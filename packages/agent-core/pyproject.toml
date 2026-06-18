@@ -1,0 +1,12 @@
+[project]
+name = "agent-core"
+version = "0.1.0"
+description = "Core domain and ports for Zebra Agent."
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "pydantic>=2.11.7,<3.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

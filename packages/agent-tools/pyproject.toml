@@ -1,0 +1,15 @@
+[project]
+name = "agent-tools"
+version = "0.1.0"
+description = "Tool gateway package for Zebra Agent."
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "agent-core",
+]
+
+[tool.uv.sources]
+agent-core = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
