@@ -196,6 +196,15 @@ For non-trivial tasks, use this loop:
 4. Validate with targeted commands.
 5. Update docs or progress files if the durable state changed.
 
+## Branch And PR Workflow
+
+- Do not commit implementation work directly on `main`.
+- Keep local `main` aligned with `origin/main`; use it only as the base for new work.
+- Create one focused branch per coherent implementation slice, using the `codex/` prefix by default, such as `codex/phase1-core-domain`.
+- Prefer small PRs that map to the implementation plan phases and can be reviewed independently.
+- Open PRs against `main`; merging into `main` is handled by the maintainer or an explicit merge task.
+- After a PR is merged, return to `main`, pull the latest `origin/main`, then create the next branch from the updated base.
+
 ## Local Commands
 
 Use these commands by default:
