@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from agent_core.domain.events import EventType
 from agent_core.domain.sessions import SessionStatus
@@ -9,11 +9,17 @@ from agent_core.harness import (
     HarnessLoop,
     HarnessStopReason,
     HarnessTask,
+    StepClock,
 )
 
 
 def test_harness_loop_retries_and_stops_after_success() -> None:
-    loop = HarnessLoop()
+    loop = HarnessLoop(
+        clock=StepClock(
+            current=datetime(2026, 6, 19, 23, 0, tzinfo=UTC),
+            step=timedelta(seconds=1),
+        )
+    )
     task = HarnessTask(
         title="Retry until success",
         user_input="fix after one retry",
@@ -35,7 +41,6 @@ def test_harness_loop_retries_and_stops_after_success() -> None:
     result = loop.run(
         task,
         attempt_runner,
-        created_at=datetime(2026, 6, 19, 23, 0, tzinfo=UTC),
     )
 
     assert result.session.status is SessionStatus.COMPLETED
@@ -49,7 +54,12 @@ def test_harness_loop_retries_and_stops_after_success() -> None:
 
 
 def test_harness_loop_stops_when_retry_budget_is_exhausted() -> None:
-    loop = HarnessLoop()
+    loop = HarnessLoop(
+        clock=StepClock(
+            current=datetime(2026, 6, 19, 23, 5, tzinfo=UTC),
+            step=timedelta(seconds=1),
+        )
+    )
     task = HarnessTask(title="Exhaust retries", user_input="keep failing", max_attempts=2)
 
     result = loop.run(
@@ -58,7 +68,6 @@ def test_harness_loop_stops_when_retry_budget_is_exhausted() -> None:
             outcome=HarnessAttemptOutcome.FAILED,
             summary="attempt failed",
         ),
-        created_at=datetime(2026, 6, 19, 23, 5, tzinfo=UTC),
     )
 
     assert result.session.status is SessionStatus.FAILED
@@ -70,3 +79,31 @@ def test_harness_loop_stops_when_retry_budget_is_exhausted() -> None:
         event.event_type for event in result.events
     ].count(EventType.HARNESS_ATTEMPT_STARTED) == 2
     assert result.events[-1].event_type is EventType.SESSION_FAILED
+
+
+def test_harness_loop_uses_ordered_timestamps_across_attempts() -> None:
+    loop = HarnessLoop(
+        clock=StepClock(
+            current=datetime(2026, 6, 20, 0, 10, tzinfo=UTC),
+            step=timedelta(seconds=2),
+        )
+    )
+    task = HarnessTask(
+        title="Timestamped retries",
+        user_input="retry with time",
+        max_attempts=2,
+    )
+
+    result = loop.run(
+        task,
+        lambda _context: HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.FAILED,
+            summary="attempt failed",
+        ),
+    )
+    created_times = [event.created_at for event in result.events]
+
+    assert created_times == sorted(created_times)
+    assert result.events[3].payload["attempt_number"] == 1
+    assert result.events[4].payload["attempt_number"] == 2
+    assert result.events[3].created_at < result.events[4].created_at

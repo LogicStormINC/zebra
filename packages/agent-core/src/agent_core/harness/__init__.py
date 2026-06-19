@@ -17,6 +17,7 @@ from agent_core.harness.models import (
 from agent_core.harness.orchestrator import SingleAttemptOrchestrator
 from agent_core.harness.projection import HarnessTraceProjector
 from agent_core.harness.stopping import HarnessStoppingPolicy
+from agent_core.harness.timing import StepClock, SystemClock
 
 __all__ = [
     "HarnessAttempt",
@@ -33,6 +34,8 @@ __all__ = [
     "HarnessStopReason",
     "HarnessStoppingPolicy",
     "SingleAttemptOrchestrator",
+    "StepClock",
+    "SystemClock",
     "HarnessTask",
     "HarnessToolTrace",
     "HarnessTraceProjector",

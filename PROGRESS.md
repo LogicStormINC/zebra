@@ -27,16 +27,17 @@
 - `P3-HAR-03 - Structured Run Output And Retry Skeleton`
 - `P3-HAR-04 - Multi-Attempt Loop Driver`
 - `P3-HAR-05 - Assistant Message And Tool Trace Projection`
+- `P3-HAR-06 - Attempt Event Timestamp Refinement`
 
 ## Current Focus
 
-- `P3-HAR-06 - Attempt Event Timestamp Refinement`
-- keep the existing runtime and builtin contracts stable while the harness trace becomes more time-aware
+- `P3-HAR-07 - Planner And Verifier Hooks`
+- keep the existing runtime and builtin contracts stable while the harness gains explicit pre-tool and post-tool hook points
 
 ## Next Unlocks
 
-- `P3-HAR-06` is now the next direct Phase 3 slice
-- the next step is to improve event timing semantics across multi-attempt runs
+- `P3-HAR-07` is now the next direct Phase 3 slice
+- the next step is to separate planning and verification responsibilities inside the harness flow
 
 ## Active Documents
 

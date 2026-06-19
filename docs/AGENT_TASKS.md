@@ -412,7 +412,7 @@ Expose a more useful structured harness trace by projecting assistant messages, 
 
 ### P3-HAR-06 - Attempt Event Timestamp Refinement
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `UNASSIGNED`
 - Suggested role: `CORE`
 - Depends on: `P3-HAR-05`
@@ -431,6 +431,31 @@ Refine harness event timing so multi-attempt runs no longer stamp every event wi
 
 #### Acceptance
 
-- [ ] Harness event timing is explicit and deterministic.
-- [ ] Multi-attempt traces show sensible per-attempt time progression.
-- [ ] Tests cover timestamp ordering across attempts.
+- [x] Harness event timing is explicit and deterministic.
+- [x] Multi-attempt traces show sensible per-attempt time progression.
+- [x] Tests cover timestamp ordering across attempts.
+
+### P3-HAR-07 - Planner And Verifier Hooks
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P3-HAR-06`
+- Branch: `codex/p3-har-07-planner-verifier-hooks`
+- Owned paths: `packages/agent-core/`, `tests/`
+
+#### Goal
+
+Introduce minimal planner and verifier hook contracts so the harness loop can separate “model proposes work” from “post-tool verification”.
+
+#### Deliverables
+
+- planner hook contract
+- verifier hook contract
+- tests for planner and verifier participation in one run
+
+#### Acceptance
+
+- [ ] Harness has explicit planner and verifier hook points.
+- [ ] Hook participation is deterministic and typed.
+- [ ] Tests cover at least one planner/verifier assisted run path.

@@ -248,3 +248,24 @@
   - `uv run pytest tests/agent_core/test_harness_trace_projection.py tests/agent_core/test_harness_multi_attempt.py tests/agent_core/test_harness_stopping.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
   - `make check` 通过
+
+## 2026-06-20 Attempt Event Timestamp Refinement
+
+- 执行 `P3-HAR-06 - Attempt Event Timestamp Refinement`
+- 新增：
+  - `SystemClock`
+  - `StepClock`
+- `HarnessLoop` 现在通过 `ClockPort` 驱动事件时间，不再把整次 run 的所有事件压成同一个 `created_at`
+- 当前行为：
+  - 初始化事件按时钟顺序推进
+  - 每次 attempt 有独立 `started_at`
+  - emitted events 和 terminal events 继续沿时钟推进
+- 新增测试：
+  - `tests/agent_core/test_harness_multi_attempt.py` 中的时间顺序断言
+- 覆盖场景：
+  - 多 attempt 事件时间递增
+  - 同一 run 内时间顺序稳定可预测
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_harness_multi_attempt.py tests/agent_core/test_harness_trace_projection.py tests/agent_core/test_harness_stopping.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
+  - `make check` 通过

@@ -19,6 +19,8 @@ from agent_core.harness import (
     HarnessToolTrace,
     HarnessTraceProjector,
     SingleAttemptOrchestrator,
+    StepClock,
+    SystemClock,
 )
 
 __all__ = [
@@ -36,6 +38,8 @@ __all__ = [
     "HarnessStopReason",
     "HarnessStoppingPolicy",
     "SingleAttemptOrchestrator",
+    "StepClock",
+    "SystemClock",
     "HarnessTask",
     "HarnessToolTrace",
     "HarnessTraceProjector",
