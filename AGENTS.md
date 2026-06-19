@@ -121,7 +121,7 @@ Avoid assigning two contributors to the same package subarea unless one is expli
 If work stops before merge:
 
 - update task status in `docs/AGENT_TASKS.md`
-- record blockers or partial completion in `progress.md`
+- record blockers or partial completion in `WORKLOG.md`
 - record any durable decisions in `findings.md` or the relevant doc
 - leave exact next steps for the next owner
 
@@ -146,7 +146,7 @@ Only keep cross-workspace and project-governance files at the repository root:
 - `PROGRESS.md`
 - `task_plan.md`
 - `findings.md`
-- `progress.md`
+- `WORKLOG.md`
 - `pyproject.toml`
 - `uv.lock`
 - `Makefile`
@@ -280,7 +280,7 @@ Keep planning file responsibilities separate:
 - `PROGRESS.md`: project-level current state
 - `task_plan.md`: current multi-step task plan
 - `findings.md`: discoveries and durable implementation notes
-- `progress.md`: session log
+- `WORKLOG.md`: session log
 
 ## Default Workflow
 

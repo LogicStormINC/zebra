@@ -20,7 +20,7 @@
 
 ### P2-RT-01 - LocalRuntime Process Execution
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `UNASSIGNED`
 - Suggested role: `RUNTIME`
 - Depends on: `Phase 1 completed`
@@ -41,10 +41,10 @@ Implement a real `LocalRuntime` that can execute a constrained command process t
 
 #### Acceptance
 
-- [ ] Runtime can execute a simple command and return structured results.
-- [ ] Timeout behavior is deterministic and tested.
-- [ ] No `agent-core` module imports infrastructure SDKs because of this task.
-- [ ] Validation commands and results are recorded in the PR.
+- [x] Runtime can execute a simple command and return structured results.
+- [x] Timeout behavior is deterministic and tested.
+- [x] No `agent-core` module imports infrastructure SDKs because of this task.
+- [x] Validation commands and results are recorded in the PR or work log.
 
 ### P2-RT-02 - Workspace And Worktree Abstractions
 
@@ -74,12 +74,12 @@ Add local workspace abstractions that prepare later file, patch, and git tools w
 
 ### P2-TOOL-01 - Tool Contracts And Execution Results
 
-- Status: `Ready`
+- Status: `Review`
 - Owner: `UNASSIGNED`
 - Suggested role: `CTX`
 - Depends on: `Phase 1 completed`
 - Branch: `codex/p2-tool-01-tool-results`
-- Owned paths: `packages/agent-tools/`, `tests/`
+- Owned paths: `packages/agent-tools/`, `packages/agent-core/src/agent_core/py.typed`, `tests/`
 
 #### Goal
 
@@ -94,9 +94,9 @@ Create the first concrete execution-layer tool contracts and result structures b
 
 #### Acceptance
 
-- [ ] Tool execution paths reject invalid inputs before runtime execution.
-- [ ] Result model is structured enough for later command and file tools.
-- [ ] Tests cover success path and invalid input path.
+- [x] Tool execution paths reject invalid inputs before runtime execution.
+- [x] Result model is structured enough for later command and file tools.
+- [x] Tests cover success path and invalid input path.
 
 ### P2-TOOL-02 - Builtin File Read Path
 

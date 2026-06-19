@@ -10,7 +10,7 @@
 |---|---|---|
 | Read current architecture and progress state | completed | `v1.0` 文档和 `PROGRESS.md` 已对齐 |
 | Define implementation phases and acceptance criteria | completed | 已形成正式文档草案 |
-| Persist planning files for future continuation | completed | `task_plan.md`、`findings.md`、`progress.md` 已建立 |
+| Persist planning files for future continuation | completed | `task_plan.md`、`findings.md`、`WORKLOG.md` 已建立 |
 | Sync repo-level progress view | completed | `PROGRESS.md` 已恢复为项目级状态摘要，并链接正式实施文档 |
 
 ## Key Decisions

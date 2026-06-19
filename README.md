@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-The repository is in bootstrap phase. The single-package Python layout has been replaced with an `apps/ + packages/` workspace skeleton so the control plane, harness, runtime, tools, and policy layers do not collapse into one package.
+The repository has completed bootstrap and core-domain baseline work and is now in `Phase 2 - Runtime And Tooling Spine`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, and the current mainline work is adding real local runtime execution plus the first structured tool execution path.
 
 Read in this order:
 
