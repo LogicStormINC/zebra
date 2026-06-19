@@ -73,3 +73,54 @@
   - `uv run ruff check packages/agent-tools/src/agent_tools tests/agent_tools` 通过
   - `uv run mypy packages/agent-tools/src/agent_tools tests/agent_tools` 通过
   - `make check` 通过
+
+## 2026-06-19 Builtin Patch And Validation Path
+
+- 执行 `P2-TOOL-04 - Builtin Patch Apply Path`
+- 新增 `agent_tools.builtin.patch`
+- 实现 `patch.apply`：
+  - 输入为 unified diff 字符串
+  - 先校验 patch 头中的路径，拒绝越界到 workspace 外
+  - 通过 typed `patch` 命令映射到 `RuntimePort`
+  - 非零退出和 stderr 作为结构化结果返回
+- 新增测试：
+  - `tests/agent_tools/test_patch_apply_tool.py`
+
+- 执行 `P2-TOOL-05 - Builtin Validation Commands`
+- 新增 `agent_tools.builtin.tests`
+- 实现 `tests.run`：
+  - 使用 preset 映射，不接受任意自由 shell 文本
+  - 支持 `cwd` 与 `timeout_seconds`
+  - 返回结构化执行结果
+- 新增测试：
+  - `tests/agent_tools/test_tests_run_tool.py`
+
+- 执行 `P2-IT-01 - Local Toolchain Integration Flow`
+- 新增集成测试：
+  - `tests/integration/test_local_toolchain_flow.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_tools tests/agent_runtime tests/integration tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-tools/src/agent_tools tests/agent_tools tests/integration` 通过
+  - `make check` 通过
+
+## 2026-06-19 Readonly Git Inspection Path
+
+- 执行 `P2-GIT-01 - Readonly Git Inspection Tools`
+- 新增 `agent_tools.builtin.git`
+- 实现 `git.status`：
+  - 只执行 readonly `git status --short --branch`
+  - `cwd` 如果提供，必须仍然位于 workspace 内
+  - 返回结构化结果，不引入写操作
+- 新增测试：
+  - `tests/agent_tools/test_git_status_tool.py`
+- 补齐 `Phase 2` 最小本地工具闭环：
+  - `files.read`
+  - `patch.apply`
+  - `command.run`
+  - `tests.run`
+  - `git.status`
+  - `tests/integration/test_local_toolchain_flow.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_tools tests/agent_runtime tests/integration tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-tools/src/agent_tools tests/agent_tools tests/integration` 通过
+  - `make check` 通过

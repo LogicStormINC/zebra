@@ -3,11 +3,10 @@
 ## Current Phase
 
 - Active phase: `Phase 2 - Runtime And Tooling Spine`
-- Repository status: `in progress`
+- Repository status: `phase 2 completed`
 - Current focus:
-  - merge the first typed runtime execution path
-  - merge the first tool registry and execution contract slice
-  - keep task ownership and validation evidence aligned with `docs/AGENT_TASKS.md`
+  - prepare the first `Phase 3` harness loop task cards
+  - keep the `Phase 2` runtime and builtin contracts stable as the base layer for harness work
 
 ## Completed
 
@@ -18,16 +17,20 @@
 - `P2-TOOL-01 - Tool Contracts And Execution Results`
 - `P2-TOOL-02 - Builtin File Read Path`
 - `P2-TOOL-03 - Builtin Command Execution Path`
+- `P2-TOOL-04 - Builtin Patch Apply Path`
+- `P2-TOOL-05 - Builtin Validation Commands`
+- `P2-IT-01 - Local Toolchain Integration Flow`
+- `P2-GIT-01 - Readonly Git Inspection Tools`
 
 ## Current Focus
 
-- extend the Phase 2 task board for the remaining builtin paths needed by `docs/实施任务拆解与阶段验收.md`
-- keep the tool and runtime contracts stable while adding patch, test, and git-oriented follow-up slices
+- define the first executable `Phase 3` task board slices
+- keep the existing runtime and builtin contracts stable while the harness loop is introduced
 
 ## Next Unlocks
 
-- the currently defined `P2-*` task cards are complete
-- Phase 2 as a document milestone is still in progress because the stage doc still requires more than file read and command execution
+- `Phase 3 - Harness Loop MVP` is the next direct milestone
+- `docs/AGENT_TASKS.md` should be extended from Phase 2 into the first Phase 3 execution set before new implementation starts
 
 ## Active Documents
 

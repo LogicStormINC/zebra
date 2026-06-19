@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 2 from `实施任务拆解与阶段验收.md`.
+> Current execution range: Phase 2 completed; Phase 3 prepared from `实施任务拆解与阶段验收.md`.
 
 ## Global Rules
 
@@ -150,7 +150,187 @@ Implement the first builtin command tool using typed executable plus argv, not f
 - [x] Exit code and captured output are returned in structured form.
 - [x] Timeout handling is tested end to end.
 
+### P2-TOOL-04 - Builtin Patch Apply Path
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CTX`
+- Depends on: `P2-TOOL-02`, `P2-TOOL-03`
+- Branch: `codex/p2-tool-04-patch-apply`
+- Owned paths: `packages/agent-tools/`, `packages/agent-runtime/`, `tests/`
+
+#### Goal
+
+Implement the first builtin patch path that can apply a constrained diff inside the current workspace.
+
+#### Deliverables
+
+- patch tool contract
+- workspace-bounded patch path validation
+- runtime invocation mapping for patch application
+- tests for success and invalid path rejection
+
+#### Acceptance
+
+- [x] Patch application stays within the current workspace.
+- [x] Patch failure returns a structured tool result.
+- [x] Tests cover a successful apply path and a rejected path.
+
+### P2-TOOL-05 - Builtin Validation Commands
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CTX`
+- Depends on: `P2-TOOL-03`, `P2-TOOL-04`
+- Branch: `codex/p2-tool-05-validation-commands`
+- Owned paths: `packages/agent-tools/`, `packages/agent-runtime/`, `tests/`
+
+#### Goal
+
+Implement the first validation-oriented builtin tools so the local loop can run tests or checks after edits.
+
+#### Deliverables
+
+- test or check tool contract
+- command preset mapping for deterministic validation
+- timeout and non-zero handling
+- tests for successful validation and failure reporting
+
+#### Acceptance
+
+- [x] Validation execution uses typed commands, not free shell text.
+- [x] Test or check results are returned in structured form.
+- [x] Failure and timeout behavior are tested.
+
+### P2-GIT-01 - Readonly Git Inspection Tools
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `RUNTIME`
+- Depends on: `P2-TOOL-03`, `P2-RT-02`
+- Branch: `codex/p2-git-01-readonly-inspection`
+- Owned paths: `packages/agent-tools/`, `packages/agent-runtime/`, `tests/`
+
+#### Goal
+
+Add the first readonly git inspection path needed for local agent verification and review loops.
+
+#### Deliverables
+
+- readonly git status or diff tool contract
+- workspace-root git invocation mapping
+- tests for clean and dirty repository inspection
+
+#### Acceptance
+
+- [x] Git inspection stays readonly.
+- [x] Output is returned in structured form.
+- [x] Tests cover at least one successful inspection path.
+
+### P2-IT-01 - Local Toolchain Integration Flow
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CTX`
+- Depends on: `P2-TOOL-02`, `P2-TOOL-04`, `P2-TOOL-05`
+- Branch: `codex/p2-it-01-local-toolchain-flow`
+- Owned paths: `tests/`, `packages/agent-tools/`, `packages/agent-runtime/`
+
+#### Goal
+
+Prove the minimum local Phase 2 edit loop with read, patch, validate, and structured results.
+
+#### Deliverables
+
+- integration-style test or smoke flow
+- deterministic fixture workspace
+- documentation of the validated local loop
+
+#### Acceptance
+
+- [x] The repository proves a local `read -> patch -> validate -> return result` flow.
+- [x] Integration coverage uses the real runtime and builtin tools.
+- [x] Validation evidence is recorded in the work log or PR.
+
 ## Notes
 
 - Historical Phase 0 task plans from older docs are no longer the active task registry.
 - New tasks should be added using `TASK_CARD_TEMPLATE.md` and must align with the active execution set.
+
+## Phase 3 Task Board
+
+### P3-HAR-01 - Harness Loop Skeleton
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `Phase 2 completed`
+- Branch: `codex/p3-har-01-loop-skeleton`
+- Owned paths: `packages/agent-core/`, `tests/`
+
+#### Goal
+
+Implement the smallest harness loop skeleton that can accept a task, hold state, and coordinate one tool-capable attempt.
+
+#### Deliverables
+
+- loop entrypoint
+- task or attempt state model
+- stopping condition skeleton
+- deterministic tests for one minimal run
+
+#### Acceptance
+
+- [ ] The repo has a typed harness loop entrypoint.
+- [ ] One minimal loop path is covered by deterministic tests.
+- [ ] The implementation does not hardcode infrastructure concerns into domain models.
+
+### P3-MOD-01 - Mock Model Gateway
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P3-HAR-01`
+- Branch: `codex/p3-mod-01-mock-model-gateway`
+- Owned paths: `packages/agent-core/`, `tests/`
+
+#### Goal
+
+Provide the first mock model gateway path so the harness can be exercised without a real provider.
+
+#### Deliverables
+
+- deterministic mock model response contract
+- fixture or scripted response path
+- tests for harness-model interaction
+
+#### Acceptance
+
+- [ ] The harness can consume a deterministic mock model output.
+- [ ] Tests cover at least one tool call planning path.
+- [ ] No real network model dependency is introduced.
+
+### P3-HAR-02 - Single Attempt Tool Orchestration
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P3-HAR-01`, `P3-MOD-01`
+- Branch: `codex/p3-har-02-single-attempt-orchestration`
+- Owned paths: `packages/agent-core/`, `packages/agent-tools/`, `tests/`
+
+#### Goal
+
+Wire the harness, tool gateway, runtime, and policy boundary into one single-attempt execution path.
+
+#### Deliverables
+
+- one request-to-tool-run orchestration path
+- structured tool result handling
+- tests for one successful and one failed attempt
+
+#### Acceptance
+
+- [ ] One model-driven tool execution path runs end to end.
+- [ ] Tool results are fed back into harness state deterministically.
+- [ ] Tests cover one success case and one failure case.
