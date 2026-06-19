@@ -16,15 +16,15 @@
 - `P2-RT-01 - LocalRuntime Process Execution`
 - `P2-RT-02 - Workspace And Worktree Abstractions`
 - `P2-TOOL-01 - Tool Contracts And Execution Results`
+- `P2-TOOL-02 - Builtin File Read Path`
 
 ## Current Focus
 
-- `P2-TOOL-02 - Builtin File Read Path`
 - `P2-TOOL-03 - Builtin Command Execution Path`
 
 ## Next Unlocks
 
-- `P2-TOOL-02` and `P2-TOOL-03` are now unblocked because the runtime execution path, workspace boundary, and tool registry baseline are all merged on `main`.
+- `P2-TOOL-03` is the next direct Phase 2 slice.
 
 ## Active Documents
 

@@ -39,3 +39,19 @@
   - `uv run pytest tests/agent_runtime/test_workspace.py tests/agent_runtime/test_local_runtime.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-runtime/src/agent_runtime tests/agent_runtime tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy packages/agent-runtime/src/agent_runtime tests/agent_runtime` 通过
+
+## 2026-06-19 Builtin File Read Path
+
+- 执行 `P2-TOOL-02 - Builtin File Read Path`
+- 新增 `agent_tools.builtin.files`
+- 实现 `files.read`：
+  - 通过 `LocalWorkspace` 做相对路径归一化
+  - 拒绝越界读取
+  - 对大文件返回截断结果和结构化 metadata
+- 为 `agent-tools` 增加对 `agent-runtime` 的 workspace 依赖声明
+- 新增测试：
+  - `tests/agent_tools/test_file_read_tool.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_tools/test_file_read_tool.py tests/agent_tools/test_executor.py tests/agent_runtime/test_workspace.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-tools/src/agent_tools tests/agent_tools packages/agent-runtime/src/agent_runtime tests/agent_runtime tests/smoke/test_workspace_bootstrap.py` 通过
+  - `make check` 通过

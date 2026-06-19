@@ -100,7 +100,7 @@ Create the first concrete execution-layer tool contracts and result structures b
 
 ### P2-TOOL-02 - Builtin File Read Path
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `UNASSIGNED`
 - Suggested role: `CTX`
 - Depends on: `P2-TOOL-01`, `P2-RT-02`
@@ -120,9 +120,9 @@ Implement the first builtin file read path using runtime-side workspace constrai
 
 #### Acceptance
 
-- [ ] Reads outside the allowed workspace are rejected.
-- [ ] Normal read behavior is deterministic and tested.
-- [ ] Output behavior for large files is defined.
+- [x] Reads outside the allowed workspace are rejected.
+- [x] Normal read behavior is deterministic and tested.
+- [x] Output behavior for large files is defined.
 
 ### P2-TOOL-03 - Builtin Command Execution Path
 
