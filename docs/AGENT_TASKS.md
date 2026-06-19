@@ -387,7 +387,7 @@ Extend the harness loop from one attempt to a minimal multi-attempt driver that 
 
 ### P3-HAR-05 - Assistant Message And Tool Trace Projection
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `UNASSIGNED`
 - Suggested role: `CORE`
 - Depends on: `P3-HAR-04`
@@ -406,6 +406,31 @@ Expose a more useful structured harness trace by projecting assistant messages, 
 
 #### Acceptance
 
-- [ ] Harness run output exposes assistant and tool trace data in a typed form.
-- [ ] Projection logic is deterministic.
-- [ ] Tests cover both successful and failed tool paths.
+- [x] Harness run output exposes assistant and tool trace data in a typed form.
+- [x] Projection logic is deterministic.
+- [x] Tests cover both successful and failed tool paths.
+
+### P3-HAR-06 - Attempt Event Timestamp Refinement
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P3-HAR-05`
+- Branch: `codex/p3-har-06-attempt-timestamps`
+- Owned paths: `packages/agent-core/`, `tests/`
+
+#### Goal
+
+Refine harness event timing so multi-attempt runs no longer stamp every event with the same timestamp and can model per-attempt timing more accurately.
+
+#### Deliverables
+
+- per-attempt timestamp strategy
+- deterministic time source usage
+- tests for ordered timestamps across attempts
+
+#### Acceptance
+
+- [ ] Harness event timing is explicit and deterministic.
+- [ ] Multi-attempt traces show sensible per-attempt time progression.
+- [ ] Tests cover timestamp ordering across attempts.

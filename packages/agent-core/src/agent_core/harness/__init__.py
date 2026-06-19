@@ -4,28 +4,36 @@ from agent_core.harness.models import (
     HarnessAttempt,
     HarnessAttemptOutcome,
     HarnessAttemptResult,
+    HarnessAttemptTrace,
     HarnessContext,
     HarnessEventDraft,
     HarnessLoopResult,
     HarnessRunResult,
+    HarnessRunTrace,
     HarnessStopReason,
     HarnessTask,
+    HarnessToolTrace,
 )
 from agent_core.harness.orchestrator import SingleAttemptOrchestrator
+from agent_core.harness.projection import HarnessTraceProjector
 from agent_core.harness.stopping import HarnessStoppingPolicy
 
 __all__ = [
     "HarnessAttempt",
     "HarnessAttemptOutcome",
     "HarnessAttemptResult",
+    "HarnessAttemptTrace",
     "HarnessContext",
     "HarnessEventDraft",
     "HarnessLoop",
     "HarnessModelStep",
     "HarnessLoopResult",
+    "HarnessRunTrace",
     "HarnessRunResult",
     "HarnessStopReason",
     "HarnessStoppingPolicy",
     "SingleAttemptOrchestrator",
     "HarnessTask",
+    "HarnessToolTrace",
+    "HarnessTraceProjector",
 ]

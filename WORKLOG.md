@@ -228,3 +228,23 @@
   - `uv run pytest tests/agent_core/test_harness_multi_attempt.py tests/agent_core/test_harness_stopping.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
   - `make check` 通过
+
+## 2026-06-20 Assistant And Tool Trace Projection
+
+- 执行 `P3-HAR-05 - Assistant Message And Tool Trace Projection`
+- 新增：
+  - `HarnessToolTrace`
+  - `HarnessAttemptTrace`
+  - `HarnessRunTrace`
+  - `HarnessTraceProjector`
+- `SingleAttemptOrchestrator` 现在在 emitted events 中显式携带 `attempt_number`
+- 当前 projection 可以把 assistant message、tool proposal、policy decision、tool result 投影为紧凑 run-facing trace
+- 新增测试：
+  - `tests/agent_core/test_harness_trace_projection.py`
+- 覆盖场景：
+  - successful tool trace
+  - failed tool trace
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_harness_trace_projection.py tests/agent_core/test_harness_multi_attempt.py tests/agent_core/test_harness_stopping.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
+  - `make check` 通过

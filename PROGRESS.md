@@ -26,16 +26,17 @@
 - `P3-HAR-02 - Single Attempt Tool Orchestration`
 - `P3-HAR-03 - Structured Run Output And Retry Skeleton`
 - `P3-HAR-04 - Multi-Attempt Loop Driver`
+- `P3-HAR-05 - Assistant Message And Tool Trace Projection`
 
 ## Current Focus
 
-- `P3-HAR-05 - Assistant Message And Tool Trace Projection`
-- keep the existing runtime and builtin contracts stable while the harness exposes richer structured traces
+- `P3-HAR-06 - Attempt Event Timestamp Refinement`
+- keep the existing runtime and builtin contracts stable while the harness trace becomes more time-aware
 
 ## Next Unlocks
 
-- `P3-HAR-05` is now the next direct Phase 3 slice
-- the next step is to expose assistant and tool traces in a more ergonomic run-facing structure
+- `P3-HAR-06` is now the next direct Phase 3 slice
+- the next step is to improve event timing semantics across multi-attempt runs
 
 ## Active Documents
 

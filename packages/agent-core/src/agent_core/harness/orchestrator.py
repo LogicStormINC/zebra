@@ -38,6 +38,7 @@ class SingleAttemptOrchestrator:
                 event_type=EventType.MODEL_RESPONSE_RECEIVED,
                 actor=EventActor.HARNESS,
                 payload={
+                    "attempt_number": context.attempt.number,
                     "assistant_message": completion.assistant_message.content,
                     "tool_call_count": len(completion.tool_calls),
                 },
@@ -61,6 +62,7 @@ class SingleAttemptOrchestrator:
                 event_type=EventType.TOOL_CALL_PROPOSED,
                 actor=EventActor.HARNESS,
                 payload={
+                    "attempt_number": context.attempt.number,
                     "tool_name": tool_call.name,
                     "arguments": tool_call.arguments,
                 },
@@ -73,6 +75,7 @@ class SingleAttemptOrchestrator:
                 event_type=EventType.POLICY_DECISION_MADE,
                 actor=EventActor.POLICY,
                 payload={
+                    "attempt_number": context.attempt.number,
                     "decision": decision.decision.value,
                     "reason": decision.reason,
                     "policy_profile": decision.policy_profile,
@@ -96,7 +99,10 @@ class SingleAttemptOrchestrator:
             HarnessEventDraft(
                 event_type=EventType.TOOL_EXECUTION_STARTED,
                 actor=EventActor.HARNESS,
-                payload={"tool_name": tool_call.name},
+                payload={
+                    "attempt_number": context.attempt.number,
+                    "tool_name": tool_call.name,
+                },
             )
         )
         tool_result = self._tool_gateway.execute(tool_call)
@@ -109,6 +115,7 @@ class SingleAttemptOrchestrator:
                 ),
                 actor=EventActor.TOOL,
                 payload={
+                    "attempt_number": context.attempt.number,
                     "tool_name": tool_call.name,
                     "status": tool_result.status.value,
                     "output": tool_result.output,

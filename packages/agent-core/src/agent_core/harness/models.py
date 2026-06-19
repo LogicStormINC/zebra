@@ -94,6 +94,30 @@ class HarnessRunResult:
 
 
 @dataclass(frozen=True)
+class HarnessToolTrace:
+    tool_name: str
+    status: str
+    arguments: dict[str, Any] = field(default_factory=dict)
+    output: str = ""
+    metadata: dict[str, Any] = field(default_factory=dict)
+    policy_decision: str | None = None
+
+
+@dataclass(frozen=True)
+class HarnessAttemptTrace:
+    attempt_number: int
+    assistant_message: str | None = None
+    tools: tuple[HarnessToolTrace, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class HarnessRunTrace:
+    final_outcome: HarnessAttemptOutcome
+    stop_reason: HarnessStopReason
+    attempts: tuple[HarnessAttemptTrace, ...]
+
+
+@dataclass(frozen=True)
 class HarnessLoopResult:
     session: Session
     events: tuple[SessionEvent, ...]
