@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-The repository has completed bootstrap and core-domain baseline work and is now in `Phase 2 - Runtime And Tooling Spine`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, and the current mainline work is adding real local runtime execution plus the first structured tool execution path.
+The repository has completed the Phase 3 harness MVP and is now entering `Phase 4 - Control Plane And Recovery`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, and the next mainline work is adding durable storage and replayable session state.
 
 Read in this order:
 

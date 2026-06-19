@@ -536,3 +536,32 @@ Make the Phase 3 harness loop expose explicit model/tool call budgets and stop d
 - [x] Run results report budget usage and deterministic stop reasons.
 - [x] Tests cover at least one exhausted budget path.
 - [x] The repo has at least one mock harness smoke test covering the main loop.
+
+## Phase 4 Task Board
+
+### P4-STO-01 - SQLite Event Store And Session Projection
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P3-HAR-10`
+- Branch: `codex/p4-sto-01-sqlite-event-store`
+- Owned paths: `packages/agent-storage/`, `pyproject.toml`, `tests/`, `README.md`
+
+#### Goal
+
+Stand up the first durable storage slice by adding a local SQLite event store and a matching session projection store that can replay one session stream.
+
+#### Deliverables
+
+- `agent-storage` workspace package
+- SQLite event append and per-session read path
+- SQLite session projection save and get path
+- tests for ordered replay and duplicate-sequence rejection
+
+#### Acceptance
+
+- [x] Session events can be appended and read back in sequence order.
+- [x] Duplicate sequence writes for one session are rejected.
+- [x] A stored event stream can be replayed back into a `Session` projection.
+- [x] The storage package is wired into the workspace and smoke imports.

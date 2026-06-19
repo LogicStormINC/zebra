@@ -367,3 +367,30 @@
   - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core tests/smoke` 通过
   - `uv run mypy packages/agent-core/src/agent_core tests/agent_core` 通过
   - `make check` 通过
+
+## 2026-06-20 SQLite Event Store And Session Projection
+
+- 执行 `P4-STO-01 - SQLite Event Store And Session Projection`
+- 新增 `agent-storage` workspace package
+- 新增：
+  - `SQLiteEventStore`
+  - `SQLiteProjectionStore`
+  - SQLite 连接与 event row 映射辅助模块
+- 当前行为：
+  - session events 可按 `session_id + sequence` 顺序持久化和读取
+  - 同一 session 的重复 sequence 会被 SQLite 唯一约束拒绝
+  - 读取出的 event stream 可以直接喂给 `rebuild_session`
+- 新增测试：
+  - `tests/agent_storage/test_sqlite_event_store.py`
+  - `tests/agent_storage/test_sqlite_projection_store.py`
+- 覆盖场景：
+  - append/list session events
+  - duplicate sequence rejection
+  - replay into session projection
+  - save/get session projection
+- 本轮验证结果：
+  - `make sync` 通过
+  - `uv run pytest tests/agent_storage/test_sqlite_event_store.py tests/agent_storage/test_sqlite_projection_store.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-storage/src/agent_storage tests/agent_storage tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy packages/agent-storage/src/agent_storage tests/agent_storage` 通过
+  - `make check` 通过

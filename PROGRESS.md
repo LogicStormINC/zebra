@@ -3,10 +3,10 @@
 ## Current Phase
 
 - Active phase: `Phase 3 - Harness Execution Spine`
-- Repository status: `phase 3 in progress`
+- Repository status: `phase 4 in progress`
 - Current focus:
-  - define the next Phase 3 slice after explicit tool selection
-  - keep the existing runtime and builtin contracts stable while harness behavior grows richer
+  - establish the first durable storage slice for session events and projections
+  - keep phase 3 harness contracts stable while phase 4 control-plane foundations land
 
 ## Completed
 
@@ -32,16 +32,17 @@
 - `P3-HAR-08 - Session Event Builder Cleanup`
 - `P3-HAR-09 - Tool Call Selection Strategy`
 - `P3-HAR-10 - Explicit Harness Budgets`
+- `P4-STO-01 - SQLite Event Store And Session Projection`
 
 ## Current Focus
 
-- phase 3 harness MVP closure after explicit budgets and smoke coverage
-- identify whether the next slice should register remaining Phase 3 polish or move into Phase 4 control-plane groundwork
+- phase 4 control-plane groundwork after the first durable storage slice
+- choose the next direct task card between recovery worker entry, leases, and event schema formalization
 
 ## Next Unlocks
 
-- `P3-HAR-10` is complete
-- the next step is to register the next direct task card before moving into recovery and durable-session work
+- `P4-STO-01` is complete
+- the next step is to register the next recovery-oriented slice on top of the new storage package
 
 ## Active Documents
 
