@@ -1,5 +1,6 @@
 from agent_context.compiler import compile_context
 from agent_core.domain.sessions import SessionStatus
+from agent_core.ports.runtime import RuntimeExecutionRequest
 from agent_runtime.adapters.local import LocalRuntime
 from agent_security.policy import policy_profile
 from agent_tools.gateway import gateway_name
@@ -18,5 +19,8 @@ def test_workspace_packages_import() -> None:
 
 def test_runtime_port_shape() -> None:
     runtime = LocalRuntime()
-    assert runtime.execute(["echo", "ok"]) == 0
-    assert runtime.execute([]) == 1
+    result = runtime.execute(RuntimeExecutionRequest(command=("echo", "ok")))
+
+    assert result.succeeded is True
+    assert result.exit_code == 0
+    assert "ok" in result.stdout

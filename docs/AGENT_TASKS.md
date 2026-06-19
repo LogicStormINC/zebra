@@ -20,12 +20,12 @@
 
 ### P2-RT-01 - LocalRuntime Process Execution
 
-- Status: `Ready`
+- Status: `Review`
 - Owner: `UNASSIGNED`
 - Suggested role: `RUNTIME`
 - Depends on: `Phase 1 completed`
 - Branch: `codex/p2-rt-01-local-runtime`
-- Owned paths: `packages/agent-runtime/`, `tests/`
+- Owned paths: `packages/agent-runtime/`, `packages/agent-core/src/agent_core/ports/runtime.py`, `tests/`
 
 #### Goal
 
