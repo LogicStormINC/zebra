@@ -261,7 +261,7 @@ Prove the minimum local Phase 2 edit loop with read, patch, validate, and struct
 
 ### P3-HAR-01 - Harness Loop Skeleton
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `UNASSIGNED`
 - Suggested role: `CORE`
 - Depends on: `Phase 2 completed`
@@ -281,13 +281,13 @@ Implement the smallest harness loop skeleton that can accept a task, hold state,
 
 #### Acceptance
 
-- [ ] The repo has a typed harness loop entrypoint.
-- [ ] One minimal loop path is covered by deterministic tests.
-- [ ] The implementation does not hardcode infrastructure concerns into domain models.
+- [x] The repo has a typed harness loop entrypoint.
+- [x] One minimal loop path is covered by deterministic tests.
+- [x] The implementation does not hardcode infrastructure concerns into domain models.
 
 ### P3-MOD-01 - Mock Model Gateway
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `UNASSIGNED`
 - Suggested role: `CORE`
 - Depends on: `P3-HAR-01`

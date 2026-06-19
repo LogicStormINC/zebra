@@ -3,9 +3,9 @@
 ## Current Phase
 
 - Active phase: `Phase 2 - Runtime And Tooling Spine`
-- Repository status: `phase 2 completed`
+- Repository status: `phase 3 in progress`
 - Current focus:
-  - prepare the first `Phase 3` harness loop task cards
+  - implement the first mock model gateway path on top of the harness loop skeleton
   - keep the `Phase 2` runtime and builtin contracts stable as the base layer for harness work
 
 ## Completed
@@ -21,16 +21,17 @@
 - `P2-TOOL-05 - Builtin Validation Commands`
 - `P2-IT-01 - Local Toolchain Integration Flow`
 - `P2-GIT-01 - Readonly Git Inspection Tools`
+- `P3-HAR-01 - Harness Loop Skeleton`
 
 ## Current Focus
 
-- define the first executable `Phase 3` task board slices
-- keep the existing runtime and builtin contracts stable while the harness loop is introduced
+- `P3-MOD-01 - Mock Model Gateway`
+- keep the existing runtime and builtin contracts stable while model-free harness coverage expands
 
 ## Next Unlocks
 
-- `Phase 3 - Harness Loop MVP` is the next direct milestone
-- `docs/AGENT_TASKS.md` should be extended from Phase 2 into the first Phase 3 execution set before new implementation starts
+- `P3-MOD-01` is now the next direct Phase 3 slice
+- `P3-HAR-02` remains blocked on the mock model gateway path
 
 ## Active Documents
 

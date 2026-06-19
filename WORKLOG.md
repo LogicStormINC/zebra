@@ -124,3 +124,22 @@
   - `uv run pytest tests/agent_tools tests/agent_runtime tests/integration tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-tools/src/agent_tools tests/agent_tools tests/integration` 通过
   - `make check` 通过
+
+## 2026-06-19 Harness Loop Skeleton
+
+- 执行 `P3-HAR-01 - Harness Loop Skeleton`
+- 新增 `agent_core.harness`
+- 实现最小 loop 骨架：
+  - `HarnessTask`
+  - `HarnessAttempt`
+  - `HarnessContext`
+  - `HarnessAttemptResult`
+  - `HarnessLoop`
+- 新增 `HARNESS_ATTEMPT_STARTED` 事件，并接入 session projection
+- 当前 loop 只协调一次注入式 `attempt_runner`，不提前耦合真实模型或真实工具执行
+- 新增测试：
+  - `tests/agent_core/test_harness_loop.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
+  - `uv run mypy packages/agent-core/src/agent_core tests/agent_core` 通过
