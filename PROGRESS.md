@@ -31,16 +31,17 @@
 - `P3-HAR-07 - Planner And Verifier Hooks`
 - `P3-HAR-08 - Session Event Builder Cleanup`
 - `P3-HAR-09 - Tool Call Selection Strategy`
+- `P3-HAR-10 - Explicit Harness Budgets`
 
 ## Current Focus
 
-- phase 3 harness work after explicit tool-call selection
-- identify and start the next direct harness slice from `docs/实施任务拆解与阶段验收.md`
+- phase 3 harness MVP closure after explicit budgets and smoke coverage
+- identify whether the next slice should register remaining Phase 3 polish or move into Phase 4 control-plane groundwork
 
 ## Next Unlocks
 
-- `P3-HAR-09` is complete
-- the next step is to choose the next direct Phase 3 harness slice and keep building in task-card order
+- `P3-HAR-10` is complete
+- the next step is to register the next direct task card before moving into recovery and durable-session work
 
 ## Active Documents
 

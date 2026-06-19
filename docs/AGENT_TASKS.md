@@ -509,3 +509,30 @@ Make tool selection explicit by extracting the current â€œfirst tool call winsâ€
 - [x] Tool selection is expressed through an explicit strategy.
 - [x] Default behavior remains deterministic.
 - [x] Tests cover at least one multi-tool completion path.
+
+### P3-HAR-10 - Explicit Harness Budgets
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P3-HAR-09`
+- Branch: `codex/p3-har-10-explicit-budgets`
+- Owned paths: `packages/agent-core/`, `tests/`
+
+#### Goal
+
+Make the Phase 3 harness loop expose explicit model/tool call budgets and stop deterministically when those budgets are exhausted.
+
+#### Deliverables
+
+- typed harness task budget fields
+- stopping policy support for model/tool call budgets
+- tests for deterministic budget exhaustion behavior
+- one mock harness smoke path covering the closed loop
+
+#### Acceptance
+
+- [x] Harness task shape exposes explicit model/tool call budgets.
+- [x] Run results report budget usage and deterministic stop reasons.
+- [x] Tests cover at least one exhausted budget path.
+- [x] The repo has at least one mock harness smoke test covering the main loop.

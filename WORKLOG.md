@@ -339,3 +339,31 @@
   - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
   - `uv run mypy packages/agent-core/src/agent_core tests/agent_core` 通过
   - `make check` 通过
+
+## 2026-06-20 Explicit Harness Budgets
+
+- 执行 `P3-HAR-10 - Explicit Harness Budgets`
+- 新增：
+  - `HarnessTask.max_model_calls`
+  - `HarnessTask.max_tool_calls`
+  - `HarnessRunResult` 的 budget usage / limit 字段
+  - `MODEL_CALL_BUDGET_EXHAUSTED`
+  - `TOOL_CALL_BUDGET_EXHAUSTED`
+- `HarnessLoop` 现在会把 task budget 写入 `TASK_PREPARED` event，并累计每次 attempt 的 model/tool usage
+- `SingleAttemptOrchestrator` 现在会在 attempt metadata 中显式回传：
+  - `model_calls_used`
+  - `tool_calls_executed`
+- `HarnessStoppingPolicy` 现在会在 retry 判断前先检查 model/tool budget 是否已经耗尽
+- 新增测试：
+  - `tests/agent_core/test_harness_stopping.py`
+  - `tests/smoke/test_mock_harness_loop.py`
+- 覆盖场景：
+  - tool call budget exhausted
+  - model call budget exhausted
+  - loop 因 tool budget 耗尽而停止重试
+  - mock harness loop 端到端 smoke 闭环
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_harness_stopping.py tests/agent_core/test_single_attempt_orchestrator.py tests/smoke/test_mock_harness_loop.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core tests/smoke` 通过
+  - `uv run mypy packages/agent-core/src/agent_core tests/agent_core` 通过
+  - `make check` 通过

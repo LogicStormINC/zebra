@@ -79,7 +79,9 @@ class SingleAttemptOrchestrator:
                 summary="model completed without tool calls",
                 metadata={
                     "assistant_message": completion.assistant_message.content,
+                    "model_calls_used": 1,
                     "tool_call_count": 0,
+                    "tool_calls_executed": 0,
                     "plan_summary": planner_result.summary,
                 },
                 emitted_events=tuple(emitted_events),
@@ -121,10 +123,12 @@ class SingleAttemptOrchestrator:
                 summary="tool call blocked by policy",
                 metadata={
                     "assistant_message": completion.assistant_message.content,
+                    "model_calls_used": 1,
                     "tool_name": tool_call.name,
                     "policy_decision": decision.decision.value,
                     "selection_summary": selection.summary,
                     "selection_metadata": selection.metadata,
+                    "tool_calls_executed": 0,
                 },
                 emitted_events=tuple(emitted_events),
             )
@@ -187,11 +191,13 @@ class SingleAttemptOrchestrator:
             ),
             metadata={
                 "assistant_message": completion.assistant_message.content,
+                "model_calls_used": 1,
                 "plan_summary": planner_result.summary,
                 "tool_name": tool_call.name,
                 "tool_selection_summary": selection.summary,
                 "tool_selection_metadata": selection.metadata,
                 "tool_status": tool_result.status.value,
+                "tool_calls_executed": 1,
                 "tool_output": tool_result.output,
                 "tool_metadata": tool_result.metadata,
                 "verification_summary": verifier_result.summary,

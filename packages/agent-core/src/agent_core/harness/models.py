@@ -15,8 +15,10 @@ class HarnessAttemptOutcome(StrEnum):
 class HarnessStopReason(StrEnum):
     COMPLETED = "completed"
     FAILED_TERMINAL = "failed_terminal"
+    MODEL_CALL_BUDGET_EXHAUSTED = "model_call_budget_exhausted"
     RETRY_EXHAUSTED = "retry_exhausted"
     RETRY_ALLOWED = "retry_allowed"
+    TOOL_CALL_BUDGET_EXHAUSTED = "tool_call_budget_exhausted"
 
 
 @dataclass(frozen=True)
@@ -24,6 +26,8 @@ class HarnessTask:
     title: str
     user_input: str
     max_attempts: int = 1
+    max_model_calls: int | None = None
+    max_tool_calls: int | None = None
 
     def __post_init__(self) -> None:
         if not self.title.strip():
@@ -32,6 +36,10 @@ class HarnessTask:
             raise ValueError("harness task user_input must not be blank")
         if self.max_attempts <= 0:
             raise ValueError("harness task max_attempts must be positive")
+        if self.max_model_calls is not None and self.max_model_calls <= 0:
+            raise ValueError("harness task max_model_calls must be positive when set")
+        if self.max_tool_calls is not None and self.max_tool_calls <= 0:
+            raise ValueError("harness task max_tool_calls must be positive when set")
 
 
 @dataclass(frozen=True)
@@ -78,6 +86,10 @@ class HarnessRunResult:
     stop_reason: HarnessStopReason
     attempts_used: int
     max_attempts: int
+    model_calls_used: int
+    max_model_calls: int | None
+    tool_calls_used: int
+    max_tool_calls: int | None
     can_retry: bool
     summary: str
     last_attempt: HarnessAttemptResult
@@ -89,6 +101,14 @@ class HarnessRunResult:
             raise ValueError("harness run result max_attempts must be positive")
         if self.attempts_used > self.max_attempts:
             raise ValueError("harness run result attempts_used cannot exceed max_attempts")
+        if self.model_calls_used < 0:
+            raise ValueError("harness run result model_calls_used cannot be negative")
+        if self.tool_calls_used < 0:
+            raise ValueError("harness run result tool_calls_used cannot be negative")
+        if self.max_model_calls is not None and self.max_model_calls <= 0:
+            raise ValueError("harness run result max_model_calls must be positive when set")
+        if self.max_tool_calls is not None and self.max_tool_calls <= 0:
+            raise ValueError("harness run result max_tool_calls must be positive when set")
         if not self.summary.strip():
             raise ValueError("harness run result summary must not be blank")
 

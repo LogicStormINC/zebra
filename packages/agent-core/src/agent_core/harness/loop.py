@@ -54,9 +54,17 @@ class HarnessLoop:
         recorder.record(
             event_type=EventType.TASK_PREPARED,
             actor=EventActor.HARNESS,
-            payload={"title": task.title, "user_input": task.user_input},
+            payload={
+                "title": task.title,
+                "user_input": task.user_input,
+                "max_attempts": task.max_attempts,
+                "max_model_calls": task.max_model_calls,
+                "max_tool_calls": task.max_tool_calls,
+            },
         )
         attempt_results: list[HarnessAttemptResult] = []
+        model_calls_used = 0
+        tool_calls_used = 0
 
         for attempt_number in range(1, task.max_attempts + 1):
             attempt_started_at = self._clock.now()
@@ -72,12 +80,16 @@ class HarnessLoop:
                 HarnessContext(task=task, session=recorder.session, attempt=attempt)
             )
             attempt_results.append(attempt_result)
+            model_calls_used += int(attempt_result.metadata.get("model_calls_used", 1))
+            tool_calls_used += int(attempt_result.metadata.get("tool_calls_executed", 0))
             for draft in attempt_result.emitted_events:
                 recorder.record_draft(draft)
 
             run_result = self._stopping_policy.build_run_result(
                 task,
                 attempts_used=attempt.number,
+                model_calls_used=model_calls_used,
+                tool_calls_used=tool_calls_used,
                 attempt_result=attempt_result,
             )
             if run_result.can_retry:
