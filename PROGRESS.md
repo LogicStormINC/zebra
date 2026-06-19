@@ -33,15 +33,16 @@
 - `P3-HAR-09 - Tool Call Selection Strategy`
 - `P3-HAR-10 - Explicit Harness Budgets`
 - `P4-STO-01 - SQLite Event Store And Session Projection`
+- `P4-STO-02 - Event Idempotency Protection`
 
 ## Current Focus
 
-- phase 4 control-plane groundwork after the first durable storage slice
+- phase 4 control-plane groundwork after durable storage and idempotent append protection
 - choose the next direct task card between recovery worker entry, leases, and event schema formalization
 
 ## Next Unlocks
 
-- `P4-STO-01` is complete
+- `P4-STO-02` is complete
 - the next step is to register the next recovery-oriented slice on top of the new storage package
 
 ## Active Documents

@@ -565,3 +565,28 @@ Stand up the first durable storage slice by adding a local SQLite event store an
 - [x] Duplicate sequence writes for one session are rejected.
 - [x] A stored event stream can be replayed back into a `Session` projection.
 - [x] The storage package is wired into the workspace and smoke imports.
+
+### P4-STO-02 - Event Idempotency Protection
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P4-STO-01`
+- Branch: `codex/p4-sto-02-event-idempotency`
+- Owned paths: `packages/agent-storage/`, `tests/`
+
+#### Goal
+
+Add deterministic idempotency protection to the SQLite event store so retried tool-side event submissions do not create duplicate durable records.
+
+#### Deliverables
+
+- session-level idempotency key uniqueness in SQLite
+- idempotent append behavior for retried writes
+- tests covering duplicate idempotency-key retry behavior
+
+#### Acceptance
+
+- [x] A repeated event submission with the same session-scoped idempotency key does not create a second row.
+- [x] `append()` returns the existing durable event for an idempotent retry.
+- [x] Existing sequence-conflict protection remains intact.

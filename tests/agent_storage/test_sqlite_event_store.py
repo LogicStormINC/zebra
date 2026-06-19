@@ -114,3 +114,36 @@ def test_sqlite_event_store_supports_projection_rebuild(tmp_path: Path) -> None:
     assert session.session_id == session_id
     assert session.status.value == "completed"
     assert session.current_sequence == 3
+
+
+def test_sqlite_event_store_returns_existing_event_for_idempotent_retry(
+    tmp_path: Path,
+) -> None:
+    store = SQLiteEventStore(tmp_path / "events.db")
+    session_id = new_session_id()
+    created_at = datetime(2026, 6, 19, 23, 15, tzinfo=UTC)
+    first_event = SessionEvent.create(
+        session_id=session_id,
+        sequence=0,
+        event_type=EventType.TOOL_EXECUTION_COMPLETED,
+        actor=EventActor.TOOL,
+        payload={"tool_name": "tests.run", "status": "executed"},
+        idempotency_key="tool-run-1",
+        created_at=created_at,
+    )
+    retry_event = SessionEvent.create(
+        session_id=session_id,
+        sequence=1,
+        event_type=EventType.TOOL_EXECUTION_COMPLETED,
+        actor=EventActor.TOOL,
+        payload={"tool_name": "tests.run", "status": "executed"},
+        idempotency_key="tool-run-1",
+        created_at=created_at,
+    )
+
+    stored_event = store.append(first_event)
+    retried_event = store.append(retry_event)
+
+    assert stored_event == first_event
+    assert retried_event == first_event
+    assert store.list_for_session(session_id) == [first_event]

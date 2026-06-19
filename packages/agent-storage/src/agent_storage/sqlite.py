@@ -50,6 +50,9 @@ class SQLiteEventStore(EventStorePort):
                     ),
                 )
             except sqlite3.IntegrityError as exc:
+                existing_event = self._find_existing_idempotent_event(connection, event)
+                if existing_event is not None:
+                    return existing_event
                 raise ValueError("duplicate or conflicting session event") from exc
         return event
 
@@ -99,3 +102,41 @@ class SQLiteEventStore(EventStorePort):
                 )
                 """
             )
+            connection.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_session_events_idempotency
+                ON session_events(session_id, idempotency_key)
+                WHERE idempotency_key IS NOT NULL
+                """
+            )
+
+    def _find_existing_idempotent_event(
+        self,
+        connection: sqlite3.Connection,
+        event: SessionEvent,
+    ) -> SessionEvent | None:
+        if event.idempotency_key is None:
+            return None
+        row = connection.execute(
+            """
+            SELECT
+                event_id,
+                session_id,
+                sequence,
+                event_type,
+                payload,
+                actor,
+                created_at,
+                causation_id,
+                correlation_id,
+                idempotency_key,
+                policy_version,
+                model_profile
+            FROM session_events
+            WHERE session_id = ? AND idempotency_key = ?
+            """,
+            (str(event.session_id), event.idempotency_key),
+        ).fetchone()
+        if row is None:
+            return None
+        return deserialize_event_row(row)

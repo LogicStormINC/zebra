@@ -394,3 +394,22 @@
   - `uv run ruff check packages/agent-storage/src/agent_storage tests/agent_storage tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy packages/agent-storage/src/agent_storage tests/agent_storage` 通过
   - `make check` 通过
+
+## 2026-06-20 Event Idempotency Protection
+
+- 执行 `P4-STO-02 - Event Idempotency Protection`
+- `SQLiteEventStore` 现在会为 `session_id + idempotency_key` 建立唯一索引
+- 当前行为：
+  - 同一 session 下，带相同 `idempotency_key` 的重试写入不会产生第二条事件
+  - `append()` 在幂等重试时会返回已存在的 durable event
+  - 原有 `session_id + sequence` 冲突保护保持不变
+- 新增测试：
+  - `tests/agent_storage/test_sqlite_event_store.py`
+- 覆盖场景：
+  - idempotent retry returns existing event
+  - duplicate sequence rejection still works
+- 本轮验证结果：
+  - `uv run pytest tests/agent_storage/test_sqlite_event_store.py tests/agent_storage/test_sqlite_projection_store.py` 通过
+  - `uv run ruff check packages/agent-storage/src/agent_storage tests/agent_storage` 通过
+  - `uv run mypy packages/agent-storage/src/agent_storage tests/agent_storage` 通过
+  - `make check` 通过
