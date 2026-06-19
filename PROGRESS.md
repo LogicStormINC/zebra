@@ -34,15 +34,16 @@
 - `P3-HAR-10 - Explicit Harness Budgets`
 - `P4-STO-01 - SQLite Event Store And Session Projection`
 - `P4-STO-02 - Event Idempotency Protection`
+- `P4-WKR-01 - Worker Recovery Entry`
 
 ## Current Focus
 
-- phase 4 control-plane groundwork after durable storage and idempotent append protection
+- phase 4 control-plane groundwork after durable storage, idempotent append, and basic recovery entry
 - choose the next direct task card between recovery worker entry, leases, and event schema formalization
 
 ## Next Unlocks
 
-- `P4-STO-02` is complete
+- `P4-WKR-01` is complete
 - the next step is to register the next recovery-oriented slice on top of the new storage package
 
 ## Active Documents

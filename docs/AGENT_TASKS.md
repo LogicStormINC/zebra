@@ -590,3 +590,30 @@ Add deterministic idempotency protection to the SQLite event store so retried to
 - [x] A repeated event submission with the same session-scoped idempotency key does not create a second row.
 - [x] `append()` returns the existing durable event for an idempotent retry.
 - [x] Existing sequence-conflict protection remains intact.
+
+### P4-WKR-01 - Worker Recovery Entry
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P4-STO-02`
+- Branch: `codex/p4-wkr-01-recovery-entry`
+- Owned paths: `apps/worker/`, `tests/`
+
+#### Goal
+
+Add the first worker-side recovery entry that can rebuild a durable session from stored events and persist the rebuilt projection for later inspection.
+
+#### Deliverables
+
+- worker recovery service
+- durable session replay from event store
+- projection persistence after recovery
+- tests for recoverable, terminal, and missing-session paths
+
+#### Acceptance
+
+- [x] Worker can rebuild a session from stored events.
+- [x] Recovered session projection is written back to the projection store.
+- [x] Missing-session recovery fails deterministically.
+- [x] Tests cover at least one interrupted-running session and one terminal session.

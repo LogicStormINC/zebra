@@ -6,7 +6,7 @@ from agent_security.policy import policy_profile
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from agent_tools.gateway import ToolExecutor, ToolRegistry
 from zebra_agent_api.app import create_app
-from zebra_agent_worker.main import worker_banner
+from zebra_agent_worker import SessionRecoveryService, worker_banner
 
 
 def test_workspace_packages_import() -> None:
@@ -19,6 +19,7 @@ def test_workspace_packages_import() -> None:
     assert SQLiteEventStore is not None
     assert SQLiteProjectionStore is not None
     assert create_app() == "api-bootstrap"
+    assert SessionRecoveryService is not None
     assert worker_banner() == "worker-ready:created"
 
 

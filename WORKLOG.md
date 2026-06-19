@@ -413,3 +413,28 @@
   - `uv run ruff check packages/agent-storage/src/agent_storage tests/agent_storage` 通过
   - `uv run mypy packages/agent-storage/src/agent_storage tests/agent_storage` 通过
   - `make check` 通过
+
+## 2026-06-20 Worker Recovery Entry
+
+- 执行 `P4-WKR-01 - Worker Recovery Entry`
+- `apps/worker` 新增：
+  - `SessionRecoveryService`
+  - `RecoveredSession`
+  - `SessionRecoveryError`
+- 当前行为：
+  - worker 可以从 event store 读取一个 session 的完整事件流
+  - 通过 `rebuild_session` 重建 durable session 视图
+  - recovery 后会把最新 projection 写回 projection store
+  - 缺失 session 会以确定性错误失败
+- 新增测试：
+  - `tests/worker/test_recovery.py`
+- 覆盖场景：
+  - interrupted running session recovery
+  - terminal session recovery
+  - missing session failure
+- 本轮验证结果：
+  - `make sync` 通过
+  - `uv run pytest tests/worker/test_recovery.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check apps/worker/src/zebra_agent_worker tests/worker tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy apps/worker/src/zebra_agent_worker tests/worker` 通过
+  - `make check` 通过
