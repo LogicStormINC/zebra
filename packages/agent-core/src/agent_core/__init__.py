@@ -2,6 +2,7 @@
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.harness import (
+    FirstToolCallSelectionStrategy,
     HarnessAttempt,
     HarnessAttemptOutcome,
     HarnessAttemptResult,
@@ -26,11 +27,14 @@ from agent_core.harness import (
     SingleAttemptOrchestrator,
     StepClock,
     SystemClock,
+    ToolCallSelection,
+    ToolCallSelectionStrategy,
     VerifierHook,
     VerifierResult,
 )
 
 __all__ = [
+    "FirstToolCallSelectionStrategy",
     "HarnessAttempt",
     "HarnessAttemptOutcome",
     "HarnessAttemptResult",
@@ -40,13 +44,13 @@ __all__ = [
     "HarnessEventRecorder",
     "HarnessLoop",
     "HarnessModelStep",
+    "HarnessLoopResult",
     "NoopPlanner",
     "NoopVerifier",
     "PlannerHook",
     "PlannerResult",
-    "HarnessLoopResult",
-    "HarnessRunTrace",
     "HarnessRunResult",
+    "HarnessRunTrace",
     "HarnessStopReason",
     "HarnessStoppingPolicy",
     "SingleAttemptOrchestrator",
@@ -55,6 +59,8 @@ __all__ = [
     "HarnessTask",
     "HarnessToolTrace",
     "HarnessTraceProjector",
+    "ToolCallSelection",
+    "ToolCallSelectionStrategy",
     "VerifierHook",
     "VerifierResult",
     "ModelCompletion",

@@ -487,7 +487,7 @@ Reduce repeated event-construction code inside the harness by extracting a dedic
 
 ### P3-HAR-09 - Tool Call Selection Strategy
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `UNASSIGNED`
 - Suggested role: `CORE`
 - Depends on: `P3-HAR-08`
@@ -506,6 +506,6 @@ Make tool selection explicit by extracting the current â€œfirst tool call winsâ€
 
 #### Acceptance
 
-- [ ] Tool selection is expressed through an explicit strategy.
-- [ ] Default behavior remains deterministic.
-- [ ] Tests cover at least one multi-tool completion path.
+- [x] Tool selection is expressed through an explicit strategy.
+- [x] Default behavior remains deterministic.
+- [x] Tests cover at least one multi-tool completion path.

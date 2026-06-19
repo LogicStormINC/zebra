@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 2 - Runtime And Tooling Spine`
+- Active phase: `Phase 3 - Harness Execution Spine`
 - Repository status: `phase 3 in progress`
 - Current focus:
-  - implement the first mock model gateway path on top of the harness loop skeleton
-  - keep the `Phase 2` runtime and builtin contracts stable as the base layer for harness work
+  - define the next Phase 3 slice after explicit tool selection
+  - keep the existing runtime and builtin contracts stable while harness behavior grows richer
 
 ## Completed
 
@@ -30,16 +30,17 @@
 - `P3-HAR-06 - Attempt Event Timestamp Refinement`
 - `P3-HAR-07 - Planner And Verifier Hooks`
 - `P3-HAR-08 - Session Event Builder Cleanup`
+- `P3-HAR-09 - Tool Call Selection Strategy`
 
 ## Current Focus
 
-- `P3-HAR-09 - Tool Call Selection Strategy`
-- keep the existing runtime and builtin contracts stable while tool-call routing becomes more explicit
+- phase 3 harness work after explicit tool-call selection
+- identify and start the next direct harness slice from `docs/实施任务拆解与阶段验收.md`
 
 ## Next Unlocks
 
-- `P3-HAR-09` is now the next direct Phase 3 slice
-- the next step is to make tool call selection explicit before adding richer planning behavior
+- `P3-HAR-09` is complete
+- the next step is to choose the next direct Phase 3 harness slice and keep building in task-card order
 
 ## Active Documents
 

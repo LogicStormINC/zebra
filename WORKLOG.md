@@ -317,3 +317,25 @@
   - `uv run pytest tests/agent_core/test_harness_recorder.py tests/agent_core/test_harness_hooks.py tests/agent_core/test_harness_multi_attempt.py tests/agent_core/test_harness_trace_projection.py tests/agent_core/test_harness_stopping.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
   - `make check` 通过
+
+## 2026-06-20 Tool Call Selection Strategy
+
+- 执行 `P3-HAR-09 - Tool Call Selection Strategy`
+- 新增：
+  - `ToolCallSelection`
+  - `ToolCallSelectionStrategy`
+  - `FirstToolCallSelectionStrategy`
+- `SingleAttemptOrchestrator` 现在通过显式 selector 选择 tool call，不再内联硬编码 `completion.tool_calls[0]`
+- 当前行为：
+  - 默认策略仍然稳定选择第一个 tool call
+  - selection summary 和 metadata 会进入 proposal event 与 attempt metadata
+- 新增测试：
+  - `tests/agent_core/test_single_attempt_orchestrator.py`
+- 覆盖场景：
+  - 默认选择策略的确定性
+  - multi-tool completion 下 orchestrator 只执行选中的 tool call
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_single_attempt_orchestrator.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
+  - `uv run mypy packages/agent-core/src/agent_core tests/agent_core` 通过
+  - `make check` 通过

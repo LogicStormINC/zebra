@@ -14,6 +14,10 @@ from agent_core.harness.models import (
     HarnessContext,
     HarnessEventDraft,
 )
+from agent_core.harness.selection import (
+    FirstToolCallSelectionStrategy,
+    ToolCallSelectionStrategy,
+)
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.tool_gateway import ToolGatewayPort
@@ -29,6 +33,7 @@ class SingleAttemptOrchestrator:
         model_step: HarnessModelStep | None = None,
         planner: PlannerHook | None = None,
         verifier: VerifierHook | None = None,
+        tool_selector: ToolCallSelectionStrategy | None = None,
     ) -> None:
         self._model_gateway = model_gateway
         self._policy_engine = policy_engine
@@ -36,6 +41,7 @@ class SingleAttemptOrchestrator:
         self._model_step = model_step or HarnessModelStep()
         self._planner = planner or NoopPlanner()
         self._verifier = verifier or NoopVerifier()
+        self._tool_selector = tool_selector or FirstToolCallSelectionStrategy()
 
     def run(self, context: HarnessContext) -> HarnessAttemptResult:
         completion = self._model_step.request_initial_completion(
@@ -79,7 +85,8 @@ class SingleAttemptOrchestrator:
                 emitted_events=tuple(emitted_events),
             )
 
-        tool_call = completion.tool_calls[0]
+        selection = self._tool_selector.select(completion.tool_calls)
+        tool_call = selection.tool_call
         emitted_events.append(
             HarnessEventDraft(
                 event_type=EventType.TOOL_CALL_PROPOSED,
@@ -88,6 +95,8 @@ class SingleAttemptOrchestrator:
                     "attempt_number": context.attempt.number,
                     "tool_name": tool_call.name,
                     "arguments": tool_call.arguments,
+                    "selection_summary": selection.summary,
+                    "selection_metadata": selection.metadata,
                 },
             )
         )
@@ -114,6 +123,8 @@ class SingleAttemptOrchestrator:
                     "assistant_message": completion.assistant_message.content,
                     "tool_name": tool_call.name,
                     "policy_decision": decision.decision.value,
+                    "selection_summary": selection.summary,
+                    "selection_metadata": selection.metadata,
                 },
                 emitted_events=tuple(emitted_events),
             )
@@ -178,6 +189,8 @@ class SingleAttemptOrchestrator:
                 "assistant_message": completion.assistant_message.content,
                 "plan_summary": planner_result.summary,
                 "tool_name": tool_call.name,
+                "tool_selection_summary": selection.summary,
+                "tool_selection_metadata": selection.metadata,
                 "tool_status": tool_result.status.value,
                 "tool_output": tool_result.output,
                 "tool_metadata": tool_result.metadata,
