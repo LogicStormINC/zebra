@@ -126,7 +126,7 @@ Implement the first builtin file read path using runtime-side workspace constrai
 
 ### P2-TOOL-03 - Builtin Command Execution Path
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `UNASSIGNED`
 - Suggested role: `CTX`
 - Depends on: `P2-TOOL-01`, `P2-RT-01`
@@ -146,9 +146,9 @@ Implement the first builtin command tool using typed executable plus argv, not f
 
 #### Acceptance
 
-- [ ] Command execution does not rely on unrestricted shell parsing.
-- [ ] Exit code and captured output are returned in structured form.
-- [ ] Timeout handling is tested end to end.
+- [x] Command execution does not rely on unrestricted shell parsing.
+- [x] Exit code and captured output are returned in structured form.
+- [x] Timeout handling is tested end to end.
 
 ## Notes
 

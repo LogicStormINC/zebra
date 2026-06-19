@@ -17,14 +17,17 @@
 - `P2-RT-02 - Workspace And Worktree Abstractions`
 - `P2-TOOL-01 - Tool Contracts And Execution Results`
 - `P2-TOOL-02 - Builtin File Read Path`
+- `P2-TOOL-03 - Builtin Command Execution Path`
 
 ## Current Focus
 
-- `P2-TOOL-03 - Builtin Command Execution Path`
+- extend the Phase 2 task board for the remaining builtin paths needed by `docs/实施任务拆解与阶段验收.md`
+- keep the tool and runtime contracts stable while adding patch, test, and git-oriented follow-up slices
 
 ## Next Unlocks
 
-- `P2-TOOL-03` is the next direct Phase 2 slice.
+- the currently defined `P2-*` task cards are complete
+- Phase 2 as a document milestone is still in progress because the stage doc still requires more than file read and command execution
 
 ## Active Documents
 

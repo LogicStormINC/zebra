@@ -55,3 +55,21 @@
   - `uv run pytest tests/agent_tools/test_file_read_tool.py tests/agent_tools/test_executor.py tests/agent_runtime/test_workspace.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-tools/src/agent_tools tests/agent_tools packages/agent-runtime/src/agent_runtime tests/agent_runtime tests/smoke/test_workspace_bootstrap.py` 通过
   - `make check` 通过
+
+## 2026-06-19 Builtin Command Execution Path
+
+- 执行 `P2-TOOL-03 - Builtin Command Execution Path`
+- 新增 `agent_tools.builtin.command`
+- 实现 `command.run`：
+  - `command` 必须是 typed argv，不接受自由 shell 字符串
+  - 默认在 workspace 根目录执行
+  - `cwd` 如果提供，必须仍然位于 workspace 内
+  - `timeout_seconds` 透传到 `RuntimePort`
+  - 返回结构化执行结果：`stdout` 作为输出，`exit_code`、`stderr`、`timed_out` 写入 metadata
+- 新增测试：
+  - `tests/agent_tools/test_command_run_tool.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_tools/test_command_run_tool.py tests/agent_tools/test_file_read_tool.py tests/agent_tools/test_executor.py tests/agent_runtime/test_workspace.py tests/agent_runtime/test_local_runtime.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-tools/src/agent_tools tests/agent_tools` 通过
+  - `uv run mypy packages/agent-tools/src/agent_tools tests/agent_tools` 通过
+  - `make check` 通过
