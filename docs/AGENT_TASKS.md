@@ -48,7 +48,7 @@ Implement a real `LocalRuntime` that can execute a constrained command process t
 
 ### P2-RT-02 - Workspace And Worktree Abstractions
 
-- Status: `Locked`
+- Status: `Done`
 - Owner: `UNASSIGNED`
 - Suggested role: `RUNTIME`
 - Depends on: `P2-RT-01`
@@ -68,9 +68,9 @@ Add local workspace abstractions that prepare later file, patch, and git tools w
 
 #### Acceptance
 
-- [ ] Runtime-side workspace handling is typed and testable.
-- [ ] Path normalization and invalid path behavior are covered by tests.
-- [ ] The implementation stays within runtime boundaries.
+- [x] Runtime-side workspace handling is typed and testable.
+- [x] Path normalization and invalid path behavior are covered by tests.
+- [x] The implementation stays within runtime boundaries.
 
 ### P2-TOOL-01 - Tool Contracts And Execution Results
 
@@ -100,7 +100,7 @@ Create the first concrete execution-layer tool contracts and result structures b
 
 ### P2-TOOL-02 - Builtin File Read Path
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `UNASSIGNED`
 - Suggested role: `CTX`
 - Depends on: `P2-TOOL-01`, `P2-RT-02`
@@ -126,7 +126,7 @@ Implement the first builtin file read path using runtime-side workspace constrai
 
 ### P2-TOOL-03 - Builtin Command Execution Path
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `UNASSIGNED`
 - Suggested role: `CTX`
 - Depends on: `P2-TOOL-01`, `P2-RT-01`
