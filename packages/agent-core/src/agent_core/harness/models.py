@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from agent_core.domain.events import SessionEvent
+from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session
 
 
@@ -47,10 +47,18 @@ class HarnessContext:
 
 
 @dataclass(frozen=True)
+class HarnessEventDraft:
+    event_type: EventType
+    actor: EventActor
+    payload: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class HarnessAttemptResult:
     outcome: HarnessAttemptOutcome
     summary: str
     metadata: dict[str, Any] = field(default_factory=dict)
+    emitted_events: tuple[HarnessEventDraft, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         if not self.summary.strip():

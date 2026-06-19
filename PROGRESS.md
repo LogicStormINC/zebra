@@ -23,16 +23,17 @@
 - `P2-GIT-01 - Readonly Git Inspection Tools`
 - `P3-HAR-01 - Harness Loop Skeleton`
 - `P3-MOD-01 - Mock Model Gateway`
+- `P3-HAR-02 - Single Attempt Tool Orchestration`
 
 ## Current Focus
 
-- `P3-HAR-02 - Single Attempt Tool Orchestration`
-- keep the existing runtime and builtin contracts stable while the harness begins consuming real tool results
+- `P3-HAR-03 - Structured Run Output And Retry Skeleton`
+- keep the existing runtime and builtin contracts stable while the harness grows retry and stopping semantics
 
 ## Next Unlocks
 
-- `P3-HAR-02` is now the next direct Phase 3 slice
-- the next step is to wire model output, policy evaluation, and tool execution into one deterministic attempt path
+- `P3-HAR-03` is now the next direct Phase 3 slice
+- the next step is to make failed attempts produce structured run output and retry decisions
 
 ## Active Documents
 

@@ -5,17 +5,21 @@ from agent_core.harness.models import (
     HarnessAttemptOutcome,
     HarnessAttemptResult,
     HarnessContext,
+    HarnessEventDraft,
     HarnessLoopResult,
     HarnessTask,
 )
+from agent_core.harness.orchestrator import SingleAttemptOrchestrator
 
 __all__ = [
     "HarnessAttempt",
     "HarnessAttemptOutcome",
     "HarnessAttemptResult",
     "HarnessContext",
+    "HarnessEventDraft",
     "HarnessLoop",
     "HarnessModelStep",
     "HarnessLoopResult",
+    "SingleAttemptOrchestrator",
     "HarnessTask",
 ]

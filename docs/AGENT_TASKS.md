@@ -312,7 +312,7 @@ Provide the first mock model gateway path so the harness can be exercised withou
 
 ### P3-HAR-02 - Single Attempt Tool Orchestration
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `UNASSIGNED`
 - Suggested role: `CORE`
 - Depends on: `P3-HAR-01`, `P3-MOD-01`
@@ -331,6 +331,31 @@ Wire the harness, tool gateway, runtime, and policy boundary into one single-att
 
 #### Acceptance
 
-- [ ] One model-driven tool execution path runs end to end.
-- [ ] Tool results are fed back into harness state deterministically.
-- [ ] Tests cover one success case and one failure case.
+- [x] One model-driven tool execution path runs end to end.
+- [x] Tool results are fed back into harness state deterministically.
+- [x] Tests cover one success case and one failure case.
+
+### P3-HAR-03 - Structured Run Output And Retry Skeleton
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P3-HAR-02`
+- Branch: `codex/p3-har-03-run-output-retry`
+- Owned paths: `packages/agent-core/`, `tests/`
+
+#### Goal
+
+Add the first structured run output contract and a minimal retry skeleton so the harness can report one failed attempt and decide whether another attempt is allowed.
+
+#### Deliverables
+
+- run result model
+- retry eligibility or stopping helper
+- tests for stop vs retry decisions
+
+#### Acceptance
+
+- [ ] Harness run output is structured and typed.
+- [ ] Retry or stop decisions are deterministic.
+- [ ] Tests cover both retryable and terminal outcomes.

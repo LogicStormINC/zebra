@@ -6,10 +6,12 @@ from agent_core.harness import (
     HarnessAttemptOutcome,
     HarnessAttemptResult,
     HarnessContext,
+    HarnessEventDraft,
     HarnessLoop,
     HarnessLoopResult,
     HarnessModelStep,
     HarnessTask,
+    SingleAttemptOrchestrator,
 )
 
 __all__ = [
@@ -17,9 +19,11 @@ __all__ = [
     "HarnessAttemptOutcome",
     "HarnessAttemptResult",
     "HarnessContext",
+    "HarnessEventDraft",
     "HarnessLoop",
     "HarnessModelStep",
     "HarnessLoopResult",
+    "SingleAttemptOrchestrator",
     "HarnessTask",
     "ModelCompletion",
     "ScriptedModelGateway",

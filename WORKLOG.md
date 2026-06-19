@@ -163,3 +163,24 @@
   - `uv run pytest tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
   - `make check` 通过
+
+## 2026-06-19 Single Attempt Tool Orchestration
+
+- 执行 `P3-HAR-02 - Single Attempt Tool Orchestration`
+- 新增 `SingleAttemptOrchestrator`
+- 在单次 attempt 中串起：
+  - model completion
+  - tool call proposal
+  - policy evaluation
+  - tool execution
+  - structured attempt result
+- 为 harness 增加 `HarnessEventDraft` 机制，使 attempt 内部步骤能稳定写回事件流
+- 新增测试：
+  - `tests/agent_core/test_single_attempt_orchestrator.py`
+- 覆盖场景：
+  - model -> policy -> tool success
+  - tool execution failed path
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
+  - `make check` 通过

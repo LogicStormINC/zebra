@@ -64,6 +64,15 @@ class HarnessLoop:
         )
 
         attempt_result = attempt_runner(HarnessContext(task=task, session=session, attempt=attempt))
+        for draft in attempt_result.emitted_events:
+            session = self._append_event(
+                session,
+                events,
+                event_type=draft.event_type,
+                actor=draft.actor,
+                payload=draft.payload,
+                created_at=now,
+            )
         terminal_event_type = (
             EventType.SESSION_COMPLETED
             if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
