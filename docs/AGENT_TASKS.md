@@ -362,7 +362,7 @@ Add the first structured run output contract and a minimal retry skeleton so the
 
 ### P3-HAR-04 - Multi-Attempt Loop Driver
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `UNASSIGNED`
 - Suggested role: `CORE`
 - Depends on: `P3-HAR-03`
@@ -381,6 +381,31 @@ Extend the harness loop from one attempt to a minimal multi-attempt driver that 
 
 #### Acceptance
 
-- [ ] The harness can run more than one attempt when retry is allowed.
-- [ ] Success stops further attempts immediately.
-- [ ] Tests cover at least one retry success path and one exhaustion path.
+- [x] The harness can run more than one attempt when retry is allowed.
+- [x] Success stops further attempts immediately.
+- [x] Tests cover at least one retry success path and one exhaustion path.
+
+### P3-HAR-05 - Assistant Message And Tool Trace Projection
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P3-HAR-04`
+- Branch: `codex/p3-har-05-trace-projection`
+- Owned paths: `packages/agent-core/`, `tests/`
+
+#### Goal
+
+Expose a more useful structured harness trace by projecting assistant messages, tool proposals, and tool results into a compact run-facing model.
+
+#### Deliverables
+
+- run trace model
+- projection helper from emitted events or attempt results
+- tests for projected assistant and tool trace data
+
+#### Acceptance
+
+- [ ] Harness run output exposes assistant and tool trace data in a typed form.
+- [ ] Projection logic is deterministic.
+- [ ] Tests cover both successful and failed tool paths.

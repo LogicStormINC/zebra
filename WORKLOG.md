@@ -209,3 +209,22 @@
   - `uv run pytest tests/agent_core/test_harness_stopping.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
   - `make check` 通过
+
+## 2026-06-19 Multi-Attempt Loop Driver
+
+- 执行 `P3-HAR-04 - Multi-Attempt Loop Driver`
+- `HarnessLoop` 从单次 attempt 升级为 bounded multi-attempt driver
+- 当前行为：
+  - 如果失败且 `can_retry=true`，继续下一次 attempt
+  - 成功后立即停止
+  - 达到重试预算后终止并返回 `retry_exhausted`
+- `HarnessLoopResult` 现在保留 `attempt_results`
+- 新增测试：
+  - `tests/agent_core/test_harness_multi_attempt.py`
+- 覆盖场景：
+  - 第一次失败，第二次成功
+  - 重试预算耗尽后失败终止
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_harness_multi_attempt.py tests/agent_core/test_harness_stopping.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
+  - `make check` 通过

@@ -98,4 +98,5 @@ class HarnessLoopResult:
     session: Session
     events: tuple[SessionEvent, ...]
     attempt_result: HarnessAttemptResult
+    attempt_results: tuple[HarnessAttemptResult, ...]
     run_result: HarnessRunResult

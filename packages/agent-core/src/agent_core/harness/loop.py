@@ -56,55 +56,67 @@ class HarnessLoop:
             payload={"title": task.title, "user_input": task.user_input},
             created_at=now,
         )
+        attempt_results: list[HarnessAttemptResult] = []
 
-        attempt = HarnessAttempt(number=1, started_at=now)
-        session = self._append_event(
-            session,
-            events,
-            event_type=EventType.HARNESS_ATTEMPT_STARTED,
-            actor=EventActor.HARNESS,
-            payload={"attempt_number": attempt.number},
-            created_at=now,
-        )
-
-        attempt_result = attempt_runner(HarnessContext(task=task, session=session, attempt=attempt))
-        for draft in attempt_result.emitted_events:
+        for attempt_number in range(1, task.max_attempts + 1):
+            attempt = HarnessAttempt(number=attempt_number, started_at=now)
             session = self._append_event(
                 session,
                 events,
-                event_type=draft.event_type,
-                actor=draft.actor,
-                payload=draft.payload,
+                event_type=EventType.HARNESS_ATTEMPT_STARTED,
+                actor=EventActor.HARNESS,
+                payload={"attempt_number": attempt.number},
                 created_at=now,
             )
-        terminal_event_type = (
-            EventType.SESSION_COMPLETED
-            if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
-            else EventType.SESSION_FAILED
-        )
-        session = self._append_event(
-            session,
-            events,
-            event_type=terminal_event_type,
-            actor=EventActor.HARNESS,
-            payload={
-                "attempt_number": attempt.number,
-                "summary": attempt_result.summary,
-                "metadata": attempt_result.metadata,
-            },
-            created_at=now,
-        )
-        run_result = self._stopping_policy.build_run_result(
-            task,
-            attempts_used=attempt.number,
-            attempt_result=attempt_result,
-        )
-        return HarnessLoopResult(
-            session=session,
-            events=tuple(events),
-            attempt_result=attempt_result,
-            run_result=run_result,
-        )
+
+            attempt_result = attempt_runner(
+                HarnessContext(task=task, session=session, attempt=attempt)
+            )
+            attempt_results.append(attempt_result)
+            for draft in attempt_result.emitted_events:
+                session = self._append_event(
+                    session,
+                    events,
+                    event_type=draft.event_type,
+                    actor=draft.actor,
+                    payload=draft.payload,
+                    created_at=now,
+                )
+
+            run_result = self._stopping_policy.build_run_result(
+                task,
+                attempts_used=attempt.number,
+                attempt_result=attempt_result,
+            )
+            if run_result.can_retry:
+                continue
+
+            terminal_event_type = (
+                EventType.SESSION_COMPLETED
+                if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+                else EventType.SESSION_FAILED
+            )
+            session = self._append_event(
+                session,
+                events,
+                event_type=terminal_event_type,
+                actor=EventActor.HARNESS,
+                payload={
+                    "attempt_number": attempt.number,
+                    "summary": attempt_result.summary,
+                    "metadata": attempt_result.metadata,
+                },
+                created_at=now,
+            )
+            return HarnessLoopResult(
+                session=session,
+                events=tuple(events),
+                attempt_result=attempt_result,
+                attempt_results=tuple(attempt_results),
+                run_result=run_result,
+            )
+
+        raise RuntimeError("harness loop exited without producing a terminal run result")
 
     @staticmethod
     def _append_event(

@@ -35,6 +35,7 @@ def test_harness_loop_runs_single_completed_attempt() -> None:
     assert captured_contexts[0].session.status is SessionStatus.RUNNING
     assert captured_contexts[0].attempt.number == 1
     assert result.session.status is SessionStatus.COMPLETED
+    assert len(result.attempt_results) == 1
     assert [event.event_type for event in result.events] == [
         EventType.SESSION_CREATED,
         EventType.USER_MESSAGE_RECEIVED,
@@ -59,4 +60,5 @@ def test_harness_loop_marks_failed_attempts_as_failed() -> None:
     )
 
     assert result.session.status is SessionStatus.FAILED
+    assert len(result.attempt_results) == 1
     assert result.events[-1].event_type is EventType.SESSION_FAILED

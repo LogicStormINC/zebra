@@ -25,16 +25,17 @@
 - `P3-MOD-01 - Mock Model Gateway`
 - `P3-HAR-02 - Single Attempt Tool Orchestration`
 - `P3-HAR-03 - Structured Run Output And Retry Skeleton`
+- `P3-HAR-04 - Multi-Attempt Loop Driver`
 
 ## Current Focus
 
-- `P3-HAR-04 - Multi-Attempt Loop Driver`
-- keep the existing runtime and builtin contracts stable while the harness grows from one attempt into a bounded retry loop
+- `P3-HAR-05 - Assistant Message And Tool Trace Projection`
+- keep the existing runtime and builtin contracts stable while the harness exposes richer structured traces
 
 ## Next Unlocks
 
-- `P3-HAR-04` is now the next direct Phase 3 slice
-- the next step is to turn retry eligibility into a real bounded multi-attempt loop
+- `P3-HAR-05` is now the next direct Phase 3 slice
+- the next step is to expose assistant and tool traces in a more ergonomic run-facing structure
 
 ## Active Documents
 
