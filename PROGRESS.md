@@ -22,16 +22,17 @@
 - `P2-IT-01 - Local Toolchain Integration Flow`
 - `P2-GIT-01 - Readonly Git Inspection Tools`
 - `P3-HAR-01 - Harness Loop Skeleton`
+- `P3-MOD-01 - Mock Model Gateway`
 
 ## Current Focus
 
-- `P3-MOD-01 - Mock Model Gateway`
-- keep the existing runtime and builtin contracts stable while model-free harness coverage expands
+- `P3-HAR-02 - Single Attempt Tool Orchestration`
+- keep the existing runtime and builtin contracts stable while the harness begins consuming real tool results
 
 ## Next Unlocks
 
-- `P3-MOD-01` is now the next direct Phase 3 slice
-- `P3-HAR-02` remains blocked on the mock model gateway path
+- `P3-HAR-02` is now the next direct Phase 3 slice
+- the next step is to wire model output, policy evaluation, and tool execution into one deterministic attempt path
 
 ## Active Documents
 

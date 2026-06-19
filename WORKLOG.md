@@ -143,3 +143,23 @@
   - `uv run pytest tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
   - `uv run mypy packages/agent-core/src/agent_core tests/agent_core` 通过
+
+## 2026-06-19 Mock Model Gateway
+
+- 执行 `P3-MOD-01 - Mock Model Gateway`
+- 新增 `agent_core.domain.modeling.ModelCompletion`
+- 调整 `ModelGatewayPort`，从返回单条消息升级为返回 `ModelCompletion`
+- 新增 `agent_core.application.mock_model`：
+  - `ScriptedModelGateway`
+  - `ScriptedModelResponse`
+- 新增 `HarnessModelStep`，用于构造初始用户消息并请求一次模型完成
+- 新增测试：
+  - `tests/agent_core/test_mock_model_gateway.py`
+- 覆盖场景：
+  - deterministic mock completion
+  - tool call planning path
+  - script exhaustion failure
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
+  - `make check` 通过

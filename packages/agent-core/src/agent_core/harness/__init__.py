@@ -1,4 +1,5 @@
 from agent_core.harness.loop import HarnessLoop
+from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import (
     HarnessAttempt,
     HarnessAttemptOutcome,
@@ -14,6 +15,7 @@ __all__ = [
     "HarnessAttemptResult",
     "HarnessContext",
     "HarnessLoop",
+    "HarnessModelStep",
     "HarnessLoopResult",
     "HarnessTask",
 ]

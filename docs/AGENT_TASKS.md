@@ -287,7 +287,7 @@ Implement the smallest harness loop skeleton that can accept a task, hold state,
 
 ### P3-MOD-01 - Mock Model Gateway
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `UNASSIGNED`
 - Suggested role: `CORE`
 - Depends on: `P3-HAR-01`
@@ -306,13 +306,13 @@ Provide the first mock model gateway path so the harness can be exercised withou
 
 #### Acceptance
 
-- [ ] The harness can consume a deterministic mock model output.
-- [ ] Tests cover at least one tool call planning path.
-- [ ] No real network model dependency is introduced.
+- [x] The harness can consume a deterministic mock model output.
+- [x] Tests cover at least one tool call planning path.
+- [x] No real network model dependency is introduced.
 
 ### P3-HAR-02 - Single Attempt Tool Orchestration
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `UNASSIGNED`
 - Suggested role: `CORE`
 - Depends on: `P3-HAR-01`, `P3-MOD-01`
