@@ -19,16 +19,20 @@ Read these files first before making architectural or workflow changes:
 
 1. `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`
 2. `docs/实施任务拆解与阶段验收.md`
-3. `PROGRESS.md`
-4. `README.md`
+3. `docs/02_Codex-like工程Agent平台_多人协作任务分配与RACI_v1.0.md`
+4. `docs/AGENT_TASKS.md`
+5. `PROGRESS.md`
+6. `README.md`
 
 If there is a conflict, use this priority:
 
 1. Current user request
 2. `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`
 3. `docs/实施任务拆解与阶段验收.md`
-4. `PROGRESS.md`
-5. Older design notes
+4. `docs/02_Codex-like工程Agent平台_多人协作任务分配与RACI_v1.0.md`
+5. `docs/AGENT_TASKS.md`
+6. `PROGRESS.md`
+7. Older design notes
 
 ## Project Rules
 
@@ -38,6 +42,98 @@ If there is a conflict, use this priority:
 - Do not treat chat text as durable project state. Durable decisions must be written back into repository files.
 - Any change to architecture, milestone sequencing, or repository structure must be reflected in `PROGRESS.md`.
 - Any change large enough to affect future implementation decisions must be reflected in `docs/`.
+
+## Collaboration Rules
+
+These rules exist to prevent parallel contributors from redoing the same work or colliding in the same paths.
+
+### Task Source Of Truth
+
+- `docs/AGENT_TASKS.md` is the operational task registry for parallel development.
+- `docs/02_Codex-like工程Agent平台_多人协作任务分配与RACI_v1.0.md` is the role and responsibility reference.
+- Phase documents define sequencing; task registry defines concurrent execution boundaries.
+
+### Claim Before Coding
+
+Before starting any non-trivial implementation:
+
+1. choose one task from `docs/AGENT_TASKS.md`
+2. confirm the task status is `Ready`
+3. assign one human owner
+4. create one branch for that task
+5. work only inside the task's `Owned paths`
+
+Do not start coding first and claim later.
+
+### One Task, One Branch, One Owner
+
+For active implementation work, enforce:
+
+- one task card
+- one primary owner
+- one branch
+- one worktree
+- one main review thread or PR
+
+Do not mix multiple unrelated tasks into the same branch or PR.
+
+### Owned Paths Are Hard Boundaries
+
+- A task may modify only its declared `Owned paths`.
+- If a task requires edits outside its `Owned paths`, stop and either:
+  - split the work into another task, or
+  - update the task definition explicitly before coding
+- Shared files such as `AGENTS.md`, `PROGRESS.md`, root configs, or contracts must be treated as coordination hotspots and should not be changed casually from unrelated tasks.
+
+### Parallel Development Strategy
+
+Multiple contributors should parallelize by task lane and path ownership, not just by phase label.
+
+Preferred pattern:
+
+- one contributor on core contracts
+- one contributor on runtime
+- one contributor on security or policy
+- one contributor on docs or governance
+
+Avoid assigning two contributors to the same package subarea unless one is explicitly doing review-only or follow-up work after the first PR merges.
+
+### Dependency And Unlock Rules
+
+- A `Locked` task cannot start until its dependency tasks are merged to `main`.
+- `Ready` means it may be claimed by one owner.
+- `In Progress` means nobody else should implement overlapping code for that task.
+- `Review` means only review fixes or explicitly requested follow-up work should be added.
+- `Done` means merged and reflected in the task registry if needed.
+
+### Branch And PR Mapping
+
+- Branch names should map directly to one task, such as `codex/p0-con-01-events-v1`.
+- PR titles should include the task identifier when one exists.
+- PR descriptions should restate:
+  - task id
+  - owned paths
+  - validation commands
+  - known risks or follow-up items
+
+### Handoff Rules
+
+If work stops before merge:
+
+- update task status in `docs/AGENT_TASKS.md`
+- record blockers or partial completion in `progress.md`
+- record any durable decisions in `findings.md` or the relevant doc
+- leave exact next steps for the next owner
+
+### Conflict Resolution
+
+If two tasks need the same file or boundary:
+
+1. prefer merging the dependency task first
+2. rebase the second task on updated `main`
+3. if overlap remains, create a narrower follow-up task instead of force-combining both changes
+
+Do not solve repeated overlap by allowing broad “temporary shared ownership”.
 
 ## Repository Layout Rules
 
@@ -191,10 +287,11 @@ Keep planning file responsibilities separate:
 For non-trivial tasks, use this loop:
 
 1. Read the relevant design section.
-2. Check `PROGRESS.md` and `docs/实施任务拆解与阶段验收.md`.
-3. Make the smallest coherent implementation slice.
-4. Validate with targeted commands.
-5. Update docs or progress files if the durable state changed.
+2. Check `PROGRESS.md`, `docs/实施任务拆解与阶段验收.md`, and `docs/AGENT_TASKS.md`.
+3. Claim exactly one ready task and confirm its owned paths.
+4. Make the smallest coherent implementation slice.
+5. Validate with targeted commands.
+6. Update docs or progress files if the durable state changed.
 
 ## Branch And PR Workflow
 
@@ -236,7 +333,7 @@ If you stop mid-stream, leave behind:
 <claude-mem-context>
 # Memory Context
 
-# [zebra-agent] recent context, 2026-06-18 5:38pm GMT+8
+# [zebra-agent] recent context, 2026-06-19 2:11pm GMT+8
 
 No previous sessions found.
 </claude-mem-context>

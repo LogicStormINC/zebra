@@ -1,0 +1,31 @@
+from typing import NewType
+from uuid import UUID, uuid4
+
+SessionId = NewType("SessionId", UUID)
+EventId = NewType("EventId", UUID)
+MessageId = NewType("MessageId", UUID)
+ToolCallId = NewType("ToolCallId", UUID)
+ArtifactId = NewType("ArtifactId", UUID)
+CorrelationId = NewType("CorrelationId", UUID)
+def new_session_id() -> SessionId:
+    return SessionId(uuid4())
+
+
+def new_event_id() -> EventId:
+    return EventId(uuid4())
+
+
+def new_message_id() -> MessageId:
+    return MessageId(uuid4())
+
+
+def new_tool_call_id() -> ToolCallId:
+    return ToolCallId(uuid4())
+
+
+def new_artifact_id() -> ArtifactId:
+    return ArtifactId(uuid4())
+
+
+def new_correlation_id() -> CorrelationId:
+    return CorrelationId(uuid4())

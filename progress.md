@@ -1,11 +1,53 @@
-# Progress Log
+# Zebra Agent Progress
 
-## 2026-06-18
+## Current Effective Docs
 
-- 读取并对齐了架构基线文档和当前项目进度
-- 新增正式实施文档：`docs/实施任务拆解与阶段验收.md`
-- 新增 planning files：`task_plan.md`、`findings.md`、`progress.md`
-- 已将 `PROGRESS.md` 恢复为项目级状态摘要
-- 当前规划结论：
-  - Phase 0 已完成
-  - 推荐立即进入 Phase 1：`agent-core` 的领域模型和 Ports
+The active execution set is:
+
+1. `AGENTS.md`
+2. `docs/实施任务拆解与阶段验收.md`
+3. `docs/02_Codex-like工程Agent平台_多人协作任务分配与RACI_v1.0.md`
+4. `docs/AGENT_TASKS.md`
+5. `README.md`
+
+Older planning documents are reference material only unless explicitly merged into the files above.
+
+## Current Phase
+
+Phase 1 completed. Phase 2 is ready to start.
+
+## Current Goal
+
+Start the first local execution path while preserving the existing `agent-core` boundary:
+
+- implement `LocalRuntime`
+- add workspace or worktree abstractions
+- implement the first builtin file and command tool paths
+
+## Status Snapshot
+
+Completed:
+
+- repository bootstrap is complete
+- `uv` workspace and monorepo package layout are in place
+- `agent-core` base domain models are implemented
+- `agent-core` base Ports are implemented
+- session projection and replay semantics are implemented
+- Phase 1 tests and validation pass
+
+Ready to start:
+
+- `packages/agent-runtime` local adapter work
+- `packages/agent-tools` first builtin tool work
+- Phase 2 task claiming from `docs/AGENT_TASKS.md`
+
+Not started:
+
+- real runtime process execution
+- file, patch, test, and git tool implementations
+- harness worker integration on top of runtime and tools
+- control-plane persistence and recovery implementation
+
+## Recommended Next Step
+
+Claim one `Ready` Phase 2 task from `docs/AGENT_TASKS.md` and execute it on a dedicated `codex/<task-id>-<short-name>` branch within its owned paths only.

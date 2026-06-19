@@ -1,0 +1,10 @@
+from typing import Protocol
+
+from agent_core.domain.identifiers import SessionId
+from agent_core.domain.sessions import Session
+
+
+class ProjectionStorePort(Protocol):
+    def save_session(self, session: Session) -> Session: ...
+
+    def get_session(self, session_id: SessionId) -> Session | None: ...
