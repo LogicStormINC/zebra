@@ -29,16 +29,17 @@
 - `P3-HAR-05 - Assistant Message And Tool Trace Projection`
 - `P3-HAR-06 - Attempt Event Timestamp Refinement`
 - `P3-HAR-07 - Planner And Verifier Hooks`
+- `P3-HAR-08 - Session Event Builder Cleanup`
 
 ## Current Focus
 
-- `P3-HAR-08 - Session Event Builder Cleanup`
-- keep the existing runtime and builtin contracts stable while harness event recording is consolidated
+- `P3-HAR-09 - Tool Call Selection Strategy`
+- keep the existing runtime and builtin contracts stable while tool-call routing becomes more explicit
 
 ## Next Unlocks
 
-- `P3-HAR-08` is now the next direct Phase 3 slice
-- the next step is to centralize harness event recording before layering more orchestration detail
+- `P3-HAR-09` is now the next direct Phase 3 slice
+- the next step is to make tool call selection explicit before adding richer planning behavior
 
 ## Active Documents
 

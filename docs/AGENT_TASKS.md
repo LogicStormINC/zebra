@@ -462,7 +462,7 @@ Introduce minimal planner and verifier hook contracts so the harness loop can se
 
 ### P3-HAR-08 - Session Event Builder Cleanup
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `UNASSIGNED`
 - Suggested role: `CORE`
 - Depends on: `P3-HAR-07`
@@ -481,6 +481,31 @@ Reduce repeated event-construction code inside the harness by extracting a dedic
 
 #### Acceptance
 
-- [ ] Harness event creation logic is centralized.
-- [ ] Existing harness behavior remains unchanged.
-- [ ] Tests cover the refactored event builder path.
+- [x] Harness event creation logic is centralized.
+- [x] Existing harness behavior remains unchanged.
+- [x] Tests cover the refactored event builder path.
+
+### P3-HAR-09 - Tool Call Selection Strategy
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P3-HAR-08`
+- Branch: `codex/p3-har-09-tool-call-selection`
+- Owned paths: `packages/agent-core/`, `tests/`
+
+#### Goal
+
+Make tool selection explicit by extracting the current “first tool call wins” behavior into a typed selection strategy that can evolve later.
+
+#### Deliverables
+
+- tool selection strategy contract
+- default selector implementation
+- tests for deterministic selection behavior
+
+#### Acceptance
+
+- [ ] Tool selection is expressed through an explicit strategy.
+- [ ] Default behavior remains deterministic.
+- [ ] Tests cover at least one multi-tool completion path.

@@ -295,3 +295,25 @@
   - `uv run pytest tests/agent_core/test_harness_hooks.py tests/agent_core/test_harness_multi_attempt.py tests/agent_core/test_harness_trace_projection.py tests/agent_core/test_harness_stopping.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
   - `make check` 通过
+
+## 2026-06-20 Session Event Builder Cleanup
+
+- 执行 `P3-HAR-08 - Session Event Builder Cleanup`
+- 新增 `HarnessEventRecorder`
+- 统一收拢：
+  - `SessionEvent.create`
+  - sequence 递增
+  - append 到事件流
+  - `apply_event` 投影回 session
+  - clock 驱动的 `created_at`
+- `HarnessLoop` 改为通过 recorder 记录初始化、attempt、draft 和 terminal 事件
+- 新增测试：
+  - `tests/agent_core/test_harness_recorder.py`
+- 覆盖场景：
+  - recorder 正常记录事件
+  - sequence 递增
+  - session projection 行为保持不变
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_harness_recorder.py tests/agent_core/test_harness_hooks.py tests/agent_core/test_harness_multi_attempt.py tests/agent_core/test_harness_trace_projection.py tests/agent_core/test_harness_stopping.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
+  - `make check` 通过
