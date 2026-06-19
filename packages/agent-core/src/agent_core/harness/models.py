@@ -12,6 +12,13 @@ class HarnessAttemptOutcome(StrEnum):
     FAILED = "failed"
 
 
+class HarnessStopReason(StrEnum):
+    COMPLETED = "completed"
+    FAILED_TERMINAL = "failed_terminal"
+    RETRY_EXHAUSTED = "retry_exhausted"
+    RETRY_ALLOWED = "retry_allowed"
+
+
 @dataclass(frozen=True)
 class HarnessTask:
     title: str
@@ -66,7 +73,29 @@ class HarnessAttemptResult:
 
 
 @dataclass(frozen=True)
+class HarnessRunResult:
+    final_outcome: HarnessAttemptOutcome
+    stop_reason: HarnessStopReason
+    attempts_used: int
+    max_attempts: int
+    can_retry: bool
+    summary: str
+    last_attempt: HarnessAttemptResult
+
+    def __post_init__(self) -> None:
+        if self.attempts_used <= 0:
+            raise ValueError("harness run result attempts_used must be positive")
+        if self.max_attempts <= 0:
+            raise ValueError("harness run result max_attempts must be positive")
+        if self.attempts_used > self.max_attempts:
+            raise ValueError("harness run result attempts_used cannot exceed max_attempts")
+        if not self.summary.strip():
+            raise ValueError("harness run result summary must not be blank")
+
+
+@dataclass(frozen=True)
 class HarnessLoopResult:
     session: Session
     events: tuple[SessionEvent, ...]
     attempt_result: HarnessAttemptResult
+    run_result: HarnessRunResult

@@ -184,3 +184,28 @@
   - `uv run pytest tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
   - `make check` 通过
+
+## 2026-06-19 Structured Run Output And Retry Skeleton
+
+- 执行 `P3-HAR-03 - Structured Run Output And Retry Skeleton`
+- 新增：
+  - `HarnessRunResult`
+  - `HarnessStopReason`
+  - `HarnessStoppingPolicy`
+- `HarnessLoopResult` 现在包含结构化 `run_result`
+- 当前 loop 仍然只执行单次 attempt，但已经能稳定给出：
+  - 最终 outcome
+  - stop reason
+  - attempts used
+  - max attempts
+  - can retry
+- 新增测试：
+  - `tests/agent_core/test_harness_stopping.py`
+- 覆盖场景：
+  - failed but retryable
+  - retry exhausted
+  - loop 暴露结构化 run result
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_harness_stopping.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
+  - `make check` 通过

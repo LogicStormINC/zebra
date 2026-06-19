@@ -24,16 +24,17 @@
 - `P3-HAR-01 - Harness Loop Skeleton`
 - `P3-MOD-01 - Mock Model Gateway`
 - `P3-HAR-02 - Single Attempt Tool Orchestration`
+- `P3-HAR-03 - Structured Run Output And Retry Skeleton`
 
 ## Current Focus
 
-- `P3-HAR-03 - Structured Run Output And Retry Skeleton`
-- keep the existing runtime and builtin contracts stable while the harness grows retry and stopping semantics
+- `P3-HAR-04 - Multi-Attempt Loop Driver`
+- keep the existing runtime and builtin contracts stable while the harness grows from one attempt into a bounded retry loop
 
 ## Next Unlocks
 
-- `P3-HAR-03` is now the next direct Phase 3 slice
-- the next step is to make failed attempts produce structured run output and retry decisions
+- `P3-HAR-04` is now the next direct Phase 3 slice
+- the next step is to turn retry eligibility into a real bounded multi-attempt loop
 
 ## Active Documents
 

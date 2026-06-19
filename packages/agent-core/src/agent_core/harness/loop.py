@@ -12,11 +12,15 @@ from agent_core.harness.models import (
     HarnessLoopResult,
     HarnessTask,
 )
+from agent_core.harness.stopping import HarnessStoppingPolicy
 
 AttemptRunner = Callable[[HarnessContext], HarnessAttemptResult]
 
 
 class HarnessLoop:
+    def __init__(self, *, stopping_policy: HarnessStoppingPolicy | None = None) -> None:
+        self._stopping_policy = stopping_policy or HarnessStoppingPolicy()
+
     def run(
         self,
         task: HarnessTask,
@@ -90,10 +94,16 @@ class HarnessLoop:
             },
             created_at=now,
         )
+        run_result = self._stopping_policy.build_run_result(
+            task,
+            attempts_used=attempt.number,
+            attempt_result=attempt_result,
+        )
         return HarnessLoopResult(
             session=session,
             events=tuple(events),
             attempt_result=attempt_result,
+            run_result=run_result,
         )
 
     @staticmethod

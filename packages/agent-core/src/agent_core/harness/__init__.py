@@ -7,9 +7,12 @@ from agent_core.harness.models import (
     HarnessContext,
     HarnessEventDraft,
     HarnessLoopResult,
+    HarnessRunResult,
+    HarnessStopReason,
     HarnessTask,
 )
 from agent_core.harness.orchestrator import SingleAttemptOrchestrator
+from agent_core.harness.stopping import HarnessStoppingPolicy
 
 __all__ = [
     "HarnessAttempt",
@@ -20,6 +23,9 @@ __all__ = [
     "HarnessLoop",
     "HarnessModelStep",
     "HarnessLoopResult",
+    "HarnessRunResult",
+    "HarnessStopReason",
+    "HarnessStoppingPolicy",
     "SingleAttemptOrchestrator",
     "HarnessTask",
 ]

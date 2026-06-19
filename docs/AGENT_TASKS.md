@@ -337,7 +337,7 @@ Wire the harness, tool gateway, runtime, and policy boundary into one single-att
 
 ### P3-HAR-03 - Structured Run Output And Retry Skeleton
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `UNASSIGNED`
 - Suggested role: `CORE`
 - Depends on: `P3-HAR-02`
@@ -356,6 +356,31 @@ Add the first structured run output contract and a minimal retry skeleton so the
 
 #### Acceptance
 
-- [ ] Harness run output is structured and typed.
-- [ ] Retry or stop decisions are deterministic.
-- [ ] Tests cover both retryable and terminal outcomes.
+- [x] Harness run output is structured and typed.
+- [x] Retry or stop decisions are deterministic.
+- [x] Tests cover both retryable and terminal outcomes.
+
+### P3-HAR-04 - Multi-Attempt Loop Driver
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P3-HAR-03`
+- Branch: `codex/p3-har-04-multi-attempt-loop`
+- Owned paths: `packages/agent-core/`, `tests/`
+
+#### Goal
+
+Extend the harness loop from one attempt to a minimal multi-attempt driver that stops on success or when retry budget is exhausted.
+
+#### Deliverables
+
+- multi-attempt loop driver
+- retry iteration state handling
+- tests for success-after-retry and exhausted retry paths
+
+#### Acceptance
+
+- [ ] The harness can run more than one attempt when retry is allowed.
+- [ ] Success stops further attempts immediately.
+- [ ] Tests cover at least one retry success path and one exhaustion path.
