@@ -28,16 +28,17 @@
 - `P3-HAR-04 - Multi-Attempt Loop Driver`
 - `P3-HAR-05 - Assistant Message And Tool Trace Projection`
 - `P3-HAR-06 - Attempt Event Timestamp Refinement`
+- `P3-HAR-07 - Planner And Verifier Hooks`
 
 ## Current Focus
 
-- `P3-HAR-07 - Planner And Verifier Hooks`
-- keep the existing runtime and builtin contracts stable while the harness gains explicit pre-tool and post-tool hook points
+- `P3-HAR-08 - Session Event Builder Cleanup`
+- keep the existing runtime and builtin contracts stable while harness event recording is consolidated
 
 ## Next Unlocks
 
-- `P3-HAR-07` is now the next direct Phase 3 slice
-- the next step is to separate planning and verification responsibilities inside the harness flow
+- `P3-HAR-08` is now the next direct Phase 3 slice
+- the next step is to centralize harness event recording before layering more orchestration detail
 
 ## Active Documents
 

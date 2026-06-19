@@ -1,3 +1,11 @@
+from agent_core.harness.hooks import (
+    NoopPlanner,
+    NoopVerifier,
+    PlannerHook,
+    PlannerResult,
+    VerifierHook,
+    VerifierResult,
+)
 from agent_core.harness.loop import HarnessLoop
 from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import (
@@ -28,6 +36,10 @@ __all__ = [
     "HarnessEventDraft",
     "HarnessLoop",
     "HarnessModelStep",
+    "NoopPlanner",
+    "NoopVerifier",
+    "PlannerHook",
+    "PlannerResult",
     "HarnessLoopResult",
     "HarnessRunTrace",
     "HarnessRunResult",
@@ -39,4 +51,6 @@ __all__ = [
     "HarnessTask",
     "HarnessToolTrace",
     "HarnessTraceProjector",
+    "VerifierHook",
+    "VerifierResult",
 ]

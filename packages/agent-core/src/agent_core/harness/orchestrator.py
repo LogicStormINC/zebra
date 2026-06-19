@@ -1,6 +1,12 @@
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.policies import PolicyDecisionType
 from agent_core.domain.tools import ToolCallStatus
+from agent_core.harness.hooks import (
+    NoopPlanner,
+    NoopVerifier,
+    PlannerHook,
+    VerifierHook,
+)
 from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import (
     HarnessAttemptOutcome,
@@ -21,11 +27,15 @@ class SingleAttemptOrchestrator:
         tool_gateway: ToolGatewayPort,
         *,
         model_step: HarnessModelStep | None = None,
+        planner: PlannerHook | None = None,
+        verifier: VerifierHook | None = None,
     ) -> None:
         self._model_gateway = model_gateway
         self._policy_engine = policy_engine
         self._tool_gateway = tool_gateway
         self._model_step = model_step or HarnessModelStep()
+        self._planner = planner or NoopPlanner()
+        self._verifier = verifier or NoopVerifier()
 
     def run(self, context: HarnessContext) -> HarnessAttemptResult:
         completion = self._model_step.request_initial_completion(
@@ -44,6 +54,18 @@ class SingleAttemptOrchestrator:
                 },
             )
         ]
+        planner_result = self._planner.plan(context)
+        emitted_events.append(
+            HarnessEventDraft(
+                event_type=EventType.PLAN_PROPOSED,
+                actor=EventActor.HARNESS,
+                payload={
+                    "attempt_number": context.attempt.number,
+                    "summary": planner_result.summary,
+                    "metadata": planner_result.metadata,
+                },
+            )
+        )
 
         if not completion.tool_calls:
             return HarnessAttemptResult(
@@ -52,6 +74,7 @@ class SingleAttemptOrchestrator:
                 metadata={
                     "assistant_message": completion.assistant_message.content,
                     "tool_call_count": 0,
+                    "plan_summary": planner_result.summary,
                 },
                 emitted_events=tuple(emitted_events),
             )
@@ -123,6 +146,23 @@ class SingleAttemptOrchestrator:
                 },
             )
         )
+        verifier_result = self._verifier.verify(
+            context,
+            tool_result.status.value,
+            tool_result.output,
+        )
+        emitted_events.append(
+            HarnessEventDraft(
+                event_type=EventType.TESTS_COMPLETED,
+                actor=EventActor.HARNESS,
+                payload={
+                    "attempt_number": context.attempt.number,
+                    "summary": verifier_result.summary,
+                    "passed": verifier_result.passed,
+                    "metadata": verifier_result.metadata,
+                },
+            )
+        )
         return HarnessAttemptResult(
             outcome=(
                 HarnessAttemptOutcome.COMPLETED
@@ -136,10 +176,14 @@ class SingleAttemptOrchestrator:
             ),
             metadata={
                 "assistant_message": completion.assistant_message.content,
+                "plan_summary": planner_result.summary,
                 "tool_name": tool_call.name,
                 "tool_status": tool_result.status.value,
                 "tool_output": tool_result.output,
                 "tool_metadata": tool_result.metadata,
+                "verification_summary": verifier_result.summary,
+                "verification_passed": verifier_result.passed,
+                "verification_metadata": verifier_result.metadata,
             },
             emitted_events=tuple(emitted_events),
         )

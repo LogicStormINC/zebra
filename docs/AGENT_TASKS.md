@@ -437,7 +437,7 @@ Refine harness event timing so multi-attempt runs no longer stamp every event wi
 
 ### P3-HAR-07 - Planner And Verifier Hooks
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `UNASSIGNED`
 - Suggested role: `CORE`
 - Depends on: `P3-HAR-06`
@@ -456,6 +456,31 @@ Introduce minimal planner and verifier hook contracts so the harness loop can se
 
 #### Acceptance
 
-- [ ] Harness has explicit planner and verifier hook points.
-- [ ] Hook participation is deterministic and typed.
-- [ ] Tests cover at least one planner/verifier assisted run path.
+- [x] Harness has explicit planner and verifier hook points.
+- [x] Hook participation is deterministic and typed.
+- [x] Tests cover at least one planner/verifier assisted run path.
+
+### P3-HAR-08 - Session Event Builder Cleanup
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P3-HAR-07`
+- Branch: `codex/p3-har-08-event-builder-cleanup`
+- Owned paths: `packages/agent-core/`, `tests/`
+
+#### Goal
+
+Reduce repeated event-construction code inside the harness by extracting a dedicated event builder or recorder helper.
+
+#### Deliverables
+
+- harness event builder helper
+- loop and orchestration call-site cleanup
+- tests proving no behavioral regression
+
+#### Acceptance
+
+- [ ] Harness event creation logic is centralized.
+- [ ] Existing harness behavior remains unchanged.
+- [ ] Tests cover the refactored event builder path.

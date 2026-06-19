@@ -83,10 +83,12 @@ def test_single_attempt_orchestrator_runs_model_to_tool_success_path() -> None:
         EventType.TASK_PREPARED,
         EventType.HARNESS_ATTEMPT_STARTED,
         EventType.MODEL_RESPONSE_RECEIVED,
+        EventType.PLAN_PROPOSED,
         EventType.TOOL_CALL_PROPOSED,
         EventType.POLICY_DECISION_MADE,
         EventType.TOOL_EXECUTION_STARTED,
         EventType.TOOL_EXECUTION_COMPLETED,
+        EventType.TESTS_COMPLETED,
         EventType.SESSION_COMPLETED,
     ]
 
@@ -136,5 +138,6 @@ def test_single_attempt_orchestrator_marks_failed_tool_execution() -> None:
     assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
     assert result.session.status.value == "failed"
     assert result.attempt_result.metadata["tool_status"] == "failed"
-    assert result.events[-2].event_type is EventType.TOOL_EXECUTION_FAILED
+    assert result.events[-3].event_type is EventType.TOOL_EXECUTION_FAILED
+    assert result.events[-2].event_type is EventType.TESTS_COMPLETED
     assert result.events[-1].event_type is EventType.SESSION_FAILED

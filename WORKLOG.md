@@ -269,3 +269,29 @@
   - `uv run pytest tests/agent_core/test_harness_multi_attempt.py tests/agent_core/test_harness_trace_projection.py tests/agent_core/test_harness_stopping.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
   - `make check` 通过
+
+## 2026-06-20 Planner And Verifier Hooks
+
+- 执行 `P3-HAR-07 - Planner And Verifier Hooks`
+- 新增：
+  - `PlannerHook`
+  - `VerifierHook`
+  - `PlannerResult`
+  - `VerifierResult`
+  - `NoopPlanner`
+  - `NoopVerifier`
+- `SingleAttemptOrchestrator` 现在有显式 planner / verifier hook 点：
+  - planner 在 tool call proposal 前参与
+  - verifier 在 tool result 后参与
+- emitted events 里新增：
+  - `PLAN_PROPOSED`
+  - `TESTS_COMPLETED` 作为最小 verifier 完成事件
+- 新增测试：
+  - `tests/agent_core/test_harness_hooks.py`
+- 覆盖场景：
+  - planner 和 verifier 在一次 run 中被调用
+  - 结构化 metadata 回写到 attempt result
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_harness_hooks.py tests/agent_core/test_harness_multi_attempt.py tests/agent_core/test_harness_trace_projection.py tests/agent_core/test_harness_stopping.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_mock_model_gateway.py tests/agent_core/test_harness_loop.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_session_projection.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core` 通过
+  - `make check` 通过
