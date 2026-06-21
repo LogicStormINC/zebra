@@ -984,3 +984,29 @@ Wire compiled context into the harness model request path without breaking packa
 - [x] Harness model requests can include a compiled context system message.
 - [x] `agent-context` provides a local adapter that renders a prompt from compiled context.
 - [x] Tests cover system-message injection and adapter rendering.
+
+### P5-CTX-07 - Runtime Evidence Context Injection
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CTX`
+- Depends on: `P5-CTX-06`
+- Branch: `codex/p5-ctx-07-runtime-evidence-context`
+- Owned paths: `packages/agent-context/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Let the context compiler accept compacted runtime evidence so conversation summaries and tool-output summaries can re-enter the compiled context set and flow into the dynamic prompt section under the same token budget rules.
+
+#### Deliverables
+
+- runtime-evidence items on `ContextCompileRequest`
+- validation that only compacted dynamic items can be injected this way
+- tests covering compiled-context inclusion and dynamic-section routing
+
+#### Acceptance
+
+- [x] `compile_context` can accept compacted conversation and tool-output items.
+- [x] Runtime evidence participates in normal token-budget trimming.
+- [x] Prompt layout routes runtime evidence into the dynamic section.
+- [x] Tests cover runtime-evidence inclusion and prompt-layout routing.

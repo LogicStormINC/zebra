@@ -66,12 +66,21 @@ class ContextCompileRequest:
     task_input: str
     workspace_root: Path
     budget: ContextBudget = field(default_factory=lambda: ContextBudget(max_tokens=1200))
+    runtime_evidence_items: tuple[ContextItem, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.task_input.strip():
             raise ValueError("task_input must not be blank")
         if not self.workspace_root.is_absolute():
             raise ValueError("workspace_root must be absolute")
+        for item in self.runtime_evidence_items:
+            if item.kind not in {
+                ContextItemKind.CONVERSATION_SUMMARY,
+                ContextItemKind.TOOL_OUTPUT_SUMMARY,
+            }:
+                raise ValueError(
+                    "runtime_evidence_items must use conversation or tool-output summary kinds"
+                )
 
 
 @dataclass(frozen=True)

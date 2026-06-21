@@ -747,6 +747,22 @@
   - `uv run mypy packages/agent-core/src/agent_core/domain/tool_runs.py packages/agent-core/src/agent_core/ports/tool_run_store.py packages/agent-storage/src/agent_storage/tool_runs.py apps/worker/src/zebra_agent_worker/tool_run_index.py tests/agent_storage/test_sqlite_tool_runs.py tests/worker/test_tool_run_index.py` 通过
   - `make check` 通过
 
+## 2026-06-22 Runtime Evidence Context Injection
+
+- 执行 `P5-CTX-07 - Runtime Evidence Context Injection`
+- `ContextCompileRequest` 新增：
+  - `runtime_evidence_items`
+- 当前行为：
+  - 允许把 `CONVERSATION_SUMMARY` 与 `TOOL_OUTPUT_SUMMARY` 作为 runtime evidence 注入编译输入
+  - 这些 items 和普通 context items 一样参与统一 token budget
+  - prompt layout 会把它们路由到 dynamic section
+- 新增测试：
+  - `tests/agent_context/test_runtime_evidence.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_context/test_runtime_evidence.py tests/agent_context/test_adapter.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
+  - `uv run ruff check packages/agent-context/src/agent_context tests/agent_context/test_runtime_evidence.py tests/agent_context/test_adapter.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
+  - `uv run mypy packages/agent-context/src/agent_context tests/agent_context/test_runtime_evidence.py tests/agent_context/test_adapter.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
+
 ## 2026-06-22 Harness Context Input Wiring
 
 - 执行 `P5-CTX-06 - Harness Context Input Wiring`

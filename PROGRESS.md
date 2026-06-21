@@ -6,7 +6,7 @@
 - Repository status: `phase 5 in progress`
 - Current focus:
   - replace the `agent-context` bootstrap stub with typed, deterministic context compilation slices
-  - keep context work local-first while starting controlled harness integration
+  - keep context work local-first while extending the context signal set around runtime evidence
 
 ## Completed
 
@@ -49,15 +49,16 @@
 - `P5-CTX-04 - Prompt Layout And Cache Key Rules`
 - `P5-CTX-05 - Trust Marking And Prompt-Injection Baseline`
 - `P5-CTX-06 - Harness Context Input Wiring`
+- `P5-CTX-07 - Runtime Evidence Context Injection`
 
 ## Current Focus
 
 - phase 5 context compiler groundwork after the durable control-plane baseline
-- register the next direct slice around richer retrieval signals or feeding compacted runtime evidence back into context compilation
+- register the next direct slice around richer retrieval signals or actual harness-side propagation of runtime evidence into later attempts
 
 ## Next Unlocks
 
-- `P5-CTX-06` is complete
+- `P5-CTX-07` is complete
 - the next step is to register the next ready context-compiler task card before more implementation starts
 
 ## Active Documents

@@ -31,6 +31,7 @@ def compile_context(
     scanned_files = scan_workspace_files(workspace_root)
     ranked_files = rank_files(scanned_files, compile_request.task_input)
     ranked_items = [build_repo_map_item(workspace_root)]
+    ranked_items.extend(compile_request.runtime_evidence_items)
     ranked_items.extend(
         _build_file_item(
             file,
