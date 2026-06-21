@@ -574,3 +574,28 @@
   - `uv run ruff check apps/worker/src/zebra_agent_worker tests/worker tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy apps/worker/src/zebra_agent_worker tests/worker` 通过
   - `make check` 通过
+
+## 2026-06-22 Tool Run Index
+
+- 执行 `P4-STO-04 - Tool Run Index`
+- `agent-core` 新增：
+  - `ToolRunRecord`
+  - `ToolRunStorePort`
+- `agent-storage` 新增：
+  - `SQLiteToolRunStore`
+- `apps/worker` 新增：
+  - `ToolRunIndexer`
+- 当前行为：
+  - tool execution event 可以被映射为 durable tool-run record
+  - control plane 可以按 session 查询 tool run 索引，而不是每次直接扫描原始 event payload
+- 新增测试：
+  - `tests/agent_storage/test_sqlite_tool_runs.py`
+  - `tests/worker/test_tool_run_index.py`
+- 覆盖场景：
+  - tool-run upsert and query
+  - event-to-tool-run indexing
+- 本轮验证结果：
+  - `uv run pytest tests/agent_storage/test_sqlite_tool_runs.py tests/worker/test_tool_run_index.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core/domain/tool_runs.py packages/agent-core/src/agent_core/ports/tool_run_store.py packages/agent-storage/src/agent_storage/tool_runs.py apps/worker/src/zebra_agent_worker/tool_run_index.py tests/agent_storage/test_sqlite_tool_runs.py tests/worker/test_tool_run_index.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy packages/agent-core/src/agent_core/domain/tool_runs.py packages/agent-core/src/agent_core/ports/tool_run_store.py packages/agent-storage/src/agent_storage/tool_runs.py apps/worker/src/zebra_agent_worker/tool_run_index.py tests/agent_storage/test_sqlite_tool_runs.py tests/worker/test_tool_run_index.py` 通过
+  - `make check` 通过

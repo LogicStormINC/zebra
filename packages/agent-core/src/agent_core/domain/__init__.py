@@ -6,6 +6,7 @@ from agent_core.domain.leases import WorkerLease
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.tool_runs import ToolRunRecord
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 
 __all__ = [
@@ -21,6 +22,7 @@ __all__ = [
     "SessionStatus",
     "ToolCall",
     "ToolCallStatus",
+    "ToolRunRecord",
     "ToolResult",
     "WorkerLease",
 ]

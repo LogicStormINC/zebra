@@ -769,3 +769,28 @@ Expose a single worker-facing resume entry that combines claim and recovery sema
 - [x] Worker can resume a running session through one entrypoint.
 - [x] Terminal sessions are rejected deterministically.
 - [x] Rejected terminal resumes do not leave dangling leases.
+
+### P4-STO-04 - Tool Run Index
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P4-WKR-03`
+- Branch: `codex/p4-sto-04-tool-run-index`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `apps/worker/`, `tests/`
+
+#### Goal
+
+Expose a durable tool-run index so control-plane queries do not need to scan raw event payloads for every tool execution detail.
+
+#### Deliverables
+
+- core tool-run record model and store port
+- SQLite tool-run store
+- worker-side event-to-index mapping for tool execution events
+
+#### Acceptance
+
+- [x] Tool run records can be upserted and queried by session.
+- [x] Tool execution events can be projected into tool-run records.
+- [x] Tests cover storage upsert and worker-side indexing behavior.

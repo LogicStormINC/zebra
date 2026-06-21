@@ -9,6 +9,7 @@ from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_core.ports.runtime import RuntimeExecutionRequest, RuntimeExecutionResult, RuntimePort
 from agent_core.ports.tool_gateway import ToolGatewayPort
+from agent_core.ports.tool_run_store import ToolRunStorePort
 
 __all__ = [
     "ArtifactStorePort",
@@ -22,4 +23,5 @@ __all__ = [
     "RuntimeExecutionResult",
     "RuntimePort",
     "ToolGatewayPort",
+    "ToolRunStorePort",
 ]
