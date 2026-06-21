@@ -1,0 +1,20 @@
+from pathlib import Path
+
+from agent_context import LocalContextCompiler
+
+
+def test_local_context_compiler_renders_system_prompt(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "AGENTS.md").write_text("Repository rules.\n", encoding="utf-8")
+    (workspace / "README.md").write_text("Project overview.\n", encoding="utf-8")
+
+    prompt = LocalContextCompiler().build_system_prompt(
+        task_input="inspect repository rules",
+        workspace_root=workspace.resolve(),
+        max_tokens=120,
+    )
+
+    assert prompt is not None
+    assert "Stable Context:" in prompt
+    assert "Semi-Stable Context:" in prompt

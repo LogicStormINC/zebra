@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
+from pathlib import Path
 from typing import Any
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
@@ -28,6 +29,8 @@ class HarnessTask:
     max_attempts: int = 1
     max_model_calls: int | None = None
     max_tool_calls: int | None = None
+    workspace_root: Path | None = None
+    context_token_budget: int = 200
 
     def __post_init__(self) -> None:
         if not self.title.strip():
@@ -40,6 +43,10 @@ class HarnessTask:
             raise ValueError("harness task max_model_calls must be positive when set")
         if self.max_tool_calls is not None and self.max_tool_calls <= 0:
             raise ValueError("harness task max_tool_calls must be positive when set")
+        if self.workspace_root is not None and not self.workspace_root.is_absolute():
+            raise ValueError("harness task workspace_root must be absolute when set")
+        if self.context_token_budget <= 0:
+            raise ValueError("harness task context_token_budget must be positive")
 
 
 @dataclass(frozen=True)

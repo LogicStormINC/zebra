@@ -1,5 +1,6 @@
 """Context package for Zebra Agent."""
 
+from agent_context.adapter import LocalContextCompiler
 from agent_context.compaction import (
     ConversationCompactionRequest,
     ToolOutputCompactionRequest,
@@ -34,6 +35,7 @@ __all__ = [
     "CompiledContext",
     "build_prompt_cache_key",
     "build_prompt_layout",
+    "LocalContextCompiler",
     "compact_conversation",
     "compact_tool_outputs",
     "ConversationCompactionRequest",

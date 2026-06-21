@@ -746,3 +746,24 @@
   - `uv run ruff check packages/agent-core/src/agent_core/domain/tool_runs.py packages/agent-core/src/agent_core/ports/tool_run_store.py packages/agent-storage/src/agent_storage/tool_runs.py apps/worker/src/zebra_agent_worker/tool_run_index.py tests/agent_storage/test_sqlite_tool_runs.py tests/worker/test_tool_run_index.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy packages/agent-core/src/agent_core/domain/tool_runs.py packages/agent-core/src/agent_core/ports/tool_run_store.py packages/agent-storage/src/agent_storage/tool_runs.py apps/worker/src/zebra_agent_worker/tool_run_index.py tests/agent_storage/test_sqlite_tool_runs.py tests/worker/test_tool_run_index.py` 通过
   - `make check` 通过
+
+## 2026-06-22 Harness Context Input Wiring
+
+- 执行 `P5-CTX-06 - Harness Context Input Wiring`
+- `agent-core` 新增：
+  - `ContextCompilerPort`
+  - `HarnessTask.workspace_root`
+  - `HarnessTask.context_token_budget`
+- `HarnessModelStep` 现在支持：
+  - 通过抽象 `ContextCompilerPort` 生成 system message
+  - 在 user message 前注入 compiled context prompt
+- `agent-context` 新增：
+  - `LocalContextCompiler`
+- 新增测试：
+  - `tests/agent_core/test_harness_model_step.py`
+  - `tests/agent_context/test_adapter.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_model_step.py tests/agent_context/test_adapter.py tests/agent_context/test_compiler.py` 通过
+  - `make check` 通过

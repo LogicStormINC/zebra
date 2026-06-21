@@ -1,6 +1,11 @@
 from pathlib import Path
 
-from agent_context import ContextBudget, ContextCompileRequest, compile_context
+from agent_context import (
+    ContextBudget,
+    ContextCompileRequest,
+    LocalContextCompiler,
+    compile_context,
+)
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.runtime import RuntimeExecutionRequest
 from agent_runtime import LocalRuntime, LocalWorkspace
@@ -35,6 +40,7 @@ def test_workspace_packages_import() -> None:
     )
     assert compiled.items
     assert compiled.total_tokens <= 80
+    assert LocalContextCompiler is not None
     assert ToolRegistry is not None
     assert ToolExecutor is not None
     assert LocalWorkspace is not None

@@ -957,3 +957,30 @@ Add the first trust-level and prompt-injection baseline markers to context items
 - [x] Stable project-guidance files are marked above untrusted code files.
 - [x] Suspicious prompt-injection-like content is marked in item metadata.
 - [x] Tests cover baseline trust assignment and suspicious-content marking.
+
+### P5-CTX-06 - Harness Context Input Wiring
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CTX`
+- Depends on: `P5-CTX-05`
+- Branch: `codex/p5-ctx-06-harness-context-input`
+- Owned paths: `packages/agent-core/`, `packages/agent-context/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Wire compiled context into the harness model request path without breaking package boundaries by defining a core-side context-compiler port and a local context adapter in `agent-context`.
+
+#### Deliverables
+
+- `ContextCompilerPort` in `agent-core`
+- harness task fields for workspace root and context budget
+- `HarnessModelStep` system-message injection path
+- local `agent-context` adapter that renders compiled context into a prompt
+
+#### Acceptance
+
+- [x] `agent-core` consumes context compilation only through an abstract port.
+- [x] Harness model requests can include a compiled context system message.
+- [x] `agent-context` provides a local adapter that renders a prompt from compiled context.
+- [x] Tests cover system-message injection and adapter rendering.
