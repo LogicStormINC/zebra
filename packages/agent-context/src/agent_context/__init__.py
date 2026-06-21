@@ -16,12 +16,22 @@ from agent_context.models import (
     ContextItemKind,
     ContextProvenance,
 )
+from agent_context.prompt_layout import (
+    PromptCacheKeyRequest,
+    PromptLayout,
+    PromptSection,
+    PromptSectionKind,
+    build_prompt_cache_key,
+    build_prompt_layout,
+)
 from agent_context.ranking import rank_files, score_file
 from agent_context.related import recall_related_files
 from agent_context.scanner import ScannedFile, build_repo_map_item, scan_workspace_files
 
 __all__ = [
     "CompiledContext",
+    "build_prompt_cache_key",
+    "build_prompt_layout",
     "compact_conversation",
     "compact_tool_outputs",
     "ConversationCompactionRequest",
@@ -30,6 +40,10 @@ __all__ = [
     "ContextItem",
     "ContextItemKind",
     "ContextProvenance",
+    "PromptCacheKeyRequest",
+    "PromptLayout",
+    "PromptSection",
+    "PromptSectionKind",
     "ScannedFile",
     "build_repo_map_item",
     "compile_context",

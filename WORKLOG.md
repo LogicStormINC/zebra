@@ -352,6 +352,35 @@
   - `uv run ruff check packages/agent-context/src/agent_context tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy packages/agent-context/src/agent_context tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `make check` 通过
+
+## 2026-06-22 Prompt Layout And Cache Key Rules
+
+- 执行 `P5-CTX-04 - Prompt Layout And Cache Key Rules`
+- 新增 `agent_context.prompt_layout`：
+  - `PromptSectionKind`
+  - `PromptSection`
+  - `PromptLayout`
+  - `PromptCacheKeyRequest`
+  - `build_prompt_layout`
+  - `build_prompt_cache_key`
+- 当前 prompt-layout 行为：
+  - `AGENTS.md` / `README.md` 等稳定项目指导进入 stable section
+  - `Repo Map`、代码片段、related files 进入 semi-stable section
+  - conversation/tool-output compaction items 进入 dynamic section
+- 当前 cache-key 行为会显式纳入：
+  - `task_input`
+  - `workspace_root`
+  - `model_profile`
+  - `policy_summary`
+  - `tool_manifest`
+  - 各 section 的序列化 context items
+- 新增测试：
+  - `tests/agent_context/test_prompt_layout.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-context/src/agent_context tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy packages/agent-context/src/agent_context tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
+  - `make check` 通过
   - 每次 attempt 有独立 `started_at`
   - emitted events 和 terminal events 继续沿时钟推进
 - 新增测试：

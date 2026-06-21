@@ -46,15 +46,16 @@
 - `P5-CTX-01 - Context Compiler Bootstrap`
 - `P5-CTX-02 - Related Files Recall And Ranking Split`
 - `P5-CTX-03 - Conversation And Tool Output Compaction`
+- `P5-CTX-04 - Prompt Layout And Cache Key Rules`
 
 ## Current Focus
 
 - phase 5 context compiler groundwork after the durable control-plane baseline
-- register the next direct slice around prompt layout/cache-key rules or prompt-injection baseline marking
+- register the next direct slice around prompt-injection baseline marking or richer context item trust metadata
 
 ## Next Unlocks
 
-- `P5-CTX-03` is complete
+- `P5-CTX-04` is complete
 - the next step is to register the next ready context-compiler task card before more implementation starts
 
 ## Active Documents

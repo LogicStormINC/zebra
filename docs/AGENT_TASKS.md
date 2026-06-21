@@ -903,3 +903,30 @@ Add the first typed compaction layer for session summaries and tool-output summa
 - [x] Tool-output compaction produces a compact, typed summary item.
 - [x] Both compaction paths respect a token budget.
 - [x] Tests cover section preservation, output summarization, and truncation behavior.
+
+### P5-CTX-04 - Prompt Layout And Cache Key Rules
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CTX`
+- Depends on: `P5-CTX-03`
+- Branch: `codex/p5-ctx-04-prompt-layout-cache-key`
+- Owned paths: `packages/agent-context/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define the first deterministic prompt layout and cache-key rules so compiled context can be partitioned into stable, semi-stable, and dynamic sections and hashed consistently against the model/policy/tool envelope.
+
+#### Deliverables
+
+- prompt section and layout types
+- stable / semi-stable / dynamic classification rules
+- deterministic prompt cache key builder
+- tests for section routing and cache-key stability or invalidation
+
+#### Acceptance
+
+- [x] Prompt layout groups context into stable, semi-stable, and dynamic sections.
+- [x] Cache-key generation is deterministic for identical inputs.
+- [x] Cache-key generation changes when tool-manifest inputs change.
+- [x] Tests cover section routing and cache-key stability behavior.
