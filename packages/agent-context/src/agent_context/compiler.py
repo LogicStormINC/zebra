@@ -16,6 +16,7 @@ from agent_context.scanner import (
     estimate_tokens,
     scan_workspace_files,
 )
+from agent_context.trust import prompt_injection_metadata, trust_level_for_item
 
 
 def compile_context(
@@ -67,8 +68,16 @@ def _build_file_item(
             source_type="file",
             locator=file.relative_path.as_posix(),
         ),
+        trust_level=trust_level_for_item(
+            kind=kind,
+            locator=file.relative_path.as_posix(),
+        ),
         priority=priority,
         token_count=estimate_tokens(file.snippet),
+        metadata=prompt_injection_metadata(
+            file.snippet,
+            file.relative_path.as_posix(),
+        ),
     )
 
 

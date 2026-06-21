@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from agent_context.models import ContextItem, ContextItemKind, ContextProvenance
+from agent_context.models import ContextItem, ContextItemKind, ContextProvenance, TrustLevel
 from agent_context.scanner import estimate_tokens
 
 
@@ -72,8 +72,10 @@ def compact_conversation(
             source_type="session_projection",
             locator="conversation_compaction",
         ),
+        trust_level=TrustLevel.USER,
         priority=95,
         token_count=estimate_tokens(content),
+        metadata={"instruction_boundary": "data", "prompt_injection_risk": False},
     )
 
 
@@ -98,8 +100,10 @@ def compact_tool_outputs(
             source_type="tool_trace",
             locator="tool_output_compaction",
         ),
+        trust_level=TrustLevel.USER,
         priority=90,
         token_count=estimate_tokens(content),
+        metadata={"instruction_boundary": "data", "prompt_injection_risk": False},
     )
 
 

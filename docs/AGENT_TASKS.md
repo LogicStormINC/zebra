@@ -930,3 +930,30 @@ Define the first deterministic prompt layout and cache-key rules so compiled con
 - [x] Cache-key generation is deterministic for identical inputs.
 - [x] Cache-key generation changes when tool-manifest inputs change.
 - [x] Tests cover section routing and cache-key stability behavior.
+
+### P5-CTX-05 - Trust Marking And Prompt-Injection Baseline
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CTX`
+- Depends on: `P5-CTX-04`
+- Branch: `codex/p5-ctx-05-trust-marking`
+- Owned paths: `packages/agent-context/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add the first trust-level and prompt-injection baseline markers to context items so downstream layout and policy code can distinguish trusted project guidance from untrusted code and suspicious content.
+
+#### Deliverables
+
+- trust-level model on context items
+- baseline trust assignment for repo map, project guidance, dynamic summaries, and code files
+- suspicious-pattern metadata for prompt-injection-like content
+- tests covering trusted vs untrusted item marking
+
+#### Acceptance
+
+- [x] Context items expose a trust-level field.
+- [x] Stable project-guidance files are marked above untrusted code files.
+- [x] Suspicious prompt-injection-like content is marked in item metadata.
+- [x] Tests cover baseline trust assignment and suspicious-content marking.

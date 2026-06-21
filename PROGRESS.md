@@ -6,7 +6,7 @@
 - Repository status: `phase 5 in progress`
 - Current focus:
   - replace the `agent-context` bootstrap stub with typed, deterministic context compilation slices
-  - keep context work local-first and task-focused before adding compaction, cache keys, or injection analysis
+  - keep context work local-first and task-focused before adding deeper policy coupling or advanced retrieval
 
 ## Completed
 
@@ -47,15 +47,16 @@
 - `P5-CTX-02 - Related Files Recall And Ranking Split`
 - `P5-CTX-03 - Conversation And Tool Output Compaction`
 - `P5-CTX-04 - Prompt Layout And Cache Key Rules`
+- `P5-CTX-05 - Trust Marking And Prompt-Injection Baseline`
 
 ## Current Focus
 
 - phase 5 context compiler groundwork after the durable control-plane baseline
-- register the next direct slice around prompt-injection baseline marking or richer context item trust metadata
+- register the next direct slice around richer context metadata or wiring compiled context into harness/model requests
 
 ## Next Unlocks
 
-- `P5-CTX-04` is complete
+- `P5-CTX-05` is complete
 - the next step is to register the next ready context-compiler task card before more implementation starts
 
 ## Active Documents

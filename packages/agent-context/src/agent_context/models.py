@@ -11,6 +11,13 @@ class ContextItemKind(StrEnum):
     TOOL_OUTPUT_SUMMARY = "tool_output_summary"
 
 
+class TrustLevel(StrEnum):
+    SYSTEM = "system"
+    TRUSTED = "trusted"
+    USER = "user"
+    UNTRUSTED = "untrusted"
+
+
 @dataclass(frozen=True)
 class ContextProvenance:
     source_type: str
@@ -29,8 +36,10 @@ class ContextItem:
     title: str
     content: str
     provenance: ContextProvenance
+    trust_level: TrustLevel = TrustLevel.UNTRUSTED
     priority: int = 0
     token_count: int = 0
+    metadata: dict[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.title.strip():

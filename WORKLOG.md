@@ -381,6 +381,30 @@
   - `uv run ruff check packages/agent-context/src/agent_context tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy packages/agent-context/src/agent_context tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `make check` 通过
+
+## 2026-06-22 Trust Marking And Prompt-Injection Baseline
+
+- 执行 `P5-CTX-05 - Trust Marking And Prompt-Injection Baseline`
+- 新增 `agent_context.trust`：
+  - `trust_level_for_item`
+  - `prompt_injection_metadata`
+- `ContextItem` 现在补充：
+  - `trust_level`
+  - `metadata`
+- 当前 trust baseline：
+  - `Repo Map` 标记为 `system`
+  - `AGENTS.md` / `README.md` / `pyproject.toml` / `Makefile` 标记为 `trusted`
+  - conversation/tool-output summaries 标记为 `user`
+  - 代码文件默认标记为 `untrusted`
+- 当前 injection baseline：
+  - 仅做 suspicious pattern metadata 标记
+  - 不做自动拒绝或策略联动
+- 新增测试：
+  - `tests/agent_context/test_compiler.py` 中的 suspicious-content 标记断言
+- 本轮验证结果：
+  - `uv run pytest tests/agent_context/test_compiler.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-context/src/agent_context tests/agent_context/test_compiler.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy packages/agent-context/src/agent_context tests/agent_context/test_compiler.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py` 通过
   - 每次 attempt 有独立 `started_at`
   - emitted events 和 terminal events 继续沿时钟推进
 - 新增测试：

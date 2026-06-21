@@ -15,6 +15,7 @@ from agent_context.models import (
     ContextItem,
     ContextItemKind,
     ContextProvenance,
+    TrustLevel,
 )
 from agent_context.prompt_layout import (
     PromptCacheKeyRequest,
@@ -27,6 +28,7 @@ from agent_context.prompt_layout import (
 from agent_context.ranking import rank_files, score_file
 from agent_context.related import recall_related_files
 from agent_context.scanner import ScannedFile, build_repo_map_item, scan_workspace_files
+from agent_context.trust import prompt_injection_metadata, trust_level_for_item
 
 __all__ = [
     "CompiledContext",
@@ -53,4 +55,7 @@ __all__ = [
     "score_file",
     "ToolOutputCompactionRequest",
     "ToolOutputEvidence",
+    "TrustLevel",
+    "prompt_injection_metadata",
+    "trust_level_for_item",
 ]

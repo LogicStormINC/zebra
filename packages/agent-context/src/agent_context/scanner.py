@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from agent_context.models import ContextItem, ContextItemKind, ContextProvenance
+from agent_context.trust import prompt_injection_metadata, trust_level_for_item
 
 TEXT_SUFFIXES = {".md", ".py", ".toml", ".yaml", ".yml", ".json"}
 SKIP_DIRS = {
@@ -75,8 +76,13 @@ def build_repo_map_item(workspace_root: Path) -> ContextItem:
             source_type="workspace",
             locator=str(workspace_root),
         ),
+        trust_level=trust_level_for_item(
+            kind=ContextItemKind.REPO_MAP,
+            locator=str(workspace_root),
+        ),
         priority=100,
         token_count=estimate_tokens(content),
+        metadata=prompt_injection_metadata(content, str(workspace_root)),
     )
 
 

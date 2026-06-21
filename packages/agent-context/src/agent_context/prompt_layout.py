@@ -126,6 +126,8 @@ def _serialize_item(item: ContextItem) -> dict[str, object]:
         "content": item.content,
         "source_type": item.provenance.source_type,
         "locator": item.provenance.locator,
+        "trust_level": item.trust_level.value,
         "priority": item.priority,
         "token_count": item.token_count,
+        "metadata": item.metadata,
     }
