@@ -11,6 +11,15 @@ class ContextItemKind(StrEnum):
     TOOL_OUTPUT_SUMMARY = "tool_output_summary"
 
 
+RUNTIME_EVIDENCE_KINDS = frozenset(
+    {
+        ContextItemKind.CONVERSATION_SUMMARY,
+        ContextItemKind.TOOL_OUTPUT_SUMMARY,
+    }
+)
+RUNTIME_EVIDENCE_SOURCE_TYPES = frozenset({"session_projection", "tool_trace"})
+
+
 class TrustLevel(StrEnum):
     SYSTEM = "system"
     TRUSTED = "trusted"
@@ -73,13 +82,18 @@ class ContextCompileRequest:
             raise ValueError("task_input must not be blank")
         if not self.workspace_root.is_absolute():
             raise ValueError("workspace_root must be absolute")
+        if not self.workspace_root.exists():
+            raise ValueError("workspace_root must exist")
+        if not self.workspace_root.is_dir():
+            raise ValueError("workspace_root must be a directory")
         for item in self.runtime_evidence_items:
-            if item.kind not in {
-                ContextItemKind.CONVERSATION_SUMMARY,
-                ContextItemKind.TOOL_OUTPUT_SUMMARY,
-            }:
+            if item.kind not in RUNTIME_EVIDENCE_KINDS:
                 raise ValueError(
                     "runtime_evidence_items must use conversation or tool-output summary kinds"
+                )
+            if item.provenance.source_type not in RUNTIME_EVIDENCE_SOURCE_TYPES:
+                raise ValueError(
+                    "runtime_evidence_items must come from session projection or tool trace"
                 )
 
 

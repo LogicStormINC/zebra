@@ -1,9 +1,12 @@
 from pathlib import Path
 
+import pytest
 from agent_context import (
     ContextBudget,
     ContextCompileRequest,
+    ContextItem,
     ContextItemKind,
+    ContextProvenance,
     TrustLevel,
     compile_context,
 )
@@ -118,3 +121,47 @@ def test_compile_context_marks_untrusted_injection_like_content(tmp_path: Path) 
 
     assert payload_item.trust_level is TrustLevel.UNTRUSTED
     assert payload_item.metadata["prompt_injection_risk"] is True
+
+
+def test_compile_request_rejects_missing_workspace_root(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="workspace_root must exist"):
+        ContextCompileRequest(
+            task_input="inspect missing workspace",
+            workspace_root=(tmp_path / "missing").resolve(),
+        )
+
+
+def test_compile_request_rejects_non_directory_workspace_root(
+    tmp_path: Path,
+) -> None:
+    file_path = tmp_path / "README.md"
+    file_path.write_text("Project overview.\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="workspace_root must be a directory"):
+        ContextCompileRequest(
+            task_input="inspect file path",
+            workspace_root=file_path.resolve(),
+        )
+
+
+def test_compile_request_rejects_runtime_evidence_from_file_source(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    fake_runtime_item = ContextItem(
+        kind=ContextItemKind.CONVERSATION_SUMMARY,
+        title="Conversation Summary",
+        content="Prior attempt failed.",
+        provenance=ContextProvenance(source_type="file", locator="notes.md"),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="runtime_evidence_items must come from session projection or tool trace",
+    ):
+        ContextCompileRequest(
+            task_input="retry with evidence",
+            workspace_root=workspace.resolve(),
+            runtime_evidence_items=(fake_runtime_item,),
+        )

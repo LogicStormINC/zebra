@@ -801,6 +801,22 @@
   - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core/test_harness_retry_plan.py tests/agent_core/test_harness_hooks.py tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_harness_multi_attempt.py` 通过
   - `uv run mypy packages/agent-core/src/agent_core tests/agent_core/test_harness_retry_plan.py tests/agent_core/test_harness_hooks.py tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_harness_multi_attempt.py` 通过
   - `make check` 通过
+
+## 2026-06-22 Context Compiler Acceptance Hardening
+
+- 执行 `P5-CTX-11 - Context Compiler Acceptance Hardening`
+- `ContextCompileRequest` 现在校验：
+  - `workspace_root` 必须存在
+  - `workspace_root` 必须是目录
+  - runtime evidence 只能使用 conversation/tool-output summary kinds
+  - runtime evidence provenance 必须来自 session projection 或 tool trace
+- 新增/更新测试：
+  - `tests/agent_context/test_compiler.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_context/test_compiler.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_adapter.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py` 通过
+  - `uv run ruff check packages/agent-context/src/agent_context tests/agent_context/test_compiler.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_adapter.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py` 通过
+  - `uv run mypy packages/agent-context/src/agent_context tests/agent_context/test_compiler.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_adapter.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py` 通过
+  - `make check` 通过
   - `uv run ruff check packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `uv run mypy packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `make check` 通过

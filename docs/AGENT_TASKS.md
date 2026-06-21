@@ -1090,3 +1090,29 @@ Add a deterministic core retry-planning projection that turns structured runtime
 - [x] Failed verifier summaries and failed tool statuses become retry blockers.
 - [x] Passed verifier summaries become accepted constraints.
 - [x] Default planner metadata exposes retry focus, blockers, accepted constraints, and prior tool outputs.
+
+### P5-CTX-11 - Context Compiler Acceptance Hardening
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P5-CTX-10`
+- Branch: `codex/p5-ctx-11-context-acceptance-hardening`
+- Owned paths: `packages/agent-context/`, `tests/agent_context/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Harden context compiler input acceptance so invalid workspaces and spoofed runtime evidence are rejected before scanning or prompt assembly.
+
+#### Deliverables
+
+- workspace root existence and directory validation on `ContextCompileRequest`
+- runtime-evidence kind and provenance source allowlist
+- tests covering invalid workspace roots and rejected file-sourced runtime evidence
+
+#### Acceptance
+
+- [x] Missing workspace roots are rejected.
+- [x] File paths are rejected as workspace roots.
+- [x] Runtime evidence is limited to conversation/tool-output summary kinds.
+- [x] Runtime evidence must come from session projection or tool trace provenance.
