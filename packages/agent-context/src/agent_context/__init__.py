@@ -9,6 +9,9 @@ from agent_context.models import (
     ContextItemKind,
     ContextProvenance,
 )
+from agent_context.ranking import rank_files, score_file
+from agent_context.related import recall_related_files
+from agent_context.scanner import ScannedFile, build_repo_map_item, scan_workspace_files
 
 __all__ = [
     "CompiledContext",
@@ -17,5 +20,11 @@ __all__ = [
     "ContextItem",
     "ContextItemKind",
     "ContextProvenance",
+    "ScannedFile",
+    "build_repo_map_item",
     "compile_context",
+    "rank_files",
+    "recall_related_files",
+    "scan_workspace_files",
+    "score_file",
 ]

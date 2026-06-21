@@ -6,6 +6,7 @@ from pathlib import Path
 class ContextItemKind(StrEnum):
     REPO_MAP = "repo_map"
     FILE_SNIPPET = "file_snippet"
+    RELATED_FILE = "related_file"
 
 
 @dataclass(frozen=True)

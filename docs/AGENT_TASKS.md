@@ -849,3 +849,30 @@ Replace the `agent-context` placeholder with the first deterministic context com
 - [x] Every context item exposes provenance information.
 - [x] The compiler enforces a token budget and reports truncation.
 - [x] Tests cover ranking/provenance behavior and budget trimming.
+
+### P5-CTX-02 - Related Files Recall And Ranking Split
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CTX`
+- Depends on: `P5-CTX-01`
+- Branch: `codex/p5-ctx-02-related-files`
+- Owned paths: `packages/agent-context/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Split the bootstrap compiler into smaller ranking and scanning modules, and add the first deterministic related-files recall path so context assembly can surface local dependency neighbors instead of only directly matched files.
+
+#### Deliverables
+
+- dedicated scanner and ranker modules
+- local python import-based related-files recall
+- explicit related-file context item kind
+- tests covering related-file inclusion
+
+#### Acceptance
+
+- [x] Context ranking logic is split out of `compiler.py`.
+- [x] The compiler can emit related-file items for directly matched Python files.
+- [x] Related-file items preserve provenance and participate in token-budget trimming.
+- [x] Tests cover at least one local import-driven related-file recall path.

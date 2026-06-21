@@ -44,15 +44,16 @@
 - `P4-STO-04 - Tool Run Index`
 - `P4-STO-05 - Model Call Index`
 - `P5-CTX-01 - Context Compiler Bootstrap`
+- `P5-CTX-02 - Related Files Recall And Ranking Split`
 
 ## Current Focus
 
 - phase 5 context compiler groundwork after the durable control-plane baseline
-- register the next direct slice around related-files recall, conversation compaction, or prompt layout/cache-key rules
+- register the next direct slice around conversation compaction or prompt layout/cache-key rules
 
 ## Next Unlocks
 
-- `P5-CTX-01` is complete
+- `P5-CTX-02` is complete
 - the next step is to register the next ready context-compiler task card before more implementation starts
 
 ## Active Documents

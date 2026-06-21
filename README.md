@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-The repository is in `Phase 5 - Context Compiler`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, the control-plane foundation includes durable session events and recovery/indexing primitives, and the mainline now includes the first typed workspace context compiler with provenance and token-budget trimming.
+The repository is in `Phase 5 - Context Compiler`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, the control-plane foundation includes durable session events and recovery/indexing primitives, and the mainline now includes a typed workspace context compiler with provenance, token-budget trimming, split ranking/scanning modules, and the first related-files recall path.
 
 Read in this order:
 

@@ -311,6 +311,23 @@
   - `uv run ruff check packages/agent-context/src/agent_context tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy packages/agent-context/src/agent_context tests/agent_context/test_compiler.py` 通过
   - `make check` 通过
+
+## 2026-06-22 Related Files Recall And Ranking Split
+
+- 执行 `P5-CTX-02 - Related Files Recall And Ranking Split`
+- 将 `agent-context` 进一步拆分为更清晰的职责边界：
+  - `scanner.py`
+  - `ranking.py`
+  - `related.py`
+  - `compiler.py`
+- 新增 `ContextItemKind.RELATED_FILE`
+- `compile_context` 现在除了主排序文件外，还会基于本地 Python import 关系补充 related file context items
+- 新增测试：
+  - `tests/agent_context/test_compiler.py` 中的 related-file recall 场景
+- 本轮验证结果：
+  - `uv run pytest tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-context/src/agent_context tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy packages/agent-context/src/agent_context tests/agent_context/test_compiler.py` 通过
   - 每次 attempt 有独立 `started_at`
   - emitted events 和 terminal events 继续沿时钟推进
 - 新增测试：
