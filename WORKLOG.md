@@ -938,6 +938,27 @@
   - `uv run pytest` 通过，146 passed
   - `make check` 通过
 
+## 2026-06-22 Approval Service Entry
+
+- 执行 `P6-POL-08 - Approval Service Entry`
+- `agent-core.application` 新增：
+  - `ApprovalDecisionAction`
+  - `ApprovalDecisionCommand`
+  - `ApprovalDecisionService`
+- 当前行为：
+  - grant command 构造 `APPROVAL_GRANTED`
+  - reject command 构造 `APPROVAL_REJECTED`
+  - approval decision 必须基于 `WAITING_APPROVAL` session
+  - approval decision sequence 必须连续
+- 新增测试：
+  - `tests/agent_core/test_approval_decisions.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_approval_decisions.py tests/agent_core/test_session_projection.py tests/agent_core/test_sessions.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core/application packages/agent-core/src/agent_core/domain/sessions.py tests/agent_core/test_approval_decisions.py tests/agent_core/test_session_projection.py tests/agent_core/test_sessions.py` 通过
+  - `uv run mypy packages/agent-core/src/agent_core/application packages/agent-core/src/agent_core/domain/sessions.py tests/agent_core/test_approval_decisions.py tests/agent_core/test_session_projection.py tests/agent_core/test_sessions.py` 通过
+  - `uv run pytest` 通过，150 passed
+  - `make check` 通过
+
 ## 2026-06-22 Command Risk Rules
 
 - 执行 `P6-POL-02 - Command Risk Rules`

@@ -5,7 +5,7 @@
 - Active phase: `Phase 6 - Policy And Approvals Hardening`
 - Repository status: `phase 6 ready`
 - Current focus:
-  - define approval decision projection semantics
+  - add local approval decision service entry
   - keep security boundaries local-first and explicit before expanding remote/cloud services
 
 ## Completed
@@ -62,15 +62,16 @@
 - `P6-POL-05 - Approval Request Model`
 - `P6-POL-06 - Approval Event Wiring`
 - `P6-POL-07 - Approval Decision Projection`
+- `P6-POL-08 - Approval Service Entry`
 
 ## Current Focus
 
-- Phase 6 policy hardening has command/path/sensitive-output prechecks, approval request projection, approval event wiring, and approval decision projection
-- register the next direct slice around approval service entry or phase-6 closeout
+- Phase 6 policy hardening has command/path/sensitive-output prechecks, approval request projection, approval event wiring, approval decision projection, and a local approval service entry
+- register the next direct slice around phase-6 closeout or API approval adapters
 
 ## Next Unlocks
 
-- `P6-POL-07` is complete
+- `P6-POL-08` is complete
 - the next step is to register the next ready Phase 6 policy and approvals task card
 
 ## Active Documents

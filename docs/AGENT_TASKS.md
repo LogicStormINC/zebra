@@ -1330,3 +1330,30 @@ Define deterministic session projection semantics for approval grant and rejecti
 - [x] `APPROVAL_REJECTED` moves a waiting approval session to failed.
 - [x] approval decision event streams preserve current sequence.
 - [x] existing event contract and session tests remain compatible.
+
+### P6-POL-08 - Approval Service Entry
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE`
+- Depends on: `P6-POL-07`
+- Branch: `codex/p6-pol-08-approval-service-entry`
+- Owned paths: `packages/agent-core/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a local application service entry for approval decisions so API or worker layers can reuse one deterministic event-building path.
+
+#### Deliverables
+
+- `ApprovalDecisionAction`
+- `ApprovalDecisionCommand`
+- `ApprovalDecisionService`
+- tests covering grant, reject, non-waiting session rejection, and sequence validation
+
+#### Acceptance
+
+- [x] grant commands build `APPROVAL_GRANTED` events.
+- [x] reject commands build `APPROVAL_REJECTED` events.
+- [x] approval decisions require a `WAITING_APPROVAL` session.
+- [x] approval decision event sequence must follow the current session sequence.
