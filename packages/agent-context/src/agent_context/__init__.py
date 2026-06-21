@@ -1,5 +1,12 @@
 """Context package for Zebra Agent."""
 
+from agent_context.compaction import (
+    ConversationCompactionRequest,
+    ToolOutputCompactionRequest,
+    ToolOutputEvidence,
+    compact_conversation,
+    compact_tool_outputs,
+)
 from agent_context.compiler import compile_context
 from agent_context.models import (
     CompiledContext,
@@ -15,6 +22,9 @@ from agent_context.scanner import ScannedFile, build_repo_map_item, scan_workspa
 
 __all__ = [
     "CompiledContext",
+    "compact_conversation",
+    "compact_tool_outputs",
+    "ConversationCompactionRequest",
     "ContextBudget",
     "ContextCompileRequest",
     "ContextItem",
@@ -27,4 +37,6 @@ __all__ = [
     "recall_related_files",
     "scan_workspace_files",
     "score_file",
+    "ToolOutputCompactionRequest",
+    "ToolOutputEvidence",
 ]

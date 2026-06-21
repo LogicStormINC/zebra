@@ -876,3 +876,30 @@ Split the bootstrap compiler into smaller ranking and scanning modules, and add 
 - [x] The compiler can emit related-file items for directly matched Python files.
 - [x] Related-file items preserve provenance and participate in token-budget trimming.
 - [x] Tests cover at least one local import-driven related-file recall path.
+
+### P5-CTX-03 - Conversation And Tool Output Compaction
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CTX`
+- Depends on: `P5-CTX-02`
+- Branch: `codex/p5-ctx-03-context-compaction`
+- Owned paths: `packages/agent-context/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add the first typed compaction layer for session summaries and tool-output summaries so the context package can preserve the required operator state under a smaller token budget.
+
+#### Deliverables
+
+- conversation compaction request and output types
+- tool-output compaction request and output types
+- deterministic truncation behavior under token limits
+- tests for required summary sections and truncation
+
+#### Acceptance
+
+- [x] Conversation compaction preserves the required session summary sections.
+- [x] Tool-output compaction produces a compact, typed summary item.
+- [x] Both compaction paths respect a token budget.
+- [x] Tests cover section preservation, output summarization, and truncation behavior.

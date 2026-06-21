@@ -328,6 +328,30 @@
   - `uv run pytest tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-context/src/agent_context tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy packages/agent-context/src/agent_context tests/agent_context/test_compiler.py` 通过
+
+## 2026-06-22 Conversation And Tool Output Compaction
+
+- 执行 `P5-CTX-03 - Conversation And Tool Output Compaction`
+- 新增 `agent_context.compaction`：
+  - `ConversationCompactionRequest`
+  - `ToolOutputCompactionRequest`
+  - `ToolOutputEvidence`
+  - `compact_conversation`
+  - `compact_tool_outputs`
+- 新增 `ContextItemKind`：
+  - `CONVERSATION_SUMMARY`
+  - `TOOL_OUTPUT_SUMMARY`
+- 当前 compaction 行为：
+  - 保留用户目标、验收、约束、计划、修改文件、失败尝试、未解决测试、审批、artifact 等关键 section
+  - 对工具输出做结构化单行压缩
+  - 在 token budget 下做 deterministic truncation
+- 新增测试：
+  - `tests/agent_context/test_compaction.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-context/src/agent_context tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy packages/agent-context/src/agent_context tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
+  - `make check` 通过
   - 每次 attempt 有独立 `started_at`
   - emitted events 和 terminal events 继续沿时钟推进
 - 新增测试：

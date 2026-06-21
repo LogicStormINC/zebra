@@ -7,6 +7,8 @@ class ContextItemKind(StrEnum):
     REPO_MAP = "repo_map"
     FILE_SNIPPET = "file_snippet"
     RELATED_FILE = "related_file"
+    CONVERSATION_SUMMARY = "conversation_summary"
+    TOOL_OUTPUT_SUMMARY = "tool_output_summary"
 
 
 @dataclass(frozen=True)
