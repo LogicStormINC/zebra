@@ -92,6 +92,104 @@ def test_rebuild_session_rejects_non_contiguous_sequences() -> None:
         )
 
 
+def test_rebuild_session_applies_approval_granted_transition() -> None:
+    session_id = new_session_id()
+    created_at = datetime(2026, 6, 18, 10, 0, tzinfo=UTC)
+
+    session = rebuild_session(
+        [
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=0,
+                event_type=EventType.SESSION_CREATED,
+                actor=EventActor.SYSTEM,
+                payload={"title": "approval grant"},
+                created_at=created_at,
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=1,
+                event_type=EventType.TASK_PREPARED,
+                actor=EventActor.HARNESS,
+                created_at=created_at + timedelta(seconds=1),
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=2,
+                event_type=EventType.HARNESS_ATTEMPT_STARTED,
+                actor=EventActor.HARNESS,
+                created_at=created_at + timedelta(seconds=2),
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=3,
+                event_type=EventType.APPROVAL_REQUESTED,
+                actor=EventActor.POLICY,
+                created_at=created_at + timedelta(seconds=3),
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=4,
+                event_type=EventType.APPROVAL_GRANTED,
+                actor=EventActor.USER,
+                created_at=created_at + timedelta(seconds=4),
+            ),
+        ]
+    )
+
+    assert session.status is SessionStatus.RUNNING
+    assert session.current_sequence == 4
+
+
+def test_rebuild_session_applies_approval_rejected_transition() -> None:
+    session_id = new_session_id()
+    created_at = datetime(2026, 6, 18, 10, 0, tzinfo=UTC)
+
+    session = rebuild_session(
+        [
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=0,
+                event_type=EventType.SESSION_CREATED,
+                actor=EventActor.SYSTEM,
+                payload={"title": "approval reject"},
+                created_at=created_at,
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=1,
+                event_type=EventType.TASK_PREPARED,
+                actor=EventActor.HARNESS,
+                created_at=created_at + timedelta(seconds=1),
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=2,
+                event_type=EventType.HARNESS_ATTEMPT_STARTED,
+                actor=EventActor.HARNESS,
+                created_at=created_at + timedelta(seconds=2),
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=3,
+                event_type=EventType.APPROVAL_REQUESTED,
+                actor=EventActor.POLICY,
+                created_at=created_at + timedelta(seconds=3),
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=4,
+                event_type=EventType.APPROVAL_REJECTED,
+                actor=EventActor.USER,
+                created_at=created_at + timedelta(seconds=4),
+            ),
+        ]
+    )
+
+    assert session.status is SessionStatus.FAILED
+    assert session.current_sequence == 4
+
+
 def test_rebuild_session_requires_title_in_created_event() -> None:
     session_id = new_session_id()
     created_at = datetime(2026, 6, 18, 10, 0, tzinfo=UTC)

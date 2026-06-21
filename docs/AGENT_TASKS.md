@@ -1304,3 +1304,29 @@ Wire `REQUIRE_APPROVAL` policy decisions into explicit harness events so approva
 - [x] approval-required tool calls do not execute the tool gateway.
 - [x] attempt metadata records `policy_decision=require_approval`.
 - [x] session projection can handle the current approval-request-to-failed terminal path.
+
+### P6-POL-07 - Approval Decision Projection
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE`
+- Depends on: `P6-POL-06`
+- Branch: `codex/p6-pol-07-approval-decision-projection`
+- Owned paths: `packages/agent-core/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define deterministic session projection semantics for approval grant and rejection events before adding a service endpoint for approval decisions.
+
+#### Deliverables
+
+- `APPROVAL_REJECTED` projection to terminal failed state
+- tests covering approval-request-to-granted and approval-request-to-rejected event streams
+- progress and task registry updates for approval decision projection
+
+#### Acceptance
+
+- [x] `APPROVAL_GRANTED` moves a waiting approval session back to running.
+- [x] `APPROVAL_REJECTED` moves a waiting approval session to failed.
+- [x] approval decision event streams preserve current sequence.
+- [x] existing event contract and session tests remain compatible.

@@ -923,6 +923,21 @@
   - `uv run pytest` 通过，144 passed
   - `make check` 通过
 
+## 2026-06-22 Approval Decision Projection
+
+- 执行 `P6-POL-07 - Approval Decision Projection`
+- `SessionProjection` 现在支持：
+  - `APPROVAL_GRANTED` 将 waiting approval session 恢复为 running
+  - `APPROVAL_REJECTED` 将 waiting approval session 投影为 failed
+- 更新测试：
+  - `tests/agent_core/test_session_projection.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_session_projection.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_event_contracts.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core/application/session_projection.py tests/agent_core/test_session_projection.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_event_contracts.py` 通过
+  - `uv run mypy packages/agent-core/src/agent_core/application/session_projection.py tests/agent_core/test_session_projection.py tests/agent_core/test_sessions.py tests/agent_core/test_events.py tests/agent_core/test_event_contracts.py` 通过
+  - `uv run pytest` 通过，146 passed
+  - `make check` 通过
+
 ## 2026-06-22 Command Risk Rules
 
 - 执行 `P6-POL-02 - Command Risk Rules`
