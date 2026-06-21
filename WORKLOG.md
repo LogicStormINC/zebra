@@ -534,3 +534,21 @@
   - `uv run ruff check packages/agent-core/src/agent_core/domain/events.py tests/agent_core/test_events.py tests/agent_storage/test_sqlite_event_store.py` 通过
   - `uv run mypy packages/agent-core/src/agent_core/domain/events.py tests/agent_core/test_events.py` 通过
   - `make check` 通过
+
+## 2026-06-22 Incremental Event Replay
+
+- 执行 `P4-STO-03 - Incremental Event Replay`
+- `EventStorePort` 新增 `read_since(session_id, sequence)`
+- `SQLiteEventStore` 现在支持按 sequence 增量读取 session 事件
+- `SessionRecoveryService` 现在会优先读取已有 projection，并只回放其后的增量事件
+- 新增测试：
+  - `tests/agent_storage/test_sqlite_event_store.py`
+  - `tests/worker/test_recovery.py`
+- 覆盖场景：
+  - event-store delta reads
+  - projection-based resume with newer events
+- 本轮验证结果：
+  - `uv run pytest tests/agent_storage/test_sqlite_event_store.py tests/worker/test_recovery.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core/ports/event_store.py packages/agent-storage/src/agent_storage/sqlite.py apps/worker/src/zebra_agent_worker/recovery.py tests/agent_storage/test_sqlite_event_store.py tests/worker/test_recovery.py` 通过
+  - `uv run mypy packages/agent-core/src/agent_core/ports/event_store.py packages/agent-storage/src/agent_storage/sqlite.py apps/worker/src/zebra_agent_worker/recovery.py tests/agent_storage/test_sqlite_event_store.py tests/worker/test_recovery.py` 通过
+  - `make check` 通过

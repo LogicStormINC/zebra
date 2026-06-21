@@ -718,3 +718,29 @@ Move covered event payload schemas from passive documentation/testing into the a
 - [x] Covered events validate payloads during event creation.
 - [x] Invalid payloads fail before persistence.
 - [x] Uncovered events still pass through unchanged until their schema is defined.
+
+### P4-STO-03 - Incremental Event Replay
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P4-GOV-02`
+- Branch: `codex/p4-sto-03-incremental-replay`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `apps/worker/`, `tests/`
+
+#### Goal
+
+Let recovery paths resume from the latest stored projection by replaying only events after the last known sequence, instead of rebuilding every session from scratch.
+
+#### Deliverables
+
+- event store `read_since` contract
+- SQLite incremental event read implementation
+- recovery path that applies only delta events on top of a stored projection
+- tests for checkpointed replay
+
+#### Acceptance
+
+- [x] Event store can read only events after a given sequence.
+- [x] Recovery can resume from a stored projection and apply only newer events.
+- [x] Tests cover both event-store delta reads and projection-based resume.

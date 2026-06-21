@@ -39,15 +39,16 @@
 - `P4-WKR-02 - Worker Claim And Resume Flow`
 - `P4-GOV-01 - Core Event Schema Drafts`
 - `P4-GOV-02 - Event Schema Enforcement`
+- `P4-STO-03 - Incremental Event Replay`
 
 ## Current Focus
 
-- phase 4 control-plane groundwork after durable storage, recovery flow, event schema drafts, and schema enforcement
+- phase 4 control-plane groundwork after durable storage, schema enforcement, and incremental replay
 - choose the next direct task card between recovery worker entry, leases, and event schema formalization
 
 ## Next Unlocks
 
-- `P4-GOV-02` is complete
+- `P4-STO-03` is complete
 - the next step is to register the next recovery-oriented slice on top of the new storage package
 
 ## Active Documents

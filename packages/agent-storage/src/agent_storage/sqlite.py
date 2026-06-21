@@ -57,6 +57,9 @@ class SQLiteEventStore(EventStorePort):
         return event
 
     def list_for_session(self, session_id: SessionId) -> list[SessionEvent]:
+        return self.read_since(session_id, sequence=-1)
+
+    def read_since(self, session_id: SessionId, sequence: int) -> list[SessionEvent]:
         with self._database.connect() as connection:
             rows = connection.execute(
                 """
@@ -75,9 +78,10 @@ class SQLiteEventStore(EventStorePort):
                     model_profile
                 FROM session_events
                 WHERE session_id = ?
+                  AND sequence > ?
                 ORDER BY sequence ASC
                 """,
-                (str(session_id),),
+                (str(session_id), sequence),
             ).fetchall()
         return [deserialize_event_row(row) for row in rows]
 

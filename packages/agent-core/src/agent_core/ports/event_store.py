@@ -8,3 +8,9 @@ class EventStorePort(Protocol):
     def append(self, event: SessionEvent) -> SessionEvent: ...
 
     def list_for_session(self, session_id: SessionId) -> list[SessionEvent]: ...
+
+    def read_since(
+        self,
+        session_id: SessionId,
+        sequence: int,
+    ) -> list[SessionEvent]: ...

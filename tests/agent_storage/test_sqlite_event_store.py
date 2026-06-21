@@ -159,3 +159,38 @@ def test_sqlite_event_store_returns_existing_event_for_idempotent_retry(
     assert stored_event == first_event
     assert retried_event == first_event
     assert store.list_for_session(session_id) == [first_event]
+
+
+def test_sqlite_event_store_reads_only_events_after_sequence(tmp_path: Path) -> None:
+    store = SQLiteEventStore(tmp_path / "events.db")
+    session_id = new_session_id()
+    created_at = datetime(2026, 6, 19, 23, 20, tzinfo=UTC)
+    created_event = SessionEvent.create(
+        session_id=session_id,
+        sequence=0,
+        event_type=EventType.SESSION_CREATED,
+        actor=EventActor.SYSTEM,
+        payload={"title": "Delta Task"},
+        created_at=created_at,
+    )
+    prepared_event = SessionEvent.create(
+        session_id=session_id,
+        sequence=1,
+        event_type=EventType.TASK_PREPARED,
+        actor=EventActor.HARNESS,
+        payload={"title": "Delta Task", "user_input": "continue"},
+        created_at=created_at,
+    )
+    started_event = SessionEvent.create(
+        session_id=session_id,
+        sequence=2,
+        event_type=EventType.HARNESS_ATTEMPT_STARTED,
+        actor=EventActor.HARNESS,
+        payload={"attempt_number": 1},
+        created_at=created_at,
+    )
+    for event in (created_event, prepared_event, started_event):
+        store.append(event)
+
+    assert store.read_since(session_id, sequence=0) == [prepared_event, started_event]
+    assert store.read_since(session_id, sequence=1) == [started_event]
