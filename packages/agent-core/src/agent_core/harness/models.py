@@ -6,6 +6,7 @@ from typing import Any
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session
+from agent_core.ports.context_compiler import RuntimeEvidenceInput
 
 
 class HarnessAttemptOutcome(StrEnum):
@@ -31,6 +32,7 @@ class HarnessTask:
     max_tool_calls: int | None = None
     workspace_root: Path | None = None
     context_token_budget: int = 200
+    runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.title.strip():

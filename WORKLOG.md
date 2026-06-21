@@ -763,6 +763,27 @@
   - `uv run ruff check packages/agent-context/src/agent_context tests/agent_context/test_runtime_evidence.py tests/agent_context/test_adapter.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `uv run mypy packages/agent-context/src/agent_context tests/agent_context/test_runtime_evidence.py tests/agent_context/test_adapter.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
 
+## 2026-06-22 Attempt Evidence Feedback Loop
+
+- 执行 `P5-CTX-08 - Attempt Evidence Feedback Loop`
+- `agent-core` 新增：
+  - `RuntimeEvidenceInput`
+- `HarnessLoop` 现在支持：
+  - 从 prior attempt result 提取 conversation summary evidence
+  - 从 prior attempt result 提取 tool-output evidence
+  - 在 retry attempt 前把 evidence 填回 `HarnessTask.runtime_evidence`
+- `LocalContextCompiler` 现在支持：
+  - 接收抽象 runtime-evidence inputs
+  - 把它们压缩成 dynamic context items
+- 新增测试：
+  - `tests/agent_core/test_harness_runtime_evidence.py`
+  - `tests/agent_context/test_adapter.py` 中的 runtime-evidence 渲染场景
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
+  - `uv run mypy packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
+  - `make check` 通过
+
 ## 2026-06-22 Harness Context Input Wiring
 
 - 执行 `P5-CTX-06 - Harness Context Input Wiring`

@@ -1010,3 +1010,30 @@ Let the context compiler accept compacted runtime evidence so conversation summa
 - [x] Runtime evidence participates in normal token-budget trimming.
 - [x] Prompt layout routes runtime evidence into the dynamic section.
 - [x] Tests cover runtime-evidence inclusion and prompt-layout routing.
+
+### P5-CTX-08 - Attempt Evidence Feedback Loop
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CTX`
+- Depends on: `P5-CTX-07`
+- Branch: `codex/p5-ctx-08-attempt-evidence-feedback`
+- Owned paths: `packages/agent-core/`, `packages/agent-context/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Feed prior attempt evidence into later attempts by accumulating runtime evidence inside the harness loop and passing it through the abstract context-compiler port on retry attempts.
+
+#### Deliverables
+
+- core runtime-evidence input model
+- harness-loop accumulation of prior attempt summaries and tool-output evidence
+- local context adapter support for abstract runtime-evidence inputs
+- tests covering retry-time evidence propagation
+
+#### Acceptance
+
+- [x] Retry attempts receive prior attempt runtime evidence through the harness task shape.
+- [x] The context-compiler port can accept abstract runtime-evidence inputs.
+- [x] The local context adapter renders runtime-evidence inputs into dynamic context items.
+- [x] Tests cover retry-time evidence propagation and adapter rendering.

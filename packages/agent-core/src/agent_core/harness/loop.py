@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import datetime
 
 from agent_core.domain.events import EventActor, EventType
@@ -15,6 +16,7 @@ from agent_core.harness.recorder import HarnessEventRecorder
 from agent_core.harness.stopping import HarnessStoppingPolicy
 from agent_core.harness.timing import SystemClock
 from agent_core.ports.clock import ClockPort
+from agent_core.ports.context_compiler import RuntimeEvidenceInput
 
 AttemptRunner = Callable[[HarnessContext], HarnessAttemptResult]
 
@@ -65,10 +67,12 @@ class HarnessLoop:
         attempt_results: list[HarnessAttemptResult] = []
         model_calls_used = 0
         tool_calls_used = 0
+        runtime_evidence: list[RuntimeEvidenceInput] = []
 
         for attempt_number in range(1, task.max_attempts + 1):
             attempt_started_at = self._clock.now()
             attempt = HarnessAttempt(number=attempt_number, started_at=attempt_started_at)
+            attempt_task = replace(task, runtime_evidence=tuple(runtime_evidence))
             recorder.record(
                 event_type=EventType.HARNESS_ATTEMPT_STARTED,
                 actor=EventActor.HARNESS,
@@ -77,11 +81,12 @@ class HarnessLoop:
             )
 
             attempt_result = attempt_runner(
-                HarnessContext(task=task, session=recorder.session, attempt=attempt)
+                HarnessContext(task=attempt_task, session=recorder.session, attempt=attempt)
             )
             attempt_results.append(attempt_result)
             model_calls_used += int(attempt_result.metadata.get("model_calls_used", 1))
             tool_calls_used += int(attempt_result.metadata.get("tool_calls_executed", 0))
+            runtime_evidence.extend(_runtime_evidence_from_attempt_result(attempt_result))
             for draft in attempt_result.emitted_events:
                 recorder.record_draft(draft)
 
@@ -118,3 +123,53 @@ class HarnessLoop:
             )
 
         raise RuntimeError("harness loop exited without producing a terminal run result")
+
+
+def _runtime_evidence_from_attempt_result(
+    attempt_result: HarnessAttemptResult,
+) -> tuple[RuntimeEvidenceInput, ...]:
+    evidence: list[RuntimeEvidenceInput] = [
+        RuntimeEvidenceInput(
+            kind="conversation_summary",
+            summary=attempt_result.summary,
+            details=tuple(
+                detail
+                for detail in (
+                    _optional_string(attempt_result.metadata.get("plan_summary")),
+                    _optional_string(attempt_result.metadata.get("verification_summary")),
+                )
+                if detail is not None
+            ),
+        )
+    ]
+    tool_output = _optional_string(attempt_result.metadata.get("tool_output"))
+    tool_name = _optional_string(attempt_result.metadata.get("tool_name"))
+    if tool_output is not None and tool_name is not None:
+        artifact_uri = _artifact_uri_from_metadata(
+            attempt_result.metadata.get("tool_metadata")
+        )
+        evidence.append(
+            RuntimeEvidenceInput(
+                kind="tool_output_summary",
+                summary=f"{tool_name}: {tool_output}",
+                artifact_uri=artifact_uri,
+            )
+        )
+    return tuple(evidence)
+
+
+def _optional_string(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
+def _artifact_uri_from_metadata(value: object) -> str | None:
+    if not isinstance(value, dict):
+        return None
+    artifact_uri = value.get("artifact_uri")
+    if not isinstance(artifact_uri, str):
+        return None
+    stripped = artifact_uri.strip()
+    return stripped or None

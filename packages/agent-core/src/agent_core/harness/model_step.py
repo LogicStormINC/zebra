@@ -26,6 +26,7 @@ class HarnessModelStep:
                 task_input=task.user_input,
                 workspace_root=task.workspace_root,
                 max_tokens=task.context_token_budget,
+                runtime_evidence=task.runtime_evidence,
             )
             if system_prompt is not None:
                 messages.append(
