@@ -5,7 +5,7 @@
 - Active phase: `Phase 6 - Policy And Approvals Hardening`
 - Repository status: `phase 6 ready`
 - Current focus:
-  - model approval requests after sensitive-output policy rules
+  - wire approval-required policy decisions into explicit harness events
   - keep security boundaries local-first and explicit before expanding remote/cloud services
 
 ## Completed
@@ -60,15 +60,16 @@
 - `P6-POL-03 - Path Risk Rules`
 - `P6-POL-04 - Sensitive Output Rules`
 - `P6-POL-05 - Approval Request Model`
+- `P6-POL-06 - Approval Event Wiring`
 
 ## Current Focus
 
-- Phase 6 policy hardening has command/path/sensitive-output prechecks and approval request projection
-- register the next direct slice around approval event wiring or phase-6 closeout
+- Phase 6 policy hardening has command/path/sensitive-output prechecks, approval request projection, and approval event wiring
+- register the next direct slice around approval resume semantics or phase-6 closeout
 
 ## Next Unlocks
 
-- `P6-POL-05` is complete
+- `P6-POL-06` is complete
 - the next step is to register the next ready Phase 6 policy and approvals task card
 
 ## Active Documents

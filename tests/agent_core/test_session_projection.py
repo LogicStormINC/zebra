@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from agent_core.application.session_projection import SessionProjectionError, rebuild_session
+from agent_core.contracts import EventPayloadValidationError
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_session_id
 from agent_core.domain.sessions import SessionStatus
@@ -95,16 +96,12 @@ def test_rebuild_session_requires_title_in_created_event() -> None:
     session_id = new_session_id()
     created_at = datetime(2026, 6, 18, 10, 0, tzinfo=UTC)
 
-    with pytest.raises(SessionProjectionError, match="must include a title"):
-        rebuild_session(
-            [
-                SessionEvent.create(
-                    session_id=session_id,
-                    sequence=0,
-                    event_type=EventType.SESSION_CREATED,
-                    actor=EventActor.SYSTEM,
-                    payload={},
-                    created_at=created_at,
-                )
-            ]
+    with pytest.raises(EventPayloadValidationError, match="invalid payload"):
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=0,
+            event_type=EventType.SESSION_CREATED,
+            actor=EventActor.SYSTEM,
+            payload={},
+            created_at=created_at,
         )

@@ -126,9 +126,26 @@ class SingleAttemptOrchestrator:
             )
         )
         if decision.decision is not PolicyDecisionType.ALLOW:
+            if decision.decision is PolicyDecisionType.REQUIRE_APPROVAL:
+                emitted_events.append(
+                    HarnessEventDraft(
+                        event_type=EventType.APPROVAL_REQUESTED,
+                        actor=EventActor.POLICY,
+                        payload={
+                            "attempt_number": context.attempt.number,
+                            "reason": decision.reason,
+                            "policy_profile": decision.policy_profile,
+                            "tool_name": tool_call.name,
+                        },
+                    )
+                )
             return HarnessAttemptResult(
                 outcome=HarnessAttemptOutcome.FAILED,
-                summary="tool call blocked by policy",
+                summary=(
+                    "tool call requires approval"
+                    if decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+                    else "tool call blocked by policy"
+                ),
                 metadata={
                     "assistant_message": completion.assistant_message.content,
                     "model_calls_used": 1,

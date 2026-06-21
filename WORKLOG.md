@@ -904,6 +904,25 @@
   - `uv run mypy packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py` 通过
   - `make check` 通过
 
+## 2026-06-22 Approval Event Wiring
+
+- 执行 `P6-POL-06 - Approval Event Wiring`
+- `SingleAttemptOrchestrator` 现在支持：
+  - `REQUIRE_APPROVAL` policy decision 发出 `APPROVAL_REQUESTED`
+  - approval-required tool call 不执行 tool gateway
+  - attempt metadata 保留 `policy_decision=require_approval`
+- `Session` 状态机现在允许：
+  - 当前 local MVP 里的 `waiting_approval -> failed` terminal path
+- 更新测试：
+  - `tests/agent_core/test_single_attempt_orchestrator.py`
+  - `tests/agent_core/test_session_projection.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_session_projection.py tests/agent_core/test_harness_trace_projection.py tests/agent_core/test_harness_hooks.py tests/agent_core/test_domain_models.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_session_projection.py tests/agent_core/test_harness_trace_projection.py tests/agent_core/test_harness_hooks.py tests/agent_core/test_domain_models.py` 通过
+  - `uv run mypy packages/agent-core/src/agent_core tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_session_projection.py tests/agent_core/test_harness_trace_projection.py tests/agent_core/test_harness_hooks.py tests/agent_core/test_domain_models.py` 通过
+  - `uv run pytest` 通过，144 passed
+  - `make check` 通过
+
 ## 2026-06-22 Command Risk Rules
 
 - 执行 `P6-POL-02 - Command Risk Rules`

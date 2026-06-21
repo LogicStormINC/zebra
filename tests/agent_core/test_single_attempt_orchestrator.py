@@ -25,6 +25,15 @@ class AllowAllPolicyEngine:
         )
 
 
+class RequireApprovalPolicyEngine:
+    def evaluate_tool_call(self, _tool_call: ToolCall) -> PolicyDecision:
+        return PolicyDecision(
+            decision=PolicyDecisionType.REQUIRE_APPROVAL,
+            reason="manual approval required in test",
+            policy_profile="workspace_write",
+        )
+
+
 class StaticToolGateway:
     def __init__(self, result: ToolResult) -> None:
         self._result = result
@@ -159,6 +168,68 @@ def test_single_attempt_orchestrator_marks_failed_tool_execution() -> None:
     assert result.events[-3].event_type is EventType.TOOL_EXECUTION_FAILED
     assert result.events[-2].event_type is EventType.TESTS_COMPLETED
     assert result.events[-1].event_type is EventType.SESSION_FAILED
+
+
+def test_single_attempt_orchestrator_emits_approval_requested_event() -> None:
+    created_at = datetime(2026, 6, 19, 22, 8, tzinfo=UTC)
+    tool_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="command.run",
+        arguments={"command": ["python", "-m", "pytest"]},
+        created_at=created_at,
+    )
+    gateway = ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="I will run tests.",
+                        created_at=created_at,
+                    ),
+                    tool_calls=(tool_call,),
+                )
+            ),
+        )
+    )
+    tool_gateway = StaticToolGateway(
+        ToolResult(
+            tool_call_id=tool_call.tool_call_id,
+            status=ToolCallStatus.EXECUTED,
+        )
+    )
+    orchestrator = SingleAttemptOrchestrator(
+        gateway,
+        RequireApprovalPolicyEngine(),
+        tool_gateway,
+    )
+    loop = HarnessLoop()
+
+    result = loop.run(
+        HarnessTask(title="Run tests", user_input="Run pytest."),
+        orchestrator.run,
+        created_at=created_at,
+    )
+
+    assert result.attempt_result.summary == "tool call requires approval"
+    assert result.attempt_result.metadata["policy_decision"] == "require_approval"
+    assert result.session.status.value == "failed"
+    assert tool_gateway.executed_tool_call is None
+    approval_event = next(
+        event
+        for event in result.events
+        if event.event_type is EventType.APPROVAL_REQUESTED
+    )
+    assert approval_event.payload == {
+        "attempt_number": 1,
+        "reason": "manual approval required in test",
+        "policy_profile": "workspace_write",
+        "tool_name": "command.run",
+    }
+    assert EventType.TOOL_EXECUTION_STARTED not in [
+        event.event_type for event in result.events
+    ]
 
 
 def test_first_tool_call_selection_strategy_is_deterministic() -> None:

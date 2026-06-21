@@ -27,7 +27,11 @@ _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
         SessionStatus.FAILED,
         SessionStatus.CANCELLED,
     },
-    SessionStatus.WAITING_APPROVAL: {SessionStatus.RUNNING, SessionStatus.CANCELLED},
+    SessionStatus.WAITING_APPROVAL: {
+        SessionStatus.RUNNING,
+        SessionStatus.FAILED,
+        SessionStatus.CANCELLED,
+    },
     SessionStatus.SUSPENDED: {SessionStatus.READY, SessionStatus.CANCELLED},
     SessionStatus.COMPLETED: set(),
     SessionStatus.FAILED: set(),

@@ -1277,3 +1277,30 @@ Add a typed approval request projection so policy decisions that require approva
 - [x] approval requests include tool name, policy profile, reason, risk, and scope.
 - [x] sensitive transfer approvals are marked high risk.
 - [x] command approvals include executable and cwd scope when available.
+
+### P6-POL-06 - Approval Event Wiring
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE`
+- Depends on: `P6-POL-05`
+- Branch: `codex/p6-pol-06-approval-event-wiring`
+- Owned paths: `packages/agent-core/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Wire `REQUIRE_APPROVAL` policy decisions into explicit harness events so approval-needed tool calls are distinguishable from hard policy denial.
+
+#### Deliverables
+
+- `APPROVAL_REQUESTED` event emission in the single-attempt orchestrator
+- attempt summary and metadata that preserve `require_approval`
+- session transition support for the current local-MVP terminal approval path
+- tests covering approval event emission and no tool execution
+
+#### Acceptance
+
+- [x] `REQUIRE_APPROVAL` emits `APPROVAL_REQUESTED`.
+- [x] approval-required tool calls do not execute the tool gateway.
+- [x] attempt metadata records `policy_decision=require_approval`.
+- [x] session projection can handle the current approval-request-to-failed terminal path.
