@@ -744,3 +744,28 @@ Let recovery paths resume from the latest stored projection by replaying only ev
 - [x] Event store can read only events after a given sequence.
 - [x] Recovery can resume from a stored projection and apply only newer events.
 - [x] Tests cover both event-store delta reads and projection-based resume.
+
+### P4-WKR-03 - Explicit Resume Entry
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P4-STO-03`
+- Branch: `codex/p4-wkr-03-explicit-resume`
+- Owned paths: `apps/worker/`, `tests/`
+
+#### Goal
+
+Expose a single worker-facing resume entry that combines claim and recovery semantics and refuses to resume terminal sessions.
+
+#### Deliverables
+
+- worker resume service
+- terminal-session guard
+- tests for resumable vs terminal sessions
+
+#### Acceptance
+
+- [x] Worker can resume a running session through one entrypoint.
+- [x] Terminal sessions are rejected deterministically.
+- [x] Rejected terminal resumes do not leave dangling leases.

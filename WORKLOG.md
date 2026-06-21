@@ -552,3 +552,25 @@
   - `uv run ruff check packages/agent-core/src/agent_core/ports/event_store.py packages/agent-storage/src/agent_storage/sqlite.py apps/worker/src/zebra_agent_worker/recovery.py tests/agent_storage/test_sqlite_event_store.py tests/worker/test_recovery.py` 通过
   - `uv run mypy packages/agent-core/src/agent_core/ports/event_store.py packages/agent-storage/src/agent_storage/sqlite.py apps/worker/src/zebra_agent_worker/recovery.py tests/agent_storage/test_sqlite_event_store.py tests/worker/test_recovery.py` 通过
   - `make check` 通过
+
+## 2026-06-22 Explicit Resume Entry
+
+- 执行 `P4-WKR-03 - Explicit Resume Entry`
+- `apps/worker` 新增：
+  - `SessionResumeService`
+  - `ResumedSession`
+  - `SessionResumeError`
+- 当前行为：
+  - worker 可以通过单个 resume entry 完成 claim + recovery
+  - terminal session 会被明确拒绝
+  - terminal resume 失败后不会遗留 lease
+- 新增测试：
+  - `tests/worker/test_resume.py`
+- 覆盖场景：
+  - resume running session
+  - reject terminal session without dangling lease
+- 本轮验证结果：
+  - `uv run pytest tests/worker/test_resume.py tests/worker/test_claims.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check apps/worker/src/zebra_agent_worker tests/worker tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy apps/worker/src/zebra_agent_worker tests/worker` 通过
+  - `make check` 通过
