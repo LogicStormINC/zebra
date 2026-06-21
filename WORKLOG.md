@@ -851,6 +851,22 @@
   - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py` 通过
   - `make check` 通过
+  - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py` 通过
+  - `make check` 通过
+
+## 2026-06-22 Command Risk Rules
+
+- 执行 `P6-POL-02 - Command Risk Rules`
+- `LocalPolicyEngine` 现在支持：
+  - `command.run` 参数级风险判断
+  - shell interpreter execution 进入 approval
+  - shell metacharacter usage 进入 approval
+  - malformed command arguments 进入 approval
+- 更新测试：
+  - `tests/agent_security/test_policy_profiles.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_security/test_policy_profiles.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `uv run mypy packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `make check` 通过

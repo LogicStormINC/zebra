@@ -1172,3 +1172,29 @@ Replace the security package bootstrap placeholder with deterministic local poli
 - [x] `full_access` allows known local tools.
 - [x] unknown tools are denied for all profiles.
 - [x] existing bootstrap smoke import remains compatible.
+
+### P6-POL-02 - Command Risk Rules
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SEC`
+- Depends on: `P6-POL-01`
+- Branch: `codex/p6-pol-02-command-risk-rules`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `tests/smoke/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add parameter-aware command risk rules so `command.run` is not allowed solely by tool name when its arguments indicate shell execution or shell-injection risk.
+
+#### Deliverables
+
+- command argument inspection in `LocalPolicyEngine`
+- approval decisions for shell interpreters, shell metacharacters, and malformed command arguments
+- tests covering safe command allow and high-risk command approval
+
+#### Acceptance
+
+- [x] `full_access` allows typed safe command arrays.
+- [x] shell interpreter commands require approval.
+- [x] commands containing shell metacharacters require approval.
+- [x] malformed command arguments require approval.

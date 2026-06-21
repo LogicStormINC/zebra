@@ -6,11 +6,11 @@ from agent_core.domain.tools import ToolCall
 from agent_security import LocalPolicyEngine, PolicyProfile, policy_profile
 
 
-def _tool_call(name: str) -> ToolCall:
+def _tool_call(name: str, arguments: dict[str, object] | None = None) -> ToolCall:
     return ToolCall(
         tool_call_id=new_tool_call_id(),
         name=name,
-        arguments={},
+        arguments=arguments or {},
         created_at=datetime(2026, 6, 22, 15, 0, tzinfo=UTC),
     )
 
@@ -50,12 +50,45 @@ def test_workspace_write_profile_allows_patch_and_requires_command_approval() ->
 def test_full_access_profile_allows_known_local_tools() -> None:
     engine = LocalPolicyEngine(profile=PolicyProfile.FULL_ACCESS)
 
-    assert engine.evaluate_tool_call(_tool_call("command.run")).decision is (
-        PolicyDecisionType.ALLOW
-    )
+    assert engine.evaluate_tool_call(
+        _tool_call("command.run", {"command": ["python", "-m", "pytest"]})
+    ).decision is PolicyDecisionType.ALLOW
     assert engine.evaluate_tool_call(_tool_call("tests.run")).policy_profile == (
         "full_access"
     )
+
+
+def test_full_access_profile_requires_approval_for_shell_interpreter_command() -> None:
+    engine = LocalPolicyEngine(profile=PolicyProfile.FULL_ACCESS)
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("command.run", {"command": ["sh", "-c", "echo ok"]})
+    )
+
+    assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+    assert "shell interpreter" in decision.reason
+
+
+def test_full_access_profile_requires_approval_for_shell_metacharacters() -> None:
+    engine = LocalPolicyEngine(profile=PolicyProfile.FULL_ACCESS)
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("command.run", {"command": ["python", "-c", "print(1); print(2)"]})
+    )
+
+    assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+    assert "shell metacharacter" in decision.reason
+
+
+def test_full_access_profile_requires_approval_for_malformed_command() -> None:
+    engine = LocalPolicyEngine(profile=PolicyProfile.FULL_ACCESS)
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("command.run", {"command": "python -m pytest"})
+    )
+
+    assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+    assert "malformed" in decision.reason
 
 
 def test_unknown_tool_is_denied_for_all_profiles() -> None:
