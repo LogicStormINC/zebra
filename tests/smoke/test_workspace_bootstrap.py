@@ -1,4 +1,6 @@
-from agent_context.compiler import compile_context
+from pathlib import Path
+
+from agent_context import ContextBudget, ContextCompileRequest, compile_context
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.runtime import RuntimeExecutionRequest
 from agent_runtime import LocalRuntime, LocalWorkspace
@@ -24,7 +26,15 @@ from zebra_agent_worker import (
 
 def test_workspace_packages_import() -> None:
     assert SessionStatus.CREATED.value == "created"
-    assert compile_context() == "context-bootstrap"
+    compiled = compile_context(
+        ContextCompileRequest(
+            task_input="bootstrap context",
+            workspace_root=Path.cwd().resolve(),
+            budget=ContextBudget(max_tokens=80),
+        )
+    )
+    assert compiled.items
+    assert compiled.total_tokens <= 80
     assert ToolRegistry is not None
     assert ToolExecutor is not None
     assert LocalWorkspace is not None

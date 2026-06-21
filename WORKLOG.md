@@ -286,6 +286,31 @@
   - `uv run ruff check packages/agent-core/src/agent_core packages/agent-storage/src/agent_storage apps/worker/src/zebra_agent_worker tests/agent_core/test_single_attempt_orchestrator.py tests/agent_storage/test_sqlite_model_calls.py tests/worker/test_model_call_index.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy packages/agent-core/src/agent_core packages/agent-storage/src/agent_storage apps/worker/src/zebra_agent_worker tests/agent_storage/test_sqlite_model_calls.py tests/worker/test_model_call_index.py` 通过
   - `make check` 通过
+
+## 2026-06-22 Context Compiler Bootstrap
+
+- 执行 `P5-CTX-01 - Context Compiler Bootstrap`
+- 将 `agent-context` 从占位返回值升级为最小可用的 deterministic compiler：
+  - `ContextItemKind`
+  - `ContextProvenance`
+  - `ContextItem`
+  - `ContextBudget`
+  - `ContextCompileRequest`
+  - `CompiledContext`
+- `compile_context` 现在支持：
+  - workspace 扫描
+  - root/doc 文件优先
+  - 基于任务词和路径的基础打分
+  - repo map 引导项
+  - token budget 裁剪与 `truncated` 标记
+- 新增测试：
+  - `tests/agent_context/test_compiler.py`
+  - `tests/smoke/test_workspace_bootstrap.py` 中的真实编译路径断言
+- 本轮验证结果：
+  - `uv run pytest tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-context/src/agent_context tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy packages/agent-context/src/agent_context tests/agent_context/test_compiler.py` 通过
+  - `make check` 通过
   - 每次 attempt 有独立 `started_at`
   - emitted events 和 terminal events 继续沿时钟推进
 - 新增测试：

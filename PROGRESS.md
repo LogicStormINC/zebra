@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 4 - Control Plane And Recovery`
-- Repository status: `phase 4 in progress`
+- Active phase: `Phase 5 - Context Compiler`
+- Repository status: `phase 5 in progress`
 - Current focus:
-  - finish the remaining phase 4 control-plane foundations on top of durable events, replay, and indexes
-  - keep the harness contracts stable while adding storage-backed control-plane query surfaces
+  - replace the `agent-context` bootstrap stub with typed, deterministic context compilation slices
+  - keep context work local-first and task-focused before adding compaction, cache keys, or injection analysis
 
 ## Completed
 
@@ -43,16 +43,17 @@
 - `P4-WKR-03 - Explicit Resume Entry`
 - `P4-STO-04 - Tool Run Index`
 - `P4-STO-05 - Model Call Index`
+- `P5-CTX-01 - Context Compiler Bootstrap`
 
 ## Current Focus
 
-- phase 4 control-plane groundwork after durable storage, resume flow, tool-run indexing, and model-call indexing
-- register the next direct slice either as a remaining phase 4 control-plane surface or the first phase 5 context-compiler task card
+- phase 5 context compiler groundwork after the durable control-plane baseline
+- register the next direct slice around related-files recall, conversation compaction, or prompt layout/cache-key rules
 
 ## Next Unlocks
 
-- `P4-STO-05` is complete
-- the next step is to register the next ready task card before more implementation starts
+- `P5-CTX-01` is complete
+- the next step is to register the next ready context-compiler task card before more implementation starts
 
 ## Active Documents
 

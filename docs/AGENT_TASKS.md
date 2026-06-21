@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 4 in progress; durable storage, recovery, and control-plane indexes are landing from `实施任务拆解与阶段验收.md`.
+> Current execution range: Phase 5 in progress; context-compiler MVP is landing on top of the completed durable control-plane baseline from `实施任务拆解与阶段验收.md`.
 
 ## Global Rules
 
@@ -820,3 +820,32 @@ Expose a durable model-call index so control-plane queries can inspect provider,
 - [x] Model call records can be upserted and queried by session.
 - [x] `MODEL_RESPONSE_RECEIVED` events carry enough metadata to index provider, model, usage, latency, cache, and cost fields.
 - [x] Tests cover storage upsert, harness event emission, and worker-side indexing behavior.
+
+## Phase 5 Task Board
+
+### P5-CTX-01 - Context Compiler Bootstrap
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CTX`
+- Depends on: `P4-STO-05`
+- Branch: `codex/p5-ctx-01-context-bootstrap`
+- Owned paths: `packages/agent-context/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Replace the `agent-context` placeholder with the first deterministic context compiler slice that can scan a workspace, emit typed context items with provenance, and trim the result to a token budget.
+
+#### Deliverables
+
+- typed context item, provenance, request, and budget models
+- deterministic workspace scan and repo-map bootstrap
+- basic ranking for key files and task-related files
+- token-budget trimming behavior with tests
+
+#### Acceptance
+
+- [x] Given a task input and workspace root, the compiler returns a stable ordered list of context items.
+- [x] Every context item exposes provenance information.
+- [x] The compiler enforces a token budget and reports truncation.
+- [x] Tests cover ranking/provenance behavior and budget trimming.

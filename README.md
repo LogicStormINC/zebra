@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-The repository is in `Phase 4 - Control Plane And Recovery`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, and the control-plane foundation now includes durable session events, replayable projections, worker leases, recovery and resume flows, plus tool-run and model-call indexes.
+The repository is in `Phase 5 - Context Compiler`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, the control-plane foundation includes durable session events and recovery/indexing primitives, and the mainline now includes the first typed workspace context compiler with provenance and token-budget trimming.
 
 Read in this order:
 
