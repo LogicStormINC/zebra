@@ -5,7 +5,7 @@
 - Active phase: `Phase 6 - Policy And Approvals Hardening`
 - Repository status: `phase 6 ready`
 - Current focus:
-  - begin hardening policy and approvals after the Phase 5 context compiler closeout
+  - establish deterministic local policy profiles after the Phase 5 context compiler closeout
   - keep security boundaries local-first and explicit before expanding remote/cloud services
 
 ## Completed
@@ -55,16 +55,17 @@
 - `P5-CTX-10 - Context-Aware Retry Plan Hint`
 - `P5-CTX-11 - Context Compiler Acceptance Hardening`
 - `P5-CTX-12 - Phase 5 Closeout Record`
+- `P6-POL-01 - Local Policy Profiles`
 
 ## Current Focus
 
-- Phase 5 context compiler is closed out for local MVP scope
-- register the first Phase 6 policy-hardening task card before more implementation starts
+- Phase 6 policy hardening has started with local deterministic policy profiles
+- register the next direct slice around command/path/security rule hardening
 
 ## Next Unlocks
 
-- `P5-CTX-12` is complete
-- the next step is to register the first ready Phase 6 policy and approvals task card
+- `P6-POL-01` is complete
+- the next step is to register the next ready Phase 6 policy and approvals task card
 
 ## Active Documents
 

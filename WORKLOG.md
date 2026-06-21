@@ -832,6 +832,25 @@
   - `uv run ruff check packages/agent-context/src/agent_context packages/agent-core/src/agent_core/ports/context_compiler.py packages/agent-core/src/agent_core/harness/model_step.py packages/agent-core/src/agent_core/harness/loop.py packages/agent-core/src/agent_core/harness/retry_plan.py tests/agent_context tests/agent_core/test_harness_model_step.py tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_retry_plan.py` 通过
   - `uv run mypy packages/agent-context/src/agent_context packages/agent-core/src/agent_core/ports/context_compiler.py packages/agent-core/src/agent_core/harness/model_step.py packages/agent-core/src/agent_core/harness/loop.py packages/agent-core/src/agent_core/harness/retry_plan.py tests/agent_context tests/agent_core/test_harness_model_step.py tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_retry_plan.py` 通过
   - `make check` 通过
+
+## 2026-06-22 Local Policy Profiles
+
+- 执行 `P6-POL-01 - Local Policy Profiles`
+- `agent-security` 新增：
+  - `PolicyProfile`
+  - `LocalPolicyEngine`
+- 当前行为：
+  - `read_only` 允许 `files.read`、`git.status`
+  - `workspace_write` 允许 `patch.apply`、`tests.run`，但 `command.run` 进入 approval
+  - `full_access` 允许已知本地工具
+  - 未知工具在所有 profile 下拒绝
+- 新增测试：
+  - `tests/agent_security/test_policy_profiles.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_security/test_policy_profiles.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py` 通过
+  - `make check` 通过
   - `uv run ruff check packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `uv run mypy packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `make check` 通过

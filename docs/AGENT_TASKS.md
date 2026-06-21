@@ -1142,3 +1142,33 @@ Close Phase 5 by recording the context-compiler acceptance evidence, known defer
 - [x] Validation commands and results are recorded.
 - [x] Known deferrals are explicit.
 - [x] `PROGRESS.md` identifies Phase 6 as the next active implementation phase.
+
+## Phase 6 Task Board
+
+### P6-POL-01 - Local Policy Profiles
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SEC`
+- Depends on: `P5-CTX-12`
+- Branch: `codex/p6-pol-01-policy-profiles`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `tests/smoke/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Replace the security package bootstrap placeholder with deterministic local policy profiles for read-only, workspace-write, and full-access tool-call decisions.
+
+#### Deliverables
+
+- `PolicyProfile` values for `read_only`, `workspace_write`, and `full_access`
+- `LocalPolicyEngine` implementing the core `PolicyEnginePort` shape
+- profile rules for readonly tools, workspace write tools, command approval, full-access known tools, and unknown-tool denial
+- tests covering profile decisions and bootstrap compatibility
+
+#### Acceptance
+
+- [x] `read_only` allows readonly tools and denies write/command tools.
+- [x] `workspace_write` allows patch/test tools and requires approval for generic command execution.
+- [x] `full_access` allows known local tools.
+- [x] unknown tools are denied for all profiles.
+- [x] existing bootstrap smoke import remains compatible.
