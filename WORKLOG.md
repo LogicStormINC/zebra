@@ -780,6 +780,27 @@
   - `tests/agent_context/test_adapter.py` 中的 runtime-evidence 渲染场景
 - 本轮验证结果：
   - `uv run pytest tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
+
+## 2026-06-22 Context-Aware Retry Plan Hint
+
+- 执行 `P5-CTX-10 - Context-Aware Retry Plan Hint`
+- `agent-core` 新增：
+  - `RetryPlanHint`
+  - `build_retry_plan_hint`
+- 默认 `NoopPlanner` 现在支持：
+  - 在 retry attempt 存在 runtime evidence 时生成 deterministic retry summary
+  - 在 planner metadata 中暴露 retry focus、retry blockers、accepted constraints、prior tool outputs
+- 当前行为：
+  - `planner_summary` 会成为 retry focus
+  - failed `verifier_summary` 与 failed `tool_status` 会成为 retry blockers
+  - passed `verifier_summary` 会成为 accepted constraints
+- 新增测试：
+  - `tests/agent_core/test_harness_retry_plan.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_harness_retry_plan.py tests/agent_core/test_harness_hooks.py tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_harness_multi_attempt.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core/test_harness_retry_plan.py tests/agent_core/test_harness_hooks.py tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_harness_multi_attempt.py` 通过
+  - `uv run mypy packages/agent-core/src/agent_core tests/agent_core/test_harness_retry_plan.py tests/agent_core/test_harness_hooks.py tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_harness_multi_attempt.py` 通过
+  - `make check` 通过
   - `uv run ruff check packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `uv run mypy packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `make check` 通过

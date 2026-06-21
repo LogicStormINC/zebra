@@ -25,6 +25,7 @@ from agent_core.harness.models import (
 from agent_core.harness.orchestrator import SingleAttemptOrchestrator
 from agent_core.harness.projection import HarnessTraceProjector
 from agent_core.harness.recorder import HarnessEventRecorder
+from agent_core.harness.retry_plan import RetryPlanHint, build_retry_plan_hint
 from agent_core.harness.selection import (
     FirstToolCallSelectionStrategy,
     ToolCallSelection,
@@ -49,6 +50,7 @@ __all__ = [
     "NoopVerifier",
     "PlannerHook",
     "PlannerResult",
+    "RetryPlanHint",
     "HarnessRunResult",
     "HarnessRunTrace",
     "HarnessStopReason",
@@ -63,4 +65,5 @@ __all__ = [
     "ToolCallSelectionStrategy",
     "VerifierHook",
     "VerifierResult",
+    "build_retry_plan_hint",
 ]

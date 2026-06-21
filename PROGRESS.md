@@ -6,7 +6,7 @@
 - Repository status: `phase 5 in progress`
 - Current focus:
   - replace the `agent-context` bootstrap stub with typed, deterministic context compilation slices
-  - keep context work local-first while preserving structured retry-attempt evidence across planning and verification signals
+  - keep context work local-first while feeding structured retry-attempt evidence back into deterministic planning hints
 
 ## Completed
 
@@ -52,15 +52,16 @@
 - `P5-CTX-07 - Runtime Evidence Context Injection`
 - `P5-CTX-08 - Attempt Evidence Feedback Loop`
 - `P5-CTX-09 - Structured Planner And Verifier Evidence`
+- `P5-CTX-10 - Context-Aware Retry Plan Hint`
 
 ## Current Focus
 
-- phase 5 context compiler groundwork after structured retry-attempt evidence
-- register the next direct slice around richer retrieval signals or context-aware attempt planning
+- phase 5 context compiler groundwork after context-aware retry plan hints
+- register the next direct slice around richer retrieval signals or context compiler acceptance hardening
 
 ## Next Unlocks
 
-- `P5-CTX-09` is complete
+- `P5-CTX-10` is complete
 - the next step is to register the next ready context-compiler task card before more implementation starts
 
 ## Active Documents

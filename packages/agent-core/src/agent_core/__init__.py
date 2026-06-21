@@ -27,6 +27,7 @@ from agent_core.harness import (
     NoopVerifier,
     PlannerHook,
     PlannerResult,
+    RetryPlanHint,
     SingleAttemptOrchestrator,
     StepClock,
     SystemClock,
@@ -34,6 +35,7 @@ from agent_core.harness import (
     ToolCallSelectionStrategy,
     VerifierHook,
     VerifierResult,
+    build_retry_plan_hint,
 )
 
 __all__ = [
@@ -52,6 +54,7 @@ __all__ = [
     "NoopVerifier",
     "PlannerHook",
     "PlannerResult",
+    "RetryPlanHint",
     "HarnessRunResult",
     "HarnessRunTrace",
     "HarnessStopReason",
@@ -69,6 +72,7 @@ __all__ = [
     "ToolRunRecord",
     "VerifierHook",
     "VerifierResult",
+    "build_retry_plan_hint",
     "ModelCompletion",
     "ModelUsage",
     "ScriptedModelGateway",

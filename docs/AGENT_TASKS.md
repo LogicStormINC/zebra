@@ -1064,3 +1064,29 @@ Promote planner, verifier, and tool-status outputs from opaque conversation-summ
 - [x] Prior-attempt verifier results are carried as `verifier_summary` runtime evidence with pass/fail metadata.
 - [x] Tool status and tool output remain separate runtime evidence kinds.
 - [x] The local context adapter renders planner summaries and verifier failures into retry context.
+
+### P5-CTX-10 - Context-Aware Retry Plan Hint
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE`
+- Depends on: `P5-CTX-09`
+- Branch: `codex/p5-ctx-10-context-aware-retry-plan`
+- Owned paths: `packages/agent-core/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a deterministic core retry-planning projection that turns structured runtime evidence into planner-facing guidance without introducing infrastructure dependencies or coupling `agent-core` to `agent-context`.
+
+#### Deliverables
+
+- retry-plan hint model and builder in `agent-core`
+- default planner behavior that uses retry hints when prior runtime evidence exists
+- tests covering evidence grouping and default planner retry metadata
+
+#### Acceptance
+
+- [x] Planner summaries become retry focus signals.
+- [x] Failed verifier summaries and failed tool statuses become retry blockers.
+- [x] Passed verifier summaries become accepted constraints.
+- [x] Default planner metadata exposes retry focus, blockers, accepted constraints, and prior tool outputs.

@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Protocol
 
 from agent_core.harness.models import HarnessContext
+from agent_core.harness.retry_plan import build_retry_plan_hint
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,18 @@ class VerifierHook(Protocol):
 @dataclass(frozen=True)
 class NoopPlanner:
     def plan(self, context: HarnessContext) -> PlannerResult:
+        if context.task.runtime_evidence:
+            retry_hint = build_retry_plan_hint(context.task.runtime_evidence)
+            return PlannerResult(
+                summary=retry_hint.summary,
+                metadata={
+                    "attempt_number": context.attempt.number,
+                    "accepted_constraints": retry_hint.accepted_constraints,
+                    "prior_tool_outputs": retry_hint.prior_tool_outputs,
+                    "retry_blockers": retry_hint.blockers,
+                    "retry_focus": retry_hint.focus,
+                },
+            )
         return PlannerResult(
             summary="planner hook skipped",
             metadata={"attempt_number": context.attempt.number},
