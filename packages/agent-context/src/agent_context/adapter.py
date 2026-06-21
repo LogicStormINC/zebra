@@ -42,13 +42,32 @@ def _compact_runtime_evidence(
     runtime_evidence: tuple[RuntimeEvidenceInput, ...],
 ) -> tuple[ContextItem, ...]:
     items: list[ContextItem] = []
+    planner_summaries = tuple(
+        evidence.summary
+        for evidence in runtime_evidence
+        if evidence.kind == "planner_summary"
+    )
+    verifier_failures = tuple(
+        evidence.summary
+        for evidence in runtime_evidence
+        if evidence.kind == "verifier_summary"
+        and not bool((evidence.metadata or {}).get("passed"))
+    )
+    verifier_acceptance = tuple(
+        evidence.summary
+        for evidence in runtime_evidence
+        if evidence.kind == "verifier_summary"
+        and bool((evidence.metadata or {}).get("passed"))
+    )
     for evidence in runtime_evidence:
         if evidence.kind == "conversation_summary":
             items.append(
                 compact_conversation(
                     ConversationCompactionRequest(
                         user_goal=evidence.summary,
-                        current_plan=evidence.details,
+                        acceptance_criteria=verifier_acceptance,
+                        current_plan=evidence.details + planner_summaries,
+                        unresolved_tests=verifier_failures,
                         max_tokens=120,
                     )
                 )

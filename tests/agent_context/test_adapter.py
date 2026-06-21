@@ -38,9 +38,20 @@ def test_local_context_compiler_renders_runtime_evidence_in_dynamic_section(
                 summary="Retry after test failure.",
                 details=("inspect logs",),
             ),
+            RuntimeEvidenceInput(
+                kind="planner_summary",
+                summary="Run targeted smoke tests.",
+            ),
+            RuntimeEvidenceInput(
+                kind="verifier_summary",
+                summary="Smoke tests are still failing.",
+                metadata={"passed": False},
+            ),
         ),
     )
 
     assert prompt is not None
     assert "Dynamic Context:" in prompt
     assert "Conversation Summary" in prompt
+    assert "Run targeted smoke tests." in prompt
+    assert "Smoke tests are still failing." in prompt

@@ -63,9 +63,14 @@ def test_retry_attempt_receives_prior_runtime_evidence(tmp_path: Path) -> None:
                 summary="first attempt failed",
                 metadata={
                     "plan_summary": "inspect failing path",
+                    "plan_metadata": {"source": "planner"},
                     "tool_name": "tests.run",
+                    "tool_status": "failed",
                     "tool_output": "2 failed",
                     "tool_metadata": {"artifact_uri": "artifact://tests/1"},
+                    "verification_summary": "smoke tests failed",
+                    "verification_passed": False,
+                    "verification_metadata": {"suite": "smoke"},
                     "tool_calls_executed": 1,
                     "model_calls_used": 1,
                 },
@@ -92,6 +97,12 @@ def test_retry_attempt_receives_prior_runtime_evidence(tmp_path: Path) -> None:
         created_at=datetime(2026, 6, 22, 12, 55, tzinfo=UTC),
     )
 
-    assert seen_evidence_sizes == [0, 2]
+    assert seen_evidence_sizes == [0, 5]
     assert len(compiler.calls) == 1
-    assert len(compiler.calls[0]) == 2
+    assert [evidence.kind for evidence in compiler.calls[0]] == [
+        "conversation_summary",
+        "planner_summary",
+        "verifier_summary",
+        "tool_status",
+        "tool_output_summary",
+    ]

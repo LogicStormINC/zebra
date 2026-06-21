@@ -783,6 +783,9 @@
   - `uv run ruff check packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `uv run mypy packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `make check` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
+  - `uv run mypy packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
+  - `make check` 通过
 
 ## 2026-06-22 Harness Context Input Wiring
 
@@ -804,3 +807,22 @@
   - `uv run ruff check packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_compiler.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_model_step.py tests/agent_context/test_adapter.py tests/agent_context/test_compiler.py` 通过
   - `make check` 通过
+
+## 2026-06-22 Structured Planner And Verifier Evidence
+
+- 执行 `P5-CTX-09 - Structured Planner And Verifier Evidence`
+- `RuntimeEvidenceInput` 新增：
+  - `metadata`
+- `HarnessLoop` 现在支持：
+  - 把 prior attempt 的 planner summary 提取为 `planner_summary`
+  - 把 prior attempt 的 verifier result 提取为带 pass/fail metadata 的 `verifier_summary`
+  - 把 tool status 与 tool output 分别保留为结构化 evidence
+- `LocalContextCompiler` 现在支持：
+  - 把 planner summaries 合并进 conversation compaction 的 current plan
+  - 把 failed verifier summaries 合并进 unresolved tests
+  - 把 passed verifier summaries 合并进 acceptance criteria
+- 更新测试：
+  - `tests/agent_core/test_harness_runtime_evidence.py`
+  - `tests/agent_context/test_adapter.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过

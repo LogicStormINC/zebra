@@ -8,6 +8,7 @@ class RuntimeEvidenceInput:
     kind: str
     summary: str
     details: tuple[str, ...] = ()
+    metadata: dict[str, object] | None = None
     artifact_uri: str | None = None
 
     def __post_init__(self) -> None:

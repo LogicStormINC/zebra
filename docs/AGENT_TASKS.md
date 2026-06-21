@@ -1037,3 +1037,30 @@ Feed prior attempt evidence into later attempts by accumulating runtime evidence
 - [x] The context-compiler port can accept abstract runtime-evidence inputs.
 - [x] The local context adapter renders runtime-evidence inputs into dynamic context items.
 - [x] Tests cover retry-time evidence propagation and adapter rendering.
+
+### P5-CTX-09 - Structured Planner And Verifier Evidence
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P5-CTX-08`
+- Branch: `codex/p5-ctx-09-structured-evidence`
+- Owned paths: `packages/agent-core/`, `packages/agent-context/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Promote planner, verifier, and tool-status outputs from opaque conversation-summary details into structured runtime evidence so retry attempts can distinguish planning signals from verification failures and tool-output artifacts.
+
+#### Deliverables
+
+- runtime-evidence metadata on the core context-compiler input contract
+- harness extraction of planner, verifier, tool-status, and tool-output evidence as distinct evidence kinds
+- local context adapter mapping that folds planner summaries and verifier outcomes into conversation compaction fields
+- tests covering structured evidence propagation and rendered retry context
+
+#### Acceptance
+
+- [x] Prior-attempt planner summaries are carried as `planner_summary` runtime evidence.
+- [x] Prior-attempt verifier results are carried as `verifier_summary` runtime evidence with pass/fail metadata.
+- [x] Tool status and tool output remain separate runtime evidence kinds.
+- [x] The local context adapter renders planner summaries and verifier failures into retry context.

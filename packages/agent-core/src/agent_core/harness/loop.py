@@ -132,16 +132,41 @@ def _runtime_evidence_from_attempt_result(
         RuntimeEvidenceInput(
             kind="conversation_summary",
             summary=attempt_result.summary,
-            details=tuple(
-                detail
-                for detail in (
-                    _optional_string(attempt_result.metadata.get("plan_summary")),
-                    _optional_string(attempt_result.metadata.get("verification_summary")),
-                )
-                if detail is not None
-            ),
         )
     ]
+    plan_summary = _optional_string(attempt_result.metadata.get("plan_summary"))
+    if plan_summary is not None:
+        evidence.append(
+            RuntimeEvidenceInput(
+                kind="planner_summary",
+                summary=plan_summary,
+                metadata=_dict_metadata(attempt_result.metadata.get("plan_metadata")),
+            )
+        )
+    verification_summary = _optional_string(
+        attempt_result.metadata.get("verification_summary")
+    )
+    if verification_summary is not None:
+        evidence.append(
+            RuntimeEvidenceInput(
+                kind="verifier_summary",
+                summary=verification_summary,
+                metadata={
+                    "passed": bool(attempt_result.metadata.get("verification_passed")),
+                    **_dict_metadata(
+                        attempt_result.metadata.get("verification_metadata")
+                    ),
+                },
+            )
+        )
+    tool_status = _optional_string(attempt_result.metadata.get("tool_status"))
+    if tool_status is not None:
+        evidence.append(
+            RuntimeEvidenceInput(
+                kind="tool_status",
+                summary=tool_status,
+            )
+        )
     tool_output = _optional_string(attempt_result.metadata.get("tool_output"))
     tool_name = _optional_string(attempt_result.metadata.get("tool_name"))
     if tool_output is not None and tool_name is not None:
@@ -173,3 +198,9 @@ def _artifact_uri_from_metadata(value: object) -> str | None:
         return None
     stripped = artifact_uri.strip()
     return stripped or None
+
+
+def _dict_metadata(value: object) -> dict[str, object]:
+    if not isinstance(value, dict):
+        return {}
+    return {str(key): item for key, item in value.items()}
