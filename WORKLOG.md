@@ -491,3 +491,28 @@
   - `uv run ruff check apps/worker/src/zebra_agent_worker tests/worker tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy apps/worker/src/zebra_agent_worker tests/worker` 通过
   - `make check` 通过
+
+## 2026-06-21 Core Event Schema Drafts
+
+- 执行 `P4-GOV-01 - Core Event Schema Drafts`
+- `agent-core` 新增：
+  - `agent_core.contracts`
+  - `event_payload_schema_for`
+  - `validate_event_payload`
+  - `EventPayloadValidationError`
+- 当前行为：
+  - `SessionCreated`、`UserMessageReceived`、`ToolExecutionCompleted` 已有 machine-checkable payload schema
+  - covered payload 默认拒绝未知字段
+  - 可以直接生成 JSON Schema dict，供后续 API / storage / docs 复用
+- 新增测试：
+  - `tests/agent_core/test_event_contracts.py`
+- 覆盖场景：
+  - schema generation
+  - valid payload acceptance
+  - unknown field rejection
+  - unknown event schema lookup failure
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_event_contracts.py tests/agent_core/test_events.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core/contracts tests/agent_core/test_event_contracts.py` 通过
+  - `uv run mypy packages/agent-core/src/agent_core/contracts tests/agent_core/test_event_contracts.py` 通过
+  - `make check` 通过

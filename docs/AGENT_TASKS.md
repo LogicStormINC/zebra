@@ -669,3 +669,28 @@ Combine session recovery and durable leases into a minimal claim/resume flow so 
 - [x] Concurrent claim attempts are blocked while the lease is active.
 - [x] Another worker can take over after lease expiry.
 - [x] Tests cover heartbeat and release behavior in the claim flow.
+
+### P4-GOV-01 - Core Event Schema Drafts
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P4-WKR-02`
+- Branch: `codex/p4-gov-01-event-schema-drafts`
+- Owned paths: `packages/agent-core/`, `tests/`
+
+#### Goal
+
+Define the first machine-checkable payload schema drafts for the most critical durable events so worker, storage, and future API layers share the same event contract baseline.
+
+#### Deliverables
+
+- versioned event contract module
+- payload schema generation for core durable events
+- payload validation helpers and contract tests
+
+#### Acceptance
+
+- [x] `SessionCreated`, `UserMessageReceived`, and `ToolExecutionCompleted` have machine-checkable payload schemas.
+- [x] Unknown fields are rejected for covered event payloads.
+- [x] Tests cover schema generation and validation failure behavior.
