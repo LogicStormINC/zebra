@@ -3,7 +3,7 @@ from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.runtime import RuntimeExecutionRequest
 from agent_runtime import LocalRuntime, LocalWorkspace
 from agent_security.policy import policy_profile
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_storage import SQLiteEventStore, SQLiteLeaseStore, SQLiteProjectionStore
 from agent_tools.gateway import ToolExecutor, ToolRegistry
 from zebra_agent_api.app import create_app
 from zebra_agent_worker import SessionRecoveryService, worker_banner
@@ -17,6 +17,7 @@ def test_workspace_packages_import() -> None:
     assert LocalWorkspace is not None
     assert policy_profile() == "local-bootstrap"
     assert SQLiteEventStore is not None
+    assert SQLiteLeaseStore is not None
     assert SQLiteProjectionStore is not None
     assert create_app() == "api-bootstrap"
     assert SessionRecoveryService is not None

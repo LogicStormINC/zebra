@@ -2,6 +2,7 @@
 
 from agent_core.domain.artifacts import ArtifactRef
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.leases import WorkerLease
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.sessions import Session, SessionStatus
@@ -21,4 +22,5 @@ __all__ = [
     "ToolCall",
     "ToolCallStatus",
     "ToolResult",
+    "WorkerLease",
 ]

@@ -617,3 +617,29 @@ Add the first worker-side recovery entry that can rebuild a durable session from
 - [x] Recovered session projection is written back to the projection store.
 - [x] Missing-session recovery fails deterministically.
 - [x] Tests cover at least one interrupted-running session and one terminal session.
+
+### P4-SCH-01 - SQLite Worker Leases
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P4-WKR-01`
+- Branch: `codex/p4-sch-01-sqlite-worker-leases`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `tests/`
+
+#### Goal
+
+Add the minimum durable lease mechanism so workers can claim, heartbeat, and release session ownership without relying on in-memory coordination.
+
+#### Deliverables
+
+- core lease model and port
+- SQLite lease store implementation
+- tests for acquire, heartbeat, expiry takeover, and release
+
+#### Acceptance
+
+- [x] One worker can acquire a lease for a session.
+- [x] A second worker cannot steal an unexpired lease.
+- [x] An expired lease can be reacquired deterministically.
+- [x] Heartbeat and release behavior are covered by tests.

@@ -438,3 +438,32 @@
   - `uv run ruff check apps/worker/src/zebra_agent_worker tests/worker tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy apps/worker/src/zebra_agent_worker tests/worker` 通过
   - `make check` 通过
+
+## 2026-06-21 SQLite Worker Leases
+
+- 执行 `P4-SCH-01 - SQLite Worker Leases`
+- `agent-core` 新增：
+  - `WorkerLease`
+  - `LeaseStorePort`
+- `agent-storage` 新增：
+  - `SQLiteLeaseStore`
+  - `LeaseConflictError`
+- 当前行为：
+  - worker 可以为某个 session 申请 lease
+  - 未过期 lease 不允许被其他 worker 抢占
+  - 过期 lease 可以被后续 worker 重新获取
+  - 已持有 worker 可以 heartbeat 更新 checkpoint 和 expiry
+  - release 后 lease 会被删除
+- 新增测试：
+  - `tests/agent_storage/test_sqlite_leases.py`
+- 覆盖场景：
+  - acquire and read active lease
+  - reject other worker before expiry
+  - allow reacquire after expiry
+  - heartbeat owned lease
+  - release owned lease
+- 本轮验证结果：
+  - `uv run pytest tests/agent_storage/test_sqlite_leases.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core packages/agent-storage/src/agent_storage tests/agent_storage tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy packages/agent-core/src/agent_core packages/agent-storage/src/agent_storage tests/agent_storage` 通过
+  - `make check` 通过
