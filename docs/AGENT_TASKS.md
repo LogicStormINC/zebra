@@ -643,3 +643,29 @@ Add the minimum durable lease mechanism so workers can claim, heartbeat, and rel
 - [x] A second worker cannot steal an unexpired lease.
 - [x] An expired lease can be reacquired deterministically.
 - [x] Heartbeat and release behavior are covered by tests.
+
+### P4-WKR-02 - Worker Claim And Resume Flow
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P4-SCH-01`
+- Branch: `codex/p4-wkr-02-claim-resume`
+- Owned paths: `apps/worker/`, `tests/`
+
+#### Goal
+
+Combine session recovery and durable leases into a minimal claim/resume flow so a worker can safely take ownership of a resumable session and continue from the latest checkpoint.
+
+#### Deliverables
+
+- worker claim service
+- claim heartbeat and release helpers
+- tests for concurrent claim blocking and expired-lease takeover
+
+#### Acceptance
+
+- [x] Worker can claim a running session and receive both recovery state and lease state.
+- [x] Concurrent claim attempts are blocked while the lease is active.
+- [x] Another worker can take over after lease expiry.
+- [x] Tests cover heartbeat and release behavior in the claim flow.

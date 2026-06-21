@@ -467,3 +467,27 @@
   - `uv run ruff check packages/agent-core/src/agent_core packages/agent-storage/src/agent_storage tests/agent_storage tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy packages/agent-core/src/agent_core packages/agent-storage/src/agent_storage tests/agent_storage` 通过
   - `make check` 通过
+
+## 2026-06-21 Worker Claim And Resume Flow
+
+- 执行 `P4-WKR-02 - Worker Claim And Resume Flow`
+- `apps/worker` 新增：
+  - `SessionClaimService`
+  - `ClaimedSession`
+- 当前行为：
+  - worker 可以先恢复 session，再申请 lease 完成 claim
+  - claim 结果同时包含 recovery state 和 lease state
+  - 已 claim session 可以 heartbeat 续租并推进 checkpoint
+  - 可以显式 release claim
+- 新增测试：
+  - `tests/worker/test_claims.py`
+- 覆盖场景：
+  - claim running session
+  - block concurrent claim before expiry
+  - allow takeover after expiry
+  - heartbeat and release claim
+- 本轮验证结果：
+  - `uv run pytest tests/worker/test_claims.py tests/worker/test_recovery.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check apps/worker/src/zebra_agent_worker tests/worker tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy apps/worker/src/zebra_agent_worker tests/worker` 通过
+  - `make check` 通过

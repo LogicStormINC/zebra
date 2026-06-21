@@ -1,5 +1,6 @@
 from agent_core.domain.sessions import SessionStatus
 
+from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.recovery import SessionRecoveryService
 
 
@@ -8,6 +9,7 @@ def worker_banner() -> str:
 
 
 __all__ = [
+    "SessionClaimService",
     "SessionRecoveryService",
     "worker_banner",
 ]
