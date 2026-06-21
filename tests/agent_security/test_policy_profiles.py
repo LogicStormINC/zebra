@@ -35,10 +35,16 @@ def test_read_only_profile_allows_read_tools_and_denies_write_tools() -> None:
 
 def test_workspace_write_profile_allows_patch_and_requires_command_approval() -> None:
     engine = LocalPolicyEngine(profile=PolicyProfile.WORKSPACE_WRITE)
+    safe_patch = """--- a/README.md
++++ b/README.md
+@@
+-old
++new
+"""
 
-    assert engine.evaluate_tool_call(_tool_call("patch.apply")).decision is (
-        PolicyDecisionType.ALLOW
-    )
+    assert engine.evaluate_tool_call(
+        _tool_call("patch.apply", {"patch": safe_patch})
+    ).decision is PolicyDecisionType.ALLOW
     assert engine.evaluate_tool_call(_tool_call("tests.run")).decision is (
         PolicyDecisionType.ALLOW
     )
@@ -98,3 +104,43 @@ def test_unknown_tool_is_denied_for_all_profiles() -> None:
         assert engine.evaluate_tool_call(_tool_call("network.fetch")).decision is (
             PolicyDecisionType.DENY
         )
+
+
+def test_path_traversal_is_denied_for_file_read() -> None:
+    engine = LocalPolicyEngine(profile=PolicyProfile.READ_ONLY)
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("files.read", {"path": "../secrets.env"})
+    )
+
+    assert decision.decision is PolicyDecisionType.DENY
+    assert "escapes workspace" in decision.reason
+
+
+def test_absolute_cwd_is_denied_for_command_run_before_profile_allowance() -> None:
+    engine = LocalPolicyEngine(profile=PolicyProfile.FULL_ACCESS)
+
+    decision = engine.evaluate_tool_call(
+        _tool_call(
+            "command.run",
+            {"command": ["python", "-m", "pytest"], "cwd": "/tmp/outside"},
+        )
+    )
+
+    assert decision.decision is PolicyDecisionType.DENY
+    assert "escapes workspace" in decision.reason
+
+
+def test_patch_apply_path_traversal_is_denied() -> None:
+    engine = LocalPolicyEngine(profile=PolicyProfile.WORKSPACE_WRITE)
+    patch = """--- a/../secret.txt
++++ b/../secret.txt
+@@
+-old
++new
+"""
+
+    decision = engine.evaluate_tool_call(_tool_call("patch.apply", {"patch": patch}))
+
+    assert decision.decision is PolicyDecisionType.DENY
+    assert "outside the workspace" in decision.reason

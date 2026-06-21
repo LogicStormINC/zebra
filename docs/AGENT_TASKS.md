@@ -1198,3 +1198,29 @@ Add parameter-aware command risk rules so `command.run` is not allowed solely by
 - [x] shell interpreter commands require approval.
 - [x] commands containing shell metacharacters require approval.
 - [x] malformed command arguments require approval.
+
+### P6-POL-03 - Path Risk Rules
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SEC`
+- Depends on: `P6-POL-02`
+- Branch: `codex/p6-pol-03-path-risk-rules`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `tests/smoke/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add policy-level path traversal checks so obvious workspace escape attempts are rejected before tool-specific runtime validation.
+
+#### Deliverables
+
+- path argument inspection for `files.read`, `git.status`, and `command.run`
+- patch header path inspection for `patch.apply`
+- tests covering relative traversal, absolute path usage, and patch traversal
+
+#### Acceptance
+
+- [x] `files.read` rejects `..` traversal paths.
+- [x] `command.run` rejects absolute `cwd` paths before profile allow/approval logic.
+- [x] `patch.apply` rejects patch headers that escape the workspace.
+- [x] existing profile and smoke tests remain compatible with safe path arguments.

@@ -5,7 +5,7 @@
 - Active phase: `Phase 6 - Policy And Approvals Hardening`
 - Repository status: `phase 6 ready`
 - Current focus:
-  - harden command execution policy after establishing local policy profiles
+  - harden path traversal policy after command-risk rules
   - keep security boundaries local-first and explicit before expanding remote/cloud services
 
 ## Completed
@@ -57,15 +57,16 @@
 - `P5-CTX-12 - Phase 5 Closeout Record`
 - `P6-POL-01 - Local Policy Profiles`
 - `P6-POL-02 - Command Risk Rules`
+- `P6-POL-03 - Path Risk Rules`
 
 ## Current Focus
 
-- Phase 6 policy hardening has command-risk rules for `command.run`
-- register the next direct slice around path traversal or sensitive-output policy
+- Phase 6 policy hardening has command and path traversal prechecks
+- register the next direct slice around sensitive-output or approval request modeling
 
 ## Next Unlocks
 
-- `P6-POL-02` is complete
+- `P6-POL-03` is complete
 - the next step is to register the next ready Phase 6 policy and approvals task card
 
 ## Active Documents
