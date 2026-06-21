@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 2 completed; Phase 3 prepared from `实施任务拆解与阶段验收.md`.
+> Current execution range: Phase 4 in progress; durable storage, recovery, and control-plane indexes are landing from `实施任务拆解与阶段验收.md`.
 
 ## Global Rules
 
@@ -794,3 +794,29 @@ Expose a durable tool-run index so control-plane queries do not need to scan raw
 - [x] Tool run records can be upserted and queried by session.
 - [x] Tool execution events can be projected into tool-run records.
 - [x] Tests cover storage upsert and worker-side indexing behavior.
+
+### P4-STO-05 - Model Call Index
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P4-STO-04`
+- Branch: `codex/p4-sto-05-model-call-index`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `apps/worker/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose a durable model-call index so control-plane queries can inspect provider, model, usage, latency, cache, and cost data without rescanning raw session events.
+
+#### Deliverables
+
+- core model-call record model and store port
+- model completion metadata carried through the harness response event
+- SQLite model-call store
+- worker-side event-to-index mapping for model response events
+
+#### Acceptance
+
+- [x] Model call records can be upserted and queried by session.
+- [x] `MODEL_RESPONSE_RECEIVED` events carry enough metadata to index provider, model, usage, latency, cache, and cost fields.
+- [x] Tests cover storage upsert, harness event emission, and worker-side indexing behavior.

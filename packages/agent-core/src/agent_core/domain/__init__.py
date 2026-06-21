@@ -4,6 +4,7 @@ from agent_core.domain.artifacts import ArtifactRef
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.leases import WorkerLease
 from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.tool_runs import ToolRunRecord
@@ -14,6 +15,7 @@ __all__ = [
     "EventActor",
     "EventType",
     "MessageRole",
+    "ModelCallRecord",
     "PolicyDecision",
     "PolicyDecisionType",
     "Session",

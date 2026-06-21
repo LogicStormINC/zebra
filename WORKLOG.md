@@ -258,6 +258,34 @@
 - `HarnessLoop` 现在通过 `ClockPort` 驱动事件时间，不再把整次 run 的所有事件压成同一个 `created_at`
 - 当前行为：
   - 初始化事件按时钟顺序推进
+
+## 2026-06-22 Model Call Index
+
+- 执行 `P4-STO-05 - Model Call Index`
+- 为核心模型调用补齐 durable 索引闭环：
+  - `agent_core.domain.model_calls.ModelCallRecord`
+  - `agent_core.ports.model_call_store.ModelCallStorePort`
+  - `agent_core.domain.modeling` 中的 `ModelCallMetadata` 与 `ModelUsage`
+- `SingleAttemptOrchestrator` 现在会把以下字段写入 `MODEL_RESPONSE_RECEIVED` 事件：
+  - `provider`
+  - `model_name`
+  - `input_tokens`
+  - `output_tokens`
+  - `total_tokens`
+  - `latency_ms`
+  - `cache_hit`
+  - `cost_usd`
+- 新增 `agent_storage.model_calls.SQLiteModelCallStore`
+- 新增 `zebra_agent_worker.model_call_index.ModelCallIndexer`
+- 新增测试：
+  - `tests/agent_storage/test_sqlite_model_calls.py`
+  - `tests/worker/test_model_call_index.py`
+  - `tests/agent_core/test_single_attempt_orchestrator.py` 中的模型响应元数据断言
+- 本轮验证结果：
+  - `uv run pytest tests/agent_storage/test_sqlite_model_calls.py tests/worker/test_model_call_index.py tests/agent_core/test_single_attempt_orchestrator.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core packages/agent-storage/src/agent_storage apps/worker/src/zebra_agent_worker tests/agent_core/test_single_attempt_orchestrator.py tests/agent_storage/test_sqlite_model_calls.py tests/worker/test_model_call_index.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy packages/agent-core/src/agent_core packages/agent-storage/src/agent_storage apps/worker/src/zebra_agent_worker tests/agent_storage/test_sqlite_model_calls.py tests/worker/test_model_call_index.py` 通过
+  - `make check` 通过
   - 每次 attempt 有独立 `started_at`
   - emitted events 和 terminal events 继续沿时钟推进
 - 新增测试：

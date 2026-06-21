@@ -4,7 +4,7 @@ from agent_core.application.mock_model import ScriptedModelGateway, ScriptedMode
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import (
@@ -54,6 +54,18 @@ def test_single_attempt_orchestrator_runs_model_to_tool_success_path() -> None:
                         created_at=created_at,
                     ),
                     tool_calls=(tool_call,),
+                    call_metadata=ModelCallMetadata(
+                        provider="openai",
+                        model_name="gpt-5-codex",
+                        latency_ms=850,
+                        cache_hit=False,
+                        cost_usd=0.024,
+                        usage=ModelUsage(
+                            input_tokens=120,
+                            output_tokens=36,
+                            total_tokens=156,
+                        ),
+                    ),
                 )
             ),
         )
@@ -80,6 +92,9 @@ def test_single_attempt_orchestrator_runs_model_to_tool_success_path() -> None:
     assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
     assert result.session.status.value == "completed"
     assert result.attempt_result.metadata["tool_status"] == "executed"
+    assert result.events[4].payload["provider"] == "openai"
+    assert result.events[4].payload["model_name"] == "gpt-5-codex"
+    assert result.events[4].payload["total_tokens"] == 156
     assert [event.event_type for event in result.events] == [
         EventType.SESSION_CREATED,
         EventType.USER_MESSAGE_RECEIVED,

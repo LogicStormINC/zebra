@@ -6,12 +6,14 @@ from agent_security.policy import policy_profile
 from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
+    SQLiteModelCallStore,
     SQLiteProjectionStore,
     SQLiteToolRunStore,
 )
 from agent_tools.gateway import ToolExecutor, ToolRegistry
 from zebra_agent_api.app import create_app
 from zebra_agent_worker import (
+    ModelCallIndexer,
     SessionClaimService,
     SessionRecoveryService,
     SessionResumeService,
@@ -29,10 +31,12 @@ def test_workspace_packages_import() -> None:
     assert policy_profile() == "local-bootstrap"
     assert SQLiteEventStore is not None
     assert SQLiteLeaseStore is not None
+    assert SQLiteModelCallStore is not None
     assert SQLiteProjectionStore is not None
     assert SQLiteToolRunStore is not None
     assert create_app() == "api-bootstrap"
     assert SessionClaimService is not None
+    assert ModelCallIndexer is not None
     assert SessionRecoveryService is not None
     assert SessionResumeService is not None
     assert ToolRunIndexer is not None

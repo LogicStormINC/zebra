@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-The repository has completed the Phase 3 harness MVP and is now entering `Phase 4 - Control Plane And Recovery`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, and the next mainline work is adding durable storage and replayable session state.
+The repository is in `Phase 4 - Control Plane And Recovery`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, and the control-plane foundation now includes durable session events, replayable projections, worker leases, recovery and resume flows, plus tool-run and model-call indexes.
 
 Read in this order:
 

@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 3 - Harness Execution Spine`
+- Active phase: `Phase 4 - Control Plane And Recovery`
 - Repository status: `phase 4 in progress`
 - Current focus:
-  - establish the first durable storage slice for session events and projections
-  - keep phase 3 harness contracts stable while phase 4 control-plane foundations land
+  - finish the remaining phase 4 control-plane foundations on top of durable events, replay, and indexes
+  - keep the harness contracts stable while adding storage-backed control-plane query surfaces
 
 ## Completed
 
@@ -42,16 +42,17 @@
 - `P4-STO-03 - Incremental Event Replay`
 - `P4-WKR-03 - Explicit Resume Entry`
 - `P4-STO-04 - Tool Run Index`
+- `P4-STO-05 - Model Call Index`
 
 ## Current Focus
 
-- phase 4 control-plane groundwork after durable storage, resume flow, and tool-run indexing
-- choose the next direct task card between recovery worker entry, leases, and event schema formalization
+- phase 4 control-plane groundwork after durable storage, resume flow, tool-run indexing, and model-call indexing
+- register the next direct slice either as a remaining phase 4 control-plane surface or the first phase 5 context-compiler task card
 
 ## Next Unlocks
 
-- `P4-STO-04` is complete
-- the next step is to register the next recovery-oriented slice on top of the new storage package
+- `P4-STO-05` is complete
+- the next step is to register the next ready task card before more implementation starts
 
 ## Active Documents
 

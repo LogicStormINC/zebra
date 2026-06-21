@@ -4,6 +4,7 @@ from agent_core.ports.artifact_store import ArtifactStorePort
 from agent_core.ports.clock import ClockPort
 from agent_core.ports.event_store import EventStorePort
 from agent_core.ports.lease_store import LeaseStorePort
+from agent_core.ports.model_call_store import ModelCallStorePort
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.projection_store import ProjectionStorePort
@@ -16,6 +17,7 @@ __all__ = [
     "ClockPort",
     "EventStorePort",
     "LeaseStorePort",
+    "ModelCallStorePort",
     "ModelGatewayPort",
     "PolicyEnginePort",
     "ProjectionStorePort",

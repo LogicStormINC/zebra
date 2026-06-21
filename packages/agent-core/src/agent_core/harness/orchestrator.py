@@ -57,6 +57,14 @@ class SingleAttemptOrchestrator:
                     "attempt_number": context.attempt.number,
                     "assistant_message": completion.assistant_message.content,
                     "tool_call_count": len(completion.tool_calls),
+                    "provider": completion.call_metadata.provider,
+                    "model_name": completion.call_metadata.model_name,
+                    "input_tokens": completion.call_metadata.usage.input_tokens,
+                    "output_tokens": completion.call_metadata.usage.output_tokens,
+                    "total_tokens": completion.call_metadata.usage.total_tokens,
+                    "latency_ms": completion.call_metadata.latency_ms,
+                    "cache_hit": completion.call_metadata.cache_hit,
+                    "cost_usd": completion.call_metadata.cost_usd,
                 },
             )
         ]
