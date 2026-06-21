@@ -83,12 +83,19 @@ class SessionEvent(BaseModel):
         model_profile: str | None = None,
         created_at: datetime | None = None,
     ) -> "SessionEvent":
+        normalized_payload = payload or {}
+        try:
+            from agent_core.contracts.events import validate_event_payload
+
+            normalized_payload = validate_event_payload(event_type, normalized_payload)
+        except KeyError:
+            pass
         return cls(
             event_id=new_event_id(),
             session_id=session_id,
             sequence=sequence,
             event_type=event_type,
-            payload=payload or {},
+            payload=normalized_payload,
             actor=actor,
             created_at=created_at or datetime.now(UTC),
             causation_id=causation_id,

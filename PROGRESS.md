@@ -38,15 +38,16 @@
 - `P4-SCH-01 - SQLite Worker Leases`
 - `P4-WKR-02 - Worker Claim And Resume Flow`
 - `P4-GOV-01 - Core Event Schema Drafts`
+- `P4-GOV-02 - Event Schema Enforcement`
 
 ## Current Focus
 
-- phase 4 control-plane groundwork after durable storage, recovery flow, and event schema drafts
+- phase 4 control-plane groundwork after durable storage, recovery flow, event schema drafts, and schema enforcement
 - choose the next direct task card between recovery worker entry, leases, and event schema formalization
 
 ## Next Unlocks
 
-- `P4-GOV-01` is complete
+- `P4-GOV-02` is complete
 - the next step is to register the next recovery-oriented slice on top of the new storage package
 
 ## Active Documents

@@ -516,3 +516,21 @@
   - `uv run ruff check packages/agent-core/src/agent_core/contracts tests/agent_core/test_event_contracts.py` 通过
   - `uv run mypy packages/agent-core/src/agent_core/contracts tests/agent_core/test_event_contracts.py` 通过
   - `make check` 通过
+
+## 2026-06-21 Event Schema Enforcement
+
+- 执行 `P4-GOV-02 - Event Schema Enforcement`
+- `SessionEvent.create()` 现在会对已覆盖的 event payload 执行 schema 校验
+- 当前行为：
+  - covered event 在创建时即拒绝非法 payload
+  - 未覆盖 event 暂时保持 passthrough，避免阻塞后续 schema 逐步补齐
+- 新增测试：
+  - `tests/agent_core/test_events.py`
+- 覆盖场景：
+  - invalid covered-event payload rejection
+  - uncovered event payload passthrough
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_events.py tests/agent_core/test_event_contracts.py tests/agent_storage/test_sqlite_event_store.py` 通过
+  - `uv run ruff check packages/agent-core/src/agent_core/domain/events.py tests/agent_core/test_events.py tests/agent_storage/test_sqlite_event_store.py` 通过
+  - `uv run mypy packages/agent-core/src/agent_core/domain/events.py tests/agent_core/test_events.py` 通过
+  - `make check` 通过

@@ -127,7 +127,13 @@ def test_sqlite_event_store_returns_existing_event_for_idempotent_retry(
         sequence=0,
         event_type=EventType.TOOL_EXECUTION_COMPLETED,
         actor=EventActor.TOOL,
-        payload={"tool_name": "tests.run", "status": "executed"},
+        payload={
+            "attempt_number": 1,
+            "tool_name": "tests.run",
+            "status": "executed",
+            "output": "ok",
+            "metadata": {"exit_code": 0},
+        },
         idempotency_key="tool-run-1",
         created_at=created_at,
     )
@@ -136,7 +142,13 @@ def test_sqlite_event_store_returns_existing_event_for_idempotent_retry(
         sequence=1,
         event_type=EventType.TOOL_EXECUTION_COMPLETED,
         actor=EventActor.TOOL,
-        payload={"tool_name": "tests.run", "status": "executed"},
+        payload={
+            "attempt_number": 1,
+            "tool_name": "tests.run",
+            "status": "executed",
+            "output": "ok",
+            "metadata": {"exit_code": 0},
+        },
         idempotency_key="tool-run-1",
         created_at=created_at,
     )

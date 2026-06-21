@@ -694,3 +694,27 @@ Define the first machine-checkable payload schema drafts for the most critical d
 - [x] `SessionCreated`, `UserMessageReceived`, and `ToolExecutionCompleted` have machine-checkable payload schemas.
 - [x] Unknown fields are rejected for covered event payloads.
 - [x] Tests cover schema generation and validation failure behavior.
+
+### P4-GOV-02 - Event Schema Enforcement
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: `P4-GOV-01`
+- Branch: `codex/p4-gov-02-event-schema-enforcement`
+- Owned paths: `packages/agent-core/`, `tests/`
+
+#### Goal
+
+Move covered event payload schemas from passive documentation/testing into the actual event creation path so invalid durable payloads are rejected before they hit storage.
+
+#### Deliverables
+
+- schema validation hook inside `SessionEvent.create`
+- tests for covered-event rejection and uncovered-event passthrough
+
+#### Acceptance
+
+- [x] Covered events validate payloads during event creation.
+- [x] Invalid payloads fail before persistence.
+- [x] Uncovered events still pass through unchanged until their schema is defined.
