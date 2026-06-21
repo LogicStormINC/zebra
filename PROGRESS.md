@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 5 - Context Compiler`
-- Repository status: `phase 5 in progress`
+- Active phase: `Phase 6 - Policy And Approvals Hardening`
+- Repository status: `phase 6 ready`
 - Current focus:
-  - replace the `agent-context` bootstrap stub with typed, deterministic context compilation slices
-  - keep context work local-first while hardening context compiler input acceptance
+  - begin hardening policy and approvals after the Phase 5 context compiler closeout
+  - keep security boundaries local-first and explicit before expanding remote/cloud services
 
 ## Completed
 
@@ -54,16 +54,17 @@
 - `P5-CTX-09 - Structured Planner And Verifier Evidence`
 - `P5-CTX-10 - Context-Aware Retry Plan Hint`
 - `P5-CTX-11 - Context Compiler Acceptance Hardening`
+- `P5-CTX-12 - Phase 5 Closeout Record`
 
 ## Current Focus
 
-- phase 5 context compiler groundwork after context compiler acceptance hardening
-- register the next direct slice around richer retrieval signals or phase-5 closeout
+- Phase 5 context compiler is closed out for local MVP scope
+- register the first Phase 6 policy-hardening task card before more implementation starts
 
 ## Next Unlocks
 
-- `P5-CTX-11` is complete
-- the next step is to register the next ready context-compiler task card before more implementation starts
+- `P5-CTX-12` is complete
+- the next step is to register the first ready Phase 6 policy and approvals task card
 
 ## Active Documents
 

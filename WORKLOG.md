@@ -817,6 +817,21 @@
   - `uv run ruff check packages/agent-context/src/agent_context tests/agent_context/test_compiler.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_adapter.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py` 通过
   - `uv run mypy packages/agent-context/src/agent_context tests/agent_context/test_compiler.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_adapter.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py` 通过
   - `make check` 通过
+
+## 2026-06-22 Phase 5 Closeout Record
+
+- 执行 `P5-CTX-12 - Phase 5 Closeout Record`
+- 新增文档：
+  - `docs/Phase5_Context_Compiler_验收记录.md`
+- 当前状态：
+  - Phase 5 context compiler local MVP scope 已关闭
+  - `PROGRESS.md` 已推进到 `Phase 6 - Policy And Approvals Hardening`
+  - Git context provider、durable context-compacted events、persistent context cache 明确作为后续项
+- 本轮验证结果：
+  - `uv run pytest tests/agent_context tests/agent_core/test_harness_model_step.py tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_retry_plan.py` 通过
+  - `uv run ruff check packages/agent-context/src/agent_context packages/agent-core/src/agent_core/ports/context_compiler.py packages/agent-core/src/agent_core/harness/model_step.py packages/agent-core/src/agent_core/harness/loop.py packages/agent-core/src/agent_core/harness/retry_plan.py tests/agent_context tests/agent_core/test_harness_model_step.py tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_retry_plan.py` 通过
+  - `uv run mypy packages/agent-context/src/agent_context packages/agent-core/src/agent_core/ports/context_compiler.py packages/agent-core/src/agent_core/harness/model_step.py packages/agent-core/src/agent_core/harness/loop.py packages/agent-core/src/agent_core/harness/retry_plan.py tests/agent_context tests/agent_core/test_harness_model_step.py tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_retry_plan.py` 通过
+  - `make check` 通过
   - `uv run ruff check packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `uv run mypy packages/agent-core/src/agent_core packages/agent-context/src/agent_context tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
   - `make check` 通过

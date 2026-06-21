@@ -1116,3 +1116,29 @@ Harden context compiler input acceptance so invalid workspaces and spoofed runti
 - [x] File paths are rejected as workspace roots.
 - [x] Runtime evidence is limited to conversation/tool-output summary kinds.
 - [x] Runtime evidence must come from session projection or tool trace provenance.
+
+### P5-CTX-12 - Phase 5 Closeout Record
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOCS`
+- Depends on: `P5-CTX-11`
+- Branch: `codex/p5-ctx-12-phase5-closeout`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 5 by recording the context-compiler acceptance evidence, known deferrals, and the next phase boundary before Phase 6 policy work begins.
+
+#### Deliverables
+
+- Phase 5 acceptance record under `docs/`
+- task registry update for the closeout slice
+- project progress update moving the repository to Phase 6 ready state
+
+#### Acceptance
+
+- [x] Acceptance record maps Phase 5 criteria to implemented code paths.
+- [x] Validation commands and results are recorded.
+- [x] Known deferrals are explicit.
+- [x] `PROGRESS.md` identifies Phase 6 as the next active implementation phase.
