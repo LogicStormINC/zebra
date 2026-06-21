@@ -11,6 +11,31 @@ class PolicyProfile(StrEnum):
     FULL_ACCESS = "full_access"
 
 
+class ApprovalRisk(StrEnum):
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+@dataclass(frozen=True)
+class ApprovalRequest:
+    tool_name: str
+    policy_profile: str
+    risk: ApprovalRisk
+    reason: str
+    scope: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if not self.tool_name.strip():
+            raise ValueError("approval request tool_name must not be blank")
+        if not self.policy_profile.strip():
+            raise ValueError("approval request policy_profile must not be blank")
+        if not self.reason.strip():
+            raise ValueError("approval request reason must not be blank")
+        for item in self.scope:
+            if not item.strip():
+                raise ValueError("approval request scope must not contain blanks")
+
+
 READ_ONLY_TOOLS = frozenset({"files.read", "git.status"})
 WORKSPACE_WRITE_TOOLS = READ_ONLY_TOOLS | frozenset({"patch.apply", "tests.run"})
 FULL_ACCESS_TOOLS = WORKSPACE_WRITE_TOOLS | frozenset({"command.run"})
@@ -43,6 +68,21 @@ class LocalPolicyEngine:
 
 def policy_profile() -> str:
     return "local-bootstrap"
+
+
+def build_approval_request(
+    tool_call: ToolCall,
+    decision: PolicyDecision,
+) -> ApprovalRequest | None:
+    if decision.decision is not PolicyDecisionType.REQUIRE_APPROVAL:
+        return None
+    return ApprovalRequest(
+        tool_name=tool_call.name,
+        policy_profile=decision.policy_profile,
+        risk=_approval_risk(decision.reason),
+        reason=decision.reason,
+        scope=_approval_scope(tool_call),
+    )
 
 
 def _decision_for_read_only(
@@ -150,6 +190,26 @@ def _is_unsafe_relative_path(raw_path: str) -> bool:
 def _contains_sensitive_marker(value: str) -> bool:
     normalized = value.lower()
     return any(marker in normalized for marker in SENSITIVE_PATH_MARKERS)
+
+
+def _approval_risk(reason: str) -> ApprovalRisk:
+    normalized = reason.lower()
+    if "sensitive" in normalized or "data transfer" in normalized:
+        return ApprovalRisk.HIGH
+    return ApprovalRisk.MEDIUM
+
+
+def _approval_scope(tool_call: ToolCall) -> tuple[str, ...]:
+    entries = [f"tool:{tool_call.name}"]
+    command = tool_call.arguments.get("command")
+    if isinstance(command, list | tuple) and command:
+        executable = command[0]
+        if isinstance(executable, str) and executable.strip():
+            entries.append(f"command:{executable.strip()}")
+    cwd = tool_call.arguments.get("cwd")
+    if isinstance(cwd, str) and cwd.strip():
+        entries.append(f"cwd:{cwd.strip()}")
+    return tuple(entries)
 
 
 def _allow(profile: PolicyProfile, reason: str) -> PolicyDecision:

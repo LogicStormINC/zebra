@@ -1250,3 +1250,30 @@ Add policy-level approval rules for obvious sensitive data exfiltration risk bef
 - [x] commands referencing private key paths require approval.
 - [x] network-capable data-transfer commands require approval.
 - [x] existing profile and path traversal tests remain compatible.
+
+### P6-POL-05 - Approval Request Model
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SEC`
+- Depends on: `P6-POL-04`
+- Branch: `codex/p6-pol-05-approval-request-model`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `tests/smoke/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a typed approval request projection so policy decisions that require approval can expose risk, reason, and scope without changing the core policy decision schema.
+
+#### Deliverables
+
+- `ApprovalRisk` and `ApprovalRequest` models
+- `build_approval_request` projection helper
+- approval scope extraction for command tool calls
+- tests covering non-approval, medium-risk command approval, and high-risk sensitive transfer approval
+
+#### Acceptance
+
+- [x] allow/deny decisions do not produce approval requests.
+- [x] approval requests include tool name, policy profile, reason, risk, and scope.
+- [x] sensitive transfer approvals are marked high risk.
+- [x] command approvals include executable and cwd scope when available.

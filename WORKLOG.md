@@ -797,6 +797,8 @@
   - `make check` 通过
   - `uv run mypy packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py` 通过
   - `make check` 通过
+  - `uv run mypy packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py` 通过
+  - `make check` 通过
 
 ## 2026-06-22 Sensitive Output Rules
 
@@ -881,6 +883,23 @@
   - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py` 通过
   - `make check` 通过
+
+## 2026-06-22 Approval Request Model
+
+- 执行 `P6-POL-05 - Approval Request Model`
+- `agent-security` 新增：
+  - `ApprovalRisk`
+  - `ApprovalRequest`
+  - `build_approval_request`
+- 当前行为：
+  - allow/deny decision 不生成 approval request
+  - approval request 携带 tool、profile、reason、risk、scope
+  - sensitive transfer approval 标记为 high risk
+- 更新测试：
+  - `tests/agent_security/test_policy_profiles.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_security/test_policy_profiles.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py` 通过
   - `make check` 通过
