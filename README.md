@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-The repository is in `Phase 6 - Policy And Approvals Hardening`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, the control-plane foundation includes durable session events and recovery/indexing primitives, Phase 5 has closed out with a typed workspace context compiler, and Phase 6 now includes deterministic local policy profiles plus command-risk and path-traversal policy prechecks.
+The repository is in `Phase 6 - Policy And Approvals Hardening`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, the control-plane foundation includes durable session events and recovery/indexing primitives, Phase 5 has closed out with a typed workspace context compiler, and Phase 6 now includes deterministic local policy profiles plus command-risk, path-traversal, and sensitive-output policy prechecks.
 
 Read in this order:
 

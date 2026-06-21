@@ -795,6 +795,21 @@
   - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py tests/smoke/test_workspace_bootstrap.py` 通过
   - `uv run mypy packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py` 通过
   - `make check` 通过
+  - `uv run mypy packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py` 通过
+  - `make check` 通过
+
+## 2026-06-22 Sensitive Output Rules
+
+- 执行 `P6-POL-04 - Sensitive Output Rules`
+- `LocalPolicyEngine` 现在支持：
+  - sensitive path marker 检测
+  - network-capable data transfer command 检测
+  - 明显 secret exfiltration 风险进入 approval
+- 更新测试：
+  - `tests/agent_security/test_policy_profiles.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_security/test_policy_profiles.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security/test_policy_profiles.py tests/smoke/test_workspace_bootstrap.py` 通过
 
 ## 2026-06-22 Context-Aware Retry Plan Hint
 

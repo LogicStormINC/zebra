@@ -1224,3 +1224,29 @@ Add policy-level path traversal checks so obvious workspace escape attempts are 
 - [x] `command.run` rejects absolute `cwd` paths before profile allow/approval logic.
 - [x] `patch.apply` rejects patch headers that escape the workspace.
 - [x] existing profile and smoke tests remain compatible with safe path arguments.
+
+### P6-POL-04 - Sensitive Output Rules
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SEC`
+- Depends on: `P6-POL-03`
+- Branch: `codex/p6-pol-04-sensitive-output-rules`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `tests/smoke/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add policy-level approval rules for obvious sensitive data exfiltration risk before command execution reaches the runtime.
+
+#### Deliverables
+
+- sensitive path marker detection in `command.run`
+- network-capable data-transfer command detection
+- tests covering `.env`, private key, and upload-style command references
+
+#### Acceptance
+
+- [x] commands referencing `.env` paths require approval.
+- [x] commands referencing private key paths require approval.
+- [x] network-capable data-transfer commands require approval.
+- [x] existing profile and path traversal tests remain compatible.

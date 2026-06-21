@@ -16,6 +16,8 @@ WORKSPACE_WRITE_TOOLS = READ_ONLY_TOOLS | frozenset({"patch.apply", "tests.run"}
 FULL_ACCESS_TOOLS = WORKSPACE_WRITE_TOOLS | frozenset({"command.run"})
 SHELL_EXECUTABLES = frozenset({"bash", "fish", "powershell", "pwsh", "sh", "zsh"})
 SHELL_INJECTION_MARKERS = ("&&", "||", "$(", "`", ";", "|", ">", "<")
+SENSITIVE_PATH_MARKERS = (".env", "credential", "id_rsa", "private_key", "secret", "token")
+EXFILTRATION_COMMANDS = frozenset({"curl", "nc", "netcat", "scp", "wget"})
 PATH_ARGUMENTS_BY_TOOL = {
     "command.run": ("cwd",),
     "files.read": ("path",),
@@ -89,7 +91,11 @@ def _command_risk_reason(tool_call: ToolCall) -> str | None:
     executable = command_parts[0].rsplit("/", maxsplit=1)[-1].lower()
     if executable in SHELL_EXECUTABLES:
         return "command.run requires approval for shell interpreter execution"
+    if executable in EXFILTRATION_COMMANDS:
+        return "command.run requires approval for network-capable data transfer"
     command_text = " ".join(command_parts)
+    if _contains_sensitive_marker(command_text):
+        return "command.run requires approval for sensitive path reference"
     if any(marker in command_text for marker in SHELL_INJECTION_MARKERS):
         return "command.run requires approval for shell metacharacter usage"
     return None
@@ -139,6 +145,11 @@ def _is_unsafe_relative_path(raw_path: str) -> bool:
         return True
     parts = stripped.replace("\\", "/").split("/")
     return any(part == ".." for part in parts)
+
+
+def _contains_sensitive_marker(value: str) -> bool:
+    normalized = value.lower()
+    return any(marker in normalized for marker in SENSITIVE_PATH_MARKERS)
 
 
 def _allow(profile: PolicyProfile, reason: str) -> PolicyDecision:
