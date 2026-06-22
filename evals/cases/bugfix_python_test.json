@@ -1,0 +1,9 @@
+{
+  "case_id": "bugfix-python-test",
+  "category": "bugfix",
+  "title": "Fix a failing Python unit test",
+  "prompt": "Inspect the failing Python test, implement the smallest fix, and run the targeted test.",
+  "min_events": 3,
+  "min_tool_results": 1,
+  "max_cost_usd": 1.0
+}

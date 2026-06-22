@@ -994,6 +994,31 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 Eval Case And Grader Bootstrap
+
+- 执行 `P7-EVAL-01 - Eval Case And Grader Bootstrap`
+- `agent-observability` 新增：
+  - `EvalCase`
+  - `EvalGrade`
+  - `LocalEvalGrader`
+  - `load_eval_cases`
+- `evals/cases/` 新增最小本地数据集：
+  - `bugfix-python-test`
+  - `security-block-env`
+  - `recovery-resume-task`
+- 当前行为：
+  - eval case 可以从 JSON 文件或目录加载
+  - grader 可以基于 replay summary 产出 typed pass/fail result
+  - invalid case path、threshold、category 会被拒绝
+- 新增测试：
+  - `tests/agent_observability/test_evals.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_observability/test_evals.py tests/agent_observability/test_replay.py tests/agent_observability/test_jsonl_trace_store.py tests/agent_observability/test_trace_models.py` 通过
+  - `uv run ruff check packages/agent-observability/src/agent_observability tests/agent_observability` 通过
+  - `uv run mypy packages/agent-observability/src/agent_observability tests/agent_observability` 通过
+  - `uv run pytest` 通过，166 passed
+  - `make check` 通过
+
 ## 2026-06-22 Local Replay Runner
 
 - 执行 `P7-OBS-03 - Local Replay Runner`

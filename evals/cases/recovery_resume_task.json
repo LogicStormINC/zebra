@@ -1,0 +1,9 @@
+{
+  "case_id": "recovery-resume-task",
+  "category": "recovery",
+  "title": "Resume after an interrupted task",
+  "prompt": "Recover a session from persisted events and continue without duplicating completed tool effects.",
+  "min_events": 4,
+  "min_tool_results": 1,
+  "max_cost_usd": 1.5
+}

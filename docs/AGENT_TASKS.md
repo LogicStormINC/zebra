@@ -1466,3 +1466,32 @@ Add a deterministic local replay runner that can read persisted trace records an
 - [x] Store replay returns results in trace insertion order.
 - [x] Empty stores return no replay results.
 - [x] Zero-event traces are rejected.
+
+### P7-EVAL-01 - Eval Case And Grader Bootstrap
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `QA`
+- Depends on: `P7-OBS-03`
+- Branch: `codex/p7-eval-01-case-grader-bootstrap`
+- Owned paths: `packages/agent-observability/`, `tests/agent_observability/`, `evals/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Create the first local eval case directory and deterministic grader so Phase 7 has a minimal regression dataset before adding eval runners or release gates.
+
+#### Deliverables
+
+- `EvalCase`
+- `EvalGrade`
+- `LocalEvalGrader`
+- `load_eval_cases`
+- initial local JSON eval cases under `evals/cases/`
+- tests covering grading pass/fail, case loading, and invalid case definitions
+
+#### Acceptance
+
+- [x] Eval cases can be loaded from the repository case directory.
+- [x] The grader produces typed pass/fail results from replay summaries.
+- [x] The initial dataset includes bugfix, security, and recovery cases.
+- [x] Invalid case inputs are rejected.
