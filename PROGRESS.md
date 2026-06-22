@@ -89,18 +89,20 @@
 - `P8-MOD-02 - CLI Model Gateway Smoke`
 - `P8-CLI-05 - CLI Durable Run Execution`
 - `P8-API-06 - API Session Create And Execute`
+- `P8-QUE-01 - Queued Session Bootstrap Events`
 
 ## Current Focus
 
 - Phase 8 has deterministic CLI command parsing, local session operations, settings-backed database defaults, framework-independent route adaptation, a thin FastAPI serving layer, read-only session stream replay over SSE, an executable local operator runbook, optional bearer-token auth for non-health API routes, a real OpenAI-compatible model gateway adapter, and a CLI model smoke path
 - Phase 8 now also has an explicit CLI durable execution path that can persist one harness attempt with real model and builtin tool wiring
 - Phase 8 now also has a writable API `POST /sessions` entry that can either create a session or run one durable local harness attempt immediately
+- create-only session flows now persist queued task bootstrap events and land in `ready` state for later recovery
 - worker-owned execution flows remain later task cards
 
 ## Next Unlocks
 
-- `P8-API-06` is complete
-- the next step is to reuse the same local execution wiring from worker-owned session flows
+- `P8-QUE-01` is complete
+- the next step is to let worker-owned execution recover queued task input and run through the shared local harness entry
 
 ## Active Documents
 

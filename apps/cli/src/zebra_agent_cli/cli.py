@@ -9,16 +9,15 @@ from pathlib import Path
 from typing import Literal
 from uuid import UUID
 
+from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.approvals import (
     ApprovalDecisionAction,
     ApprovalDecisionCommand,
     ApprovalDecisionService,
 )
 from agent_core.application.session_projection import apply_event
-from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.sessions import Session
 from agent_integrations import build_model_gateway
 from agent_security import PolicyProfile
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
@@ -134,16 +133,18 @@ def _run_result(
         session = execution_result.harness_result.session
         payload = serialize_run_execution(execution_result)
     else:
-        session = Session.create(title=namespace.title)
-        event = SessionEvent.create(
-            session_id=session.session_id,
-            sequence=0,
-            event_type=EventType.SESSION_CREATED,
-            actor=EventActor.USER,
-            payload={"title": namespace.title},
-            created_at=session.created_at,
+        bootstrap = SessionBootstrapService().build(
+            SessionBootstrapCommand(
+                title=namespace.title,
+                user_input=namespace.prompt,
+                workspace_root=workspace.expanduser().resolve(),
+                policy_profile=namespace.policy_profile,
+            )
         )
-        SQLiteEventStore(database_path).append(event)
+        session = bootstrap.session
+        event_store = SQLiteEventStore(database_path)
+        for event in bootstrap.events:
+            event_store.append(event)
         SQLiteProjectionStore(database_path).save_session(session)
         payload = {
             "executed": False,

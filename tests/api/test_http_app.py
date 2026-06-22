@@ -83,7 +83,10 @@ def test_http_app_streams_session_events_as_sse(tmp_path: Path) -> None:
             sequence=1,
             event_type=EventType.TASK_PREPARED,
             actor=EventActor.HARNESS,
-            payload={"prompt": "stream me"},
+            payload={
+                "title": session.title,
+                "user_input": "stream me",
+            },
         )
     )
     client = TestClient(create_http_app(database_path))

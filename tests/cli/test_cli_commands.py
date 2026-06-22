@@ -44,16 +44,20 @@ def test_cli_run_command_creates_local_session(
     assert output["command"] == "run"
     assert output["prompt"] == "Fix tests"
     assert output["executed"] is False
-    assert output["status"] == SessionStatus.CREATED.value
+    assert output["status"] == SessionStatus.READY.value
     assert output["title"] == "Fix failing tests"
     assert output["workspace"] == "."
     assert output["database"] == str(database_path)
     assert session is not None
     assert session.title == "Fix failing tests"
-    assert session.status is SessionStatus.CREATED
-    assert len(events) == 1
+    assert session.status is SessionStatus.READY
+    assert len(events) == 3
     assert events[0].event_type is EventType.SESSION_CREATED
     assert events[0].payload == {"title": "Fix failing tests"}
+    assert events[1].event_type is EventType.USER_MESSAGE_RECEIVED
+    assert events[1].payload == {"content": "Fix tests"}
+    assert events[2].event_type is EventType.TASK_PREPARED
+    assert events[2].payload["workspace_root"] == str(Path(".").resolve())
 
 
 def test_cli_run_command_uses_settings_database_by_default(tmp_path: Path) -> None:
@@ -72,7 +76,7 @@ def test_cli_run_command_uses_settings_database_by_default(tmp_path: Path) -> No
 
     assert result.payload["database"] == str(database_path)
     assert session is not None
-    assert len(events) == 1
+    assert len(events) == 3
 
 
 def test_cli_run_command_database_option_overrides_settings(tmp_path: Path) -> None:

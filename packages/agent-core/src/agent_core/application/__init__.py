@@ -5,9 +5,17 @@ from agent_core.application.approvals import (
     ApprovalDecisionCommand,
     ApprovalDecisionService,
 )
+from agent_core.application.session_bootstrap import (
+    BootstrappedSession,
+    SessionBootstrapCommand,
+    SessionBootstrapService,
+)
 
 __all__ = [
     "ApprovalDecisionAction",
     "ApprovalDecisionCommand",
     "ApprovalDecisionService",
+    "BootstrappedSession",
+    "SessionBootstrapCommand",
+    "SessionBootstrapService",
 ]

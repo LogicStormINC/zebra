@@ -18,7 +18,10 @@ def test_harness_event_recorder_records_and_projects_session_events() -> None:
     first = recorder.record(
         event_type=EventType.TASK_PREPARED,
         actor=EventActor.HARNESS,
-        payload={"title": "Recorder test"},
+        payload={
+            "title": "Recorder test",
+            "user_input": "inspect recorder state",
+        },
     )
     second = recorder.record_draft(
         HarnessEventDraft(

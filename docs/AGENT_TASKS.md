@@ -2067,3 +2067,30 @@ Expose the first writable local API session entry by reusing the same durable ex
 - [x] `POST /sessions` can create a durable local session without immediate execution.
 - [x] `POST /sessions` with execution enabled persists the full harness event stream and returns terminal status data.
 - [x] Existing API read and stream routes remain unchanged.
+
+### P8-QUE-01 - Queued Session Bootstrap Events
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-API-06`
+- Branch: `codex/p8-que-01-session-bootstrap-events`
+- Owned paths: `apps/api/`, `apps/cli/`, `packages/agent-core/`, `tests/api/`, `tests/cli/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Persist enough durable bootstrap state for create-only sessions so later worker-owned execution can reconstruct the queued task input instead of receiving a session with only `SESSION_CREATED`.
+
+#### Deliverables
+
+- shared core-side session bootstrap service or helper
+- durable `SESSION_CREATED` + `USER_MESSAGE_RECEIVED` + `TASK_PREPARED` event emission for queued sessions
+- CLI and API create-only flows updated to use the shared bootstrap path
+- tests covering event stream contents and ready-to-run session status
+
+#### Acceptance
+
+- [x] Create-only CLI and API session flows persist user input and task-prepared metadata, not just the title.
+- [x] Queued sessions land in `ready` state instead of remaining `created`.
+- [x] Bootstrap event construction is shared instead of duplicated between app entry points.
+- [x] Existing explicit execute flows remain unchanged.

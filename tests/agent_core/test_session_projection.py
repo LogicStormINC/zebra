@@ -25,6 +25,7 @@ def test_rebuild_session_applies_status_transitions() -> None:
             sequence=1,
             event_type=EventType.TASK_PREPARED,
             actor=EventActor.HARNESS,
+            payload={"title": "bootstrap", "user_input": "continue"},
             created_at=created_at + timedelta(seconds=1),
         ),
         SessionEvent.create(
@@ -60,6 +61,7 @@ def test_rebuild_session_requires_session_created_first() -> None:
                     sequence=0,
                     event_type=EventType.TASK_PREPARED,
                     actor=EventActor.HARNESS,
+                    payload={"title": "bootstrap", "user_input": "continue"},
                     created_at=datetime(2026, 6, 18, 10, 0, tzinfo=UTC),
                 )
             ]
@@ -86,6 +88,7 @@ def test_rebuild_session_rejects_non_contiguous_sequences() -> None:
                     sequence=2,
                     event_type=EventType.TASK_PREPARED,
                     actor=EventActor.HARNESS,
+                    payload={"title": "bootstrap", "user_input": "continue"},
                     created_at=created_at + timedelta(seconds=1),
                 ),
             ]
@@ -111,6 +114,7 @@ def test_rebuild_session_applies_approval_granted_transition() -> None:
                 sequence=1,
                 event_type=EventType.TASK_PREPARED,
                 actor=EventActor.HARNESS,
+                payload={"title": "approval grant", "user_input": "continue"},
                 created_at=created_at + timedelta(seconds=1),
             ),
             SessionEvent.create(
@@ -160,6 +164,7 @@ def test_rebuild_session_applies_approval_rejected_transition() -> None:
                 sequence=1,
                 event_type=EventType.TASK_PREPARED,
                 actor=EventActor.HARNESS,
+                payload={"title": "approval reject", "user_input": "continue"},
                 created_at=created_at + timedelta(seconds=1),
             ),
             SessionEvent.create(

@@ -33,6 +33,45 @@ class UserMessageReceivedPayload(BaseModel):
         return stripped
 
 
+class TaskPreparedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str
+    user_input: str
+    workspace_root: str | None = None
+    policy_profile: str | None = None
+    max_attempts: int | None = None
+    max_model_calls: int | None = None
+    max_tool_calls: int | None = None
+
+    @field_validator("title", "user_input")
+    @classmethod
+    def ensure_required_text_not_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("field must not be blank")
+        return stripped
+
+    @field_validator("workspace_root", "policy_profile")
+    @classmethod
+    def ensure_optional_text_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("field must not be blank when provided")
+        return stripped
+
+    @field_validator("max_attempts", "max_model_calls", "max_tool_calls")
+    @classmethod
+    def ensure_optional_positive_int(cls, value: int | None) -> int | None:
+        if value is None:
+            return None
+        if value <= 0:
+            raise ValueError("field must be positive when provided")
+        return value
+
+
 class ToolExecutionCompletedPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -61,6 +100,7 @@ class ToolExecutionCompletedPayload(BaseModel):
 _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SESSION_CREATED: SessionCreatedPayload,
     EventType.USER_MESSAGE_RECEIVED: UserMessageReceivedPayload,
+    EventType.TASK_PREPARED: TaskPreparedPayload,
     EventType.TOOL_EXECUTION_COMPLETED: ToolExecutionCompletedPayload,
 }
 

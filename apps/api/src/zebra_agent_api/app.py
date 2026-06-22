@@ -5,9 +5,8 @@ from pathlib import Path
 from typing import TypedDict
 from uuid import UUID
 
-from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.sessions import Session
 from agent_core.harness.models import HarnessLoopResult
 from agent_integrations import build_model_gateway
 from agent_runtime import run_local_harness
@@ -94,16 +93,18 @@ class ZebraAgentApi:
             return parsed
 
         if not parsed["execute"]:
-            session = Session.create(title=parsed["title"])
-            event = SessionEvent.create(
-                session_id=session.session_id,
-                sequence=0,
-                event_type=EventType.SESSION_CREATED,
-                actor=EventActor.USER,
-                payload={"title": parsed["title"]},
-                created_at=session.created_at,
+            bootstrap = SessionBootstrapService().build(
+                SessionBootstrapCommand(
+                    title=parsed["title"],
+                    user_input=parsed["prompt"],
+                    workspace_root=Path(parsed["workspace"]).expanduser().resolve(),
+                    policy_profile=parsed["policy_profile"],
+                )
             )
-            SQLiteEventStore(self.database_path).append(event)
+            session = bootstrap.session
+            event_store = SQLiteEventStore(self.database_path)
+            for event in bootstrap.events:
+                event_store.append(event)
             SQLiteProjectionStore(self.database_path).save_session(session)
             return ApiResponse(
                 status_code=201,

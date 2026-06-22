@@ -91,7 +91,10 @@ def test_api_get_session_stream_returns_persisted_events(tmp_path: Path) -> None
             sequence=1,
             event_type=EventType.TASK_PREPARED,
             actor=EventActor.HARNESS,
-            payload={"prompt": "stream me"},
+            payload={
+                "title": session.title,
+                "user_input": "stream me",
+            },
         )
     )
 
@@ -114,7 +117,15 @@ def test_api_get_session_stream_returns_persisted_events(tmp_path: Path) -> None
             "event_type": EventType.TASK_PREPARED.value,
             "actor": EventActor.HARNESS.value,
             "created_at": prepared.created_at.isoformat(),
-            "payload": {"prompt": "stream me"},
+            "payload": {
+                "title": session.title,
+                "user_input": "stream me",
+                "workspace_root": None,
+                "policy_profile": None,
+                "max_attempts": None,
+                "max_model_calls": None,
+                "max_tool_calls": None,
+            },
         },
     ]
 
@@ -147,9 +158,10 @@ def test_api_create_session_persists_created_session(tmp_path: Path) -> None:
 
     assert response.status_code == 201
     assert response.body["executed"] is False
-    assert response.body["status"] == SessionStatus.CREATED.value
+    assert response.body["status"] == SessionStatus.READY.value
     assert session is not None
     assert session.title == "API create session"
+    assert session.status is SessionStatus.READY
 
 
 def test_api_create_session_execute_persists_harness_events(

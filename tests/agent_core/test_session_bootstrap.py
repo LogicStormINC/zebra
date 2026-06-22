@@ -1,0 +1,34 @@
+from pathlib import Path
+
+from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+from agent_core.domain.events import EventType
+from agent_core.domain.sessions import SessionStatus
+
+
+def test_session_bootstrap_service_builds_ready_session_events() -> None:
+    result = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Bootstrap task",
+            user_input="Inspect the repository.",
+            workspace_root=Path("/tmp/bootstrap"),
+            policy_profile="workspace_write",
+        )
+    )
+
+    assert [event.event_type for event in result.events] == [
+        EventType.SESSION_CREATED,
+        EventType.USER_MESSAGE_RECEIVED,
+        EventType.TASK_PREPARED,
+    ]
+    assert result.events[1].payload == {"content": "Inspect the repository."}
+    assert result.events[2].payload == {
+        "title": "Bootstrap task",
+        "user_input": "Inspect the repository.",
+        "workspace_root": "/tmp/bootstrap",
+        "policy_profile": "workspace_write",
+        "max_attempts": 1,
+        "max_model_calls": 1,
+        "max_tool_calls": 1,
+    }
+    assert result.session.status is SessionStatus.READY
+    assert result.session.current_sequence == 2

@@ -56,7 +56,8 @@ Expected result:
 
 - JSON output with `command=run`
 - a `session_id`
-- `status=created`
+- `status=ready`
+- persisted bootstrap events for session creation, user input, and task preparation
 
 Create and execute one durable harness attempt immediately:
 
@@ -190,6 +191,7 @@ Current behavior:
 - returns `text/event-stream`
 - replays persisted events in ascending `sequence`
 - closes after the current stored events are sent
+- create-only sessions now replay bootstrap events before any later worker or execute path continues
 
 Current limitation:
 

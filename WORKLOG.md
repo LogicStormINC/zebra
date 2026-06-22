@@ -26,6 +26,17 @@
   - route adapter `POST /sessions`
   - HTTP JSON request parsing、create、execute 与错误输入
 
+## 2026-06-22 Queued Session Bootstrap Events
+
+- 执行 `P8-QUE-01 - Queued Session Bootstrap Events`
+- 在 `agent-core` 新增共享 `SessionBootstrapService`
+- create-only CLI/API session 现在都会持久化：
+  - `SESSION_CREATED`
+  - `USER_MESSAGE_RECEIVED`
+  - `TASK_PREPARED`
+- create-only session 的 durable 状态从 `created` 前移到 `ready`
+- 为后续 worker-owned execution 预埋了可恢复的任务输入与 workspace 信息
+
 ## 2026-06-19
 
 - 将会与 `PROGRESS.md` 冲突的旧 `progress.md` 会话日志文件重命名为 `WORKLOG.md`

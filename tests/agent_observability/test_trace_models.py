@@ -78,7 +78,11 @@ def test_build_trace_record_rejects_empty_event_stream() -> None:
 def test_build_trace_record_rejects_mixed_sessions() -> None:
     events = (
         _event(EventType.SESSION_CREATED, sequence=0, payload={"title": "one"}),
-        _event(EventType.TASK_PREPARED, sequence=1),
+        _event(
+            EventType.TASK_PREPARED,
+            sequence=1,
+            payload={"title": "one", "user_input": "continue"},
+        ),
     )
 
     with pytest.raises(ValueError, match="one session"):
