@@ -14,13 +14,14 @@ The current repository direction is:
 
 ## Current Status
 
-The repository is in `Phase 8 - CLI/API Productization`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, the control-plane foundation includes durable session events and recovery/indexing primitives, Phase 5 has closed out with a typed workspace context compiler, Phase 6 has closed out with deterministic local policy and approval hardening, Phase 7 has closed out with local trace, replay, eval, and release-gate foundations wired into `make check`, and Phase 8 now has CLI command skeletons, local session operations, API health/session route adaptation, settings-backed CLI/API database defaults, a thin FastAPI serving layer, and read-only SSE session replay.
+The repository is in `Phase 8 - CLI/API Productization`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, the control-plane foundation includes durable session events and recovery/indexing primitives, Phase 5 has closed out with a typed workspace context compiler, Phase 6 has closed out with deterministic local policy and approval hardening, Phase 7 has closed out with local trace, replay, eval, and release-gate foundations wired into `make check`, and Phase 8 now has CLI command skeletons, local session operations, API health/session route adaptation, settings-backed CLI/API database defaults, a thin FastAPI serving layer, read-only SSE session replay, and an executable local operator runbook.
 
 Read in this order:
 
 1. `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`
 2. `AGENTS.md`
 3. `PROGRESS.md`
+4. `docs/operator_runbook.md`
 
 ## Repository Shape
 
@@ -46,3 +47,11 @@ Or directly:
 uv sync --all-packages --group dev
 uv run pytest
 ```
+
+## Operator Entry
+
+For the current local operator workflow, start with `docs/operator_runbook.md`. It covers:
+
+- CLI session creation and inspection
+- local FastAPI serving
+- SSE session stream replay

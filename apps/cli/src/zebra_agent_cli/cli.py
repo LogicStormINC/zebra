@@ -14,6 +14,7 @@ from agent_core.application.approvals import (
     ApprovalDecisionService,
 )
 from agent_core.application.session_projection import apply_event
+from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
@@ -104,6 +105,15 @@ def _run_result(
 ) -> CliCommandResult:
     session = Session.create(title=namespace.title)
     database_path = _database_path(namespace.database, settings)
+    event = SessionEvent.create(
+        session_id=session.session_id,
+        sequence=0,
+        event_type=EventType.SESSION_CREATED,
+        actor=EventActor.USER,
+        payload={"title": namespace.title},
+        created_at=session.created_at,
+    )
+    SQLiteEventStore(database_path).append(event)
     SQLiteProjectionStore(database_path).save_session(session)
     return CliCommandResult(
         command="run",

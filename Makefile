@@ -1,6 +1,6 @@
 PYTHON := uv run
 
-.PHONY: sync check eval test tree
+.PHONY: sync check eval test tree api-serve
 
 sync:
 	uv sync --all-packages --group dev
@@ -18,3 +18,6 @@ test:
 
 tree:
 	find apps packages tests -maxdepth 3 | sort
+
+api-serve:
+	uv run uvicorn zebra_agent_api.http:create_http_app --factory --host 127.0.0.1 --port 8000

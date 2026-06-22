@@ -1903,3 +1903,32 @@ Add the first read-only session stream endpoint so operators can replay persiste
 - [x] Missing sessions return deterministic `not_found` output for the stream path.
 - [x] Non-stream session routes remain unchanged.
 - [x] Streaming implementation remains a thin adapter over existing API/storage logic.
+
+### P8-DOC-01 - Operator Runbook
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P8-API-04`
+- Branch: `codex/p8-doc-01-operator-runbook`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`, `Makefile`, `pyproject.toml`
+
+#### Goal
+
+Close the remaining Phase 8 operator guidance gap by documenting a runnable local workflow for CLI, HTTP API, and session stream usage.
+
+#### Deliverables
+
+- operator runbook for local CLI/API workflow
+- explicit API serve command
+- CLI run bootstrap event persistence for stream replay consistency
+- README pointer to the runbook
+- validation evidence that the documented commands work end to end
+
+#### Acceptance
+
+- [x] Operators have one durable runbook covering setup, CLI usage, API serving, and stream replay.
+- [x] The runbook points to executable local commands, not placeholder prose.
+- [x] A session created through CLI has a replayable bootstrap event for the stream endpoint.
+- [x] README points to the runbook as the current operator entry.
+- [x] The documented flow is validated in the current repository state.

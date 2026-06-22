@@ -34,6 +34,7 @@ def test_cli_run_command_creates_local_session(
     output = json.loads(capsys.readouterr().out)
     session_id = SessionId(UUID(output["session_id"]))
     session = SQLiteProjectionStore(database_path).get_session(session_id)
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
 
     assert output["command"] == "run"
     assert output["prompt"] == "Fix tests"
@@ -44,6 +45,9 @@ def test_cli_run_command_creates_local_session(
     assert session is not None
     assert session.title == "Fix failing tests"
     assert session.status is SessionStatus.CREATED
+    assert len(events) == 1
+    assert events[0].event_type is EventType.SESSION_CREATED
+    assert events[0].payload == {"title": "Fix failing tests"}
 
 
 def test_cli_run_command_uses_settings_database_by_default(tmp_path: Path) -> None:
@@ -56,9 +60,13 @@ def test_cli_run_command_uses_settings_database_by_default(tmp_path: Path) -> No
     session = SQLiteProjectionStore(database_path).get_session(
         SessionId(UUID(str(result.payload["session_id"])))
     )
+    events = SQLiteEventStore(database_path).list_for_session(
+        SessionId(UUID(str(result.payload["session_id"])))
+    )
 
     assert result.payload["database"] == str(database_path)
     assert session is not None
+    assert len(events) == 1
 
 
 def test_cli_run_command_database_option_overrides_settings(tmp_path: Path) -> None:

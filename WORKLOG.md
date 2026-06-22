@@ -994,6 +994,35 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 Operator Runbook
+
+- 执行 `P8-DOC-01 - Operator Runbook`
+- 新增：
+  - `docs/operator_runbook.md`
+  - `make api-serve`
+  - `uvicorn` local operator dependency
+- 行为对齐：
+  - CLI `run` 现在会写入 `session_created` bootstrap event
+  - 刚创建的 session 可以立即被 `/sessions/{id}/stream` replay
+- 文档覆盖：
+  - local bootstrap
+  - CLI `run` / `inspect` / `resume` / `approve`
+  - API `health` / `sessions/{id}`
+  - SSE `sessions/{id}/stream`
+- 手工验证结果：
+  - `make api-serve` 可启动本地 API
+  - `uv run zebra-agent run ...` 可创建 session
+  - `curl /health`、`curl /sessions/{id}`、`curl -N /sessions/{id}/stream` 均验证通过
+- 本轮验证结果：
+  - `uv lock` 通过
+  - `make sync` 通过
+  - `uv run python -c "import uvicorn; print(uvicorn.__version__)"` 通过
+  - `uv run pytest tests/cli/test_cli_commands.py` 通过，9 passed
+  - `uv run ruff check apps/cli/src/zebra_agent_cli tests/cli` 通过
+  - `uv run mypy apps/cli tests/cli` 通过
+  - `uv run pytest` 通过，204 passed
+  - `make check` 通过
+
 ## 2026-06-22 Session Stream Foundation
 
 - 执行 `P8-API-04 - Session Stream Foundation`

@@ -5,7 +5,7 @@
 - Active phase: `Phase 8 - CLI/API Productization`
 - Repository status: `phase 8 ready`
 - Current focus:
-  - add session stream foundation on top of the HTTP API layer
+  - close Phase 8 operator runbook coverage with executable local guidance
   - keep CLI/API entry points thin composition layers over existing package contracts
 
 ## Completed
@@ -83,16 +83,17 @@
 - `P8-CONFIG-02 - Entry Point Settings Wiring`
 - `P8-API-03 - FastAPI Serving Foundation`
 - `P8-API-04 - Session Stream Foundation`
+- `P8-DOC-01 - Operator Runbook`
 
 ## Current Focus
 
-- Phase 8 has deterministic CLI command parsing, local session operations, settings-backed database defaults, framework-independent route adaptation, a thin FastAPI serving layer, and read-only session stream replay over SSE
-- auth, operator runbook coverage, and runtime model gateway wiring remain later task cards
+- Phase 8 has deterministic CLI command parsing, local session operations, settings-backed database defaults, framework-independent route adaptation, a thin FastAPI serving layer, read-only session stream replay over SSE, and an executable local operator runbook
+- auth and runtime model gateway wiring remain later task cards
 
 ## Next Unlocks
 
-- `P8-API-04` is complete
-- the next step is to add operator runbook coverage or auth foundations
+- `P8-DOC-01` is complete
+- the next step is to add auth foundations for the local API layer
 
 ## Active Documents
 
