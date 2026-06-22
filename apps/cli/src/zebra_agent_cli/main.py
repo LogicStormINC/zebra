@@ -1,5 +1,9 @@
-from agent_core.domain.sessions import SessionStatus
+from __future__ import annotations
+
+import sys
+
+from zebra_agent_cli.cli import main as cli_main
 
 
 def main() -> None:
-    print(f"zebra-agent CLI bootstrap ready: {SessionStatus.CREATED.value}")
+    raise SystemExit(cli_main(sys.argv[1:]))

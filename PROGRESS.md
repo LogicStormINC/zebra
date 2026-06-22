@@ -5,7 +5,7 @@
 - Active phase: `Phase 8 - CLI/API Productization`
 - Repository status: `phase 8 ready`
 - Current focus:
-  - start local-first CLI/API productization on top of the completed core, runtime, policy, context, and eval foundations
+  - add deterministic CLI command skeletons for `run`, `resume`, `inspect`, and `approve`
   - keep CLI/API entry points thin composition layers over existing package contracts
 
 ## Completed
@@ -73,16 +73,17 @@
 - `P7-EVAL-04 - Local Release Gate Baseline`
 - `P7-EVAL-05 - Eval Release Check Integration`
 - `P7-EVAL-06 - Phase 7 Closeout Record`
+- `P8-CLI-01 - CLI Command Skeleton`
 
 ## Current Focus
 
-- Phase 7 has closed out with typed trace/audit/cost models, local JSONL trace persistence, deterministic local replay summaries, local eval case/grader and runner support, an expanded MVP baseline dataset, and a local release gate wired into `make check`
-- Phase 8 should begin with CLI commands for `run`, `resume`, `inspect`, and `approve`, followed by API health/session foundations
+- Phase 8 has started with deterministic CLI command parsing for `run`, `resume`, `inspect`, and `approve`
+- CLI commands currently emit local intent output; persistent storage and worker/API wiring remain later task cards
 
 ## Next Unlocks
 
-- `P7-EVAL-06` is complete
-- the next step is to register the first ready Phase 8 CLI/API productization task card
+- `P8-CLI-01` is complete
+- the next step is to wire the CLI `run` command to a local session creation path or register the first API health/session task
 
 ## Active Documents
 

@@ -994,6 +994,28 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 CLI Command Skeleton
+
+- 执行 `P8-CLI-01 - CLI Command Skeleton`
+- `apps/cli` 新增：
+  - deterministic CLI parser
+  - `run` command intent output
+  - `resume` command intent output
+  - `inspect` command intent output
+  - `approve` command intent output
+- 当前行为：
+  - CLI 命令只输出本地 intent，不提前接 storage、worker 或 API
+  - `main.py` 保持入口转发，解析逻辑在 `cli.py`
+- 新增测试：
+  - `tests/cli/test_cli_commands.py`
+- 本轮验证结果：
+  - `uv run pytest tests/cli/test_cli_commands.py` 通过
+  - `uv run ruff check apps/cli/src/zebra_agent_cli tests/cli` 通过
+  - `uv run mypy apps/cli tests/cli` 通过
+  - `uv run zebra-agent run "Fix tests" --title "Fix failing tests"` 通过
+  - `uv run pytest` 通过，180 passed
+  - `make check` 通过，包含 eval release gate
+
 ## 2026-06-22 Phase 7 Closeout Record
 
 - 执行 `P7-EVAL-06 - Phase 7 Closeout Record`

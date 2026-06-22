@@ -1625,3 +1625,35 @@ Close Phase 7 by recording eval and observability evidence, known deferrals, and
 - [x] `PROGRESS.md` identifies Phase 8 as the next active implementation phase.
 - [x] `README.md` reflects Phase 7 closeout and Phase 8 readiness.
 - [x] `WORKLOG.md` records Phase 7 closeout validation evidence.
+
+## Phase 8 Task Board
+
+### P8-CLI-01 - CLI Command Skeleton
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P7-EVAL-06`
+- Branch: `codex/p8-cli-01-command-skeleton`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a deterministic CLI command skeleton for `run`, `resume`, `inspect`, and `approve` before wiring persistent storage, worker execution, or API calls.
+
+#### Deliverables
+
+- CLI parser and execution result model
+- `run` command intent output
+- `resume` command intent output
+- `inspect` command intent output
+- `approve` command intent output
+- tests covering all Phase 8 starter CLI commands
+
+#### Acceptance
+
+- [x] `zebra-agent run` can parse prompt, title, and workspace intent.
+- [x] `zebra-agent resume` can parse a session id.
+- [x] `zebra-agent inspect` can parse a session id.
+- [x] `zebra-agent approve` can parse an approval decision.
+- [x] CLI command outputs are deterministic and test-covered.
