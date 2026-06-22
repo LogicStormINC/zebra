@@ -20,11 +20,22 @@ class RouteAdapter:
         if method == "GET" and request.path == "/health":
             return self.app.health()
         if method == "GET" and request.path.startswith("/sessions/"):
-            session_id = request.path.removeprefix("/sessions/")
-            if not session_id:
+            parts = _session_path_parts(request.path)
+            if parts == ():
                 return _not_found(request)
-            return self.app.get_session(session_id)
+            if len(parts) == 1:
+                return self.app.get_session(parts[0])
+            if len(parts) == 2 and parts[1] == "stream":
+                return self.app.get_session_stream(parts[0])
+            return _not_found(request)
         return _not_found(request)
+
+
+def _session_path_parts(path: str) -> tuple[str, ...]:
+    suffix = path.removeprefix("/sessions/")
+    if not suffix:
+        return ()
+    return tuple(part for part in suffix.split("/") if part)
 
 
 def _not_found(request: RouteRequest) -> ApiResponse:

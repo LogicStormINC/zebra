@@ -1876,3 +1876,30 @@ Add the first HTTP framework serving layer on top of the existing API route adap
 - [x] HTTP `GET /sessions/{session_id}` returns the same session payload as the route adapter.
 - [x] Unsupported paths or methods return deterministic `not_found` output.
 - [x] FastAPI handlers remain thin adapters over the existing API app and route adapter.
+
+### P8-API-04 - Session Stream Foundation
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-API-03`
+- Branch: `codex/p8-api-04-session-stream`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add the first read-only session stream endpoint so operators can replay persisted session events over HTTP before real-time streaming or websocket delivery exists.
+
+#### Deliverables
+
+- API session event listing for one session
+- route adapter support for `GET /sessions/{session_id}/stream`
+- HTTP SSE response built from persisted session events
+- tests covering stream replay, missing sessions, and deterministic path handling
+
+#### Acceptance
+
+- [x] `GET /sessions/{session_id}/stream` replays persisted session events in order.
+- [x] Missing sessions return deterministic `not_found` output for the stream path.
+- [x] Non-stream session routes remain unchanged.
+- [x] Streaming implementation remains a thin adapter over existing API/storage logic.

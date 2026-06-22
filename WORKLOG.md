@@ -994,6 +994,29 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 Session Stream Foundation
+
+- 执行 `P8-API-04 - Session Stream Foundation`
+- 新增：
+  - `GET /sessions/{session_id}/stream` 路径
+  - API session event listing for one session
+  - HTTP `text/event-stream` replay built from persisted session events
+- 当前行为：
+  - stream 端点按 sequence 顺序回放当前已持久化事件
+  - 缺失 session 继续返回确定性的 `not_found`
+  - 普通 `GET /sessions/{session_id}` 行为不变
+  - 当前是 replay foundation，不是实时增量订阅
+- 新增测试：
+  - API session stream read path
+  - route adapter session stream path handling
+  - HTTP SSE replay and missing-session coverage
+- 本轮验证结果：
+  - `uv run pytest tests/api/test_api_app.py tests/api/test_routes.py tests/api/test_http_app.py` 通过，18 passed
+  - `uv run ruff check apps/api/src/zebra_agent_api tests/api` 通过
+  - `uv run mypy apps/api tests/api` 通过
+  - `uv run pytest` 通过，204 passed
+  - `make check` 通过
+
 ## 2026-06-22 FastAPI Serving Foundation
 
 - 执行 `P8-API-03 - FastAPI Serving Foundation`
