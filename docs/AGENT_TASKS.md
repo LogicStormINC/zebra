@@ -1939,7 +1939,7 @@ Close the remaining Phase 8 operator guidance gap by documenting a runnable loca
 - Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P8-DOC-01`
-- Branch: `codex/p8-api-05-local-auth`
+- Branch: `codex/p8-mod-01-openai-compatible-gateway`
 - Owned paths: `apps/api/`, `apps/config/`, `configs/`, `tests/api/`, `tests/config/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`, `pyproject.toml`
 
 #### Goal
@@ -1959,3 +1959,30 @@ Add the first local API auth guard so non-health HTTP routes can require a confi
 - [x] When no auth token is configured, current local API behavior remains unchanged.
 - [x] When an auth token is configured, session read and stream endpoints require a matching bearer token.
 - [x] Auth failures return deterministic HTTP `401` output.
+
+### P8-MOD-01 - OpenAI-Compatible Model Gateway Adapter
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-API-05`
+- Branch: `codex/p8-api-05-local-auth`
+- Owned paths: `packages/agent-integrations/`, `tests/agent_integrations/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`, `pyproject.toml`
+
+#### Goal
+
+Add the first real model gateway adapter for OpenAI-compatible chat completions so DeepSeek-backed runtime wiring has a reusable foundation before it is attached to CLI or API execution flows.
+
+#### Deliverables
+
+- new `agent-integrations` workspace package
+- OpenAI-compatible HTTP model gateway adapter
+- settings-to-gateway factory for current DeepSeek configuration shape
+- tests covering request serialization, response parsing, tool-call parsing, and missing API key handling
+
+#### Acceptance
+
+- [x] The adapter can convert core `SessionMessage` inputs into an OpenAI-compatible chat completion request.
+- [x] The adapter can parse assistant text, usage, and optional tool calls into `ModelCompletion`.
+- [x] Missing configured API keys fail deterministically before any HTTP request.
+- [x] The implementation remains isolated from `agent-core` domain rules beyond the existing port contract.

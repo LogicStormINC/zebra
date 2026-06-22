@@ -994,6 +994,30 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 OpenAI-Compatible Model Gateway Adapter
+
+- 执行 `P8-MOD-01 - OpenAI-Compatible Model Gateway Adapter`
+- 新增：
+  - `packages/agent-integrations`
+  - `OpenAICompatibleModelGateway`
+  - `build_model_gateway(settings, env=...)`
+- 当前行为：
+  - 使用 OpenAI-compatible `/chat/completions` 接口
+  - 将 core `SessionMessage` 序列化为 chat messages
+  - 解析 assistant text、usage、tool calls 到 `ModelCompletion`
+  - 缺失 API key 时在发请求前确定性失败
+- 当前边界：
+  - 这是 provider adapter foundation，还没有接到 CLI/API 执行主路径
+  - 当前按 DeepSeek 文档使用 `https://api.deepseek.com/chat/completions`
+- 本轮验证结果：
+  - `uv lock` 通过
+  - `make sync` 通过
+  - `uv run pytest tests/agent_integrations/test_openai_compatible.py` 通过，4 passed
+  - `uv run ruff check packages/agent-integrations/src/agent_integrations tests/agent_integrations` 通过
+  - `uv run mypy packages/agent-integrations tests/agent_integrations` 通过
+  - `uv run pytest` 通过，213 passed
+  - `make check` 通过
+
 ## 2026-06-22 Local API Auth Foundation
 
 - 执行 `P8-API-05 - Local API Auth Foundation`
