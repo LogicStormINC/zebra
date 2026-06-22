@@ -3,31 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
-from agent_core.harness import HarnessLoop, HarnessTask, SingleAttemptOrchestrator
 from agent_core.harness.models import HarnessLoopResult
 from agent_core.harness.projection import HarnessTraceProjector
 from agent_integrations import build_model_gateway
-from agent_runtime import LocalRuntime, LocalWorkspace
-from agent_security import LocalPolicyEngine, PolicyProfile
+from agent_runtime import run_local_harness
+from agent_security import PolicyProfile
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
-from agent_tools import (
-    CommandRunTool,
-    FileReadTool,
-    GitStatusTool,
-    PatchApplyTool,
-    TestsRunTool,
-    ToolExecutor,
-    ToolRegistry,
-)
-from agent_tools.errors import ToolRegistryError
 from zebra_agent_config import ZebraAgentSettings
-
-DEFAULT_TEST_PRESETS = {
-    "pytest": ("uv", "run", "pytest"),
-    "check": ("make", "check"),
-    "test": ("make", "test"),
-}
 
 
 @dataclass(frozen=True)
@@ -46,20 +28,12 @@ def execute_durable_run(
     settings: ZebraAgentSettings,
     policy_profile: PolicyProfile = PolicyProfile.WORKSPACE_WRITE,
 ) -> DurableRunResult:
-    result = HarnessLoop().run(
-        HarnessTask(
-            title=title,
-            user_input=prompt,
-            max_attempts=1,
-            max_model_calls=1,
-            max_tool_calls=1,
-            workspace_root=workspace_root,
-        ),
-        SingleAttemptOrchestrator(
-            build_model_gateway(settings),
-            LocalPolicyEngine(profile=policy_profile),
-            _LocalToolGateway(workspace_root),
-        ).run,
+    result = run_local_harness(
+        prompt=prompt,
+        title=title,
+        workspace_root=workspace_root,
+        model_gateway=build_model_gateway(settings),
+        policy_profile=policy_profile,
     )
     event_store = SQLiteEventStore(database_path)
     for event in result.events:
@@ -102,35 +76,3 @@ def serialize_run_execution(result: DurableRunResult) -> dict[str, object]:
             for attempt in trace.attempts
         ],
     }
-
-
-class _LocalToolGateway:
-    def __init__(self, workspace_root: Path) -> None:
-        self._workspace = LocalWorkspace(workspace_root)
-        self._workspace.ensure()
-        runtime = LocalRuntime()
-        registry = ToolRegistry()
-        tools = (
-            FileReadTool(self._workspace),
-            GitStatusTool(runtime, self._workspace),
-            PatchApplyTool(runtime, self._workspace),
-            TestsRunTool(runtime, self._workspace, DEFAULT_TEST_PRESETS),
-            CommandRunTool(runtime, self._workspace),
-        )
-        for tool in tools:
-            registry.register(tool.contract, tool.handle)
-        self._executor = ToolExecutor(registry)
-
-    def execute(self, tool_call: ToolCall) -> ToolResult:
-        try:
-            return self._executor.execute(tool_call)
-        except ToolRegistryError as exc:
-            return ToolResult(
-                tool_call_id=tool_call.tool_call_id,
-                status=ToolCallStatus.FAILED,
-                output="",
-                metadata={
-                    "reason": "tool_validation_error",
-                    "detail": str(exc),
-                },
-            )

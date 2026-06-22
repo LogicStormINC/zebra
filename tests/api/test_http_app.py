@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import zebra_agent_api.app as api_app_module
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
@@ -114,6 +115,80 @@ def test_http_app_stream_missing_session_returns_not_found(tmp_path: Path) -> No
     }
 
 
+def test_http_app_creates_session(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post(
+        "/sessions",
+        json={
+            "prompt": "Inspect the workspace",
+            "title": "HTTP create session",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["executed"] is False
+    assert response.json()["title"] == "HTTP create session"
+
+
+def test_http_app_executes_session_create(tmp_path: Path, monkeypatch) -> None:
+    from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
+    from agent_core.domain.identifiers import new_message_id
+    from agent_core.domain.messages import MessageRole, SessionMessage
+    from agent_core.domain.modeling import ModelCompletion
+
+    def fake_build_model_gateway(settings: ZebraAgentSettings):
+        del settings
+        return ScriptedModelGateway(
+            responses=(
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content="HTTP execution complete.",
+                            created_at=_created_at(),
+                        )
+                    )
+                ),
+            )
+        )
+
+    monkeypatch.setattr(api_app_module, "build_model_gateway", fake_build_model_gateway)
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite", settings=_settings("secret")))
+
+    response = client.post(
+        "/sessions",
+        headers={"Authorization": "Bearer secret"},
+        json={
+            "prompt": "Inspect the workspace",
+            "title": "HTTP execute session",
+            "workspace": str(tmp_path),
+            "execute": True,
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["executed"] is True
+    assert response.json()["assistant_message"] == "HTTP execution complete."
+
+
+def test_http_app_rejects_invalid_json_body(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post(
+        "/sessions",
+        content="{invalid",
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "status": "invalid_request",
+        "reason": "request body must be valid JSON",
+    }
+
+
 def test_http_app_health_remains_public_with_auth_enabled(tmp_path: Path) -> None:
     client = TestClient(create_http_app(tmp_path / "sessions.sqlite", settings=_settings("secret")))
 
@@ -201,3 +276,9 @@ def _settings(auth_token: str | None) -> ZebraAgentSettings:
             model="test-model",
         ),
     )
+
+
+def _created_at():
+    from datetime import UTC, datetime
+
+    return datetime(2026, 6, 22, 13, 25, tzinfo=UTC)

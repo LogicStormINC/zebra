@@ -2040,3 +2040,30 @@ Extend the local CLI with one explicit durable execution path that creates a ses
 - [x] `zebra-agent run --execute` persists the full harness event stream to the local event store.
 - [x] The durable execution path can complete with either assistant-only output or one builtin tool execution.
 - [x] Final CLI output exposes terminal status and a compact trace without requiring direct database inspection.
+
+### P8-API-06 - API Session Create And Execute
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-CLI-05`
+- Branch: `codex/p8-api-06-session-create-execute`
+- Owned paths: `apps/api/`, `apps/cli/`, `packages/agent-runtime/`, `tests/api/`, `tests/cli/`, `tests/agent_runtime/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose the first writable local API session entry by reusing the same durable execution wiring as the CLI while keeping both app entry points as thin composition layers.
+
+#### Deliverables
+
+- shared local harness runner in `agent-runtime`
+- API `POST /sessions` path for local session creation with optional immediate execution
+- deterministic API response for final session state and compact trace when execution is requested
+- tests covering create-only and execute-on-create behavior through app, route adapter, and HTTP layers
+
+#### Acceptance
+
+- [x] CLI durable execution wiring is reused through a shared runtime-side helper instead of app-to-app imports.
+- [x] `POST /sessions` can create a durable local session without immediate execution.
+- [x] `POST /sessions` with execution enabled persists the full harness event stream and returns terminal status data.
+- [x] Existing API read and stream routes remain unchanged.

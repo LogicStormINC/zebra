@@ -12,6 +12,20 @@
   - assistant-only durable execution
   - `files.read` builtin tool durable execution
 
+## 2026-06-22 API Session Create And Execute
+
+- 执行 `P8-API-06 - API Session Create And Execute`
+- 把本地 harness 执行 wiring 抽到 `agent-runtime.run_local_harness`
+- CLI durable execution 改为复用共享 runtime-side helper
+- 新增 API `POST /sessions`：
+  - `execute=false` 时仅创建 durable session
+  - `execute=true` 时立即运行一轮本地 harness，并持久化完整事件流
+- 新增测试：
+  - runtime shared harness runner
+  - API app create-only / execute paths
+  - route adapter `POST /sessions`
+  - HTTP JSON request parsing、create、execute 与错误输入
+
 ## 2026-06-19
 
 - 将会与 `PROGRESS.md` 冲突的旧 `progress.md` 会话日志文件重命名为 `WORKLOG.md`

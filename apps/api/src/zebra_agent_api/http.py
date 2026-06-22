@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
@@ -28,10 +29,14 @@ def create_http_app(
         auth_error = _authorize_request(request, active_settings)
         if auth_error is not None:
             return auth_error
+        body, body_error = await _read_request_body(request)
+        if body_error is not None:
+            return body_error
         response = adapter.handle(
             RouteRequest(
                 method=request.method,
                 path=request.url.path,
+                body=body,
             )
         )
         if _is_stream_request(request) and response.status_code == 200:
@@ -48,6 +53,33 @@ def create_http_app(
 
 def _is_stream_request(request: Request) -> bool:
     return request.method.upper() == "GET" and request.url.path.endswith("/stream")
+
+
+async def _read_request_body(request: Request) -> tuple[dict[str, Any] | None, JSONResponse | None]:
+    if request.method.upper() not in {"POST", "PUT", "PATCH"}:
+        return None, None
+    raw_body = await request.body()
+    if not raw_body:
+        return None, None
+    try:
+        payload = await request.json()
+    except JSONDecodeError:
+        return None, JSONResponse(
+            status_code=400,
+            content={
+                "status": "invalid_request",
+                "reason": "request body must be valid JSON",
+            },
+        )
+    if not isinstance(payload, dict):
+        return None, JSONResponse(
+            status_code=400,
+            content={
+                "status": "invalid_request",
+                "reason": "request body must be a JSON object",
+            },
+        )
+    return dict(payload), None
 
 
 def _encode_sse_events(events: object) -> list[str]:

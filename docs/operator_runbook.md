@@ -138,11 +138,36 @@ Read one session:
 curl http://127.0.0.1:8000/sessions/<session_id>
 ```
 
+Create one session through the API without immediate execution:
+
+```bash
+curl -X POST http://127.0.0.1:8000/sessions \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"Inspect the current workspace","title":"API create demo"}'
+```
+
+Create and execute one durable local harness attempt through the API:
+
+```bash
+curl -X POST http://127.0.0.1:8000/sessions \
+  -H "Content-Type: application/json" \
+  -d "{\"prompt\":\"Inspect the current workspace\",\"title\":\"API execute demo\",\"workspace\":\"$(pwd)\",\"execute\":true}"
+```
+
 When `ZEBRA_API_AUTH_TOKEN` is set, pass a bearer token for non-health routes:
 
 ```bash
 curl -H "Authorization: Bearer $ZEBRA_API_AUTH_TOKEN" \
   http://127.0.0.1:8000/sessions/<session_id>
+```
+
+Authenticated create or execute:
+
+```bash
+curl -X POST http://127.0.0.1:8000/sessions \
+  -H "Authorization: Bearer $ZEBRA_API_AUTH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"prompt\":\"Inspect the current workspace\",\"workspace\":\"$(pwd)\",\"execute\":true}"
 ```
 
 ## Session Stream Replay
@@ -183,6 +208,7 @@ make check
 ## Known Boundaries
 
 - The API currently exposes health, session read, and session stream replay only.
+- The API now also exposes `POST /sessions` for local session creation and optional immediate execution.
 - The stream endpoint is read-only and does not subscribe to future events.
 - Local API auth is optional and uses one static bearer token from settings.
 - Health remains public even when the local bearer token is enabled.

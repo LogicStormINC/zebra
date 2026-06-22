@@ -5,6 +5,9 @@ description = "API composition root for Zebra Agent."
 requires-python = ">=3.12,<4.0"
 dependencies = [
     "agent-core",
+    "agent-integrations",
+    "agent-runtime",
+    "agent-security",
     "agent-storage",
     "fastapi>=0.116.1,<0.117.0",
     "zebra-agent-config",
@@ -12,6 +15,9 @@ dependencies = [
 
 [tool.uv.sources]
 agent-core = { workspace = true }
+agent-integrations = { workspace = true }
+agent-runtime = { workspace = true }
+agent-security = { workspace = true }
 agent-storage = { workspace = true }
 zebra-agent-config = { workspace = true }
 

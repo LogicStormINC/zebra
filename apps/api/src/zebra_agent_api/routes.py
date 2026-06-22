@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from zebra_agent_api.app import ApiResponse, ZebraAgentApi
 
@@ -9,6 +10,7 @@ from zebra_agent_api.app import ApiResponse, ZebraAgentApi
 class RouteRequest:
     method: str
     path: str
+    body: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -19,6 +21,8 @@ class RouteAdapter:
         method = request.method.upper()
         if method == "GET" and request.path == "/health":
             return self.app.health()
+        if method == "POST" and request.path == "/sessions":
+            return self.app.create_session(request.body or {})
         if method == "GET" and request.path.startswith("/sessions/"):
             parts = _session_path_parts(request.path)
             if parts == ():

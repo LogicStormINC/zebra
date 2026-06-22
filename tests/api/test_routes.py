@@ -45,6 +45,25 @@ def test_route_adapter_returns_not_found_for_unknown_route(tmp_path: Path) -> No
     }
 
 
+def test_route_adapter_handles_session_create(tmp_path: Path) -> None:
+    adapter = RouteAdapter(create_app(tmp_path / "sessions.sqlite"))
+
+    response = adapter.handle(
+        RouteRequest(
+            method="POST",
+            path="/sessions",
+            body={
+                "prompt": "Create one session",
+                "title": "Route create session",
+            },
+        )
+    )
+
+    assert response.status_code == 201
+    assert response.body["executed"] is False
+    assert response.body["title"] == "Route create session"
+
+
 def test_route_adapter_handles_session_stream(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session = SQLiteProjectionStore(database_path).save_session(

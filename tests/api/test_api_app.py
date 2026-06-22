@@ -1,7 +1,12 @@
 from pathlib import Path
 
+import zebra_agent_api.app as api_app_module
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import SessionId, new_message_id, new_tool_call_id
+from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.tools import ToolCall
 from agent_storage import SQLiteProjectionStore
 from zebra_agent_api.app import create_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
@@ -126,6 +131,163 @@ def test_api_get_session_stream_returns_not_found(tmp_path: Path) -> None:
     }
 
 
+def test_api_create_session_persists_created_session(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    response = create_app(database_path, settings=_settings(database_path)).create_session(
+        {
+            "prompt": "Inspect the workspace",
+            "title": "API create session",
+        }
+    )
+
+    session = SQLiteProjectionStore(database_path).get_session(
+        SessionId(response.body["session_id"])
+    )
+
+    assert response.status_code == 201
+    assert response.body["executed"] is False
+    assert response.body["status"] == SessionStatus.CREATED.value
+    assert session is not None
+    assert session.title == "API create session"
+
+
+def test_api_create_session_execute_persists_harness_events(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    def fake_build_model_gateway(settings: ZebraAgentSettings):
+        del settings
+        from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
+
+        return ScriptedModelGateway(
+            responses=(
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content="API execution complete.",
+                            created_at=_created_at(),
+                        )
+                    )
+                ),
+            )
+        )
+
+    monkeypatch.setattr(api_app_module, "build_model_gateway", fake_build_model_gateway)
+
+    response = create_app(database_path, settings=_settings(database_path)).create_session(
+        {
+            "prompt": "Inspect the workspace",
+            "title": "API execute session",
+            "workspace": str(tmp_path),
+            "execute": True,
+        }
+    )
+
+    session = SQLiteProjectionStore(database_path).get_session(
+        SessionId(response.body["session_id"])
+    )
+
+    assert response.status_code == 201
+    assert response.body["executed"] is True
+    assert response.body["status"] == SessionStatus.COMPLETED.value
+    assert response.body["assistant_message"] == "API execution complete."
+    assert response.body["trace"] == [
+        {
+            "attempt_number": 1,
+            "assistant_message": "API execution complete.",
+            "tools": [],
+        }
+    ]
+    assert session is not None
+    assert session.status is SessionStatus.COMPLETED
+
+
+def test_api_create_session_execute_runs_builtin_tool(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    (tmp_path / "README.md").write_text("api readme\n", encoding="utf-8")
+
+    def fake_build_model_gateway(settings: ZebraAgentSettings):
+        del settings
+        from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
+
+        return ScriptedModelGateway(
+            responses=(
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content="Reading README.",
+                            created_at=_created_at(),
+                        ),
+                        tool_calls=(
+                            ToolCall(
+                                tool_call_id=new_tool_call_id(),
+                                name="files.read",
+                                arguments={"path": "README.md"},
+                                created_at=_created_at(),
+                            ),
+                        ),
+                    )
+                ),
+            )
+        )
+
+    monkeypatch.setattr(api_app_module, "build_model_gateway", fake_build_model_gateway)
+
+    response = create_app(database_path, settings=_settings(database_path)).create_session(
+        {
+            "prompt": "Read the README",
+            "workspace": str(tmp_path),
+            "execute": True,
+        }
+    )
+
+    assert response.status_code == 201
+    assert response.body["trace"] == [
+        {
+            "attempt_number": 1,
+            "assistant_message": "Reading README.",
+            "tools": [
+                {
+                    "tool_name": "files.read",
+                    "status": "executed",
+                    "arguments": {"path": "README.md"},
+                    "output": "api readme\n",
+                    "metadata": {
+                        "path": "README.md",
+                        "byte_count": 11,
+                        "truncated": False,
+                    },
+                    "policy_decision": "allow",
+                }
+            ],
+        }
+    ]
+
+
+def test_api_create_session_rejects_invalid_request(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    response = create_app(database_path, settings=_settings(database_path)).create_session(
+        {"prompt": "   "}
+    )
+
+    assert response.status_code == 400
+    assert response.body == {
+        "status": "invalid_request",
+        "reason": "prompt must be a non-blank string",
+    }
+
+
 def _settings(database_path: Path) -> ZebraAgentSettings:
     return ZebraAgentSettings(
         profile="test",
@@ -138,3 +300,9 @@ def _settings(database_path: Path) -> ZebraAgentSettings:
             model="test-model",
         ),
     )
+
+
+def _created_at():
+    from datetime import UTC, datetime
+
+    return datetime(2026, 6, 22, 13, 20, tzinfo=UTC)
