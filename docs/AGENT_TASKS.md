@@ -1712,3 +1712,31 @@ Wire `zebra-agent inspect` and `zebra-agent resume` to read local durable sessio
 - [x] `zebra-agent resume` reads an existing local session projection.
 - [x] Missing sessions return deterministic `not_found` output.
 - [x] Resume does not mutate session state or start worker execution yet.
+
+### P8-CLI-04 - CLI Approve Local Decision
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-CLI-03`
+- Branch: `codex/p8-cli-04-approve-decision`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Wire `zebra-agent approve` to local approval decision events and projection updates while preserving fail-closed behavior for invalid session states.
+
+#### Deliverables
+
+- `approve --database` option
+- `approve --operator` option
+- approval decision event append via `SQLiteEventStore`
+- projection update via existing session projection logic
+- tests covering granted approvals and invalid session states
+
+#### Acceptance
+
+- [x] `zebra-agent approve --decision approve` records an approval granted event.
+- [x] Approval decisions update the local session projection.
+- [x] Non-waiting sessions return deterministic `invalid_state` output.
+- [x] Invalid decision values are rejected by CLI parsing.

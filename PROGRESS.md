@@ -5,7 +5,7 @@
 - Active phase: `Phase 8 - CLI/API Productization`
 - Repository status: `phase 8 ready`
 - Current focus:
-  - wire `zebra-agent inspect` and `zebra-agent resume` to local session projection reads
+  - wire `zebra-agent approve` to local approval decision events
   - keep CLI/API entry points thin composition layers over existing package contracts
 
 ## Completed
@@ -76,16 +76,17 @@
 - `P8-CLI-01 - CLI Command Skeleton`
 - `P8-CLI-02 - CLI Run Local Session Creation`
 - `P8-CLI-03 - CLI Inspect And Resume Session Read`
+- `P8-CLI-04 - CLI Approve Local Decision`
 
 ## Current Focus
 
-- Phase 8 has deterministic CLI command parsing, `zebra-agent run` creates a local durable session projection, and `inspect`/`resume` can read it back
-- `approve`, worker execution, and API wiring remain later task cards
+- Phase 8 has deterministic CLI command parsing, `run` creates local durable session projections, `inspect`/`resume` can read them back, and `approve` records local approval decision events
+- worker execution and API wiring remain later task cards
 
 ## Next Unlocks
 
-- `P8-CLI-03` is complete
-- the next step is to wire `approve` to local approval decisions or register the first API health/session task
+- `P8-CLI-04` is complete
+- the next step is to register the first API health/session task or wire CLI resume to worker claim/resume services
 
 ## Active Documents
 

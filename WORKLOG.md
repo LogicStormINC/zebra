@@ -994,6 +994,28 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 CLI Approve Local Decision
+
+- 执行 `P8-CLI-04 - CLI Approve Local Decision`
+- `apps/cli` 更新：
+  - `approve --database`
+  - `approve --operator`
+  - `ApprovalDecisionService` 本地组合
+  - `SQLiteEventStore` approval event append
+  - `SQLiteProjectionStore` session projection update
+- 当前行为：
+  - waiting approval session 可以通过 CLI 记录 grant/reject
+  - non-waiting session 返回 deterministic `invalid_state`
+  - missing session 返回 deterministic `not_found`
+- 更新测试：
+  - `tests/cli/test_cli_commands.py`
+- 本轮验证结果：
+  - `uv run pytest tests/cli/test_cli_commands.py` 通过
+  - `uv run ruff check apps/cli/src/zebra_agent_cli tests/cli` 通过
+  - `uv run mypy apps/cli tests/cli` 通过
+  - `uv run pytest` 通过，182 passed
+  - `make check` 通过，包含 eval release gate
+
 ## 2026-06-22 CLI Inspect And Resume Session Read
 
 - 执行 `P8-CLI-03 - CLI Inspect And Resume Session Read`

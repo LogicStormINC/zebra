@@ -3,9 +3,10 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session, SessionStatus
-from agent_storage import SQLiteProjectionStore
+from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from zebra_agent_cli.cli import execute, main
 
 
@@ -92,19 +93,69 @@ def test_cli_inspect_command_reports_missing_session(tmp_path: Path) -> None:
     }
 
 
-def test_cli_approve_command_outputs_decision_intent() -> None:
+def test_cli_approve_command_records_granted_decision(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    waiting = Session.create(title="Needs approval").model_copy(
+        update={
+            "status": SessionStatus.WAITING_APPROVAL,
+            "current_sequence": 2,
+        }
+    )
+    SQLiteProjectionStore(database_path).save_session(waiting)
+
     result = execute(
-        ["approve", "approval-1", "--decision", "reject", "--reason", "unsafe"]
+        [
+            "approve",
+            str(waiting.session_id),
+            "--decision",
+            "approve",
+            "--reason",
+            "safe",
+            "--database",
+            str(database_path),
+        ]
+    )
+    events = SQLiteEventStore(database_path).list_for_session(waiting.session_id)
+    session = SQLiteProjectionStore(database_path).get_session(waiting.session_id)
+
+    assert result.payload["session_id"] == str(waiting.session_id)
+    assert result.payload["decision"] == "approve"
+    assert result.payload["event_type"] == EventType.APPROVAL_GRANTED.value
+    assert result.payload["sequence"] == 3
+    assert result.payload["status"] == SessionStatus.RUNNING.value
+    assert events[0].event_type is EventType.APPROVAL_GRANTED
+    assert session is not None
+    assert session.status is SessionStatus.RUNNING
+
+
+def test_cli_approve_command_rejects_non_waiting_session(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="No approval needed")
     )
 
-    assert result.payload == {
-        "approval_id": "approval-1",
-        "decision": "reject",
-        "reason": "unsafe",
-        "status": "accepted",
-    }
+    result = execute(
+        [
+            "approve",
+            str(session.session_id),
+            "--decision",
+            "reject",
+            "--database",
+            str(database_path),
+        ]
+    )
+
+    assert result.payload["status"] == "invalid_state"
+    assert "waiting approval" in str(result.payload["reason"])
 
 
 def test_cli_approve_requires_valid_decision() -> None:
     with pytest.raises(SystemExit):
-        execute(["approve", "approval-1", "--decision", "maybe"])
+        execute(
+            [
+                "approve",
+                "00000000-0000-0000-0000-000000000001",
+                "--decision",
+                "maybe",
+            ]
+        )

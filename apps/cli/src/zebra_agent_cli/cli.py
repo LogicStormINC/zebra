@@ -8,9 +8,15 @@ from pathlib import Path
 from typing import Literal
 from uuid import UUID
 
+from agent_core.application.approvals import (
+    ApprovalDecisionAction,
+    ApprovalDecisionCommand,
+    ApprovalDecisionService,
+)
+from agent_core.application.session_projection import apply_event
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session
-from agent_storage import SQLiteProjectionStore
+from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 
 CommandName = Literal["run", "resume", "inspect", "approve"]
 
@@ -40,7 +46,7 @@ def execute(argv: Sequence[str]) -> CliCommandResult:
     if command == "inspect":
         return _session_result("inspect", namespace.session_id, Path(namespace.database))
     if command == "approve":
-        return _approval_result(namespace)
+        return _approval_result(namespace, Path(namespace.database))
     raise ValueError(f"unsupported CLI command: {command}")
 
 
@@ -69,9 +75,11 @@ def _parser() -> argparse.ArgumentParser:
     inspect.add_argument("--database", default=".zebra-agent/sessions.sqlite")
 
     approve = subcommands.add_parser("approve", help="Record an approval decision.")
-    approve.add_argument("approval_id")
+    approve.add_argument("session_id")
     approve.add_argument("--decision", choices=("approve", "reject"), required=True)
     approve.add_argument("--reason", default="")
+    approve.add_argument("--operator", default="local-operator")
+    approve.add_argument("--database", default=".zebra-agent/sessions.sqlite")
 
     return parser
 
@@ -120,13 +128,58 @@ def _session_result(
     )
 
 
-def _approval_result(namespace: argparse.Namespace) -> CliCommandResult:
+def _approval_result(
+    namespace: argparse.Namespace,
+    database_path: Path,
+) -> CliCommandResult:
+    session_id = SessionId(UUID(namespace.session_id))
+    projection_store = SQLiteProjectionStore(database_path)
+    session = projection_store.get_session(session_id)
+    if session is None:
+        return CliCommandResult(
+            command="approve",
+            payload={
+                "session_id": namespace.session_id,
+                "database": str(database_path),
+                "status": "not_found",
+            },
+        )
+    action = (
+        ApprovalDecisionAction.GRANT
+        if namespace.decision == "approve"
+        else ApprovalDecisionAction.REJECT
+    )
+    reason = namespace.reason or f"{namespace.decision} via CLI"
+    try:
+        event = ApprovalDecisionService().build_event(
+            session=session,
+            next_sequence=session.current_sequence + 1,
+            command=ApprovalDecisionCommand(
+                action=action,
+                operator=namespace.operator,
+                reason=reason,
+            ),
+        )
+    except ValueError as exc:
+        return CliCommandResult(
+            command="approve",
+            payload={
+                "session_id": namespace.session_id,
+                "database": str(database_path),
+                "status": "invalid_state",
+                "reason": str(exc),
+            },
+        )
+    SQLiteEventStore(database_path).append(event)
+    updated_session = projection_store.save_session(apply_event(session, event))
     return CliCommandResult(
         command="approve",
         payload={
-            "approval_id": namespace.approval_id,
+            "session_id": namespace.session_id,
+            "database": str(database_path),
             "decision": namespace.decision,
-            "reason": namespace.reason,
-            "status": "accepted",
+            "event_type": event.event_type.value,
+            "sequence": event.sequence,
+            "status": updated_session.status.value,
         },
     )
