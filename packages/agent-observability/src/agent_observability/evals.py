@@ -67,6 +67,26 @@ class EvalRunResult:
 
 
 @dataclass(frozen=True)
+class ReleaseGatePolicy:
+    min_pass_rate: float = 1.0
+    min_average_score: float = 1.0
+
+    def __post_init__(self) -> None:
+        if not 0 <= self.min_pass_rate <= 1:
+            raise ValueError("release gate min_pass_rate must be between 0 and 1")
+        if not 0 <= self.min_average_score <= 1:
+            raise ValueError("release gate min_average_score must be between 0 and 1")
+
+
+@dataclass(frozen=True)
+class ReleaseGateResult:
+    passed: bool
+    pass_rate: float
+    average_score: float
+    reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class LocalEvalGrader:
     def grade(self, case: EvalCase, replay: ReplayResult) -> EvalGrade:
         reasons: list[str] = []
@@ -110,6 +130,32 @@ class LocalEvalRunner:
                 continue
             grades.append(self.grader.grade(case, replays[index]))
         return EvalRunResult(grades=tuple(grades))
+
+
+@dataclass(frozen=True)
+class LocalReleaseGate:
+    policy: ReleaseGatePolicy = ReleaseGatePolicy()
+
+    def evaluate(self, result: EvalRunResult) -> ReleaseGateResult:
+        if result.total_count == 0:
+            return ReleaseGateResult(
+                passed=False,
+                pass_rate=0.0,
+                average_score=0.0,
+                reasons=("release gate requires at least one eval result",),
+            )
+        pass_rate = result.pass_count / result.total_count
+        reasons: list[str] = []
+        if pass_rate < self.policy.min_pass_rate:
+            reasons.append("eval pass rate below release gate minimum")
+        if result.average_score < self.policy.min_average_score:
+            reasons.append("eval average score below release gate minimum")
+        return ReleaseGateResult(
+            passed=not reasons,
+            pass_rate=pass_rate,
+            average_score=result.average_score,
+            reasons=tuple(reasons),
+        )
 
 
 def load_eval_cases(path: Path) -> tuple[EvalCase, ...]:

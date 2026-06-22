@@ -4,6 +4,9 @@ from agent_observability.evals import (
     EvalRunResult,
     LocalEvalGrader,
     LocalEvalRunner,
+    LocalReleaseGate,
+    ReleaseGatePolicy,
+    ReleaseGateResult,
     load_eval_cases,
 )
 from agent_observability.jsonl import JsonlTraceStore
@@ -24,8 +27,11 @@ __all__ = [
     "JsonlTraceStore",
     "LocalEvalGrader",
     "LocalEvalRunner",
+    "LocalReleaseGate",
     "LocalReplayRunner",
     "ReplayResult",
+    "ReleaseGatePolicy",
+    "ReleaseGateResult",
     "TraceRecord",
     "build_trace_record",
     "load_eval_cases",

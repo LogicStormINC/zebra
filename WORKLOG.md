@@ -994,6 +994,26 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 Local Release Gate Baseline
+
+- 执行 `P7-EVAL-04 - Local Release Gate Baseline`
+- `agent-observability` 新增：
+  - `ReleaseGatePolicy`
+  - `ReleaseGateResult`
+  - `LocalReleaseGate`
+- 当前行为：
+  - release gate 可以基于 eval pass rate 和 average score 做本地判定
+  - empty eval result fail closed
+  - invalid gate threshold 被拒绝
+- 新增测试：
+  - `tests/agent_observability/test_release_gate.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_observability/test_release_gate.py tests/agent_observability/test_eval_runner.py tests/agent_observability/test_evals.py` 通过
+  - `uv run ruff check packages/agent-observability/src/agent_observability tests/agent_observability` 通过
+  - `uv run mypy packages/agent-observability/src/agent_observability tests/agent_observability` 通过
+  - `uv run pytest` 通过，174 passed
+  - `make check` 通过
+
 ## 2026-06-22 Baseline Eval Case Expansion
 
 - 执行 `P7-EVAL-03 - Baseline Eval Case Expansion`

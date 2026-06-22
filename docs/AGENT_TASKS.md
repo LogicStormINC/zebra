@@ -1545,3 +1545,31 @@ Expand the local MVP eval dataset so Phase 7 covers the documented bugfix, refac
 - [x] The local eval dataset includes at least eight cases.
 - [x] The dataset includes bugfix, refactor, recovery, security, and analysis categories.
 - [x] The added cases cover TypeScript type errors, cross-file refactor, unrelated diff control, dependency lock constraints, and analysis-only diagnosis.
+
+### P7-EVAL-04 - Local Release Gate Baseline
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `QA`
+- Depends on: `P7-EVAL-03`
+- Branch: `codex/p7-eval-04-release-gate`
+- Owned paths: `packages/agent-observability/`, `tests/agent_observability/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a local release gate decision layer that can evaluate eval run results before CLI integration or release automation.
+
+#### Deliverables
+
+- `ReleaseGatePolicy`
+- `ReleaseGateResult`
+- `LocalReleaseGate`
+- tests covering pass, threshold failures, empty eval results, and invalid thresholds
+
+#### Acceptance
+
+- [x] Release gate evaluates eval pass rate and average score.
+- [x] Passing eval runs produce a passing gate result.
+- [x] Failed thresholds produce explicit reasons.
+- [x] Empty eval results fail closed.
+- [x] Invalid gate thresholds are rejected.
