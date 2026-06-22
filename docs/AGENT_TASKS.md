@@ -2013,3 +2013,30 @@ Add a minimal CLI smoke entry that exercises the real model gateway with the cur
 - [x] Output includes assistant response plus provider/model/usage metadata when available.
 - [x] Missing API key fails deterministically.
 - [x] Existing `run`/`inspect`/`resume`/`approve` behavior remains unchanged.
+
+### P8-CLI-05 - CLI Durable Run Execution
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-MOD-02`
+- Branch: `codex/p8-cli-05-run-execute`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Extend the local CLI with one explicit durable execution path that creates a session, runs one harness attempt through the configured model gateway, and persists the resulting event stream and projection without changing the existing default `run` bootstrap behavior.
+
+#### Deliverables
+
+- `run --execute` path for one durable harness attempt
+- local CLI wiring for model gateway, policy engine, runtime-backed builtin tools, and SQLite persistence
+- deterministic CLI JSON output for final status, assistant message, and compact tool trace
+- tests covering no-tool completion and one real builtin tool execution path
+
+#### Acceptance
+
+- [x] Default `zebra-agent run` behavior remains session creation only.
+- [x] `zebra-agent run --execute` persists the full harness event stream to the local event store.
+- [x] The durable execution path can complete with either assistant-only output or one builtin tool execution.
+- [x] Final CLI output exposes terminal status and a compact trace without requiring direct database inspection.

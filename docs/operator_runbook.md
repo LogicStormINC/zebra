@@ -7,7 +7,7 @@ This runbook describes the current local operator flow for Zebra Agent Phase 8.
 Scope:
 
 - local workspace bootstrap
-- CLI session creation, inspection, and approval
+- CLI session creation, durable execution, inspection, and approval
 - local HTTP API serving
 - SSE session stream replay
 
@@ -57,6 +57,32 @@ Expected result:
 - JSON output with `command=run`
 - a `session_id`
 - `status=created`
+
+Create and execute one durable harness attempt immediately:
+
+```bash
+uv run zebra-agent run "Inspect the current workspace" \
+  --title "Operator execute demo" \
+  --execute \
+  --workspace "$(pwd)"
+```
+
+Expected result:
+
+- JSON output with `executed=true`
+- terminal `status` such as `completed` or `failed`
+- `assistant_message`
+- compact `trace` data for any executed builtin tool calls
+
+Current default policy profile for `--execute` is `workspace_write`.
+Override it explicitly when needed:
+
+```bash
+uv run zebra-agent run "Inspect git status" \
+  --execute \
+  --workspace "$(pwd)" \
+  --policy-profile read_only
+```
 
 Inspect the same session:
 

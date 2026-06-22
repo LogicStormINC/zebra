@@ -20,8 +20,11 @@ from agent_core.domain.identifiers import SessionId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.sessions import Session
 from agent_integrations import build_model_gateway
+from agent_security import PolicyProfile
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from zebra_agent_config import ZebraAgentSettings, load_settings
+
+from zebra_agent_cli.execution import execute_durable_run, serialize_run_execution
 
 CommandName = Literal["run", "resume", "inspect", "approve", "model"]
 
@@ -85,6 +88,12 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--title", default="Untitled task")
     run.add_argument("--workspace", default=".")
     run.add_argument("--database")
+    run.add_argument("--execute", action="store_true")
+    run.add_argument(
+        "--policy-profile",
+        choices=tuple(profile.value for profile in PolicyProfile),
+        default=PolicyProfile.WORKSPACE_WRITE.value,
+    )
 
     resume = subcommands.add_parser("resume", help="Resume a suspended session.")
     resume.add_argument("session_id")
@@ -111,27 +120,44 @@ def _run_result(
     namespace: argparse.Namespace,
     settings: ZebraAgentSettings,
 ) -> CliCommandResult:
-    session = Session.create(title=namespace.title)
     database_path = _database_path(namespace.database, settings)
-    event = SessionEvent.create(
-        session_id=session.session_id,
-        sequence=0,
-        event_type=EventType.SESSION_CREATED,
-        actor=EventActor.USER,
-        payload={"title": namespace.title},
-        created_at=session.created_at,
-    )
-    SQLiteEventStore(database_path).append(event)
-    SQLiteProjectionStore(database_path).save_session(session)
+    workspace = Path(namespace.workspace)
+    if namespace.execute:
+        execution_result = execute_durable_run(
+            prompt=namespace.prompt,
+            title=namespace.title,
+            workspace_root=workspace.expanduser().resolve(),
+            database_path=database_path,
+            settings=settings,
+            policy_profile=PolicyProfile(namespace.policy_profile),
+        )
+        session = execution_result.harness_result.session
+        payload = serialize_run_execution(execution_result)
+    else:
+        session = Session.create(title=namespace.title)
+        event = SessionEvent.create(
+            session_id=session.session_id,
+            sequence=0,
+            event_type=EventType.SESSION_CREATED,
+            actor=EventActor.USER,
+            payload={"title": namespace.title},
+            created_at=session.created_at,
+        )
+        SQLiteEventStore(database_path).append(event)
+        SQLiteProjectionStore(database_path).save_session(session)
+        payload = {
+            "executed": False,
+            "status": session.status.value,
+        }
     return CliCommandResult(
         command="run",
         payload={
             "session_id": str(session.session_id),
             "title": namespace.title,
             "prompt": namespace.prompt,
-            "workspace": str(Path(namespace.workspace)),
+            "workspace": str(workspace),
             "database": str(database_path),
-            "status": session.status.value,
+            **payload,
         },
     )
 

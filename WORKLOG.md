@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026-06-22 CLI Durable Run Execution
+
+- 执行 `P8-CLI-05 - CLI Durable Run Execution`
+- 新增 `run --execute`：
+  - 复用现有 harness loop 与 single-attempt orchestrator
+  - 接入真实 model gateway
+  - 接入本地 policy engine、runtime-backed builtin tools、SQLite event/projection persistence
+- 默认 `run` 行为保持为仅创建 session，不隐式开始执行
+- 新增测试：
+  - assistant-only durable execution
+  - `files.read` builtin tool durable execution
+
 ## 2026-06-19
 
 - 将会与 `PROGRESS.md` 冲突的旧 `progress.md` 会话日志文件重命名为 `WORKLOG.md`
