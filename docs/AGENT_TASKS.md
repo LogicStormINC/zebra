@@ -1438,3 +1438,31 @@ Add a local JSONL trace store so trace records can be persisted and read back be
 - [x] Stored trace records can be read back in insertion order.
 - [x] Missing store files return an empty list.
 - [x] Directory paths are rejected.
+
+### P7-OBS-03 - Local Replay Runner
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OBS`
+- Depends on: `P7-OBS-02`
+- Branch: `codex/p7-obs-03-local-replay-runner`
+- Owned paths: `packages/agent-observability/`, `tests/agent_observability/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a deterministic local replay runner that can read persisted trace records and summarize historical task execution without introducing remote observability or eval services.
+
+#### Deliverables
+
+- `LocalReplayRunner`
+- `ReplayResult`
+- store replay path for JSONL trace history
+- tests covering single trace replay, store replay order, empty stores, and invalid zero-event traces
+
+#### Acceptance
+
+- [x] A persisted historical trace can be replayed into a typed result.
+- [x] Replay results preserve session id, event count, tool result count, audit step count, model calls, tokens, and cost.
+- [x] Store replay returns results in trace insertion order.
+- [x] Empty stores return no replay results.
+- [x] Zero-event traces are rejected.

@@ -994,6 +994,26 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 Local Replay Runner
+
+- 执行 `P7-OBS-03 - Local Replay Runner`
+- `agent-observability` 新增：
+  - `LocalReplayRunner`
+  - `ReplayResult`
+- 当前行为：
+  - 单个 trace record 可以 replay 成 deterministic summary
+  - JSONL trace store 可以按写入顺序 replay
+  - missing store file replay 返回空结果
+  - zero-event trace 被拒绝
+- 新增测试：
+  - `tests/agent_observability/test_replay.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_observability/test_replay.py tests/agent_observability/test_jsonl_trace_store.py tests/agent_observability/test_trace_models.py` 通过
+  - `uv run ruff check packages/agent-observability/src/agent_observability tests/agent_observability` 通过
+  - `uv run mypy packages/agent-observability/src/agent_observability tests/agent_observability` 通过
+  - `uv run pytest` 通过，161 passed
+  - `make check` 通过
+
 ## 2026-06-22 Local Trace JSONL Store
 
 - 执行 `P7-OBS-02 - Local Trace JSONL Store`
