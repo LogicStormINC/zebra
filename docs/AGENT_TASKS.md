@@ -1357,3 +1357,29 @@ Add a local application service entry for approval decisions so API or worker la
 - [x] reject commands build `APPROVAL_REJECTED` events.
 - [x] approval decisions require a `WAITING_APPROVAL` session.
 - [x] approval decision event sequence must follow the current session sequence.
+
+### P6-POL-09 - Phase 6 Closeout Record
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOCS`
+- Depends on: `P6-POL-08`
+- Branch: `codex/p6-pol-09-phase6-closeout`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 6 by recording policy and approval hardening evidence, known deferrals, and the next phase boundary before eval and observability work begins.
+
+#### Deliverables
+
+- Phase 6 acceptance record under `docs/`
+- task registry update for the closeout slice
+- project progress update moving the repository to Phase 7 ready state
+
+#### Acceptance
+
+- [x] Acceptance record maps Phase 6 criteria to implemented code paths.
+- [x] Validation commands and results are recorded.
+- [x] Deferred MCP, egress, credential, and API-adapter work is explicit.
+- [x] `PROGRESS.md` identifies Phase 7 as the next active implementation phase.

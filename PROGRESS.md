@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 6 - Policy And Approvals Hardening`
-- Repository status: `phase 6 ready`
+- Active phase: `Phase 7 - Eval And Observability`
+- Repository status: `phase 7 ready`
 - Current focus:
-  - add local approval decision service entry
-  - keep security boundaries local-first and explicit before expanding remote/cloud services
+  - begin eval and observability after the Phase 6 policy and approvals closeout
+  - keep traces, audit, replay, and metrics local-first before adding cloud services
 
 ## Completed
 
@@ -63,16 +63,17 @@
 - `P6-POL-06 - Approval Event Wiring`
 - `P6-POL-07 - Approval Decision Projection`
 - `P6-POL-08 - Approval Service Entry`
+- `P6-POL-09 - Phase 6 Closeout Record`
 
 ## Current Focus
 
-- Phase 6 policy hardening has command/path/sensitive-output prechecks, approval request projection, approval event wiring, approval decision projection, and a local approval service entry
-- register the next direct slice around phase-6 closeout or API approval adapters
+- Phase 6 policy and approvals hardening is closed out for local MVP scope
+- register the first Phase 7 eval and observability task card before more implementation starts
 
 ## Next Unlocks
 
-- `P6-POL-08` is complete
-- the next step is to register the next ready Phase 6 policy and approvals task card
+- `P6-POL-09` is complete
+- the next step is to register the first ready Phase 7 eval and observability task card
 
 ## Active Documents
 

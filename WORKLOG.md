@@ -959,6 +959,22 @@
   - `uv run pytest` 通过，150 passed
   - `make check` 通过
 
+## 2026-06-22 Phase 6 Closeout Record
+
+- 执行 `P6-POL-09 - Phase 6 Closeout Record`
+- 新增文档：
+  - `docs/Phase6_Policy_Approvals_验收记录.md`
+- 当前状态：
+  - Phase 6 policy and approvals local MVP scope 已关闭
+  - `PROGRESS.md` 已推进到 `Phase 7 - Eval And Observability`
+  - MCP-specific rules、network egress broker、credential broker、approval API adapters 明确作为后续项
+- 本轮验证结果：
+  - `uv run pytest tests/agent_security tests/agent_core/test_approval_decisions.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_session_projection.py` 通过
+  - `uv run ruff check packages/agent-security/src/agent_security packages/agent-core/src/agent_core/application packages/agent-core/src/agent_core/harness/orchestrator.py packages/agent-core/src/agent_core/domain/sessions.py tests/agent_security tests/agent_core/test_approval_decisions.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_session_projection.py` 通过
+  - `uv run mypy packages/agent-security/src/agent_security packages/agent-core/src/agent_core/application packages/agent-core/src/agent_core/harness/orchestrator.py packages/agent-core/src/agent_core/domain/sessions.py tests/agent_security tests/agent_core/test_approval_decisions.py tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_session_projection.py` 通过
+  - `uv run pytest` 通过，150 passed
+  - `make check` 通过
+
 ## 2026-06-22 Command Risk Rules
 
 - 执行 `P6-POL-02 - Command Risk Rules`
