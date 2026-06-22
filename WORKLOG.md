@@ -994,6 +994,30 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 FastAPI Serving Foundation
+
+- 执行 `P8-API-03 - FastAPI Serving Foundation`
+- 新增：
+  - `zebra_agent_api.http.create_http_app`
+  - FastAPI request/response adapter over existing `RouteAdapter`
+  - HTTP tests for health, session lookup, unknown path, and unsupported method
+- 当前行为：
+  - `GET /health` 复用现有 health payload
+  - `GET /sessions/{session_id}` 复用现有 session lookup payload
+  - 未支持路径和方法继续返回确定性的 `not_found`
+  - FastAPI handler 不直接承载领域逻辑
+- 依赖更新：
+  - `apps/api` 增加 `fastapi`
+  - root dev group 增加 `httpx`
+- 本轮验证结果：
+  - `uv lock` 通过
+  - `make sync` 通过
+  - `uv run pytest tests/api/test_api_app.py tests/api/test_routes.py tests/api/test_http_app.py` 通过，12 passed
+  - `uv run ruff check apps/api/src/zebra_agent_api tests/api` 通过
+  - `uv run mypy apps/api tests/api` 通过
+  - `uv run pytest` 通过，198 passed
+  - `make check` 通过
+
 ## 2026-06-22 Entry Point Settings Wiring
 
 - 执行 `P8-CONFIG-02 - Entry Point Settings Wiring`

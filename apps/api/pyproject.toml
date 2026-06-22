@@ -6,6 +6,7 @@ requires-python = ">=3.12,<4.0"
 dependencies = [
     "agent-core",
     "agent-storage",
+    "fastapi>=0.116.1,<0.117.0",
     "zebra-agent-config",
 ]
 

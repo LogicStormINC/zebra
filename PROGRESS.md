@@ -5,7 +5,7 @@
 - Active phase: `Phase 8 - CLI/API Productization`
 - Repository status: `phase 8 ready`
 - Current focus:
-  - wire local settings into CLI/API entry points
+  - add HTTP framework serving on top of the API route adapter
   - keep CLI/API entry points thin composition layers over existing package contracts
 
 ## Completed
@@ -81,16 +81,17 @@
 - `P8-API-02 - API Route Adapter`
 - `P8-CONFIG-01 - Local Settings Loader`
 - `P8-CONFIG-02 - Entry Point Settings Wiring`
+- `P8-API-03 - FastAPI Serving Foundation`
 
 ## Current Focus
 
-- Phase 8 has deterministic CLI command parsing, local session operations, API health/session route adaptation, and settings-backed database defaults for CLI/API entry points
-- worker execution, HTTP framework serving, streaming, auth, and runtime model gateway wiring remain later task cards
+- Phase 8 has deterministic CLI command parsing, local session operations, settings-backed database defaults, framework-independent route adaptation, and a thin FastAPI serving layer
+- streaming, auth, operator runbook coverage, and runtime model gateway wiring remain later task cards
 
 ## Next Unlocks
 
-- `P8-CONFIG-02` is complete
-- the next step is to add HTTP framework serving, streaming foundation, or operator runbook coverage
+- `P8-API-03` is complete
+- the next step is to add streaming foundation or operator runbook coverage
 
 ## Active Documents
 

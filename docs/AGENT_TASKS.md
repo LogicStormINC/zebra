@@ -1850,3 +1850,29 @@ Wire local settings into CLI and API composition roots so entry points use the c
 - [x] CLI explicit `--database` still overrides settings.
 - [x] API `create_app()` uses settings database URL when no path is provided.
 - [x] API explicit database path still overrides settings.
+
+### P8-API-03 - FastAPI Serving Foundation
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-CONFIG-02`
+- Branch: `codex/p8-api-03-fastapi-serving`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`, `pyproject.toml`, `uv.lock`
+
+#### Goal
+
+Add the first HTTP framework serving layer on top of the existing API route adapter so local operators can access health and session lookup over ASGI without moving domain logic into FastAPI handlers.
+
+#### Deliverables
+
+- FastAPI dependency wiring for `zebra-agent-api`
+- HTTP app factory that delegates requests through `RouteAdapter`
+- tests covering health, session lookup, and deterministic not-found behavior over HTTP
+
+#### Acceptance
+
+- [x] HTTP `GET /health` returns the same health payload as the route adapter.
+- [x] HTTP `GET /sessions/{session_id}` returns the same session payload as the route adapter.
+- [x] Unsupported paths or methods return deterministic `not_found` output.
+- [x] FastAPI handlers remain thin adapters over the existing API app and route adapter.
