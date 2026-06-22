@@ -1,0 +1,179 @@
+from datetime import UTC, datetime
+from pathlib import Path
+
+from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
+from agent_core.domain.identifiers import SessionId, new_message_id, new_tool_call_id
+from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.model_calls import ModelCallRecord
+from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
+from agent_core.domain.sessions import SessionStatus
+from agent_core.domain.tool_runs import ToolRunRecord
+from agent_core.domain.tools import ToolCall
+from agent_storage import (
+    SQLiteEventStore,
+    SQLiteLeaseStore,
+    SQLiteModelCallStore,
+    SQLiteProjectionStore,
+    SQLiteToolRunStore,
+)
+from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
+from zebra_agent_worker import (
+    SessionClaimService,
+    SessionExecutionService,
+    SessionRecoveryService,
+    SessionResumeService,
+)
+
+
+def test_worker_execution_service_completes_ready_session(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _assistant_only_gateway(settings=settings),
+    )
+
+    result = _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-a",
+        executed_at=_created_at(),
+    )
+
+    assert result.session.status is SessionStatus.COMPLETED
+    assert result.attempt_result.metadata["assistant_message"] == "Worker completed the session."
+    assert SQLiteLeaseStore(database_path).get(session_id) is None
+    model_calls = SQLiteModelCallStore(database_path).list_for_session(session_id)
+    assert len(model_calls) == 1
+    assert isinstance(model_calls[0], ModelCallRecord)
+
+
+def test_worker_execution_service_indexes_tool_run(tmp_path: Path, monkeypatch) -> None:
+    database_path = tmp_path / "worker.db"
+    (tmp_path / "README.md").write_text("worker readme\n", encoding="utf-8")
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _tool_gateway(settings=settings),
+    )
+
+    result = _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-a",
+        executed_at=_created_at(),
+    )
+
+    tool_runs = SQLiteToolRunStore(database_path).list_for_session(session_id)
+    assert result.session.status is SessionStatus.COMPLETED
+    assert len(tool_runs) == 1
+    assert isinstance(tool_runs[0], ToolRunRecord)
+    assert tool_runs[0].tool_name == "files.read"
+    assert tool_runs[0].status == "executed"
+
+
+def _build_execution_service(database_path: Path) -> SessionExecutionService:
+    claim_service = SessionClaimService(
+        SQLiteLeaseStore(database_path),
+        SessionRecoveryService(
+            SQLiteEventStore(database_path),
+            SQLiteProjectionStore(database_path),
+        ),
+    )
+    return SessionExecutionService(
+        database_path=database_path,
+        claim_service=claim_service,
+        resume_service=SessionResumeService(claim_service),
+        settings=_settings(database_path),
+    )
+
+
+def _seed_ready_session(database_path: Path, workspace_root: Path) -> SessionId:
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Queued worker task",
+            user_input="Continue the queued task.",
+            workspace_root=workspace_root.resolve(),
+        )
+    )
+    event_store = SQLiteEventStore(database_path)
+    for event in bootstrap.events:
+        event_store.append(event)
+    SQLiteProjectionStore(database_path).save_session(bootstrap.session)
+    return bootstrap.session.session_id
+
+
+def _settings(database_path: Path) -> ZebraAgentSettings:
+    return ZebraAgentSettings(
+        profile="test",
+        database_url=str(database_path),
+        api=ApiSettings(auth_token=None),
+        model=ModelSettings(
+            provider="test",
+            api_key_env="TEST_API_KEY",
+            base_url="https://example.test",
+            model="test-model",
+        ),
+    )
+
+
+def _assistant_only_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGateway:
+    del settings
+    return ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="Worker completed the session.",
+                        created_at=_created_at(),
+                    ),
+                    call_metadata=ModelCallMetadata(
+                        provider="test",
+                        model_name="test-model",
+                        usage=ModelUsage(total_tokens=7),
+                    ),
+                )
+            ),
+        )
+    )
+
+
+def _tool_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGateway:
+    del settings
+    return ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="Reading README.",
+                        created_at=_created_at(),
+                    ),
+                    tool_calls=(
+                        ToolCall(
+                            tool_call_id=new_tool_call_id(),
+                            name="files.read",
+                            arguments={"path": "README.md"},
+                            created_at=_created_at(),
+                        ),
+                    ),
+                    call_metadata=ModelCallMetadata(
+                        provider="test",
+                        model_name="test-model",
+                        usage=ModelUsage(total_tokens=9),
+                    ),
+                )
+            ),
+        )
+    )
+
+
+def _created_at() -> datetime:
+    return datetime(2026, 6, 22, 14, 0, tzinfo=UTC)

@@ -6,6 +6,7 @@ from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import HarnessLoop, HarnessTask, SingleAttemptOrchestrator
 from agent_core.harness.models import HarnessLoopResult
 from agent_core.ports.model_gateway import ModelGatewayPort
+from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_security import LocalPolicyEngine, PolicyProfile
 from agent_tools import (
     CommandRunTool,
@@ -48,12 +49,12 @@ def run_local_harness(
         SingleAttemptOrchestrator(
             model_gateway,
             LocalPolicyEngine(profile=policy_profile),
-            _LocalToolGateway(workspace_root),
+            LocalToolGateway(workspace_root),
         ).run,
     )
 
 
-class _LocalToolGateway:
+class LocalToolGateway(ToolGatewayPort):
     def __init__(self, workspace_root: Path) -> None:
         self._workspace = LocalWorkspace(workspace_root)
         self._workspace.ensure()

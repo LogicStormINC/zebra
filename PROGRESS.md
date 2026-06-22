@@ -90,6 +90,7 @@
 - `P8-CLI-05 - CLI Durable Run Execution`
 - `P8-API-06 - API Session Create And Execute`
 - `P8-QUE-01 - Queued Session Bootstrap Events`
+- `P8-WKR-04 - Worker Execute Ready Session`
 
 ## Current Focus
 
@@ -97,12 +98,12 @@
 - Phase 8 now also has an explicit CLI durable execution path that can persist one harness attempt with real model and builtin tool wiring
 - Phase 8 now also has a writable API `POST /sessions` entry that can either create a session or run one durable local harness attempt immediately
 - create-only session flows now persist queued task bootstrap events and land in `ready` state for later recovery
-- worker-owned execution flows remain later task cards
+- Phase 8 now also has a worker-side ready-session execution service that can resume one queued task, emit terminal events, and update model/tool indexes
 
 ## Next Unlocks
 
-- `P8-QUE-01` is complete
-- the next step is to let worker-owned execution recover queued task input and run through the shared local harness entry
+- `P8-WKR-04` is complete
+- the next step is to expose worker execution through a durable operator entry such as explicit worker loop or API/CLI resume trigger
 
 ## Active Documents
 

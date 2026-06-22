@@ -37,6 +37,21 @@
 - create-only session 的 durable 状态从 `created` 前移到 `ready`
 - 为后续 worker-owned execution 预埋了可恢复的任务输入与 workspace 信息
 
+## 2026-06-22 Worker Execute Ready Session
+
+- 执行 `P8-WKR-04 - Worker Execute Ready Session`
+- `agent-runtime` 暴露可复用 `LocalToolGateway`
+- `apps/worker` 新增 `SessionExecutionService`
+- worker 现在可以：
+  - 从 queued bootstrap events 重建任务输入
+  - claim/resume 一个 `ready` session
+  - 执行一轮本地 harness attempt
+  - 持久化 terminal events、projection、model call index、tool run index
+  - 在终态后释放 lease
+- 新增测试：
+  - assistant-only worker execution
+  - builtin `files.read` worker execution 与 tool-run indexing
+
 ## 2026-06-19
 
 - 将会与 `PROGRESS.md` 冲突的旧 `progress.md` 会话日志文件重命名为 `WORKLOG.md`

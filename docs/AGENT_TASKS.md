@@ -2094,3 +2094,30 @@ Persist enough durable bootstrap state for create-only sessions so later worker-
 - [x] Queued sessions land in `ready` state instead of remaining `created`.
 - [x] Bootstrap event construction is shared instead of duplicated between app entry points.
 - [x] Existing explicit execute flows remain unchanged.
+
+### P8-WKR-04 - Worker Execute Ready Session
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-QUE-01`
+- Branch: `codex/p8-wkr-04-execute-ready-session`
+- Owned paths: `apps/worker/`, `packages/agent-runtime/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Let the local worker recover a queued `ready` session, execute one harness attempt through the shared local runtime/model wiring, and persist the resulting event stream plus model/tool indexes.
+
+#### Deliverables
+
+- worker-side queued task recovery from durable bootstrap events
+- worker execution service for one resumed ready session
+- lease release plus projection/model-call/tool-run persistence after execution
+- tests covering assistant-only and tool-using worker execution paths
+
+#### Acceptance
+
+- [x] Worker can reconstruct task input from queued bootstrap events.
+- [x] Worker can execute one ready session and persist terminal events.
+- [x] Model call and tool run indexes update from worker-emitted events.
+- [x] Lease state is released after terminal worker execution.
