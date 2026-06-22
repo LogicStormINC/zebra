@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-The repository is in `Phase 7 - Eval And Observability`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, the control-plane foundation includes durable session events and recovery/indexing primitives, Phase 5 has closed out with a typed workspace context compiler, Phase 6 has closed out with deterministic local policy and approval hardening, and Phase 7 now includes typed trace/audit/cost models, local JSONL trace persistence, deterministic local replay summaries, and a minimal local eval case/grader baseline.
+The repository is in `Phase 7 - Eval And Observability`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, the control-plane foundation includes durable session events and recovery/indexing primitives, Phase 5 has closed out with a typed workspace context compiler, Phase 6 has closed out with deterministic local policy and approval hardening, and Phase 7 now includes typed trace/audit/cost models, local JSONL trace persistence, deterministic local replay summaries, a minimal local eval case/grader baseline, and eval run aggregation.
 
 Read in this order:
 

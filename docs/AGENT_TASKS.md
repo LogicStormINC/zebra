@@ -1495,3 +1495,29 @@ Create the first local eval case directory and deterministic grader so Phase 7 h
 - [x] The grader produces typed pass/fail results from replay summaries.
 - [x] The initial dataset includes bugfix, security, and recovery cases.
 - [x] Invalid case inputs are rejected.
+
+### P7-EVAL-02 - Local Eval Runner
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `QA`
+- Depends on: `P7-EVAL-01`
+- Branch: `codex/p7-eval-02-local-runner`
+- Owned paths: `packages/agent-observability/`, `tests/agent_observability/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a deterministic local eval runner that combines loaded eval cases, replay summaries, and grader output before adding CLI integration or release gates.
+
+#### Deliverables
+
+- `EvalRunResult`
+- `LocalEvalRunner`
+- tests covering ordered grading, aggregate pass metrics, missing replay failures, and empty case rejection
+
+#### Acceptance
+
+- [x] Eval cases can be graded against replay results in deterministic order.
+- [x] Eval run results expose total count, pass count, all-pass status, and average score.
+- [x] Missing replay results are explicit failures.
+- [x] Empty eval runs are rejected.

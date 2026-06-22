@@ -994,6 +994,26 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 Local Eval Runner
+
+- 执行 `P7-EVAL-02 - Local Eval Runner`
+- `agent-observability` 新增：
+  - `EvalRunResult`
+  - `LocalEvalRunner`
+- 当前行为：
+  - eval cases 和 replay summaries 可以按顺序组合评分
+  - eval run result 暴露 total count、pass count、all-pass status、average score
+  - missing replay result 会成为显式失败
+  - empty eval run 被拒绝
+- 新增测试：
+  - `tests/agent_observability/test_eval_runner.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_observability/test_eval_runner.py tests/agent_observability/test_evals.py tests/agent_observability/test_replay.py` 通过
+  - `uv run ruff check packages/agent-observability/src/agent_observability tests/agent_observability` 通过
+  - `uv run mypy packages/agent-observability/src/agent_observability tests/agent_observability` 通过
+  - `uv run pytest` 通过，169 passed
+  - `make check` 通过
+
 ## 2026-06-22 Eval Case And Grader Bootstrap
 
 - 执行 `P7-EVAL-01 - Eval Case And Grader Bootstrap`

@@ -44,6 +44,29 @@ class EvalGrade:
 
 
 @dataclass(frozen=True)
+class EvalRunResult:
+    grades: tuple[EvalGrade, ...]
+
+    @property
+    def passed(self) -> bool:
+        return all(grade.passed for grade in self.grades)
+
+    @property
+    def pass_count(self) -> int:
+        return sum(1 for grade in self.grades if grade.passed)
+
+    @property
+    def total_count(self) -> int:
+        return len(self.grades)
+
+    @property
+    def average_score(self) -> float:
+        if not self.grades:
+            return 0.0
+        return sum(grade.score for grade in self.grades) / len(self.grades)
+
+
+@dataclass(frozen=True)
 class LocalEvalGrader:
     def grade(self, case: EvalCase, replay: ReplayResult) -> EvalGrade:
         reasons: list[str] = []
@@ -60,6 +83,33 @@ class LocalEvalGrader:
             score=1.0 if passed else 0.0,
             reasons=tuple(reasons),
         )
+
+
+@dataclass(frozen=True)
+class LocalEvalRunner:
+    grader: LocalEvalGrader = LocalEvalGrader()
+
+    def run(
+        self,
+        cases: tuple[EvalCase, ...],
+        replays: tuple[ReplayResult, ...],
+    ) -> EvalRunResult:
+        if not cases:
+            raise ValueError("eval run requires at least one case")
+        grades: list[EvalGrade] = []
+        for index, case in enumerate(cases):
+            if index >= len(replays):
+                grades.append(
+                    EvalGrade(
+                        case_id=case.case_id,
+                        passed=False,
+                        score=0.0,
+                        reasons=("missing replay result for eval case",),
+                    )
+                )
+                continue
+            grades.append(self.grader.grade(case, replays[index]))
+        return EvalRunResult(grades=tuple(grades))
 
 
 def load_eval_cases(path: Path) -> tuple[EvalCase, ...]:

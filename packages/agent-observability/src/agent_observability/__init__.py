@@ -1,7 +1,9 @@
 from agent_observability.evals import (
     EvalCase,
     EvalGrade,
+    EvalRunResult,
     LocalEvalGrader,
+    LocalEvalRunner,
     load_eval_cases,
 )
 from agent_observability.jsonl import JsonlTraceStore
@@ -18,8 +20,10 @@ __all__ = [
     "CostSummary",
     "EvalCase",
     "EvalGrade",
+    "EvalRunResult",
     "JsonlTraceStore",
     "LocalEvalGrader",
+    "LocalEvalRunner",
     "LocalReplayRunner",
     "ReplayResult",
     "TraceRecord",
