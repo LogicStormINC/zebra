@@ -20,10 +20,20 @@ from agent_core.domain.identifiers import SessionId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_integrations import build_model_gateway
 from agent_security import PolicyProfile
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_storage import SQLiteEventStore, SQLiteLeaseStore, SQLiteProjectionStore
 from zebra_agent_config import ZebraAgentSettings, load_settings
+from zebra_agent_worker import (
+    SessionClaimService,
+    SessionExecutionService,
+    SessionRecoveryService,
+    SessionResumeService,
+)
 
-from zebra_agent_cli.execution import execute_durable_run, serialize_run_execution
+from zebra_agent_cli.execution import (
+    execute_durable_run,
+    serialize_run_execution,
+    serialize_trace_events,
+)
 
 CommandName = Literal["run", "resume", "inspect", "approve", "model"]
 
@@ -54,11 +64,7 @@ def execute(
     if command == "run":
         return _run_result(namespace, active_settings)
     if command == "resume":
-        return _session_result(
-            "resume",
-            namespace.session_id,
-            _database_path(namespace.database, active_settings),
-        )
+        return _resume_result(namespace, active_settings)
     if command == "inspect":
         return _session_result(
             "inspect",
@@ -97,6 +103,9 @@ def _parser() -> argparse.ArgumentParser:
     resume = subcommands.add_parser("resume", help="Resume a suspended session.")
     resume.add_argument("session_id")
     resume.add_argument("--database")
+    resume.add_argument("--execute", action="store_true")
+    resume.add_argument("--worker-id", default="local-worker")
+    resume.add_argument("--lease-ttl-seconds", type=int, default=30)
 
     inspect = subcommands.add_parser("inspect", help="Inspect a session.")
     inspect.add_argument("session_id")
@@ -193,6 +202,47 @@ def _session_result(
             "title": session.title,
             "status": session.status.value,
             "current_sequence": session.current_sequence,
+        },
+    )
+
+
+def _resume_result(
+    namespace: argparse.Namespace,
+    settings: ZebraAgentSettings,
+) -> CliCommandResult:
+    database_path = _database_path(namespace.database, settings)
+    if not namespace.execute:
+        return _session_result("resume", namespace.session_id, database_path)
+
+    session_id = SessionId(UUID(namespace.session_id))
+    claim_service = SessionClaimService(
+        SQLiteLeaseStore(database_path),
+        SessionRecoveryService(
+            SQLiteEventStore(database_path),
+            SQLiteProjectionStore(database_path),
+        ),
+    )
+    result = SessionExecutionService(
+        database_path=database_path,
+        claim_service=claim_service,
+        resume_service=SessionResumeService(claim_service),
+        settings=settings,
+    ).execute_session(
+        session_id,
+        worker_id=namespace.worker_id,
+        lease_ttl_seconds=namespace.lease_ttl_seconds,
+    )
+    return CliCommandResult(
+        command="resume",
+        payload={
+            "session_id": namespace.session_id,
+            "database": str(database_path),
+            "executed": True,
+            "worker_id": namespace.worker_id,
+            "status": result.session.status.value,
+            "current_sequence": result.session.current_sequence,
+            "assistant_message": result.attempt_result.metadata.get("assistant_message"),
+            "trace": serialize_trace_events(result.events),
         },
     )
 

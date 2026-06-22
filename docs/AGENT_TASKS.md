@@ -2121,3 +2121,30 @@ Let the local worker recover a queued `ready` session, execute one harness attem
 - [x] Worker can execute one ready session and persist terminal events.
 - [x] Model call and tool run indexes update from worker-emitted events.
 - [x] Lease state is released after terminal worker execution.
+
+### P8-CLI-06 - CLI Resume Execute Trigger
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-WKR-04`
+- Branch: `codex/p8-cli-06-resume-execute`
+- Owned paths: `apps/cli/`, `apps/worker/`, `tests/cli/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose the new worker-side ready-session execution capability through an explicit CLI operator entry while preserving the current read-only default behavior of `resume`.
+
+#### Deliverables
+
+- `zebra-agent resume --execute` path
+- CLI wiring into the worker execution service with configurable worker identity
+- deterministic JSON output for terminal status, assistant message, and tool trace after execution
+- tests covering read-only resume, execute resume, and lease/index persistence through the CLI path
+
+#### Acceptance
+
+- [x] Default `zebra-agent resume <id>` remains read-only.
+- [x] `zebra-agent resume <id> --execute` runs the queued session through worker execution and persists terminal events.
+- [x] CLI output exposes final execution status and compact trace data.
+- [x] Existing worker execution tests remain green.

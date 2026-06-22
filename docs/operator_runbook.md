@@ -97,6 +97,19 @@ Resume readback:
 uv run zebra-agent resume <session_id>
 ```
 
+Execute the queued ready session through the worker-backed resume path:
+
+```bash
+uv run zebra-agent resume <session_id> --execute --worker-id local-worker
+```
+
+Expected result:
+
+- JSON output with `executed=true`
+- terminal `status` such as `completed` or `failed`
+- `assistant_message`
+- compact `trace` data for any executed builtin tool calls
+
 If a session reaches `waiting_approval`, record a decision with:
 
 ```bash

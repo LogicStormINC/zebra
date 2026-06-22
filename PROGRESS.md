@@ -91,6 +91,7 @@
 - `P8-API-06 - API Session Create And Execute`
 - `P8-QUE-01 - Queued Session Bootstrap Events`
 - `P8-WKR-04 - Worker Execute Ready Session`
+- `P8-CLI-06 - CLI Resume Execute Trigger`
 
 ## Current Focus
 
@@ -99,11 +100,12 @@
 - Phase 8 now also has a writable API `POST /sessions` entry that can either create a session or run one durable local harness attempt immediately
 - create-only session flows now persist queued task bootstrap events and land in `ready` state for later recovery
 - Phase 8 now also has a worker-side ready-session execution service that can resume one queued task, emit terminal events, and update model/tool indexes
+- Phase 8 now also has an explicit CLI `resume --execute` operator entry for queued ready sessions
 
 ## Next Unlocks
 
-- `P8-WKR-04` is complete
-- the next step is to expose worker execution through a durable operator entry such as explicit worker loop or API/CLI resume trigger
+- `P8-CLI-06` is complete
+- the next step is to expose the same worker execution path through an HTTP resume trigger or a long-running worker loop
 
 ## Active Documents
 

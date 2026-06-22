@@ -11,7 +11,7 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.tools import ToolCall
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_storage import SQLiteEventStore, SQLiteLeaseStore, SQLiteProjectionStore
 from zebra_agent_cli.cli import execute, main
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
@@ -247,6 +247,135 @@ def test_cli_resume_command_reads_local_session(tmp_path: Path) -> None:
     assert result.payload["current_sequence"] == 0
 
 
+def test_cli_resume_command_execute_runs_worker_session(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    def fake_build_model_gateway(settings: ZebraAgentSettings):
+        del settings
+        return FakeGateway(
+            completion=ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content="Resume execution complete.",
+                    created_at=_created_at(),
+                ),
+                call_metadata=ModelCallMetadata(
+                    provider="test",
+                    model_name="test-model",
+                    latency_ms=5,
+                    usage=ModelUsage(total_tokens=6),
+                ),
+            )
+        )
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        fake_build_model_gateway,
+    )
+
+    result = execute(
+        [
+            "resume",
+            str(session_id),
+            "--execute",
+            "--worker-id",
+            "worker-a",
+            "--database",
+            str(database_path),
+        ],
+        settings=_settings(database_path),
+    )
+
+    updated_session = SQLiteProjectionStore(database_path).get_session(session_id)
+    assert result.command == "resume"
+    assert result.payload["executed"] is True
+    assert result.payload["worker_id"] == "worker-a"
+    assert result.payload["status"] == SessionStatus.COMPLETED.value
+    assert result.payload["assistant_message"] == "Resume execution complete."
+    assert result.payload["trace"] == [
+        {
+            "attempt_number": 1,
+            "assistant_message": "Resume execution complete.",
+            "tools": [],
+        }
+    ]
+    assert updated_session is not None
+    assert updated_session.status is SessionStatus.COMPLETED
+    assert SQLiteLeaseStore(database_path).get(session_id) is None
+
+
+def test_cli_resume_command_execute_reports_tool_trace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    (tmp_path / "README.md").write_text("resume readme\n", encoding="utf-8")
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    def fake_build_model_gateway(settings: ZebraAgentSettings):
+        del settings
+        return FakeGateway(
+            completion=ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content="Reading README on resume.",
+                    created_at=_created_at(),
+                ),
+                tool_calls=(
+                    ToolCall(
+                        tool_call_id=new_tool_call_id(),
+                        name="files.read",
+                        arguments={"path": "README.md"},
+                        created_at=_created_at(),
+                    ),
+                ),
+            )
+        )
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        fake_build_model_gateway,
+    )
+
+    result = execute(
+        [
+            "resume",
+            str(session_id),
+            "--execute",
+            "--database",
+            str(database_path),
+        ],
+        settings=_settings(database_path),
+    )
+
+    assert result.payload["trace"] == [
+        {
+            "attempt_number": 1,
+            "assistant_message": "Reading README on resume.",
+            "tools": [
+                {
+                    "tool_name": "files.read",
+                    "status": "executed",
+                    "arguments": {"path": "README.md"},
+                    "output": "resume readme\n",
+                    "metadata": {
+                        "path": "README.md",
+                        "byte_count": 14,
+                        "truncated": False,
+                    },
+                    "policy_decision": "allow",
+                }
+            ],
+        }
+    ]
+
+
 def test_cli_inspect_command_reads_local_session(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session = SQLiteProjectionStore(database_path).save_session(
@@ -460,3 +589,20 @@ class FakeGateway:
         assert len(messages) == 1
         assert messages[0].role is MessageRole.USER
         return self._completion
+
+
+def _seed_ready_session(database_path: Path, workspace_root: Path) -> SessionId:
+    from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Resume task",
+            user_input="Continue the queued session.",
+            workspace_root=workspace_root.resolve(),
+        )
+    )
+    event_store = SQLiteEventStore(database_path)
+    for event in bootstrap.events:
+        event_store.append(event)
+    SQLiteProjectionStore(database_path).save_session(bootstrap.session)
+    return bootstrap.session.session_id

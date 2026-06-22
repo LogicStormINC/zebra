@@ -52,6 +52,19 @@
   - assistant-only worker execution
   - builtin `files.read` worker execution 与 tool-run indexing
 
+## 2026-06-22 CLI Resume Execute Trigger
+
+- 执行 `P8-CLI-06 - CLI Resume Execute Trigger`
+- `zebra-agent resume` 保持默认只读
+- 新增 `zebra-agent resume --execute`：
+  - 复用 worker-side `SessionExecutionService`
+  - 允许显式传入 `--worker-id`
+  - 返回终态 `status`、assistant message 和紧凑 tool trace
+- 新增测试：
+  - read-only resume 不变
+  - assistant-only resume execution
+  - `files.read` resume execution trace
+
 ## 2026-06-19
 
 - 将会与 `PROGRESS.md` 冲突的旧 `progress.md` 会话日志文件重命名为 `WORKLOG.md`
