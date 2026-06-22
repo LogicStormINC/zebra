@@ -1684,3 +1684,31 @@ Wire `zebra-agent run` to create a local durable session projection while keepin
 - [x] Created sessions are persisted to the configured SQLite projection store.
 - [x] Run output includes session id, status, prompt, title, workspace, and database path.
 - [x] Worker execution remains deferred to later task cards.
+
+### P8-CLI-03 - CLI Inspect And Resume Session Read
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-CLI-02`
+- Branch: `codex/p8-cli-03-session-read`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Wire `zebra-agent inspect` and `zebra-agent resume` to read local durable session projections without starting worker execution yet.
+
+#### Deliverables
+
+- `inspect --database` option
+- `resume --database` option
+- projection-store lookup for session title, status, and sequence
+- deterministic missing-session output
+- tests covering existing and missing session reads
+
+#### Acceptance
+
+- [x] `zebra-agent inspect` reads an existing local session projection.
+- [x] `zebra-agent resume` reads an existing local session projection.
+- [x] Missing sessions return deterministic `not_found` output.
+- [x] Resume does not mutate session state or start worker execution yet.

@@ -4,7 +4,7 @@ from uuid import UUID
 
 import pytest
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.sessions import SessionStatus
+from agent_core.domain.sessions import Session, SessionStatus
 from agent_storage import SQLiteProjectionStore
 from zebra_agent_cli.cli import execute, main
 
@@ -44,20 +44,52 @@ def test_cli_run_command_creates_local_session(
     assert session.status is SessionStatus.CREATED
 
 
-def test_cli_resume_command_outputs_session_intent() -> None:
-    result = execute(["resume", "session-1"])
+def test_cli_resume_command_reads_local_session(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="Resume me")
+    )
 
-    assert result.payload == {
-        "session_id": "session-1",
-        "status": "accepted",
-    }
+    result = execute(["resume", str(session.session_id), "--database", str(database_path)])
+
+    assert result.command == "resume"
+    assert result.payload["session_id"] == str(session.session_id)
+    assert result.payload["database"] == str(database_path)
+    assert result.payload["title"] == "Resume me"
+    assert result.payload["status"] == SessionStatus.CREATED.value
+    assert result.payload["current_sequence"] == 0
 
 
-def test_cli_inspect_command_outputs_session_intent() -> None:
-    result = execute(["inspect", "session-1"])
+def test_cli_inspect_command_reads_local_session(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="Inspect me")
+    )
+
+    result = execute(["inspect", str(session.session_id), "--database", str(database_path)])
 
     assert result.command == "inspect"
-    assert result.payload["session_id"] == "session-1"
+    assert result.payload["session_id"] == str(session.session_id)
+    assert result.payload["title"] == "Inspect me"
+
+
+def test_cli_inspect_command_reports_missing_session(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    result = execute(
+        [
+            "inspect",
+            "00000000-0000-0000-0000-000000000001",
+            "--database",
+            str(database_path),
+        ]
+    )
+
+    assert result.payload == {
+        "session_id": "00000000-0000-0000-0000-000000000001",
+        "database": str(database_path),
+        "status": "not_found",
+    }
 
 
 def test_cli_approve_command_outputs_decision_intent() -> None:

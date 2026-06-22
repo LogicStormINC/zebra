@@ -994,6 +994,27 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 CLI Inspect And Resume Session Read
+
+- 执行 `P8-CLI-03 - CLI Inspect And Resume Session Read`
+- `apps/cli` 更新：
+  - `inspect --database`
+  - `resume --database`
+  - `SQLiteProjectionStore` session projection lookup
+- 当前行为：
+  - `inspect` 和 `resume` 可以读取 session title、status、current_sequence
+  - missing session 返回 deterministic `not_found`
+  - `resume` 仍不修改 session 状态，也不启动 worker execution
+- 更新测试：
+  - `tests/cli/test_cli_commands.py`
+- 本轮验证结果：
+  - `uv run pytest tests/cli/test_cli_commands.py` 通过
+  - `uv run ruff check apps/cli/src/zebra_agent_cli tests/cli` 通过
+  - `uv run mypy apps/cli tests/cli` 通过
+  - `uv run zebra-agent run ...` 后接 `uv run zebra-agent inspect ...` 通过
+  - `uv run pytest` 通过，181 passed
+  - `make check` 通过，包含 eval release gate
+
 ## 2026-06-22 CLI Run Local Session Creation
 
 - 执行 `P8-CLI-02 - CLI Run Local Session Creation`
