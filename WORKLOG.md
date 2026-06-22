@@ -994,6 +994,30 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 Local Settings Loader
+
+- 执行 `P8-CONFIG-01 - Local Settings Loader`
+- 新增：
+  - `apps/config`
+  - `configs/default.env`
+  - typed `ZebraAgentSettings`
+  - typed `ModelSettings`
+- 当前行为：
+  - 默认 profile 为 `local`
+  - 默认 database 为 `.zebra-agent/sessions.sqlite`
+  - 默认 model provider 为 `deepseek`
+  - 默认 model 为 `deepseek-v4-flash`
+  - env values 可以覆盖 repository defaults
+- 新增测试：
+  - `tests/config/test_settings.py`
+- 本轮验证结果：
+  - `make sync` 通过
+  - `uv run pytest tests/config/test_settings.py` 通过，2 passed
+  - `uv run ruff check apps/config/src/zebra_agent_config tests/config` 通过
+  - `uv run mypy apps/config tests/config` 通过
+  - `uv run pytest` 通过，190 passed
+  - `make check` 通过
+
 ## 2026-06-22 API Route Adapter
 
 - 执行 `P8-API-02 - API Route Adapter`

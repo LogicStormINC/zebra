@@ -21,6 +21,7 @@ package = false
 members = [
     "apps/cli",
     "apps/api",
+    "apps/config",
     "apps/worker",
     "packages/agent-core",
     "packages/agent-context",

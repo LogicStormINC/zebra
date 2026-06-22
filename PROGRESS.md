@@ -5,7 +5,7 @@
 - Active phase: `Phase 8 - CLI/API Productization`
 - Repository status: `phase 8 ready`
 - Current focus:
-  - add framework-independent API route adapter for health and session lookup
+  - add local settings loader and profile/model defaults
   - keep CLI/API entry points thin composition layers over existing package contracts
 
 ## Completed
@@ -79,16 +79,17 @@
 - `P8-CLI-04 - CLI Approve Local Decision`
 - `P8-API-01 - API Health And Session Foundation`
 - `P8-API-02 - API Route Adapter`
+- `P8-CONFIG-01 - Local Settings Loader`
 
 ## Current Focus
 
-- Phase 8 has deterministic CLI command parsing, local session creation/readback, local approval decisions, API health/session handlers, and a framework-independent route adapter
-- worker execution, HTTP framework serving, streaming, and auth remain later task cards
+- Phase 8 has deterministic CLI command parsing, local session operations, API health/session route adaptation, and local settings loading for profile/model defaults
+- worker execution, HTTP framework serving, streaming, auth, and runtime model gateway wiring remain later task cards
 
 ## Next Unlocks
 
-- `P8-API-02` is complete
-- the next step is to add HTTP framework serving, streaming foundation, or wire CLI resume to worker claim/resume services
+- `P8-CONFIG-01` is complete
+- the next step is to wire settings into CLI/API entry points or add HTTP framework serving
 
 ## Active Documents
 

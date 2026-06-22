@@ -1,0 +1,10 @@
+[project]
+name = "zebra-agent-config"
+version = "0.1.0"
+description = "Configuration loading for Zebra Agent composition roots."
+requires-python = ">=3.12,<4.0"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

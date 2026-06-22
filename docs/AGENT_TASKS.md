@@ -1795,3 +1795,31 @@ Add a concrete local route adapter for API health and session lookup before intr
 - [x] `GET /sessions/{session_id}` routes to the API session lookup handler.
 - [x] Unsupported routes return deterministic 404/not_found output.
 - [x] Route adapter remains framework-independent.
+
+### P8-CONFIG-01 - Local Settings Loader
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-API-02`
+- Branch: `codex/p8-config-01-local-settings`
+- Owned paths: `apps/config/`, `configs/`, `tests/config/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`, `pyproject.toml`, `uv.lock`
+
+#### Goal
+
+Add local configuration loading and profile/model selection defaults before wiring settings into CLI, API, worker, or model gateway runtime paths.
+
+#### Deliverables
+
+- `zebra-agent-config` workspace app package
+- typed settings models
+- default local env-style config
+- environment override support
+- tests covering defaults and overrides
+
+#### Acceptance
+
+- [x] Settings load a local profile and database URL.
+- [x] Settings expose model provider, API key env name, base URL, and model name.
+- [x] Environment values override repository defaults.
+- [x] DeepSeek defaults use `https://api.deepseek.com` and `deepseek-v4-flash`.
