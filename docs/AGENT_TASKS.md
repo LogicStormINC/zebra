@@ -1939,7 +1939,7 @@ Close the remaining Phase 8 operator guidance gap by documenting a runnable loca
 - Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P8-DOC-01`
-- Branch: `codex/p8-mod-01-openai-compatible-gateway`
+- Branch: `codex/p8-mod-02-cli-model-smoke`
 - Owned paths: `apps/api/`, `apps/config/`, `configs/`, `tests/api/`, `tests/config/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`, `pyproject.toml`
 
 #### Goal
@@ -1986,3 +1986,30 @@ Add the first real model gateway adapter for OpenAI-compatible chat completions 
 - [x] The adapter can parse assistant text, usage, and optional tool calls into `ModelCompletion`.
 - [x] Missing configured API keys fail deterministically before any HTTP request.
 - [x] The implementation remains isolated from `agent-core` domain rules beyond the existing port contract.
+
+### P8-MOD-02 - CLI Model Gateway Smoke
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-MOD-01`
+- Branch: `codex/p8-mod-01-openai-compatible-gateway`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`, `pyproject.toml`
+
+#### Goal
+
+Add a minimal CLI smoke entry that exercises the real model gateway with the current provider settings before folding that path into session execution flows.
+
+#### Deliverables
+
+- CLI command for one-shot model completion
+- dependency wiring from CLI to `agent-integrations`
+- deterministic JSON output for assistant response and model metadata
+- tests covering provider invocation, missing API key failure, and tool-call summary output
+
+#### Acceptance
+
+- [x] CLI can send one prompt through the configured model gateway.
+- [x] Output includes assistant response plus provider/model/usage metadata when available.
+- [x] Missing API key fails deterministically.
+- [x] Existing `run`/`inspect`/`resume`/`approve` behavior remains unchanged.

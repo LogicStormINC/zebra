@@ -4,6 +4,7 @@ import argparse
 import json
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 from uuid import UUID
@@ -15,12 +16,14 @@ from agent_core.application.approvals import (
 )
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import SessionId, new_message_id
+from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.sessions import Session
+from agent_integrations import build_model_gateway
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
-CommandName = Literal["run", "resume", "inspect", "approve"]
+CommandName = Literal["run", "resume", "inspect", "approve", "model"]
 
 
 @dataclass(frozen=True)
@@ -62,6 +65,8 @@ def execute(
         )
     if command == "approve":
         return _approval_result(namespace, _database_path(namespace.database, active_settings))
+    if command == "model":
+        return _model_result(namespace, active_settings)
     raise ValueError(f"unsupported CLI command: {command}")
 
 
@@ -95,6 +100,9 @@ def _parser() -> argparse.ArgumentParser:
     approve.add_argument("--reason", default="")
     approve.add_argument("--operator", default="local-operator")
     approve.add_argument("--database")
+
+    model = subcommands.add_parser("model", help="Run one prompt through the configured model.")
+    model.add_argument("prompt")
 
     return parser
 
@@ -215,5 +223,41 @@ def _approval_result(
             "event_type": event.event_type.value,
             "sequence": event.sequence,
             "status": updated_session.status.value,
+        },
+    )
+
+
+def _model_result(
+    namespace: argparse.Namespace,
+    settings: ZebraAgentSettings,
+) -> CliCommandResult:
+    completion = build_model_gateway(settings).complete(
+        [
+            SessionMessage(
+                message_id=new_message_id(),
+                role=MessageRole.USER,
+                content=namespace.prompt,
+                created_at=datetime.now(UTC),
+            )
+        ]
+    )
+    return CliCommandResult(
+        command="model",
+        payload={
+            "prompt": namespace.prompt,
+            "response": completion.assistant_message.content,
+            "provider": completion.call_metadata.provider,
+            "model_name": completion.call_metadata.model_name,
+            "latency_ms": completion.call_metadata.latency_ms,
+            "input_tokens": completion.call_metadata.usage.input_tokens,
+            "output_tokens": completion.call_metadata.usage.output_tokens,
+            "total_tokens": completion.call_metadata.usage.total_tokens,
+            "tool_calls": [
+                {
+                    "name": tool_call.name,
+                    "arguments": tool_call.arguments,
+                }
+                for tool_call in completion.tool_calls
+            ],
         },
     )

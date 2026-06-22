@@ -5,7 +5,7 @@
 - Active phase: `Phase 8 - CLI/API Productization`
 - Repository status: `phase 8 ready`
 - Current focus:
-  - add a real OpenAI-compatible model gateway foundation for later CLI/API wiring
+  - expose the real model gateway through a minimal CLI smoke path
   - keep CLI/API entry points thin composition layers over existing package contracts
 
 ## Completed
@@ -86,16 +86,17 @@
 - `P8-DOC-01 - Operator Runbook`
 - `P8-API-05 - Local API Auth Foundation`
 - `P8-MOD-01 - OpenAI-Compatible Model Gateway Adapter`
+- `P8-MOD-02 - CLI Model Gateway Smoke`
 
 ## Current Focus
 
-- Phase 8 has deterministic CLI command parsing, local session operations, settings-backed database defaults, framework-independent route adaptation, a thin FastAPI serving layer, read-only session stream replay over SSE, an executable local operator runbook, optional bearer-token auth for non-health API routes, and a real OpenAI-compatible model gateway adapter
-- wiring that model gateway into CLI/API execution flows remains later task cards
+- Phase 8 has deterministic CLI command parsing, local session operations, settings-backed database defaults, framework-independent route adaptation, a thin FastAPI serving layer, read-only session stream replay over SSE, an executable local operator runbook, optional bearer-token auth for non-health API routes, a real OpenAI-compatible model gateway adapter, and a CLI model smoke path
+- wiring that model gateway into durable session execution flows remains later task cards
 
 ## Next Unlocks
 
-- `P8-MOD-01` is complete
-- the next step is to wire the runtime model gateway into CLI or API execution flows
+- `P8-MOD-02` is complete
+- the next step is to wire the model gateway into durable `run` or API-driven session execution flows
 
 ## Active Documents
 

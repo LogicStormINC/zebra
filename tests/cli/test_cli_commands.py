@@ -1,11 +1,16 @@
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
 
 import pytest
+import zebra_agent_cli.cli as cli_module
 from agent_core.domain.events import EventType
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import SessionId, new_message_id, new_tool_call_id
+from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
 from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.tools import ToolCall
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from zebra_agent_cli.cli import execute, main
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
@@ -206,6 +211,93 @@ def test_cli_approve_requires_valid_decision() -> None:
         )
 
 
+def test_cli_model_command_uses_configured_gateway(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_build_model_gateway(settings: ZebraAgentSettings) -> FakeGateway:
+        assert settings.model.provider == "test"
+        return FakeGateway(
+            completion=ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content="Gateway response",
+                    created_at=_created_at(),
+                ),
+                call_metadata=ModelCallMetadata(
+                    provider="test",
+                    model_name="test-model",
+                    latency_ms=42,
+                    usage=ModelUsage(
+                        input_tokens=3,
+                        output_tokens=5,
+                        total_tokens=8,
+                    ),
+                ),
+            )
+        )
+
+    monkeypatch.setattr(cli_module, "build_model_gateway", fake_build_model_gateway)
+
+    result = execute(["model", "Hello"], settings=_settings(Path(":memory:")))
+
+    assert result.command == "model"
+    assert result.payload == {
+        "prompt": "Hello",
+        "response": "Gateway response",
+        "provider": "test",
+        "model_name": "test-model",
+        "latency_ms": 42,
+        "input_tokens": 3,
+        "output_tokens": 5,
+        "total_tokens": 8,
+        "tool_calls": [],
+    }
+
+
+def test_cli_model_command_reports_tool_calls(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_build_model_gateway(settings: ZebraAgentSettings) -> FakeGateway:
+        del settings
+        return FakeGateway(
+            completion=ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content="Tool calls proposed.",
+                    created_at=_created_at(),
+                ),
+                tool_calls=(
+                    ToolCall(
+                        tool_call_id=new_tool_call_id(),
+                        name="files.read",
+                        arguments={"path": "README.md"},
+                        created_at=_created_at(),
+                    ),
+                ),
+            )
+        )
+
+    monkeypatch.setattr(cli_module, "build_model_gateway", fake_build_model_gateway)
+
+    result = execute(["model", "Read the README"], settings=_settings(Path(":memory:")))
+
+    assert result.payload["tool_calls"] == [
+        {
+            "name": "files.read",
+            "arguments": {"path": "README.md"},
+        }
+    ]
+
+
+def test_cli_model_command_surfaces_missing_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_build_model_gateway(settings: ZebraAgentSettings) -> FakeGateway:
+        del settings
+        raise ValueError("missing API key in environment variable TEST_API_KEY")
+
+    monkeypatch.setattr(cli_module, "build_model_gateway", fake_build_model_gateway)
+
+    with pytest.raises(ValueError, match="missing API key"):
+        execute(["model", "Hello"], settings=_settings(Path(":memory:")))
+
+
 def _settings(database_path: Path) -> ZebraAgentSettings:
     return ZebraAgentSettings(
         profile="test",
@@ -218,3 +310,17 @@ def _settings(database_path: Path) -> ZebraAgentSettings:
             model="test-model",
         ),
     )
+
+
+def _created_at() -> datetime:
+    return datetime(2026, 6, 22, 12, 30, tzinfo=UTC)
+
+
+class FakeGateway:
+    def __init__(self, *, completion: ModelCompletion) -> None:
+        self._completion = completion
+
+    def complete(self, messages: list[SessionMessage]) -> ModelCompletion:
+        assert len(messages) == 1
+        assert messages[0].role is MessageRole.USER
+        return self._completion

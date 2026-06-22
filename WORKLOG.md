@@ -994,6 +994,28 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 CLI Model Gateway Smoke
+
+- 执行 `P8-MOD-02 - CLI Model Gateway Smoke`
+- 新增：
+  - `zebra-agent model "<prompt>"`
+  - CLI 到 `agent-integrations.build_model_gateway(...)` 的依赖 wiring
+- 当前行为：
+  - 发送一条 user prompt 到当前 provider settings 对应的 model gateway
+  - 返回 assistant response、provider/model/usage metadata
+  - 缺失 API key 时在发请求前确定性失败
+  - 不改变现有 `run` / `inspect` / `resume` / `approve` 行为
+- 文档更新：
+  - `docs/operator_runbook.md` 增加 model smoke 命令
+- 本轮验证结果：
+  - `uv lock` 通过
+  - `make sync` 通过
+  - `uv run pytest tests/cli/test_cli_commands.py` 通过，12 passed
+  - `uv run ruff check apps/cli/src/zebra_agent_cli tests/cli` 通过
+  - `uv run mypy apps/cli tests/cli` 通过
+  - `uv run pytest` 通过，216 passed
+  - `make check` 通过
+
 ## 2026-06-22 OpenAI-Compatible Model Gateway Adapter
 
 - 执行 `P8-MOD-01 - OpenAI-Compatible Model Gateway Adapter`

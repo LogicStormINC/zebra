@@ -76,6 +76,20 @@ If a session reaches `waiting_approval`, record a decision with:
 uv run zebra-agent approve <session_id> --decision approve --reason "operator approved"
 ```
 
+Run one prompt directly through the configured model gateway:
+
+```bash
+uv run zebra-agent model "Summarize the current repository state"
+```
+
+Expected result:
+
+- JSON output with `command=model`
+- assistant `response`
+- provider, model, and usage metadata when the upstream API returns them
+
+If the configured API key environment variable is missing, the command fails before sending any HTTP request.
+
 ## API Serve
 
 Start the local API server:
