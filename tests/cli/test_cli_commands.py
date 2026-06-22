@@ -1,20 +1,47 @@
 import json
+from pathlib import Path
+from uuid import UUID
 
 import pytest
+from agent_core.domain.identifiers import SessionId
+from agent_core.domain.sessions import SessionStatus
+from agent_storage import SQLiteProjectionStore
 from zebra_agent_cli.cli import execute, main
 
 
-def test_cli_run_command_outputs_task_intent(capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["run", "Fix tests", "--title", "Fix failing tests"]) == 0
+def test_cli_run_command_creates_local_session(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    assert (
+        main(
+            [
+                "run",
+                "Fix tests",
+                "--title",
+                "Fix failing tests",
+                "--database",
+                str(database_path),
+            ]
+        )
+        == 0
+    )
 
     output = json.loads(capsys.readouterr().out)
-    assert output == {
-        "command": "run",
-        "prompt": "Fix tests",
-        "status": "created",
-        "title": "Fix failing tests",
-        "workspace": ".",
-    }
+    session_id = SessionId(UUID(output["session_id"]))
+    session = SQLiteProjectionStore(database_path).get_session(session_id)
+
+    assert output["command"] == "run"
+    assert output["prompt"] == "Fix tests"
+    assert output["status"] == SessionStatus.CREATED.value
+    assert output["title"] == "Fix failing tests"
+    assert output["workspace"] == "."
+    assert output["database"] == str(database_path)
+    assert session is not None
+    assert session.title == "Fix failing tests"
+    assert session.status is SessionStatus.CREATED
 
 
 def test_cli_resume_command_outputs_session_intent() -> None:

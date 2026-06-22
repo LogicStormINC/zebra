@@ -994,6 +994,28 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 CLI Run Local Session Creation
+
+- 执行 `P8-CLI-02 - CLI Run Local Session Creation`
+- `apps/cli` 更新：
+  - `run --database`
+  - `Session.create` 本地组合
+  - `SQLiteProjectionStore` session projection 持久化
+- 当前行为：
+  - `zebra-agent run` 会创建本地 session id
+  - 输出包含 session id、status、prompt、title、workspace、database
+  - worker execution 和 model orchestration 仍留给后续任务
+- 更新测试：
+  - `tests/cli/test_cli_commands.py`
+- 本轮验证结果：
+  - `uv lock` 通过
+  - `uv run pytest tests/cli/test_cli_commands.py` 通过
+  - `uv run ruff check apps/cli/src/zebra_agent_cli tests/cli` 通过
+  - `uv run mypy apps/cli tests/cli` 通过
+  - `uv run zebra-agent run "Fix tests" --title "Fix failing tests" --database /tmp/zebra-agent-cli-session.sqlite` 通过
+  - `uv run pytest` 通过，180 passed
+  - `make check` 通过，包含 eval release gate
+
 ## 2026-06-22 CLI Command Skeleton
 
 - 执行 `P8-CLI-01 - CLI Command Skeleton`

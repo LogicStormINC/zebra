@@ -1657,3 +1657,30 @@ Add a deterministic CLI command skeleton for `run`, `resume`, `inspect`, and `ap
 - [x] `zebra-agent inspect` can parse a session id.
 - [x] `zebra-agent approve` can parse an approval decision.
 - [x] CLI command outputs are deterministic and test-covered.
+
+### P8-CLI-02 - CLI Run Local Session Creation
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-CLI-01`
+- Branch: `codex/p8-cli-02-run-session-create`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`, `uv.lock`
+
+#### Goal
+
+Wire `zebra-agent run` to create a local durable session projection while keeping worker execution and model orchestration for later task cards.
+
+#### Deliverables
+
+- `run --database` option
+- local `Session.create` composition in CLI
+- SQLite projection persistence for newly created sessions
+- tests proving `run` output can be read back from the local projection store
+
+#### Acceptance
+
+- [x] `zebra-agent run` creates a local session id.
+- [x] Created sessions are persisted to the configured SQLite projection store.
+- [x] Run output includes session id, status, prompt, title, workspace, and database path.
+- [x] Worker execution remains deferred to later task cards.

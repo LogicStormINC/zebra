@@ -7,7 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from agent_core.domain.sessions import SessionStatus
+from agent_core.domain.sessions import Session
+from agent_storage import SQLiteProjectionStore
 
 CommandName = Literal["run", "resume", "inspect", "approve"]
 
@@ -55,6 +56,7 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("prompt")
     run.add_argument("--title", default="Untitled task")
     run.add_argument("--workspace", default=".")
+    run.add_argument("--database", default=".zebra-agent/sessions.sqlite")
 
     resume = subcommands.add_parser("resume", help="Resume a suspended session.")
     resume.add_argument("session_id")
@@ -71,13 +73,18 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _run_result(namespace: argparse.Namespace) -> CliCommandResult:
+    session = Session.create(title=namespace.title)
+    database_path = Path(namespace.database)
+    SQLiteProjectionStore(database_path).save_session(session)
     return CliCommandResult(
         command="run",
         payload={
+            "session_id": str(session.session_id),
             "title": namespace.title,
             "prompt": namespace.prompt,
             "workspace": str(Path(namespace.workspace)),
-            "status": SessionStatus.CREATED.value,
+            "database": str(database_path),
+            "status": session.status.value,
         },
     )
 
