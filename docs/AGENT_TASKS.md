@@ -1932,3 +1932,30 @@ Close the remaining Phase 8 operator guidance gap by documenting a runnable loca
 - [x] A session created through CLI has a replayable bootstrap event for the stream endpoint.
 - [x] README points to the runbook as the current operator entry.
 - [x] The documented flow is validated in the current repository state.
+
+### P8-API-05 - Local API Auth Foundation
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-DOC-01`
+- Branch: `codex/p8-api-05-local-auth`
+- Owned paths: `apps/api/`, `apps/config/`, `configs/`, `tests/api/`, `tests/config/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`, `pyproject.toml`
+
+#### Goal
+
+Add the first local API auth guard so non-health HTTP routes can require a configured bearer token without introducing a full multi-user auth system yet.
+
+#### Deliverables
+
+- settings support for local API bearer token
+- HTTP auth guard for session read and stream endpoints
+- tests covering disabled auth, missing token, invalid token, and valid token
+- operator docs for local token usage
+
+#### Acceptance
+
+- [x] Health remains accessible without auth.
+- [x] When no auth token is configured, current local API behavior remains unchanged.
+- [x] When an auth token is configured, session read and stream endpoints require a matching bearer token.
+- [x] Auth failures return deterministic HTTP `401` output.

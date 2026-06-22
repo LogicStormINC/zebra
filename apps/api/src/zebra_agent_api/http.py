@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
-from zebra_agent_config import ZebraAgentSettings
+from zebra_agent_config import ZebraAgentSettings, load_settings
 
 from zebra_agent_api.app import create_app
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
@@ -19,11 +19,15 @@ def create_http_app(
     *,
     settings: ZebraAgentSettings | None = None,
 ) -> FastAPI:
-    adapter = RouteAdapter(create_app(database_path, settings=settings))
+    active_settings = settings or load_settings()
+    adapter = RouteAdapter(create_app(database_path, settings=active_settings))
     app = FastAPI(title="Zebra Agent API")
 
     async def handle(request: Request, full_path: str = "") -> Response:
         del full_path
+        auth_error = _authorize_request(request, active_settings)
+        if auth_error is not None:
+            return auth_error
         response = adapter.handle(
             RouteRequest(
                 method=request.method,
@@ -66,3 +70,29 @@ def _coerce_events(events: object) -> list[dict[str, Any]]:
             raise TypeError("stream event must be a mapping")
         normalized.append(dict(event))
     return normalized
+
+
+def _authorize_request(request: Request, settings: ZebraAgentSettings) -> JSONResponse | None:
+    if request.url.path == "/health":
+        return None
+    expected_token = settings.api.auth_token
+    if expected_token is None:
+        return None
+    header = request.headers.get("authorization", "")
+    prefix = "Bearer "
+    if not header.startswith(prefix):
+        return _unauthorized()
+    provided_token = header.removeprefix(prefix).strip()
+    if provided_token != expected_token:
+        return _unauthorized()
+    return None
+
+
+def _unauthorized() -> JSONResponse:
+    return JSONResponse(
+        status_code=401,
+        content={
+            "status": "unauthorized",
+            "reason": "missing_or_invalid_bearer_token",
+        },
+    )

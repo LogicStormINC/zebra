@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-The repository is in `Phase 8 - CLI/API Productization`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, the control-plane foundation includes durable session events and recovery/indexing primitives, Phase 5 has closed out with a typed workspace context compiler, Phase 6 has closed out with deterministic local policy and approval hardening, Phase 7 has closed out with local trace, replay, eval, and release-gate foundations wired into `make check`, and Phase 8 now has CLI command skeletons, local session operations, API health/session route adaptation, settings-backed CLI/API database defaults, a thin FastAPI serving layer, read-only SSE session replay, and an executable local operator runbook.
+The repository is in `Phase 8 - CLI/API Productization`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, the control-plane foundation includes durable session events and recovery/indexing primitives, Phase 5 has closed out with a typed workspace context compiler, Phase 6 has closed out with deterministic local policy and approval hardening, Phase 7 has closed out with local trace, replay, eval, and release-gate foundations wired into `make check`, and Phase 8 now has CLI command skeletons, local session operations, API health/session route adaptation, settings-backed CLI/API database defaults, a thin FastAPI serving layer, read-only SSE session replay, an executable local operator runbook, and optional bearer-token auth for non-health API routes.
 
 Read in this order:
 

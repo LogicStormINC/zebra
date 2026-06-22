@@ -6,6 +6,7 @@ from agent_core.domain.sessions import Session
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from fastapi.testclient import TestClient
 from zebra_agent_api import create_http_app
+from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
 
 def test_http_app_serves_health(tmp_path: Path) -> None:
@@ -111,3 +112,92 @@ def test_http_app_stream_missing_session_returns_not_found(tmp_path: Path) -> No
         "session_id": "00000000-0000-0000-0000-000000000001",
         "status": "not_found",
     }
+
+
+def test_http_app_health_remains_public_with_auth_enabled(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite", settings=_settings("secret")))
+
+    response = client.get("/health")
+
+    assert response.status_code == 200
+
+
+def test_http_app_session_routes_require_bearer_token_when_configured(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="Auth session")
+    )
+    client = TestClient(create_http_app(database_path, settings=_settings("secret")))
+
+    response = client.get(f"/sessions/{session.session_id}")
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "status": "unauthorized",
+        "reason": "missing_or_invalid_bearer_token",
+    }
+
+
+def test_http_app_session_routes_reject_invalid_bearer_token(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="Auth session")
+    )
+    client = TestClient(create_http_app(database_path, settings=_settings("secret")))
+
+    response = client.get(
+        f"/sessions/{session.session_id}",
+        headers={"Authorization": "Bearer wrong"},
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "status": "unauthorized",
+        "reason": "missing_or_invalid_bearer_token",
+    }
+
+
+def test_http_app_session_routes_allow_valid_bearer_token(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="Auth session")
+    )
+    client = TestClient(create_http_app(database_path, settings=_settings("secret")))
+
+    response = client.get(
+        f"/sessions/{session.session_id}",
+        headers={"Authorization": "Bearer secret"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["session_id"] == str(session.session_id)
+
+
+def test_http_app_stream_route_requires_bearer_token_when_configured(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="Auth stream")
+    )
+    client = TestClient(create_http_app(database_path, settings=_settings("secret")))
+
+    response = client.get(f"/sessions/{session.session_id}/stream")
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "status": "unauthorized",
+        "reason": "missing_or_invalid_bearer_token",
+    }
+
+
+def _settings(auth_token: str | None) -> ZebraAgentSettings:
+    return ZebraAgentSettings(
+        profile="test",
+        database_url=":memory:",
+        api=ApiSettings(auth_token=auth_token),
+        model=ModelSettings(
+            provider="test",
+            api_key_env="TEST_API_KEY",
+            base_url="https://example.test",
+            model="test-model",
+        ),
+    )

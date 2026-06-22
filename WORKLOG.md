@@ -994,6 +994,26 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 Local API Auth Foundation
+
+- 执行 `P8-API-05 - Local API Auth Foundation`
+- 新增：
+  - `ZEBRA_API_AUTH_TOKEN` settings support
+  - optional bearer-token auth guard for non-health API routes
+- 当前行为：
+  - `/health` 始终公开
+  - 未配置 auth token 时，当前本地 API 行为不变
+  - 配置 auth token 后，session read 和 stream 路径要求 `Authorization: Bearer ...`
+  - 鉴权失败返回确定性的 `401 unauthorized`
+- 文档更新：
+  - `docs/operator_runbook.md` 增加本地 token 用法
+- 本轮验证结果：
+  - `uv run pytest tests/config/test_settings.py tests/api/test_http_app.py tests/api/test_api_app.py tests/cli/test_cli_commands.py` 通过，29 passed
+  - `uv run ruff check apps/config/src/zebra_agent_config apps/api/src/zebra_agent_api tests/config tests/api tests/cli` 通过
+  - `uv run mypy apps/config apps/api tests/config tests/api` 通过
+  - `uv run pytest` 通过，209 passed
+  - `make check` 通过
+
 ## 2026-06-22 Operator Runbook
 
 - 执行 `P8-DOC-01 - Operator Runbook`

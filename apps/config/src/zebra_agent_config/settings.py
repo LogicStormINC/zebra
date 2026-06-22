@@ -15,9 +15,15 @@ class ModelSettings:
 
 
 @dataclass(frozen=True)
+class ApiSettings:
+    auth_token: str | None
+
+
+@dataclass(frozen=True)
 class ZebraAgentSettings:
     profile: str
     database_url: str
+    api: ApiSettings
     model: ModelSettings
 
 
@@ -35,6 +41,9 @@ def load_settings(
             values,
             "ZEBRA_DATABASE_URL",
             default=".zebra-agent/sessions.sqlite",
+        ),
+        api=ApiSettings(
+            auth_token=_read_optional(values, "ZEBRA_API_AUTH_TOKEN"),
         ),
         model=ModelSettings(
             provider=provider,
@@ -66,4 +75,11 @@ def _read(values: Mapping[str, str], key: str, *, default: str) -> str:
     value = values.get(key, default).strip()
     if not value:
         return default
+    return value
+
+
+def _read_optional(values: Mapping[str, str], key: str) -> str | None:
+    value = values.get(key, "").strip()
+    if not value:
+        return None
     return value

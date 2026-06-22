@@ -8,7 +8,7 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from zebra_agent_cli.cli import execute, main
-from zebra_agent_config import ModelSettings, ZebraAgentSettings
+from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
 
 def test_cli_run_command_creates_local_session(
@@ -210,6 +210,7 @@ def _settings(database_path: Path) -> ZebraAgentSettings:
     return ZebraAgentSettings(
         profile="test",
         database_url=str(database_path),
+        api=ApiSettings(auth_token=None),
         model=ModelSettings(
             provider="test",
             api_key_env="TEST_API_KEY",
