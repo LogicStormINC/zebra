@@ -994,6 +994,22 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 Phase 7 Closeout Record
+
+- 执行 `P7-EVAL-06 - Phase 7 Closeout Record`
+- Phase 7 验收证据：
+  - trace/audit/cost models 已由 `P7-OBS-01` 覆盖
+  - local JSONL trace persistence 已由 `P7-OBS-02` 覆盖
+  - local replay runner 已由 `P7-OBS-03` 覆盖
+  - eval case/grader/runner 已由 `P7-EVAL-01` 和 `P7-EVAL-02` 覆盖
+  - bugfix/refactor/recovery/security/analysis baseline cases 已由 `P7-EVAL-03` 覆盖
+  - local release gate 与 `make check` 集成已由 `P7-EVAL-04` 和 `P7-EVAL-05` 覆盖
+- Phase 8 ready 状态：
+  - 下一阶段从 CLI/API Productization 开始
+  - 首批任务应围绕 `run`、`resume`、`inspect`、`approve` CLI 命令和 API health/session foundation 注册
+- 本轮验证结果：
+  - `make check` 通过，包含 ruff、mypy 和 eval release gate
+
 ## 2026-06-22 Eval Release Check Integration
 
 - 执行 `P7-EVAL-05 - Eval Release Check Integration`

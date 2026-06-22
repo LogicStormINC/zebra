@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 7 - Eval And Observability`
-- Repository status: `phase 7 ready`
+- Active phase: `Phase 8 - CLI/API Productization`
+- Repository status: `phase 8 ready`
 - Current focus:
-  - wire local eval release gate into repository checks
-  - keep traces, audit, replay, and metrics local-first before adding cloud services
+  - start local-first CLI/API productization on top of the completed core, runtime, policy, context, and eval foundations
+  - keep CLI/API entry points thin composition layers over existing package contracts
 
 ## Completed
 
@@ -72,16 +72,17 @@
 - `P7-EVAL-03 - Baseline Eval Case Expansion`
 - `P7-EVAL-04 - Local Release Gate Baseline`
 - `P7-EVAL-05 - Eval Release Check Integration`
+- `P7-EVAL-06 - Phase 7 Closeout Record`
 
 ## Current Focus
 
-- Phase 7 eval and observability has typed trace/audit/cost models, local JSONL trace persistence, deterministic local replay summaries, local eval case/grader and runner support, an expanded MVP baseline dataset, and a local release gate wired into `make check`
-- keep eval execution local until CLI/API productization begins
+- Phase 7 has closed out with typed trace/audit/cost models, local JSONL trace persistence, deterministic local replay summaries, local eval case/grader and runner support, an expanded MVP baseline dataset, and a local release gate wired into `make check`
+- Phase 8 should begin with CLI commands for `run`, `resume`, `inspect`, and `approve`, followed by API health/session foundations
 
 ## Next Unlocks
 
-- `P7-EVAL-05` is complete
-- the next step is to register the next ready Phase 7 eval and observability task card
+- `P7-EVAL-06` is complete
+- the next step is to register the first ready Phase 8 CLI/API productization task card
 
 ## Active Documents
 

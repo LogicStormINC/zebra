@@ -1600,3 +1600,28 @@ Wire the local eval release gate into the repository validation path so Phase 7 
 - [x] `make check` includes the eval release check.
 - [x] The baseline dataset passes the local release gate.
 - [x] The check prints pass rate, average score, and case count.
+
+### P7-EVAL-06 - Phase 7 Closeout Record
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `QA`
+- Depends on: `P7-EVAL-05`
+- Branch: `codex/p7-eval-06-phase7-closeout`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 7 by recording eval and observability evidence, known deferrals, and the next phase boundary before CLI/API productization begins.
+
+#### Deliverables
+
+- Phase 7 closeout progress update
+- validation evidence for trace, replay, eval, and release gate paths
+- Phase 8 ready state in project status
+
+#### Acceptance
+
+- [x] `PROGRESS.md` identifies Phase 8 as the next active implementation phase.
+- [x] `README.md` reflects Phase 7 closeout and Phase 8 readiness.
+- [x] `WORKLOG.md` records Phase 7 closeout validation evidence.
