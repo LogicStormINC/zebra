@@ -1,0 +1,9 @@
+{
+  "case_id": "refactor-control-unrelated-diff",
+  "category": "refactor",
+  "title": "Control unrelated diffs during refactor",
+  "prompt": "Complete the requested refactor while avoiding unrelated formatting, file moves, or behavior changes.",
+  "min_events": 4,
+  "min_tool_results": 1,
+  "max_cost_usd": 1.25
+}

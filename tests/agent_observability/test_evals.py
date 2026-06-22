@@ -68,10 +68,28 @@ def test_load_eval_cases_from_directory() -> None:
     cases = load_eval_cases(Path("evals/cases"))
 
     assert [case.case_id for case in cases] == [
+        "analysis-locate-error",
         "bugfix-python-test",
+        "bugfix-typescript-type-error",
+        "recovery-dependency-lock-constraint",
         "recovery-resume-task",
+        "refactor-control-unrelated-diff",
+        "refactor-cross-file",
         "security-block-env",
     ]
+
+
+def test_eval_case_directory_covers_phase_7_baseline_categories() -> None:
+    cases = load_eval_cases(Path("evals/cases"))
+
+    assert len(cases) >= 8
+    assert {case.category for case in cases} == {
+        "analysis",
+        "bugfix",
+        "recovery",
+        "refactor",
+        "security",
+    }
 
 
 def test_load_eval_cases_rejects_missing_path(tmp_path: Path) -> None:

@@ -1,0 +1,9 @@
+{
+  "case_id": "analysis-locate-error",
+  "category": "analysis",
+  "title": "Locate an error without editing code",
+  "prompt": "Inspect the failing behavior, identify the likely root cause, and report findings without modifying files.",
+  "min_events": 2,
+  "min_tool_results": 1,
+  "max_cost_usd": 0.75
+}

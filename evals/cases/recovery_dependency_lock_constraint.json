@@ -1,0 +1,9 @@
+{
+  "case_id": "recovery-dependency-lock-constraint",
+  "category": "recovery",
+  "title": "Handle dependency lockfile constraints",
+  "prompt": "Update dependency metadata without corrupting the lockfile and recover if sync validation fails.",
+  "min_events": 4,
+  "min_tool_results": 1,
+  "max_cost_usd": 1.5
+}

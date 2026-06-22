@@ -994,6 +994,26 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 Baseline Eval Case Expansion
+
+- 执行 `P7-EVAL-03 - Baseline Eval Case Expansion`
+- `evals/cases/` 新增：
+  - `analysis-locate-error`
+  - `bugfix-typescript-type-error`
+  - `refactor-cross-file`
+  - `refactor-control-unrelated-diff`
+  - `recovery-dependency-lock-constraint`
+- 当前行为：
+  - 本地 eval dataset 覆盖 bugfix、refactor、recovery、security、analysis
+  - case 数量从 3 扩展到 8
+  - 测试锁定 Phase 7 baseline category coverage
+- 本轮验证结果：
+  - `uv run pytest tests/agent_observability/test_evals.py tests/agent_observability/test_eval_runner.py` 通过
+  - `uv run ruff check tests/agent_observability packages/agent-observability/src/agent_observability` 通过
+  - `uv run mypy tests/agent_observability packages/agent-observability/src/agent_observability` 通过
+  - `uv run pytest` 通过，170 passed
+  - `make check` 通过
+
 ## 2026-06-22 Local Eval Runner
 
 - 执行 `P7-EVAL-02 - Local Eval Runner`

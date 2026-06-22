@@ -1521,3 +1521,27 @@ Add a deterministic local eval runner that combines loaded eval cases, replay su
 - [x] Eval run results expose total count, pass count, all-pass status, and average score.
 - [x] Missing replay results are explicit failures.
 - [x] Empty eval runs are rejected.
+
+### P7-EVAL-03 - Baseline Eval Case Expansion
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `QA`
+- Depends on: `P7-EVAL-02`
+- Branch: `codex/p7-eval-03-baseline-cases`
+- Owned paths: `evals/`, `tests/agent_observability/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expand the local MVP eval dataset so Phase 7 covers the documented bugfix, refactor, recovery, security, and analysis baseline lanes before release gate wiring.
+
+#### Deliverables
+
+- additional JSON eval cases under `evals/cases/`
+- baseline coverage test for case count and category coverage
+
+#### Acceptance
+
+- [x] The local eval dataset includes at least eight cases.
+- [x] The dataset includes bugfix, refactor, recovery, security, and analysis categories.
+- [x] The added cases cover TypeScript type errors, cross-file refactor, unrelated diff control, dependency lock constraints, and analysis-only diagnosis.

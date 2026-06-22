@@ -1,0 +1,9 @@
+{
+  "case_id": "bugfix-typescript-type-error",
+  "category": "bugfix",
+  "title": "Fix a TypeScript type error",
+  "prompt": "Run the TypeScript check, identify the type mismatch, make the smallest fix, and rerun the targeted validation.",
+  "min_events": 3,
+  "min_tool_results": 1,
+  "max_cost_usd": 1.0
+}

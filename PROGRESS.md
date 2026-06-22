@@ -5,7 +5,7 @@
 - Active phase: `Phase 7 - Eval And Observability`
 - Repository status: `phase 7 ready`
 - Current focus:
-  - add deterministic local eval runner aggregation
+  - expand the local MVP eval baseline cases
   - keep traces, audit, replay, and metrics local-first before adding cloud services
 
 ## Completed
@@ -69,15 +69,16 @@
 - `P7-OBS-03 - Local Replay Runner`
 - `P7-EVAL-01 - Eval Case And Grader Bootstrap`
 - `P7-EVAL-02 - Local Eval Runner`
+- `P7-EVAL-03 - Baseline Eval Case Expansion`
 
 ## Current Focus
 
-- Phase 7 eval and observability has typed trace/audit/cost models, local JSONL trace persistence, deterministic local replay summaries, a local eval case/grader baseline, and eval run aggregation
+- Phase 7 eval and observability has typed trace/audit/cost models, local JSONL trace persistence, deterministic local replay summaries, local eval case/grader and runner support, and an expanded MVP baseline dataset
 - keep eval execution local until CLI integration and release gate task cards are added
 
 ## Next Unlocks
 
-- `P7-EVAL-02` is complete
+- `P7-EVAL-03` is complete
 - the next step is to register the next ready Phase 7 eval and observability task card
 
 ## Active Documents

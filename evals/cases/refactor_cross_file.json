@@ -1,0 +1,9 @@
+{
+  "case_id": "refactor-cross-file",
+  "category": "refactor",
+  "title": "Perform a cross-file refactor",
+  "prompt": "Refactor a small shared interface across two files while preserving behavior and tests.",
+  "min_events": 4,
+  "min_tool_results": 1,
+  "max_cost_usd": 1.25
+}
