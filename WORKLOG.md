@@ -994,6 +994,28 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 Eval Release Check Integration
+
+- 执行 `P7-EVAL-05 - Eval Release Check Integration`
+- 新增：
+  - `scripts/eval_release_check.py`
+  - `make eval`
+  - `make check` eval release gate step
+- 当前行为：
+  - release check 加载 `evals/cases/`
+  - 基于 case 阈值构造本地 baseline replay summaries
+  - 输出 pass rate、average score、case count
+  - release gate 失败时脚本返回非 0
+- 新增测试：
+  - `tests/agent_observability/test_eval_release_check.py`
+- 本轮验证结果：
+  - `make eval` 通过
+  - `uv run pytest tests/agent_observability/test_eval_release_check.py tests/agent_observability/test_release_gate.py tests/agent_observability/test_eval_runner.py tests/agent_observability/test_evals.py` 通过
+  - `uv run ruff check scripts/eval_release_check.py tests/agent_observability packages/agent-observability/src/agent_observability` 通过
+  - `uv run mypy packages/agent-observability/src/agent_observability tests/agent_observability` 通过
+  - `uv run pytest` 通过，175 passed
+  - `make check` 通过，包含 eval release gate
+
 ## 2026-06-22 Local Release Gate Baseline
 
 - 执行 `P7-EVAL-04 - Local Release Gate Baseline`

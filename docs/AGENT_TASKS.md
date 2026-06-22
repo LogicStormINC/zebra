@@ -1573,3 +1573,30 @@ Add a local release gate decision layer that can evaluate eval run results befor
 - [x] Failed thresholds produce explicit reasons.
 - [x] Empty eval results fail closed.
 - [x] Invalid gate thresholds are rejected.
+
+### P7-EVAL-05 - Eval Release Check Integration
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `QA`
+- Depends on: `P7-EVAL-04`
+- Branch: `codex/p7-eval-05-check-integration`
+- Owned paths: `scripts/`, `tests/agent_observability/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`, `Makefile`
+
+#### Goal
+
+Wire the local eval release gate into the repository validation path so Phase 7 has a concrete pre-release check command.
+
+#### Deliverables
+
+- `scripts/eval_release_check.py`
+- `make eval`
+- `make check` eval release gate step
+- tests covering the baseline release check output
+
+#### Acceptance
+
+- [x] `make eval` runs the local eval release check.
+- [x] `make check` includes the eval release check.
+- [x] The baseline dataset passes the local release gate.
+- [x] The check prints pass rate, average score, and case count.

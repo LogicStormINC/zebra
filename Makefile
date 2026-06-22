@@ -1,6 +1,6 @@
 PYTHON := uv run
 
-.PHONY: sync check test tree
+.PHONY: sync check eval test tree
 
 sync:
 	uv sync --all-packages --group dev
@@ -8,6 +8,10 @@ sync:
 check:
 	uv run ruff check .
 	uv run mypy packages apps
+	uv run python scripts/eval_release_check.py
+
+eval:
+	uv run python scripts/eval_release_check.py
 
 test:
 	uv run pytest
