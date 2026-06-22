@@ -1823,3 +1823,30 @@ Add local configuration loading and profile/model selection defaults before wiri
 - [x] Settings expose model provider, API key env name, base URL, and model name.
 - [x] Environment values override repository defaults.
 - [x] DeepSeek defaults use `https://api.deepseek.com` and `deepseek-v4-flash`.
+
+### P8-CONFIG-02 - Entry Point Settings Wiring
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-CONFIG-01`
+- Branch: `codex/p8-config-02-entrypoint-wiring`
+- Owned paths: `apps/cli/`, `apps/api/`, `tests/cli/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Wire local settings into CLI and API composition roots so entry points use the configured database URL by default while preserving explicit operator overrides.
+
+#### Deliverables
+
+- CLI database default resolved through `zebra-agent-config`
+- API app database default resolved through `zebra-agent-config`
+- app package dependencies on `zebra-agent-config`
+- tests covering settings defaults and explicit database overrides
+
+#### Acceptance
+
+- [x] CLI commands use settings database URL when `--database` is omitted.
+- [x] CLI explicit `--database` still overrides settings.
+- [x] API `create_app()` uses settings database URL when no path is provided.
+- [x] API explicit database path still overrides settings.

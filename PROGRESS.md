@@ -5,7 +5,7 @@
 - Active phase: `Phase 8 - CLI/API Productization`
 - Repository status: `phase 8 ready`
 - Current focus:
-  - add local settings loader and profile/model defaults
+  - wire local settings into CLI/API entry points
   - keep CLI/API entry points thin composition layers over existing package contracts
 
 ## Completed
@@ -80,16 +80,17 @@
 - `P8-API-01 - API Health And Session Foundation`
 - `P8-API-02 - API Route Adapter`
 - `P8-CONFIG-01 - Local Settings Loader`
+- `P8-CONFIG-02 - Entry Point Settings Wiring`
 
 ## Current Focus
 
-- Phase 8 has deterministic CLI command parsing, local session operations, API health/session route adaptation, and local settings loading for profile/model defaults
+- Phase 8 has deterministic CLI command parsing, local session operations, API health/session route adaptation, and settings-backed database defaults for CLI/API entry points
 - worker execution, HTTP framework serving, streaming, auth, and runtime model gateway wiring remain later task cards
 
 ## Next Unlocks
 
-- `P8-CONFIG-01` is complete
-- the next step is to wire settings into CLI/API entry points or add HTTP framework serving
+- `P8-CONFIG-02` is complete
+- the next step is to add HTTP framework serving, streaming foundation, or operator runbook coverage
 
 ## Active Documents
 

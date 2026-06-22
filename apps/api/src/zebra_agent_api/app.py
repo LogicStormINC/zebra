@@ -6,6 +6,7 @@ from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId
 from agent_storage import SQLiteProjectionStore
+from zebra_agent_config import ZebraAgentSettings, load_settings
 
 
 @dataclass(frozen=True)
@@ -50,5 +51,10 @@ class ZebraAgentApi:
         )
 
 
-def create_app(database_path: str | Path = ".zebra-agent/sessions.sqlite") -> ZebraAgentApi:
-    return ZebraAgentApi(database_path=Path(database_path))
+def create_app(
+    database_path: str | Path | None = None,
+    *,
+    settings: ZebraAgentSettings | None = None,
+) -> ZebraAgentApi:
+    active_settings = settings or load_settings()
+    return ZebraAgentApi(database_path=Path(database_path or active_settings.database_url))

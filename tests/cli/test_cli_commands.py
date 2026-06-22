@@ -8,6 +8,7 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from zebra_agent_cli.cli import execute, main
+from zebra_agent_config import ModelSettings, ZebraAgentSettings
 
 
 def test_cli_run_command_creates_local_session(
@@ -43,6 +44,42 @@ def test_cli_run_command_creates_local_session(
     assert session is not None
     assert session.title == "Fix failing tests"
     assert session.status is SessionStatus.CREATED
+
+
+def test_cli_run_command_uses_settings_database_by_default(tmp_path: Path) -> None:
+    database_path = tmp_path / "configured.sqlite"
+
+    result = execute(
+        ["run", "Use configured database"],
+        settings=_settings(database_path),
+    )
+    session = SQLiteProjectionStore(database_path).get_session(
+        SessionId(UUID(str(result.payload["session_id"])))
+    )
+
+    assert result.payload["database"] == str(database_path)
+    assert session is not None
+
+
+def test_cli_run_command_database_option_overrides_settings(tmp_path: Path) -> None:
+    configured_path = tmp_path / "configured.sqlite"
+    explicit_path = tmp_path / "explicit.sqlite"
+
+    result = execute(
+        [
+            "run",
+            "Use explicit database",
+            "--database",
+            str(explicit_path),
+        ],
+        settings=_settings(configured_path),
+    )
+
+    assert result.payload["database"] == str(explicit_path)
+    assert SQLiteProjectionStore(explicit_path).get_session(
+        SessionId(UUID(str(result.payload["session_id"])))
+    ) is not None
+    assert not configured_path.exists()
 
 
 def test_cli_resume_command_reads_local_session(tmp_path: Path) -> None:
@@ -159,3 +196,16 @@ def test_cli_approve_requires_valid_decision() -> None:
                 "maybe",
             ]
         )
+
+
+def _settings(database_path: Path) -> ZebraAgentSettings:
+    return ZebraAgentSettings(
+        profile="test",
+        database_url=str(database_path),
+        model=ModelSettings(
+            provider="test",
+            api_key_env="TEST_API_KEY",
+            base_url="https://example.test",
+            model="test-model",
+        ),
+    )

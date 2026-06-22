@@ -17,6 +17,7 @@ from agent_core.application.session_projection import apply_event
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from zebra_agent_config import ZebraAgentSettings, load_settings
 
 CommandName = Literal["run", "resume", "inspect", "approve"]
 
@@ -36,17 +37,30 @@ class CliCommandResult:
         )
 
 
-def execute(argv: Sequence[str]) -> CliCommandResult:
+def execute(
+    argv: Sequence[str],
+    *,
+    settings: ZebraAgentSettings | None = None,
+) -> CliCommandResult:
     namespace = _parser().parse_args(list(argv))
+    active_settings = settings or load_settings()
     command = namespace.command
     if command == "run":
-        return _run_result(namespace)
+        return _run_result(namespace, active_settings)
     if command == "resume":
-        return _session_result("resume", namespace.session_id, Path(namespace.database))
+        return _session_result(
+            "resume",
+            namespace.session_id,
+            _database_path(namespace.database, active_settings),
+        )
     if command == "inspect":
-        return _session_result("inspect", namespace.session_id, Path(namespace.database))
+        return _session_result(
+            "inspect",
+            namespace.session_id,
+            _database_path(namespace.database, active_settings),
+        )
     if command == "approve":
-        return _approval_result(namespace, Path(namespace.database))
+        return _approval_result(namespace, _database_path(namespace.database, active_settings))
     raise ValueError(f"unsupported CLI command: {command}")
 
 
@@ -64,29 +78,32 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("prompt")
     run.add_argument("--title", default="Untitled task")
     run.add_argument("--workspace", default=".")
-    run.add_argument("--database", default=".zebra-agent/sessions.sqlite")
+    run.add_argument("--database")
 
     resume = subcommands.add_parser("resume", help="Resume a suspended session.")
     resume.add_argument("session_id")
-    resume.add_argument("--database", default=".zebra-agent/sessions.sqlite")
+    resume.add_argument("--database")
 
     inspect = subcommands.add_parser("inspect", help="Inspect a session.")
     inspect.add_argument("session_id")
-    inspect.add_argument("--database", default=".zebra-agent/sessions.sqlite")
+    inspect.add_argument("--database")
 
     approve = subcommands.add_parser("approve", help="Record an approval decision.")
     approve.add_argument("session_id")
     approve.add_argument("--decision", choices=("approve", "reject"), required=True)
     approve.add_argument("--reason", default="")
     approve.add_argument("--operator", default="local-operator")
-    approve.add_argument("--database", default=".zebra-agent/sessions.sqlite")
+    approve.add_argument("--database")
 
     return parser
 
 
-def _run_result(namespace: argparse.Namespace) -> CliCommandResult:
+def _run_result(
+    namespace: argparse.Namespace,
+    settings: ZebraAgentSettings,
+) -> CliCommandResult:
     session = Session.create(title=namespace.title)
-    database_path = Path(namespace.database)
+    database_path = _database_path(namespace.database, settings)
     SQLiteProjectionStore(database_path).save_session(session)
     return CliCommandResult(
         command="run",
@@ -99,6 +116,13 @@ def _run_result(namespace: argparse.Namespace) -> CliCommandResult:
             "status": session.status.value,
         },
     )
+
+
+def _database_path(
+    database: str | None,
+    settings: ZebraAgentSettings,
+) -> Path:
+    return Path(database or settings.database_url)
 
 
 def _session_result(

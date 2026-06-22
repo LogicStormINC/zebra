@@ -994,6 +994,30 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 Entry Point Settings Wiring
+
+- 执行 `P8-CONFIG-02 - Entry Point Settings Wiring`
+- 新增行为：
+  - CLI `run`、`resume`、`inspect`、`approve` 在未传 `--database` 时使用 `zebra-agent-config` 的 `database_url`
+  - CLI 显式 `--database` 继续覆盖 settings
+  - API `create_app()` 在未传 database path 时使用 settings database URL
+  - API 显式 database path 继续覆盖 settings
+- 更新依赖：
+  - `apps/cli` 依赖 `zebra-agent-config`
+  - `apps/api` 依赖 `zebra-agent-config`
+- 新增测试：
+  - CLI settings database default
+  - CLI explicit database override
+  - API settings database default
+  - API explicit database override
+- 本轮验证结果：
+  - `uv lock` 通过
+  - `uv run pytest tests/cli/test_cli_commands.py tests/api/test_api_app.py` 通过，14 passed
+  - `uv run ruff check apps/cli/src/zebra_agent_cli apps/api/src/zebra_agent_api tests/cli tests/api` 通过
+  - `uv run mypy apps/cli apps/api tests/cli tests/api` 通过
+  - `uv run pytest` 通过，194 passed
+  - `make check` 通过
+
 ## 2026-06-22 Local Settings Loader
 
 - 执行 `P8-CONFIG-01 - Local Settings Loader`
