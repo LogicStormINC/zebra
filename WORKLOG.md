@@ -994,6 +994,24 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 Local Trace JSONL Store
+
+- 执行 `P7-OBS-02 - Local Trace JSONL Store`
+- `agent-observability` 新增：
+  - `JsonlTraceStore`
+- 当前行为：
+  - trace records 可以 append 到本地 JSONL 文件
+  - trace records 可以按写入顺序读回
+  - missing store file 返回空列表
+  - directory path 被拒绝
+- 新增测试：
+  - `tests/agent_observability/test_jsonl_trace_store.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_observability/test_jsonl_trace_store.py tests/agent_observability/test_trace_models.py` 通过
+  - `uv run ruff check packages/agent-observability/src/agent_observability tests/agent_observability` 通过
+  - `uv run mypy packages/agent-observability/src/agent_observability tests/agent_observability` 通过
+  - `make check` 通过
+
 ## 2026-06-22 Command Risk Rules
 
 - 执行 `P6-POL-02 - Command Risk Rules`

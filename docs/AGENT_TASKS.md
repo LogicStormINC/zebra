@@ -1412,3 +1412,29 @@ Bootstrap the observability package with deterministic local trace, audit, and c
 - [x] Trace records include event count, tool result count, audit records, and cost summary.
 - [x] Trace building rejects empty and mixed-session streams.
 - [x] Cost summary rejects negative values.
+
+### P7-OBS-02 - Local Trace JSONL Store
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OBS`
+- Depends on: `P7-OBS-01`
+- Branch: `codex/p7-obs-02-local-trace-store`
+- Owned paths: `packages/agent-observability/`, `tests/agent_observability/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a local JSONL trace store so trace records can be persisted and read back before implementing replay runners or remote observability backends.
+
+#### Deliverables
+
+- `JsonlTraceStore`
+- JSON serialization for trace, cost, and audit records
+- tests covering append/list, missing store files, and invalid directory paths
+
+#### Acceptance
+
+- [x] Trace records can be appended to a JSONL file.
+- [x] Stored trace records can be read back in insertion order.
+- [x] Missing store files return an empty list.
+- [x] Directory paths are rejected.

@@ -5,7 +5,7 @@
 - Active phase: `Phase 7 - Eval And Observability`
 - Repository status: `phase 7 ready`
 - Current focus:
-  - bootstrap local observability models after the Phase 6 policy and approvals closeout
+  - add local trace persistence after the observability model bootstrap
   - keep traces, audit, replay, and metrics local-first before adding cloud services
 
 ## Completed
@@ -65,15 +65,16 @@
 - `P6-POL-08 - Approval Service Entry`
 - `P6-POL-09 - Phase 6 Closeout Record`
 - `P7-OBS-01 - Observability Models Bootstrap`
+- `P7-OBS-02 - Local Trace JSONL Store`
 
 ## Current Focus
 
-- Phase 7 eval and observability has a typed trace/audit/cost model bootstrap
-- register the next direct slice around local trace persistence or replay
+- Phase 7 eval and observability has typed trace/audit/cost models and local JSONL trace persistence
+- register the next direct slice around local replay
 
 ## Next Unlocks
 
-- `P7-OBS-01` is complete
+- `P7-OBS-02` is complete
 - the next step is to register the next ready Phase 7 eval and observability task card
 
 ## Active Documents

@@ -1,3 +1,4 @@
+from agent_observability.jsonl import JsonlTraceStore
 from agent_observability.models import (
     AuditRecord,
     CostSummary,
@@ -8,6 +9,7 @@ from agent_observability.models import (
 __all__ = [
     "AuditRecord",
     "CostSummary",
+    "JsonlTraceStore",
     "TraceRecord",
     "build_trace_record",
 ]
