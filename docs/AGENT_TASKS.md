@@ -1383,3 +1383,32 @@ Close Phase 6 by recording policy and approval hardening evidence, known deferra
 - [x] Validation commands and results are recorded.
 - [x] Deferred MCP, egress, credential, and API-adapter work is explicit.
 - [x] `PROGRESS.md` identifies Phase 7 as the next active implementation phase.
+
+## Phase 7 Task Board
+
+### P7-OBS-01 - Observability Models Bootstrap
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OBS`
+- Depends on: `P6-POL-09`
+- Branch: `codex/p7-obs-01-observability-models`
+- Owned paths: `packages/agent-observability/`, `tests/agent_observability/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`, `pyproject.toml`, `uv.lock`
+
+#### Goal
+
+Bootstrap the observability package with deterministic local trace, audit, and cost summary models before adding storage, replay, or eval runners.
+
+#### Deliverables
+
+- `agent-observability` workspace package
+- trace record model for session event streams
+- audit record and cost summary models
+- tests covering event counts, tool result counts, model cost aggregation, empty streams, mixed sessions, and negative costs
+
+#### Acceptance
+
+- [x] Session event streams can produce a typed trace record.
+- [x] Trace records include event count, tool result count, audit records, and cost summary.
+- [x] Trace building rejects empty and mixed-session streams.
+- [x] Cost summary rejects negative values.

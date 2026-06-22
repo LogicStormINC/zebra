@@ -975,6 +975,25 @@
   - `uv run pytest` 通过，150 passed
   - `make check` 通过
 
+## 2026-06-22 Observability Models Bootstrap
+
+- 执行 `P7-OBS-01 - Observability Models Bootstrap`
+- 新增 workspace package：
+  - `packages/agent-observability`
+- 当前行为：
+  - session event stream 可以构造 `TraceRecord`
+  - trace 包含 event count、tool result count、audit records、cost summary
+  - 空 event stream 和 mixed session stream 会被拒绝
+- 新增测试：
+  - `tests/agent_observability/test_trace_models.py`
+- 本轮验证结果：
+  - `uv sync --all-packages --group dev` 通过
+  - `uv run pytest tests/agent_observability/test_trace_models.py` 通过
+  - `uv run ruff check packages/agent-observability/src/agent_observability tests/agent_observability/test_trace_models.py` 通过
+  - `uv run mypy packages/agent-observability/src/agent_observability tests/agent_observability/test_trace_models.py` 通过
+  - `uv run pytest` 通过，154 passed
+  - `make check` 通过
+
 ## 2026-06-22 Command Risk Rules
 
 - 执行 `P6-POL-02 - Command Risk Rules`

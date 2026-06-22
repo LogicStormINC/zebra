@@ -5,7 +5,7 @@
 - Active phase: `Phase 7 - Eval And Observability`
 - Repository status: `phase 7 ready`
 - Current focus:
-  - begin eval and observability after the Phase 6 policy and approvals closeout
+  - bootstrap local observability models after the Phase 6 policy and approvals closeout
   - keep traces, audit, replay, and metrics local-first before adding cloud services
 
 ## Completed
@@ -64,16 +64,17 @@
 - `P6-POL-07 - Approval Decision Projection`
 - `P6-POL-08 - Approval Service Entry`
 - `P6-POL-09 - Phase 6 Closeout Record`
+- `P7-OBS-01 - Observability Models Bootstrap`
 
 ## Current Focus
 
-- Phase 6 policy and approvals hardening is closed out for local MVP scope
-- register the first Phase 7 eval and observability task card before more implementation starts
+- Phase 7 eval and observability has a typed trace/audit/cost model bootstrap
+- register the next direct slice around local trace persistence or replay
 
 ## Next Unlocks
 
-- `P6-POL-09` is complete
-- the next step is to register the first ready Phase 7 eval and observability task card
+- `P7-OBS-01` is complete
+- the next step is to register the next ready Phase 7 eval and observability task card
 
 ## Active Documents
 
