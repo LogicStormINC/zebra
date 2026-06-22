@@ -994,6 +994,32 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 API Health And Session Foundation
+
+- 执行 `P8-API-01 - API Health And Session Foundation`
+- `apps/api` 更新：
+  - `ZebraAgentApi`
+  - `ApiResponse`
+  - health handler
+  - session lookup handler
+- 当前行为：
+  - API app 仍是无外部 framework 的 composition object
+  - health 返回 service status
+  - session lookup 通过 `SQLiteProjectionStore` 读取 projection
+  - missing session 返回 404/not_found
+- 新增测试：
+  - `tests/api/test_api_app.py`
+- 更新测试：
+  - `tests/smoke/test_workspace_bootstrap.py`
+- 本轮验证结果：
+  - `uv lock` 通过
+  - `uv run pytest tests/api/test_api_app.py tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run ruff check apps/api/src/zebra_agent_api tests/api tests/smoke/test_workspace_bootstrap.py` 通过
+  - `uv run mypy apps/api tests/api` 通过
+  - `uv run pytest` 通过，185 passed
+  - `make check` 通过，包含 eval release gate
+  - 说明：直接 mypy `tests/smoke/test_workspace_bootstrap.py` 会触发既有未标记 `py.typed` 的包导入问题，默认 `make check` 不检查 tests
+
 ## 2026-06-22 CLI Approve Local Decision
 
 - 执行 `P8-CLI-04 - CLI Approve Local Decision`

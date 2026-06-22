@@ -50,7 +50,7 @@ def test_workspace_packages_import() -> None:
     assert SQLiteModelCallStore is not None
     assert SQLiteProjectionStore is not None
     assert SQLiteToolRunStore is not None
-    assert create_app() == "api-bootstrap"
+    assert create_app().health().body["status"] == "ok"
     assert SessionClaimService is not None
     assert ModelCallIndexer is not None
     assert SessionRecoveryService is not None

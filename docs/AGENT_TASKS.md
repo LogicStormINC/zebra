@@ -1740,3 +1740,30 @@ Wire `zebra-agent approve` to local approval decision events and projection upda
 - [x] Approval decisions update the local session projection.
 - [x] Non-waiting sessions return deterministic `invalid_state` output.
 - [x] Invalid decision values are rejected by CLI parsing.
+
+### P8-API-01 - API Health And Session Foundation
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-CLI-04`
+- Branch: `codex/p8-api-01-health-session-foundation`
+- Owned paths: `apps/api/`, `tests/api/`, `tests/smoke/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`, `uv.lock`
+
+#### Goal
+
+Add the first API composition root for health checks and local session lookup before adding HTTP framework routing, streaming, or auth.
+
+#### Deliverables
+
+- API app object
+- health handler
+- session lookup handler backed by `SQLiteProjectionStore`
+- tests covering health, existing session lookup, and missing session lookup
+
+#### Acceptance
+
+- [x] API health returns service status.
+- [x] API session lookup returns existing session projection data.
+- [x] Missing sessions return deterministic 404/not_found output.
+- [x] API remains a thin composition layer over storage and core contracts.
