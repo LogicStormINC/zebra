@@ -994,6 +994,26 @@
   - `uv run pytest` 通过，154 passed
   - `make check` 通过
 
+## 2026-06-22 API Route Adapter
+
+- 执行 `P8-API-02 - API Route Adapter`
+- `apps/api` 新增：
+  - `RouteRequest`
+  - `RouteAdapter`
+- 当前行为：
+  - `GET /health` 路由到 health handler
+  - `GET /sessions/{session_id}` 路由到 session lookup handler
+  - unsupported routes 返回 deterministic 404/not_found
+  - route adapter 仍不依赖外部 HTTP framework
+- 新增测试：
+  - `tests/api/test_routes.py`
+- 本轮验证结果：
+  - `uv run pytest tests/api/test_routes.py tests/api/test_api_app.py` 通过
+  - `uv run ruff check apps/api/src/zebra_agent_api tests/api` 通过
+  - `uv run mypy apps/api tests/api` 通过
+  - `uv run pytest` 通过，188 passed
+  - `make check` 通过，包含 eval release gate
+
 ## 2026-06-22 API Health And Session Foundation
 
 - 执行 `P8-API-01 - API Health And Session Foundation`

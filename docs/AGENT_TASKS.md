@@ -1767,3 +1767,31 @@ Add the first API composition root for health checks and local session lookup be
 - [x] API session lookup returns existing session projection data.
 - [x] Missing sessions return deterministic 404/not_found output.
 - [x] API remains a thin composition layer over storage and core contracts.
+
+### P8-API-02 - API Route Adapter
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-API-01`
+- Branch: `codex/p8-api-02-route-adapter`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a concrete local route adapter for API health and session lookup before introducing an HTTP framework, streaming, or auth.
+
+#### Deliverables
+
+- route request model
+- route adapter for `GET /health`
+- route adapter for `GET /sessions/{session_id}`
+- deterministic 404 output for unsupported routes
+- tests covering health, session lookup, and unknown routes
+
+#### Acceptance
+
+- [x] `GET /health` routes to the API health handler.
+- [x] `GET /sessions/{session_id}` routes to the API session lookup handler.
+- [x] Unsupported routes return deterministic 404/not_found output.
+- [x] Route adapter remains framework-independent.
