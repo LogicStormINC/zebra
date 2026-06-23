@@ -2198,3 +2198,27 @@
 - 验证：
   - `uv run pytest tests/agent_security/test_capabilities.py tests/agent_security/test_credentials.py`
   - `make check`
+
+## 2026-06-23 Phase 15 Credential Broker Port
+
+- 执行 `P15-SEC-02 - Credential Broker Port`
+- 新增：
+  - `CredentialBroker`
+  - `InMemoryCredentialBroker`
+  - `CredentialMissingError`
+  - `CredentialDeniedError`
+  - `CredentialUnavailableError`
+  - `docs/Credential_Broker_Foundation.md`
+- 行为边界：
+  - broker Port 通过 provider、audience、scopes 和 now 请求 SCM credential
+  - fake broker 可返回 runtime capability，但 redacted snapshot 不暴露 token
+  - missing、denied、unavailable 错误语义分离
+  - 未引入 durable token storage 或具体 secret backend
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P15-SEC-02` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P15-INT-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run pytest tests/agent_security/test_broker.py tests/agent_security/test_capabilities.py`
+  - `make check`

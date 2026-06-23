@@ -2992,8 +2992,8 @@ Define the local credential capability model needed before adding concrete crede
 
 ### P15-SEC-02 - Credential Broker Port
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `SEC`
 - Depends on: `P15-SEC-01`
 - Branch: `codex/p15-sec-02-credential-broker-port`
@@ -3012,14 +3012,14 @@ Define a credential broker Port that can issue scoped runtime capabilities witho
 
 #### Acceptance
 
-- [ ] Broker Port can request an SCM credential by provider and audience.
-- [ ] Fake broker returns redacted capabilities in tests.
-- [ ] Error paths distinguish missing, denied, and unavailable credentials.
-- [ ] No token value is stored in durable session state.
+- [x] Broker Port can request an SCM credential by provider and audience.
+- [x] Fake broker returns redacted capabilities in tests.
+- [x] Error paths distinguish missing, denied, and unavailable credentials.
+- [x] No token value is stored in durable session state.
 
 ### P15-INT-01 - SCM Broker Lookup Adapter
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `CTX`
 - Depends on: `P15-SEC-02`

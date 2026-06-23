@@ -1,5 +1,13 @@
 """Security package for Zebra Agent."""
 
+from agent_security.broker import (
+    CredentialBroker,
+    CredentialBrokerError,
+    CredentialDeniedError,
+    CredentialMissingError,
+    CredentialUnavailableError,
+    InMemoryCredentialBroker,
+)
 from agent_security.capabilities import CredentialCapability
 from agent_security.credentials import (
     REDACTED_SECRET,
@@ -25,9 +33,15 @@ __all__ = [
     "ApprovalRequest",
     "ApprovalRisk",
     "CommitPolicy",
+    "CredentialBroker",
+    "CredentialBrokerError",
     "CredentialCapability",
+    "CredentialDeniedError",
+    "CredentialMissingError",
+    "CredentialUnavailableError",
     "DeliveryDecision",
     "DeliveryDecisionType",
+    "InMemoryCredentialBroker",
     "LocalPolicyEngine",
     "PolicyProfile",
     "PullRequestPolicy",
