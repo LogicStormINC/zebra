@@ -3,9 +3,9 @@
 ## Current Phase
 
 - Active phase: `Phase 14 - SCM Execution Hardening`
-- Repository status: `phase 14 ready`
+- Repository status: `phase 14 SCM execution audit hardening complete`
 - Current focus:
-  - harden SCM execution audit metadata before expanding remote behavior
+  - add SCM token redaction regression coverage before documenting the remote operator path
   - keep local-only PR planning as the default behavior
   - keep live SCM execution behind explicit provider, dry-run, token, and policy gates
 
@@ -119,6 +119,7 @@
 - `P13-SEC-01 - SCM Credential Boundary Draft`
 - `P13-INT-01 - Guarded GitHub Pull Request Execution`
 - `P13-CLOSE-01 - Phase 13 Closeout And Phase 14 Planning`
+- `P14-OBS-01 - SCM Execution Audit Hardening`
 
 ## Current Focus
 
@@ -128,12 +129,12 @@
 - `apps/api/src/zebra_agent_api/app.py` has been reduced from 489 to 384 lines by moving read-only session APIs into `session_read.py`
 - SCM credential boundary now separates token environment names from token values and provides deterministic redaction
 - guarded GitHub PR execution now requires explicit GitHub provider, dry-run disablement, token availability, and full-access policy
-- Phase 14 should harden audit metadata and redaction before broadening remote SCM behavior
+- SCM execution audit metadata now normalizes provider, status, URL, commit SHA, dry-run flag, and unavailable reasons without token values
+- Phase 14 should finish token redaction regression coverage before documenting the remote SCM operator path
 
 ## Next Unlocks
 
-- `P14-OBS-01 - SCM Execution Audit Hardening` is ready
-- `P14-SEC-01 - SCM Token Redaction Regression Gate` unlocks after audit hardening
+- `P14-SEC-01 - SCM Token Redaction Regression Gate` is ready
 - `P14-DOC-01 - Remote SCM Operator Safety Runbook` unlocks after audit and redaction coverage
 
 ## Active Documents

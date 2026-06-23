@@ -50,7 +50,13 @@ def test_api_delivery_audit_lists_records(tmp_path: Path) -> None:
             status_code=200,
             policy_profile="full_access",
             idempotency_key="pr-key-1",
-            result_metadata={"provider": "github", "commit_sha": "a" * 40},
+            result_metadata={
+                "provider": "github",
+                "status": "dry_run",
+                "commit_sha": "a" * 40,
+                "dry_run": True,
+                "url": None,
+            },
             created_at=created_at,
         )
     )
@@ -67,7 +73,13 @@ def test_api_delivery_audit_lists_records(tmp_path: Path) -> None:
                 "status_code": 200,
                 "policy_profile": "full_access",
                 "idempotency_key": "pr-key-1",
-                "result_metadata": {"provider": "github", "commit_sha": "a" * 40},
+                "result_metadata": {
+                    "provider": "github",
+                    "status": "dry_run",
+                    "commit_sha": "a" * 40,
+                    "dry_run": True,
+                    "url": None,
+                },
                 "created_at": created_at.isoformat(),
             }
         ],

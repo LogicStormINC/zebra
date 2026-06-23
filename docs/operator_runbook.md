@@ -301,6 +301,7 @@ Expected result in the current local-only runtime:
 - repeated requests with the same `Idempotency-Key` and request body return the first response
 - reusing the same `Idempotency-Key` with a different body returns `idempotency_conflict`
 - each non-replayed pull-request attempt is persisted in the delivery audit store with policy and result metadata
+- pull-request audit metadata normalizes `provider`, `status`, `commit_sha`, `dry_run`, `url`, and failure `reason` when available
 
 Read delivery audit records for one session:
 
@@ -313,15 +314,17 @@ Expected result:
 - JSON output with `delivery_audit`
 - explicit empty list when no delivery attempts were recorded
 - action, status, status code, policy profile, idempotency key, result metadata, and timestamp for each record
+- pull-request result metadata distinguishes `dry_run`, `created`, `policy_blocked`, and `pull_request_unavailable` outcomes
+- token values must not appear in delivery audit result metadata
 - read-only behavior with no delivery side effect
 
 GitHub pull-request provider status:
 
 - `LocalOnlyPullRequestGateway` remains the default API behavior.
-- `GitHubPullRequestGateway` is currently a skeleton for explicit future wiring.
 - The GitHub skeleton can build a dry-run request payload for review without live GitHub access.
 - A non-dry-run GitHub request without a token fails before any network call.
-- A non-dry-run GitHub request with a token still fails closed because live execution is not implemented yet.
+- A non-dry-run GitHub request with a token may create a remote PR only when the explicit provider, dry-run, token, and policy gates all pass.
+- Transport failures are reported as deterministic `pull_request_unavailable` responses and audit records.
 - Serialized request headers redact the token as `Bearer <redacted>`.
 
 SCM provider configuration:

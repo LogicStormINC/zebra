@@ -2103,3 +2103,22 @@
 - 验证：
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 14 SCM Execution Audit Hardening
+
+- 执行 `P14-OBS-01 - SCM Execution Audit Hardening`
+- 行为更新：
+  - pull-request delivery audit 记录规范化 `provider`
+  - dry-run 和 created 响应记录 `status`、`commit_sha`、`dry_run`、`url`
+  - policy blocked、missing workspace、transport unavailable 等失败路径记录 provider、dry-run flag 和 reason
+  - delivery audit read API 返回同一套 result metadata，不引入 token value
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P14-OBS-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P14-SEC-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+  - `docs/operator_runbook.md`
+- 验证：
+  - `uv run pytest tests/api/test_delivery_audit_metadata.py tests/api/test_session_delivery_audit.py tests/api/test_session_pull_request.py tests/agent_storage/test_delivery_audit.py`
+  - `make check`
+  - `make test`

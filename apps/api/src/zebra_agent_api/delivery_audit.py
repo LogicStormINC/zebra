@@ -17,7 +17,11 @@ def record_delivery_audit(
     response: ApiResponse,
     policy_profile: str | None = None,
     idempotency_key: str | None = None,
+    result_metadata: dict[str, object] | None = None,
 ) -> None:
+    metadata = _metadata_from_response(action, response)
+    if result_metadata:
+        metadata.update(result_metadata)
     SQLiteDeliveryAuditStore(database_path).append(
         DeliveryAuditRecord(
             session_id=SessionId(UUID(session_id)),
@@ -26,7 +30,7 @@ def record_delivery_audit(
             status_code=response.status_code,
             policy_profile=policy_profile,
             idempotency_key=idempotency_key,
-            result_metadata=_metadata_from_response(action, response),
+            result_metadata=metadata,
             created_at=datetime.now(UTC),
         )
     )
@@ -58,6 +62,7 @@ def _metadata_from_response(action: str, response: ApiResponse) -> dict[str, obj
     if isinstance(pull_request, dict):
         return {
             "provider": pull_request.get("provider"),
+            "status": pull_request.get("status"),
             "commit_sha": pull_request.get("commit_sha"),
             "dry_run": pull_request.get("dry_run"),
             "url": pull_request.get("url"),

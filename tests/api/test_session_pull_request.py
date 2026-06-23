@@ -46,6 +46,8 @@ def test_api_pull_request_returns_local_only_dry_run_plan(tmp_path: Path) -> Non
     assert audit_records[0].status_code == 200
     assert audit_records[0].policy_profile == "full_access"
     assert audit_records[0].result_metadata["provider"] == "local-only"
+    assert audit_records[0].result_metadata["status"] == "dry_run"
+    assert audit_records[0].result_metadata["dry_run"] is True
 
 
 def test_api_pull_request_rejects_network_execution_in_local_only_mode(
@@ -70,6 +72,8 @@ def test_api_pull_request_rejects_network_execution_in_local_only_mode(
     audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
     assert len(audit_records) == 1
     assert audit_records[0].status == "pull_request_unavailable"
+    assert audit_records[0].result_metadata["provider"] == "local-only"
+    assert audit_records[0].result_metadata["dry_run"] is False
 
 
 def test_api_pull_request_selects_github_dry_run_gateway(tmp_path: Path) -> None:
@@ -113,6 +117,8 @@ def test_api_pull_request_selects_github_dry_run_gateway(tmp_path: Path) -> None
     assert len(audit_records) == 1
     assert audit_records[0].status == "dry_run"
     assert audit_records[0].result_metadata["provider"] == "github"
+    assert audit_records[0].result_metadata["status"] == "dry_run"
+    assert audit_records[0].result_metadata["dry_run"] is True
 
 
 def test_api_pull_request_github_non_dry_run_fails_closed(tmp_path: Path) -> None:
@@ -142,6 +148,8 @@ def test_api_pull_request_github_non_dry_run_fails_closed(tmp_path: Path) -> Non
     audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
     assert len(audit_records) == 1
     assert audit_records[0].status == "pull_request_unavailable"
+    assert audit_records[0].result_metadata["provider"] == "github"
+    assert audit_records[0].result_metadata["dry_run"] is False
     assert audit_records[0].result_metadata["reason"] == (
         "github token is required for pull request execution"
     )

@@ -69,6 +69,10 @@ class SessionPullRequestApi:
                     reason=policy_decision.reason,
                 ),
                 policy_profile=policy_decision.policy_profile,
+                audit_metadata={
+                    "provider": _gateway_provider(self.pull_request_gateway),
+                    "dry_run": parsed["dry_run"],
+                },
             )
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
@@ -81,6 +85,10 @@ class SessionPullRequestApi:
                     reason="session workspace_root is unavailable",
                 ),
                 policy_profile=policy_decision.policy_profile,
+                audit_metadata={
+                    "provider": _gateway_provider(self.pull_request_gateway),
+                    "dry_run": parsed["dry_run"],
+                },
             )
         try:
             plan = self.pull_request_gateway.plan(
@@ -103,6 +111,10 @@ class SessionPullRequestApi:
                     reason=str(error),
                 ),
                 policy_profile=policy_decision.policy_profile,
+                audit_metadata={
+                    "provider": _gateway_provider(self.pull_request_gateway),
+                    "dry_run": parsed["dry_run"],
+                },
             )
         except (ValueError, ScmIntegrationError) as error:
             return self._save(
@@ -114,6 +126,10 @@ class SessionPullRequestApi:
                     reason=str(error),
                 ),
                 policy_profile=policy_decision.policy_profile,
+                audit_metadata={
+                    "provider": _gateway_provider(self.pull_request_gateway),
+                    "dry_run": parsed["dry_run"],
+                },
             )
         return self._save(
             payload,
@@ -147,6 +163,7 @@ class SessionPullRequestApi:
         response: ApiResponse,
         *,
         policy_profile: str | None = None,
+        audit_metadata: dict[str, object] | None = None,
     ) -> ApiResponse:
         saved = save_idempotent_response(
             database_path=self.database_path,
@@ -162,5 +179,15 @@ class SessionPullRequestApi:
             response=saved,
             policy_profile=policy_profile,
             idempotency_key=idempotency_key,
+            result_metadata=audit_metadata,
         )
         return saved
+
+
+def _gateway_provider(gateway: PullRequestGateway) -> str:
+    name = gateway.__class__.__name__
+    if "GitHub" in name:
+        return "github"
+    if "LocalOnly" in name:
+        return "local-only"
+    return "unknown"

@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 10 is closed. The repository now has a complete local delivery surface: CLI durable run and resume execution, writable API session creation and resume execution, queued-session bootstrap persistence, worker-side ready-session execution, a local worker polling loop, read-only SSE replay, operator runbook coverage, optional API bearer auth, an OpenAI-compatible model gateway adapter, session diff and artifact reads, local Git commit delivery, and local-only pull-request planning.
+Phase 13 is closed and Phase 14 hardening is underway. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, token, and policy gates.
 
 The next milestone is `Phase 14 - SCM Execution Hardening`. The current implementation lanes are:
 
@@ -36,7 +36,8 @@ The next milestone is `Phase 14 - SCM Execution Hardening`. The current implemen
 - API composition has been split so `app.py` is below the 500-line hard limit
 - SCM credential boundary separates token env names from token values with deterministic redaction
 - guarded GitHub pull-request execution is available only behind explicit provider, dry-run, token, and policy gates
-- SCM execution audit hardening is the next ready implementation lane
+- SCM execution audit metadata now records normalized provider, status, URL, commit SHA, dry-run flag, and unavailable reasons
+- SCM token redaction regression coverage is the next ready implementation lane
 
 Read in this order:
 

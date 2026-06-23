@@ -2857,8 +2857,8 @@ Close Phase 13 with an explicit acceptance record and define post-execution hard
 
 ### P14-OBS-01 - SCM Execution Audit Hardening
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P13-CLOSE-01`
 - Branch: `codex/p14-obs-01-scm-execution-audit-hardening`
@@ -2877,14 +2877,14 @@ Harden delivery audit metadata for guarded SCM execution so operators can distin
 
 #### Acceptance
 
-- [ ] Created GitHub PR attempts record provider, status, URL, commit SHA, and dry-run flag.
-- [ ] Transport failures record a deterministic unavailable status and reason.
-- [ ] Read API returns normalized metadata without token values.
-- [ ] Existing local-only audit behavior remains unchanged.
+- [x] Created GitHub PR attempts record provider, status, URL, commit SHA, and dry-run flag.
+- [x] Transport failures record a deterministic unavailable status and reason.
+- [x] Read API returns normalized metadata without token values.
+- [x] Existing local-only audit behavior remains unchanged.
 
 ### P14-SEC-01 - SCM Token Redaction Regression Gate
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `SEC`
 - Depends on: `P14-OBS-01`
