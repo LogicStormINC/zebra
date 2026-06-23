@@ -328,7 +328,7 @@ Token redaction regression scope:
 GitHub pull-request provider status:
 
 - `LocalOnlyPullRequestGateway` remains the default API behavior.
-- The GitHub skeleton can build a dry-run request payload for review without live GitHub access.
+- The GitHub gateway can build a dry-run request payload for review without live GitHub access.
 - A non-dry-run GitHub request without a token fails before any network call.
 - A non-dry-run GitHub request with a token may create a remote PR only when the explicit provider, dry-run, token, and policy gates all pass.
 - Transport failures are reported as deterministic `pull_request_unavailable` responses and audit records.
@@ -360,6 +360,102 @@ Rules:
 - configured `ZEBRA_GITHUB_TOKEN_ENV` with a token available in the process environment
 - a session created with `policy_profile=full_access`
 - tests and runbook examples should prefer dry-run unless a real repository side effect is intentional.
+
+Remote GitHub PR execution checklist:
+
+1. Start from the default local-only config and confirm local-only dry-run behavior.
+
+```bash
+export ZEBRA_SCM_PROVIDER=local-only
+export ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true
+curl -X POST http://127.0.0.1:8000/sessions/<session_id>/pull-request \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: pr-local-dry-run-1" \
+  -d '{"title":"Dry run PR","body":"No remote side effect.","dry_run":true}'
+```
+
+Expected result:
+
+- `provider=local-only`
+- `status=dry_run`
+- `url=null`
+- one delivery audit record with `dry_run=true`
+
+2. Switch to GitHub provider while keeping dry-run enabled.
+
+```bash
+export ZEBRA_SCM_PROVIDER=github
+export ZEBRA_GITHUB_OWNER=<owner>
+export ZEBRA_GITHUB_REPO=<repo>
+export ZEBRA_GITHUB_TOKEN_ENV=ZEBRA_GITHUB_TOKEN
+export ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true
+curl -X POST http://127.0.0.1:8000/sessions/<session_id>/pull-request \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: pr-github-dry-run-1" \
+  -d '{"title":"GitHub dry run PR","body":"Review payload only.","head_branch":"feature/zebra","dry_run":true}'
+```
+
+Expected result:
+
+- `provider=github`
+- `status=dry_run`
+- `request_payload.headers.Authorization` is absent unless a token is configured
+- no network mutation occurs
+- delivery audit records the GitHub provider and `dry_run=true`
+
+3. Before live execution, verify token handling and policy.
+
+```bash
+export ZEBRA_GITHUB_TOKEN=<token>
+export ZEBRA_SCM_PULL_REQUEST_DRY_RUN=false
+```
+
+Required preconditions:
+
+- the session was created with `policy_profile=full_access`
+- `ZEBRA_GITHUB_TOKEN_ENV` names the token variable and does not contain the token itself
+- the token value is present only in the process environment
+- the previous GitHub dry-run payload was reviewed
+- the target repository, base branch, and head branch are correct
+
+4. Execute the remote PR request with a unique idempotency key.
+
+```bash
+curl -X POST http://127.0.0.1:8000/sessions/<session_id>/pull-request \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: pr-github-live-1" \
+  -d '{"title":"Implement reviewed changes","body":"Summary and validation notes.","base_branch":"main","head_branch":"feature/zebra","dry_run":false}'
+```
+
+Expected result:
+
+- `provider=github`
+- `status=created`
+- remote PR `url`
+- `commit_sha` from the workspace
+- no raw token value in the API response
+
+5. Inspect delivery audit immediately after the request.
+
+```bash
+curl http://127.0.0.1:8000/sessions/<session_id>/delivery-audit
+```
+
+Expected result:
+
+- a `session.pull_request` audit record
+- `result_metadata.provider=github`
+- `result_metadata.status=created` or `pull_request_unavailable`
+- `result_metadata.dry_run=false`
+- `result_metadata.url` when GitHub created a PR
+- no raw token value in `result_metadata`
+
+Rollback and failure handling:
+
+- If a live PR was created unintentionally, close it in GitHub and record the PR URL in the session worklog or operator incident notes.
+- If the API returns `policy_blocked`, recreate or rerun the session with `policy_profile=full_access`; do not bypass the policy gate.
+- If the API returns `pull_request_unavailable`, inspect `reason`, fix configuration or transport availability, and retry with a new idempotency key only when the previous request did not create a PR.
+- Return to safe defaults after testing with `ZEBRA_SCM_PROVIDER=local-only` and `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true`.
 
 Append one more user message to an existing session:
 

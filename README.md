@@ -28,8 +28,8 @@ The next milestone is `Phase 14 - SCM Execution Hardening`. The current implemen
 - `POST /sessions/{id}/pull-request` is now available as a local-only dry-run planning path
 - side-effect `Idempotency-Key` handling is now available for commit and pull-request retries
 - delivery audit records now capture commit and pull-request attempts
-- a GitHub PR provider skeleton can serialize dry-run request payloads without live GitHub access
-- remote SCM execution is not wired to the API yet; local-only dry-run remains the default safe behavior
+- the GitHub PR provider can serialize dry-run request payloads without live GitHub access
+- guarded GitHub PR execution is wired to the API but remains disabled unless the explicit provider, dry-run, token, and policy gates all pass
 - explicit SCM provider settings are available and keep local-only as the default
 - pull-request gateway selection can opt into GitHub dry-run without enabling remote execution
 - delivery audit read API is available for session-level operator inspection
@@ -38,7 +38,8 @@ The next milestone is `Phase 14 - SCM Execution Hardening`. The current implemen
 - guarded GitHub pull-request execution is available only behind explicit provider, dry-run, token, and policy gates
 - SCM execution audit metadata now records normalized provider, status, URL, commit SHA, dry-run flag, and unavailable reasons
 - SCM token redaction regression coverage now checks PR plans, API responses, delivery audit records, and settings snapshots
-- remote SCM operator safety runbook coverage is the next ready implementation lane
+- remote SCM operator safety runbook coverage documents dry-run first, explicit opt-in, audit inspection, token rules, and rollback steps
+- Phase 14 closeout and next planning is the next ready implementation lane
 
 Read in this order:
 

@@ -2139,3 +2139,20 @@
   - `docs/operator_runbook.md`
 - 验证：
   - `uv run pytest tests/agent_security/test_credentials.py tests/agent_integrations/test_scm.py tests/api/test_scm_token_redaction.py tests/api/test_session_pull_request.py tests/api/test_delivery_audit_metadata.py`
+
+## 2026-06-23 Phase 14 Remote SCM Operator Safety Runbook
+
+- 执行 `P14-DOC-01 - Remote SCM Operator Safety Runbook`
+- 文档更新：
+  - `docs/operator_runbook.md` 增加 remote GitHub PR execution checklist
+  - checklist 从 local-only dry-run 开始，再切换 GitHub dry-run，最后才允许 live execution
+  - live execution 前明确 token env、`full_access` policy、payload review 和 target branch 前置条件
+  - live execution 后要求立即读取 delivery audit
+  - rollback 和 failure handling 覆盖 accidental PR、`policy_blocked`、`pull_request_unavailable`
+- 规划更新：
+  - `docs/AGENT_TASKS.md` 将 `P14-DOC-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 增加 `P14-CLOSE-01 - Phase 14 Closeout And Next Planning`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`

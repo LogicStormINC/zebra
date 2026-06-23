@@ -2911,8 +2911,8 @@ Add regression coverage proving SCM token values cannot leak through plans, API 
 
 ### P14-DOC-01 - Remote SCM Operator Safety Runbook
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P14-OBS-01`, `P14-SEC-01`
 - Branch: `codex/p14-doc-01-remote-scm-operator-safety-runbook`
@@ -2931,7 +2931,32 @@ Document the exact safe operator path for enabling guarded GitHub PR execution.
 
 #### Acceptance
 
-- [ ] Runbook starts with local-only and dry-run defaults.
-- [ ] Live execution instructions require explicit opt-in.
-- [ ] Audit inspection is part of the operator flow.
-- [ ] Token handling rules are visible before execution steps.
+- [x] Runbook starts with local-only and dry-run defaults.
+- [x] Live execution instructions require explicit opt-in.
+- [x] Audit inspection is part of the operator flow.
+- [x] Token handling rules are visible before execution steps.
+
+### P14-CLOSE-01 - Phase 14 Closeout And Next Planning
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P14-DOC-01`
+- Branch: `codex/p14-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 14 with an acceptance record and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 14 acceptance record
+- task registry update for the next phase
+- project progress update
+
+#### Acceptance
+
+- [ ] Phase 14 completed tasks are mapped to behavior and validation evidence.
+- [ ] Next phase starter tasks are ready and path-scoped.
+- [ ] README and PROGRESS point to the current implementation state.
