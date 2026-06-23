@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 9 - Session Control And Worker Hardening`
-- Repository status: `phase 9 ready`
+- Active phase: `Phase 10 - Code Delivery Surface`
+- Repository status: `phase 10 ready`
 - Current focus:
-  - expose durable session control APIs beyond create and resume
-  - harden the worker loop from operator helper into a more daemon-like local worker entry
+  - expose read-only session diff and artifact review APIs
+  - prepare controlled commit and pull-request delivery entries
 
 ## Completed
 
@@ -97,20 +97,24 @@
 - `P8-INT-01 - Phase 8 Mainline Alignment`
 - `P8-CLOSE-01 - Phase 8 Closeout Record`
 - `P9-API-01 - Session Messages Entry`
+- `P9-API-02 - Cancel And Suspend Entry`
+- `P9-API-03 - Approval HTTP Entry`
+- `P9-WKR-01 - Worker Continuous Loop Behavior`
+- `P9-CLOSE-01 - Phase 9 Closeout And Phase 10 Planning`
 
 ## Current Focus
 
-- Phase 8 is now closed with aligned CLI, API, and worker operator entry points for local durable execution
-- Phase 9 now has `POST /sessions/{id}/messages` for appending user input onto an existing durable session
-- Phase 9 now also has `POST /sessions/{id}/cancel`, `POST /sessions/{id}/suspend`, and `POST /approvals/{id}/approve|reject` on the current development line
-- Phase 9 now has worker-loop stop reporting and daemon-friendly continuous polling on the current development line
+- Phase 9 is now closed with session messages, cancel, suspend, approval HTTP, and worker daemon behavior completed
+- Phase 10 should start with read-only delivery-review APIs before introducing commit or PR side effects
+- `GET /sessions/{id}/diff` is the next ready implementation lane
+- `GET /sessions/{id}/artifacts`, `POST /sessions/{id}/commit`, and `POST /sessions/{id}/pull-request` are scheduled as locked follow-ups
 
 ## Next Unlocks
 
-- `P9-API-01` is complete
-- `P9-API-02` and `P9-API-03` are complete on the current mainline
-- `P9-WKR-01 - Worker Continuous Loop Behavior` is complete
-- the next Phase 9 task should be added or selected from the task registry before coding
+- `P10-API-01 - Session Diff Read API` is ready
+- `P10-API-02 - Session Artifacts Read API` unlocks after diff
+- `P10-API-03 - Session Commit API` unlocks after diff
+- `P10-API-04 - Session Pull Request API` unlocks after commit
 
 ## Active Documents
 

@@ -2360,3 +2360,139 @@ Harden the current worker loop from a single-operator poll helper into a more st
 - [x] Loop reporting stays machine-readable for operator automation.
 - [x] Existing single-cycle worker loop behavior remains supported.
 - [x] Documentation explains short-run and long-run worker invocation modes.
+
+### P9-CLOSE-01 - Phase 9 Closeout And Phase 10 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOCS`
+- Depends on: `P9-API-03`, `P9-WKR-01`
+- Branch: `codex/p9-closeout-phase10-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 9 by recording session-control and worker-hardening evidence, then schedule the next code-delivery surface tasks before implementation resumes.
+
+#### Deliverables
+
+- Phase 9 acceptance record under `docs/`
+- task registry update for Phase 10 starter tasks
+- project progress update moving the repository to Phase 10 ready state
+
+#### Acceptance
+
+- [x] Acceptance record maps Phase 9 criteria to implemented code paths.
+- [x] Validation commands and results are recorded.
+- [x] Deferred diff, artifacts, commit, and pull-request work is explicit.
+- [x] `PROGRESS.md` identifies Phase 10 starter tasks as the next active implementation lanes.
+
+## Phase 10 Task Board
+
+### P10-API-01 - Session Diff Read API
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P9-CLOSE-01`
+- Branch: `codex/p10-api-01-session-diff`
+- Owned paths: `apps/api/`, `packages/agent-runtime/`, `tests/api/`, `tests/agent_runtime/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose a read-only `GET /sessions/{id}/diff` API that lets operators inspect the current workspace delta for a durable session before any commit or PR action exists.
+
+#### Deliverables
+
+- session diff application entry or runtime adapter
+- API route and deterministic not-found or unavailable responses
+- tests covering clean workspace, changed workspace, missing session, and auth behavior
+- runbook guidance for operator review
+
+#### Acceptance
+
+- [ ] Operators can request a machine-readable diff for a known session.
+- [ ] Missing or non-diffable sessions fail deterministically.
+- [ ] The route is read-only and does not mutate session state.
+- [ ] Runbook documents the diff review path.
+
+### P10-API-02 - Session Artifacts Read API
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P10-API-01`
+- Branch: `codex/p10-api-02-session-artifacts`
+- Owned paths: `apps/api/`, `packages/agent-storage/`, `tests/api/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose `GET /sessions/{id}/artifacts` so operator surfaces can list durable model, tool, and runtime outputs without scraping event payloads directly.
+
+#### Deliverables
+
+- artifact projection or query contract
+- API route for per-session artifact listing
+- tests covering empty artifact lists, persisted artifacts, missing session, and auth behavior
+- runbook guidance for artifact lookup
+
+#### Acceptance
+
+- [ ] Operators can list artifacts for a known session.
+- [ ] Empty artifact lists are represented explicitly.
+- [ ] Artifact response fields are stable and machine-readable.
+- [ ] Runbook documents the artifact lookup path.
+
+### P10-API-03 - Session Commit API
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P10-API-01`
+- Branch: `codex/p10-api-03-session-commit`
+- Owned paths: `apps/api/`, `packages/agent-runtime/`, `packages/agent-security/`, `tests/api/`, `tests/agent_runtime/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a controlled `POST /sessions/{id}/commit` entry that can turn reviewed workspace changes into a local Git commit under explicit policy constraints.
+
+#### Deliverables
+
+- commit request validation and policy checks
+- runtime-backed local Git commit implementation
+- deterministic conflict responses for dirty, missing, terminal, or policy-blocked cases
+- tests covering success, no-diff, invalid message, and policy rejection
+
+#### Acceptance
+
+- [ ] A reviewed session can create one local commit through the API.
+- [ ] Commit message and author inputs are validated.
+- [ ] Policy-blocked commit attempts fail closed.
+- [ ] Existing read-only diff behavior remains unchanged.
+
+### P10-API-04 - Session Pull Request API
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P10-API-03`
+- Branch: `codex/p10-api-04-session-pr`
+- Owned paths: `apps/api/`, `packages/agent-integrations/`, `packages/agent-security/`, `tests/api/`, `tests/agent_integrations/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a controlled `POST /sessions/{id}/pull-request` planning and execution path for future GitHub-backed delivery while keeping networked side effects explicit and approval-gated.
+
+#### Deliverables
+
+- PR request validation and policy checks
+- integration boundary for GitHub or SCM provider execution
+- deterministic dry-run or unavailable response for local-only environments
+- tests covering policy gating, missing commit, and dry-run behavior
+
+#### Acceptance
+
+- [ ] PR creation is represented as an explicit controlled action.
+- [ ] Networked PR execution is approval or policy gated.
+- [ ] Local-only environments return deterministic unavailable or dry-run responses.
+- [ ] Runbook documents the PR delivery path and limitations.

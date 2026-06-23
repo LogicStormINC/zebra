@@ -16,12 +16,14 @@ The current repository direction is:
 
 Phase 8 is closed. The repository now has a complete local productization baseline: CLI durable run and resume execution, writable API session creation and resume execution, queued-session bootstrap persistence, worker-side ready-session execution, a local worker polling loop, settings-backed entry points, read-only SSE replay, operator runbook coverage, optional API bearer auth, and a real OpenAI-compatible model gateway adapter.
 
-The next milestone is `Phase 9 - Session Control And Worker Hardening`. The immediate implementation lanes are:
+The next milestone is `Phase 10 - Code Delivery Surface`. The immediate implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
 - `POST /approvals/{id}/approve` and `POST /approvals/{id}/reject` are now available on the current development line
 - worker-loop stop reporting and daemon-friendly continuous polling are now available on the current development line
+- `GET /sessions/{id}/diff` is the next ready implementation lane
+- `GET /sessions/{id}/artifacts`, `POST /sessions/{id}/commit`, and `POST /sessions/{id}/pull-request` are scheduled follow-ups
 
 Read in this order:
 

@@ -1718,3 +1718,19 @@
   - `README.md`
 - 本轮验证结果：
   - `uv run pytest tests/worker/test_loop.py tests/worker/test_execution.py tests/worker/test_claims.py tests/worker/test_resume.py` 通过
+
+## 2026-06-23 Phase 9 Closeout And Phase 10 Planning
+
+- 执行 `P9-CLOSE-01 - Phase 9 Closeout And Phase 10 Planning`
+- 新增文档：
+  - `docs/Phase9_Session_Control_Worker_Hardening_验收记录.md`
+- 更新规划：
+  - `docs/AGENT_TASKS.md` 增加 `P9-CLOSE-01`
+  - `docs/AGENT_TASKS.md` 增加 `Phase 10 Task Board`
+  - `PROGRESS.md` 切换到 `phase 10 ready`
+  - `README.md` 补充 Phase 10 starter lanes
+- Phase 10 首批任务：
+  - `P10-API-01 - Session Diff Read API`
+  - `P10-API-02 - Session Artifacts Read API`
+  - `P10-API-03 - Session Commit API`
+  - `P10-API-04 - Session Pull Request API`
