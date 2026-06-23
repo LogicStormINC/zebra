@@ -2391,8 +2391,8 @@ Close Phase 9 by recording session-control and worker-hardening evidence, then s
 
 ### P10-API-01 - Session Diff Read API
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P9-CLOSE-01`
 - Branch: `codex/p10-api-01-session-diff`
@@ -2411,14 +2411,14 @@ Expose a read-only `GET /sessions/{id}/diff` API that lets operators inspect the
 
 #### Acceptance
 
-- [ ] Operators can request a machine-readable diff for a known session.
-- [ ] Missing or non-diffable sessions fail deterministically.
-- [ ] The route is read-only and does not mutate session state.
-- [ ] Runbook documents the diff review path.
+- [x] Operators can request a machine-readable diff for a known session.
+- [x] Missing or non-diffable sessions fail deterministically.
+- [x] The route is read-only and does not mutate session state.
+- [x] Runbook documents the diff review path.
 
 ### P10-API-02 - Session Artifacts Read API
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `APP`
 - Depends on: `P10-API-01`

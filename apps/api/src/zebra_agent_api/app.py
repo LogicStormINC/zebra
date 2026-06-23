@@ -14,10 +14,11 @@ from agent_core.application import (
     SessionMessageAppendService,
 )
 from agent_core.application.session_projection import apply_event
+from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.harness.models import HarnessLoopResult
 from agent_integrations import build_model_gateway
-from agent_runtime import run_local_harness
+from agent_runtime import WorkspaceDiffError, WorkspaceDiffService, run_local_harness
 from agent_security import PolicyProfile
 from agent_storage import (
     LeaseConflictError,
@@ -108,6 +109,42 @@ class ZebraAgentApi:
                     }
                     for event in events
                 ],
+            },
+        )
+
+    def get_session_diff(self, session_id: str) -> ApiResponse:
+        session_key = SessionId(UUID(session_id))
+        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        if session is None:
+            return ApiResponse(
+                status_code=404,
+                body={"session_id": session_id, "status": "not_found"},
+            )
+        workspace_root = _workspace_root_for_session(
+            SQLiteEventStore(self.database_path).list_for_session(session_key)
+        )
+        if workspace_root is None:
+            return conflict(
+                session_id=session_id,
+                status="diff_unavailable",
+                reason="session workspace_root is unavailable",
+            )
+        try:
+            diff = WorkspaceDiffService().read_diff(workspace_root)
+        except WorkspaceDiffError as error:
+            return conflict(
+                session_id=session_id,
+                status="diff_unavailable",
+                reason=str(error),
+            )
+        return ApiResponse(
+            status_code=200,
+            body={
+                "session_id": session_id,
+                "workspace": str(diff.workspace_root),
+                "clean": diff.clean,
+                "git_status": diff.git_status,
+                "diff": diff.diff,
             },
         )
 
@@ -377,3 +414,14 @@ def _trace_payload(result: HarnessLoopResult) -> list[dict[str, object]]:
         }
         for attempt in trace.attempts
     ]
+
+
+def _workspace_root_for_session(events: list[SessionEvent]) -> Path | None:
+    workspace_root: Path | None = None
+    for event in events:
+        if event.event_type is not EventType.TASK_PREPARED:
+            continue
+        raw_workspace_root = event.payload.get("workspace_root")
+        if isinstance(raw_workspace_root, str) and raw_workspace_root.strip():
+            workspace_root = Path(raw_workspace_root).expanduser().resolve()
+    return workspace_root

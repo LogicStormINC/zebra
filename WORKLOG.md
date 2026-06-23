@@ -1734,3 +1734,24 @@
   - `P10-API-02 - Session Artifacts Read API`
   - `P10-API-03 - Session Commit API`
   - `P10-API-04 - Session Pull Request API`
+
+## 2026-06-23 Session Diff Read API
+
+- 执行 `P10-API-01 - Session Diff Read API`
+- `agent-runtime` 现在支持：
+  - `WorkspaceDiffService`
+  - clean/dirty Git workspace diff projection
+  - non-Git workspace deterministic rejection
+- `apps/api` 现在支持：
+  - `GET /sessions/{session_id}/diff`
+  - missing session 404
+  - missing or non-Git workspace `diff_unavailable` conflict
+  - bearer auth behavior inherited from existing session routes
+- 更新测试：
+  - `tests/agent_runtime/test_git_diff.py`
+  - `tests/api/test_session_diff.py`
+- 文档同步：
+  - `docs/operator_runbook.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`

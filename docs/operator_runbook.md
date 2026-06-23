@@ -231,6 +231,19 @@ Read one session:
 curl http://127.0.0.1:8000/sessions/<session_id>
 ```
 
+Review the current Git diff for a session workspace:
+
+```bash
+curl http://127.0.0.1:8000/sessions/<session_id>/diff
+```
+
+Expected result:
+
+- JSON output with `clean=true` or `clean=false`
+- `git_status` from `git status --short`
+- unified `diff` from the session workspace
+- deterministic `diff_unavailable` conflict when the workspace is missing or not a Git repository
+
 Append one more user message to an existing session:
 
 ```bash

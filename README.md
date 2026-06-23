@@ -22,8 +22,9 @@ The next milestone is `Phase 10 - Code Delivery Surface`. The immediate implemen
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
 - `POST /approvals/{id}/approve` and `POST /approvals/{id}/reject` are now available on the current development line
 - worker-loop stop reporting and daemon-friendly continuous polling are now available on the current development line
-- `GET /sessions/{id}/diff` is the next ready implementation lane
-- `GET /sessions/{id}/artifacts`, `POST /sessions/{id}/commit`, and `POST /sessions/{id}/pull-request` are scheduled follow-ups
+- `GET /sessions/{id}/diff` is now available on the current development line
+- `GET /sessions/{id}/artifacts` is the next ready implementation lane
+- `POST /sessions/{id}/commit` and `POST /sessions/{id}/pull-request` are scheduled follow-ups
 
 Read in this order:
 

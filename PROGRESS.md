@@ -105,14 +105,14 @@
 ## Current Focus
 
 - Phase 9 is now closed with session messages, cancel, suspend, approval HTTP, and worker daemon behavior completed
-- Phase 10 should start with read-only delivery-review APIs before introducing commit or PR side effects
-- `GET /sessions/{id}/diff` is the next ready implementation lane
-- `GET /sessions/{id}/artifacts`, `POST /sessions/{id}/commit`, and `POST /sessions/{id}/pull-request` are scheduled as locked follow-ups
+- Phase 10 now has `GET /sessions/{id}/diff` for read-only workspace review
+- `GET /sessions/{id}/artifacts` is the next ready implementation lane
+- `POST /sessions/{id}/commit` and `POST /sessions/{id}/pull-request` are scheduled as locked follow-ups
 
 ## Next Unlocks
 
-- `P10-API-01 - Session Diff Read API` is ready
-- `P10-API-02 - Session Artifacts Read API` unlocks after diff
+- `P10-API-01 - Session Diff Read API` is complete
+- `P10-API-02 - Session Artifacts Read API` is ready
 - `P10-API-03 - Session Commit API` unlocks after diff
 - `P10-API-04 - Session Pull Request API` unlocks after commit
 
