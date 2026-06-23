@@ -2825,3 +2825,113 @@ Define the minimal credential boundary required before live SCM execution become
 - [x] Serialized configs include token env names only.
 - [x] Redaction behavior is deterministic.
 - [x] Live SCM execution remains blocked until this boundary is adopted.
+
+### P13-CLOSE-01 - Phase 13 Closeout And Phase 14 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `TL`
+- Depends on: `P13-API-01`, `P13-SEC-01`, `P13-INT-01`
+- Branch: `codex/p13-closeout-phase14-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 13 with an explicit acceptance record and define post-execution hardening work before expanding remote SCM behavior.
+
+#### Deliverables
+
+- Phase 13 acceptance record
+- task registry update for Phase 14 starter tasks
+- project progress update moving the repository to Phase 14 ready state
+- README alignment with the latest closeout record
+
+#### Acceptance
+
+- [x] Phase 13 acceptance record maps completed tasks to implemented behavior.
+- [x] Validation commands and results are recorded.
+- [x] Live GitHub execution remains guarded and opt-in.
+- [x] Phase 14 starter tasks focus on hardening rather than broader side effects.
+
+## Phase 14 Task Board
+
+### P14-OBS-01 - SCM Execution Audit Hardening
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P13-CLOSE-01`
+- Branch: `codex/p14-obs-01-scm-execution-audit-hardening`
+- Owned paths: `apps/api/`, `packages/agent-storage/`, `tests/api/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Harden delivery audit metadata for guarded SCM execution so operators can distinguish dry-run, created, blocked, and transport-failed attempts.
+
+#### Deliverables
+
+- normalized SCM execution result metadata
+- audit coverage for created and transport-failed GitHub attempts
+- read API coverage for new metadata
+- runbook update
+
+#### Acceptance
+
+- [ ] Created GitHub PR attempts record provider, status, URL, commit SHA, and dry-run flag.
+- [ ] Transport failures record a deterministic unavailable status and reason.
+- [ ] Read API returns normalized metadata without token values.
+- [ ] Existing local-only audit behavior remains unchanged.
+
+### P14-SEC-01 - SCM Token Redaction Regression Gate
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `SEC`
+- Depends on: `P14-OBS-01`
+- Branch: `codex/p14-sec-01-scm-token-redaction-regression-gate`
+- Owned paths: `packages/agent-security/`, `packages/agent-integrations/`, `apps/api/`, `tests/agent_security/`, `tests/agent_integrations/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add regression coverage proving SCM token values cannot leak through plans, API responses, delivery audit, or serialized settings.
+
+#### Deliverables
+
+- shared token-leak assertion helper or focused tests
+- integration tests for PR plan and execution responses
+- API tests for delivery audit redaction
+- runbook update
+
+#### Acceptance
+
+- [ ] Token values do not appear in PR plans.
+- [ ] Token values do not appear in API responses.
+- [ ] Token values do not appear in delivery audit records.
+- [ ] Token values do not appear in settings snapshots.
+
+### P14-DOC-01 - Remote SCM Operator Safety Runbook
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P14-OBS-01`, `P14-SEC-01`
+- Branch: `codex/p14-doc-01-remote-scm-operator-safety-runbook`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Document the exact safe operator path for enabling guarded GitHub PR execution.
+
+#### Deliverables
+
+- dry-run first checklist
+- required environment variables
+- policy requirements
+- rollback and audit inspection steps
+
+#### Acceptance
+
+- [ ] Runbook starts with local-only and dry-run defaults.
+- [ ] Live execution instructions require explicit opt-in.
+- [ ] Audit inspection is part of the operator flow.
+- [ ] Token handling rules are visible before execution steps.

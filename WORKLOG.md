@@ -2085,3 +2085,21 @@
   - `uv run pytest tests/agent_integrations/test_scm.py tests/api/test_session_pull_request.py`
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 13 Closeout And Phase 14 Planning
+
+- 执行 `P13-CLOSE-01 - Phase 13 Closeout And Phase 14 Planning`
+- 新增文档：
+  - `docs/Phase13_API_Composition_And_Guarded_SCM_Execution_验收记录.md`
+- 更新规划：
+  - `docs/AGENT_TASKS.md` 增加 `P13-CLOSE-01`
+  - `docs/AGENT_TASKS.md` 增加 `Phase 14 Task Board`
+  - `PROGRESS.md` 切换到 `phase 14 ready`
+  - `README.md` 指向最新 Phase 13 closeout summary
+- Phase 14 首批任务：
+  - `P14-OBS-01 - SCM Execution Audit Hardening`
+  - `P14-SEC-01 - SCM Token Redaction Regression Gate`
+  - `P14-DOC-01 - Remote SCM Operator Safety Runbook`
+- 验证：
+  - `make check`
+  - `make test`

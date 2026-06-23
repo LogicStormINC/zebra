@@ -16,7 +16,7 @@ The current repository direction is:
 
 Phase 10 is closed. The repository now has a complete local delivery surface: CLI durable run and resume execution, writable API session creation and resume execution, queued-session bootstrap persistence, worker-side ready-session execution, a local worker polling loop, read-only SSE replay, operator runbook coverage, optional API bearer auth, an OpenAI-compatible model gateway adapter, session diff and artifact reads, local Git commit delivery, and local-only pull-request planning.
 
-The next milestone is `Phase 13 - API Composition And Guarded SCM Execution`. The current implementation lanes are:
+The next milestone is `Phase 14 - SCM Execution Hardening`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -36,6 +36,7 @@ The next milestone is `Phase 13 - API Composition And Guarded SCM Execution`. Th
 - API composition has been split so `app.py` is below the 500-line hard limit
 - SCM credential boundary separates token env names from token values with deterministic redaction
 - guarded GitHub pull-request execution is available only behind explicit provider, dry-run, token, and policy gates
+- SCM execution audit hardening is the next ready implementation lane
 
 Read in this order:
 
@@ -79,4 +80,4 @@ For the current local operator workflow, start with `docs/operator_runbook.md`. 
 - local FastAPI serving
 - SSE session stream replay
 
-For the latest phase closeout summary, see `docs/Phase12_Remote_SCM_Configuration_验收记录.md`.
+For the latest phase closeout summary, see `docs/Phase13_API_Composition_And_Guarded_SCM_Execution_验收记录.md`.
