@@ -3045,8 +3045,8 @@ Route SCM token lookup through the broker boundary while preserving local-only a
 
 ### P15-CLOSE-01 - Phase 15 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P15-INT-01`
 - Branch: `codex/p15-closeout-next-plan`
@@ -3064,6 +3064,87 @@ Close Phase 15 with an acceptance record and define the next implementation phas
 
 #### Acceptance
 
-- [ ] Phase 15 completed tasks are mapped to behavior and validation evidence.
-- [ ] Credential broker deferrals and env fallback boundaries are explicit.
+- [x] Phase 15 completed tasks are mapped to behavior and validation evidence.
+- [x] Credential broker deferrals and env fallback boundaries are explicit.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 16 Task Board
+
+### P16-SEC-01 - Local Environment Credential Broker
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `SEC`
+- Depends on: `P15-CLOSE-01`
+- Branch: `codex/p16-sec-01-local-env-credential-broker`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Implement a local environment-backed credential broker so runtime composition can request scoped capabilities through the broker Port without reading environment variables inside SCM adapters.
+
+#### Deliverables
+
+- local environment broker implementation
+- provider/audience/scope mapping for GitHub pull-request creation
+- tests for success, missing env var, denied scope, and redaction
+- docs update for local-only backend limits
+
+#### Acceptance
+
+- [ ] Broker issues `CredentialCapability` from configured environment variable names.
+- [ ] Missing environment values raise `CredentialMissingError`.
+- [ ] Unsupported provider or scope raises `CredentialDeniedError`.
+- [ ] Raw token values do not appear in redacted snapshots or repr.
+
+### P16-APP-01 - API Credential Broker Composition
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P16-SEC-01`
+- Branch: `codex/p16-app-01-api-credential-broker-composition`
+- Owned paths: `apps/api/`, `packages/agent-integrations/`, `packages/agent-security/`, `tests/api/`, `tests/agent_integrations/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Wire API pull-request gateway construction through the credential broker boundary while preserving local-only and GitHub dry-run behavior.
+
+#### Deliverables
+
+- API composition creates or receives a broker instance
+- broker-backed GitHub non-dry-run API test with fake transport
+- missing broker credential API failure test
+- docs update for API operator behavior
+
+#### Acceptance
+
+- [ ] Local-only API behavior remains unchanged.
+- [ ] GitHub dry-run API behavior does not require credentials.
+- [ ] GitHub non-dry-run API path can use a broker-issued capability in tests.
+- [ ] Missing broker credential fails before network execution and records audit metadata.
+
+### P16-CLOSE-01 - Phase 16 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P16-APP-01`
+- Branch: `codex/p16-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 16 with local credential backend and API composition evidence.
+
+#### Deliverables
+
+- Phase 16 acceptance record
+- next phase task board
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Local broker and API composition validation evidence is recorded.
+- [ ] Env fallback boundary is updated or retired explicitly.
 - [ ] Next phase starter tasks are ready and path-scoped.

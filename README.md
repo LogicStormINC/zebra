@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 14 is closed and Phase 15 credential broker foundation is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
+Phase 15 is closed and Phase 16 local credential backend work is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
 
-The next milestone is `Phase 15 - Credential Broker Foundation`. The current implementation lanes are:
+The next milestone is `Phase 16 - Local Credential Backend And API Wiring`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -42,7 +42,7 @@ The next milestone is `Phase 15 - Credential Broker Foundation`. The current imp
 - credential capability domain modeling covers provider, audience, scopes, expiry, and redacted serialization
 - credential broker Port definition covers SCM credential requests, in-memory test broker, and missing/denied/unavailable errors
 - SCM gateway construction can use broker-issued capabilities for GitHub non-dry-run execution while preserving local-only and dry-run defaults
-- Phase 15 closeout and next planning is the next ready implementation lane
+- local environment-backed credential broker is the next ready implementation lane
 
 Read in this order:
 
@@ -86,4 +86,4 @@ For the current local operator workflow, start with `docs/operator_runbook.md`. 
 - local FastAPI serving
 - SSE session stream replay
 
-For the latest phase closeout summary, see `docs/Phase14_SCM_Execution_Hardening_验收记录.md`.
+For the latest phase closeout summary, see `docs/Phase15_Credential_Broker_Foundation_验收记录.md`.

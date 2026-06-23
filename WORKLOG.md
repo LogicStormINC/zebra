@@ -2240,3 +2240,25 @@
   - `README.md`
 - 验证：
   - `uv run pytest tests/agent_integrations/test_scm.py tests/agent_security/test_broker.py`
+
+## 2026-06-23 Phase 15 Closeout And Phase 16 Planning
+
+- 执行 `P15-CLOSE-01 - Phase 15 Closeout And Next Planning`
+- 新增文档：
+  - `docs/Phase15_Credential_Broker_Foundation_验收记录.md`
+- Phase 15 验收结论：
+  - credential capability domain model 完成
+  - credential broker Port 完成
+  - SCM broker lookup adapter 完成
+  - env-token fallback 仍保留为兼容边界
+- Phase 16 首批任务：
+  - `P16-SEC-01 - Local Environment Credential Broker`
+  - `P16-APP-01 - API Credential Broker Composition`
+  - `P16-CLOSE-01 - Phase 16 Closeout And Next Planning`
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
+  - `make test`
