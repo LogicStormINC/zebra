@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId
 from agent_integrations import (
     LocalOnlyPullRequestGateway,
+    PullRequestGateway,
     PullRequestRequest,
     ScmIntegrationError,
     ScmUnavailableError,
@@ -24,6 +25,7 @@ from zebra_agent_api.session_payloads import parse_pull_request_payload
 @dataclass(frozen=True)
 class SessionPullRequestApi:
     database_path: Path
+    pull_request_gateway: PullRequestGateway = field(default_factory=LocalOnlyPullRequestGateway)
 
     def open_pull_request(
         self,
@@ -81,7 +83,7 @@ class SessionPullRequestApi:
                 policy_profile=policy_decision.policy_profile,
             )
         try:
-            plan = LocalOnlyPullRequestGateway().plan(
+            plan = self.pull_request_gateway.plan(
                 workspace_root,
                 PullRequestRequest(
                     title=parsed["title"],
@@ -130,6 +132,7 @@ class SessionPullRequestApi:
                         "dry_run": plan.dry_run,
                         "status": plan.status,
                         "url": plan.url,
+                        "request_payload": plan.request_payload,
                     },
                     "policy_profile": policy_decision.policy_profile,
                 },

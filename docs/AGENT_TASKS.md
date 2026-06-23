@@ -2664,8 +2664,8 @@ Add explicit SCM provider settings so remote pull-request execution cannot be en
 
 ### P12-INT-01 - Pull Request Gateway Selection
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P12-CONFIG-01`
 - Branch: `codex/p12-int-01-pr-gateway-selection`
@@ -2684,14 +2684,14 @@ Wire pull-request gateway selection behind SCM settings while preserving local-o
 
 #### Acceptance
 
-- [ ] Existing local-only API tests continue to pass without SCM config.
-- [ ] GitHub dry-run can be selected only through explicit settings.
-- [ ] Non-dry-run GitHub execution still fails closed until the execution task lands.
-- [ ] Delivery audit records provider/status metadata for selected gateway paths.
+- [x] Existing local-only API tests continue to pass without SCM config.
+- [x] GitHub dry-run can be selected only through explicit settings.
+- [x] Non-dry-run GitHub execution still fails closed until the execution task lands.
+- [x] Delivery audit records provider/status metadata for selected gateway paths.
 
 ### P12-API-01 - Delivery Audit Read API
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `APP`
 - Depends on: `P11-CLOSE-01`

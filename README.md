@@ -31,7 +31,8 @@ The next milestone is `Phase 12 - Remote SCM Configuration`. The current impleme
 - a GitHub PR provider skeleton can serialize dry-run request payloads without live GitHub access
 - remote SCM execution is not wired to the API yet; local-only dry-run remains the default safe behavior
 - explicit SCM provider settings are available and keep local-only as the default
-- pull-request gateway selection is the next ready implementation lane
+- pull-request gateway selection can opt into GitHub dry-run without enabling remote execution
+- delivery audit read API is the next ready implementation lane
 
 Read in this order:
 

@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from zebra_agent_api import create_http_app
 from zebra_agent_api.app import create_app
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
-from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
+from zebra_agent_config import ApiSettings, ModelSettings, ScmSettings, ZebraAgentSettings
 
 
 def test_api_pull_request_returns_local_only_dry_run_plan(tmp_path: Path) -> None:
@@ -70,6 +70,75 @@ def test_api_pull_request_rejects_network_execution_in_local_only_mode(
     audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
     assert len(audit_records) == 1
     assert audit_records[0].status == "pull_request_unavailable"
+
+
+def test_api_pull_request_selects_github_dry_run_gateway(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+
+    response = create_app(
+        database_path, settings=_settings(None, scm=_github_scm())
+    ).open_session_pull_request(
+        str(session_id),
+        {
+            "title": "Add feature",
+            "body": "Implementation details.",
+            "base_branch": "main",
+            "head_branch": "feature/zebra",
+        },
+    )
+
+    assert response.status_code == 200
+    pull_request = response.body["pull_request"]
+    assert isinstance(pull_request, dict)
+    assert pull_request["provider"] == "github"
+    assert pull_request["status"] == "dry_run"
+    assert pull_request["request_payload"] == {
+        "endpoint": "https://api.github.com/repos/octo-org/zebra-agent/pulls",
+        "headers": {
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+        "body": {
+            "title": "Add feature",
+            "body": "Implementation details.",
+            "base": "main",
+            "head": "feature/zebra",
+            "maintainer_can_modify": True,
+            "draft": False,
+        },
+    }
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].status == "dry_run"
+    assert audit_records[0].result_metadata["provider"] == "github"
+
+
+def test_api_pull_request_github_non_dry_run_fails_closed(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+
+    response = create_app(
+        database_path, settings=_settings(None, scm=_github_scm())
+    ).open_session_pull_request(
+        str(session_id),
+        {
+            "title": "Add feature",
+            "base_branch": "main",
+            "head_branch": "feature/zebra",
+            "dry_run": False,
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.body == {
+        "session_id": str(session_id),
+        "status": "pull_request_unavailable",
+        "reason": "github token is required for pull request execution",
+        "idempotency_key": None,
+    }
 
 
 def test_api_pull_request_rejects_policy_blocked_session(tmp_path: Path) -> None:
@@ -273,7 +342,7 @@ def _git(path: Path, command: tuple[str, ...]) -> str:
     return run(command, cwd=path, check=True, capture_output=True, text=True).stdout
 
 
-def _settings(auth_token: str | None) -> ZebraAgentSettings:
+def _settings(auth_token: str | None, *, scm: ScmSettings | None = None) -> ZebraAgentSettings:
     return ZebraAgentSettings(
         profile="test",
         database_url=":memory:",
@@ -284,4 +353,27 @@ def _settings(auth_token: str | None) -> ZebraAgentSettings:
             base_url="https://example.test",
             model="test-model",
         ),
+        scm=scm or _local_scm(),
+    )
+
+
+def _local_scm() -> ScmSettings:
+    return ScmSettings(
+        provider="local-only",
+        github_owner=None,
+        github_repo=None,
+        github_token_env=None,
+        github_api_base_url="https://api.github.com",
+        pull_request_dry_run=True,
+    )
+
+
+def _github_scm() -> ScmSettings:
+    return ScmSettings(
+        provider="github",
+        github_owner="octo-org",
+        github_repo="zebra-agent",
+        github_token_env="GITHUB_TOKEN",
+        github_api_base_url="https://api.github.com",
+        pull_request_dry_run=True,
     )

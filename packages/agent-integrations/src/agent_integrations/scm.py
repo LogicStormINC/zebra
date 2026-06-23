@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from subprocess import run
+from typing import Protocol
+
+from zebra_agent_config import ScmSettings
 
 
 class ScmIntegrationError(ValueError):
@@ -42,6 +45,11 @@ class PullRequestPlan:
     status: str
     url: str | None = None
     request_payload: dict[str, object] | None = None
+
+
+class PullRequestGateway(Protocol):
+    def plan(self, workspace_root: Path, request: PullRequestRequest) -> PullRequestPlan:
+        raise NotImplementedError
 
 
 @dataclass(frozen=True)
@@ -158,6 +166,23 @@ class GitHubPullRequestGateway:
                 "draft": False,
             },
         )
+
+
+def build_pull_request_gateway(settings: ScmSettings) -> PullRequestGateway:
+    if settings.provider == "local-only":
+        return LocalOnlyPullRequestGateway()
+    if settings.provider == "github":
+        if settings.github_owner is None or settings.github_repo is None:
+            raise ScmUnavailableError("github owner and repo are required")
+        return GitHubPullRequestGateway(
+            GitHubPullRequestConfig(
+                owner=settings.github_owner,
+                repo=settings.github_repo,
+                token=None,
+                api_base_url=settings.github_api_base_url,
+            )
+        )
+    raise ScmUnavailableError(f"unsupported SCM provider: {settings.provider}")
 
 
 def _serializable_payload(payload: GitHubPullRequestPayload) -> dict[str, object]:

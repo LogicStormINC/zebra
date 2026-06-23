@@ -1956,3 +1956,24 @@
   - `uv run pytest tests/config/test_settings.py`
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 12 Pull Request Gateway Selection
+
+- 执行 `P12-INT-01 - Pull Request Gateway Selection`
+- 新增集成能力：
+  - `PullRequestGateway` protocol
+  - `build_pull_request_gateway(settings.scm)`
+- API 集成：
+  - `SessionPullRequestApi` 接收可注入 PR gateway
+  - `ZebraAgentApi` 基于 `settings.scm` 选择 local-only 或 GitHub gateway
+  - GitHub dry-run 会返回 provider=`github` 和可审查 `request_payload`
+  - GitHub non-dry-run 仍 fail-closed
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P12-INT-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P12-API-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run pytest tests/agent_integrations/test_scm.py tests/api/test_session_pull_request.py`
+  - `make check`
+  - `make test`

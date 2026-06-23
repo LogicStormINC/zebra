@@ -8,7 +8,9 @@ from agent_integrations import (
     LocalOnlyPullRequestGateway,
     PullRequestRequest,
     ScmUnavailableError,
+    build_pull_request_gateway,
 )
+from zebra_agent_config import ScmSettings
 
 
 def test_local_only_pull_request_gateway_builds_dry_run_plan(tmp_path: Path) -> None:
@@ -145,6 +147,50 @@ def test_github_pull_request_gateway_serializes_request_with_redacted_token() ->
         "maintainer_can_modify": True,
         "draft": False,
     }
+
+
+def test_build_pull_request_gateway_defaults_to_local_only() -> None:
+    gateway = build_pull_request_gateway(
+        ScmSettings(
+            provider="local-only",
+            github_owner=None,
+            github_repo=None,
+            github_token_env=None,
+            github_api_base_url="https://api.github.com",
+            pull_request_dry_run=True,
+        )
+    )
+
+    assert isinstance(gateway, LocalOnlyPullRequestGateway)
+
+
+def test_build_pull_request_gateway_selects_github() -> None:
+    gateway = build_pull_request_gateway(
+        ScmSettings(
+            provider="github",
+            github_owner="octo-org",
+            github_repo="zebra-agent",
+            github_token_env="GITHUB_TOKEN",
+            github_api_base_url="https://api.github.com",
+            pull_request_dry_run=True,
+        )
+    )
+
+    assert isinstance(gateway, GitHubPullRequestGateway)
+
+
+def test_build_pull_request_gateway_rejects_unknown_provider() -> None:
+    with pytest.raises(ScmUnavailableError, match="unsupported SCM provider"):
+        build_pull_request_gateway(
+            ScmSettings(
+                provider="unknown",
+                github_owner=None,
+                github_repo=None,
+                github_token_env=None,
+                github_api_base_url="https://api.github.com",
+                pull_request_dry_run=True,
+            )
+        )
 
 
 def _git_workspace(path: Path) -> Path:

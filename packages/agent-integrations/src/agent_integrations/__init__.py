@@ -9,14 +9,17 @@ from agent_integrations.scm import (
     GitHubPullRequestGateway,
     GitHubPullRequestPayload,
     LocalOnlyPullRequestGateway,
+    PullRequestGateway,
     PullRequestPlan,
     PullRequestRequest,
     ScmIntegrationError,
     ScmUnavailableError,
+    build_pull_request_gateway,
 )
 
 __all__ = [
     "LocalOnlyPullRequestGateway",
+    "PullRequestGateway",
     "GitHubPullRequestConfig",
     "GitHubPullRequestGateway",
     "GitHubPullRequestPayload",
@@ -26,4 +29,5 @@ __all__ = [
     "ScmIntegrationError",
     "ScmUnavailableError",
     "build_model_gateway",
+    "build_pull_request_gateway",
 ]

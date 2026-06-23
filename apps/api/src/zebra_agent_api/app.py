@@ -16,7 +16,7 @@ from agent_core.application import (
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.identifiers import SessionId
 from agent_core.harness.models import HarnessLoopResult
-from agent_integrations import build_model_gateway
+from agent_integrations import build_model_gateway, build_pull_request_gateway
 from agent_runtime import WorkspaceDiffError, WorkspaceDiffService, run_local_harness
 from agent_security import PolicyProfile
 from agent_storage import (
@@ -200,7 +200,18 @@ class ZebraAgentApi:
         *,
         idempotency_key: str | None = None,
     ) -> ApiResponse:
-        return SessionPullRequestApi(self.database_path).open_pull_request(
+        try:
+            gateway = build_pull_request_gateway(self.settings.scm)
+        except ValueError as error:
+            return conflict(
+                session_id=session_id,
+                status="pull_request_unavailable",
+                reason=str(error),
+            )
+        return SessionPullRequestApi(
+            self.database_path,
+            pull_request_gateway=gateway,
+        ).open_pull_request(
             session_id,
             payload,
             idempotency_key=idempotency_key,
