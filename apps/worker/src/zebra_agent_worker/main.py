@@ -47,6 +47,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "stop_when_idle": namespace.stop_when_idle,
                 "cycles_completed": result.cycles_completed,
                 "idle_cycles": result.idle_cycles,
+                "stop_reason": result.stop_reason,
                 "executed_session_ids": list(result.executed_session_ids),
                 "skipped_session_ids": list(result.skipped_session_ids),
             },
@@ -84,8 +85,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--max-cycles",
         type=int,
-        default=1,
-        help="Maximum number of polling cycles to run.",
+        default=None,
+        help="Maximum number of polling cycles to run. Omit for continuous operation.",
     )
     parser.add_argument(
         "--stop-when-idle",

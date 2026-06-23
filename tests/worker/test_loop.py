@@ -30,7 +30,30 @@ def test_worker_loop_returns_idle_when_no_ready_sessions(tmp_path: Path) -> None
 
     assert result.cycles_completed == 1
     assert result.idle_cycles == 1
+    assert result.stop_reason == "idle"
     assert result.executed_session_ids == ()
+
+
+def test_worker_loop_polls_multiple_idle_cycles_without_final_sleep(
+    tmp_path: Path,
+) -> None:
+    sleep_calls: list[float] = []
+
+    result = build_worker_loop_service(
+        database_path=tmp_path / "worker.db",
+        settings=_settings(tmp_path / "worker.db"),
+        sleep=sleep_calls.append,
+    ).run(
+        worker_id="worker-a",
+        max_cycles=3,
+        stop_when_idle=False,
+        idle_sleep_seconds=0.25,
+    )
+
+    assert result.cycles_completed == 3
+    assert result.idle_cycles == 3
+    assert result.stop_reason == "max_cycles"
+    assert sleep_calls == [0.25, 0.25]
 
 
 def test_worker_loop_executes_ready_session(
@@ -85,6 +108,7 @@ def test_worker_loop_processes_multiple_ready_sessions_until_idle(
 
     assert result.cycles_completed == 3
     assert result.idle_cycles == 1
+    assert result.stop_reason == "idle"
     assert result.executed_session_ids == (str(first), str(second))
 
 
@@ -119,6 +143,7 @@ def test_worker_loop_skips_already_leased_ready_session(
     session = SQLiteProjectionStore(database_path).get_session(session_id)
     assert result.executed_session_ids == ()
     assert result.skipped_session_ids == (str(session_id),)
+    assert result.stop_reason == "blocked"
     assert session is not None
     assert session.status is SessionStatus.READY
 
@@ -156,6 +181,22 @@ def test_worker_main_emits_loop_summary(
     assert payload["command"] == "loop"
     assert payload["executed_session_ids"] == [str(session_id)]
     assert payload["worker_id"] == "worker-a"
+    assert payload["stop_reason"] == "max_cycles"
+
+
+def test_worker_loop_rejects_invalid_loop_inputs(tmp_path: Path) -> None:
+    service = build_worker_loop_service(
+        database_path=tmp_path / "worker.db",
+        settings=_settings(tmp_path / "worker.db"),
+        sleep=lambda _: None,
+    )
+
+    try:
+        service.run(worker_id="worker-a", max_cycles=0)
+    except ValueError as error:
+        assert str(error) == "max_cycles must be greater than zero when provided"
+    else:
+        raise AssertionError("expected invalid max_cycles to fail")
 
 
 def _seed_ready_session(database_path: Path, workspace_root: Path) -> SessionId:

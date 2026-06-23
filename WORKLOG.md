@@ -1700,3 +1700,21 @@
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
+
+## 2026-06-23 Worker Continuous Loop Behavior
+
+- 执行 `P9-WKR-01 - Worker Continuous Loop Behavior`
+- `zebra-agent-worker` loop 现在支持：
+  - omitted `--max-cycles` 的连续 daemon-style polling
+  - `stop_reason` 机器可读输出
+  - idle 多轮 polling 的 deterministic sleep 语义
+  - 单轮 `--max-cycles 1 --stop-when-idle` 行为继续可用
+- 更新测试：
+  - `tests/worker/test_loop.py`
+- 文档同步：
+  - `docs/operator_runbook.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 本轮验证结果：
+  - `uv run pytest tests/worker/test_loop.py tests/worker/test_execution.py tests/worker/test_claims.py tests/worker/test_resume.py` 通过

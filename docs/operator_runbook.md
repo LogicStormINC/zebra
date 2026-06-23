@@ -142,8 +142,27 @@ Expected result:
 
 - JSON output with `command=loop`
 - `cycles_completed` and `idle_cycles`
+- `stop_reason` such as `idle`, `max_cycles`, or `blocked`
 - `executed_session_ids` for any claimed ready sessions
 - `skipped_session_ids` when a ready session is already leased elsewhere
+
+For a long-running local worker, omit `--max-cycles` and keep
+`--stop-when-idle` unset:
+
+```bash
+uv run zebra-agent-worker \
+  --database .zebra/sessions.sqlite \
+  --worker-id local-worker \
+  --batch-size 1 \
+  --idle-sleep-seconds 2
+```
+
+Expected behavior:
+
+- the process keeps polling until interrupted by the operator or process manager
+- idle cycles sleep between polls
+- ready sessions are claimed and executed as they appear
+- final JSON is emitted when the process exits through a bounded run path
 
 If a session reaches `waiting_approval`, record a decision with:
 

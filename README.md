@@ -21,7 +21,7 @@ The next milestone is `Phase 9 - Session Control And Worker Hardening`. The imme
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
 - `POST /approvals/{id}/approve` and `POST /approvals/{id}/reject` are now available on the current development line
-- continuous worker-loop hardening is the next mainline lane for longer-running local operator use
+- worker-loop stop reporting and daemon-friendly continuous polling are now available on the current development line
 
 Read in this order:
 

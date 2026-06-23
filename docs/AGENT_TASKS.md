@@ -2336,8 +2336,8 @@ Expose `POST /approvals/{id}/approve` and `POST /approvals/{id}/reject` by reusi
 
 ### P9-WKR-01 - Worker Continuous Loop Behavior
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P8-CLOSE-01`
 - Branch: `codex/p9-wkr-01-worker-daemon`
@@ -2356,7 +2356,7 @@ Harden the current worker loop from a single-operator poll helper into a more st
 
 #### Acceptance
 
-- [ ] Worker loop can run for multiple cycles with deterministic idle behavior.
-- [ ] Loop reporting stays machine-readable for operator automation.
-- [ ] Existing single-cycle worker loop behavior remains supported.
-- [ ] Documentation explains short-run and long-run worker invocation modes.
+- [x] Worker loop can run for multiple cycles with deterministic idle behavior.
+- [x] Loop reporting stays machine-readable for operator automation.
+- [x] Existing single-cycle worker loop behavior remains supported.
+- [x] Documentation explains short-run and long-run worker invocation modes.

@@ -103,13 +103,14 @@
 - Phase 8 is now closed with aligned CLI, API, and worker operator entry points for local durable execution
 - Phase 9 now has `POST /sessions/{id}/messages` for appending user input onto an existing durable session
 - Phase 9 now also has `POST /sessions/{id}/cancel`, `POST /sessions/{id}/suspend`, and `POST /approvals/{id}/approve|reject` on the current development line
-- worker follow-up should now harden continuous loop behavior without reopening API-owned paths in the same task
+- Phase 9 now has worker-loop stop reporting and daemon-friendly continuous polling on the current development line
 
 ## Next Unlocks
 
 - `P9-API-01` is complete
 - `P9-API-02` and `P9-API-03` are complete on the current mainline
-- the first parallel-ready worker task after closeout is `P9-WKR-01 - Worker Continuous Loop Behavior`
+- `P9-WKR-01 - Worker Continuous Loop Behavior` is complete
+- the next Phase 9 task should be added or selected from the task registry before coding
 
 ## Active Documents
 

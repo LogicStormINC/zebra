@@ -31,6 +31,7 @@ class WorkerLoopCycleResult:
 class WorkerLoopRunResult:
     cycles_completed: int
     idle_cycles: int
+    stop_reason: str
     executed_session_ids: tuple[str, ...]
     skipped_session_ids: tuple[str, ...]
 
@@ -94,7 +95,14 @@ class WorkerLoopService:
         stop_when_idle: bool = False,
         idle_sleep_seconds: float = 1.0,
     ) -> WorkerLoopRunResult:
+        _validate_loop_inputs(
+            batch_size=batch_size,
+            lease_ttl_seconds=lease_ttl_seconds,
+            max_cycles=max_cycles,
+            idle_sleep_seconds=idle_sleep_seconds,
+        )
         accumulator = _LoopAccumulator()
+        stop_reason = "max_cycles"
         while max_cycles is None or accumulator.cycles_completed < max_cycles:
             cycle = self.poll_once(
                 worker_id=worker_id,
@@ -107,6 +115,9 @@ class WorkerLoopService:
             if not cycle.ready_session_ids:
                 accumulator.idle_cycles += 1
                 if stop_when_idle:
+                    stop_reason = "idle"
+                    break
+                if not _has_remaining_cycles(accumulator, max_cycles):
                     break
                 self._sleep(idle_sleep_seconds)
                 continue
@@ -115,10 +126,14 @@ class WorkerLoopService:
                 and not cycle.executed_session_ids
                 and len(cycle.skipped_session_ids) == len(cycle.ready_session_ids)
             ):
+                stop_reason = "blocked"
+                break
+            if not _has_remaining_cycles(accumulator, max_cycles):
                 break
         return WorkerLoopRunResult(
             cycles_completed=accumulator.cycles_completed,
             idle_cycles=accumulator.idle_cycles,
+            stop_reason=stop_reason,
             executed_session_ids=tuple(accumulator.executed_session_ids),
             skipped_session_ids=tuple(accumulator.skipped_session_ids),
         )
@@ -149,3 +164,24 @@ def build_worker_loop_service(
         execution_service=execution_service,
         sleep=sleep,
     )
+
+
+def _has_remaining_cycles(accumulator: _LoopAccumulator, max_cycles: int | None) -> bool:
+    return max_cycles is None or accumulator.cycles_completed < max_cycles
+
+
+def _validate_loop_inputs(
+    *,
+    batch_size: int,
+    lease_ttl_seconds: int,
+    max_cycles: int | None,
+    idle_sleep_seconds: float,
+) -> None:
+    if batch_size <= 0:
+        raise ValueError("batch_size must be greater than zero")
+    if lease_ttl_seconds <= 0:
+        raise ValueError("lease_ttl_seconds must be greater than zero")
+    if max_cycles is not None and max_cycles <= 0:
+        raise ValueError("max_cycles must be greater than zero when provided")
+    if idle_sleep_seconds < 0:
+        raise ValueError("idle_sleep_seconds must not be negative")
