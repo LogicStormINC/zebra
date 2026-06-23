@@ -3,10 +3,10 @@
 ## Current Phase
 
 - Active phase: `Phase 11 - Delivery Hardening`
-- Repository status: `phase 11 delivery audit complete`
+- Repository status: `phase 11 GitHub PR provider skeleton complete`
 - Current focus:
-  - prepare the GitHub pull-request provider skeleton behind explicit configuration
-  - preserve local-only dry-run as the default safe delivery behavior
+  - plan the next delivery hardening or closeout slice
+  - preserve local-only dry-run as the default safe delivery behavior until remote SCM execution is explicitly wired
 
 ## Completed
 
@@ -108,17 +108,19 @@
 - `P10-CLOSE-01 - Phase 10 Closeout And Phase 11 Planning`
 - `P11-API-01 - Side Effect Idempotency Keys`
 - `P11-OBS-01 - Delivery Audit Events`
+- `P11-INT-01 - GitHub Pull Request Provider Skeleton`
 
 ## Current Focus
 
 - Phase 10 is now closed with diff, artifacts, local commit, and local-only PR dry-run delivery APIs completed
 - Phase 11 now has idempotent retry handling for commit and pull-request side-effect APIs
 - delivery audit records now capture commit and pull-request attempts with policy and result metadata
-- GitHub PR provider work is now the next ready implementation lane
+- GitHub PR provider skeleton now serializes request payloads and fails closed before network execution
+- remote SCM execution is still not wired to the API and remains an explicit future task
 
 ## Next Unlocks
 
-- `P11-INT-01 - GitHub Pull Request Provider Skeleton` is ready
+- Next Phase 11 closeout or remote-SCM execution task should be defined before further GitHub delivery work
 
 ## Active Documents
 

@@ -1889,3 +1889,25 @@
   - `uv run pytest tests/agent_storage/test_delivery_audit.py tests/api/test_session_commit.py tests/api/test_session_pull_request.py`
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 11 GitHub Pull Request Provider Skeleton
+
+- 执行 `P11-INT-01 - GitHub Pull Request Provider Skeleton`
+- 新增集成骨架：
+  - `GitHubPullRequestConfig`
+  - `GitHubPullRequestGateway`
+  - `GitHubPullRequestPayload`
+- 行为边界：
+  - local-only 仍是默认 PR gateway
+  - GitHub dry-run 可以生成可审查的 request payload
+  - GitHub non-dry-run 缺 token 时在网络调用前失败
+  - GitHub non-dry-run 即使有 token 也仍 fail-closed，真实执行尚未实现
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P11-INT-01` 标记为 `Done`
+  - `PROGRESS.md`
+  - `README.md`
+  - `docs/operator_runbook.md`
+- 验证：
+  - `uv run pytest tests/agent_integrations/test_scm.py`
+  - `make check`
+  - `make test`

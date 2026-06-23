@@ -302,6 +302,15 @@ Expected result in the current local-only runtime:
 - reusing the same `Idempotency-Key` with a different body returns `idempotency_conflict`
 - each non-replayed pull-request attempt is persisted in the delivery audit store with policy and result metadata
 
+GitHub pull-request provider status:
+
+- `LocalOnlyPullRequestGateway` remains the default API behavior.
+- `GitHubPullRequestGateway` is currently a skeleton for explicit future wiring.
+- The GitHub skeleton can build a dry-run request payload for review without live GitHub access.
+- A non-dry-run GitHub request without a token fails before any network call.
+- A non-dry-run GitHub request with a token still fails closed because live execution is not implemented yet.
+- Serialized request headers redact the token as `Bearer <redacted>`.
+
 Append one more user message to an existing session:
 
 ```bash

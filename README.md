@@ -28,7 +28,8 @@ The next milestone is `Phase 11 - Delivery Hardening`. The immediate implementat
 - `POST /sessions/{id}/pull-request` is now available as a local-only dry-run planning path
 - side-effect `Idempotency-Key` handling is now available for commit and pull-request retries
 - delivery audit records now capture commit and pull-request attempts
-- a GitHub PR provider skeleton is the next ready implementation lane
+- a GitHub PR provider skeleton can serialize dry-run request payloads without live GitHub access
+- remote SCM execution is not wired to the API yet; local-only dry-run remains the default safe behavior
 
 Read in this order:
 

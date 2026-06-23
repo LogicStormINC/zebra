@@ -2581,8 +2581,8 @@ Record commit and pull-request delivery attempts as durable audit events so deli
 
 ### P11-INT-01 - GitHub Pull Request Provider Skeleton
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P11-API-01`, `P11-OBS-01`
 - Branch: `codex/p11-int-01-github-pr-provider`
@@ -2601,7 +2601,7 @@ Add a GitHub pull-request provider skeleton behind explicit configuration while 
 
 #### Acceptance
 
-- [ ] Local-only remains the default provider.
-- [ ] Missing GitHub token fails before any network call.
-- [ ] GitHub request payload is tested without requiring live GitHub access.
-- [ ] Runbook documents provider configuration and limitations.
+- [x] Local-only remains the default provider.
+- [x] Missing GitHub token fails before any network call.
+- [x] GitHub request payload is tested without requiring live GitHub access.
+- [x] Runbook documents provider configuration and limitations.

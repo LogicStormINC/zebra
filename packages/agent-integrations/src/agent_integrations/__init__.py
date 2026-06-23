@@ -5,6 +5,9 @@ from agent_integrations.openai_compatible import (
     build_model_gateway,
 )
 from agent_integrations.scm import (
+    GitHubPullRequestConfig,
+    GitHubPullRequestGateway,
+    GitHubPullRequestPayload,
     LocalOnlyPullRequestGateway,
     PullRequestPlan,
     PullRequestRequest,
@@ -14,6 +17,9 @@ from agent_integrations.scm import (
 
 __all__ = [
     "LocalOnlyPullRequestGateway",
+    "GitHubPullRequestConfig",
+    "GitHubPullRequestGateway",
+    "GitHubPullRequestPayload",
     "OpenAICompatibleModelGateway",
     "PullRequestPlan",
     "PullRequestRequest",
