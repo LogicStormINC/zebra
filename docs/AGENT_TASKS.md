@@ -2205,7 +2205,7 @@ Add a minimal long-running worker loop that can discover ready sessions from dur
 
 ### P8-INT-01 - Phase 8 Mainline Alignment
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P8-API-07`, `P8-WKR-05`
@@ -2224,6 +2224,6 @@ Align the completed Phase 8 resume-trigger and worker-loop slices onto one verif
 
 #### Acceptance
 
-- [ ] The branch contains CLI resume execute, API resume execute, and worker ready-session loop together.
-- [ ] `PROGRESS.md`, `README.md`, and `docs/operator_runbook.md` describe the combined Phase 8 surface without contradiction.
-- [ ] Integration validation passes for the combined slices.
+- [x] The branch contains CLI resume execute, API resume execute, and worker ready-session loop together.
+- [x] `PROGRESS.md`, `README.md`, and `docs/operator_runbook.md` describe the combined Phase 8 surface without contradiction.
+- [x] Integration validation passes for the combined slices.

@@ -1635,3 +1635,20 @@
   - `tests/worker/test_loop.py`
 - 本轮验证结果：
   - `uv run pytest tests/agent_storage/test_sqlite_projection_store.py tests/worker/test_loop.py` 通过
+
+## 2026-06-23 Phase 8 Mainline Alignment
+
+- 执行 `P8-INT-01 - Phase 8 Mainline Alignment`
+- 主线对齐后同时包含：
+  - CLI `resume --execute`
+  - API `POST /sessions/{session_id}/resume`
+  - `zebra-agent-worker` ready session loop
+- 冲突整理：
+  - `PROGRESS.md`
+  - `README.md`
+  - `docs/operator_runbook.md`
+  - `docs/AGENT_TASKS.md`
+  - `WORKLOG.md`
+- 本轮验证结果：
+  - `uv run pytest tests/cli/test_cli_commands.py tests/api/test_http_app.py tests/api/test_routes.py tests/agent_storage/test_sqlite_projection_store.py tests/worker/test_loop.py` 通过
+  - `make check` 通过

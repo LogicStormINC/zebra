@@ -106,8 +106,8 @@
 
 ## Next Unlocks
 
-- `P8-INT-01` is in progress
-- the next step is to validate the combined Phase 8 mainline branch end to end and then merge the aligned slices back toward `main`
+- `P8-INT-01` is complete
+- the next step is to merge the aligned Phase 8 mainline branch back toward `main` and then decide whether to close Phase 8 formally or start the next milestone
 
 ## Active Documents
 
