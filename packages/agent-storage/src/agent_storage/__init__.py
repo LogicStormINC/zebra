@@ -1,5 +1,6 @@
 """Storage adapters for Zebra Agent."""
 
+from agent_storage.artifacts import SessionArtifact, SQLiteArtifactStore
 from agent_storage.leases import LeaseConflictError, SQLiteLeaseStore
 from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.projections import SQLiteProjectionStore
@@ -8,6 +9,8 @@ from agent_storage.tool_runs import SQLiteToolRunStore
 
 __all__ = [
     "LeaseConflictError",
+    "SessionArtifact",
+    "SQLiteArtifactStore",
     "SQLiteEventStore",
     "SQLiteLeaseStore",
     "SQLiteModelCallStore",

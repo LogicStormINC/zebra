@@ -1755,3 +1755,24 @@
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
+
+## 2026-06-23 Session Artifacts Read API
+
+- 执行 `P10-API-02 - Session Artifacts Read API`
+- `agent-storage` 现在支持：
+  - `SQLiteArtifactStore`
+  - model call artifact projection
+  - tool run artifact projection
+  - explicit empty artifact list
+- `apps/api` 现在支持：
+  - `GET /sessions/{session_id}/artifacts`
+  - missing session 404
+  - inherited bearer auth behavior for session routes
+- 更新测试：
+  - `tests/agent_storage/test_artifacts.py`
+  - `tests/api/test_session_artifacts.py`
+- 文档同步：
+  - `docs/operator_runbook.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`

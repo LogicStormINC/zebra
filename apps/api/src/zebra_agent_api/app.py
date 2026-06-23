@@ -22,6 +22,7 @@ from agent_runtime import WorkspaceDiffError, WorkspaceDiffService, run_local_ha
 from agent_security import PolicyProfile
 from agent_storage import (
     LeaseConflictError,
+    SQLiteArtifactStore,
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
@@ -145,6 +146,35 @@ class ZebraAgentApi:
                 "clean": diff.clean,
                 "git_status": diff.git_status,
                 "diff": diff.diff,
+            },
+        )
+
+    def get_session_artifacts(self, session_id: str) -> ApiResponse:
+        session_key = SessionId(UUID(session_id))
+        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        if session is None:
+            return ApiResponse(
+                status_code=404,
+                body={"session_id": session_id, "status": "not_found"},
+            )
+        artifacts = SQLiteArtifactStore(self.database_path).list_for_session(session_key)
+        return ApiResponse(
+            status_code=200,
+            body={
+                "session_id": session_id,
+                "artifacts": [
+                    {
+                        "artifact_id": artifact.artifact_id,
+                        "sequence": artifact.sequence,
+                        "source": artifact.source,
+                        "kind": artifact.kind,
+                        "label": artifact.label,
+                        "uri": artifact.uri,
+                        "preview": artifact.preview,
+                        "metadata": artifact.metadata,
+                    }
+                    for artifact in artifacts
+                ],
             },
         )
 

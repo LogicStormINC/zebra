@@ -2418,8 +2418,8 @@ Expose a read-only `GET /sessions/{id}/diff` API that lets operators inspect the
 
 ### P10-API-02 - Session Artifacts Read API
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P10-API-01`
 - Branch: `codex/p10-api-02-session-artifacts`
@@ -2438,14 +2438,14 @@ Expose `GET /sessions/{id}/artifacts` so operator surfaces can list durable mode
 
 #### Acceptance
 
-- [ ] Operators can list artifacts for a known session.
-- [ ] Empty artifact lists are represented explicitly.
-- [ ] Artifact response fields are stable and machine-readable.
-- [ ] Runbook documents the artifact lookup path.
+- [x] Operators can list artifacts for a known session.
+- [x] Empty artifact lists are represented explicitly.
+- [x] Artifact response fields are stable and machine-readable.
+- [x] Runbook documents the artifact lookup path.
 
 ### P10-API-03 - Session Commit API
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `APP`
 - Depends on: `P10-API-01`

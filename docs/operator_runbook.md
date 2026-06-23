@@ -244,6 +244,20 @@ Expected result:
 - unified `diff` from the session workspace
 - deterministic `diff_unavailable` conflict when the workspace is missing or not a Git repository
 
+List model and tool artifacts indexed for a session:
+
+```bash
+curl http://127.0.0.1:8000/sessions/<session_id>/artifacts
+```
+
+Expected result:
+
+- JSON output with an `artifacts` list
+- stable `artifact_id`, `sequence`, `source`, `kind`, `label`, `uri`, and `preview`
+- model-call artifacts for assistant messages and usage metadata
+- tool-run artifacts for tool output and optional `artifact_uri`
+- an explicit empty list when no artifacts have been indexed
+
 Append one more user message to an existing session:
 
 ```bash

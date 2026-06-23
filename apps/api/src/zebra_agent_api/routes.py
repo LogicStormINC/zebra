@@ -46,6 +46,8 @@ class RouteAdapter:
                 return self.app.get_session_stream(parts[0])
             if len(parts) == 2 and parts[1] == "diff":
                 return self.app.get_session_diff(parts[0])
+            if len(parts) == 2 and parts[1] == "artifacts":
+                return self.app.get_session_artifacts(parts[0])
             return _not_found(request)
         return _not_found(request)
 
