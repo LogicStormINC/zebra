@@ -1,5 +1,28 @@
 # Progress Log
 
+## 2026-06-23 SCM Credential Source Audit Metadata
+
+- 执行 `P18-OBS-01 - SCM Credential Source Audit Metadata`
+- 为 GitHub pull request 计划与 API delivery audit 增加非敏感凭证来源字段：
+  - `credential_source`
+  - `credential_backend`
+- 打通三类语义路径：
+  - broker-backed 成功执行记录 `credential_source=broker`
+  - explicit env fallback 成功执行记录 `credential_source=env_fallback`
+  - broker missing 失败记录保留来源元数据，便于和普通 transport failure 区分
+- 保持安全边界不变：
+  - API response 不暴露 token
+  - delivery audit 不暴露 token
+  - request payload 继续使用 redacted authorization header
+- 新增和更新测试：
+  - `tests/api/test_delivery_audit_metadata.py`
+  - `tests/api/test_session_delivery_audit.py`
+  - `tests/api/test_session_pull_request.py`
+  - `tests/agent_integrations/test_scm.py`
+- 本轮验证结果：
+  - `poetry run pytest tests/api/test_delivery_audit_metadata.py tests/api/test_session_delivery_audit.py tests/api/test_session_pull_request.py tests/agent_integrations/test_scm.py` 通过
+  - `make check` 通过
+
 ## 2026-06-22 CLI Durable Run Execution
 
 - 执行 `P8-CLI-05 - CLI Durable Run Execution`
