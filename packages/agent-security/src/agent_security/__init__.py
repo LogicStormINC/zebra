@@ -20,6 +20,10 @@ from agent_security.delivery import (
     DeliveryDecisionType,
     PullRequestPolicy,
 )
+from agent_security.environment_broker import (
+    EnvironmentCredentialBinding,
+    EnvironmentCredentialBroker,
+)
 from agent_security.policy import (
     ApprovalRequest,
     ApprovalRisk,
@@ -41,6 +45,8 @@ __all__ = [
     "CredentialUnavailableError",
     "DeliveryDecision",
     "DeliveryDecisionType",
+    "EnvironmentCredentialBinding",
+    "EnvironmentCredentialBroker",
     "InMemoryCredentialBroker",
     "LocalPolicyEngine",
     "PolicyProfile",

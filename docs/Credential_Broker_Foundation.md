@@ -13,6 +13,8 @@ Phase 15 starts with local contracts only. It does not add a concrete secret bac
 - `redacted()` snapshots emit `<redacted>` instead of raw token values.
 - `CredentialBroker` is a Port for requesting SCM credentials.
 - `InMemoryCredentialBroker` is a deterministic test fake.
+- `EnvironmentCredentialBroker` can issue local capabilities from configured environment variable names.
+- `EnvironmentCredentialBinding` maps provider, audience, scopes, token env name, and expiry.
 
 ## Error Semantics
 
@@ -32,7 +34,7 @@ These errors intentionally distinguish operator remediation paths:
 - No OS keychain integration.
 - No Vault, KMS, or cloud secret manager integration.
 - No GitHub App installation token flow.
-- No SCM execution path wiring yet.
+- No API-owned broker composition yet.
 
 ## SCM Adapter Status
 

@@ -3,9 +3,9 @@
 ## Current Phase
 
 - Active phase: `Phase 16 - Local Credential Backend And API Wiring`
-- Repository status: `phase 16 ready`
+- Repository status: `phase 16 local environment credential broker complete`
 - Current focus:
-  - implement a local environment-backed credential broker
+  - wire API pull-request composition through the credential broker boundary
   - keep local-only PR planning as the default behavior
   - keep live SCM execution behind explicit provider, dry-run, credential, and policy gates
 
@@ -127,6 +127,7 @@
 - `P15-SEC-02 - Credential Broker Port`
 - `P15-INT-01 - SCM Broker Lookup Adapter`
 - `P15-CLOSE-01 - Phase 15 Closeout And Next Planning`
+- `P16-SEC-01 - Local Environment Credential Broker`
 
 ## Current Focus
 
@@ -144,12 +145,12 @@
 - credential broker Port now defines SCM credential requests, in-memory test broker, and missing/denied/unavailable errors
 - SCM gateway construction can use broker-issued capabilities for GitHub non-dry-run execution while preserving local-only and dry-run defaults
 - Phase 15 is closed with `docs/Phase15_Credential_Broker_Foundation_验收记录.md`
-- Phase 16 should add a local credential backend and wire API composition through the broker boundary
+- local environment credential broker can issue scoped capabilities from configured env var names without leaking token values in repr or redacted snapshots
+- Phase 16 should wire API composition through the broker boundary next
 
 ## Next Unlocks
 
-- `P16-SEC-01 - Local Environment Credential Broker` is ready
-- `P16-APP-01 - API Credential Broker Composition` unlocks after local broker
+- `P16-APP-01 - API Credential Broker Composition` is ready
 - `P16-CLOSE-01 - Phase 16 Closeout And Next Planning` unlocks after API composition
 
 ## Active Documents

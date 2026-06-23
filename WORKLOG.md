@@ -2262,3 +2262,24 @@
 - 验证：
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 16 Local Environment Credential Broker
+
+- 执行 `P16-SEC-01 - Local Environment Credential Broker`
+- 新增：
+  - `EnvironmentCredentialBinding`
+  - `EnvironmentCredentialBroker`
+- 行为边界：
+  - provider、audience、scopes、token env name 和 expiry 通过 binding 显式配置
+  - broker 从配置的 env var name 读取 runtime token value
+  - missing env value 映射为 `CredentialMissingError`
+  - unsupported provider 或 scope 映射为 `CredentialDeniedError`
+  - raw token 不出现在 capability repr、redacted snapshot 或 broker repr
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P16-SEC-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P16-APP-01` 解锁为 `Ready`
+  - `docs/Credential_Broker_Foundation.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run pytest tests/agent_security/test_environment_broker.py tests/agent_security/test_broker.py tests/agent_security/test_capabilities.py`

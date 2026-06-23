@@ -3072,8 +3072,8 @@ Close Phase 15 with an acceptance record and define the next implementation phas
 
 ### P16-SEC-01 - Local Environment Credential Broker
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `SEC`
 - Depends on: `P15-CLOSE-01`
 - Branch: `codex/p16-sec-01-local-env-credential-broker`
@@ -3092,14 +3092,14 @@ Implement a local environment-backed credential broker so runtime composition ca
 
 #### Acceptance
 
-- [ ] Broker issues `CredentialCapability` from configured environment variable names.
-- [ ] Missing environment values raise `CredentialMissingError`.
-- [ ] Unsupported provider or scope raises `CredentialDeniedError`.
-- [ ] Raw token values do not appear in redacted snapshots or repr.
+- [x] Broker issues `CredentialCapability` from configured environment variable names.
+- [x] Missing environment values raise `CredentialMissingError`.
+- [x] Unsupported provider or scope raises `CredentialDeniedError`.
+- [x] Raw token values do not appear in redacted snapshots or repr.
 
 ### P16-APP-01 - API Credential Broker Composition
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `APP`
 - Depends on: `P16-SEC-01`
