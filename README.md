@@ -32,7 +32,7 @@ The next milestone is `Phase 12 - Remote SCM Configuration`. The current impleme
 - remote SCM execution is not wired to the API yet; local-only dry-run remains the default safe behavior
 - explicit SCM provider settings are available and keep local-only as the default
 - pull-request gateway selection can opt into GitHub dry-run without enabling remote execution
-- delivery audit read API is the next ready implementation lane
+- delivery audit read API is available for session-level operator inspection
 
 Read in this order:
 

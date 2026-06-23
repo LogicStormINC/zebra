@@ -3,9 +3,9 @@
 ## Current Phase
 
 - Active phase: `Phase 12 - Remote SCM Configuration`
-- Repository status: `phase 12 pull-request gateway selection complete`
+- Repository status: `phase 12 delivery audit read API complete`
 - Current focus:
-  - expose delivery audit through a read-only API
+  - plan the next Phase 12 closeout or remote SCM execution task
   - keep local-only PR planning as the default behavior
   - defer remote SCM execution until an explicit execution task is defined
 
@@ -113,6 +113,7 @@
 - `P11-CLOSE-01 - Phase 11 Closeout And Phase 12 Planning`
 - `P12-CONFIG-01 - SCM Provider Settings`
 - `P12-INT-01 - Pull Request Gateway Selection`
+- `P12-API-01 - Delivery Audit Read API`
 
 ## Current Focus
 
@@ -121,11 +122,12 @@
 - Phase 12 now has explicit SCM provider settings with local-only as the default
 - GitHub SCM config requires explicit owner, repo, and token environment variable name
 - pull-request gateway selection now supports explicit GitHub dry-run while preserving local-only default behavior
-- delivery audit read API is the next safe read-only follow-up
+- delivery audit read API now exposes delivery attempts for session-level operator inspection
+- `apps/api/src/zebra_agent_api/app.py` is at 489 lines; split API composition before adding more methods
 
 ## Next Unlocks
 
-- `P12-API-01 - Delivery Audit Read API` is ready
+- Next Phase 12 closeout or remote-SCM execution task should be defined before enabling live GitHub side effects
 
 ## Active Documents
 

@@ -2691,8 +2691,8 @@ Wire pull-request gateway selection behind SCM settings while preserving local-o
 
 ### P12-API-01 - Delivery Audit Read API
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P11-CLOSE-01`
 - Branch: `codex/p12-api-01-delivery-audit-read`
@@ -2711,7 +2711,7 @@ Expose delivery audit records through a read-only session API so operators can i
 
 #### Acceptance
 
-- [ ] Operators can list delivery attempts for one session.
-- [ ] Empty delivery audit returns an explicit empty list.
-- [ ] Response includes action, status, policy profile, idempotency key, metadata, and timestamp.
-- [ ] Read API does not trigger any side effect.
+- [x] Operators can list delivery attempts for one session.
+- [x] Empty delivery audit returns an explicit empty list.
+- [x] Response includes action, status, policy profile, idempotency key, metadata, and timestamp.
+- [x] Read API does not trigger any side effect.

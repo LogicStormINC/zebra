@@ -302,6 +302,19 @@ Expected result in the current local-only runtime:
 - reusing the same `Idempotency-Key` with a different body returns `idempotency_conflict`
 - each non-replayed pull-request attempt is persisted in the delivery audit store with policy and result metadata
 
+Read delivery audit records for one session:
+
+```bash
+curl http://127.0.0.1:8000/sessions/<session_id>/delivery-audit
+```
+
+Expected result:
+
+- JSON output with `delivery_audit`
+- explicit empty list when no delivery attempts were recorded
+- action, status, status code, policy profile, idempotency key, result metadata, and timestamp for each record
+- read-only behavior with no delivery side effect
+
 GitHub pull-request provider status:
 
 - `LocalOnlyPullRequestGateway` remains the default API behavior.

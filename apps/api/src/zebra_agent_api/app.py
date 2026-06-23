@@ -41,6 +41,7 @@ from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_commit import SessionCommitApi
 from zebra_agent_api.session_context import session_workspace_root
+from zebra_agent_api.session_delivery_audit import SessionDeliveryAuditApi
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
     parse_append_session_message_payload,
@@ -179,6 +180,9 @@ class ZebraAgentApi:
                 ],
             },
         )
+
+    def get_session_delivery_audit(self, session_id: str) -> ApiResponse:
+        return SessionDeliveryAuditApi(self.database_path).get_delivery_audit(session_id)
 
     def commit_session(
         self,

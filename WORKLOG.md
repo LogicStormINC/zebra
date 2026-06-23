@@ -1977,3 +1977,27 @@
   - `uv run pytest tests/agent_integrations/test_scm.py tests/api/test_session_pull_request.py`
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 12 Delivery Audit Read API
+
+- 执行 `P12-API-01 - Delivery Audit Read API`
+- 新增 API：
+  - `GET /sessions/{session_id}/delivery-audit`
+  - `SessionDeliveryAuditApi`
+- 响应字段：
+  - `action`
+  - `status`
+  - `status_code`
+  - `policy_profile`
+  - `idempotency_key`
+  - `result_metadata`
+  - `created_at`
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P12-API-01` 标记为 `Done`
+  - `PROGRESS.md`
+  - `README.md`
+  - `docs/operator_runbook.md`
+- 验证：
+  - `uv run pytest tests/api/test_session_delivery_audit.py tests/api/test_routes.py tests/api/test_http_app.py`
+  - `make check`
+  - `make test`
