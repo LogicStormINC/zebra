@@ -10,6 +10,10 @@ from agent_core.application.session_bootstrap import (
     SessionBootstrapCommand,
     SessionBootstrapService,
 )
+from agent_core.application.session_messages import (
+    SessionMessageAppendCommand,
+    SessionMessageAppendService,
+)
 
 __all__ = [
     "ApprovalDecisionAction",
@@ -18,4 +22,6 @@ __all__ = [
     "BootstrappedSession",
     "SessionBootstrapCommand",
     "SessionBootstrapService",
+    "SessionMessageAppendCommand",
+    "SessionMessageAppendService",
 ]

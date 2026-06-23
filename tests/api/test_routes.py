@@ -8,7 +8,7 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
-from agent_core.domain.sessions import Session
+from agent_core.domain.sessions import Session, SessionStatus
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from zebra_agent_api.app import create_app
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
@@ -127,6 +127,52 @@ def test_route_adapter_handles_session_resume_execute(tmp_path: Path, monkeypatc
     ]
 
 
+def test_route_adapter_handles_session_message_append(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(
+        RouteRequest(
+            method="POST",
+            path=f"/sessions/{session_id}/messages",
+            body={"content": "Please continue from the latest checkpoint."},
+        )
+    )
+
+    assert response.status_code == 201
+    assert response.body["session_id"] == session_id
+    assert response.body["appended"] is True
+    assert response.body["content"] == "Please continue from the latest checkpoint."
+    assert response.body["status"] == "ready"
+    assert response.body["current_sequence"] == 3
+
+
+def test_route_adapter_rejects_terminal_session_message_append(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="Terminal route").model_copy(
+            update={"status": SessionStatus.COMPLETED}
+        )
+    )
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(
+        RouteRequest(
+            method="POST",
+            path=f"/sessions/{session.session_id}/messages",
+            body={"content": "Try again."},
+        )
+    )
+
+    assert response.status_code == 409
+    assert response.body == {
+        "session_id": str(session.session_id),
+        "status": "not_appendable",
+        "reason": "cannot_append_to_terminal_session",
+    }
+
+
 def test_route_adapter_rejects_invalid_resume_payload(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
@@ -144,6 +190,26 @@ def test_route_adapter_rejects_invalid_resume_payload(tmp_path: Path) -> None:
     assert response.body == {
         "status": "invalid_request",
         "reason": "lease_ttl_seconds must be greater than zero",
+    }
+
+
+def test_route_adapter_rejects_invalid_message_payload(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(
+        RouteRequest(
+            method="POST",
+            path=f"/sessions/{session_id}/messages",
+            body={"content": "   "},
+        )
+    )
+
+    assert response.status_code == 400
+    assert response.body == {
+        "status": "invalid_request",
+        "reason": "content must be a non-blank string",
     }
 
 

@@ -18,7 +18,7 @@ Phase 8 is closed. The repository now has a complete local productization baseli
 
 The next milestone is `Phase 9 - Session Control And Worker Hardening`. The immediate implementation lanes are:
 
-- `POST /sessions/{id}/messages`
+- `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend`
 - `POST /approvals/{id}/approve` and `POST /approvals/{id}/reject`
 - continuous worker-loop hardening for longer-running local operator use

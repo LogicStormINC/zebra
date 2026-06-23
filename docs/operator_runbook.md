@@ -187,6 +187,21 @@ Read one session:
 curl http://127.0.0.1:8000/sessions/<session_id>
 ```
 
+Append one more user message to an existing session:
+
+```bash
+curl -X POST http://127.0.0.1:8000/sessions/<session_id>/messages \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Please continue from the latest checkpoint."}'
+```
+
+Expected result:
+
+- JSON output with `appended=true`
+- appended `content`
+- new `sequence` and `current_sequence`
+- unchanged non-terminal session `status`
+
 Create one session through the API without immediate execution:
 
 ```bash

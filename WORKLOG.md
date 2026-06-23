@@ -1665,3 +1665,19 @@
   - `README.md` 补充 Phase 8 closeout 与 Phase 9 starter lanes
 - 本轮验证结果：
   - `make check` 通过
+
+## 2026-06-23 Session Messages Entry
+
+- 执行 `P9-API-01 - Session Messages Entry`
+- `agent-core` 现在支持：
+  - `SessionMessageAppendService`
+- `apps/api` 现在支持：
+  - `POST /sessions/{session_id}/messages`
+  - non-blank content payload 校验
+  - terminal session append rejection
+- 更新测试：
+  - `tests/agent_core/test_session_messages.py`
+  - `tests/api/test_routes.py`
+  - `tests/api/test_http_app.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_core/test_session_messages.py tests/api/test_routes.py tests/api/test_http_app.py` 通过

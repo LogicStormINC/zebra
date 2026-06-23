@@ -4,7 +4,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
 
-from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+from agent_core.application import (
+    SessionBootstrapCommand,
+    SessionBootstrapService,
+    SessionMessageAppendCommand,
+    SessionMessageAppendService,
+)
+from agent_core.application.session_projection import apply_event
 from agent_core.domain.identifiers import SessionId
 from agent_core.harness.models import HarnessLoopResult
 from agent_integrations import build_model_gateway
@@ -31,6 +37,7 @@ from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
+    parse_append_session_message_payload,
     parse_create_session_payload,
     parse_resume_session_payload,
 )
@@ -167,6 +174,45 @@ class ZebraAgentApi:
                 "current_sequence": result.session.current_sequence,
                 "assistant_message": result.attempt_result.metadata.get("assistant_message"),
                 "trace": serialize_trace_events(result.events),
+            },
+        )
+
+    def append_session_message(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
+        parsed = parse_append_session_message_payload(payload)
+        if isinstance(parsed, ApiResponse):
+            return parsed
+
+        session_key = SessionId(UUID(session_id))
+        projection_store = SQLiteProjectionStore(self.database_path)
+        session = projection_store.get_session(session_key)
+        if session is None:
+            return ApiResponse(
+                status_code=404,
+                body={"session_id": session_id, "status": "not_found"},
+            )
+        try:
+            event = SessionMessageAppendService().build_event(
+                session=session,
+                next_sequence=session.current_sequence + 1,
+                command=SessionMessageAppendCommand(content=parsed["content"]),
+            )
+        except ValueError:
+            return conflict(
+                session_id=session_id,
+                status="not_appendable",
+                reason="cannot_append_to_terminal_session",
+            )
+        SQLiteEventStore(self.database_path).append(event)
+        updated_session = projection_store.save_session(apply_event(session, event))
+        return ApiResponse(
+            status_code=201,
+            body={
+                "session_id": session_id,
+                "appended": True,
+                "content": parsed["content"],
+                "sequence": event.sequence,
+                "status": updated_session.status.value,
+                "current_sequence": updated_session.current_sequence,
             },
         )
 

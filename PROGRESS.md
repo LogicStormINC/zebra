@@ -96,18 +96,19 @@
 - `P8-WKR-05 - Worker Ready Session Loop`
 - `P8-INT-01 - Phase 8 Mainline Alignment`
 - `P8-CLOSE-01 - Phase 8 Closeout Record`
+- `P9-API-01 - Session Messages Entry`
 
 ## Current Focus
 
 - Phase 8 is now closed with aligned CLI, API, and worker operator entry points for local durable execution
-- Phase 9 should next add `POST /sessions/{id}/messages` to unlock multi-turn session interaction on top of the current durable session model
-- Phase 9 should then add cancel or suspend and approval HTTP entries to complete the operator control plane
+- Phase 9 now has `POST /sessions/{id}/messages` for appending user input onto an existing durable session
+- Phase 9 should next add cancel or suspend and approval HTTP entries to complete the operator control plane
 - worker follow-up should harden continuous loop behavior without reopening API-owned paths in the same task
 
 ## Next Unlocks
 
-- `P8-CLOSE-01` is complete
-- the next task to claim is `P9-API-01 - Session Messages Entry`
+- `P9-API-01` is complete
+- the next API task to claim is `P9-API-02 - Cancel And Suspend Entry`
 - the first parallel-ready worker task after closeout is `P9-WKR-01 - Worker Continuous Loop Behavior`
 
 ## Active Documents

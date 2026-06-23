@@ -26,6 +26,8 @@ class RouteAdapter:
             return self.app.create_session(request.body or {})
         if method == "POST" and request.path.startswith("/sessions/"):
             parts = _session_path_parts(request.path)
+            if len(parts) == 2 and parts[1] == "messages":
+                return self.app.append_session_message(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "resume":
                 return self.app.resume_session(parts[0], request.body or {})
         if method == "GET" and request.path.startswith("/sessions/"):

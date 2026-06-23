@@ -20,6 +20,10 @@ class ResumeSessionPayload(TypedDict):
     lease_ttl_seconds: int
 
 
+class AppendSessionMessagePayload(TypedDict):
+    content: str
+
+
 def parse_create_session_payload(
     payload: dict[str, object],
 ) -> CreateSessionPayload | ApiResponse:
@@ -73,3 +77,12 @@ def parse_resume_session_payload(
         "worker_id": worker_id.strip(),
         "lease_ttl_seconds": lease_ttl_seconds,
     }
+
+
+def parse_append_session_message_payload(
+    payload: dict[str, object],
+) -> AppendSessionMessagePayload | ApiResponse:
+    content = payload.get("content")
+    if not isinstance(content, str) or not content.strip():
+        return bad_request("content must be a non-blank string")
+    return {"content": content.strip()}

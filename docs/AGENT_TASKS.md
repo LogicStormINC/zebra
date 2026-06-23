@@ -2258,8 +2258,8 @@ Close Phase 8 by recording productization evidence, explicit deferrals, and the 
 
 ### P9-API-01 - Session Messages Entry
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P8-CLOSE-01`
 - Branch: `codex/p9-api-01-session-messages`
@@ -2277,10 +2277,10 @@ Expose `POST /sessions/{id}/messages` so an existing durable session can accept 
 
 #### Acceptance
 
-- [ ] Existing sessions can accept a new user message through the API.
-- [ ] The appended message persists as a durable event and updates session metadata deterministically.
-- [ ] Terminal sessions reject new messages cleanly.
-- [ ] Existing read, create, stream, and resume routes remain unchanged.
+- [x] Existing sessions can accept a new user message through the API.
+- [x] The appended message persists as a durable event and updates session metadata deterministically.
+- [x] Terminal sessions reject new messages cleanly.
+- [x] Existing read, create, stream, and resume routes remain unchanged.
 
 ### P9-API-02 - Cancel And Suspend Entry
 
