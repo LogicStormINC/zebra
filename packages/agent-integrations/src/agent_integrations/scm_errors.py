@@ -4,3 +4,12 @@ class ScmIntegrationError(ValueError):
 
 class ScmUnavailableError(ValueError):
     """Raised when a networked SCM action is unavailable."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        metadata: dict[str, object] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.metadata = metadata or {}

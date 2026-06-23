@@ -56,6 +56,8 @@ def test_api_delivery_audit_lists_records(tmp_path: Path) -> None:
                 "commit_sha": "a" * 40,
                 "dry_run": True,
                 "url": None,
+                "credential_source": None,
+                "credential_backend": None,
             },
             created_at=created_at,
         )
@@ -79,6 +81,8 @@ def test_api_delivery_audit_lists_records(tmp_path: Path) -> None:
                     "commit_sha": "a" * 40,
                     "dry_run": True,
                     "url": None,
+                    "credential_source": None,
+                    "credential_backend": None,
                 },
                 "created_at": created_at.isoformat(),
             }

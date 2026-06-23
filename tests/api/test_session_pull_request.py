@@ -42,6 +42,8 @@ def test_api_pull_request_returns_local_only_dry_run_plan(tmp_path: Path) -> Non
     assert pull_request["dry_run"] is True
     assert pull_request["status"] == "dry_run"
     assert pull_request["url"] is None
+    assert pull_request["credential_source"] is None
+    assert pull_request["credential_backend"] is None
     audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
     assert len(audit_records) == 1
     assert audit_records[0].action == "session.pull_request"
@@ -51,6 +53,8 @@ def test_api_pull_request_returns_local_only_dry_run_plan(tmp_path: Path) -> Non
     assert audit_records[0].result_metadata["provider"] == "local-only"
     assert audit_records[0].result_metadata["status"] == "dry_run"
     assert audit_records[0].result_metadata["dry_run"] is True
+    assert audit_records[0].result_metadata["credential_source"] is None
+    assert audit_records[0].result_metadata["credential_backend"] is None
 
 
 def test_api_pull_request_rejects_network_execution_in_local_only_mode(
@@ -101,6 +105,8 @@ def test_api_pull_request_selects_github_dry_run_gateway(tmp_path: Path) -> None
     assert isinstance(pull_request, dict)
     assert pull_request["provider"] == "github"
     assert pull_request["status"] == "dry_run"
+    assert pull_request["credential_source"] is None
+    assert pull_request["credential_backend"] is None
     assert pull_request["request_payload"] == {
         "endpoint": "https://api.github.com/repos/octo-org/zebra-agent/pulls",
         "headers": {
@@ -122,6 +128,8 @@ def test_api_pull_request_selects_github_dry_run_gateway(tmp_path: Path) -> None
     assert audit_records[0].result_metadata["provider"] == "github"
     assert audit_records[0].result_metadata["status"] == "dry_run"
     assert audit_records[0].result_metadata["dry_run"] is True
+    assert audit_records[0].result_metadata["credential_source"] is None
+    assert audit_records[0].result_metadata["credential_backend"] is None
 
 
 def test_api_pull_request_github_non_dry_run_fails_closed(tmp_path: Path) -> None:
@@ -156,6 +164,8 @@ def test_api_pull_request_github_non_dry_run_fails_closed(tmp_path: Path) -> Non
     assert audit_records[0].result_metadata["reason"] == (
         "credential environment value is missing"
     )
+    assert audit_records[0].result_metadata["credential_source"] == "broker"
+    assert audit_records[0].result_metadata["credential_backend"] == "environment"
 
 
 def test_api_pull_request_uses_broker_credential_for_github_execution(
@@ -186,6 +196,8 @@ def test_api_pull_request_uses_broker_credential_for_github_execution(
     assert pull_request["provider"] == "github"
     assert pull_request["status"] == "created"
     assert pull_request["url"] == "https://github.example/pulls/1"
+    assert pull_request["credential_source"] == "broker"
+    assert pull_request["credential_backend"] == "environment"
     assert transport.token == "broker-token"
     assert "broker-token" not in repr(response.body)
     audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
@@ -194,6 +206,8 @@ def test_api_pull_request_uses_broker_credential_for_github_execution(
     assert audit_records[0].result_metadata["provider"] == "github"
     assert audit_records[0].result_metadata["dry_run"] is False
     assert audit_records[0].result_metadata["url"] == "https://github.example/pulls/1"
+    assert audit_records[0].result_metadata["credential_source"] == "broker"
+    assert audit_records[0].result_metadata["credential_backend"] == "environment"
     assert "broker-token" not in repr(audit_records[0].result_metadata)
 
 
@@ -222,8 +236,14 @@ def test_api_pull_request_uses_default_environment_broker_for_github_execution(
 
     assert response.status_code == 200
     assert response.body["pull_request"]["status"] == "created"
+    assert response.body["pull_request"]["credential_source"] == "broker"
+    assert response.body["pull_request"]["credential_backend"] == "environment"
     assert transport.token == "default-broker-token"
     assert "default-broker-token" not in repr(response.body)
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].result_metadata["credential_source"] == "broker"
+    assert audit_records[0].result_metadata["credential_backend"] == "environment"
 
 
 def test_api_pull_request_missing_broker_credential_records_audit(
@@ -263,6 +283,8 @@ def test_api_pull_request_missing_broker_credential_records_audit(
     assert audit_records[0].result_metadata["provider"] == "github"
     assert audit_records[0].result_metadata["dry_run"] is False
     assert audit_records[0].result_metadata["reason"] == ("credential environment value is missing")
+    assert audit_records[0].result_metadata["credential_source"] == "broker"
+    assert audit_records[0].result_metadata["credential_backend"] == "environment"
 
 
 def test_api_pull_request_missing_default_broker_credential_records_audit(
@@ -297,6 +319,8 @@ def test_api_pull_request_missing_default_broker_credential_records_audit(
     assert audit_records[0].result_metadata["provider"] == "github"
     assert audit_records[0].result_metadata["dry_run"] is False
     assert audit_records[0].result_metadata["reason"] == ("credential environment value is missing")
+    assert audit_records[0].result_metadata["credential_source"] == "broker"
+    assert audit_records[0].result_metadata["credential_backend"] == "environment"
 
 
 def test_api_pull_request_rejects_policy_blocked_session(tmp_path: Path) -> None:

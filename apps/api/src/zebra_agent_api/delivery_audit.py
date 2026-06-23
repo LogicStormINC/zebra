@@ -66,5 +66,7 @@ def _metadata_from_response(action: str, response: ApiResponse) -> dict[str, obj
             "commit_sha": pull_request.get("commit_sha"),
             "dry_run": pull_request.get("dry_run"),
             "url": pull_request.get("url"),
+            "credential_source": pull_request.get("credential_source"),
+            "credential_backend": pull_request.get("credential_backend"),
         }
     return {"reason": response.body.get("reason")}

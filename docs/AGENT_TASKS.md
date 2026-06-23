@@ -3257,8 +3257,8 @@ Close Phase 17 with credential backend hardening evidence and define the next im
 
 ### P18-OBS-01 - SCM Credential Source Audit Metadata
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `QA`
 - Depends on: `P17-CLOSE-01`
 - Branch: `codex/p18-obs-01-scm-credential-source-audit`
@@ -3277,14 +3277,14 @@ Add non-secret credential source metadata to SCM delivery audit so operators can
 
 #### Acceptance
 
-- [ ] Broker-backed PR attempts record a non-secret credential source.
-- [ ] Explicit fallback attempts record a non-secret credential source.
-- [ ] Missing credential attempts distinguish broker missing from transport failure.
-- [ ] No raw token value appears in API response or delivery audit metadata.
+- [x] Broker-backed PR attempts record a non-secret credential source.
+- [x] Explicit fallback attempts record a non-secret credential source.
+- [x] Missing credential attempts distinguish broker missing from transport failure.
+- [x] No raw token value appears in API response or delivery audit metadata.
 
 ### P18-OBS-02 - Credential Failure Audit Classification
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `QA`
 - Depends on: `P18-OBS-01`

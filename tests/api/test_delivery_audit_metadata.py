@@ -25,6 +25,8 @@ def test_delivery_audit_records_created_pull_request_metadata(tmp_path: Path) ->
                     "commit_sha": "a" * 40,
                     "dry_run": False,
                     "url": "https://github.example/pulls/1",
+                    "credential_source": "broker",
+                    "credential_backend": "environment",
                 },
             },
         ),
@@ -42,5 +44,7 @@ def test_delivery_audit_records_created_pull_request_metadata(tmp_path: Path) ->
         "commit_sha": "a" * 40,
         "dry_run": False,
         "url": "https://github.example/pulls/1",
+        "credential_source": "broker",
+        "credential_backend": "environment",
     }
     assert "secret-token" not in str(records[0].result_metadata)

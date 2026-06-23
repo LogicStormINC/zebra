@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 17 is closed and Phase 18 SCM delivery audit observability is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
+Phase 17 is closed and Phase 18 SCM delivery audit observability is in progress. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
 
 The next milestone is `Phase 18 - SCM Delivery Audit And Broker Observability`. The current implementation lanes are:
 
@@ -47,8 +47,9 @@ The next milestone is `Phase 18 - SCM Delivery Audit And Broker Observability`. 
 - API composition builds a default environment broker from GitHub SCM settings when no explicit broker is supplied
 - direct SCM env fallback is disabled by default and must be enabled explicitly
 - broker-backed SCM operator docs cover default environment broker execution, token rules, audit inspection, and fallback boundary
-- SCM credential source audit metadata is the next ready implementation lane
-- Phase 17 closeout and next planning is the next ready implementation lane
+- SCM delivery audit now records non-secret credential source and backend metadata for broker-backed and explicit env-fallback GitHub PR execution
+- broker-missing credential failures now retain source metadata without exposing token values
+- credential failure classification is the next ready implementation lane
 
 Read in this order:
 

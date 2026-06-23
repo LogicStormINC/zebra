@@ -11,7 +11,7 @@ from typing import Protocol
 from agent_security import CredentialBroker, ScmCredentialBoundary
 from zebra_agent_config import ScmSettings
 
-from agent_integrations.scm_credentials import github_token_from_broker
+from agent_integrations.scm_credentials import CredentialLookupResult, github_token_from_broker
 from agent_integrations.scm_errors import ScmIntegrationError, ScmUnavailableError
 
 
@@ -44,6 +44,8 @@ class PullRequestPlan:
     status: str
     url: str | None = None
     request_payload: dict[str, object] | None = None
+    credential_source: str | None = None
+    credential_backend: str | None = None
 
 
 class PullRequestGateway(Protocol):
@@ -119,11 +121,15 @@ class GitHubPullRequestGateway:
         *,
         credential_broker: CredentialBroker | None = None,
         credential_now: datetime | None = None,
+        credential_source_fallback: str | None = None,
+        credential_backend_fallback: str | None = None,
         transport: GitHubPullRequestTransport | None = None,
     ) -> None:
         self._config = config
         self._credential_broker = credential_broker
         self._credential_now = credential_now
+        self._credential_source_fallback = credential_source_fallback
+        self._credential_backend_fallback = credential_backend_fallback
         if transport is None:
             from agent_integrations.github import GitHubHttpPullRequestTransport
 
@@ -166,15 +172,26 @@ class GitHubPullRequestGateway:
                 "github pull request execution requires ZEBRA_SCM_PULL_REQUEST_DRY_RUN=false"
             )
         token = self._config.token
+        lookup: CredentialLookupResult | None = None
         if token is None and self._credential_broker is not None:
-            token = github_token_from_broker(
+            lookup = github_token_from_broker(
                 owner=self._config.owner,
                 repo=self._config.repo,
                 credential_broker=self._credential_broker,
                 now=self._credential_now or datetime.now(UTC),
             )
+            token = lookup.token_value
         if token is None:
-            raise ScmUnavailableError("github token is required for pull request execution")
+            metadata: dict[str, object] | None = None
+            if self._credential_source_fallback is not None:
+                metadata = {
+                    "credential_source": self._credential_source_fallback,
+                    "credential_backend": self._credential_backend_fallback,
+                }
+            raise ScmUnavailableError(
+                "github token is required for pull request execution",
+                metadata=metadata,
+            )
         url = self._transport.create_pull_request(payload, token=token)
         return PullRequestPlan(
             provider="github",
@@ -187,6 +204,8 @@ class GitHubPullRequestGateway:
             status="created",
             url=url,
             request_payload=_serializable_payload(payload),
+            credential_source=lookup.credential_source if lookup is not None else "env_fallback",
+            credential_backend=lookup.credential_backend if lookup is not None else "environment",
         )
 
     def build_payload(self, request: PullRequestRequest) -> GitHubPullRequestPayload:
@@ -231,6 +250,8 @@ def build_pull_request_gateway(
         if settings.github_owner is None or settings.github_repo is None:
             raise ScmUnavailableError("github owner and repo are required")
         token_value = None
+        credential_source_fallback = None
+        credential_backend_fallback = None
         if not settings.pull_request_dry_run:
             if credential_broker is None:
                 if allow_env_token_fallback:
@@ -240,6 +261,8 @@ def build_pull_request_gateway(
                         token_value=values.get(settings.github_token_env or ""),
                     )
                     token_value = capability.token_value
+                    credential_source_fallback = "env_fallback"
+                    credential_backend_fallback = "environment"
         return GitHubPullRequestGateway(
             GitHubPullRequestConfig(
                 owner=settings.github_owner,
@@ -250,6 +273,8 @@ def build_pull_request_gateway(
             ),
             credential_broker=credential_broker,
             credential_now=now,
+            credential_source_fallback=credential_source_fallback,
+            credential_backend_fallback=credential_backend_fallback,
             transport=github_transport,
         )
     raise ScmUnavailableError(f"unsupported SCM provider: {settings.provider}")

@@ -452,6 +452,8 @@ Expected result:
 - `result_metadata.status=created` or `pull_request_unavailable`
 - `result_metadata.dry_run=false`
 - `result_metadata.url` when GitHub created a PR
+- `result_metadata.credential_source=broker` for the default API broker path
+- `result_metadata.credential_backend=environment` for the current local backend
 - no raw token value in `result_metadata`
 - `result_metadata.reason=credential environment value is missing` when the broker cannot read the configured token env value
 

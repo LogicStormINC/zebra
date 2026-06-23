@@ -51,3 +51,11 @@ For compatibility, SCM gateway construction retains direct environment token fal
 When a broker is supplied, GitHub non-dry-run execution requests credentials during pull-request planning. Missing broker credentials fail before network execution and are recorded in delivery audit metadata.
 
 When no broker is supplied to API composition, the default environment broker uses `ZEBRA_GITHUB_TOKEN_ENV` as the token variable name. The token value itself remains outside settings and durable state.
+
+Delivery audit metadata may include non-secret credential observability fields:
+
+- `credential_source=broker` when the GitHub credential came through the broker boundary
+- `credential_source=env_fallback` only when explicit adapter fallback is enabled with `allow_env_token_fallback=True`
+- `credential_backend=environment` for the current local backend implementation
+
+These fields are intended for operator diagnosis only. They must never contain raw token material.

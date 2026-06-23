@@ -114,6 +114,7 @@ class SessionPullRequestApi:
                 audit_metadata={
                     "provider": _gateway_provider(self.pull_request_gateway),
                     "dry_run": parsed["dry_run"],
+                    **error.metadata,
                 },
             )
         except (ValueError, ScmIntegrationError) as error:
@@ -149,6 +150,8 @@ class SessionPullRequestApi:
                         "status": plan.status,
                         "url": plan.url,
                         "request_payload": plan.request_payload,
+                        "credential_source": plan.credential_source,
+                        "credential_backend": plan.credential_backend,
                     },
                     "policy_profile": policy_decision.policy_profile,
                 },
