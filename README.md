@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 13 is closed and Phase 14 hardening is underway. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, token, and policy gates.
+Phase 14 is closed and Phase 15 credential broker foundation is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
 
-The next milestone is `Phase 14 - SCM Execution Hardening`. The current implementation lanes are:
+The next milestone is `Phase 15 - Credential Broker Foundation`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -39,7 +39,7 @@ The next milestone is `Phase 14 - SCM Execution Hardening`. The current implemen
 - SCM execution audit metadata now records normalized provider, status, URL, commit SHA, dry-run flag, and unavailable reasons
 - SCM token redaction regression coverage now checks PR plans, API responses, delivery audit records, and settings snapshots
 - remote SCM operator safety runbook coverage documents dry-run first, explicit opt-in, audit inspection, token rules, and rollback steps
-- Phase 14 closeout and next planning is the next ready implementation lane
+- credential capability domain modeling is the next ready implementation lane
 
 Read in this order:
 
@@ -83,4 +83,4 @@ For the current local operator workflow, start with `docs/operator_runbook.md`. 
 - local FastAPI serving
 - SSE session stream replay
 
-For the latest phase closeout summary, see `docs/Phase13_API_Composition_And_Guarded_SCM_Execution_验收记录.md`.
+For the latest phase closeout summary, see `docs/Phase14_SCM_Execution_Hardening_验收记录.md`.

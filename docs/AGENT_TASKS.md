@@ -2938,8 +2938,8 @@ Document the exact safe operator path for enabling guarded GitHub PR execution.
 
 ### P14-CLOSE-01 - Phase 14 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P14-DOC-01`
 - Branch: `codex/p14-closeout-next-plan`
@@ -2957,6 +2957,88 @@ Close Phase 14 with an acceptance record and define the next implementation phas
 
 #### Acceptance
 
-- [ ] Phase 14 completed tasks are mapped to behavior and validation evidence.
-- [ ] Next phase starter tasks are ready and path-scoped.
-- [ ] README and PROGRESS point to the current implementation state.
+- [x] Phase 14 completed tasks are mapped to behavior and validation evidence.
+- [x] Next phase starter tasks are ready and path-scoped.
+- [x] README and PROGRESS point to the current implementation state.
+
+## Phase 15 Task Board
+
+### P15-SEC-01 - Credential Capability Domain Model
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `SEC`
+- Depends on: `P14-CLOSE-01`
+- Branch: `codex/p15-sec-01-credential-capability-model`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define the local credential capability model needed before adding concrete credential broker backends.
+
+#### Deliverables
+
+- short-lived credential capability value object
+- scope and audience fields for SCM credentials
+- deterministic redaction serialization
+- regression tests proving raw values stay outside serializable snapshots
+
+#### Acceptance
+
+- [ ] Capability model validates provider, scope, audience, and expiry.
+- [ ] Redacted serialization never emits raw token values.
+- [ ] Tests cover valid, invalid, and expired capability cases.
+- [ ] No concrete secret backend is introduced.
+
+### P15-SEC-02 - Credential Broker Port
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `SEC`
+- Depends on: `P15-SEC-01`
+- Branch: `codex/p15-sec-02-credential-broker-port`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define a credential broker Port that can issue scoped runtime capabilities without coupling core logic to environment variables or secret backends.
+
+#### Deliverables
+
+- broker Protocol or interface
+- in-memory fake broker for tests
+- explicit unavailable and denied error types
+- docs describing local-only MVP limits
+
+#### Acceptance
+
+- [ ] Broker Port can request an SCM credential by provider and audience.
+- [ ] Fake broker returns redacted capabilities in tests.
+- [ ] Error paths distinguish missing, denied, and unavailable credentials.
+- [ ] No token value is stored in durable session state.
+
+### P15-INT-01 - SCM Broker Lookup Adapter
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `CTX`
+- Depends on: `P15-SEC-02`
+- Branch: `codex/p15-int-01-scm-broker-lookup-adapter`
+- Owned paths: `packages/agent-integrations/`, `packages/agent-security/`, `tests/agent_integrations/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Route SCM token lookup through the broker boundary while preserving local-only and dry-run defaults.
+
+#### Deliverables
+
+- broker-backed SCM credential lookup path
+- integration tests for dry-run, missing credential, and fake credential execution
+- documentation of the env-token fallback boundary if retained
+
+#### Acceptance
+
+- [ ] Local-only behavior remains unchanged.
+- [ ] GitHub dry-run does not require a credential.
+- [ ] GitHub non-dry-run can use a broker-issued test capability.
+- [ ] Missing broker credential fails before network execution.

@@ -2156,3 +2156,25 @@
   - `README.md`
 - 验证：
   - `make check`
+
+## 2026-06-23 Phase 14 Closeout And Phase 15 Planning
+
+- 执行 `P14-CLOSE-01 - Phase 14 Closeout And Next Planning`
+- 新增文档：
+  - `docs/Phase14_SCM_Execution_Hardening_验收记录.md`
+- Phase 14 验收结论：
+  - SCM execution audit metadata 完成
+  - token redaction regression gate 完成
+  - remote SCM operator safety runbook 完成
+  - local-only 和 dry-run 默认安全边界保持不变
+- Phase 15 首批任务：
+  - `P15-SEC-01 - Credential Capability Domain Model`
+  - `P15-SEC-02 - Credential Broker Port`
+  - `P15-INT-01 - SCM Broker Lookup Adapter`
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
+  - `make test`

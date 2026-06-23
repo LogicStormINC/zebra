@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 14 - SCM Execution Hardening`
-- Repository status: `phase 14 SCM execution hardening complete`
+- Active phase: `Phase 15 - Credential Broker Foundation`
+- Repository status: `phase 15 ready`
 - Current focus:
-  - close Phase 14 and define the next implementation phase
+  - define credential capabilities before introducing concrete secret backends
   - keep local-only PR planning as the default behavior
-  - keep live SCM execution behind explicit provider, dry-run, token, and policy gates
+  - keep live SCM execution behind explicit provider, dry-run, credential, and policy gates
 
 ## Completed
 
@@ -122,6 +122,7 @@
 - `P14-OBS-01 - SCM Execution Audit Hardening`
 - `P14-SEC-01 - SCM Token Redaction Regression Gate`
 - `P14-DOC-01 - Remote SCM Operator Safety Runbook`
+- `P14-CLOSE-01 - Phase 14 Closeout And Next Planning`
 
 ## Current Focus
 
@@ -134,11 +135,14 @@
 - SCM execution audit metadata now normalizes provider, status, URL, commit SHA, dry-run flag, and unavailable reasons without token values
 - SCM token redaction regression coverage now checks PR plans, API responses, delivery audit records, and settings snapshots
 - remote SCM operator safety runbook now documents dry-run first, explicit opt-in, token rules, audit inspection, and rollback steps
-- Phase 14 is ready for closeout and next-phase planning
+- Phase 14 is closed with `docs/Phase14_SCM_Execution_Hardening_验收记录.md`
+- Phase 15 starts credential broker foundation work before adding concrete secret backends
 
 ## Next Unlocks
 
-- `P14-CLOSE-01 - Phase 14 Closeout And Next Planning` is ready
+- `P15-SEC-01 - Credential Capability Domain Model` is ready
+- `P15-SEC-02 - Credential Broker Port` unlocks after capability model
+- `P15-INT-01 - SCM Broker Lookup Adapter` unlocks after broker Port
 
 ## Active Documents
 
