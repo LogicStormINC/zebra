@@ -2062,3 +2062,26 @@
   - `uv run pytest tests/agent_security/test_credentials.py tests/config/test_settings.py`
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 13 Guarded GitHub Pull Request Execution
+
+- 执行 `P13-INT-01 - Guarded GitHub Pull Request Execution`
+- 新增：
+  - `GitHubPullRequestTransport`
+  - `GitHubHttpPullRequestTransport`
+  - settings-driven token lookup in `build_pull_request_gateway`
+- 行为边界：
+  - local-only 仍为默认 provider
+  - GitHub execution 必须显式关闭 `ZEBRA_SCM_PULL_REQUEST_DRY_RUN`
+  - 缺 token 时在网络调用前失败
+  - 测试使用 fake transport，不依赖 live GitHub
+  - 成功执行返回 `status=created` 和 PR URL
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P13-INT-01` 标记为 `Done`
+  - `PROGRESS.md`
+  - `README.md`
+  - `docs/operator_runbook.md`
+- 验证：
+  - `uv run pytest tests/agent_integrations/test_scm.py tests/api/test_session_pull_request.py`
+  - `make check`
+  - `make test`

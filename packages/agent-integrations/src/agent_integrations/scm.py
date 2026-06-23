@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import os
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from subprocess import run
 from typing import Protocol
 
+from agent_security import ScmCredentialBoundary
 from zebra_agent_config import ScmSettings
 
 
@@ -52,12 +55,23 @@ class PullRequestGateway(Protocol):
         raise NotImplementedError
 
 
+class GitHubPullRequestTransport(Protocol):
+    def create_pull_request(
+        self,
+        payload: GitHubPullRequestPayload,
+        *,
+        token: str,
+    ) -> str:
+        raise NotImplementedError
+
+
 @dataclass(frozen=True)
 class GitHubPullRequestConfig:
     owner: str
     repo: str
     token: str | None = None
     api_base_url: str = "https://api.github.com"
+    execution_enabled: bool = False
 
     def __post_init__(self) -> None:
         if not self.owner.strip():
@@ -103,8 +117,18 @@ class LocalOnlyPullRequestGateway:
 
 
 class GitHubPullRequestGateway:
-    def __init__(self, config: GitHubPullRequestConfig) -> None:
+    def __init__(
+        self,
+        config: GitHubPullRequestConfig,
+        *,
+        transport: GitHubPullRequestTransport | None = None,
+    ) -> None:
         self._config = config
+        if transport is None:
+            from agent_integrations.github import GitHubHttpPullRequestTransport
+
+            transport = GitHubHttpPullRequestTransport()
+        self._transport = transport
 
     def plan(self, workspace_root: Path, request: PullRequestRequest) -> PullRequestPlan:
         root = workspace_root.expanduser().resolve()
@@ -137,9 +161,25 @@ class GitHubPullRequestGateway:
                 status="dry_run",
                 request_payload=_serializable_payload(payload),
             )
+        if not self._config.execution_enabled:
+            raise ScmUnavailableError(
+                "github pull request execution requires ZEBRA_SCM_PULL_REQUEST_DRY_RUN=false"
+            )
         if self._config.token is None:
             raise ScmUnavailableError("github token is required for pull request execution")
-        raise ScmUnavailableError("github pull request execution is not implemented")
+        url = self._transport.create_pull_request(payload, token=self._config.token)
+        return PullRequestPlan(
+            provider="github",
+            title=request.title.strip(),
+            body=request.body.strip(),
+            base_branch=request.base_branch.strip(),
+            head_branch=head_branch,
+            commit_sha=commit_sha,
+            dry_run=False,
+            status="created",
+            url=url,
+            request_payload=_serializable_payload(payload),
+        )
 
     def build_payload(self, request: PullRequestRequest) -> GitHubPullRequestPayload:
         head_branch = request.head_branch
@@ -168,19 +208,34 @@ class GitHubPullRequestGateway:
         )
 
 
-def build_pull_request_gateway(settings: ScmSettings) -> PullRequestGateway:
+def build_pull_request_gateway(
+    settings: ScmSettings,
+    *,
+    env: Mapping[str, str] | None = None,
+    github_transport: GitHubPullRequestTransport | None = None,
+) -> PullRequestGateway:
     if settings.provider == "local-only":
         return LocalOnlyPullRequestGateway()
     if settings.provider == "github":
         if settings.github_owner is None or settings.github_repo is None:
             raise ScmUnavailableError("github owner and repo are required")
+        values = env or os.environ
+        token_value = None
+        if not settings.pull_request_dry_run:
+            capability = ScmCredentialBoundary().capability_from_settings(
+                settings,
+                token_value=values.get(settings.github_token_env or ""),
+            )
+            token_value = capability.token_value
         return GitHubPullRequestGateway(
             GitHubPullRequestConfig(
                 owner=settings.github_owner,
                 repo=settings.github_repo,
-                token=None,
+                token=token_value,
                 api_base_url=settings.github_api_base_url,
-            )
+                execution_enabled=not settings.pull_request_dry_run,
+            ),
+            transport=github_transport,
         )
     raise ScmUnavailableError(f"unsupported SCM provider: {settings.provider}")
 

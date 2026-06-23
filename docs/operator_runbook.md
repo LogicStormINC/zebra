@@ -344,6 +344,12 @@ Rules:
 - `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true` keeps provider selection non-mutating until remote execution is explicitly implemented.
 - SCM credential snapshots store token environment variable names only.
 - Any token value handled by the credential boundary serializes as `<redacted>`.
+- GitHub PR execution requires all of the following:
+- `ZEBRA_SCM_PROVIDER=github`
+- `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=false`
+- configured `ZEBRA_GITHUB_TOKEN_ENV` with a token available in the process environment
+- a session created with `policy_profile=full_access`
+- tests and runbook examples should prefer dry-run unless a real repository side effect is intentional.
 
 Append one more user message to an existing session:
 

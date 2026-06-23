@@ -1,5 +1,6 @@
 """Provider integrations for Zebra Agent."""
 
+from agent_integrations.github import GitHubHttpPullRequestTransport
 from agent_integrations.openai_compatible import (
     OpenAICompatibleModelGateway,
     build_model_gateway,
@@ -8,6 +9,7 @@ from agent_integrations.scm import (
     GitHubPullRequestConfig,
     GitHubPullRequestGateway,
     GitHubPullRequestPayload,
+    GitHubPullRequestTransport,
     LocalOnlyPullRequestGateway,
     PullRequestGateway,
     PullRequestPlan,
@@ -21,8 +23,10 @@ __all__ = [
     "LocalOnlyPullRequestGateway",
     "PullRequestGateway",
     "GitHubPullRequestConfig",
+    "GitHubHttpPullRequestTransport",
     "GitHubPullRequestGateway",
     "GitHubPullRequestPayload",
+    "GitHubPullRequestTransport",
     "OpenAICompatibleModelGateway",
     "PullRequestPlan",
     "PullRequestRequest",

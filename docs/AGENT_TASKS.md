@@ -2774,8 +2774,8 @@ Split `ZebraAgentApi` composition before adding more API behavior, keeping every
 
 ### P13-INT-01 - Guarded GitHub Pull Request Execution
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P13-API-01`, `P13-SEC-01`
 - Branch: `codex/p13-int-01-guarded-github-pr-execution`
@@ -2794,10 +2794,10 @@ Add the first guarded GitHub PR execution path while preserving local-only defau
 
 #### Acceptance
 
-- [ ] Local-only remains the default with no remote side effect.
-- [ ] GitHub execution requires explicit provider and dry-run disablement.
-- [ ] Missing token fails before any network call.
-- [ ] Tests do not require live GitHub access.
+- [x] Local-only remains the default with no remote side effect.
+- [x] GitHub execution requires explicit provider and dry-run disablement.
+- [x] Missing token fails before any network call.
+- [x] Tests do not require live GitHub access.
 
 ### P13-SEC-01 - SCM Credential Boundary Draft
 

@@ -78,7 +78,7 @@ def test_api_pull_request_selects_github_dry_run_gateway(tmp_path: Path) -> None
     session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
 
     response = create_app(
-        database_path, settings=_settings(None, scm=_github_scm())
+        database_path, settings=_settings(None, scm=_github_scm(pull_request_dry_run=False))
     ).open_session_pull_request(
         str(session_id),
         {
@@ -121,7 +121,7 @@ def test_api_pull_request_github_non_dry_run_fails_closed(tmp_path: Path) -> Non
     session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
 
     response = create_app(
-        database_path, settings=_settings(None, scm=_github_scm())
+        database_path, settings=_settings(None, scm=_github_scm(pull_request_dry_run=False))
     ).open_session_pull_request(
         str(session_id),
         {
@@ -139,6 +139,12 @@ def test_api_pull_request_github_non_dry_run_fails_closed(tmp_path: Path) -> Non
         "reason": "github token is required for pull request execution",
         "idempotency_key": None,
     }
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].status == "pull_request_unavailable"
+    assert audit_records[0].result_metadata["reason"] == (
+        "github token is required for pull request execution"
+    )
 
 
 def test_api_pull_request_rejects_policy_blocked_session(tmp_path: Path) -> None:
@@ -368,12 +374,12 @@ def _local_scm() -> ScmSettings:
     )
 
 
-def _github_scm() -> ScmSettings:
+def _github_scm(*, pull_request_dry_run: bool = True) -> ScmSettings:
     return ScmSettings(
         provider="github",
         github_owner="octo-org",
         github_repo="zebra-agent",
-        github_token_env="GITHUB_TOKEN",
+        github_token_env="ZEBRA_TEST_MISSING_GITHUB_TOKEN",
         github_api_base_url="https://api.github.com",
-        pull_request_dry_run=True,
+        pull_request_dry_run=pull_request_dry_run,
     )
