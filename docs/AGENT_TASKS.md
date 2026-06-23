@@ -3230,8 +3230,8 @@ Update operator documentation for broker-backed SCM execution and the env fallba
 
 ### P17-CLOSE-01 - Phase 17 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P17-DOC-01`
 - Branch: `codex/p17-closeout-next-plan`
@@ -3249,6 +3249,84 @@ Close Phase 17 with credential backend hardening evidence and define the next im
 
 #### Acceptance
 
-- [ ] Phase 17 completed tasks are mapped to behavior and validation evidence.
-- [ ] Broker-backed operator flow and fallback boundary are recorded.
+- [x] Phase 17 completed tasks are mapped to behavior and validation evidence.
+- [x] Broker-backed operator flow and fallback boundary are recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 18 Task Board
+
+### P18-OBS-01 - SCM Credential Source Audit Metadata
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `QA`
+- Depends on: `P17-CLOSE-01`
+- Branch: `codex/p18-obs-01-scm-credential-source-audit`
+- Owned paths: `apps/api/`, `packages/agent-integrations/`, `packages/agent-security/`, `tests/api/`, `tests/agent_integrations/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add non-secret credential source metadata to SCM delivery audit so operators can distinguish broker-backed, explicit fallback, and missing credential paths.
+
+#### Deliverables
+
+- redacted credential source metadata model or helper
+- pull-request audit metadata update
+- tests proving token values are absent
+- docs update for audit interpretation
+
+#### Acceptance
+
+- [ ] Broker-backed PR attempts record a non-secret credential source.
+- [ ] Explicit fallback attempts record a non-secret credential source.
+- [ ] Missing credential attempts distinguish broker missing from transport failure.
+- [ ] No raw token value appears in API response or delivery audit metadata.
+
+### P18-OBS-02 - Credential Failure Audit Classification
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `QA`
+- Depends on: `P18-OBS-01`
+- Branch: `codex/p18-obs-02-credential-failure-audit-classification`
+- Owned paths: `apps/api/`, `packages/agent-integrations/`, `packages/agent-security/`, `tests/api/`, `tests/agent_integrations/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Classify credential missing, denied, unavailable, and transport failures in operator-facing delivery audit without exposing secrets.
+
+#### Deliverables
+
+- deterministic failure classification values
+- API and integration tests for each credential failure family
+- runbook update for remediation guidance
+
+#### Acceptance
+
+- [ ] Missing credential audit is distinguishable from denied credential audit.
+- [ ] Broker unavailable audit is distinguishable from GitHub transport failure audit.
+- [ ] Remediation guidance is documented.
+
+### P18-CLOSE-01 - Phase 18 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P18-OBS-02`
+- Branch: `codex/p18-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 18 with SCM delivery audit and credential observability evidence.
+
+#### Deliverables
+
+- Phase 18 acceptance record
+- next phase task board
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Credential source and failure classification evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

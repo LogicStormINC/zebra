@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 16 is closed and Phase 17 credential backend hardening is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
+Phase 17 is closed and Phase 18 SCM delivery audit observability is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
 
-The next milestone is `Phase 17 - Credential Backend Hardening`. The current implementation lanes are:
+The next milestone is `Phase 18 - SCM Delivery Audit And Broker Observability`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -47,6 +47,7 @@ The next milestone is `Phase 17 - Credential Backend Hardening`. The current imp
 - API composition builds a default environment broker from GitHub SCM settings when no explicit broker is supplied
 - direct SCM env fallback is disabled by default and must be enabled explicitly
 - broker-backed SCM operator docs cover default environment broker execution, token rules, audit inspection, and fallback boundary
+- SCM credential source audit metadata is the next ready implementation lane
 - Phase 17 closeout and next planning is the next ready implementation lane
 
 Read in this order:
@@ -91,4 +92,4 @@ For the current local operator workflow, start with `docs/operator_runbook.md`. 
 - local FastAPI serving
 - SSE session stream replay
 
-For the latest phase closeout summary, see `docs/Phase16_Local_Credential_Backend_And_API_Wiring_验收记录.md`.
+For the latest phase closeout summary, see `docs/Phase17_Credential_Backend_Hardening_验收记录.md`.

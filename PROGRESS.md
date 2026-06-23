@@ -2,10 +2,10 @@
 
 ## Current Phase
 
-- Active phase: `Phase 17 - Credential Backend Hardening`
-- Repository status: `phase 17 credential backend hardening complete`
+- Active phase: `Phase 18 - SCM Delivery Audit And Broker Observability`
+- Repository status: `phase 18 ready`
 - Current focus:
-  - close Phase 17 and define the next implementation phase
+  - add credential source metadata to SCM delivery audit
   - keep local-only PR planning as the default behavior
   - keep live SCM execution behind explicit provider, dry-run, credential, and policy gates
 
@@ -133,6 +133,7 @@
 - `P17-APP-01 - API Default Environment Broker Factory`
 - `P17-INT-01 - SCM Env Fallback Boundary`
 - `P17-DOC-01 - Broker-Backed SCM Operator Docs`
+- `P17-CLOSE-01 - Phase 17 Closeout And Next Planning`
 
 ## Current Focus
 
@@ -156,11 +157,14 @@
 - API composition now builds a default environment broker from GitHub SCM settings when explicit broker injection is not supplied
 - direct SCM env fallback is now disabled by default and requires explicit `allow_env_token_fallback=True`
 - broker-backed SCM operator docs now describe default environment broker execution, token handling, audit inspection, and fallback boundary
-- Phase 17 is ready for closeout and next-phase planning
+- Phase 17 is closed with `docs/Phase17_Credential_Backend_Hardening_验收记录.md`
+- Phase 18 should add non-secret credential source and failure classification to SCM delivery audit
 
 ## Next Unlocks
 
-- `P17-CLOSE-01 - Phase 17 Closeout And Next Planning` is ready
+- `P18-OBS-01 - SCM Credential Source Audit Metadata` is ready
+- `P18-OBS-02 - Credential Failure Audit Classification` unlocks after source metadata
+- `P18-CLOSE-01 - Phase 18 Closeout And Next Planning` unlocks after failure classification
 
 ## Active Documents
 

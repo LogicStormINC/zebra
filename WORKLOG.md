@@ -2376,3 +2376,24 @@
   - `README.md`
 - 验证：
   - `make check`
+
+## 2026-06-23 Phase 17 Closeout And Phase 18 Planning
+
+- 执行 `P17-CLOSE-01 - Phase 17 Closeout And Next Planning`
+- 新增文档：
+  - `docs/Phase17_Credential_Backend_Hardening_验收记录.md`
+- Phase 17 验收结论：
+  - API default environment broker factory 完成
+  - direct SCM env fallback 默认关闭，显式 compatibility flag 保留
+  - broker-backed SCM operator docs 完成
+- Phase 18 首批任务：
+  - `P18-OBS-01 - SCM Credential Source Audit Metadata`
+  - `P18-OBS-02 - Credential Failure Audit Classification`
+  - `P18-CLOSE-01 - Phase 18 Closeout And Next Planning`
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
+  - `make test`
