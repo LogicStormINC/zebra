@@ -3153,8 +3153,8 @@ Close Phase 16 with local credential backend and API composition evidence.
 
 ### P17-APP-01 - API Default Environment Broker Factory
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P16-CLOSE-01`
 - Branch: `codex/p17-app-01-api-default-environment-broker-factory`
@@ -3173,14 +3173,14 @@ Make API composition construct a default environment-backed credential broker fr
 
 #### Acceptance
 
-- [ ] Local-only API behavior remains unchanged.
-- [ ] GitHub dry-run does not require a broker credential.
-- [ ] GitHub non-dry-run can use the default environment broker in tests.
-- [ ] Missing default broker env value records delivery audit metadata.
+- [x] Local-only API behavior remains unchanged.
+- [x] GitHub dry-run does not require a broker credential.
+- [x] GitHub non-dry-run can use the default environment broker in tests.
+- [x] Missing default broker env value records delivery audit metadata.
 
 ### P17-INT-01 - SCM Env Fallback Boundary
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `CTX`
 - Depends on: `P17-APP-01`

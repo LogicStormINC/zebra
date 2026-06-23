@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,7 @@ def create_http_app(
     *,
     settings: ZebraAgentSettings | None = None,
     credential_broker: CredentialBroker | None = None,
+    credential_env: Mapping[str, str] | None = None,
     github_transport: GitHubPullRequestTransport | None = None,
 ) -> FastAPI:
     active_settings = settings or load_settings()
@@ -30,6 +32,7 @@ def create_http_app(
             database_path,
             settings=active_settings,
             credential_broker=credential_broker,
+            credential_env=credential_env,
             github_transport=github_transport,
         )
     )

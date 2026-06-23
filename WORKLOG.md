@@ -2323,3 +2323,22 @@
 - 验证：
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 17 API Default Environment Broker Factory
+
+- 执行 `P17-APP-01 - API Default Environment Broker Factory`
+- 新增：
+  - `zebra_agent_api.credential_broker.build_default_credential_broker`
+- 行为更新：
+  - local-only API 不构造 credential broker
+  - GitHub API composition 在未显式注入 broker 时从 SCM settings 构造 `EnvironmentCredentialBroker`
+  - GitHub non-dry-run API 路径可通过默认 environment broker 使用 fake transport 测试
+  - missing default broker env value 在网络执行前失败并记录 delivery audit metadata
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P17-APP-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P17-INT-01` 解锁为 `Ready`
+  - `docs/Credential_Broker_Foundation.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run pytest tests/api/test_credential_broker.py tests/api/test_session_pull_request.py tests/agent_security/test_environment_broker.py`

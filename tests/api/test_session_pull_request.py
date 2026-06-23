@@ -145,7 +145,7 @@ def test_api_pull_request_github_non_dry_run_fails_closed(tmp_path: Path) -> Non
     assert response.body == {
         "session_id": str(session_id),
         "status": "pull_request_unavailable",
-        "reason": "github token is required for pull request execution",
+        "reason": "credential environment value is missing",
         "idempotency_key": None,
     }
     audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
@@ -154,7 +154,7 @@ def test_api_pull_request_github_non_dry_run_fails_closed(tmp_path: Path) -> Non
     assert audit_records[0].result_metadata["provider"] == "github"
     assert audit_records[0].result_metadata["dry_run"] is False
     assert audit_records[0].result_metadata["reason"] == (
-        "github token is required for pull request execution"
+        "credential environment value is missing"
     )
 
 
@@ -197,6 +197,35 @@ def test_api_pull_request_uses_broker_credential_for_github_execution(
     assert "broker-token" not in repr(audit_records[0].result_metadata)
 
 
+def test_api_pull_request_uses_default_environment_broker_for_github_execution(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
+
+    response = create_app(
+        database_path,
+        settings=_settings(None, scm=_github_scm(pull_request_dry_run=False)),
+        credential_env={"ZEBRA_TEST_MISSING_GITHUB_TOKEN": "default-broker-token"},
+        github_transport=transport,
+    ).open_session_pull_request(
+        str(session_id),
+        {
+            "title": "Add feature",
+            "base_branch": "main",
+            "head_branch": "feature/zebra",
+            "dry_run": False,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.body["pull_request"]["status"] == "created"
+    assert transport.token == "default-broker-token"
+    assert "default-broker-token" not in repr(response.body)
+
+
 def test_api_pull_request_missing_broker_credential_records_audit(
     tmp_path: Path,
 ) -> None:
@@ -231,6 +260,40 @@ def test_api_pull_request_missing_broker_credential_records_audit(
     audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
     assert len(audit_records) == 1
     assert audit_records[0].status == "pull_request_unavailable"
+    assert audit_records[0].result_metadata["provider"] == "github"
+    assert audit_records[0].result_metadata["dry_run"] is False
+    assert audit_records[0].result_metadata["reason"] == ("credential environment value is missing")
+
+
+def test_api_pull_request_missing_default_broker_credential_records_audit(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
+
+    response = create_app(
+        database_path,
+        settings=_settings(None, scm=_github_scm(pull_request_dry_run=False)),
+        credential_env={},
+        github_transport=transport,
+    ).open_session_pull_request(
+        str(session_id),
+        {
+            "title": "Add feature",
+            "base_branch": "main",
+            "head_branch": "feature/zebra",
+            "dry_run": False,
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.body["status"] == "pull_request_unavailable"
+    assert response.body["reason"] == "credential environment value is missing"
+    assert transport.token is None
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
     assert audit_records[0].result_metadata["provider"] == "github"
     assert audit_records[0].result_metadata["dry_run"] is False
     assert audit_records[0].result_metadata["reason"] == ("credential environment value is missing")

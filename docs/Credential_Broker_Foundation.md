@@ -16,6 +16,7 @@ Phase 15 starts with local contracts only. It does not add a concrete secret bac
 - `EnvironmentCredentialBroker` can issue local capabilities from configured environment variable names.
 - `EnvironmentCredentialBinding` maps provider, audience, scopes, token env name, and expiry.
 - API composition can inject a credential broker into pull-request gateway construction.
+- API composition now builds a default `EnvironmentCredentialBroker` from GitHub SCM settings when no explicit broker is supplied.
 
 ## Error Semantics
 
@@ -48,3 +49,5 @@ These errors intentionally distinguish operator remediation paths:
 For compatibility, the current API composition path can still use the existing environment token fallback when no broker is supplied. Future secret backend work should replace that fallback with a concrete broker implementation rather than spreading environment reads into additional adapters.
 
 When a broker is supplied, GitHub non-dry-run execution requests credentials during pull-request planning. Missing broker credentials fail before network execution and are recorded in delivery audit metadata.
+
+When no broker is supplied to API composition, the default environment broker uses `ZEBRA_GITHUB_TOKEN_ENV` as the token variable name. The token value itself remains outside settings and durable state.

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
@@ -40,6 +41,7 @@ from zebra_agent_worker import (
     WorkerExecutionError,
 )
 
+from zebra_agent_api.credential_broker import build_default_credential_broker
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_commit import SessionCommitApi
@@ -363,13 +365,20 @@ def create_app(
     *,
     settings: ZebraAgentSettings | None = None,
     credential_broker: CredentialBroker | None = None,
+    credential_env: Mapping[str, str] | None = None,
     github_transport: GitHubPullRequestTransport | None = None,
 ) -> ZebraAgentApi:
     active_settings = settings or load_settings()
+    active_broker = credential_broker
+    if active_broker is None:
+        active_broker = build_default_credential_broker(
+            active_settings.scm,
+            env=credential_env,
+        )
     return ZebraAgentApi(
         database_path=Path(database_path or active_settings.database_url),
         settings=active_settings,
-        credential_broker=credential_broker,
+        credential_broker=active_broker,
         github_transport=github_transport,
     )
 
