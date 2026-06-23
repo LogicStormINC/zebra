@@ -3019,8 +3019,8 @@ Define a credential broker Port that can issue scoped runtime capabilities witho
 
 ### P15-INT-01 - SCM Broker Lookup Adapter
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CTX`
 - Depends on: `P15-SEC-02`
 - Branch: `codex/p15-int-01-scm-broker-lookup-adapter`
@@ -3038,7 +3038,32 @@ Route SCM token lookup through the broker boundary while preserving local-only a
 
 #### Acceptance
 
-- [ ] Local-only behavior remains unchanged.
-- [ ] GitHub dry-run does not require a credential.
-- [ ] GitHub non-dry-run can use a broker-issued test capability.
-- [ ] Missing broker credential fails before network execution.
+- [x] Local-only behavior remains unchanged.
+- [x] GitHub dry-run does not require a credential.
+- [x] GitHub non-dry-run can use a broker-issued test capability.
+- [x] Missing broker credential fails before network execution.
+
+### P15-CLOSE-01 - Phase 15 Closeout And Next Planning
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P15-INT-01`
+- Branch: `codex/p15-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 15 with an acceptance record and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 15 acceptance record
+- task registry update for the next phase
+- project progress update
+
+#### Acceptance
+
+- [ ] Phase 15 completed tasks are mapped to behavior and validation evidence.
+- [ ] Credential broker deferrals and env fallback boundaries are explicit.
+- [ ] Next phase starter tasks are ready and path-scoped.

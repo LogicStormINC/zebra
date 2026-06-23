@@ -2222,3 +2222,21 @@
 - 验证：
   - `uv run pytest tests/agent_security/test_broker.py tests/agent_security/test_capabilities.py`
   - `make check`
+
+## 2026-06-23 Phase 15 SCM Broker Lookup Adapter
+
+- 执行 `P15-INT-01 - SCM Broker Lookup Adapter`
+- 行为更新：
+  - `build_pull_request_gateway` 支持可选 `credential_broker`
+  - GitHub dry-run 不请求 broker credential
+  - GitHub non-dry-run 可使用 broker-issued capability
+  - broker missing/denied/unavailable 错误在网络执行前转为 `ScmUnavailableError`
+  - 没有传入 broker 时保留现有 env-token fallback，以兼容当前 API composition path
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P15-INT-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 增加 `P15-CLOSE-01 - Phase 15 Closeout And Next Planning`
+  - `docs/Credential_Broker_Foundation.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run pytest tests/agent_integrations/test_scm.py tests/agent_security/test_broker.py`

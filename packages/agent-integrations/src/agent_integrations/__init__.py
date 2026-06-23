@@ -14,10 +14,9 @@ from agent_integrations.scm import (
     PullRequestGateway,
     PullRequestPlan,
     PullRequestRequest,
-    ScmIntegrationError,
-    ScmUnavailableError,
     build_pull_request_gateway,
 )
+from agent_integrations.scm_errors import ScmIntegrationError, ScmUnavailableError
 
 __all__ = [
     "LocalOnlyPullRequestGateway",

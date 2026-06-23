@@ -34,10 +34,12 @@ These errors intentionally distinguish operator remediation paths:
 - No GitHub App installation token flow.
 - No SCM execution path wiring yet.
 
-## Next Step
+## SCM Adapter Status
 
-`P15-INT-01` should route SCM token lookup through this broker boundary while preserving:
+`P15-INT-01` routes optional SCM token lookup through this broker boundary while preserving:
 
 - local-only default behavior
 - GitHub dry-run without credential lookup
 - fail-closed non-dry-run behavior when the broker cannot issue a capability
+
+For compatibility, the current API composition path can still use the existing environment token fallback when no broker is supplied. Future secret backend work should replace that fallback with a concrete broker implementation rather than spreading environment reads into additional adapters.

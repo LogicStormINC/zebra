@@ -3,9 +3,9 @@
 ## Current Phase
 
 - Active phase: `Phase 15 - Credential Broker Foundation`
-- Repository status: `phase 15 credential broker port complete`
+- Repository status: `phase 15 credential broker foundation complete`
 - Current focus:
-  - route SCM token lookup through the broker boundary
+  - close Phase 15 and define the next implementation phase
   - keep local-only PR planning as the default behavior
   - keep live SCM execution behind explicit provider, dry-run, credential, and policy gates
 
@@ -125,6 +125,7 @@
 - `P14-CLOSE-01 - Phase 14 Closeout And Next Planning`
 - `P15-SEC-01 - Credential Capability Domain Model`
 - `P15-SEC-02 - Credential Broker Port`
+- `P15-INT-01 - SCM Broker Lookup Adapter`
 
 ## Current Focus
 
@@ -140,11 +141,12 @@
 - Phase 14 is closed with `docs/Phase14_SCM_Execution_Hardening_验收记录.md`
 - credential capability domain model now covers provider, audience, scopes, expiry, and redacted serialization
 - credential broker Port now defines SCM credential requests, in-memory test broker, and missing/denied/unavailable errors
-- Phase 15 should route SCM credential lookup through the broker boundary before adding concrete secret backends
+- SCM gateway construction can use broker-issued capabilities for GitHub non-dry-run execution while preserving local-only and dry-run defaults
+- Phase 15 is ready for closeout and next-phase planning
 
 ## Next Unlocks
 
-- `P15-INT-01 - SCM Broker Lookup Adapter` is ready
+- `P15-CLOSE-01 - Phase 15 Closeout And Next Planning` is ready
 
 ## Active Documents
 

@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from pathlib import Path
 from subprocess import run
 
@@ -11,6 +12,7 @@ from agent_integrations import (
     ScmUnavailableError,
     build_pull_request_gateway,
 )
+from agent_security import CredentialCapability, InMemoryCredentialBroker
 from zebra_agent_config import ScmSettings
 
 
@@ -296,6 +298,72 @@ def test_build_pull_request_gateway_reads_token_only_when_execution_enabled() ->
     assert isinstance(gateway, GitHubPullRequestGateway)
 
 
+def test_build_pull_request_gateway_dry_run_does_not_request_broker_credential(
+    tmp_path: Path,
+) -> None:
+    workspace = _git_workspace(tmp_path / "workspace")
+    gateway = build_pull_request_gateway(
+        _github_scm(pull_request_dry_run=True),
+        credential_broker=InMemoryCredentialBroker(unavailable=True),
+    )
+
+    plan = gateway.plan(
+        workspace,
+        PullRequestRequest(
+            title="Add feature",
+            body="Implementation details.",
+            base_branch="main",
+            head_branch="feature/zebra",
+            dry_run=True,
+        ),
+    )
+
+    assert plan.provider == "github"
+    assert plan.status == "dry_run"
+    assert plan.request_payload is not None
+    assert "Authorization" not in plan.request_payload["headers"]
+
+
+def test_build_pull_request_gateway_uses_broker_credential_for_execution(
+    tmp_path: Path,
+) -> None:
+    workspace = _git_workspace(tmp_path / "workspace")
+    transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
+    gateway = build_pull_request_gateway(
+        _github_scm(pull_request_dry_run=False),
+        credential_broker=InMemoryCredentialBroker.with_capabilities([_github_capability()]),
+        github_transport=transport,
+        now=_now(),
+    )
+
+    plan = gateway.plan(
+        workspace,
+        PullRequestRequest(
+            title="Add feature",
+            body="Implementation details.",
+            base_branch="main",
+            head_branch="feature/zebra",
+            dry_run=False,
+        ),
+    )
+
+    assert plan.provider == "github"
+    assert plan.status == "created"
+    assert plan.url == "https://github.example/pulls/1"
+    assert transport.token == "broker-token"
+    _assert_secret_absent("broker-token", plan)
+
+
+def test_build_pull_request_gateway_fails_before_execution_when_broker_credential_missing() -> None:
+    with pytest.raises(ScmUnavailableError, match="missing"):
+        build_pull_request_gateway(
+            _github_scm(pull_request_dry_run=False),
+            credential_broker=InMemoryCredentialBroker(),
+            github_transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
+            now=_now(),
+        )
+
+
 def test_build_pull_request_gateway_rejects_unknown_provider() -> None:
     with pytest.raises(ScmUnavailableError, match="unsupported SCM provider"):
         build_pull_request_gateway(
@@ -323,6 +391,31 @@ def _git_workspace(path: Path) -> Path:
 
 def _git(path: Path, command: tuple[str, ...]) -> str:
     return run(command, cwd=path, check=True, capture_output=True, text=True).stdout
+
+
+def _github_scm(*, pull_request_dry_run: bool) -> ScmSettings:
+    return ScmSettings(
+        provider="github",
+        github_owner="octo-org",
+        github_repo="zebra-agent",
+        github_token_env="GITHUB_TOKEN",
+        github_api_base_url="https://api.github.com",
+        pull_request_dry_run=pull_request_dry_run,
+    )
+
+
+def _github_capability() -> CredentialCapability:
+    return CredentialCapability(
+        provider="github",
+        audience="repo:octo-org/zebra-agent",
+        scopes=("pull_request:create",),
+        expires_at=datetime(2026, 6, 23, 12, 30, tzinfo=UTC),
+        token_value="broker-token",
+    )
+
+
+def _now() -> datetime:
+    return datetime(2026, 6, 23, 12, 0, tzinfo=UTC)
 
 
 class _FakeGitHubTransport:

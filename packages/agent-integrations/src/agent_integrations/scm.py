@@ -3,20 +3,16 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from subprocess import run
 from typing import Protocol
 
-from agent_security import ScmCredentialBoundary
+from agent_security import CredentialBroker, ScmCredentialBoundary
 from zebra_agent_config import ScmSettings
 
-
-class ScmIntegrationError(ValueError):
-    """Raised when SCM data cannot be read."""
-
-
-class ScmUnavailableError(ValueError):
-    """Raised when a networked SCM action is unavailable."""
+from agent_integrations.scm_credentials import token_from_broker
+from agent_integrations.scm_errors import ScmIntegrationError, ScmUnavailableError
 
 
 @dataclass(frozen=True)
@@ -212,7 +208,9 @@ def build_pull_request_gateway(
     settings: ScmSettings,
     *,
     env: Mapping[str, str] | None = None,
+    credential_broker: CredentialBroker | None = None,
     github_transport: GitHubPullRequestTransport | None = None,
+    now: datetime | None = None,
 ) -> PullRequestGateway:
     if settings.provider == "local-only":
         return LocalOnlyPullRequestGateway()
@@ -222,11 +220,18 @@ def build_pull_request_gateway(
         values = env or os.environ
         token_value = None
         if not settings.pull_request_dry_run:
-            capability = ScmCredentialBoundary().capability_from_settings(
-                settings,
-                token_value=values.get(settings.github_token_env or ""),
-            )
-            token_value = capability.token_value
+            if credential_broker is not None:
+                token_value = token_from_broker(
+                    settings,
+                    credential_broker=credential_broker,
+                    now=now or datetime.now(UTC),
+                )
+            else:
+                capability = ScmCredentialBoundary().capability_from_settings(
+                    settings,
+                    token_value=values.get(settings.github_token_env or ""),
+                )
+                token_value = capability.token_value
         return GitHubPullRequestGateway(
             GitHubPullRequestConfig(
                 owner=settings.github_owner,

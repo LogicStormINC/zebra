@@ -4,10 +4,8 @@ import json
 import urllib.error
 import urllib.request
 
-from agent_integrations.scm import (
-    GitHubPullRequestPayload,
-    ScmUnavailableError,
-)
+from agent_integrations.scm import GitHubPullRequestPayload
+from agent_integrations.scm_errors import ScmUnavailableError
 
 
 class GitHubHttpPullRequestTransport:
