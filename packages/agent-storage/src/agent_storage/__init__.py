@@ -1,6 +1,7 @@
 """Storage adapters for Zebra Agent."""
 
 from agent_storage.artifacts import SessionArtifact, SQLiteArtifactStore
+from agent_storage.delivery_audit import SQLiteDeliveryAuditStore
 from agent_storage.idempotency import (
     IdempotencyConflictError,
     IdempotencyRecord,
@@ -19,6 +20,7 @@ __all__ = [
     "LeaseConflictError",
     "SessionArtifact",
     "SQLiteArtifactStore",
+    "SQLiteDeliveryAuditStore",
     "SQLiteEventStore",
     "SQLiteIdempotencyStore",
     "SQLiteLeaseStore",

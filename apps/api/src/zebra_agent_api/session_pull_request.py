@@ -14,6 +14,7 @@ from agent_integrations import (
 from agent_security import DeliveryDecisionType, PullRequestPolicy
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 
+from zebra_agent_api.delivery_audit import record_delivery_audit
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.session_context import session_policy_profile, session_workspace_root
@@ -65,6 +66,7 @@ class SessionPullRequestApi:
                     status="policy_blocked",
                     reason=policy_decision.reason,
                 ),
+                policy_profile=policy_decision.policy_profile,
             )
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
@@ -76,6 +78,7 @@ class SessionPullRequestApi:
                     status="pull_request_unavailable",
                     reason="session workspace_root is unavailable",
                 ),
+                policy_profile=policy_decision.policy_profile,
             )
         try:
             plan = LocalOnlyPullRequestGateway().plan(
@@ -97,6 +100,7 @@ class SessionPullRequestApi:
                     status="pull_request_unavailable",
                     reason=str(error),
                 ),
+                policy_profile=policy_decision.policy_profile,
             )
         except (ValueError, ScmIntegrationError) as error:
             return self._save(
@@ -107,6 +111,7 @@ class SessionPullRequestApi:
                     status="pull_request_unavailable",
                     reason=str(error),
                 ),
+                policy_profile=policy_decision.policy_profile,
             )
         return self._save(
             payload,
@@ -129,6 +134,7 @@ class SessionPullRequestApi:
                     "policy_profile": policy_decision.policy_profile,
                 },
             ),
+            policy_profile=policy_decision.policy_profile,
         )
 
     def _save(
@@ -136,11 +142,22 @@ class SessionPullRequestApi:
         payload: dict[str, object],
         idempotency_key: str | None,
         response: ApiResponse,
+        *,
+        policy_profile: str | None = None,
     ) -> ApiResponse:
-        return save_idempotent_response(
+        saved = save_idempotent_response(
             database_path=self.database_path,
             action="session.pull_request",
             idempotency_key=idempotency_key,
             payload=payload,
             response=response,
         )
+        record_delivery_audit(
+            database_path=self.database_path,
+            session_id=str(saved.body["session_id"]),
+            action="session.pull_request",
+            response=saved,
+            policy_profile=policy_profile,
+            idempotency_key=idempotency_key,
+        )
+        return saved

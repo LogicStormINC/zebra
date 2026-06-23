@@ -1,6 +1,7 @@
 """Domain models for Zebra Agent."""
 
 from agent_core.domain.artifacts import ArtifactRef
+from agent_core.domain.delivery_audit import DeliveryAuditRecord
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.leases import WorkerLease
 from agent_core.domain.messages import MessageRole, SessionMessage
@@ -12,6 +13,7 @@ from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 
 __all__ = [
     "ArtifactRef",
+    "DeliveryAuditRecord",
     "EventActor",
     "EventType",
     "MessageRole",

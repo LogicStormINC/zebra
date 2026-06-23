@@ -277,6 +277,7 @@ Expected result:
 - deterministic `commit_unavailable` conflict when the workspace is missing, clean, or not a Git repository
 - repeated requests with the same `Idempotency-Key` and request body return the first response
 - reusing the same `Idempotency-Key` with a different body returns `idempotency_conflict`
+- each non-replayed commit attempt is persisted in the delivery audit store with policy and result metadata
 
 Plan a pull request for a committed session workspace:
 
@@ -299,6 +300,7 @@ Expected result in the current local-only runtime:
 - deterministic `policy_blocked` conflict unless the session was created with `policy_profile=full_access`
 - repeated requests with the same `Idempotency-Key` and request body return the first response
 - reusing the same `Idempotency-Key` with a different body returns `idempotency_conflict`
+- each non-replayed pull-request attempt is persisted in the delivery audit store with policy and result metadata
 
 Append one more user message to an existing session:
 

@@ -27,8 +27,8 @@ The next milestone is `Phase 11 - Delivery Hardening`. The immediate implementat
 - `POST /sessions/{id}/commit` is now available on the current development line
 - `POST /sessions/{id}/pull-request` is now available as a local-only dry-run planning path
 - side-effect `Idempotency-Key` handling is now available for commit and pull-request retries
-- delivery audit events are the next ready implementation lane
-- a GitHub PR provider skeleton is a scheduled follow-up after delivery audit
+- delivery audit records now capture commit and pull-request attempts
+- a GitHub PR provider skeleton is the next ready implementation lane
 
 Read in this order:
 

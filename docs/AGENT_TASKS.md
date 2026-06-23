@@ -2554,12 +2554,12 @@ Add shared `Idempotency-Key` handling for side-effect API actions so commit, pul
 
 ### P11-OBS-01 - Delivery Audit Events
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P11-API-01`
 - Branch: `codex/p11-obs-01-delivery-audit`
-- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `packages/agent-observability/`, `tests/agent_core/`, `tests/agent_storage/`, `tests/agent_observability/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+- Owned paths: `apps/api/`, `packages/agent-core/`, `packages/agent-storage/`, `packages/agent-observability/`, `tests/api/`, `tests/agent_core/`, `tests/agent_storage/`, `tests/agent_observability/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
@@ -2574,14 +2574,14 @@ Record commit and pull-request delivery attempts as durable audit events so deli
 
 #### Acceptance
 
-- [ ] Commit attempts are recorded with session, policy, and result metadata.
-- [ ] Pull-request attempts are recorded with dry-run or unavailable status.
-- [ ] Delivery audit records can be queried deterministically.
-- [ ] Existing trace/eval checks remain green.
+- [x] Commit attempts are recorded with session, policy, and result metadata.
+- [x] Pull-request attempts are recorded with dry-run or unavailable status.
+- [x] Delivery audit records can be queried deterministically.
+- [x] Existing trace/eval checks remain green.
 
 ### P11-INT-01 - GitHub Pull Request Provider Skeleton
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `APP`
 - Depends on: `P11-API-01`, `P11-OBS-01`

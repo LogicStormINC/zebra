@@ -3,7 +3,7 @@ from subprocess import run
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.domain.identifiers import SessionId
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_storage import SQLiteDeliveryAuditStore, SQLiteEventStore, SQLiteProjectionStore
 from fastapi.testclient import TestClient
 from zebra_agent_api import create_http_app
 from zebra_agent_api.app import create_app
@@ -35,6 +35,13 @@ def test_api_commit_session_creates_local_commit(tmp_path: Path) -> None:
     assert response.body["idempotency_key"] is None
     assert len(str(response.body["commit_sha"])) == 40
     assert _git(workspace, ("git", "status", "--short")) == ""
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].action == "session.commit"
+    assert audit_records[0].status == "committed"
+    assert audit_records[0].status_code == 201
+    assert audit_records[0].policy_profile == "full_access"
+    assert audit_records[0].result_metadata["commit_sha"] == response.body["commit_sha"]
 
 
 def test_api_commit_session_rejects_policy_blocked_session(tmp_path: Path) -> None:
@@ -55,6 +62,10 @@ def test_api_commit_session_rejects_policy_blocked_session(tmp_path: Path) -> No
         "reason": "commit requires full_access session policy",
         "idempotency_key": None,
     }
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].status == "policy_blocked"
+    assert audit_records[0].policy_profile == "workspace_write"
 
 
 def test_api_commit_session_rejects_clean_workspace(tmp_path: Path) -> None:
@@ -74,6 +85,10 @@ def test_api_commit_session_rejects_clean_workspace(tmp_path: Path) -> None:
         "reason": "workspace has no changes to commit",
         "idempotency_key": None,
     }
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].status == "commit_unavailable"
+    assert audit_records[0].result_metadata["reason"] == "workspace has no changes to commit"
 
 
 def test_api_commit_session_returns_not_found(tmp_path: Path) -> None:
@@ -150,6 +165,9 @@ def test_api_commit_session_replays_idempotent_response(tmp_path: Path) -> None:
     assert replayed_response.body == first_response.body
     assert replayed_response.body["idempotency_key"] == "commit-key-1"
     assert _git(workspace, ("git", "status", "--short")) == ""
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].idempotency_key == "commit-key-1"
 
 
 def test_api_commit_session_rejects_idempotency_key_reused_for_different_payload(

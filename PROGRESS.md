@@ -3,10 +3,10 @@
 ## Current Phase
 
 - Active phase: `Phase 11 - Delivery Hardening`
-- Repository status: `phase 11 delivery idempotency complete`
+- Repository status: `phase 11 delivery audit complete`
 - Current focus:
-  - record delivery audit events before enabling real remote SCM providers
-  - preserve idempotent retry behavior for delivery side effects
+  - prepare the GitHub pull-request provider skeleton behind explicit configuration
+  - preserve local-only dry-run as the default safe delivery behavior
 
 ## Completed
 
@@ -107,18 +107,18 @@
 - `P10-API-04 - Session Pull Request API`
 - `P10-CLOSE-01 - Phase 10 Closeout And Phase 11 Planning`
 - `P11-API-01 - Side Effect Idempotency Keys`
+- `P11-OBS-01 - Delivery Audit Events`
 
 ## Current Focus
 
 - Phase 10 is now closed with diff, artifacts, local commit, and local-only PR dry-run delivery APIs completed
 - Phase 11 now has idempotent retry handling for commit and pull-request side-effect APIs
-- delivery audit is the next ready implementation lane before enabling real remote SCM providers
-- GitHub PR provider work remains locked until delivery audit is complete
+- delivery audit records now capture commit and pull-request attempts with policy and result metadata
+- GitHub PR provider work is now the next ready implementation lane
 
 ## Next Unlocks
 
-- `P11-OBS-01 - Delivery Audit Events` is ready
-- `P11-INT-01 - GitHub Pull Request Provider Skeleton` unlocks after idempotency and delivery audit
+- `P11-INT-01 - GitHub Pull Request Provider Skeleton` is ready
 
 ## Active Documents
 

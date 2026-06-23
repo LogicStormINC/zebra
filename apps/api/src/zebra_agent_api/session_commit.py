@@ -9,6 +9,7 @@ from agent_runtime import WorkspaceCommitCommand, WorkspaceCommitError, Workspac
 from agent_security import CommitPolicy, DeliveryDecisionType
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 
+from zebra_agent_api.delivery_audit import record_delivery_audit
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.session_context import session_policy_profile, session_workspace_root
@@ -60,6 +61,7 @@ class SessionCommitApi:
                     status="policy_blocked",
                     reason=policy_decision.reason,
                 ),
+                policy_profile=policy_decision.policy_profile,
             )
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
@@ -71,6 +73,7 @@ class SessionCommitApi:
                     status="commit_unavailable",
                     reason="session workspace_root is unavailable",
                 ),
+                policy_profile=policy_decision.policy_profile,
             )
         try:
             result = WorkspaceCommitService().commit(
@@ -90,6 +93,7 @@ class SessionCommitApi:
                     status="commit_unavailable",
                     reason=str(error),
                 ),
+                policy_profile=policy_decision.policy_profile,
             )
         return self._save(
             payload,
@@ -105,6 +109,7 @@ class SessionCommitApi:
                     "policy_profile": policy_decision.policy_profile,
                 },
             ),
+            policy_profile=policy_decision.policy_profile,
         )
 
     def _save(
@@ -112,11 +117,22 @@ class SessionCommitApi:
         payload: dict[str, object],
         idempotency_key: str | None,
         response: ApiResponse,
+        *,
+        policy_profile: str | None = None,
     ) -> ApiResponse:
-        return save_idempotent_response(
+        saved = save_idempotent_response(
             database_path=self.database_path,
             action="session.commit",
             idempotency_key=idempotency_key,
             payload=payload,
             response=response,
         )
+        record_delivery_audit(
+            database_path=self.database_path,
+            session_id=str(saved.body["session_id"]),
+            action="session.commit",
+            response=saved,
+            policy_profile=policy_profile,
+            idempotency_key=idempotency_key,
+        )
+        return saved

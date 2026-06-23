@@ -3,7 +3,7 @@ from subprocess import run
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.domain.identifiers import SessionId
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_storage import SQLiteDeliveryAuditStore, SQLiteEventStore, SQLiteProjectionStore
 from fastapi.testclient import TestClient
 from zebra_agent_api import create_http_app
 from zebra_agent_api.app import create_app
@@ -39,6 +39,13 @@ def test_api_pull_request_returns_local_only_dry_run_plan(tmp_path: Path) -> Non
     assert pull_request["dry_run"] is True
     assert pull_request["status"] == "dry_run"
     assert pull_request["url"] is None
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].action == "session.pull_request"
+    assert audit_records[0].status == "dry_run"
+    assert audit_records[0].status_code == 200
+    assert audit_records[0].policy_profile == "full_access"
+    assert audit_records[0].result_metadata["provider"] == "local-only"
 
 
 def test_api_pull_request_rejects_network_execution_in_local_only_mode(
@@ -60,6 +67,9 @@ def test_api_pull_request_rejects_network_execution_in_local_only_mode(
         "reason": "pull request execution is unavailable in local-only mode",
         "idempotency_key": None,
     }
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].status == "pull_request_unavailable"
 
 
 def test_api_pull_request_rejects_policy_blocked_session(tmp_path: Path) -> None:
@@ -79,6 +89,10 @@ def test_api_pull_request_rejects_policy_blocked_session(tmp_path: Path) -> None
         "reason": "pull request requires full_access session policy",
         "idempotency_key": None,
     }
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].status == "policy_blocked"
+    assert audit_records[0].policy_profile == "workspace_write"
 
 
 def test_api_pull_request_returns_not_found(tmp_path: Path) -> None:
@@ -152,6 +166,9 @@ def test_api_pull_request_replays_idempotent_response(tmp_path: Path) -> None:
     assert replayed_response.status_code == 200
     assert replayed_response.body == first_response.body
     assert replayed_response.body["idempotency_key"] == "pr-key-1"
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].idempotency_key == "pr-key-1"
 
 
 def test_api_pull_request_rejects_idempotency_key_reused_for_different_payload(

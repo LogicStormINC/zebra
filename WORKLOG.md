@@ -1865,3 +1865,27 @@
   - `uv run pytest tests/agent_storage/test_idempotency.py tests/api/test_session_commit.py tests/api/test_session_pull_request.py`
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 11 Delivery Audit Events
+
+- 执行 `P11-OBS-01 - Delivery Audit Events`
+- 修正任务边界：
+  - `docs/AGENT_TASKS.md` 为 P11-OBS-01 增加 `apps/api/` 和 `tests/api/` owned paths，用于显式 API wiring
+- 新增 core/storage 能力：
+  - `DeliveryAuditRecord`
+  - `DeliveryAuditStorePort`
+  - `SQLiteDeliveryAuditStore`
+- API 集成：
+  - commit 成功、policy blocked、unavailable 会记录 delivery audit
+  - pull-request dry-run、policy blocked、unavailable 会记录 delivery audit
+  - idempotent replay 不重复写入审计记录
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P11-OBS-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P11-INT-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+  - `docs/operator_runbook.md`
+- 验证：
+  - `uv run pytest tests/agent_storage/test_delivery_audit.py tests/api/test_session_commit.py tests/api/test_session_pull_request.py`
+  - `make check`
+  - `make test`
