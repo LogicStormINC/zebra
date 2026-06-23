@@ -258,6 +258,23 @@ Expected result:
 - tool-run artifacts for tool output and optional `artifact_uri`
 - an explicit empty list when no artifacts have been indexed
 
+Create a local Git commit for a reviewed session workspace:
+
+```bash
+curl -X POST http://127.0.0.1:8000/sessions/<session_id>/commit \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Implement reviewed changes"}'
+```
+
+Expected result:
+
+- JSON output with `committed=true`
+- new `commit_sha`
+- committed `message`
+- session `workspace`
+- deterministic `policy_blocked` conflict unless the session was created with `policy_profile=full_access`
+- deterministic `commit_unavailable` conflict when the workspace is missing, clean, or not a Git repository
+
 Append one more user message to an existing session:
 
 ```bash

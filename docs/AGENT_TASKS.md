@@ -2445,8 +2445,8 @@ Expose `GET /sessions/{id}/artifacts` so operator surfaces can list durable mode
 
 ### P10-API-03 - Session Commit API
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `In Progress`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P10-API-01`
 - Branch: `codex/p10-api-03-session-commit`
@@ -2465,14 +2465,14 @@ Add a controlled `POST /sessions/{id}/commit` entry that can turn reviewed works
 
 #### Acceptance
 
-- [ ] A reviewed session can create one local commit through the API.
-- [ ] Commit message and author inputs are validated.
-- [ ] Policy-blocked commit attempts fail closed.
-- [ ] Existing read-only diff behavior remains unchanged.
+- [x] A reviewed session can create one local commit through the API.
+- [x] Commit message and author inputs are validated.
+- [x] Policy-blocked commit attempts fail closed.
+- [x] Existing read-only diff behavior remains unchanged.
 
 ### P10-API-04 - Session Pull Request API
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `APP`
 - Depends on: `P10-API-03`

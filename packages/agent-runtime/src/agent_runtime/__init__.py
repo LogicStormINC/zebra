@@ -1,6 +1,12 @@
 """Runtime package for Zebra Agent."""
 
 from agent_runtime.adapters.local import LocalRuntime
+from agent_runtime.git_commit import (
+    WorkspaceCommitCommand,
+    WorkspaceCommitError,
+    WorkspaceCommitResult,
+    WorkspaceCommitService,
+)
 from agent_runtime.git_diff import WorkspaceDiffError, WorkspaceDiffResult, WorkspaceDiffService
 from agent_runtime.harness import LocalToolGateway, run_local_harness
 from agent_runtime.workspace import (
@@ -16,6 +22,10 @@ __all__ = [
     "LocalToolGateway",
     "LocalWorkspace",
     "LocalWorktree",
+    "WorkspaceCommitCommand",
+    "WorkspaceCommitError",
+    "WorkspaceCommitResult",
+    "WorkspaceCommitService",
     "WorkspaceDiffError",
     "WorkspaceDiffResult",
     "WorkspaceDiffService",

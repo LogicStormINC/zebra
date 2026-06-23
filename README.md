@@ -24,8 +24,8 @@ The next milestone is `Phase 10 - Code Delivery Surface`. The immediate implemen
 - worker-loop stop reporting and daemon-friendly continuous polling are now available on the current development line
 - `GET /sessions/{id}/diff` is now available on the current development line
 - `GET /sessions/{id}/artifacts` is now available on the current development line
-- `POST /sessions/{id}/commit` is the next ready implementation lane
-- `POST /sessions/{id}/pull-request` is a scheduled follow-up
+- `POST /sessions/{id}/commit` is now available on the current development line
+- `POST /sessions/{id}/pull-request` is the next ready implementation lane
 
 Read in this order:
 

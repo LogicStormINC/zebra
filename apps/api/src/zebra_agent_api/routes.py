@@ -36,6 +36,8 @@ class RouteAdapter:
                 return self.app.append_session_message(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "resume":
                 return self.app.resume_session(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "commit":
+                return self.app.commit_session(parts[0], request.body or {})
         if method == "GET" and request.path.startswith("/sessions/"):
             parts = _session_path_parts(request.path)
             if parts == ():

@@ -14,7 +14,6 @@ from agent_core.application import (
     SessionMessageAppendService,
 )
 from agent_core.application.session_projection import apply_event
-from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.harness.models import HarnessLoopResult
 from agent_integrations import build_model_gateway
@@ -40,6 +39,8 @@ from zebra_agent_worker import (
 
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.serialization import serialize_trace_events
+from zebra_agent_api.session_commit import SessionCommitApi
+from zebra_agent_api.session_context import session_workspace_root
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
     parse_append_session_message_payload,
@@ -121,7 +122,7 @@ class ZebraAgentApi:
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        workspace_root = _workspace_root_for_session(
+        workspace_root = session_workspace_root(
             SQLiteEventStore(self.database_path).list_for_session(session_key)
         )
         if workspace_root is None:
@@ -177,6 +178,9 @@ class ZebraAgentApi:
                 ],
             },
         )
+
+    def commit_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
+        return SessionCommitApi(self.database_path).commit(session_id, payload)
 
     def create_session(self, payload: dict[str, object]) -> ApiResponse:
         parsed = parse_create_session_payload(payload)
@@ -444,14 +448,3 @@ def _trace_payload(result: HarnessLoopResult) -> list[dict[str, object]]:
         }
         for attempt in trace.attempts
     ]
-
-
-def _workspace_root_for_session(events: list[SessionEvent]) -> Path | None:
-    workspace_root: Path | None = None
-    for event in events:
-        if event.event_type is not EventType.TASK_PREPARED:
-            continue
-        raw_workspace_root = event.payload.get("workspace_root")
-        if isinstance(raw_workspace_root, str) and raw_workspace_root.strip():
-            workspace_root = Path(raw_workspace_root).expanduser().resolve()
-    return workspace_root

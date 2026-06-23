@@ -1,5 +1,6 @@
 """Security package for Zebra Agent."""
 
+from agent_security.delivery import CommitPolicy, DeliveryDecision, DeliveryDecisionType
 from agent_security.policy import (
     ApprovalRequest,
     ApprovalRisk,
@@ -12,6 +13,9 @@ from agent_security.policy import (
 __all__ = [
     "ApprovalRequest",
     "ApprovalRisk",
+    "CommitPolicy",
+    "DeliveryDecision",
+    "DeliveryDecisionType",
     "LocalPolicyEngine",
     "PolicyProfile",
     "build_approval_request",

@@ -29,6 +29,12 @@ class ApprovalDecisionPayload(TypedDict):
     reason: str
 
 
+class CommitSessionPayload(TypedDict):
+    message: str
+    author_name: str
+    author_email: str
+
+
 def parse_create_session_payload(
     payload: dict[str, object],
 ) -> CreateSessionPayload | ApiResponse:
@@ -109,4 +115,26 @@ def parse_approval_decision_payload(
     return {
         "operator": operator.strip(),
         "reason": reason.strip(),
+    }
+
+
+def parse_commit_session_payload(
+    payload: dict[str, object],
+) -> CommitSessionPayload | ApiResponse:
+    message = payload.get("message")
+    if not isinstance(message, str) or not message.strip():
+        return bad_request("message must be a non-blank string")
+
+    author_name = payload.get("author_name", "Zebra Agent")
+    if not isinstance(author_name, str) or not author_name.strip():
+        return bad_request("author_name must be a non-blank string when provided")
+
+    author_email = payload.get("author_email", "zebra-agent@example.local")
+    if not isinstance(author_email, str) or not author_email.strip() or "@" not in author_email:
+        return bad_request("author_email must be a valid email when provided")
+
+    return {
+        "message": message.strip(),
+        "author_name": author_name.strip(),
+        "author_email": author_email.strip(),
     }

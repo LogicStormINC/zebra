@@ -1776,3 +1776,29 @@
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
+
+## 2026-06-23 Session Commit API
+
+- 执行 `P10-API-03 - Session Commit API`
+- `agent-runtime` 现在支持：
+  - `WorkspaceCommitService`
+  - dirty Git workspace commit
+  - clean or non-Git workspace deterministic rejection
+- `agent-security` 现在支持：
+  - `CommitPolicy`
+  - commit requires `full_access` session policy
+- `apps/api` 现在支持：
+  - `POST /sessions/{session_id}/commit`
+  - commit message and author validation
+  - missing session 404
+  - policy-blocked conflict
+  - inherited bearer auth behavior for session routes
+- 更新测试：
+  - `tests/agent_runtime/test_git_commit.py`
+  - `tests/agent_security/test_delivery_policy.py`
+  - `tests/api/test_session_commit.py`
+- 文档同步：
+  - `docs/operator_runbook.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
