@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -20,11 +20,31 @@ class ApiSettings:
 
 
 @dataclass(frozen=True)
+class ScmSettings:
+    provider: str
+    github_owner: str | None
+    github_repo: str | None
+    github_token_env: str | None
+    github_api_base_url: str
+    pull_request_dry_run: bool
+
+
+@dataclass(frozen=True)
 class ZebraAgentSettings:
     profile: str
     database_url: str
     api: ApiSettings
     model: ModelSettings
+    scm: ScmSettings = field(
+        default_factory=lambda: ScmSettings(
+            provider="local-only",
+            github_owner=None,
+            github_repo=None,
+            github_token_env=None,
+            github_api_base_url="https://api.github.com",
+            pull_request_dry_run=True,
+        )
+    )
 
 
 def load_settings(
@@ -55,6 +75,37 @@ def load_settings(
             base_url=_read(values, "ZEBRA_MODEL_BASE_URL", default="https://api.deepseek.com"),
             model=_read(values, "ZEBRA_MODEL_NAME", default="deepseek-v4-flash"),
         ),
+        scm=_load_scm_settings(values),
+    )
+
+
+def _load_scm_settings(values: Mapping[str, str]) -> ScmSettings:
+    provider = _read(values, "ZEBRA_SCM_PROVIDER", default="local-only")
+    github_owner = _read_optional(values, "ZEBRA_GITHUB_OWNER")
+    github_repo = _read_optional(values, "ZEBRA_GITHUB_REPO")
+    github_token_env = _read_optional(values, "ZEBRA_GITHUB_TOKEN_ENV")
+    if provider == "github":
+        if github_owner is None:
+            raise ValueError("ZEBRA_GITHUB_OWNER is required when ZEBRA_SCM_PROVIDER=github")
+        if github_repo is None:
+            raise ValueError("ZEBRA_GITHUB_REPO is required when ZEBRA_SCM_PROVIDER=github")
+        if github_token_env is None:
+            raise ValueError("ZEBRA_GITHUB_TOKEN_ENV is required when ZEBRA_SCM_PROVIDER=github")
+    return ScmSettings(
+        provider=provider,
+        github_owner=github_owner,
+        github_repo=github_repo,
+        github_token_env=github_token_env,
+        github_api_base_url=_read(
+            values,
+            "ZEBRA_GITHUB_API_BASE_URL",
+            default="https://api.github.com",
+        ),
+        pull_request_dry_run=_read_bool(
+            values,
+            "ZEBRA_SCM_PULL_REQUEST_DRY_RUN",
+            default=True,
+        ),
     )
 
 
@@ -83,3 +134,10 @@ def _read_optional(values: Mapping[str, str], key: str) -> str | None:
     if not value:
         return None
     return value
+
+
+def _read_bool(values: Mapping[str, str], key: str, *, default: bool) -> bool:
+    value = values.get(key, "").strip().lower()
+    if not value:
+        return default
+    return value in {"1", "true", "yes", "on"}

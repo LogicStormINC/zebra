@@ -311,6 +311,25 @@ GitHub pull-request provider status:
 - A non-dry-run GitHub request with a token still fails closed because live execution is not implemented yet.
 - Serialized request headers redact the token as `Bearer <redacted>`.
 
+SCM provider configuration:
+
+```bash
+ZEBRA_SCM_PROVIDER=local-only
+ZEBRA_GITHUB_OWNER=
+ZEBRA_GITHUB_REPO=
+ZEBRA_GITHUB_TOKEN_ENV=
+ZEBRA_GITHUB_API_BASE_URL=https://api.github.com
+ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true
+```
+
+Rules:
+
+- `local-only` is the default provider.
+- `github` must be selected explicitly with `ZEBRA_SCM_PROVIDER=github`.
+- GitHub config requires `ZEBRA_GITHUB_OWNER`, `ZEBRA_GITHUB_REPO`, and `ZEBRA_GITHUB_TOKEN_ENV`.
+- `ZEBRA_GITHUB_TOKEN_ENV` is the name of the environment variable that will hold a token later; the token value itself must not be written to config files.
+- `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true` keeps provider selection non-mutating until remote execution is explicitly implemented.
+
 Append one more user message to an existing session:
 
 ```bash

@@ -1929,3 +1929,30 @@
 - 验证：
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 12 SCM Provider Settings
+
+- 执行 `P12-CONFIG-01 - SCM Provider Settings`
+- 配置新增：
+  - `ScmSettings`
+  - `ZEBRA_SCM_PROVIDER`
+  - `ZEBRA_GITHUB_OWNER`
+  - `ZEBRA_GITHUB_REPO`
+  - `ZEBRA_GITHUB_TOKEN_ENV`
+  - `ZEBRA_GITHUB_API_BASE_URL`
+  - `ZEBRA_SCM_PULL_REQUEST_DRY_RUN`
+- 行为边界：
+  - 默认 provider 为 `local-only`
+  - GitHub provider 必须显式配置 owner、repo 和 token env name
+  - 配置只保存 token 环境变量名，不保存 token 值
+  - 现有手动构造 `ZebraAgentSettings` 默认仍得到 local-only SCM settings
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P12-CONFIG-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P12-INT-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+  - `docs/operator_runbook.md`
+- 验证：
+  - `uv run pytest tests/config/test_settings.py`
+  - `make check`
+  - `make test`

@@ -3,9 +3,9 @@
 ## Current Phase
 
 - Active phase: `Phase 12 - Remote SCM Configuration`
-- Repository status: `phase 12 ready`
+- Repository status: `phase 12 SCM provider settings complete`
 - Current focus:
-  - add explicit SCM provider configuration
+  - wire pull-request gateway selection behind SCM settings
   - keep local-only PR planning as the default behavior
   - defer remote SCM execution until provider selection and policy/audit wiring are explicit
 
@@ -111,18 +111,19 @@
 - `P11-OBS-01 - Delivery Audit Events`
 - `P11-INT-01 - GitHub Pull Request Provider Skeleton`
 - `P11-CLOSE-01 - Phase 11 Closeout And Phase 12 Planning`
+- `P12-CONFIG-01 - SCM Provider Settings`
 
 ## Current Focus
 
 - Phase 11 is now closed with idempotency, delivery audit, and GitHub PR provider skeleton complete
 - remote SCM execution is still not wired to the API and remains an explicit future task
-- Phase 12 starts with SCM provider settings before any gateway selection or remote execution wiring
+- Phase 12 now has explicit SCM provider settings with local-only as the default
+- GitHub SCM config requires explicit owner, repo, and token environment variable name
 - delivery audit read API is planned as a safe read-only follow-up
 
 ## Next Unlocks
 
-- `P12-CONFIG-01 - SCM Provider Settings` is ready
-- `P12-INT-01 - Pull Request Gateway Selection` unlocks after SCM settings
+- `P12-INT-01 - Pull Request Gateway Selection` is ready
 - `P12-API-01 - Delivery Audit Read API` is planned as a read-only follow-up
 
 ## Active Documents

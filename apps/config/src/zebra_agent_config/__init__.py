@@ -1,6 +1,7 @@
 from zebra_agent_config.settings import (
     ApiSettings,
     ModelSettings,
+    ScmSettings,
     ZebraAgentSettings,
     load_settings,
 )
@@ -8,6 +9,7 @@ from zebra_agent_config.settings import (
 __all__ = [
     "ApiSettings",
     "ModelSettings",
+    "ScmSettings",
     "ZebraAgentSettings",
     "load_settings",
 ]

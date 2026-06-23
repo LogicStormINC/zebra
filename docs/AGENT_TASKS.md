@@ -2637,12 +2637,12 @@ Close Phase 11 with an explicit delivery-hardening acceptance record and define 
 
 ### P12-CONFIG-01 - SCM Provider Settings
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P11-CLOSE-01`
 - Branch: `codex/p12-config-01-scm-provider-settings`
-- Owned paths: `apps/config/`, `tests/config/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+- Owned paths: `apps/config/`, `tests/config/`, `configs/default.env`, `.env.example`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
@@ -2657,14 +2657,14 @@ Add explicit SCM provider settings so remote pull-request execution cannot be en
 
 #### Acceptance
 
-- [ ] Local-only is the default SCM provider.
-- [ ] GitHub provider requires explicit configuration.
-- [ ] Token values are read only through an environment variable name and are not serialized.
-- [ ] Tests cover default and GitHub opt-in config paths.
+- [x] Local-only is the default SCM provider.
+- [x] GitHub provider requires explicit configuration.
+- [x] Token values are read only through an environment variable name and are not serialized.
+- [x] Tests cover default and GitHub opt-in config paths.
 
 ### P12-INT-01 - Pull Request Gateway Selection
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `APP`
 - Depends on: `P12-CONFIG-01`
