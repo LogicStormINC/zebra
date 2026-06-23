@@ -46,7 +46,7 @@ These errors intentionally distinguish operator remediation paths:
 - GitHub dry-run without credential lookup
 - fail-closed non-dry-run behavior when the broker cannot issue a capability
 
-For compatibility, the current API composition path can still use the existing environment token fallback when no broker is supplied. Future secret backend work should replace that fallback with a concrete broker implementation rather than spreading environment reads into additional adapters.
+For compatibility, SCM gateway construction retains direct environment token fallback only when `allow_env_token_fallback=True` is passed explicitly. API composition should use the default environment broker instead of relying on direct adapter env reads.
 
 When a broker is supplied, GitHub non-dry-run execution requests credentials during pull-request planning. Missing broker credentials fail before network execution and are recorded in delivery audit metadata.
 

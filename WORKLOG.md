@@ -2342,3 +2342,20 @@
   - `README.md`
 - 验证：
   - `uv run pytest tests/api/test_credential_broker.py tests/api/test_session_pull_request.py tests/agent_security/test_environment_broker.py`
+
+## 2026-06-23 Phase 17 SCM Env Fallback Boundary
+
+- 执行 `P17-INT-01 - SCM Env Fallback Boundary`
+- 行为更新：
+  - `build_pull_request_gateway` 默认不再读取 direct env token fallback
+  - retained fallback 必须显式传入 `allow_env_token_fallback=True`
+  - broker-backed path 保持优先
+  - local-only 和 GitHub dry-run 行为不变
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P17-INT-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P17-DOC-01` 解锁为 `Ready`
+  - `docs/Credential_Broker_Foundation.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run pytest tests/agent_integrations/test_scm.py tests/api/test_session_pull_request.py tests/api/test_credential_broker.py`

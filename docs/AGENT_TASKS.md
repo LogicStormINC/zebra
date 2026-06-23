@@ -3180,8 +3180,8 @@ Make API composition construct a default environment-backed credential broker fr
 
 ### P17-INT-01 - SCM Env Fallback Boundary
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CTX`
 - Depends on: `P17-APP-01`
 - Branch: `codex/p17-int-01-scm-env-fallback-boundary`
@@ -3199,13 +3199,13 @@ Narrow or explicitly deprecate direct environment-token fallback in SCM gateway 
 
 #### Acceptance
 
-- [ ] Broker-backed path is preferred in integration tests.
-- [ ] Any retained env fallback is explicit and documented.
-- [ ] Removing or narrowing fallback does not break local-only or dry-run behavior.
+- [x] Broker-backed path is preferred in integration tests.
+- [x] Any retained env fallback is explicit and documented.
+- [x] Removing or narrowing fallback does not break local-only or dry-run behavior.
 
 ### P17-DOC-01 - Broker-Backed SCM Operator Docs
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P17-APP-01`, `P17-INT-01`

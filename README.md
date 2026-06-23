@@ -45,7 +45,8 @@ The next milestone is `Phase 17 - Credential Backend Hardening`. The current imp
 - local environment-backed credential broker can issue scoped capabilities from configured env var names
 - API pull-request composition can inject a credential broker and fake GitHub transport for broker-backed execution tests
 - API composition builds a default environment broker from GitHub SCM settings when no explicit broker is supplied
-- SCM env fallback boundary is the next ready implementation lane
+- direct SCM env fallback is disabled by default and must be enabled explicitly
+- broker-backed SCM operator docs are the next ready implementation lane
 
 Read in this order:
 

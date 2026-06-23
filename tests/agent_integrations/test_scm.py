@@ -281,7 +281,9 @@ def test_build_pull_request_gateway_selects_github() -> None:
     assert isinstance(gateway, GitHubPullRequestGateway)
 
 
-def test_build_pull_request_gateway_reads_token_only_when_execution_enabled() -> None:
+def test_build_pull_request_gateway_does_not_use_env_token_fallback_by_default(
+    tmp_path: Path,
+) -> None:
     gateway = build_pull_request_gateway(
         ScmSettings(
             provider="github",
@@ -296,6 +298,43 @@ def test_build_pull_request_gateway_reads_token_only_when_execution_enabled() ->
     )
 
     assert isinstance(gateway, GitHubPullRequestGateway)
+    with pytest.raises(ScmUnavailableError, match="github token is required"):
+        gateway.plan(
+            _git_workspace(tmp_path / "workspace"),
+            PullRequestRequest(
+                title="Add feature",
+                body="Implementation details.",
+                base_branch="main",
+                head_branch="feature/zebra",
+                dry_run=False,
+            ),
+        )
+
+
+def test_build_pull_request_gateway_uses_explicit_env_token_fallback(
+    tmp_path: Path,
+) -> None:
+    transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
+    gateway = build_pull_request_gateway(
+        _github_scm(pull_request_dry_run=False),
+        env={"GITHUB_TOKEN": "secret-token"},
+        github_transport=transport,
+        allow_env_token_fallback=True,
+    )
+
+    plan = gateway.plan(
+        _git_workspace(tmp_path / "workspace"),
+        PullRequestRequest(
+            title="Add feature",
+            body="Implementation details.",
+            base_branch="main",
+            head_branch="feature/zebra",
+            dry_run=False,
+        ),
+    )
+
+    assert plan.status == "created"
+    assert transport.token == "secret-token"
 
 
 def test_build_pull_request_gateway_dry_run_does_not_request_broker_credential(

@@ -223,21 +223,23 @@ def build_pull_request_gateway(
     credential_broker: CredentialBroker | None = None,
     github_transport: GitHubPullRequestTransport | None = None,
     now: datetime | None = None,
+    allow_env_token_fallback: bool = False,
 ) -> PullRequestGateway:
     if settings.provider == "local-only":
         return LocalOnlyPullRequestGateway()
     if settings.provider == "github":
         if settings.github_owner is None or settings.github_repo is None:
             raise ScmUnavailableError("github owner and repo are required")
-        values = env or os.environ
         token_value = None
         if not settings.pull_request_dry_run:
             if credential_broker is None:
-                capability = ScmCredentialBoundary().capability_from_settings(
-                    settings,
-                    token_value=values.get(settings.github_token_env or ""),
-                )
-                token_value = capability.token_value
+                if allow_env_token_fallback:
+                    values = env or os.environ
+                    capability = ScmCredentialBoundary().capability_from_settings(
+                        settings,
+                        token_value=values.get(settings.github_token_env or ""),
+                    )
+                    token_value = capability.token_value
         return GitHubPullRequestGateway(
             GitHubPullRequestConfig(
                 owner=settings.github_owner,
