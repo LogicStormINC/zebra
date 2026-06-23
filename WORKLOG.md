@@ -2359,3 +2359,20 @@
   - `README.md`
 - 验证：
   - `uv run pytest tests/agent_integrations/test_scm.py tests/api/test_session_pull_request.py tests/api/test_credential_broker.py`
+
+## 2026-06-23 Phase 17 Broker-Backed SCM Operator Docs
+
+- 执行 `P17-DOC-01 - Broker-Backed SCM Operator Docs`
+- 文档更新：
+  - `docs/operator_runbook.md` 改为 broker-backed GitHub PR execution 说明
+  - 明确 API composition 默认从 SCM settings 构造 environment broker
+  - 明确 `ZEBRA_GITHUB_TOKEN_ENV` 只存 env var name，token value 只存在 API process env
+  - 明确 direct SCM adapter env fallback 默认关闭，只保留 integration compatibility flag
+  - delivery audit checklist 增加 missing broker env value 的 reason
+- 规划更新：
+  - `docs/AGENT_TASKS.md` 将 `P17-DOC-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 增加 `P17-CLOSE-01 - Phase 17 Closeout And Next Planning`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`

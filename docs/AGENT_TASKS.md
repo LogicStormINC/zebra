@@ -3205,8 +3205,8 @@ Narrow or explicitly deprecate direct environment-token fallback in SCM gateway 
 
 ### P17-DOC-01 - Broker-Backed SCM Operator Docs
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P17-APP-01`, `P17-INT-01`
 - Branch: `codex/p17-doc-01-broker-backed-scm-operator-docs`
@@ -3224,6 +3224,31 @@ Update operator documentation for broker-backed SCM execution and the env fallba
 
 #### Acceptance
 
-- [ ] Runbook describes broker-backed GitHub PR execution.
-- [ ] Token handling rules remain visible before execution steps.
-- [ ] Audit inspection remains part of the operator flow.
+- [x] Runbook describes broker-backed GitHub PR execution.
+- [x] Token handling rules remain visible before execution steps.
+- [x] Audit inspection remains part of the operator flow.
+
+### P17-CLOSE-01 - Phase 17 Closeout And Next Planning
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P17-DOC-01`
+- Branch: `codex/p17-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 17 with credential backend hardening evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 17 acceptance record
+- next phase task board
+- project progress update
+
+#### Acceptance
+
+- [ ] Phase 17 completed tasks are mapped to behavior and validation evidence.
+- [ ] Broker-backed operator flow and fallback boundary are recorded.
+- [ ] Next phase starter tasks are ready and path-scoped.

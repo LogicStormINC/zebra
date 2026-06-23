@@ -329,8 +329,9 @@ GitHub pull-request provider status:
 
 - `LocalOnlyPullRequestGateway` remains the default API behavior.
 - The GitHub gateway can build a dry-run request payload for review without live GitHub access.
-- A non-dry-run GitHub request without a token fails before any network call.
-- A non-dry-run GitHub request with a token may create a remote PR only when the explicit provider, dry-run, token, and policy gates all pass.
+- API composition builds a default environment-backed credential broker from GitHub SCM settings.
+- A non-dry-run GitHub request without a broker-issued credential fails before any network call.
+- A non-dry-run GitHub request with a broker-issued credential may create a remote PR only when the explicit provider, dry-run, credential, and policy gates all pass.
 - Transport failures are reported as deterministic `pull_request_unavailable` responses and audit records.
 - Serialized request headers redact the token as `Bearer <redacted>`.
 
@@ -354,10 +355,12 @@ Rules:
 - `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true` keeps provider selection non-mutating until remote execution is explicitly implemented.
 - SCM credential snapshots store token environment variable names only.
 - Any token value handled by the credential boundary serializes as `<redacted>`.
+- API composition uses `ZEBRA_GITHUB_TOKEN_ENV` to build an environment-backed credential broker.
+- Direct SCM adapter env-token fallback is disabled by default and exists only behind an explicit compatibility flag in integration code.
 - GitHub PR execution requires all of the following:
 - `ZEBRA_SCM_PROVIDER=github`
 - `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=false`
-- configured `ZEBRA_GITHUB_TOKEN_ENV` with a token available in the process environment
+- configured `ZEBRA_GITHUB_TOKEN_ENV` with a token available in the API process environment
 - a session created with `policy_profile=full_access`
 - tests and runbook examples should prefer dry-run unless a real repository side effect is intentional.
 
@@ -414,7 +417,8 @@ Required preconditions:
 
 - the session was created with `policy_profile=full_access`
 - `ZEBRA_GITHUB_TOKEN_ENV` names the token variable and does not contain the token itself
-- the token value is present only in the process environment
+- the token value is present only in the API process environment
+- the default API environment broker can issue a credential for `repo:<owner>/<repo>`
 - the previous GitHub dry-run payload was reviewed
 - the target repository, base branch, and head branch are correct
 
@@ -449,6 +453,7 @@ Expected result:
 - `result_metadata.dry_run=false`
 - `result_metadata.url` when GitHub created a PR
 - no raw token value in `result_metadata`
+- `result_metadata.reason=credential environment value is missing` when the broker cannot read the configured token env value
 
 Rollback and failure handling:
 
