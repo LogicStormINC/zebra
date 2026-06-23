@@ -110,6 +110,23 @@ Expected result:
 - `assistant_message`
 - compact `trace` data for any executed builtin tool calls
 
+Execute the same queued ready session through the API layer:
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${ZEBRA_AGENT_API_AUTH_TOKEN}" \
+  -d '{"worker_id":"api-worker","lease_ttl_seconds":45}' \
+  http://127.0.0.1:8000/sessions/<session_id>/resume
+```
+
+Expected result:
+
+- JSON output with `executed=true`
+- `worker_id` echoing the requested worker identity
+- terminal `status` and `current_sequence`
+- `assistant_message` and compact `trace`
+
 If a session reaches `waiting_approval`, record a decision with:
 
 ```bash

@@ -1,8 +1,15 @@
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import zebra_agent_api.app as api_app_module
+import zebra_agent_worker.execution as worker_execution_module
+from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import new_message_id
+from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.sessions import Session
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from fastapi.testclient import TestClient
@@ -176,6 +183,103 @@ def test_http_app_executes_session_create(tmp_path: Path, monkeypatch) -> None:
     assert response.json()["assistant_message"] == "HTTP execution complete."
 
 
+def test_http_app_executes_session_resume(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(worker_execution_module, "build_model_gateway", _fake_resume_gateway)
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    client = TestClient(create_http_app(database_path, settings=_settings("secret")))
+
+    response = client.post(
+        f"/sessions/{session_id}/resume",
+        headers={"Authorization": "Bearer secret"},
+        json={"worker_id": "api-worker", "lease_ttl_seconds": 45},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "session_id": session_id,
+        "executed": True,
+        "worker_id": "api-worker",
+        "status": "completed",
+        "current_sequence": 6,
+        "assistant_message": "HTTP resume complete.",
+        "trace": [
+            {
+                "attempt_number": 1,
+                "assistant_message": "HTTP resume complete.",
+                "tools": [],
+            }
+        ],
+    }
+
+
+def test_http_app_resume_requires_bearer_token_when_configured(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    client = TestClient(create_http_app(database_path, settings=_settings("secret")))
+
+    response = client.post(f"/sessions/{session_id}/resume", json={})
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "status": "unauthorized",
+        "reason": "missing_or_invalid_bearer_token",
+    }
+
+
+def test_http_app_resume_rejects_invalid_payload(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    client = TestClient(create_http_app(database_path))
+
+    response = client.post(
+        f"/sessions/{session_id}/resume",
+        json={"lease_ttl_seconds": 0},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "status": "invalid_request",
+        "reason": "lease_ttl_seconds must be greater than zero",
+    }
+
+
+def test_http_app_resume_missing_session_returns_not_found(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post(
+        "/sessions/00000000-0000-0000-0000-000000000001/resume",
+        json={},
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "session_id": "00000000-0000-0000-0000-000000000001",
+        "status": "not_found",
+    }
+
+
+def test_http_app_resume_terminal_session_returns_conflict(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(worker_execution_module, "build_model_gateway", _fake_resume_gateway)
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    client = TestClient(create_http_app(database_path))
+
+    first = client.post(f"/sessions/{session_id}/resume", json={})
+    second = client.post(f"/sessions/{session_id}/resume", json={})
+
+    assert first.status_code == 200
+    assert second.status_code == 409
+    assert second.json() == {
+        "session_id": session_id,
+        "status": "not_resumable",
+        "reason": "cannot_resume_terminal_session",
+    }
+
+
 def test_http_app_rejects_invalid_json_body(tmp_path: Path) -> None:
     client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
 
@@ -285,3 +389,35 @@ def _created_at():
     from datetime import UTC, datetime
 
     return datetime(2026, 6, 22, 13, 25, tzinfo=UTC)
+
+
+def _seed_ready_session(database_path: Path, *, workspace_root: Path) -> str:
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="HTTP queued session",
+            user_input="Summarize the workspace",
+            workspace_root=workspace_root,
+        )
+    )
+    event_store = SQLiteEventStore(database_path)
+    for event in bootstrap.events:
+        event_store.append(event)
+    SQLiteProjectionStore(database_path).save_session(bootstrap.session)
+    return str(bootstrap.session.session_id)
+
+
+def _fake_resume_gateway(_settings: ZebraAgentSettings) -> ScriptedModelGateway:
+    return ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="HTTP resume complete.",
+                        created_at=datetime(2026, 6, 22, 13, 25, tzinfo=UTC),
+                    )
+                )
+            ),
+        )
+    )

@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-The repository is in `Phase 8 - CLI/API Productization`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, the control-plane foundation includes durable session events and recovery/indexing primitives, Phase 5 has closed out with a typed workspace context compiler, Phase 6 has closed out with deterministic local policy and approval hardening, Phase 7 has closed out with local trace, replay, eval, and release-gate foundations wired into `make check`, and Phase 8 now has CLI command skeletons, local session operations, an explicit durable CLI run execution path, queued session bootstrap persistence for later worker recovery, a CLI resume execution trigger for ready sessions, API health/session route adaptation, a writable API session creation and execution entry, a worker-side ready-session execution service, settings-backed CLI/API database defaults, a thin FastAPI serving layer, read-only SSE session replay, an executable local operator runbook, optional bearer-token auth for non-health API routes, a real OpenAI-compatible model gateway adapter, and a CLI model smoke path.
+The repository is in `Phase 8 - CLI/API Productization`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, the control-plane foundation includes durable session events and recovery/indexing primitives, Phase 5 has closed out with a typed workspace context compiler, Phase 6 has closed out with deterministic local policy and approval hardening, Phase 7 has closed out with local trace, replay, eval, and release-gate foundations wired into `make check`, and Phase 8 now has CLI command skeletons, local session operations, an explicit durable CLI run execution path, queued session bootstrap persistence for later worker recovery, CLI and API resume execution triggers for ready sessions, API health/session route adaptation, a writable API session creation and execution entry, a worker-side ready-session execution service, settings-backed CLI/API database defaults, a thin FastAPI serving layer, read-only SSE session replay, an executable local operator runbook, optional bearer-token auth for non-health API routes, a real OpenAI-compatible model gateway adapter, and a CLI model smoke path.
 
 Read in this order:
 
@@ -53,6 +53,6 @@ uv run pytest
 For the current local operator workflow, start with `docs/operator_runbook.md`. It covers:
 
 - CLI session creation, durable execution, and inspection
-- writable local API session creation and execution
+- writable local API session creation, execution, and resume triggering
 - local FastAPI serving
 - SSE session stream replay

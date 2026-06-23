@@ -101,11 +101,12 @@
 - create-only session flows now persist queued task bootstrap events and land in `ready` state for later recovery
 - Phase 8 now also has a worker-side ready-session execution service that can resume one queued task, emit terminal events, and update model/tool indexes
 - Phase 8 now also has an explicit CLI `resume --execute` operator entry for queued ready sessions
+- Phase 8 now also has an explicit API `POST /sessions/{session_id}/resume` trigger for queued ready sessions
 
 ## Next Unlocks
 
-- `P8-CLI-06` is complete
-- the next step is to expose the same worker execution path through an HTTP resume trigger or a long-running worker loop
+- `P8-API-07` is complete
+- the next step is to add a long-running worker loop that can claim and execute ready sessions without a manual CLI or HTTP trigger
 
 ## Active Documents
 

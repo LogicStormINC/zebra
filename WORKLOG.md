@@ -1601,3 +1601,20 @@
   - `tests/agent_context/test_adapter.py`
 - 本轮验证结果：
   - `uv run pytest tests/agent_core/test_harness_runtime_evidence.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_mock_model_gateway.py tests/agent_context/test_adapter.py tests/agent_context/test_runtime_evidence.py tests/agent_context/test_prompt_layout.py tests/agent_context/test_compaction.py tests/agent_context/test_compiler.py` 通过
+
+## 2026-06-23 API Resume Execute Trigger
+
+- 执行 `P8-API-07 - API Resume Execute Trigger`
+- `apps/api` 现在支持：
+  - `POST /sessions/{session_id}/resume`
+  - `worker_id` 与 `lease_ttl_seconds` 请求参数校验
+  - 对 missing session、terminal resume、lease conflict、execution error 的确定性响应映射
+- 新增模块：
+  - `apps/api/src/zebra_agent_api/responses.py`
+  - `apps/api/src/zebra_agent_api/session_payloads.py`
+  - `apps/api/src/zebra_agent_api/serialization.py`
+- 更新测试：
+  - `tests/api/test_routes.py`
+  - `tests/api/test_http_app.py`
+- 本轮验证结果：
+  - `uv run pytest tests/api/test_routes.py tests/api/test_http_app.py` 通过

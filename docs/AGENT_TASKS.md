@@ -2148,3 +2148,30 @@ Expose the new worker-side ready-session execution capability through an explici
 - [x] `zebra-agent resume <id> --execute` runs the queued session through worker execution and persists terminal events.
 - [x] CLI output exposes final execution status and compact trace data.
 - [x] Existing worker execution tests remain green.
+
+### P8-API-07 - API Resume Execute Trigger
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-WKR-04`
+- Branch: `codex/p8-api-07-resume-execute`
+- Owned paths: `apps/api/`, `apps/worker/`, `tests/api/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose the worker-backed ready-session execution path through an explicit HTTP resume trigger while preserving the existing `POST /sessions` create semantics.
+
+#### Deliverables
+
+- `POST /sessions/{session_id}/resume` route
+- API wiring into the worker execution service with configurable worker identity
+- deterministic JSON output for terminal status, assistant message, and tool trace after execution
+- tests covering success, auth behavior, invalid payloads, and missing or terminal session handling
+
+#### Acceptance
+
+- [x] Existing `POST /sessions` behavior remains unchanged.
+- [x] `POST /sessions/{session_id}/resume` executes a queued ready session through the worker path and persists terminal events.
+- [x] API response exposes final execution status, worker id, and compact trace data.
+- [x] Auth and invalid-request handling remain deterministic.

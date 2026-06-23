@@ -1,5 +1,6 @@
-from zebra_agent_api.app import ApiResponse, ZebraAgentApi, create_app
+from zebra_agent_api.app import ZebraAgentApi, create_app
 from zebra_agent_api.http import create_http_app
+from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
 
 __all__ = [

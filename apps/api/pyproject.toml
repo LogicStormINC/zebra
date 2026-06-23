@@ -11,6 +11,7 @@ dependencies = [
     "agent-storage",
     "fastapi>=0.116.1,<0.117.0",
     "zebra-agent-config",
+    "zebra-agent-worker",
 ]
 
 [tool.uv.sources]
@@ -20,6 +21,7 @@ agent-runtime = { workspace = true }
 agent-security = { workspace = true }
 agent-storage = { workspace = true }
 zebra-agent-config = { workspace = true }
+zebra-agent-worker = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

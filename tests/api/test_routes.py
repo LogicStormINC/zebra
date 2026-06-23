@@ -1,6 +1,13 @@
+from datetime import UTC, datetime
 from pathlib import Path
 
+import zebra_agent_worker.execution as worker_execution_module
+from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import new_message_id
+from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.sessions import Session
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from zebra_agent_api.app import create_app
@@ -91,6 +98,55 @@ def test_route_adapter_handles_session_stream(tmp_path: Path) -> None:
     assert events[0]["event_id"] == str(event.event_id)
 
 
+def test_route_adapter_handles_session_resume_execute(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(worker_execution_module, "build_model_gateway", _fake_model_gateway)
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(
+        RouteRequest(
+            method="POST",
+            path=f"/sessions/{session_id}/resume",
+            body={"worker_id": "route-worker", "lease_ttl_seconds": 45},
+        )
+    )
+
+    assert response.status_code == 200
+    assert response.body["session_id"] == session_id
+    assert response.body["executed"] is True
+    assert response.body["worker_id"] == "route-worker"
+    assert response.body["status"] == "completed"
+    assert response.body["assistant_message"] == "Route execution complete."
+    assert response.body["trace"] == [
+        {
+            "attempt_number": 1,
+            "assistant_message": "Route execution complete.",
+            "tools": [],
+        }
+    ]
+
+
+def test_route_adapter_rejects_invalid_resume_payload(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(
+        RouteRequest(
+            method="POST",
+            path=f"/sessions/{session_id}/resume",
+            body={"lease_ttl_seconds": 0},
+        )
+    )
+
+    assert response.status_code == 400
+    assert response.body == {
+        "status": "invalid_request",
+        "reason": "lease_ttl_seconds must be greater than zero",
+    }
+
+
 def test_route_adapter_returns_not_found_for_invalid_session_subpath(tmp_path: Path) -> None:
     adapter = RouteAdapter(create_app(tmp_path / "sessions.sqlite"))
 
@@ -107,3 +163,35 @@ def test_route_adapter_returns_not_found_for_invalid_session_subpath(tmp_path: P
         "path": "/sessions/00000000-0000-0000-0000-000000000001/unknown",
         "status": "not_found",
     }
+
+
+def _seed_ready_session(database_path: Path, *, workspace_root: Path) -> str:
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Route queued session",
+            user_input="Summarize the workspace",
+            workspace_root=workspace_root,
+        )
+    )
+    event_store = SQLiteEventStore(database_path)
+    for event in bootstrap.events:
+        event_store.append(event)
+    SQLiteProjectionStore(database_path).save_session(bootstrap.session)
+    return str(bootstrap.session.session_id)
+
+
+def _fake_model_gateway(_settings):
+    return ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="Route execution complete.",
+                        created_at=datetime(2026, 6, 22, 13, 25, tzinfo=UTC),
+                    )
+                )
+            ),
+        )
+    )
