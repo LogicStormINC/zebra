@@ -1,5 +1,6 @@
 """Security package for Zebra Agent."""
 
+from agent_security.capabilities import CredentialCapability
 from agent_security.credentials import (
     REDACTED_SECRET,
     ScmCredentialBoundary,
@@ -24,6 +25,7 @@ __all__ = [
     "ApprovalRequest",
     "ApprovalRisk",
     "CommitPolicy",
+    "CredentialCapability",
     "DeliveryDecision",
     "DeliveryDecisionType",
     "LocalPolicyEngine",

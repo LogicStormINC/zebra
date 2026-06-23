@@ -2178,3 +2178,23 @@
 - 验证：
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 15 Credential Capability Domain Model
+
+- 执行 `P15-SEC-01 - Credential Capability Domain Model`
+- 新增：
+  - `CredentialCapability`
+- 行为边界：
+  - capability 包含 provider、audience、scopes、expires_at
+  - runtime token value 仅保留为运行时字段，`repr` 不显示
+  - `redacted()` 只输出 `<redacted>`，不输出真实 token
+  - expiry 使用 timezone-aware datetime 判断
+  - 未引入任何具体 secret backend
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P15-SEC-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P15-SEC-02` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run pytest tests/agent_security/test_capabilities.py tests/agent_security/test_credentials.py`
+  - `make check`

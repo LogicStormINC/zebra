@@ -2965,8 +2965,8 @@ Close Phase 14 with an acceptance record and define the next implementation phas
 
 ### P15-SEC-01 - Credential Capability Domain Model
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `SEC`
 - Depends on: `P14-CLOSE-01`
 - Branch: `codex/p15-sec-01-credential-capability-model`
@@ -2985,14 +2985,14 @@ Define the local credential capability model needed before adding concrete crede
 
 #### Acceptance
 
-- [ ] Capability model validates provider, scope, audience, and expiry.
-- [ ] Redacted serialization never emits raw token values.
-- [ ] Tests cover valid, invalid, and expired capability cases.
-- [ ] No concrete secret backend is introduced.
+- [x] Capability model validates provider, scope, audience, and expiry.
+- [x] Redacted serialization never emits raw token values.
+- [x] Tests cover valid, invalid, and expired capability cases.
+- [x] No concrete secret backend is introduced.
 
 ### P15-SEC-02 - Credential Broker Port
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `SEC`
 - Depends on: `P15-SEC-01`

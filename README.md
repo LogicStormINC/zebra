@@ -39,7 +39,8 @@ The next milestone is `Phase 15 - Credential Broker Foundation`. The current imp
 - SCM execution audit metadata now records normalized provider, status, URL, commit SHA, dry-run flag, and unavailable reasons
 - SCM token redaction regression coverage now checks PR plans, API responses, delivery audit records, and settings snapshots
 - remote SCM operator safety runbook coverage documents dry-run first, explicit opt-in, audit inspection, token rules, and rollback steps
-- credential capability domain modeling is the next ready implementation lane
+- credential capability domain modeling covers provider, audience, scopes, expiry, and redacted serialization
+- credential broker Port definition is the next ready implementation lane
 
 Read in this order:
 
