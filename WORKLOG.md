@@ -1618,3 +1618,20 @@
   - `tests/api/test_http_app.py`
 - 本轮验证结果：
   - `uv run pytest tests/api/test_routes.py tests/api/test_http_app.py` 通过
+
+## 2026-06-23 Worker Ready Session Loop
+
+- 执行 `P8-WKR-05 - Worker Ready Session Loop`
+- `packages/agent-core` 现在支持：
+  - `ProjectionStorePort.list_ready_sessions(limit=...)`
+- `packages/agent-storage` 现在支持：
+  - `SQLiteProjectionStore.list_ready_sessions()` 按 `updated_at` 顺序扫描 ready session
+- `apps/worker` 现在支持：
+  - `WorkerLoopService`
+  - `zebra-agent-worker` 本地 operator 入口
+  - 单次 poll 与多 cycle ready session 执行
+- 更新测试：
+  - `tests/agent_storage/test_sqlite_projection_store.py`
+  - `tests/worker/test_loop.py`
+- 本轮验证结果：
+  - `uv run pytest tests/agent_storage/test_sqlite_projection_store.py tests/worker/test_loop.py` 通过

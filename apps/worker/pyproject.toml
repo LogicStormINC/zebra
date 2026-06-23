@@ -12,6 +12,9 @@ dependencies = [
     "zebra-agent-config",
 ]
 
+[project.scripts]
+zebra-agent-worker = "zebra_agent_worker.main:main"
+
 [tool.uv.sources]
 agent-core = { workspace = true }
 agent-integrations = { workspace = true }

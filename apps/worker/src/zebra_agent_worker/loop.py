@@ -1,0 +1,151 @@
+from __future__ import annotations
+
+import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from agent_core.ports.projection_store import ProjectionStorePort
+from agent_storage import (
+    LeaseConflictError,
+    SQLiteEventStore,
+    SQLiteLeaseStore,
+    SQLiteProjectionStore,
+)
+from zebra_agent_config import ZebraAgentSettings
+
+from zebra_agent_worker.claims import SessionClaimService
+from zebra_agent_worker.execution import SessionExecutionService
+from zebra_agent_worker.recovery import SessionRecoveryError, SessionRecoveryService
+from zebra_agent_worker.resume import SessionResumeError, SessionResumeService
+
+
+@dataclass(frozen=True)
+class WorkerLoopCycleResult:
+    ready_session_ids: tuple[str, ...]
+    executed_session_ids: tuple[str, ...]
+    skipped_session_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class WorkerLoopRunResult:
+    cycles_completed: int
+    idle_cycles: int
+    executed_session_ids: tuple[str, ...]
+    skipped_session_ids: tuple[str, ...]
+
+
+@dataclass
+class _LoopAccumulator:
+    cycles_completed: int = 0
+    idle_cycles: int = 0
+    executed_session_ids: list[str] = field(default_factory=list)
+    skipped_session_ids: list[str] = field(default_factory=list)
+
+
+class WorkerLoopService:
+    def __init__(
+        self,
+        projection_store: ProjectionStorePort,
+        execution_service: SessionExecutionService,
+        *,
+        sleep: Callable[[float], None] = time.sleep,
+    ) -> None:
+        self._projection_store = projection_store
+        self._execution_service = execution_service
+        self._sleep = sleep
+
+    def poll_once(
+        self,
+        *,
+        worker_id: str,
+        batch_size: int = 1,
+        lease_ttl_seconds: int = 30,
+    ) -> WorkerLoopCycleResult:
+        ready_sessions = self._projection_store.list_ready_sessions(limit=batch_size)
+        ready_ids = tuple(str(session.session_id) for session in ready_sessions)
+        executed_ids: list[str] = []
+        skipped_ids: list[str] = []
+        for session in ready_sessions:
+            session_id = str(session.session_id)
+            try:
+                self._execution_service.execute_session(
+                    session.session_id,
+                    worker_id=worker_id,
+                    lease_ttl_seconds=lease_ttl_seconds,
+                )
+            except (LeaseConflictError, SessionRecoveryError, SessionResumeError):
+                skipped_ids.append(session_id)
+                continue
+            executed_ids.append(session_id)
+        return WorkerLoopCycleResult(
+            ready_session_ids=ready_ids,
+            executed_session_ids=tuple(executed_ids),
+            skipped_session_ids=tuple(skipped_ids),
+        )
+
+    def run(
+        self,
+        *,
+        worker_id: str,
+        batch_size: int = 1,
+        lease_ttl_seconds: int = 30,
+        max_cycles: int | None = None,
+        stop_when_idle: bool = False,
+        idle_sleep_seconds: float = 1.0,
+    ) -> WorkerLoopRunResult:
+        accumulator = _LoopAccumulator()
+        while max_cycles is None or accumulator.cycles_completed < max_cycles:
+            cycle = self.poll_once(
+                worker_id=worker_id,
+                batch_size=batch_size,
+                lease_ttl_seconds=lease_ttl_seconds,
+            )
+            accumulator.cycles_completed += 1
+            accumulator.executed_session_ids.extend(cycle.executed_session_ids)
+            accumulator.skipped_session_ids.extend(cycle.skipped_session_ids)
+            if not cycle.ready_session_ids:
+                accumulator.idle_cycles += 1
+                if stop_when_idle:
+                    break
+                self._sleep(idle_sleep_seconds)
+                continue
+            if (
+                stop_when_idle
+                and not cycle.executed_session_ids
+                and len(cycle.skipped_session_ids) == len(cycle.ready_session_ids)
+            ):
+                break
+        return WorkerLoopRunResult(
+            cycles_completed=accumulator.cycles_completed,
+            idle_cycles=accumulator.idle_cycles,
+            executed_session_ids=tuple(accumulator.executed_session_ids),
+            skipped_session_ids=tuple(accumulator.skipped_session_ids),
+        )
+
+
+def build_worker_loop_service(
+    *,
+    database_path: Path,
+    settings: ZebraAgentSettings,
+    sleep: Callable[[float], None] = time.sleep,
+) -> WorkerLoopService:
+    projection_store = SQLiteProjectionStore(database_path)
+    claim_service = SessionClaimService(
+        SQLiteLeaseStore(database_path),
+        SessionRecoveryService(
+            SQLiteEventStore(database_path),
+            projection_store,
+        ),
+    )
+    execution_service = SessionExecutionService(
+        database_path=database_path,
+        claim_service=claim_service,
+        resume_service=SessionResumeService(claim_service),
+        settings=settings,
+    )
+    return WorkerLoopService(
+        projection_store=projection_store,
+        execution_service=execution_service,
+        sleep=sleep,
+    )

@@ -102,11 +102,12 @@
 - Phase 8 now also has a worker-side ready-session execution service that can resume one queued task, emit terminal events, and update model/tool indexes
 - Phase 8 now also has an explicit CLI `resume --execute` operator entry for queued ready sessions
 - Phase 8 now also has an explicit API `POST /sessions/{session_id}/resume` trigger for queued ready sessions
+- Phase 8 now also has a worker polling loop and `zebra-agent-worker` operator entry that can discover ready sessions and execute them from durable storage
 
 ## Next Unlocks
 
-- `P8-API-07` is complete
-- the next step is to add a long-running worker loop that can claim and execute ready sessions without a manual CLI or HTTP trigger
+- `P8-INT-01` is in progress
+- the next step is to validate the combined Phase 8 mainline branch end to end and then merge the aligned slices back toward `main`
 
 ## Active Documents
 

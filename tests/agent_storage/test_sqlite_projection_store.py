@@ -31,3 +31,53 @@ def test_sqlite_projection_store_returns_none_for_unknown_session(tmp_path: Path
     )
 
     assert store.get_session(session.session_id) is None
+
+
+def test_sqlite_projection_store_lists_ready_sessions_in_update_order(tmp_path: Path) -> None:
+    store = SQLiteProjectionStore(tmp_path / "projections.db")
+    base_time = datetime(2026, 6, 19, 23, 30, tzinfo=UTC)
+    first = Session.create(title="first", created_at=base_time).model_copy(
+        update={
+            "status": SessionStatus.READY,
+            "updated_at": base_time,
+        }
+    )
+    second = Session.create(title="second", created_at=base_time).model_copy(
+        update={
+            "status": SessionStatus.READY,
+            "updated_at": base_time.replace(minute=31),
+        }
+    )
+    running = Session.create(title="running", created_at=base_time).model_copy(
+        update={
+            "status": SessionStatus.RUNNING,
+            "updated_at": base_time.replace(minute=32),
+        }
+    )
+    store.save_session(second)
+    store.save_session(running)
+    store.save_session(first)
+
+    ready = store.list_ready_sessions(limit=10)
+
+    assert [session.session_id for session in ready] == [first.session_id, second.session_id]
+
+
+def test_sqlite_projection_store_respects_ready_session_limit(tmp_path: Path) -> None:
+    store = SQLiteProjectionStore(tmp_path / "projections.db")
+    base_time = datetime(2026, 6, 19, 23, 40, tzinfo=UTC)
+    first = Session.create(title="first", created_at=base_time).model_copy(
+        update={"status": SessionStatus.READY, "updated_at": base_time}
+    )
+    second = Session.create(title="second", created_at=base_time).model_copy(
+        update={
+            "status": SessionStatus.READY,
+            "updated_at": base_time.replace(minute=41),
+        }
+    )
+    store.save_session(first)
+    store.save_session(second)
+
+    ready = store.list_ready_sessions(limit=1)
+
+    assert [session.session_id for session in ready] == [first.session_id]

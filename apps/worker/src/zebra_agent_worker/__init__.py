@@ -6,9 +6,19 @@ from zebra_agent_worker.execution import (
     SessionExecutionService,
     WorkerExecutionError,
 )
-from zebra_agent_worker.main import SessionRecoveryService, worker_banner
+from zebra_agent_worker.loop import (
+    WorkerLoopCycleResult,
+    WorkerLoopRunResult,
+    WorkerLoopService,
+    build_worker_loop_service,
+)
+from zebra_agent_worker.main import worker_banner
 from zebra_agent_worker.model_call_index import ModelCallIndexer
-from zebra_agent_worker.recovery import RecoveredSession, SessionRecoveryError
+from zebra_agent_worker.recovery import (
+    RecoveredSession,
+    SessionRecoveryError,
+    SessionRecoveryService,
+)
 from zebra_agent_worker.resume import ResumedSession, SessionResumeError, SessionResumeService
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 
@@ -19,6 +29,9 @@ __all__ = [
     "RecoveredSession",
     "SessionClaimService",
     "SessionExecutionService",
+    "WorkerLoopCycleResult",
+    "WorkerLoopRunResult",
+    "WorkerLoopService",
     "SessionRecoveryError",
     "SessionRecoveryService",
     "ResumedSession",
@@ -26,5 +39,6 @@ __all__ = [
     "SessionResumeService",
     "ToolRunIndexer",
     "WorkerExecutionError",
+    "build_worker_loop_service",
     "worker_banner",
 ]

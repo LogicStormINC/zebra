@@ -127,6 +127,24 @@ Expected result:
 - terminal `status` and `current_sequence`
 - `assistant_message` and compact `trace`
 
+Run the local worker loop against durable ready sessions:
+
+```bash
+uv run zebra-agent-worker \
+  --database .zebra/sessions.sqlite \
+  --worker-id local-worker \
+  --batch-size 1 \
+  --max-cycles 1 \
+  --stop-when-idle
+```
+
+Expected result:
+
+- JSON output with `command=loop`
+- `cycles_completed` and `idle_cycles`
+- `executed_session_ids` for any claimed ready sessions
+- `skipped_session_ids` when a ready session is already leased elsewhere
+
 If a session reaches `waiting_approval`, record a decision with:
 
 ```bash

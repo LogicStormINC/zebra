@@ -71,6 +71,40 @@ class SQLiteProjectionStore(ProjectionStorePort):
             }
         )
 
+    def list_ready_sessions(self, *, limit: int) -> list[Session]:
+        if limit <= 0:
+            return []
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    session_id,
+                    title,
+                    status,
+                    created_at,
+                    updated_at,
+                    current_sequence
+                FROM session_projections
+                WHERE status = ?
+                ORDER BY updated_at ASC, created_at ASC, session_id ASC
+                LIMIT ?
+                """,
+                (SessionStatus.READY.value, limit),
+            ).fetchall()
+        return [
+            Session.model_validate(
+                {
+                    "session_id": row["session_id"],
+                    "title": row["title"],
+                    "status": SessionStatus(row["status"]),
+                    "created_at": row["created_at"],
+                    "updated_at": row["updated_at"],
+                    "current_sequence": row["current_sequence"],
+                }
+            )
+            for row in rows
+        ]
+
     def _initialize(self) -> None:
         with self._database.connect() as connection:
             connection.execute(

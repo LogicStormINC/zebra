@@ -2175,3 +2175,55 @@ Expose the worker-backed ready-session execution path through an explicit HTTP r
 - [x] `POST /sessions/{session_id}/resume` executes a queued ready session through the worker path and persists terminal events.
 - [x] API response exposes final execution status, worker id, and compact trace data.
 - [x] Auth and invalid-request handling remain deterministic.
+
+### P8-WKR-05 - Worker Ready Session Loop
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-WKR-04`
+- Branch: `codex/p8-wkr-05-worker-loop`
+- Owned paths: `apps/worker/`, `packages/agent-core/`, `packages/agent-storage/`, `tests/worker/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a minimal long-running worker loop that can discover ready sessions from durable storage and execute them without a manual CLI or HTTP resume trigger.
+
+#### Deliverables
+
+- projection-store support for listing ready sessions deterministically
+- worker-side polling loop with configurable batch size and worker identity
+- single-cycle and multi-cycle tests covering execution, empty polls, and already-leased sessions
+- operator-facing documentation for invoking the worker loop locally
+
+#### Acceptance
+
+- [x] Worker can poll durable storage and return zero work cleanly when no ready sessions exist.
+- [x] Worker can claim and execute at least one ready session discovered through the poll loop.
+- [x] Active leases prevent a second worker loop from double-executing the same ready session.
+- [x] The worker app exposes a stable local operator entry for running the loop.
+
+### P8-INT-01 - Phase 8 Mainline Alignment
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P8-API-07`, `P8-WKR-05`
+- Branch: `codex/p8-int-01-phase8-mainline`
+- Owned paths: `apps/api/`, `apps/cli/`, `apps/worker/`, `packages/agent-core/`, `packages/agent-storage/`, `tests/api/`, `tests/cli/`, `tests/worker/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Align the completed Phase 8 resume-trigger and worker-loop slices onto one verified mainline branch so the local productization baseline includes all documented operator entry points together.
+
+#### Deliverables
+
+- one branch containing `P8-CLI-06`, `P8-API-07`, and `P8-WKR-05`
+- resolved documentation and runbook updates for the combined Phase 8 operator surface
+- regression validation across CLI, API, worker, and storage slices after integration
+
+#### Acceptance
+
+- [ ] The branch contains CLI resume execute, API resume execute, and worker ready-session loop together.
+- [ ] `PROGRESS.md`, `README.md`, and `docs/operator_runbook.md` describe the combined Phase 8 surface without contradiction.
+- [ ] Integration validation passes for the combined slices.
