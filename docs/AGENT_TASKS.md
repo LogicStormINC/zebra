@@ -2747,8 +2747,8 @@ Close Phase 12 with an explicit acceptance record and define the next phase with
 
 ### P13-API-01 - API Composition Split
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P12-CLOSE-01`
 - Branch: `codex/p13-api-01-composition-split`
@@ -2767,17 +2767,17 @@ Split `ZebraAgentApi` composition before adding more API behavior, keeping every
 
 #### Acceptance
 
-- [ ] `app.py` is safely below the 500-line hard limit.
-- [ ] Existing route and HTTP API tests continue to pass.
-- [ ] No endpoint behavior changes.
-- [ ] Future API work has a clear extension point.
+- [x] `app.py` is safely below the 500-line hard limit.
+- [x] Existing route and HTTP API tests continue to pass.
+- [x] No endpoint behavior changes.
+- [x] Future API work has a clear extension point.
 
 ### P13-INT-01 - Guarded GitHub Pull Request Execution
 
 - Status: `Locked`
 - Owner: `Unassigned`
 - Suggested role: `APP`
-- Depends on: `P13-API-01`
+- Depends on: `P13-API-01`, `P13-SEC-01`
 - Branch: `codex/p13-int-01-guarded-github-pr-execution`
 - Owned paths: `packages/agent-integrations/`, `apps/api/`, `apps/config/`, `tests/agent_integrations/`, `tests/api/`, `tests/config/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
@@ -2801,7 +2801,7 @@ Add the first guarded GitHub PR execution path while preserving local-only defau
 
 ### P13-SEC-01 - SCM Credential Boundary Draft
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `SEC`
 - Depends on: `P12-CLOSE-01`

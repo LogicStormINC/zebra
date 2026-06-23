@@ -3,9 +3,9 @@
 ## Current Phase
 
 - Active phase: `Phase 13 - API Composition And Guarded SCM Execution`
-- Repository status: `phase 13 ready`
+- Repository status: `phase 13 API composition split complete`
 - Current focus:
-  - split API composition before adding more API behavior
+  - define the SCM credential boundary before live remote execution
   - keep local-only PR planning as the default behavior
   - defer remote SCM execution until explicit safety tasks are complete
 
@@ -115,20 +115,20 @@
 - `P12-INT-01 - Pull Request Gateway Selection`
 - `P12-API-01 - Delivery Audit Read API`
 - `P12-CLOSE-01 - Phase 12 Closeout And Phase 13 Planning`
+- `P13-API-01 - API Composition Split`
 
 ## Current Focus
 
 - Phase 11 is now closed with idempotency, delivery audit, and GitHub PR provider skeleton complete
 - remote SCM execution is still not wired to the API and remains an explicit future task
 - Phase 12 is now closed with SCM settings, gateway selection, and delivery audit read API complete
-- `apps/api/src/zebra_agent_api/app.py` is at 489 lines; split API composition before adding more API behavior
+- `apps/api/src/zebra_agent_api/app.py` has been reduced from 489 to 384 lines by moving read-only session APIs into `session_read.py`
 - remote SCM execution remains deferred behind explicit execution and credential-boundary tasks
 
 ## Next Unlocks
 
-- `P13-API-01 - API Composition Split` is ready
-- `P13-INT-01 - Guarded GitHub Pull Request Execution` unlocks after API composition split
-- `P13-SEC-01 - SCM Credential Boundary Draft` is planned before live SCM execution is accepted
+- `P13-SEC-01 - SCM Credential Boundary Draft` is ready
+- `P13-INT-01 - Guarded GitHub Pull Request Execution` unlocks after API composition split and credential boundary
 
 ## Active Documents
 

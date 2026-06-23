@@ -33,7 +33,8 @@ The next milestone is `Phase 13 - API Composition And Guarded SCM Execution`. Th
 - explicit SCM provider settings are available and keep local-only as the default
 - pull-request gateway selection can opt into GitHub dry-run without enabling remote execution
 - delivery audit read API is available for session-level operator inspection
-- API composition split is the next ready implementation lane because `app.py` is close to the 500-line hard limit
+- API composition has been split so `app.py` is below the 500-line hard limit
+- SCM credential boundary is the next ready implementation lane before guarded GitHub execution
 
 Read in this order:
 

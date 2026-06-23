@@ -17,11 +17,10 @@ from agent_core.application.session_projection import apply_event
 from agent_core.domain.identifiers import SessionId
 from agent_core.harness.models import HarnessLoopResult
 from agent_integrations import build_model_gateway, build_pull_request_gateway
-from agent_runtime import WorkspaceDiffError, WorkspaceDiffService, run_local_harness
+from agent_runtime import run_local_harness
 from agent_security import PolicyProfile
 from agent_storage import (
     LeaseConflictError,
-    SQLiteArtifactStore,
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
@@ -40,8 +39,6 @@ from zebra_agent_worker import (
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_commit import SessionCommitApi
-from zebra_agent_api.session_context import session_workspace_root
-from zebra_agent_api.session_delivery_audit import SessionDeliveryAuditApi
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
     parse_append_session_message_payload,
@@ -50,6 +47,7 @@ from zebra_agent_api.session_payloads import (
     parse_resume_session_payload,
 )
 from zebra_agent_api.session_pull_request import SessionPullRequestApi
+from zebra_agent_api.session_read import SessionReadApi
 
 
 @dataclass(frozen=True)
@@ -67,122 +65,19 @@ class ZebraAgentApi:
         )
 
     def get_session(self, session_id: str) -> ApiResponse:
-        session = SQLiteProjectionStore(self.database_path).get_session(SessionId(UUID(session_id)))
-        if session is None:
-            return ApiResponse(
-                status_code=404,
-                body={
-                    "session_id": session_id,
-                    "status": "not_found",
-                },
-            )
-        return ApiResponse(
-            status_code=200,
-            body={
-                "session_id": str(session.session_id),
-                "title": session.title,
-                "status": session.status.value,
-                "current_sequence": session.current_sequence,
-            },
-        )
+        return SessionReadApi(self.database_path).get_session(session_id)
 
     def get_session_stream(self, session_id: str) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
-        if session is None:
-            return ApiResponse(
-                status_code=404,
-                body={
-                    "session_id": session_id,
-                    "status": "not_found",
-                },
-            )
-        events = SQLiteEventStore(self.database_path).list_for_session(session_key)
-        return ApiResponse(
-            status_code=200,
-            body={
-                "session_id": session_id,
-                "events": [
-                    {
-                        "event_id": str(event.event_id),
-                        "sequence": event.sequence,
-                        "event_type": event.event_type.value,
-                        "actor": event.actor.value,
-                        "created_at": event.created_at.isoformat(),
-                        "payload": event.payload,
-                    }
-                    for event in events
-                ],
-            },
-        )
+        return SessionReadApi(self.database_path).get_session_stream(session_id)
 
     def get_session_diff(self, session_id: str) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
-        if session is None:
-            return ApiResponse(
-                status_code=404,
-                body={"session_id": session_id, "status": "not_found"},
-            )
-        workspace_root = session_workspace_root(
-            SQLiteEventStore(self.database_path).list_for_session(session_key)
-        )
-        if workspace_root is None:
-            return conflict(
-                session_id=session_id,
-                status="diff_unavailable",
-                reason="session workspace_root is unavailable",
-            )
-        try:
-            diff = WorkspaceDiffService().read_diff(workspace_root)
-        except WorkspaceDiffError as error:
-            return conflict(
-                session_id=session_id,
-                status="diff_unavailable",
-                reason=str(error),
-            )
-        return ApiResponse(
-            status_code=200,
-            body={
-                "session_id": session_id,
-                "workspace": str(diff.workspace_root),
-                "clean": diff.clean,
-                "git_status": diff.git_status,
-                "diff": diff.diff,
-            },
-        )
+        return SessionReadApi(self.database_path).get_session_diff(session_id)
 
     def get_session_artifacts(self, session_id: str) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
-        if session is None:
-            return ApiResponse(
-                status_code=404,
-                body={"session_id": session_id, "status": "not_found"},
-            )
-        artifacts = SQLiteArtifactStore(self.database_path).list_for_session(session_key)
-        return ApiResponse(
-            status_code=200,
-            body={
-                "session_id": session_id,
-                "artifacts": [
-                    {
-                        "artifact_id": artifact.artifact_id,
-                        "sequence": artifact.sequence,
-                        "source": artifact.source,
-                        "kind": artifact.kind,
-                        "label": artifact.label,
-                        "uri": artifact.uri,
-                        "preview": artifact.preview,
-                        "metadata": artifact.metadata,
-                    }
-                    for artifact in artifacts
-                ],
-            },
-        )
+        return SessionReadApi(self.database_path).get_session_artifacts(session_id)
 
     def get_session_delivery_audit(self, session_id: str) -> ApiResponse:
-        return SessionDeliveryAuditApi(self.database_path).get_delivery_audit(session_id)
+        return SessionReadApi(self.database_path).get_session_delivery_audit(session_id)
 
     def commit_session(
         self,

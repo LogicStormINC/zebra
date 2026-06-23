@@ -2019,3 +2019,23 @@
 - 验证：
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 13 API Composition Split
+
+- 执行 `P13-API-01 - API Composition Split`
+- 新增：
+  - `apps/api/src/zebra_agent_api/session_read.py`
+- 拆分内容：
+  - session lookup
+  - session stream
+  - session diff
+  - session artifacts
+  - session delivery audit read delegation
+- 结果：
+  - `apps/api/src/zebra_agent_api/app.py` 从 489 行降到 384 行
+  - endpoint 行为不变
+  - `P13-SEC-01` 解锁为下一步，`P13-INT-01` 等待 credential boundary
+- 验证：
+  - `uv run pytest tests/api/test_api_app.py tests/api/test_routes.py tests/api/test_http_app.py tests/api/test_session_diff.py tests/api/test_session_artifacts.py tests/api/test_session_delivery_audit.py`
+  - `make check`
+  - `make test`
