@@ -2774,7 +2774,7 @@ Split `ZebraAgentApi` composition before adding more API behavior, keeping every
 
 ### P13-INT-01 - Guarded GitHub Pull Request Execution
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `APP`
 - Depends on: `P13-API-01`, `P13-SEC-01`
@@ -2801,8 +2801,8 @@ Add the first guarded GitHub PR execution path while preserving local-only defau
 
 ### P13-SEC-01 - SCM Credential Boundary Draft
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `SEC`
 - Depends on: `P12-CLOSE-01`
 - Branch: `codex/p13-sec-01-scm-credential-boundary`
@@ -2821,7 +2821,7 @@ Define the minimal credential boundary required before live SCM execution become
 
 #### Acceptance
 
-- [ ] Token values are never stored in project settings snapshots.
-- [ ] Serialized configs include token env names only.
-- [ ] Redaction behavior is deterministic.
-- [ ] Live SCM execution remains blocked until this boundary is adopted.
+- [x] Token values are never stored in project settings snapshots.
+- [x] Serialized configs include token env names only.
+- [x] Redaction behavior is deterministic.
+- [x] Live SCM execution remains blocked until this boundary is adopted.

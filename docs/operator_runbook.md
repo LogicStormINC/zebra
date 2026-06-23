@@ -342,6 +342,8 @@ Rules:
 - GitHub config requires `ZEBRA_GITHUB_OWNER`, `ZEBRA_GITHUB_REPO`, and `ZEBRA_GITHUB_TOKEN_ENV`.
 - `ZEBRA_GITHUB_TOKEN_ENV` is the name of the environment variable that will hold a token later; the token value itself must not be written to config files.
 - `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true` keeps provider selection non-mutating until remote execution is explicitly implemented.
+- SCM credential snapshots store token environment variable names only.
+- Any token value handled by the credential boundary serializes as `<redacted>`.
 
 Append one more user message to an existing session:
 

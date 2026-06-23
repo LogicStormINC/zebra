@@ -91,3 +91,18 @@ def test_load_settings_reads_scm_defaults_file(tmp_path: Path) -> None:
     assert settings.scm.github_owner == "default-org"
     assert settings.scm.github_repo == "default-repo"
     assert settings.scm.github_token_env == "DEFAULT_GITHUB_TOKEN"
+
+
+def test_load_settings_does_not_store_scm_token_value() -> None:
+    settings = load_settings(
+        {
+            "ZEBRA_SCM_PROVIDER": "github",
+            "ZEBRA_GITHUB_OWNER": "octo-org",
+            "ZEBRA_GITHUB_REPO": "zebra-agent",
+            "ZEBRA_GITHUB_TOKEN_ENV": "GITHUB_TOKEN",
+            "GITHUB_TOKEN": "secret-token",
+        }
+    )
+
+    assert settings.scm.github_token_env == "GITHUB_TOKEN"
+    assert "secret-token" not in repr(settings.scm)

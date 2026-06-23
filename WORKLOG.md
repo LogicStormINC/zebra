@@ -2039,3 +2039,26 @@
   - `uv run pytest tests/api/test_api_app.py tests/api/test_routes.py tests/api/test_http_app.py tests/api/test_session_diff.py tests/api/test_session_artifacts.py tests/api/test_session_delivery_audit.py`
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 13 SCM Credential Boundary Draft
+
+- 执行 `P13-SEC-01 - SCM Credential Boundary Draft`
+- 新增：
+  - `ScmCredentialCapability`
+  - `ScmCredentialBoundary`
+  - `REDACTED_SECRET`
+- 行为边界：
+  - local-only 不产生 token capability
+  - GitHub capability 只保留 token env name 和运行时 token value
+  - settings snapshot 不包含 token value
+  - redacted serialization 输出 `<redacted>`
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P13-SEC-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P13-INT-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+  - `docs/operator_runbook.md`
+- 验证：
+  - `uv run pytest tests/agent_security/test_credentials.py tests/config/test_settings.py`
+  - `make check`
+  - `make test`
