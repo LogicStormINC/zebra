@@ -2227,3 +2227,136 @@ Align the completed Phase 8 resume-trigger and worker-loop slices onto one verif
 - [x] The branch contains CLI resume execute, API resume execute, and worker ready-session loop together.
 - [x] `PROGRESS.md`, `README.md`, and `docs/operator_runbook.md` describe the combined Phase 8 surface without contradiction.
 - [x] Integration validation passes for the combined slices.
+
+### P8-CLOSE-01 - Phase 8 Closeout Record
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOCS`
+- Depends on: `P8-INT-01`
+- Branch: `codex/p8-close-01-phase-closeout`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 8 by recording productization evidence, explicit deferrals, and the next implementation lanes before Phase 9 session-control work begins.
+
+#### Deliverables
+
+- Phase 8 acceptance record under `docs/`
+- task registry update for the closeout slice plus next-phase starter tasks
+- project progress update moving the repository to Phase 9 ready state
+
+#### Acceptance
+
+- [x] Acceptance record maps Phase 8 criteria to implemented code paths.
+- [x] Validation commands and results are recorded.
+- [x] Deferred session-control, approval, and commit or PR surface work is explicit.
+- [x] `PROGRESS.md` identifies Phase 9 starter tasks as the next active implementation lanes.
+
+## Phase 9 Task Board
+
+### P9-API-01 - Session Messages Entry
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P8-CLOSE-01`
+- Branch: `codex/p9-api-01-session-messages`
+- Owned paths: `apps/api/`, `packages/agent-core/`, `tests/api/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose `POST /sessions/{id}/messages` so an existing durable session can accept another user message instead of requiring a brand-new session for every interaction.
+
+#### Deliverables
+
+- API route and payload validation for appending one user message to a session
+- durable event emission and projection update for the appended message
+- tests covering happy-path append, missing session, invalid payload, and terminal-session rejection
+
+#### Acceptance
+
+- [ ] Existing sessions can accept a new user message through the API.
+- [ ] The appended message persists as a durable event and updates session metadata deterministically.
+- [ ] Terminal sessions reject new messages cleanly.
+- [ ] Existing read, create, stream, and resume routes remain unchanged.
+
+### P9-API-02 - Cancel And Suspend Entry
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P9-API-01`
+- Branch: `codex/p9-api-02-session-control`
+- Owned paths: `apps/api/`, `packages/agent-core/`, `tests/api/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` so operators can move live or queued sessions through the documented control-plane transitions.
+
+#### Deliverables
+
+- cancel and suspend API routes with deterministic response models
+- durable control events and projection transitions
+- tests covering valid transitions, invalid state transitions, auth behavior, and missing sessions
+
+#### Acceptance
+
+- [ ] Cancel and suspend routes persist control events and update session state correctly.
+- [ ] Invalid transitions return deterministic errors without mutating durable state.
+- [ ] Existing create, message, stream, and resume behavior remains unchanged.
+- [ ] Operator runbook documents both control actions.
+
+### P9-API-03 - Approval HTTP Entry
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P9-API-02`
+- Branch: `codex/p9-api-03-approval-http`
+- Owned paths: `apps/api/`, `packages/agent-core/`, `tests/api/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose `POST /approvals/{id}/approve` and `POST /approvals/{id}/reject` by reusing the existing approval service entry instead of keeping approval resolution CLI-only.
+
+#### Deliverables
+
+- approval and rejection API routes
+- request validation and deterministic error mapping
+- tests covering grant, reject, invalid state, and auth cases
+
+#### Acceptance
+
+- [ ] Approval decisions can be recorded over HTTP with the same durable event semantics as the core service entry.
+- [ ] Invalid approval state is rejected deterministically.
+- [ ] Existing CLI approval behavior remains unchanged.
+- [ ] Runbook documents the approval HTTP path.
+
+### P9-WKR-01 - Worker Continuous Loop Behavior
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P8-CLOSE-01`
+- Branch: `codex/p9-wkr-01-worker-daemon`
+- Owned paths: `apps/worker/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Harden the current worker loop from a single-operator poll helper into a more stable continuous worker process with explicit idle behavior, cycle reporting, and daemon-friendly defaults.
+
+#### Deliverables
+
+- improved worker loop defaults for continuous operation
+- deterministic stop and idle semantics for local daemon-style execution
+- tests covering multi-cycle idle polling and non-interactive operator execution
+- runbook guidance for long-running local worker usage
+
+#### Acceptance
+
+- [ ] Worker loop can run for multiple cycles with deterministic idle behavior.
+- [ ] Loop reporting stays machine-readable for operator automation.
+- [ ] Existing single-cycle worker loop behavior remains supported.
+- [ ] Documentation explains short-run and long-run worker invocation modes.

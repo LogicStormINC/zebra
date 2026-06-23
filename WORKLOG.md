@@ -1652,3 +1652,16 @@
 - 本轮验证结果：
   - `uv run pytest tests/cli/test_cli_commands.py tests/api/test_http_app.py tests/api/test_routes.py tests/agent_storage/test_sqlite_projection_store.py tests/worker/test_loop.py` 通过
   - `make check` 通过
+
+## 2026-06-23 Phase 8 Closeout Record
+
+- 执行 `P8-CLOSE-01 - Phase 8 Closeout Record`
+- 新增文档：
+  - `docs/Phase8_CLI_API_Productization_验收记录.md`
+- 更新规划：
+  - `docs/AGENT_TASKS.md` 增加 `P8-CLOSE-01`
+  - `docs/AGENT_TASKS.md` 增加 `Phase 9 Task Board`
+  - `PROGRESS.md` 切换到 `phase 9 ready`
+  - `README.md` 补充 Phase 8 closeout 与 Phase 9 starter lanes
+- 本轮验证结果：
+  - `make check` 通过

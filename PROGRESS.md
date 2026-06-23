@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 8 - CLI/API Productization`
-- Repository status: `phase 8 ready`
+- Active phase: `Phase 9 - Session Control And Worker Hardening`
+- Repository status: `phase 9 ready`
 - Current focus:
-  - expose the real model gateway through a minimal durable CLI run execution path
-  - keep CLI/API entry points thin composition layers over existing package contracts
+  - expose durable session control APIs beyond create and resume
+  - harden the worker loop from operator helper into a more daemon-like local worker entry
 
 ## Completed
 
@@ -92,22 +92,23 @@
 - `P8-QUE-01 - Queued Session Bootstrap Events`
 - `P8-WKR-04 - Worker Execute Ready Session`
 - `P8-CLI-06 - CLI Resume Execute Trigger`
+- `P8-API-07 - API Resume Execute Trigger`
+- `P8-WKR-05 - Worker Ready Session Loop`
+- `P8-INT-01 - Phase 8 Mainline Alignment`
+- `P8-CLOSE-01 - Phase 8 Closeout Record`
 
 ## Current Focus
 
-- Phase 8 has deterministic CLI command parsing, local session operations, settings-backed database defaults, framework-independent route adaptation, a thin FastAPI serving layer, read-only session stream replay over SSE, an executable local operator runbook, optional bearer-token auth for non-health API routes, a real OpenAI-compatible model gateway adapter, and a CLI model smoke path
-- Phase 8 now also has an explicit CLI durable execution path that can persist one harness attempt with real model and builtin tool wiring
-- Phase 8 now also has a writable API `POST /sessions` entry that can either create a session or run one durable local harness attempt immediately
-- create-only session flows now persist queued task bootstrap events and land in `ready` state for later recovery
-- Phase 8 now also has a worker-side ready-session execution service that can resume one queued task, emit terminal events, and update model/tool indexes
-- Phase 8 now also has an explicit CLI `resume --execute` operator entry for queued ready sessions
-- Phase 8 now also has an explicit API `POST /sessions/{session_id}/resume` trigger for queued ready sessions
-- Phase 8 now also has a worker polling loop and `zebra-agent-worker` operator entry that can discover ready sessions and execute them from durable storage
+- Phase 8 is now closed with aligned CLI, API, and worker operator entry points for local durable execution
+- Phase 9 should next add `POST /sessions/{id}/messages` to unlock multi-turn session interaction on top of the current durable session model
+- Phase 9 should then add cancel or suspend and approval HTTP entries to complete the operator control plane
+- worker follow-up should harden continuous loop behavior without reopening API-owned paths in the same task
 
 ## Next Unlocks
 
-- `P8-INT-01` is complete
-- the next step is to merge the aligned Phase 8 mainline branch back toward `main` and then decide whether to close Phase 8 formally or start the next milestone
+- `P8-CLOSE-01` is complete
+- the next task to claim is `P9-API-01 - Session Messages Entry`
+- the first parallel-ready worker task after closeout is `P9-WKR-01 - Worker Continuous Loop Behavior`
 
 ## Active Documents
 

@@ -14,7 +14,14 @@ The current repository direction is:
 
 ## Current Status
 
-The repository is in `Phase 8 - CLI/API Productization`. The `apps/ + packages/` workspace skeleton is in place, the core contracts are typed, the local runtime and builtin tools are wired, the control-plane foundation includes durable session events and recovery/indexing primitives, Phase 5 has closed out with a typed workspace context compiler, Phase 6 has closed out with deterministic local policy and approval hardening, Phase 7 has closed out with local trace, replay, eval, and release-gate foundations wired into `make check`, and Phase 8 now has CLI command skeletons, local session operations, an explicit durable CLI run execution path, queued session bootstrap persistence for later worker recovery, CLI and API resume execution triggers for ready sessions, API health/session route adaptation, a writable API session creation and execution entry, a worker-side ready-session execution service, a worker polling loop with a local operator entry, settings-backed CLI/API database defaults, a thin FastAPI serving layer, read-only SSE session replay, an executable local operator runbook, optional bearer-token auth for non-health API routes, a real OpenAI-compatible model gateway adapter, and a CLI model smoke path.
+Phase 8 is closed. The repository now has a complete local productization baseline: CLI durable run and resume execution, writable API session creation and resume execution, queued-session bootstrap persistence, worker-side ready-session execution, a local worker polling loop, settings-backed entry points, read-only SSE replay, operator runbook coverage, optional API bearer auth, and a real OpenAI-compatible model gateway adapter.
+
+The next milestone is `Phase 9 - Session Control And Worker Hardening`. The immediate implementation lanes are:
+
+- `POST /sessions/{id}/messages`
+- `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend`
+- `POST /approvals/{id}/approve` and `POST /approvals/{id}/reject`
+- continuous worker-loop hardening for longer-running local operator use
 
 Read in this order:
 
@@ -57,3 +64,5 @@ For the current local operator workflow, start with `docs/operator_runbook.md`. 
 - worker loop execution for queued ready sessions
 - local FastAPI serving
 - SSE session stream replay
+
+For the latest phase closeout summary, see `docs/Phase8_CLI_API_Productization_验收记录.md`.
