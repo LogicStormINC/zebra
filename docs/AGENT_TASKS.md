@@ -2715,3 +2715,113 @@ Expose delivery audit records through a read-only session API so operators can i
 - [x] Empty delivery audit returns an explicit empty list.
 - [x] Response includes action, status, policy profile, idempotency key, metadata, and timestamp.
 - [x] Read API does not trigger any side effect.
+
+### P12-CLOSE-01 - Phase 12 Closeout And Phase 13 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `TL`
+- Depends on: `P12-CONFIG-01`, `P12-INT-01`, `P12-API-01`
+- Branch: `codex/p12-closeout-phase13-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 12 with an explicit acceptance record and define the next phase without violating file-size or remote-side-effect boundaries.
+
+#### Deliverables
+
+- Phase 12 acceptance record
+- task registry update for Phase 13 starter tasks
+- project progress update moving the repository to Phase 13 ready state
+- README alignment with the latest closeout record
+
+#### Acceptance
+
+- [x] Phase 12 acceptance record maps completed tasks to implemented behavior.
+- [x] Validation commands and results are recorded.
+- [x] `app.py` file-size risk is explicit before further API work.
+- [x] Remote SCM execution remains deferred behind future safety tasks.
+
+## Phase 13 Task Board
+
+### P13-API-01 - API Composition Split
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P12-CLOSE-01`
+- Branch: `codex/p13-api-01-composition-split`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Split `ZebraAgentApi` composition before adding more API behavior, keeping every source file under repository limits.
+
+#### Deliverables
+
+- session read APIs moved behind focused composition modules where appropriate
+- `apps/api/src/zebra_agent_api/app.py` reduced away from the 500-line hard limit
+- route behavior unchanged
+- targeted API regression tests
+
+#### Acceptance
+
+- [ ] `app.py` is safely below the 500-line hard limit.
+- [ ] Existing route and HTTP API tests continue to pass.
+- [ ] No endpoint behavior changes.
+- [ ] Future API work has a clear extension point.
+
+### P13-INT-01 - Guarded GitHub Pull Request Execution
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P13-API-01`
+- Branch: `codex/p13-int-01-guarded-github-pr-execution`
+- Owned paths: `packages/agent-integrations/`, `apps/api/`, `apps/config/`, `tests/agent_integrations/`, `tests/api/`, `tests/config/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add the first guarded GitHub PR execution path while preserving local-only default behavior and fail-closed semantics.
+
+#### Deliverables
+
+- explicit opt-in execution gate
+- token lookup by configured environment variable name
+- request serialization and execution boundary tests without live GitHub dependency
+- delivery audit coverage for attempted execution
+
+#### Acceptance
+
+- [ ] Local-only remains the default with no remote side effect.
+- [ ] GitHub execution requires explicit provider and dry-run disablement.
+- [ ] Missing token fails before any network call.
+- [ ] Tests do not require live GitHub access.
+
+### P13-SEC-01 - SCM Credential Boundary Draft
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `SEC`
+- Depends on: `P12-CLOSE-01`
+- Branch: `codex/p13-sec-01-scm-credential-boundary`
+- Owned paths: `packages/agent-security/`, `apps/config/`, `tests/agent_security/`, `tests/config/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define the minimal credential boundary required before live SCM execution becomes acceptable.
+
+#### Deliverables
+
+- credential capability model draft
+- redaction and non-serialization rules for SCM tokens
+- tests covering token name/value separation and safe serialization
+- runbook update
+
+#### Acceptance
+
+- [ ] Token values are never stored in project settings snapshots.
+- [ ] Serialized configs include token env names only.
+- [ ] Redaction behavior is deterministic.
+- [ ] Live SCM execution remains blocked until this boundary is adopted.

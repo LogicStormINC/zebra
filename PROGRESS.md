@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 12 - Remote SCM Configuration`
-- Repository status: `phase 12 delivery audit read API complete`
+- Active phase: `Phase 13 - API Composition And Guarded SCM Execution`
+- Repository status: `phase 13 ready`
 - Current focus:
-  - plan the next Phase 12 closeout or remote SCM execution task
+  - split API composition before adding more API behavior
   - keep local-only PR planning as the default behavior
-  - defer remote SCM execution until an explicit execution task is defined
+  - defer remote SCM execution until explicit safety tasks are complete
 
 ## Completed
 
@@ -114,20 +114,21 @@
 - `P12-CONFIG-01 - SCM Provider Settings`
 - `P12-INT-01 - Pull Request Gateway Selection`
 - `P12-API-01 - Delivery Audit Read API`
+- `P12-CLOSE-01 - Phase 12 Closeout And Phase 13 Planning`
 
 ## Current Focus
 
 - Phase 11 is now closed with idempotency, delivery audit, and GitHub PR provider skeleton complete
 - remote SCM execution is still not wired to the API and remains an explicit future task
-- Phase 12 now has explicit SCM provider settings with local-only as the default
-- GitHub SCM config requires explicit owner, repo, and token environment variable name
-- pull-request gateway selection now supports explicit GitHub dry-run while preserving local-only default behavior
-- delivery audit read API now exposes delivery attempts for session-level operator inspection
-- `apps/api/src/zebra_agent_api/app.py` is at 489 lines; split API composition before adding more methods
+- Phase 12 is now closed with SCM settings, gateway selection, and delivery audit read API complete
+- `apps/api/src/zebra_agent_api/app.py` is at 489 lines; split API composition before adding more API behavior
+- remote SCM execution remains deferred behind explicit execution and credential-boundary tasks
 
 ## Next Unlocks
 
-- Next Phase 12 closeout or remote-SCM execution task should be defined before enabling live GitHub side effects
+- `P13-API-01 - API Composition Split` is ready
+- `P13-INT-01 - Guarded GitHub Pull Request Execution` unlocks after API composition split
+- `P13-SEC-01 - SCM Credential Boundary Draft` is planned before live SCM execution is accepted
 
 ## Active Documents
 

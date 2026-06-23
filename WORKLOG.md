@@ -2001,3 +2001,21 @@
   - `uv run pytest tests/api/test_session_delivery_audit.py tests/api/test_routes.py tests/api/test_http_app.py`
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 12 Closeout And Phase 13 Planning
+
+- 执行 `P12-CLOSE-01 - Phase 12 Closeout And Phase 13 Planning`
+- 新增文档：
+  - `docs/Phase12_Remote_SCM_Configuration_验收记录.md`
+- 更新规划：
+  - `docs/AGENT_TASKS.md` 增加 `P12-CLOSE-01`
+  - `docs/AGENT_TASKS.md` 增加 `Phase 13 Task Board`
+  - `PROGRESS.md` 切换到 `phase 13 ready`
+  - `README.md` 指向最新 Phase 12 closeout summary
+- Phase 13 首批任务：
+  - `P13-API-01 - API Composition Split`
+  - `P13-INT-01 - Guarded GitHub Pull Request Execution`
+  - `P13-SEC-01 - SCM Credential Boundary Draft`
+- 验证：
+  - `make check`
+  - `make test`
