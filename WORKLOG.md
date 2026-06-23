@@ -2301,3 +2301,25 @@
   - `README.md`
 - 验证：
   - `uv run pytest tests/api/test_session_pull_request.py tests/agent_integrations/test_scm.py tests/agent_security/test_environment_broker.py`
+
+## 2026-06-23 Phase 16 Closeout And Phase 17 Planning
+
+- 执行 `P16-CLOSE-01 - Phase 16 Closeout And Next Planning`
+- 新增文档：
+  - `docs/Phase16_Local_Credential_Backend_And_API_Wiring_验收记录.md`
+- Phase 16 验收结论：
+  - local environment credential broker 完成
+  - API credential broker composition 完成
+  - missing credential audit metadata 覆盖完成
+  - direct env fallback 仍保留为兼容边界
+- Phase 17 首批任务：
+  - `P17-APP-01 - API Default Environment Broker Factory`
+  - `P17-INT-01 - SCM Env Fallback Boundary`
+  - `P17-DOC-01 - Broker-Backed SCM Operator Docs`
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
+  - `make test`

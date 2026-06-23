@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 15 is closed and Phase 16 local credential backend work is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
+Phase 16 is closed and Phase 17 credential backend hardening is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
 
-The next milestone is `Phase 16 - Local Credential Backend And API Wiring`. The current implementation lanes are:
+The next milestone is `Phase 17 - Credential Backend Hardening`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -44,7 +44,7 @@ The next milestone is `Phase 16 - Local Credential Backend And API Wiring`. The 
 - SCM gateway construction can use broker-issued capabilities for GitHub non-dry-run execution while preserving local-only and dry-run defaults
 - local environment-backed credential broker can issue scoped capabilities from configured env var names
 - API pull-request composition can inject a credential broker and fake GitHub transport for broker-backed execution tests
-- Phase 16 closeout and next planning is the next ready implementation lane
+- default API environment broker composition is the next ready implementation lane
 
 Read in this order:
 
@@ -88,4 +88,4 @@ For the current local operator workflow, start with `docs/operator_runbook.md`. 
 - local FastAPI serving
 - SSE session stream replay
 
-For the latest phase closeout summary, see `docs/Phase15_Credential_Broker_Foundation_验收记录.md`.
+For the latest phase closeout summary, see `docs/Phase16_Local_Credential_Backend_And_API_Wiring_验收记录.md`.

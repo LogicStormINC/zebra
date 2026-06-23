@@ -3126,8 +3126,8 @@ Wire API pull-request gateway construction through the credential broker boundar
 
 ### P16-CLOSE-01 - Phase 16 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P16-APP-01`
 - Branch: `codex/p16-closeout-next-plan`
@@ -3145,6 +3145,85 @@ Close Phase 16 with local credential backend and API composition evidence.
 
 #### Acceptance
 
-- [ ] Local broker and API composition validation evidence is recorded.
-- [ ] Env fallback boundary is updated or retired explicitly.
-- [ ] Next phase starter tasks are ready and path-scoped.
+- [x] Local broker and API composition validation evidence is recorded.
+- [x] Env fallback boundary is updated or retired explicitly.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 17 Task Board
+
+### P17-APP-01 - API Default Environment Broker Factory
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P16-CLOSE-01`
+- Branch: `codex/p17-app-01-api-default-environment-broker-factory`
+- Owned paths: `apps/api/`, `packages/agent-security/`, `tests/api/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Make API composition construct a default environment-backed credential broker from SCM settings when explicit broker injection is not supplied.
+
+#### Deliverables
+
+- broker factory helper for GitHub SCM settings
+- default `create_app` composition path using the helper
+- tests proving default API broker behavior with env mapping or injected env
+- docs update for default broker composition
+
+#### Acceptance
+
+- [ ] Local-only API behavior remains unchanged.
+- [ ] GitHub dry-run does not require a broker credential.
+- [ ] GitHub non-dry-run can use the default environment broker in tests.
+- [ ] Missing default broker env value records delivery audit metadata.
+
+### P17-INT-01 - SCM Env Fallback Boundary
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `CTX`
+- Depends on: `P17-APP-01`
+- Branch: `codex/p17-int-01-scm-env-fallback-boundary`
+- Owned paths: `packages/agent-integrations/`, `packages/agent-security/`, `tests/agent_integrations/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Narrow or explicitly deprecate direct environment-token fallback in SCM gateway construction now that API composition can use a broker.
+
+#### Deliverables
+
+- explicit fallback policy in code or docs
+- regression tests for broker-first behavior
+- compatibility tests for any retained fallback
+
+#### Acceptance
+
+- [ ] Broker-backed path is preferred in integration tests.
+- [ ] Any retained env fallback is explicit and documented.
+- [ ] Removing or narrowing fallback does not break local-only or dry-run behavior.
+
+### P17-DOC-01 - Broker-Backed SCM Operator Docs
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P17-APP-01`, `P17-INT-01`
+- Branch: `codex/p17-doc-01-broker-backed-scm-operator-docs`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Update operator documentation for broker-backed SCM execution and the env fallback boundary.
+
+#### Deliverables
+
+- broker-backed configuration examples
+- audit inspection checklist
+- fallback/deprecation notes
+
+#### Acceptance
+
+- [ ] Runbook describes broker-backed GitHub PR execution.
+- [ ] Token handling rules remain visible before execution steps.
+- [ ] Audit inspection remains part of the operator flow.

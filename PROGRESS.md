@@ -2,10 +2,10 @@
 
 ## Current Phase
 
-- Active phase: `Phase 16 - Local Credential Backend And API Wiring`
-- Repository status: `phase 16 local credential backend and API wiring complete`
+- Active phase: `Phase 17 - Credential Backend Hardening`
+- Repository status: `phase 17 ready`
 - Current focus:
-  - close Phase 16 and define the next implementation phase
+  - build default API environment broker composition
   - keep local-only PR planning as the default behavior
   - keep live SCM execution behind explicit provider, dry-run, credential, and policy gates
 
@@ -129,6 +129,7 @@
 - `P15-CLOSE-01 - Phase 15 Closeout And Next Planning`
 - `P16-SEC-01 - Local Environment Credential Broker`
 - `P16-APP-01 - API Credential Broker Composition`
+- `P16-CLOSE-01 - Phase 16 Closeout And Next Planning`
 
 ## Current Focus
 
@@ -148,11 +149,14 @@
 - Phase 15 is closed with `docs/Phase15_Credential_Broker_Foundation_验收记录.md`
 - local environment credential broker can issue scoped capabilities from configured env var names without leaking token values in repr or redacted snapshots
 - API pull-request composition can inject a broker and fake GitHub transport for broker-backed non-dry-run execution tests
-- Phase 16 is ready for closeout and next-phase planning
+- Phase 16 is closed with `docs/Phase16_Local_Credential_Backend_And_API_Wiring_验收记录.md`
+- Phase 17 should build default broker composition and narrow the direct env fallback boundary
 
 ## Next Unlocks
 
-- `P16-CLOSE-01 - Phase 16 Closeout And Next Planning` is ready
+- `P17-APP-01 - API Default Environment Broker Factory` is ready
+- `P17-INT-01 - SCM Env Fallback Boundary` unlocks after default broker composition
+- `P17-DOC-01 - Broker-Backed SCM Operator Docs` unlocks after fallback boundary
 
 ## Active Documents
 
