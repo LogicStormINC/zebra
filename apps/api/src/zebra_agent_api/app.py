@@ -16,9 +16,13 @@ from agent_core.application import (
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.identifiers import SessionId
 from agent_core.harness.models import HarnessLoopResult
-from agent_integrations import build_model_gateway, build_pull_request_gateway
+from agent_integrations import (
+    GitHubPullRequestTransport,
+    build_model_gateway,
+    build_pull_request_gateway,
+)
 from agent_runtime import run_local_harness
-from agent_security import PolicyProfile
+from agent_security import CredentialBroker, PolicyProfile
 from agent_storage import (
     LeaseConflictError,
     SQLiteEventStore,
@@ -54,6 +58,8 @@ from zebra_agent_api.session_read import SessionReadApi
 class ZebraAgentApi:
     database_path: Path
     settings: ZebraAgentSettings
+    credential_broker: CredentialBroker | None = None
+    github_transport: GitHubPullRequestTransport | None = None
 
     def health(self) -> ApiResponse:
         return ApiResponse(
@@ -100,7 +106,11 @@ class ZebraAgentApi:
         idempotency_key: str | None = None,
     ) -> ApiResponse:
         try:
-            gateway = build_pull_request_gateway(self.settings.scm)
+            gateway = build_pull_request_gateway(
+                self.settings.scm,
+                credential_broker=self.credential_broker,
+                github_transport=self.github_transport,
+            )
         except ValueError as error:
             return conflict(
                 session_id=session_id,
@@ -352,11 +362,15 @@ def create_app(
     database_path: str | Path | None = None,
     *,
     settings: ZebraAgentSettings | None = None,
+    credential_broker: CredentialBroker | None = None,
+    github_transport: GitHubPullRequestTransport | None = None,
 ) -> ZebraAgentApi:
     active_settings = settings or load_settings()
     return ZebraAgentApi(
         database_path=Path(database_path or active_settings.database_url),
         settings=active_settings,
+        credential_broker=credential_broker,
+        github_transport=github_transport,
     )
 
 

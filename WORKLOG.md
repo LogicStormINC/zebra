@@ -2283,3 +2283,21 @@
   - `README.md`
 - 验证：
   - `uv run pytest tests/agent_security/test_environment_broker.py tests/agent_security/test_broker.py tests/agent_security/test_capabilities.py`
+
+## 2026-06-23 Phase 16 API Credential Broker Composition
+
+- 执行 `P16-APP-01 - API Credential Broker Composition`
+- 行为更新：
+  - `ZebraAgentApi` 支持注入 `credential_broker`
+  - `ZebraAgentApi` 支持注入 GitHub transport 以便 API 层 fake execution 测试
+  - `create_app` 与 `create_http_app` 保持默认行为不变，同时支持 dependency injection
+  - GitHub non-dry-run API 路径可使用 broker-issued capability
+  - broker missing credential 在网络执行前失败并记录 delivery audit metadata
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P16-APP-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P16-CLOSE-01` 解锁为 `Ready`
+  - `docs/Credential_Broker_Foundation.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run pytest tests/api/test_session_pull_request.py tests/agent_integrations/test_scm.py tests/agent_security/test_environment_broker.py`

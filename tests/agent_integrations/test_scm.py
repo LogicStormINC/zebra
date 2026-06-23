@@ -354,13 +354,27 @@ def test_build_pull_request_gateway_uses_broker_credential_for_execution(
     _assert_secret_absent("broker-token", plan)
 
 
-def test_build_pull_request_gateway_fails_before_execution_when_broker_credential_missing() -> None:
+def test_build_pull_request_gateway_fails_before_execution_when_broker_credential_missing(
+    tmp_path: Path,
+) -> None:
+    workspace = _git_workspace(tmp_path / "workspace")
+    gateway = build_pull_request_gateway(
+        _github_scm(pull_request_dry_run=False),
+        credential_broker=InMemoryCredentialBroker(),
+        github_transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
+        now=_now(),
+    )
+
     with pytest.raises(ScmUnavailableError, match="missing"):
-        build_pull_request_gateway(
-            _github_scm(pull_request_dry_run=False),
-            credential_broker=InMemoryCredentialBroker(),
-            github_transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
-            now=_now(),
+        gateway.plan(
+            workspace,
+            PullRequestRequest(
+                title="Add feature",
+                body="Implementation details.",
+                base_branch="main",
+                head_branch="feature/zebra",
+                dry_run=False,
+            ),
         )
 
 

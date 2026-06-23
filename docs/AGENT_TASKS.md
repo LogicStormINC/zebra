@@ -3099,8 +3099,8 @@ Implement a local environment-backed credential broker so runtime composition ca
 
 ### P16-APP-01 - API Credential Broker Composition
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P16-SEC-01`
 - Branch: `codex/p16-app-01-api-credential-broker-composition`
@@ -3119,14 +3119,14 @@ Wire API pull-request gateway construction through the credential broker boundar
 
 #### Acceptance
 
-- [ ] Local-only API behavior remains unchanged.
-- [ ] GitHub dry-run API behavior does not require credentials.
-- [ ] GitHub non-dry-run API path can use a broker-issued capability in tests.
-- [ ] Missing broker credential fails before network execution and records audit metadata.
+- [x] Local-only API behavior remains unchanged.
+- [x] GitHub dry-run API behavior does not require credentials.
+- [x] GitHub non-dry-run API path can use a broker-issued capability in tests.
+- [x] Missing broker credential fails before network execution and records audit metadata.
 
 ### P16-CLOSE-01 - Phase 16 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P16-APP-01`

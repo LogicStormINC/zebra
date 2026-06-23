@@ -43,7 +43,8 @@ The next milestone is `Phase 16 - Local Credential Backend And API Wiring`. The 
 - credential broker Port definition covers SCM credential requests, in-memory test broker, and missing/denied/unavailable errors
 - SCM gateway construction can use broker-issued capabilities for GitHub non-dry-run execution while preserving local-only and dry-run defaults
 - local environment-backed credential broker can issue scoped capabilities from configured env var names
-- API credential broker composition is the next ready implementation lane
+- API pull-request composition can inject a credential broker and fake GitHub transport for broker-backed execution tests
+- Phase 16 closeout and next planning is the next ready implementation lane
 
 Read in this order:
 

@@ -5,6 +5,8 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
+from agent_integrations import GitHubPullRequestTransport
+from agent_security import CredentialBroker
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from zebra_agent_config import ZebraAgentSettings, load_settings
@@ -19,9 +21,18 @@ def create_http_app(
     database_path: str | Path | None = None,
     *,
     settings: ZebraAgentSettings | None = None,
+    credential_broker: CredentialBroker | None = None,
+    github_transport: GitHubPullRequestTransport | None = None,
 ) -> FastAPI:
     active_settings = settings or load_settings()
-    adapter = RouteAdapter(create_app(database_path, settings=active_settings))
+    adapter = RouteAdapter(
+        create_app(
+            database_path,
+            settings=active_settings,
+            credential_broker=credential_broker,
+            github_transport=github_transport,
+        )
+    )
     app = FastAPI(title="Zebra Agent API")
 
     async def handle(request: Request, full_path: str = "") -> Response:

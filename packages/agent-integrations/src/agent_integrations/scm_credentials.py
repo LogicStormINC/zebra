@@ -14,10 +14,25 @@ def token_from_broker(
     credential_broker: CredentialBroker,
     now: datetime,
 ) -> str | None:
+    return github_token_from_broker(
+        owner=settings.github_owner,
+        repo=settings.github_repo,
+        credential_broker=credential_broker,
+        now=now,
+    )
+
+
+def github_token_from_broker(
+    *,
+    owner: str | None,
+    repo: str | None,
+    credential_broker: CredentialBroker,
+    now: datetime,
+) -> str | None:
     try:
         capability = credential_broker.request_scm_credential(
             provider="github",
-            audience=github_repository_audience(settings.github_owner, settings.github_repo),
+            audience=github_repository_audience(owner, repo),
             scopes=("pull_request:create",),
             now=now,
         )

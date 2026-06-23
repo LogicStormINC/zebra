@@ -1,8 +1,11 @@
+from datetime import UTC, datetime
 from pathlib import Path
 from subprocess import run
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.domain.identifiers import SessionId
+from agent_integrations import GitHubPullRequestPayload
+from agent_security import EnvironmentCredentialBinding, EnvironmentCredentialBroker
 from agent_storage import SQLiteDeliveryAuditStore, SQLiteEventStore, SQLiteProjectionStore
 from fastapi.testclient import TestClient
 from zebra_agent_api import create_http_app
@@ -153,6 +156,84 @@ def test_api_pull_request_github_non_dry_run_fails_closed(tmp_path: Path) -> Non
     assert audit_records[0].result_metadata["reason"] == (
         "github token is required for pull request execution"
     )
+
+
+def test_api_pull_request_uses_broker_credential_for_github_execution(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
+
+    response = create_app(
+        database_path,
+        settings=_settings(None, scm=_github_scm(pull_request_dry_run=False)),
+        credential_broker=_github_broker(env={"GITHUB_TOKEN": "broker-token"}),
+        github_transport=transport,
+    ).open_session_pull_request(
+        str(session_id),
+        {
+            "title": "Add feature",
+            "base_branch": "main",
+            "head_branch": "feature/zebra",
+            "dry_run": False,
+        },
+    )
+
+    assert response.status_code == 200
+    pull_request = response.body["pull_request"]
+    assert pull_request["provider"] == "github"
+    assert pull_request["status"] == "created"
+    assert pull_request["url"] == "https://github.example/pulls/1"
+    assert transport.token == "broker-token"
+    assert "broker-token" not in repr(response.body)
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].status == "created"
+    assert audit_records[0].result_metadata["provider"] == "github"
+    assert audit_records[0].result_metadata["dry_run"] is False
+    assert audit_records[0].result_metadata["url"] == "https://github.example/pulls/1"
+    assert "broker-token" not in repr(audit_records[0].result_metadata)
+
+
+def test_api_pull_request_missing_broker_credential_records_audit(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
+
+    response = create_app(
+        database_path,
+        settings=_settings(None, scm=_github_scm(pull_request_dry_run=False)),
+        credential_broker=_github_broker(env={}),
+        github_transport=transport,
+    ).open_session_pull_request(
+        str(session_id),
+        {
+            "title": "Add feature",
+            "base_branch": "main",
+            "head_branch": "feature/zebra",
+            "dry_run": False,
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.body == {
+        "session_id": str(session_id),
+        "status": "pull_request_unavailable",
+        "reason": "credential environment value is missing",
+        "idempotency_key": None,
+    }
+    assert transport.token is None
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].status == "pull_request_unavailable"
+    assert audit_records[0].result_metadata["provider"] == "github"
+    assert audit_records[0].result_metadata["dry_run"] is False
+    assert audit_records[0].result_metadata["reason"] == ("credential environment value is missing")
 
 
 def test_api_pull_request_rejects_policy_blocked_session(tmp_path: Path) -> None:
@@ -391,3 +472,35 @@ def _github_scm(*, pull_request_dry_run: bool = True) -> ScmSettings:
         github_api_base_url="https://api.github.com",
         pull_request_dry_run=pull_request_dry_run,
     )
+
+
+def _github_broker(*, env: dict[str, str]) -> EnvironmentCredentialBroker:
+    return EnvironmentCredentialBroker(
+        bindings=(
+            EnvironmentCredentialBinding(
+                provider="github",
+                audience="repo:octo-org/zebra-agent",
+                scopes=("pull_request:create",),
+                token_env="GITHUB_TOKEN",
+                expires_at=datetime(2026, 6, 23, 12, 30, tzinfo=UTC),
+            ),
+        ),
+        env=env,
+    )
+
+
+class _FakeGitHubTransport:
+    def __init__(self, *, url: str) -> None:
+        self._url = url
+        self.payload: GitHubPullRequestPayload | None = None
+        self.token: str | None = None
+
+    def create_pull_request(
+        self,
+        payload: GitHubPullRequestPayload,
+        *,
+        token: str,
+    ) -> str:
+        self.payload = payload
+        self.token = token
+        return self._url

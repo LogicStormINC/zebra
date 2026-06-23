@@ -11,7 +11,7 @@ from typing import Protocol
 from agent_security import CredentialBroker, ScmCredentialBoundary
 from zebra_agent_config import ScmSettings
 
-from agent_integrations.scm_credentials import token_from_broker
+from agent_integrations.scm_credentials import github_token_from_broker
 from agent_integrations.scm_errors import ScmIntegrationError, ScmUnavailableError
 
 
@@ -117,9 +117,13 @@ class GitHubPullRequestGateway:
         self,
         config: GitHubPullRequestConfig,
         *,
+        credential_broker: CredentialBroker | None = None,
+        credential_now: datetime | None = None,
         transport: GitHubPullRequestTransport | None = None,
     ) -> None:
         self._config = config
+        self._credential_broker = credential_broker
+        self._credential_now = credential_now
         if transport is None:
             from agent_integrations.github import GitHubHttpPullRequestTransport
 
@@ -161,9 +165,17 @@ class GitHubPullRequestGateway:
             raise ScmUnavailableError(
                 "github pull request execution requires ZEBRA_SCM_PULL_REQUEST_DRY_RUN=false"
             )
-        if self._config.token is None:
+        token = self._config.token
+        if token is None and self._credential_broker is not None:
+            token = github_token_from_broker(
+                owner=self._config.owner,
+                repo=self._config.repo,
+                credential_broker=self._credential_broker,
+                now=self._credential_now or datetime.now(UTC),
+            )
+        if token is None:
             raise ScmUnavailableError("github token is required for pull request execution")
-        url = self._transport.create_pull_request(payload, token=self._config.token)
+        url = self._transport.create_pull_request(payload, token=token)
         return PullRequestPlan(
             provider="github",
             title=request.title.strip(),
@@ -220,13 +232,7 @@ def build_pull_request_gateway(
         values = env or os.environ
         token_value = None
         if not settings.pull_request_dry_run:
-            if credential_broker is not None:
-                token_value = token_from_broker(
-                    settings,
-                    credential_broker=credential_broker,
-                    now=now or datetime.now(UTC),
-                )
-            else:
+            if credential_broker is None:
                 capability = ScmCredentialBoundary().capability_from_settings(
                     settings,
                     token_value=values.get(settings.github_token_env or ""),
@@ -240,6 +246,8 @@ def build_pull_request_gateway(
                 api_base_url=settings.github_api_base_url,
                 execution_enabled=not settings.pull_request_dry_run,
             ),
+            credential_broker=credential_broker,
+            credential_now=now,
             transport=github_transport,
         )
     raise ScmUnavailableError(f"unsupported SCM provider: {settings.provider}")
