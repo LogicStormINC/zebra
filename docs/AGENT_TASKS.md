@@ -2884,8 +2884,8 @@ Harden delivery audit metadata for guarded SCM execution so operators can distin
 
 ### P14-SEC-01 - SCM Token Redaction Regression Gate
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `SEC`
 - Depends on: `P14-OBS-01`
 - Branch: `codex/p14-sec-01-scm-token-redaction-regression-gate`
@@ -2904,14 +2904,14 @@ Add regression coverage proving SCM token values cannot leak through plans, API 
 
 #### Acceptance
 
-- [ ] Token values do not appear in PR plans.
-- [ ] Token values do not appear in API responses.
-- [ ] Token values do not appear in delivery audit records.
-- [ ] Token values do not appear in settings snapshots.
+- [x] Token values do not appear in PR plans.
+- [x] Token values do not appear in API responses.
+- [x] Token values do not appear in delivery audit records.
+- [x] Token values do not appear in settings snapshots.
 
 ### P14-DOC-01 - Remote SCM Operator Safety Runbook
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P14-OBS-01`, `P14-SEC-01`

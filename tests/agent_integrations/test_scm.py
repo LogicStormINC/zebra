@@ -181,6 +181,39 @@ def test_github_pull_request_gateway_executes_with_fake_transport(tmp_path: Path
     assert transport.payload.body["title"] == "Add feature"
 
 
+def test_github_pull_request_gateway_plan_does_not_expose_token(tmp_path: Path) -> None:
+    workspace = _git_workspace(tmp_path / "workspace")
+    transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
+    gateway = GitHubPullRequestGateway(
+        GitHubPullRequestConfig(
+            owner="octo-org",
+            repo="zebra-agent",
+            token="secret-token",
+            execution_enabled=True,
+        ),
+        transport=transport,
+    )
+
+    plan = gateway.plan(
+        workspace,
+        PullRequestRequest(
+            title="Add feature",
+            body="Implementation details.",
+            base_branch="main",
+            head_branch="feature/zebra",
+            dry_run=False,
+        ),
+    )
+
+    _assert_secret_absent("secret-token", plan)
+    assert plan.request_payload is not None
+    assert plan.request_payload["headers"] == {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Authorization": "Bearer <redacted>",
+    }
+
+
 def test_github_pull_request_gateway_serializes_request_with_redacted_token() -> None:
     gateway = GitHubPullRequestGateway(
         GitHubPullRequestConfig(
@@ -307,3 +340,7 @@ class _FakeGitHubTransport:
         self.payload = payload
         self.token = token
         return self._url
+
+
+def _assert_secret_absent(secret: str, value: object) -> None:
+    assert secret not in repr(value)

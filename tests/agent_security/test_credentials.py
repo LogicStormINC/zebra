@@ -45,6 +45,16 @@ def test_scm_credential_boundary_settings_snapshot_excludes_token_value() -> Non
     assert "secret-token" not in str(snapshot)
 
 
+def test_scm_credential_boundary_redacted_snapshot_does_not_expose_token() -> None:
+    capability = ScmCredentialBoundary().capability_from_settings(
+        _github_scm(),
+        token_value="secret-token",
+    )
+
+    assert "secret-token" not in repr(capability.redacted())
+    assert capability.redacted()["token_value"] == REDACTED_SECRET
+
+
 def _local_scm() -> ScmSettings:
     return ScmSettings(
         provider="local-only",

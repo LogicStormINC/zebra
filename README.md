@@ -37,7 +37,8 @@ The next milestone is `Phase 14 - SCM Execution Hardening`. The current implemen
 - SCM credential boundary separates token env names from token values with deterministic redaction
 - guarded GitHub pull-request execution is available only behind explicit provider, dry-run, token, and policy gates
 - SCM execution audit metadata now records normalized provider, status, URL, commit SHA, dry-run flag, and unavailable reasons
-- SCM token redaction regression coverage is the next ready implementation lane
+- SCM token redaction regression coverage now checks PR plans, API responses, delivery audit records, and settings snapshots
+- remote SCM operator safety runbook coverage is the next ready implementation lane
 
 Read in this order:
 

@@ -2122,3 +2122,20 @@
   - `uv run pytest tests/api/test_delivery_audit_metadata.py tests/api/test_session_delivery_audit.py tests/api/test_session_pull_request.py tests/agent_storage/test_delivery_audit.py`
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 14 SCM Token Redaction Regression Gate
+
+- 执行 `P14-SEC-01 - SCM Token Redaction Regression Gate`
+- 新增回归覆盖：
+  - GitHub PR plan 不暴露真实 token
+  - API pull-request created 响应不暴露真实 token
+  - delivery audit result metadata 不暴露真实 token
+  - credential redacted snapshot 和 settings snapshot 不暴露真实 token value
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P14-SEC-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P14-DOC-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+  - `docs/operator_runbook.md`
+- 验证：
+  - `uv run pytest tests/agent_security/test_credentials.py tests/agent_integrations/test_scm.py tests/api/test_scm_token_redaction.py tests/api/test_session_pull_request.py tests/api/test_delivery_audit_metadata.py`

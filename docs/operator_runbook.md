@@ -318,6 +318,13 @@ Expected result:
 - token values must not appear in delivery audit result metadata
 - read-only behavior with no delivery side effect
 
+Token redaction regression scope:
+
+- PR plans expose only redacted authorization headers.
+- API pull-request responses must not include raw token values.
+- Delivery audit result metadata must not include raw token values.
+- SCM settings snapshots must store token environment variable names only.
+
 GitHub pull-request provider status:
 
 - `LocalOnlyPullRequestGateway` remains the default API behavior.

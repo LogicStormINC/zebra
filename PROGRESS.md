@@ -3,9 +3,9 @@
 ## Current Phase
 
 - Active phase: `Phase 14 - SCM Execution Hardening`
-- Repository status: `phase 14 SCM execution audit hardening complete`
+- Repository status: `phase 14 SCM audit and redaction hardening complete`
 - Current focus:
-  - add SCM token redaction regression coverage before documenting the remote operator path
+  - document the safe remote SCM operator path after audit and redaction hardening
   - keep local-only PR planning as the default behavior
   - keep live SCM execution behind explicit provider, dry-run, token, and policy gates
 
@@ -120,6 +120,7 @@
 - `P13-INT-01 - Guarded GitHub Pull Request Execution`
 - `P13-CLOSE-01 - Phase 13 Closeout And Phase 14 Planning`
 - `P14-OBS-01 - SCM Execution Audit Hardening`
+- `P14-SEC-01 - SCM Token Redaction Regression Gate`
 
 ## Current Focus
 
@@ -130,12 +131,12 @@
 - SCM credential boundary now separates token environment names from token values and provides deterministic redaction
 - guarded GitHub PR execution now requires explicit GitHub provider, dry-run disablement, token availability, and full-access policy
 - SCM execution audit metadata now normalizes provider, status, URL, commit SHA, dry-run flag, and unavailable reasons without token values
-- Phase 14 should finish token redaction regression coverage before documenting the remote SCM operator path
+- SCM token redaction regression coverage now checks PR plans, API responses, delivery audit records, and settings snapshots
+- Phase 14 should finish the remote SCM operator safety runbook before closeout
 
 ## Next Unlocks
 
-- `P14-SEC-01 - SCM Token Redaction Regression Gate` is ready
-- `P14-DOC-01 - Remote SCM Operator Safety Runbook` unlocks after audit and redaction coverage
+- `P14-DOC-01 - Remote SCM Operator Safety Runbook` is ready
 
 ## Active Documents
 
