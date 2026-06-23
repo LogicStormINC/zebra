@@ -180,15 +180,31 @@ class ZebraAgentApi:
             },
         )
 
-    def commit_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
-        return SessionCommitApi(self.database_path).commit(session_id, payload)
+    def commit_session(
+        self,
+        session_id: str,
+        payload: dict[str, object],
+        *,
+        idempotency_key: str | None = None,
+    ) -> ApiResponse:
+        return SessionCommitApi(self.database_path).commit(
+            session_id,
+            payload,
+            idempotency_key=idempotency_key,
+        )
 
     def open_session_pull_request(
         self,
         session_id: str,
         payload: dict[str, object],
+        *,
+        idempotency_key: str | None = None,
     ) -> ApiResponse:
-        return SessionPullRequestApi(self.database_path).open_pull_request(session_id, payload)
+        return SessionPullRequestApi(self.database_path).open_pull_request(
+            session_id,
+            payload,
+            idempotency_key=idempotency_key,
+        )
 
     def create_session(self, payload: dict[str, object]) -> ApiResponse:
         parsed = parse_create_session_payload(payload)

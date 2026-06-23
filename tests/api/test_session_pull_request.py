@@ -28,6 +28,7 @@ def test_api_pull_request_returns_local_only_dry_run_plan(tmp_path: Path) -> Non
     assert response.status_code == 200
     assert response.body["session_id"] == str(session_id)
     assert response.body["policy_profile"] == "full_access"
+    assert response.body["idempotency_key"] is None
     pull_request = response.body["pull_request"]
     assert isinstance(pull_request, dict)
     assert pull_request["provider"] == "local-only"
@@ -57,6 +58,7 @@ def test_api_pull_request_rejects_network_execution_in_local_only_mode(
         "session_id": str(session_id),
         "status": "pull_request_unavailable",
         "reason": "pull request execution is unavailable in local-only mode",
+        "idempotency_key": None,
     }
 
 
@@ -75,6 +77,7 @@ def test_api_pull_request_rejects_policy_blocked_session(tmp_path: Path) -> None
         "session_id": str(session_id),
         "status": "policy_blocked",
         "reason": "pull request requires full_access session policy",
+        "idempotency_key": None,
     }
 
 
@@ -88,6 +91,7 @@ def test_api_pull_request_returns_not_found(tmp_path: Path) -> None:
     assert response.body == {
         "session_id": "00000000-0000-0000-0000-000000000001",
         "status": "not_found",
+        "idempotency_key": None,
     }
 
 
@@ -124,6 +128,76 @@ def test_route_adapter_handles_session_pull_request(tmp_path: Path) -> None:
 
     assert response.status_code == 200
     assert response.body["pull_request"]["status"] == "dry_run"
+
+
+def test_api_pull_request_replays_idempotent_response(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    app = create_app(database_path)
+    payload = {"title": "Add feature", "base_branch": "main"}
+
+    first_response = app.open_session_pull_request(
+        str(session_id),
+        payload,
+        idempotency_key="pr-key-1",
+    )
+    replayed_response = app.open_session_pull_request(
+        str(session_id),
+        payload,
+        idempotency_key="pr-key-1",
+    )
+
+    assert first_response.status_code == 200
+    assert replayed_response.status_code == 200
+    assert replayed_response.body == first_response.body
+    assert replayed_response.body["idempotency_key"] == "pr-key-1"
+
+
+def test_api_pull_request_rejects_idempotency_key_reused_for_different_payload(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    app = create_app(database_path)
+
+    app.open_session_pull_request(
+        str(session_id),
+        {"title": "Add feature", "base_branch": "main"},
+        idempotency_key="pr-key-1",
+    )
+    response = app.open_session_pull_request(
+        str(session_id),
+        {"title": "Add feature", "base_branch": "develop"},
+        idempotency_key="pr-key-1",
+    )
+
+    assert response.status_code == 409
+    assert response.body == {
+        "status": "idempotency_conflict",
+        "reason": "idempotency key reused with different request",
+    }
+
+
+def test_route_adapter_forwards_pull_request_idempotency_key(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    adapter = RouteAdapter(create_app(database_path))
+    request = RouteRequest(
+        method="POST",
+        path=f"/sessions/{session_id}/pull-request",
+        body={"title": "Route PR"},
+        headers={"idempotency-key": "route-pr-1"},
+    )
+
+    first_response = adapter.handle(request)
+    replayed_response = adapter.handle(request)
+
+    assert first_response.status_code == 200
+    assert replayed_response.body == first_response.body
+    assert replayed_response.body["idempotency_key"] == "route-pr-1"
 
 
 def test_http_app_session_pull_request_requires_bearer_token_when_configured(

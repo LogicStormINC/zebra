@@ -12,6 +12,7 @@ class RouteRequest:
     method: str
     path: str
     body: dict[str, Any] | None = None
+    headers: dict[str, str] | None = None
 
 
 @dataclass(frozen=True)
@@ -37,9 +38,17 @@ class RouteAdapter:
             if len(parts) == 2 and parts[1] == "resume":
                 return self.app.resume_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "commit":
-                return self.app.commit_session(parts[0], request.body or {})
+                return self.app.commit_session(
+                    parts[0],
+                    request.body or {},
+                    idempotency_key=_idempotency_key(request),
+                )
             if len(parts) == 2 and parts[1] == "pull-request":
-                return self.app.open_session_pull_request(parts[0], request.body or {})
+                return self.app.open_session_pull_request(
+                    parts[0],
+                    request.body or {},
+                    idempotency_key=_idempotency_key(request),
+                )
         if method == "GET" and request.path.startswith("/sessions/"):
             parts = _session_path_parts(request.path)
             if parts == ():
@@ -68,6 +77,15 @@ def _approval_path_parts(path: str) -> tuple[str, ...]:
     if not suffix:
         return ()
     return tuple(part for part in suffix.split("/") if part)
+
+
+def _idempotency_key(request: RouteRequest) -> str | None:
+    if request.headers is None:
+        return None
+    for name, value in request.headers.items():
+        if name.lower() == "idempotency-key" and value.strip():
+            return value.strip()
+    return None
 
 
 def _not_found(request: RouteRequest) -> ApiResponse:

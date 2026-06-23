@@ -14,6 +14,7 @@ from agent_integrations import (
 from agent_security import DeliveryDecisionType, PullRequestPolicy
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 
+from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.session_context import session_policy_profile, session_workspace_root
 from zebra_agent_api.session_payloads import parse_pull_request_payload
@@ -23,32 +24,58 @@ from zebra_agent_api.session_payloads import parse_pull_request_payload
 class SessionPullRequestApi:
     database_path: Path
 
-    def open_pull_request(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
+    def open_pull_request(
+        self,
+        session_id: str,
+        payload: dict[str, object],
+        *,
+        idempotency_key: str | None = None,
+    ) -> ApiResponse:
         parsed = parse_pull_request_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
+        replayed = replay_idempotent_response(
+            database_path=self.database_path,
+            action="session.pull_request",
+            idempotency_key=idempotency_key,
+            payload=payload,
+        )
+        if replayed is not None:
+            return replayed
 
         session_key = SessionId(UUID(session_id))
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
-            return ApiResponse(
-                status_code=404,
-                body={"session_id": session_id, "status": "not_found"},
+            return self._save(
+                payload,
+                idempotency_key,
+                ApiResponse(
+                    status_code=404,
+                    body={"session_id": session_id, "status": "not_found"},
+                ),
             )
         events = SQLiteEventStore(self.database_path).list_for_session(session_key)
         policy_decision = PullRequestPolicy().evaluate(session_policy_profile(events))
         if policy_decision.decision is DeliveryDecisionType.DENY:
-            return conflict(
-                session_id=session_id,
-                status="policy_blocked",
-                reason=policy_decision.reason,
+            return self._save(
+                payload,
+                idempotency_key,
+                conflict(
+                    session_id=session_id,
+                    status="policy_blocked",
+                    reason=policy_decision.reason,
+                ),
             )
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
-            return conflict(
-                session_id=session_id,
-                status="pull_request_unavailable",
-                reason="session workspace_root is unavailable",
+            return self._save(
+                payload,
+                idempotency_key,
+                conflict(
+                    session_id=session_id,
+                    status="pull_request_unavailable",
+                    reason="session workspace_root is unavailable",
+                ),
             )
         try:
             plan = LocalOnlyPullRequestGateway().plan(
@@ -62,32 +89,58 @@ class SessionPullRequestApi:
                 ),
             )
         except ScmUnavailableError as error:
-            return conflict(
-                session_id=session_id,
-                status="pull_request_unavailable",
-                reason=str(error),
+            return self._save(
+                payload,
+                idempotency_key,
+                conflict(
+                    session_id=session_id,
+                    status="pull_request_unavailable",
+                    reason=str(error),
+                ),
             )
         except (ValueError, ScmIntegrationError) as error:
-            return conflict(
-                session_id=session_id,
-                status="pull_request_unavailable",
-                reason=str(error),
+            return self._save(
+                payload,
+                idempotency_key,
+                conflict(
+                    session_id=session_id,
+                    status="pull_request_unavailable",
+                    reason=str(error),
+                ),
             )
-        return ApiResponse(
-            status_code=200,
-            body={
-                "session_id": session_id,
-                "pull_request": {
-                    "provider": plan.provider,
-                    "title": plan.title,
-                    "body": plan.body,
-                    "base_branch": plan.base_branch,
-                    "head_branch": plan.head_branch,
-                    "commit_sha": plan.commit_sha,
-                    "dry_run": plan.dry_run,
-                    "status": plan.status,
-                    "url": plan.url,
+        return self._save(
+            payload,
+            idempotency_key,
+            ApiResponse(
+                status_code=200,
+                body={
+                    "session_id": session_id,
+                    "pull_request": {
+                        "provider": plan.provider,
+                        "title": plan.title,
+                        "body": plan.body,
+                        "base_branch": plan.base_branch,
+                        "head_branch": plan.head_branch,
+                        "commit_sha": plan.commit_sha,
+                        "dry_run": plan.dry_run,
+                        "status": plan.status,
+                        "url": plan.url,
+                    },
+                    "policy_profile": policy_decision.policy_profile,
                 },
-                "policy_profile": policy_decision.policy_profile,
-            },
+            ),
+        )
+
+    def _save(
+        self,
+        payload: dict[str, object],
+        idempotency_key: str | None,
+        response: ApiResponse,
+    ) -> ApiResponse:
+        return save_idempotent_response(
+            database_path=self.database_path,
+            action="session.pull_request",
+            idempotency_key=idempotency_key,
+            payload=payload,
+            response=response,
         )

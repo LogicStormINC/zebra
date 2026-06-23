@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 8 is closed. The repository now has a complete local productization baseline: CLI durable run and resume execution, writable API session creation and resume execution, queued-session bootstrap persistence, worker-side ready-session execution, a local worker polling loop, settings-backed entry points, read-only SSE replay, operator runbook coverage, optional API bearer auth, and a real OpenAI-compatible model gateway adapter.
+Phase 10 is closed. The repository now has a complete local delivery surface: CLI durable run and resume execution, writable API session creation and resume execution, queued-session bootstrap persistence, worker-side ready-session execution, a local worker polling loop, read-only SSE replay, operator runbook coverage, optional API bearer auth, an OpenAI-compatible model gateway adapter, session diff and artifact reads, local Git commit delivery, and local-only pull-request planning.
 
 The next milestone is `Phase 11 - Delivery Hardening`. The immediate implementation lanes are:
 
@@ -26,8 +26,9 @@ The next milestone is `Phase 11 - Delivery Hardening`. The immediate implementat
 - `GET /sessions/{id}/artifacts` is now available on the current development line
 - `POST /sessions/{id}/commit` is now available on the current development line
 - `POST /sessions/{id}/pull-request` is now available as a local-only dry-run planning path
-- side-effect `Idempotency-Key` handling is the next ready implementation lane
-- delivery audit events and a GitHub PR provider skeleton are scheduled follow-ups
+- side-effect `Idempotency-Key` handling is now available for commit and pull-request retries
+- delivery audit events are the next ready implementation lane
+- a GitHub PR provider skeleton is a scheduled follow-up after delivery audit
 
 Read in this order:
 

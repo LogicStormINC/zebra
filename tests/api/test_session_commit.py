@@ -32,6 +32,7 @@ def test_api_commit_session_creates_local_commit(tmp_path: Path) -> None:
     assert response.body["message"] == "Commit session changes"
     assert response.body["workspace"] == str(workspace)
     assert response.body["policy_profile"] == "full_access"
+    assert response.body["idempotency_key"] is None
     assert len(str(response.body["commit_sha"])) == 40
     assert _git(workspace, ("git", "status", "--short")) == ""
 
@@ -52,6 +53,7 @@ def test_api_commit_session_rejects_policy_blocked_session(tmp_path: Path) -> No
         "session_id": str(session_id),
         "status": "policy_blocked",
         "reason": "commit requires full_access session policy",
+        "idempotency_key": None,
     }
 
 
@@ -70,6 +72,7 @@ def test_api_commit_session_rejects_clean_workspace(tmp_path: Path) -> None:
         "session_id": str(session_id),
         "status": "commit_unavailable",
         "reason": "workspace has no changes to commit",
+        "idempotency_key": None,
     }
 
 
@@ -83,6 +86,7 @@ def test_api_commit_session_returns_not_found(tmp_path: Path) -> None:
     assert response.body == {
         "session_id": "00000000-0000-0000-0000-000000000001",
         "status": "not_found",
+        "idempotency_key": None,
     }
 
 
@@ -122,6 +126,80 @@ def test_route_adapter_handles_session_commit(tmp_path: Path) -> None:
     assert response.body["committed"] is True
 
 
+def test_api_commit_session_replays_idempotent_response(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    (workspace / "tracked.txt").write_text("changed\n", encoding="utf-8")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    payload = {"message": "Commit once"}
+    app = create_app(database_path)
+
+    first_response = app.commit_session(
+        str(session_id),
+        payload,
+        idempotency_key="commit-key-1",
+    )
+    replayed_response = app.commit_session(
+        str(session_id),
+        payload,
+        idempotency_key="commit-key-1",
+    )
+
+    assert first_response.status_code == 201
+    assert replayed_response.status_code == 201
+    assert replayed_response.body == first_response.body
+    assert replayed_response.body["idempotency_key"] == "commit-key-1"
+    assert _git(workspace, ("git", "status", "--short")) == ""
+
+
+def test_api_commit_session_rejects_idempotency_key_reused_for_different_payload(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    (workspace / "tracked.txt").write_text("changed\n", encoding="utf-8")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    app = create_app(database_path)
+
+    app.commit_session(
+        str(session_id),
+        {"message": "Commit once"},
+        idempotency_key="commit-key-1",
+    )
+    response = app.commit_session(
+        str(session_id),
+        {"message": "Different commit message"},
+        idempotency_key="commit-key-1",
+    )
+
+    assert response.status_code == 409
+    assert response.body == {
+        "status": "idempotency_conflict",
+        "reason": "idempotency key reused with different request",
+    }
+
+
+def test_route_adapter_forwards_commit_idempotency_key(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    (workspace / "tracked.txt").write_text("route change\n", encoding="utf-8")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    adapter = RouteAdapter(create_app(database_path))
+    request = RouteRequest(
+        method="POST",
+        path=f"/sessions/{session_id}/commit",
+        body={"message": "Route commit"},
+        headers={"Idempotency-Key": "route-commit-1"},
+    )
+
+    first_response = adapter.handle(request)
+    replayed_response = adapter.handle(request)
+
+    assert first_response.status_code == 201
+    assert replayed_response.body == first_response.body
+    assert replayed_response.body["idempotency_key"] == "route-commit-1"
+
+
 def test_http_app_session_commit_requires_bearer_token_when_configured(
     tmp_path: Path,
 ) -> None:
@@ -137,6 +215,31 @@ def test_http_app_session_commit_requires_bearer_token_when_configured(
         "status": "unauthorized",
         "reason": "missing_or_invalid_bearer_token",
     }
+
+
+def test_http_app_session_commit_forwards_idempotency_key(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    (workspace / "tracked.txt").write_text("http change\n", encoding="utf-8")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    client = TestClient(create_http_app(database_path))
+    payload = {"message": "HTTP commit"}
+
+    first_response = client.post(
+        f"/sessions/{session_id}/commit",
+        headers={"Idempotency-Key": "http-commit-1"},
+        json=payload,
+    )
+    replayed_response = client.post(
+        f"/sessions/{session_id}/commit",
+        headers={"Idempotency-Key": "http-commit-1"},
+        json=payload,
+    )
+
+    assert first_response.status_code == 201
+    assert replayed_response.status_code == 201
+    assert replayed_response.json() == first_response.json()
+    assert replayed_response.json()["idempotency_key"] == "http-commit-1"
 
 
 def _seed_ready_session(

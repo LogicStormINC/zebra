@@ -2527,8 +2527,8 @@ Close Phase 10 by recording delivery-surface evidence, known local-only limitati
 
 ### P11-API-01 - Side Effect Idempotency Keys
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P10-CLOSE-01`
 - Branch: `codex/p11-api-01-idempotency`
@@ -2547,14 +2547,14 @@ Add shared `Idempotency-Key` handling for side-effect API actions so commit, pul
 
 #### Acceptance
 
-- [ ] Repeated side-effect requests with the same key return the original response.
-- [ ] Conflicting payloads for the same key fail deterministically.
-- [ ] Missing idempotency keys remain explicit in API behavior.
-- [ ] Runbook documents idempotent retry usage.
+- [x] Repeated side-effect requests with the same key return the original response.
+- [x] Conflicting payloads for the same key fail deterministically.
+- [x] Missing idempotency keys remain explicit in API behavior.
+- [x] Runbook documents idempotent retry usage.
 
 ### P11-OBS-01 - Delivery Audit Events
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `APP`
 - Depends on: `P11-API-01`

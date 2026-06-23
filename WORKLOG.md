@@ -1843,3 +1843,25 @@
   - `P11-API-01 - Side Effect Idempotency Keys`
   - `P11-OBS-01 - Delivery Audit Events`
   - `P11-INT-01 - GitHub Pull Request Provider Skeleton`
+
+## 2026-06-23 Phase 11 Side Effect Idempotency Keys
+
+- 执行 `P11-API-01 - Side Effect Idempotency Keys`
+- 新增 `SQLiteIdempotencyStore`：
+  - 以 `action + idempotency_key` 记录首次请求 hash、状态码和响应体
+  - 同 key 同 payload 重放首次响应
+  - 同 key 不同 payload 返回确定性冲突
+- API 集成：
+  - `POST /sessions/{session_id}/commit`
+  - `POST /sessions/{session_id}/pull-request`
+  - HTTP/Route 层透传 `Idempotency-Key`
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P11-API-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P11-OBS-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+  - `docs/operator_runbook.md`
+- 验证：
+  - `uv run pytest tests/agent_storage/test_idempotency.py tests/api/test_session_commit.py tests/api/test_session_pull_request.py`
+  - `make check`
+  - `make test`

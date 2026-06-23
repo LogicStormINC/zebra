@@ -263,6 +263,7 @@ Create a local Git commit for a reviewed session workspace:
 ```bash
 curl -X POST http://127.0.0.1:8000/sessions/<session_id>/commit \
   -H "Content-Type: application/json" \
+  -H "Idempotency-Key: commit-<unique-retry-key>" \
   -d '{"message":"Implement reviewed changes"}'
 ```
 
@@ -274,12 +275,15 @@ Expected result:
 - session `workspace`
 - deterministic `policy_blocked` conflict unless the session was created with `policy_profile=full_access`
 - deterministic `commit_unavailable` conflict when the workspace is missing, clean, or not a Git repository
+- repeated requests with the same `Idempotency-Key` and request body return the first response
+- reusing the same `Idempotency-Key` with a different body returns `idempotency_conflict`
 
 Plan a pull request for a committed session workspace:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/sessions/<session_id>/pull-request \
   -H "Content-Type: application/json" \
+  -H "Idempotency-Key: pr-<unique-retry-key>" \
   -d '{"title":"Implement reviewed changes","body":"Summary and validation notes."}'
 ```
 
@@ -293,6 +297,8 @@ Expected result in the current local-only runtime:
 - no network call and no remote PR URL
 - deterministic `pull_request_unavailable` conflict when `dry_run=false`
 - deterministic `policy_blocked` conflict unless the session was created with `policy_profile=full_access`
+- repeated requests with the same `Idempotency-Key` and request body return the first response
+- reusing the same `Idempotency-Key` with a different body returns `idempotency_conflict`
 
 Append one more user message to an existing session:
 

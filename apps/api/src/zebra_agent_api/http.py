@@ -37,6 +37,7 @@ def create_http_app(
                 method=request.method,
                 path=request.url.path,
                 body=body,
+                headers=dict(request.headers),
             )
         )
         if _is_stream_request(request) and response.status_code == 200:
