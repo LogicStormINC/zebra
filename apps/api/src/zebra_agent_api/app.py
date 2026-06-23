@@ -5,6 +5,9 @@ from pathlib import Path
 from uuid import UUID
 
 from agent_core.application import (
+    ApprovalDecisionAction,
+    ApprovalDecisionCommand,
+    ApprovalDecisionService,
     SessionBootstrapCommand,
     SessionBootstrapService,
     SessionMessageAppendCommand,
@@ -38,6 +41,7 @@ from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
     parse_append_session_message_payload,
+    parse_approval_decision_payload,
     parse_create_session_payload,
     parse_resume_session_payload,
 )
@@ -58,9 +62,7 @@ class ZebraAgentApi:
         )
 
     def get_session(self, session_id: str) -> ApiResponse:
-        session = SQLiteProjectionStore(self.database_path).get_session(
-            SessionId(UUID(session_id))
-        )
+        session = SQLiteProjectionStore(self.database_path).get_session(SessionId(UUID(session_id)))
         if session is None:
             return ApiResponse(
                 status_code=404,
@@ -216,6 +218,22 @@ class ZebraAgentApi:
             },
         )
 
+    def approve(self, approval_id: str, payload: dict[str, object]) -> ApiResponse:
+        return self._record_approval_decision(
+            approval_id,
+            payload,
+            action=ApprovalDecisionAction.GRANT,
+            decision="approve",
+        )
+
+    def reject(self, approval_id: str, payload: dict[str, object]) -> ApiResponse:
+        return self._record_approval_decision(
+            approval_id,
+            payload,
+            action=ApprovalDecisionAction.REJECT,
+            decision="reject",
+        )
+
     def _create_queued_session(self, parsed: CreateSessionPayload) -> ApiResponse:
         bootstrap = SessionBootstrapService().build(
             SessionBootstrapCommand(
@@ -268,6 +286,59 @@ class ZebraAgentApi:
                 "attempts_used": result.run_result.attempts_used,
                 "policy_profile": str(parsed["policy_profile"]),
                 "trace": _trace_payload(result),
+            },
+        )
+
+    def _record_approval_decision(
+        self,
+        approval_id: str,
+        payload: dict[str, object],
+        *,
+        action: ApprovalDecisionAction,
+        decision: str,
+    ) -> ApiResponse:
+        parsed = parse_approval_decision_payload(
+            payload,
+            default_reason=f"{decision} via API",
+        )
+        if isinstance(parsed, ApiResponse):
+            return parsed
+
+        session_key = SessionId(UUID(approval_id))
+        projection_store = SQLiteProjectionStore(self.database_path)
+        session = projection_store.get_session(session_key)
+        if session is None:
+            return ApiResponse(
+                status_code=404,
+                body={"approval_id": approval_id, "status": "not_found"},
+            )
+        try:
+            event = ApprovalDecisionService().build_event(
+                session=session,
+                next_sequence=session.current_sequence + 1,
+                command=ApprovalDecisionCommand(
+                    action=action,
+                    operator=parsed["operator"],
+                    reason=parsed["reason"],
+                ),
+            )
+        except ValueError as error:
+            return conflict(
+                session_id=approval_id,
+                status="invalid_state",
+                reason=str(error),
+            )
+        SQLiteEventStore(self.database_path).append(event)
+        updated_session = projection_store.save_session(apply_event(session, event))
+        return ApiResponse(
+            status_code=200,
+            body={
+                "approval_id": approval_id,
+                "session_id": approval_id,
+                "decision": decision,
+                "event_type": event.event_type.value,
+                "sequence": event.sequence,
+                "status": updated_session.status.value,
             },
         )
 

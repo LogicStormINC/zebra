@@ -2284,8 +2284,8 @@ Expose `POST /sessions/{id}/messages` so an existing durable session can accept 
 
 ### P9-API-02 - Cancel And Suspend Entry
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P9-API-01`
 - Branch: `codex/p9-api-02-session-control`
@@ -2303,15 +2303,15 @@ Expose `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` so operato
 
 #### Acceptance
 
-- [ ] Cancel and suspend routes persist control events and update session state correctly.
-- [ ] Invalid transitions return deterministic errors without mutating durable state.
-- [ ] Existing create, message, stream, and resume behavior remains unchanged.
-- [ ] Operator runbook documents both control actions.
+- [x] Cancel and suspend routes persist control events and update session state correctly.
+- [x] Invalid transitions return deterministic errors without mutating durable state.
+- [x] Existing create, message, stream, and resume behavior remains unchanged.
+- [x] Operator runbook documents both control actions.
 
 ### P9-API-03 - Approval HTTP Entry
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P9-API-02`
 - Branch: `codex/p9-api-03-approval-http`
@@ -2329,10 +2329,10 @@ Expose `POST /approvals/{id}/approve` and `POST /approvals/{id}/reject` by reusi
 
 #### Acceptance
 
-- [ ] Approval decisions can be recorded over HTTP with the same durable event semantics as the core service entry.
-- [ ] Invalid approval state is rejected deterministically.
-- [ ] Existing CLI approval behavior remains unchanged.
-- [ ] Runbook documents the approval HTTP path.
+- [x] Approval decisions can be recorded over HTTP with the same durable event semantics as the core service entry.
+- [x] Invalid approval state is rejected deterministically.
+- [x] Existing CLI approval behavior remains unchanged.
+- [x] Runbook documents the approval HTTP path.
 
 ### P9-WKR-01 - Worker Continuous Loop Behavior
 

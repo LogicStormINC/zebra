@@ -24,6 +24,12 @@ class RouteAdapter:
             return self.app.health()
         if method == "POST" and request.path == "/sessions":
             return self.app.create_session(request.body or {})
+        if method == "POST" and request.path.startswith("/approvals/"):
+            parts = _approval_path_parts(request.path)
+            if len(parts) == 2 and parts[1] == "approve":
+                return self.app.approve(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "reject":
+                return self.app.reject(parts[0], request.body or {})
         if method == "POST" and request.path.startswith("/sessions/"):
             parts = _session_path_parts(request.path)
             if len(parts) == 2 and parts[1] == "messages":
@@ -44,6 +50,13 @@ class RouteAdapter:
 
 def _session_path_parts(path: str) -> tuple[str, ...]:
     suffix = path.removeprefix("/sessions/")
+    if not suffix:
+        return ()
+    return tuple(part for part in suffix.split("/") if part)
+
+
+def _approval_path_parts(path: str) -> tuple[str, ...]:
+    suffix = path.removeprefix("/approvals/")
     if not suffix:
         return ()
     return tuple(part for part in suffix.split("/") if part)

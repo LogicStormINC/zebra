@@ -1681,3 +1681,22 @@
   - `tests/api/test_http_app.py`
 - 本轮验证结果：
   - `uv run pytest tests/agent_core/test_session_messages.py tests/api/test_routes.py tests/api/test_http_app.py` 通过
+
+## 2026-06-23 Approval HTTP Entry
+
+- 执行 `P9-API-03 - Approval HTTP Entry`
+- `apps/api` 现在支持：
+  - `POST /approvals/{approval_id}/approve`
+  - `POST /approvals/{approval_id}/reject`
+  - approval operator/reason payload 校验与默认值
+  - waiting approval session 的 grant/reject durable event 写入
+  - invalid approval state 的 deterministic 409 映射
+- 本轮新增测试：
+  - `tests/api/test_approval_api_app.py`
+  - `tests/api/test_approval_routes.py`
+  - `tests/api/test_http_approvals.py`
+- 文档同步：
+  - `docs/operator_runbook.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`

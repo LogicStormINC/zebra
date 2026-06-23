@@ -24,6 +24,11 @@ class AppendSessionMessagePayload(TypedDict):
     content: str
 
 
+class ApprovalDecisionPayload(TypedDict):
+    operator: str
+    reason: str
+
+
 def parse_create_session_payload(
     payload: dict[str, object],
 ) -> CreateSessionPayload | ApiResponse:
@@ -86,3 +91,22 @@ def parse_append_session_message_payload(
     if not isinstance(content, str) or not content.strip():
         return bad_request("content must be a non-blank string")
     return {"content": content.strip()}
+
+
+def parse_approval_decision_payload(
+    payload: dict[str, object],
+    *,
+    default_reason: str,
+) -> ApprovalDecisionPayload | ApiResponse:
+    operator = payload.get("operator", "api-operator")
+    if not isinstance(operator, str) or not operator.strip():
+        return bad_request("operator must be a non-blank string when provided")
+
+    reason = payload.get("reason", default_reason)
+    if not isinstance(reason, str) or not reason.strip():
+        return bad_request("reason must be a non-blank string when provided")
+
+    return {
+        "operator": operator.strip(),
+        "reason": reason.strip(),
+    }

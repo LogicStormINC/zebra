@@ -19,9 +19,9 @@ Phase 8 is closed. The repository now has a complete local productization baseli
 The next milestone is `Phase 9 - Session Control And Worker Hardening`. The immediate implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
-- `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend`
-- `POST /approvals/{id}/approve` and `POST /approvals/{id}/reject`
-- continuous worker-loop hardening for longer-running local operator use
+- `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
+- `POST /approvals/{id}/approve` and `POST /approvals/{id}/reject` are now available on the current development line
+- continuous worker-loop hardening is the next mainline lane for longer-running local operator use
 
 Read in this order:
 
@@ -59,8 +59,8 @@ uv run pytest
 
 For the current local operator workflow, start with `docs/operator_runbook.md`. It covers:
 
-- CLI session creation, durable execution, and inspection
-- writable local API session creation, execution, and resume triggering
+- CLI session creation, durable execution, inspection, and approval
+- writable local API session creation, execution, resume triggering, and approval decisions
 - worker loop execution for queued ready sessions
 - local FastAPI serving
 - SSE session stream replay

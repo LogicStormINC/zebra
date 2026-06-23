@@ -151,6 +151,31 @@ If a session reaches `waiting_approval`, record a decision with:
 uv run zebra-agent approve <session_id> --decision approve --reason "operator approved"
 ```
 
+The local HTTP API exposes the same approval decision path. In the current local MVP,
+the approval id is the waiting session id:
+
+```bash
+curl -X POST http://127.0.0.1:8000/approvals/<session_id>/approve \
+  -H "Content-Type: application/json" \
+  -d '{"operator":"api-operator","reason":"operator approved"}'
+```
+
+To reject instead:
+
+```bash
+curl -X POST http://127.0.0.1:8000/approvals/<session_id>/reject \
+  -H "Content-Type: application/json" \
+  -d '{"reason":"unsafe command scope"}'
+```
+
+Expected result:
+
+- JSON output with `approval_id` and `session_id`
+- `decision=approve` or `decision=reject`
+- durable approval `event_type`
+- new event `sequence`
+- updated session `status`
+
 Run one prompt directly through the configured model gateway:
 
 ```bash
