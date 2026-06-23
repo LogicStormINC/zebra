@@ -1911,3 +1911,21 @@
   - `uv run pytest tests/agent_integrations/test_scm.py`
   - `make check`
   - `make test`
+
+## 2026-06-23 Phase 11 Closeout And Phase 12 Planning
+
+- 执行 `P11-CLOSE-01 - Phase 11 Closeout And Phase 12 Planning`
+- 新增文档：
+  - `docs/Phase11_Delivery_Hardening_验收记录.md`
+- 更新规划：
+  - `docs/AGENT_TASKS.md` 增加 `P11-CLOSE-01`
+  - `docs/AGENT_TASKS.md` 增加 `Phase 12 Task Board`
+  - `PROGRESS.md` 切换到 `phase 12 ready`
+  - `README.md` 指向最新 Phase 11 closeout summary
+- Phase 12 首批任务：
+  - `P12-CONFIG-01 - SCM Provider Settings`
+  - `P12-INT-01 - Pull Request Gateway Selection`
+  - `P12-API-01 - Delivery Audit Read API`
+- 验证：
+  - `make check`
+  - `make test`

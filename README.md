@@ -16,7 +16,7 @@ The current repository direction is:
 
 Phase 10 is closed. The repository now has a complete local delivery surface: CLI durable run and resume execution, writable API session creation and resume execution, queued-session bootstrap persistence, worker-side ready-session execution, a local worker polling loop, read-only SSE replay, operator runbook coverage, optional API bearer auth, an OpenAI-compatible model gateway adapter, session diff and artifact reads, local Git commit delivery, and local-only pull-request planning.
 
-The next milestone is `Phase 11 - Delivery Hardening`. The immediate implementation lanes are:
+The next milestone is `Phase 12 - Remote SCM Configuration`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -30,6 +30,7 @@ The next milestone is `Phase 11 - Delivery Hardening`. The immediate implementat
 - delivery audit records now capture commit and pull-request attempts
 - a GitHub PR provider skeleton can serialize dry-run request payloads without live GitHub access
 - remote SCM execution is not wired to the API yet; local-only dry-run remains the default safe behavior
+- explicit SCM provider settings are the next ready implementation lane
 
 Read in this order:
 
@@ -73,4 +74,4 @@ For the current local operator workflow, start with `docs/operator_runbook.md`. 
 - local FastAPI serving
 - SSE session stream replay
 
-For the latest phase closeout summary, see `docs/Phase8_CLI_API_Productization_验收记录.md`.
+For the latest phase closeout summary, see `docs/Phase11_Delivery_Hardening_验收记录.md`.

@@ -2,11 +2,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 11 - Delivery Hardening`
-- Repository status: `phase 11 GitHub PR provider skeleton complete`
+- Active phase: `Phase 12 - Remote SCM Configuration`
+- Repository status: `phase 12 ready`
 - Current focus:
-  - plan the next delivery hardening or closeout slice
-  - preserve local-only dry-run as the default safe delivery behavior until remote SCM execution is explicitly wired
+  - add explicit SCM provider configuration
+  - keep local-only PR planning as the default behavior
+  - defer remote SCM execution until provider selection and policy/audit wiring are explicit
 
 ## Completed
 
@@ -109,18 +110,20 @@
 - `P11-API-01 - Side Effect Idempotency Keys`
 - `P11-OBS-01 - Delivery Audit Events`
 - `P11-INT-01 - GitHub Pull Request Provider Skeleton`
+- `P11-CLOSE-01 - Phase 11 Closeout And Phase 12 Planning`
 
 ## Current Focus
 
-- Phase 10 is now closed with diff, artifacts, local commit, and local-only PR dry-run delivery APIs completed
-- Phase 11 now has idempotent retry handling for commit and pull-request side-effect APIs
-- delivery audit records now capture commit and pull-request attempts with policy and result metadata
-- GitHub PR provider skeleton now serializes request payloads and fails closed before network execution
+- Phase 11 is now closed with idempotency, delivery audit, and GitHub PR provider skeleton complete
 - remote SCM execution is still not wired to the API and remains an explicit future task
+- Phase 12 starts with SCM provider settings before any gateway selection or remote execution wiring
+- delivery audit read API is planned as a safe read-only follow-up
 
 ## Next Unlocks
 
-- Next Phase 11 closeout or remote-SCM execution task should be defined before further GitHub delivery work
+- `P12-CONFIG-01 - SCM Provider Settings` is ready
+- `P12-INT-01 - Pull Request Gateway Selection` unlocks after SCM settings
+- `P12-API-01 - Delivery Audit Read API` is planned as a read-only follow-up
 
 ## Active Documents
 

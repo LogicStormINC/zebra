@@ -2605,3 +2605,113 @@ Add a GitHub pull-request provider skeleton behind explicit configuration while 
 - [x] Missing GitHub token fails before any network call.
 - [x] GitHub request payload is tested without requiring live GitHub access.
 - [x] Runbook documents provider configuration and limitations.
+
+### P11-CLOSE-01 - Phase 11 Closeout And Phase 12 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `TL`
+- Depends on: `P11-API-01`, `P11-OBS-01`, `P11-INT-01`
+- Branch: `codex/p11-closeout-phase12-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 11 with an explicit delivery-hardening acceptance record and define the next safe Phase 12 implementation lanes.
+
+#### Deliverables
+
+- Phase 11 acceptance record
+- task registry update for Phase 12 starter tasks
+- project progress update moving the repository to Phase 12 ready state
+- README and runbook alignment where current status changed
+
+#### Acceptance
+
+- [x] Phase 11 acceptance record maps completed tasks to implemented behavior.
+- [x] Validation commands and results are recorded.
+- [x] Remote SCM execution remains explicitly deferred.
+- [x] `PROGRESS.md` identifies Phase 12 starter tasks as the next active implementation lanes.
+
+## Phase 12 Task Board
+
+### P12-CONFIG-01 - SCM Provider Settings
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P11-CLOSE-01`
+- Branch: `codex/p12-config-01-scm-provider-settings`
+- Owned paths: `apps/config/`, `tests/config/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add explicit SCM provider settings so remote pull-request execution cannot be enabled accidentally.
+
+#### Deliverables
+
+- SCM settings dataclass
+- environment/default loading for provider, GitHub owner/repo, token env, and dry-run default
+- tests covering local-only default, GitHub opt-in, and missing token env behavior
+- runbook update documenting safe configuration
+
+#### Acceptance
+
+- [ ] Local-only is the default SCM provider.
+- [ ] GitHub provider requires explicit configuration.
+- [ ] Token values are read only through an environment variable name and are not serialized.
+- [ ] Tests cover default and GitHub opt-in config paths.
+
+### P12-INT-01 - Pull Request Gateway Selection
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P12-CONFIG-01`
+- Branch: `codex/p12-int-01-pr-gateway-selection`
+- Owned paths: `packages/agent-integrations/`, `apps/api/`, `apps/config/`, `tests/agent_integrations/`, `tests/api/`, `tests/config/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Wire pull-request gateway selection behind SCM settings while preserving local-only as the default API behavior.
+
+#### Deliverables
+
+- gateway factory
+- API composition wiring for selected provider
+- tests proving local-only default and GitHub dry-run selection
+- policy and audit behavior preserved
+
+#### Acceptance
+
+- [ ] Existing local-only API tests continue to pass without SCM config.
+- [ ] GitHub dry-run can be selected only through explicit settings.
+- [ ] Non-dry-run GitHub execution still fails closed until the execution task lands.
+- [ ] Delivery audit records provider/status metadata for selected gateway paths.
+
+### P12-API-01 - Delivery Audit Read API
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P11-CLOSE-01`
+- Branch: `codex/p12-api-01-delivery-audit-read`
+- Owned paths: `apps/api/`, `packages/agent-storage/`, `tests/api/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose delivery audit records through a read-only session API so operators can inspect delivery decisions after responses are gone.
+
+#### Deliverables
+
+- `GET /sessions/{id}/delivery-audit` route
+- deterministic response schema
+- tests covering not found, empty audit, and recorded delivery attempts
+- runbook update
+
+#### Acceptance
+
+- [ ] Operators can list delivery attempts for one session.
+- [ ] Empty delivery audit returns an explicit empty list.
+- [ ] Response includes action, status, policy profile, idempotency key, metadata, and timestamp.
+- [ ] Read API does not trigger any side effect.
