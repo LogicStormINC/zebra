@@ -2496,3 +2496,112 @@ Add a controlled `POST /sessions/{id}/pull-request` planning and execution path 
 - [x] Networked PR execution is approval or policy gated.
 - [x] Local-only environments return deterministic unavailable or dry-run responses.
 - [x] Runbook documents the PR delivery path and limitations.
+
+### P10-CLOSE-01 - Phase 10 Closeout And Phase 11 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOCS`
+- Depends on: `P10-API-04`
+- Branch: `codex/p10-closeout-phase11-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 10 by recording delivery-surface evidence, known local-only limitations, and the next delivery-hardening tasks.
+
+#### Deliverables
+
+- Phase 10 acceptance record under `docs/`
+- task registry update for Phase 11 starter tasks
+- project progress update moving the repository to Phase 11 ready state
+
+#### Acceptance
+
+- [x] Acceptance record maps Phase 10 criteria to implemented code paths.
+- [x] Validation commands and results are recorded.
+- [x] Deferred idempotency, delivery audit, and real SCM provider work is explicit.
+- [x] `PROGRESS.md` identifies Phase 11 starter tasks as the next active implementation lanes.
+
+## Phase 11 Task Board
+
+### P11-API-01 - Side Effect Idempotency Keys
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P10-CLOSE-01`
+- Branch: `codex/p11-api-01-idempotency`
+- Owned paths: `apps/api/`, `packages/agent-storage/`, `tests/api/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add shared `Idempotency-Key` handling for side-effect API actions so commit, pull-request, approvals, and control actions can be retried safely by operators.
+
+#### Deliverables
+
+- idempotency request parsing and response replay contract
+- storage adapter for side-effect response records
+- API integration for at least commit and pull-request actions
+- tests covering first request, replay, conflicting replay, and missing key behavior
+
+#### Acceptance
+
+- [ ] Repeated side-effect requests with the same key return the original response.
+- [ ] Conflicting payloads for the same key fail deterministically.
+- [ ] Missing idempotency keys remain explicit in API behavior.
+- [ ] Runbook documents idempotent retry usage.
+
+### P11-OBS-01 - Delivery Audit Events
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P11-API-01`
+- Branch: `codex/p11-obs-01-delivery-audit`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `packages/agent-observability/`, `tests/agent_core/`, `tests/agent_storage/`, `tests/agent_observability/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Record commit and pull-request delivery attempts as durable audit events so delivery decisions can be replayed and reviewed after the API response is gone.
+
+#### Deliverables
+
+- delivery event types or audit records
+- storage projection for delivery attempts
+- wiring from commit and pull-request APIs
+- tests covering success, policy-blocked, and unavailable delivery attempts
+
+#### Acceptance
+
+- [ ] Commit attempts are recorded with session, policy, and result metadata.
+- [ ] Pull-request attempts are recorded with dry-run or unavailable status.
+- [ ] Delivery audit records can be queried deterministically.
+- [ ] Existing trace/eval checks remain green.
+
+### P11-INT-01 - GitHub Pull Request Provider Skeleton
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P11-API-01`, `P11-OBS-01`
+- Branch: `codex/p11-int-01-github-pr-provider`
+- Owned paths: `packages/agent-integrations/`, `apps/config/`, `tests/agent_integrations/`, `tests/config/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a GitHub pull-request provider skeleton behind explicit configuration while preserving local-only dry-run as the default safe behavior.
+
+#### Deliverables
+
+- GitHub provider config model
+- provider interface for PR creation
+- dry-run and unavailable fallbacks
+- tests covering missing token, dry-run, and request serialization
+
+#### Acceptance
+
+- [ ] Local-only remains the default provider.
+- [ ] Missing GitHub token fails before any network call.
+- [ ] GitHub request payload is tested without requiring live GitHub access.
+- [ ] Runbook documents provider configuration and limitations.

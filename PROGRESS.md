@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 10 - Code Delivery Surface`
-- Repository status: `phase 10 ready`
+- Active phase: `Phase 11 - Delivery Hardening`
+- Repository status: `phase 11 ready`
 - Current focus:
-  - expose read-only session diff and artifact review APIs
-  - prepare controlled commit and pull-request delivery entries
+  - add idempotency to side-effect API actions
+  - record delivery audit events before enabling real remote SCM providers
 
 ## Completed
 
@@ -101,22 +101,24 @@
 - `P9-API-03 - Approval HTTP Entry`
 - `P9-WKR-01 - Worker Continuous Loop Behavior`
 - `P9-CLOSE-01 - Phase 9 Closeout And Phase 10 Planning`
+- `P10-API-01 - Session Diff Read API`
+- `P10-API-02 - Session Artifacts Read API`
+- `P10-API-03 - Session Commit API`
+- `P10-API-04 - Session Pull Request API`
+- `P10-CLOSE-01 - Phase 10 Closeout And Phase 11 Planning`
 
 ## Current Focus
 
-- Phase 9 is now closed with session messages, cancel, suspend, approval HTTP, and worker daemon behavior completed
-- Phase 10 now has `GET /sessions/{id}/diff` for read-only workspace review
-- Phase 10 now has `GET /sessions/{id}/artifacts` for model and tool artifact review
-- Phase 10 now has `POST /sessions/{id}/commit` for policy-gated local Git commits
-- Phase 10 now has `POST /sessions/{id}/pull-request` as a policy-gated local-only dry-run planning path
+- Phase 10 is now closed with diff, artifacts, local commit, and local-only PR dry-run delivery APIs completed
+- Phase 11 should harden side-effect reliability and auditability before enabling real remote SCM providers
+- `P11-API-01 - Side Effect Idempotency Keys` is the next ready implementation lane
+- delivery audit and GitHub PR provider work are scheduled as locked follow-ups
 
 ## Next Unlocks
 
-- `P10-API-01 - Session Diff Read API` is complete
-- `P10-API-02 - Session Artifacts Read API` is complete
-- `P10-API-03 - Session Commit API` is complete
-- `P10-API-04 - Session Pull Request API` is complete
-- the next task should be Phase 10 closeout or the next documented phase plan
+- `P11-API-01 - Side Effect Idempotency Keys` is ready
+- `P11-OBS-01 - Delivery Audit Events` unlocks after idempotency
+- `P11-INT-01 - GitHub Pull Request Provider Skeleton` unlocks after idempotency and delivery audit
 
 ## Active Documents
 

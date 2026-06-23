@@ -16,7 +16,7 @@ The current repository direction is:
 
 Phase 8 is closed. The repository now has a complete local productization baseline: CLI durable run and resume execution, writable API session creation and resume execution, queued-session bootstrap persistence, worker-side ready-session execution, a local worker polling loop, settings-backed entry points, read-only SSE replay, operator runbook coverage, optional API bearer auth, and a real OpenAI-compatible model gateway adapter.
 
-The next milestone is `Phase 10 - Code Delivery Surface`. The immediate implementation lanes are:
+The next milestone is `Phase 11 - Delivery Hardening`. The immediate implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -26,6 +26,8 @@ The next milestone is `Phase 10 - Code Delivery Surface`. The immediate implemen
 - `GET /sessions/{id}/artifacts` is now available on the current development line
 - `POST /sessions/{id}/commit` is now available on the current development line
 - `POST /sessions/{id}/pull-request` is now available as a local-only dry-run planning path
+- side-effect `Idempotency-Key` handling is the next ready implementation lane
+- delivery audit events and a GitHub PR provider skeleton are scheduled follow-ups
 
 Read in this order:
 
