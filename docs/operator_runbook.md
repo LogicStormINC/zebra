@@ -275,6 +275,25 @@ Expected result:
 - deterministic `policy_blocked` conflict unless the session was created with `policy_profile=full_access`
 - deterministic `commit_unavailable` conflict when the workspace is missing, clean, or not a Git repository
 
+Plan a pull request for a committed session workspace:
+
+```bash
+curl -X POST http://127.0.0.1:8000/sessions/<session_id>/pull-request \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Implement reviewed changes","body":"Summary and validation notes."}'
+```
+
+Expected result in the current local-only runtime:
+
+- JSON output with a `pull_request` object
+- `provider=local-only`
+- `status=dry_run`
+- current `commit_sha`
+- base and head branch names
+- no network call and no remote PR URL
+- deterministic `pull_request_unavailable` conflict when `dry_run=false`
+- deterministic `policy_blocked` conflict unless the session was created with `policy_profile=full_access`
+
 Append one more user message to an existing session:
 
 ```bash

@@ -35,6 +35,14 @@ class CommitSessionPayload(TypedDict):
     author_email: str
 
 
+class PullRequestPayload(TypedDict):
+    title: str
+    body: str
+    base_branch: str
+    head_branch: str | None
+    dry_run: bool
+
+
 def parse_create_session_payload(
     payload: dict[str, object],
 ) -> CreateSessionPayload | ApiResponse:
@@ -137,4 +145,36 @@ def parse_commit_session_payload(
         "message": message.strip(),
         "author_name": author_name.strip(),
         "author_email": author_email.strip(),
+    }
+
+
+def parse_pull_request_payload(
+    payload: dict[str, object],
+) -> PullRequestPayload | ApiResponse:
+    title = payload.get("title")
+    if not isinstance(title, str) or not title.strip():
+        return bad_request("title must be a non-blank string")
+
+    body = payload.get("body", "")
+    if not isinstance(body, str):
+        return bad_request("body must be a string when provided")
+
+    base_branch = payload.get("base_branch", "main")
+    if not isinstance(base_branch, str) or not base_branch.strip():
+        return bad_request("base_branch must be a non-blank string when provided")
+
+    head_branch = payload.get("head_branch")
+    if head_branch is not None and (not isinstance(head_branch, str) or not head_branch.strip()):
+        return bad_request("head_branch must be a non-blank string when provided")
+
+    dry_run = payload.get("dry_run", True)
+    if not isinstance(dry_run, bool):
+        return bad_request("dry_run must be a boolean when provided")
+
+    return {
+        "title": title.strip(),
+        "body": body.strip(),
+        "base_branch": base_branch.strip(),
+        "head_branch": head_branch.strip() if isinstance(head_branch, str) else None,
+        "dry_run": dry_run,
     }

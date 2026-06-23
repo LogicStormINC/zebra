@@ -31,3 +31,18 @@ class CommitPolicy:
             reason="commit is allowed by full_access session policy",
             policy_profile=PolicyProfile.FULL_ACCESS.value,
         )
+
+
+class PullRequestPolicy:
+    def evaluate(self, policy_profile: str | None) -> DeliveryDecision:
+        if policy_profile != PolicyProfile.FULL_ACCESS.value:
+            return DeliveryDecision(
+                decision=DeliveryDecisionType.DENY,
+                reason="pull request requires full_access session policy",
+                policy_profile=policy_profile or PolicyProfile.WORKSPACE_WRITE.value,
+            )
+        return DeliveryDecision(
+            decision=DeliveryDecisionType.ALLOW,
+            reason="pull request is allowed by full_access session policy",
+            policy_profile=PolicyProfile.FULL_ACCESS.value,
+        )

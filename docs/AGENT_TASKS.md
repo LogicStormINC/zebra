@@ -2445,7 +2445,7 @@ Expose `GET /sessions/{id}/artifacts` so operator surfaces can list durable mode
 
 ### P10-API-03 - Session Commit API
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P10-API-01`
@@ -2472,8 +2472,8 @@ Add a controlled `POST /sessions/{id}/commit` entry that can turn reviewed works
 
 ### P10-API-04 - Session Pull Request API
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P10-API-03`
 - Branch: `codex/p10-api-04-session-pr`
@@ -2492,7 +2492,7 @@ Add a controlled `POST /sessions/{id}/pull-request` planning and execution path 
 
 #### Acceptance
 
-- [ ] PR creation is represented as an explicit controlled action.
-- [ ] Networked PR execution is approval or policy gated.
-- [ ] Local-only environments return deterministic unavailable or dry-run responses.
-- [ ] Runbook documents the PR delivery path and limitations.
+- [x] PR creation is represented as an explicit controlled action.
+- [x] Networked PR execution is approval or policy gated.
+- [x] Local-only environments return deterministic unavailable or dry-run responses.
+- [x] Runbook documents the PR delivery path and limitations.

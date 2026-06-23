@@ -48,6 +48,7 @@ from zebra_agent_api.session_payloads import (
     parse_create_session_payload,
     parse_resume_session_payload,
 )
+from zebra_agent_api.session_pull_request import SessionPullRequestApi
 
 
 @dataclass(frozen=True)
@@ -181,6 +182,13 @@ class ZebraAgentApi:
 
     def commit_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
         return SessionCommitApi(self.database_path).commit(session_id, payload)
+
+    def open_session_pull_request(
+        self,
+        session_id: str,
+        payload: dict[str, object],
+    ) -> ApiResponse:
+        return SessionPullRequestApi(self.database_path).open_pull_request(session_id, payload)
 
     def create_session(self, payload: dict[str, object]) -> ApiResponse:
         parsed = parse_create_session_payload(payload)

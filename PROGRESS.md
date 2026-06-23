@@ -108,14 +108,15 @@
 - Phase 10 now has `GET /sessions/{id}/diff` for read-only workspace review
 - Phase 10 now has `GET /sessions/{id}/artifacts` for model and tool artifact review
 - Phase 10 now has `POST /sessions/{id}/commit` for policy-gated local Git commits
-- `POST /sessions/{id}/pull-request` is the next ready implementation lane
+- Phase 10 now has `POST /sessions/{id}/pull-request` as a policy-gated local-only dry-run planning path
 
 ## Next Unlocks
 
 - `P10-API-01 - Session Diff Read API` is complete
 - `P10-API-02 - Session Artifacts Read API` is complete
 - `P10-API-03 - Session Commit API` is complete
-- `P10-API-04 - Session Pull Request API` is ready
+- `P10-API-04 - Session Pull Request API` is complete
+- the next task should be Phase 10 closeout or the next documented phase plan
 
 ## Active Documents
 

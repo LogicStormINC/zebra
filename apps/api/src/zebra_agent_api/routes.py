@@ -38,6 +38,8 @@ class RouteAdapter:
                 return self.app.resume_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "commit":
                 return self.app.commit_session(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "pull-request":
+                return self.app.open_session_pull_request(parts[0], request.body or {})
         if method == "GET" and request.path.startswith("/sessions/"):
             parts = _session_path_parts(request.path)
             if parts == ():

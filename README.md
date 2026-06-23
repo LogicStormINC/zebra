@@ -25,7 +25,7 @@ The next milestone is `Phase 10 - Code Delivery Surface`. The immediate implemen
 - `GET /sessions/{id}/diff` is now available on the current development line
 - `GET /sessions/{id}/artifacts` is now available on the current development line
 - `POST /sessions/{id}/commit` is now available on the current development line
-- `POST /sessions/{id}/pull-request` is the next ready implementation lane
+- `POST /sessions/{id}/pull-request` is now available as a local-only dry-run planning path
 
 Read in this order:
 

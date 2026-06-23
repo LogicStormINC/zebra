@@ -1802,3 +1802,29 @@
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
+
+## 2026-06-23 Session Pull Request API
+
+- 执行 `P10-API-04 - Session Pull Request API`
+- `agent-integrations` 现在支持：
+  - `LocalOnlyPullRequestGateway`
+  - PR dry-run plan
+  - local-only unavailable response for network execution
+- `agent-security` 现在支持：
+  - `PullRequestPolicy`
+  - PR requires `full_access` session policy
+- `apps/api` 现在支持：
+  - `POST /sessions/{session_id}/pull-request`
+  - PR title/body/base/head/dry_run payload validation
+  - missing session 404
+  - policy-blocked conflict
+  - local-only unavailable conflict when `dry_run=false`
+- 更新测试：
+  - `tests/agent_integrations/test_scm.py`
+  - `tests/agent_security/test_delivery_policy.py`
+  - `tests/api/test_session_pull_request.py`
+- 文档同步：
+  - `docs/operator_runbook.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
