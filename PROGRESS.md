@@ -174,10 +174,11 @@
 - SCM proxy transport contracts now exist in `agent-integrations`, including deterministic serializable request and response models separate from the direct GitHub HTTP path
 - GitHub PR execution can now use a proxy-backed adapter selected by environment while preserving direct-path guards and failure classification
 - MCP proxy starter contracts now exist for `mcp.<server>.<tool>` calls, along with policy-facing egress metadata that distinguishes local tool paths from proxy-routable MCP paths
+- operator runbook now documents proxy-backed SCM transport selection, MCP proxy starter routing, proxy-specific remediation, and rollback to safe defaults
 
 ## Next Unlocks
 
-- `P21-DOC-01 - Proxy Egress Operator Docs` is ready
+- `P21-CLOSE-01 - Phase 21 Closeout And Next Planning` is ready
 
 ## Active Documents
 

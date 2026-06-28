@@ -166,6 +166,16 @@
   - `uv run ruff check packages/agent-tools/src/agent_tools packages/agent-security/src/agent_security tests/agent_tools tests/agent_security`
   - `uv run mypy packages/agent-tools/src/agent_tools/__init__.py packages/agent-tools/src/agent_tools/mcp_proxy.py packages/agent-security/src/agent_security/mcp_proxy_policy.py tests/agent_tools/test_mcp_proxy.py tests/agent_security/test_mcp_proxy_policy.py`
 
+## 2026-06-28 P21-DOC-01 Proxy Egress Operator Docs
+
+- 执行 `P21-DOC-01 - Proxy Egress Operator Docs`
+- 更新 `docs/operator_runbook.md`：
+  - 增加 `ZEBRA_SCM_GITHUB_TRANSPORT` 与 `ZEBRA_SCM_PROXY_ENDPOINT` 配置说明
+  - 明确 direct 与 proxy transport 的使用边界
+  - 增加 proxy mode 的 preconditions、失败排查和回滚步骤
+  - 新增 MCP proxy starter section，说明 `mcp.<server>.<tool>` 命名契约与 `route=local|mcp_proxy|blocked` 的 operator 含义
+- 更新 `README.md`、`PROGRESS.md`、`docs/AGENT_TASKS.md`，将 Phase 21 当前文档状态写回仓库并解锁 closeout 任务
+
 ## 2026-06-28 GitHub App Credential Adapter Skeleton
 
 - 执行 `P19-INT-01 - GitHub App Credential Adapter Skeleton`

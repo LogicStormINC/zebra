@@ -3613,8 +3613,8 @@ Define the first explicit MCP proxy egress contract so `mcp-proxy-only` can evol
 
 ### P21-DOC-01 - Proxy Egress Operator Docs
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P21-INT-02`, `P21-TOOL-01`
 - Branch: `codex/p21-doc-01-proxy-egress-operator-docs`
@@ -3632,13 +3632,13 @@ Document the operator model for proxy-backed SCM and MCP egress paths.
 
 #### Acceptance
 
-- [ ] Operator docs explain when to use direct trusted-local execution versus proxy-backed egress.
-- [ ] Runbook examples preserve fail-closed defaults and narrow explicit enablement.
-- [ ] Remediation guidance distinguishes proxy availability from upstream SCM or MCP failures.
+- [x] Operator docs explain when to use direct trusted-local execution versus proxy-backed egress.
+- [x] Runbook examples preserve fail-closed defaults and narrow explicit enablement.
+- [x] Remediation guidance distinguishes proxy availability from upstream SCM or MCP failures.
 
 ### P21-CLOSE-01 - Phase 21 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P21-DOC-01`

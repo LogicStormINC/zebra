@@ -347,6 +347,8 @@ ZEBRA_GITHUB_API_BASE_URL=https://api.github.com
 ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true
 ZEBRA_SCM_NETWORK_PROFILE=none
 ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST=
+ZEBRA_SCM_GITHUB_TRANSPORT=direct
+ZEBRA_SCM_PROXY_ENDPOINT=
 ```
 
 Rules:
@@ -358,6 +360,9 @@ Rules:
 - `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true` keeps provider selection non-mutating until remote execution is explicitly implemented.
 - `ZEBRA_SCM_NETWORK_PROFILE=none` is the default fail-closed local posture and blocks direct remote SCM execution.
 - `ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST` is only valid when `ZEBRA_SCM_NETWORK_PROFILE=domain-allowlist`.
+- `ZEBRA_SCM_GITHUB_TRANSPORT=direct` preserves the current direct local GitHub transport.
+- `ZEBRA_SCM_GITHUB_TRANSPORT=proxy` routes GitHub PR execution through the SCM proxy adapter.
+- `ZEBRA_SCM_PROXY_ENDPOINT` is required when `ZEBRA_SCM_GITHUB_TRANSPORT=proxy`.
 - SCM credential snapshots store token environment variable names only.
 - Any token value handled by the credential boundary serializes as `<redacted>`.
 - API composition uses `ZEBRA_GITHUB_TOKEN_ENV` to build an environment-backed credential broker.
@@ -367,6 +372,8 @@ Rules:
 - `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=false`
 - `ZEBRA_SCM_NETWORK_PROFILE=full-trusted-local` or `ZEBRA_SCM_NETWORK_PROFILE=domain-allowlist`
 - if using `domain-allowlist`, `ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST` must contain the configured GitHub API host such as `api.github.com`
+- `ZEBRA_SCM_GITHUB_TRANSPORT=direct` or `ZEBRA_SCM_GITHUB_TRANSPORT=proxy`
+- if using `proxy`, `ZEBRA_SCM_PROXY_ENDPOINT` must point at the SCM proxy service
 - configured `ZEBRA_GITHUB_TOKEN_ENV` with a token available in the API process environment
 - a session created with `policy_profile=full_access`
 - tests and runbook examples should prefer dry-run unless a real repository side effect is intentional.
@@ -379,6 +386,13 @@ Egress-profile meanings for the current direct GitHub transport:
 - `mcp-proxy-only`: reserved for future proxy-backed MCP egress; blocks the current direct GitHub transport
 - `git-proxy-only`: reserved for future SCM proxy transport; blocks the current direct GitHub transport
 - `full-trusted-local`: allows the current direct GitHub transport from the local operator environment
+
+Transport selection guidance:
+
+- use `direct` only for trusted local operators with intentional narrow enablement
+- use `proxy` when you want remote SCM side effects to leave the local process through the proxy contract
+- `git-proxy-only` should normally be paired with `ZEBRA_SCM_GITHUB_TRANSPORT=proxy`
+- `mcp-proxy-only` does not enable GitHub PR execution by itself; it is reserved for MCP proxy paths
 
 Remote GitHub PR execution checklist:
 
@@ -451,6 +465,8 @@ export ZEBRA_GITHUB_TOKEN=<token>
 export ZEBRA_SCM_PULL_REQUEST_DRY_RUN=false
 export ZEBRA_SCM_NETWORK_PROFILE=domain-allowlist
 export ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST=api.github.com
+export ZEBRA_SCM_GITHUB_TRANSPORT=proxy
+export ZEBRA_SCM_PROXY_ENDPOINT=http://127.0.0.1:9000/scm
 ```
 
 Required preconditions:
@@ -461,6 +477,9 @@ Required preconditions:
 - the default API environment broker can issue a credential for `repo:<owner>/<repo>`
 - the previous GitHub dry-run payload was reviewed
 - the selected network profile intentionally allows the configured GitHub API host
+- the selected transport mode intentionally matches the profile:
+  - `direct` for trusted local execution
+  - `proxy` for proxy-backed SCM execution
 - the target repository, base branch, and head branch are correct
 
 5. Execute the remote PR request with a unique idempotency key.
@@ -510,11 +529,35 @@ Rollback and failure handling:
 - If the API returns `policy_blocked`, recreate or rerun the session with `policy_profile=full_access`; do not bypass the policy gate.
 - If the API returns `pull_request_unavailable`, inspect `reason`, fix configuration or transport availability, and retry with a new idempotency key only when the previous request did not create a PR.
 - If `result_metadata.failure_class=egress_policy`, keep `ZEBRA_SCM_NETWORK_PROFILE=none` unless live SCM execution is intentionally required. Prefer `domain-allowlist` with the narrowest host list possible; use `full-trusted-local` only for trusted local operators.
+- If `reason=ZEBRA_SCM_PROXY_ENDPOINT is required when ZEBRA_SCM_GITHUB_TRANSPORT=proxy`, the operator selected proxy mode without wiring the proxy endpoint.
+- If `result_metadata.failure_class=transport_failure` while `ZEBRA_SCM_GITHUB_TRANSPORT=proxy`, inspect proxy availability, proxy response shape, and the proxy's upstream GitHub reachability before retrying.
 - If `result_metadata.failure_class=credential_missing`, confirm the configured token env var exists and is non-empty in the broker backend.
 - If `result_metadata.failure_class=credential_denied`, confirm the broker binding or capability grants `pull_request:create` for the requested `repo:<owner>/<repo>` audience.
 - If `result_metadata.failure_class=credential_unavailable`, restore broker availability before retrying.
 - If `result_metadata.failure_class=transport_failure`, inspect GitHub API reachability, response validity, and remote-side status before retrying.
-- Return to safe defaults after testing with `ZEBRA_SCM_PROVIDER=local-only`, `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true`, `ZEBRA_SCM_NETWORK_PROFILE=none`, and an empty `ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST`.
+- Return to safe defaults after testing with `ZEBRA_SCM_PROVIDER=local-only`, `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true`, `ZEBRA_SCM_NETWORK_PROFILE=none`, an empty `ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST`, `ZEBRA_SCM_GITHUB_TRANSPORT=direct`, and no `ZEBRA_SCM_PROXY_ENDPOINT`.
+
+## MCP Proxy Starter
+
+Current MCP proxy starter contract:
+
+- MCP tool names must use `mcp.<server>.<tool>`
+- `agent-tools` now exposes:
+  - `parse_mcp_tool_name(...)`
+  - `build_mcp_proxy_request(...)`
+  - `McpProxyRequest`
+  - `McpProxyResponse`
+- `agent-security.classify_tool_egress(...)` now distinguishes:
+  - `route=local` for builtin/local tool calls
+  - `route=mcp_proxy` for MCP calls under `mcp-proxy-only` or `full-trusted-local`
+  - `route=blocked` for MCP calls under other profiles
+
+Operator guidance:
+
+- keep `network_profile=none` unless MCP proxy execution is intentionally required
+- use `network_profile=mcp-proxy-only` when the operator wants MCP egress only through the MCP proxy path
+- do not treat `mcp-proxy-only` as permission for direct SCM or direct HTTP execution
+- if a planned MCP tool does not follow `mcp.<server>.<tool>`, fix the tool registration first instead of bypassing the contract
 
 Append one more user message to an existing session:
 
