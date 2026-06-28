@@ -11,7 +11,10 @@ from agent_integrations import (
     GitHubAppCredentialBroker,
     GitHubAppInstallationToken,
     GitHubAppTokenTransport,
+    GitHubProxyPullRequestTransport,
     GitHubPullRequestPayload,
+    ScmProxyRequest,
+    ScmProxyResponse,
     ScmUnavailableError,
 )
 from agent_security import (
@@ -493,6 +496,79 @@ def test_api_pull_request_transport_failure_records_audit(
     assert audit_records[0].result_metadata["failure_class"] == "transport_failure"
 
 
+def test_api_pull_request_uses_proxy_transport_for_github_execution(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _allow_github_egress(monkeypatch)
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    proxy_transport = _FakeScmProxyTransport(url="https://github.example/pulls/2")
+
+    response = create_app(
+        database_path,
+        settings=_settings(None, scm=_github_scm(pull_request_dry_run=False)),
+        credential_broker=_github_broker(env={"GITHUB_TOKEN": "broker-token"}),
+        github_transport=GitHubProxyPullRequestTransport(proxy_transport=proxy_transport),
+    ).open_session_pull_request(
+        str(session_id),
+        {
+            "title": "Add feature",
+            "base_branch": "main",
+            "head_branch": "feature/zebra",
+            "dry_run": False,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.body["pull_request"]["status"] == "created"
+    assert response.body["pull_request"]["url"] == "https://github.example/pulls/2"
+    assert proxy_transport.last_request is not None
+    assert proxy_transport.last_request.provider == "github"
+    assert "broker-token" not in repr(proxy_transport.last_request.to_serializable())
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].result_metadata["credential_source"] == "broker"
+    assert audit_records[0].result_metadata["credential_backend"] == "environment"
+
+
+def test_api_pull_request_proxy_transport_failure_records_audit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _allow_github_egress(monkeypatch)
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+
+    response = create_app(
+        database_path,
+        settings=_settings(None, scm=_github_scm(pull_request_dry_run=False)),
+        credential_broker=_github_broker(env={"GITHUB_TOKEN": "broker-token"}),
+        github_transport=GitHubProxyPullRequestTransport(
+            proxy_transport=_FailingScmProxyTransport()
+        ),
+    ).open_session_pull_request(
+        str(session_id),
+        {
+            "title": "Add feature",
+            "base_branch": "main",
+            "head_branch": "feature/zebra",
+            "dry_run": False,
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.body["status"] == "pull_request_unavailable"
+    assert response.body["reason"] == "scm proxy execution failed: proxy offline"
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].result_metadata["credential_source"] == "broker"
+    assert audit_records[0].result_metadata["credential_backend"] == "environment"
+    assert audit_records[0].result_metadata["failure_class"] == "transport_failure"
+
+
 def test_api_pull_request_github_app_transport_failure_records_audit(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -858,6 +934,28 @@ class _FakeGitHubTransport:
         self.payload = payload
         self.token = token
         return self._url
+
+
+class _FakeScmProxyTransport:
+    def __init__(self, *, url: str) -> None:
+        self._url = url
+        self.last_request: ScmProxyRequest | None = None
+
+    def execute(self, request: ScmProxyRequest) -> ScmProxyResponse:
+        self.last_request = request
+        return ScmProxyResponse(
+            status_code=201,
+            body={"html_url": self._url},
+            metadata={"transport": "proxy"},
+        )
+
+
+class _FailingScmProxyTransport:
+    def execute(self, request: ScmProxyRequest) -> ScmProxyResponse:
+        raise ScmUnavailableError(
+            "scm proxy execution failed: proxy offline",
+            metadata={"failure_class": "transport_failure"},
+        )
 
 
 class _FailingGitHubTransport:

@@ -14,6 +14,7 @@ class ScmProxyRequest:
     endpoint: str
     method: str = "POST"
     headers: tuple[tuple[str, str], ...] = ()
+    secret_headers: tuple[tuple[str, str], ...] = ()
     body: dict[str, JsonValue] = field(default_factory=dict)
     metadata: dict[str, JsonValue] = field(default_factory=dict)
 
@@ -23,11 +24,18 @@ class ScmProxyRequest:
         object.__setattr__(self, "endpoint", _normalize_required(self.endpoint, "endpoint"))
         object.__setattr__(self, "method", _normalize_required(self.method, "method").upper())
         object.__setattr__(self, "headers", _normalize_headers(self.headers))
+        object.__setattr__(self, "secret_headers", _normalize_headers(self.secret_headers))
         object.__setattr__(self, "body", _normalize_json_object(self.body, "body"))
         object.__setattr__(self, "metadata", _normalize_json_object(self.metadata, "metadata"))
 
     def header_map(self) -> dict[str, str]:
         return dict(self.headers)
+
+    def merged_header_map(self) -> dict[str, str]:
+        return {
+            **dict(self.headers),
+            **dict(self.secret_headers),
+        }
 
     def to_serializable(self) -> dict[str, JsonValue]:
         return {
@@ -38,6 +46,14 @@ class ScmProxyRequest:
             "headers": [{"name": name, "value": value} for name, value in self.headers],
             "body": self.body,
             "metadata": self.metadata,
+        }
+
+    def to_transport_payload(self) -> dict[str, JsonValue]:
+        return {
+            **self.to_serializable(),
+            "secret_headers": [
+                {"name": name, "value": value} for name, value in self.secret_headers
+            ],
         }
 
 
@@ -77,6 +93,7 @@ def build_github_pull_request_proxy_request(
     endpoint: str,
     headers: dict[str, str],
     body: dict[str, JsonValue],
+    token: str,
     credential_source: str | None,
     credential_backend: str | None,
 ) -> ScmProxyRequest:
@@ -91,6 +108,7 @@ def build_github_pull_request_proxy_request(
         endpoint=endpoint,
         method="POST",
         headers=tuple(headers.items()),
+        secret_headers=(("Authorization", f"Bearer {token.strip()}"),),
         body=body,
         metadata=metadata,
     )

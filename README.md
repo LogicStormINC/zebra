@@ -42,6 +42,7 @@ The next milestone is `Phase 21 - Proxy-Gated Egress Adapters`. The current impl
 - GitHub PR execution now enforces explicit egress checks before credential lookup or transport side effects; direct transport remains blocked unless `full-trusted-local` or a matching `domain-allowlist` profile is configured
 - `docs/operator_runbook.md` now documents egress profiles, failure-class interpretation, and safe rollback to `network_profile=none`
 - `agent-integrations` now exposes a standalone SCM proxy transport contract and deterministic serializable request/response models for future proxy-backed execution paths
+- GitHub PR execution can now route through a proxy-backed adapter when `ZEBRA_SCM_GITHUB_TRANSPORT=proxy` and `ZEBRA_SCM_PROXY_ENDPOINT` are configured
 - remote SCM operator safety runbook coverage documents dry-run first, explicit opt-in, audit inspection, token rules, and rollback steps
 - credential capability domain modeling covers provider, audience, scopes, expiry, and redacted serialization
 - credential broker Port definition covers SCM credential requests, in-memory test broker, and missing/denied/unavailable errors
@@ -57,8 +58,8 @@ The next milestone is `Phase 21 - Proxy-Gated Egress Adapters`. The current impl
 - secret-store Port and redaction contract now exist in `agent-security`
 - local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
 - GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
-- GitHub proxy-backed PR execution is the next ready implementation lane
-- MCP proxy egress starter work can proceed in parallel on its owned paths
+- MCP proxy egress starter work is the next ready implementation lane
+- proxy operator docs can proceed after the MCP contract lands
 
 Read in this order:
 

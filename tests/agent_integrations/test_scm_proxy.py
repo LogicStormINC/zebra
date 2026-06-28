@@ -104,6 +104,7 @@ def test_build_github_pull_request_proxy_request_builds_deterministic_shape() ->
             "base": "main",
             "head": "feature/zebra",
         },
+        token="secret-token",
         credential_source="broker",
         credential_backend="environment",
     )
@@ -127,6 +128,10 @@ def test_build_github_pull_request_proxy_request_builds_deterministic_shape() ->
             "credential_source": "broker",
         },
     }
+    assert "secret-token" not in repr(request.to_serializable())
+    assert request.to_transport_payload()["secret_headers"] == [
+        {"name": "Authorization", "value": "Bearer secret-token"}
+    ]
 
 
 def test_scm_proxy_transport_protocol_accepts_fake() -> None:

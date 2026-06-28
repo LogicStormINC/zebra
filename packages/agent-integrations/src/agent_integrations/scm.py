@@ -21,6 +21,12 @@ from zebra_agent_config import ScmSettings
 
 from agent_integrations.scm_credentials import CredentialLookupResult, github_token_from_broker
 from agent_integrations.scm_errors import ScmIntegrationError, ScmUnavailableError
+from agent_integrations.scm_proxy import (
+    JsonValue,
+    ScmProxyTransport,
+    build_github_pull_request_proxy_request,
+)
+from agent_integrations.scm_proxy_http import ScmHttpProxyTransport
 
 
 @dataclass(frozen=True)
@@ -69,6 +75,34 @@ class GitHubPullRequestTransport(Protocol):
         token: str,
     ) -> str:
         raise NotImplementedError
+
+
+class GitHubProxyPullRequestTransport:
+    def __init__(self, *, proxy_transport: ScmProxyTransport) -> None:
+        self._proxy_transport = proxy_transport
+
+    def create_pull_request(
+        self,
+        payload: GitHubPullRequestPayload,
+        *,
+        token: str,
+    ) -> str:
+        request = build_github_pull_request_proxy_request(
+            endpoint=payload.endpoint,
+            headers=payload.headers,
+            body=_json_proxy_body(payload.body),
+            token=token,
+            credential_source=None,
+            credential_backend=None,
+        )
+        response = self._proxy_transport.execute(request)
+        url = response.body.get("html_url")
+        if not isinstance(url, str) or not url.strip():
+            raise ScmUnavailableError(
+                "github proxy pull request response did not include html_url",
+                metadata={"failure_class": "transport_failure"},
+            )
+        return url
 
 
 @dataclass(frozen=True)
@@ -274,6 +308,7 @@ def build_pull_request_gateway(
         if settings.github_owner is None or settings.github_repo is None:
             raise ScmUnavailableError("github owner and repo are required")
         network_profile = _network_profile_from_env(active_env)
+        transport = github_transport or _build_github_transport_from_env(active_env)
         token_value = None
         credential_source_fallback = None
         credential_backend_fallback = None
@@ -300,7 +335,7 @@ def build_pull_request_gateway(
             credential_source_fallback=credential_source_fallback,
             credential_backend_fallback=credential_backend_fallback,
             network_profile=network_profile,
-            transport=github_transport,
+            transport=transport,
         )
     raise ScmUnavailableError(f"unsupported SCM provider: {settings.provider}")
 
@@ -348,6 +383,34 @@ def _target_host(api_base_url: str) -> str:
     if host is None or not host.strip():
         raise ScmIntegrationError("github api_base_url must include a hostname")
     return host.strip().lower()
+
+
+def _build_github_transport_from_env(env: Mapping[str, str]) -> GitHubPullRequestTransport | None:
+    transport_mode = env.get("ZEBRA_SCM_GITHUB_TRANSPORT", "direct").strip().lower()
+    if not transport_mode or transport_mode == "direct":
+        return None
+    if transport_mode != "proxy":
+        raise ScmUnavailableError(
+            f"unsupported github transport mode: {transport_mode}"
+        )
+    proxy_endpoint = env.get("ZEBRA_SCM_PROXY_ENDPOINT", "").strip()
+    if not proxy_endpoint:
+        raise ScmUnavailableError(
+            "ZEBRA_SCM_PROXY_ENDPOINT is required when ZEBRA_SCM_GITHUB_TRANSPORT=proxy"
+        )
+    return GitHubProxyPullRequestTransport(
+        proxy_transport=ScmHttpProxyTransport(proxy_endpoint=proxy_endpoint)
+    )
+
+
+def _json_proxy_body(value: dict[str, object]) -> dict[str, JsonValue]:
+    normalized: dict[str, JsonValue] = {}
+    for key, item in value.items():
+        if isinstance(item, str | int | float | bool) or item is None:
+            normalized[key] = item
+            continue
+        raise ScmIntegrationError("github pull request payload must be JSON-serializable")
+    return normalized
 
 
 def _serializable_payload(payload: GitHubPullRequestPayload) -> dict[str, object]:

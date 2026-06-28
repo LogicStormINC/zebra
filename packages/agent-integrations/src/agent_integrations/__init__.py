@@ -12,6 +12,7 @@ from agent_integrations.openai_compatible import (
     build_model_gateway,
 )
 from agent_integrations.scm import (
+    GitHubProxyPullRequestTransport,
     GitHubPullRequestConfig,
     GitHubPullRequestGateway,
     GitHubPullRequestPayload,
@@ -29,6 +30,7 @@ from agent_integrations.scm_proxy import (
     ScmProxyTransport,
     build_github_pull_request_proxy_request,
 )
+from agent_integrations.scm_proxy_http import ScmHttpProxyTransport
 
 __all__ = [
     "LocalOnlyPullRequestGateway",
@@ -41,6 +43,7 @@ __all__ = [
     "GitHubAppTokenTransport",
     "GitHubPullRequestGateway",
     "GitHubPullRequestPayload",
+    "GitHubProxyPullRequestTransport",
     "GitHubPullRequestTransport",
     "OpenAICompatibleModelGateway",
     "PullRequestPlan",
@@ -48,6 +51,7 @@ __all__ = [
     "ScmIntegrationError",
     "ScmProxyRequest",
     "ScmProxyResponse",
+    "ScmHttpProxyTransport",
     "ScmProxyTransport",
     "ScmUnavailableError",
     "build_model_gateway",

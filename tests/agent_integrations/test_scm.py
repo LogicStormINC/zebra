@@ -9,11 +9,14 @@ from agent_integrations import (
     GitHubAppCredentialBroker,
     GitHubAppInstallationToken,
     GitHubAppTokenTransport,
+    GitHubProxyPullRequestTransport,
     GitHubPullRequestConfig,
     GitHubPullRequestGateway,
     GitHubPullRequestPayload,
     LocalOnlyPullRequestGateway,
     PullRequestRequest,
+    ScmProxyRequest,
+    ScmProxyResponse,
     ScmUnavailableError,
     build_pull_request_gateway,
 )
@@ -722,6 +725,56 @@ def test_build_pull_request_gateway_allows_domain_allowlist_profile(
     assert transport.token == "broker-token"
 
 
+def test_build_pull_request_gateway_uses_proxy_transport_when_configured(
+    tmp_path: Path,
+) -> None:
+    workspace = _git_workspace(tmp_path / "workspace")
+    proxy_transport = _FakeScmProxyTransport(url="https://github.example/pulls/2")
+    gateway = build_pull_request_gateway(
+        _github_scm(pull_request_dry_run=False),
+        env={
+            **_network_env(profile="full-trusted-local"),
+            "ZEBRA_SCM_GITHUB_TRANSPORT": "proxy",
+            "ZEBRA_SCM_PROXY_ENDPOINT": "https://proxy.example/scm",
+        },
+        credential_broker=InMemoryCredentialBroker.with_capabilities([_github_capability()]),
+        github_transport=GitHubProxyPullRequestTransport(proxy_transport=proxy_transport),
+        now=_now(),
+    )
+
+    plan = gateway.plan(
+        workspace,
+        PullRequestRequest(
+            title="Add feature",
+            body="Implementation details.",
+            base_branch="main",
+            head_branch="feature/zebra",
+            dry_run=False,
+        ),
+    )
+
+    assert plan.status == "created"
+    assert plan.url == "https://github.example/pulls/2"
+    assert proxy_transport.last_request is not None
+    assert proxy_transport.last_request.provider == "github"
+    assert proxy_transport.last_request.action == "pull_request.create"
+    assert proxy_transport.last_request.secret_headers == (
+        ("Authorization", "Bearer broker-token"),
+    )
+    assert "broker-token" not in repr(proxy_transport.last_request.to_serializable())
+
+
+def test_build_pull_request_gateway_rejects_proxy_mode_without_endpoint() -> None:
+    with pytest.raises(ScmUnavailableError, match="ZEBRA_SCM_PROXY_ENDPOINT is required"):
+        build_pull_request_gateway(
+            _github_scm(pull_request_dry_run=False),
+            env={
+                **_network_env(profile="full-trusted-local"),
+                "ZEBRA_SCM_GITHUB_TRANSPORT": "proxy",
+            },
+        )
+
+
 def test_build_pull_request_gateway_rejects_unknown_provider() -> None:
     with pytest.raises(ScmUnavailableError, match="unsupported SCM provider"):
         build_pull_request_gateway(
@@ -850,6 +903,20 @@ class _FakeGitHubAppTransport:
         return GitHubAppInstallationToken(
             token_value="github-app-token",
             expires_at=datetime(2026, 6, 23, 12, 30, tzinfo=UTC),
+        )
+
+
+class _FakeScmProxyTransport:
+    def __init__(self, *, url: str) -> None:
+        self._url = url
+        self.last_request: ScmProxyRequest | None = None
+
+    def execute(self, request: ScmProxyRequest) -> ScmProxyResponse:
+        self.last_request = request
+        return ScmProxyResponse(
+            status_code=201,
+            body={"html_url": self._url},
+            metadata={"transport": "proxy"},
         )
 
 

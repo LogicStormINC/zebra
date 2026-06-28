@@ -172,11 +172,12 @@
 - operator runbook now documents egress profiles, safe-default examples, and remediation paths that distinguish `egress_policy` from credential and transport failures
 - Phase 20 is closed with `docs/Phase20_Egress_Control_Foundations_验收记录.md`
 - SCM proxy transport contracts now exist in `agent-integrations`, including deterministic serializable request and response models separate from the direct GitHub HTTP path
+- GitHub PR execution can now use a proxy-backed adapter selected by environment while preserving direct-path guards and failure classification
 
 ## Next Unlocks
 
-- `P21-INT-02 - GitHub Proxy Pull Request Adapter` is ready
 - `P21-TOOL-01 - MCP Proxy Egress Starter Contract` is ready
+- `P21-DOC-01 - Proxy Egress Operator Docs` is ready
 
 ## Active Documents
 

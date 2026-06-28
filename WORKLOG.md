@@ -113,6 +113,29 @@
   - `uv run ruff check packages/agent-integrations/src/agent_integrations tests/agent_integrations`
   - `uv run mypy packages/agent-integrations/src/agent_integrations/scm_proxy.py tests/agent_integrations/test_scm_proxy.py`
 
+## 2026-06-28 P21-INT-02 GitHub Proxy Pull Request Adapter
+
+- 执行 `P21-INT-02 - GitHub Proxy Pull Request Adapter`
+- 在 `packages/agent-integrations/src/agent_integrations/scm.py` 增加 `GitHubProxyPullRequestTransport`
+- 在 `packages/agent-integrations/src/agent_integrations/scm_proxy_http.py` 增加 `ScmHttpProxyTransport`
+- 接线规则：
+  - `ZEBRA_SCM_GITHUB_TRANSPORT=direct` 保持当前 direct GitHub HTTP transport
+  - `ZEBRA_SCM_GITHUB_TRANSPORT=proxy` 时改走 proxy-backed adapter
+  - `ZEBRA_SCM_PROXY_ENDPOINT` 缺失时显式失败
+- 安全边界：
+  - proxy request 的 public serializable shape 不包含 raw token
+  - token 仅进入 runtime `secret_headers`
+  - 现有 `egress_policy`、`credential_*`、`transport_failure` 分类保持不变
+- 回归覆盖：
+  - `tests/agent_integrations/test_scm.py` 覆盖 proxy created path 和缺少 proxy endpoint 的失败
+  - `tests/api/test_session_pull_request.py` 覆盖 API proxy created path 与 proxy transport failure audit
+  - `tests/agent_integrations/test_scm_proxy.py` 覆盖 secret header 不进入 serializable snapshot
+- 更新 `README.md`、`PROGRESS.md`、`docs/AGENT_TASKS.md`，将 `P21-DOC-01` 解锁
+- 验证：
+  - `poetry run pytest tests/agent_integrations/test_scm_proxy.py tests/agent_integrations/test_scm.py tests/api/test_session_pull_request.py`
+  - `uv run ruff check packages/agent-integrations/src/agent_integrations tests/agent_integrations tests/api/test_session_pull_request.py`
+  - `uv run mypy packages/agent-integrations/src/agent_integrations/scm_proxy.py packages/agent-integrations/src/agent_integrations/scm_proxy_http.py tests/agent_integrations/test_scm_proxy.py`
+
 ## 2026-06-28 GitHub App Credential Adapter Skeleton
 
 - 执行 `P19-INT-01 - GitHub App Credential Adapter Skeleton`

@@ -3563,8 +3563,8 @@ Define the proxy-facing transport contract required to move SCM side effects off
 
 ### P21-INT-02 - GitHub Proxy Pull Request Adapter
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `INT`
 - Depends on: `P21-INT-01`
 - Branch: `codex/p21-int-02-github-proxy-pr-adapter`
@@ -3582,9 +3582,9 @@ Add a GitHub PR adapter that executes through the proxy transport contract inste
 
 #### Acceptance
 
-- [ ] GitHub PR execution can route through the proxy transport when configured.
-- [ ] Audit metadata still distinguishes egress policy, credential, and transport failures.
-- [ ] Direct transport behavior remains explicitly guarded and backwards compatible.
+- [x] GitHub PR execution can route through the proxy transport when configured.
+- [x] Audit metadata still distinguishes egress policy, credential, and transport failures.
+- [x] Direct transport behavior remains explicitly guarded and backwards compatible.
 
 ### P21-TOOL-01 - MCP Proxy Egress Starter Contract
 
@@ -3613,7 +3613,7 @@ Define the first explicit MCP proxy egress contract so `mcp-proxy-only` can evol
 
 ### P21-DOC-01 - Proxy Egress Operator Docs
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P21-INT-02`, `P21-TOOL-01`
