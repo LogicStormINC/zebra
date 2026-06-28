@@ -3815,8 +3815,8 @@ Project proxy-aware policy and approval metadata into durable harness event payl
 
 ### P23-API-01 - Proxy Approval Readback Surface
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `API`
 - Depends on: `P23-HAR-01`
 - Branch: `codex/p23-api-01-proxy-approval-readback-surface`
@@ -3834,9 +3834,9 @@ Expose proxy-aware approval context through operator-facing API read and approva
 
 #### Acceptance
 
-- [ ] Operator-facing API surfaces expose proxy route and target context for approval-related flows.
-- [ ] Existing local-only approval responses remain backwards compatible.
-- [ ] Proxy-aware approval readback does not expose secrets or raw credential material.
+- [x] Operator-facing API surfaces expose proxy route and target context for approval-related flows.
+- [x] Existing local-only approval responses remain backwards compatible.
+- [x] Proxy-aware approval readback does not expose secrets or raw credential material.
 
 ### P23-OBS-01 - Proxy Approval Trace Normalization
 

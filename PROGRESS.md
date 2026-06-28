@@ -183,10 +183,10 @@
 - proxy gateway operator guidance is now split into `docs/proxy_gateway_operator_runbook.md`, and the main operator runbook links to it instead of growing beyond the markdown file-size limit
 - Phase 22 is closed with `docs/Phase22_Proxy_Execution_And_Gateway_Wiring_验收记录.md`
 - harness policy and approval events can now persist proxy route, target, network-profile, and scope metadata without changing existing local-only payloads
+- operator-facing session reads and approval decision responses now expose proxy-safe `approval_context` derived from the latest `approval_requested` event
 
 ## Next Unlocks
 
-- `P23-API-01 - Proxy Approval Readback Surface` is ready
 - `P23-OBS-01 - Proxy Approval Trace Normalization` is ready
 
 ## Active Documents

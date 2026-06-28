@@ -2855,3 +2855,20 @@
   - `poetry run pytest tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_session_projection.py tests/smoke/test_mock_harness_loop.py`
   - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core tests/smoke`
   - `uv run mypy packages/agent-core/src/agent_core/domain/policies.py packages/agent-core/src/agent_core/harness/orchestrator.py tests/agent_core/test_single_attempt_orchestrator.py`
+
+## 2026-06-28 Phase 23 Proxy Approval Readback Surface
+
+- 执行 `P23-API-01 - Proxy Approval Readback Surface`
+- 行为更新：
+  - 新增 `zebra_agent_api.approval_context.latest_approval_context(...)`
+  - `GET /sessions/{id}` 在存在 `approval_requested` 事件时返回只读 `approval_context`
+  - approval approve/reject 响应在存在 proxy-aware 审批上下文时回显同一份 `approval_context`
+  - readback 仅暴露 `tool_name`、`reason`、`policy_profile`、`route`、`target`、`network_profile`、`scope`，不暴露任何 secret
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P23-API-01` 标记为 `Done`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/api/test_approval_api_app.py tests/api/test_http_app.py tests/api/test_approval_routes.py tests/api/test_http_approvals.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api tests/api`
+  - `make check`

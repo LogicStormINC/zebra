@@ -12,6 +12,7 @@ from agent_storage import (
     SQLiteProjectionStore,
 )
 
+from zebra_agent_api.approval_context import latest_approval_context
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.session_context import session_workspace_root
 from zebra_agent_api.session_delivery_audit import SessionDeliveryAuditApi
@@ -22,7 +23,8 @@ class SessionReadApi:
     database_path: Path
 
     def get_session(self, session_id: str) -> ApiResponse:
-        session = SQLiteProjectionStore(self.database_path).get_session(SessionId(UUID(session_id)))
+        session_key = SessionId(UUID(session_id))
+        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
@@ -31,14 +33,19 @@ class SessionReadApi:
                     "status": "not_found",
                 },
             )
+        events = SQLiteEventStore(self.database_path).list_for_session(session_key)
+        body: dict[str, object] = {
+            "session_id": str(session.session_id),
+            "title": session.title,
+            "status": session.status.value,
+            "current_sequence": session.current_sequence,
+        }
+        approval_context = latest_approval_context(events)
+        if approval_context is not None:
+            body["approval_context"] = approval_context
         return ApiResponse(
             status_code=200,
-            body={
-                "session_id": str(session.session_id),
-                "title": session.title,
-                "status": session.status.value,
-                "current_sequence": session.current_sequence,
-            },
+            body=body,
         )
 
     def get_session_stream(self, session_id: str) -> ApiResponse:

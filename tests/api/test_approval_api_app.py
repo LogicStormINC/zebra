@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from agent_core.domain.events import EventType
+from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from zebra_agent_api.app import create_app
@@ -53,6 +53,32 @@ def test_api_reject_records_rejected_decision(tmp_path: Path) -> None:
     assert updated.status is SessionStatus.FAILED
 
 
+def test_api_approval_includes_proxy_approval_context_when_present(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_waiting_session_with_proxy_approval(database_path)
+
+    response = create_app(database_path).approve(
+        str(session.session_id),
+        {"operator": "alice", "reason": "safe to continue"},
+    )
+
+    assert response.status_code == 200
+    assert response.body["approval_context"] == {
+        "tool_name": "mcp.github.create_pull_request",
+        "reason": "proxy-routed external tool execution in test",
+        "policy_profile": "full_access",
+        "route": "mcp_proxy",
+        "target": "github.create_pull_request",
+        "network_profile": "mcp-proxy-only",
+        "scope": [
+            "tool:mcp.github.create_pull_request",
+            "route:mcp_proxy",
+            "network_profile:mcp-proxy-only",
+            "target:github.create_pull_request",
+        ],
+    }
+
+
 def test_api_approval_returns_invalid_state_for_non_waiting_session(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session = SQLiteProjectionStore(database_path).save_session(
@@ -90,3 +116,31 @@ def _seed_waiting_session(database_path: Path) -> Session:
         }
     )
     return SQLiteProjectionStore(database_path).save_session(session)
+
+
+def _seed_waiting_session_with_proxy_approval(database_path: Path) -> Session:
+    session = _seed_waiting_session(database_path)
+    SQLiteEventStore(database_path).append(
+        SessionEvent.create(
+            session_id=session.session_id,
+            sequence=0,
+            event_type=EventType.APPROVAL_REQUESTED,
+            actor=EventActor.POLICY,
+            payload={
+                "attempt_number": 1,
+                "tool_name": "mcp.github.create_pull_request",
+                "reason": "proxy-routed external tool execution in test",
+                "policy_profile": "full_access",
+                "route": "mcp_proxy",
+                "target": "github.create_pull_request",
+                "network_profile": "mcp-proxy-only",
+                "scope": [
+                    "tool:mcp.github.create_pull_request",
+                    "route:mcp_proxy",
+                    "network_profile:mcp-proxy-only",
+                    "target:github.create_pull_request",
+                ],
+            },
+        )
+    )
+    return session

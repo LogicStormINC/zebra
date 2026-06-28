@@ -43,6 +43,60 @@ def test_http_app_serves_session_lookup(tmp_path: Path) -> None:
     assert response.json()["title"] == "HTTP session"
 
 
+def test_http_app_serves_proxy_approval_context_on_session_lookup(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = Session.create(title="Waiting approval").model_copy(
+        update={
+            "status": SessionStatus.WAITING_APPROVAL,
+            "current_sequence": 3,
+        }
+    )
+    SQLiteProjectionStore(database_path).save_session(session)
+    SQLiteEventStore(database_path).append(
+        SessionEvent.create(
+            session_id=session.session_id,
+            sequence=0,
+            event_type=EventType.APPROVAL_REQUESTED,
+            actor=EventActor.POLICY,
+            payload={
+                "attempt_number": 1,
+                "tool_name": "mcp.github.create_pull_request",
+                "reason": "proxy-routed external tool execution in test",
+                "policy_profile": "full_access",
+                "route": "mcp_proxy",
+                "target": "github.create_pull_request",
+                "network_profile": "mcp-proxy-only",
+                "scope": [
+                    "tool:mcp.github.create_pull_request",
+                    "route:mcp_proxy",
+                    "network_profile:mcp-proxy-only",
+                    "target:github.create_pull_request",
+                ],
+            },
+            created_at=_created_at(),
+        )
+    )
+    client = TestClient(create_http_app(database_path))
+
+    response = client.get(f"/sessions/{session.session_id}")
+
+    assert response.status_code == 200
+    assert response.json()["approval_context"] == {
+        "tool_name": "mcp.github.create_pull_request",
+        "reason": "proxy-routed external tool execution in test",
+        "policy_profile": "full_access",
+        "route": "mcp_proxy",
+        "target": "github.create_pull_request",
+        "network_profile": "mcp-proxy-only",
+        "scope": [
+            "tool:mcp.github.create_pull_request",
+            "route:mcp_proxy",
+            "network_profile:mcp-proxy-only",
+            "target:github.create_pull_request",
+        ],
+    }
+
+
 def test_http_app_returns_not_found_for_unknown_path(tmp_path: Path) -> None:
     client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
 

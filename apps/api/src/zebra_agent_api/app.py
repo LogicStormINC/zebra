@@ -41,6 +41,7 @@ from zebra_agent_worker import (
     WorkerExecutionError,
 )
 
+from zebra_agent_api.approval_context import latest_approval_context
 from zebra_agent_api.credential_broker import build_default_credential_broker
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.serialization import serialize_trace_events
@@ -345,19 +346,21 @@ class ZebraAgentApi:
                 status="invalid_state",
                 reason=str(error),
             )
-        SQLiteEventStore(self.database_path).append(event)
+        event_store = SQLiteEventStore(self.database_path)
+        approval_context = latest_approval_context(event_store.list_for_session(session_key))
+        event_store.append(event)
         updated_session = projection_store.save_session(apply_event(session, event))
-        return ApiResponse(
-            status_code=200,
-            body={
-                "approval_id": approval_id,
-                "session_id": approval_id,
-                "decision": decision,
-                "event_type": event.event_type.value,
-                "sequence": event.sequence,
-                "status": updated_session.status.value,
-            },
-        )
+        body: dict[str, object] = {
+            "approval_id": approval_id,
+            "session_id": approval_id,
+            "decision": decision,
+            "event_type": event.event_type.value,
+            "sequence": event.sequence,
+            "status": updated_session.status.value,
+        }
+        if approval_context is not None:
+            body["approval_context"] = approval_context
+        return ApiResponse(status_code=200, body=body)
 
 
 def create_app(
