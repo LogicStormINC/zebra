@@ -3638,8 +3638,8 @@ Document the operator model for proxy-backed SCM and MCP egress paths.
 
 ### P21-CLOSE-01 - Phase 21 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P21-DOC-01`
 - Branch: `codex/p21-closeout-next-plan`
@@ -3657,5 +3657,131 @@ Close Phase 21 with proxy-egress evidence and define the next implementation pha
 
 #### Acceptance
 
-- [ ] Proxy-backed egress evidence is recorded.
+- [x] Proxy-backed egress evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 22 Task Board
+
+### P22-TOOL-01 - MCP Proxy Gateway Execution Path
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `TOOL`
+- Depends on: `P21-CLOSE-01`
+- Branch: `codex/p22-tool-01-mcp-proxy-gateway-execution`
+- Owned paths: `packages/agent-tools/`, `tests/agent_tools/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Turn the MCP proxy starter contract into a concrete execution path behind the tool gateway.
+
+#### Deliverables
+
+- MCP proxy executor or gateway adapter
+- tool-gateway wiring for proxy-routed MCP calls
+- targeted tests for successful and blocked MCP proxy execution
+
+#### Acceptance
+
+- [ ] `mcp.<server>.<tool>` calls can execute through the MCP proxy path when policy allows them.
+- [ ] Local builtin tool execution remains unchanged.
+- [ ] Failed MCP proxy execution is surfaced deterministically through tool results or gateway errors.
+
+### P22-OBS-01 - Proxy Audit Metadata Normalization
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `OBS`
+- Depends on: `P22-TOOL-01`
+- Branch: `codex/p22-obs-01-proxy-audit-metadata-normalization`
+- Owned paths: `packages/agent-integrations/`, `packages/agent-tools/`, `tests/agent_integrations/`, `tests/agent_tools/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Normalize audit-facing metadata across SCM proxy and MCP proxy execution paths.
+
+#### Deliverables
+
+- shared proxy audit metadata shape
+- deterministic failure classes for proxy availability versus upstream failures
+- regression coverage across SCM and MCP proxy flows
+
+#### Acceptance
+
+- [ ] Proxy-backed SCM and MCP execution expose a stable audit metadata shape.
+- [ ] Proxy availability failures remain distinguishable from upstream GitHub or MCP target failures.
+- [ ] Existing non-proxy audit behavior remains backwards compatible.
+
+### P22-SEC-01 - Proxy Route Policy Integration
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `SEC`
+- Depends on: `P22-TOOL-01`
+- Branch: `codex/p22-sec-01-proxy-route-policy-integration`
+- Owned paths: `packages/agent-security/`, `packages/agent-tools/`, `tests/agent_security/`, `tests/agent_tools/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Integrate proxy route classification deeper into policy and approval surfaces.
+
+#### Deliverables
+
+- richer proxy-route policy metadata
+- approval-facing distinctions for local versus proxy-routed tool calls
+- regression tests for policy outputs
+
+#### Acceptance
+
+- [ ] Policy-facing outputs distinguish direct-local, proxy-routed, and blocked external tool paths.
+- [ ] Approval or denial messaging stays deterministic for MCP proxy scenarios.
+- [ ] Current fail-closed defaults remain unchanged.
+
+### P22-DOC-01 - Proxy Gateway Operator Docs
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P22-OBS-01`, `P22-SEC-01`
+- Branch: `codex/p22-doc-01-proxy-gateway-operator-docs`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Document the operator model for concrete proxy gateway execution paths.
+
+#### Deliverables
+
+- runbook updates for MCP proxy execution
+- audit interpretation guide for proxy-backed SCM and MCP paths
+- rollback guidance for proxy gateway incidents
+
+#### Acceptance
+
+- [ ] Operator docs explain how proxy-backed MCP execution differs from the starter-contract phase.
+- [ ] Audit interpretation covers both SCM and MCP proxy flows.
+- [ ] Runbook examples preserve fail-closed defaults and narrow enablement.
+
+### P22-CLOSE-01 - Phase 22 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P22-DOC-01`
+- Branch: `codex/p22-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 22 with proxy gateway evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 22 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Proxy gateway execution evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

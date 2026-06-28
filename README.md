@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 21 proxy-egress starter contracts are underway. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, network-profile, credential, policy, and emerging proxy-transport gates.
+Phase 21 is closed and Phase 22 proxy gateway execution planning is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, and MCP proxy starter contracts behind explicit provider, dry-run, network-profile, credential, and policy gates.
 
-The next milestone is `Phase 21 - Proxy-Gated Egress Adapters`. The current implementation lanes are:
+The next milestone is `Phase 22 - Proxy Execution And Gateway Wiring`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -60,7 +60,8 @@ The next milestone is `Phase 21 - Proxy-Gated Egress Adapters`. The current impl
 - secret-store Port and redaction contract now exist in `agent-security`
 - local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
 - GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
-- Phase 21 closeout and next-phase planning are the next ready implementation lane
+- MCP proxy gateway execution is the next ready implementation lane
+- proxy audit normalization and policy integration remain staged behind that execution path
 
 Read in this order:
 

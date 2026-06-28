@@ -176,6 +176,28 @@
   - 新增 MCP proxy starter section，说明 `mcp.<server>.<tool>` 命名契约与 `route=local|mcp_proxy|blocked` 的 operator 含义
 - 更新 `README.md`、`PROGRESS.md`、`docs/AGENT_TASKS.md`，将 Phase 21 当前文档状态写回仓库并解锁 closeout 任务
 
+## 2026-06-28 P21-CLOSE-01 Phase 21 Closeout And Next Planning
+
+- 执行 `P21-CLOSE-01 - Phase 21 Closeout And Next Planning`
+- 新增 Phase 21 验收记录：
+  - `docs/Phase21_Proxy_Egress_Contracts_验收记录.md`
+- 汇总 Phase 21 已完成证据：
+  - `ScmProxyRequest` / `ScmProxyResponse`
+  - `GitHubProxyPullRequestTransport`
+  - `McpProxyRequest` / `McpProxyResponse`
+  - `classify_tool_egress(...)`
+  - proxy operator runbook guidance
+- 将仓库主线状态推进到 Phase 22 ready
+- 新增 Phase 22 starter tasks：
+  - `P22-TOOL-01 - MCP Proxy Gateway Execution Path`
+  - `P22-OBS-01 - Proxy Audit Metadata Normalization`
+  - `P22-SEC-01 - Proxy Route Policy Integration`
+  - `P22-DOC-01 - Proxy Gateway Operator Docs`
+  - `P22-CLOSE-01 - Phase 22 Closeout And Next Planning`
+- Phase 22 方向依据：
+  - 当前 SCM proxy 与 MCP proxy 仍偏 contract / adapter 层
+  - 下一阶段应把 MCP proxy 接到真实 tool gateway execution path，并统一 proxy 审计语义
+
 ## 2026-06-28 GitHub App Credential Adapter Skeleton
 
 - 执行 `P19-INT-01 - GitHub App Credential Adapter Skeleton`

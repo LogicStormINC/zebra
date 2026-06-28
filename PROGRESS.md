@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-- Active phase: `Phase 21 - Proxy-Gated Egress Adapters`
-- Repository status: `phase 21 ready`
+- Active phase: `Phase 22 - Proxy Execution And Gateway Wiring`
+- Repository status: `phase 22 ready`
 - Current focus:
   - keep local-only PR planning as the default behavior
-  - keep live SCM execution behind explicit provider, dry-run, credential, and policy gates
-  - move remote side effects toward proxy-backed transport adapters
-  - keep default local posture fail-closed until proxy-backed paths are explicit
+  - keep live SCM and MCP egress behind explicit provider, dry-run, credential, and policy gates
+  - execute proxy contracts through concrete gateway paths
+  - keep default local posture fail-closed until gateway-backed proxy paths are explicit
 
 ## Completed
 
@@ -175,10 +175,13 @@
 - GitHub PR execution can now use a proxy-backed adapter selected by environment while preserving direct-path guards and failure classification
 - MCP proxy starter contracts now exist for `mcp.<server>.<tool>` calls, along with policy-facing egress metadata that distinguishes local tool paths from proxy-routable MCP paths
 - operator runbook now documents proxy-backed SCM transport selection, MCP proxy starter routing, proxy-specific remediation, and rollback to safe defaults
+- Phase 21 is closed with `docs/Phase21_Proxy_Egress_Contracts_验收记录.md`
 
 ## Next Unlocks
 
-- `P21-CLOSE-01 - Phase 21 Closeout And Next Planning` is ready
+- `P22-TOOL-01 - MCP Proxy Gateway Execution Path` is ready
+- `P22-OBS-01 - Proxy Audit Metadata Normalization` unlocks after the MCP proxy gateway execution path
+- `P22-SEC-01 - Proxy Route Policy Integration` unlocks after the MCP proxy gateway execution path
 
 ## Active Documents
 
