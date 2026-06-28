@@ -38,6 +38,22 @@ These errors intentionally distinguish operator remediation paths:
 - No GitHub App installation token flow.
 - No durable or external secret backend yet.
 
+## Secret-Store Direction
+
+Phase 19 introduces the local contract that future non-environment broker backends should depend on:
+
+- `SecretStore` is the Port for retrieving secret material by handle.
+- `SecretMaterial` carries `handle`, `backend`, optional `version`, and runtime `value`.
+- `SecretMaterial.redacted()` must replace raw values with `<redacted>`.
+- `SecretMissingError` means the requested handle does not exist.
+- `SecretUnavailableError` means the backing store cannot currently serve reads.
+
+This contract exists so future broker backends can consume secret material without:
+
+- reading raw secret storage directly from API composition
+- leaking secret values into repr, durable metadata, or operator-facing audit state
+- coupling integrations to a specific storage backend such as OS keychain, Vault, or KMS
+
 ## SCM Adapter Status
 
 `P15-INT-01` routes optional SCM token lookup through this broker boundary while preserving:

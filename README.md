@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 18 is closed and Phase 19 secret-store and broker-backed credential foundations are ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
+Phase 18 is closed and Phase 19 secret-store and broker-backed credential foundations are in progress. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
 
 The next milestone is `Phase 19 - Secret Store And Broker-Backed Credential Foundations`. The current implementation lanes are:
 
@@ -50,7 +50,8 @@ The next milestone is `Phase 19 - Secret Store And Broker-Backed Credential Foun
 - SCM delivery audit now records non-secret credential source and backend metadata for broker-backed and explicit env-fallback GitHub PR execution
 - broker-missing credential failures now retain source metadata without exposing token values
 - SCM delivery audit now classifies credential_missing, credential_denied, credential_unavailable, and transport_failure for operator remediation
-- secret-store Port and redaction contract is the next ready implementation lane
+- secret-store Port and redaction contract now exist in `agent-security`
+- local secret-store backend is the next ready implementation lane
 - local secure storage and GitHub App-backed credential adapters remain staged behind that Port
 
 Read in this order:

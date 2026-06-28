@@ -3335,8 +3335,8 @@ Close Phase 18 with SCM delivery audit and credential observability evidence.
 
 ### P19-SEC-01 - Secret Store Port And Redaction Contract
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `SEC`
 - Depends on: `P18-CLOSE-01`
 - Branch: `codex/p19-sec-01-secret-store-port`
@@ -3355,13 +3355,13 @@ Define the secret-store Port and redacted snapshot contract needed before non-en
 
 #### Acceptance
 
-- [ ] Secret retrieval contract keeps raw secret values out of repr and durable metadata.
-- [ ] Security package exposes deterministic missing and unavailable secret-store semantics.
-- [ ] Future broker backends can depend on the Port without reading raw storage directly from API or integrations.
+- [x] Secret retrieval contract keeps raw secret values out of repr and durable metadata.
+- [x] Security package exposes deterministic missing and unavailable secret-store semantics.
+- [x] Future broker backends can depend on the Port without reading raw storage directly from API or integrations.
 
 ### P19-SEC-02 - Local Secret Store Backend
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `SEC`
 - Depends on: `P19-SEC-01`

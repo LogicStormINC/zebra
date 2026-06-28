@@ -1,5 +1,27 @@
 # Progress Log
 
+## 2026-06-28 Secret Store Port And Redaction Contract
+
+- 执行 `P19-SEC-01 - Secret Store Port And Redaction Contract`
+- 新增 `agent_security.secret_store`：
+  - `SecretStore`
+  - `SecretMaterial`
+  - `SecretStoreError`
+  - `SecretMissingError`
+  - `SecretUnavailableError`
+  - `InMemorySecretStore`
+- 约束 secret-store contract：
+  - raw secret value 不进入 `repr`
+  - `redacted()` 统一输出 `<redacted>`
+  - missing 与 unavailable 语义分离
+- 更新 `agent_security.__init__` 导出和 `docs/Credential_Broker_Foundation.md`
+- 新增测试：
+  - `tests/agent_security/test_secret_store.py`
+- 本轮验证结果：
+  - `poetry run pytest tests/agent_security/test_secret_store.py tests/agent_security/test_broker.py tests/agent_security/test_capabilities.py tests/agent_security/test_environment_broker.py` 通过
+  - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security` 通过
+  - `uv run mypy packages/agent-security/src/agent_security tests/agent_security` 通过
+
 ## 2026-06-28 Phase 18 Closeout And Phase 19 Planning
 
 - 执行 `P18-CLOSE-01 - Phase 18 Closeout And Next Planning`

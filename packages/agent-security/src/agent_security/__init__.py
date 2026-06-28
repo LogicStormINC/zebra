@@ -32,6 +32,14 @@ from agent_security.policy import (
     build_approval_request,
     policy_profile,
 )
+from agent_security.secret_store import (
+    InMemorySecretStore,
+    SecretMaterial,
+    SecretMissingError,
+    SecretStore,
+    SecretStoreError,
+    SecretUnavailableError,
+)
 
 __all__ = [
     "ApprovalRequest",
@@ -54,6 +62,12 @@ __all__ = [
     "REDACTED_SECRET",
     "ScmCredentialBoundary",
     "ScmCredentialCapability",
+    "SecretMaterial",
+    "SecretMissingError",
+    "SecretStore",
+    "SecretStoreError",
+    "SecretUnavailableError",
+    "InMemorySecretStore",
     "build_approval_request",
     "policy_profile",
 ]
