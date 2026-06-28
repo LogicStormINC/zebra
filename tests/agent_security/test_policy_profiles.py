@@ -10,6 +10,8 @@ from agent_security import (
     build_approval_request,
     policy_profile,
 )
+from agent_security.mcp_proxy_policy import ToolEgressRoute
+from agent_security.network_profile import parse_network_profile
 
 
 def _tool_call(name: str, arguments: dict[str, object] | None = None) -> ToolCall:
@@ -28,9 +30,10 @@ def test_legacy_policy_profile_name_is_stable_for_bootstrap_smoke() -> None:
 def test_read_only_profile_allows_read_tools_and_denies_write_tools() -> None:
     engine = LocalPolicyEngine(profile=PolicyProfile.READ_ONLY)
 
-    assert engine.evaluate_tool_call(_tool_call("files.read")).decision is (
-        PolicyDecisionType.ALLOW
-    )
+    read_decision = engine.evaluate_tool_call(_tool_call("files.read"))
+
+    assert read_decision.decision is PolicyDecisionType.ALLOW
+    assert "local route" in read_decision.reason
     assert engine.evaluate_tool_call(_tool_call("git.status")).decision is (
         PolicyDecisionType.ALLOW
     )
@@ -160,9 +163,14 @@ def test_build_approval_request_projects_command_scope_and_medium_risk() -> None
     assert request.risk is ApprovalRisk.MEDIUM
     assert request.scope == (
         "tool:command.run",
+        "route:local",
+        "network_profile:none",
         "command:python",
         "cwd:packages/agent-security",
     )
+    assert request.route is ToolEgressRoute.LOCAL
+    assert request.target is None
+    assert request.network_profile == "none"
 
 
 def test_build_approval_request_marks_sensitive_transfer_as_high_risk() -> None:
@@ -187,6 +195,55 @@ def test_unknown_tool_is_denied_for_all_profiles() -> None:
         assert engine.evaluate_tool_call(_tool_call("network.fetch")).decision is (
             PolicyDecisionType.DENY
         )
+
+
+def test_mcp_tool_is_blocked_by_fail_closed_default_profile() -> None:
+    engine = LocalPolicyEngine(profile=PolicyProfile.FULL_ACCESS)
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("mcp.github.create_pull_request", {"title": "Add feature"})
+    )
+
+    assert decision.decision is PolicyDecisionType.DENY
+    assert (
+        decision.reason
+        == "mcp.github.create_pull_request is blocked on external route "
+        "github.create_pull_request because network profile none does not allow "
+        "mcp proxy egress"
+    )
+
+
+def test_mcp_tool_requires_approval_when_proxy_route_is_enabled() -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.FULL_ACCESS,
+        network_profile=parse_network_profile("mcp-proxy-only"),
+    )
+    tool_call = _tool_call("mcp.github.create_pull_request", {"title": "Add feature"})
+
+    decision = engine.evaluate_tool_call(tool_call)
+    request = build_approval_request(
+        tool_call,
+        decision,
+        network_profile=engine.network_profile,
+    )
+
+    assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+    assert (
+        decision.reason
+        == "mcp.github.create_pull_request requires approval for proxy-routed external "
+        "tool execution to github.create_pull_request under network profile "
+        "mcp-proxy-only"
+    )
+    assert request is not None
+    assert request.route is ToolEgressRoute.MCP_PROXY
+    assert request.target == "github.create_pull_request"
+    assert request.network_profile == "mcp-proxy-only"
+    assert request.scope == (
+        "tool:mcp.github.create_pull_request",
+        "route:mcp_proxy",
+        "network_profile:mcp-proxy-only",
+        "target:github.create_pull_request",
+    )
 
 
 def test_path_traversal_is_denied_for_file_read() -> None:

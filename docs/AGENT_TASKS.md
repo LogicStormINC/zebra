@@ -3714,8 +3714,8 @@ Normalize audit-facing metadata across SCM proxy and MCP proxy execution paths.
 
 ### P22-SEC-01 - Proxy Route Policy Integration
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `SEC`
 - Depends on: `P22-TOOL-01`
 - Branch: `codex/p22-sec-01-proxy-route-policy-integration`
@@ -3733,13 +3733,13 @@ Integrate proxy route classification deeper into policy and approval surfaces.
 
 #### Acceptance
 
-- [ ] Policy-facing outputs distinguish direct-local, proxy-routed, and blocked external tool paths.
-- [ ] Approval or denial messaging stays deterministic for MCP proxy scenarios.
-- [ ] Current fail-closed defaults remain unchanged.
+- [x] Policy-facing outputs distinguish direct-local, proxy-routed, and blocked external tool paths.
+- [x] Approval or denial messaging stays deterministic for MCP proxy scenarios.
+- [x] Current fail-closed defaults remain unchanged.
 
 ### P22-DOC-01 - Proxy Gateway Operator Docs
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P22-OBS-01`, `P22-SEC-01`

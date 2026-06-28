@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 21 is closed and Phase 22 proxy gateway execution planning is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, and MCP proxy starter contracts behind explicit provider, dry-run, network-profile, credential, and policy gates.
+Phase 21 is closed and Phase 22 proxy gateway execution is in progress. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, and policy-level route distinctions behind explicit provider, dry-run, network-profile, credential, and policy gates.
 
 The next milestone is `Phase 22 - Proxy Execution And Gateway Wiring`. The current implementation lanes are:
 
@@ -47,6 +47,7 @@ The next milestone is `Phase 22 - Proxy Execution And Gateway Wiring`. The curre
 - `docs/operator_runbook.md` now documents proxy-backed SCM execution, MCP proxy starter routing, remediation, and rollback to safe defaults
 - `ToolExecutor` can now execute `mcp.<server>.<tool>` calls through an MCP proxy gateway when that gateway is wired in, without changing local builtin tool behavior
 - proxy-backed SCM audit and MCP proxy execution metadata now share stable `route` / `proxy_target` / `proxy_transport` fields
+- local policy evaluation and approval requests now distinguish local tool paths, proxy-routed MCP tool paths, and fail-closed blocked MCP routes deterministically
 - remote SCM operator safety runbook coverage documents dry-run first, explicit opt-in, audit inspection, token rules, and rollback steps
 - credential capability domain modeling covers provider, audience, scopes, expiry, and redacted serialization
 - credential broker Port definition covers SCM credential requests, in-memory test broker, and missing/denied/unavailable errors
@@ -62,7 +63,7 @@ The next milestone is `Phase 22 - Proxy Execution And Gateway Wiring`. The curre
 - secret-store Port and redaction contract now exist in `agent-security`
 - local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
 - GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
-- proxy route policy integration is the next ready implementation lane
+- proxy gateway operator docs are the next ready implementation lane
 
 Read in this order:
 

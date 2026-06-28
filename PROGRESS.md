@@ -3,7 +3,7 @@
 ## Current Phase
 
 - Active phase: `Phase 22 - Proxy Execution And Gateway Wiring`
-- Repository status: `phase 22 ready`
+- Repository status: `phase 22 in progress`
 - Current focus:
   - keep local-only PR planning as the default behavior
   - keep live SCM and MCP egress behind explicit provider, dry-run, credential, and policy gates
@@ -178,10 +178,12 @@
 - Phase 21 is closed with `docs/Phase21_Proxy_Egress_Contracts_验收记录.md`
 - `ToolExecutor` now supports MCP proxy gateway execution for `mcp.<server>.<tool>` calls without changing builtin local tool behavior
 - proxy-backed SCM audit and MCP proxy tool execution now share stable `route`, `proxy_target`, and `proxy_transport` metadata fields
+- local policy evaluation now classifies MCP tools into deterministic local, proxy-routed approval, or fail-closed blocked outputs
+- approval request payloads now project route, target, and network-profile scope for proxy-aware operator decisions
 
 ## Next Unlocks
 
-- `P22-SEC-01 - Proxy Route Policy Integration` is ready
+- `P22-DOC-01 - Proxy Gateway Operator Docs` is ready
 
 ## Active Documents
 

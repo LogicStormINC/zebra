@@ -2779,3 +2779,22 @@
 - 验证：
   - `make check`
   - `make test`
+
+## 2026-06-28 Phase 22 Proxy Route Policy Integration
+
+- 执行 `P22-SEC-01 - Proxy Route Policy Integration`
+- 行为更新：
+  - `LocalPolicyEngine` 现可结合 `network_profile` 对 `mcp.<server>.<tool>` 调用输出确定性的 local / proxy-routed / blocked 策略结果
+  - fail-closed 默认值 `network_profile=none` 下，MCP 工具仍被明确拒绝
+  - 代理可达的 MCP 工具会生成稳定的 approval reason，并把 `route`、`target`、`network_profile` 投影进 `ApprovalRequest`
+  - 本地 builtin 工具的 allow / approval reason 明确标识为 local route
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P22-SEC-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P22-DOC-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_security/test_policy_profiles.py tests/agent_security/test_mcp_proxy_policy.py`
+  - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security`
+  - `uv run mypy packages/agent-security/src/agent_security/policy.py tests/agent_security/test_policy_profiles.py tests/agent_security/test_mcp_proxy_policy.py`
+  - `make check`
