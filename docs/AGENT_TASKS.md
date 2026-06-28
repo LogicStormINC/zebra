@@ -3487,8 +3487,8 @@ Guard SCM transport execution with explicit network-profile checks before remote
 
 ### P20-DOC-01 - Egress Control Operator Docs
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P20-SEC-01`, `P20-INT-01`
 - Branch: `codex/p20-doc-01-egress-control-operator-docs`
@@ -3506,13 +3506,13 @@ Document the operator model for guarded network profiles and SCM egress constrai
 
 #### Acceptance
 
-- [ ] Operator docs explain when remote SCM execution is blocked by network profile.
-- [ ] Examples preserve `network none` as the default local posture.
-- [ ] Remediation guidance distinguishes egress policy from credential policy.
+- [x] Operator docs explain when remote SCM execution is blocked by network profile.
+- [x] Examples preserve `network none` as the default local posture.
+- [x] Remediation guidance distinguishes egress policy from credential policy.
 
 ### P20-CLOSE-01 - Phase 20 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P20-DOC-01`

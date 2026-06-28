@@ -57,6 +57,17 @@
   - `poetry run pytest tests/agent_integrations/test_scm.py tests/api/test_session_pull_request.py`
   - `uv run ruff check packages/agent-integrations/src/agent_integrations tests/agent_integrations tests/api/test_session_pull_request.py`
 
+## 2026-06-28 P20-DOC-01 Egress Control Operator Docs
+
+- 执行 `P20-DOC-01 - Egress Control Operator Docs`
+- 更新 `docs/operator_runbook.md`：
+  - 增加 `ZEBRA_SCM_NETWORK_PROFILE` 与 `ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST` 配置说明
+  - 明确当前 direct GitHub transport 仅允许 `full-trusted-local` 或命中 API host 的 `domain-allowlist`
+  - 增加默认 `network_profile=none` 下的阻断示例
+  - 将 `egress_policy` 纳入 delivery audit `failure_class` 说明与 remediation 指引
+  - 明确测试后要回退到 `network_profile=none` 的安全默认值
+- 更新 `README.md`、`PROGRESS.md`、`docs/AGENT_TASKS.md`，将 Phase 20 文档状态与下一张 closeout 任务写回仓库
+
 ## 2026-06-28 GitHub App Credential Adapter Skeleton
 
 - 执行 `P19-INT-01 - GitHub App Credential Adapter Skeleton`

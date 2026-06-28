@@ -331,7 +331,7 @@ GitHub pull-request provider status:
 - The GitHub gateway can build a dry-run request payload for review without live GitHub access.
 - API composition builds a default environment-backed credential broker from GitHub SCM settings.
 - A non-dry-run GitHub request without a broker-issued credential fails before any network call.
-- A non-dry-run GitHub request with a broker-issued credential may create a remote PR only when the explicit provider, dry-run, credential, and policy gates all pass.
+- A non-dry-run GitHub request with a broker-issued credential may create a remote PR only when the explicit provider, dry-run, network-profile, credential, and policy gates all pass.
 - GitHub App-backed credential exchange remains a guarded skeleton path for integration hardening; it is not the default operator configuration path yet.
 - Transport failures are reported as deterministic `pull_request_unavailable` responses and audit records.
 - Serialized request headers redact the token as `Bearer <redacted>`.
@@ -345,6 +345,8 @@ ZEBRA_GITHUB_REPO=
 ZEBRA_GITHUB_TOKEN_ENV=
 ZEBRA_GITHUB_API_BASE_URL=https://api.github.com
 ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true
+ZEBRA_SCM_NETWORK_PROFILE=none
+ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST=
 ```
 
 Rules:
@@ -354,6 +356,8 @@ Rules:
 - GitHub config requires `ZEBRA_GITHUB_OWNER`, `ZEBRA_GITHUB_REPO`, and `ZEBRA_GITHUB_TOKEN_ENV`.
 - `ZEBRA_GITHUB_TOKEN_ENV` is the name of the environment variable that will hold a token later; the token value itself must not be written to config files.
 - `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true` keeps provider selection non-mutating until remote execution is explicitly implemented.
+- `ZEBRA_SCM_NETWORK_PROFILE=none` is the default fail-closed local posture and blocks direct remote SCM execution.
+- `ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST` is only valid when `ZEBRA_SCM_NETWORK_PROFILE=domain-allowlist`.
 - SCM credential snapshots store token environment variable names only.
 - Any token value handled by the credential boundary serializes as `<redacted>`.
 - API composition uses `ZEBRA_GITHUB_TOKEN_ENV` to build an environment-backed credential broker.
@@ -361,9 +365,20 @@ Rules:
 - GitHub PR execution requires all of the following:
 - `ZEBRA_SCM_PROVIDER=github`
 - `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=false`
+- `ZEBRA_SCM_NETWORK_PROFILE=full-trusted-local` or `ZEBRA_SCM_NETWORK_PROFILE=domain-allowlist`
+- if using `domain-allowlist`, `ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST` must contain the configured GitHub API host such as `api.github.com`
 - configured `ZEBRA_GITHUB_TOKEN_ENV` with a token available in the API process environment
 - a session created with `policy_profile=full_access`
 - tests and runbook examples should prefer dry-run unless a real repository side effect is intentional.
+
+Egress-profile meanings for the current direct GitHub transport:
+
+- `none`: default local posture; blocks all direct remote SCM execution
+- `setup-only`: reserved for dependency/bootstrap phases; blocks direct remote SCM execution here
+- `domain-allowlist`: allows direct GitHub transport only when the API host is explicitly listed
+- `mcp-proxy-only`: reserved for future proxy-backed MCP egress; blocks the current direct GitHub transport
+- `git-proxy-only`: reserved for future SCM proxy transport; blocks the current direct GitHub transport
+- `full-trusted-local`: allows the current direct GitHub transport from the local operator environment
 
 Remote GitHub PR execution checklist:
 
@@ -393,6 +408,8 @@ export ZEBRA_GITHUB_OWNER=<owner>
 export ZEBRA_GITHUB_REPO=<repo>
 export ZEBRA_GITHUB_TOKEN_ENV=ZEBRA_GITHUB_TOKEN
 export ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true
+export ZEBRA_SCM_NETWORK_PROFILE=none
+unset ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST
 curl -X POST http://127.0.0.1:8000/sessions/<session_id>/pull-request \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: pr-github-dry-run-1" \
@@ -407,11 +424,33 @@ Expected result:
 - no network mutation occurs
 - delivery audit records the GitHub provider and `dry_run=true`
 
-3. Before live execution, verify token handling and policy.
+3. Confirm that the default egress posture still blocks live execution before you broaden it.
+
+```bash
+export ZEBRA_SCM_PULL_REQUEST_DRY_RUN=false
+export ZEBRA_SCM_NETWORK_PROFILE=none
+unset ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST
+curl -X POST http://127.0.0.1:8000/sessions/<session_id>/pull-request \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: pr-github-egress-block-1" \
+  -d '{"title":"Blocked live PR","body":"Expect egress block.","base_branch":"main","head_branch":"feature/zebra","dry_run":false}'
+```
+
+Expected result:
+
+- `status=pull_request_unavailable`
+- `reason=github pull request execution is blocked by network profile none`
+- audit `result_metadata.failure_class=egress_policy`
+- audit `result_metadata.network_profile=none`
+- no token lookup or remote PR creation
+
+4. Before live execution, verify token handling, policy, and explicit egress approval.
 
 ```bash
 export ZEBRA_GITHUB_TOKEN=<token>
 export ZEBRA_SCM_PULL_REQUEST_DRY_RUN=false
+export ZEBRA_SCM_NETWORK_PROFILE=domain-allowlist
+export ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST=api.github.com
 ```
 
 Required preconditions:
@@ -421,9 +460,10 @@ Required preconditions:
 - the token value is present only in the API process environment
 - the default API environment broker can issue a credential for `repo:<owner>/<repo>`
 - the previous GitHub dry-run payload was reviewed
+- the selected network profile intentionally allows the configured GitHub API host
 - the target repository, base branch, and head branch are correct
 
-4. Execute the remote PR request with a unique idempotency key.
+5. Execute the remote PR request with a unique idempotency key.
 
 ```bash
 curl -X POST http://127.0.0.1:8000/sessions/<session_id>/pull-request \
@@ -440,7 +480,7 @@ Expected result:
 - `commit_sha` from the workspace
 - no raw token value in the API response
 
-5. Inspect delivery audit immediately after the request.
+6. Inspect delivery audit immediately after the request.
 
 ```bash
 curl http://127.0.0.1:8000/sessions/<session_id>/delivery-audit
@@ -456,6 +496,7 @@ Expected result:
 - `result_metadata.credential_source=broker` for the default API broker path
 - `result_metadata.credential_backend=environment` for the current local backend
 - `result_metadata.failure_class` for failed requests:
+  - `egress_policy`
   - `credential_missing`
   - `credential_denied`
   - `credential_unavailable`
@@ -468,11 +509,12 @@ Rollback and failure handling:
 - If a live PR was created unintentionally, close it in GitHub and record the PR URL in the session worklog or operator incident notes.
 - If the API returns `policy_blocked`, recreate or rerun the session with `policy_profile=full_access`; do not bypass the policy gate.
 - If the API returns `pull_request_unavailable`, inspect `reason`, fix configuration or transport availability, and retry with a new idempotency key only when the previous request did not create a PR.
+- If `result_metadata.failure_class=egress_policy`, keep `ZEBRA_SCM_NETWORK_PROFILE=none` unless live SCM execution is intentionally required. Prefer `domain-allowlist` with the narrowest host list possible; use `full-trusted-local` only for trusted local operators.
 - If `result_metadata.failure_class=credential_missing`, confirm the configured token env var exists and is non-empty in the broker backend.
 - If `result_metadata.failure_class=credential_denied`, confirm the broker binding or capability grants `pull_request:create` for the requested `repo:<owner>/<repo>` audience.
 - If `result_metadata.failure_class=credential_unavailable`, restore broker availability before retrying.
 - If `result_metadata.failure_class=transport_failure`, inspect GitHub API reachability, response validity, and remote-side status before retrying.
-- Return to safe defaults after testing with `ZEBRA_SCM_PROVIDER=local-only` and `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true`.
+- Return to safe defaults after testing with `ZEBRA_SCM_PROVIDER=local-only`, `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true`, `ZEBRA_SCM_NETWORK_PROFILE=none`, and an empty `ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST`.
 
 Append one more user message to an existing session:
 
