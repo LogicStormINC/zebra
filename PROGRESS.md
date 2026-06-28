@@ -2,10 +2,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 18 - SCM Delivery Audit And Broker Observability`
-- Repository status: `phase 18 in progress`
+- Active phase: `Phase 19 - Secret Store And Broker-Backed Credential Foundations`
+- Repository status: `phase 19 ready`
 - Current focus:
-  - close Phase 18 with credential failure classification evidence
+  - define the secret-store Port and redaction contract
+  - add a local secret-store backend behind the broker boundary
+  - prepare the first provider-backed credential adapter skeleton
   - keep local-only PR planning as the default behavior
   - keep live SCM execution behind explicit provider, dry-run, credential, and policy gates
 
@@ -161,11 +163,14 @@
 - SCM delivery audit now records non-secret credential source and backend metadata for broker-backed and explicit fallback GitHub PR execution paths
 - broker-missing failures now carry credential-source audit metadata without exposing token values
 - SCM delivery audit now classifies credential_missing, credential_denied, credential_unavailable, and transport_failure for operator remediation
-- Phase 18 should next close with acceptance evidence and next-phase planning
+- Phase 18 is closed with `docs/Phase18_SCM_Audit_Observability_验收记录.md`
+- Phase 19 should next introduce secret-store and provider-backed credential foundations without widening the execution surface prematurely
 
 ## Next Unlocks
 
-- `P18-CLOSE-01 - Phase 18 Closeout And Next Planning` is ready
+- `P19-SEC-01 - Secret Store Port And Redaction Contract` is ready
+- `P19-SEC-02 - Local Secret Store Backend` unlocks after the Port
+- `P19-INT-01 - GitHub App Credential Adapter Skeleton` unlocks after the local secret-store backend
 
 ## Active Documents
 

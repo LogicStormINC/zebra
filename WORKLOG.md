@@ -1,5 +1,25 @@
 # Progress Log
 
+## 2026-06-28 Phase 18 Closeout And Phase 19 Planning
+
+- 执行 `P18-CLOSE-01 - Phase 18 Closeout And Next Planning`
+- 新增 Phase 18 验收记录：
+  - `docs/Phase18_SCM_Audit_Observability_验收记录.md`
+- 汇总 Phase 18 已完成证据：
+  - `credential_source`
+  - `credential_backend`
+  - `failure_class`
+  - operator remediation guidance
+- 将仓库主线状态推进到 Phase 19 ready
+- 新增 Phase 19 starter tasks：
+  - `P19-SEC-01 - Secret Store Port And Redaction Contract`
+  - `P19-SEC-02 - Local Secret Store Backend`
+  - `P19-INT-01 - GitHub App Credential Adapter Skeleton`
+- Phase 19 方向依据：
+  - 架构文档 `Credential Broker`
+  - 架构文档 `Secret: OS Keychain / 本地安全存储`
+  - 目录规划中的 `credentials/secret_store.py` 与 `protocols/github_app.py`
+
 ## 2026-06-28 Credential Failure Audit Classification
 
 - 执行 `P18-OBS-02 - Credential Failure Audit Classification`

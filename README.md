@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 17 is closed and Phase 18 SCM delivery audit observability is in progress. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
+Phase 18 is closed and Phase 19 secret-store and broker-backed credential foundations are ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
 
-The next milestone is `Phase 18 - SCM Delivery Audit And Broker Observability`. The current implementation lanes are:
+The next milestone is `Phase 19 - Secret Store And Broker-Backed Credential Foundations`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -50,7 +50,8 @@ The next milestone is `Phase 18 - SCM Delivery Audit And Broker Observability`. 
 - SCM delivery audit now records non-secret credential source and backend metadata for broker-backed and explicit env-fallback GitHub PR execution
 - broker-missing credential failures now retain source metadata without exposing token values
 - SCM delivery audit now classifies credential_missing, credential_denied, credential_unavailable, and transport_failure for operator remediation
-- Phase 18 closeout is the next ready implementation lane
+- secret-store Port and redaction contract is the next ready implementation lane
+- local secure storage and GitHub App-backed credential adapters remain staged behind that Port
 
 Read in this order:
 
@@ -94,4 +95,4 @@ For the current local operator workflow, start with `docs/operator_runbook.md`. 
 - local FastAPI serving
 - SSE session stream replay
 
-For the latest phase closeout summary, see `docs/Phase17_Credential_Backend_Hardening_验收记录.md`.
+For the latest phase closeout summary, see `docs/Phase18_SCM_Audit_Observability_验收记录.md`.

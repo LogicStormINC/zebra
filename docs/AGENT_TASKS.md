@@ -3309,8 +3309,8 @@ Classify credential missing, denied, unavailable, and transport failures in oper
 
 ### P18-CLOSE-01 - Phase 18 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P18-OBS-02`
 - Branch: `codex/p18-closeout-next-plan`
@@ -3328,5 +3328,83 @@ Close Phase 18 with SCM delivery audit and credential observability evidence.
 
 #### Acceptance
 
-- [ ] Credential source and failure classification evidence is recorded.
-- [ ] Next phase starter tasks are ready and path-scoped.
+- [x] Credential source and failure classification evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 19 Task Board
+
+### P19-SEC-01 - Secret Store Port And Redaction Contract
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `SEC`
+- Depends on: `P18-CLOSE-01`
+- Branch: `codex/p19-sec-01-secret-store-port`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define the secret-store Port and redacted snapshot contract needed before non-environment credential backends are added.
+
+#### Deliverables
+
+- secret-store Protocol or interface
+- redacted secret metadata model
+- deterministic tests for missing and unavailable secret lookups
+- focused architecture note or doc update
+
+#### Acceptance
+
+- [ ] Secret retrieval contract keeps raw secret values out of repr and durable metadata.
+- [ ] Security package exposes deterministic missing and unavailable secret-store semantics.
+- [ ] Future broker backends can depend on the Port without reading raw storage directly from API or integrations.
+
+### P19-SEC-02 - Local Secret Store Backend
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `SEC`
+- Depends on: `P19-SEC-01`
+- Branch: `codex/p19-sec-02-local-secret-store-backend`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Implement a local secret-store backend aligned with the architecture's local secure storage direction.
+
+#### Deliverables
+
+- local secret-store backend
+- broker-facing retrieval helper
+- tests covering missing, unavailable, and redacted read paths
+
+#### Acceptance
+
+- [ ] Local secret storage can serve credential material without exposing raw values in repr or snapshots.
+- [ ] Missing and unavailable secret-store failures remain distinguishable.
+- [ ] Broker-facing callers can retrieve secret material through the backend without bypassing the Port.
+
+### P19-INT-01 - GitHub App Credential Adapter Skeleton
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `INT`
+- Depends on: `P19-SEC-02`
+- Branch: `codex/p19-int-01-github-app-credential-adapter`
+- Owned paths: `packages/agent-integrations/`, `packages/agent-security/`, `tests/agent_integrations/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add the first provider-backed non-environment credential adapter using the secret-store and broker boundaries.
+
+#### Deliverables
+
+- GitHub App credential adapter skeleton
+- broker lookup path using stored secret material
+- redaction and failure-class regression tests
+
+#### Acceptance
+
+- [ ] Integration path can request GitHub App-backed credentials without writing raw secrets into durable audit state.
+- [ ] Provider-backed missing, denied, unavailable, and transport failures remain classifiable.
+- [ ] Operator-facing docs identify the GitHub App adapter as a guarded future execution path.
