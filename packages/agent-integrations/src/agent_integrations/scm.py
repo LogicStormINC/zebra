@@ -187,12 +187,21 @@ class GitHubPullRequestGateway:
                 metadata = {
                     "credential_source": self._credential_source_fallback,
                     "credential_backend": self._credential_backend_fallback,
+                    "failure_class": "credential_missing",
                 }
             raise ScmUnavailableError(
                 "github token is required for pull request execution",
                 metadata=metadata,
             )
-        url = self._transport.create_pull_request(payload, token=token)
+        credential_source = lookup.credential_source if lookup is not None else "env_fallback"
+        credential_backend = lookup.credential_backend if lookup is not None else "environment"
+        try:
+            url = self._transport.create_pull_request(payload, token=token)
+        except ScmUnavailableError as error:
+            metadata = dict(error.metadata)
+            metadata.setdefault("credential_source", credential_source)
+            metadata.setdefault("credential_backend", credential_backend)
+            raise ScmUnavailableError(str(error), metadata=metadata) from error
         return PullRequestPlan(
             provider="github",
             title=request.title.strip(),
@@ -204,8 +213,8 @@ class GitHubPullRequestGateway:
             status="created",
             url=url,
             request_payload=_serializable_payload(payload),
-            credential_source=lookup.credential_source if lookup is not None else "env_fallback",
-            credential_backend=lookup.credential_backend if lookup is not None else "environment",
+            credential_source=credential_source,
+            credential_backend=credential_backend,
         )
 
     def build_payload(self, request: PullRequestRequest) -> GitHubPullRequestPayload:

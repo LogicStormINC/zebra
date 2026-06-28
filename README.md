@@ -49,7 +49,8 @@ The next milestone is `Phase 18 - SCM Delivery Audit And Broker Observability`. 
 - broker-backed SCM operator docs cover default environment broker execution, token rules, audit inspection, and fallback boundary
 - SCM delivery audit now records non-secret credential source and backend metadata for broker-backed and explicit env-fallback GitHub PR execution
 - broker-missing credential failures now retain source metadata without exposing token values
-- credential failure classification is the next ready implementation lane
+- SCM delivery audit now classifies credential_missing, credential_denied, credential_unavailable, and transport_failure for operator remediation
+- Phase 18 closeout is the next ready implementation lane
 
 Read in this order:
 

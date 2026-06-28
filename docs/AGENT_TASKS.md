@@ -3284,8 +3284,8 @@ Add non-secret credential source metadata to SCM delivery audit so operators can
 
 ### P18-OBS-02 - Credential Failure Audit Classification
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `QA`
 - Depends on: `P18-OBS-01`
 - Branch: `codex/p18-obs-02-credential-failure-audit-classification`
@@ -3303,13 +3303,13 @@ Classify credential missing, denied, unavailable, and transport failures in oper
 
 #### Acceptance
 
-- [ ] Missing credential audit is distinguishable from denied credential audit.
-- [ ] Broker unavailable audit is distinguishable from GitHub transport failure audit.
-- [ ] Remediation guidance is documented.
+- [x] Missing credential audit is distinguishable from denied credential audit.
+- [x] Broker unavailable audit is distinguishable from GitHub transport failure audit.
+- [x] Remediation guidance is documented.
 
 ### P18-CLOSE-01 - Phase 18 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P18-OBS-02`

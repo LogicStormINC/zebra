@@ -4,8 +4,13 @@ from subprocess import run
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.domain.identifiers import SessionId
-from agent_integrations import GitHubPullRequestPayload
-from agent_security import EnvironmentCredentialBinding, EnvironmentCredentialBroker
+from agent_integrations import GitHubPullRequestPayload, ScmUnavailableError
+from agent_security import (
+    CredentialCapability,
+    EnvironmentCredentialBinding,
+    EnvironmentCredentialBroker,
+    InMemoryCredentialBroker,
+)
 from agent_storage import SQLiteDeliveryAuditStore, SQLiteEventStore, SQLiteProjectionStore
 from fastapi.testclient import TestClient
 from zebra_agent_api import create_http_app
@@ -166,6 +171,7 @@ def test_api_pull_request_github_non_dry_run_fails_closed(tmp_path: Path) -> Non
     )
     assert audit_records[0].result_metadata["credential_source"] == "broker"
     assert audit_records[0].result_metadata["credential_backend"] == "environment"
+    assert audit_records[0].result_metadata["failure_class"] == "credential_missing"
 
 
 def test_api_pull_request_uses_broker_credential_for_github_execution(
@@ -285,6 +291,7 @@ def test_api_pull_request_missing_broker_credential_records_audit(
     assert audit_records[0].result_metadata["reason"] == ("credential environment value is missing")
     assert audit_records[0].result_metadata["credential_source"] == "broker"
     assert audit_records[0].result_metadata["credential_backend"] == "environment"
+    assert audit_records[0].result_metadata["failure_class"] == "credential_missing"
 
 
 def test_api_pull_request_missing_default_broker_credential_records_audit(
@@ -321,6 +328,107 @@ def test_api_pull_request_missing_default_broker_credential_records_audit(
     assert audit_records[0].result_metadata["reason"] == ("credential environment value is missing")
     assert audit_records[0].result_metadata["credential_source"] == "broker"
     assert audit_records[0].result_metadata["credential_backend"] == "environment"
+    assert audit_records[0].result_metadata["failure_class"] == "credential_missing"
+
+
+def test_api_pull_request_denied_broker_credential_records_audit(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
+
+    response = create_app(
+        database_path,
+        settings=_settings(None, scm=_github_scm(pull_request_dry_run=False)),
+        credential_broker=_denied_github_broker(),
+        github_transport=transport,
+    ).open_session_pull_request(
+        str(session_id),
+        {
+            "title": "Add feature",
+            "base_branch": "main",
+            "head_branch": "feature/zebra",
+            "dry_run": False,
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.body["status"] == "pull_request_unavailable"
+    assert response.body["reason"] == "credential request denied for audience"
+    assert transport.token is None
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].result_metadata["credential_source"] == "broker"
+    assert audit_records[0].result_metadata["credential_backend"] == "environment"
+    assert audit_records[0].result_metadata["failure_class"] == "credential_denied"
+
+
+def test_api_pull_request_unavailable_broker_records_audit(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
+
+    response = create_app(
+        database_path,
+        settings=_settings(None, scm=_github_scm(pull_request_dry_run=False)),
+        credential_broker=_unavailable_github_broker(),
+        github_transport=transport,
+    ).open_session_pull_request(
+        str(session_id),
+        {
+            "title": "Add feature",
+            "base_branch": "main",
+            "head_branch": "feature/zebra",
+            "dry_run": False,
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.body["status"] == "pull_request_unavailable"
+    assert response.body["reason"] == "credential broker is unavailable"
+    assert transport.token is None
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].result_metadata["credential_source"] == "broker"
+    assert audit_records[0].result_metadata["credential_backend"] == "environment"
+    assert audit_records[0].result_metadata["failure_class"] == "credential_unavailable"
+
+
+def test_api_pull_request_transport_failure_records_audit(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+
+    response = create_app(
+        database_path,
+        settings=_settings(None, scm=_github_scm(pull_request_dry_run=False)),
+        credential_broker=_github_broker(env={"GITHUB_TOKEN": "broker-token"}),
+        github_transport=_FailingGitHubTransport(),
+    ).open_session_pull_request(
+        str(session_id),
+        {
+            "title": "Add feature",
+            "base_branch": "main",
+            "head_branch": "feature/zebra",
+            "dry_run": False,
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.body["status"] == "pull_request_unavailable"
+    assert response.body["reason"] == "github pull request execution failed: transport offline"
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].result_metadata["credential_source"] == "broker"
+    assert audit_records[0].result_metadata["credential_backend"] == "environment"
+    assert audit_records[0].result_metadata["failure_class"] == "transport_failure"
 
 
 def test_api_pull_request_rejects_policy_blocked_session(tmp_path: Path) -> None:
@@ -569,10 +677,31 @@ def _github_broker(*, env: dict[str, str]) -> EnvironmentCredentialBroker:
                 audience="repo:octo-org/zebra-agent",
                 scopes=("pull_request:create",),
                 token_env="GITHUB_TOKEN",
-                expires_at=datetime(2026, 6, 23, 12, 30, tzinfo=UTC),
+                expires_at=datetime(2026, 7, 23, 12, 30, tzinfo=UTC),
             ),
         ),
         env=env,
+    )
+
+
+def _denied_github_broker() -> EnvironmentCredentialBroker:
+    return InMemoryCredentialBroker(
+        capabilities=(_github_capability(),),
+        denied_audiences=frozenset({"repo:octo-org/zebra-agent"}),
+    )
+
+
+def _unavailable_github_broker() -> InMemoryCredentialBroker:
+    return InMemoryCredentialBroker(unavailable=True)
+
+
+def _github_capability() -> CredentialCapability:
+    return CredentialCapability(
+        provider="github",
+        audience="repo:octo-org/zebra-agent",
+        scopes=("pull_request:create",),
+        expires_at=datetime(2026, 7, 23, 12, 30, tzinfo=UTC),
+        token_value="broker-token",
     )
 
 
@@ -591,3 +720,16 @@ class _FakeGitHubTransport:
         self.payload = payload
         self.token = token
         return self._url
+
+
+class _FailingGitHubTransport:
+    def create_pull_request(
+        self,
+        payload: GitHubPullRequestPayload,
+        *,
+        token: str,
+    ) -> str:
+        raise ScmUnavailableError(
+            "github pull request execution failed: transport offline",
+            metadata={"failure_class": "transport_failure"},
+        )

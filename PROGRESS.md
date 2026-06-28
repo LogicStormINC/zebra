@@ -5,7 +5,7 @@
 - Active phase: `Phase 18 - SCM Delivery Audit And Broker Observability`
 - Repository status: `phase 18 in progress`
 - Current focus:
-  - classify credential failure families in SCM delivery audit
+  - close Phase 18 with credential failure classification evidence
   - keep local-only PR planning as the default behavior
   - keep live SCM execution behind explicit provider, dry-run, credential, and policy gates
 
@@ -160,12 +160,12 @@
 - Phase 17 is closed with `docs/Phase17_Credential_Backend_Hardening_验收记录.md`
 - SCM delivery audit now records non-secret credential source and backend metadata for broker-backed and explicit fallback GitHub PR execution paths
 - broker-missing failures now carry credential-source audit metadata without exposing token values
-- Phase 18 should next classify credential failure families for operator-facing remediation
+- SCM delivery audit now classifies credential_missing, credential_denied, credential_unavailable, and transport_failure for operator remediation
+- Phase 18 should next close with acceptance evidence and next-phase planning
 
 ## Next Unlocks
 
-- `P18-OBS-02 - Credential Failure Audit Classification` is ready
-- `P18-CLOSE-01 - Phase 18 Closeout And Next Planning` unlocks after failure classification
+- `P18-CLOSE-01 - Phase 18 Closeout And Next Planning` is ready
 
 ## Active Documents
 

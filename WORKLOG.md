@@ -1,5 +1,29 @@
 # Progress Log
 
+## 2026-06-28 Credential Failure Audit Classification
+
+- 执行 `P18-OBS-02 - Credential Failure Audit Classification`
+- 为 SCM pull-request 失败审计增加稳定的 `failure_class` 分类：
+  - `credential_missing`
+  - `credential_denied`
+  - `credential_unavailable`
+  - `transport_failure`
+- 分类从集成层透传到 API delivery audit metadata：
+  - broker missing / denied / unavailable 分别保留不同 failure class
+  - GitHub transport failure 与 broker unavailable 明确区分
+  - transport failure 仍保留 `credential_source` 与 `credential_backend`，便于排障
+- 新增和更新测试：
+  - `tests/agent_integrations/test_scm.py`
+  - `tests/api/test_session_pull_request.py`
+  - `tests/api/test_delivery_audit_metadata.py`
+  - `tests/api/test_session_delivery_audit.py`
+- 更新 `docs/operator_runbook.md`，补充基于 `failure_class` 的 remediation 指引
+- 本轮验证结果：
+  - `poetry run pytest tests/agent_integrations/test_scm.py tests/api/test_session_pull_request.py tests/api/test_delivery_audit_metadata.py tests/api/test_session_delivery_audit.py` 通过
+  - `make check` 通过
+  - `make test` 未通过；当前阻塞为与本任务无关的 `tests/worker/test_loop.py::test_worker_loop_skips_already_leased_ready_session`
+  - 阻塞原因是该用例使用固定 `acquired_at=2026-06-23T09:00Z` 与真实当前时间比较，lease 已过期后被 worker 正常重新 claim；该问题位于 `tests/worker/`，不属于 `P18-OBS-02` owned paths
+
 ## 2026-06-23 SCM Credential Source Audit Metadata
 
 - 执行 `P18-OBS-01 - SCM Credential Source Audit Metadata`

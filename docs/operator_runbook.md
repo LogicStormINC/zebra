@@ -454,6 +454,11 @@ Expected result:
 - `result_metadata.url` when GitHub created a PR
 - `result_metadata.credential_source=broker` for the default API broker path
 - `result_metadata.credential_backend=environment` for the current local backend
+- `result_metadata.failure_class` for failed requests:
+  - `credential_missing`
+  - `credential_denied`
+  - `credential_unavailable`
+  - `transport_failure`
 - no raw token value in `result_metadata`
 - `result_metadata.reason=credential environment value is missing` when the broker cannot read the configured token env value
 
@@ -462,6 +467,10 @@ Rollback and failure handling:
 - If a live PR was created unintentionally, close it in GitHub and record the PR URL in the session worklog or operator incident notes.
 - If the API returns `policy_blocked`, recreate or rerun the session with `policy_profile=full_access`; do not bypass the policy gate.
 - If the API returns `pull_request_unavailable`, inspect `reason`, fix configuration or transport availability, and retry with a new idempotency key only when the previous request did not create a PR.
+- If `result_metadata.failure_class=credential_missing`, confirm the configured token env var exists and is non-empty in the broker backend.
+- If `result_metadata.failure_class=credential_denied`, confirm the broker binding or capability grants `pull_request:create` for the requested `repo:<owner>/<repo>` audience.
+- If `result_metadata.failure_class=credential_unavailable`, restore broker availability before retrying.
+- If `result_metadata.failure_class=transport_failure`, inspect GitHub API reachability, response validity, and remote-side status before retrying.
 - Return to safe defaults after testing with `ZEBRA_SCM_PROVIDER=local-only` and `ZEBRA_SCM_PULL_REQUEST_DRY_RUN=true`.
 
 Append one more user message to an existing session:

@@ -423,6 +423,68 @@ def test_build_pull_request_gateway_fails_before_execution_when_broker_credentia
     assert excinfo.value.metadata == {
         "credential_source": "broker",
         "credential_backend": "environment",
+        "failure_class": "credential_missing",
+    }
+
+
+def test_build_pull_request_gateway_classifies_broker_denied_credential(
+    tmp_path: Path,
+) -> None:
+    workspace = _git_workspace(tmp_path / "workspace")
+    gateway = build_pull_request_gateway(
+        _github_scm(pull_request_dry_run=False),
+        credential_broker=InMemoryCredentialBroker(
+            capabilities=(_github_capability(),),
+            denied_audiences=frozenset({"repo:octo-org/zebra-agent"}),
+        ),
+        github_transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
+        now=_now(),
+    )
+
+    with pytest.raises(ScmUnavailableError, match="denied") as excinfo:
+        gateway.plan(
+            workspace,
+            PullRequestRequest(
+                title="Add feature",
+                body="Implementation details.",
+                base_branch="main",
+                head_branch="feature/zebra",
+                dry_run=False,
+            ),
+        )
+    assert excinfo.value.metadata == {
+        "credential_source": "broker",
+        "credential_backend": "environment",
+        "failure_class": "credential_denied",
+    }
+
+
+def test_build_pull_request_gateway_classifies_broker_unavailable(
+    tmp_path: Path,
+) -> None:
+    workspace = _git_workspace(tmp_path / "workspace")
+    gateway = build_pull_request_gateway(
+        _github_scm(pull_request_dry_run=False),
+        credential_broker=InMemoryCredentialBroker(unavailable=True),
+        github_transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
+        now=_now(),
+    )
+
+    with pytest.raises(ScmUnavailableError, match="unavailable") as excinfo:
+        gateway.plan(
+            workspace,
+            PullRequestRequest(
+                title="Add feature",
+                body="Implementation details.",
+                base_branch="main",
+                head_branch="feature/zebra",
+                dry_run=False,
+            ),
+        )
+    assert excinfo.value.metadata == {
+        "credential_source": "broker",
+        "credential_backend": "environment",
+        "failure_class": "credential_unavailable",
     }
 
 
@@ -451,6 +513,36 @@ def test_build_pull_request_gateway_records_explicit_env_fallback_missing_metada
     assert excinfo.value.metadata == {
         "credential_source": "env_fallback",
         "credential_backend": "environment",
+        "failure_class": "credential_missing",
+    }
+
+
+def test_build_pull_request_gateway_classifies_transport_failure(
+    tmp_path: Path,
+) -> None:
+    workspace = _git_workspace(tmp_path / "workspace")
+    gateway = build_pull_request_gateway(
+        _github_scm(pull_request_dry_run=False),
+        credential_broker=InMemoryCredentialBroker.with_capabilities([_github_capability()]),
+        github_transport=_FailingGitHubTransport(),
+        now=_now(),
+    )
+
+    with pytest.raises(ScmUnavailableError, match="transport offline") as excinfo:
+        gateway.plan(
+            workspace,
+            PullRequestRequest(
+                title="Add feature",
+                body="Implementation details.",
+                base_branch="main",
+                head_branch="feature/zebra",
+                dry_run=False,
+            ),
+        )
+    assert excinfo.value.metadata == {
+        "credential_source": "broker",
+        "credential_backend": "environment",
+        "failure_class": "transport_failure",
     }
 
 
@@ -523,6 +615,19 @@ class _FakeGitHubTransport:
         self.payload = payload
         self.token = token
         return self._url
+
+
+class _FailingGitHubTransport:
+    def create_pull_request(
+        self,
+        payload: GitHubPullRequestPayload,
+        *,
+        token: str,
+    ) -> str:
+        raise ScmUnavailableError(
+            "github pull request execution failed: transport offline",
+            metadata={"failure_class": "transport_failure"},
+        )
 
 
 def _assert_secret_absent(secret: str, value: object) -> None:
