@@ -63,7 +63,7 @@ The next milestone is `Phase 22 - Proxy Execution And Gateway Wiring`. The curre
 - secret-store Port and redaction contract now exist in `agent-security`
 - local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
 - GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
-- proxy gateway operator docs are the next ready implementation lane
+- Phase 22 closeout and next-phase planning are the next ready implementation lane
 
 Read in this order:
 

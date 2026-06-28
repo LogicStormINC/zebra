@@ -3739,8 +3739,8 @@ Integrate proxy route classification deeper into policy and approval surfaces.
 
 ### P22-DOC-01 - Proxy Gateway Operator Docs
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P22-OBS-01`, `P22-SEC-01`
 - Branch: `codex/p22-doc-01-proxy-gateway-operator-docs`
@@ -3758,13 +3758,13 @@ Document the operator model for concrete proxy gateway execution paths.
 
 #### Acceptance
 
-- [ ] Operator docs explain how proxy-backed MCP execution differs from the starter-contract phase.
-- [ ] Audit interpretation covers both SCM and MCP proxy flows.
-- [ ] Runbook examples preserve fail-closed defaults and narrow enablement.
+- [x] Operator docs explain how proxy-backed MCP execution differs from the starter-contract phase.
+- [x] Audit interpretation covers both SCM and MCP proxy flows.
+- [x] Runbook examples preserve fail-closed defaults and narrow enablement.
 
 ### P22-CLOSE-01 - Phase 22 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P22-DOC-01`

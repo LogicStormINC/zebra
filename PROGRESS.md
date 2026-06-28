@@ -3,7 +3,7 @@
 ## Current Phase
 
 - Active phase: `Phase 22 - Proxy Execution And Gateway Wiring`
-- Repository status: `phase 22 in progress`
+- Repository status: `phase 22 closeout ready`
 - Current focus:
   - keep local-only PR planning as the default behavior
   - keep live SCM and MCP egress behind explicit provider, dry-run, credential, and policy gates
@@ -180,10 +180,11 @@
 - proxy-backed SCM audit and MCP proxy tool execution now share stable `route`, `proxy_target`, and `proxy_transport` metadata fields
 - local policy evaluation now classifies MCP tools into deterministic local, proxy-routed approval, or fail-closed blocked outputs
 - approval request payloads now project route, target, and network-profile scope for proxy-aware operator decisions
+- proxy gateway operator guidance is now split into `docs/proxy_gateway_operator_runbook.md`, and the main operator runbook links to it instead of growing beyond the markdown file-size limit
 
 ## Next Unlocks
 
-- `P22-DOC-01 - Proxy Gateway Operator Docs` is ready
+- `P22-CLOSE-01 - Phase 22 Closeout And Next Planning` is ready
 
 ## Active Documents
 

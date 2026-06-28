@@ -2798,3 +2798,21 @@
   - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security`
   - `uv run mypy packages/agent-security/src/agent_security/policy.py tests/agent_security/test_policy_profiles.py tests/agent_security/test_mcp_proxy_policy.py`
   - `make check`
+
+## 2026-06-28 Phase 22 Proxy Gateway Operator Docs
+
+- 执行 `P22-DOC-01 - Proxy Gateway Operator Docs`
+- 文档更新：
+  - 新增 `docs/proxy_gateway_operator_runbook.md`，集中记录 proxy-backed SCM 与 MCP gateway 的 operator model
+  - `docs/operator_runbook.md` 改为保留主线本地操作说明，并跳转到新的 proxy runbook
+  - `docs/operator_runbook.md` 从 651 行降到 423 行，重新满足 markdown 文件长度约束
+  - `docs/AGENT_TASKS.md` 将 `P22-DOC-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P22-CLOSE-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+- 文档结论：
+  - operator docs 明确区分了 Phase 21 starter-contract 与 Phase 22 concrete gateway execution
+  - audit interpretation 覆盖了 SCM proxy 与 MCP proxy 的 route / target / transport 证据
+  - rollback guidance 保持 fail-closed 默认值和窄化启用原则
+- 验证：
+  - `make check`
