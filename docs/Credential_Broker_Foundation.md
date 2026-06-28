@@ -47,6 +47,8 @@ Phase 19 introduces the local contract that future non-environment broker backen
 - `SecretMaterial.redacted()` must replace raw values with `<redacted>`.
 - `SecretMissingError` means the requested handle does not exist.
 - `SecretUnavailableError` means the backing store cannot currently serve reads.
+- `LocalSecretStore` is the first local backend, backed by per-handle JSON documents under a local root directory.
+- `get_secret_value(...)` is the broker-facing helper for retrieving raw secret material through the Port.
 
 This contract exists so future broker backends can consume secret material without:
 

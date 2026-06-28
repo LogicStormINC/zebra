@@ -1,11 +1,16 @@
+import json
+from pathlib import Path
+
 import pytest
 from agent_security import (
     REDACTED_SECRET,
     InMemorySecretStore,
+    LocalSecretStore,
     SecretMaterial,
     SecretMissingError,
     SecretStore,
     SecretUnavailableError,
+    get_secret_value,
 )
 
 
@@ -79,6 +84,84 @@ def test_in_memory_secret_store_validates_handle() -> None:
 
 def test_in_memory_secret_store_satisfies_secret_store_protocol() -> None:
     store = InMemorySecretStore()
+
+    typed_store: SecretStore = store
+
+    assert typed_store is store
+
+
+def test_local_secret_store_reads_secret_document(tmp_path: Path) -> None:
+    root = tmp_path / "secrets"
+    root.mkdir()
+    secret_path = root / "github" / "app"
+    secret_path.mkdir(parents=True)
+    (secret_path / "private-key.json").write_text(
+        json.dumps({"value": "file-secret", "version": "v2"}),
+        encoding="utf-8",
+    )
+    store = LocalSecretStore(root=root)
+
+    secret = store.get_secret(handle="github/app/private-key")
+
+    assert secret == SecretMaterial(
+        handle="github/app/private-key",
+        backend="local-file",
+        version="v2",
+        value="file-secret",
+    )
+    assert get_secret_value(store, handle="github/app/private-key") == "file-secret"
+    assert "file-secret" not in repr(secret)
+
+
+def test_local_secret_store_reports_missing_secret(tmp_path: Path) -> None:
+    root = tmp_path / "secrets"
+    root.mkdir()
+    store = LocalSecretStore(root=root)
+
+    with pytest.raises(SecretMissingError, match="missing"):
+        store.get_secret(handle="github/app/private-key")
+
+
+def test_local_secret_store_reports_unavailable_root(tmp_path: Path) -> None:
+    store = LocalSecretStore(root=tmp_path / "missing-root")
+
+    with pytest.raises(SecretUnavailableError, match="root is unavailable"):
+        store.get_secret(handle="github/app/private-key")
+
+
+def test_local_secret_store_reports_unreadable_document(tmp_path: Path) -> None:
+    root = tmp_path / "secrets"
+    secret_path = root / "github" / "app"
+    secret_path.mkdir(parents=True)
+    (secret_path / "private-key.json").write_text("not-json", encoding="utf-8")
+    store = LocalSecretStore(root=root)
+
+    with pytest.raises(SecretUnavailableError, match="unreadable"):
+        store.get_secret(handle="github/app/private-key")
+
+
+def test_local_secret_store_rejects_invalid_document_shape(tmp_path: Path) -> None:
+    root = tmp_path / "secrets"
+    secret_path = root / "github" / "app"
+    secret_path.mkdir(parents=True)
+    (secret_path / "private-key.json").write_text(json.dumps({"value": ""}), encoding="utf-8")
+    store = LocalSecretStore(root=root)
+
+    with pytest.raises(SecretUnavailableError, match="value is unavailable"):
+        store.get_secret(handle="github/app/private-key")
+
+
+def test_local_secret_store_rejects_traversal_handle(tmp_path: Path) -> None:
+    root = tmp_path / "secrets"
+    root.mkdir()
+    store = LocalSecretStore(root=root)
+
+    with pytest.raises(ValueError, match="traversal"):
+        store.get_secret(handle="../outside")
+
+
+def test_local_secret_store_satisfies_secret_store_protocol(tmp_path: Path) -> None:
+    store = LocalSecretStore(root=tmp_path / "secrets")
 
     typed_store: SecretStore = store
 

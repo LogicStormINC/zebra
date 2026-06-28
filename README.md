@@ -51,8 +51,8 @@ The next milestone is `Phase 19 - Secret Store And Broker-Backed Credential Foun
 - broker-missing credential failures now retain source metadata without exposing token values
 - SCM delivery audit now classifies credential_missing, credential_denied, credential_unavailable, and transport_failure for operator remediation
 - secret-store Port and redaction contract now exist in `agent-security`
-- local secret-store backend is the next ready implementation lane
-- local secure storage and GitHub App-backed credential adapters remain staged behind that Port
+- local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
+- GitHub App-backed credential adapter skeleton is the next ready implementation lane
 
 Read in this order:
 

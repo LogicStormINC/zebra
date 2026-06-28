@@ -34,11 +34,13 @@ from agent_security.policy import (
 )
 from agent_security.secret_store import (
     InMemorySecretStore,
+    LocalSecretStore,
     SecretMaterial,
     SecretMissingError,
     SecretStore,
     SecretStoreError,
     SecretUnavailableError,
+    get_secret_value,
 )
 
 __all__ = [
@@ -57,6 +59,7 @@ __all__ = [
     "EnvironmentCredentialBroker",
     "InMemoryCredentialBroker",
     "LocalPolicyEngine",
+    "LocalSecretStore",
     "PolicyProfile",
     "PullRequestPolicy",
     "REDACTED_SECRET",
@@ -67,6 +70,7 @@ __all__ = [
     "SecretStore",
     "SecretStoreError",
     "SecretUnavailableError",
+    "get_secret_value",
     "InMemorySecretStore",
     "build_approval_request",
     "policy_profile",

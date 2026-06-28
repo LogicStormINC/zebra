@@ -3361,8 +3361,8 @@ Define the secret-store Port and redacted snapshot contract needed before non-en
 
 ### P19-SEC-02 - Local Secret Store Backend
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `SEC`
 - Depends on: `P19-SEC-01`
 - Branch: `codex/p19-sec-02-local-secret-store-backend`
@@ -3380,13 +3380,13 @@ Implement a local secret-store backend aligned with the architecture's local sec
 
 #### Acceptance
 
-- [ ] Local secret storage can serve credential material without exposing raw values in repr or snapshots.
-- [ ] Missing and unavailable secret-store failures remain distinguishable.
-- [ ] Broker-facing callers can retrieve secret material through the backend without bypassing the Port.
+- [x] Local secret storage can serve credential material without exposing raw values in repr or snapshots.
+- [x] Missing and unavailable secret-store failures remain distinguishable.
+- [x] Broker-facing callers can retrieve secret material through the backend without bypassing the Port.
 
 ### P19-INT-01 - GitHub App Credential Adapter Skeleton
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `INT`
 - Depends on: `P19-SEC-02`

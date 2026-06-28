@@ -1,5 +1,27 @@
 # Progress Log
 
+## 2026-06-28 Local Secret Store Backend
+
+- 执行 `P19-SEC-02 - Local Secret Store Backend`
+- 在 `agent_security.secret_store` 中新增：
+  - `LocalSecretStore`
+  - `get_secret_value(...)`
+- 本地 backend 设计：
+  - 以本地目录为 root
+  - 按 handle 映射到分层 JSON secret document
+  - 返回 `SecretMaterial`
+  - 继续沿用 redacted contract，不暴露 raw value
+- 当前错误语义：
+  - missing secret -> `SecretMissingError`
+  - missing/unreadable root or invalid document -> `SecretUnavailableError`
+  - traversal or blank handle -> `ValueError`
+- 更新文档：
+  - `docs/Credential_Broker_Foundation.md`
+- 本轮验证结果：
+  - `poetry run pytest tests/agent_security/test_secret_store.py tests/agent_security/test_broker.py tests/agent_security/test_capabilities.py tests/agent_security/test_environment_broker.py` 通过
+  - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security` 通过
+  - `uv run mypy packages/agent-security/src/agent_security tests/agent_security` 通过
+
 ## 2026-06-28 Secret Store Port And Redaction Contract
 
 - 执行 `P19-SEC-01 - Secret Store Port And Redaction Contract`
