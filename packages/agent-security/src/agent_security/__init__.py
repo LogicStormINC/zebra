@@ -25,6 +25,14 @@ from agent_security.environment_broker import (
     EnvironmentCredentialBinding,
     EnvironmentCredentialBroker,
 )
+from agent_security.network_profile import (
+    DEFAULT_NETWORK_PROFILE,
+    SUPPORTED_NETWORK_PROFILES,
+    NetworkProfile,
+    NetworkProfileError,
+    NetworkProfileName,
+    parse_network_profile,
+)
 from agent_security.policy import (
     ApprovalRequest,
     ApprovalRisk,
@@ -62,9 +70,13 @@ __all__ = [
     "InMemoryCredentialBroker",
     "LocalPolicyEngine",
     "LocalSecretStore",
+    "NetworkProfile",
+    "NetworkProfileError",
+    "NetworkProfileName",
     "PolicyProfile",
     "PullRequestPolicy",
     "REDACTED_SECRET",
+    "SUPPORTED_NETWORK_PROFILES",
     "ScmCredentialBoundary",
     "ScmCredentialCapability",
     "SecretMaterial",
@@ -72,8 +84,10 @@ __all__ = [
     "SecretStore",
     "SecretStoreError",
     "SecretUnavailableError",
+    "DEFAULT_NETWORK_PROFILE",
     "get_secret_value",
     "InMemorySecretStore",
     "build_approval_request",
+    "parse_network_profile",
     "policy_profile",
 ]

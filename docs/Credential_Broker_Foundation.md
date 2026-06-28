@@ -91,3 +91,17 @@ Current limits:
 - no production transport is wired into default API composition
 - no operator-facing GitHub App configuration flow exists yet
 - the skeleton is intended for integration hardening and test injection only until a later phase broadens the execution path
+
+## Egress Control Foundation
+
+Phase 20 starts by defining a deterministic network-profile contract in `agent-security`.
+
+Current local contract:
+
+- `NetworkProfileName` defines the allowed profiles: `none`, `setup-only`, `domain-allowlist`, `mcp-proxy-only`, `git-proxy-only`, and `full-trusted-local`
+- `DEFAULT_NETWORK_PROFILE` is `none`, preserving fail-closed local defaults
+- `parse_network_profile(...)` normalizes and validates operator input before runtime adapters consume it
+- `domain-allowlist` requires at least one bare hostname entry
+- non-allowlist profiles reject domain allowlists so ambiguous egress intent fails early
+
+This phase only establishes the contract. It does not yet permit remote SCM transport by itself. Later Phase 20 work should consume this model to block or allow specific networked execution paths deterministically.

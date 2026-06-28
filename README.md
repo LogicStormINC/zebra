@@ -38,6 +38,7 @@ The next milestone is `Phase 20 - Egress Control Foundations`. The current imple
 - guarded GitHub pull-request execution is available only behind explicit provider, dry-run, token, and policy gates
 - SCM execution audit metadata now records normalized provider, status, URL, commit SHA, dry-run flag, and unavailable reasons
 - SCM token redaction regression coverage now checks PR plans, API responses, delivery audit records, and settings snapshots
+- `agent-security` now exposes deterministic network-profile contracts for upcoming egress guards, with `none` preserved as the fail-closed default
 - remote SCM operator safety runbook coverage documents dry-run first, explicit opt-in, audit inspection, token rules, and rollback steps
 - credential capability domain modeling covers provider, audience, scopes, expiry, and redacted serialization
 - credential broker Port definition covers SCM credential requests, in-memory test broker, and missing/denied/unavailable errors
@@ -53,8 +54,8 @@ The next milestone is `Phase 20 - Egress Control Foundations`. The current imple
 - secret-store Port and redaction contract now exist in `agent-security`
 - local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
 - GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
-- network profile contract is the next ready implementation lane
-- SCM transport egress guards and operator docs remain staged behind that contract
+- SCM transport egress guards are the next ready implementation lane
+- operator docs remain staged behind the transport guard
 
 Read in this order:
 

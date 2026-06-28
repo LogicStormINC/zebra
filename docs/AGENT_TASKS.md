@@ -3437,8 +3437,8 @@ Close Phase 19 with secret-store and provider-backed credential foundation evide
 
 ### P20-SEC-01 - Network Profile Contract
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `SEC`
 - Depends on: `P19-CLOSE-01`
 - Branch: `codex/p20-sec-01-network-profile-contract`
@@ -3456,13 +3456,13 @@ Define deterministic network-profile contracts aligned with the architecture's e
 
 #### Acceptance
 
-- [ ] Security package defines `none`, `setup-only`, `domain-allowlist`, `mcp-proxy-only`, `git-proxy-only`, and `full-trusted-local`.
-- [ ] Invalid or ambiguous network profiles are rejected deterministically.
-- [ ] Current local defaults remain fail-closed.
+- [x] Security package defines `none`, `setup-only`, `domain-allowlist`, `mcp-proxy-only`, `git-proxy-only`, and `full-trusted-local`.
+- [x] Invalid or ambiguous network profiles are rejected deterministically.
+- [x] Current local defaults remain fail-closed.
 
 ### P20-INT-01 - SCM Transport Egress Guard
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `INT`
 - Depends on: `P20-SEC-01`

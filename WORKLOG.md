@@ -21,6 +21,20 @@
   - `network none` 为默认 fail-closed posture
   - 目录规划中的 `policy/network_policy.py` 与 `credentials/egress_proxy.py`
 
+## 2026-06-28 P20-SEC-01 Network Profile Contract
+
+- 执行 `P20-SEC-01 - Network Profile Contract`
+- 在 `packages/agent-security/src/agent_security/network_profile.py` 新增确定性网络配置契约：
+  - 定义 `none`、`setup-only`、`domain-allowlist`、`mcp-proxy-only`、`git-proxy-only`、`full-trusted-local`
+  - 保持 `DEFAULT_NETWORK_PROFILE=none` 的 fail-closed 本地默认值
+  - 对无效 profile、空白 profile、歧义 allowlist、非 allowlist profile 附带域名列表等情况做显式拒绝
+- 在 `tests/agent_security/test_network_profile.py` 增加定向回归覆盖
+- 更新 `README.md`、`PROGRESS.md`、`docs/Credential_Broker_Foundation.md`，将 Phase 20 当前完成状态写回仓库
+- 验证：
+  - `poetry run pytest tests/agent_security/test_network_profile.py tests/agent_security/test_secret_store.py tests/agent_security/test_policy_profiles.py`
+  - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security`
+  - `uv run mypy packages/agent-security/src/agent_security tests/agent_security`
+
 ## 2026-06-28 GitHub App Credential Adapter Skeleton
 
 - 执行 `P19-INT-01 - GitHub App Credential Adapter Skeleton`
