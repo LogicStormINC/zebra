@@ -2816,3 +2816,25 @@
   - rollback guidance 保持 fail-closed 默认值和窄化启用原则
 - 验证：
   - `make check`
+
+## 2026-06-28 Phase 22 Closeout And Phase 23 Planning
+
+- 执行 `P22-CLOSE-01 - Phase 22 Closeout And Next Planning`
+- 新增文档：
+  - `docs/Phase22_Proxy_Execution_And_Gateway_Wiring_验收记录.md`
+- Phase 22 验收结论：
+  - MCP proxy contract 已进入 concrete gateway execution path
+  - SCM proxy 与 MCP proxy 已共享稳定的 route / target / transport 观测字段
+  - policy 与 approval surface 已能区分 local、proxy-routed、blocked 三类 MCP 路径
+  - operator runbook 已拆分为主 runbook 与 proxy gateway runbook
+- Phase 23 starter tasks：
+  - `P23-HAR-01 - Proxy Approval Event Projection`
+  - `P23-API-01 - Proxy Approval Readback Surface`
+  - `P23-OBS-01 - Proxy Approval Trace Normalization`
+  - `P23-CLOSE-01 - Phase 23 Closeout And Next Planning`
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`

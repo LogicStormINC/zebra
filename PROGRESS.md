@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-- Active phase: `Phase 22 - Proxy Execution And Gateway Wiring`
-- Repository status: `phase 22 closeout ready`
+- Active phase: `Phase 23 - Proxy Approval Projection And Operator Readback`
+- Repository status: `phase 23 ready`
 - Current focus:
-  - keep local-only PR planning as the default behavior
-  - keep live SCM and MCP egress behind explicit provider, dry-run, credential, and policy gates
-  - execute proxy contracts through concrete gateway paths
-  - keep default local posture fail-closed until gateway-backed proxy paths are explicit
+  - project proxy-aware approval metadata into durable harness events
+  - expose proxy approval context through operator-facing readback surfaces
+  - keep proxy execution evidence consistent across policy, trace, and API layers
+  - preserve the default fail-closed local posture while broadening read visibility, not execution permissions
 
 ## Completed
 
@@ -181,10 +181,11 @@
 - local policy evaluation now classifies MCP tools into deterministic local, proxy-routed approval, or fail-closed blocked outputs
 - approval request payloads now project route, target, and network-profile scope for proxy-aware operator decisions
 - proxy gateway operator guidance is now split into `docs/proxy_gateway_operator_runbook.md`, and the main operator runbook links to it instead of growing beyond the markdown file-size limit
+- Phase 22 is closed with `docs/Phase22_Proxy_Execution_And_Gateway_Wiring_验收记录.md`
 
 ## Next Unlocks
 
-- `P22-CLOSE-01 - Phase 22 Closeout And Next Planning` is ready
+- `P23-HAR-01 - Proxy Approval Event Projection` is ready
 
 ## Active Documents
 

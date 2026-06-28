@@ -3764,8 +3764,8 @@ Document the operator model for concrete proxy gateway execution paths.
 
 ### P22-CLOSE-01 - Phase 22 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P22-DOC-01`
 - Branch: `codex/p22-closeout-next-plan`
@@ -3783,5 +3783,106 @@ Close Phase 22 with proxy gateway evidence and define the next implementation ph
 
 #### Acceptance
 
-- [ ] Proxy gateway execution evidence is recorded.
+- [x] Proxy gateway execution evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 23 Task Board
+
+### P23-HAR-01 - Proxy Approval Event Projection
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `HAR`
+- Depends on: `P22-CLOSE-01`
+- Branch: `codex/p23-har-01-proxy-approval-event-projection`
+- Owned paths: `packages/agent-core/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Project proxy-aware policy and approval metadata into durable harness event payloads.
+
+#### Deliverables
+
+- policy decision payload extensions for proxy route metadata
+- approval-requested event payload extensions for proxy scope metadata
+- regression tests for proxy-aware approval event emission
+
+#### Acceptance
+
+- [ ] Harness events persist proxy route, target, and network-profile data when policy evaluates an MCP tool.
+- [ ] Existing non-proxy policy and approval event payloads remain backwards compatible.
+- [ ] Approval-requested events remain deterministic for both blocked and proxy-routed MCP paths.
+
+### P23-API-01 - Proxy Approval Readback Surface
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `API`
+- Depends on: `P23-HAR-01`
+- Branch: `codex/p23-api-01-proxy-approval-readback-surface`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose proxy-aware approval context through operator-facing API read and approval surfaces.
+
+#### Deliverables
+
+- API response fields for proxy approval context
+- readback coverage for session and approval operator flows
+- regression tests for proxy-aware approval serialization
+
+#### Acceptance
+
+- [ ] Operator-facing API surfaces expose proxy route and target context for approval-related flows.
+- [ ] Existing local-only approval responses remain backwards compatible.
+- [ ] Proxy-aware approval readback does not expose secrets or raw credential material.
+
+### P23-OBS-01 - Proxy Approval Trace Normalization
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `OBS`
+- Depends on: `P23-HAR-01`
+- Branch: `codex/p23-obs-01-proxy-approval-trace-normalization`
+- Owned paths: `packages/agent-core/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Keep proxy-aware approval evidence consistent across policy events, traces, and run summaries.
+
+#### Deliverables
+
+- normalized proxy approval metadata in trace-facing outputs
+- regression tests for proxy approval trace shape
+- documentation of trace interpretation deltas
+
+#### Acceptance
+
+- [ ] Trace-facing outputs reuse the same proxy route vocabulary as policy and tool execution metadata.
+- [ ] Proxy approval metadata remains deterministic across blocked, approval, and executed paths.
+- [ ] Non-proxy trace outputs remain backwards compatible.
+
+### P23-CLOSE-01 - Phase 23 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P23-API-01`, `P23-OBS-01`
+- Branch: `codex/p23-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 23 with proxy-aware approval readback evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 23 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Proxy-aware approval readback evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.
