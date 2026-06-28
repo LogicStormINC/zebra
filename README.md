@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 19 is closed and Phase 20 egress-control foundations are ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
+Phase 20 is closed and Phase 21 proxy-egress planning is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, network-profile, credential, and policy gates.
 
-The next milestone is `Phase 20 - Egress Control Foundations`. The current implementation lanes are:
+The next milestone is `Phase 21 - Proxy-Gated Egress Adapters`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -56,7 +56,8 @@ The next milestone is `Phase 20 - Egress Control Foundations`. The current imple
 - secret-store Port and redaction contract now exist in `agent-security`
 - local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
 - GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
-- Phase 20 closeout and next-phase planning are the next ready implementation lane
+- SCM proxy transport contract is the next ready implementation lane
+- GitHub proxy-backed PR execution and MCP proxy starter work remain staged behind that contract
 
 Read in this order:
 

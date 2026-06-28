@@ -68,6 +68,27 @@
   - 明确测试后要回退到 `network_profile=none` 的安全默认值
 - 更新 `README.md`、`PROGRESS.md`、`docs/AGENT_TASKS.md`，将 Phase 20 文档状态与下一张 closeout 任务写回仓库
 
+## 2026-06-28 P20-CLOSE-01 Phase 20 Closeout And Next Planning
+
+- 执行 `P20-CLOSE-01 - Phase 20 Closeout And Next Planning`
+- 新增 Phase 20 验收记录：
+  - `docs/Phase20_Egress_Control_Foundations_验收记录.md`
+- 汇总 Phase 20 已完成证据：
+  - `NetworkProfile`
+  - fail-closed `DEFAULT_NETWORK_PROFILE=none`
+  - SCM egress gate with `failure_class=egress_policy`
+  - operator runbook remediation and rollback guidance
+- 将仓库主线状态推进到 Phase 21 ready
+- 新增 Phase 21 starter tasks：
+  - `P21-INT-01 - SCM Proxy Transport Contract`
+  - `P21-INT-02 - GitHub Proxy Pull Request Adapter`
+  - `P21-TOOL-01 - MCP Proxy Egress Starter Contract`
+  - `P21-DOC-01 - Proxy Egress Operator Docs`
+  - `P21-CLOSE-01 - Phase 21 Closeout And Next Planning`
+- Phase 21 方向依据：
+  - 当前 `git-proxy-only` 与 `mcp-proxy-only` 仍只有策略标签，没有真实 transport
+  - 下一阶段应把 remote side effect 从 direct local transport 进一步收敛到 proxy-backed contract
+
 ## 2026-06-28 GitHub App Credential Adapter Skeleton
 
 - 执行 `P19-INT-01 - GitHub App Credential Adapter Skeleton`

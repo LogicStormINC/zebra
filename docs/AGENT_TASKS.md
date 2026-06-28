@@ -3512,8 +3512,8 @@ Document the operator model for guarded network profiles and SCM egress constrai
 
 ### P20-CLOSE-01 - Phase 20 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P20-DOC-01`
 - Branch: `codex/p20-closeout-next-plan`
@@ -3531,5 +3531,131 @@ Close Phase 20 with egress-control evidence and define the next implementation p
 
 #### Acceptance
 
-- [ ] Network profile and SCM egress guard evidence is recorded.
+- [x] Network profile and SCM egress guard evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 21 Task Board
+
+### P21-INT-01 - SCM Proxy Transport Contract
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `INT`
+- Depends on: `P20-CLOSE-01`
+- Branch: `codex/p21-int-01-scm-proxy-transport-contract`
+- Owned paths: `packages/agent-integrations/`, `tests/agent_integrations/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define the proxy-facing transport contract required to move SCM side effects off direct local HTTP paths.
+
+#### Deliverables
+
+- proxy transport Port for SCM requests
+- serializable request and response model for proxy execution
+- targeted tests for deterministic proxy contract behavior
+
+#### Acceptance
+
+- [ ] SCM integrations expose a proxy transport contract separate from the current direct GitHub HTTP path.
+- [ ] Proxy transport request and response payloads are deterministic and serializable.
+- [ ] Existing direct transport behavior remains unchanged until the proxy adapter task lands.
+
+### P21-INT-02 - GitHub Proxy Pull Request Adapter
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `INT`
+- Depends on: `P21-INT-01`
+- Branch: `codex/p21-int-02-github-proxy-pr-adapter`
+- Owned paths: `packages/agent-integrations/`, `tests/agent_integrations/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a GitHub PR adapter that executes through the proxy transport contract instead of direct local HTTP transport.
+
+#### Deliverables
+
+- GitHub proxy-backed PR adapter
+- execution-path selection between direct and proxy-backed transport
+- regression tests for created and blocked proxy-backed flows
+
+#### Acceptance
+
+- [ ] GitHub PR execution can route through the proxy transport when configured.
+- [ ] Audit metadata still distinguishes egress policy, credential, and transport failures.
+- [ ] Direct transport behavior remains explicitly guarded and backwards compatible.
+
+### P21-TOOL-01 - MCP Proxy Egress Starter Contract
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `TOOL`
+- Depends on: `P20-CLOSE-01`
+- Branch: `codex/p21-tool-01-mcp-proxy-egress-starter-contract`
+- Owned paths: `packages/agent-tools/`, `packages/agent-security/`, `tests/agent_tools/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define the first explicit MCP proxy egress contract so `mcp-proxy-only` can evolve from a blocked profile into a concrete execution path.
+
+#### Deliverables
+
+- proxy-oriented MCP egress contract
+- deterministic policy-facing metadata for MCP proxy routing
+- targeted tests for blocked versus proxy-routable MCP calls
+
+#### Acceptance
+
+- [ ] Tooling surfaces a concrete MCP proxy contract rather than a placeholder profile label.
+- [ ] Policy-facing metadata distinguishes direct-local tool calls from future proxy-routed MCP calls.
+- [ ] The current fail-closed default remains unchanged.
+
+### P21-DOC-01 - Proxy Egress Operator Docs
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P21-INT-02`, `P21-TOOL-01`
+- Branch: `codex/p21-doc-01-proxy-egress-operator-docs`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Document the operator model for proxy-backed SCM and MCP egress paths.
+
+#### Deliverables
+
+- runbook updates for proxy-backed egress
+- remediation matrix for proxy, credential, and upstream failures
+- safe rollback guidance
+
+#### Acceptance
+
+- [ ] Operator docs explain when to use direct trusted-local execution versus proxy-backed egress.
+- [ ] Runbook examples preserve fail-closed defaults and narrow explicit enablement.
+- [ ] Remediation guidance distinguishes proxy availability from upstream SCM or MCP failures.
+
+### P21-CLOSE-01 - Phase 21 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P21-DOC-01`
+- Branch: `codex/p21-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 21 with proxy-egress evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 21 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Proxy-backed egress evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

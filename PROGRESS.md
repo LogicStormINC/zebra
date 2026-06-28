@@ -2,12 +2,13 @@
 
 ## Current Phase
 
-- Active phase: `Phase 20 - Egress Control Foundations`
-- Repository status: `phase 20 ready`
+- Active phase: `Phase 21 - Proxy-Gated Egress Adapters`
+- Repository status: `phase 21 ready`
 - Current focus:
   - keep local-only PR planning as the default behavior
   - keep live SCM execution behind explicit provider, dry-run, credential, and policy gates
-  - close Phase 20 with acceptance evidence and next-phase planning
+  - move remote side effects toward proxy-backed transport boundaries
+  - keep default local posture fail-closed until proxy-backed paths are explicit
 
 ## Completed
 
@@ -169,10 +170,13 @@
 - deterministic network-profile contracts now exist in `agent-security`, including fail-closed defaulting and explicit validation for `domain-allowlist`
 - GitHub PR execution now blocks direct remote transport by default and records `egress_policy` metadata when the configured network profile disallows the target host
 - operator runbook now documents egress profiles, safe-default examples, and remediation paths that distinguish `egress_policy` from credential and transport failures
+- Phase 20 is closed with `docs/Phase20_Egress_Control_Foundations_验收记录.md`
 
 ## Next Unlocks
 
-- `P20-CLOSE-01 - Phase 20 Closeout And Next Planning` is ready
+- `P21-INT-01 - SCM Proxy Transport Contract` is ready
+- `P21-INT-02 - GitHub Proxy Pull Request Adapter` unlocks after the proxy transport contract
+- `P21-TOOL-01 - MCP Proxy Egress Starter Contract` unlocks after Phase 20 closeout
 
 ## Active Documents
 
