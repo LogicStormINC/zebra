@@ -89,6 +89,30 @@
   - 当前 `git-proxy-only` 与 `mcp-proxy-only` 仍只有策略标签，没有真实 transport
   - 下一阶段应把 remote side effect 从 direct local transport 进一步收敛到 proxy-backed contract
 
+## 2026-06-28 P21-INT-01 SCM Proxy Transport Contract
+
+- 执行 `P21-INT-01 - SCM Proxy Transport Contract`
+- 在 `packages/agent-integrations/src/agent_integrations/scm_proxy.py` 新增独立 proxy contract：
+  - `ScmProxyRequest`
+  - `ScmProxyResponse`
+  - `ScmProxyTransport`
+  - `build_github_pull_request_proxy_request(...)`
+- 约束点：
+  - request / response 形状必须是确定性的可序列化 JSON 结构
+  - headers 去重、排序并标准化
+  - contract 与现有 direct GitHub HTTP transport 分离，不改变当前执行路径
+- 在 `tests/agent_integrations/test_scm_proxy.py` 增加定向回归：
+  - request / response 标准化
+  - 非 JSON 值拒绝
+  - duplicate headers 拒绝
+  - GitHub proxy request helper 的稳定输出
+  - proxy transport Protocol 兼容性
+- 更新 `README.md`、`PROGRESS.md`、`docs/AGENT_TASKS.md`，将下一张 adapter 任务和 MCP proxy starter 解锁
+- 验证：
+  - `poetry run pytest tests/agent_integrations/test_scm_proxy.py tests/agent_integrations/test_scm.py`
+  - `uv run ruff check packages/agent-integrations/src/agent_integrations tests/agent_integrations`
+  - `uv run mypy packages/agent-integrations/src/agent_integrations/scm_proxy.py tests/agent_integrations/test_scm_proxy.py`
+
 ## 2026-06-28 GitHub App Credential Adapter Skeleton
 
 - 执行 `P19-INT-01 - GitHub App Credential Adapter Skeleton`

@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 20 is closed and Phase 21 proxy-egress planning is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, network-profile, credential, and policy gates.
+Phase 21 proxy-egress starter contracts are underway. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, network-profile, credential, policy, and emerging proxy-transport gates.
 
 The next milestone is `Phase 21 - Proxy-Gated Egress Adapters`. The current implementation lanes are:
 
@@ -41,6 +41,7 @@ The next milestone is `Phase 21 - Proxy-Gated Egress Adapters`. The current impl
 - `agent-security` now exposes deterministic network-profile contracts for upcoming egress guards, with `none` preserved as the fail-closed default
 - GitHub PR execution now enforces explicit egress checks before credential lookup or transport side effects; direct transport remains blocked unless `full-trusted-local` or a matching `domain-allowlist` profile is configured
 - `docs/operator_runbook.md` now documents egress profiles, failure-class interpretation, and safe rollback to `network_profile=none`
+- `agent-integrations` now exposes a standalone SCM proxy transport contract and deterministic serializable request/response models for future proxy-backed execution paths
 - remote SCM operator safety runbook coverage documents dry-run first, explicit opt-in, audit inspection, token rules, and rollback steps
 - credential capability domain modeling covers provider, audience, scopes, expiry, and redacted serialization
 - credential broker Port definition covers SCM credential requests, in-memory test broker, and missing/denied/unavailable errors
@@ -56,8 +57,8 @@ The next milestone is `Phase 21 - Proxy-Gated Egress Adapters`. The current impl
 - secret-store Port and redaction contract now exist in `agent-security`
 - local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
 - GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
-- SCM proxy transport contract is the next ready implementation lane
-- GitHub proxy-backed PR execution and MCP proxy starter work remain staged behind that contract
+- GitHub proxy-backed PR execution is the next ready implementation lane
+- MCP proxy egress starter work can proceed in parallel on its owned paths
 
 Read in this order:
 

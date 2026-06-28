@@ -7,7 +7,7 @@
 - Current focus:
   - keep local-only PR planning as the default behavior
   - keep live SCM execution behind explicit provider, dry-run, credential, and policy gates
-  - move remote side effects toward proxy-backed transport boundaries
+  - move remote side effects toward proxy-backed transport adapters
   - keep default local posture fail-closed until proxy-backed paths are explicit
 
 ## Completed
@@ -171,12 +171,12 @@
 - GitHub PR execution now blocks direct remote transport by default and records `egress_policy` metadata when the configured network profile disallows the target host
 - operator runbook now documents egress profiles, safe-default examples, and remediation paths that distinguish `egress_policy` from credential and transport failures
 - Phase 20 is closed with `docs/Phase20_Egress_Control_Foundations_验收记录.md`
+- SCM proxy transport contracts now exist in `agent-integrations`, including deterministic serializable request and response models separate from the direct GitHub HTTP path
 
 ## Next Unlocks
 
-- `P21-INT-01 - SCM Proxy Transport Contract` is ready
-- `P21-INT-02 - GitHub Proxy Pull Request Adapter` unlocks after the proxy transport contract
-- `P21-TOOL-01 - MCP Proxy Egress Starter Contract` unlocks after Phase 20 closeout
+- `P21-INT-02 - GitHub Proxy Pull Request Adapter` is ready
+- `P21-TOOL-01 - MCP Proxy Egress Starter Contract` is ready
 
 ## Active Documents
 

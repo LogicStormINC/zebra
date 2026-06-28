@@ -23,6 +23,12 @@ from agent_integrations.scm import (
     build_pull_request_gateway,
 )
 from agent_integrations.scm_errors import ScmIntegrationError, ScmUnavailableError
+from agent_integrations.scm_proxy import (
+    ScmProxyRequest,
+    ScmProxyResponse,
+    ScmProxyTransport,
+    build_github_pull_request_proxy_request,
+)
 
 __all__ = [
     "LocalOnlyPullRequestGateway",
@@ -40,7 +46,11 @@ __all__ = [
     "PullRequestPlan",
     "PullRequestRequest",
     "ScmIntegrationError",
+    "ScmProxyRequest",
+    "ScmProxyResponse",
+    "ScmProxyTransport",
     "ScmUnavailableError",
     "build_model_gateway",
     "build_pull_request_gateway",
+    "build_github_pull_request_proxy_request",
 ]

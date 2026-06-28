@@ -3538,8 +3538,8 @@ Close Phase 20 with egress-control evidence and define the next implementation p
 
 ### P21-INT-01 - SCM Proxy Transport Contract
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `INT`
 - Depends on: `P20-CLOSE-01`
 - Branch: `codex/p21-int-01-scm-proxy-transport-contract`
@@ -3557,13 +3557,13 @@ Define the proxy-facing transport contract required to move SCM side effects off
 
 #### Acceptance
 
-- [ ] SCM integrations expose a proxy transport contract separate from the current direct GitHub HTTP path.
-- [ ] Proxy transport request and response payloads are deterministic and serializable.
-- [ ] Existing direct transport behavior remains unchanged until the proxy adapter task lands.
+- [x] SCM integrations expose a proxy transport contract separate from the current direct GitHub HTTP path.
+- [x] Proxy transport request and response payloads are deterministic and serializable.
+- [x] Existing direct transport behavior remains unchanged until the proxy adapter task lands.
 
 ### P21-INT-02 - GitHub Proxy Pull Request Adapter
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `INT`
 - Depends on: `P21-INT-01`
@@ -3588,7 +3588,7 @@ Add a GitHub PR adapter that executes through the proxy transport contract inste
 
 ### P21-TOOL-01 - MCP Proxy Egress Starter Contract
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `TOOL`
 - Depends on: `P20-CLOSE-01`
