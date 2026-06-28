@@ -60,6 +60,9 @@ class PullRequestPlan:
     request_payload: dict[str, object] | None = None
     credential_source: str | None = None
     credential_backend: str | None = None
+    route: str | None = None
+    proxy_target: str | None = None
+    proxy_transport: str | None = None
 
 
 class PullRequestGateway(Protocol):
@@ -103,6 +106,14 @@ class GitHubProxyPullRequestTransport:
                 metadata={"failure_class": "transport_failure"},
             )
         return url
+
+    @property
+    def audit_metadata(self) -> dict[str, str]:
+        return {
+            "route": "proxy",
+            "proxy_target": "github.pull_request.create",
+            "proxy_transport": "scm_http_proxy",
+        }
 
 
 @dataclass(frozen=True)
@@ -210,6 +221,9 @@ class GitHubPullRequestGateway:
                 dry_run=True,
                 status="dry_run",
                 request_payload=_serializable_payload(payload),
+                route=_transport_route(self._transport),
+                proxy_target=_transport_proxy_target(self._transport),
+                proxy_transport=_transport_proxy_transport(self._transport),
             )
         if not self._config.execution_enabled:
             raise ScmUnavailableError(
@@ -263,6 +277,9 @@ class GitHubPullRequestGateway:
             request_payload=_serializable_payload(payload),
             credential_source=credential_source,
             credential_backend=credential_backend,
+            route=_transport_route(self._transport),
+            proxy_target=_transport_proxy_target(self._transport),
+            proxy_transport=_transport_proxy_transport(self._transport),
         )
 
     def build_payload(self, request: PullRequestRequest) -> GitHubPullRequestPayload:
@@ -411,6 +428,24 @@ def _json_proxy_body(value: dict[str, object]) -> dict[str, JsonValue]:
             continue
         raise ScmIntegrationError("github pull request payload must be JSON-serializable")
     return normalized
+
+
+def _transport_route(transport: GitHubPullRequestTransport) -> str:
+    if isinstance(transport, GitHubProxyPullRequestTransport):
+        return "proxy"
+    return "direct"
+
+
+def _transport_proxy_target(transport: GitHubPullRequestTransport) -> str | None:
+    if isinstance(transport, GitHubProxyPullRequestTransport):
+        return transport.audit_metadata["proxy_target"]
+    return None
+
+
+def _transport_proxy_transport(transport: GitHubPullRequestTransport) -> str | None:
+    if isinstance(transport, GitHubProxyPullRequestTransport):
+        return transport.audit_metadata["proxy_transport"]
+    return None
 
 
 def _serializable_payload(payload: GitHubPullRequestPayload) -> dict[str, object]:

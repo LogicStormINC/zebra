@@ -22,7 +22,9 @@ class McpProxyToolGateway:
             status=ToolCallStatus.EXECUTED,
             output=response.output,
             metadata={
-                "route": "mcp_proxy",
+                "route": "proxy",
+                "proxy_target": f"{request.target.server_name}.{request.target.tool_name}",
+                "proxy_transport": "mcp_proxy",
                 "server_name": request.target.server_name,
                 "tool_name": request.target.tool_name,
                 **response.metadata,

@@ -3689,8 +3689,8 @@ Turn the MCP proxy starter contract into a concrete execution path behind the to
 
 ### P22-OBS-01 - Proxy Audit Metadata Normalization
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `OBS`
 - Depends on: `P22-TOOL-01`
 - Branch: `codex/p22-obs-01-proxy-audit-metadata-normalization`
@@ -3708,9 +3708,9 @@ Normalize audit-facing metadata across SCM proxy and MCP proxy execution paths.
 
 #### Acceptance
 
-- [ ] Proxy-backed SCM and MCP execution expose a stable audit metadata shape.
-- [ ] Proxy availability failures remain distinguishable from upstream GitHub or MCP target failures.
-- [ ] Existing non-proxy audit behavior remains backwards compatible.
+- [x] Proxy-backed SCM and MCP execution expose a stable audit metadata shape.
+- [x] Proxy availability failures remain distinguishable from upstream GitHub or MCP target failures.
+- [x] Existing non-proxy audit behavior remains backwards compatible.
 
 ### P22-SEC-01 - Proxy Route Policy Integration
 

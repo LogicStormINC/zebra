@@ -177,10 +177,10 @@
 - operator runbook now documents proxy-backed SCM transport selection, MCP proxy starter routing, proxy-specific remediation, and rollback to safe defaults
 - Phase 21 is closed with `docs/Phase21_Proxy_Egress_Contracts_验收记录.md`
 - `ToolExecutor` now supports MCP proxy gateway execution for `mcp.<server>.<tool>` calls without changing builtin local tool behavior
+- proxy-backed SCM audit and MCP proxy tool execution now share stable `route`, `proxy_target`, and `proxy_transport` metadata fields
 
 ## Next Unlocks
 
-- `P22-OBS-01 - Proxy Audit Metadata Normalization` is ready
 - `P22-SEC-01 - Proxy Route Policy Integration` is ready
 
 ## Active Documents

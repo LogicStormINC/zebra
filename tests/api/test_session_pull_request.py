@@ -524,6 +524,9 @@ def test_api_pull_request_uses_proxy_transport_for_github_execution(
     assert response.status_code == 200
     assert response.body["pull_request"]["status"] == "created"
     assert response.body["pull_request"]["url"] == "https://github.example/pulls/2"
+    assert response.body["pull_request"]["route"] == "proxy"
+    assert response.body["pull_request"]["proxy_target"] == "github.pull_request.create"
+    assert response.body["pull_request"]["proxy_transport"] == "scm_http_proxy"
     assert proxy_transport.last_request is not None
     assert proxy_transport.last_request.provider == "github"
     assert "broker-token" not in repr(proxy_transport.last_request.to_serializable())
@@ -531,6 +534,9 @@ def test_api_pull_request_uses_proxy_transport_for_github_execution(
     assert len(audit_records) == 1
     assert audit_records[0].result_metadata["credential_source"] == "broker"
     assert audit_records[0].result_metadata["credential_backend"] == "environment"
+    assert audit_records[0].result_metadata["route"] == "proxy"
+    assert audit_records[0].result_metadata["proxy_target"] == "github.pull_request.create"
+    assert audit_records[0].result_metadata["proxy_transport"] == "scm_http_proxy"
 
 
 def test_api_pull_request_proxy_transport_failure_records_audit(

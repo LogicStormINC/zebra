@@ -68,5 +68,8 @@ def _metadata_from_response(action: str, response: ApiResponse) -> dict[str, obj
             "url": pull_request.get("url"),
             "credential_source": pull_request.get("credential_source"),
             "credential_backend": pull_request.get("credential_backend"),
+            "route": pull_request.get("route"),
+            "proxy_target": pull_request.get("proxy_target"),
+            "proxy_transport": pull_request.get("proxy_transport"),
         }
     return {"reason": response.body.get("reason")}

@@ -214,6 +214,32 @@
   - `uv run ruff check packages/agent-tools/src/agent_tools tests/agent_tools tests/agent_security`
   - `uv run mypy packages/agent-tools/src/agent_tools/__init__.py packages/agent-tools/src/agent_tools/executor.py packages/agent-tools/src/agent_tools/mcp_gateway.py packages/agent-tools/src/agent_tools/mcp_proxy.py tests/agent_tools/test_executor.py tests/agent_tools/test_mcp_proxy.py`
 
+## 2026-06-28 P22-OBS-01 Proxy Audit Metadata Normalization
+
+- 执行 `P22-OBS-01 - Proxy Audit Metadata Normalization`
+- 在 SCM proxy 与 MCP proxy 两侧统一稳定 metadata shape：
+  - `route`
+  - `proxy_target`
+  - `proxy_transport`
+- SCM 侧：
+  - `PullRequestPlan` 增加 proxy metadata 字段
+  - API pull request 响应和 delivery audit 记录 proxy metadata
+  - direct path 默认记录 `route=direct`
+- MCP 侧：
+  - `McpProxyToolGateway` 返回的 `ToolResult.metadata` 对齐为相同字段
+- 保持失败语义：
+  - proxy availability 仍通过 `failure_class=transport_failure` 暴露
+  - 既有 credential / egress policy 分类不变
+- 回归覆盖：
+  - `tests/agent_integrations/test_scm.py`
+  - `tests/api/test_session_pull_request.py`
+  - `tests/api/test_session_delivery_audit.py`
+  - `tests/agent_tools/test_executor.py`
+- 更新 `README.md`、`PROGRESS.md`、`docs/AGENT_TASKS.md`
+- 验证：
+  - `poetry run pytest tests/agent_integrations/test_scm.py tests/api/test_session_pull_request.py tests/api/test_session_delivery_audit.py tests/agent_tools/test_executor.py`
+  - `uv run ruff check packages/agent-integrations/src/agent_integrations packages/agent-tools/src/agent_tools apps/api/src/zebra_agent_api tests/agent_integrations tests/api tests/agent_tools`
+
 ## 2026-06-28 GitHub App Credential Adapter Skeleton
 
 - 执行 `P19-INT-01 - GitHub App Credential Adapter Skeleton`

@@ -94,7 +94,9 @@ def test_tool_executor_routes_mcp_tool_through_proxy_gateway() -> None:
 
     assert result.status is ToolCallStatus.EXECUTED
     assert result.output == "proxy-ok"
-    assert result.metadata["route"] == "mcp_proxy"
+    assert result.metadata["route"] == "proxy"
+    assert result.metadata["proxy_target"] == "github.create_pull_request"
+    assert result.metadata["proxy_transport"] == "mcp_proxy"
     assert result.metadata["server_name"] == "github"
     assert proxy_transport.last_request is not None
     assert proxy_transport.last_request.target.tool_name == "create_pull_request"

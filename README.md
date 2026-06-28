@@ -46,6 +46,7 @@ The next milestone is `Phase 22 - Proxy Execution And Gateway Wiring`. The curre
 - `agent-tools` and `agent-security` now expose MCP proxy starter contracts plus egress classification metadata for `mcp.<server>.<tool>` calls
 - `docs/operator_runbook.md` now documents proxy-backed SCM execution, MCP proxy starter routing, remediation, and rollback to safe defaults
 - `ToolExecutor` can now execute `mcp.<server>.<tool>` calls through an MCP proxy gateway when that gateway is wired in, without changing local builtin tool behavior
+- proxy-backed SCM audit and MCP proxy execution metadata now share stable `route` / `proxy_target` / `proxy_transport` fields
 - remote SCM operator safety runbook coverage documents dry-run first, explicit opt-in, audit inspection, token rules, and rollback steps
 - credential capability domain modeling covers provider, audience, scopes, expiry, and redacted serialization
 - credential broker Port definition covers SCM credential requests, in-memory test broker, and missing/denied/unavailable errors
@@ -61,8 +62,7 @@ The next milestone is `Phase 22 - Proxy Execution And Gateway Wiring`. The curre
 - secret-store Port and redaction contract now exist in `agent-security`
 - local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
 - GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
-- proxy audit normalization is the next ready implementation lane
-- proxy route policy integration can now proceed in parallel on its owned paths
+- proxy route policy integration is the next ready implementation lane
 
 Read in this order:
 
