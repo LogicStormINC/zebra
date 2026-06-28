@@ -3411,8 +3411,8 @@ Add the first provider-backed non-environment credential adapter using the secre
 
 ### P19-CLOSE-01 - Phase 19 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P19-INT-01`
 - Branch: `codex/p19-closeout-next-plan`
@@ -3430,5 +3430,106 @@ Close Phase 19 with secret-store and provider-backed credential foundation evide
 
 #### Acceptance
 
-- [ ] Secret-store and GitHub App credential skeleton evidence is recorded.
+- [x] Secret-store and GitHub App credential skeleton evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 20 Task Board
+
+### P20-SEC-01 - Network Profile Contract
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `SEC`
+- Depends on: `P19-CLOSE-01`
+- Branch: `codex/p20-sec-01-network-profile-contract`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define deterministic network-profile contracts aligned with the architecture's egress-control model.
+
+#### Deliverables
+
+- network profile model and validation rules
+- deterministic tests for allowed profile values and defaults
+- focused architecture note or doc update
+
+#### Acceptance
+
+- [ ] Security package defines `none`, `setup-only`, `domain-allowlist`, `mcp-proxy-only`, `git-proxy-only`, and `full-trusted-local`.
+- [ ] Invalid or ambiguous network profiles are rejected deterministically.
+- [ ] Current local defaults remain fail-closed.
+
+### P20-INT-01 - SCM Transport Egress Guard
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `INT`
+- Depends on: `P20-SEC-01`
+- Branch: `codex/p20-int-01-scm-transport-egress-guard`
+- Owned paths: `packages/agent-integrations/`, `packages/agent-security/`, `tests/agent_integrations/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Guard SCM transport execution with explicit network-profile checks before remote side effects occur.
+
+#### Deliverables
+
+- SCM transport egress gate
+- audit metadata or reason updates for blocked egress
+- regression tests for blocked and allowed paths
+
+#### Acceptance
+
+- [ ] Remote SCM execution is blocked when the network profile disallows the transport.
+- [ ] Local-only and dry-run behavior remain unchanged.
+- [ ] Operator-facing failures clearly distinguish egress policy blocks from credential or transport failures.
+
+### P20-DOC-01 - Egress Control Operator Docs
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P20-SEC-01`, `P20-INT-01`
+- Branch: `codex/p20-doc-01-egress-control-operator-docs`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Document the operator model for guarded network profiles and SCM egress constraints.
+
+#### Deliverables
+
+- runbook updates for egress profiles
+- remediation guidance for egress policy blocks
+- examples that preserve fail-closed defaults
+
+#### Acceptance
+
+- [ ] Operator docs explain when remote SCM execution is blocked by network profile.
+- [ ] Examples preserve `network none` as the default local posture.
+- [ ] Remediation guidance distinguishes egress policy from credential policy.
+
+### P20-CLOSE-01 - Phase 20 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P20-DOC-01`
+- Branch: `codex/p20-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 20 with egress-control evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 20 acceptance record
+- next phase task board
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Network profile and SCM egress guard evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

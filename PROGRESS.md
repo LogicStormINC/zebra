@@ -2,10 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 19 - Secret Store And Broker-Backed Credential Foundations`
-- Repository status: `phase 19 in progress`
+- Active phase: `Phase 20 - Egress Control Foundations`
+- Repository status: `phase 20 ready`
 - Current focus:
-  - close Phase 19 with secret-store and GitHub App credential evidence
+  - define deterministic network profiles and defaults
+  - guard remote SCM transport with explicit egress policy
   - keep local-only PR planning as the default behavior
   - keep live SCM execution behind explicit provider, dry-run, credential, and policy gates
 
@@ -165,11 +166,14 @@
 - secret-store Port and redaction contract now exist in `agent-security` for future non-environment broker backends
 - local secret-store backend now reads per-handle secret documents through the Port and keeps raw values out of repr and redacted snapshots
 - GitHub App credential broker skeleton now retrieves private-key material through `SecretStore` and preserves failure classification across integration and API audit paths
-- Phase 19 should next introduce secret-store and provider-backed credential foundations without widening the execution surface prematurely
+- Phase 19 is closed with `docs/Phase19_Secret_Store_And_Broker_Credentials_验收记录.md`
+- Phase 20 should next introduce explicit egress policy without weakening current fail-closed local defaults
 
 ## Next Unlocks
 
-- `P19-CLOSE-01 - Phase 19 Closeout And Next Planning` is ready
+- `P20-SEC-01 - Network Profile Contract` is ready
+- `P20-INT-01 - SCM Transport Egress Guard` unlocks after the profile contract
+- `P20-DOC-01 - Egress Control Operator Docs` unlocks after the contract and SCM guard
 
 ## Active Documents
 

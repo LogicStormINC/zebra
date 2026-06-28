@@ -1,5 +1,26 @@
 # Progress Log
 
+## 2026-06-28 Phase 19 Closeout And Phase 20 Planning
+
+- 执行 `P19-CLOSE-01 - Phase 19 Closeout And Next Planning`
+- 新增 Phase 19 验收记录：
+  - `docs/Phase19_Secret_Store_And_Broker_Credentials_验收记录.md`
+- 汇总 Phase 19 已完成证据：
+  - `SecretStore`
+  - `LocalSecretStore`
+  - `GitHubAppCredentialBroker`
+  - provider-backed `failure_class`
+- 将仓库主线状态推进到 Phase 20 ready
+- 新增 Phase 20 starter tasks：
+  - `P20-SEC-01 - Network Profile Contract`
+  - `P20-INT-01 - SCM Transport Egress Guard`
+  - `P20-DOC-01 - Egress Control Operator Docs`
+  - `P20-CLOSE-01 - Phase 20 Closeout And Next Planning`
+- Phase 20 方向依据：
+  - 架构文档 `11.6 Egress Control`
+  - `network none` 为默认 fail-closed posture
+  - 目录规划中的 `policy/network_policy.py` 与 `credentials/egress_proxy.py`
+
 ## 2026-06-28 GitHub App Credential Adapter Skeleton
 
 - 执行 `P19-INT-01 - GitHub App Credential Adapter Skeleton`
