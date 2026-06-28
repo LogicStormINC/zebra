@@ -2838,3 +2838,20 @@
   - `README.md`
 - 验证：
   - `make check`
+
+## 2026-06-28 Phase 23 Proxy Approval Event Projection
+
+- 执行 `P23-HAR-01 - Proxy Approval Event Projection`
+- 行为更新：
+  - `PolicyDecision` 现在可选承载 `route`、`target`、`network_profile`、`scope`
+  - `SingleAttemptOrchestrator` 在 `POLICY_DECISION_MADE` 与 `APPROVAL_REQUESTED` 事件中按需透传这些代理审批字段
+  - 旧的 local-only policy payload 在无代理字段时保持不变
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P23-HAR-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P23-API-01` 与 `P23-OBS-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_core/test_single_attempt_orchestrator.py tests/agent_core/test_session_projection.py tests/smoke/test_mock_harness_loop.py`
+  - `uv run ruff check packages/agent-core/src/agent_core tests/agent_core tests/smoke`
+  - `uv run mypy packages/agent-core/src/agent_core/domain/policies.py packages/agent-core/src/agent_core/harness/orchestrator.py tests/agent_core/test_single_attempt_orchestrator.py`

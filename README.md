@@ -64,7 +64,7 @@ The next milestone is `Phase 23 - Proxy Approval Projection And Operator Readbac
 - secret-store Port and redaction contract now exist in `agent-security`
 - local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
 - GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
-- proxy approval event projection is the next ready implementation lane
+- proxy approval readback surface is the next ready implementation lane
 
 Read in this order:
 

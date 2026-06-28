@@ -3790,8 +3790,8 @@ Close Phase 22 with proxy gateway evidence and define the next implementation ph
 
 ### P23-HAR-01 - Proxy Approval Event Projection
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `HAR`
 - Depends on: `P22-CLOSE-01`
 - Branch: `codex/p23-har-01-proxy-approval-event-projection`
@@ -3809,13 +3809,13 @@ Project proxy-aware policy and approval metadata into durable harness event payl
 
 #### Acceptance
 
-- [ ] Harness events persist proxy route, target, and network-profile data when policy evaluates an MCP tool.
-- [ ] Existing non-proxy policy and approval event payloads remain backwards compatible.
-- [ ] Approval-requested events remain deterministic for both blocked and proxy-routed MCP paths.
+- [x] Harness events persist proxy route, target, and network-profile data when policy evaluates an MCP tool.
+- [x] Existing non-proxy policy and approval event payloads remain backwards compatible.
+- [x] Approval-requested events remain deterministic for both blocked and proxy-routed MCP paths.
 
 ### P23-API-01 - Proxy Approval Readback Surface
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `API`
 - Depends on: `P23-HAR-01`
@@ -3840,7 +3840,7 @@ Expose proxy-aware approval context through operator-facing API read and approva
 
 ### P23-OBS-01 - Proxy Approval Trace Normalization
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `OBS`
 - Depends on: `P23-HAR-01`
