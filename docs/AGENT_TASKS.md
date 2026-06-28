@@ -3462,8 +3462,8 @@ Define deterministic network-profile contracts aligned with the architecture's e
 
 ### P20-INT-01 - SCM Transport Egress Guard
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `INT`
 - Depends on: `P20-SEC-01`
 - Branch: `codex/p20-int-01-scm-transport-egress-guard`
@@ -3481,13 +3481,13 @@ Guard SCM transport execution with explicit network-profile checks before remote
 
 #### Acceptance
 
-- [ ] Remote SCM execution is blocked when the network profile disallows the transport.
-- [ ] Local-only and dry-run behavior remain unchanged.
-- [ ] Operator-facing failures clearly distinguish egress policy blocks from credential or transport failures.
+- [x] Remote SCM execution is blocked when the network profile disallows the transport.
+- [x] Local-only and dry-run behavior remain unchanged.
+- [x] Operator-facing failures clearly distinguish egress policy blocks from credential or transport failures.
 
 ### P20-DOC-01 - Egress Control Operator Docs
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P20-SEC-01`, `P20-INT-01`

@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from subprocess import run
 
+import pytest
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.domain.identifiers import SessionId
 from agent_integrations import (
@@ -168,7 +169,7 @@ def test_api_pull_request_github_non_dry_run_fails_closed(tmp_path: Path) -> Non
     assert response.body == {
         "session_id": str(session_id),
         "status": "pull_request_unavailable",
-        "reason": "credential environment value is missing",
+        "reason": "github pull request execution is blocked by network profile none",
         "idempotency_key": None,
     }
     audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
@@ -177,16 +178,18 @@ def test_api_pull_request_github_non_dry_run_fails_closed(tmp_path: Path) -> Non
     assert audit_records[0].result_metadata["provider"] == "github"
     assert audit_records[0].result_metadata["dry_run"] is False
     assert audit_records[0].result_metadata["reason"] == (
-        "credential environment value is missing"
+        "github pull request execution is blocked by network profile none"
     )
-    assert audit_records[0].result_metadata["credential_source"] == "broker"
-    assert audit_records[0].result_metadata["credential_backend"] == "environment"
-    assert audit_records[0].result_metadata["failure_class"] == "credential_missing"
+    assert audit_records[0].result_metadata["failure_class"] == "egress_policy"
+    assert audit_records[0].result_metadata["network_profile"] == "none"
+    assert audit_records[0].result_metadata["target_host"] == "api.github.com"
 
 
 def test_api_pull_request_uses_broker_credential_for_github_execution(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _allow_github_egress(monkeypatch)
     database_path = tmp_path / "sessions.sqlite"
     workspace = _git_workspace(tmp_path / "workspace")
     session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
@@ -229,7 +232,9 @@ def test_api_pull_request_uses_broker_credential_for_github_execution(
 
 def test_api_pull_request_uses_default_environment_broker_for_github_execution(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _allow_github_egress(monkeypatch)
     database_path = tmp_path / "sessions.sqlite"
     workspace = _git_workspace(tmp_path / "workspace")
     session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
@@ -264,7 +269,9 @@ def test_api_pull_request_uses_default_environment_broker_for_github_execution(
 
 def test_api_pull_request_uses_github_app_broker_for_execution(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _allow_github_egress(monkeypatch)
     database_path = tmp_path / "sessions.sqlite"
     workspace = _git_workspace(tmp_path / "workspace")
     session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
@@ -299,7 +306,9 @@ def test_api_pull_request_uses_github_app_broker_for_execution(
 
 def test_api_pull_request_missing_broker_credential_records_audit(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _allow_github_egress(monkeypatch)
     database_path = tmp_path / "sessions.sqlite"
     workspace = _git_workspace(tmp_path / "workspace")
     session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
@@ -341,7 +350,9 @@ def test_api_pull_request_missing_broker_credential_records_audit(
 
 def test_api_pull_request_missing_default_broker_credential_records_audit(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _allow_github_egress(monkeypatch)
     database_path = tmp_path / "sessions.sqlite"
     workspace = _git_workspace(tmp_path / "workspace")
     session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
@@ -378,7 +389,9 @@ def test_api_pull_request_missing_default_broker_credential_records_audit(
 
 def test_api_pull_request_denied_broker_credential_records_audit(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _allow_github_egress(monkeypatch)
     database_path = tmp_path / "sessions.sqlite"
     workspace = _git_workspace(tmp_path / "workspace")
     session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
@@ -412,7 +425,9 @@ def test_api_pull_request_denied_broker_credential_records_audit(
 
 def test_api_pull_request_unavailable_broker_records_audit(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _allow_github_egress(monkeypatch)
     database_path = tmp_path / "sessions.sqlite"
     workspace = _git_workspace(tmp_path / "workspace")
     session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
@@ -446,7 +461,9 @@ def test_api_pull_request_unavailable_broker_records_audit(
 
 def test_api_pull_request_transport_failure_records_audit(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _allow_github_egress(monkeypatch)
     database_path = tmp_path / "sessions.sqlite"
     workspace = _git_workspace(tmp_path / "workspace")
     session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
@@ -478,7 +495,9 @@ def test_api_pull_request_transport_failure_records_audit(
 
 def test_api_pull_request_github_app_transport_failure_records_audit(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _allow_github_egress(monkeypatch)
     database_path = tmp_path / "sessions.sqlite"
     workspace = _git_workspace(tmp_path / "workspace")
     session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
@@ -812,6 +831,16 @@ def _github_app_broker(
         secret_store=LocalSecretStore(root=root),
         transport=app_transport,
     )
+
+
+def _allow_github_egress(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    profile: str = "full-trusted-local",
+    allowlist: tuple[str, ...] = (),
+) -> None:
+    monkeypatch.setenv("ZEBRA_SCM_NETWORK_PROFILE", profile)
+    monkeypatch.setenv("ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST", ",".join(allowlist))
 
 
 class _FakeGitHubTransport:

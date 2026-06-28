@@ -7,8 +7,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 from subprocess import run
 from typing import Protocol
+from urllib.parse import urlparse
 
-from agent_security import CredentialBroker, ScmCredentialBoundary
+from agent_security import (
+    DEFAULT_NETWORK_PROFILE,
+    CredentialBroker,
+    NetworkProfile,
+    NetworkProfileName,
+    ScmCredentialBoundary,
+    parse_network_profile,
+)
 from zebra_agent_config import ScmSettings
 
 from agent_integrations.scm_credentials import CredentialLookupResult, github_token_from_broker
@@ -123,6 +131,7 @@ class GitHubPullRequestGateway:
         credential_now: datetime | None = None,
         credential_source_fallback: str | None = None,
         credential_backend_fallback: str | None = None,
+        network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
         transport: GitHubPullRequestTransport | None = None,
     ) -> None:
         self._config = config
@@ -130,6 +139,7 @@ class GitHubPullRequestGateway:
         self._credential_now = credential_now
         self._credential_source_fallback = credential_source_fallback
         self._credential_backend_fallback = credential_backend_fallback
+        self._network_profile = network_profile
         if transport is None:
             from agent_integrations.github import GitHubHttpPullRequestTransport
 
@@ -171,6 +181,10 @@ class GitHubPullRequestGateway:
             raise ScmUnavailableError(
                 "github pull request execution requires ZEBRA_SCM_PULL_REQUEST_DRY_RUN=false"
             )
+        _ensure_github_egress_allowed(
+            network_profile=self._network_profile,
+            api_base_url=self._config.api_base_url,
+        )
         token = self._config.token
         lookup: CredentialLookupResult | None = None
         if token is None and self._credential_broker is not None:
@@ -253,21 +267,22 @@ def build_pull_request_gateway(
     now: datetime | None = None,
     allow_env_token_fallback: bool = False,
 ) -> PullRequestGateway:
+    active_env = env or os.environ
     if settings.provider == "local-only":
         return LocalOnlyPullRequestGateway()
     if settings.provider == "github":
         if settings.github_owner is None or settings.github_repo is None:
             raise ScmUnavailableError("github owner and repo are required")
+        network_profile = _network_profile_from_env(active_env)
         token_value = None
         credential_source_fallback = None
         credential_backend_fallback = None
         if not settings.pull_request_dry_run:
             if credential_broker is None:
                 if allow_env_token_fallback:
-                    values = env or os.environ
                     capability = ScmCredentialBoundary().capability_from_settings(
                         settings,
-                        token_value=values.get(settings.github_token_env or ""),
+                        token_value=active_env.get(settings.github_token_env or ""),
                     )
                     token_value = capability.token_value
                     credential_source_fallback = "env_fallback"
@@ -284,9 +299,55 @@ def build_pull_request_gateway(
             credential_now=now,
             credential_source_fallback=credential_source_fallback,
             credential_backend_fallback=credential_backend_fallback,
+            network_profile=network_profile,
             transport=github_transport,
         )
     raise ScmUnavailableError(f"unsupported SCM provider: {settings.provider}")
+
+
+def _network_profile_from_env(env: Mapping[str, str]) -> NetworkProfile:
+    raw_profile = env.get("ZEBRA_SCM_NETWORK_PROFILE", DEFAULT_NETWORK_PROFILE.name.value)
+    raw_allowlist = env.get("ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST", "")
+    domain_allowlist = tuple(
+        entry.strip() for entry in raw_allowlist.split(",") if entry.strip()
+    )
+    return parse_network_profile(
+        raw_profile,
+        domain_allowlist=domain_allowlist or None,
+    )
+
+
+def _ensure_github_egress_allowed(
+    *,
+    network_profile: NetworkProfile,
+    api_base_url: str,
+) -> None:
+    target_host = _target_host(api_base_url)
+    if network_profile.name is NetworkProfileName.FULL_TRUSTED_LOCAL:
+        return
+    if (
+        network_profile.name is NetworkProfileName.DOMAIN_ALLOWLIST
+        and target_host in network_profile.domain_allowlist
+    ):
+        return
+    raise ScmUnavailableError(
+        (
+            "github pull request execution is blocked by network profile "
+            f"{network_profile.name.value}"
+        ),
+        metadata={
+            "failure_class": "egress_policy",
+            "network_profile": network_profile.name.value,
+            "target_host": target_host,
+        },
+    )
+
+
+def _target_host(api_base_url: str) -> str:
+    host = urlparse(api_base_url).hostname
+    if host is None or not host.strip():
+        raise ScmIntegrationError("github api_base_url must include a hostname")
+    return host.strip().lower()
 
 
 def _serializable_payload(payload: GitHubPullRequestPayload) -> dict[str, object]:

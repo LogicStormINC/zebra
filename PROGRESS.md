@@ -5,7 +5,6 @@
 - Active phase: `Phase 20 - Egress Control Foundations`
 - Repository status: `phase 20 ready`
 - Current focus:
-  - guard remote SCM transport with explicit egress policy
   - document operator-facing egress behavior and remediation
   - keep local-only PR planning as the default behavior
   - keep live SCM execution behind explicit provider, dry-run, credential, and policy gates
@@ -168,12 +167,12 @@
 - GitHub App credential broker skeleton now retrieves private-key material through `SecretStore` and preserves failure classification across integration and API audit paths
 - Phase 19 is closed with `docs/Phase19_Secret_Store_And_Broker_Credentials_验收记录.md`
 - deterministic network-profile contracts now exist in `agent-security`, including fail-closed defaulting and explicit validation for `domain-allowlist`
-- Phase 20 should next wire explicit egress policy into remote SCM transport without weakening current local defaults
+- GitHub PR execution now blocks direct remote transport by default and records `egress_policy` metadata when the configured network profile disallows the target host
+- Phase 20 should next document operator-facing egress controls and remediation without weakening current local defaults
 
 ## Next Unlocks
 
-- `P20-INT-01 - SCM Transport Egress Guard` is ready
-- `P20-DOC-01 - Egress Control Operator Docs` unlocks after the contract and SCM guard
+- `P20-DOC-01 - Egress Control Operator Docs` is ready
 
 ## Active Documents
 

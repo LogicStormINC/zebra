@@ -17,7 +17,12 @@ from agent_integrations import (
     ScmUnavailableError,
     build_pull_request_gateway,
 )
-from agent_security import CredentialCapability, InMemoryCredentialBroker, LocalSecretStore
+from agent_security import (
+    CredentialCapability,
+    InMemoryCredentialBroker,
+    LocalSecretStore,
+    parse_network_profile,
+)
 from zebra_agent_config import ScmSettings
 
 
@@ -114,7 +119,8 @@ def test_github_pull_request_gateway_fails_missing_token_before_execution(
             owner="octo-org",
             repo="zebra-agent",
             execution_enabled=True,
-        )
+        ),
+        network_profile=parse_network_profile("full-trusted-local"),
     )
 
     with pytest.raises(ScmUnavailableError, match="github token is required") as excinfo:
@@ -166,6 +172,7 @@ def test_github_pull_request_gateway_executes_with_fake_transport(tmp_path: Path
             token="secret-token",
             execution_enabled=True,
         ),
+        network_profile=parse_network_profile("full-trusted-local"),
         transport=transport,
     )
 
@@ -199,6 +206,7 @@ def test_github_pull_request_gateway_plan_does_not_expose_token(tmp_path: Path) 
             token="secret-token",
             execution_enabled=True,
         ),
+        network_profile=parse_network_profile("full-trusted-local"),
         transport=transport,
     )
 
@@ -299,7 +307,10 @@ def test_build_pull_request_gateway_does_not_use_env_token_fallback_by_default(
             github_api_base_url="https://api.github.com",
             pull_request_dry_run=False,
         ),
-        env={"GITHUB_TOKEN": "secret-token"},
+        env={
+            "GITHUB_TOKEN": "secret-token",
+            **_network_env(profile="full-trusted-local"),
+        },
         github_transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
     )
 
@@ -323,7 +334,10 @@ def test_build_pull_request_gateway_uses_explicit_env_token_fallback(
     transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
     gateway = build_pull_request_gateway(
         _github_scm(pull_request_dry_run=False),
-        env={"GITHUB_TOKEN": "secret-token"},
+        env={
+            "GITHUB_TOKEN": "secret-token",
+            **_network_env(profile="full-trusted-local"),
+        },
         github_transport=transport,
         allow_env_token_fallback=True,
     )
@@ -380,6 +394,7 @@ def test_build_pull_request_gateway_uses_broker_credential_for_execution(
     transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
     gateway = build_pull_request_gateway(
         _github_scm(pull_request_dry_run=False),
+        env=_network_env(profile="full-trusted-local"),
         credential_broker=InMemoryCredentialBroker.with_capabilities([_github_capability()]),
         github_transport=transport,
         now=_now(),
@@ -412,6 +427,7 @@ def test_build_pull_request_gateway_uses_github_app_broker_for_execution(
     transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
     gateway = build_pull_request_gateway(
         _github_scm(pull_request_dry_run=False),
+        env=_network_env(profile="full-trusted-local"),
         credential_broker=_github_app_broker(tmp_path),
         github_transport=transport,
         now=_now(),
@@ -440,6 +456,7 @@ def test_build_pull_request_gateway_fails_before_execution_when_broker_credentia
     workspace = _git_workspace(tmp_path / "workspace")
     gateway = build_pull_request_gateway(
         _github_scm(pull_request_dry_run=False),
+        env=_network_env(profile="full-trusted-local"),
         credential_broker=InMemoryCredentialBroker(),
         github_transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
         now=_now(),
@@ -469,6 +486,7 @@ def test_build_pull_request_gateway_classifies_github_app_missing_secret(
     workspace = _git_workspace(tmp_path / "workspace")
     gateway = build_pull_request_gateway(
         _github_scm(pull_request_dry_run=False),
+        env=_network_env(profile="full-trusted-local"),
         credential_broker=_github_app_broker(tmp_path, create_secret=False),
         github_transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
         now=_now(),
@@ -498,6 +516,7 @@ def test_build_pull_request_gateway_classifies_broker_denied_credential(
     workspace = _git_workspace(tmp_path / "workspace")
     gateway = build_pull_request_gateway(
         _github_scm(pull_request_dry_run=False),
+        env=_network_env(profile="full-trusted-local"),
         credential_broker=InMemoryCredentialBroker(
             capabilities=(_github_capability(),),
             denied_audiences=frozenset({"repo:octo-org/zebra-agent"}),
@@ -530,6 +549,7 @@ def test_build_pull_request_gateway_classifies_broker_unavailable(
     workspace = _git_workspace(tmp_path / "workspace")
     gateway = build_pull_request_gateway(
         _github_scm(pull_request_dry_run=False),
+        env=_network_env(profile="full-trusted-local"),
         credential_broker=InMemoryCredentialBroker(unavailable=True),
         github_transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
         now=_now(),
@@ -559,7 +579,7 @@ def test_build_pull_request_gateway_records_explicit_env_fallback_missing_metada
     workspace = _git_workspace(tmp_path / "workspace")
     gateway = build_pull_request_gateway(
         _github_scm(pull_request_dry_run=False),
-        env={},
+        env=_network_env(profile="full-trusted-local"),
         github_transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
         allow_env_token_fallback=True,
     )
@@ -588,6 +608,7 @@ def test_build_pull_request_gateway_classifies_github_app_transport_failure(
     workspace = _git_workspace(tmp_path / "workspace")
     gateway = build_pull_request_gateway(
         _github_scm(pull_request_dry_run=False),
+        env=_network_env(profile="full-trusted-local"),
         credential_broker=_github_app_broker(
             tmp_path,
             app_transport=_FailingGitHubAppTransport(),
@@ -620,6 +641,7 @@ def test_build_pull_request_gateway_classifies_transport_failure(
     workspace = _git_workspace(tmp_path / "workspace")
     gateway = build_pull_request_gateway(
         _github_scm(pull_request_dry_run=False),
+        env=_network_env(profile="full-trusted-local"),
         credential_broker=InMemoryCredentialBroker.with_capabilities([_github_capability()]),
         github_transport=_FailingGitHubTransport(),
         now=_now(),
@@ -641,6 +663,63 @@ def test_build_pull_request_gateway_classifies_transport_failure(
         "credential_backend": "environment",
         "failure_class": "transport_failure",
     }
+
+
+def test_build_pull_request_gateway_blocks_remote_execution_by_default_network_profile(
+    tmp_path: Path,
+) -> None:
+    workspace = _git_workspace(tmp_path / "workspace")
+    gateway = build_pull_request_gateway(
+        _github_scm(pull_request_dry_run=False),
+        credential_broker=InMemoryCredentialBroker.with_capabilities([_github_capability()]),
+        github_transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
+        now=_now(),
+    )
+
+    with pytest.raises(ScmUnavailableError, match="blocked by network profile none") as excinfo:
+        gateway.plan(
+            workspace,
+            PullRequestRequest(
+                title="Add feature",
+                body="Implementation details.",
+                base_branch="main",
+                head_branch="feature/zebra",
+                dry_run=False,
+            ),
+        )
+    assert excinfo.value.metadata == {
+        "failure_class": "egress_policy",
+        "network_profile": "none",
+        "target_host": "api.github.com",
+    }
+
+
+def test_build_pull_request_gateway_allows_domain_allowlist_profile(
+    tmp_path: Path,
+) -> None:
+    workspace = _git_workspace(tmp_path / "workspace")
+    transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
+    gateway = build_pull_request_gateway(
+        _github_scm(pull_request_dry_run=False),
+        env=_network_env(profile="domain-allowlist", allowlist=("api.github.com",)),
+        credential_broker=InMemoryCredentialBroker.with_capabilities([_github_capability()]),
+        github_transport=transport,
+        now=_now(),
+    )
+
+    plan = gateway.plan(
+        workspace,
+        PullRequestRequest(
+            title="Add feature",
+            body="Implementation details.",
+            base_branch="main",
+            head_branch="feature/zebra",
+            dry_run=False,
+        ),
+    )
+
+    assert plan.status == "created"
+    assert transport.token == "broker-token"
 
 
 def test_build_pull_request_gateway_rejects_unknown_provider() -> None:
@@ -695,6 +774,17 @@ def _github_capability() -> CredentialCapability:
 
 def _now() -> datetime:
     return datetime(2026, 6, 23, 12, 0, tzinfo=UTC)
+
+
+def _network_env(
+    *,
+    profile: str,
+    allowlist: tuple[str, ...] = (),
+) -> dict[str, str]:
+    return {
+        "ZEBRA_SCM_NETWORK_PROFILE": profile,
+        "ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST": ",".join(allowlist),
+    }
 
 
 def _github_app_broker(

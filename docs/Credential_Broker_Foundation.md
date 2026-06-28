@@ -103,5 +103,13 @@ Current local contract:
 - `parse_network_profile(...)` normalizes and validates operator input before runtime adapters consume it
 - `domain-allowlist` requires at least one bare hostname entry
 - non-allowlist profiles reject domain allowlists so ambiguous egress intent fails early
+- SCM pull-request execution now evaluates this contract before remote transport side effects occur
+- current local gateway wiring reads:
+  - `ZEBRA_SCM_NETWORK_PROFILE`
+  - `ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST`
+- current direct GitHub transport is allowed only for:
+  - `full-trusted-local`
+  - `domain-allowlist` containing the configured GitHub API host
+- `git-proxy-only` and `mcp-proxy-only` remain blocked until proxy-backed transports exist
 
 This phase only establishes the contract. It does not yet permit remote SCM transport by itself. Later Phase 20 work should consume this model to block or allow specific networked execution paths deterministically.

@@ -35,6 +35,28 @@
   - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security`
   - `uv run mypy packages/agent-security/src/agent_security tests/agent_security`
 
+## 2026-06-28 P20-INT-01 SCM Transport Egress Guard
+
+- 执行 `P20-INT-01 - SCM Transport Egress Guard`
+- 在 `packages/agent-integrations/src/agent_integrations/scm.py` 为 GitHub PR 执行路径增加 egress gate：
+  - 从环境读取 `ZEBRA_SCM_NETWORK_PROFILE`
+  - 从环境读取 `ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST`
+  - 在 credential lookup 与 transport side effect 之前先判断是否允许访问目标 GitHub API host
+- 当前 direct GitHub transport 仅在以下 profile 下允许：
+  - `full-trusted-local`
+  - `domain-allowlist` 且 allowlist 命中目标 host
+- 默认 `none` 下远程执行会返回 `failure_class=egress_policy`，并记录：
+  - `network_profile`
+  - `target_host`
+- 保持 dry-run 与 local-only 行为不变；credential / transport 失败分类在放行 egress 后继续保留
+- 更新 `tests/agent_integrations/test_scm.py` 与 `tests/api/test_session_pull_request.py`：
+  - 新增默认 egress block 覆盖
+  - 新增 domain allowlist 放行覆盖
+  - 保持 broker / env / GitHub App / transport failure 审计语义
+- 验证：
+  - `poetry run pytest tests/agent_integrations/test_scm.py tests/api/test_session_pull_request.py`
+  - `uv run ruff check packages/agent-integrations/src/agent_integrations tests/agent_integrations tests/api/test_session_pull_request.py`
+
 ## 2026-06-28 GitHub App Credential Adapter Skeleton
 
 - 执行 `P19-INT-01 - GitHub App Credential Adapter Skeleton`
