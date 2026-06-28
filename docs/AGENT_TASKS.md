@@ -3664,8 +3664,8 @@ Close Phase 21 with proxy-egress evidence and define the next implementation pha
 
 ### P22-TOOL-01 - MCP Proxy Gateway Execution Path
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TOOL`
 - Depends on: `P21-CLOSE-01`
 - Branch: `codex/p22-tool-01-mcp-proxy-gateway-execution`
@@ -3683,13 +3683,13 @@ Turn the MCP proxy starter contract into a concrete execution path behind the to
 
 #### Acceptance
 
-- [ ] `mcp.<server>.<tool>` calls can execute through the MCP proxy path when policy allows them.
-- [ ] Local builtin tool execution remains unchanged.
-- [ ] Failed MCP proxy execution is surfaced deterministically through tool results or gateway errors.
+- [x] `mcp.<server>.<tool>` calls can execute through the MCP proxy path when policy allows them.
+- [x] Local builtin tool execution remains unchanged.
+- [x] Failed MCP proxy execution is surfaced deterministically through tool results or gateway errors.
 
 ### P22-OBS-01 - Proxy Audit Metadata Normalization
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `OBS`
 - Depends on: `P22-TOOL-01`
@@ -3714,7 +3714,7 @@ Normalize audit-facing metadata across SCM proxy and MCP proxy execution paths.
 
 ### P22-SEC-01 - Proxy Route Policy Integration
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `SEC`
 - Depends on: `P22-TOOL-01`

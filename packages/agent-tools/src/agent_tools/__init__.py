@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from agent_tools.builtin.tests import TestsRunTool, tests_run_contract
     from agent_tools.contracts import RegisteredTool, ToolContract
     from agent_tools.executor import ToolExecutor
+    from agent_tools.mcp_gateway import McpProxyToolGateway
     from agent_tools.mcp_proxy import (
         McpProxyRequest,
         McpProxyResponse,
@@ -28,6 +29,7 @@ __all__ = [
     "McpProxyRequest",
     "McpProxyResponse",
     "McpProxyTransport",
+    "McpProxyToolGateway",
     "McpToolTarget",
     "PatchApplyTool",
     "RegisteredTool",
@@ -51,6 +53,7 @@ _EXPORTS = {
     "McpProxyRequest": ("agent_tools.mcp_proxy", "McpProxyRequest"),
     "McpProxyResponse": ("agent_tools.mcp_proxy", "McpProxyResponse"),
     "McpProxyTransport": ("agent_tools.mcp_proxy", "McpProxyTransport"),
+    "McpProxyToolGateway": ("agent_tools.mcp_gateway", "McpProxyToolGateway"),
     "McpToolTarget": ("agent_tools.mcp_proxy", "McpToolTarget"),
     "PatchApplyTool": ("agent_tools.builtin.patch", "PatchApplyTool"),
     "RegisteredTool": ("agent_tools.contracts", "RegisteredTool"),

@@ -176,12 +176,12 @@
 - MCP proxy starter contracts now exist for `mcp.<server>.<tool>` calls, along with policy-facing egress metadata that distinguishes local tool paths from proxy-routable MCP paths
 - operator runbook now documents proxy-backed SCM transport selection, MCP proxy starter routing, proxy-specific remediation, and rollback to safe defaults
 - Phase 21 is closed with `docs/Phase21_Proxy_Egress_Contracts_验收记录.md`
+- `ToolExecutor` now supports MCP proxy gateway execution for `mcp.<server>.<tool>` calls without changing builtin local tool behavior
 
 ## Next Unlocks
 
-- `P22-TOOL-01 - MCP Proxy Gateway Execution Path` is ready
-- `P22-OBS-01 - Proxy Audit Metadata Normalization` unlocks after the MCP proxy gateway execution path
-- `P22-SEC-01 - Proxy Route Policy Integration` unlocks after the MCP proxy gateway execution path
+- `P22-OBS-01 - Proxy Audit Metadata Normalization` is ready
+- `P22-SEC-01 - Proxy Route Policy Integration` is ready
 
 ## Active Documents
 

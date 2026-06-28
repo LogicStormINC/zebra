@@ -198,6 +198,22 @@
   - 当前 SCM proxy 与 MCP proxy 仍偏 contract / adapter 层
   - 下一阶段应把 MCP proxy 接到真实 tool gateway execution path，并统一 proxy 审计语义
 
+## 2026-06-28 P22-TOOL-01 MCP Proxy Gateway Execution Path
+
+- 执行 `P22-TOOL-01 - MCP Proxy Gateway Execution Path`
+- 在 `packages/agent-tools/src/agent_tools/mcp_gateway.py` 新增 `McpProxyToolGateway`
+- 在 `packages/agent-tools/src/agent_tools/executor.py` 为 `ToolExecutor` 增加可选 `mcp_proxy_gateway`
+- 当前行为：
+  - 已注册 builtin/local tools 继续按原路径执行
+  - 未注册但符合 `mcp.<server>.<tool>` 的调用，在配置了 `mcp_proxy_gateway` 时转入 MCP proxy execution path
+  - 非 MCP 的未知 tool 仍保持 `UnknownToolError`
+- `McpProxyToolGateway` 当前通过 `build_mcp_proxy_request(...)` 调用 `McpProxyTransport`，并返回稳定的 `ToolResult`
+- 更新 `README.md`、`PROGRESS.md`、`docs/AGENT_TASKS.md`
+- 验证：
+  - `poetry run pytest tests/agent_tools/test_executor.py tests/agent_tools/test_mcp_proxy.py tests/agent_security/test_mcp_proxy_policy.py`
+  - `uv run ruff check packages/agent-tools/src/agent_tools tests/agent_tools tests/agent_security`
+  - `uv run mypy packages/agent-tools/src/agent_tools/__init__.py packages/agent-tools/src/agent_tools/executor.py packages/agent-tools/src/agent_tools/mcp_gateway.py packages/agent-tools/src/agent_tools/mcp_proxy.py tests/agent_tools/test_executor.py tests/agent_tools/test_mcp_proxy.py`
+
 ## 2026-06-28 GitHub App Credential Adapter Skeleton
 
 - 执行 `P19-INT-01 - GitHub App Credential Adapter Skeleton`
