@@ -5,7 +5,7 @@
 - Active phase: `Phase 19 - Secret Store And Broker-Backed Credential Foundations`
 - Repository status: `phase 19 in progress`
 - Current focus:
-  - prepare the first provider-backed credential adapter skeleton
+  - close Phase 19 with secret-store and GitHub App credential evidence
   - keep local-only PR planning as the default behavior
   - keep live SCM execution behind explicit provider, dry-run, credential, and policy gates
 
@@ -164,11 +164,12 @@
 - Phase 18 is closed with `docs/Phase18_SCM_Audit_Observability_验收记录.md`
 - secret-store Port and redaction contract now exist in `agent-security` for future non-environment broker backends
 - local secret-store backend now reads per-handle secret documents through the Port and keeps raw values out of repr and redacted snapshots
+- GitHub App credential broker skeleton now retrieves private-key material through `SecretStore` and preserves failure classification across integration and API audit paths
 - Phase 19 should next introduce secret-store and provider-backed credential foundations without widening the execution surface prematurely
 
 ## Next Unlocks
 
-- `P19-INT-01 - GitHub App Credential Adapter Skeleton` is ready
+- `P19-CLOSE-01 - Phase 19 Closeout And Next Planning` is ready
 
 ## Active Documents
 

@@ -1,9 +1,14 @@
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 from subprocess import run
 
 import pytest
 from agent_integrations import (
+    GitHubAppCredentialBinding,
+    GitHubAppCredentialBroker,
+    GitHubAppInstallationToken,
+    GitHubAppTokenTransport,
     GitHubPullRequestConfig,
     GitHubPullRequestGateway,
     GitHubPullRequestPayload,
@@ -12,7 +17,7 @@ from agent_integrations import (
     ScmUnavailableError,
     build_pull_request_gateway,
 )
-from agent_security import CredentialCapability, InMemoryCredentialBroker
+from agent_security import CredentialCapability, InMemoryCredentialBroker, LocalSecretStore
 from zebra_agent_config import ScmSettings
 
 
@@ -363,7 +368,9 @@ def test_build_pull_request_gateway_dry_run_does_not_request_broker_credential(
     assert plan.provider == "github"
     assert plan.status == "dry_run"
     assert plan.request_payload is not None
-    assert "Authorization" not in plan.request_payload["headers"]
+    headers = plan.request_payload["headers"]
+    assert isinstance(headers, dict)
+    assert "Authorization" not in headers
 
 
 def test_build_pull_request_gateway_uses_broker_credential_for_execution(
@@ -398,6 +405,35 @@ def test_build_pull_request_gateway_uses_broker_credential_for_execution(
     _assert_secret_absent("broker-token", plan)
 
 
+def test_build_pull_request_gateway_uses_github_app_broker_for_execution(
+    tmp_path: Path,
+) -> None:
+    workspace = _git_workspace(tmp_path / "workspace")
+    transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
+    gateway = build_pull_request_gateway(
+        _github_scm(pull_request_dry_run=False),
+        credential_broker=_github_app_broker(tmp_path),
+        github_transport=transport,
+        now=_now(),
+    )
+
+    plan = gateway.plan(
+        workspace,
+        PullRequestRequest(
+            title="Add feature",
+            body="Implementation details.",
+            base_branch="main",
+            head_branch="feature/zebra",
+            dry_run=False,
+        ),
+    )
+
+    assert plan.status == "created"
+    assert plan.credential_source == "broker"
+    assert plan.credential_backend == "github_app"
+    assert transport.token == "github-app-token"
+
+
 def test_build_pull_request_gateway_fails_before_execution_when_broker_credential_missing(
     tmp_path: Path,
 ) -> None:
@@ -423,6 +459,35 @@ def test_build_pull_request_gateway_fails_before_execution_when_broker_credentia
     assert excinfo.value.metadata == {
         "credential_source": "broker",
         "credential_backend": "environment",
+        "failure_class": "credential_missing",
+    }
+
+
+def test_build_pull_request_gateway_classifies_github_app_missing_secret(
+    tmp_path: Path,
+) -> None:
+    workspace = _git_workspace(tmp_path / "workspace")
+    gateway = build_pull_request_gateway(
+        _github_scm(pull_request_dry_run=False),
+        credential_broker=_github_app_broker(tmp_path, create_secret=False),
+        github_transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
+        now=_now(),
+    )
+
+    with pytest.raises(ScmUnavailableError, match="private key is missing") as excinfo:
+        gateway.plan(
+            workspace,
+            PullRequestRequest(
+                title="Add feature",
+                body="Implementation details.",
+                base_branch="main",
+                head_branch="feature/zebra",
+                dry_run=False,
+            ),
+        )
+    assert excinfo.value.metadata == {
+        "credential_source": "broker",
+        "credential_backend": "github_app",
         "failure_class": "credential_missing",
     }
 
@@ -517,6 +582,38 @@ def test_build_pull_request_gateway_records_explicit_env_fallback_missing_metada
     }
 
 
+def test_build_pull_request_gateway_classifies_github_app_transport_failure(
+    tmp_path: Path,
+) -> None:
+    workspace = _git_workspace(tmp_path / "workspace")
+    gateway = build_pull_request_gateway(
+        _github_scm(pull_request_dry_run=False),
+        credential_broker=_github_app_broker(
+            tmp_path,
+            app_transport=_FailingGitHubAppTransport(),
+        ),
+        github_transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
+        now=_now(),
+    )
+
+    with pytest.raises(ScmUnavailableError, match="token exchange failed") as excinfo:
+        gateway.plan(
+            workspace,
+            PullRequestRequest(
+                title="Add feature",
+                body="Implementation details.",
+                base_branch="main",
+                head_branch="feature/zebra",
+                dry_run=False,
+            ),
+        )
+    assert excinfo.value.metadata == {
+        "credential_source": "broker",
+        "credential_backend": "github_app",
+        "failure_class": "transport_failure",
+    }
+
+
 def test_build_pull_request_gateway_classifies_transport_failure(
     tmp_path: Path,
 ) -> None:
@@ -600,6 +697,37 @@ def _now() -> datetime:
     return datetime(2026, 6, 23, 12, 0, tzinfo=UTC)
 
 
+def _github_app_broker(
+    tmp_path: Path,
+    *,
+    create_secret: bool = True,
+    app_transport: GitHubAppTokenTransport | None = None,
+) -> GitHubAppCredentialBroker:
+    root = tmp_path / "github-app-secrets"
+    secret_path = root / "github" / "app"
+    secret_path.mkdir(parents=True, exist_ok=True)
+    if create_secret:
+        (secret_path / "private-key.json").write_text(
+            json.dumps({"value": "private-key-material", "version": "v1"}),
+            encoding="utf-8",
+        )
+    if app_transport is None:
+        app_transport = _FakeGitHubAppTransport()
+    return GitHubAppCredentialBroker(
+        bindings=(
+            GitHubAppCredentialBinding(
+                audience="repo:octo-org/zebra-agent",
+                installation_id="inst-123",
+                app_id="app-123",
+                private_key_handle="github/app/private-key",
+                scopes=("pull_request:create",),
+            ),
+        ),
+        secret_store=LocalSecretStore(root=root),
+        transport=app_transport,
+    )
+
+
 class _FakeGitHubTransport:
     def __init__(self, *, url: str) -> None:
         self._url = url
@@ -615,6 +743,36 @@ class _FakeGitHubTransport:
         self.payload = payload
         self.token = token
         return self._url
+
+
+class _FakeGitHubAppTransport:
+    def create_installation_token(
+        self,
+        *,
+        app_id: str,
+        installation_id: str,
+        private_key: str,
+        now: datetime,
+    ) -> GitHubAppInstallationToken:
+        assert app_id == "app-123"
+        assert installation_id == "inst-123"
+        assert private_key == "private-key-material"
+        return GitHubAppInstallationToken(
+            token_value="github-app-token",
+            expires_at=datetime(2026, 6, 23, 12, 30, tzinfo=UTC),
+        )
+
+
+class _FailingGitHubAppTransport:
+    def create_installation_token(
+        self,
+        *,
+        app_id: str,
+        installation_id: str,
+        private_key: str,
+        now: datetime,
+    ) -> GitHubAppInstallationToken:
+        raise RuntimeError("token exchange offline")
 
 
 class _FailingGitHubTransport:

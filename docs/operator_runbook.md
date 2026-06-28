@@ -332,6 +332,7 @@ GitHub pull-request provider status:
 - API composition builds a default environment-backed credential broker from GitHub SCM settings.
 - A non-dry-run GitHub request without a broker-issued credential fails before any network call.
 - A non-dry-run GitHub request with a broker-issued credential may create a remote PR only when the explicit provider, dry-run, credential, and policy gates all pass.
+- GitHub App-backed credential exchange remains a guarded skeleton path for integration hardening; it is not the default operator configuration path yet.
 - Transport failures are reported as deterministic `pull_request_unavailable` responses and audit records.
 - Serialized request headers redact the token as `Bearer <redacted>`.
 

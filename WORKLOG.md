@@ -1,5 +1,36 @@
 # Progress Log
 
+## 2026-06-28 GitHub App Credential Adapter Skeleton
+
+- 执行 `P19-INT-01 - GitHub App Credential Adapter Skeleton`
+- 新增 `agent_integrations.github_app`：
+  - `GitHubAppCredentialBinding`
+  - `GitHubAppInstallationToken`
+  - `GitHubAppTokenTransport`
+  - `GitHubAppCredentialBroker`
+- 适配路径：
+  - 通过 `SecretStore` 读取 private key material
+  - 通过 `GitHubAppTokenTransport` 交换 installation token
+  - 返回标准 `CredentialCapability`
+- 新增 provider-backed failure 语义：
+  - `CredentialTransportError`
+  - SCM audit `failure_class=transport_failure` 可从 GitHub App token exchange 透传
+- 保持安全边界：
+  - private key 不进入 `repr`
+  - private key 不进入 API response
+  - private key 不进入 delivery audit metadata
+- 新增和更新测试：
+  - `tests/agent_integrations/test_github_app.py`
+  - `tests/agent_integrations/test_scm.py`
+  - `tests/api/test_session_pull_request.py`
+- 更新文档：
+  - `docs/Credential_Broker_Foundation.md`
+  - `docs/operator_runbook.md`
+- 本轮验证结果：
+  - `poetry run pytest tests/agent_integrations/test_github_app.py tests/agent_integrations/test_scm.py tests/api/test_session_pull_request.py` 通过
+  - `uv run ruff check packages/agent-integrations/src/agent_integrations packages/agent-security/src/agent_security tests/agent_integrations tests/api/test_session_pull_request.py` 通过
+  - `uv run mypy packages/agent-integrations/src/agent_integrations packages/agent-security/src/agent_security tests/agent_integrations` 通过
+
 ## 2026-06-28 Local Secret Store Backend
 
 - 执行 `P19-SEC-02 - Local Secret Store Backend`

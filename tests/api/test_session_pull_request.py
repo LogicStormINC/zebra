@@ -1,15 +1,25 @@
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 from subprocess import run
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.domain.identifiers import SessionId
-from agent_integrations import GitHubPullRequestPayload, ScmUnavailableError
+from agent_integrations import (
+    GitHubAppCredentialBinding,
+    GitHubAppCredentialBroker,
+    GitHubAppInstallationToken,
+    GitHubAppTokenTransport,
+    GitHubPullRequestPayload,
+    ScmUnavailableError,
+)
 from agent_security import (
+    CredentialBroker,
     CredentialCapability,
     EnvironmentCredentialBinding,
     EnvironmentCredentialBroker,
     InMemoryCredentialBroker,
+    LocalSecretStore,
 )
 from agent_storage import SQLiteDeliveryAuditStore, SQLiteEventStore, SQLiteProjectionStore
 from fastapi.testclient import TestClient
@@ -252,6 +262,41 @@ def test_api_pull_request_uses_default_environment_broker_for_github_execution(
     assert audit_records[0].result_metadata["credential_backend"] == "environment"
 
 
+def test_api_pull_request_uses_github_app_broker_for_execution(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+    transport = _FakeGitHubTransport(url="https://github.example/pulls/1")
+
+    response = create_app(
+        database_path,
+        settings=_settings(None, scm=_github_scm(pull_request_dry_run=False)),
+        credential_broker=_github_app_broker(tmp_path),
+        github_transport=transport,
+    ).open_session_pull_request(
+        str(session_id),
+        {
+            "title": "Add feature",
+            "base_branch": "main",
+            "head_branch": "feature/zebra",
+            "dry_run": False,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.body["pull_request"]["credential_source"] == "broker"
+    assert response.body["pull_request"]["credential_backend"] == "github_app"
+    assert transport.token == "github-app-token"
+    assert "private-key-material" not in repr(response.body)
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].result_metadata["credential_source"] == "broker"
+    assert audit_records[0].result_metadata["credential_backend"] == "github_app"
+    assert "private-key-material" not in repr(audit_records[0].result_metadata)
+
+
 def test_api_pull_request_missing_broker_credential_records_audit(
     tmp_path: Path,
 ) -> None:
@@ -428,6 +473,41 @@ def test_api_pull_request_transport_failure_records_audit(
     assert len(audit_records) == 1
     assert audit_records[0].result_metadata["credential_source"] == "broker"
     assert audit_records[0].result_metadata["credential_backend"] == "environment"
+    assert audit_records[0].result_metadata["failure_class"] == "transport_failure"
+
+
+def test_api_pull_request_github_app_transport_failure_records_audit(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = _git_workspace(tmp_path / "workspace")
+    session_id = _seed_ready_session(database_path, workspace, policy_profile="full_access")
+
+    response = create_app(
+        database_path,
+        settings=_settings(None, scm=_github_scm(pull_request_dry_run=False)),
+        credential_broker=_github_app_broker(
+            tmp_path,
+            app_transport=_FailingGitHubAppTransport(),
+        ),
+        github_transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
+    ).open_session_pull_request(
+        str(session_id),
+        {
+            "title": "Add feature",
+            "base_branch": "main",
+            "head_branch": "feature/zebra",
+            "dry_run": False,
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.body["status"] == "pull_request_unavailable"
+    assert response.body["reason"] == "github app token exchange failed"
+    audit_records = SQLiteDeliveryAuditStore(database_path).list_for_session(session_id)
+    assert len(audit_records) == 1
+    assert audit_records[0].result_metadata["credential_source"] == "broker"
+    assert audit_records[0].result_metadata["credential_backend"] == "github_app"
     assert audit_records[0].result_metadata["failure_class"] == "transport_failure"
 
 
@@ -684,7 +764,7 @@ def _github_broker(*, env: dict[str, str]) -> EnvironmentCredentialBroker:
     )
 
 
-def _denied_github_broker() -> EnvironmentCredentialBroker:
+def _denied_github_broker() -> CredentialBroker:
     return InMemoryCredentialBroker(
         capabilities=(_github_capability(),),
         denied_audiences=frozenset({"repo:octo-org/zebra-agent"}),
@@ -702,6 +782,35 @@ def _github_capability() -> CredentialCapability:
         scopes=("pull_request:create",),
         expires_at=datetime(2026, 7, 23, 12, 30, tzinfo=UTC),
         token_value="broker-token",
+    )
+
+
+def _github_app_broker(
+    tmp_path: Path,
+    *,
+    app_transport: GitHubAppTokenTransport | None = None,
+) -> GitHubAppCredentialBroker:
+    root = tmp_path / "github-app-secrets"
+    secret_path = root / "github" / "app"
+    secret_path.mkdir(parents=True, exist_ok=True)
+    (secret_path / "private-key.json").write_text(
+        json.dumps({"value": "private-key-material", "version": "v1"}),
+        encoding="utf-8",
+    )
+    if app_transport is None:
+        app_transport = _FakeGitHubAppTransport()
+    return GitHubAppCredentialBroker(
+        bindings=(
+            GitHubAppCredentialBinding(
+                audience="repo:octo-org/zebra-agent",
+                installation_id="inst-123",
+                app_id="app-123",
+                private_key_handle="github/app/private-key",
+                scopes=("pull_request:create",),
+            ),
+        ),
+        secret_store=LocalSecretStore(root=root),
+        transport=app_transport,
     )
 
 
@@ -733,3 +842,33 @@ class _FailingGitHubTransport:
             "github pull request execution failed: transport offline",
             metadata={"failure_class": "transport_failure"},
         )
+
+
+class _FakeGitHubAppTransport:
+    def create_installation_token(
+        self,
+        *,
+        app_id: str,
+        installation_id: str,
+        private_key: str,
+        now: datetime,
+    ) -> GitHubAppInstallationToken:
+        assert app_id == "app-123"
+        assert installation_id == "inst-123"
+        assert private_key == "private-key-material"
+        return GitHubAppInstallationToken(
+            token_value="github-app-token",
+            expires_at=datetime(2026, 7, 23, 12, 30, tzinfo=UTC),
+        )
+
+
+class _FailingGitHubAppTransport:
+    def create_installation_token(
+        self,
+        *,
+        app_id: str,
+        installation_id: str,
+        private_key: str,
+        now: datetime,
+    ) -> GitHubAppInstallationToken:
+        raise RuntimeError("token exchange offline")

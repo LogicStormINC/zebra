@@ -3386,8 +3386,8 @@ Implement a local secret-store backend aligned with the architecture's local sec
 
 ### P19-INT-01 - GitHub App Credential Adapter Skeleton
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `INT`
 - Depends on: `P19-SEC-02`
 - Branch: `codex/p19-int-01-github-app-credential-adapter`
@@ -3405,6 +3405,30 @@ Add the first provider-backed non-environment credential adapter using the secre
 
 #### Acceptance
 
-- [ ] Integration path can request GitHub App-backed credentials without writing raw secrets into durable audit state.
-- [ ] Provider-backed missing, denied, unavailable, and transport failures remain classifiable.
-- [ ] Operator-facing docs identify the GitHub App adapter as a guarded future execution path.
+- [x] Integration path can request GitHub App-backed credentials without writing raw secrets into durable audit state.
+- [x] Provider-backed missing, denied, unavailable, and transport failures remain classifiable.
+- [x] Operator-facing docs identify the GitHub App adapter as a guarded future execution path.
+
+### P19-CLOSE-01 - Phase 19 Closeout And Next Planning
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P19-INT-01`
+- Branch: `codex/p19-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 19 with secret-store and provider-backed credential foundation evidence.
+
+#### Deliverables
+
+- Phase 19 acceptance record
+- next phase task board
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Secret-store and GitHub App credential skeleton evidence is recorded.
+- [ ] Next phase starter tasks are ready and path-scoped.

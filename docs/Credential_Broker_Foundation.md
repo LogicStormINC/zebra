@@ -35,7 +35,7 @@ These errors intentionally distinguish operator remediation paths:
 - No durable token storage.
 - No OS keychain integration.
 - No Vault, KMS, or cloud secret manager integration.
-- No GitHub App installation token flow.
+- No live GitHub App installation token flow in the default operator path.
 - No durable or external secret backend yet.
 
 ## Secret-Store Direction
@@ -77,3 +77,17 @@ Delivery audit metadata may include non-secret credential observability fields:
 - `credential_backend=environment` for the current local backend implementation
 
 These fields are intended for operator diagnosis only. They must never contain raw token material.
+
+## GitHub App Skeleton
+
+Phase 19 adds a guarded `GitHubAppCredentialBroker` skeleton:
+
+- the broker reads a private-key secret through `SecretStore`
+- the adapter exchanges that key through a `GitHubAppTokenTransport`
+- the resulting installation token is returned as a normal `CredentialCapability`
+
+Current limits:
+
+- no production transport is wired into default API composition
+- no operator-facing GitHub App configuration flow exists yet
+- the skeleton is intended for integration hardening and test injection only until a later phase broadens the execution path

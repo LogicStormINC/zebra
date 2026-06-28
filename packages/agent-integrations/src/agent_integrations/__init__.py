@@ -1,6 +1,12 @@
 """Provider integrations for Zebra Agent."""
 
 from agent_integrations.github import GitHubHttpPullRequestTransport
+from agent_integrations.github_app import (
+    GitHubAppCredentialBinding,
+    GitHubAppCredentialBroker,
+    GitHubAppInstallationToken,
+    GitHubAppTokenTransport,
+)
 from agent_integrations.openai_compatible import (
     OpenAICompatibleModelGateway,
     build_model_gateway,
@@ -23,6 +29,10 @@ __all__ = [
     "PullRequestGateway",
     "GitHubPullRequestConfig",
     "GitHubHttpPullRequestTransport",
+    "GitHubAppCredentialBinding",
+    "GitHubAppCredentialBroker",
+    "GitHubAppInstallationToken",
+    "GitHubAppTokenTransport",
     "GitHubPullRequestGateway",
     "GitHubPullRequestPayload",
     "GitHubPullRequestTransport",

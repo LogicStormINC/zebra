@@ -5,6 +5,7 @@ from agent_security.broker import (
     CredentialBrokerError,
     CredentialDeniedError,
     CredentialMissingError,
+    CredentialTransportError,
     CredentialUnavailableError,
     InMemoryCredentialBroker,
 )
@@ -52,6 +53,7 @@ __all__ = [
     "CredentialCapability",
     "CredentialDeniedError",
     "CredentialMissingError",
+    "CredentialTransportError",
     "CredentialUnavailableError",
     "DeliveryDecision",
     "DeliveryDecisionType",
