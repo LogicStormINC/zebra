@@ -25,6 +25,11 @@ from agent_security.environment_broker import (
     EnvironmentCredentialBinding,
     EnvironmentCredentialBroker,
 )
+from agent_security.mcp_proxy_policy import (
+    ToolEgressMetadata,
+    ToolEgressRoute,
+    classify_tool_egress,
+)
 from agent_security.network_profile import (
     DEFAULT_NETWORK_PROFILE,
     SUPPORTED_NETWORK_PROFILES,
@@ -87,7 +92,10 @@ __all__ = [
     "DEFAULT_NETWORK_PROFILE",
     "get_secret_value",
     "InMemorySecretStore",
+    "ToolEgressMetadata",
+    "ToolEgressRoute",
     "build_approval_request",
+    "classify_tool_egress",
     "parse_network_profile",
     "policy_profile",
 ]

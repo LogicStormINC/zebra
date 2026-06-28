@@ -3588,8 +3588,8 @@ Add a GitHub PR adapter that executes through the proxy transport contract inste
 
 ### P21-TOOL-01 - MCP Proxy Egress Starter Contract
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TOOL`
 - Depends on: `P20-CLOSE-01`
 - Branch: `codex/p21-tool-01-mcp-proxy-egress-starter-contract`
@@ -3607,9 +3607,9 @@ Define the first explicit MCP proxy egress contract so `mcp-proxy-only` can evol
 
 #### Acceptance
 
-- [ ] Tooling surfaces a concrete MCP proxy contract rather than a placeholder profile label.
-- [ ] Policy-facing metadata distinguishes direct-local tool calls from future proxy-routed MCP calls.
-- [ ] The current fail-closed default remains unchanged.
+- [x] Tooling surfaces a concrete MCP proxy contract rather than a placeholder profile label.
+- [x] Policy-facing metadata distinguishes direct-local tool calls from future proxy-routed MCP calls.
+- [x] The current fail-closed default remains unchanged.
 
 ### P21-DOC-01 - Proxy Egress Operator Docs
 

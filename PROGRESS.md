@@ -173,10 +173,10 @@
 - Phase 20 is closed with `docs/Phase20_Egress_Control_Foundations_验收记录.md`
 - SCM proxy transport contracts now exist in `agent-integrations`, including deterministic serializable request and response models separate from the direct GitHub HTTP path
 - GitHub PR execution can now use a proxy-backed adapter selected by environment while preserving direct-path guards and failure classification
+- MCP proxy starter contracts now exist for `mcp.<server>.<tool>` calls, along with policy-facing egress metadata that distinguishes local tool paths from proxy-routable MCP paths
 
 ## Next Unlocks
 
-- `P21-TOOL-01 - MCP Proxy Egress Starter Contract` is ready
 - `P21-DOC-01 - Proxy Egress Operator Docs` is ready
 
 ## Active Documents

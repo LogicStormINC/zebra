@@ -136,6 +136,36 @@
   - `uv run ruff check packages/agent-integrations/src/agent_integrations tests/agent_integrations tests/api/test_session_pull_request.py`
   - `uv run mypy packages/agent-integrations/src/agent_integrations/scm_proxy.py packages/agent-integrations/src/agent_integrations/scm_proxy_http.py tests/agent_integrations/test_scm_proxy.py`
 
+## 2026-06-28 P21-TOOL-01 MCP Proxy Egress Starter Contract
+
+- 执行 `P21-TOOL-01 - MCP Proxy Egress Starter Contract`
+- 在 `packages/agent-tools/src/agent_tools/mcp_proxy.py` 新增 MCP proxy starter contract：
+  - `McpToolTarget`
+  - `McpProxyRequest`
+  - `McpProxyResponse`
+  - `McpProxyTransport`
+  - `parse_mcp_tool_name(...)`
+  - `build_mcp_proxy_request(...)`
+- 约定 `mcp.<server>.<tool>` 为 MCP tool naming contract，并要求 arguments 为确定性 JSON serializable 结构
+- 在 `packages/agent-security/src/agent_security/mcp_proxy_policy.py` 新增 policy-facing egress classifier：
+  - `ToolEgressRoute`
+  - `ToolEgressMetadata`
+  - `classify_tool_egress(...)`
+- 当前 starter 行为：
+  - builtin/local tools 标记为 `route=local`
+  - MCP tool 在 `mcp-proxy-only` 和 `full-trusted-local` 下标记为 `route=mcp_proxy`
+  - 其他 profile 下对 MCP tool 标记为 `route=blocked`
+- 顺手将 `packages/agent-tools/src/agent_tools/__init__.py` 改为 lazy exports，避免工具包初始化时的循环导入
+- 回归覆盖：
+  - `tests/agent_tools/test_mcp_proxy.py`
+  - `tests/agent_security/test_mcp_proxy_policy.py`
+  - `tests/agent_tools/test_executor.py`
+- 更新 `README.md`、`PROGRESS.md`、`docs/AGENT_TASKS.md`
+- 验证：
+  - `poetry run pytest tests/agent_tools/test_mcp_proxy.py tests/agent_security/test_mcp_proxy_policy.py tests/agent_tools/test_executor.py`
+  - `uv run ruff check packages/agent-tools/src/agent_tools packages/agent-security/src/agent_security tests/agent_tools tests/agent_security`
+  - `uv run mypy packages/agent-tools/src/agent_tools/__init__.py packages/agent-tools/src/agent_tools/mcp_proxy.py packages/agent-security/src/agent_security/mcp_proxy_policy.py tests/agent_tools/test_mcp_proxy.py tests/agent_security/test_mcp_proxy_policy.py`
+
 ## 2026-06-28 GitHub App Credential Adapter Skeleton
 
 - 执行 `P19-INT-01 - GitHub App Credential Adapter Skeleton`
