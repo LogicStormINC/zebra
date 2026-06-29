@@ -4199,8 +4199,8 @@ Close Phase 26 with local snapshot operator evidence and define the next impleme
 
 ### P27-API-01 - Workspace Lifecycle Readback Surface
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `API`
 - Depends on: `P26-CLOSE-01`
 - Branch: `codex/p27-api-01-workspace-lifecycle-readback`
@@ -4218,9 +4218,9 @@ Expose projection-backed workspace lifecycle and snapshot metadata through safe 
 
 #### Acceptance
 
-- [ ] Operators can read durable workspace lifecycle state without scanning raw event streams.
-- [ ] Snapshot metadata is exposed safely without leaking irrelevant runtime internals.
-- [ ] Existing session read paths remain backward compatible.
+- [x] Operators can read durable workspace lifecycle state without scanning raw event streams.
+- [x] Snapshot metadata is exposed safely without leaking irrelevant runtime internals.
+- [x] Existing session read paths remain backward compatible.
 
 ### P27-CLI-01 - Workspace Lifecycle Inspect Output
 

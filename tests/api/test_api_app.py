@@ -7,7 +7,8 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_core.domain.tools import ToolCall
-from agent_storage import SQLiteProjectionStore
+from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
+from agent_storage import SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
 from zebra_agent_api.app import create_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
@@ -53,6 +54,53 @@ def test_api_get_session_returns_projection(tmp_path: Path) -> None:
         "title": "API session",
         "status": SessionStatus.CREATED.value,
         "current_sequence": 0,
+    }
+
+
+def test_api_get_session_includes_workspace_projection_when_available(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="Workspace readback").model_copy(
+            update={
+                "status": SessionStatus.SUSPENDED,
+                "current_sequence": 4,
+            }
+        )
+    )
+    SQLiteWorkspaceProjectionStore(database_path).save_workspace(
+        WorkspaceProjection.model_validate(
+            {
+                "session_id": session.session_id,
+                "workspace_root": str(tmp_path.resolve()),
+                "prepared_at": _created_at(),
+                "updated_at": _created_at(),
+                "current_sequence": 4,
+                "status": WorkspaceStatus.SUSPENDED,
+                "policy_profile": "workspace_write",
+                "last_attempt_number": 1,
+                "runtime_name": "local",
+                "snapshot_id": "snap-123",
+                "snapshot_path": "/tmp/zebra-agent-runtime/snap-123",
+            }
+        )
+    )
+
+    response = create_app(database_path).get_session(str(session.session_id))
+
+    assert response.status_code == 200
+    assert response.body["workspace"] == {
+        "workspace_root": str(tmp_path.resolve()),
+        "status": "suspended",
+        "current_sequence": 4,
+        "prepared_at": _created_at().isoformat(),
+        "updated_at": _created_at().isoformat(),
+        "policy_profile": "workspace_write",
+        "last_attempt_number": 1,
+        "snapshot": {
+            "runtime_name": "local",
+            "snapshot_id": "snap-123",
+            "snapshot_path": "/tmp/zebra-agent-runtime/snap-123",
+        },
     }
 
 

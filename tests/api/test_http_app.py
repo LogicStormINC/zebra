@@ -11,7 +11,8 @@ from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
+from agent_storage import SQLiteEventStore, SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
 from fastapi.testclient import TestClient
 from zebra_agent_api import create_http_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
@@ -108,6 +109,53 @@ def test_http_app_serves_proxy_approval_context_on_session_lookup(tmp_path: Path
             "network_profile:mcp-proxy-only",
             "target:github.create_pull_request",
         ],
+    }
+
+
+def test_http_app_serves_workspace_projection_on_session_lookup(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = Session.create(title="Workspace HTTP").model_copy(
+        update={
+            "status": SessionStatus.SUSPENDED,
+            "current_sequence": 4,
+        }
+    )
+    SQLiteProjectionStore(database_path).save_session(session)
+    SQLiteWorkspaceProjectionStore(database_path).save_workspace(
+        WorkspaceProjection.model_validate(
+            {
+                "session_id": session.session_id,
+                "workspace_root": str(tmp_path.resolve()),
+                "prepared_at": _created_at(),
+                "updated_at": _created_at(),
+                "current_sequence": 4,
+                "status": WorkspaceStatus.SUSPENDED,
+                "policy_profile": "workspace_write",
+                "last_attempt_number": 1,
+                "runtime_name": "local",
+                "snapshot_id": "snap-http-1",
+                "snapshot_path": "/tmp/zebra-agent-runtime/snap-http-1",
+            }
+        )
+    )
+    client = TestClient(create_http_app(database_path))
+
+    response = client.get(f"/sessions/{session.session_id}")
+
+    assert response.status_code == 200
+    assert response.json()["workspace"] == {
+        "workspace_root": str(tmp_path.resolve()),
+        "status": "suspended",
+        "current_sequence": 4,
+        "prepared_at": _created_at().isoformat(),
+        "updated_at": _created_at().isoformat(),
+        "policy_profile": "workspace_write",
+        "last_attempt_number": 1,
+        "snapshot": {
+            "runtime_name": "local",
+            "snapshot_id": "snap-http-1",
+            "snapshot_path": "/tmp/zebra-agent-runtime/snap-http-1",
+        },
     }
 
 

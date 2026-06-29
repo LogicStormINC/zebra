@@ -9,9 +9,14 @@ from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
+from agent_storage import SQLiteEventStore, SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
 from zebra_agent_api.app import create_app
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
+
+
+def _created_at() -> datetime:
+    return datetime(2026, 6, 29, 21, 0, tzinfo=UTC)
 
 
 def test_route_adapter_handles_health(tmp_path: Path) -> None:
@@ -37,6 +42,52 @@ def test_route_adapter_handles_session_lookup(tmp_path: Path) -> None:
     assert response.status_code == 200
     assert response.body["session_id"] == str(session.session_id)
     assert response.body["title"] == "Route session"
+
+
+def test_route_adapter_handles_session_lookup_with_workspace_projection(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="Route workspace").model_copy(
+            update={
+                "status": SessionStatus.SUSPENDED,
+                "current_sequence": 4,
+            }
+        )
+    )
+    SQLiteWorkspaceProjectionStore(database_path).save_workspace(
+        WorkspaceProjection.model_validate(
+            {
+                "session_id": session.session_id,
+                "workspace_root": str(tmp_path.resolve()),
+                "prepared_at": _created_at(),
+                "updated_at": _created_at(),
+                "current_sequence": 4,
+                "status": WorkspaceStatus.SUSPENDED,
+                "runtime_name": "local",
+                "snapshot_id": "snap-route-1",
+                "snapshot_path": "/tmp/zebra-agent-runtime/snap-route-1",
+            }
+        )
+    )
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(
+        RouteRequest(method="GET", path=f"/sessions/{session.session_id}")
+    )
+
+    assert response.status_code == 200
+    assert response.body["workspace"] == {
+        "workspace_root": str(tmp_path.resolve()),
+        "status": "suspended",
+        "current_sequence": 4,
+        "prepared_at": _created_at().isoformat(),
+        "updated_at": _created_at().isoformat(),
+        "snapshot": {
+            "runtime_name": "local",
+            "snapshot_id": "snap-route-1",
+            "snapshot_path": "/tmp/zebra-agent-runtime/snap-route-1",
+        },
+    }
 
 
 def test_route_adapter_handles_approval_list(tmp_path: Path) -> None:

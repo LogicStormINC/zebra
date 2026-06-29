@@ -74,6 +74,7 @@ The next milestone is `Phase 27 - Workspace Lifecycle Readback And Snapshot Hous
 - `docs/local_snapshot_runtime.md` documents the supported local snapshot subset, storage layout, retention model, and explicit unsupported paths
 - local suspend and resume now emit durable control-plane events, persist snapshot metadata in workspace projections, and restore suspended workspaces onto fresh runtime-managed directories before worker execution
 - `docs/Phase26_Local_Snapshot_Operator_Controls_验收记录.md` records the completed local snapshot operator controls phase
+- session readback now includes projection-backed workspace lifecycle and snapshot metadata when durable workspace state exists
 - Phase 27 workspace lifecycle readback, CLI inspect output, and snapshot housekeeping are the next ready implementation lanes
 
 Read in this order:

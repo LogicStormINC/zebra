@@ -5,7 +5,7 @@
 - Active phase: `Phase 27 - Workspace Lifecycle Readback And Snapshot Housekeeping`
 - Repository status: `phase 27 ready`
 - Current focus:
-  - expose projection-backed workspace lifecycle read surfaces for operators
+  - merge projection-backed workspace lifecycle read surfaces for operators
   - extend local inspect surfaces with snapshot-safe workspace metadata
   - harden snapshot housekeeping and compatibility checks
 
@@ -198,10 +198,11 @@
 - session control now emits durable suspend and resume lifecycle events, persists snapshot metadata in workspace projections, and restores suspended local workspaces before worker execution resumes
 - CLI `suspend`, API `POST /sessions/{id}/suspend`, and worker resume execution now share the same local snapshot-backed control-plane behavior
 - Phase 26 is closed with `docs/Phase26_Local_Snapshot_Operator_Controls_验收记录.md`
+- session read APIs now expose projection-backed workspace lifecycle state and snapshot metadata for operator inspection without replay-only fallback
 
 ## Next Unlocks
 
-- `P27-API-01 - Workspace Lifecycle Readback Surface` is ready
+- `P27-API-01 - Workspace Lifecycle Readback Surface` is in review on `codex/p27-api-01-workspace-lifecycle-readback`
 - `P27-CLI-01 - Workspace Lifecycle Inspect Output` is locked on `P27-API-01`
 - `P27-RT-01 - Snapshot Housekeeping And Compatibility Checks` is locked on `P27-API-01`
 - `P27-CLOSE-01 - Phase 27 Closeout And Next Planning` is locked on the phase implementation tasks

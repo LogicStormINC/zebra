@@ -3133,3 +3133,19 @@
   - `README.md`
 - 验证：
   - `make check`
+
+## 2026-06-29 Phase 27 Workspace Lifecycle Readback Surface
+
+- 执行 `P27-API-01 - Workspace Lifecycle Readback Surface`
+- 行为更新：
+  - `GET /sessions/{id}` 现在在存在 durable workspace projection 时返回 projection-backed `workspace`
+  - workspace readback 现在包含 lifecycle status、sequence、prepared/updated time、policy_profile、last_attempt_number
+  - suspended workspace readback 会额外返回 snapshot-safe metadata：`runtime_name`、`snapshot_id`、`snapshot_path`
+  - 保持向后兼容：没有 workspace projection 的 session read surface 仍然返回既有字段
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/api/test_api_app.py tests/api/test_http_app.py tests/api/test_routes.py`
+  - `make check`
