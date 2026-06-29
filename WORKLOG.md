@@ -3165,3 +3165,52 @@
 - 验证：
   - `poetry run pytest tests/cli/test_cli_commands.py`
   - `make check`
+
+## 2026-06-29 Phase 27 Snapshot Housekeeping And Compatibility Checks
+
+- 执行 `P27-RT-01 - Snapshot Housekeeping And Compatibility Checks`
+- 行为更新：
+  - local snapshot inspection 现在显式区分 `valid`、`missing`、`incompatible`
+  - local runtime restore/fork 会先校验 retained snapshot manifest 与 payload，再决定是否 fail closed
+  - worker 恢复 suspended workspace 时会在成功 restore 后显式清理已消费的 retained snapshot payload
+  - 新增 retention prune、manifest mismatch、显式 cleanup、以及 worker restore fail-closed 的 regression coverage
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `docs/local_snapshot_runtime.md`
+  - `docs/operator_runbook.md`
+- 验证：
+  - `poetry run pytest tests/agent_runtime/test_local_runtime.py`
+  - `poetry run pytest tests/worker/test_execution.py`
+  - `make check`
+
+## 2026-06-29 Phase 27 Closeout And Phase 28 Planning
+
+- 执行 `P27-CLOSE-01 - Phase 27 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase27_Workspace_Lifecycle_Readback_And_Snapshot_Housekeeping_验收记录.md`
+  - 归档 Phase 27 的 API readback、CLI inspect、snapshot housekeeping 验收结论
+  - 将下一阶段定义为 `Phase 28 - Durable Artifact Storage And Retrieval`
+  - 新增 `P28-STO-01`、`P28-WKR-01`、`P28-API-01`、`P28-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - 复用当前实现分支已经通过的 `make check`
+
+## 2026-06-29 Phase 28 Durable Artifact Payload Store
+
+- 执行 `P28-STO-01 - Durable Artifact Payload Store`
+- 行为更新：
+  - 新增 artifact payload 领域模型和 `ArtifactPayloadStorePort`
+  - 新增 `SQLiteArtifactPayloadStore`，用 SQLite 持久化 artifact metadata，并用本地文件布局持久化 payload bytes
+  - payload inspection 现在显式区分 metadata 缺失与 payload 文件缺失
+  - 旧的 `SQLiteArtifactStore.list_for_session(...)` 行为保持不变，避免打破既有 artifact list read surface
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_storage/test_artifact_payloads.py tests/agent_storage/test_artifacts.py tests/agent_core/test_domain_models.py`

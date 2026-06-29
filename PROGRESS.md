@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 27 - Workspace Lifecycle Readback And Snapshot Housekeeping`
-- Repository status: `phase 27 ready`
+- Active phase: `Phase 28 - Durable Artifact Storage And Retrieval`
+- Repository status: `phase 28 ready`
 - Current focus:
-  - merge projection-backed workspace lifecycle read surfaces for operators
-  - merge local inspect surfaces with snapshot-safe workspace metadata
-  - harden snapshot housekeeping and compatibility checks
+  - merge the durable local artifact payload store branch
+  - wire worker execution to persist artifact payload references
+  - expose operator-safe artifact detail and retrieval read surfaces
 
 ## Completed
 
@@ -200,13 +200,17 @@
 - Phase 26 is closed with `docs/Phase26_Local_Snapshot_Operator_Controls_验收记录.md`
 - session read APIs now expose projection-backed workspace lifecycle state and snapshot metadata for operator inspection without replay-only fallback
 - CLI inspect and resume-read surfaces now expose the same durable workspace lifecycle state and suspended snapshot metadata for local operators
+- local snapshot inspect and cleanup now classify retained payloads as valid, missing, or incompatible through manifest-aware checks
+- worker restore paths now fail closed on incompatible retained snapshots and explicitly clean consumed snapshot payloads after successful restore
+- Phase 27 is closed with `docs/Phase27_Workspace_Lifecycle_Readback_And_Snapshot_Housekeeping_验收记录.md`
+- durable local artifact payload storage now exists with SQLite-backed metadata, file-backed payload retention, and explicit missing-payload inspection
 
 ## Next Unlocks
 
-- `P27-API-01 - Workspace Lifecycle Readback Surface` is in review on `codex/p27-api-01-workspace-lifecycle-readback`
-- `P27-CLI-01 - Workspace Lifecycle Inspect Output` is in review on `codex/p27-cli-01-workspace-lifecycle-inspect`
-- `P27-RT-01 - Snapshot Housekeeping And Compatibility Checks` is locked on `P27-API-01`
-- `P27-CLOSE-01 - Phase 27 Closeout And Next Planning` is locked on the phase implementation tasks
+- `P28-STO-01 - Durable Artifact Payload Store` is in review on the current development line
+- `P28-WKR-01 - Worker Artifact Capture Wiring` is locked on `P28-STO-01`
+- `P28-API-01 - Artifact Detail And Retrieval Surface` is locked on `P28-STO-01`
+- `P28-CLOSE-01 - Phase 28 Closeout And Next Planning` is locked on the phase implementation tasks
 
 ## Active Documents
 

@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 26 is closed and the repository is ready to start Phase 27 workspace lifecycle readback and snapshot housekeeping. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates, a real local snapshot backend for workspace-backed runtime handles, snapshot-backed suspend or resume control wiring across CLI, API, and worker execution, and updated operator guidance for the supported local snapshot model.
+Phase 27 is closed and the repository is ready to start Phase 28 durable artifact storage and retrieval. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates, a real local snapshot backend for workspace-backed runtime handles, snapshot-backed suspend or resume control wiring across CLI, API, and worker execution, manifest-aware snapshot compatibility checks, explicit retained-snapshot cleanup, and updated operator guidance for the supported local snapshot model.
 
-The next milestone is `Phase 27 - Workspace Lifecycle Readback And Snapshot Housekeeping`. The current implementation lanes are:
+The next milestone is `Phase 28 - Durable Artifact Storage And Retrieval`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -76,7 +76,11 @@ The next milestone is `Phase 27 - Workspace Lifecycle Readback And Snapshot Hous
 - `docs/Phase26_Local_Snapshot_Operator_Controls_验收记录.md` records the completed local snapshot operator controls phase
 - session readback now includes projection-backed workspace lifecycle and snapshot metadata when durable workspace state exists
 - CLI inspect and resume-read output now includes durable workspace lifecycle state and suspended snapshot metadata when available
-- Phase 27 workspace lifecycle readback, CLI inspect output, and snapshot housekeeping are the next ready implementation lanes
+- local snapshot housekeeping now classifies retained payloads as valid, missing, or incompatible before restore proceeds
+- worker resume now deletes consumed snapshot payloads explicitly after a successful local restore
+- `docs/Phase27_Workspace_Lifecycle_Readback_And_Snapshot_Housekeeping_验收记录.md` records the completed workspace lifecycle readback and snapshot housekeeping phase
+- durable local artifact payload storage now exists with SQLite-backed metadata and explicit missing-payload inspection for later retrieval wiring
+- Phase 28 durable artifact storage, worker artifact capture, and artifact retrieval are the next ready implementation lanes
 
 Read in this order:
 

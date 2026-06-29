@@ -8,6 +8,7 @@ from agent_core.ports.runtime import (
     RuntimeSnapshot,
 )
 from agent_runtime.adapters.local import LocalRuntime
+from agent_runtime.adapters.local_snapshot_state import LocalSnapshotStatus
 
 
 def test_local_runtime_executes_successfully() -> None:
@@ -130,8 +131,49 @@ def test_local_runtime_snapshot_retention_prunes_old_snapshots(tmp_path: Path) -
     assert second.snapshot_path is not None
     assert Path(first.snapshot_path).exists() is False
     assert Path(second.snapshot_path).is_dir()
-    with pytest.raises(RuntimeCapabilityError, match="no longer available"):
+    inspection = runtime.inspect_snapshot(first)
+    assert inspection.status is LocalSnapshotStatus.MISSING
+    with pytest.raises(RuntimeCapabilityError, match="payload is unavailable"):
         runtime.restore(first)
+
+
+def test_local_runtime_detects_incompatible_snapshot_manifest(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    runtime = LocalRuntime(snapshot_root=tmp_path / "runtime-state")
+
+    handle = runtime.provision(workspace_root=str(workspace))
+    snapshot = runtime.snapshot(handle)
+    assert snapshot.snapshot_path is not None
+    manifest_path = Path(snapshot.snapshot_path) / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["runtime_name"] = "remote"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    inspection = runtime.inspect_snapshot(snapshot)
+
+    assert inspection.status is LocalSnapshotStatus.INCOMPATIBLE
+    assert inspection.restorable is False
+    with pytest.raises(RuntimeCapabilityError, match="incompatible"):
+        runtime.restore(snapshot)
+
+
+def test_local_runtime_cleanup_snapshot_removes_payload(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    runtime = LocalRuntime(snapshot_root=tmp_path / "runtime-state")
+
+    handle = runtime.provision(workspace_root=str(workspace))
+    snapshot = runtime.snapshot(handle)
+    assert snapshot.snapshot_path is not None
+
+    cleanup = runtime.cleanup_snapshot(snapshot)
+    inspection = runtime.inspect_snapshot(snapshot)
+
+    assert cleanup.removed is True
+    assert cleanup.status is LocalSnapshotStatus.VALID
+    assert Path(snapshot.snapshot_path).exists() is False
+    assert inspection.status is LocalSnapshotStatus.MISSING
 
 
 def test_local_runtime_rejects_snapshot_operations_outside_supported_subset(

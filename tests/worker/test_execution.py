@@ -1,6 +1,8 @@
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.identifiers import SessionId, new_message_id, new_tool_call_id
@@ -27,6 +29,7 @@ from zebra_agent_worker import (
     SessionRecoveryService,
     SessionResumeService,
 )
+from zebra_agent_worker.execution import WorkerExecutionError
 
 
 def test_worker_execution_service_completes_ready_session(
@@ -151,7 +154,7 @@ def test_worker_execution_service_restores_suspended_workspace_before_running(
     original_workspace.mkdir()
     (original_workspace / "note.txt").write_text("before suspend\n", encoding="utf-8")
     session_id = _seed_ready_session(database_path, original_workspace)
-    SessionControlService(database_path).suspend_session(session_id)
+    suspended = SessionControlService(database_path).suspend_session(session_id)
     (original_workspace / "note.txt").write_text("after suspend\n", encoding="utf-8")
 
     monkeypatch.setattr(
@@ -174,6 +177,41 @@ def test_worker_execution_service_restores_suspended_workspace_before_running(
         "before suspend\n"
     )
     assert workspace.snapshot_id is None
+    assert workspace.snapshot_path is None
+    assert suspended.workspace.snapshot_path is not None
+    assert Path(suspended.workspace.snapshot_path).exists() is False
+
+
+def test_worker_execution_service_rejects_incompatible_suspended_snapshot(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    workspace_root = tmp_path / "workspace"
+    workspace_root.mkdir()
+    session_id = _seed_ready_session(database_path, workspace_root)
+    suspended = SessionControlService(database_path).suspend_session(session_id)
+    assert suspended.workspace.snapshot_path is not None
+    manifest_path = Path(suspended.workspace.snapshot_path) / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["runtime_name"] = "remote"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _assistant_only_gateway(settings=settings),
+    )
+
+    with pytest.raises(WorkerExecutionError, match="snapshot is incompatible"):
+        _build_execution_service(database_path).execute_session(
+            session_id,
+            worker_id="worker-a",
+            executed_at=_created_at(),
+        )
+
+    restored_workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(session_id)
+    assert restored_workspace is not None
+    assert restored_workspace.status is WorkspaceStatus.SUSPENDED
 
 
 def _settings(database_path: Path) -> ZebraAgentSettings:

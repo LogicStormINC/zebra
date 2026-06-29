@@ -36,6 +36,8 @@ Unsupported operations remain explicit:
 - snapshot on a missing or non-directory workspace root
 - restore or fork from a snapshot owned by a different runtime
 - restore or fork from a pruned or missing snapshot payload
+- restore or fork from a retained snapshot whose manifest is incompatible with
+  the requested runtime or snapshot metadata
 
 ## Storage Layout
 
@@ -62,6 +64,20 @@ The local backend keeps runtime-managed state under a snapshot root:
 This keeps restore and fork flows explicit without depending on hidden process
 memory outside the runtime instance.
 
+## Compatibility Checks
+
+Retained local snapshots are now inspected before restore or fork:
+
+- `valid` means the snapshot root, `manifest.json`, and workspace payload are
+  all present and the manifest matches the requested snapshot metadata
+- `missing` means the retained payload has been pruned, manually deleted, or is
+  otherwise incomplete on disk
+- `incompatible` means the retained payload exists but its manifest is malformed
+  or no longer matches the requested runtime or snapshot identity
+
+Restore and fork now fail closed when inspection reports `missing` or
+`incompatible`.
+
 ## Retention Model
 
 Retention is deterministic per source handle:
@@ -72,6 +88,13 @@ Retention is deterministic per source handle:
 - restore or fork from a pruned snapshot fails with an explicit capability error
 
 The default retention limit is `3`.
+
+Snapshot cleanup is now explicit in addition to retention pruning:
+
+- restore paths remove the consumed retained snapshot payload after a successful
+  local restore
+- runtime housekeeping can classify an already-pruned or already-cleaned
+  snapshot as `missing` deterministically
 
 ## Semantics
 
@@ -96,8 +119,8 @@ The current local control plane uses these runtime semantics in three places:
 - `POST /sessions/{id}/suspend` exposes the same local snapshot-backed suspend
   path over the HTTP API
 - worker-backed resume execution restores the suspended workspace onto a fresh
-  working directory and updates the durable `workspace_root` before the harness
-  runs
+  working directory, cleans the consumed retained snapshot payload, and updates
+  the durable `workspace_root` before the harness runs
 
 What still remains outside this document:
 

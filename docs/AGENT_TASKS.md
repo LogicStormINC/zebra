@@ -4199,7 +4199,7 @@ Close Phase 26 with local snapshot operator evidence and define the next impleme
 
 ### P27-API-01 - Workspace Lifecycle Readback Surface
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `API`
 - Depends on: `P26-CLOSE-01`
@@ -4224,7 +4224,7 @@ Expose projection-backed workspace lifecycle and snapshot metadata through safe 
 
 ### P27-CLI-01 - Workspace Lifecycle Inspect Output
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P27-API-01`
@@ -4249,8 +4249,8 @@ Extend CLI inspect-style operator output so local users can read workspace lifec
 
 ### P27-RT-01 - Snapshot Housekeeping And Compatibility Checks
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `RUNTIME`
 - Depends on: `P27-API-01`
 - Branch: `codex/p27-rt-01-snapshot-housekeeping-compat`
@@ -4268,14 +4268,14 @@ Make retained local snapshot payloads easier to validate and clean by adding exp
 
 #### Acceptance
 
-- [ ] Operators can distinguish valid, missing, and incompatible retained snapshots deterministically.
-- [ ] Snapshot cleanup behavior is explicit rather than incidental.
-- [ ] Restore paths fail closed when compatibility checks reject a snapshot.
+- [x] Operators can distinguish valid, missing, and incompatible retained snapshots deterministically.
+- [x] Snapshot cleanup behavior is explicit rather than incidental.
+- [x] Restore paths fail closed when compatibility checks reject a snapshot.
 
 ### P27-CLOSE-01 - Phase 27 Closeout And Next Planning
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P27-API-01`, `P27-CLI-01`, `P27-RT-01`
 - Branch: `codex/p27-closeout-next-plan`
@@ -4293,5 +4293,110 @@ Close Phase 27 with workspace lifecycle readback and snapshot housekeeping evide
 
 #### Acceptance
 
-- [ ] Workspace lifecycle readback and snapshot housekeeping evidence is recorded.
+- [x] Workspace lifecycle readback and snapshot housekeeping evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 28 Task Board
+
+### P28-STO-01 - Durable Artifact Payload Store
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `STORAGE`
+- Depends on: `P27-CLOSE-01`
+- Branch: `codex/p28-sto-01-durable-artifact-payload-store`
+- Owned paths: `packages/agent-storage/`, `packages/agent-core/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a durable local artifact payload store so session artifacts no longer depend
+only on model-call or tool-run index rows for operator retrieval.
+
+#### Deliverables
+
+- local artifact payload storage contract and SQLite-backed metadata model
+- artifact retention-safe local file layout or handle abstraction
+- regression coverage for store, lookup, and missing-payload behavior
+
+#### Acceptance
+
+- [x] Artifact payload metadata is durable and independently queryable.
+- [x] Missing local artifact payloads fail closed with explicit status.
+- [x] Existing artifact index readers remain backward compatible.
+
+### P28-WKR-01 - Worker Artifact Capture Wiring
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `RUNTIME`
+- Depends on: `P28-STO-01`
+- Branch: `codex/p28-wkr-01-worker-artifact-capture-wiring`
+- Owned paths: `apps/worker/`, `packages/agent-runtime/`, `packages/agent-storage/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Persist concrete artifact payload references during worker execution so durable
+artifact reads can rely on more than ephemeral inline previews.
+
+#### Deliverables
+
+- worker-side artifact capture for supported model-call or tool-run outputs
+- durable payload metadata writes during execution indexing
+- regression coverage for successful capture and missing-payload fallback
+
+#### Acceptance
+
+- [ ] Worker execution writes durable artifact payload references for supported outputs.
+- [ ] Existing session execution and indexing flows remain backward compatible.
+- [ ] Missing or skipped payload capture paths stay explicit in stored metadata.
+
+### P28-API-01 - Artifact Detail And Retrieval Surface
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `API`
+- Depends on: `P28-STO-01`
+- Branch: `codex/p28-api-01-artifact-detail-and-retrieval`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose operator-safe artifact detail and retrieval read surfaces over the new
+durable local artifact payload model.
+
+#### Deliverables
+
+- artifact detail or retrieval API path
+- explicit not-found and payload-missing response semantics
+- regression coverage for indexed-only, stored, and missing artifact reads
+
+#### Acceptance
+
+- [ ] Operators can distinguish indexed-only versus payload-backed artifacts.
+- [ ] Artifact retrieval remains local-safe and machine-readable.
+- [ ] Existing artifact list responses remain backward compatible.
+
+### P28-CLOSE-01 - Phase 28 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P28-STO-01`, `P28-WKR-01`, `P28-API-01`
+- Branch: `codex/p28-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 28 with durable artifact storage evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 28 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Durable artifact storage evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

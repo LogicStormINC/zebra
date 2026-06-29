@@ -1,5 +1,6 @@
 """Hexagonal ports for Zebra Agent core."""
 
+from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.artifact_store import ArtifactStorePort
 from agent_core.ports.clock import ClockPort
 from agent_core.ports.context_compiler import ContextCompilerPort, RuntimeEvidenceInput
@@ -23,6 +24,7 @@ from agent_core.ports.tool_run_store import ToolRunStorePort
 from agent_core.ports.workspace_projection_store import WorkspaceProjectionStorePort
 
 __all__ = [
+    "ArtifactPayloadStorePort",
     "ArtifactStorePort",
     "ClockPort",
     "ContextCompilerPort",

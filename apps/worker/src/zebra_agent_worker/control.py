@@ -12,8 +12,9 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
-from agent_core.ports.runtime import RuntimeSnapshot
+from agent_core.ports.runtime import RuntimeCapabilityError, RuntimeSnapshot
 from agent_runtime import LocalRuntime
+from agent_runtime.adapters.local_snapshot_state import LocalSnapshotStatus
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
 
 from zebra_agent_worker.recovery import (
@@ -112,16 +113,30 @@ class SessionControlService:
             raise SessionControlError("suspended workspace is missing snapshot metadata")
 
         runtime = build_local_runtime(self._database_path)
-        restored = runtime.restore(
-            RuntimeSnapshot.create(
-                runtime_name=workspace.runtime_name,
-                source_handle_id=workspace.snapshot_id,
-                workspace_root=workspace.workspace_root,
-                snapshot_path=workspace.snapshot_path,
-            )
+        snapshot = RuntimeSnapshot(
+            snapshot_id=workspace.snapshot_id,
+            runtime_name=workspace.runtime_name,
+            source_handle_id=workspace.snapshot_id,
+            created_at=workspace.updated_at,
+            workspace_root=workspace.workspace_root,
+            snapshot_path=workspace.snapshot_path,
         )
+        inspection = runtime.inspect_snapshot(snapshot)
+        if inspection.status is LocalSnapshotStatus.MISSING:
+            raise SessionControlError(
+                "suspended workspace snapshot payload is unavailable"
+            )
+        if inspection.status is LocalSnapshotStatus.INCOMPATIBLE:
+            raise SessionControlError(
+                "suspended workspace snapshot is incompatible"
+            )
+        try:
+            restored = runtime.restore(snapshot)
+        except RuntimeCapabilityError as exc:
+            raise SessionControlError(str(exc)) from exc
         if restored.workspace_root is None:
             raise SessionControlError("restored runtime did not return workspace_root")
+        runtime.cleanup_snapshot(snapshot)
 
         event = SessionEvent.create(
             session_id=session_id,

@@ -424,8 +424,17 @@ If suspend succeeds but a later resume fails:
 
 1. inspect the session and workspace projection state
 2. inspect the session stream for `session_suspended` and `session_resumed`
-3. verify the snapshot payload still exists under the runtime-managed snapshot root described in `docs/local_snapshot_runtime.md`
+3. verify whether the retained snapshot is missing or incompatible under the runtime-managed snapshot root described in `docs/local_snapshot_runtime.md`
 4. if needed, re-run resume after clearing the lease conflict or operator mistake
+
+Interpret retained snapshot outcomes this way:
+
+- `valid` means the retained payload and manifest still match the requested
+  local snapshot
+- `missing` usually means retention pruning, manual deletion, or prior cleanup
+  already removed the retained payload
+- `incompatible` means the retained payload exists but the manifest no longer
+  matches the expected runtime or snapshot identity
 
 ## Known Boundaries
 
@@ -433,6 +442,7 @@ If suspend succeeds but a later resume fails:
 - suspend does not preserve running subprocess memory or network state
 - restore moves execution onto a fresh runtime-managed workspace path
 - snapshot retention is deterministic but local; operators should not treat it as archival backup
+- successful restore also cleans the consumed retained snapshot payload
 - health remains public even when the local bearer token is enabled
 
 ## Validation Commands

@@ -11,6 +11,10 @@ from agent_core.ports.runtime import (
     RuntimeSnapshot,
 )
 
+from agent_runtime.adapters.local_snapshot_state import (
+    LocalSnapshotCleanupResult,
+    LocalSnapshotInspection,
+)
 from agent_runtime.adapters.local_snapshots import LocalSnapshotBackend
 
 
@@ -74,6 +78,14 @@ class LocalRuntime(RuntimePort):
     def snapshot(self, handle: RuntimeHandle) -> RuntimeSnapshot:
         current = self._require_known_handle(handle)
         return self._snapshots.create_snapshot(current)
+
+    def inspect_snapshot(self, snapshot: RuntimeSnapshot) -> LocalSnapshotInspection:
+        self._require_local_snapshot(snapshot)
+        return self._snapshots.inspect_snapshot(snapshot)
+
+    def cleanup_snapshot(self, snapshot: RuntimeSnapshot) -> LocalSnapshotCleanupResult:
+        self._require_local_snapshot(snapshot)
+        return self._snapshots.cleanup_snapshot(snapshot)
 
     def restore(self, snapshot: RuntimeSnapshot) -> RuntimeHandle:
         self._require_local_snapshot(snapshot)
