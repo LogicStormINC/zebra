@@ -2965,3 +2965,24 @@
   - `uv run ruff check packages/agent-core/src/agent_core packages/agent-storage/src/agent_storage tests/agent_core tests/agent_storage`
   - `uv run mypy packages/agent-core/src/agent_core/domain/sessions.py packages/agent-core/src/agent_core/application/session_projection.py packages/agent-storage/src/agent_storage/projections.py tests/agent_storage/test_sqlite_event_store.py tests/agent_storage/test_sqlite_projection_store.py`
   - `make check`
+
+## 2026-06-29 Phase 24 Closeout And Phase 25 Planning
+
+- 执行 `P24-CLOSE-01 - Phase 24 Closeout And Next Planning`
+- closeout 结论：
+  - Phase 24 已完成 durable approval context projection、projection-backed approval queue/detail reads、以及 projection drift consistency coverage
+  - proxy-aware approval vocabulary 现在在 event replay、projection、API readback、以及 trace surfaces 上保持一致
+  - 下一阶段主线调整为 durable workspace and snapshot foundations
+- 新增文档：
+  - `docs/Phase24_Durable_Approval_Projection_And_Operator_Queue_验收记录.md`
+- 下一阶段 starter tasks：
+  - `P25-STO-01 - Durable Workspace Projection Store`
+  - `P25-RT-01 - Runtime Snapshot And Resume Contracts`
+  - `P25-WKR-01 - Worker Snapshot Lifecycle Wiring`
+  - `P25-CLOSE-01 - Phase 25 Closeout And Next Planning`
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`

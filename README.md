@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 23 is closed and the implementation lanes for Phase 24 are complete. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, and trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates.
+Phase 24 is closed and the repository is ready to start Phase 25 workspace and snapshot foundations. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, and trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates.
 
-The next milestone is `Phase 24 - Durable Approval Projection And Operator Queue`. The current implementation lanes are:
+The next milestone is `Phase 25 - Durable Workspace And Snapshot Foundations`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -66,7 +66,8 @@ The next milestone is `Phase 24 - Durable Approval Projection And Operator Queue
 - local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
 - GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
 - projection rebuild, durable SQLite projection rows, and repeated approval reads now keep the same proxy-aware `approval_context` vocabulary for `route`, `target`, `network_profile`, and `scope`
-- Phase 24 closeout and next-phase planning are the remaining ready implementation lane
+- `docs/Phase24_Durable_Approval_Projection_And_Operator_Queue_验收记录.md` records the completed durable approval projection and operator queue phase
+- Phase 25 workspace projection, runtime snapshot contracts, and worker lifecycle wiring are the next ready implementation lanes
 
 Read in this order:
 
@@ -110,4 +111,4 @@ For the current local operator workflow, start with `docs/operator_runbook.md`. 
 - local FastAPI serving
 - SSE session stream replay
 
-For the latest phase closeout summary, see `docs/Phase19_Secret_Store_And_Broker_Credentials_验收记录.md`.
+For the latest phase closeout summary, see `docs/Phase24_Durable_Approval_Projection_And_Operator_Queue_验收记录.md`.

@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 24 - Durable Approval Projection And Operator Queue`
-- Repository status: `phase 24 closeout ready`
+- Active phase: `Phase 25 - Durable Workspace And Snapshot Foundations`
+- Repository status: `phase 25 ready`
 - Current focus:
-  - close Phase 24 with durable approval projection evidence
-  - define the next phase starter tasks and path ownership
-  - preserve the default fail-closed local posture while broadening operator visibility, not execution permissions
+  - persist workspace and sandbox lifecycle state into durable projections
+  - define typed runtime snapshot, restore, fork, suspend, and resume contracts
+  - prepare worker-side snapshot-backed resume wiring without widening execution permissions
 
 ## Completed
 
@@ -188,10 +188,14 @@
 - session projections and SQLite projection storage now persist durable `approval_context` state for proxy-aware approval requests
 - operator-facing approval queue and approval detail reads are now projection-backed and no longer depend on raw event replay
 - projection rebuild, durable SQLite projection rows, and repeated approval reads now hold the same `route`, `target`, `network_profile`, and `scope` vocabulary for proxy-aware approval context
+- Phase 24 is closed with `docs/Phase24_Durable_Approval_Projection_And_Operator_Queue_验收记录.md`
 
 ## Next Unlocks
 
-- `P24-CLOSE-01 - Phase 24 Closeout And Next Planning` is ready
+- `P25-STO-01 - Durable Workspace Projection Store` is ready
+- `P25-RT-01 - Runtime Snapshot And Resume Contracts` is ready after `P25-STO-01`
+- `P25-WKR-01 - Worker Snapshot Lifecycle Wiring` is locked on `P25-RT-01`
+- `P25-CLOSE-01 - Phase 25 Closeout And Next Planning` is locked on the phase implementation tasks
 
 ## Active Documents
 

@@ -3966,8 +3966,8 @@ Ensure projection-backed approval context stays consistent with event and trace 
 
 ### P24-CLOSE-01 - Phase 24 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P24-API-01`, `P24-OBS-01`
 - Branch: `codex/p24-closeout-next-plan`
@@ -3985,5 +3985,109 @@ Close Phase 24 with durable approval projection evidence and define the next imp
 
 #### Acceptance
 
-- [ ] Durable approval projection evidence is recorded.
+- [x] Durable approval projection evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 25 Task Board
+
+### P25-STO-01 - Durable Workspace Projection Store
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `STO`
+- Depends on: `P24-CLOSE-01`
+- Branch: `codex/p25-sto-01-durable-workspace-projection-store`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `tests/agent_storage/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Persist workspace and sandbox lifecycle facts into durable projection state so later snapshot and resume flows do not rely on process-local memory.
+
+#### Deliverables
+
+- workspace projection model
+- SQLite workspace projection store
+- replay coverage for workspace lifecycle updates
+- documentation of stored workspace fields and compatibility expectations
+
+#### Acceptance
+
+- [ ] Durable workspace state can be rebuilt from session events deterministically.
+- [ ] SQLite persistence can store and reload workspace projection rows without losing lifecycle fields.
+- [ ] Existing session projection behavior remains backwards compatible.
+
+### P25-RT-01 - Runtime Snapshot And Resume Contracts
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `RUNTIME`
+- Depends on: `P25-STO-01`
+- Branch: `codex/p25-rt-01-runtime-snapshot-and-resume-contracts`
+- Owned paths: `packages/agent-core/`, `packages/agent-runtime/`, `tests/agent_runtime/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Extend the current runtime boundary beyond `execute(...)` so snapshot, restore, fork, suspend, and resume semantics exist as typed contracts before worker wiring begins.
+
+#### Deliverables
+
+- runtime lifecycle domain types
+- runtime Port extensions for snapshot and resume operations
+- local adapter placeholder or deterministic local implementation
+- tests covering contract behavior and fail-closed unsupported cases
+
+#### Acceptance
+
+- [ ] Core runtime contracts model snapshot, restore, fork, suspend, and resume explicitly.
+- [ ] Local runtime behavior is deterministic for the supported subset and explicit for unsupported operations.
+- [ ] Existing command execution paths remain compatible.
+
+### P25-WKR-01 - Worker Snapshot Lifecycle Wiring
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `WKR`
+- Depends on: `P25-RT-01`
+- Branch: `codex/p25-wkr-01-worker-snapshot-lifecycle-wiring`
+- Owned paths: `apps/worker/`, `packages/agent-runtime/`, `packages/agent-storage/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Wire worker-side suspend and resume control paths to durable workspace state so a session can release runtime resources and later restore execution context.
+
+#### Deliverables
+
+- worker lifecycle wiring for snapshot-backed suspend or resume
+- durable workspace row updates during worker lifecycle transitions
+- regression coverage for snapshot-backed resume orchestration
+- operator notes for current local lifecycle limitations
+
+#### Acceptance
+
+- [ ] Worker lifecycle can persist suspend or resume transitions against durable workspace state.
+- [ ] Resume paths read workspace projection state instead of relying on process-local memory.
+- [ ] Failures leave deterministic lifecycle state for a later retry or operator action.
+
+### P25-CLOSE-01 - Phase 25 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P25-STO-01`, `P25-RT-01`, `P25-WKR-01`
+- Branch: `codex/p25-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 25 with durable workspace and snapshot evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 25 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Durable workspace and snapshot evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.
