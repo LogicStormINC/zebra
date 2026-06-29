@@ -3865,8 +3865,8 @@ Keep proxy-aware approval evidence consistent across policy events, traces, and 
 
 ### P23-CLOSE-01 - Phase 23 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P23-API-01`, `P23-OBS-01`
 - Branch: `codex/p23-closeout-next-plan`
@@ -3884,5 +3884,106 @@ Close Phase 23 with proxy-aware approval readback evidence and define the next i
 
 #### Acceptance
 
-- [ ] Proxy-aware approval readback evidence is recorded.
+- [x] Proxy-aware approval readback evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 24 Task Board
+
+### P24-STO-01 - Durable Approval Context Projection
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `STO`
+- Depends on: `P23-CLOSE-01`
+- Branch: `codex/p24-sto-01-durable-approval-context-projection`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `tests/agent_core/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Persist proxy-aware approval context into durable projection state so operator reads do not depend on replaying the full event stream.
+
+#### Deliverables
+
+- approval-context projection model updates
+- storage-layer rebuild coverage for proxy-aware approval context
+- regression tests for projection persistence and recovery
+
+#### Acceptance
+
+- [ ] Session or approval projection state persists proxy-aware approval context after `approval_requested`.
+- [ ] Projection rebuild stays deterministic across approval grant and reject paths.
+- [ ] Existing local-only projection behavior remains backwards compatible.
+
+### P24-API-01 - Approval Queue And Detail Read API
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `API`
+- Depends on: `P24-STO-01`
+- Branch: `codex/p24-api-01-approval-queue-and-detail-read-api`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose projection-backed approval queue and approval detail reads for operators.
+
+#### Deliverables
+
+- approval queue read endpoint or route
+- approval detail read endpoint or route
+- proxy-aware approval context serialization for queue and detail reads
+
+#### Acceptance
+
+- [ ] Operators can list waiting approvals without replaying raw event streams.
+- [ ] Approval detail reads expose proxy-aware context using the existing safe field set.
+- [ ] Queue and detail responses remain free of secrets and raw credential material.
+
+### P24-OBS-01 - Approval Projection Consistency Checks
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `OBS`
+- Depends on: `P24-STO-01`
+- Branch: `codex/p24-obs-01-approval-projection-consistency-checks`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `tests/agent_core/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Ensure projection-backed approval context stays consistent with event and trace metadata.
+
+#### Deliverables
+
+- consistency assertions between replayed events and projection output
+- regression coverage for proxy-aware approval context drift
+- operator guidance for interpreting projection-versus-event discrepancies
+
+#### Acceptance
+
+- [ ] Projection-backed approval context matches the event payload vocabulary for route, target, network profile, and scope.
+- [ ] Regression tests cover grant, reject, and repeated approval-read scenarios.
+- [ ] Non-proxy approval paths remain backwards compatible.
+
+### P24-CLOSE-01 - Phase 24 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P24-API-01`, `P24-OBS-01`
+- Branch: `codex/p24-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 24 with durable approval projection evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 24 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Durable approval projection evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-- Active phase: `Phase 23 - Proxy Approval Projection And Operator Readback`
-- Repository status: `phase 23 ready`
+- Active phase: `Phase 24 - Durable Approval Projection And Operator Queue`
+- Repository status: `phase 24 ready`
 - Current focus:
-  - project proxy-aware approval metadata into durable harness events
-  - expose proxy approval context through operator-facing readback surfaces
-  - keep proxy execution evidence consistent across policy, trace, and API layers
-  - preserve the default fail-closed local posture while broadening read visibility, not execution permissions
+  - persist proxy-aware approval context into durable projection models
+  - expose approval-focused queue and detail reads for operators
+  - keep projection-backed approval reads aligned with event and trace metadata
+  - preserve the default fail-closed local posture while broadening operator visibility, not execution permissions
 
 ## Completed
 
@@ -185,10 +185,11 @@
 - harness policy and approval events can now persist proxy route, target, network-profile, and scope metadata without changing existing local-only payloads
 - operator-facing session reads and approval decision responses now expose proxy-safe `approval_context` derived from the latest `approval_requested` event
 - harness trace projection and API trace serialization now normalize proxy approval metadata with the same `route`, `target`, `network_profile`, and `scope` vocabulary used by policy and execution layers
+- Phase 23 is closed with `docs/Phase23_Proxy_Approval_Projection_And_Operator_Readback_验收记录.md`
 
 ## Next Unlocks
 
-- `P23-CLOSE-01 - Phase 23 Closeout And Next Planning` is ready
+- `P24-STO-01 - Durable Approval Context Projection` is ready
 
 ## Active Documents
 

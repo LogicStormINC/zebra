@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 22 is closed and Phase 23 proxy approval projection planning is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, policy-level route distinctions, and dedicated proxy operator runbooks behind explicit provider, dry-run, network-profile, credential, and policy gates.
+Phase 23 is closed and Phase 24 durable approval projection planning is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, readback, and trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates.
 
-The next milestone is `Phase 23 - Proxy Approval Projection And Operator Readback`. The current implementation lanes are:
+The next milestone is `Phase 24 - Durable Approval Projection And Operator Queue`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -49,6 +49,7 @@ The next milestone is `Phase 23 - Proxy Approval Projection And Operator Readbac
 - proxy-backed SCM audit and MCP proxy execution metadata now share stable `route` / `proxy_target` / `proxy_transport` fields
 - local policy evaluation and approval requests now distinguish local tool paths, proxy-routed MCP tool paths, and fail-closed blocked MCP routes deterministically
 - `docs/Phase22_Proxy_Execution_And_Gateway_Wiring_验收记录.md` records the completed proxy gateway execution phase and its remaining deferrals
+- `docs/Phase23_Proxy_Approval_Projection_And_Operator_Readback_验收记录.md` records the completed proxy-aware approval readback phase and its remaining deferrals
 - remote SCM operator safety runbook coverage documents dry-run first, explicit opt-in, audit inspection, token rules, and rollback steps
 - credential capability domain modeling covers provider, audience, scopes, expiry, and redacted serialization
 - credential broker Port definition covers SCM credential requests, in-memory test broker, and missing/denied/unavailable errors
@@ -64,7 +65,7 @@ The next milestone is `Phase 23 - Proxy Approval Projection And Operator Readbac
 - secret-store Port and redaction contract now exist in `agent-security`
 - local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
 - GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
-- Phase 23 closeout and next-phase planning are the next ready implementation lane
+- durable approval context projection is the next ready implementation lane
 
 Read in this order:
 

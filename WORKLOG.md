@@ -2890,3 +2890,24 @@
   - `poetry run pytest tests/agent_core/test_harness_trace_projection.py tests/agent_core/test_single_attempt_orchestrator.py tests/api/test_api_app.py tests/api/test_http_app.py`
   - `uv run ruff check packages/agent-core/src/agent_core apps/api/src/zebra_agent_api tests/agent_core tests/api`
   - `make check`
+
+## 2026-06-29 Phase 23 Closeout And Phase 24 Planning
+
+- 执行 `P23-CLOSE-01 - Phase 23 Closeout And Next Planning`
+- 新增文档：
+  - `docs/Phase23_Proxy_Approval_Projection_And_Operator_Readback_验收记录.md`
+- Phase 23 验收结论：
+  - proxy-aware approval metadata 已进入 harness events
+  - session read 与 approval decision 响应已暴露安全的 `approval_context`
+  - trace 与 API trace 已归一化 proxy approval metadata vocabulary
+- Phase 24 starter tasks：
+  - `P24-STO-01 - Durable Approval Context Projection`
+  - `P24-API-01 - Approval Queue And Detail Read API`
+  - `P24-OBS-01 - Approval Projection Consistency Checks`
+  - `P24-CLOSE-01 - Phase 24 Closeout And Next Planning`
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
