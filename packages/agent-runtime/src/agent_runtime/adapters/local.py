@@ -1,4 +1,5 @@
 from dataclasses import replace
+from pathlib import Path
 from subprocess import TimeoutExpired, run
 
 from agent_core.ports.runtime import (
@@ -10,6 +11,8 @@ from agent_core.ports.runtime import (
     RuntimeSnapshot,
 )
 
+from agent_runtime.adapters.local_snapshots import LocalSnapshotBackend
+
 
 def _normalize_output(output: bytes | str | None) -> str:
     if output is None:
@@ -20,8 +23,17 @@ def _normalize_output(output: bytes | str | None) -> str:
 
 
 class LocalRuntime(RuntimePort):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        snapshot_root: str | Path | None = None,
+        snapshot_retention_limit: int = 3,
+    ) -> None:
         self._handles: dict[str, RuntimeHandle] = {}
+        self._snapshots = LocalSnapshotBackend(
+            root_path=snapshot_root,
+            retention_limit=snapshot_retention_limit,
+        )
 
     def execute(self, request: RuntimeExecutionRequest) -> RuntimeExecutionResult:
         try:
@@ -60,14 +72,20 @@ class LocalRuntime(RuntimePort):
         return handle
 
     def snapshot(self, handle: RuntimeHandle) -> RuntimeSnapshot:
-        self._require_known_handle(handle)
-        raise RuntimeCapabilityError("local runtime does not support snapshot")
+        current = self._require_known_handle(handle)
+        return self._snapshots.create_snapshot(current)
 
     def restore(self, snapshot: RuntimeSnapshot) -> RuntimeHandle:
-        raise RuntimeCapabilityError("local runtime does not support restore")
+        self._require_local_snapshot(snapshot)
+        restored = self._snapshots.restore_handle(snapshot)
+        self._handles[restored.handle_id] = restored
+        return restored
 
     def fork(self, snapshot: RuntimeSnapshot) -> RuntimeHandle:
-        raise RuntimeCapabilityError("local runtime does not support fork")
+        self._require_local_snapshot(snapshot)
+        forked = self._snapshots.fork_handle(snapshot)
+        self._handles[forked.handle_id] = forked
+        return forked
 
     def suspend(self, handle: RuntimeHandle) -> RuntimeHandle:
         current = self._require_known_handle(handle)
@@ -90,3 +108,7 @@ class LocalRuntime(RuntimePort):
         if current is None:
             raise RuntimeCapabilityError("runtime handle is unknown to local runtime")
         return current
+
+    def _require_local_snapshot(self, snapshot: RuntimeSnapshot) -> None:
+        if snapshot.runtime_name != "local":
+            raise RuntimeCapabilityError("runtime snapshot does not belong to local runtime")

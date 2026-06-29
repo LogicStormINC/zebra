@@ -3065,3 +3065,23 @@
   - `README.md`
 - 验证：
   - `make check`
+
+## 2026-06-29 Phase 26 Local Snapshot Backend
+
+- 执行 `P26-RT-01 - Local Snapshot Backend`
+- 行为更新：
+  - `LocalRuntime` 现在支持对带 `workspace_root` 的本地句柄执行真实 snapshot
+  - snapshot 会把工作目录复制到 runtime-managed `snapshots/<snapshot_id>/workspace/`，并写出 `manifest.json`
+  - `restore(...)` 和 `fork(...)` 现在会从 snapshot payload 复制出新的 runtime-managed 工作目录，并返回新的 local runtime handle
+  - `RuntimeSnapshot` 现在携带 `workspace_root` 与 `snapshot_path`，避免 restore path 依赖隐藏的进程内状态
+  - local snapshot retention 按 source handle 确定性裁剪，超出保留上限时优先删除最旧 snapshot
+  - 对无 `workspace_root` 句柄、非 local snapshot、以及已被裁剪或缺失的 snapshot，仍保持显式 fail-closed
+- 文档更新：
+  - `docs/local_snapshot_runtime.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_runtime/test_local_runtime.py`
+  - `uv run ruff check --fix packages/agent-core/src/agent_core/ports/runtime.py packages/agent-runtime/src/agent_runtime/adapters/local.py packages/agent-runtime/src/agent_runtime/adapters/local_snapshots.py tests/agent_runtime/test_local_runtime.py`
+  - `uv run mypy packages/agent-core/src/agent_core/ports/runtime.py packages/agent-runtime/src/agent_runtime/adapters/local.py packages/agent-runtime/src/agent_runtime/adapters/local_snapshots.py tests/agent_runtime/test_local_runtime.py`

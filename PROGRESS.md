@@ -3,11 +3,11 @@
 ## Current Phase
 
 - Active phase: `Phase 26 - Local Snapshot Operator Controls`
-- Repository status: `phase 26 ready`
+- Repository status: `phase 26 in progress`
 - Current focus:
-  - implement a working local snapshot backend behind the new runtime lifecycle contracts
   - wire session suspend and resume control paths to durable workspace state
   - expose operator-facing local snapshot behavior through CLI, API, and docs
+  - merge the local snapshot backend slice and use it as the base for control-plane wiring
 
 ## Completed
 
@@ -190,13 +190,15 @@
 - projection rebuild, durable SQLite projection rows, and repeated approval reads now hold the same `route`, `target`, `network_profile`, and `scope` vocabulary for proxy-aware approval context
 - Phase 24 is closed with `docs/Phase24_Durable_Approval_Projection_And_Operator_Queue_验收记录.md`
 - durable workspace projection state now persists `workspace_root`, `policy_profile`, lifecycle status, sequence, and last attempt number for later snapshot or resume wiring
-- runtime contracts now model `provision`, `snapshot`, `restore`, `fork`, `suspend`, and `resume`, while local runtime keeps snapshot paths fail-closed and suspend or resume deterministic
+- runtime contracts now model `provision`, `snapshot`, `restore`, `fork`, `suspend`, and `resume`, with `RuntimeSnapshot` carrying explicit local snapshot metadata
 - worker recovery, resume, and execution now reuse durable workspace projection state and keep workspace lifecycle rows aligned with emitted worker events
 - Phase 25 is closed with `docs/Phase25_Durable_Workspace_And_Snapshot_Foundations_验收记录.md`
+- local runtime now supports filesystem-backed snapshot, restore, and fork flows for workspace-backed handles with deterministic per-handle retention
+- local snapshot behavior is documented in `docs/local_snapshot_runtime.md`, including supported subset, storage layout, retention, and explicit unsupported paths
 
 ## Next Unlocks
 
-- `P26-RT-01 - Local Snapshot Backend` is ready
+- `P26-RT-01 - Local Snapshot Backend` is in review on `codex/p26-rt-01-local-snapshot-backend`
 - `P26-APP-01 - Suspend And Resume Control Wiring` is locked on `P26-RT-01`
 - `P26-DOC-01 - Snapshot Operator Runbook` is locked on `P26-APP-01`
 - `P26-CLOSE-01 - Phase 26 Closeout And Next Planning` is locked on the phase implementation tasks

@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 25 is closed and the repository is ready to start Phase 26 local snapshot operator controls. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, and trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates.
+Phase 26 is in progress. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates, and a first real local snapshot backend for workspace-backed runtime handles.
 
 The next milestone is `Phase 26 - Local Snapshot Operator Controls`. The current implementation lanes are:
 
@@ -68,10 +68,11 @@ The next milestone is `Phase 26 - Local Snapshot Operator Controls`. The current
 - projection rebuild, durable SQLite projection rows, and repeated approval reads now keep the same proxy-aware `approval_context` vocabulary for `route`, `target`, `network_profile`, and `scope`
 - `docs/Phase24_Durable_Approval_Projection_And_Operator_Queue_验收记录.md` records the completed durable approval projection and operator queue phase
 - durable workspace projection storage now exists for `workspace_root`, `policy_profile`, lifecycle status, current sequence, and last attempt number
-- runtime contracts now expose explicit lifecycle methods for `provision`, `snapshot`, `restore`, `fork`, `suspend`, and `resume`, with the local adapter keeping snapshot paths fail-closed
+- runtime contracts now expose explicit lifecycle methods for `provision`, `snapshot`, `restore`, `fork`, `suspend`, and `resume`, and the local adapter now supports filesystem-backed snapshot, restore, and fork flows for the supported subset
 - worker recovery and execution now reuse durable workspace projection state instead of raw bootstrap payloads for workspace lifecycle control
 - `docs/Phase25_Durable_Workspace_And_Snapshot_Foundations_验收记录.md` records the completed durable workspace and snapshot foundations phase
-- Phase 26 local snapshot backend, suspend/resume control wiring, and operator runbook work are the next ready implementation lanes
+- `docs/local_snapshot_runtime.md` documents the supported local snapshot subset, storage layout, retention model, and explicit unsupported paths
+- Phase 26 suspend/resume control wiring and operator runbook work are the next implementation lanes after the runtime backend review passes
 
 Read in this order:
 
@@ -107,7 +108,7 @@ uv run pytest
 
 ## Operator Entry
 
-For the current local operator workflow, start with `docs/operator_runbook.md`. It covers:
+For the current local operator workflow, start with `docs/operator_runbook.md`. For local snapshot runtime semantics, also read `docs/local_snapshot_runtime.md`. The operator runbook covers:
 
 - CLI session creation, durable execution, inspection, and approval
 - writable local API session creation, execution, resume triggering, and approval decisions

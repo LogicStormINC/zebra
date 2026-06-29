@@ -63,6 +63,8 @@ class RuntimeSnapshot:
     runtime_name: str
     source_handle_id: str
     created_at: datetime
+    workspace_root: str | None = None
+    snapshot_path: str | None = None
 
     @classmethod
     def create(
@@ -71,12 +73,16 @@ class RuntimeSnapshot:
         runtime_name: str,
         source_handle_id: str,
         created_at: datetime | None = None,
+        workspace_root: str | None = None,
+        snapshot_path: str | None = None,
     ) -> "RuntimeSnapshot":
         return cls(
             snapshot_id=str(uuid4()),
             runtime_name=runtime_name,
             source_handle_id=source_handle_id,
             created_at=created_at or datetime.now(UTC),
+            workspace_root=workspace_root,
+            snapshot_path=snapshot_path,
         )
 
 

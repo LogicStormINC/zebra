@@ -4096,8 +4096,8 @@ Close Phase 25 with durable workspace and snapshot evidence and define the next 
 
 ### P26-RT-01 - Local Snapshot Backend
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `RUNTIME`
 - Depends on: `P25-CLOSE-01`
 - Branch: `codex/p26-rt-01-local-snapshot-backend`
@@ -4116,9 +4116,9 @@ Turn the current fail-closed local snapshot contract into a real local snapshot 
 
 #### Acceptance
 
-- [ ] Local runtime can create a snapshot and restore a usable runtime handle from it.
-- [ ] Local snapshot behavior is deterministic and documented for the supported subset.
-- [ ] Unsupported paths remain explicit rather than silently degraded.
+- [x] Local runtime can create a snapshot and restore a usable runtime handle from it.
+- [x] Local snapshot behavior is deterministic and documented for the supported subset.
+- [x] Unsupported paths remain explicit rather than silently degraded.
 
 ### P26-APP-01 - Suspend And Resume Control Wiring
 
