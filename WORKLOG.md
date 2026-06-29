@@ -3112,3 +3112,24 @@
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
+
+## 2026-06-29 Phase 26 Closeout And Phase 27 Planning
+
+- 执行 `P26-CLOSE-01 - Phase 26 Closeout And Next Planning`
+- closeout 结论：
+  - Phase 26 已完成 local snapshot backend、snapshot-backed suspend/resume control wiring、以及 Phase 26 operator runbook
+  - runtime、workspace projection、worker、CLI、API 与 operator docs 现在共享同一套本地 snapshot 控制语义
+  - 仍缺少 projection-backed workspace lifecycle readback 与 snapshot housekeeping/compatibility read surface
+- 新增文档：
+  - `docs/Phase26_Local_Snapshot_Operator_Controls_验收记录.md`
+- 下一阶段 starter tasks：
+  - `P27-API-01 - Workspace Lifecycle Readback Surface`
+  - `P27-CLI-01 - Workspace Lifecycle Inspect Output`
+  - `P27-RT-01 - Snapshot Housekeeping And Compatibility Checks`
+  - `P27-CLOSE-01 - Phase 27 Closeout And Next Planning`
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`

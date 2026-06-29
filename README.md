@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 26 is in progress. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates, a real local snapshot backend for workspace-backed runtime handles, and snapshot-backed suspend or resume control wiring across CLI, API, and worker execution.
+Phase 26 is closed and the repository is ready to start Phase 27 workspace lifecycle readback and snapshot housekeeping. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates, a real local snapshot backend for workspace-backed runtime handles, snapshot-backed suspend or resume control wiring across CLI, API, and worker execution, and updated operator guidance for the supported local snapshot model.
 
-The next milestone is `Phase 26 - Local Snapshot Operator Controls`. The current implementation lanes are:
+The next milestone is `Phase 27 - Workspace Lifecycle Readback And Snapshot Housekeeping`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -73,7 +73,8 @@ The next milestone is `Phase 26 - Local Snapshot Operator Controls`. The current
 - `docs/Phase25_Durable_Workspace_And_Snapshot_Foundations_验收记录.md` records the completed durable workspace and snapshot foundations phase
 - `docs/local_snapshot_runtime.md` documents the supported local snapshot subset, storage layout, retention model, and explicit unsupported paths
 - local suspend and resume now emit durable control-plane events, persist snapshot metadata in workspace projections, and restore suspended workspaces onto fresh runtime-managed directories before worker execution
-- Phase 26 operator runbook is now the active documentation lane before phase closeout
+- `docs/Phase26_Local_Snapshot_Operator_Controls_验收记录.md` records the completed local snapshot operator controls phase
+- Phase 27 workspace lifecycle readback, CLI inspect output, and snapshot housekeeping are the next ready implementation lanes
 
 Read in this order:
 

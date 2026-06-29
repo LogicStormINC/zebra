@@ -4148,7 +4148,7 @@ Wire session suspend and resume control paths to runtime lifecycle operations an
 
 ### P26-DOC-01 - Snapshot Operator Runbook
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P26-APP-01`
@@ -4173,8 +4173,8 @@ Document the supported local snapshot, suspend, and resume operator model once t
 
 ### P26-CLOSE-01 - Phase 26 Closeout And Next Planning
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P26-RT-01`, `P26-APP-01`, `P26-DOC-01`
 - Branch: `codex/p26-closeout-next-plan`
@@ -4192,5 +4192,106 @@ Close Phase 26 with local snapshot operator evidence and define the next impleme
 
 #### Acceptance
 
-- [ ] Local snapshot operator evidence is recorded.
+- [x] Local snapshot operator evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 27 Task Board
+
+### P27-API-01 - Workspace Lifecycle Readback Surface
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `API`
+- Depends on: `P26-CLOSE-01`
+- Branch: `codex/p27-api-01-workspace-lifecycle-readback`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose projection-backed workspace lifecycle and snapshot metadata through safe operator read surfaces so suspended or restored state can be inspected without replaying raw events.
+
+#### Deliverables
+
+- session readback fields or dedicated workspace-lifecycle read surface
+- snapshot-safe serialization for operator inspection
+- regression coverage for ready, suspended, restored, and terminal workspace reads
+
+#### Acceptance
+
+- [ ] Operators can read durable workspace lifecycle state without scanning raw event streams.
+- [ ] Snapshot metadata is exposed safely without leaking irrelevant runtime internals.
+- [ ] Existing session read paths remain backward compatible.
+
+### P27-CLI-01 - Workspace Lifecycle Inspect Output
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P27-API-01`
+- Branch: `codex/p27-cli-01-workspace-lifecycle-inspect`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Extend CLI inspect-style operator output so local users can read workspace lifecycle and snapshot state directly from the durable control plane.
+
+#### Deliverables
+
+- CLI inspect or resume-read output updates for workspace lifecycle state
+- snapshot metadata presentation for suspended sessions
+- regression coverage for inspect output across lifecycle states
+
+#### Acceptance
+
+- [ ] CLI surfaces expose workspace lifecycle state for local operators.
+- [ ] Suspended snapshot metadata is readable without replaying raw events.
+- [ ] Existing machine-readable CLI output stays stable for older fields.
+
+### P27-RT-01 - Snapshot Housekeeping And Compatibility Checks
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `RUNTIME`
+- Depends on: `P27-API-01`
+- Branch: `codex/p27-rt-01-snapshot-housekeeping-compat`
+- Owned paths: `apps/worker/`, `packages/agent-runtime/`, `packages/agent-storage/`, `tests/agent_runtime/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Make retained local snapshot payloads easier to validate and clean by adding explicit compatibility checks and deterministic housekeeping behavior outside a single runtime call path.
+
+#### Deliverables
+
+- snapshot compatibility validation or manifest checks
+- deterministic housekeeping or cleanup entry for retained snapshots
+- regression coverage for expired, missing, incompatible, and cleaned payloads
+
+#### Acceptance
+
+- [ ] Operators can distinguish valid, missing, and incompatible retained snapshots deterministically.
+- [ ] Snapshot cleanup behavior is explicit rather than incidental.
+- [ ] Restore paths fail closed when compatibility checks reject a snapshot.
+
+### P27-CLOSE-01 - Phase 27 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P27-API-01`, `P27-CLI-01`, `P27-RT-01`
+- Branch: `codex/p27-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 27 with workspace lifecycle readback and snapshot housekeeping evidence, then define the next implementation phase.
+
+#### Deliverables
+
+- Phase 27 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Workspace lifecycle readback and snapshot housekeeping evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

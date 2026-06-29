@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 26 - Local Snapshot Operator Controls`
-- Repository status: `phase 26 in progress`
+- Active phase: `Phase 27 - Workspace Lifecycle Readback And Snapshot Housekeeping`
+- Repository status: `phase 27 ready`
 - Current focus:
-  - expose operator-facing local snapshot behavior through CLI, API, and docs
-  - land the operator runbook for the new local suspend and resume flow
-  - close Phase 26 once runtime and control-plane slices are merged
+  - expose projection-backed workspace lifecycle read surfaces for operators
+  - extend local inspect surfaces with snapshot-safe workspace metadata
+  - harden snapshot housekeeping and compatibility checks
 
 ## Completed
 
@@ -197,13 +197,14 @@
 - local snapshot behavior is documented in `docs/local_snapshot_runtime.md`, including supported subset, storage layout, retention, and explicit unsupported paths
 - session control now emits durable suspend and resume lifecycle events, persists snapshot metadata in workspace projections, and restores suspended local workspaces before worker execution resumes
 - CLI `suspend`, API `POST /sessions/{id}/suspend`, and worker resume execution now share the same local snapshot-backed control-plane behavior
+- Phase 26 is closed with `docs/Phase26_Local_Snapshot_Operator_Controls_验收记录.md`
 
 ## Next Unlocks
 
-- `P26-RT-01 - Local Snapshot Backend` is complete on `main`
-- `P26-APP-01 - Suspend And Resume Control Wiring` is complete on `main`
-- `P26-DOC-01 - Snapshot Operator Runbook` is in progress on `codex/p26-doc-01-snapshot-operator-runbook`
-- `P26-CLOSE-01 - Phase 26 Closeout And Next Planning` is locked on the phase implementation tasks
+- `P27-API-01 - Workspace Lifecycle Readback Surface` is ready
+- `P27-CLI-01 - Workspace Lifecycle Inspect Output` is locked on `P27-API-01`
+- `P27-RT-01 - Snapshot Housekeeping And Compatibility Checks` is locked on `P27-API-01`
+- `P27-CLOSE-01 - Phase 27 Closeout And Next Planning` is locked on the phase implementation tasks
 
 ## Active Documents
 
