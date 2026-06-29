@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 25 - Durable Workspace And Snapshot Foundations`
-- Repository status: `phase 25 closeout ready`
+- Active phase: `Phase 26 - Local Snapshot Operator Controls`
+- Repository status: `phase 26 ready`
 - Current focus:
-  - close Phase 25 with durable workspace and snapshot evidence
-  - define the next phase starter tasks and path ownership
-  - keep worker lifecycle state deterministic while snapshot-specific runtime behavior remains explicitly scoped
+  - implement a working local snapshot backend behind the new runtime lifecycle contracts
+  - wire session suspend and resume control paths to durable workspace state
+  - expose operator-facing local snapshot behavior through CLI, API, and docs
 
 ## Completed
 
@@ -192,10 +192,14 @@
 - durable workspace projection state now persists `workspace_root`, `policy_profile`, lifecycle status, sequence, and last attempt number for later snapshot or resume wiring
 - runtime contracts now model `provision`, `snapshot`, `restore`, `fork`, `suspend`, and `resume`, while local runtime keeps snapshot paths fail-closed and suspend or resume deterministic
 - worker recovery, resume, and execution now reuse durable workspace projection state and keep workspace lifecycle rows aligned with emitted worker events
+- Phase 25 is closed with `docs/Phase25_Durable_Workspace_And_Snapshot_Foundations_验收记录.md`
 
 ## Next Unlocks
 
-- `P25-CLOSE-01 - Phase 25 Closeout And Next Planning` is ready
+- `P26-RT-01 - Local Snapshot Backend` is ready
+- `P26-APP-01 - Suspend And Resume Control Wiring` is locked on `P26-RT-01`
+- `P26-DOC-01 - Snapshot Operator Runbook` is locked on `P26-APP-01`
+- `P26-CLOSE-01 - Phase 26 Closeout And Next Planning` is locked on the phase implementation tasks
 
 ## Active Documents
 

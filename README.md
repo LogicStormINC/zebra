@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 24 is closed and the repository is ready to start Phase 25 workspace and snapshot foundations. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, and trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates.
+Phase 25 is closed and the repository is ready to start Phase 26 local snapshot operator controls. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, and trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates.
 
-The next milestone is `Phase 25 - Durable Workspace And Snapshot Foundations`. The current implementation lanes are:
+The next milestone is `Phase 26 - Local Snapshot Operator Controls`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -70,7 +70,8 @@ The next milestone is `Phase 25 - Durable Workspace And Snapshot Foundations`. T
 - durable workspace projection storage now exists for `workspace_root`, `policy_profile`, lifecycle status, current sequence, and last attempt number
 - runtime contracts now expose explicit lifecycle methods for `provision`, `snapshot`, `restore`, `fork`, `suspend`, and `resume`, with the local adapter keeping snapshot paths fail-closed
 - worker recovery and execution now reuse durable workspace projection state instead of raw bootstrap payloads for workspace lifecycle control
-- Phase 25 closeout and next-phase planning are the remaining ready implementation lane
+- `docs/Phase25_Durable_Workspace_And_Snapshot_Foundations_验收记录.md` records the completed durable workspace and snapshot foundations phase
+- Phase 26 local snapshot backend, suspend/resume control wiring, and operator runbook work are the next ready implementation lanes
 
 Read in this order:
 
@@ -114,4 +115,4 @@ For the current local operator workflow, start with `docs/operator_runbook.md`. 
 - local FastAPI serving
 - SSE session stream replay
 
-For the latest phase closeout summary, see `docs/Phase24_Durable_Approval_Projection_And_Operator_Queue_验收记录.md`.
+For the latest phase closeout summary, see `docs/Phase25_Durable_Workspace_And_Snapshot_Foundations_验收记录.md`.

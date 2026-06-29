@@ -3044,3 +3044,24 @@
   - `uv run ruff check apps/worker/src/zebra_agent_worker packages/agent-storage/src/agent_storage tests/worker`
   - `uv run mypy packages apps`
   - `make check`
+
+## 2026-06-29 Phase 25 Closeout And Phase 26 Planning
+
+- 执行 `P25-CLOSE-01 - Phase 25 Closeout And Next Planning`
+- closeout 结论：
+  - Phase 25 已完成 durable workspace projection、runtime snapshot lifecycle contracts、以及 worker-side workspace lifecycle wiring
+  - workspace lifecycle state 现在可以 durable replay，并贯穿 recovery、resume、execution 这条 worker 主链
+  - 仍未交付真实 local snapshot backend，也未把 session suspend control path 接到 runtime lifecycle 和 operator surface 上
+- 新增文档：
+  - `docs/Phase25_Durable_Workspace_And_Snapshot_Foundations_验收记录.md`
+- 下一阶段 starter tasks：
+  - `P26-RT-01 - Local Snapshot Backend`
+  - `P26-APP-01 - Suspend And Resume Control Wiring`
+  - `P26-DOC-01 - Snapshot Operator Runbook`
+  - `P26-CLOSE-01 - Phase 26 Closeout And Next Planning`
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`

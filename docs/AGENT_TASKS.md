@@ -4070,8 +4070,8 @@ Wire worker-side suspend and resume control paths to durable workspace state so 
 
 ### P25-CLOSE-01 - Phase 25 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P25-STO-01`, `P25-RT-01`, `P25-WKR-01`
 - Branch: `codex/p25-closeout-next-plan`
@@ -4089,5 +4089,108 @@ Close Phase 25 with durable workspace and snapshot evidence and define the next 
 
 #### Acceptance
 
-- [ ] Durable workspace and snapshot evidence is recorded.
+- [x] Durable workspace and snapshot evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 26 Task Board
+
+### P26-RT-01 - Local Snapshot Backend
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `RUNTIME`
+- Depends on: `P25-CLOSE-01`
+- Branch: `codex/p26-rt-01-local-snapshot-backend`
+- Owned paths: `packages/agent-core/`, `packages/agent-runtime/`, `tests/agent_runtime/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Turn the current fail-closed local snapshot contract into a real local snapshot backend with deterministic retention and compatibility semantics.
+
+#### Deliverables
+
+- local runtime snapshot implementation
+- snapshot metadata or retention model
+- restore and fork behavior for the supported local subset
+- regression coverage for snapshot lifecycle compatibility
+
+#### Acceptance
+
+- [ ] Local runtime can create a snapshot and restore a usable runtime handle from it.
+- [ ] Local snapshot behavior is deterministic and documented for the supported subset.
+- [ ] Unsupported paths remain explicit rather than silently degraded.
+
+### P26-APP-01 - Suspend And Resume Control Wiring
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P26-RT-01`
+- Branch: `codex/p26-app-01-suspend-resume-control-wiring`
+- Owned paths: `apps/api/`, `apps/cli/`, `apps/worker/`, `packages/agent-storage/`, `tests/api/`, `tests/cli/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Wire session suspend and resume control paths to runtime lifecycle operations and durable workspace state so local operators can pause and continue work through a consistent control plane.
+
+#### Deliverables
+
+- suspend or resume lifecycle wiring across CLI, API, and worker entry points
+- durable workspace state updates for control-plane lifecycle transitions
+- regression coverage for suspend then resume operator flows
+- failure handling for unsupported or invalid lifecycle transitions
+
+#### Acceptance
+
+- [ ] Session suspend and resume paths update durable workspace lifecycle state consistently.
+- [ ] CLI and API operator flows can trigger the supported local suspend or resume path.
+- [ ] Invalid lifecycle transitions fail deterministically without corrupting workspace state.
+
+### P26-DOC-01 - Snapshot Operator Runbook
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P26-APP-01`
+- Branch: `codex/p26-doc-01-snapshot-operator-runbook`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Document the supported local snapshot, suspend, and resume operator model once the control paths exist.
+
+#### Deliverables
+
+- operator runbook updates for local snapshot lifecycle
+- failure interpretation and rollback notes
+- README and progress updates for the new operator surface
+
+#### Acceptance
+
+- [ ] Operator docs describe the supported local snapshot and suspend workflow concretely.
+- [ ] Failure and unsupported-path behavior are documented.
+- [ ] README points to the current operator guidance without contradiction.
+
+### P26-CLOSE-01 - Phase 26 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P26-RT-01`, `P26-APP-01`, `P26-DOC-01`
+- Branch: `codex/p26-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 26 with local snapshot operator evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 26 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Local snapshot operator evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.
