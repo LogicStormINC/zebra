@@ -5,7 +5,7 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
-from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_core.domain.tools import ToolCall
 from agent_storage import SQLiteProjectionStore
 from zebra_agent_api.app import create_app
@@ -66,6 +66,39 @@ def test_api_get_session_returns_not_found(tmp_path: Path) -> None:
         "session_id": "00000000-0000-0000-0000-000000000001",
         "status": "not_found",
     }
+
+
+def test_api_lists_waiting_approvals_from_projection(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    first = _waiting_session("First approval").model_copy(update={"current_sequence": 3})
+    second = _waiting_session("Second approval").model_copy(
+        update={
+            "current_sequence": 4,
+            "updated_at": _created_at().replace(second=21),
+        }
+    )
+    SQLiteProjectionStore(database_path).save_session(first)
+    SQLiteProjectionStore(database_path).save_session(second)
+
+    response = create_app(database_path).list_approvals()
+
+    assert response.status_code == 200
+    assert response.body["approvals"][0]["approval_id"] == str(first.session_id)
+    assert response.body["approvals"][1]["approval_id"] == str(second.session_id)
+    assert response.body["approvals"][0]["approval_context"]["route"] == "mcp_proxy"
+
+
+def test_api_get_approval_returns_projection_detail(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _waiting_session("Approval detail").model_copy(update={"current_sequence": 5})
+    SQLiteProjectionStore(database_path).save_session(session)
+
+    response = create_app(database_path).get_approval(str(session.session_id))
+
+    assert response.status_code == 200
+    assert response.body["approval_id"] == str(session.session_id)
+    assert response.body["title"] == "Approval detail"
+    assert response.body["approval_context"]["route"] == "mcp_proxy"
 
 
 def test_api_get_session_stream_returns_persisted_events(tmp_path: Path) -> None:
@@ -322,3 +355,23 @@ def _created_at():
     from datetime import UTC, datetime
 
     return datetime(2026, 6, 22, 13, 20, tzinfo=UTC)
+
+
+def _waiting_session(title: str) -> Session:
+    return Session.create(title=title, created_at=_created_at()).model_copy(
+        update={
+            "status": SessionStatus.WAITING_APPROVAL,
+            "approval_context": ApprovalContext(
+                tool_name="mcp.github.create_pull_request",
+                reason="proxy-routed external tool execution in test",
+                policy_profile="full_access",
+                route="mcp_proxy",
+                target="github.create_pull_request",
+                network_profile="mcp-proxy-only",
+                scope=(
+                    "tool:mcp.github.create_pull_request",
+                    "route:mcp_proxy",
+                ),
+            ),
+        }
+    )

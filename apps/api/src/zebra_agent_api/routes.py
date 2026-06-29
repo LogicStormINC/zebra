@@ -31,6 +31,12 @@ class RouteAdapter:
                 return self.app.approve(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "reject":
                 return self.app.reject(parts[0], request.body or {})
+        if method == "GET" and request.path == "/approvals":
+            return self.app.list_approvals()
+        if method == "GET" and request.path.startswith("/approvals/"):
+            parts = _approval_path_parts(request.path)
+            if len(parts) == 1:
+                return self.app.get_approval(parts[0])
         if method == "POST" and request.path.startswith("/sessions/"):
             parts = _session_path_parts(request.path)
             if len(parts) == 2 and parts[1] == "messages":

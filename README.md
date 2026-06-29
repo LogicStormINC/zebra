@@ -65,7 +65,7 @@ The next milestone is `Phase 24 - Durable Approval Projection And Operator Queue
 - secret-store Port and redaction contract now exist in `agent-security`
 - local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
 - GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
-- approval queue and detail read API is the next ready implementation lane
+- Phase 24 closeout and next-phase planning are the next ready implementation lane
 
 Read in this order:
 

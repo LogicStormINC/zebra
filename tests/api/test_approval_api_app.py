@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from zebra_agent_api.app import create_app
 
@@ -119,7 +119,25 @@ def _seed_waiting_session(database_path: Path) -> Session:
 
 
 def _seed_waiting_session_with_proxy_approval(database_path: Path) -> Session:
-    session = _seed_waiting_session(database_path)
+    session = _seed_waiting_session(database_path).model_copy(
+        update={
+            "approval_context": ApprovalContext(
+                tool_name="mcp.github.create_pull_request",
+                reason="proxy-routed external tool execution in test",
+                policy_profile="full_access",
+                route="mcp_proxy",
+                target="github.create_pull_request",
+                network_profile="mcp-proxy-only",
+                scope=(
+                    "tool:mcp.github.create_pull_request",
+                    "route:mcp_proxy",
+                    "network_profile:mcp-proxy-only",
+                    "target:github.create_pull_request",
+                ),
+            )
+        }
+    )
+    SQLiteProjectionStore(database_path).save_session(session)
     SQLiteEventStore(database_path).append(
         SessionEvent.create(
             session_id=session.session_id,

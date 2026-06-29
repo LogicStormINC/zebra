@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.sessions import ApprovalContext
 
 
 def latest_approval_context(events: list[SessionEvent]) -> dict[str, object] | None:
@@ -26,3 +27,20 @@ def _approval_context_payload(event: SessionEvent) -> dict[str, object]:
         if normalized:
             context["scope"] = normalized
     return context
+
+
+def serialize_approval_context(context: ApprovalContext | None) -> dict[str, object] | None:
+    if context is None:
+        return None
+    payload: dict[str, object] = {
+        "tool_name": context.tool_name,
+        "reason": context.reason,
+        "policy_profile": context.policy_profile,
+    }
+    for field in ("route", "target", "network_profile"):
+        value = getattr(context, field)
+        if isinstance(value, str) and value.strip():
+            payload[field] = value
+    if context.scope:
+        payload["scope"] = list(context.scope)
+    return payload

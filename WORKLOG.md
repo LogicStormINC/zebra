@@ -2929,3 +2929,21 @@
   - `poetry run pytest tests/agent_core/test_session_projection.py tests/agent_storage/test_sqlite_projection_store.py`
   - `uv run ruff check packages/agent-core/src/agent_core packages/agent-storage/src/agent_storage tests/agent_core tests/agent_storage`
   - `uv run mypy packages/agent-core/src/agent_core/domain/sessions.py packages/agent-core/src/agent_core/application/session_projection.py packages/agent-storage/src/agent_storage/projections.py tests/agent_core/test_session_projection.py tests/agent_storage/test_sqlite_projection_store.py`
+
+## 2026-06-29 Phase 24 Approval Queue And Detail Read API
+
+- 执行 `P24-API-01 - Approval Queue And Detail Read API`
+- 行为更新：
+  - 新增 projection-backed `GET /approvals`
+  - 新增 projection-backed `GET /approvals/{id}`
+  - `GET /sessions/{id}` 与 approval approve/reject 回读现在统一使用 durable `approval_context`
+  - approval queue/detail 仅暴露安全字段集，不暴露 secrets 或 raw credential material
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P24-API-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P24-CLOSE-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/api/test_api_app.py tests/api/test_routes.py tests/api/test_http_approvals.py tests/api/test_approval_api_app.py tests/api/test_http_app.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api tests/api`
+  - `make check`

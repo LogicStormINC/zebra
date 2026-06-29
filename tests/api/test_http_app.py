@@ -10,7 +10,7 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
-from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from fastapi.testclient import TestClient
 from zebra_agent_api import create_http_app
@@ -49,6 +49,20 @@ def test_http_app_serves_proxy_approval_context_on_session_lookup(tmp_path: Path
         update={
             "status": SessionStatus.WAITING_APPROVAL,
             "current_sequence": 3,
+            "approval_context": ApprovalContext(
+                tool_name="mcp.github.create_pull_request",
+                reason="proxy-routed external tool execution in test",
+                policy_profile="full_access",
+                route="mcp_proxy",
+                target="github.create_pull_request",
+                network_profile="mcp-proxy-only",
+                scope=(
+                    "tool:mcp.github.create_pull_request",
+                    "route:mcp_proxy",
+                    "network_profile:mcp-proxy-only",
+                    "target:github.create_pull_request",
+                ),
+            ),
         }
     )
     SQLiteProjectionStore(database_path).save_session(session)

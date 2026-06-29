@@ -187,11 +187,12 @@
 - harness trace projection and API trace serialization now normalize proxy approval metadata with the same `route`, `target`, `network_profile`, and `scope` vocabulary used by policy and execution layers
 - Phase 23 is closed with `docs/Phase23_Proxy_Approval_Projection_And_Operator_Readback_验收记录.md`
 - session projections and SQLite projection storage now persist durable `approval_context` state for proxy-aware approval requests
+- operator-facing approval queue and approval detail reads are now projection-backed and no longer depend on raw event replay
 
 ## Next Unlocks
 
-- `P24-API-01 - Approval Queue And Detail Read API` is ready
 - `P24-OBS-01 - Approval Projection Consistency Checks` is ready
+- `P24-CLOSE-01 - Phase 24 Closeout And Next Planning` is ready
 
 ## Active Documents
 

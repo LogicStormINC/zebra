@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_storage import SQLiteProjectionStore
 from fastapi.testclient import TestClient
 from zebra_agent_api import create_http_app
@@ -25,6 +25,18 @@ def test_http_app_approves_waiting_session(tmp_path: Path) -> None:
         "event_type": "approval_granted",
         "sequence": 3,
         "status": "running",
+        "approval_context": {
+            "tool_name": "mcp.github.create_pull_request",
+            "reason": "proxy-routed external tool execution in test",
+            "policy_profile": "full_access",
+            "route": "mcp_proxy",
+            "target": "github.create_pull_request",
+            "network_profile": "mcp-proxy-only",
+            "scope": [
+                "tool:mcp.github.create_pull_request",
+                "route:mcp_proxy",
+            ],
+        },
     }
 
 
@@ -43,6 +55,18 @@ def test_http_app_rejects_waiting_session(tmp_path: Path) -> None:
         "event_type": "approval_rejected",
         "sequence": 3,
         "status": "failed",
+        "approval_context": {
+            "tool_name": "mcp.github.create_pull_request",
+            "reason": "proxy-routed external tool execution in test",
+            "policy_profile": "full_access",
+            "route": "mcp_proxy",
+            "target": "github.create_pull_request",
+            "network_profile": "mcp-proxy-only",
+            "scope": [
+                "tool:mcp.github.create_pull_request",
+                "route:mcp_proxy",
+            ],
+        },
     }
 
 
@@ -94,6 +118,29 @@ def test_http_app_approval_rejects_invalid_payload(tmp_path: Path) -> None:
     }
 
 
+def test_http_app_lists_waiting_approvals(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_waiting_session(database_path)
+    client = TestClient(create_http_app(database_path))
+
+    response = client.get("/approvals")
+
+    assert response.status_code == 200
+    assert response.json()["approvals"][0]["approval_id"] == str(session.session_id)
+
+
+def test_http_app_reads_waiting_approval_detail(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_waiting_session(database_path)
+    client = TestClient(create_http_app(database_path))
+
+    response = client.get(f"/approvals/{session.session_id}")
+
+    assert response.status_code == 200
+    assert response.json()["approval_id"] == str(session.session_id)
+    assert response.json()["approval_context"]["route"] == "mcp_proxy"
+
+
 def _settings(auth_token: str | None) -> ZebraAgentSettings:
     return ZebraAgentSettings(
         profile="test",
@@ -113,6 +160,18 @@ def _seed_waiting_session(database_path: Path) -> Session:
         update={
             "status": SessionStatus.WAITING_APPROVAL,
             "current_sequence": 2,
+            "approval_context": ApprovalContext(
+                tool_name="mcp.github.create_pull_request",
+                reason="proxy-routed external tool execution in test",
+                policy_profile="full_access",
+                route="mcp_proxy",
+                target="github.create_pull_request",
+                network_profile="mcp-proxy-only",
+                scope=(
+                    "tool:mcp.github.create_pull_request",
+                    "route:mcp_proxy",
+                ),
+            ),
         }
     )
     return SQLiteProjectionStore(database_path).save_session(session)

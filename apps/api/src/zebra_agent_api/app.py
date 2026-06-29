@@ -41,7 +41,8 @@ from zebra_agent_worker import (
     WorkerExecutionError,
 )
 
-from zebra_agent_api.approval_context import latest_approval_context
+from zebra_agent_api.approval_context import serialize_approval_context
+from zebra_agent_api.approval_read import ApprovalReadApi
 from zebra_agent_api.credential_broker import build_default_credential_broker
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.serialization import serialize_trace_events
@@ -75,6 +76,12 @@ class ZebraAgentApi:
 
     def get_session(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session(session_id)
+
+    def list_approvals(self) -> ApiResponse:
+        return ApprovalReadApi(self.database_path).list_approvals()
+
+    def get_approval(self, approval_id: str) -> ApiResponse:
+        return ApprovalReadApi(self.database_path).get_approval(approval_id)
 
     def get_session_stream(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session_stream(session_id)
@@ -347,7 +354,7 @@ class ZebraAgentApi:
                 reason=str(error),
             )
         event_store = SQLiteEventStore(self.database_path)
-        approval_context = latest_approval_context(event_store.list_for_session(session_key))
+        approval_context = serialize_approval_context(session.approval_context)
         event_store.append(event)
         updated_session = projection_store.save_session(apply_event(session, event))
         body: dict[str, object] = {

@@ -12,7 +12,7 @@ from agent_storage import (
     SQLiteProjectionStore,
 )
 
-from zebra_agent_api.approval_context import latest_approval_context
+from zebra_agent_api.approval_context import serialize_approval_context
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.session_context import session_workspace_root
 from zebra_agent_api.session_delivery_audit import SessionDeliveryAuditApi
@@ -33,14 +33,13 @@ class SessionReadApi:
                     "status": "not_found",
                 },
             )
-        events = SQLiteEventStore(self.database_path).list_for_session(session_key)
         body: dict[str, object] = {
             "session_id": str(session.session_id),
             "title": session.title,
             "status": session.status.value,
             "current_sequence": session.current_sequence,
         }
-        approval_context = latest_approval_context(events)
+        approval_context = serialize_approval_context(session.approval_context)
         if approval_context is not None:
             body["approval_context"] = approval_context
         return ApiResponse(

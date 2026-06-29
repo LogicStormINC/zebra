@@ -3916,8 +3916,8 @@ Persist proxy-aware approval context into durable projection state so operator r
 
 ### P24-API-01 - Approval Queue And Detail Read API
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `API`
 - Depends on: `P24-STO-01`
 - Branch: `codex/p24-api-01-approval-queue-and-detail-read-api`
@@ -3935,9 +3935,9 @@ Expose projection-backed approval queue and approval detail reads for operators.
 
 #### Acceptance
 
-- [ ] Operators can list waiting approvals without replaying raw event streams.
-- [ ] Approval detail reads expose proxy-aware context using the existing safe field set.
-- [ ] Queue and detail responses remain free of secrets and raw credential material.
+- [x] Operators can list waiting approvals without replaying raw event streams.
+- [x] Approval detail reads expose proxy-aware context using the existing safe field set.
+- [x] Queue and detail responses remain free of secrets and raw credential material.
 
 ### P24-OBS-01 - Approval Projection Consistency Checks
 
@@ -3966,7 +3966,7 @@ Ensure projection-backed approval context stays consistent with event and trace 
 
 ### P24-CLOSE-01 - Phase 24 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P24-API-01`, `P24-OBS-01`

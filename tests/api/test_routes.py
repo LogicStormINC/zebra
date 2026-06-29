@@ -8,7 +8,7 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
-from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from zebra_agent_api.app import create_app
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
@@ -37,6 +37,30 @@ def test_route_adapter_handles_session_lookup(tmp_path: Path) -> None:
     assert response.status_code == 200
     assert response.body["session_id"] == str(session.session_id)
     assert response.body["title"] == "Route session"
+
+
+def test_route_adapter_handles_approval_list(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_waiting_approval_session(database_path)
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(RouteRequest(method="GET", path="/approvals"))
+
+    assert response.status_code == 200
+    assert response.body["approvals"][0]["approval_id"] == str(session.session_id)
+
+
+def test_route_adapter_handles_approval_detail(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_waiting_approval_session(database_path)
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(
+        RouteRequest(method="GET", path=f"/approvals/{session.session_id}")
+    )
+
+    assert response.status_code == 200
+    assert response.body["approval_id"] == str(session.session_id)
 
 
 def test_route_adapter_returns_not_found_for_unknown_route(tmp_path: Path) -> None:
@@ -261,3 +285,25 @@ def _fake_model_gateway(_settings):
             ),
         )
     )
+
+
+def _seed_waiting_approval_session(database_path: Path) -> Session:
+    session = Session.create(title="Waiting approval").model_copy(
+        update={
+            "status": SessionStatus.WAITING_APPROVAL,
+            "current_sequence": 2,
+            "approval_context": ApprovalContext(
+                tool_name="mcp.github.create_pull_request",
+                reason="proxy-routed external tool execution in test",
+                policy_profile="full_access",
+                route="mcp_proxy",
+                target="github.create_pull_request",
+                network_profile="mcp-proxy-only",
+                scope=(
+                    "tool:mcp.github.create_pull_request",
+                    "route:mcp_proxy",
+                ),
+            ),
+        }
+    )
+    return SQLiteProjectionStore(database_path).save_session(session)
