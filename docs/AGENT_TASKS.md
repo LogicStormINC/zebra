@@ -4326,7 +4326,7 @@ only on model-call or tool-run index rows for operator retrieval.
 
 ### P28-WKR-01 - Worker Artifact Capture Wiring
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `RUNTIME`
 - Depends on: `P28-STO-01`
@@ -4352,8 +4352,8 @@ artifact reads can rely on more than ephemeral inline previews.
 
 ### P28-API-01 - Artifact Detail And Retrieval Surface
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `API`
 - Depends on: `P28-STO-01`
 - Branch: `codex/p28-api-01-artifact-detail-and-retrieval`
@@ -4372,9 +4372,9 @@ durable local artifact payload model.
 
 #### Acceptance
 
-- [ ] Operators can distinguish indexed-only versus payload-backed artifacts.
-- [ ] Artifact retrieval remains local-safe and machine-readable.
-- [ ] Existing artifact list responses remain backward compatible.
+- [x] Operators can distinguish indexed-only versus payload-backed artifacts.
+- [x] Artifact retrieval remains local-safe and machine-readable.
+- [x] Existing artifact list responses remain backward compatible.
 
 ### P28-CLOSE-01 - Phase 28 Closeout And Next Planning
 

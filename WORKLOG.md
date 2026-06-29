@@ -3228,3 +3228,19 @@
   - `README.md`
 - 验证：
   - `poetry run pytest tests/worker/test_tool_run_index.py tests/worker/test_execution.py`
+
+## 2026-06-29 Phase 28 Artifact Detail And Retrieval Surface
+
+- 执行 `P28-API-01 - Artifact Detail And Retrieval Surface`
+- 行为更新：
+  - 新增 `GET /sessions/{id}/artifacts/{artifact_id}`，返回 artifact detail 和 retrieval state
+  - 新增 `GET /sessions/{id}/artifacts/{artifact_id}/content`，对本地 payload-backed artifact 返回 base64 内容
+  - retrieval state 现在显式区分 `indexed_only`、`payload_available`、`payload_missing`、`external_reference`
+  - 既有 `GET /sessions/{id}/artifacts` 列表响应保持不变
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/api/test_session_artifacts.py`
+  - `make check`

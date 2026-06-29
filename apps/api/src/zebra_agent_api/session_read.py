@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import base64
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId
 from agent_runtime import WorkspaceDiffError, WorkspaceDiffService
 from agent_storage import (
+    SessionArtifact,
     SQLiteArtifactStore,
     SQLiteEventStore,
     SQLiteProjectionStore,
@@ -148,5 +151,111 @@ class SessionReadApi:
             },
         )
 
+    def get_session_artifact_detail(self, session_id: str, artifact_id: str) -> ApiResponse:
+        artifact = self._resolve_session_artifact(session_id, artifact_id)
+        if isinstance(artifact, ApiResponse):
+            return artifact
+        return ApiResponse(
+            status_code=200,
+            body={
+                "session_id": session_id,
+                "artifact": {
+                    "artifact_id": artifact.artifact_id,
+                    "sequence": artifact.sequence,
+                    "source": artifact.source,
+                    "kind": artifact.kind,
+                    "label": artifact.label,
+                    "uri": artifact.uri,
+                    "preview": artifact.preview,
+                    "metadata": artifact.metadata,
+                    "retrieval": _artifact_retrieval(artifact.uri),
+                },
+            },
+        )
+
+    def get_session_artifact_content(self, session_id: str, artifact_id: str) -> ApiResponse:
+        artifact = self._resolve_session_artifact(session_id, artifact_id)
+        if isinstance(artifact, ApiResponse):
+            return artifact
+        retrieval = _artifact_retrieval(artifact.uri)
+        status = retrieval["status"]
+        if status == "indexed_only":
+            return conflict(
+                session_id=session_id,
+                status="artifact_unavailable",
+                reason="artifact_is_indexed_only",
+            )
+        if status == "external_reference":
+            return conflict(
+                session_id=session_id,
+                status="artifact_unavailable",
+                reason="artifact_uses_external_reference",
+            )
+        if status == "payload_missing":
+            return conflict(
+                session_id=session_id,
+                status="artifact_unavailable",
+                reason="artifact_payload_missing",
+            )
+        assert artifact.uri is not None
+        payload = Path(urlparse(artifact.uri).path).read_bytes()
+        return ApiResponse(
+            status_code=200,
+            body={
+                "session_id": session_id,
+                "artifact_id": artifact.artifact_id,
+                "encoding": "base64",
+                "content_base64": base64.b64encode(payload).decode("ascii"),
+                "size_bytes": len(payload),
+            },
+        )
+
     def get_session_delivery_audit(self, session_id: str) -> ApiResponse:
         return SessionDeliveryAuditApi(self.database_path).get_delivery_audit(session_id)
+
+    def _resolve_session_artifact(
+        self,
+        session_id: str,
+        artifact_id: str,
+    ) -> SessionArtifact | ApiResponse:
+        session_key = SessionId(UUID(session_id))
+        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        if session is None:
+            return ApiResponse(
+                status_code=404,
+                body={"session_id": session_id, "status": "not_found"},
+            )
+        artifacts = SQLiteArtifactStore(self.database_path).list_for_session(session_key)
+        for artifact in artifacts:
+            if artifact.artifact_id == artifact_id:
+                return artifact
+        return ApiResponse(
+            status_code=404,
+            body={
+                "session_id": session_id,
+                "artifact_id": artifact_id,
+                "status": "not_found",
+            },
+        )
+
+
+def _artifact_retrieval(uri: str | None) -> dict[str, object]:
+    if uri is None:
+        return {
+            "status": "indexed_only",
+            "retrievable": False,
+            "uri": None,
+        }
+    parsed = urlparse(uri)
+    if parsed.scheme != "file":
+        return {
+            "status": "external_reference",
+            "retrievable": False,
+            "uri": uri,
+        }
+    payload_path = Path(parsed.path)
+    return {
+        "status": "payload_available" if payload_path.is_file() else "payload_missing",
+        "retrievable": payload_path.is_file(),
+        "uri": uri,
+    }

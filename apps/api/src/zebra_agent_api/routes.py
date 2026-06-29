@@ -69,6 +69,10 @@ class RouteAdapter:
                 return self.app.get_session_diff(parts[0])
             if len(parts) == 2 and parts[1] == "artifacts":
                 return self.app.get_session_artifacts(parts[0])
+            if len(parts) == 3 and parts[1] == "artifacts":
+                return self.app.get_session_artifact_detail(parts[0], parts[2])
+            if len(parts) == 4 and parts[1] == "artifacts" and parts[3] == "content":
+                return self.app.get_session_artifact_content(parts[0], parts[2])
             if len(parts) == 2 and parts[1] == "delivery-audit":
                 return self.app.get_session_delivery_audit(parts[0])
             return _not_found(request)

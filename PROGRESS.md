@@ -5,9 +5,9 @@
 - Active phase: `Phase 28 - Durable Artifact Storage And Retrieval`
 - Repository status: `phase 28 ready`
 - Current focus:
-  - merge the worker artifact capture branch
-  - expose operator-safe artifact detail and retrieval read surfaces
-  - close Phase 28 after artifact readback lands
+  - merge the artifact retrieval branch
+  - close Phase 28 with acceptance evidence
+  - define the next post-artifact implementation slice
 
 ## Completed
 
@@ -205,13 +205,14 @@
 - Phase 27 is closed with `docs/Phase27_Workspace_Lifecycle_Readback_And_Snapshot_Housekeeping_验收记录.md`
 - durable local artifact payload storage now exists with SQLite-backed metadata, file-backed payload retention, and explicit missing-payload inspection
 - worker execution now persists supported text tool outputs into the durable artifact payload store and rewrites local artifact refs to those retained payloads when no explicit artifact URI exists
+- session artifact read APIs now expose artifact detail and base64 content retrieval with explicit `indexed_only`, `payload_available`, `payload_missing`, and `external_reference` semantics
 
 ## Next Unlocks
 
 - `P28-STO-01 - Durable Artifact Payload Store` is in review on the current development line
-- `P28-WKR-01 - Worker Artifact Capture Wiring` is in review on `codex/p28-wkr-01-worker-artifact-capture-wiring`
-- `P28-API-01 - Artifact Detail And Retrieval Surface` is ready on `codex/p28-api-01-artifact-detail-and-retrieval`
-- `P28-CLOSE-01 - Phase 28 Closeout And Next Planning` is locked on the phase implementation tasks
+- `P28-WKR-01 - Worker Artifact Capture Wiring` is complete on the current development line
+- `P28-API-01 - Artifact Detail And Retrieval Surface` is in review on `codex/p28-api-01-artifact-detail-and-retrieval`
+- `P28-CLOSE-01 - Phase 28 Closeout And Next Planning` is the next unlock after the API review branch lands
 
 ## Active Documents
 

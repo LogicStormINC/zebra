@@ -1,11 +1,14 @@
+import base64
 from datetime import UTC, datetime
 from pathlib import Path
 
+from agent_core.domain.artifact_payloads import ArtifactPayloadWrite
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.sessions import Session
 from agent_core.domain.tool_runs import ToolRunRecord
 from agent_storage import (
+    SQLiteArtifactPayloadStore,
     SQLiteModelCallStore,
     SQLiteProjectionStore,
     SQLiteToolRunStore,
@@ -106,6 +109,85 @@ def test_route_adapter_handles_session_artifacts(tmp_path: Path) -> None:
     assert len(response.body["artifacts"]) == 2
 
 
+def test_api_get_session_artifact_detail_distinguishes_indexed_and_payload_backed(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+    payload = _seed_payload_backed_tool_artifact(database_path, session.session_id)
+
+    response = create_app(database_path).get_session_artifact_detail(
+        str(session.session_id),
+        "tool-run:5",
+    )
+
+    assert response.status_code == 200
+    assert response.body["artifact"]["uri"] == payload.uri
+    assert response.body["artifact"]["retrieval"] == {
+        "status": "payload_available",
+        "retrievable": True,
+        "uri": payload.uri,
+    }
+
+
+def test_api_get_session_artifact_detail_reports_indexed_only(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+    _seed_artifacts(database_path, session.session_id)
+
+    response = create_app(database_path).get_session_artifact_detail(
+        str(session.session_id),
+        "model-call:4",
+    )
+
+    assert response.status_code == 200
+    assert response.body["artifact"]["retrieval"] == {
+        "status": "indexed_only",
+        "retrievable": False,
+        "uri": None,
+    }
+
+
+def test_api_get_session_artifact_content_returns_payload_bytes(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+    payload = _seed_payload_backed_tool_artifact(database_path, session.session_id)
+
+    response = create_app(database_path).get_session_artifact_content(
+        str(session.session_id),
+        "tool-run:5",
+    )
+
+    assert response.status_code == 200
+    assert response.body == {
+        "session_id": str(session.session_id),
+        "artifact_id": "tool-run:5",
+        "encoding": "base64",
+        "content_base64": base64.b64encode(b"pytest passed").decode("ascii"),
+        "size_bytes": 13,
+    }
+    assert payload.uri is not None
+
+
+def test_api_get_session_artifact_content_reports_missing_payload(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+    payload = _seed_payload_backed_tool_artifact(database_path, session.session_id)
+    Path(payload.uri.removeprefix("file://")).unlink()
+
+    response = create_app(database_path).get_session_artifact_content(
+        str(session.session_id),
+        "tool-run:5",
+    )
+
+    assert response.status_code == 409
+    assert response.body == {
+        "session_id": str(session.session_id),
+        "status": "artifact_unavailable",
+        "reason": "artifact_payload_missing",
+    }
+
+
 def test_http_app_session_artifacts_requires_bearer_token_when_configured(
     tmp_path: Path,
 ) -> None:
@@ -120,6 +202,23 @@ def test_http_app_session_artifacts_requires_bearer_token_when_configured(
         "status": "unauthorized",
         "reason": "missing_or_invalid_bearer_token",
     }
+
+
+def test_route_adapter_handles_session_artifact_content(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+    _seed_payload_backed_tool_artifact(database_path, session.session_id)
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(
+        RouteRequest(
+            method="GET",
+            path=f"/sessions/{session.session_id}/artifacts/tool-run:5/content",
+        )
+    )
+
+    assert response.status_code == 200
+    assert response.body["artifact_id"] == "tool-run:5"
 
 
 def _seed_session(database_path: Path) -> Session:
@@ -158,6 +257,32 @@ def _seed_artifacts(database_path: Path, session_id: SessionId) -> None:
             created_at=_created_at(),
         )
     )
+
+
+def _seed_payload_backed_tool_artifact(database_path: Path, session_id: SessionId):
+    payload = SQLiteArtifactPayloadStore(database_path).store_payload(
+        ArtifactPayloadWrite(
+            session_id=session_id,
+            kind="tool_output",
+            mime_type="text/plain",
+            payload=b"pytest passed",
+            file_name="pytest.log",
+            created_at=_created_at(),
+        )
+    )
+    SQLiteToolRunStore(database_path).upsert(
+        ToolRunRecord(
+            session_id=session_id,
+            sequence=5,
+            tool_name="tests.run",
+            status="executed",
+            idempotency_key="tool-5",
+            output="pytest passed",
+            artifact_uri=payload.uri,
+            created_at=_created_at(),
+        )
+    )
+    return payload
 
 
 def _created_at() -> datetime:
