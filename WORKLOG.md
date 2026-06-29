@@ -3102,3 +3102,13 @@
 - 验证：
   - `poetry run pytest tests/agent_core/test_session_projection.py tests/agent_core/test_workspace_projection.py tests/agent_storage/test_sqlite_workspace_store.py tests/worker/test_execution.py tests/api/test_routes.py tests/api/test_http_app.py tests/cli/test_cli_commands.py`
   - `make check`
+
+## 2026-06-29 Phase 26 Snapshot Operator Runbook
+
+- 执行 `P26-DOC-01 - Snapshot Operator Runbook`
+- 文档更新：
+  - `docs/operator_runbook.md` 现在改为 Phase 26 operator 语义，覆盖 CLI/API suspend、snapshot-backed resume、worker restore 前置、failure interpretation、以及已实现边界
+  - `docs/local_snapshot_runtime.md` 去掉了“尚未接线”的旧描述，并补充当前 control-plane integration 说明
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`

@@ -6,8 +6,16 @@
 workspace-backed handles.
 
 This slice is intentionally limited to local filesystem copies. It does not yet
-wire session control-plane suspend and resume flows, and it does not attempt to
-fake container or VM checkpoint semantics.
+attempt to fake container or VM checkpoint semantics.
+
+The current repository line now wires these runtime semantics into the local
+session control plane:
+
+- suspend creates a durable snapshot for the current workspace-backed session
+- workspace projections persist `runtime_name`, `snapshot_id`, and
+  `snapshot_path`
+- worker resume restores onto a fresh runtime-managed working directory before
+  harness execution continues
 
 ## Supported Subset
 
@@ -79,12 +87,20 @@ This is a filesystem snapshot, not a process checkpoint. Open subprocess state,
 in-memory interpreter state, and live network connections are outside the
 supported subset.
 
-## Next Integration Step
+## Control-Plane Integration
 
-Phase 26 application wiring should use these runtime semantics to:
+The current local control plane uses these runtime semantics in three places:
 
-- suspend a session by pairing runtime lifecycle calls with durable workspace
-  projection updates
-- restore a session onto a fresh working directory and persist the new
-  `workspace_root`
-- expose the local-only behavior clearly in CLI and API operator surfaces
+- `uv run zebra-agent suspend <session_id>` creates a local snapshot and marks
+  the durable session state as suspended
+- `POST /sessions/{id}/suspend` exposes the same local snapshot-backed suspend
+  path over the HTTP API
+- worker-backed resume execution restores the suspended workspace onto a fresh
+  working directory and updates the durable `workspace_root` before the harness
+  runs
+
+What still remains outside this document:
+
+- operator guidance and rollback procedure live in `docs/operator_runbook.md`
+- Phase 26 closeout evidence lives in the phase acceptance record once the
+  documentation slice is closed

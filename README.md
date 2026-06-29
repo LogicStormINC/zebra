@@ -73,7 +73,7 @@ The next milestone is `Phase 26 - Local Snapshot Operator Controls`. The current
 - `docs/Phase25_Durable_Workspace_And_Snapshot_Foundations_验收记录.md` records the completed durable workspace and snapshot foundations phase
 - `docs/local_snapshot_runtime.md` documents the supported local snapshot subset, storage layout, retention model, and explicit unsupported paths
 - local suspend and resume now emit durable control-plane events, persist snapshot metadata in workspace projections, and restore suspended workspaces onto fresh runtime-managed directories before worker execution
-- Phase 26 operator runbook and closeout are the remaining implementation lanes
+- Phase 26 operator runbook is now the active documentation lane before phase closeout
 
 Read in this order:
 

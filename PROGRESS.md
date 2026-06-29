@@ -6,7 +6,7 @@
 - Repository status: `phase 26 in progress`
 - Current focus:
   - expose operator-facing local snapshot behavior through CLI, API, and docs
-  - finish the operator runbook for the new local suspend and resume flow
+  - land the operator runbook for the new local suspend and resume flow
   - close Phase 26 once runtime and control-plane slices are merged
 
 ## Completed
@@ -201,8 +201,8 @@
 ## Next Unlocks
 
 - `P26-RT-01 - Local Snapshot Backend` is complete on `main`
-- `P26-APP-01 - Suspend And Resume Control Wiring` is in review on `codex/p26-app-01-suspend-resume-control-wiring`
-- `P26-DOC-01 - Snapshot Operator Runbook` is the next documentation slice after this branch merges
+- `P26-APP-01 - Suspend And Resume Control Wiring` is complete on `main`
+- `P26-DOC-01 - Snapshot Operator Runbook` is in progress on `codex/p26-doc-01-snapshot-operator-runbook`
 - `P26-CLOSE-01 - Phase 26 Closeout And Next Planning` is locked on the phase implementation tasks
 
 ## Active Documents

@@ -4122,7 +4122,7 @@ Turn the current fail-closed local snapshot contract into a real local snapshot 
 
 ### P26-APP-01 - Suspend And Resume Control Wiring
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P26-RT-01`
@@ -4148,8 +4148,8 @@ Wire session suspend and resume control paths to runtime lifecycle operations an
 
 ### P26-DOC-01 - Snapshot Operator Runbook
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P26-APP-01`
 - Branch: `codex/p26-doc-01-snapshot-operator-runbook`
@@ -4167,9 +4167,9 @@ Document the supported local snapshot, suspend, and resume operator model once t
 
 #### Acceptance
 
-- [ ] Operator docs describe the supported local snapshot and suspend workflow concretely.
-- [ ] Failure and unsupported-path behavior are documented.
-- [ ] README points to the current operator guidance without contradiction.
+- [x] Operator docs describe the supported local snapshot and suspend workflow concretely.
+- [x] Failure and unsupported-path behavior are documented.
+- [x] README points to the current operator guidance without contradiction.
 
 ### P26-CLOSE-01 - Phase 26 Closeout And Next Planning
 

@@ -2,14 +2,16 @@
 
 ## Purpose
 
-This runbook describes the current local operator flow for Zebra Agent Phase 8.
+This runbook describes the current local operator flow for Zebra Agent
+Phase 26.
 
 Scope:
 
 - local workspace bootstrap
-- CLI session creation, durable execution, inspection, and approval
+- CLI session creation, execution, suspend, resume, inspection, and approval
 - local HTTP API serving
-- SSE session stream replay
+- session diff, artifacts, delivery audit, and SSE replay
+- local snapshot-backed suspend and resume behavior
 
 This runbook only documents behavior that exists in the repository today.
 
@@ -27,14 +29,12 @@ make sync
 
 ## Local Database
 
-Use an explicit local database path so CLI and API read the same state:
+Use an explicit local database path so CLI, API, and worker read the same state:
 
 ```bash
 export ZEBRA_DATABASE_URL=.zebra-agent/operator-runbook.sqlite
 mkdir -p .zebra-agent
 ```
-
-The CLI can still override this path with `--database`, but the runbook uses one shared default.
 
 Optional local API auth:
 
@@ -43,6 +43,28 @@ export ZEBRA_API_AUTH_TOKEN=local-demo-token
 ```
 
 If this variable is unset, the current local API remains open.
+
+## Control Model
+
+Current local Phase 26 control semantics:
+
+- `run` creates a ready session or executes it immediately
+- `resume --execute` runs a ready session through the worker-backed execution path
+- `suspend` snapshots a workspace-backed session and moves the durable state to
+  `suspended`
+- resume execution from a suspended session restores onto a fresh
+  runtime-managed workspace before harness execution continues
+
+Important boundaries:
+
+- this is a filesystem snapshot, not a process checkpoint
+- open subprocess state, in-memory interpreter state, and live sockets are not restored
+- suspend is only supported for sessions with a valid local `workspace_root`
+- restore creates a new working directory, so operators must not assume the old
+  workspace path remains the active execution root
+
+For the runtime storage layout and retention model, also read
+`docs/local_snapshot_runtime.md`.
 
 ## CLI Workflow
 
@@ -91,78 +113,45 @@ Inspect the same session:
 uv run zebra-agent inspect <session_id>
 ```
 
-Resume readback:
+Read the current session projection without executing:
 
 ```bash
 uv run zebra-agent resume <session_id>
 ```
 
-Execute the queued ready session through the worker-backed resume path:
+Suspend a local session:
+
+```bash
+uv run zebra-agent suspend <session_id>
+```
+
+Expected result:
+
+- JSON output with `command=suspend`
+- `suspended=true`
+- `status=suspended`
+- `workspace_status=suspended`
+- `snapshot_id`
+
+Resume execution for a ready or suspended session:
 
 ```bash
 uv run zebra-agent resume <session_id> --execute --worker-id local-worker
 ```
 
-Expected result:
+Expected result for a ready session:
 
 - JSON output with `executed=true`
 - terminal `status` such as `completed` or `failed`
 - `assistant_message`
 - compact `trace` data for any executed builtin tool calls
 
-Execute the same queued ready session through the API layer:
+Expected result for a suspended session:
 
-```bash
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${ZEBRA_AGENT_API_AUTH_TOKEN}" \
-  -d '{"worker_id":"api-worker","lease_ttl_seconds":45}' \
-  http://127.0.0.1:8000/sessions/<session_id>/resume
-```
-
-Expected result:
-
-- JSON output with `executed=true`
-- `worker_id` echoing the requested worker identity
-- terminal `status` and `current_sequence`
-- `assistant_message` and compact `trace`
-
-Run the local worker loop against durable ready sessions:
-
-```bash
-uv run zebra-agent-worker \
-  --database .zebra/sessions.sqlite \
-  --worker-id local-worker \
-  --batch-size 1 \
-  --max-cycles 1 \
-  --stop-when-idle
-```
-
-Expected result:
-
-- JSON output with `command=loop`
-- `cycles_completed` and `idle_cycles`
-- `stop_reason` such as `idle`, `max_cycles`, or `blocked`
-- `executed_session_ids` for any claimed ready sessions
-- `skipped_session_ids` when a ready session is already leased elsewhere
-
-For a long-running local worker, omit `--max-cycles` and keep
-`--stop-when-idle` unset:
-
-```bash
-uv run zebra-agent-worker \
-  --database .zebra/sessions.sqlite \
-  --worker-id local-worker \
-  --batch-size 1 \
-  --idle-sleep-seconds 2
-```
-
-Expected behavior:
-
-- the process keeps polling until interrupted by the operator or process manager
-- idle cycles sleep between polls
-- ready sessions are claimed and executed as they appear
-- final JSON is emitted when the process exits through a bounded run path
+- the worker restores onto a fresh runtime-managed workspace before execution
+- durable workspace state updates to the restored `workspace_root`
+- previous snapshot metadata is cleared from the workspace projection once restore succeeds
+- terminal `status` reflects the post-resume harness result
 
 If a session reaches `waiting_approval`, record a decision with:
 
@@ -170,27 +159,9 @@ If a session reaches `waiting_approval`, record a decision with:
 uv run zebra-agent approve <session_id> --decision approve --reason "operator approved"
 ```
 
-The local HTTP API exposes the same approval decision path. In the current local MVP,
-the approval id is the waiting session id:
-
-```bash
-curl -X POST http://127.0.0.1:8000/approvals/<session_id>/approve \
-  -H "Content-Type: application/json" \
-  -d '{"operator":"api-operator","reason":"operator approved"}'
-```
-
-To reject instead:
-
-```bash
-curl -X POST http://127.0.0.1:8000/approvals/<session_id>/reject \
-  -H "Content-Type: application/json" \
-  -d '{"reason":"unsafe command scope"}'
-```
-
 Expected result:
 
-- JSON output with `approval_id` and `session_id`
-- `decision=approve` or `decision=reject`
+- JSON output with `decision=approve` or `decision=reject`
 - durable approval `event_type`
 - new event `sequence`
 - updated session `status`
@@ -209,7 +180,7 @@ Expected result:
 
 If the configured API key environment variable is missing, the command fails before sending any HTTP request.
 
-## API Serve
+## HTTP API Workflow
 
 Start the local API server:
 
@@ -223,6 +194,64 @@ Health check:
 
 ```bash
 curl http://127.0.0.1:8000/health
+```
+
+Create one session through the API without immediate execution:
+
+```bash
+curl -X POST http://127.0.0.1:8000/sessions \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"Inspect the current workspace","title":"API create demo"}'
+```
+
+Create and execute one durable local harness attempt through the API:
+
+```bash
+curl -X POST http://127.0.0.1:8000/sessions \
+  -H "Content-Type: application/json" \
+  -d "{\"prompt\":\"Inspect the current workspace\",\"title\":\"API execute demo\",\"workspace\":\"$(pwd)\",\"execute\":true}"
+```
+
+Suspend a session through the API:
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${ZEBRA_API_AUTH_TOKEN}" \
+  -d '{}' \
+  http://127.0.0.1:8000/sessions/<session_id>/suspend
+```
+
+Expected result:
+
+- JSON output with `suspended=true`
+- `status=suspended`
+- `workspace_status=suspended`
+- `snapshot_id`
+
+Resume execution through the API layer:
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${ZEBRA_API_AUTH_TOKEN}" \
+  -d '{"worker_id":"api-worker","lease_ttl_seconds":45}' \
+  http://127.0.0.1:8000/sessions/<session_id>/resume
+```
+
+Expected result:
+
+- JSON output with `executed=true`
+- `worker_id` echoing the requested worker identity
+- terminal `status` and `current_sequence`
+- `assistant_message` and compact `trace`
+- for suspended sessions, restore occurs before harness execution continues
+
+When `ZEBRA_API_AUTH_TOKEN` is set, pass a bearer token for non-health routes:
+
+```bash
+curl -H "Authorization: Bearer $ZEBRA_API_AUTH_TOKEN" \
+  http://127.0.0.1:8000/sessions/<session_id>
 ```
 
 Read one session:
@@ -250,13 +279,77 @@ List model and tool artifacts indexed for a session:
 curl http://127.0.0.1:8000/sessions/<session_id>/artifacts
 ```
 
+Read delivery audit records for one session:
+
+```bash
+curl http://127.0.0.1:8000/sessions/<session_id>/delivery-audit
+```
+
+Append one more user message to an existing session:
+
+```bash
+curl -X POST http://127.0.0.1:8000/sessions/<session_id>/messages \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Please continue from the latest checkpoint."}'
+```
+
+The local HTTP API exposes the same approval decision path. In the current
+local MVP, the approval id is the waiting session id:
+
+```bash
+curl -X POST http://127.0.0.1:8000/approvals/<session_id>/approve \
+  -H "Content-Type: application/json" \
+  -d '{"operator":"api-operator","reason":"operator approved"}'
+```
+
+To reject instead:
+
+```bash
+curl -X POST http://127.0.0.1:8000/approvals/<session_id>/reject \
+  -H "Content-Type: application/json" \
+  -d '{"reason":"unsafe command scope"}'
+```
+
+## Worker Loop
+
+Run the local worker loop against durable ready sessions:
+
+```bash
+uv run zebra-agent-worker \
+  --database .zebra-agent/operator-runbook.sqlite \
+  --worker-id local-worker \
+  --batch-size 1 \
+  --max-cycles 1 \
+  --stop-when-idle
+```
+
 Expected result:
 
-- JSON output with an `artifacts` list
-- stable `artifact_id`, `sequence`, `source`, `kind`, `label`, `uri`, and `preview`
-- model-call artifacts for assistant messages and usage metadata
-- tool-run artifacts for tool output and optional `artifact_uri`
-- an explicit empty list when no artifacts have been indexed
+- JSON output with `command=loop`
+- `cycles_completed` and `idle_cycles`
+- `stop_reason` such as `idle`, `max_cycles`, or `blocked`
+- `executed_session_ids` for any claimed ready sessions
+- `skipped_session_ids` when a ready session is already leased elsewhere
+
+For a long-running local worker, omit `--max-cycles` and keep
+`--stop-when-idle` unset:
+
+```bash
+uv run zebra-agent-worker \
+  --database .zebra-agent/operator-runbook.sqlite \
+  --worker-id local-worker \
+  --batch-size 1 \
+  --idle-sleep-seconds 2
+```
+
+Expected behavior:
+
+- the process keeps polling until interrupted by the operator or process manager
+- idle cycles sleep between polls
+- ready sessions are claimed and executed as they appear
+- final JSON is emitted when the process exits through a bounded run path
+
+## Git And Delivery Surfaces
 
 Create a local Git commit for a reviewed session workspace:
 
@@ -266,18 +359,6 @@ curl -X POST http://127.0.0.1:8000/sessions/<session_id>/commit \
   -H "Idempotency-Key: commit-<unique-retry-key>" \
   -d '{"message":"Implement reviewed changes"}'
 ```
-
-Expected result:
-
-- JSON output with `committed=true`
-- new `commit_sha`
-- committed `message`
-- session `workspace`
-- deterministic `policy_blocked` conflict unless the session was created with `policy_profile=full_access`
-- deterministic `commit_unavailable` conflict when the workspace is missing, clean, or not a Git repository
-- repeated requests with the same `Idempotency-Key` and request body return the first response
-- reusing the same `Idempotency-Key` with a different body returns `idempotency_conflict`
-- each non-replayed commit attempt is persisted in the delivery audit store with policy and result metadata
 
 Plan a pull request for a committed session workspace:
 
@@ -290,93 +371,10 @@ curl -X POST http://127.0.0.1:8000/sessions/<session_id>/pull-request \
 
 Expected result in the current local-only runtime:
 
-- JSON output with a `pull_request` object
-- `provider=local-only`
-- `status=dry_run`
-- current `commit_sha`
-- base and head branch names
-- no network call and no remote PR URL
-- deterministic `pull_request_unavailable` conflict when `dry_run=false`
-- deterministic `policy_blocked` conflict unless the session was created with `policy_profile=full_access`
-- repeated requests with the same `Idempotency-Key` and request body return the first response
-- reusing the same `Idempotency-Key` with a different body returns `idempotency_conflict`
-- each non-replayed pull-request attempt is persisted in the delivery audit store with policy and result metadata
-- pull-request audit metadata normalizes `provider`, `status`, `commit_sha`, `dry_run`, `url`, and failure `reason` when available
-
-Read delivery audit records for one session:
-
-```bash
-curl http://127.0.0.1:8000/sessions/<session_id>/delivery-audit
-```
-
-Expected result:
-
-- JSON output with `delivery_audit`
-- explicit empty list when no delivery attempts were recorded
-- action, status, status code, policy profile, idempotency key, result metadata, and timestamp for each record
-- pull-request result metadata distinguishes `dry_run`, `created`, `policy_blocked`, and `pull_request_unavailable` outcomes
-- token values must not appear in delivery audit result metadata
-- read-only behavior with no delivery side effect
-
-## Proxy Gateway Operations
-
-Proxy-backed SCM and MCP execution is now documented in a dedicated runbook:
-
-- [Proxy Gateway Operator Runbook](./proxy_gateway_operator_runbook.md)
-
-Use that runbook for:
-
-- proxy-backed GitHub pull-request configuration and rollback
-- MCP proxy gateway execution semantics
-- route / target / transport metadata interpretation
-- proxy incident response and safe-default restoration
-
-Append one more user message to an existing session:
-
-```bash
-curl -X POST http://127.0.0.1:8000/sessions/<session_id>/messages \
-  -H "Content-Type: application/json" \
-  -d '{"content":"Please continue from the latest checkpoint."}'
-```
-
-Expected result:
-
-- JSON output with `appended=true`
-- appended `content`
-- new `sequence` and `current_sequence`
-- unchanged non-terminal session `status`
-
-Create one session through the API without immediate execution:
-
-```bash
-curl -X POST http://127.0.0.1:8000/sessions \
-  -H "Content-Type: application/json" \
-  -d '{"prompt":"Inspect the current workspace","title":"API create demo"}'
-```
-
-Create and execute one durable local harness attempt through the API:
-
-```bash
-curl -X POST http://127.0.0.1:8000/sessions \
-  -H "Content-Type: application/json" \
-  -d "{\"prompt\":\"Inspect the current workspace\",\"title\":\"API execute demo\",\"workspace\":\"$(pwd)\",\"execute\":true}"
-```
-
-When `ZEBRA_API_AUTH_TOKEN` is set, pass a bearer token for non-health routes:
-
-```bash
-curl -H "Authorization: Bearer $ZEBRA_API_AUTH_TOKEN" \
-  http://127.0.0.1:8000/sessions/<session_id>
-```
-
-Authenticated create or execute:
-
-```bash
-curl -X POST http://127.0.0.1:8000/sessions \
-  -H "Authorization: Bearer $ZEBRA_API_AUTH_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"prompt\":\"Inspect the current workspace\",\"workspace\":\"$(pwd)\",\"execute\":true}"
-```
+- pull-request planning remains local-first by default
+- guarded remote SCM execution still requires explicit provider, dry-run, token,
+  credential, network-profile, and policy gates
+- delivery audit records persist non-replayed commit and pull-request attempts
 
 ## Session Stream Replay
 
@@ -398,12 +396,44 @@ Current behavior:
 - returns `text/event-stream`
 - replays persisted events in ascending `sequence`
 - closes after the current stored events are sent
-- create-only sessions now replay bootstrap events before any later worker or execute path continues
+- create-only sessions replay bootstrap events before any later worker or execute path continues
 
-Current limitation:
+## Proxy Gateway Operations
 
-- this is replay, not a live tail
-- reconnect cursor and incremental delivery are not implemented yet
+Proxy-backed SCM and MCP execution is documented in:
+
+- [Proxy Gateway Operator Runbook](./proxy_gateway_operator_runbook.md)
+
+Use that runbook for:
+
+- proxy-backed GitHub pull-request configuration and rollback
+- MCP proxy gateway execution semantics
+- route / target / transport metadata interpretation
+- proxy incident response and safe-default restoration
+
+## Failure Interpretation
+
+Interpret common local control-plane failures this way:
+
+- `not_suspendable` means the session state or workspace state does not support a local snapshot-backed suspend
+- `cannot_resume_terminal_session` means the session already reached a terminal state and cannot execute again
+- `session_already_leased` means another worker already holds the session lease
+- `diff_unavailable`, `commit_unavailable`, or `pull_request_unavailable` still indicate workspace or policy issues, not snapshot corruption
+
+If suspend succeeds but a later resume fails:
+
+1. inspect the session and workspace projection state
+2. inspect the session stream for `session_suspended` and `session_resumed`
+3. verify the snapshot payload still exists under the runtime-managed snapshot root described in `docs/local_snapshot_runtime.md`
+4. if needed, re-run resume after clearing the lease conflict or operator mistake
+
+## Known Boundaries
+
+- this is still a local filesystem snapshot model, not full sandbox checkpointing
+- suspend does not preserve running subprocess memory or network state
+- restore moves execution onto a fresh runtime-managed workspace path
+- snapshot retention is deterministic but local; operators should not treat it as archival backup
+- health remains public even when the local bearer token is enabled
 
 ## Validation Commands
 
@@ -413,11 +443,3 @@ Use the default repository validation before or after operator changes:
 make test
 make check
 ```
-
-## Known Boundaries
-
-- The API currently exposes health, session read, and session stream replay only.
-- The API now also exposes `POST /sessions` for local session creation and optional immediate execution.
-- The stream endpoint is read-only and does not subscribe to future events.
-- Local API auth is optional and uses one static bearer token from settings.
-- Health remains public even when the local bearer token is enabled.
