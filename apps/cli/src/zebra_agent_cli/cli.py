@@ -24,6 +24,8 @@ from agent_storage import SQLiteEventStore, SQLiteLeaseStore, SQLiteProjectionSt
 from zebra_agent_config import ZebraAgentSettings, load_settings
 from zebra_agent_worker import (
     SessionClaimService,
+    SessionControlError,
+    SessionControlService,
     SessionExecutionService,
     SessionRecoveryService,
     SessionResumeService,
@@ -35,7 +37,7 @@ from zebra_agent_cli.execution import (
     serialize_trace_events,
 )
 
-CommandName = Literal["run", "resume", "inspect", "approve", "model"]
+CommandName = Literal["run", "resume", "suspend", "inspect", "approve", "model"]
 
 
 @dataclass(frozen=True)
@@ -65,6 +67,8 @@ def execute(
         return _run_result(namespace, active_settings)
     if command == "resume":
         return _resume_result(namespace, active_settings)
+    if command == "suspend":
+        return _suspend_result(namespace, active_settings)
     if command == "inspect":
         return _session_result(
             "inspect",
@@ -106,6 +110,10 @@ def _parser() -> argparse.ArgumentParser:
     resume.add_argument("--execute", action="store_true")
     resume.add_argument("--worker-id", default="local-worker")
     resume.add_argument("--lease-ttl-seconds", type=int, default=30)
+
+    suspend = subcommands.add_parser("suspend", help="Suspend a local session.")
+    suspend.add_argument("session_id")
+    suspend.add_argument("--database")
 
     inspect = subcommands.add_parser("inspect", help="Inspect a session.")
     inspect.add_argument("session_id")
@@ -243,6 +251,38 @@ def _resume_result(
             "current_sequence": result.session.current_sequence,
             "assistant_message": result.attempt_result.metadata.get("assistant_message"),
             "trace": serialize_trace_events(result.events),
+        },
+    )
+
+
+def _suspend_result(
+    namespace: argparse.Namespace,
+    settings: ZebraAgentSettings,
+) -> CliCommandResult:
+    database_path = _database_path(namespace.database, settings)
+    try:
+        result = SessionControlService(database_path).suspend_session(
+            SessionId(UUID(namespace.session_id))
+        )
+    except SessionControlError as error:
+        return CliCommandResult(
+            command="suspend",
+            payload={
+                "session_id": namespace.session_id,
+                "database": str(database_path),
+                "status": "not_suspendable",
+                "reason": str(error),
+            },
+        )
+    return CliCommandResult(
+        command="suspend",
+        payload={
+            "session_id": namespace.session_id,
+            "database": str(database_path),
+            "suspended": True,
+            "status": "suspended",
+            "workspace_status": result.workspace.status.value,
+            "snapshot_id": result.workspace.snapshot_id,
         },
     )
 

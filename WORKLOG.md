@@ -3085,3 +3085,20 @@
   - `poetry run pytest tests/agent_runtime/test_local_runtime.py`
   - `uv run ruff check --fix packages/agent-core/src/agent_core/ports/runtime.py packages/agent-runtime/src/agent_runtime/adapters/local.py packages/agent-runtime/src/agent_runtime/adapters/local_snapshots.py tests/agent_runtime/test_local_runtime.py`
   - `uv run mypy packages/agent-core/src/agent_core/ports/runtime.py packages/agent-runtime/src/agent_runtime/adapters/local.py packages/agent-runtime/src/agent_runtime/adapters/local_snapshots.py tests/agent_runtime/test_local_runtime.py`
+
+## 2026-06-29 Phase 26 Suspend And Resume Control Wiring
+
+- 执行 `P26-APP-01 - Suspend And Resume Control Wiring`
+- 行为更新：
+  - 新增 durable `session_suspended` / `session_resumed` 事件，并把 session 与 workspace projection 的状态映射接通
+  - workspace projection 现在持久化 `runtime_name`、`snapshot_id`、`snapshot_path`，用于 suspend 后的 resume restore
+  - `SessionControlService` 现在负责本地 suspend snapshot 与 suspended workspace restore
+  - worker `execute_session(...)` 在恢复到 suspended session 时，会先 restore 到新的 runtime-managed workspace，再继续原有 harness 执行
+  - CLI 新增 `suspend` 命令，API 新增 `POST /sessions/{id}/suspend`，现有 `resume` 执行路径会复用同一套 snapshot-backed restore 逻辑
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_core/test_session_projection.py tests/agent_core/test_workspace_projection.py tests/agent_storage/test_sqlite_workspace_store.py tests/worker/test_execution.py tests/api/test_routes.py tests/api/test_http_app.py tests/cli/test_cli_commands.py`
+  - `make check`

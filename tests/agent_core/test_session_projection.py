@@ -279,3 +279,56 @@ def test_rebuild_session_persists_proxy_approval_context() -> None:
         "tool:mcp.github.create_pull_request",
         "route:mcp_proxy",
     )
+
+
+def test_rebuild_session_applies_suspend_and_resume_transitions() -> None:
+    session_id = new_session_id()
+    created_at = datetime(2026, 6, 29, 20, 0, tzinfo=UTC)
+
+    session = rebuild_session(
+        [
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=0,
+                event_type=EventType.SESSION_CREATED,
+                actor=EventActor.SYSTEM,
+                payload={"title": "suspend and resume"},
+                created_at=created_at,
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=1,
+                event_type=EventType.TASK_PREPARED,
+                actor=EventActor.HARNESS,
+                payload={"title": "suspend and resume", "user_input": "continue"},
+                created_at=created_at + timedelta(seconds=1),
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=2,
+                event_type=EventType.SESSION_SUSPENDED,
+                actor=EventActor.SYSTEM,
+                payload={
+                    "runtime_name": "local",
+                    "snapshot_id": "snap-001",
+                    "snapshot_path": "/tmp/snap-001",
+                },
+                created_at=created_at + timedelta(seconds=2),
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=3,
+                event_type=EventType.SESSION_RESUMED,
+                actor=EventActor.SYSTEM,
+                payload={
+                    "runtime_name": "local",
+                    "snapshot_id": "snap-001",
+                    "workspace_root": "/tmp/restored-001",
+                },
+                created_at=created_at + timedelta(seconds=3),
+            ),
+        ]
+    )
+
+    assert session.status is SessionStatus.READY
+    assert session.current_sequence == 3

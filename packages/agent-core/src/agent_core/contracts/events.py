@@ -97,10 +97,44 @@ class ToolExecutionCompletedPayload(BaseModel):
         return stripped
 
 
+class SessionSuspendedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    runtime_name: str
+    snapshot_id: str
+    snapshot_path: str
+
+    @field_validator("runtime_name", "snapshot_id", "snapshot_path")
+    @classmethod
+    def ensure_field_not_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("field must not be blank")
+        return stripped
+
+
+class SessionResumedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    runtime_name: str
+    snapshot_id: str
+    workspace_root: str
+
+    @field_validator("runtime_name", "snapshot_id", "workspace_root")
+    @classmethod
+    def ensure_field_not_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("field must not be blank")
+        return stripped
+
+
 _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SESSION_CREATED: SessionCreatedPayload,
     EventType.USER_MESSAGE_RECEIVED: UserMessageReceivedPayload,
     EventType.TASK_PREPARED: TaskPreparedPayload,
+    EventType.SESSION_SUSPENDED: SessionSuspendedPayload,
+    EventType.SESSION_RESUMED: SessionResumedPayload,
     EventType.TOOL_EXECUTION_COMPLETED: ToolExecutionCompletedPayload,
 }
 

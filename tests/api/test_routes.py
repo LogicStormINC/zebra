@@ -151,6 +151,25 @@ def test_route_adapter_handles_session_resume_execute(tmp_path: Path, monkeypatc
     ]
 
 
+def test_route_adapter_handles_session_suspend(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(
+        RouteRequest(
+            method="POST",
+            path=f"/sessions/{session_id}/suspend",
+            body={},
+        )
+    )
+
+    assert response.status_code == 200
+    assert response.body["session_id"] == session_id
+    assert response.body["suspended"] is True
+    assert response.body["status"] == "suspended"
+
+
 def test_route_adapter_handles_session_message_append(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
@@ -214,6 +233,26 @@ def test_route_adapter_rejects_invalid_resume_payload(tmp_path: Path) -> None:
     assert response.body == {
         "status": "invalid_request",
         "reason": "lease_ttl_seconds must be greater than zero",
+    }
+
+
+def test_route_adapter_rejects_invalid_suspend_payload(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(
+        RouteRequest(
+            method="POST",
+            path=f"/sessions/{session_id}/suspend",
+            body={"unexpected": True},
+        )
+    )
+
+    assert response.status_code == 400
+    assert response.body == {
+        "status": "invalid_request",
+        "reason": "suspend does not accept request fields yet",
     }
 
 

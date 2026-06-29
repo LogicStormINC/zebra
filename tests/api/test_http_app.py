@@ -281,6 +281,33 @@ def test_http_app_executes_session_resume(tmp_path: Path, monkeypatch) -> None:
     }
 
 
+def test_http_app_suspends_and_then_resumes_session(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(worker_execution_module, "build_model_gateway", _fake_resume_gateway)
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "note.txt").write_text("before suspend\n", encoding="utf-8")
+    session_id = _seed_ready_session(database_path, workspace_root=workspace)
+    client = TestClient(create_http_app(database_path, settings=_settings("secret")))
+
+    suspend = client.post(
+        f"/sessions/{session_id}/suspend",
+        headers={"Authorization": "Bearer secret"},
+        json={},
+    )
+    (workspace / "note.txt").write_text("after suspend\n", encoding="utf-8")
+    resume = client.post(
+        f"/sessions/{session_id}/resume",
+        headers={"Authorization": "Bearer secret"},
+        json={"worker_id": "api-worker", "lease_ttl_seconds": 45},
+    )
+
+    assert suspend.status_code == 200
+    assert suspend.json()["status"] == "suspended"
+    assert resume.status_code == 200
+    assert resume.json()["status"] == "completed"
+
+
 def test_http_app_appends_session_message(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
@@ -379,6 +406,20 @@ def test_http_app_resume_requires_bearer_token_when_configured(tmp_path: Path) -
     client = TestClient(create_http_app(database_path, settings=_settings("secret")))
 
     response = client.post(f"/sessions/{session_id}/resume", json={})
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "status": "unauthorized",
+        "reason": "missing_or_invalid_bearer_token",
+    }
+
+
+def test_http_app_suspend_requires_bearer_token_when_configured(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    client = TestClient(create_http_app(database_path, settings=_settings("secret")))
+
+    response = client.post(f"/sessions/{session_id}/suspend", json={})
 
     assert response.status_code == 401
     assert response.json() == {

@@ -23,6 +23,9 @@ def test_sqlite_workspace_projection_store_round_trips_workspace_projection(
             "status": WorkspaceStatus.RUNNING,
             "policy_profile": "workspace_write",
             "last_attempt_number": 1,
+            "runtime_name": "local",
+            "snapshot_id": "snap-001",
+            "snapshot_path": "/tmp/snapshots/snap-001",
         }
     )
 
@@ -86,3 +89,29 @@ def test_sqlite_workspace_projection_store_persists_rebuilt_workspace_state(
     assert loaded == rebuilt
     assert loaded.status is WorkspaceStatus.COMPLETED
     assert loaded.last_attempt_number == 2
+
+
+def test_sqlite_workspace_projection_store_persists_snapshot_metadata(tmp_path: Path) -> None:
+    store = SQLiteWorkspaceProjectionStore(tmp_path / "workspace.db")
+    created_at = datetime(2026, 6, 29, 18, 50, tzinfo=UTC)
+    projection = WorkspaceProjection.model_validate(
+        {
+            "session_id": new_session_id(),
+            "workspace_root": "/tmp/workspace-suspended",
+            "prepared_at": created_at,
+            "updated_at": created_at,
+            "current_sequence": 4,
+            "status": WorkspaceStatus.SUSPENDED,
+            "runtime_name": "local",
+            "snapshot_id": "snap-002",
+            "snapshot_path": "/tmp/snapshots/snap-002",
+        }
+    )
+
+    store.save_workspace(projection)
+    loaded = store.get_workspace(projection.session_id)
+
+    assert loaded is not None
+    assert loaded.runtime_name == "local"
+    assert loaded.snapshot_id == "snap-002"
+    assert loaded.snapshot_path == "/tmp/snapshots/snap-002"

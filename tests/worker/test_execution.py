@@ -22,6 +22,7 @@ from agent_storage import (
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 from zebra_agent_worker import (
     SessionClaimService,
+    SessionControlService,
     SessionExecutionService,
     SessionRecoveryService,
     SessionResumeService,
@@ -139,6 +140,40 @@ def test_worker_execution_service_updates_workspace_projection_lifecycle(
     assert workspace.workspace_root == str(tmp_path.resolve())
     assert workspace.status is WorkspaceStatus.COMPLETED
     assert workspace.last_attempt_number == 1
+
+
+def test_worker_execution_service_restores_suspended_workspace_before_running(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    original_workspace = tmp_path / "workspace"
+    original_workspace.mkdir()
+    (original_workspace / "note.txt").write_text("before suspend\n", encoding="utf-8")
+    session_id = _seed_ready_session(database_path, original_workspace)
+    SessionControlService(database_path).suspend_session(session_id)
+    (original_workspace / "note.txt").write_text("after suspend\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _assistant_only_gateway(settings=settings),
+    )
+
+    _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-a",
+        executed_at=_created_at(),
+    )
+
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(session_id)
+
+    assert workspace is not None
+    assert workspace.status is WorkspaceStatus.COMPLETED
+    assert workspace.workspace_root != str(original_workspace.resolve())
+    assert (Path(workspace.workspace_root) / "note.txt").read_text(encoding="utf-8") == (
+        "before suspend\n"
+    )
+    assert workspace.snapshot_id is None
 
 
 def _settings(database_path: Path) -> ZebraAgentSettings:

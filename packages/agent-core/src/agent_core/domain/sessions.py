@@ -47,7 +47,11 @@ class ApprovalContext(BaseModel):
 
 _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
     SessionStatus.CREATED: {SessionStatus.READY, SessionStatus.CANCELLED},
-    SessionStatus.READY: {SessionStatus.RUNNING, SessionStatus.CANCELLED},
+    SessionStatus.READY: {
+        SessionStatus.RUNNING,
+        SessionStatus.SUSPENDED,
+        SessionStatus.CANCELLED,
+    },
     SessionStatus.RUNNING: {
         SessionStatus.WAITING_APPROVAL,
         SessionStatus.SUSPENDED,

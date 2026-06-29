@@ -4096,7 +4096,7 @@ Close Phase 25 with durable workspace and snapshot evidence and define the next 
 
 ### P26-RT-01 - Local Snapshot Backend
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `RUNTIME`
 - Depends on: `P25-CLOSE-01`
@@ -4122,12 +4122,12 @@ Turn the current fail-closed local snapshot contract into a real local snapshot 
 
 ### P26-APP-01 - Suspend And Resume Control Wiring
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P26-RT-01`
 - Branch: `codex/p26-app-01-suspend-resume-control-wiring`
-- Owned paths: `apps/api/`, `apps/cli/`, `apps/worker/`, `packages/agent-storage/`, `tests/api/`, `tests/cli/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+- Owned paths: `apps/api/`, `apps/cli/`, `apps/worker/`, `packages/agent-core/`, `packages/agent-storage/`, `tests/agent_core/`, `tests/api/`, `tests/cli/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
@@ -4142,9 +4142,9 @@ Wire session suspend and resume control paths to runtime lifecycle operations an
 
 #### Acceptance
 
-- [ ] Session suspend and resume paths update durable workspace lifecycle state consistently.
-- [ ] CLI and API operator flows can trigger the supported local suspend or resume path.
-- [ ] Invalid lifecycle transitions fail deterministically without corrupting workspace state.
+- [x] Session suspend and resume paths update durable workspace lifecycle state consistently.
+- [x] CLI and API operator flows can trigger the supported local suspend or resume path.
+- [x] Invalid lifecycle transitions fail deterministically without corrupting workspace state.
 
 ### P26-DOC-01 - Snapshot Operator Runbook
 

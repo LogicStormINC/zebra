@@ -5,9 +5,9 @@
 - Active phase: `Phase 26 - Local Snapshot Operator Controls`
 - Repository status: `phase 26 in progress`
 - Current focus:
-  - wire session suspend and resume control paths to durable workspace state
   - expose operator-facing local snapshot behavior through CLI, API, and docs
-  - merge the local snapshot backend slice and use it as the base for control-plane wiring
+  - finish the operator runbook for the new local suspend and resume flow
+  - close Phase 26 once runtime and control-plane slices are merged
 
 ## Completed
 
@@ -195,12 +195,14 @@
 - Phase 25 is closed with `docs/Phase25_Durable_Workspace_And_Snapshot_Foundations_验收记录.md`
 - local runtime now supports filesystem-backed snapshot, restore, and fork flows for workspace-backed handles with deterministic per-handle retention
 - local snapshot behavior is documented in `docs/local_snapshot_runtime.md`, including supported subset, storage layout, retention, and explicit unsupported paths
+- session control now emits durable suspend and resume lifecycle events, persists snapshot metadata in workspace projections, and restores suspended local workspaces before worker execution resumes
+- CLI `suspend`, API `POST /sessions/{id}/suspend`, and worker resume execution now share the same local snapshot-backed control-plane behavior
 
 ## Next Unlocks
 
-- `P26-RT-01 - Local Snapshot Backend` is in review on `codex/p26-rt-01-local-snapshot-backend`
-- `P26-APP-01 - Suspend And Resume Control Wiring` is locked on `P26-RT-01`
-- `P26-DOC-01 - Snapshot Operator Runbook` is locked on `P26-APP-01`
+- `P26-RT-01 - Local Snapshot Backend` is complete on `main`
+- `P26-APP-01 - Suspend And Resume Control Wiring` is in review on `codex/p26-app-01-suspend-resume-control-wiring`
+- `P26-DOC-01 - Snapshot Operator Runbook` is the next documentation slice after this branch merges
 - `P26-CLOSE-01 - Phase 26 Closeout And Next Planning` is locked on the phase implementation tasks
 
 ## Active Documents

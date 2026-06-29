@@ -10,6 +10,7 @@ class WorkspaceStatus(StrEnum):
     PREPARED = "prepared"
     RUNNING = "running"
     WAITING_APPROVAL = "waiting_approval"
+    SUSPENDED = "suspended"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -26,6 +27,9 @@ class WorkspaceProjection(BaseModel):
     status: WorkspaceStatus
     policy_profile: str | None = None
     last_attempt_number: int | None = None
+    runtime_name: str | None = None
+    snapshot_id: str | None = None
+    snapshot_path: str | None = None
 
     @field_validator("workspace_root")
     @classmethod
@@ -35,13 +39,12 @@ class WorkspaceProjection(BaseModel):
             raise ValueError("workspace_root must not be blank")
         return stripped
 
-    @field_validator("policy_profile")
+    @field_validator("policy_profile", "runtime_name", "snapshot_id", "snapshot_path")
     @classmethod
-    def ensure_policy_profile_not_blank(cls, value: str | None) -> str | None:
+    def ensure_optional_text_not_blank(cls, value: str | None) -> str | None:
         if value is None:
             return None
         stripped = value.strip()
         if not stripped:
-            raise ValueError("policy_profile must not be blank when provided")
+            raise ValueError("optional text field must not be blank when provided")
         return stripped
-

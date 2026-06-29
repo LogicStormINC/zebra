@@ -77,6 +77,8 @@ def _next_status_for_event(event: SessionEvent) -> SessionStatus | None:
         EventType.APPROVAL_REQUESTED: SessionStatus.WAITING_APPROVAL,
         EventType.APPROVAL_GRANTED: SessionStatus.RUNNING,
         EventType.APPROVAL_REJECTED: SessionStatus.FAILED,
+        EventType.SESSION_SUSPENDED: SessionStatus.SUSPENDED,
+        EventType.SESSION_RESUMED: SessionStatus.READY,
         EventType.SESSION_COMPLETED: SessionStatus.COMPLETED,
         EventType.SESSION_FAILED: SessionStatus.FAILED,
         EventType.SESSION_CANCELLED: SessionStatus.CANCELLED,

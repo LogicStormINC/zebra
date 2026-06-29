@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 26 is in progress. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates, and a first real local snapshot backend for workspace-backed runtime handles.
+Phase 26 is in progress. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates, a real local snapshot backend for workspace-backed runtime handles, and snapshot-backed suspend or resume control wiring across CLI, API, and worker execution.
 
 The next milestone is `Phase 26 - Local Snapshot Operator Controls`. The current implementation lanes are:
 
@@ -72,7 +72,8 @@ The next milestone is `Phase 26 - Local Snapshot Operator Controls`. The current
 - worker recovery and execution now reuse durable workspace projection state instead of raw bootstrap payloads for workspace lifecycle control
 - `docs/Phase25_Durable_Workspace_And_Snapshot_Foundations_验收记录.md` records the completed durable workspace and snapshot foundations phase
 - `docs/local_snapshot_runtime.md` documents the supported local snapshot subset, storage layout, retention model, and explicit unsupported paths
-- Phase 26 suspend/resume control wiring and operator runbook work are the next implementation lanes after the runtime backend review passes
+- local suspend and resume now emit durable control-plane events, persist snapshot metadata in workspace projections, and restore suspended workspaces onto fresh runtime-managed directories before worker execution
+- Phase 26 operator runbook and closeout are the remaining implementation lanes
 
 Read in this order:
 

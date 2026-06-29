@@ -20,6 +20,10 @@ class ResumeSessionPayload(TypedDict):
     lease_ttl_seconds: int
 
 
+class SuspendSessionPayload(TypedDict):
+    pass
+
+
 class AppendSessionMessagePayload(TypedDict):
     content: str
 
@@ -96,6 +100,14 @@ def parse_resume_session_payload(
         "worker_id": worker_id.strip(),
         "lease_ttl_seconds": lease_ttl_seconds,
     }
+
+
+def parse_suspend_session_payload(
+    payload: dict[str, object],
+) -> SuspendSessionPayload | ApiResponse:
+    if payload:
+        return bad_request("suspend does not accept request fields yet")
+    return {}
 
 
 def parse_append_session_message_payload(

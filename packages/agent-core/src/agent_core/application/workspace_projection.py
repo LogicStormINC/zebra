@@ -54,6 +54,15 @@ def apply_event(
         updates["last_attempt_number"] = attempt_number
     if event.event_type is EventType.TASK_PREPARED:
         updates["policy_profile"] = _optional_payload_string(event, "policy_profile")
+    if event.event_type is EventType.SESSION_SUSPENDED:
+        updates["runtime_name"] = _required_payload_string(event, "runtime_name")
+        updates["snapshot_id"] = _required_payload_string(event, "snapshot_id")
+        updates["snapshot_path"] = _required_payload_string(event, "snapshot_path")
+    if event.event_type is EventType.SESSION_RESUMED:
+        updates["workspace_root"] = _required_payload_string(event, "workspace_root")
+        updates["runtime_name"] = _required_payload_string(event, "runtime_name")
+        updates["snapshot_id"] = None
+        updates["snapshot_path"] = None
     return projection.model_copy(update=updates)
 
 
@@ -69,6 +78,8 @@ def _next_status_for_event(event: SessionEvent) -> WorkspaceStatus | None:
         EventType.APPROVAL_REQUESTED: WorkspaceStatus.WAITING_APPROVAL,
         EventType.APPROVAL_GRANTED: WorkspaceStatus.RUNNING,
         EventType.APPROVAL_REJECTED: WorkspaceStatus.FAILED,
+        EventType.SESSION_SUSPENDED: WorkspaceStatus.SUSPENDED,
+        EventType.SESSION_RESUMED: WorkspaceStatus.PREPARED,
         EventType.SESSION_COMPLETED: WorkspaceStatus.COMPLETED,
         EventType.SESSION_FAILED: WorkspaceStatus.FAILED,
         EventType.SESSION_CANCELLED: WorkspaceStatus.CANCELLED,

@@ -31,6 +31,8 @@ class EventType(StrEnum):
     TOOL_EXECUTION_FAILED = "tool_execution_failed"
     PATCH_APPLIED = "patch_applied"
     TESTS_COMPLETED = "tests_completed"
+    SESSION_SUSPENDED = "session_suspended"
+    SESSION_RESUMED = "session_resumed"
     SESSION_COMPLETED = "session_completed"
     SESSION_FAILED = "session_failed"
     SESSION_CANCELLED = "session_cancelled"

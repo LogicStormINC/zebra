@@ -11,7 +11,12 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.tools import ToolCall
-from agent_storage import SQLiteEventStore, SQLiteLeaseStore, SQLiteProjectionStore
+from agent_storage import (
+    SQLiteEventStore,
+    SQLiteLeaseStore,
+    SQLiteProjectionStore,
+    SQLiteWorkspaceProjectionStore,
+)
 from zebra_agent_cli.cli import execute, main
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
@@ -247,6 +252,20 @@ def test_cli_resume_command_reads_local_session(tmp_path: Path) -> None:
     assert result.payload["current_sequence"] == 0
 
 
+def test_cli_suspend_command_marks_session_suspended(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    result = execute(["suspend", str(session_id), "--database", str(database_path)])
+
+    updated_session = SQLiteProjectionStore(database_path).get_session(session_id)
+    assert result.command == "suspend"
+    assert result.payload["suspended"] is True
+    assert result.payload["status"] == "suspended"
+    assert updated_session is not None
+    assert updated_session.status is SessionStatus.SUSPENDED
+
+
 def test_cli_resume_command_execute_runs_worker_session(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -307,6 +326,53 @@ def test_cli_resume_command_execute_runs_worker_session(
     assert updated_session is not None
     assert updated_session.status is SessionStatus.COMPLETED
     assert SQLiteLeaseStore(database_path).get(session_id) is None
+
+
+def test_cli_resume_command_execute_restores_suspended_workspace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "README.md").write_text("before suspend\n", encoding="utf-8")
+    session_id = _seed_ready_session(database_path, workspace)
+    execute(["suspend", str(session_id), "--database", str(database_path)])
+    (workspace / "README.md").write_text("after suspend\n", encoding="utf-8")
+
+    def fake_build_model_gateway(settings: ZebraAgentSettings):
+        del settings
+        return FakeGateway(
+            completion=ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content="Resume execution complete.",
+                    created_at=_created_at(),
+                )
+            )
+        )
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        fake_build_model_gateway,
+    )
+
+    result = execute(
+        [
+            "resume",
+            str(session_id),
+            "--execute",
+            "--database",
+            str(database_path),
+        ],
+        settings=_settings(database_path),
+    )
+
+    workspace_projection = SQLiteWorkspaceProjectionStore(database_path).get_workspace(session_id)
+    assert result.payload["status"] == SessionStatus.COMPLETED.value
+    assert workspace_projection is not None
+    assert workspace_projection.workspace_root != str(workspace.resolve())
 
 
 def test_cli_resume_command_execute_reports_tool_trace(

@@ -41,6 +41,8 @@ class RouteAdapter:
             parts = _session_path_parts(request.path)
             if len(parts) == 2 and parts[1] == "messages":
                 return self.app.append_session_message(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "suspend":
+                return self.app.suspend_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "resume":
                 return self.app.resume_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "commit":

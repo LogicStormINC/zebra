@@ -95,3 +95,63 @@ def test_rebuild_workspace_requires_task_prepared_event() -> None:
         match="event stream does not contain task_prepared",
     ):
         rebuild_workspace(events)
+
+
+def test_rebuild_workspace_tracks_suspend_snapshot_and_resume_restore() -> None:
+    session_id = new_session_id()
+    created_at = datetime(2026, 6, 29, 18, 30, tzinfo=UTC)
+    events = [
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=0,
+            event_type=EventType.SESSION_CREATED,
+            actor=EventActor.USER,
+            payload={"title": "Suspend Workspace"},
+            created_at=created_at,
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=1,
+            event_type=EventType.TASK_PREPARED,
+            actor=EventActor.HARNESS,
+            payload={
+                "title": "Suspend Workspace",
+                "user_input": "continue",
+                "workspace_root": "/tmp/workspace-before-suspend",
+                "policy_profile": "workspace_write",
+            },
+            created_at=created_at,
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=2,
+            event_type=EventType.SESSION_SUSPENDED,
+            actor=EventActor.SYSTEM,
+            payload={
+                "runtime_name": "local",
+                "snapshot_id": "snap-001",
+                "snapshot_path": "/tmp/snapshots/snap-001",
+            },
+            created_at=created_at,
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=3,
+            event_type=EventType.SESSION_RESUMED,
+            actor=EventActor.SYSTEM,
+            payload={
+                "runtime_name": "local",
+                "snapshot_id": "snap-001",
+                "workspace_root": "/tmp/workspace-restored",
+            },
+            created_at=created_at,
+        ),
+    ]
+
+    projection = rebuild_workspace(events)
+
+    assert projection.status is WorkspaceStatus.PREPARED
+    assert projection.workspace_root == "/tmp/workspace-restored"
+    assert projection.runtime_name == "local"
+    assert projection.snapshot_id is None
+    assert projection.snapshot_path is None

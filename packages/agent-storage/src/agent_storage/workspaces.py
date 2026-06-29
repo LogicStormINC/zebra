@@ -24,8 +24,11 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     current_sequence,
                     status,
                     policy_profile,
-                    last_attempt_number
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    last_attempt_number,
+                    runtime_name,
+                    snapshot_id,
+                    snapshot_path
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_id) DO UPDATE SET
                     workspace_root = excluded.workspace_root,
                     prepared_at = excluded.prepared_at,
@@ -33,7 +36,10 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     current_sequence = excluded.current_sequence,
                     status = excluded.status,
                     policy_profile = excluded.policy_profile,
-                    last_attempt_number = excluded.last_attempt_number
+                    last_attempt_number = excluded.last_attempt_number,
+                    runtime_name = excluded.runtime_name,
+                    snapshot_id = excluded.snapshot_id,
+                    snapshot_path = excluded.snapshot_path
                 """,
                 (
                     str(workspace.session_id),
@@ -44,6 +50,9 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     workspace.status.value,
                     workspace.policy_profile,
                     workspace.last_attempt_number,
+                    workspace.runtime_name,
+                    workspace.snapshot_id,
+                    workspace.snapshot_path,
                 ),
             )
         return workspace
@@ -60,7 +69,10 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     current_sequence,
                     status,
                     policy_profile,
-                    last_attempt_number
+                    last_attempt_number,
+                    runtime_name,
+                    snapshot_id,
+                    snapshot_path
                 FROM workspace_projections
                 WHERE session_id = ?
                 """,
@@ -78,6 +90,9 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                 "status": WorkspaceStatus(row["status"]),
                 "policy_profile": row["policy_profile"],
                 "last_attempt_number": row["last_attempt_number"],
+                "runtime_name": row["runtime_name"],
+                "snapshot_id": row["snapshot_id"],
+                "snapshot_path": row["snapshot_path"],
             }
         )
 
@@ -93,7 +108,37 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     current_sequence INTEGER NOT NULL,
                     status TEXT NOT NULL,
                     policy_profile TEXT,
-                    last_attempt_number INTEGER
+                    last_attempt_number INTEGER,
+                    runtime_name TEXT,
+                    snapshot_id TEXT,
+                    snapshot_path TEXT
                 )
                 """
             )
+            columns = {
+                row[1]
+                for row in connection.execute(
+                    "PRAGMA table_info(workspace_projections)"
+                ).fetchall()
+            }
+            if "runtime_name" not in columns:
+                connection.execute(
+                    """
+                    ALTER TABLE workspace_projections
+                    ADD COLUMN runtime_name TEXT
+                    """
+                )
+            if "snapshot_id" not in columns:
+                connection.execute(
+                    """
+                    ALTER TABLE workspace_projections
+                    ADD COLUMN snapshot_id TEXT
+                    """
+                )
+            if "snapshot_path" not in columns:
+                connection.execute(
+                    """
+                    ALTER TABLE workspace_projections
+                    ADD COLUMN snapshot_path TEXT
+                    """
+                )

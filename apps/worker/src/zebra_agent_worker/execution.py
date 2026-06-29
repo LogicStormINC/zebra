@@ -29,8 +29,10 @@ from agent_storage import (
 )
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
-from zebra_agent_worker.claims import SessionClaimService
+from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
+from zebra_agent_worker.control import SessionControlError, SessionControlService
 from zebra_agent_worker.model_call_index import ModelCallIndexer
+from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 
@@ -73,6 +75,12 @@ class SessionExecutionService:
         self._event_store = SQLiteEventStore(database_path)
         self._projection_store = SQLiteProjectionStore(database_path)
         self._workspace_store = SQLiteWorkspaceProjectionStore(database_path)
+        self._recovery_service = SessionRecoveryService(
+            self._event_store,
+            self._projection_store,
+            self._workspace_store,
+        )
+        self._control_service = SessionControlService(database_path)
         self._model_call_indexer = ModelCallIndexer(SQLiteModelCallStore(database_path))
         self._tool_run_indexer = ToolRunIndexer(SQLiteToolRunStore(database_path))
 
@@ -92,6 +100,19 @@ class SessionExecutionService:
             lease_ttl_seconds=lease_ttl_seconds,
         )
         claimed = resumed.claimed
+        try:
+            restored = self._control_service.restore_suspended_workspace(
+                session_id,
+                resumed_at=started_at,
+            )
+        except SessionControlError as exc:
+            self._claim_service.release_claim(claimed)
+            raise WorkerExecutionError(str(exc)) from exc
+        if restored is not None:
+            claimed = ClaimedSession(
+                recovery=self._recovery_service.recover_session(session_id),
+                lease=claimed.lease,
+            )
         task = _recover_task(
             self._event_store.list_for_session(session_id),
             workspace=claimed.recovery.workspace,

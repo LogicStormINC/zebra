@@ -33,6 +33,8 @@ from agent_storage import (
 from zebra_agent_config import ZebraAgentSettings, load_settings
 from zebra_agent_worker import (
     SessionClaimService,
+    SessionControlError,
+    SessionControlService,
     SessionExecutionService,
     SessionRecoveryError,
     SessionRecoveryService,
@@ -53,6 +55,7 @@ from zebra_agent_api.session_payloads import (
     parse_approval_decision_payload,
     parse_create_session_payload,
     parse_resume_session_payload,
+    parse_suspend_session_payload,
 )
 from zebra_agent_api.session_pull_request import SessionPullRequestApi
 from zebra_agent_api.session_read import SessionReadApi
@@ -201,6 +204,40 @@ class ZebraAgentApi:
                 "current_sequence": result.session.current_sequence,
                 "assistant_message": result.attempt_result.metadata.get("assistant_message"),
                 "trace": serialize_trace_events(result.events),
+            },
+        )
+
+    def suspend_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
+        parsed = parse_suspend_session_payload(payload)
+        if isinstance(parsed, ApiResponse):
+            return parsed
+        del parsed
+
+        try:
+            result = SessionControlService(self.database_path).suspend_session(
+                SessionId(UUID(session_id))
+            )
+        except SessionControlError as error:
+            message = str(error)
+            if message == "session was not found":
+                return ApiResponse(
+                    status_code=404,
+                    body={"session_id": session_id, "status": "not_found"},
+                )
+            return conflict(
+                session_id=session_id,
+                status="not_suspendable",
+                reason=message.replace(" ", "_"),
+            )
+
+        return ApiResponse(
+            status_code=200,
+            body={
+                "session_id": session_id,
+                "suspended": True,
+                "status": "suspended",
+                "workspace_status": result.workspace.status.value,
+                "snapshot_id": result.workspace.snapshot_id,
             },
         )
 
