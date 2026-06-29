@@ -28,6 +28,22 @@ class ApprovalContext(BaseModel):
     network_profile: str | None = None
     scope: tuple[str, ...] = ()
 
+    def to_mapping(self) -> dict[str, object]:
+        mapping: dict[str, object] = {
+            "tool_name": self.tool_name,
+            "reason": self.reason,
+            "policy_profile": self.policy_profile,
+        }
+        if self.route is not None:
+            mapping["route"] = self.route
+        if self.target is not None:
+            mapping["target"] = self.target
+        if self.network_profile is not None:
+            mapping["network_profile"] = self.network_profile
+        if self.scope:
+            mapping["scope"] = list(self.scope)
+        return mapping
+
 
 _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
     SessionStatus.CREATED: {SessionStatus.READY, SessionStatus.CANCELLED},

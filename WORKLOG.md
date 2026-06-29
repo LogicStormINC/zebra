@@ -2947,3 +2947,21 @@
   - `poetry run pytest tests/api/test_api_app.py tests/api/test_routes.py tests/api/test_http_approvals.py tests/api/test_approval_api_app.py tests/api/test_http_app.py`
   - `uv run ruff check apps/api/src/zebra_agent_api tests/api`
   - `make check`
+
+## 2026-06-29 Phase 24 Approval Projection Consistency Checks
+
+- 执行 `P24-OBS-01 - Approval Projection Consistency Checks`
+- 行为更新：
+  - `ApprovalContext` 新增 `to_mapping()`，统一 replay、projection 与 repeated-read 断言使用的安全字段映射
+  - `SQLiteEventStore` 回放测试现在校验 `approval_requested` 事件、rebuild 后的 session projection、以及 durable SQLite projection row 之间的 proxy-aware approval vocabulary 一致性
+  - `SQLiteProjectionStore` repeated-read 回归覆盖现在验证多次读取 `approval_context` 不会漂移
+  - `docs/proxy_gateway_operator_runbook.md` 新增 projection drift check，明确 queue/detail read 与 event replay 或 trace 不一致时的排查顺序
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P24-OBS-01` 标记为 `Done`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_storage/test_sqlite_event_store.py tests/agent_storage/test_sqlite_projection_store.py tests/agent_core/test_session_projection.py tests/agent_core/test_harness_trace_projection.py`
+  - `uv run ruff check packages/agent-core/src/agent_core packages/agent-storage/src/agent_storage tests/agent_core tests/agent_storage`
+  - `uv run mypy packages/agent-core/src/agent_core/domain/sessions.py packages/agent-core/src/agent_core/application/session_projection.py packages/agent-storage/src/agent_storage/projections.py tests/agent_storage/test_sqlite_event_store.py tests/agent_storage/test_sqlite_projection_store.py`
+  - `make check`

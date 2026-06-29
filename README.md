@@ -14,7 +14,7 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 23 is closed and Phase 24 durable approval projection planning is ready. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, readback, and trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates.
+Phase 23 is closed and the implementation lanes for Phase 24 are complete. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, and trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates.
 
 The next milestone is `Phase 24 - Durable Approval Projection And Operator Queue`. The current implementation lanes are:
 
@@ -65,7 +65,8 @@ The next milestone is `Phase 24 - Durable Approval Projection And Operator Queue
 - secret-store Port and redaction contract now exist in `agent-security`
 - local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
 - GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
-- Phase 24 closeout and next-phase planning are the next ready implementation lane
+- projection rebuild, durable SQLite projection rows, and repeated approval reads now keep the same proxy-aware `approval_context` vocabulary for `route`, `target`, `network_profile`, and `scope`
+- Phase 24 closeout and next-phase planning are the remaining ready implementation lane
 
 Read in this order:
 

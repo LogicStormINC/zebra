@@ -3941,8 +3941,8 @@ Expose projection-backed approval queue and approval detail reads for operators.
 
 ### P24-OBS-01 - Approval Projection Consistency Checks
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `OBS`
 - Depends on: `P24-STO-01`
 - Branch: `codex/p24-obs-01-approval-projection-consistency-checks`
@@ -3960,9 +3960,9 @@ Ensure projection-backed approval context stays consistent with event and trace 
 
 #### Acceptance
 
-- [ ] Projection-backed approval context matches the event payload vocabulary for route, target, network profile, and scope.
-- [ ] Regression tests cover grant, reject, and repeated approval-read scenarios.
-- [ ] Non-proxy approval paths remain backwards compatible.
+- [x] Projection-backed approval context matches the event payload vocabulary for route, target, network profile, and scope.
+- [x] Regression tests cover grant, reject, and repeated approval-read scenarios.
+- [x] Non-proxy approval paths remain backwards compatible.
 
 ### P24-CLOSE-01 - Phase 24 Closeout And Next Planning
 

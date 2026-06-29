@@ -110,3 +110,40 @@ def test_sqlite_projection_store_round_trips_approval_context(tmp_path: Path) ->
     loaded = store.get_session(session.session_id)
 
     assert loaded == session
+
+
+def test_sqlite_projection_store_repeated_reads_keep_approval_context_stable(
+    tmp_path: Path,
+) -> None:
+    store = SQLiteProjectionStore(tmp_path / "projections.db")
+    created_at = datetime(2026, 6, 29, 11, 30, tzinfo=UTC)
+    session = Session.create(title="Stable Approval Context", created_at=created_at).model_copy(
+        update={
+            "status": SessionStatus.WAITING_APPROVAL,
+            "updated_at": created_at,
+            "current_sequence": 5,
+            "approval_context": ApprovalContext(
+                tool_name="mcp.github.create_pull_request",
+                reason="proxy-routed external tool execution in test",
+                policy_profile="full_access",
+                route="mcp_proxy",
+                target="github.create_pull_request",
+                network_profile="mcp-proxy-only",
+                scope=(
+                    "tool:mcp.github.create_pull_request",
+                    "route:mcp_proxy",
+                    "network_profile:mcp-proxy-only",
+                ),
+            ),
+        }
+    )
+
+    store.save_session(session)
+    first = store.get_session(session.session_id)
+    second = store.get_session(session.session_id)
+
+    assert first is not None
+    assert second is not None
+    assert first.approval_context is not None
+    assert second.approval_context is not None
+    assert first.approval_context.to_mapping() == second.approval_context.to_mapping()

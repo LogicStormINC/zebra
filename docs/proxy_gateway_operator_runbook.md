@@ -231,6 +231,29 @@ Interpretation guidance:
   approval or was halted before tool execution
 - policy denial under `network_profile=none` confirms fail-closed behavior is intact
 
+## Projection Drift Check
+
+When approval queue or detail reads disagree with event replay or trace output,
+check the fields in this order:
+
+- event payload on `approval_requested`
+- persisted projection `approval_context`
+- trace-facing `policy_route`, `policy_target`, `policy_network_profile`, and `policy_scope`
+
+Expected rule:
+
+- route, target, network profile, and scope should use the same vocabulary across
+  events, projections, queue reads, detail reads, and traces
+
+If projection-backed approval reads differ from the replayed `approval_requested`
+event:
+
+- rebuild the session from the event stream and compare the resulting
+  `approval_context`
+- confirm the SQLite projection row was updated after the latest approval event
+- treat projection drift as a read-model issue first, not as permission to bypass
+  the fail-closed policy path
+
 ## Failure Handling
 
 SCM proxy-backed failures:
