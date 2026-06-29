@@ -21,6 +21,7 @@ from agent_integrations import build_model_gateway
 from agent_runtime import LocalToolGateway
 from agent_security import LocalPolicyEngine, PolicyProfile
 from agent_storage import (
+    SQLiteArtifactPayloadStore,
     SQLiteEventStore,
     SQLiteModelCallStore,
     SQLiteProjectionStore,
@@ -82,7 +83,10 @@ class SessionExecutionService:
         )
         self._control_service = SessionControlService(database_path)
         self._model_call_indexer = ModelCallIndexer(SQLiteModelCallStore(database_path))
-        self._tool_run_indexer = ToolRunIndexer(SQLiteToolRunStore(database_path))
+        self._tool_run_indexer = ToolRunIndexer(
+            SQLiteToolRunStore(database_path),
+            SQLiteArtifactPayloadStore(database_path),
+        )
 
     def execute_session(
         self,

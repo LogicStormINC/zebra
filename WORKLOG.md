@@ -3214,3 +3214,17 @@
   - `README.md`
 - 验证：
   - `poetry run pytest tests/agent_storage/test_artifact_payloads.py tests/agent_storage/test_artifacts.py tests/agent_core/test_domain_models.py`
+
+## 2026-06-29 Phase 28 Worker Artifact Capture Wiring
+
+- 执行 `P28-WKR-01 - Worker Artifact Capture Wiring`
+- 行为更新：
+  - `ToolRunIndexer` 现在会把没有显式 `artifact_uri` 的文本 tool output 写入 durable artifact payload store
+  - worker execution 产出的 `ToolRunRecord.artifact_uri` 现在可以直接指向本地持久化 payload
+  - 已有显式 `artifact_uri` 的工具结果保持原样，避免破坏既有外部 artifact 引用
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/worker/test_tool_run_index.py tests/worker/test_execution.py`

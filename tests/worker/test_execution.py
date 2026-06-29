@@ -80,6 +80,10 @@ def test_worker_execution_service_indexes_tool_run(tmp_path: Path, monkeypatch) 
     assert isinstance(tool_runs[0], ToolRunRecord)
     assert tool_runs[0].tool_name == "files.read"
     assert tool_runs[0].status == "executed"
+    assert tool_runs[0].artifact_uri is not None
+    assert Path(tool_runs[0].artifact_uri.removeprefix("file://")).read_text(
+        encoding="utf-8"
+    ) == "worker readme\n"
 
 
 def _build_execution_service(database_path: Path) -> SessionExecutionService:

@@ -4300,7 +4300,7 @@ Close Phase 27 with workspace lifecycle readback and snapshot housekeeping evide
 
 ### P28-STO-01 - Durable Artifact Payload Store
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `STORAGE`
 - Depends on: `P27-CLOSE-01`
@@ -4326,8 +4326,8 @@ only on model-call or tool-run index rows for operator retrieval.
 
 ### P28-WKR-01 - Worker Artifact Capture Wiring
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `RUNTIME`
 - Depends on: `P28-STO-01`
 - Branch: `codex/p28-wkr-01-worker-artifact-capture-wiring`
@@ -4346,13 +4346,13 @@ artifact reads can rely on more than ephemeral inline previews.
 
 #### Acceptance
 
-- [ ] Worker execution writes durable artifact payload references for supported outputs.
-- [ ] Existing session execution and indexing flows remain backward compatible.
-- [ ] Missing or skipped payload capture paths stay explicit in stored metadata.
+- [x] Worker execution writes durable artifact payload references for supported outputs.
+- [x] Existing session execution and indexing flows remain backward compatible.
+- [x] Missing or skipped payload capture paths stay explicit in stored metadata.
 
 ### P28-API-01 - Artifact Detail And Retrieval Surface
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `API`
 - Depends on: `P28-STO-01`

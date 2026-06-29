@@ -80,6 +80,7 @@ The next milestone is `Phase 28 - Durable Artifact Storage And Retrieval`. The c
 - worker resume now deletes consumed snapshot payloads explicitly after a successful local restore
 - `docs/Phase27_Workspace_Lifecycle_Readback_And_Snapshot_Housekeeping_验收记录.md` records the completed workspace lifecycle readback and snapshot housekeeping phase
 - durable local artifact payload storage now exists with SQLite-backed metadata and explicit missing-payload inspection for later retrieval wiring
+- worker execution now persists supported text tool outputs into the local artifact payload store when no explicit artifact URI is already provided
 - Phase 28 durable artifact storage, worker artifact capture, and artifact retrieval are the next ready implementation lanes
 
 Read in this order:
