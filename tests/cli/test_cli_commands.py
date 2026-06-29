@@ -11,6 +11,7 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.tools import ToolCall
+from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
@@ -252,6 +253,52 @@ def test_cli_resume_command_reads_local_session(tmp_path: Path) -> None:
     assert result.payload["current_sequence"] == 0
 
 
+def test_cli_resume_read_includes_workspace_projection(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="Resume workspace").model_copy(
+            update={
+                "status": SessionStatus.SUSPENDED,
+                "current_sequence": 4,
+            }
+        )
+    )
+    SQLiteWorkspaceProjectionStore(database_path).save_workspace(
+        WorkspaceProjection.model_validate(
+            {
+                "session_id": session.session_id,
+                "workspace_root": str(tmp_path.resolve()),
+                "prepared_at": _created_at(),
+                "updated_at": _created_at(),
+                "current_sequence": 4,
+                "status": WorkspaceStatus.SUSPENDED,
+                "policy_profile": "workspace_write",
+                "last_attempt_number": 1,
+                "runtime_name": "local",
+                "snapshot_id": "snap-cli-1",
+                "snapshot_path": "/tmp/zebra-agent-runtime/snap-cli-1",
+            }
+        )
+    )
+
+    result = execute(["resume", str(session.session_id), "--database", str(database_path)])
+
+    assert result.payload["workspace"] == {
+        "workspace_root": str(tmp_path.resolve()),
+        "status": "suspended",
+        "current_sequence": 4,
+        "prepared_at": _created_at().isoformat(),
+        "updated_at": _created_at().isoformat(),
+        "policy_profile": "workspace_write",
+        "last_attempt_number": 1,
+        "snapshot": {
+            "runtime_name": "local",
+            "snapshot_id": "snap-cli-1",
+            "snapshot_path": "/tmp/zebra-agent-runtime/snap-cli-1",
+        },
+    }
+
+
 def test_cli_suspend_command_marks_session_suspended(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session_id = _seed_ready_session(database_path, tmp_path)
@@ -453,6 +500,48 @@ def test_cli_inspect_command_reads_local_session(tmp_path: Path) -> None:
     assert result.command == "inspect"
     assert result.payload["session_id"] == str(session.session_id)
     assert result.payload["title"] == "Inspect me"
+
+
+def test_cli_inspect_command_includes_workspace_projection(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="Inspect workspace").model_copy(
+            update={
+                "status": SessionStatus.SUSPENDED,
+                "current_sequence": 4,
+            }
+        )
+    )
+    SQLiteWorkspaceProjectionStore(database_path).save_workspace(
+        WorkspaceProjection.model_validate(
+            {
+                "session_id": session.session_id,
+                "workspace_root": str(tmp_path.resolve()),
+                "prepared_at": _created_at(),
+                "updated_at": _created_at(),
+                "current_sequence": 4,
+                "status": WorkspaceStatus.SUSPENDED,
+                "runtime_name": "local",
+                "snapshot_id": "snap-cli-2",
+                "snapshot_path": "/tmp/zebra-agent-runtime/snap-cli-2",
+            }
+        )
+    )
+
+    result = execute(["inspect", str(session.session_id), "--database", str(database_path)])
+
+    assert result.payload["workspace"] == {
+        "workspace_root": str(tmp_path.resolve()),
+        "status": "suspended",
+        "current_sequence": 4,
+        "prepared_at": _created_at().isoformat(),
+        "updated_at": _created_at().isoformat(),
+        "snapshot": {
+            "runtime_name": "local",
+            "snapshot_id": "snap-cli-2",
+            "snapshot_path": "/tmp/zebra-agent-runtime/snap-cli-2",
+        },
+    }
 
 
 def test_cli_inspect_command_reports_missing_session(tmp_path: Path) -> None:

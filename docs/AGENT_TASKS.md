@@ -4224,8 +4224,8 @@ Expose projection-backed workspace lifecycle and snapshot metadata through safe 
 
 ### P27-CLI-01 - Workspace Lifecycle Inspect Output
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P27-API-01`
 - Branch: `codex/p27-cli-01-workspace-lifecycle-inspect`
@@ -4243,9 +4243,9 @@ Extend CLI inspect-style operator output so local users can read workspace lifec
 
 #### Acceptance
 
-- [ ] CLI surfaces expose workspace lifecycle state for local operators.
-- [ ] Suspended snapshot metadata is readable without replaying raw events.
-- [ ] Existing machine-readable CLI output stays stable for older fields.
+- [x] CLI surfaces expose workspace lifecycle state for local operators.
+- [x] Suspended snapshot metadata is readable without replaying raw events.
+- [x] Existing machine-readable CLI output stays stable for older fields.
 
 ### P27-RT-01 - Snapshot Housekeeping And Compatibility Checks
 

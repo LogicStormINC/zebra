@@ -20,7 +20,12 @@ from agent_core.domain.identifiers import SessionId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_integrations import build_model_gateway
 from agent_security import PolicyProfile
-from agent_storage import SQLiteEventStore, SQLiteLeaseStore, SQLiteProjectionStore
+from agent_storage import (
+    SQLiteEventStore,
+    SQLiteLeaseStore,
+    SQLiteProjectionStore,
+    SQLiteWorkspaceProjectionStore,
+)
 from zebra_agent_config import ZebraAgentSettings, load_settings
 from zebra_agent_worker import (
     SessionClaimService,
@@ -36,6 +41,7 @@ from zebra_agent_cli.execution import (
     serialize_run_execution,
     serialize_trace_events,
 )
+from zebra_agent_cli.workspace_read import serialize_workspace_projection
 
 CommandName = Literal["run", "resume", "suspend", "inspect", "approve", "model"]
 
@@ -192,7 +198,8 @@ def _session_result(
     session_id: str,
     database_path: Path,
 ) -> CliCommandResult:
-    session = SQLiteProjectionStore(database_path).get_session(SessionId(UUID(session_id)))
+    session_key = SessionId(UUID(session_id))
+    session = SQLiteProjectionStore(database_path).get_session(session_key)
     if session is None:
         return CliCommandResult(
             command=command,
@@ -202,16 +209,18 @@ def _session_result(
                 "status": "not_found",
             },
         )
-    return CliCommandResult(
-        command=command,
-        payload={
-            "session_id": session_id,
-            "database": str(database_path),
-            "title": session.title,
-            "status": session.status.value,
-            "current_sequence": session.current_sequence,
-        },
-    )
+    payload: dict[str, object] = {
+        "session_id": session_id,
+        "database": str(database_path),
+        "title": session.title,
+        "status": session.status.value,
+        "current_sequence": session.current_sequence,
+    }
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(session_key)
+    serialized_workspace = serialize_workspace_projection(workspace)
+    if serialized_workspace is not None:
+        payload["workspace"] = serialized_workspace
+    return CliCommandResult(command=command, payload=payload)
 
 
 def _resume_result(

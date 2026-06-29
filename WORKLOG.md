@@ -3149,3 +3149,19 @@
 - 验证：
   - `poetry run pytest tests/api/test_api_app.py tests/api/test_http_app.py tests/api/test_routes.py`
   - `make check`
+
+## 2026-06-29 Phase 27 Workspace Lifecycle Inspect Output
+
+- 执行 `P27-CLI-01 - Workspace Lifecycle Inspect Output`
+- 行为更新：
+  - `zebra-agent inspect <session_id>` 现在在存在 durable workspace projection 时返回 projection-backed `workspace`
+  - `zebra-agent resume <session_id>` 的只读模式现在也返回相同的 workspace lifecycle readback
+  - suspended session 的 CLI readback 现在包含 snapshot-safe metadata：`runtime_name`、`snapshot_id`、`snapshot_path`
+  - 保持向后兼容：旧的 `session_id`、`title`、`status`、`current_sequence` 字段保持不变
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/cli/test_cli_commands.py`
+  - `make check`
