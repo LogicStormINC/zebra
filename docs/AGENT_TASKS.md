@@ -4044,8 +4044,8 @@ Extend the current runtime boundary beyond `execute(...)` so snapshot, restore, 
 
 ### P25-WKR-01 - Worker Snapshot Lifecycle Wiring
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `WKR`
 - Depends on: `P25-RT-01`
 - Branch: `codex/p25-wkr-01-worker-snapshot-lifecycle-wiring`
@@ -4064,13 +4064,13 @@ Wire worker-side suspend and resume control paths to durable workspace state so 
 
 #### Acceptance
 
-- [ ] Worker lifecycle can persist suspend or resume transitions against durable workspace state.
-- [ ] Resume paths read workspace projection state instead of relying on process-local memory.
-- [ ] Failures leave deterministic lifecycle state for a later retry or operator action.
+- [x] Worker lifecycle can persist suspend or resume transitions against durable workspace state.
+- [x] Resume paths read workspace projection state instead of relying on process-local memory.
+- [x] Failures leave deterministic lifecycle state for a later retry or operator action.
 
 ### P25-CLOSE-01 - Phase 25 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P25-STO-01`, `P25-RT-01`, `P25-WKR-01`

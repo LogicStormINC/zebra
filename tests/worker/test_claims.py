@@ -9,6 +9,7 @@ from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
+    SQLiteWorkspaceProjectionStore,
 )
 from zebra_agent_worker import SessionClaimService, SessionRecoveryService
 
@@ -23,6 +24,7 @@ def test_session_claim_service_claims_and_heartbeats_running_session(
         SessionRecoveryService(
             SQLiteEventStore(database_path),
             SQLiteProjectionStore(database_path),
+            SQLiteWorkspaceProjectionStore(database_path),
         ),
     )
     claimed_at = datetime(2026, 6, 21, 23, 55, tzinfo=UTC)
@@ -55,6 +57,7 @@ def test_session_claim_service_blocks_concurrent_worker_before_expiry(
         SessionRecoveryService(
             SQLiteEventStore(database_path),
             SQLiteProjectionStore(database_path),
+            SQLiteWorkspaceProjectionStore(database_path),
         ),
     )
     claimed_at = datetime(2026, 6, 21, 23, 56, tzinfo=UTC)
@@ -85,6 +88,7 @@ def test_session_claim_service_allows_takeover_after_expiry(tmp_path: Path) -> N
         SessionRecoveryService(
             SQLiteEventStore(database_path),
             SQLiteProjectionStore(database_path),
+            SQLiteWorkspaceProjectionStore(database_path),
         ),
     )
     claimed_at = datetime(2026, 6, 21, 23, 57, tzinfo=UTC)
@@ -115,6 +119,7 @@ def test_session_claim_service_releases_claim(tmp_path: Path) -> None:
         SessionRecoveryService(
             SQLiteEventStore(database_path),
             SQLiteProjectionStore(database_path),
+            SQLiteWorkspaceProjectionStore(database_path),
         ),
     )
     claimed_at = datetime(2026, 6, 21, 23, 58, tzinfo=UTC)
@@ -150,7 +155,11 @@ def _seed_running_session(database_path: Path) -> SessionId:
             sequence=1,
             event_type=EventType.TASK_PREPARED,
             actor=EventActor.HARNESS,
-            payload={"title": "Claim Session", "user_input": "continue"},
+            payload={
+                "title": "Claim Session",
+                "user_input": "continue",
+                "workspace_root": str(Path("/tmp/claim-session")),
+            },
             created_at=created_at,
         )
     )

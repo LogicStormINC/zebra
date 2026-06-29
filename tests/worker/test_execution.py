@@ -10,12 +10,14 @@ from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, Model
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tool_runs import ToolRunRecord
 from agent_core.domain.tools import ToolCall
+from agent_core.domain.workspaces import WorkspaceStatus
 from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteModelCallStore,
     SQLiteProjectionStore,
     SQLiteToolRunStore,
+    SQLiteWorkspaceProjectionStore,
 )
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 from zebra_agent_worker import (
@@ -82,6 +84,7 @@ def _build_execution_service(database_path: Path) -> SessionExecutionService:
         SessionRecoveryService(
             SQLiteEventStore(database_path),
             SQLiteProjectionStore(database_path),
+            SQLiteWorkspaceProjectionStore(database_path),
         ),
     )
     return SessionExecutionService(
@@ -104,7 +107,38 @@ def _seed_ready_session(database_path: Path, workspace_root: Path) -> SessionId:
     for event in bootstrap.events:
         event_store.append(event)
     SQLiteProjectionStore(database_path).save_session(bootstrap.session)
+    SessionRecoveryService(
+        event_store,
+        SQLiteProjectionStore(database_path),
+        SQLiteWorkspaceProjectionStore(database_path),
+    ).recover_session(bootstrap.session.session_id)
     return bootstrap.session.session_id
+
+
+def test_worker_execution_service_updates_workspace_projection_lifecycle(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _assistant_only_gateway(settings=settings),
+    )
+
+    _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-a",
+        executed_at=_created_at(),
+    )
+
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(session_id)
+
+    assert workspace is not None
+    assert workspace.workspace_root == str(tmp_path.resolve())
+    assert workspace.status is WorkspaceStatus.COMPLETED
+    assert workspace.last_attempt_number == 1
 
 
 def _settings(database_path: Path) -> ZebraAgentSettings:

@@ -4,7 +4,12 @@ from pathlib import Path
 import pytest
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, new_session_id
-from agent_storage import SQLiteEventStore, SQLiteLeaseStore, SQLiteProjectionStore
+from agent_storage import (
+    SQLiteEventStore,
+    SQLiteLeaseStore,
+    SQLiteProjectionStore,
+    SQLiteWorkspaceProjectionStore,
+)
 from zebra_agent_worker import (
     SessionClaimService,
     SessionRecoveryService,
@@ -54,6 +59,7 @@ def _build_claim_service(database_path: Path) -> SessionClaimService:
         SessionRecoveryService(
             SQLiteEventStore(database_path),
             SQLiteProjectionStore(database_path),
+            SQLiteWorkspaceProjectionStore(database_path),
         ),
     )
 
@@ -78,7 +84,11 @@ def _seed_session(database_path: Path, *, terminal: bool) -> SessionId:
             sequence=1,
             event_type=EventType.TASK_PREPARED,
             actor=EventActor.HARNESS,
-            payload={"title": "Resume Session", "user_input": "continue"},
+            payload={
+                "title": "Resume Session",
+                "user_input": "continue",
+                "workspace_root": str(Path("/tmp/resume-session")),
+            },
             created_at=created_at,
         )
     )

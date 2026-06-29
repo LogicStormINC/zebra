@@ -69,7 +69,8 @@ The next milestone is `Phase 25 - Durable Workspace And Snapshot Foundations`. T
 - `docs/Phase24_Durable_Approval_Projection_And_Operator_Queue_验收记录.md` records the completed durable approval projection and operator queue phase
 - durable workspace projection storage now exists for `workspace_root`, `policy_profile`, lifecycle status, current sequence, and last attempt number
 - runtime contracts now expose explicit lifecycle methods for `provision`, `snapshot`, `restore`, `fork`, `suspend`, and `resume`, with the local adapter keeping snapshot paths fail-closed
-- Phase 25 worker lifecycle wiring is the next ready implementation lane
+- worker recovery and execution now reuse durable workspace projection state instead of raw bootstrap payloads for workspace lifecycle control
+- Phase 25 closeout and next-phase planning are the remaining ready implementation lane
 
 Read in this order:
 

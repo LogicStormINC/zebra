@@ -3024,3 +3024,23 @@
   - `uv run ruff check packages/agent-core/src/agent_core/ports/runtime.py packages/agent-runtime/src/agent_runtime tests/agent_runtime tests/agent_tools`
   - `uv run mypy packages/agent-core/src/agent_core/ports/runtime.py packages/agent-runtime/src/agent_runtime/adapters/local.py packages/agent-runtime/src/agent_runtime/__init__.py tests/agent_runtime/test_local_runtime.py`
   - `make check`
+
+## 2026-06-29 Phase 25 Worker Snapshot Lifecycle Wiring
+
+- 执行 `P25-WKR-01 - Worker Snapshot Lifecycle Wiring`
+- 行为更新：
+  - `SessionRecoveryService` 现在优先读取 durable workspace projection，并在缺失时从事件流回放补齐
+  - `RecoveredSession` 现在同时携带 `session` 与 `workspace`，避免 worker resume path 再去依赖原始 bootstrap payload 作为 workspace lifecycle state source of truth
+  - `SessionExecutionService` 现在从 recovered workspace projection 恢复 `workspace_root` / `policy_profile`
+  - worker 追加 `HARNESS_ATTEMPT_STARTED`、tool/policy events、以及 terminal events 时，会同步推进并持久化 workspace projection lifecycle
+  - `SessionRecoveryService` 对未提供 workspace store 的调用点保持向后兼容，避免越过本任务 owned paths 去改 CLI/API
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P25-WKR-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P25-CLOSE-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/worker/test_claims.py tests/worker/test_resume.py tests/worker/test_recovery.py tests/worker/test_execution.py tests/worker/test_loop.py`
+  - `uv run ruff check apps/worker/src/zebra_agent_worker packages/agent-storage/src/agent_storage tests/worker`
+  - `uv run mypy packages apps`
+  - `make check`
