@@ -3004,3 +3004,23 @@
   - `uv run ruff check packages/agent-core/src/agent_core packages/agent-storage/src/agent_storage tests/agent_core tests/agent_storage`
   - `uv run mypy packages/agent-core/src/agent_core/domain/workspaces.py packages/agent-core/src/agent_core/application/workspace_projection.py packages/agent-core/src/agent_core/ports/workspace_projection_store.py packages/agent-storage/src/agent_storage/workspaces.py tests/agent_core/test_workspace_projection.py tests/agent_storage/test_sqlite_workspace_store.py`
   - `make check`
+
+## 2026-06-29 Phase 25 Runtime Snapshot And Resume Contracts
+
+- 执行 `P25-RT-01 - Runtime Snapshot And Resume Contracts`
+- 行为更新：
+  - `RuntimePort` 新增 `RuntimeHandle`、`RuntimeSnapshot` 和 `RuntimeCapabilityError`
+  - runtime contract 现在显式建模 `provision`、`snapshot`、`restore`、`fork`、`suspend`、`resume`
+  - `LocalRuntime` 新增 deterministic `provision/suspend/resume` handle lifecycle
+  - `LocalRuntime` 对 `snapshot/restore/fork` 明确 fail-closed 返回 unsupported，而不伪造本地 snapshot 行为
+  - 现有 `execute(...)` 调用面保持兼容，tool/runtime tests 继续通过
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P25-RT-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P25-WKR-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_runtime/test_local_runtime.py tests/agent_tools/test_command_run_tool.py tests/agent_tools/test_patch_apply_tool.py tests/agent_tools/test_tests_run_tool.py tests/agent_tools/test_git_status_tool.py`
+  - `uv run ruff check packages/agent-core/src/agent_core/ports/runtime.py packages/agent-runtime/src/agent_runtime tests/agent_runtime tests/agent_tools`
+  - `uv run mypy packages/agent-core/src/agent_core/ports/runtime.py packages/agent-runtime/src/agent_runtime/adapters/local.py packages/agent-runtime/src/agent_runtime/__init__.py tests/agent_runtime/test_local_runtime.py`
+  - `make check`

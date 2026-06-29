@@ -4018,8 +4018,8 @@ Persist workspace and sandbox lifecycle facts into durable projection state so l
 
 ### P25-RT-01 - Runtime Snapshot And Resume Contracts
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `RUNTIME`
 - Depends on: `P25-STO-01`
 - Branch: `codex/p25-rt-01-runtime-snapshot-and-resume-contracts`
@@ -4038,13 +4038,13 @@ Extend the current runtime boundary beyond `execute(...)` so snapshot, restore, 
 
 #### Acceptance
 
-- [ ] Core runtime contracts model snapshot, restore, fork, suspend, and resume explicitly.
-- [ ] Local runtime behavior is deterministic for the supported subset and explicit for unsupported operations.
-- [ ] Existing command execution paths remain compatible.
+- [x] Core runtime contracts model snapshot, restore, fork, suspend, and resume explicitly.
+- [x] Local runtime behavior is deterministic for the supported subset and explicit for unsupported operations.
+- [x] Existing command execution paths remain compatible.
 
 ### P25-WKR-01 - Worker Snapshot Lifecycle Wiring
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `WKR`
 - Depends on: `P25-RT-01`

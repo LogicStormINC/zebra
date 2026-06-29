@@ -10,7 +10,14 @@ from agent_core.ports.model_call_store import ModelCallStorePort
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.projection_store import ProjectionStorePort
-from agent_core.ports.runtime import RuntimeExecutionRequest, RuntimeExecutionResult, RuntimePort
+from agent_core.ports.runtime import (
+    RuntimeCapabilityError,
+    RuntimeExecutionRequest,
+    RuntimeExecutionResult,
+    RuntimeHandle,
+    RuntimePort,
+    RuntimeSnapshot,
+)
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_core.ports.tool_run_store import ToolRunStorePort
 from agent_core.ports.workspace_projection_store import WorkspaceProjectionStorePort
@@ -26,10 +33,13 @@ __all__ = [
     "ModelGatewayPort",
     "PolicyEnginePort",
     "ProjectionStorePort",
+    "RuntimeCapabilityError",
     "RuntimeExecutionRequest",
     "RuntimeExecutionResult",
     "RuntimeEvidenceInput",
+    "RuntimeHandle",
     "RuntimePort",
+    "RuntimeSnapshot",
     "ToolGatewayPort",
     "ToolRunStorePort",
     "WorkspaceProjectionStorePort",

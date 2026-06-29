@@ -1,4 +1,9 @@
-from agent_core.ports.runtime import RuntimeExecutionRequest
+import pytest
+from agent_core.ports.runtime import (
+    RuntimeCapabilityError,
+    RuntimeExecutionRequest,
+    RuntimeSnapshot,
+)
 from agent_runtime.adapters.local import LocalRuntime
 
 
@@ -57,3 +62,34 @@ def test_local_runtime_reports_timeout() -> None:
     assert result.succeeded is False
     assert result.timed_out is True
     assert result.exit_code is None
+
+
+def test_local_runtime_provision_suspend_and_resume_handle() -> None:
+    runtime = LocalRuntime()
+
+    handle = runtime.provision(workspace_root="/tmp/runtime-handle")
+    suspended = runtime.suspend(handle)
+    resumed = runtime.resume(suspended)
+
+    assert handle.runtime_name == "local"
+    assert handle.workspace_root == "/tmp/runtime-handle"
+    assert handle.suspended is False
+    assert suspended.suspended is True
+    assert resumed.suspended is False
+    assert resumed.handle_id == handle.handle_id
+
+
+def test_local_runtime_snapshot_operations_fail_closed() -> None:
+    runtime = LocalRuntime()
+    handle = runtime.provision(workspace_root="/tmp/runtime-handle")
+    snapshot = RuntimeSnapshot.create(
+        runtime_name="local",
+        source_handle_id=handle.handle_id,
+    )
+
+    with pytest.raises(RuntimeCapabilityError, match="does not support snapshot"):
+        runtime.snapshot(handle)
+    with pytest.raises(RuntimeCapabilityError, match="does not support restore"):
+        runtime.restore(snapshot)
+    with pytest.raises(RuntimeCapabilityError, match="does not support fork"):
+        runtime.fork(snapshot)

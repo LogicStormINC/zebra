@@ -68,7 +68,8 @@ The next milestone is `Phase 25 - Durable Workspace And Snapshot Foundations`. T
 - projection rebuild, durable SQLite projection rows, and repeated approval reads now keep the same proxy-aware `approval_context` vocabulary for `route`, `target`, `network_profile`, and `scope`
 - `docs/Phase24_Durable_Approval_Projection_And_Operator_Queue_验收记录.md` records the completed durable approval projection and operator queue phase
 - durable workspace projection storage now exists for `workspace_root`, `policy_profile`, lifecycle status, current sequence, and last attempt number
-- Phase 25 runtime snapshot contracts and worker lifecycle wiring are the next ready implementation lanes
+- runtime contracts now expose explicit lifecycle methods for `provision`, `snapshot`, `restore`, `fork`, `suspend`, and `resume`, with the local adapter keeping snapshot paths fail-closed
+- Phase 25 worker lifecycle wiring is the next ready implementation lane
 
 Read in this order:
 

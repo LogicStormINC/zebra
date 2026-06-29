@@ -1,6 +1,14 @@
+from dataclasses import replace
 from subprocess import TimeoutExpired, run
 
-from agent_core.ports.runtime import RuntimeExecutionRequest, RuntimeExecutionResult, RuntimePort
+from agent_core.ports.runtime import (
+    RuntimeCapabilityError,
+    RuntimeExecutionRequest,
+    RuntimeExecutionResult,
+    RuntimeHandle,
+    RuntimePort,
+    RuntimeSnapshot,
+)
 
 
 def _normalize_output(output: bytes | str | None) -> str:
@@ -12,6 +20,9 @@ def _normalize_output(output: bytes | str | None) -> str:
 
 
 class LocalRuntime(RuntimePort):
+    def __init__(self) -> None:
+        self._handles: dict[str, RuntimeHandle] = {}
+
     def execute(self, request: RuntimeExecutionRequest) -> RuntimeExecutionResult:
         try:
             completed = run(
@@ -39,3 +50,43 @@ class LocalRuntime(RuntimePort):
             stderr=completed.stderr,
             timed_out=False,
         )
+
+    def provision(self, *, workspace_root: str | None = None) -> RuntimeHandle:
+        handle = RuntimeHandle.create(
+            runtime_name="local",
+            workspace_root=workspace_root,
+        )
+        self._handles[handle.handle_id] = handle
+        return handle
+
+    def snapshot(self, handle: RuntimeHandle) -> RuntimeSnapshot:
+        self._require_known_handle(handle)
+        raise RuntimeCapabilityError("local runtime does not support snapshot")
+
+    def restore(self, snapshot: RuntimeSnapshot) -> RuntimeHandle:
+        raise RuntimeCapabilityError("local runtime does not support restore")
+
+    def fork(self, snapshot: RuntimeSnapshot) -> RuntimeHandle:
+        raise RuntimeCapabilityError("local runtime does not support fork")
+
+    def suspend(self, handle: RuntimeHandle) -> RuntimeHandle:
+        current = self._require_known_handle(handle)
+        if current.suspended:
+            return current
+        suspended = replace(current, suspended=True)
+        self._handles[current.handle_id] = suspended
+        return suspended
+
+    def resume(self, handle: RuntimeHandle) -> RuntimeHandle:
+        current = self._require_known_handle(handle)
+        if not current.suspended:
+            return current
+        resumed = replace(current, suspended=False)
+        self._handles[current.handle_id] = resumed
+        return resumed
+
+    def _require_known_handle(self, handle: RuntimeHandle) -> RuntimeHandle:
+        current = self._handles.get(handle.handle_id)
+        if current is None:
+            raise RuntimeCapabilityError("runtime handle is unknown to local runtime")
+        return current
