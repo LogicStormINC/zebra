@@ -67,7 +67,8 @@ The next milestone is `Phase 25 - Durable Workspace And Snapshot Foundations`. T
 - GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
 - projection rebuild, durable SQLite projection rows, and repeated approval reads now keep the same proxy-aware `approval_context` vocabulary for `route`, `target`, `network_profile`, and `scope`
 - `docs/Phase24_Durable_Approval_Projection_And_Operator_Queue_验收记录.md` records the completed durable approval projection and operator queue phase
-- Phase 25 workspace projection, runtime snapshot contracts, and worker lifecycle wiring are the next ready implementation lanes
+- durable workspace projection storage now exists for `workspace_root`, `policy_profile`, lifecycle status, current sequence, and last attempt number
+- Phase 25 runtime snapshot contracts and worker lifecycle wiring are the next ready implementation lanes
 
 Read in this order:
 

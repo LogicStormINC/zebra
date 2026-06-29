@@ -1,0 +1,97 @@
+from datetime import UTC, datetime
+
+import pytest
+from agent_core.application.workspace_projection import (
+    WorkspaceProjectionError,
+    rebuild_workspace,
+)
+from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import new_session_id
+from agent_core.domain.workspaces import WorkspaceStatus
+
+
+def test_rebuild_workspace_projects_workspace_lifecycle() -> None:
+    session_id = new_session_id()
+    created_at = datetime(2026, 6, 29, 18, 0, tzinfo=UTC)
+    events = [
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=0,
+            event_type=EventType.SESSION_CREATED,
+            actor=EventActor.USER,
+            payload={"title": "Workspace Projection"},
+            created_at=created_at,
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=1,
+            event_type=EventType.TASK_PREPARED,
+            actor=EventActor.HARNESS,
+            payload={
+                "title": "Workspace Projection",
+                "user_input": "continue",
+                "workspace_root": "/tmp/workspace-projection",
+                "policy_profile": "workspace_write",
+            },
+            created_at=created_at,
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=2,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={"attempt_number": 1},
+            created_at=created_at,
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=3,
+            event_type=EventType.APPROVAL_REQUESTED,
+            actor=EventActor.POLICY,
+            payload={
+                "attempt_number": 1,
+                "tool_name": "mcp.github.create_pull_request",
+                "reason": "approval needed",
+                "policy_profile": "full_access",
+            },
+            created_at=created_at,
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=4,
+            event_type=EventType.APPROVAL_GRANTED,
+            actor=EventActor.USER,
+            payload={"operator": "alice"},
+            created_at=created_at,
+        ),
+    ]
+
+    projection = rebuild_workspace(events)
+
+    assert projection.session_id == session_id
+    assert projection.workspace_root == "/tmp/workspace-projection"
+    assert projection.policy_profile == "workspace_write"
+    assert projection.status is WorkspaceStatus.RUNNING
+    assert projection.current_sequence == 4
+    assert projection.last_attempt_number == 1
+
+
+def test_rebuild_workspace_requires_task_prepared_event() -> None:
+    session_id = new_session_id()
+    created_at = datetime(2026, 6, 29, 18, 15, tzinfo=UTC)
+    events = [
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=0,
+            event_type=EventType.SESSION_CREATED,
+            actor=EventActor.USER,
+            payload={"title": "Missing Workspace"},
+            created_at=created_at,
+        )
+    ]
+
+    with pytest.raises(
+        WorkspaceProjectionError,
+        match="event stream does not contain task_prepared",
+    ):
+        rebuild_workspace(events)

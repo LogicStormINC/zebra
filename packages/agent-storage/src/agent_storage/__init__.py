@@ -13,6 +13,7 @@ from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.projections import SQLiteProjectionStore
 from agent_storage.sqlite import SQLiteEventStore
 from agent_storage.tool_runs import SQLiteToolRunStore
+from agent_storage.workspaces import SQLiteWorkspaceProjectionStore
 
 __all__ = [
     "IdempotencyConflictError",
@@ -27,5 +28,6 @@ __all__ = [
     "SQLiteModelCallStore",
     "SQLiteProjectionStore",
     "SQLiteToolRunStore",
+    "SQLiteWorkspaceProjectionStore",
     "new_idempotency_record",
 ]

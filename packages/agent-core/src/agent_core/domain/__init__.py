@@ -10,6 +10,7 @@ from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.tool_runs import ToolRunRecord
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 
 __all__ = [
     "ArtifactRef",
@@ -29,4 +30,6 @@ __all__ = [
     "ToolRunRecord",
     "ToolResult",
     "WorkerLease",
+    "WorkspaceProjection",
+    "WorkspaceStatus",
 ]

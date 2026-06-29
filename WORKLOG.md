@@ -2986,3 +2986,21 @@
   - `README.md`
 - 验证：
   - `make check`
+
+## 2026-06-29 Phase 25 Durable Workspace Projection Store
+
+- 执行 `P25-STO-01 - Durable Workspace Projection Store`
+- 行为更新：
+  - 新增 `WorkspaceProjection` / `WorkspaceStatus` 域模型，持久化当前事件流里已经存在的 durable workspace facts
+  - 新增 `rebuild_workspace(...)`，从 `task_prepared`、attempt、approval 与 terminal session events 重建 workspace lifecycle state
+  - 新增 `SQLiteWorkspaceProjectionStore`，持久化 `workspace_root`、`policy_profile`、`current_sequence`、`status`、`prepared_at`、`updated_at`、`last_attempt_number`
+  - 现有 session projection 路径保持兼容，未提前引入 snapshot-specific runtime fields
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P25-STO-01` 标记为 `Done`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_core/test_workspace_projection.py tests/agent_storage/test_sqlite_workspace_store.py tests/agent_storage/test_sqlite_projection_store.py tests/agent_core/test_session_projection.py`
+  - `uv run ruff check packages/agent-core/src/agent_core packages/agent-storage/src/agent_storage tests/agent_core tests/agent_storage`
+  - `uv run mypy packages/agent-core/src/agent_core/domain/workspaces.py packages/agent-core/src/agent_core/application/workspace_projection.py packages/agent-core/src/agent_core/ports/workspace_projection_store.py packages/agent-storage/src/agent_storage/workspaces.py tests/agent_core/test_workspace_projection.py tests/agent_storage/test_sqlite_workspace_store.py`
+  - `make check`

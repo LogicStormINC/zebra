@@ -3992,8 +3992,8 @@ Close Phase 24 with durable approval projection evidence and define the next imp
 
 ### P25-STO-01 - Durable Workspace Projection Store
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `STO`
 - Depends on: `P24-CLOSE-01`
 - Branch: `codex/p25-sto-01-durable-workspace-projection-store`
@@ -4012,9 +4012,9 @@ Persist workspace and sandbox lifecycle facts into durable projection state so l
 
 #### Acceptance
 
-- [ ] Durable workspace state can be rebuilt from session events deterministically.
-- [ ] SQLite persistence can store and reload workspace projection rows without losing lifecycle fields.
-- [ ] Existing session projection behavior remains backwards compatible.
+- [x] Durable workspace state can be rebuilt from session events deterministically.
+- [x] SQLite persistence can store and reload workspace projection rows without losing lifecycle fields.
+- [x] Existing session projection behavior remains backwards compatible.
 
 ### P25-RT-01 - Runtime Snapshot And Resume Contracts
 
