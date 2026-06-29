@@ -184,10 +184,11 @@
 - Phase 22 is closed with `docs/Phase22_Proxy_Execution_And_Gateway_Wiring_验收记录.md`
 - harness policy and approval events can now persist proxy route, target, network-profile, and scope metadata without changing existing local-only payloads
 - operator-facing session reads and approval decision responses now expose proxy-safe `approval_context` derived from the latest `approval_requested` event
+- harness trace projection and API trace serialization now normalize proxy approval metadata with the same `route`, `target`, `network_profile`, and `scope` vocabulary used by policy and execution layers
 
 ## Next Unlocks
 
-- `P23-OBS-01 - Proxy Approval Trace Normalization` is ready
+- `P23-CLOSE-01 - Phase 23 Closeout And Next Planning` is ready
 
 ## Active Documents
 

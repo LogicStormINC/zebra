@@ -3840,8 +3840,8 @@ Expose proxy-aware approval context through operator-facing API read and approva
 
 ### P23-OBS-01 - Proxy Approval Trace Normalization
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `OBS`
 - Depends on: `P23-HAR-01`
 - Branch: `codex/p23-obs-01-proxy-approval-trace-normalization`
@@ -3859,13 +3859,13 @@ Keep proxy-aware approval evidence consistent across policy events, traces, and 
 
 #### Acceptance
 
-- [ ] Trace-facing outputs reuse the same proxy route vocabulary as policy and tool execution metadata.
-- [ ] Proxy approval metadata remains deterministic across blocked, approval, and executed paths.
-- [ ] Non-proxy trace outputs remain backwards compatible.
+- [x] Trace-facing outputs reuse the same proxy route vocabulary as policy and tool execution metadata.
+- [x] Proxy approval metadata remains deterministic across blocked, approval, and executed paths.
+- [x] Non-proxy trace outputs remain backwards compatible.
 
 ### P23-CLOSE-01 - Phase 23 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P23-API-01`, `P23-OBS-01`

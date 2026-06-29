@@ -38,7 +38,7 @@ class _AttemptBuilder:
         self._assistant_message: str | None = None
         self._pending_tool_name: str | None = None
         self._tool_arguments: dict[str, object] = {}
-        self._policy_decision: str | None = None
+        self._policy_context: dict[str, object] = {}
         self._tools: list[HarnessToolTrace] = []
 
     def apply(self, event: SessionEvent) -> None:
@@ -58,9 +58,7 @@ class _AttemptBuilder:
             return
 
         if event.event_type is EventType.POLICY_DECISION_MADE:
-            decision = event.payload.get("decision")
-            if isinstance(decision, str):
-                self._policy_decision = decision
+            self._policy_context = _policy_context_from_payload(event.payload)
             return
 
         if event.event_type in {
@@ -84,12 +82,18 @@ class _AttemptBuilder:
                     ),
                     output=output if isinstance(output, str) else "",
                     metadata=dict(metadata) if isinstance(metadata, dict) else {},
-                    policy_decision=self._policy_decision,
+                    policy_decision=_string_or_none(self._policy_context.get("decision")),
+                    policy_route=_string_or_none(self._policy_context.get("route")),
+                    policy_target=_string_or_none(self._policy_context.get("target")),
+                    policy_network_profile=_string_or_none(
+                        self._policy_context.get("network_profile")
+                    ),
+                    policy_scope=_scope_from_context(self._policy_context),
                 )
             )
             self._pending_tool_name = None
             self._tool_arguments = {}
-            self._policy_decision = None
+            self._policy_context = {}
 
     def build(self) -> HarnessAttemptTrace:
         return HarnessAttemptTrace(
@@ -104,3 +108,30 @@ def _attempt_number(event: SessionEvent) -> int | None:
     if isinstance(raw_attempt_number, int) and raw_attempt_number > 0:
         return raw_attempt_number
     return None
+
+
+def _policy_context_from_payload(payload: dict[str, object]) -> dict[str, object]:
+    context: dict[str, object] = {}
+    for field in ("decision", "route", "target", "network_profile"):
+        value = payload.get(field)
+        if isinstance(value, str) and value.strip():
+            context[field] = value
+    scope = payload.get("scope")
+    if isinstance(scope, list | tuple):
+        normalized = [item for item in scope if isinstance(item, str) and item.strip()]
+        if normalized:
+            context["scope"] = normalized
+    return context
+
+
+def _string_or_none(value: object) -> str | None:
+    if isinstance(value, str) and value.strip():
+        return value
+    return None
+
+
+def _scope_from_context(context: dict[str, object]) -> tuple[str, ...]:
+    scope = context.get("scope")
+    if not isinstance(scope, list):
+        return ()
+    return tuple(item for item in scope if isinstance(item, str) and item.strip())

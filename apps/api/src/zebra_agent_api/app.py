@@ -402,6 +402,10 @@ def _trace_payload(result: HarnessLoopResult) -> list[dict[str, object]]:
                     "output": tool.output,
                     "metadata": tool.metadata,
                     "policy_decision": tool.policy_decision,
+                    "policy_route": tool.policy_route,
+                    "policy_target": tool.policy_target,
+                    "policy_network_profile": tool.policy_network_profile,
+                    "policy_scope": list(tool.policy_scope),
                 }
                 for tool in attempt.tools
             ],

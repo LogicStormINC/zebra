@@ -280,6 +280,10 @@ def test_api_create_session_execute_runs_builtin_tool(
                         "truncated": False,
                     },
                     "policy_decision": "allow",
+                    "policy_route": None,
+                    "policy_target": None,
+                    "policy_network_profile": None,
+                    "policy_scope": [],
                 }
             ],
         }

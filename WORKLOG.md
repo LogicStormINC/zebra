@@ -2872,3 +2872,21 @@
   - `poetry run pytest tests/api/test_approval_api_app.py tests/api/test_http_app.py tests/api/test_approval_routes.py tests/api/test_http_approvals.py`
   - `uv run ruff check apps/api/src/zebra_agent_api tests/api`
   - `make check`
+
+## 2026-06-29 Phase 23 Proxy Approval Trace Normalization
+
+- 执行 `P23-OBS-01 - Proxy Approval Trace Normalization`
+- 行为更新：
+  - `HarnessToolTrace` 新增 `policy_route`、`policy_target`、`policy_network_profile`、`policy_scope`
+  - `HarnessTraceProjector` 现在会从 `policy_decision_made` 事件中提取并归一化代理审批字段
+  - API trace payload 与 `serialize_trace_events(...)` 复用同一套代理审批字段命名
+  - non-proxy trace 继续返回 `None` / 空列表或空元组，不改变既有 allow 本地路径语义
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P23-OBS-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P23-CLOSE-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_core/test_harness_trace_projection.py tests/agent_core/test_single_attempt_orchestrator.py tests/api/test_api_app.py tests/api/test_http_app.py`
+  - `uv run ruff check packages/agent-core/src/agent_core apps/api/src/zebra_agent_api tests/agent_core tests/api`
+  - `make check`

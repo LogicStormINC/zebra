@@ -12,7 +12,7 @@ class _PendingAttemptTrace:
     tools: list[dict[str, object]] = field(default_factory=list)
     pending_tool_name: str | None = None
     pending_tool_arguments: dict[str, object] = field(default_factory=dict)
-    pending_policy_decision: str | None = None
+    pending_policy_context: dict[str, object] = field(default_factory=dict)
 
 
 def serialize_trace_events(events: tuple[SessionEvent, ...]) -> list[dict[str, object]]:
@@ -39,9 +39,7 @@ def serialize_trace_events(events: tuple[SessionEvent, ...]) -> list[dict[str, o
                     str(key): value for key, value in arguments.items()
                 }
         elif event.event_type.value == "policy_decision_made":
-            decision = event.payload.get("decision")
-            if isinstance(decision, str):
-                attempt.pending_policy_decision = decision
+            attempt.pending_policy_context = _policy_context_from_payload(event.payload)
         elif event.event_type.value in {"tool_execution_completed", "tool_execution_failed"}:
             tool_name = event.payload.get("tool_name")
             status = event.payload.get("status")
@@ -60,12 +58,26 @@ def serialize_trace_events(events: tuple[SessionEvent, ...]) -> list[dict[str, o
                     ),
                     "output": output if isinstance(output, str) else "",
                     "metadata": dict(metadata) if isinstance(metadata, dict) else {},
-                    "policy_decision": attempt.pending_policy_decision,
+                    "policy_decision": _string_or_none(
+                        attempt.pending_policy_context.get("decision")
+                    ),
+                    "policy_route": _string_or_none(
+                        attempt.pending_policy_context.get("route")
+                    ),
+                    "policy_target": _string_or_none(
+                        attempt.pending_policy_context.get("target")
+                    ),
+                    "policy_network_profile": _string_or_none(
+                        attempt.pending_policy_context.get("network_profile")
+                    ),
+                    "policy_scope": _scope_from_context(
+                        attempt.pending_policy_context
+                    ),
                 }
             )
             attempt.pending_tool_name = None
             attempt.pending_tool_arguments = {}
-            attempt.pending_policy_decision = None
+            attempt.pending_policy_context = {}
     return [
         {
             "attempt_number": attempt.attempt_number,
@@ -74,3 +86,30 @@ def serialize_trace_events(events: tuple[SessionEvent, ...]) -> list[dict[str, o
         }
         for _, attempt in sorted(attempts.items(), key=lambda item: item[0])
     ]
+
+
+def _policy_context_from_payload(payload: dict[str, object]) -> dict[str, object]:
+    context: dict[str, object] = {}
+    for key in ("decision", "route", "target", "network_profile"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            context[key] = value
+    scope = payload.get("scope")
+    if isinstance(scope, list | tuple):
+        normalized = [item for item in scope if isinstance(item, str) and item.strip()]
+        if normalized:
+            context["scope"] = normalized
+    return context
+
+
+def _string_or_none(value: object) -> str | None:
+    if isinstance(value, str) and value.strip():
+        return value
+    return None
+
+
+def _scope_from_context(context: dict[str, object]) -> list[str]:
+    scope = context.get("scope")
+    if not isinstance(scope, list):
+        return []
+    return [item for item in scope if isinstance(item, str) and item.strip()]
