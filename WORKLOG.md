@@ -2911,3 +2911,21 @@
   - `README.md`
 - 验证：
   - `make check`
+
+## 2026-06-29 Phase 24 Durable Approval Context Projection
+
+- 执行 `P24-STO-01 - Durable Approval Context Projection`
+- 行为更新：
+  - `Session` 新增 durable `approval_context`
+  - `session_projection.apply_event(...)` 在 `approval_requested` 事件携带足够字段时持久化审批上下文
+  - `approval_granted` / `approval_rejected` 路径保持已有上下文，projection rebuild 结果稳定
+  - `SQLiteProjectionStore` 新增 `approval_context_json` 持久化列，并兼容已有表结构升级
+- 文档更新：
+  - `docs/AGENT_TASKS.md` 将 `P24-STO-01` 标记为 `Done`
+  - `docs/AGENT_TASKS.md` 将 `P24-API-01` 与 `P24-OBS-01` 解锁为 `Ready`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_core/test_session_projection.py tests/agent_storage/test_sqlite_projection_store.py`
+  - `uv run ruff check packages/agent-core/src/agent_core packages/agent-storage/src/agent_storage tests/agent_core tests/agent_storage`
+  - `uv run mypy packages/agent-core/src/agent_core/domain/sessions.py packages/agent-core/src/agent_core/application/session_projection.py packages/agent-storage/src/agent_storage/projections.py tests/agent_core/test_session_projection.py tests/agent_storage/test_sqlite_projection_store.py`

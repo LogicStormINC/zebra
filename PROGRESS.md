@@ -186,10 +186,12 @@
 - operator-facing session reads and approval decision responses now expose proxy-safe `approval_context` derived from the latest `approval_requested` event
 - harness trace projection and API trace serialization now normalize proxy approval metadata with the same `route`, `target`, `network_profile`, and `scope` vocabulary used by policy and execution layers
 - Phase 23 is closed with `docs/Phase23_Proxy_Approval_Projection_And_Operator_Readback_验收记录.md`
+- session projections and SQLite projection storage now persist durable `approval_context` state for proxy-aware approval requests
 
 ## Next Unlocks
 
-- `P24-STO-01 - Durable Approval Context Projection` is ready
+- `P24-API-01 - Approval Queue And Detail Read API` is ready
+- `P24-OBS-01 - Approval Projection Consistency Checks` is ready
 
 ## Active Documents
 

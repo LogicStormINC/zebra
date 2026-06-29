@@ -3891,8 +3891,8 @@ Close Phase 23 with proxy-aware approval readback evidence and define the next i
 
 ### P24-STO-01 - Durable Approval Context Projection
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `STO`
 - Depends on: `P23-CLOSE-01`
 - Branch: `codex/p24-sto-01-durable-approval-context-projection`
@@ -3910,13 +3910,13 @@ Persist proxy-aware approval context into durable projection state so operator r
 
 #### Acceptance
 
-- [ ] Session or approval projection state persists proxy-aware approval context after `approval_requested`.
-- [ ] Projection rebuild stays deterministic across approval grant and reject paths.
-- [ ] Existing local-only projection behavior remains backwards compatible.
+- [x] Session or approval projection state persists proxy-aware approval context after `approval_requested`.
+- [x] Projection rebuild stays deterministic across approval grant and reject paths.
+- [x] Existing local-only projection behavior remains backwards compatible.
 
 ### P24-API-01 - Approval Queue And Detail Read API
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `API`
 - Depends on: `P24-STO-01`
@@ -3941,7 +3941,7 @@ Expose projection-backed approval queue and approval detail reads for operators.
 
 ### P24-OBS-01 - Approval Projection Consistency Checks
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `OBS`
 - Depends on: `P24-STO-01`

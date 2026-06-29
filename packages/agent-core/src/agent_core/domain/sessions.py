@@ -17,6 +17,18 @@ class SessionStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
+class ApprovalContext(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    tool_name: str
+    reason: str
+    policy_profile: str
+    route: str | None = None
+    target: str | None = None
+    network_profile: str | None = None
+    scope: tuple[str, ...] = ()
+
+
 _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
     SessionStatus.CREATED: {SessionStatus.READY, SessionStatus.CANCELLED},
     SessionStatus.READY: {SessionStatus.RUNNING, SessionStatus.CANCELLED},
@@ -48,6 +60,7 @@ class Session(BaseModel):
     created_at: datetime
     updated_at: datetime
     current_sequence: int = Field(default=0, ge=0)
+    approval_context: ApprovalContext | None = None
 
     @classmethod
     def create(cls, *, title: str, created_at: datetime | None = None) -> "Session":
