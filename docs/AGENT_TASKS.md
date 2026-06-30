@@ -4431,8 +4431,8 @@ readback rules are explicit instead of implied by file presence alone.
 
 ### P29-CLI-01 - Artifact Inspect And Read Commands
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P28-CLOSE-01`
 - Branch: `codex/p29-cli-01-artifact-inspect-and-read`
@@ -4451,9 +4451,9 @@ operators do not need the HTTP API for artifact inspection.
 
 #### Acceptance
 
-- [ ] Operators can inspect artifact retrieval state from the CLI.
-- [ ] CLI content retrieval stays machine-readable and local-safe.
-- [ ] Existing CLI output contracts remain backward compatible.
+- [x] Operators can inspect artifact retrieval state from the CLI.
+- [x] CLI content retrieval stays machine-readable and local-safe.
+- [x] Existing CLI output contracts remain backward compatible.
 
 ### P29-OBS-01 - Artifact Audit And Preview Redaction
 

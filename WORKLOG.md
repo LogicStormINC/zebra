@@ -3259,3 +3259,18 @@
   - `README.md`
 - 验证：
   - 复用当前实现分支已经通过的 `make check`
+
+## 2026-06-30 Phase 29 Artifact Inspect And Read Commands
+
+- 执行 `P29-CLI-01 - Artifact Inspect And Read Commands`
+- 行为更新：
+  - 新增 `zebra-agent artifact inspect <session_id> <artifact_id>`
+  - 新增 `zebra-agent artifact read <session_id> <artifact_id>`
+  - CLI retrieval state 现在与 API 对齐，显式区分 `indexed_only`、`payload_available`、`payload_missing`、`external_reference`
+  - payload-backed artifact read 现在返回 machine-readable base64 内容
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/cli/test_cli_artifacts.py tests/cli/test_cli_commands.py`

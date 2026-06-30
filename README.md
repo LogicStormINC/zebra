@@ -82,6 +82,7 @@ The next milestone is `Phase 29 - Artifact Governance And Operator Parity`. The 
 - durable local artifact payload storage now exists with SQLite-backed metadata and explicit missing-payload inspection for later retrieval wiring
 - worker execution now persists supported text tool outputs into the local artifact payload store when no explicit artifact URI is already provided
 - session artifact APIs now support detail and content readback with explicit indexed-only and payload-availability semantics
+- CLI now supports `artifact inspect` and `artifact read` for local artifact inspection without going through the HTTP API
 - `docs/Phase28_Durable_Artifact_Storage_And_Retrieval_验收记录.md` records the completed durable artifact storage and retrieval phase
 - Phase 29 artifact governance, CLI artifact readback, and artifact audit safety are the next ready implementation lanes
 
