@@ -4352,7 +4352,7 @@ artifact reads can rely on more than ephemeral inline previews.
 
 ### P28-API-01 - Artifact Detail And Retrieval Surface
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `API`
 - Depends on: `P28-STO-01`
@@ -4378,8 +4378,8 @@ durable local artifact payload model.
 
 ### P28-CLOSE-01 - Phase 28 Closeout And Next Planning
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P28-STO-01`, `P28-WKR-01`, `P28-API-01`
 - Branch: `codex/p28-closeout-next-plan`
@@ -4398,5 +4398,110 @@ implementation phase.
 
 #### Acceptance
 
-- [ ] Durable artifact storage evidence is recorded.
+- [x] Durable artifact storage evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 29 Task Board
+
+### P29-STO-01 - Artifact Metadata Governance
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `STORAGE`
+- Depends on: `P28-CLOSE-01`
+- Branch: `codex/p29-sto-01-artifact-metadata-governance`
+- Owned paths: `packages/agent-storage/`, `packages/agent-core/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Harden local artifact metadata so retention, local availability, and safe
+readback rules are explicit instead of implied by file presence alone.
+
+#### Deliverables
+
+- retention-aware or lifecycle-aware artifact metadata fields
+- safe readback metadata for local payload availability
+- regression coverage for retained, missing, and pruned artifact metadata paths
+
+#### Acceptance
+
+- [ ] Artifact metadata exposes lifecycle state explicitly.
+- [ ] Missing and pruned artifact payloads remain distinguishable.
+- [ ] Existing artifact retrieval remains backward compatible.
+
+### P29-CLI-01 - Artifact Inspect And Read Commands
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P28-CLOSE-01`
+- Branch: `codex/p29-cli-01-artifact-inspect-and-read`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose artifact detail and content retrieval through CLI surfaces so local
+operators do not need the HTTP API for artifact inspection.
+
+#### Deliverables
+
+- CLI artifact detail command
+- CLI artifact content read path with machine-readable output
+- regression coverage for indexed-only, payload-backed, and missing artifact reads
+
+#### Acceptance
+
+- [ ] Operators can inspect artifact retrieval state from the CLI.
+- [ ] CLI content retrieval stays machine-readable and local-safe.
+- [ ] Existing CLI output contracts remain backward compatible.
+
+### P29-OBS-01 - Artifact Audit And Preview Redaction
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `OBS`
+- Depends on: `P28-CLOSE-01`
+- Branch: `codex/p29-obs-01-artifact-audit-and-redaction`
+- Owned paths: `packages/agent-storage/`, `apps/api/`, `tests/api/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Make artifact reads safer to operate by adding audit correlation and explicit
+preview-redaction handling for retrieval surfaces.
+
+#### Deliverables
+
+- artifact read audit metadata or correlation fields
+- preview-redaction or safe truncation rules
+- regression coverage for sensitive preview and readback handling
+
+#### Acceptance
+
+- [ ] Artifact reads are auditable by session and artifact identifier.
+- [ ] Preview redaction or truncation behavior is explicit and tested.
+- [ ] Existing artifact list and detail responses stay stable for non-sensitive cases.
+
+### P29-CLOSE-01 - Phase 29 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P29-STO-01`, `P29-CLI-01`, `P29-OBS-01`
+- Branch: `codex/p29-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 29 with artifact governance and operator parity evidence, then
+define the next implementation phase.
+
+#### Deliverables
+
+- Phase 29 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Artifact governance and operator parity evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

@@ -3244,3 +3244,18 @@
 - 验证：
   - `poetry run pytest tests/api/test_session_artifacts.py`
   - `make check`
+
+## 2026-06-29 Phase 28 Closeout And Phase 29 Planning
+
+- 执行 `P28-CLOSE-01 - Phase 28 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase28_Durable_Artifact_Storage_And_Retrieval_验收记录.md`
+  - 归档 Phase 28 的 artifact payload store、worker capture、artifact retrieval 验收结论
+  - 将下一阶段定义为 `Phase 29 - Artifact Governance And Operator Parity`
+  - 新增 `P29-STO-01`、`P29-CLI-01`、`P29-OBS-01`、`P29-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - 复用当前实现分支已经通过的 `make check`

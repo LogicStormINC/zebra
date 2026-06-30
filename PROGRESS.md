@@ -2,12 +2,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 28 - Durable Artifact Storage And Retrieval`
-- Repository status: `phase 28 ready`
+- Active phase: `Phase 29 - Artifact Governance And Operator Parity`
+- Repository status: `phase 29 ready`
 - Current focus:
-  - merge the artifact retrieval branch
-  - close Phase 28 with acceptance evidence
-  - define the next post-artifact implementation slice
+  - harden artifact metadata and lifecycle governance
+  - add CLI artifact inspection and content retrieval
+  - improve artifact audit and preview safety
 
 ## Completed
 
@@ -206,13 +206,14 @@
 - durable local artifact payload storage now exists with SQLite-backed metadata, file-backed payload retention, and explicit missing-payload inspection
 - worker execution now persists supported text tool outputs into the durable artifact payload store and rewrites local artifact refs to those retained payloads when no explicit artifact URI exists
 - session artifact read APIs now expose artifact detail and base64 content retrieval with explicit `indexed_only`, `payload_available`, `payload_missing`, and `external_reference` semantics
+- Phase 28 is closed with `docs/Phase28_Durable_Artifact_Storage_And_Retrieval_验收记录.md`
 
 ## Next Unlocks
 
-- `P28-STO-01 - Durable Artifact Payload Store` is in review on the current development line
-- `P28-WKR-01 - Worker Artifact Capture Wiring` is complete on the current development line
-- `P28-API-01 - Artifact Detail And Retrieval Surface` is in review on `codex/p28-api-01-artifact-detail-and-retrieval`
-- `P28-CLOSE-01 - Phase 28 Closeout And Next Planning` is the next unlock after the API review branch lands
+- `P29-STO-01 - Artifact Metadata Governance` is ready on `codex/p29-sto-01-artifact-metadata-governance`
+- `P29-CLI-01 - Artifact Inspect And Read Commands` is ready on `codex/p29-cli-01-artifact-inspect-and-read`
+- `P29-OBS-01 - Artifact Audit And Preview Redaction` is ready on `codex/p29-obs-01-artifact-audit-and-redaction`
+- `P29-CLOSE-01 - Phase 29 Closeout And Next Planning` is locked on the phase implementation tasks
 
 ## Active Documents
 

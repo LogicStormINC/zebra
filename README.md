@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 27 is closed and the repository is ready to start Phase 28 durable artifact storage and retrieval. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates, a real local snapshot backend for workspace-backed runtime handles, snapshot-backed suspend or resume control wiring across CLI, API, and worker execution, manifest-aware snapshot compatibility checks, explicit retained-snapshot cleanup, and updated operator guidance for the supported local snapshot model.
+Phase 28 is closed and the repository is ready to start Phase 29 artifact governance and operator parity. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates, a real local snapshot backend for workspace-backed runtime handles, snapshot-backed suspend or resume control wiring across CLI, API, and worker execution, manifest-aware snapshot compatibility checks, explicit retained-snapshot cleanup, durable artifact payload storage, worker-side artifact capture for supported text outputs, and artifact detail plus content retrieval over the local API.
 
-The next milestone is `Phase 28 - Durable Artifact Storage And Retrieval`. The current implementation lanes are:
+The next milestone is `Phase 29 - Artifact Governance And Operator Parity`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -82,7 +82,8 @@ The next milestone is `Phase 28 - Durable Artifact Storage And Retrieval`. The c
 - durable local artifact payload storage now exists with SQLite-backed metadata and explicit missing-payload inspection for later retrieval wiring
 - worker execution now persists supported text tool outputs into the local artifact payload store when no explicit artifact URI is already provided
 - session artifact APIs now support detail and content readback with explicit indexed-only and payload-availability semantics
-- Phase 28 durable artifact storage, worker artifact capture, and artifact retrieval are the next ready implementation lanes
+- `docs/Phase28_Durable_Artifact_Storage_And_Retrieval_验收记录.md` records the completed durable artifact storage and retrieval phase
+- Phase 29 artifact governance, CLI artifact readback, and artifact audit safety are the next ready implementation lanes
 
 Read in this order:
 
