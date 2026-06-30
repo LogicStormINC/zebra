@@ -48,6 +48,7 @@ from zebra_agent_api.approval_read import ApprovalReadApi
 from zebra_agent_api.credential_broker import build_default_credential_broker
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.serialization import serialize_trace_events
+from zebra_agent_api.session_artifact_control import SessionArtifactControlApi
 from zebra_agent_api.session_commit import SessionCommitApi
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
@@ -103,6 +104,12 @@ class ZebraAgentApi:
 
     def get_session_artifact_content(self, session_id: str, artifact_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session_artifact_content(
+            session_id,
+            artifact_id,
+        )
+
+    def prune_session_artifact(self, session_id: str, artifact_id: str) -> ApiResponse:
+        return SessionArtifactControlApi(self.database_path).prune_artifact(
             session_id,
             artifact_id,
         )

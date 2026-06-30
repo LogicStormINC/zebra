@@ -45,6 +45,8 @@ class RouteAdapter:
                 return self.app.suspend_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "resume":
                 return self.app.resume_session(parts[0], request.body or {})
+            if len(parts) == 4 and parts[1] == "artifacts" and parts[3] == "prune":
+                return self.app.prune_session_artifact(parts[0], parts[2])
             if len(parts) == 2 and parts[1] == "commit":
                 return self.app.commit_session(
                     parts[0],

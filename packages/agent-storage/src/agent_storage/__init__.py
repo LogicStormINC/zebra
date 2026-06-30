@@ -4,6 +4,12 @@ from agent_storage.artifact_payloads import (
     ArtifactPayloadMissingError,
     SQLiteArtifactPayloadStore,
 )
+from agent_storage.artifact_projection import (
+    payload_for_artifact_uri,
+    serialize_artifact_lifecycle,
+    serialize_artifact_retrieval,
+    serialize_session_artifact_projection,
+)
 from agent_storage.artifacts import SessionArtifact, SQLiteArtifactStore
 from agent_storage.delivery_audit import SQLiteDeliveryAuditStore
 from agent_storage.idempotency import (
@@ -25,6 +31,10 @@ __all__ = [
     "IdempotencyRecord",
     "LeaseConflictError",
     "SessionArtifact",
+    "payload_for_artifact_uri",
+    "serialize_artifact_lifecycle",
+    "serialize_artifact_retrieval",
+    "serialize_session_artifact_projection",
     "SQLiteArtifactPayloadStore",
     "SQLiteArtifactStore",
     "SQLiteDeliveryAuditStore",

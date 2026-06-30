@@ -1,10 +1,19 @@
 """Domain models for Zebra Agent."""
 
+from agent_core.domain.artifact_access import (
+    ArtifactAccessClass,
+    ArtifactAccessDescriptor,
+)
 from agent_core.domain.artifact_payloads import (
     ArtifactPayloadInspection,
+    ArtifactPayloadLifecycleStatus,
     ArtifactPayloadStatus,
     ArtifactPayloadWrite,
     StoredArtifactPayload,
+)
+from agent_core.domain.artifact_retention import (
+    ArtifactRetentionPolicy,
+    ArtifactRetentionProfile,
 )
 from agent_core.domain.artifacts import ArtifactRef
 from agent_core.domain.delivery_audit import DeliveryAuditRecord
@@ -19,7 +28,12 @@ from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 
 __all__ = [
+    "ArtifactRetentionPolicy",
+    "ArtifactRetentionProfile",
+    "ArtifactAccessClass",
+    "ArtifactAccessDescriptor",
     "ArtifactPayloadInspection",
+    "ArtifactPayloadLifecycleStatus",
     "ArtifactPayloadStatus",
     "ArtifactPayloadWrite",
     "ArtifactRef",

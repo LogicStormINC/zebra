@@ -36,7 +36,11 @@ from zebra_agent_worker import (
     SessionResumeService,
 )
 
-from zebra_agent_cli.artifact_read import read_artifact_content, read_artifact_detail
+from zebra_agent_cli.artifact_read import (
+    prune_artifact,
+    read_artifact_content,
+    read_artifact_detail,
+)
 from zebra_agent_cli.execution import (
     execute_durable_run,
     serialize_run_execution,
@@ -144,6 +148,13 @@ def _parser() -> argparse.ArgumentParser:
     artifact_read.add_argument("session_id")
     artifact_read.add_argument("artifact_id")
     artifact_read.add_argument("--database")
+    artifact_prune = artifact_subcommands.add_parser(
+        "prune",
+        help="Prune one managed payload-backed session artifact.",
+    )
+    artifact_prune.add_argument("session_id")
+    artifact_prune.add_argument("artifact_id")
+    artifact_prune.add_argument("--database")
 
     approve = subcommands.add_parser("approve", help="Record an approval decision.")
     approve.add_argument("session_id")
@@ -422,6 +433,13 @@ def _artifact_result(
         return CliCommandResult(command="artifact", payload=payload)
     if namespace.artifact_command == "read":
         payload = read_artifact_content(
+            database_path=database_path,
+            session_id=namespace.session_id,
+            artifact_id=namespace.artifact_id,
+        )
+        return CliCommandResult(command="artifact", payload=payload)
+    if namespace.artifact_command == "prune":
+        payload = prune_artifact(
             database_path=database_path,
             session_id=namespace.session_id,
             artifact_id=namespace.artifact_id,

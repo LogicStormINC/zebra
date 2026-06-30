@@ -5,8 +5,32 @@ from pathlib import Path
 from urllib.parse import urlparse
 from uuid import UUID
 
+from agent_core.domain import ArtifactAccessDescriptor
+from agent_core.domain.artifact_payloads import StoredArtifactPayload
 from agent_core.domain.identifiers import SessionId
-from agent_storage import SessionArtifact, SQLiteArtifactStore, SQLiteProjectionStore
+from agent_security import (
+    PolicyProfile,
+    build_artifact_access_projection,
+    policy_rank,
+)
+from agent_storage import (
+    SessionArtifact,
+    SQLiteArtifactPayloadStore,
+    SQLiteArtifactStore,
+    SQLiteProjectionStore,
+    SQLiteWorkspaceProjectionStore,
+    payload_for_artifact_uri,
+    serialize_artifact_lifecycle,
+    serialize_artifact_retrieval,
+    serialize_session_artifact_projection,
+)
+
+from zebra_agent_cli.artifact_access import (
+    ArtifactAccessContext,
+    build_artifact_policy_denied_result,
+    build_artifact_unavailable_result,
+    serialize_artifact_access,
+)
 
 
 def read_artifact_detail(
@@ -27,20 +51,29 @@ def read_artifact_detail(
             "database": str(database_path),
             "status": "not_found",
         }
-    retrieval = _artifact_retrieval(resolved.uri)
+    access = _artifact_access_context(
+        database_path=database_path,
+        session_id=session_id,
+        artifact=resolved,
+    )
+    if not access.allowed:
+        return build_artifact_policy_denied_result(
+            database_path=database_path,
+            session_id=session_id,
+            artifact_id=artifact_id,
+            status="artifact_access_denied",
+            action="read",
+            access=access,
+        )
+    lifecycle = _artifact_lifecycle(database_path, resolved.uri)
+    projection = serialize_session_artifact_projection(
+        resolved,
+        lifecycle=lifecycle,
+    )
+    projection["access"] = serialize_artifact_access(access)
     return {
         "session_id": session_id,
-        "artifact": {
-            "artifact_id": resolved.artifact_id,
-            "sequence": resolved.sequence,
-            "source": resolved.source,
-            "kind": resolved.kind,
-            "label": resolved.label,
-            "uri": resolved.uri,
-            "preview": resolved.preview,
-            "metadata": resolved.metadata,
-            "retrieval": retrieval,
-        },
+        "artifact": projection,
         "database": str(database_path),
         "status": "ok",
     }
@@ -64,16 +97,33 @@ def read_artifact_content(
             "database": str(database_path),
             "status": "not_found",
         }
-    retrieval = _artifact_retrieval(resolved.uri)
+    access = _artifact_access_context(
+        database_path=database_path,
+        session_id=session_id,
+        artifact=resolved,
+    )
+    if not access.allowed:
+        return build_artifact_policy_denied_result(
+            database_path=database_path,
+            session_id=session_id,
+            artifact_id=artifact_id,
+            status="artifact_access_denied",
+            action="read",
+            access=access,
+        )
+    retrieval = serialize_artifact_retrieval(
+        resolved.uri,
+        lifecycle=_artifact_lifecycle(database_path, resolved.uri),
+    )
     status = str(retrieval["status"])
     if status != "payload_available":
-        return {
-            "session_id": session_id,
-            "artifact_id": artifact_id,
-            "database": str(database_path),
-            "status": "artifact_unavailable",
-            "reason": _artifact_unavailable_reason(status),
-        }
+        return build_artifact_unavailable_result(
+            database_path=database_path,
+            session_id=session_id,
+            artifact_id=artifact_id,
+            reason=_artifact_unavailable_reason(status),
+            access=access,
+        )
     assert resolved.uri is not None
     payload = Path(urlparse(resolved.uri).path).read_bytes()
     return {
@@ -81,10 +131,107 @@ def read_artifact_content(
         "artifact_id": artifact_id,
         "database": str(database_path),
         "status": "ok",
+        "access": serialize_artifact_access(access),
         "encoding": "base64",
         "content_base64": base64.b64encode(payload).decode("ascii"),
         "size_bytes": len(payload),
     }
+
+
+def prune_artifact(
+    *,
+    database_path: Path,
+    session_id: str,
+    artifact_id: str,
+) -> dict[str, object]:
+    resolved = _resolve_artifact(
+        database_path=database_path,
+        session_id=session_id,
+        artifact_id=artifact_id,
+    )
+    if resolved is None:
+        return {
+            "session_id": session_id,
+            "artifact_id": artifact_id,
+            "database": str(database_path),
+            "status": "not_found",
+        }
+    if resolved.uri is None:
+        return _unavailable_artifact(
+            database_path=database_path,
+            session_id=session_id,
+            artifact_id=artifact_id,
+            reason="artifact_is_indexed_only",
+        )
+    parsed = urlparse(resolved.uri)
+    if parsed.scheme != "file":
+        return _unavailable_artifact(
+            database_path=database_path,
+            session_id=session_id,
+            artifact_id=artifact_id,
+            reason="artifact_uses_external_reference",
+        )
+    payload_store = SQLiteArtifactPayloadStore(database_path)
+    payload = _payload_record_for_uri(payload_store, resolved.uri)
+    if payload is None:
+        return _unavailable_artifact(
+            database_path=database_path,
+            session_id=session_id,
+            artifact_id=artifact_id,
+            reason="artifact_payload_unmanaged",
+        )
+    access = _artifact_access_context(
+        database_path=database_path,
+        session_id=session_id,
+        artifact=resolved,
+        payload=payload,
+    )
+    access_class = access.access_class
+    required_profile = access.required_policy_profile
+    if not access.allowed:
+        return {
+            "session_id": session_id,
+            "artifact_id": artifact_id,
+            "database": str(database_path),
+            "status": "artifact_prune_denied",
+            "reason": f"artifact_prune_requires_{required_profile}_policy",
+        }
+    already_pruned = payload.pruned_at is not None
+    pruned = payload_store.prune_payload(payload.artifact_id)
+    assert pruned is not None
+    return {
+        "session_id": session_id,
+        "artifact_id": artifact_id,
+        "database": str(database_path),
+        "status": "already_pruned" if already_pruned else "pruned",
+        "access": serialize_artifact_access(access),
+        "access_class": access_class,
+        "required_policy_profile": required_profile,
+        "lifecycle": _lifecycle_body(pruned),
+    }
+
+
+def _artifact_access_context(
+    *,
+    database_path: Path,
+    session_id: str,
+    artifact: SessionArtifact,
+    payload: StoredArtifactPayload | None = None,
+) -> ArtifactAccessContext:
+    resolved_payload = payload or _payload_record_for_uri(
+        SQLiteArtifactPayloadStore(database_path),
+        artifact.uri,
+    )
+    return build_artifact_access_projection(
+        ArtifactAccessDescriptor(
+            kind=artifact.kind,
+            mime_type=resolved_payload.mime_type if resolved_payload is not None else None,
+            uri=artifact.uri,
+            preview_redacted=artifact.preview_state["redacted"],
+            preview_truncated=artifact.preview_state["truncated"],
+        ),
+        session_policy_profile=_session_policy_profile(database_path, session_id),
+    )
 
 
 def _resolve_artifact(
@@ -104,19 +251,9 @@ def _resolve_artifact(
     return None
 
 
-def _artifact_retrieval(uri: str | None) -> dict[str, object]:
-    if uri is None:
-        return {"status": "indexed_only", "retrievable": False, "uri": None}
-    parsed = urlparse(uri)
-    if parsed.scheme != "file":
-        return {"status": "external_reference", "retrievable": False, "uri": uri}
-    payload_path = Path(parsed.path)
-    available = payload_path.is_file()
-    return {
-        "status": "payload_available" if available else "payload_missing",
-        "retrievable": available,
-        "uri": uri,
-    }
+def _artifact_lifecycle(database_path: Path, uri: str | None) -> dict[str, object] | None:
+    payload = payload_for_artifact_uri(SQLiteArtifactPayloadStore(database_path), uri)
+    return serialize_artifact_lifecycle(payload)
 
 
 def _artifact_unavailable_reason(status: str) -> str:
@@ -124,5 +261,56 @@ def _artifact_unavailable_reason(status: str) -> str:
         "indexed_only": "artifact_is_indexed_only",
         "external_reference": "artifact_uses_external_reference",
         "payload_missing": "artifact_payload_missing",
+        "payload_pruned": "artifact_payload_pruned",
     }
     return mapping[status]
+
+
+def _unavailable_artifact(
+    *,
+    database_path: Path,
+    session_id: str,
+    artifact_id: str,
+    reason: str,
+) -> dict[str, object]:
+    return {
+        "session_id": session_id,
+        "artifact_id": artifact_id,
+        "database": str(database_path),
+        "status": "artifact_prune_unavailable",
+        "reason": reason,
+    }
+
+
+def _payload_record_for_uri(
+    payload_store: SQLiteArtifactPayloadStore,
+    uri: str | None,
+) -> StoredArtifactPayload | None:
+    return payload_for_artifact_uri(payload_store, uri)
+
+
+def _session_policy_profile(database_path: Path, session_id: str) -> str:
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(
+        SessionId(UUID(session_id))
+    )
+    if workspace is None or workspace.policy_profile is None:
+        return PolicyProfile.WORKSPACE_WRITE.value
+    return workspace.policy_profile
+
+
+def _policy_satisfies_requirement(
+    session_policy_profile: str,
+    required_policy_profile: str,
+) -> bool:
+    return policy_rank(session_policy_profile) >= policy_rank(required_policy_profile)
+
+
+def _lifecycle_body(payload: StoredArtifactPayload) -> dict[str, object]:
+    retained_until = payload.retained_until
+    pruned_at = payload.pruned_at
+    return {
+        "status": payload.lifecycle_status.value,
+        "retained_until": retained_until.isoformat() if retained_until is not None else None,
+        "pruned_at": pruned_at.isoformat() if pruned_at is not None else None,
+        "expired": False,
+    }

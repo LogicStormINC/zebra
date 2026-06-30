@@ -3288,3 +3288,586 @@
   - `README.md`
 - 验证：
   - `poetry run pytest tests/agent_storage/test_artifacts.py tests/api/test_session_artifacts.py tests/api/test_session_delivery_audit.py`
+
+## 2026-06-30 Phase 29 Artifact Metadata Governance
+
+- 执行 `P29-STO-01 - Artifact Metadata Governance`
+- 行为更新：
+  - artifact payload metadata 现在显式记录 `lifecycle_status`，并新增可选的 `retained_until` 与 `pruned_at`
+  - SQLite artifact payload store 现在支持对既有库做增量列迁移，并保留已有 retrieval contract
+  - artifact payload inspection 现在稳定区分 `available`、`missing`、`pruned`
+  - pruned payload 会清理本地文件并保留 metadata，后续读取得到显式 `pruned` 失败而不是混同为缺文件
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_storage/test_artifact_payloads.py`
+
+## 2026-06-30 Phase 29 Closeout And Phase 30 Planning
+
+- 执行 `P29-CLOSE-01 - Phase 29 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase29_Artifact_Governance_And_Operator_Parity_验收记录.md`
+  - 归档 Phase 29 的 artifact lifecycle metadata、CLI parity、audit and preview safety 验收结论
+  - 将下一阶段定义为 `Phase 30 - Local Artifact Retention Enforcement`
+  - 新增 `P30-POL-01`、`P30-STO-01`、`P30-API-01`、`P30-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - 复用当前实现分支已经通过的 `make check`
+
+## 2026-06-30 Phase 30 Artifact Retention Policy Profiles
+
+- 执行 `P30-POL-01 - Artifact Retention Policy Profiles`
+- 行为更新：
+  - 新增 `ArtifactRetentionProfile` 与 `ArtifactRetentionPolicy`，为后续 retention enforcement 提供稳定 core contract
+  - `agent-security` 现在根据 `policy_profile` 确定性解析 artifact retention defaults，并提供 `retained_until` 计算入口
+  - `local-bootstrap`、`read_only`、`workspace_write`、`full_access` 与未知 profile 的 retention fallback 都有显式规则
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_core/test_artifact_retention.py tests/agent_security/test_artifact_retention_policy.py tests/agent_security/test_policy_profiles.py`
+
+## 2026-06-30 Phase 30 Artifact Retention Sweep And Prune Enforcement
+
+- 执行 `P30-STO-01 - Artifact Retention Sweep And Prune Enforcement`
+- 行为更新：
+  - `SQLiteArtifactPayloadStore.prune_payload()` 现在对已 `pruned` payload 保持幂等，不再覆盖既有 `pruned_at`
+  - 新增 `sweep_expired_payloads(as_of=...)`，按 `retained_until <= as_of` 批量清理仍处于 `active` 的本地 payload
+  - 到期 sweep 只影响已过期 payload，未过期 payload 保持原状
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_storage/test_artifact_payloads.py`
+
+## 2026-06-30 Phase 30 Artifact Lifecycle Operator Readback
+
+- 执行 `P30-API-01 - Artifact Lifecycle Operator Readback`
+- 行为更新：
+  - artifact list/detail 现在为 payload-backed local artifact 暴露 additive `lifecycle` 字段
+  - lifecycle readback 现在显式返回 `status`、`retained_until`、`pruned_at`、`expired`
+  - artifact content 读取现在将 `payload_pruned` 与通用 `payload_missing` 区分开
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/api/test_session_artifacts.py`
+
+## 2026-06-30 Phase 30 Closeout And Phase 31 Planning
+
+- 执行 `P30-CLOSE-01 - Phase 30 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase30_Local_Artifact_Retention_Enforcement_验收记录.md`
+  - 归档 Phase 30 的 retention policy、sweep enforcement、lifecycle readback 验收结论
+  - 将下一阶段定义为 `Phase 31 - Artifact Operator Controls And Access Foundations`
+  - 新增 `P31-SEC-01`、`P31-API-01`、`P31-CLI-01`、`P31-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - 复用当前实现分支已经通过的 `make check`
+
+## 2026-06-30 Phase 31 Artifact Access Classification Foundations
+
+- 执行 `P31-SEC-01 - Artifact Access Classification Foundations`
+- 行为更新：
+  - 新增 `ArtifactAccessClass` 与 `ArtifactAccessDescriptor`，为 ACL-ready artifact policy 建立稳定 core contract
+  - `agent-security` 现在可以将 artifact 分类为 `operator_safe`、`sensitive`、`restricted`
+  - local artifact control policy 现在有确定性的最小 policy profile 映射，可供后续 manual prune API/CLI 复用
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_core/test_domain_models.py tests/agent_security/test_artifact_access_policy.py tests/agent_security/test_policy_profiles.py`
+
+## 2026-06-30 Phase 31 Artifact Manual Lifecycle Controls
+
+- 执行 `P31-API-01 - Artifact Manual Lifecycle Controls`
+- 行为更新：
+  - 新增 `POST /sessions/{id}/artifacts/{artifact_id}/prune`
+  - manual prune 现在只作用于 managed payload-backed local artifact
+  - prune 结果现在显式区分 `pruned`、`already_pruned`、`artifact_prune_unavailable`、`artifact_prune_denied`
+  - delivery audit 现在记录 manual prune 的 access class、required policy 和结果状态
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/api/test_session_artifacts.py`
+
+## 2026-06-30 Phase 31 Artifact Lifecycle CLI Controls
+
+- 执行 `P31-CLI-01 - Artifact Lifecycle CLI Controls`
+- 行为更新：
+  - 新增 `zebra-agent artifact prune <session_id> <artifact_id>`
+  - CLI prune 现在与 API 对齐，显式区分 `pruned`、`already_pruned`、`artifact_prune_unavailable`、`artifact_prune_denied`
+  - 现有 artifact inspect/read 路径保持兼容
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/cli/test_cli_artifacts.py`
+
+## 2026-06-30 Phase 31 Closeout And Phase 32 Planning
+
+- 执行 `P31-CLOSE-01 - Phase 31 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase31_Artifact_Operator_Controls_And_Access_Foundations_验收记录.md`
+  - 归档 Phase 31 的 access classification、manual prune API、CLI parity 验收结论
+  - 将下一阶段定义为 `Phase 32 - Artifact Access Enforcement And Audit Parity`
+  - 新增 `P32-API-01`、`P32-CLI-01`、`P32-OBS-01`、`P32-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - 复用当前实现分支已经通过的 `make check`
+
+## 2026-06-30 Phase 32 Artifact Access Read Enforcement
+
+- 执行 `P32-API-01 - Artifact Access Read Enforcement`
+- 行为更新：
+  - artifact detail/content 现在按 access class 做 deterministic gate，而不是只看 payload presence
+  - `workspace_write` 现在会被 sensitive artifact read 明确拒绝，`full_access` 仍可读取
+  - deny 结果现在显式返回 `artifact_access_denied`
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/api/test_session_artifacts.py`
+
+## 2026-06-30 Phase 32 Artifact Access CLI Enforcement
+
+- 执行 `P32-CLI-01 - Artifact Access CLI Enforcement`
+- 行为更新：
+  - CLI `artifact inspect`、`artifact read`、`artifact prune` 现在共享与 API 一致的 access enforcement 语义
+  - CLI deny 结果现在显式返回 `artifact_access_denied`
+  - 允许路径保持现有 machine-readable 输出结构
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/cli/test_cli_artifacts.py`
+
+## 2026-06-30 Phase 32 Artifact Access Audit Expansion
+
+- 执行 `P32-OBS-01 - Artifact Access Audit Expansion`
+- 行为更新：
+  - artifact detail/content/prune audit 现在统一记录 `access_class`、`required_policy_profile`、`session_policy_profile`
+  - denied 与 unavailable artifact action 现在通过 `result_status`、`retrieval_status` 和 unavailable reason 显式区分
+  - 允许路径的 artifact audit 现在也携带 access decision metadata
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/api/test_session_artifacts.py`
+
+## 2026-06-30 Phase 32 Closeout And Phase 33 Planning
+
+- 执行 `P32-CLOSE-01 - Phase 32 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase32_Artifact_Access_Enforcement_And_Audit_Parity_验收记录.md`
+  - 归档 Phase 32 的 access enforcement、CLI parity、audit expansion 验收结论
+  - 将下一阶段定义为 `Phase 33 - Artifact Access Explainability And Operator Guidance`
+  - 新增 `P33-API-01`、`P33-CLI-01`、`P33-DOC-01`、`P33-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - 复用当前实现分支已经通过的 `make check`
+
+## 2026-06-30 Phase 33 Artifact Access Projection Readback
+
+- 执行 `P33-API-01 - Artifact Access Projection Readback`
+- 行为更新：
+  - API artifact list、detail、content 返回现在统一附带 additive `access` explainability block
+  - denied 与 unavailable artifact 响应现在都显式返回 `class`、`required_policy_profile`、`session_policy_profile`、`allowed`
+  - operator-facing API readback 现在无需依赖外部规则即可解释 artifact access decision
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/api/test_session_artifact_access_projection.py tests/api/test_session_artifacts.py`
+
+## 2026-06-30 Phase 33 Artifact Access Explainability CLI Parity
+
+- 执行 `P33-CLI-01 - Artifact Access Explainability Parity`
+- 行为更新：
+  - CLI `artifact inspect`、`artifact read` 输出现在与 API 对齐，统一携带 additive `access` metadata
+  - denied read 输出现在保持 machine-readable，并显式暴露 required policy
+  - 允许路径保持兼容，仅新增 explainability 字段
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/cli/test_cli_artifact_access_explainability.py tests/cli/test_cli_artifacts.py`
+
+## 2026-06-30 Phase 33 Artifact Access Operator Guidance
+
+- 执行 `P33-DOC-01 - Artifact Access Operator Guidance`
+- 行为更新：
+  - 新增 `docs/artifact_access_operator_guidance.md`
+  - 文档现在明确区分 `artifact_access_denied` 与 `artifact_unavailable`
+  - 补充何时提升到 `full_access`，何时应回到 payload regeneration 或上游排查的 operator 指引
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - 复用当前实现分支已经通过的 `make check`
+
+## 2026-06-30 Phase 33 Closeout And Phase 34 Planning
+
+- 执行 `P33-CLOSE-01 - Phase 33 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase33_Artifact_Access_Explainability_And_Operator_Guidance_验收记录.md`
+  - 归档 Phase 33 的 API/CLI explainability 与 operator guidance 验收结论
+  - 将下一阶段定义为 `Phase 34 - Artifact Access Consolidation And Contract Hardening`
+  - 新增 `P34-API-01`、`P34-CLI-01`、`P34-TEST-01`、`P34-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - 复用当前实现分支已经通过的 `make check`
+
+## 2026-06-30 Phase 34 API Artifact Access Projection Consolidation
+
+- 执行 `P34-API-01 - Artifact Access Projection Consolidation`
+- 行为更新：
+  - API artifact read path 现在通过共享 helper 统一组装 access-denied 与 artifact-unavailable 响应
+  - delivery audit 的 access-related result metadata 现在通过单一 helper 构建，减少 detail/content 路径重复逻辑
+  - Phase 33 引入的 additive access contract 保持不变，但 API 侧扩展点更集中
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/api/test_session_artifact_access_projection.py tests/api/test_session_artifacts.py`
+  - `make check`
+
+## 2026-06-30 Phase 34 Artifact Access CLI Shared Projection Reuse
+
+- 执行 `P34-CLI-01 - Artifact Access CLI Shared Projection Reuse`
+- 行为更新：
+  - CLI artifact read path 现在通过共享 helper 统一组装 denied 与 unavailable access response
+  - CLI unavailable artifact read 现在补齐 additive `access` metadata，与 API explainability vocabulary 对齐
+  - 既有 CLI machine-readable contract 保持兼容，新增字段仅为 additive explainability
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/cli/test_cli_artifact_access_explainability.py tests/cli/test_cli_artifacts.py`
+
+## 2026-06-30 Phase 34 Artifact Access Contract Regression Matrix
+
+- 执行 `P34-TEST-01 - Artifact Access Contract Regression Matrix`
+- 行为更新：
+  - 新增 `tests/test_artifact_access_contract_matrix.py`
+  - 新增跨 API/CLI 的 allowed、denied、unavailable artifact access contract matrix
+  - matrix 现在直接比较两侧 surface 的 normalized access payload，避免 future refactor 只修一边
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/test_artifact_access_contract_matrix.py tests/api/test_session_artifact_access_projection.py tests/cli/test_cli_artifact_access_explainability.py tests/cli/test_cli_artifacts.py`
+
+## 2026-06-30 Phase 34 Closeout And Phase 35 Planning
+
+- 执行 `P34-CLOSE-01 - Phase 34 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase34_Artifact_Access_Consolidation_And_Contract_Hardening_验收记录.md`
+  - 归档 Phase 34 的 API consolidation、CLI parity、cross-surface matrix 验收结论
+  - 将下一阶段定义为 `Phase 35 - Artifact Envelope Normalization And Surface Consistency`
+  - 新增 `P35-API-01`、`P35-CLI-01`、`P35-TEST-01`、`P35-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
+
+## 2026-06-30 Phase 35 API Artifact Success Envelope Normalization
+
+- 执行 `P35-API-01 - Artifact Success Envelope Normalization`
+- 行为更新：
+  - API artifact detail 成功响应现在显式返回 `status: ok`
+  - API artifact content 成功响应现在显式返回 `status: ok`
+  - Phase 34 contract matrix 不再需要容忍 API 成功路径“隐式成功”差异，success envelope 语义更稳定
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/api/test_session_artifact_access_projection.py tests/api/test_session_artifacts.py tests/test_artifact_access_contract_matrix.py`
+
+## 2026-06-30 Phase 35 CLI Artifact Envelope Consistency Parity
+
+- 执行 `P35-CLI-01 - Artifact Envelope Consistency Parity`
+- 行为更新：
+  - CLI `artifact inspect` 成功 payload 现在补齐 `preview_state` 与 `lifecycle`
+  - CLI artifact retrieval 现在显式区分 `payload_pruned`，与 API unavailable reason 对齐
+  - CLI 继续保留 `database` 作为本地 operator context；该字段仍是 CLI 特有，不作为 cross-surface strict parity 的一部分
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/cli/test_cli_artifacts.py tests/cli/test_cli_artifact_access_explainability.py`
+
+## 2026-06-30 Phase 35 Artifact Envelope Contract Matrix Expansion
+
+- 执行 `P35-TEST-01 - Artifact Envelope Contract Matrix Expansion`
+- 行为更新：
+  - 扩展 `tests/test_artifact_access_contract_matrix.py`
+  - cross-surface matrix 现在覆盖 operator-safe detail envelope、pruned unavailable envelope，以及既有 allowed/denied/missing 路径
+  - API/CLI 共享 envelope 字段现在直接做 normalized 对比，不再只校验 access payload 局部字段
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/test_artifact_access_contract_matrix.py tests/api/test_session_artifacts.py tests/cli/test_cli_artifacts.py`
+
+## 2026-06-30 Phase 35 Closeout And Phase 36 Planning
+
+- 执行 `P35-CLOSE-01 - Phase 35 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase35_Artifact_Envelope_Normalization_And_Surface_Consistency_验收记录.md`
+  - 归档 Phase 35 的 API success normalization、CLI envelope parity、matrix expansion 验收结论
+  - 将下一阶段定义为 `Phase 36 - Shared Artifact Projection Serialization And Adapter Reuse`
+  - 新增 `P36-STO-01`、`P36-API-01`、`P36-CLI-01`、`P36-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
+
+## 2026-06-30 Phase 36 Shared Artifact Projection Serializer
+
+- 执行 `P36-STO-01 - Shared Artifact Projection Serializer`
+- 行为更新：
+  - 新增 `packages/agent-storage/src/agent_storage/artifact_projection.py`
+  - 抽出 `payload_for_artifact_uri()`、`serialize_artifact_lifecycle()`、`serialize_artifact_retrieval()`、`serialize_session_artifact_projection()`
+  - 共享 serializer 现在集中管理 payload lookup、retrieval state、lifecycle state、base artifact envelope 组装，为后续 API/CLI adapter adoption 做准备
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_storage/test_artifact_projection.py tests/agent_storage/test_artifact_payloads.py tests/agent_storage/test_artifacts.py`
+
+## 2026-06-30 Phase 36 API Adapter Shared Projection Adoption
+
+- 执行 `P36-API-01 - API Adapter Shared Projection Adoption`
+- 行为更新：
+  - API artifact list/detail/content 现在改为复用 `agent-storage` 里的 shared artifact projection serializer
+  - 删除 API 本地重复的 retrieval 与 lifecycle 组装逻辑，`session_read.py` 从 470 行降到 422 行
+  - access gating、audit metadata、operator-facing API contract 保持兼容
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/api/test_session_artifacts.py tests/api/test_session_artifact_access_projection.py tests/test_artifact_access_contract_matrix.py`
+
+## 2026-06-30 Phase 36 CLI Adapter Shared Projection Adoption
+
+- 执行 `P36-CLI-01 - CLI Adapter Shared Projection Adoption`
+- 行为更新：
+  - CLI artifact inspect/read 现在改为复用 `agent-storage` 里的 shared artifact projection serializer
+  - 删除 CLI 本地重复的 retrieval 与 lifecycle 组装逻辑，`artifact_read.py` 从 411 行降到 368 行
+  - CLI 继续保留 `database` 等本地 operator context 字段；共享 envelope 字段由 shared serializer 统一提供
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/cli/test_cli_artifacts.py tests/cli/test_cli_artifact_access_explainability.py tests/test_artifact_access_contract_matrix.py`
+
+## 2026-06-30 Phase 36 Closeout And Phase 37 Planning
+
+- 执行 `P36-CLOSE-01 - Phase 36 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase36_Shared_Artifact_Projection_Serialization_And_Adapter_Reuse_验收记录.md`
+  - 归档 Phase 36 的 shared serializer、API adoption、CLI adoption 验收结论
+  - 将下一阶段定义为 `Phase 37 - Shared Artifact Access Projection And Adapter Reuse`
+  - 新增 `P37-SEC-01`、`P37-API-01`、`P37-CLI-01`、`P37-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
+
+## 2026-06-30 Phase 37 Shared Artifact Access Projection Serializer
+
+- 执行 `P37-SEC-01 - Shared Artifact Access Projection Serializer`
+- 行为更新：
+  - 新增 `packages/agent-security/src/agent_security/artifact_access_projection.py`
+  - 抽出 `ArtifactAccessProjection`、`build_artifact_access_projection()`、`serialize_artifact_access_projection()`、`policy_rank()`
+  - 共享 helper 现在集中管理 access explainability payload 与 session policy rank 判断，为后续 API/CLI access adoption 做准备
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_security/test_artifact_access_policy.py tests/agent_security/test_artifact_access_projection.py tests/agent_security/test_policy_profiles.py`
+
+## 2026-06-30 Phase 37 API Shared Access Projection Adoption
+
+- 执行 `P37-API-01 - API Shared Access Projection Adoption`
+- 行为更新：
+  - API artifact access adapter 现在改为复用 `agent-security` 里的 shared access projection helper
+  - API prune path 也跟随新的 access context 字符串语义完成兼容，不再依赖 enum `.value`
+  - access payload、audit metadata、prune contract 保持兼容
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/api/test_session_artifacts.py tests/api/test_session_artifact_access_projection.py tests/test_artifact_access_contract_matrix.py`
+
+## 2026-06-30 Phase 37 CLI Shared Access Projection Adoption
+
+- 执行 `P37-CLI-01 - CLI Shared Access Projection Adoption`
+- 行为更新：
+  - CLI artifact access adapter 现在改为复用 `agent-security` 里的 shared access projection helper
+  - CLI access explainability payload、deny/unavailable contract、prune access fields 继续保持兼容
+  - `artifact_read.py` 从 368 行降到 343 行
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/cli/test_cli_artifacts.py tests/cli/test_cli_artifact_access_explainability.py tests/test_artifact_access_contract_matrix.py`
+
+## 2026-06-30 Phase 37 Closeout And Phase 38 Planning
+
+- 执行 `P37-CLOSE-01 - Phase 37 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase37_Shared_Artifact_Access_Projection_And_Adapter_Reuse_验收记录.md`
+  - 归档 Phase 37 的 shared access helper、API adoption、CLI adoption 验收结论
+  - 将下一阶段定义为 `Phase 38 - Shared Artifact Audit Metadata And Denial Response Reuse`
+  - 新增 `P38-OBS-01`、`P38-API-01`、`P38-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
+
+## 2026-06-30 Phase 38 Shared Artifact Access Audit Metadata Helper
+
+- 执行 `P38-OBS-01 - Shared Artifact Access Audit Metadata Helper`
+- 行为更新：
+  - 新增 `packages/agent-security/src/agent_security/artifact_access_audit.py`
+  - 抽出 `build_artifact_access_audit_metadata()`，集中生成 allow、deny、prune 成功等共享 audit metadata
+  - API artifact read 与 prune 的 audit metadata 现在复用同一条 `agent-security` helper 路径
+  - `session_artifact_control.py` 改为复用共享 payload lookup 与 lifecycle serializer，压缩 API 侧重复组装逻辑
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run ruff check apps/api/src/zebra_agent_api/artifact_access.py apps/api/src/zebra_agent_api/session_artifact_control.py packages/agent-security/src/agent_security tests/agent_security`
+  - `uv run mypy packages/agent-security/src/agent_security apps/api/src/zebra_agent_api/artifact_access.py apps/api/src/zebra_agent_api/session_artifact_control.py`
+  - `uv run pytest tests/agent_security/test_artifact_access_audit.py tests/agent_security/test_artifact_access_projection.py tests/api/test_session_artifacts.py tests/test_artifact_access_contract_matrix.py`
+
+## 2026-06-30 Phase 38 API Shared Denial Response Adoption
+
+- 执行 `P38-API-01 - API Shared Denial Response Adoption`
+- 行为更新：
+  - API artifact read adapters 现在复用共享 denial 与 unavailable response helper 路径
+  - deny reason 推导集中到 `artifact_access.py`，不再在 `session_read.py` 多处分支内内联拼接
+  - read deny 与 unavailable 的 API body 保持兼容，prune deny contract 保持原样
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run ruff check apps/api/src/zebra_agent_api/artifact_access.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/session_artifact_control.py`
+  - `uv run mypy packages apps`
+  - `uv run pytest tests/api/test_session_artifacts.py tests/test_artifact_access_contract_matrix.py tests/agent_security/test_artifact_access_audit.py`
+
+## 2026-06-30 Phase 38 Closeout And Phase 39 Planning
+
+- 执行 `P38-CLOSE-01 - Phase 38 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase38_Shared_Artifact_Audit_Metadata_And_Denial_Response_Reuse_验收记录.md`
+  - 归档 Phase 38 的 shared audit metadata helper 与 API denial-response adoption 验收结论
+  - 将下一阶段定义为 `Phase 39 - CLI Shared Denial Response Reuse And Failure Contract Parity`
+  - 新增 `P39-CLI-01`、`P39-TEST-01`、`P39-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
+
+## 2026-06-30 Phase 39 CLI Shared Denial Response Adoption
+
+- 执行 `P39-CLI-01 - CLI Shared Denial Response Adoption`
+- 行为更新：
+  - 新增 `apps/cli/src/zebra_agent_cli/artifact_access.py`
+  - CLI artifact inspect 或 read 现在复用共享 denial 与 unavailable response helper 路径
+  - CLI 本地 `database` 上下文字段与 prune deny 或 unavailable contract 保持原样
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/artifact_access.py apps/cli/src/zebra_agent_cli/artifact_read.py tests/cli/test_cli_artifacts.py tests/cli/test_cli_artifact_access_explainability.py tests/test_artifact_access_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `uv run pytest tests/cli/test_cli_artifacts.py tests/cli/test_cli_artifact_access_explainability.py tests/test_artifact_access_contract_matrix.py`
+
+## 2026-06-30 Phase 39 Artifact Failure Contract Matrix Expansion
+
+- 执行 `P39-TEST-01 - Artifact Failure Contract Matrix Expansion`
+- 行为更新：
+  - 扩展 `tests/test_artifact_access_contract_matrix.py`
+  - 新增 `detail_denied` 场景，显式锁定 API 与 CLI 在 detail deny failure envelope 上的 parity
+  - deny 与 unavailable helper adoption 后的跨表面 failure contract 继续保持兼容
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/artifact_access.py apps/cli/src/zebra_agent_cli/artifact_read.py tests/cli/test_cli_artifacts.py tests/cli/test_cli_artifact_access_explainability.py tests/test_artifact_access_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `uv run pytest tests/cli/test_cli_artifacts.py tests/cli/test_cli_artifact_access_explainability.py tests/test_artifact_access_contract_matrix.py`
+
+## 2026-06-30 Phase 39 Closeout And Phase 40 Planning
+
+- 执行 `P39-CLOSE-01 - Phase 39 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase39_CLI_Shared_Denial_Response_Reuse_And_Failure_Contract_Parity_验收记录.md`
+  - 归档 Phase 39 的 CLI denial-response helper adoption 与 failure contract matrix 扩展验收结论
+  - 将下一阶段定义为 `Phase 40 - Shared Artifact Control Response Reuse And Prune Contract Parity`
+  - 新增 `P40-API-01`、`P40-CLI-01`、`P40-TEST-01`、`P40-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`

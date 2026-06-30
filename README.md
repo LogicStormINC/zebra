@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 28 is closed and the repository is ready to start Phase 29 artifact governance and operator parity. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates, a real local snapshot backend for workspace-backed runtime handles, snapshot-backed suspend or resume control wiring across CLI, API, and worker execution, manifest-aware snapshot compatibility checks, explicit retained-snapshot cleanup, durable artifact payload storage, worker-side artifact capture for supported text outputs, and artifact detail plus content retrieval over the local API.
+Phase 39 is closed and Phase 40 shared artifact control response reuse and prune contract parity is now the next ready implementation phase. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates, a real local snapshot backend for workspace-backed runtime handles, snapshot-backed suspend or resume control wiring across CLI, API, and worker execution, manifest-aware snapshot compatibility checks, explicit retained-snapshot cleanup, durable artifact payload storage, worker-side artifact capture for supported text outputs, artifact detail plus content retrieval over the local API, CLI artifact inspect and read surfaces, audit-backed artifact read tracing, lifecycle-aware artifact payload metadata, deterministic policy-driven artifact retention defaults, storage-side expiry sweep primitives for retained local payloads, lifecycle readback for payload-backed artifacts, deterministic artifact access classification, manual artifact prune controls over both API and CLI, access-class enforcement plus audit parity for artifact actions, additive access explainability metadata across operator read surfaces, consolidated Phase 34 API and CLI access projection helpers, a cross-surface contract matrix for allowed, denied, missing, and pruned artifact access paths, explicit `status="ok"` envelopes for successful API artifact detail and content reads, CLI inspect envelopes that now include `preview_state`, `lifecycle`, and pruned-payload unavailable semantics aligned with API behavior, a shared `agent-storage` artifact projection serializer for payload lookup, lifecycle, retrieval, and base envelope assembly, both API and CLI artifact adapters adopted onto that shared projection path, a shared `agent-security` artifact access projection helper for explainability payload assembly and policy-rank evaluation, both API and CLI artifact access adapters adopted onto that shared security projection path, a shared `agent-security` artifact access audit metadata helper reused by API read and prune audit paths, shared API-side denial or unavailable response helpers for artifact read adapters, and shared CLI-side denial or unavailable response helpers for artifact read adapters.
 
-The next milestone is `Phase 29 - Artifact Governance And Operator Parity`. The current implementation lanes are:
+The next milestone is `Phase 40 - Shared Artifact Control Response Reuse And Prune Contract Parity`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -85,7 +85,7 @@ The next milestone is `Phase 29 - Artifact Governance And Operator Parity`. The 
 - CLI now supports `artifact inspect` and `artifact read` for local artifact inspection without going through the HTTP API
 - artifact previews now expose explicit redaction/truncation state, and artifact detail/content reads are now recorded in delivery audit
 - `docs/Phase28_Durable_Artifact_Storage_And_Retrieval_验收记录.md` records the completed durable artifact storage and retrieval phase
-- Phase 29 artifact governance, CLI artifact readback, and artifact audit safety are the next ready implementation lanes
+- Phase 39 CLI denial-response reuse and failure contract matrix expansion are complete, and shared prune-control response reuse is the next ready implementation lane
 
 Read in this order:
 
@@ -121,7 +121,7 @@ uv run pytest
 
 ## Operator Entry
 
-For the current local operator workflow, start with `docs/operator_runbook.md`. For local snapshot runtime semantics, also read `docs/local_snapshot_runtime.md`. The operator runbook covers:
+For the current local operator workflow, start with `docs/operator_runbook.md`. For local snapshot runtime semantics, also read `docs/local_snapshot_runtime.md`. For denied versus unavailable artifact access paths, also read `docs/artifact_access_operator_guidance.md`. The operator runbook covers:
 
 - CLI session creation, durable execution, inspection, and approval
 - writable local API session creation, execution, resume triggering, and approval decisions
@@ -129,4 +129,4 @@ For the current local operator workflow, start with `docs/operator_runbook.md`. 
 - local FastAPI serving
 - SSE session stream replay
 
-For the latest phase closeout summary, see `docs/Phase25_Durable_Workspace_And_Snapshot_Foundations_验收记录.md`.
+For the latest completed phase closeout summary, see `docs/Phase37_Shared_Artifact_Access_Projection_And_Adapter_Reuse_验收记录.md`.

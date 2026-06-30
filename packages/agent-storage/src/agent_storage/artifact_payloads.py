@@ -8,6 +8,7 @@ from uuid import UUID
 
 from agent_core.domain.artifact_payloads import (
     ArtifactPayloadInspection,
+    ArtifactPayloadLifecycleStatus,
     ArtifactPayloadStatus,
     ArtifactPayloadWrite,
     StoredArtifactPayload,
@@ -54,6 +55,11 @@ class SQLiteArtifactPayloadStore:
             uri=payload_path.resolve(strict=False).as_uri(),
             sha256=sha256(payload.payload).hexdigest(),
             size_bytes=len(payload.payload),
+            lifecycle_status=ArtifactPayloadLifecycleStatus.ACTIVE,
+            retained_until=payload.retained_until.astimezone(UTC)
+            if payload.retained_until is not None
+            else None,
+            pruned_at=None,
             created_at=payload.created_at.astimezone(UTC),
         )
         with self._database.connect() as connection:
@@ -67,8 +73,11 @@ class SQLiteArtifactPayloadStore:
                     uri,
                     sha256,
                     size_bytes,
+                    lifecycle_status,
+                    retained_until,
+                    pruned_at,
                     created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     str(stored.artifact_id),
@@ -78,6 +87,13 @@ class SQLiteArtifactPayloadStore:
                     stored.uri,
                     stored.sha256,
                     stored.size_bytes,
+                    stored.lifecycle_status.value,
+                    (
+                        stored.retained_until.isoformat()
+                        if stored.retained_until is not None
+                        else None
+                    ),
+                    None,
                     stored.created_at.isoformat(),
                 ),
             )
@@ -95,6 +111,9 @@ class SQLiteArtifactPayloadStore:
                     uri,
                     sha256,
                     size_bytes,
+                    lifecycle_status,
+                    retained_until,
+                    pruned_at,
                     created_at
                 FROM artifact_payloads
                 WHERE artifact_id = ?
@@ -111,6 +130,17 @@ class SQLiteArtifactPayloadStore:
             uri=row["uri"],
             sha256=row["sha256"],
             size_bytes=row["size_bytes"],
+            lifecycle_status=ArtifactPayloadLifecycleStatus(row["lifecycle_status"]),
+            retained_until=(
+                datetime.fromisoformat(row["retained_until"])
+                if row["retained_until"] is not None
+                else None
+            ),
+            pruned_at=(
+                datetime.fromisoformat(row["pruned_at"])
+                if row["pruned_at"] is not None
+                else None
+            ),
             created_at=datetime.fromisoformat(row["created_at"]),
         )
 
@@ -118,22 +148,90 @@ class SQLiteArtifactPayloadStore:
         stored = self.get_payload(artifact_id)
         if stored is None:
             return None
-        status = (
-            ArtifactPayloadStatus.AVAILABLE
-            if self._uri_path(stored.uri).is_file()
-            else ArtifactPayloadStatus.MISSING
-        )
+        if stored.lifecycle_status is ArtifactPayloadLifecycleStatus.PRUNED:
+            status = ArtifactPayloadStatus.PRUNED
+        else:
+            status = (
+                ArtifactPayloadStatus.AVAILABLE
+                if self._uri_path(stored.uri).is_file()
+                else ArtifactPayloadStatus.MISSING
+            )
         return ArtifactPayloadInspection(
             artifact_id=artifact_id,
             status=status,
             payload=stored,
         )
 
+    def prune_payload(
+        self,
+        artifact_id: ArtifactId,
+        *,
+        pruned_at: datetime | None = None,
+    ) -> StoredArtifactPayload | None:
+        stored = self.get_payload(artifact_id)
+        if stored is None:
+            return None
+        if stored.lifecycle_status is ArtifactPayloadLifecycleStatus.PRUNED:
+            return stored
+        payload_path = self._uri_path(stored.uri)
+        if payload_path.exists():
+            payload_path.unlink()
+        effective_pruned_at = (pruned_at or datetime.now(UTC)).astimezone(UTC)
+        with self._database.connect() as connection:
+            connection.execute(
+                """
+                UPDATE artifact_payloads
+                SET lifecycle_status = ?, pruned_at = ?
+                WHERE artifact_id = ?
+                """,
+                (
+                    ArtifactPayloadLifecycleStatus.PRUNED.value,
+                    effective_pruned_at.isoformat(),
+                    str(artifact_id),
+                ),
+            )
+        updated = self.get_payload(artifact_id)
+        assert updated is not None
+        return updated
+
+    def sweep_expired_payloads(
+        self,
+        *,
+        as_of: datetime | None = None,
+    ) -> list[StoredArtifactPayload]:
+        effective_as_of = (as_of or datetime.now(UTC)).astimezone(UTC)
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT artifact_id
+                FROM artifact_payloads
+                WHERE lifecycle_status = ?
+                  AND retained_until IS NOT NULL
+                  AND retained_until <= ?
+                ORDER BY retained_until, created_at
+                """,
+                (
+                    ArtifactPayloadLifecycleStatus.ACTIVE.value,
+                    effective_as_of.isoformat(),
+                ),
+            ).fetchall()
+        pruned: list[StoredArtifactPayload] = []
+        for row in rows:
+            payload = self.prune_payload(
+                ArtifactId(UUID(row["artifact_id"])),
+                pruned_at=effective_as_of,
+            )
+            if payload is not None:
+                pruned.append(payload)
+        return pruned
+
     def read_payload_bytes(self, artifact_id: ArtifactId) -> bytes:
         inspection = self.inspect_payload(artifact_id)
         if inspection is None:
             raise ArtifactPayloadMissingError("artifact payload metadata was not found")
         payload_path = self._uri_path(inspection.payload.uri)
+        if inspection.status is ArtifactPayloadStatus.PRUNED:
+            raise ArtifactPayloadMissingError("artifact payload has been pruned")
         if inspection.status is ArtifactPayloadStatus.MISSING:
             raise ArtifactPayloadMissingError("artifact payload file is missing")
         return payload_path.read_bytes()
@@ -150,10 +248,40 @@ class SQLiteArtifactPayloadStore:
                     uri TEXT NOT NULL,
                     sha256 TEXT NOT NULL,
                     size_bytes INTEGER NOT NULL,
+                    lifecycle_status TEXT NOT NULL DEFAULT 'active',
+                    retained_until TEXT,
+                    pruned_at TEXT,
                     created_at TEXT NOT NULL
                 )
                 """
             )
+            columns = {
+                row[1]
+                for row in connection.execute(
+                    "PRAGMA table_info(artifact_payloads)"
+                ).fetchall()
+            }
+            if "lifecycle_status" not in columns:
+                connection.execute(
+                    """
+                    ALTER TABLE artifact_payloads
+                    ADD COLUMN lifecycle_status TEXT NOT NULL DEFAULT 'active'
+                    """
+                )
+            if "retained_until" not in columns:
+                connection.execute(
+                    """
+                    ALTER TABLE artifact_payloads
+                    ADD COLUMN retained_until TEXT
+                    """
+                )
+            if "pruned_at" not in columns:
+                connection.execute(
+                    """
+                    ALTER TABLE artifact_payloads
+                    ADD COLUMN pruned_at TEXT
+                    """
+                )
 
     def _payload_path(
         self,

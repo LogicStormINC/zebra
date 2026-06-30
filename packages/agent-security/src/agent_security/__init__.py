@@ -1,5 +1,23 @@
 """Security package for Zebra Agent."""
 
+from agent_security.artifact_access import (
+    classify_artifact_access,
+    required_policy_profile_for_artifact_access,
+)
+from agent_security.artifact_access_audit import build_artifact_access_audit_metadata
+from agent_security.artifact_access_projection import (
+    ArtifactAccessProjection,
+    build_artifact_access_projection,
+    policy_rank,
+    serialize_artifact_access_projection,
+)
+from agent_security.artifact_retention import (
+    EXTENDED_ARTIFACT_RETENTION,
+    SHORT_LIVED_ARTIFACT_RETENTION,
+    STANDARD_ARTIFACT_RETENTION,
+    resolve_artifact_retained_until,
+    resolve_artifact_retention_policy,
+)
 from agent_security.broker import (
     CredentialBroker,
     CredentialBrokerError,
@@ -58,8 +76,10 @@ from agent_security.secret_store import (
 )
 
 __all__ = [
+    "EXTENDED_ARTIFACT_RETENTION",
     "ApprovalRequest",
     "ApprovalRisk",
+    "ArtifactAccessProjection",
     "CommitPolicy",
     "CredentialBroker",
     "CredentialBrokerError",
@@ -89,13 +109,23 @@ __all__ = [
     "SecretStore",
     "SecretStoreError",
     "SecretUnavailableError",
+    "SHORT_LIVED_ARTIFACT_RETENTION",
+    "STANDARD_ARTIFACT_RETENTION",
     "DEFAULT_NETWORK_PROFILE",
     "get_secret_value",
     "InMemorySecretStore",
     "ToolEgressMetadata",
     "ToolEgressRoute",
     "build_approval_request",
+    "build_artifact_access_audit_metadata",
+    "build_artifact_access_projection",
+    "classify_artifact_access",
     "classify_tool_egress",
     "parse_network_profile",
     "policy_profile",
+    "policy_rank",
+    "required_policy_profile_for_artifact_access",
+    "resolve_artifact_retained_until",
+    "resolve_artifact_retention_policy",
+    "serialize_artifact_access_projection",
 ]

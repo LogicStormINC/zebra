@@ -9,6 +9,12 @@ from agent_core.domain.identifiers import ArtifactId, SessionId
 class ArtifactPayloadStatus(StrEnum):
     AVAILABLE = "available"
     MISSING = "missing"
+    PRUNED = "pruned"
+
+
+class ArtifactPayloadLifecycleStatus(StrEnum):
+    ACTIVE = "active"
+    PRUNED = "pruned"
 
 
 class ArtifactPayloadWrite(BaseModel):
@@ -19,6 +25,7 @@ class ArtifactPayloadWrite(BaseModel):
     mime_type: str
     payload: bytes
     file_name: str | None = None
+    retained_until: datetime | None = None
     created_at: datetime
 
     @field_validator("kind", "mime_type")
@@ -37,9 +44,11 @@ class ArtifactPayloadWrite(BaseModel):
         stripped = value.strip()
         return stripped or None
 
-    @field_validator("created_at")
+    @field_validator("retained_until", "created_at")
     @classmethod
-    def ensure_timezone_aware_timestamp(cls, value: datetime) -> datetime:
+    def ensure_timezone_aware_timestamp(cls, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
         if value.tzinfo is None:
             raise ValueError("created_at must be timezone-aware")
         return value
@@ -55,6 +64,9 @@ class StoredArtifactPayload(BaseModel):
     uri: str
     sha256: str
     size_bytes: int
+    lifecycle_status: ArtifactPayloadLifecycleStatus
+    retained_until: datetime | None = None
+    pruned_at: datetime | None = None
     created_at: datetime
 
 
