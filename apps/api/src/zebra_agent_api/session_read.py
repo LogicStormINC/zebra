@@ -17,6 +17,7 @@ from agent_storage import (
 )
 
 from zebra_agent_api.approval_context import serialize_approval_context
+from zebra_agent_api.delivery_audit import record_delivery_audit
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.session_context import session_workspace_root
 from zebra_agent_api.session_delivery_audit import SessionDeliveryAuditApi
@@ -144,6 +145,7 @@ class SessionReadApi:
                         "label": artifact.label,
                         "uri": artifact.uri,
                         "preview": artifact.preview,
+                        "preview_state": artifact.preview_state,
                         "metadata": artifact.metadata,
                     }
                     for artifact in artifacts
@@ -155,7 +157,7 @@ class SessionReadApi:
         artifact = self._resolve_session_artifact(session_id, artifact_id)
         if isinstance(artifact, ApiResponse):
             return artifact
-        return ApiResponse(
+        response = ApiResponse(
             status_code=200,
             body={
                 "session_id": session_id,
@@ -167,11 +169,33 @@ class SessionReadApi:
                     "label": artifact.label,
                     "uri": artifact.uri,
                     "preview": artifact.preview,
+                    "preview_state": artifact.preview_state,
                     "metadata": artifact.metadata,
                     "retrieval": _artifact_retrieval(artifact.uri),
                 },
             },
         )
+        body_artifact = response.body["artifact"]
+        assert isinstance(body_artifact, dict)
+        retrieval = body_artifact["retrieval"]
+        assert isinstance(retrieval, dict)
+        retrieval_status = retrieval["status"]
+        assert isinstance(retrieval_status, str)
+        record_delivery_audit(
+            database_path=self.database_path,
+            session_id=session_id,
+            action="session.artifact.detail",
+            response=response,
+            result_metadata={
+                "artifact_id": artifact.artifact_id,
+                "source": artifact.source,
+                "kind": artifact.kind,
+                "preview_redacted": artifact.preview_state["redacted"],
+                "preview_truncated": artifact.preview_state["truncated"],
+                "retrieval_status": retrieval_status,
+            },
+        )
+        return response
 
     def get_session_artifact_content(self, session_id: str, artifact_id: str) -> ApiResponse:
         artifact = self._resolve_session_artifact(session_id, artifact_id)
@@ -180,26 +204,50 @@ class SessionReadApi:
         retrieval = _artifact_retrieval(artifact.uri)
         status = retrieval["status"]
         if status == "indexed_only":
-            return conflict(
+            response = conflict(
                 session_id=session_id,
                 status="artifact_unavailable",
                 reason="artifact_is_indexed_only",
             )
+            record_delivery_audit(
+                database_path=self.database_path,
+                session_id=session_id,
+                action="session.artifact.content",
+                response=response,
+                result_metadata={"artifact_id": artifact.artifact_id, "retrieval_status": status},
+            )
+            return response
         if status == "external_reference":
-            return conflict(
+            response = conflict(
                 session_id=session_id,
                 status="artifact_unavailable",
                 reason="artifact_uses_external_reference",
             )
+            record_delivery_audit(
+                database_path=self.database_path,
+                session_id=session_id,
+                action="session.artifact.content",
+                response=response,
+                result_metadata={"artifact_id": artifact.artifact_id, "retrieval_status": status},
+            )
+            return response
         if status == "payload_missing":
-            return conflict(
+            response = conflict(
                 session_id=session_id,
                 status="artifact_unavailable",
                 reason="artifact_payload_missing",
             )
+            record_delivery_audit(
+                database_path=self.database_path,
+                session_id=session_id,
+                action="session.artifact.content",
+                response=response,
+                result_metadata={"artifact_id": artifact.artifact_id, "retrieval_status": status},
+            )
+            return response
         assert artifact.uri is not None
         payload = Path(urlparse(artifact.uri).path).read_bytes()
-        return ApiResponse(
+        response = ApiResponse(
             status_code=200,
             body={
                 "session_id": session_id,
@@ -209,6 +257,18 @@ class SessionReadApi:
                 "size_bytes": len(payload),
             },
         )
+        record_delivery_audit(
+            database_path=self.database_path,
+            session_id=session_id,
+            action="session.artifact.content",
+            response=response,
+            result_metadata={
+                "artifact_id": artifact.artifact_id,
+                "retrieval_status": status,
+                "size_bytes": len(payload),
+            },
+        )
+        return response
 
     def get_session_delivery_audit(self, session_id: str) -> ApiResponse:
         return SessionDeliveryAuditApi(self.database_path).get_delivery_audit(session_id)

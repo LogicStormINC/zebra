@@ -3274,3 +3274,17 @@
   - `README.md`
 - 验证：
   - `poetry run pytest tests/cli/test_cli_artifacts.py tests/cli/test_cli_commands.py`
+
+## 2026-06-30 Phase 29 Artifact Audit And Preview Redaction
+
+- 执行 `P29-OBS-01 - Artifact Audit And Preview Redaction`
+- 行为更新：
+  - artifact list/detail 现在暴露 `preview_state`，显式标记 preview 是否发生 redaction/truncation
+  - artifact detail/content 读取现在写入 delivery audit，至少记录 `session_id`、`artifact_id`、`action`、`retrieval_status`
+  - 非敏感 preview 保持原有可读行为，敏感 preview 会做显式 redaction 和必要截断
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `poetry run pytest tests/agent_storage/test_artifacts.py tests/api/test_session_artifacts.py tests/api/test_session_delivery_audit.py`

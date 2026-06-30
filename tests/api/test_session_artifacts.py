@@ -9,6 +9,7 @@ from agent_core.domain.sessions import Session
 from agent_core.domain.tool_runs import ToolRunRecord
 from agent_storage import (
     SQLiteArtifactPayloadStore,
+    SQLiteDeliveryAuditStore,
     SQLiteModelCallStore,
     SQLiteProjectionStore,
     SQLiteToolRunStore,
@@ -38,6 +39,10 @@ def test_api_get_session_artifacts_returns_indexed_artifacts(tmp_path: Path) -> 
             "label": "deepseek-v4-flash",
             "uri": None,
             "preview": "Summarized the repository.",
+            "preview_state": {
+                "redacted": False,
+                "truncated": False,
+            },
             "metadata": {
                 "provider": "deepseek",
                 "model_name": "deepseek-v4-flash",
@@ -59,6 +64,10 @@ def test_api_get_session_artifacts_returns_indexed_artifacts(tmp_path: Path) -> 
             "label": "tests.run",
             "uri": "file:///tmp/pytest.log",
             "preview": "pytest passed",
+            "preview_state": {
+                "redacted": False,
+                "truncated": False,
+            },
             "metadata": {
                 "tool_name": "tests.run",
                 "status": "executed",
@@ -123,11 +132,19 @@ def test_api_get_session_artifact_detail_distinguishes_indexed_and_payload_backe
 
     assert response.status_code == 200
     assert response.body["artifact"]["uri"] == payload.uri
+    assert response.body["artifact"]["preview_state"] == {
+        "redacted": False,
+        "truncated": False,
+    }
     assert response.body["artifact"]["retrieval"] == {
         "status": "payload_available",
         "retrievable": True,
         "uri": payload.uri,
     }
+    audit = SQLiteDeliveryAuditStore(database_path).list_for_session(session.session_id)
+    assert audit[-1].action == "session.artifact.detail"
+    assert audit[-1].result_metadata["artifact_id"] == "tool-run:5"
+    assert audit[-1].result_metadata["retrieval_status"] == "payload_available"
 
 
 def test_api_get_session_artifact_detail_reports_indexed_only(tmp_path: Path) -> None:
@@ -185,6 +202,40 @@ def test_api_get_session_artifact_content_reports_missing_payload(tmp_path: Path
         "session_id": str(session.session_id),
         "status": "artifact_unavailable",
         "reason": "artifact_payload_missing",
+    }
+    audit = SQLiteDeliveryAuditStore(database_path).list_for_session(session.session_id)
+    assert audit[-1].action == "session.artifact.content"
+    assert audit[-1].result_metadata["artifact_id"] == "tool-run:5"
+    assert audit[-1].result_metadata["retrieval_status"] == "payload_missing"
+
+
+def test_api_get_session_artifact_detail_redacts_sensitive_preview(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+    SQLiteToolRunStore(database_path).upsert(
+        ToolRunRecord(
+            session_id=session.session_id,
+            sequence=5,
+            tool_name="tests.run",
+            status="executed",
+            idempotency_key="tool-5",
+            output="api_key=secret-value " + ("x" * 200),
+            artifact_uri=None,
+            created_at=_created_at(),
+        )
+    )
+
+    response = create_app(database_path).get_session_artifact_detail(
+        str(session.session_id),
+        "tool-run:5",
+    )
+
+    assert response.status_code == 200
+    assert "[REDACTED]" in response.body["artifact"]["preview"]
+    assert response.body["artifact"]["preview"].endswith("...")
+    assert response.body["artifact"]["preview_state"] == {
+        "redacted": True,
+        "truncated": True,
     }
 
 

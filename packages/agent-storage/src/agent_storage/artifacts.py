@@ -1,12 +1,24 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypedDict
 
 from agent_core.domain.identifiers import SessionId
 
 from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.tool_runs import SQLiteToolRunStore
+
+
+class PreviewState(TypedDict):
+    redacted: bool
+    truncated: bool
+
+
+class SanitizedPreview(TypedDict):
+    preview: str
+    state: PreviewState
 
 
 @dataclass(frozen=True)
@@ -19,6 +31,7 @@ class SessionArtifact:
     label: str
     uri: str | None
     preview: str
+    preview_state: PreviewState
     metadata: dict[str, object]
 
 
@@ -37,7 +50,8 @@ class SQLiteArtifactStore:
                 kind="assistant_message",
                 label=record.model_name or record.provider or "model response",
                 uri=None,
-                preview=record.assistant_message,
+                preview=(sanitized := _sanitize_preview(record.assistant_message))["preview"],
+                preview_state=sanitized["state"],
                 metadata={
                     "provider": record.provider,
                     "model_name": record.model_name,
@@ -62,7 +76,8 @@ class SQLiteArtifactStore:
                 kind="tool_output",
                 label=record.tool_name,
                 uri=record.artifact_uri,
-                preview=record.output,
+                preview=(sanitized := _sanitize_preview(record.output))["preview"],
+                preview_state=sanitized["state"],
                 metadata={
                     "tool_name": record.tool_name,
                     "status": record.status,
@@ -73,3 +88,36 @@ class SQLiteArtifactStore:
             for record in self._tool_runs.list_for_session(session_id)
         )
         return sorted(artifacts, key=lambda artifact: (artifact.sequence, artifact.source))
+
+
+_SECRET_PATTERNS = (
+    re.compile(r"sk-[A-Za-z0-9]{10,}"),
+    re.compile(r"ghp_[A-Za-z0-9]{10,}"),
+    re.compile(r"(?i)(api[_-]?key\s*[:=]\s*)(\S+)"),
+    re.compile(r"(?i)(token\s*[:=]\s*)(\S+)"),
+)
+_REDACTED = "[REDACTED]"
+_PREVIEW_LIMIT = 160
+
+
+def _sanitize_preview(value: str) -> SanitizedPreview:
+    sanitized = value
+    redacted = False
+    for pattern in _SECRET_PATTERNS:
+        replaced, count = pattern.subn(
+            lambda match: match.group(1) + _REDACTED if match.lastindex else _REDACTED,
+            sanitized,
+        )
+        if count:
+            redacted = True
+            sanitized = replaced
+    truncated = len(sanitized) > _PREVIEW_LIMIT
+    if truncated:
+        sanitized = sanitized[:_PREVIEW_LIMIT] + "..."
+    return {
+        "preview": sanitized,
+        "state": {
+            "redacted": redacted,
+            "truncated": truncated,
+        },
+    }

@@ -6,8 +6,9 @@
 - Repository status: `phase 29 ready`
 - Current focus:
   - harden artifact metadata and lifecycle governance
-  - merge the CLI artifact inspection branch
-  - improve artifact audit and preview safety
+  - merge the artifact audit and preview safety branch
+  - close Phase 29 with acceptance evidence
+  - define the next implementation slice
 
 ## Completed
 
@@ -208,13 +209,14 @@
 - session artifact read APIs now expose artifact detail and base64 content retrieval with explicit `indexed_only`, `payload_available`, `payload_missing`, and `external_reference` semantics
 - Phase 28 is closed with `docs/Phase28_Durable_Artifact_Storage_And_Retrieval_验收记录.md`
 - CLI now exposes `artifact inspect` and `artifact read` commands with machine-readable retrieval-state and base64 content output for local artifact inspection
+- artifact list and detail previews now expose explicit `preview_state`, and artifact detail/content reads now emit delivery-audit records keyed by session and artifact identifier
 
 ## Next Unlocks
 
 - `P29-STO-01 - Artifact Metadata Governance` is ready on `codex/p29-sto-01-artifact-metadata-governance`
-- `P29-CLI-01 - Artifact Inspect And Read Commands` is in review on `codex/p29-cli-01-artifact-inspect-and-read`
-- `P29-OBS-01 - Artifact Audit And Preview Redaction` is ready on `codex/p29-obs-01-artifact-audit-and-redaction`
-- `P29-CLOSE-01 - Phase 29 Closeout And Next Planning` is locked on the phase implementation tasks
+- `P29-CLI-01 - Artifact Inspect And Read Commands` is complete on the current development line
+- `P29-OBS-01 - Artifact Audit And Preview Redaction` is in review on `codex/p29-obs-01-artifact-audit-and-redaction`
+- `P29-CLOSE-01 - Phase 29 Closeout And Next Planning` is the next unlock after the review branch lands
 
 ## Active Documents
 

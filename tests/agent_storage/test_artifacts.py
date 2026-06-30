@@ -50,11 +50,36 @@ def test_sqlite_artifact_store_lists_model_and_tool_artifacts(tmp_path: Path) ->
     assert artifacts[0].source == "model_call"
     assert artifacts[0].kind == "assistant_message"
     assert artifacts[0].preview == "Summarized the repository."
+    assert artifacts[0].preview_state == {"redacted": False, "truncated": False}
     assert artifacts[0].metadata["total_tokens"] == 30
     assert artifacts[1].source == "tool_run"
     assert artifacts[1].kind == "tool_output"
     assert artifacts[1].uri == "file:///tmp/pytest.log"
+    assert artifacts[1].preview_state == {"redacted": False, "truncated": False}
     assert artifacts[1].metadata["status"] == "executed"
+
+
+def test_sqlite_artifact_store_redacts_and_truncates_sensitive_preview(tmp_path: Path) -> None:
+    database_path = tmp_path / "artifacts.db"
+    session_id = new_session_id()
+    SQLiteToolRunStore(database_path).upsert(
+        ToolRunRecord(
+            session_id=session_id,
+            sequence=5,
+            tool_name="tests.run",
+            status="executed",
+            idempotency_key="tool-5",
+            output="token=super-secret-value " + ("x" * 200),
+            artifact_uri=None,
+            created_at=datetime(2026, 6, 23, 14, 0, tzinfo=UTC),
+        )
+    )
+
+    artifacts = SQLiteArtifactStore(database_path).list_for_session(session_id)
+
+    assert artifacts[0].preview.endswith("...")
+    assert "[REDACTED]" in artifacts[0].preview
+    assert artifacts[0].preview_state == {"redacted": True, "truncated": True}
 
 
 def test_sqlite_artifact_store_returns_empty_list(tmp_path: Path) -> None:

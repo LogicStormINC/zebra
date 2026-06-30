@@ -4457,8 +4457,8 @@ operators do not need the HTTP API for artifact inspection.
 
 ### P29-OBS-01 - Artifact Audit And Preview Redaction
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `OBS`
 - Depends on: `P28-CLOSE-01`
 - Branch: `codex/p29-obs-01-artifact-audit-and-redaction`
@@ -4477,9 +4477,9 @@ preview-redaction handling for retrieval surfaces.
 
 #### Acceptance
 
-- [ ] Artifact reads are auditable by session and artifact identifier.
-- [ ] Preview redaction or truncation behavior is explicit and tested.
-- [ ] Existing artifact list and detail responses stay stable for non-sensitive cases.
+- [x] Artifact reads are auditable by session and artifact identifier.
+- [x] Preview redaction or truncation behavior is explicit and tested.
+- [x] Existing artifact list and detail responses stay stable for non-sensitive cases.
 
 ### P29-CLOSE-01 - Phase 29 Closeout And Next Planning
 
