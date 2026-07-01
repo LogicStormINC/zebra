@@ -47,6 +47,7 @@ from zebra_agent_cli.execution import (
     serialize_run_execution,
     serialize_trace_events,
 )
+from zebra_agent_cli.session_diff_read import read_session_diff
 from zebra_agent_cli.workspace_read import serialize_workspace_projection
 
 CommandName = Literal[
@@ -57,6 +58,7 @@ CommandName = Literal[
     "approve",
     "model",
     "artifact",
+    "diff",
     "delivery-audit",
 ]
 
@@ -100,10 +102,21 @@ def execute(
         return _approval_result(namespace, _database_path(namespace.database, active_settings))
     if command == "artifact":
         return _artifact_result(namespace, _database_path(namespace.database, active_settings))
+    if command == "diff":
+        return CliCommandResult(
+            command="diff",
+            payload=read_session_diff(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+            ),
+        )
     if command == "delivery-audit":
-        return _delivery_audit_result(
-            namespace,
-            _database_path(namespace.database, active_settings),
+        return CliCommandResult(
+            command="delivery-audit",
+            payload=read_delivery_audit(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+            ),
         )
     if command == "model":
         return _model_result(namespace, active_settings)
@@ -146,6 +159,10 @@ def _parser() -> argparse.ArgumentParser:
     inspect = subcommands.add_parser("inspect", help="Inspect a session.")
     inspect.add_argument("session_id")
     inspect.add_argument("--database")
+
+    diff = subcommands.add_parser("diff", help="Read one session workspace diff.")
+    diff.add_argument("session_id")
+    diff.add_argument("--database")
 
     delivery_audit = subcommands.add_parser(
         "delivery-audit",
@@ -440,17 +457,6 @@ def _model_result(
             ],
         },
     )
-
-
-def _delivery_audit_result(
-    namespace: argparse.Namespace,
-    database_path: Path,
-) -> CliCommandResult:
-    payload = read_delivery_audit(
-        database_path=database_path,
-        session_id=namespace.session_id,
-    )
-    return CliCommandResult(command="delivery-audit", payload=payload)
 
 
 def _artifact_result(

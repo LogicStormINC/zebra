@@ -266,6 +266,14 @@ Review the current Git diff for a session workspace:
 curl http://127.0.0.1:8000/sessions/<session_id>/diff
 ```
 
+Read the same session workspace diff directly from the local CLI without the
+HTTP API:
+
+```bash
+uv run zebra-agent diff <session_id> \
+  --database .zebra-agent/operator-runbook.sqlite
+```
+
 Expected result:
 
 - JSON output with `clean=true` or `clean=false`

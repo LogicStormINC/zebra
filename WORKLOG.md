@@ -4150,3 +4150,21 @@
   - `README.md`
 - 验证：
   - `make check`
+
+## 2026-07-01 P46-CLI-01 Session Diff CLI Read Surface
+
+- 执行 `P46-CLI-01 - Session Diff CLI Read Surface`
+- 行为更新：
+  - 新增 `apps/cli/src/zebra_agent_cli/session_diff_read.py`
+  - 新增顶层 CLI 命令 `zebra-agent diff <session_id>`
+  - 复用现有 workspace diff service 与 session bootstrap 事件中的 `workspace_root`
+  - 本地 CLI 现在可直接读取 session workspace diff，不再依赖 HTTP API
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run pytest tests/cli/test_cli_session_diff.py tests/api/test_session_diff.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/session_diff_read.py tests/cli/test_cli_session_diff.py`
+  - `uv run mypy packages apps`
+  - `make check`
