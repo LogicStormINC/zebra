@@ -6195,8 +6195,8 @@ implementation phase.
 
 ### P49-CLI-01 - Session Pull Request CLI Delivery Surface
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P48-CLOSE-01`
 - Branch: `codex/p49-cli-01-session-pull-request-read`
@@ -6218,9 +6218,9 @@ delivery completion.
 
 #### Acceptance
 
-- [ ] Operators can open one session pull request from the CLI.
-- [ ] Pull-request success and failure states stay explicit and machine-readable.
-- [ ] Existing API pull-request behavior remains backward compatible.
+- [x] Operators can open one session pull request from the CLI.
+- [x] Pull-request success and failure states stay explicit and machine-readable.
+- [x] Existing API pull-request behavior remains backward compatible.
 
 ### P49-TEST-01 - Session Pull Request Cross-Surface Contract Matrix
 

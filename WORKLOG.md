@@ -4303,3 +4303,24 @@
   - `WORKLOG.md`
 - 验证：
   - `make check`
+
+## 2026-07-01 P49-CLI-01 Session Pull Request CLI Delivery Surface
+
+- 执行 `P49-CLI-01 - Session Pull Request CLI Delivery Surface`
+- 行为更新：
+  - 新增 `apps/cli/src/zebra_agent_cli/session_pull_request_write.py`
+  - 新增顶层 CLI 命令 `zebra-agent pull-request <session_id> --title ...`
+  - CLI 复用现有 `ZebraAgentApi.open_session_pull_request` 组合路径，继承 SCM gateway、policy、idempotency、delivery-audit 与 guarded execution 语义
+  - 本地 CLI 现在可直接执行 session pull-request 规划或显式 guarded execution，不再依赖 HTTP API
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `docs/operator_runbook.md`
+  - `WORKLOG.md`
+- 验证：
+  - `make sync`
+  - `uv run pytest tests/cli/test_cli_session_pull_request.py tests/api/test_session_pull_request.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py apps/cli/src/zebra_agent_cli/session_pull_request_write.py tests/cli/test_cli_session_pull_request.py`
+  - `uv run mypy packages apps`
+  - `make check`

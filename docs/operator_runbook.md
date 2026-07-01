@@ -394,6 +394,17 @@ curl -X POST http://127.0.0.1:8000/sessions/<session_id>/pull-request \
   -d '{"title":"Implement reviewed changes","body":"Summary and validation notes."}'
 ```
 
+Open the same pull-request plan directly from the local CLI without the HTTP
+API:
+
+```bash
+uv run zebra-agent pull-request <session_id> \
+  --title "Implement reviewed changes" \
+  --body "Summary and validation notes." \
+  --idempotency-key pr-<unique-retry-key> \
+  --database .zebra-agent/operator-runbook.sqlite
+```
+
 Expected result in the current local-only runtime:
 
 - pull-request planning remains local-first by default

@@ -16,6 +16,7 @@ CommandName = Literal[
     "stream",
     "delivery-audit",
     "commit",
+    "pull-request",
 ]
 
 

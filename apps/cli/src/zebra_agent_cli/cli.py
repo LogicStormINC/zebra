@@ -46,6 +46,7 @@ from zebra_agent_cli.execution import (
 )
 from zebra_agent_cli.read_commands import add_read_subparsers, read_command_result
 from zebra_agent_cli.session_commit_write import commit_session
+from zebra_agent_cli.session_pull_request_write import open_session_pull_request
 from zebra_agent_cli.workspace_read import serialize_workspace_projection
 
 
@@ -89,6 +90,21 @@ def execute(
                 author_name=namespace.author_name,
                 author_email=namespace.author_email,
                 idempotency_key=namespace.idempotency_key,
+            ),
+        )
+    if command == "pull-request":
+        return CliCommandResult(
+            command="pull-request",
+            payload=open_session_pull_request(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+                title=namespace.title,
+                body=namespace.body,
+                base_branch=namespace.base_branch,
+                head_branch=namespace.head_branch,
+                dry_run=not namespace.execute,
+                idempotency_key=namespace.idempotency_key,
+                settings=active_settings,
             ),
         )
     if command == "model":
@@ -142,6 +158,19 @@ def _parser() -> argparse.ArgumentParser:
     commit.add_argument("--author-email", default="zebra-agent@example.local")
     commit.add_argument("--idempotency-key")
     commit.add_argument("--database")
+
+    pull_request = subcommands.add_parser(
+        "pull-request",
+        help="Open one session pull request plan or guarded execution.",
+    )
+    pull_request.add_argument("session_id")
+    pull_request.add_argument("--title", required=True)
+    pull_request.add_argument("--body", default="")
+    pull_request.add_argument("--base-branch", default="main")
+    pull_request.add_argument("--head-branch")
+    pull_request.add_argument("--execute", action="store_true")
+    pull_request.add_argument("--idempotency-key")
+    pull_request.add_argument("--database")
 
     artifact = subcommands.add_parser("artifact", help="Inspect or read session artifacts.")
     artifact_subcommands = artifact.add_subparsers(dest="artifact_command", required=True)
