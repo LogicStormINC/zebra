@@ -3,9 +3,9 @@
 ## Current Phase
 
 - Active phase: `Phase 49 - Session Pull Request CLI And Operator Parity`
-- Repository status: `phase 49 ready`
+- Repository status: `phase 49 in progress`
 - Current focus:
-  - add a local CLI session pull-request delivery surface in `P49-CLI-01`
+  - lock API and CLI session pull-request parity in `P49-TEST-01`
   - preserve stable pull-request result fields without overfitting CLI-local context
 - Phase 38 shared artifact access audit metadata helper is complete on `codex/p38-obs-01-artifact-access-audit-helper`, centralizing deterministic allow, deny, and prune audit metadata assembly in `agent-security` and reusing it across API read and prune audit paths
 - Phase 38 API shared denial-response adoption is complete on `codex/p38-api-01-artifact-denial-response-adoption`, centralizing API read-side deny and unavailable response shaping while preserving the current operator-facing access contract
@@ -287,8 +287,9 @@
 - `P48-TEST-01 - Session Commit Cross-Surface Contract Matrix` is complete on `codex/p48-test-01-session-commit-contract-matrix`
 - session commit parity rules are now locked through a shared contract matrix covering committed success, policy-blocked, clean-workspace unavailable, missing-session, and cross-surface idempotent replay while treating CLI-local `database` context as transport-specific
 - Phase 48 is closed with `docs/Phase48_Session_Commit_CLI_And_Operator_Parity_验收记录.md`
-- `P49-CLI-01 - Session Pull Request CLI Delivery Surface` is ready on `codex/p49-cli-01-session-pull-request-read`
-- `P49-TEST-01 - Session Pull Request Cross-Surface Contract Matrix` is locked behind the CLI delivery surface
+- `P49-CLI-01 - Session Pull Request CLI Delivery Surface` is complete on `codex/p49-cli-01-session-pull-request-read`
+- local operators can now open one session pull request from the CLI with explicit dry-run, created, unavailable, policy-blocked, missing-session, invalid-request, and idempotent replay semantics
+- `P49-TEST-01 - Session Pull Request Cross-Surface Contract Matrix` is ready on `codex/p49-test-01-session-pull-request-contract-matrix`
 - `P49-CLOSE-01 - Phase 49 Closeout And Next Planning` is the documentation closeout lane for session pull-request operator parity
 
 ## Active Documents
