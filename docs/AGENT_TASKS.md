@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 45 ready; delivery-audit CLI and operator parity is next on top of the completed Phase 44 audit contract coverage baseline.
+> Current execution range: Phase 46 ready; session diff CLI and operator parity is next on top of the completed Phase 45 delivery-audit operator parity baseline.
 
 ## Global Rules
 
@@ -5878,7 +5878,7 @@ implementation phase.
 
 ### P45-CLI-01 - Delivery Audit CLI Read Surface
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P44-CLOSE-01`
@@ -5904,7 +5904,7 @@ operators do not need the HTTP API for routine audit lookup.
 
 ### P45-TEST-01 - Delivery Audit Cross-Surface Contract Matrix
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P45-CLI-01`
@@ -5930,11 +5930,11 @@ audit-surface changes do not drift across operators' read paths.
 
 ### P45-CLOSE-01 - Phase 45 Closeout And Next Planning
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P45-TEST-01`
-- Branch: `codex/p45-closeout-next-plan`
+- Branch: `codex/p45-closeout-next-plan-clean`
 - Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
@@ -5950,5 +5950,84 @@ next implementation phase.
 
 #### Acceptance
 
-- [ ] Delivery-audit operator parity evidence is recorded.
+- [x] Delivery-audit operator parity evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 46 Task Board
+
+### P46-CLI-01 - Session Diff CLI Read Surface
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P45-CLOSE-01`
+- Branch: `codex/p46-cli-01-session-diff-read`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose a local CLI read surface for session workspace diff inspection so
+operators do not need the HTTP API for routine diff lookup.
+
+#### Deliverables
+
+- CLI command for session diff inspection
+- machine-readable local output for clean, dirty, and unavailable diff states
+- regression coverage for missing-session and non-git workspace diff reads
+
+#### Acceptance
+
+- [ ] Operators can inspect one session workspace diff from the CLI.
+- [ ] Clean, dirty, and unavailable diff states stay explicit and machine-readable.
+- [ ] Existing API diff behavior remains backward compatible.
+
+### P46-TEST-01 - Session Diff Cross-Surface Contract Matrix
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `TEST`
+- Depends on: `P46-CLI-01`
+- Branch: `codex/p46-test-01-session-diff-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI session diff output so future
+workspace-inspection changes do not drift across operator read paths.
+
+#### Deliverables
+
+- cross-surface session diff regression matrix
+- normalization rules for non-deterministic diff context when needed
+- documented parity boundary for API and CLI diff reads
+
+#### Acceptance
+
+- [ ] API and CLI session diff output parity is explicit and regression-tested.
+- [ ] Stable diff fields stay locked without overfitting local path noise.
+- [ ] Clean, dirty, and unavailable diff states remain backward compatible across both surfaces.
+
+### P46-CLOSE-01 - Phase 46 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P46-TEST-01`
+- Branch: `codex/p46-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 46 with session diff operator parity evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 46 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Session diff operator parity evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.
