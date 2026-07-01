@@ -4216,3 +4216,20 @@
   - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/session_stream_read.py tests/cli/test_cli_session_stream.py`
   - `uv run mypy packages apps`
   - `make check`
+
+## 2026-07-01 P47-TEST-01 Session Stream Cross-Surface Contract Matrix
+
+- 执行 `P47-TEST-01 - Session Stream Cross-Surface Contract Matrix`
+- 行为更新：
+  - 新增 `tests/test_session_stream_contract_matrix.py`
+  - 显式锁定 API SSE replay 与 CLI stream 在 populated、bootstrap-only、missing-session 三类读取路径上的共享契约
+  - 将 SSE framing 与 CLI 本地 `database` 上下文字段排除在 cross-surface 共享契约之外
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run pytest tests/test_session_stream_contract_matrix.py tests/cli/test_cli_session_stream.py tests/api/test_api_app.py tests/api/test_http_app.py tests/api/test_routes.py -k stream`
+  - `uv run ruff check tests/test_session_stream_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`

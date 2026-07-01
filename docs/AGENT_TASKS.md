@@ -6062,8 +6062,8 @@ operators do not need the HTTP API for routine persisted replay lookup.
 
 ### P47-TEST-01 - Session Stream Cross-Surface Contract Matrix
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P47-CLI-01`
 - Branch: `codex/p47-test-01-session-stream-contract-matrix`
@@ -6082,9 +6082,9 @@ so future operator replay changes do not drift across read paths.
 
 #### Acceptance
 
-- [ ] API and CLI session stream output parity is explicit and regression-tested.
-- [ ] Stable event fields stay locked without overfitting transport-specific framing.
-- [ ] Bootstrap-only and later event replay remain backward compatible across both surfaces.
+- [x] API and CLI session stream output parity is explicit and regression-tested.
+- [x] Stable event fields stay locked without overfitting transport-specific framing.
+- [x] Bootstrap-only and later event replay remain backward compatible across both surfaces.
 
 ### P47-CLOSE-01 - Phase 47 Closeout And Next Planning
 
