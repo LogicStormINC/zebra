@@ -5878,8 +5878,8 @@ implementation phase.
 
 ### P45-CLI-01 - Delivery Audit CLI Read Surface
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P44-CLOSE-01`
 - Branch: `codex/p45-cli-01-delivery-audit-read`
@@ -5898,9 +5898,9 @@ operators do not need the HTTP API for routine audit lookup.
 
 #### Acceptance
 
-- [ ] Operators can inspect one session's delivery-audit history from the CLI.
-- [ ] Missing-session and empty-history semantics stay explicit and machine-readable.
-- [ ] Existing API delivery-audit behavior remains backward compatible.
+- [x] Operators can inspect one session's delivery-audit history from the CLI.
+- [x] Missing-session and empty-history semantics stay explicit and machine-readable.
+- [x] Existing API delivery-audit behavior remains backward compatible.
 
 ### P45-TEST-01 - Delivery Audit Cross-Surface Contract Matrix
 

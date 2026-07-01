@@ -41,6 +41,7 @@ from zebra_agent_cli.artifact_read import (
     read_artifact_content,
     read_artifact_detail,
 )
+from zebra_agent_cli.delivery_audit_read import read_delivery_audit
 from zebra_agent_cli.execution import (
     execute_durable_run,
     serialize_run_execution,
@@ -48,7 +49,16 @@ from zebra_agent_cli.execution import (
 )
 from zebra_agent_cli.workspace_read import serialize_workspace_projection
 
-CommandName = Literal["run", "resume", "suspend", "inspect", "approve", "model", "artifact"]
+CommandName = Literal[
+    "run",
+    "resume",
+    "suspend",
+    "inspect",
+    "approve",
+    "model",
+    "artifact",
+    "delivery-audit",
+]
 
 
 @dataclass(frozen=True)
@@ -90,6 +100,11 @@ def execute(
         return _approval_result(namespace, _database_path(namespace.database, active_settings))
     if command == "artifact":
         return _artifact_result(namespace, _database_path(namespace.database, active_settings))
+    if command == "delivery-audit":
+        return _delivery_audit_result(
+            namespace,
+            _database_path(namespace.database, active_settings),
+        )
     if command == "model":
         return _model_result(namespace, active_settings)
     raise ValueError(f"unsupported CLI command: {command}")
@@ -131,6 +146,13 @@ def _parser() -> argparse.ArgumentParser:
     inspect = subcommands.add_parser("inspect", help="Inspect a session.")
     inspect.add_argument("session_id")
     inspect.add_argument("--database")
+
+    delivery_audit = subcommands.add_parser(
+        "delivery-audit",
+        help="Read one session delivery-audit history.",
+    )
+    delivery_audit.add_argument("session_id")
+    delivery_audit.add_argument("--database")
 
     artifact = subcommands.add_parser("artifact", help="Inspect or read session artifacts.")
     artifact_subcommands = artifact.add_subparsers(dest="artifact_command", required=True)
@@ -418,6 +440,17 @@ def _model_result(
             ],
         },
     )
+
+
+def _delivery_audit_result(
+    namespace: argparse.Namespace,
+    database_path: Path,
+) -> CliCommandResult:
+    payload = read_delivery_audit(
+        database_path=database_path,
+        session_id=namespace.session_id,
+    )
+    return CliCommandResult(command="delivery-audit", payload=payload)
 
 
 def _artifact_result(
