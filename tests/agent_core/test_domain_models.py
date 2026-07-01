@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 import pytest
+from agent_core.domain import ArtifactAccessDescriptor
 from agent_core.domain.artifacts import ArtifactRef
 from agent_core.domain.identifiers import (
     new_artifact_id,
@@ -69,6 +70,18 @@ def test_artifact_and_policy_models_can_be_instantiated() -> None:
     assert artifact.kind == "test-report"
     assert artifact.uri == "file:///tmp/report.txt"
     assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+
+
+def test_artifact_access_descriptor_normalizes_optional_strings() -> None:
+    descriptor = ArtifactAccessDescriptor(
+        kind=" tool_output ",
+        mime_type=" text/plain ",
+        uri=" file:///tmp/report.txt ",
+    )
+
+    assert descriptor.kind == "tool_output"
+    assert descriptor.mime_type == "text/plain"
+    assert descriptor.uri == "file:///tmp/report.txt"
 
 
 def test_tool_call_requires_timezone_aware_timestamp() -> None:

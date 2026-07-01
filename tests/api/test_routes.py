@@ -8,10 +8,15 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
-from agent_core.domain.sessions import Session, SessionStatus
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
+from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
+from agent_storage import SQLiteEventStore, SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
 from zebra_agent_api.app import create_app
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
+
+
+def _created_at() -> datetime:
+    return datetime(2026, 6, 29, 21, 0, tzinfo=UTC)
 
 
 def test_route_adapter_handles_health(tmp_path: Path) -> None:
@@ -37,6 +42,76 @@ def test_route_adapter_handles_session_lookup(tmp_path: Path) -> None:
     assert response.status_code == 200
     assert response.body["session_id"] == str(session.session_id)
     assert response.body["title"] == "Route session"
+
+
+def test_route_adapter_handles_session_lookup_with_workspace_projection(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="Route workspace").model_copy(
+            update={
+                "status": SessionStatus.SUSPENDED,
+                "current_sequence": 4,
+            }
+        )
+    )
+    SQLiteWorkspaceProjectionStore(database_path).save_workspace(
+        WorkspaceProjection.model_validate(
+            {
+                "session_id": session.session_id,
+                "workspace_root": str(tmp_path.resolve()),
+                "prepared_at": _created_at(),
+                "updated_at": _created_at(),
+                "current_sequence": 4,
+                "status": WorkspaceStatus.SUSPENDED,
+                "runtime_name": "local",
+                "snapshot_id": "snap-route-1",
+                "snapshot_path": "/tmp/zebra-agent-runtime/snap-route-1",
+            }
+        )
+    )
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(
+        RouteRequest(method="GET", path=f"/sessions/{session.session_id}")
+    )
+
+    assert response.status_code == 200
+    assert response.body["workspace"] == {
+        "workspace_root": str(tmp_path.resolve()),
+        "status": "suspended",
+        "current_sequence": 4,
+        "prepared_at": _created_at().isoformat(),
+        "updated_at": _created_at().isoformat(),
+        "snapshot": {
+            "runtime_name": "local",
+            "snapshot_id": "snap-route-1",
+            "snapshot_path": "/tmp/zebra-agent-runtime/snap-route-1",
+        },
+    }
+
+
+def test_route_adapter_handles_approval_list(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_waiting_approval_session(database_path)
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(RouteRequest(method="GET", path="/approvals"))
+
+    assert response.status_code == 200
+    assert response.body["approvals"][0]["approval_id"] == str(session.session_id)
+
+
+def test_route_adapter_handles_approval_detail(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_waiting_approval_session(database_path)
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(
+        RouteRequest(method="GET", path=f"/approvals/{session.session_id}")
+    )
+
+    assert response.status_code == 200
+    assert response.body["approval_id"] == str(session.session_id)
 
 
 def test_route_adapter_returns_not_found_for_unknown_route(tmp_path: Path) -> None:
@@ -127,6 +202,25 @@ def test_route_adapter_handles_session_resume_execute(tmp_path: Path, monkeypatc
     ]
 
 
+def test_route_adapter_handles_session_suspend(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(
+        RouteRequest(
+            method="POST",
+            path=f"/sessions/{session_id}/suspend",
+            body={},
+        )
+    )
+
+    assert response.status_code == 200
+    assert response.body["session_id"] == session_id
+    assert response.body["suspended"] is True
+    assert response.body["status"] == "suspended"
+
+
 def test_route_adapter_handles_session_message_append(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
@@ -190,6 +284,26 @@ def test_route_adapter_rejects_invalid_resume_payload(tmp_path: Path) -> None:
     assert response.body == {
         "status": "invalid_request",
         "reason": "lease_ttl_seconds must be greater than zero",
+    }
+
+
+def test_route_adapter_rejects_invalid_suspend_payload(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    adapter = RouteAdapter(create_app(database_path))
+
+    response = adapter.handle(
+        RouteRequest(
+            method="POST",
+            path=f"/sessions/{session_id}/suspend",
+            body={"unexpected": True},
+        )
+    )
+
+    assert response.status_code == 400
+    assert response.body == {
+        "status": "invalid_request",
+        "reason": "suspend does not accept request fields yet",
     }
 
 
@@ -261,3 +375,25 @@ def _fake_model_gateway(_settings):
             ),
         )
     )
+
+
+def _seed_waiting_approval_session(database_path: Path) -> Session:
+    session = Session.create(title="Waiting approval").model_copy(
+        update={
+            "status": SessionStatus.WAITING_APPROVAL,
+            "current_sequence": 2,
+            "approval_context": ApprovalContext(
+                tool_name="mcp.github.create_pull_request",
+                reason="proxy-routed external tool execution in test",
+                policy_profile="full_access",
+                route="mcp_proxy",
+                target="github.create_pull_request",
+                network_profile="mcp-proxy-only",
+                scope=(
+                    "tool:mcp.github.create_pull_request",
+                    "route:mcp_proxy",
+                ),
+            ),
+        }
+    )
+    return SQLiteProjectionStore(database_path).save_session(session)

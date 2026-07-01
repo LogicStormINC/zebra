@@ -33,6 +33,8 @@ from agent_storage import (
 from zebra_agent_config import ZebraAgentSettings, load_settings
 from zebra_agent_worker import (
     SessionClaimService,
+    SessionControlError,
+    SessionControlService,
     SessionExecutionService,
     SessionRecoveryError,
     SessionRecoveryService,
@@ -41,9 +43,12 @@ from zebra_agent_worker import (
     WorkerExecutionError,
 )
 
+from zebra_agent_api.approval_context import serialize_approval_context
+from zebra_agent_api.approval_read import ApprovalReadApi
 from zebra_agent_api.credential_broker import build_default_credential_broker
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.serialization import serialize_trace_events
+from zebra_agent_api.session_artifact_control import SessionArtifactControlApi
 from zebra_agent_api.session_commit import SessionCommitApi
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
@@ -51,6 +56,7 @@ from zebra_agent_api.session_payloads import (
     parse_approval_decision_payload,
     parse_create_session_payload,
     parse_resume_session_payload,
+    parse_suspend_session_payload,
 )
 from zebra_agent_api.session_pull_request import SessionPullRequestApi
 from zebra_agent_api.session_read import SessionReadApi
@@ -75,6 +81,12 @@ class ZebraAgentApi:
     def get_session(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session(session_id)
 
+    def list_approvals(self) -> ApiResponse:
+        return ApprovalReadApi(self.database_path).list_approvals()
+
+    def get_approval(self, approval_id: str) -> ApiResponse:
+        return ApprovalReadApi(self.database_path).get_approval(approval_id)
+
     def get_session_stream(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session_stream(session_id)
 
@@ -83,6 +95,24 @@ class ZebraAgentApi:
 
     def get_session_artifacts(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session_artifacts(session_id)
+
+    def get_session_artifact_detail(self, session_id: str, artifact_id: str) -> ApiResponse:
+        return SessionReadApi(self.database_path).get_session_artifact_detail(
+            session_id,
+            artifact_id,
+        )
+
+    def get_session_artifact_content(self, session_id: str, artifact_id: str) -> ApiResponse:
+        return SessionReadApi(self.database_path).get_session_artifact_content(
+            session_id,
+            artifact_id,
+        )
+
+    def prune_session_artifact(self, session_id: str, artifact_id: str) -> ApiResponse:
+        return SessionArtifactControlApi(self.database_path).prune_artifact(
+            session_id,
+            artifact_id,
+        )
 
     def get_session_delivery_audit(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session_delivery_audit(session_id)
@@ -193,6 +223,40 @@ class ZebraAgentApi:
                 "current_sequence": result.session.current_sequence,
                 "assistant_message": result.attempt_result.metadata.get("assistant_message"),
                 "trace": serialize_trace_events(result.events),
+            },
+        )
+
+    def suspend_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
+        parsed = parse_suspend_session_payload(payload)
+        if isinstance(parsed, ApiResponse):
+            return parsed
+        del parsed
+
+        try:
+            result = SessionControlService(self.database_path).suspend_session(
+                SessionId(UUID(session_id))
+            )
+        except SessionControlError as error:
+            message = str(error)
+            if message == "session was not found":
+                return ApiResponse(
+                    status_code=404,
+                    body={"session_id": session_id, "status": "not_found"},
+                )
+            return conflict(
+                session_id=session_id,
+                status="not_suspendable",
+                reason=message.replace(" ", "_"),
+            )
+
+        return ApiResponse(
+            status_code=200,
+            body={
+                "session_id": session_id,
+                "suspended": True,
+                "status": "suspended",
+                "workspace_status": result.workspace.status.value,
+                "snapshot_id": result.workspace.snapshot_id,
             },
         )
 
@@ -345,19 +409,21 @@ class ZebraAgentApi:
                 status="invalid_state",
                 reason=str(error),
             )
-        SQLiteEventStore(self.database_path).append(event)
+        event_store = SQLiteEventStore(self.database_path)
+        approval_context = serialize_approval_context(session.approval_context)
+        event_store.append(event)
         updated_session = projection_store.save_session(apply_event(session, event))
-        return ApiResponse(
-            status_code=200,
-            body={
-                "approval_id": approval_id,
-                "session_id": approval_id,
-                "decision": decision,
-                "event_type": event.event_type.value,
-                "sequence": event.sequence,
-                "status": updated_session.status.value,
-            },
-        )
+        body: dict[str, object] = {
+            "approval_id": approval_id,
+            "session_id": approval_id,
+            "decision": decision,
+            "event_type": event.event_type.value,
+            "sequence": event.sequence,
+            "status": updated_session.status.value,
+        }
+        if approval_context is not None:
+            body["approval_context"] = approval_context
+        return ApiResponse(status_code=200, body=body)
 
 
 def create_app(
@@ -399,6 +465,10 @@ def _trace_payload(result: HarnessLoopResult) -> list[dict[str, object]]:
                     "output": tool.output,
                     "metadata": tool.metadata,
                     "policy_decision": tool.policy_decision,
+                    "policy_route": tool.policy_route,
+                    "policy_target": tool.policy_target,
+                    "policy_network_profile": tool.policy_network_profile,
+                    "policy_scope": list(tool.policy_scope),
                 }
                 for tool in attempt.tools
             ],

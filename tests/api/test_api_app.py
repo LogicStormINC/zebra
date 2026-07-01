@@ -5,9 +5,10 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
-from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_core.domain.tools import ToolCall
-from agent_storage import SQLiteProjectionStore
+from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
+from agent_storage import SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
 from zebra_agent_api.app import create_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
@@ -56,6 +57,53 @@ def test_api_get_session_returns_projection(tmp_path: Path) -> None:
     }
 
 
+def test_api_get_session_includes_workspace_projection_when_available(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="Workspace readback").model_copy(
+            update={
+                "status": SessionStatus.SUSPENDED,
+                "current_sequence": 4,
+            }
+        )
+    )
+    SQLiteWorkspaceProjectionStore(database_path).save_workspace(
+        WorkspaceProjection.model_validate(
+            {
+                "session_id": session.session_id,
+                "workspace_root": str(tmp_path.resolve()),
+                "prepared_at": _created_at(),
+                "updated_at": _created_at(),
+                "current_sequence": 4,
+                "status": WorkspaceStatus.SUSPENDED,
+                "policy_profile": "workspace_write",
+                "last_attempt_number": 1,
+                "runtime_name": "local",
+                "snapshot_id": "snap-123",
+                "snapshot_path": "/tmp/zebra-agent-runtime/snap-123",
+            }
+        )
+    )
+
+    response = create_app(database_path).get_session(str(session.session_id))
+
+    assert response.status_code == 200
+    assert response.body["workspace"] == {
+        "workspace_root": str(tmp_path.resolve()),
+        "status": "suspended",
+        "current_sequence": 4,
+        "prepared_at": _created_at().isoformat(),
+        "updated_at": _created_at().isoformat(),
+        "policy_profile": "workspace_write",
+        "last_attempt_number": 1,
+        "snapshot": {
+            "runtime_name": "local",
+            "snapshot_id": "snap-123",
+            "snapshot_path": "/tmp/zebra-agent-runtime/snap-123",
+        },
+    }
+
+
 def test_api_get_session_returns_not_found(tmp_path: Path) -> None:
     response = create_app(tmp_path / "sessions.sqlite").get_session(
         "00000000-0000-0000-0000-000000000001"
@@ -66,6 +114,39 @@ def test_api_get_session_returns_not_found(tmp_path: Path) -> None:
         "session_id": "00000000-0000-0000-0000-000000000001",
         "status": "not_found",
     }
+
+
+def test_api_lists_waiting_approvals_from_projection(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    first = _waiting_session("First approval").model_copy(update={"current_sequence": 3})
+    second = _waiting_session("Second approval").model_copy(
+        update={
+            "current_sequence": 4,
+            "updated_at": _created_at().replace(second=21),
+        }
+    )
+    SQLiteProjectionStore(database_path).save_session(first)
+    SQLiteProjectionStore(database_path).save_session(second)
+
+    response = create_app(database_path).list_approvals()
+
+    assert response.status_code == 200
+    assert response.body["approvals"][0]["approval_id"] == str(first.session_id)
+    assert response.body["approvals"][1]["approval_id"] == str(second.session_id)
+    assert response.body["approvals"][0]["approval_context"]["route"] == "mcp_proxy"
+
+
+def test_api_get_approval_returns_projection_detail(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _waiting_session("Approval detail").model_copy(update={"current_sequence": 5})
+    SQLiteProjectionStore(database_path).save_session(session)
+
+    response = create_app(database_path).get_approval(str(session.session_id))
+
+    assert response.status_code == 200
+    assert response.body["approval_id"] == str(session.session_id)
+    assert response.body["title"] == "Approval detail"
+    assert response.body["approval_context"]["route"] == "mcp_proxy"
 
 
 def test_api_get_session_stream_returns_persisted_events(tmp_path: Path) -> None:
@@ -280,6 +361,10 @@ def test_api_create_session_execute_runs_builtin_tool(
                         "truncated": False,
                     },
                     "policy_decision": "allow",
+                    "policy_route": None,
+                    "policy_target": None,
+                    "policy_network_profile": None,
+                    "policy_scope": [],
                 }
             ],
         }
@@ -318,3 +403,23 @@ def _created_at():
     from datetime import UTC, datetime
 
     return datetime(2026, 6, 22, 13, 20, tzinfo=UTC)
+
+
+def _waiting_session(title: str) -> Session:
+    return Session.create(title=title, created_at=_created_at()).model_copy(
+        update={
+            "status": SessionStatus.WAITING_APPROVAL,
+            "approval_context": ApprovalContext(
+                tool_name="mcp.github.create_pull_request",
+                reason="proxy-routed external tool execution in test",
+                policy_profile="full_access",
+                route="mcp_proxy",
+                target="github.create_pull_request",
+                network_profile="mcp-proxy-only",
+                scope=(
+                    "tool:mcp.github.create_pull_request",
+                    "route:mcp_proxy",
+                ),
+            ),
+        }
+    )

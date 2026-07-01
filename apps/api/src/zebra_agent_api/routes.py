@@ -31,12 +31,22 @@ class RouteAdapter:
                 return self.app.approve(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "reject":
                 return self.app.reject(parts[0], request.body or {})
+        if method == "GET" and request.path == "/approvals":
+            return self.app.list_approvals()
+        if method == "GET" and request.path.startswith("/approvals/"):
+            parts = _approval_path_parts(request.path)
+            if len(parts) == 1:
+                return self.app.get_approval(parts[0])
         if method == "POST" and request.path.startswith("/sessions/"):
             parts = _session_path_parts(request.path)
             if len(parts) == 2 and parts[1] == "messages":
                 return self.app.append_session_message(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "suspend":
+                return self.app.suspend_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "resume":
                 return self.app.resume_session(parts[0], request.body or {})
+            if len(parts) == 4 and parts[1] == "artifacts" and parts[3] == "prune":
+                return self.app.prune_session_artifact(parts[0], parts[2])
             if len(parts) == 2 and parts[1] == "commit":
                 return self.app.commit_session(
                     parts[0],
@@ -61,6 +71,10 @@ class RouteAdapter:
                 return self.app.get_session_diff(parts[0])
             if len(parts) == 2 and parts[1] == "artifacts":
                 return self.app.get_session_artifacts(parts[0])
+            if len(parts) == 3 and parts[1] == "artifacts":
+                return self.app.get_session_artifact_detail(parts[0], parts[2])
+            if len(parts) == 4 and parts[1] == "artifacts" and parts[3] == "content":
+                return self.app.get_session_artifact_content(parts[0], parts[2])
             if len(parts) == 2 and parts[1] == "delivery-audit":
                 return self.app.get_session_delivery_audit(parts[0])
             return _not_found(request)

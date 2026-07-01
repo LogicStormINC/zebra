@@ -3,7 +3,7 @@ from pathlib import Path
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_session_id
-from agent_storage import SQLiteToolRunStore
+from agent_storage import SQLiteArtifactPayloadStore, SQLiteToolRunStore
 from zebra_agent_worker import ToolRunIndexer
 
 
@@ -31,3 +31,34 @@ def test_tool_run_indexer_indexes_tool_execution_event(tmp_path: Path) -> None:
     assert record.tool_name == "tests.run"
     assert record.artifact_uri == "file:///tmp/report.txt"
     assert store.list_for_session(event.session_id) == [record]
+
+
+def test_tool_run_indexer_persists_output_payload_when_no_artifact_uri(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "tool-runs.db"
+    store = SQLiteToolRunStore(database_path)
+    payload_store = SQLiteArtifactPayloadStore(database_path)
+    event = SessionEvent.create(
+        session_id=new_session_id(),
+        sequence=6,
+        event_type=EventType.TOOL_EXECUTION_COMPLETED,
+        actor=EventActor.TOOL,
+        payload={
+            "attempt_number": 1,
+            "tool_name": "files.read",
+            "status": "executed",
+            "output": "README contents",
+            "metadata": {},
+        },
+        idempotency_key="tool-run-6",
+        created_at=datetime(2026, 6, 22, 0, 30, tzinfo=UTC),
+    )
+
+    record = ToolRunIndexer(store, payload_store).index_event(event)
+
+    assert record is not None
+    assert record.artifact_uri is not None
+    assert Path(record.artifact_uri.removeprefix("file://")).read_text(encoding="utf-8") == (
+        "README contents"
+    )

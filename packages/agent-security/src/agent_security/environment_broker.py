@@ -42,6 +42,7 @@ class EnvironmentCredentialBinding:
 class EnvironmentCredentialBroker:
     bindings: tuple[EnvironmentCredentialBinding, ...]
     env: Mapping[str, str] = field(default_factory=lambda: os.environ, repr=False)
+    backend_name: str = field(default="environment", init=False)
 
     def request_scm_credential(
         self,

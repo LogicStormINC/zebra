@@ -130,6 +130,10 @@ class HarnessToolTrace:
     output: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
     policy_decision: str | None = None
+    policy_route: str | None = None
+    policy_target: str | None = None
+    policy_network_profile: str | None = None
+    policy_scope: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

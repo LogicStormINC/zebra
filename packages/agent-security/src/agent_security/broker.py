@@ -24,6 +24,10 @@ class CredentialUnavailableError(CredentialBrokerError):
     """Raised when the credential broker cannot serve requests."""
 
 
+class CredentialTransportError(CredentialBrokerError):
+    """Raised when a provider-backed credential exchange transport fails."""
+
+
 class CredentialBroker(Protocol):
     def request_scm_credential(
         self,
@@ -41,6 +45,7 @@ class InMemoryCredentialBroker:
     capabilities: tuple[CredentialCapability, ...] = ()
     denied_audiences: frozenset[str] = field(default_factory=frozenset)
     unavailable: bool = False
+    backend_name: str = field(default="environment", init=False)
 
     @classmethod
     def with_capabilities(

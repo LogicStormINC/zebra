@@ -2,12 +2,44 @@
 
 ## Current Phase
 
-- Active phase: `Phase 18 - SCM Delivery Audit And Broker Observability`
-- Repository status: `phase 18 in progress`
+- Active phase: `Phase 44 - Artifact Audit Metadata Contract Coverage`
+- Repository status: `phase 44 ready`
 - Current focus:
-  - classify credential failure families in SCM delivery audit
-  - keep local-only PR planning as the default behavior
-  - keep live SCM execution behind explicit provider, dry-run, credential, and policy gates
+  - add explicit artifact delivery-audit contract coverage
+  - normalize non-deterministic audit fields where parity needs stable comparison
+- Phase 38 shared artifact access audit metadata helper is complete on `codex/p38-obs-01-artifact-access-audit-helper`, centralizing deterministic allow, deny, and prune audit metadata assembly in `agent-security` and reusing it across API read and prune audit paths
+- Phase 38 API shared denial-response adoption is complete on `codex/p38-api-01-artifact-denial-response-adoption`, centralizing API read-side deny and unavailable response shaping while preserving the current operator-facing access contract
+- Phase 38 is closed with `docs/Phase38_Shared_Artifact_Audit_Metadata_And_Denial_Response_Reuse_验收记录.md`
+- Phase 39 CLI shared denial-response adoption is complete on `codex/p39-cli-01-artifact-denial-response-adoption`, extracting a CLI helper path for denied and unavailable artifact read responses while preserving CLI-local `database` context and prune behavior
+- Phase 39 failure contract matrix expansion is complete on `codex/p39-test-01-artifact-failure-contract-matrix`, explicitly covering API and CLI parity for detail-denied and content failure envelopes after shared helper adoption
+- Phase 39 is closed with `docs/Phase39_CLI_Shared_Denial_Response_Reuse_And_Failure_Contract_Parity_验收记录.md`
+- Phase 40 API shared artifact control response adoption is complete on `codex/p40-api-01-artifact-control-response-adoption`, centralizing prune denied and unavailable response construction behind shared API helper paths while preserving current prune contracts
+- Phase 40 CLI shared artifact control response adoption is complete on `codex/p40-cli-01-artifact-control-response-adoption`, centralizing prune denied and unavailable response construction behind shared CLI helper paths while preserving current prune contracts
+- Phase 40 artifact prune contract matrix expansion is complete on `codex/p40-test-01-artifact-prune-contract-matrix`, explicitly covering API and CLI parity for prune denied and prune unavailable external-reference envelopes
+- Phase 40 is closed with `docs/Phase40_Shared_Artifact_Control_Response_Reuse_And_Prune_Contract_Parity_验收记录.md`
+- Phase 41 API shared artifact control success projection is complete on `codex/p41-api-01-artifact-control-success-projection`, centralizing prune success response projection behind a shared API helper path while preserving the current success contract
+- Phase 41 CLI shared artifact control success projection is complete on `codex/p41-cli-01-artifact-control-success-projection`, centralizing prune success response projection behind a shared CLI helper path while preserving CLI-local `database` context
+- Phase 41 artifact prune success contract matrix expansion is complete on `codex/p41-test-01-artifact-prune-success-contract-matrix`, explicitly covering API and CLI parity for `pruned` and `already_pruned` envelopes with stable lifecycle normalization
+- Phase 41 is closed with `docs/Phase41_Shared_Artifact_Control_Success_Projection_And_Prune_Success_Parity_验收记录.md`
+- Phase 42 shared artifact control audit metadata helper is complete on `codex/p42-obs-01-artifact-control-audit-helper`, centralizing prune denied, success, and unavailable audit payload assembly behind a shared `agent-security` helper boundary
+- Phase 42 is closed with `docs/Phase42_Shared_Artifact_Control_Audit_Metadata_Helper_验收记录.md`
+- Phase 43 shared artifact audit metadata convergence is complete on `codex/p43-obs-01-artifact-audit-convergence`, converging read-side and control-side audit helper semantics onto one shared lower-level builder while preserving current wrappers and adapter contracts
+- Phase 43 is closed with `docs/Phase43_Shared_Artifact_Audit_Metadata_Convergence_验收记录.md`
+- Phase 41 CLI shared artifact control success projection is complete on `codex/p41-cli-01-artifact-control-success-projection`, centralizing prune success response projection behind a shared CLI helper path while preserving CLI-local `database` context
+- Phase 41 artifact prune success contract matrix expansion is complete on `codex/p41-test-01-artifact-prune-success-contract-matrix`, explicitly covering API and CLI parity for `pruned` and `already_pruned` envelopes with stable lifecycle normalization
+- Phase 41 is closed with `docs/Phase41_Shared_Artifact_Control_Success_Projection_And_Prune_Success_Parity_验收记录.md`
+- Phase 37 shared artifact access projection serializer is complete on `codex/p37-sec-01-shared-artifact-access-projection`, centralizing access explainability payload assembly and policy-rank evaluation in `agent-security`
+- Phase 37 API shared access projection adoption is complete on `codex/p37-api-01-artifact-access-projection-adoption`, replacing API-local access explainability assembly with the shared security projection helper while preserving artifact access and prune contracts
+- Phase 37 CLI shared access projection adoption is complete on `codex/p37-cli-01-artifact-access-projection-adoption`, replacing CLI-local access explainability assembly with the shared security projection helper while preserving CLI-only local context fields
+- Phase 37 is closed with `docs/Phase37_Shared_Artifact_Access_Projection_And_Adapter_Reuse_验收记录.md`
+- Phase 36 shared artifact projection serializer is complete on `codex/p36-sto-01-shared-artifact-projection-serializer`, centralizing payload lookup, lifecycle serialization, retrieval-state serialization, and base artifact envelope assembly in `agent-storage`
+- Phase 36 API adapter adoption is complete on `codex/p36-api-01-artifact-projection-adoption`, replacing API-local artifact envelope assembly with the shared storage serializer while preserving access and audit behavior
+- Phase 36 CLI adapter adoption is complete on `codex/p36-cli-01-artifact-projection-adoption`, replacing CLI-local artifact envelope assembly with the shared storage serializer while preserving CLI-only local context fields
+- Phase 36 is closed with `docs/Phase36_Shared_Artifact_Projection_Serialization_And_Adapter_Reuse_验收记录.md`
+- Phase 35 API success-envelope normalization is complete on `codex/p35-api-01-artifact-success-envelope-normalization`, making successful API artifact responses explicit instead of relying on implied 200 semantics
+- Phase 35 CLI envelope consistency parity is complete on `codex/p35-cli-01-artifact-envelope-consistency-parity`, aligning inspect success payload shape and pruned-unavailable semantics with the normalized API artifact contract while keeping CLI-only `database` context explicit
+- Phase 35 envelope contract matrix expansion is complete on `codex/p35-test-01-artifact-envelope-contract-matrix`, extending cross-surface regression from access parity into shared detail and unavailable envelope structure
+- Phase 35 is closed with `docs/Phase35_Artifact_Envelope_Normalization_And_Surface_Consistency_验收记录.md`
 
 ## Completed
 
@@ -160,12 +192,81 @@
 - Phase 17 is closed with `docs/Phase17_Credential_Backend_Hardening_验收记录.md`
 - SCM delivery audit now records non-secret credential source and backend metadata for broker-backed and explicit fallback GitHub PR execution paths
 - broker-missing failures now carry credential-source audit metadata without exposing token values
-- Phase 18 should next classify credential failure families for operator-facing remediation
+- SCM delivery audit now classifies credential_missing, credential_denied, credential_unavailable, and transport_failure for operator remediation
+- Phase 18 is closed with `docs/Phase18_SCM_Audit_Observability_验收记录.md`
+- secret-store Port and redaction contract now exist in `agent-security` for future non-environment broker backends
+- local secret-store backend now reads per-handle secret documents through the Port and keeps raw values out of repr and redacted snapshots
+- GitHub App credential broker skeleton now retrieves private-key material through `SecretStore` and preserves failure classification across integration and API audit paths
+- Phase 19 is closed with `docs/Phase19_Secret_Store_And_Broker_Credentials_验收记录.md`
+- deterministic network-profile contracts now exist in `agent-security`, including fail-closed defaulting and explicit validation for `domain-allowlist`
+- GitHub PR execution now blocks direct remote transport by default and records `egress_policy` metadata when the configured network profile disallows the target host
+- operator runbook now documents egress profiles, safe-default examples, and remediation paths that distinguish `egress_policy` from credential and transport failures
+- Phase 20 is closed with `docs/Phase20_Egress_Control_Foundations_验收记录.md`
+- SCM proxy transport contracts now exist in `agent-integrations`, including deterministic serializable request and response models separate from the direct GitHub HTTP path
+- GitHub PR execution can now use a proxy-backed adapter selected by environment while preserving direct-path guards and failure classification
+- MCP proxy starter contracts now exist for `mcp.<server>.<tool>` calls, along with policy-facing egress metadata that distinguishes local tool paths from proxy-routable MCP paths
+- operator runbook now documents proxy-backed SCM transport selection, MCP proxy starter routing, proxy-specific remediation, and rollback to safe defaults
+- Phase 21 is closed with `docs/Phase21_Proxy_Egress_Contracts_验收记录.md`
+- `ToolExecutor` now supports MCP proxy gateway execution for `mcp.<server>.<tool>` calls without changing builtin local tool behavior
+- proxy-backed SCM audit and MCP proxy tool execution now share stable `route`, `proxy_target`, and `proxy_transport` metadata fields
+- local policy evaluation now classifies MCP tools into deterministic local, proxy-routed approval, or fail-closed blocked outputs
+- approval request payloads now project route, target, and network-profile scope for proxy-aware operator decisions
+- proxy gateway operator guidance is now split into `docs/proxy_gateway_operator_runbook.md`, and the main operator runbook links to it instead of growing beyond the markdown file-size limit
+- Phase 22 is closed with `docs/Phase22_Proxy_Execution_And_Gateway_Wiring_验收记录.md`
+- harness policy and approval events can now persist proxy route, target, network-profile, and scope metadata without changing existing local-only payloads
+- operator-facing session reads and approval decision responses now expose proxy-safe `approval_context` derived from the latest `approval_requested` event
+- harness trace projection and API trace serialization now normalize proxy approval metadata with the same `route`, `target`, `network_profile`, and `scope` vocabulary used by policy and execution layers
+- Phase 23 is closed with `docs/Phase23_Proxy_Approval_Projection_And_Operator_Readback_验收记录.md`
+- session projections and SQLite projection storage now persist durable `approval_context` state for proxy-aware approval requests
+- operator-facing approval queue and approval detail reads are now projection-backed and no longer depend on raw event replay
+- projection rebuild, durable SQLite projection rows, and repeated approval reads now hold the same `route`, `target`, `network_profile`, and `scope` vocabulary for proxy-aware approval context
+- Phase 24 is closed with `docs/Phase24_Durable_Approval_Projection_And_Operator_Queue_验收记录.md`
+- durable workspace projection state now persists `workspace_root`, `policy_profile`, lifecycle status, sequence, and last attempt number for later snapshot or resume wiring
+- runtime contracts now model `provision`, `snapshot`, `restore`, `fork`, `suspend`, and `resume`, with `RuntimeSnapshot` carrying explicit local snapshot metadata
+- worker recovery, resume, and execution now reuse durable workspace projection state and keep workspace lifecycle rows aligned with emitted worker events
+- Phase 25 is closed with `docs/Phase25_Durable_Workspace_And_Snapshot_Foundations_验收记录.md`
+- local runtime now supports filesystem-backed snapshot, restore, and fork flows for workspace-backed handles with deterministic per-handle retention
+- local snapshot behavior is documented in `docs/local_snapshot_runtime.md`, including supported subset, storage layout, retention, and explicit unsupported paths
+- session control now emits durable suspend and resume lifecycle events, persists snapshot metadata in workspace projections, and restores suspended local workspaces before worker execution resumes
+- CLI `suspend`, API `POST /sessions/{id}/suspend`, and worker resume execution now share the same local snapshot-backed control-plane behavior
+- Phase 26 is closed with `docs/Phase26_Local_Snapshot_Operator_Controls_验收记录.md`
+- session read APIs now expose projection-backed workspace lifecycle state and snapshot metadata for operator inspection without replay-only fallback
+- CLI inspect and resume-read surfaces now expose the same durable workspace lifecycle state and suspended snapshot metadata for local operators
+- local snapshot inspect and cleanup now classify retained payloads as valid, missing, or incompatible through manifest-aware checks
+- worker restore paths now fail closed on incompatible retained snapshots and explicitly clean consumed snapshot payloads after successful restore
+- Phase 27 is closed with `docs/Phase27_Workspace_Lifecycle_Readback_And_Snapshot_Housekeeping_验收记录.md`
+- durable local artifact payload storage now exists with SQLite-backed metadata, file-backed payload retention, and explicit missing-payload inspection
+- worker execution now persists supported text tool outputs into the durable artifact payload store and rewrites local artifact refs to those retained payloads when no explicit artifact URI exists
+- session artifact read APIs now expose artifact detail and base64 content retrieval with explicit `indexed_only`, `payload_available`, `payload_missing`, and `external_reference` semantics
+- Phase 28 is closed with `docs/Phase28_Durable_Artifact_Storage_And_Retrieval_验收记录.md`
+- CLI now exposes `artifact inspect` and `artifact read` commands with machine-readable retrieval-state and base64 content output for local artifact inspection
+- artifact list and detail previews now expose explicit `preview_state`, and artifact detail/content reads now emit delivery-audit records keyed by session and artifact identifier
+- durable artifact payload metadata now records explicit lifecycle state plus optional retention and prune timestamps
+- durable artifact payload inspection now distinguishes `available`, `missing`, and `pruned` states without changing existing retrieval contracts
+- Phase 29 is closed with `docs/Phase29_Artifact_Governance_And_Operator_Parity_验收记录.md`
+- artifact retention policy contracts now exist in `agent-core`, and `agent-security` now maps policy profiles to deterministic local retention defaults plus `retained_until` calculation helpers
+- artifact payload storage now supports deterministic expiry sweep and idempotent prune behavior for retained local payloads
+- artifact list and detail reads now expose additive lifecycle metadata, and artifact content reads distinguish pruned payloads from generic missing payloads
+- Phase 30 is closed with `docs/Phase30_Local_Artifact_Retention_Enforcement_验收记录.md`
+- artifact access contracts now distinguish `operator_safe`, `sensitive`, and `restricted` classes, and security mapping now derives deterministic policy-facing defaults for local artifact controls
+- API and CLI now expose manual artifact prune controls with idempotent managed-payload semantics and policy-aware handling for sensitive artifact classes
+- Phase 31 is closed with `docs/Phase31_Artifact_Operator_Controls_And_Access_Foundations_验收记录.md`
+- artifact detail and content reads now enforce access classes, CLI artifact actions now share the same access gates, and audit metadata now distinguishes allowed, denied, and unavailable artifact actions by class and result
+- Phase 32 is closed with `docs/Phase32_Artifact_Access_Enforcement_And_Audit_Parity_验收记录.md`
+- artifact API and CLI read surfaces now project additive access explainability metadata, and operator guidance now documents denied versus unavailable artifact remediation
+- Phase 33 is closed with `docs/Phase33_Artifact_Access_Explainability_And_Operator_Guidance_验收记录.md`
+- Phase 34 API consolidation is complete on `codex/p34-api-01-artifact-access-consolidation`, centralizing artifact access response assembly and audit metadata for API read surfaces while preserving the Phase 33 additive contract
+- Phase 34 CLI shared projection reuse is complete on `codex/p34-cli-01-artifact-access-cli-shared-projection`, aligning denied and unavailable CLI artifact responses with the same additive access vocabulary used by the API
+- Phase 34 cross-surface regression matrix is complete on `codex/p34-test-01-artifact-access-contract-matrix`, locking API and CLI access payload parity across allowed, denied, and unavailable paths
+- Phase 34 is closed with `docs/Phase34_Artifact_Access_Consolidation_And_Contract_Hardening_验收记录.md`
 
 ## Next Unlocks
 
-- `P18-OBS-02 - Credential Failure Audit Classification` is ready
-- `P18-CLOSE-01 - Phase 18 Closeout And Next Planning` unlocks after failure classification
+- `P35-API-01 - Artifact Success Envelope Normalization` is complete on `codex/p35-api-01-artifact-success-envelope-normalization`
+- `P35-CLI-01 - Artifact Envelope Consistency Parity` is complete on `codex/p35-cli-01-artifact-envelope-consistency-parity`
+- `P44-TEST-01 - Artifact Audit Metadata Contract Coverage` is in review on `codex/p44-test-01-artifact-audit-contract-coverage`
+- artifact delivery-audit regression coverage now locks one read-side denied path and one control-side success path, preserving the current `reason`, `retrieval_status`, `payload_artifact_id`, and `lifecycle_status` metadata boundaries while treating `created_at` as the only normalized non-deterministic field
+- `P44-CLOSE-01 - Phase 44 Closeout And Next Planning` is the documentation closeout lane for the artifact audit contract phase
 
 ## Active Documents
 

@@ -58,6 +58,9 @@ def test_api_delivery_audit_lists_records(tmp_path: Path) -> None:
                 "url": None,
                 "credential_source": None,
                 "credential_backend": None,
+                "route": "direct",
+                "proxy_target": None,
+                "proxy_transport": None,
             },
             created_at=created_at,
         )
@@ -83,6 +86,9 @@ def test_api_delivery_audit_lists_records(tmp_path: Path) -> None:
                     "url": None,
                     "credential_source": None,
                     "credential_backend": None,
+                    "route": "direct",
+                    "proxy_target": None,
+                    "proxy_transport": None,
                 },
                 "created_at": created_at.isoformat(),
             }

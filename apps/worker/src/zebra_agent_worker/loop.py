@@ -11,6 +11,7 @@ from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
+    SQLiteWorkspaceProjectionStore,
 )
 from zebra_agent_config import ZebraAgentSettings
 
@@ -151,6 +152,7 @@ def build_worker_loop_service(
         SessionRecoveryService(
             SQLiteEventStore(database_path),
             projection_store,
+            SQLiteWorkspaceProjectionStore(database_path),
         ),
     )
     execution_service = SessionExecutionService(

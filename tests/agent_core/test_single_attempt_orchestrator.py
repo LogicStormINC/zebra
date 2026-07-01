@@ -34,6 +34,24 @@ class RequireApprovalPolicyEngine:
         )
 
 
+class ProxyApprovalPolicyEngine:
+    def evaluate_tool_call(self, _tool_call: ToolCall) -> PolicyDecision:
+        return PolicyDecision(
+            decision=PolicyDecisionType.REQUIRE_APPROVAL,
+            reason="proxy-routed external tool execution in test",
+            policy_profile="full_access",
+            route="mcp_proxy",
+            target="github.create_pull_request",
+            network_profile="mcp-proxy-only",
+            scope=(
+                "tool:mcp.github.create_pull_request",
+                "route:mcp_proxy",
+                "network_profile:mcp-proxy-only",
+                "target:github.create_pull_request",
+            ),
+        )
+
+
 class StaticToolGateway:
     def __init__(self, result: ToolResult) -> None:
         self._result = result
@@ -230,6 +248,95 @@ def test_single_attempt_orchestrator_emits_approval_requested_event() -> None:
     assert EventType.TOOL_EXECUTION_STARTED not in [
         event.event_type for event in result.events
     ]
+
+
+def test_single_attempt_orchestrator_projects_proxy_approval_metadata() -> None:
+    created_at = datetime(2026, 6, 28, 14, 0, tzinfo=UTC)
+    tool_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="mcp.github.create_pull_request",
+        arguments={"title": "Add feature"},
+        created_at=created_at,
+    )
+    gateway = ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="I will route the MCP call through the proxy path.",
+                        created_at=created_at,
+                    ),
+                    tool_calls=(tool_call,),
+                )
+            ),
+        )
+    )
+    tool_gateway = StaticToolGateway(
+        ToolResult(
+            tool_call_id=tool_call.tool_call_id,
+            status=ToolCallStatus.EXECUTED,
+        )
+    )
+    orchestrator = SingleAttemptOrchestrator(
+        gateway,
+        ProxyApprovalPolicyEngine(),
+        tool_gateway,
+    )
+    loop = HarnessLoop()
+
+    result = loop.run(
+        HarnessTask(title="Proxy approval", user_input="Use the MCP proxy."),
+        orchestrator.run,
+        created_at=created_at,
+    )
+
+    policy_event = next(
+        event
+        for event in result.events
+        if event.event_type is EventType.POLICY_DECISION_MADE
+    )
+    approval_event = next(
+        event
+        for event in result.events
+        if event.event_type is EventType.APPROVAL_REQUESTED
+    )
+
+    assert result.attempt_result.summary == "tool call requires approval"
+    assert result.attempt_result.metadata["policy_decision"] == "require_approval"
+    assert tool_gateway.executed_tool_call is None
+    assert policy_event.payload == {
+        "attempt_number": 1,
+        "decision": "require_approval",
+        "reason": "proxy-routed external tool execution in test",
+        "policy_profile": "full_access",
+        "tool_name": "mcp.github.create_pull_request",
+        "route": "mcp_proxy",
+        "target": "github.create_pull_request",
+        "network_profile": "mcp-proxy-only",
+        "scope": [
+            "tool:mcp.github.create_pull_request",
+            "route:mcp_proxy",
+            "network_profile:mcp-proxy-only",
+            "target:github.create_pull_request",
+        ],
+    }
+    assert approval_event.payload == {
+        "attempt_number": 1,
+        "reason": "proxy-routed external tool execution in test",
+        "policy_profile": "full_access",
+        "tool_name": "mcp.github.create_pull_request",
+        "route": "mcp_proxy",
+        "target": "github.create_pull_request",
+        "network_profile": "mcp-proxy-only",
+        "scope": [
+            "tool:mcp.github.create_pull_request",
+            "route:mcp_proxy",
+            "network_profile:mcp-proxy-only",
+            "target:github.create_pull_request",
+        ],
+    }
 
 
 def test_first_tool_call_selection_strategy_is_deterministic() -> None:

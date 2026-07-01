@@ -5,9 +5,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_core.application.session_projection import apply_event
+from agent_core.application.workspace_projection import apply_event as apply_workspace_event
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session
+from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.harness import (
     HarnessAttempt,
     HarnessContext,
@@ -19,15 +21,19 @@ from agent_integrations import build_model_gateway
 from agent_runtime import LocalToolGateway
 from agent_security import LocalPolicyEngine, PolicyProfile
 from agent_storage import (
+    SQLiteArtifactPayloadStore,
     SQLiteEventStore,
     SQLiteModelCallStore,
     SQLiteProjectionStore,
     SQLiteToolRunStore,
+    SQLiteWorkspaceProjectionStore,
 )
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
-from zebra_agent_worker.claims import SessionClaimService
+from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
+from zebra_agent_worker.control import SessionControlError, SessionControlService
 from zebra_agent_worker.model_call_index import ModelCallIndexer
+from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 
@@ -69,8 +75,18 @@ class SessionExecutionService:
         self._settings = settings or load_settings()
         self._event_store = SQLiteEventStore(database_path)
         self._projection_store = SQLiteProjectionStore(database_path)
+        self._workspace_store = SQLiteWorkspaceProjectionStore(database_path)
+        self._recovery_service = SessionRecoveryService(
+            self._event_store,
+            self._projection_store,
+            self._workspace_store,
+        )
+        self._control_service = SessionControlService(database_path)
         self._model_call_indexer = ModelCallIndexer(SQLiteModelCallStore(database_path))
-        self._tool_run_indexer = ToolRunIndexer(SQLiteToolRunStore(database_path))
+        self._tool_run_indexer = ToolRunIndexer(
+            SQLiteToolRunStore(database_path),
+            SQLiteArtifactPayloadStore(database_path),
+        )
 
     def execute_session(
         self,
@@ -88,8 +104,22 @@ class SessionExecutionService:
             lease_ttl_seconds=lease_ttl_seconds,
         )
         claimed = resumed.claimed
+        try:
+            restored = self._control_service.restore_suspended_workspace(
+                session_id,
+                resumed_at=started_at,
+            )
+        except SessionControlError as exc:
+            self._claim_service.release_claim(claimed)
+            raise WorkerExecutionError(str(exc)) from exc
+        if restored is not None:
+            claimed = ClaimedSession(
+                recovery=self._recovery_service.recover_session(session_id),
+                lease=claimed.lease,
+            )
         task = _recover_task(
             self._event_store.list_for_session(session_id),
+            workspace=claimed.recovery.workspace,
             fallback_title=claimed.recovery.session.title,
         )
         attempt_result = SingleAttemptOrchestrator(
@@ -115,6 +145,8 @@ class SessionExecutionService:
             attempt_result=attempt_result,
             event_store=self._event_store,
             projection_store=self._projection_store,
+            workspace_projection=claimed.recovery.workspace,
+            workspace_store=self._workspace_store,
             model_call_indexer=self._model_call_indexer,
             tool_run_indexer=self._tool_run_indexer,
             started_at=started_at,
@@ -130,7 +162,12 @@ class SessionExecutionService:
         )
 
 
-def _recover_task(events: list[SessionEvent], *, fallback_title: str) -> _RecoveredTask:
+def _recover_task(
+    events: list[SessionEvent],
+    *,
+    workspace: WorkspaceProjection,
+    fallback_title: str,
+) -> _RecoveredTask:
     user_input: str | None = None
     task_payload: dict[str, object] | None = None
     for event in events:
@@ -142,18 +179,13 @@ def _recover_task(events: list[SessionEvent], *, fallback_title: str) -> _Recove
             task_payload = event.payload
     if user_input is None or task_payload is None:
         raise WorkerExecutionError("queued session is missing bootstrap task input")
-    workspace_root = task_payload.get("workspace_root")
-    if not isinstance(workspace_root, str) or not workspace_root.strip():
-        raise WorkerExecutionError("queued session is missing workspace_root")
     title = task_payload.get("title")
     resolved_title = title.strip() if isinstance(title, str) and title.strip() else fallback_title
-    policy_profile = task_payload.get("policy_profile")
-    if not isinstance(policy_profile, str) or not policy_profile.strip():
-        policy_profile = PolicyProfile.WORKSPACE_WRITE.value
+    policy_profile = workspace.policy_profile or PolicyProfile.WORKSPACE_WRITE.value
     return _RecoveredTask(
         title=resolved_title,
         user_input=user_input,
-        workspace_root=Path(workspace_root).expanduser().resolve(),
+        workspace_root=Path(workspace.workspace_root).expanduser().resolve(),
         policy_profile=policy_profile,
         max_attempts=_optional_positive_int(task_payload.get("max_attempts")) or 1,
         max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
@@ -167,16 +199,20 @@ def _append_execution_events(
     attempt_result: HarnessAttemptResult,
     event_store: SQLiteEventStore,
     projection_store: SQLiteProjectionStore,
+    workspace_projection: WorkspaceProjection,
+    workspace_store: SQLiteWorkspaceProjectionStore,
     model_call_indexer: ModelCallIndexer,
     tool_run_indexer: ToolRunIndexer,
     started_at: datetime,
 ) -> tuple[SessionEvent, ...]:
     current_session = session
+    current_workspace = workspace_projection
     next_sequence = current_session.current_sequence + 1
     events: list[SessionEvent] = []
 
     def append(event_type: EventType, actor: EventActor, payload: dict[str, object]) -> None:
         nonlocal current_session
+        nonlocal current_workspace
         nonlocal next_sequence
         event = SessionEvent.create(
             session_id=current_session.session_id,
@@ -191,7 +227,9 @@ def _append_execution_events(
         model_call_indexer.index_event(event)
         tool_run_indexer.index_event(event)
         current_session = apply_event(current_session, event)
+        current_workspace = apply_workspace_event(current_workspace, event)
         projection_store.save_session(current_session)
+        workspace_store.save_workspace(current_workspace)
         events.append(event)
 
     append(

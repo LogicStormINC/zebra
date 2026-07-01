@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 5 in progress; context-compiler MVP is landing on top of the completed durable control-plane baseline from `实施任务拆解与阶段验收.md`.
+> Current execution range: Phase 43 ready; shared artifact audit metadata convergence is next on top of the completed Phase 42 control-audit helper baseline.
 
 ## Global Rules
 
@@ -3284,8 +3284,8 @@ Add non-secret credential source metadata to SCM delivery audit so operators can
 
 ### P18-OBS-02 - Credential Failure Audit Classification
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `QA`
 - Depends on: `P18-OBS-01`
 - Branch: `codex/p18-obs-02-credential-failure-audit-classification`
@@ -3303,14 +3303,14 @@ Classify credential missing, denied, unavailable, and transport failures in oper
 
 #### Acceptance
 
-- [ ] Missing credential audit is distinguishable from denied credential audit.
-- [ ] Broker unavailable audit is distinguishable from GitHub transport failure audit.
-- [ ] Remediation guidance is documented.
+- [x] Missing credential audit is distinguishable from denied credential audit.
+- [x] Broker unavailable audit is distinguishable from GitHub transport failure audit.
+- [x] Remediation guidance is documented.
 
 ### P18-CLOSE-01 - Phase 18 Closeout And Next Planning
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P18-OBS-02`
 - Branch: `codex/p18-closeout-next-plan`
@@ -3328,5 +3328,2548 @@ Close Phase 18 with SCM delivery audit and credential observability evidence.
 
 #### Acceptance
 
-- [ ] Credential source and failure classification evidence is recorded.
+- [x] Credential source and failure classification evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 19 Task Board
+
+### P19-SEC-01 - Secret Store Port And Redaction Contract
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SEC`
+- Depends on: `P18-CLOSE-01`
+- Branch: `codex/p19-sec-01-secret-store-port`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define the secret-store Port and redacted snapshot contract needed before non-environment credential backends are added.
+
+#### Deliverables
+
+- secret-store Protocol or interface
+- redacted secret metadata model
+- deterministic tests for missing and unavailable secret lookups
+- focused architecture note or doc update
+
+#### Acceptance
+
+- [x] Secret retrieval contract keeps raw secret values out of repr and durable metadata.
+- [x] Security package exposes deterministic missing and unavailable secret-store semantics.
+- [x] Future broker backends can depend on the Port without reading raw storage directly from API or integrations.
+
+### P19-SEC-02 - Local Secret Store Backend
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SEC`
+- Depends on: `P19-SEC-01`
+- Branch: `codex/p19-sec-02-local-secret-store-backend`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Implement a local secret-store backend aligned with the architecture's local secure storage direction.
+
+#### Deliverables
+
+- local secret-store backend
+- broker-facing retrieval helper
+- tests covering missing, unavailable, and redacted read paths
+
+#### Acceptance
+
+- [x] Local secret storage can serve credential material without exposing raw values in repr or snapshots.
+- [x] Missing and unavailable secret-store failures remain distinguishable.
+- [x] Broker-facing callers can retrieve secret material through the backend without bypassing the Port.
+
+### P19-INT-01 - GitHub App Credential Adapter Skeleton
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `INT`
+- Depends on: `P19-SEC-02`
+- Branch: `codex/p19-int-01-github-app-credential-adapter`
+- Owned paths: `packages/agent-integrations/`, `packages/agent-security/`, `tests/agent_integrations/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add the first provider-backed non-environment credential adapter using the secret-store and broker boundaries.
+
+#### Deliverables
+
+- GitHub App credential adapter skeleton
+- broker lookup path using stored secret material
+- redaction and failure-class regression tests
+
+#### Acceptance
+
+- [x] Integration path can request GitHub App-backed credentials without writing raw secrets into durable audit state.
+- [x] Provider-backed missing, denied, unavailable, and transport failures remain classifiable.
+- [x] Operator-facing docs identify the GitHub App adapter as a guarded future execution path.
+
+### P19-CLOSE-01 - Phase 19 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P19-INT-01`
+- Branch: `codex/p19-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 19 with secret-store and provider-backed credential foundation evidence.
+
+#### Deliverables
+
+- Phase 19 acceptance record
+- next phase task board
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Secret-store and GitHub App credential skeleton evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 20 Task Board
+
+### P20-SEC-01 - Network Profile Contract
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SEC`
+- Depends on: `P19-CLOSE-01`
+- Branch: `codex/p20-sec-01-network-profile-contract`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define deterministic network-profile contracts aligned with the architecture's egress-control model.
+
+#### Deliverables
+
+- network profile model and validation rules
+- deterministic tests for allowed profile values and defaults
+- focused architecture note or doc update
+
+#### Acceptance
+
+- [x] Security package defines `none`, `setup-only`, `domain-allowlist`, `mcp-proxy-only`, `git-proxy-only`, and `full-trusted-local`.
+- [x] Invalid or ambiguous network profiles are rejected deterministically.
+- [x] Current local defaults remain fail-closed.
+
+### P20-INT-01 - SCM Transport Egress Guard
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `INT`
+- Depends on: `P20-SEC-01`
+- Branch: `codex/p20-int-01-scm-transport-egress-guard`
+- Owned paths: `packages/agent-integrations/`, `packages/agent-security/`, `tests/agent_integrations/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Guard SCM transport execution with explicit network-profile checks before remote side effects occur.
+
+#### Deliverables
+
+- SCM transport egress gate
+- audit metadata or reason updates for blocked egress
+- regression tests for blocked and allowed paths
+
+#### Acceptance
+
+- [x] Remote SCM execution is blocked when the network profile disallows the transport.
+- [x] Local-only and dry-run behavior remain unchanged.
+- [x] Operator-facing failures clearly distinguish egress policy blocks from credential or transport failures.
+
+### P20-DOC-01 - Egress Control Operator Docs
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P20-SEC-01`, `P20-INT-01`
+- Branch: `codex/p20-doc-01-egress-control-operator-docs`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Document the operator model for guarded network profiles and SCM egress constraints.
+
+#### Deliverables
+
+- runbook updates for egress profiles
+- remediation guidance for egress policy blocks
+- examples that preserve fail-closed defaults
+
+#### Acceptance
+
+- [x] Operator docs explain when remote SCM execution is blocked by network profile.
+- [x] Examples preserve `network none` as the default local posture.
+- [x] Remediation guidance distinguishes egress policy from credential policy.
+
+### P20-CLOSE-01 - Phase 20 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P20-DOC-01`
+- Branch: `codex/p20-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 20 with egress-control evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 20 acceptance record
+- next phase task board
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Network profile and SCM egress guard evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 21 Task Board
+
+### P21-INT-01 - SCM Proxy Transport Contract
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `INT`
+- Depends on: `P20-CLOSE-01`
+- Branch: `codex/p21-int-01-scm-proxy-transport-contract`
+- Owned paths: `packages/agent-integrations/`, `tests/agent_integrations/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define the proxy-facing transport contract required to move SCM side effects off direct local HTTP paths.
+
+#### Deliverables
+
+- proxy transport Port for SCM requests
+- serializable request and response model for proxy execution
+- targeted tests for deterministic proxy contract behavior
+
+#### Acceptance
+
+- [x] SCM integrations expose a proxy transport contract separate from the current direct GitHub HTTP path.
+- [x] Proxy transport request and response payloads are deterministic and serializable.
+- [x] Existing direct transport behavior remains unchanged until the proxy adapter task lands.
+
+### P21-INT-02 - GitHub Proxy Pull Request Adapter
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `INT`
+- Depends on: `P21-INT-01`
+- Branch: `codex/p21-int-02-github-proxy-pr-adapter`
+- Owned paths: `packages/agent-integrations/`, `tests/agent_integrations/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a GitHub PR adapter that executes through the proxy transport contract instead of direct local HTTP transport.
+
+#### Deliverables
+
+- GitHub proxy-backed PR adapter
+- execution-path selection between direct and proxy-backed transport
+- regression tests for created and blocked proxy-backed flows
+
+#### Acceptance
+
+- [x] GitHub PR execution can route through the proxy transport when configured.
+- [x] Audit metadata still distinguishes egress policy, credential, and transport failures.
+- [x] Direct transport behavior remains explicitly guarded and backwards compatible.
+
+### P21-TOOL-01 - MCP Proxy Egress Starter Contract
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `TOOL`
+- Depends on: `P20-CLOSE-01`
+- Branch: `codex/p21-tool-01-mcp-proxy-egress-starter-contract`
+- Owned paths: `packages/agent-tools/`, `packages/agent-security/`, `tests/agent_tools/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define the first explicit MCP proxy egress contract so `mcp-proxy-only` can evolve from a blocked profile into a concrete execution path.
+
+#### Deliverables
+
+- proxy-oriented MCP egress contract
+- deterministic policy-facing metadata for MCP proxy routing
+- targeted tests for blocked versus proxy-routable MCP calls
+
+#### Acceptance
+
+- [x] Tooling surfaces a concrete MCP proxy contract rather than a placeholder profile label.
+- [x] Policy-facing metadata distinguishes direct-local tool calls from future proxy-routed MCP calls.
+- [x] The current fail-closed default remains unchanged.
+
+### P21-DOC-01 - Proxy Egress Operator Docs
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P21-INT-02`, `P21-TOOL-01`
+- Branch: `codex/p21-doc-01-proxy-egress-operator-docs`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Document the operator model for proxy-backed SCM and MCP egress paths.
+
+#### Deliverables
+
+- runbook updates for proxy-backed egress
+- remediation matrix for proxy, credential, and upstream failures
+- safe rollback guidance
+
+#### Acceptance
+
+- [x] Operator docs explain when to use direct trusted-local execution versus proxy-backed egress.
+- [x] Runbook examples preserve fail-closed defaults and narrow explicit enablement.
+- [x] Remediation guidance distinguishes proxy availability from upstream SCM or MCP failures.
+
+### P21-CLOSE-01 - Phase 21 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P21-DOC-01`
+- Branch: `codex/p21-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 21 with proxy-egress evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 21 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Proxy-backed egress evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 22 Task Board
+
+### P22-TOOL-01 - MCP Proxy Gateway Execution Path
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `TOOL`
+- Depends on: `P21-CLOSE-01`
+- Branch: `codex/p22-tool-01-mcp-proxy-gateway-execution`
+- Owned paths: `packages/agent-tools/`, `tests/agent_tools/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Turn the MCP proxy starter contract into a concrete execution path behind the tool gateway.
+
+#### Deliverables
+
+- MCP proxy executor or gateway adapter
+- tool-gateway wiring for proxy-routed MCP calls
+- targeted tests for successful and blocked MCP proxy execution
+
+#### Acceptance
+
+- [x] `mcp.<server>.<tool>` calls can execute through the MCP proxy path when policy allows them.
+- [x] Local builtin tool execution remains unchanged.
+- [x] Failed MCP proxy execution is surfaced deterministically through tool results or gateway errors.
+
+### P22-OBS-01 - Proxy Audit Metadata Normalization
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OBS`
+- Depends on: `P22-TOOL-01`
+- Branch: `codex/p22-obs-01-proxy-audit-metadata-normalization`
+- Owned paths: `packages/agent-integrations/`, `packages/agent-tools/`, `tests/agent_integrations/`, `tests/agent_tools/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Normalize audit-facing metadata across SCM proxy and MCP proxy execution paths.
+
+#### Deliverables
+
+- shared proxy audit metadata shape
+- deterministic failure classes for proxy availability versus upstream failures
+- regression coverage across SCM and MCP proxy flows
+
+#### Acceptance
+
+- [x] Proxy-backed SCM and MCP execution expose a stable audit metadata shape.
+- [x] Proxy availability failures remain distinguishable from upstream GitHub or MCP target failures.
+- [x] Existing non-proxy audit behavior remains backwards compatible.
+
+### P22-SEC-01 - Proxy Route Policy Integration
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SEC`
+- Depends on: `P22-TOOL-01`
+- Branch: `codex/p22-sec-01-proxy-route-policy-integration`
+- Owned paths: `packages/agent-security/`, `packages/agent-tools/`, `tests/agent_security/`, `tests/agent_tools/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Integrate proxy route classification deeper into policy and approval surfaces.
+
+#### Deliverables
+
+- richer proxy-route policy metadata
+- approval-facing distinctions for local versus proxy-routed tool calls
+- regression tests for policy outputs
+
+#### Acceptance
+
+- [x] Policy-facing outputs distinguish direct-local, proxy-routed, and blocked external tool paths.
+- [x] Approval or denial messaging stays deterministic for MCP proxy scenarios.
+- [x] Current fail-closed defaults remain unchanged.
+
+### P22-DOC-01 - Proxy Gateway Operator Docs
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P22-OBS-01`, `P22-SEC-01`
+- Branch: `codex/p22-doc-01-proxy-gateway-operator-docs`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Document the operator model for concrete proxy gateway execution paths.
+
+#### Deliverables
+
+- runbook updates for MCP proxy execution
+- audit interpretation guide for proxy-backed SCM and MCP paths
+- rollback guidance for proxy gateway incidents
+
+#### Acceptance
+
+- [x] Operator docs explain how proxy-backed MCP execution differs from the starter-contract phase.
+- [x] Audit interpretation covers both SCM and MCP proxy flows.
+- [x] Runbook examples preserve fail-closed defaults and narrow enablement.
+
+### P22-CLOSE-01 - Phase 22 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P22-DOC-01`
+- Branch: `codex/p22-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 22 with proxy gateway evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 22 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Proxy gateway execution evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 23 Task Board
+
+### P23-HAR-01 - Proxy Approval Event Projection
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `HAR`
+- Depends on: `P22-CLOSE-01`
+- Branch: `codex/p23-har-01-proxy-approval-event-projection`
+- Owned paths: `packages/agent-core/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Project proxy-aware policy and approval metadata into durable harness event payloads.
+
+#### Deliverables
+
+- policy decision payload extensions for proxy route metadata
+- approval-requested event payload extensions for proxy scope metadata
+- regression tests for proxy-aware approval event emission
+
+#### Acceptance
+
+- [x] Harness events persist proxy route, target, and network-profile data when policy evaluates an MCP tool.
+- [x] Existing non-proxy policy and approval event payloads remain backwards compatible.
+- [x] Approval-requested events remain deterministic for both blocked and proxy-routed MCP paths.
+
+### P23-API-01 - Proxy Approval Readback Surface
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P23-HAR-01`
+- Branch: `codex/p23-api-01-proxy-approval-readback-surface`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose proxy-aware approval context through operator-facing API read and approval surfaces.
+
+#### Deliverables
+
+- API response fields for proxy approval context
+- readback coverage for session and approval operator flows
+- regression tests for proxy-aware approval serialization
+
+#### Acceptance
+
+- [x] Operator-facing API surfaces expose proxy route and target context for approval-related flows.
+- [x] Existing local-only approval responses remain backwards compatible.
+- [x] Proxy-aware approval readback does not expose secrets or raw credential material.
+
+### P23-OBS-01 - Proxy Approval Trace Normalization
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OBS`
+- Depends on: `P23-HAR-01`
+- Branch: `codex/p23-obs-01-proxy-approval-trace-normalization`
+- Owned paths: `packages/agent-core/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Keep proxy-aware approval evidence consistent across policy events, traces, and run summaries.
+
+#### Deliverables
+
+- normalized proxy approval metadata in trace-facing outputs
+- regression tests for proxy approval trace shape
+- documentation of trace interpretation deltas
+
+#### Acceptance
+
+- [x] Trace-facing outputs reuse the same proxy route vocabulary as policy and tool execution metadata.
+- [x] Proxy approval metadata remains deterministic across blocked, approval, and executed paths.
+- [x] Non-proxy trace outputs remain backwards compatible.
+
+### P23-CLOSE-01 - Phase 23 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P23-API-01`, `P23-OBS-01`
+- Branch: `codex/p23-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 23 with proxy-aware approval readback evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 23 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Proxy-aware approval readback evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 24 Task Board
+
+### P24-STO-01 - Durable Approval Context Projection
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STO`
+- Depends on: `P23-CLOSE-01`
+- Branch: `codex/p24-sto-01-durable-approval-context-projection`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `tests/agent_core/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Persist proxy-aware approval context into durable projection state so operator reads do not depend on replaying the full event stream.
+
+#### Deliverables
+
+- approval-context projection model updates
+- storage-layer rebuild coverage for proxy-aware approval context
+- regression tests for projection persistence and recovery
+
+#### Acceptance
+
+- [x] Session or approval projection state persists proxy-aware approval context after `approval_requested`.
+- [x] Projection rebuild stays deterministic across approval grant and reject paths.
+- [x] Existing local-only projection behavior remains backwards compatible.
+
+### P24-API-01 - Approval Queue And Detail Read API
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P24-STO-01`
+- Branch: `codex/p24-api-01-approval-queue-and-detail-read-api`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose projection-backed approval queue and approval detail reads for operators.
+
+#### Deliverables
+
+- approval queue read endpoint or route
+- approval detail read endpoint or route
+- proxy-aware approval context serialization for queue and detail reads
+
+#### Acceptance
+
+- [x] Operators can list waiting approvals without replaying raw event streams.
+- [x] Approval detail reads expose proxy-aware context using the existing safe field set.
+- [x] Queue and detail responses remain free of secrets and raw credential material.
+
+### P24-OBS-01 - Approval Projection Consistency Checks
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OBS`
+- Depends on: `P24-STO-01`
+- Branch: `codex/p24-obs-01-approval-projection-consistency-checks`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `tests/agent_core/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Ensure projection-backed approval context stays consistent with event and trace metadata.
+
+#### Deliverables
+
+- consistency assertions between replayed events and projection output
+- regression coverage for proxy-aware approval context drift
+- operator guidance for interpreting projection-versus-event discrepancies
+
+#### Acceptance
+
+- [x] Projection-backed approval context matches the event payload vocabulary for route, target, network profile, and scope.
+- [x] Regression tests cover grant, reject, and repeated approval-read scenarios.
+- [x] Non-proxy approval paths remain backwards compatible.
+
+### P24-CLOSE-01 - Phase 24 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P24-API-01`, `P24-OBS-01`
+- Branch: `codex/p24-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 24 with durable approval projection evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 24 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Durable approval projection evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 25 Task Board
+
+### P25-STO-01 - Durable Workspace Projection Store
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STO`
+- Depends on: `P24-CLOSE-01`
+- Branch: `codex/p25-sto-01-durable-workspace-projection-store`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `tests/agent_storage/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Persist workspace and sandbox lifecycle facts into durable projection state so later snapshot and resume flows do not rely on process-local memory.
+
+#### Deliverables
+
+- workspace projection model
+- SQLite workspace projection store
+- replay coverage for workspace lifecycle updates
+- documentation of stored workspace fields and compatibility expectations
+
+#### Acceptance
+
+- [x] Durable workspace state can be rebuilt from session events deterministically.
+- [x] SQLite persistence can store and reload workspace projection rows without losing lifecycle fields.
+- [x] Existing session projection behavior remains backwards compatible.
+
+### P25-RT-01 - Runtime Snapshot And Resume Contracts
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `RUNTIME`
+- Depends on: `P25-STO-01`
+- Branch: `codex/p25-rt-01-runtime-snapshot-and-resume-contracts`
+- Owned paths: `packages/agent-core/`, `packages/agent-runtime/`, `tests/agent_runtime/`, `tests/agent_core/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Extend the current runtime boundary beyond `execute(...)` so snapshot, restore, fork, suspend, and resume semantics exist as typed contracts before worker wiring begins.
+
+#### Deliverables
+
+- runtime lifecycle domain types
+- runtime Port extensions for snapshot and resume operations
+- local adapter placeholder or deterministic local implementation
+- tests covering contract behavior and fail-closed unsupported cases
+
+#### Acceptance
+
+- [x] Core runtime contracts model snapshot, restore, fork, suspend, and resume explicitly.
+- [x] Local runtime behavior is deterministic for the supported subset and explicit for unsupported operations.
+- [x] Existing command execution paths remain compatible.
+
+### P25-WKR-01 - Worker Snapshot Lifecycle Wiring
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `WKR`
+- Depends on: `P25-RT-01`
+- Branch: `codex/p25-wkr-01-worker-snapshot-lifecycle-wiring`
+- Owned paths: `apps/worker/`, `packages/agent-runtime/`, `packages/agent-storage/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Wire worker-side suspend and resume control paths to durable workspace state so a session can release runtime resources and later restore execution context.
+
+#### Deliverables
+
+- worker lifecycle wiring for snapshot-backed suspend or resume
+- durable workspace row updates during worker lifecycle transitions
+- regression coverage for snapshot-backed resume orchestration
+- operator notes for current local lifecycle limitations
+
+#### Acceptance
+
+- [x] Worker lifecycle can persist suspend or resume transitions against durable workspace state.
+- [x] Resume paths read workspace projection state instead of relying on process-local memory.
+- [x] Failures leave deterministic lifecycle state for a later retry or operator action.
+
+### P25-CLOSE-01 - Phase 25 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P25-STO-01`, `P25-RT-01`, `P25-WKR-01`
+- Branch: `codex/p25-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 25 with durable workspace and snapshot evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 25 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Durable workspace and snapshot evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 26 Task Board
+
+### P26-RT-01 - Local Snapshot Backend
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `RUNTIME`
+- Depends on: `P25-CLOSE-01`
+- Branch: `codex/p26-rt-01-local-snapshot-backend`
+- Owned paths: `packages/agent-core/`, `packages/agent-runtime/`, `tests/agent_runtime/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Turn the current fail-closed local snapshot contract into a real local snapshot backend with deterministic retention and compatibility semantics.
+
+#### Deliverables
+
+- local runtime snapshot implementation
+- snapshot metadata or retention model
+- restore and fork behavior for the supported local subset
+- regression coverage for snapshot lifecycle compatibility
+
+#### Acceptance
+
+- [x] Local runtime can create a snapshot and restore a usable runtime handle from it.
+- [x] Local snapshot behavior is deterministic and documented for the supported subset.
+- [x] Unsupported paths remain explicit rather than silently degraded.
+
+### P26-APP-01 - Suspend And Resume Control Wiring
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P26-RT-01`
+- Branch: `codex/p26-app-01-suspend-resume-control-wiring`
+- Owned paths: `apps/api/`, `apps/cli/`, `apps/worker/`, `packages/agent-core/`, `packages/agent-storage/`, `tests/agent_core/`, `tests/api/`, `tests/cli/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Wire session suspend and resume control paths to runtime lifecycle operations and durable workspace state so local operators can pause and continue work through a consistent control plane.
+
+#### Deliverables
+
+- suspend or resume lifecycle wiring across CLI, API, and worker entry points
+- durable workspace state updates for control-plane lifecycle transitions
+- regression coverage for suspend then resume operator flows
+- failure handling for unsupported or invalid lifecycle transitions
+
+#### Acceptance
+
+- [x] Session suspend and resume paths update durable workspace lifecycle state consistently.
+- [x] CLI and API operator flows can trigger the supported local suspend or resume path.
+- [x] Invalid lifecycle transitions fail deterministically without corrupting workspace state.
+
+### P26-DOC-01 - Snapshot Operator Runbook
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P26-APP-01`
+- Branch: `codex/p26-doc-01-snapshot-operator-runbook`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Document the supported local snapshot, suspend, and resume operator model once the control paths exist.
+
+#### Deliverables
+
+- operator runbook updates for local snapshot lifecycle
+- failure interpretation and rollback notes
+- README and progress updates for the new operator surface
+
+#### Acceptance
+
+- [x] Operator docs describe the supported local snapshot and suspend workflow concretely.
+- [x] Failure and unsupported-path behavior are documented.
+- [x] README points to the current operator guidance without contradiction.
+
+### P26-CLOSE-01 - Phase 26 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P26-RT-01`, `P26-APP-01`, `P26-DOC-01`
+- Branch: `codex/p26-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 26 with local snapshot operator evidence and define the next implementation phase.
+
+#### Deliverables
+
+- Phase 26 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Local snapshot operator evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 27 Task Board
+
+### P27-API-01 - Workspace Lifecycle Readback Surface
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P26-CLOSE-01`
+- Branch: `codex/p27-api-01-workspace-lifecycle-readback`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose projection-backed workspace lifecycle and snapshot metadata through safe operator read surfaces so suspended or restored state can be inspected without replaying raw events.
+
+#### Deliverables
+
+- session readback fields or dedicated workspace-lifecycle read surface
+- snapshot-safe serialization for operator inspection
+- regression coverage for ready, suspended, restored, and terminal workspace reads
+
+#### Acceptance
+
+- [x] Operators can read durable workspace lifecycle state without scanning raw event streams.
+- [x] Snapshot metadata is exposed safely without leaking irrelevant runtime internals.
+- [x] Existing session read paths remain backward compatible.
+
+### P27-CLI-01 - Workspace Lifecycle Inspect Output
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CLI`
+- Depends on: `P27-API-01`
+- Branch: `codex/p27-cli-01-workspace-lifecycle-inspect`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Extend CLI inspect-style operator output so local users can read workspace lifecycle and snapshot state directly from the durable control plane.
+
+#### Deliverables
+
+- CLI inspect or resume-read output updates for workspace lifecycle state
+- snapshot metadata presentation for suspended sessions
+- regression coverage for inspect output across lifecycle states
+
+#### Acceptance
+
+- [x] CLI surfaces expose workspace lifecycle state for local operators.
+- [x] Suspended snapshot metadata is readable without replaying raw events.
+- [x] Existing machine-readable CLI output stays stable for older fields.
+
+### P27-RT-01 - Snapshot Housekeeping And Compatibility Checks
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `RUNTIME`
+- Depends on: `P27-API-01`
+- Branch: `codex/p27-rt-01-snapshot-housekeeping-compat`
+- Owned paths: `apps/worker/`, `packages/agent-runtime/`, `packages/agent-storage/`, `tests/agent_runtime/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Make retained local snapshot payloads easier to validate and clean by adding explicit compatibility checks and deterministic housekeeping behavior outside a single runtime call path.
+
+#### Deliverables
+
+- snapshot compatibility validation or manifest checks
+- deterministic housekeeping or cleanup entry for retained snapshots
+- regression coverage for expired, missing, incompatible, and cleaned payloads
+
+#### Acceptance
+
+- [x] Operators can distinguish valid, missing, and incompatible retained snapshots deterministically.
+- [x] Snapshot cleanup behavior is explicit rather than incidental.
+- [x] Restore paths fail closed when compatibility checks reject a snapshot.
+
+### P27-CLOSE-01 - Phase 27 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P27-API-01`, `P27-CLI-01`, `P27-RT-01`
+- Branch: `codex/p27-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 27 with workspace lifecycle readback and snapshot housekeeping evidence, then define the next implementation phase.
+
+#### Deliverables
+
+- Phase 27 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Workspace lifecycle readback and snapshot housekeeping evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 28 Task Board
+
+### P28-STO-01 - Durable Artifact Payload Store
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STORAGE`
+- Depends on: `P27-CLOSE-01`
+- Branch: `codex/p28-sto-01-durable-artifact-payload-store`
+- Owned paths: `packages/agent-storage/`, `packages/agent-core/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a durable local artifact payload store so session artifacts no longer depend
+only on model-call or tool-run index rows for operator retrieval.
+
+#### Deliverables
+
+- local artifact payload storage contract and SQLite-backed metadata model
+- artifact retention-safe local file layout or handle abstraction
+- regression coverage for store, lookup, and missing-payload behavior
+
+#### Acceptance
+
+- [x] Artifact payload metadata is durable and independently queryable.
+- [x] Missing local artifact payloads fail closed with explicit status.
+- [x] Existing artifact index readers remain backward compatible.
+
+### P28-WKR-01 - Worker Artifact Capture Wiring
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `RUNTIME`
+- Depends on: `P28-STO-01`
+- Branch: `codex/p28-wkr-01-worker-artifact-capture-wiring`
+- Owned paths: `apps/worker/`, `packages/agent-runtime/`, `packages/agent-storage/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Persist concrete artifact payload references during worker execution so durable
+artifact reads can rely on more than ephemeral inline previews.
+
+#### Deliverables
+
+- worker-side artifact capture for supported model-call or tool-run outputs
+- durable payload metadata writes during execution indexing
+- regression coverage for successful capture and missing-payload fallback
+
+#### Acceptance
+
+- [x] Worker execution writes durable artifact payload references for supported outputs.
+- [x] Existing session execution and indexing flows remain backward compatible.
+- [x] Missing or skipped payload capture paths stay explicit in stored metadata.
+
+### P28-API-01 - Artifact Detail And Retrieval Surface
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P28-STO-01`
+- Branch: `codex/p28-api-01-artifact-detail-and-retrieval`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose operator-safe artifact detail and retrieval read surfaces over the new
+durable local artifact payload model.
+
+#### Deliverables
+
+- artifact detail or retrieval API path
+- explicit not-found and payload-missing response semantics
+- regression coverage for indexed-only, stored, and missing artifact reads
+
+#### Acceptance
+
+- [x] Operators can distinguish indexed-only versus payload-backed artifacts.
+- [x] Artifact retrieval remains local-safe and machine-readable.
+- [x] Existing artifact list responses remain backward compatible.
+
+### P28-CLOSE-01 - Phase 28 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P28-STO-01`, `P28-WKR-01`, `P28-API-01`
+- Branch: `codex/p28-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 28 with durable artifact storage evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 28 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Durable artifact storage evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 29 Task Board
+
+### P29-STO-01 - Artifact Metadata Governance
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STORAGE`
+- Depends on: `P28-CLOSE-01`
+- Branch: `codex/p29-sto-01-artifact-metadata-governance`
+- Owned paths: `packages/agent-storage/`, `packages/agent-core/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Harden local artifact metadata so retention, local availability, and safe
+readback rules are explicit instead of implied by file presence alone.
+
+#### Deliverables
+
+- retention-aware or lifecycle-aware artifact metadata fields
+- safe readback metadata for local payload availability
+- regression coverage for retained, missing, and pruned artifact metadata paths
+
+#### Acceptance
+
+- [x] Artifact metadata exposes lifecycle state explicitly.
+- [x] Missing and pruned artifact payloads remain distinguishable.
+- [x] Existing artifact retrieval remains backward compatible.
+
+### P29-CLI-01 - Artifact Inspect And Read Commands
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CLI`
+- Depends on: `P28-CLOSE-01`
+- Branch: `codex/p29-cli-01-artifact-inspect-and-read`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose artifact detail and content retrieval through CLI surfaces so local
+operators do not need the HTTP API for artifact inspection.
+
+#### Deliverables
+
+- CLI artifact detail command
+- CLI artifact content read path with machine-readable output
+- regression coverage for indexed-only, payload-backed, and missing artifact reads
+
+#### Acceptance
+
+- [x] Operators can inspect artifact retrieval state from the CLI.
+- [x] CLI content retrieval stays machine-readable and local-safe.
+- [x] Existing CLI output contracts remain backward compatible.
+
+### P29-OBS-01 - Artifact Audit And Preview Redaction
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OBS`
+- Depends on: `P28-CLOSE-01`
+- Branch: `codex/p29-obs-01-artifact-audit-and-redaction`
+- Owned paths: `packages/agent-storage/`, `apps/api/`, `tests/api/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Make artifact reads safer to operate by adding audit correlation and explicit
+preview-redaction handling for retrieval surfaces.
+
+#### Deliverables
+
+- artifact read audit metadata or correlation fields
+- preview-redaction or safe truncation rules
+- regression coverage for sensitive preview and readback handling
+
+#### Acceptance
+
+- [x] Artifact reads are auditable by session and artifact identifier.
+- [x] Preview redaction or truncation behavior is explicit and tested.
+- [x] Existing artifact list and detail responses stay stable for non-sensitive cases.
+
+### P29-CLOSE-01 - Phase 29 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P29-STO-01`, `P29-CLI-01`, `P29-OBS-01`
+- Branch: `codex/p29-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 29 with artifact governance and operator parity evidence, then
+define the next implementation phase.
+
+#### Deliverables
+
+- Phase 29 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Artifact governance and operator parity evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 30 Task Board
+
+### P30-POL-01 - Artifact Retention Policy Profiles
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SECURITY`
+- Depends on: `P29-CLOSE-01`
+- Branch: `codex/p30-pol-01-artifact-retention-profiles`
+- Owned paths: `packages/agent-core/`, `packages/agent-security/`, `tests/agent_core/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define deterministic local artifact retention policy contracts so later storage
+cleanup and operator readback can rely on explicit policy-derived defaults.
+
+#### Deliverables
+
+- artifact retention profile models or policy inputs
+- policy-to-retention resolution rules for local profiles
+- regression coverage for stable defaulting and validation
+
+#### Acceptance
+
+- [x] Artifact retention defaults are explicit and deterministic.
+- [x] Policy-driven retention resolution is test-covered.
+- [x] Existing local-only policy flows remain backward compatible.
+
+### P30-STO-01 - Artifact Retention Sweep And Prune Enforcement
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STORAGE`
+- Depends on: `P30-POL-01`
+- Branch: `codex/p30-sto-01-artifact-retention-sweep`
+- Owned paths: `packages/agent-storage/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Enforce artifact expiry locally by turning retention metadata into deterministic
+prune behavior instead of passive recorded timestamps.
+
+#### Deliverables
+
+- retention sweep or prune selection path
+- explicit prune reason or expiry metadata updates
+- regression coverage for active, expired, and already-pruned payloads
+
+#### Acceptance
+
+- [x] Expired local artifact payloads can be swept deterministically.
+- [x] Repeated prune attempts remain idempotent and explicit.
+- [x] Non-expired payloads remain unchanged during sweep execution.
+
+### P30-API-01 - Artifact Lifecycle Operator Readback
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P30-POL-01`, `P30-STO-01`
+- Branch: `codex/p30-api-01-artifact-lifecycle-readback`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose retention and prune state through operator read surfaces so lifecycle
+enforcement is inspectable without direct database access.
+
+#### Deliverables
+
+- lifecycle-aware artifact detail or list response fields
+- operator-safe expired or pruned readback semantics
+- regression coverage for active, expired, and pruned artifact inspection
+
+#### Acceptance
+
+- [x] Operators can inspect retention and prune metadata through the API.
+- [x] Lifecycle readback remains backward compatible for active artifacts.
+- [x] Expired and pruned states stay explicit and machine-readable.
+
+### P30-CLOSE-01 - Phase 30 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P30-POL-01`, `P30-STO-01`, `P30-API-01`
+- Branch: `codex/p30-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 30 with retention-enforcement evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 30 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Artifact retention enforcement evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 31 Task Board
+
+### P31-SEC-01 - Artifact Access Classification Foundations
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SECURITY`
+- Depends on: `P30-CLOSE-01`
+- Branch: `codex/p31-sec-01-artifact-access-classification`
+- Owned paths: `packages/agent-core/`, `packages/agent-security/`, `tests/agent_core/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Define local artifact access classes and ACL-ready metadata contracts so future
+operator controls can enforce more than file-presence checks.
+
+#### Deliverables
+
+- artifact access class or ACL-ready domain models
+- local policy-facing classification rules
+- regression coverage for deterministic defaulting and validation
+
+#### Acceptance
+
+- [x] Artifact access classes are explicit and deterministic.
+- [x] Local policy-facing classification rules are test-covered.
+- [x] Existing local artifact read paths remain backward compatible.
+
+### P31-API-01 - Artifact Manual Lifecycle Controls
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P31-SEC-01`
+- Branch: `codex/p31-api-01-artifact-manual-lifecycle-controls`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add explicit operator-triggered lifecycle controls so retained local artifacts
+can be pruned intentionally instead of only by retention sweep.
+
+#### Deliverables
+
+- manual artifact prune API path
+- lifecycle-action audit metadata
+- regression coverage for allowed, repeated, and unavailable prune requests
+
+#### Acceptance
+
+- [x] Operators can trigger explicit prune actions through the API.
+- [x] Repeated prune requests remain idempotent and explicit.
+- [x] Lifecycle-action responses stay machine-readable and local-safe.
+
+### P31-CLI-01 - Artifact Lifecycle CLI Controls
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CLI`
+- Depends on: `P31-API-01`
+- Branch: `codex/p31-cli-01-artifact-lifecycle-controls`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose artifact lifecycle controls through CLI parity so local operators do not
+need to call the HTTP API directly for manual prune flows.
+
+#### Deliverables
+
+- CLI artifact prune command
+- machine-readable lifecycle control output
+- regression coverage for successful and idempotent prune execution
+
+#### Acceptance
+
+- [x] Operators can trigger artifact prune from the CLI.
+- [x] CLI lifecycle output stays aligned with API semantics.
+- [x] Existing artifact inspection commands remain backward compatible.
+
+### P31-CLOSE-01 - Phase 31 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P31-SEC-01`, `P31-API-01`, `P31-CLI-01`
+- Branch: `codex/p31-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 31 with operator-control and access-foundation evidence, then
+define the next implementation phase.
+
+#### Deliverables
+
+- Phase 31 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Artifact operator-control evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 32 Task Board
+
+### P32-API-01 - Artifact Access Read Enforcement
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P31-CLOSE-01`
+- Branch: `codex/p32-api-01-artifact-access-read-enforcement`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Enforce artifact access classes on detail and content read surfaces so local
+operator reads are gated by more than payload presence.
+
+#### Deliverables
+
+- access-class-aware artifact detail and content gating
+- explicit deny semantics for policy-insufficient read attempts
+- regression coverage for allowed, denied, and unavailable read paths
+
+#### Acceptance
+
+- [x] Artifact detail and content reads enforce access classes deterministically.
+- [x] Access-denied responses stay machine-readable and local-safe.
+- [x] Existing allowed read paths remain backward compatible.
+
+### P32-CLI-01 - Artifact Access CLI Enforcement
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CLI`
+- Depends on: `P32-API-01`
+- Branch: `codex/p32-cli-01-artifact-access-cli-enforcement`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Align CLI artifact inspect, read, and prune behavior with the same access
+enforcement semantics used by the API.
+
+#### Deliverables
+
+- CLI access-denied semantics for artifact reads and controls
+- machine-readable CLI output aligned with API responses
+- regression coverage for allowed, denied, and unavailable artifact actions
+
+#### Acceptance
+
+- [x] CLI artifact controls stay aligned with API access rules.
+- [x] CLI access-denied responses are explicit and machine-readable.
+- [x] Existing allowed artifact paths remain backward compatible.
+
+### P32-OBS-01 - Artifact Access Audit Expansion
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OBS`
+- Depends on: `P32-API-01`
+- Branch: `codex/p32-obs-01-artifact-access-audit-expansion`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expand audit metadata for artifact access decisions so allowed, denied, and
+lifecycle actions are consistently inspectable.
+
+#### Deliverables
+
+- delivery-audit metadata for artifact access class and deny reason
+- regression coverage for read and prune audit paths
+- explicit audit vocabulary for access-denied artifact actions
+
+#### Acceptance
+
+- [x] Artifact access decisions are auditable by class and result.
+- [x] Denied and unavailable artifact actions stay distinguishable in audit output.
+- [x] Existing audit paths remain backward compatible for allowed flows.
+
+### P32-CLOSE-01 - Phase 32 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P32-API-01`, `P32-CLI-01`, `P32-OBS-01`
+- Branch: `codex/p32-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 32 with artifact access-enforcement evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 32 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Artifact access-enforcement evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 33 Task Board
+
+### P33-API-01 - Artifact Access Projection Readback
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P32-CLOSE-01`
+- Branch: `codex/p33-api-01-artifact-access-projection`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Project artifact access class and effective policy requirements directly into
+operator read surfaces so denied and allowed paths are easier to interpret.
+
+#### Deliverables
+
+- additive access metadata in artifact read responses
+- stable projection for access class and required policy
+- regression coverage for operator-safe and sensitive artifact readback
+
+#### Acceptance
+
+- [x] Artifact read responses expose additive access metadata.
+- [x] Access projection stays backward compatible for existing clients.
+- [x] Sensitive and operator-safe artifacts remain distinguishable in readback.
+
+### P33-CLI-01 - Artifact Access Explainability Parity
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CLI`
+- Depends on: `P33-API-01`
+- Branch: `codex/p33-cli-01-artifact-access-explainability`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Align CLI inspect and read output with the same access explainability metadata
+used by the API.
+
+#### Deliverables
+
+- CLI access metadata for inspect or read paths
+- explicit machine-readable explainability output
+- regression coverage for allowed and denied artifact access flows
+
+#### Acceptance
+
+- [x] CLI artifact inspect or read output stays aligned with API access metadata.
+- [x] Denied artifact access remains explicit and machine-readable in CLI output.
+- [x] Existing allowed artifact output remains backward compatible.
+
+### P33-DOC-01 - Artifact Access Operator Guidance
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P33-API-01`, `P33-CLI-01`
+- Branch: `codex/p33-doc-01-artifact-access-operator-guidance`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Document operator remediation and policy expectations for denied artifact access
+paths.
+
+#### Deliverables
+
+- operator guidance for denied artifact reads
+- remediation notes for policy escalation versus unavailable payloads
+- updated repository status and guidance pointers
+
+#### Acceptance
+
+- [x] Operator guidance explains denied versus unavailable artifact paths.
+- [x] Remediation steps are explicit for local policy escalation.
+- [x] Repository guidance stays aligned with implemented access behavior.
+
+### P33-CLOSE-01 - Phase 33 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P33-API-01`, `P33-CLI-01`, `P33-DOC-01`
+- Branch: `codex/p33-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 33 with artifact access explainability evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 33 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Artifact access explainability evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 34 Task Board
+
+### P34-API-01 - Artifact Access Projection Consolidation
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P33-CLOSE-01`
+- Branch: `codex/p34-api-01-artifact-access-consolidation`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Consolidate artifact access projection helpers so API read paths stop duplicating
+explainability wiring and remain easier to extend safely.
+
+#### Deliverables
+
+- shared artifact access projection helper usage across API read surfaces
+- reduced duplication in artifact response assembly
+- regression coverage for unchanged artifact access payload contracts
+
+#### Acceptance
+
+- [x] API artifact access projection wiring is centralized and deterministic.
+- [x] Existing artifact access response payloads remain backward compatible.
+- [x] Regression coverage protects the shared access projection contract.
+
+### P34-CLI-01 - Artifact Access CLI Shared Projection Reuse
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CLI`
+- Depends on: `P34-API-01`
+- Branch: `codex/p34-cli-01-artifact-access-cli-shared-projection`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Reduce CLI-specific access explainability duplication by reusing the same
+projection vocabulary and helper patterns as the API.
+
+#### Deliverables
+
+- CLI access projection reuse or normalization
+- regression coverage for unchanged CLI artifact contracts
+- explicit alignment notes for API versus CLI access payloads
+
+#### Acceptance
+
+- [x] CLI artifact access projection stays aligned with API semantics.
+- [x] Shared explainability vocabulary is deterministic across local surfaces.
+- [x] Existing CLI artifact payloads remain backward compatible.
+
+### P34-TEST-01 - Artifact Access Contract Regression Matrix
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `QA`
+- Depends on: `P34-API-01`, `P34-CLI-01`
+- Branch: `codex/p34-test-01-artifact-access-contract-matrix`
+- Owned paths: `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Harden the artifact access explainability contract with a dedicated regression
+matrix that covers API, CLI, allowed, denied, and unavailable paths together.
+
+#### Deliverables
+
+- shared regression matrix for artifact access projection
+- explicit coverage for additive metadata stability
+- documentation notes for contract expectations
+
+#### Acceptance
+
+- [x] Artifact access projection regressions are covered across API and CLI.
+- [x] Allowed, denied, and unavailable paths remain distinguishable in tests.
+- [x] Additive explainability metadata stays stable across future refactors.
+
+### P34-CLOSE-01 - Phase 34 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P34-API-01`, `P34-CLI-01`, `P34-TEST-01`
+- Branch: `codex/p34-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 34 with artifact access consolidation evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 34 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Artifact access consolidation evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 35 Task Board
+
+### P35-API-01 - Artifact Success Envelope Normalization
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P34-CLOSE-01`
+- Branch: `codex/p35-api-01-artifact-success-envelope-normalization`
+- Owned paths: `apps/api/`, `tests/api/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Normalize successful API artifact response envelopes so contract consumers do
+not have to special-case missing success metadata compared with CLI output.
+
+#### Deliverables
+
+- explicit success-status normalization for artifact content or detail responses
+- regression coverage for additive, backward-compatible API success envelopes
+- documentation notes for normalized operator-facing success payloads
+
+#### Acceptance
+
+- [x] Successful API artifact responses expose a deterministic envelope.
+- [x] The normalization remains additive and backward compatible.
+- [x] Regression coverage protects the normalized API success contract.
+
+### P35-CLI-01 - Artifact Envelope Consistency Parity
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CLI`
+- Depends on: `P35-API-01`
+- Branch: `codex/p35-cli-01-artifact-envelope-consistency-parity`
+- Owned paths: `apps/cli/`, `tests/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Keep CLI artifact success and failure envelopes explicitly aligned with the
+normalized API contract where local operator semantics should match.
+
+#### Deliverables
+
+- CLI envelope normalization or explicit parity assertions
+- regression coverage for unchanged machine-readable CLI semantics
+- documented alignment boundaries between API and CLI artifact outputs
+
+#### Acceptance
+
+- [x] CLI artifact envelopes stay aligned with normalized API semantics.
+- [x] Existing machine-readable CLI contracts remain backward compatible.
+- [x] Alignment boundaries are explicit in tests or docs.
+
+### P35-TEST-01 - Artifact Envelope Contract Matrix Expansion
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `QA`
+- Depends on: `P35-API-01`, `P35-CLI-01`
+- Branch: `codex/p35-test-01-artifact-envelope-contract-matrix`
+- Owned paths: `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expand the Phase 34 access matrix into a broader artifact envelope matrix that
+locks success-shape parity in addition to access explainability payloads.
+
+#### Deliverables
+
+- cross-surface success-envelope regression matrix
+- assertions for additive status or metadata normalization
+- documentation notes for envelope compatibility expectations
+
+#### Acceptance
+
+- [x] Artifact envelope regressions are covered across API and CLI.
+- [x] Success-shape parity is explicit and test-protected.
+- [x] Additive normalization remains backward compatible.
+
+### P35-CLOSE-01 - Phase 35 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P35-API-01`, `P35-CLI-01`, `P35-TEST-01`
+- Branch: `codex/p35-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 35 with artifact envelope normalization evidence and define the
+next implementation phase.
+
+#### Deliverables
+
+- Phase 35 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Artifact envelope normalization evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 36 Task Board
+
+### P36-STO-01 - Shared Artifact Projection Serializer
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STORAGE`
+- Depends on: `P35-CLOSE-01`
+- Branch: `codex/p36-sto-01-shared-artifact-projection-serializer`
+- Owned paths: `packages/agent-storage/`, `tests/agent_storage/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Extract a reusable artifact projection serializer so API and CLI adapters stop
+duplicating retrieval, lifecycle, and shared envelope assembly rules.
+
+#### Deliverables
+
+- shared artifact projection or serializer helper
+- deterministic projection for retrieval and lifecycle fields
+- regression coverage for serializer output stability
+
+#### Acceptance
+
+- [x] Shared artifact projection logic is reusable and deterministic.
+- [x] Retrieval and lifecycle semantics are preserved.
+- [x] Regression coverage protects the serializer boundary.
+
+### P36-API-01 - API Adapter Shared Projection Adoption
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P36-STO-01`
+- Branch: `codex/p36-api-01-artifact-projection-adoption`
+- Owned paths: `apps/api/`, `tests/api/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Adopt the shared artifact projection serializer in API read adapters without
+changing the current operator-facing contract.
+
+#### Deliverables
+
+- API adapter wiring to the shared projection helper
+- regression coverage for unchanged API artifact envelopes
+- documentation notes for adapter-level contract preservation
+
+#### Acceptance
+
+- [x] API artifact read adapters use the shared projection path.
+- [x] Existing API artifact envelopes remain backward compatible.
+- [x] Adapter-level regression coverage stays green.
+
+### P36-CLI-01 - CLI Adapter Shared Projection Adoption
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CLI`
+- Depends on: `P36-STO-01`
+- Branch: `codex/p36-cli-01-artifact-projection-adoption`
+- Owned paths: `apps/cli/`, `tests/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Adopt the shared artifact projection serializer in CLI read adapters while
+preserving CLI-only local operator context fields.
+
+#### Deliverables
+
+- CLI adapter wiring to the shared projection helper
+- regression coverage for unchanged CLI machine-readable envelopes
+- explicit handling of CLI-only local context fields outside shared parity
+
+#### Acceptance
+
+- [x] CLI artifact read adapters use the shared projection path.
+- [x] CLI-only local context fields remain explicit and backward compatible.
+- [x] Regression coverage protects shared versus CLI-only boundaries.
+
+### P36-CLOSE-01 - Phase 36 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P36-STO-01`, `P36-API-01`, `P36-CLI-01`
+- Branch: `codex/p36-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 36 with shared artifact projection evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 36 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Shared artifact projection evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 37 Task Board
+
+### P37-SEC-01 - Shared Artifact Access Projection Serializer
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SECURITY`
+- Depends on: `P36-CLOSE-01`
+- Branch: `codex/p37-sec-01-shared-artifact-access-projection`
+- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Extract a reusable artifact access projection helper so API and CLI adapters
+stop duplicating access-class explainability and policy-facing access checks.
+
+#### Deliverables
+
+- shared artifact access projection helper
+- deterministic explainability payload for access class and policy requirements
+- regression coverage for access projection stability
+
+#### Acceptance
+
+- [x] Shared artifact access projection logic is reusable and deterministic.
+- [x] Access explainability payload semantics are preserved.
+- [x] Regression coverage protects the access projection boundary.
+
+### P37-API-01 - API Shared Access Projection Adoption
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P37-SEC-01`
+- Branch: `codex/p37-api-01-artifact-access-projection-adoption`
+- Owned paths: `apps/api/`, `tests/api/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Adopt the shared artifact access projection helper in API adapters without
+changing the current operator-facing access contract.
+
+#### Deliverables
+
+- API access projection wiring to the shared helper
+- regression coverage for unchanged access payloads and audit behavior
+- documentation notes for adapter-level access contract preservation
+
+#### Acceptance
+
+- [x] API access projection uses the shared helper path.
+- [x] Existing API access payloads remain backward compatible.
+- [x] Adapter-level regression coverage stays green.
+
+### P37-CLI-01 - CLI Shared Access Projection Adoption
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CLI`
+- Depends on: `P37-SEC-01`
+- Branch: `codex/p37-cli-01-artifact-access-projection-adoption`
+- Owned paths: `apps/cli/`, `tests/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Adopt the shared artifact access projection helper in CLI adapters while
+preserving CLI-only local operator context fields.
+
+#### Deliverables
+
+- CLI access projection wiring to the shared helper
+- regression coverage for unchanged CLI machine-readable access envelopes
+- explicit handling of CLI-only local context outside shared access payloads
+
+#### Acceptance
+
+- [x] CLI access projection uses the shared helper path.
+- [x] CLI-only local context fields remain explicit and backward compatible.
+- [x] Regression coverage protects shared versus CLI-only access boundaries.
+
+### P37-CLOSE-01 - Phase 37 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P37-SEC-01`, `P37-API-01`, `P37-CLI-01`
+- Branch: `codex/p37-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 37 with shared artifact access projection evidence and define the
+next implementation phase.
+
+#### Deliverables
+
+- Phase 37 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Shared artifact access projection evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 38 Task Board
+
+### P38-OBS-01 - Shared Artifact Access Audit Metadata Helper
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OBS`
+- Depends on: `P37-CLOSE-01`
+- Branch: `codex/p38-obs-01-artifact-access-audit-helper`
+- Owned paths: `apps/api/`, `packages/agent-security/`, `tests/api/`, `tests/agent_security/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Extract a reusable artifact access audit-metadata helper so API read and prune
+paths stop duplicating access result metadata assembly.
+
+#### Deliverables
+
+- shared artifact access audit metadata helper
+- deterministic metadata projection for allow, deny, and unavailable cases
+- regression coverage for audit metadata stability
+
+#### Acceptance
+
+- [x] Shared access audit metadata logic is reusable and deterministic.
+- [x] Existing audit metadata semantics remain backward compatible.
+- [x] Regression coverage protects the audit metadata boundary.
+
+### P38-API-01 - API Shared Denial Response Adoption
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P38-OBS-01`
+- Branch: `codex/p38-api-01-artifact-denial-response-adoption`
+- Owned paths: `apps/api/`, `tests/api/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Adopt shared denial and unavailable artifact response shaping in API adapters
+without changing the current operator-facing access contract.
+
+#### Deliverables
+
+- API adoption of shared denial or unavailable response helper paths
+- regression coverage for unchanged API access payloads and deny semantics
+- documentation notes for adapter-level denial contract preservation
+
+#### Acceptance
+
+- [x] API denial and unavailable response shaping uses the shared helper path.
+- [x] Existing API access payloads remain backward compatible.
+- [x] Adapter-level regression coverage stays green.
+
+### P38-CLOSE-01 - Phase 38 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P38-OBS-01`, `P38-API-01`
+- Branch: `codex/p38-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 38 with shared artifact audit-metadata evidence and define the
+next implementation phase.
+
+#### Deliverables
+
+- Phase 38 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Shared artifact audit-metadata evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 39 Task Board
+
+### P39-CLI-01 - CLI Shared Denial Response Adoption
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CLI`
+- Depends on: `P38-CLOSE-01`
+- Branch: `codex/p39-cli-01-artifact-denial-response-adoption`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Adopt shared denial and unavailable artifact response helper paths in the CLI
+adapter while preserving CLI-local operator context fields and prune behavior.
+
+#### Deliverables
+
+- CLI adoption of shared denial or unavailable response helper paths
+- preservation of CLI-local `database` context and current prune contracts
+- regression coverage for unchanged CLI deny and unavailable payloads
+
+#### Acceptance
+
+- [x] CLI denial and unavailable response shaping uses the shared helper path.
+- [x] Existing CLI response payloads remain backward compatible.
+- [x] CLI-local operator context fields stay explicit.
+
+### P39-TEST-01 - Artifact Failure Contract Matrix Expansion
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `TEST`
+- Depends on: `P39-CLI-01`
+- Branch: `codex/p39-test-01-artifact-failure-contract-matrix`
+- Owned paths: `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expand cross-surface contract coverage so shared artifact failure-envelope
+reuse across API and CLI stays stable after CLI adoption.
+
+#### Deliverables
+
+- expanded artifact failure contract matrix
+- explicit parity coverage for deny and unavailable responses
+- documentation notes for cross-surface failure-envelope expectations
+
+#### Acceptance
+
+- [x] Cross-surface failure-envelope parity is covered explicitly.
+- [x] Shared helper adoption stays backward compatible across API and CLI.
+- [x] Regression coverage stays green after matrix expansion.
+
+### P39-CLOSE-01 - Phase 39 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P39-CLI-01`, `P39-TEST-01`
+- Branch: `codex/p39-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 39 with CLI denial-response reuse evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 39 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] CLI denial-response reuse evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 40 Task Board
+
+### P40-API-01 - API Shared Artifact Control Response Adoption
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P39-CLOSE-01`
+- Branch: `codex/p40-api-01-artifact-control-response-adoption`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Adopt shared prune denied and unavailable response helper paths in API control
+adapters without changing the current operator-facing prune contract.
+
+#### Deliverables
+
+- API adoption of shared prune deny or unavailable response helper paths
+- preservation of current API prune payloads and semantics
+- regression coverage for unchanged API prune contracts
+
+#### Acceptance
+
+- [x] API prune denied and unavailable response shaping uses the shared helper path.
+- [x] Existing API prune payloads remain backward compatible.
+- [x] API prune regression coverage stays green.
+
+### P40-CLI-01 - CLI Shared Artifact Control Response Adoption
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CLI`
+- Depends on: `P40-API-01`
+- Branch: `codex/p40-cli-01-artifact-control-response-adoption`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Adopt shared prune denied and unavailable response helper paths in CLI control
+adapters while preserving CLI-local `database` context and current prune
+contracts.
+
+#### Deliverables
+
+- CLI adoption of shared prune deny or unavailable response helper paths
+- preservation of CLI-local context and current prune semantics
+- regression coverage for unchanged CLI prune payloads
+
+#### Acceptance
+
+- [x] CLI prune denied and unavailable response shaping uses the shared helper path.
+- [x] Existing CLI prune payloads remain backward compatible.
+- [x] CLI-local context fields stay explicit.
+
+### P40-TEST-01 - Artifact Prune Contract Matrix Expansion
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `TEST`
+- Depends on: `P40-API-01`, `P40-CLI-01`
+- Branch: `codex/p40-test-01-artifact-prune-contract-matrix`
+- Owned paths: `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expand cross-surface control contract coverage so shared prune-response reuse
+across API and CLI stays stable after adapter adoption.
+
+#### Deliverables
+
+- expanded artifact prune contract matrix
+- explicit parity coverage for prune denied and unavailable responses
+- documentation notes for cross-surface prune-control expectations
+
+#### Acceptance
+
+- [x] Cross-surface prune contract parity is covered explicitly.
+- [x] Shared prune helper adoption stays backward compatible across API and CLI.
+- [x] Regression coverage stays green after matrix expansion.
+
+### P40-CLOSE-01 - Phase 40 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P40-API-01`, `P40-CLI-01`, `P40-TEST-01`
+- Branch: `codex/p40-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 40 with shared prune-control response evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 40 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Shared prune-control response evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 41 Task Board
+
+### P41-API-01 - API Shared Artifact Control Success Projection
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P40-CLOSE-01`
+- Branch: `codex/p41-api-01-artifact-control-success-projection`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Adopt a shared prune success projection path in API control adapters without
+changing the current operator-facing success contract.
+
+#### Deliverables
+
+- API adoption of shared prune success response projection helper paths
+- preservation of current API prune success payloads and lifecycle semantics
+- regression coverage for unchanged API prune success contracts
+
+#### Acceptance
+
+- [x] API prune success response shaping uses the shared helper path.
+- [x] Existing API prune success payloads remain backward compatible.
+- [x] API prune success regression coverage stays green.
+
+### P41-CLI-01 - CLI Shared Artifact Control Success Projection
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P41-API-01`
+- Branch: `codex/p41-cli-01-artifact-control-success-projection`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Adopt a shared prune success projection path in CLI control adapters while
+preserving CLI-local operator context fields.
+
+#### Deliverables
+
+- CLI adoption of shared prune success response projection helper paths
+- preservation of CLI-local `database` context and current success semantics
+- regression coverage for unchanged CLI prune success contracts
+
+#### Acceptance
+
+- [ ] CLI prune success response shaping uses the shared helper path.
+- [ ] Existing CLI prune success payloads remain backward compatible.
+- [ ] CLI-local context fields stay explicit.
+
+### P41-TEST-01 - Artifact Prune Success Contract Matrix Expansion
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `TEST`
+- Depends on: `P41-API-01`, `P41-CLI-01`
+- Branch: `codex/p41-test-01-artifact-prune-success-contract-matrix`
+- Owned paths: `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expand cross-surface control contract coverage so shared prune success
+projection reuse across API and CLI stays stable after adapter adoption.
+
+#### Deliverables
+
+- expanded artifact prune success contract matrix
+- explicit parity coverage for `pruned` and `already_pruned` responses
+- documentation notes for cross-surface prune success expectations
+
+#### Acceptance
+
+- [x] Cross-surface prune success parity is covered explicitly.
+- [x] Shared prune success helper adoption stays backward compatible across API and CLI.
+- [x] Regression coverage stays green after matrix expansion.
+
+### P41-CLOSE-01 - Phase 41 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P41-API-01`, `P41-CLI-01`, `P41-TEST-01`
+- Branch: `codex/p41-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 41 with shared prune success projection evidence and define the
+next implementation phase.
+
+#### Deliverables
+
+- Phase 41 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Shared prune success projection evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 42 Task Board
+
+### P42-OBS-01 - Shared Artifact Control Audit Metadata Helper
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OBS`
+- Depends on: `P41-CLOSE-01`
+- Branch: `codex/p42-obs-01-artifact-control-audit-helper`
+- Owned paths: `apps/api/`, `apps/cli/`, `packages/agent-security/`, `tests/api/`, `tests/cli/`, `tests/agent_security/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Extract a shared artifact control audit-metadata helper so prune success and
+failure audit payload assembly stops drifting across API and CLI adapters.
+
+#### Deliverables
+
+- shared artifact control audit metadata helper
+- deterministic metadata projection for prune success, denied, and unavailable cases
+- regression coverage for audit metadata stability
+
+#### Acceptance
+
+- [x] Shared control audit metadata logic is reusable and deterministic.
+- [x] Existing prune audit metadata semantics remain backward compatible.
+- [x] Regression coverage protects the control audit metadata boundary.
+
+### P42-CLOSE-01 - Phase 42 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P42-OBS-01`
+- Branch: `codex/p42-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 42 with shared control audit-metadata evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 42 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Shared control audit-metadata evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 43 Task Board
+
+### P43-OBS-01 - Shared Artifact Audit Metadata Convergence
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OBS`
+- Depends on: `P42-CLOSE-01`
+- Branch: `codex/p43-obs-01-artifact-audit-convergence`
+- Owned paths: `apps/api/`, `packages/agent-security/`, `tests/api/`, `tests/agent_security/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Converge overlapping read-side and control-side artifact audit helper
+semantics so artifact audit metadata has a clearer single vocabulary boundary.
+
+#### Deliverables
+
+- converged shared artifact audit metadata helper boundary
+- preservation of current API artifact audit semantics
+- regression coverage for stable read and control audit metadata
+
+#### Acceptance
+
+- [x] Shared artifact audit metadata helper semantics are converged and deterministic.
+- [x] Existing artifact audit metadata contracts remain backward compatible.
+- [x] Regression coverage protects the converged audit boundary.
+
+### P43-CLOSE-01 - Phase 43 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P43-OBS-01`
+- Branch: `codex/p43-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 43 with shared artifact audit convergence evidence and define the
+next implementation phase.
+
+#### Deliverables
+
+- Phase 43 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Shared artifact audit convergence evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 44 Task Board
+
+### P44-TEST-01 - Artifact Audit Metadata Contract Coverage
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `TEST`
+- Depends on: `P43-CLOSE-01`
+- Branch: `codex/p44-test-01-artifact-audit-contract-coverage`
+- Owned paths: `tests/`, `apps/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add explicit regression coverage for artifact delivery-audit payload semantics
+so read-side and control-side audit metadata boundaries stay stable.
+
+#### Deliverables
+
+- artifact audit metadata contract coverage
+- stable normalization rules for non-deterministic audit fields when needed
+- documentation notes for preserved audit metadata boundaries
+
+#### Acceptance
+
+- [x] Artifact audit metadata contract coverage is explicit and stable.
+- [x] Existing audit metadata semantics remain backward compatible.
+- [x] Regression coverage stays green after audit contract expansion.
+
+### P44-CLOSE-01 - Phase 44 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P44-TEST-01`
+- Branch: `codex/p44-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 44 with artifact audit contract evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 44 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Artifact audit contract evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

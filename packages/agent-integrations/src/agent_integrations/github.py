@@ -29,8 +29,14 @@ class GitHubHttpPullRequestTransport:
             with urllib.request.urlopen(request, timeout=10) as response:
                 body = json.loads(response.read().decode("utf-8"))
         except (OSError, urllib.error.HTTPError, json.JSONDecodeError) as error:
-            raise ScmUnavailableError(f"github pull request execution failed: {error}") from error
+            raise ScmUnavailableError(
+                f"github pull request execution failed: {error}",
+                metadata={"failure_class": "transport_failure"},
+            ) from error
         url = body.get("html_url") if isinstance(body, dict) else None
         if not isinstance(url, str) or not url.strip():
-            raise ScmUnavailableError("github pull request response did not include html_url")
+            raise ScmUnavailableError(
+                "github pull request response did not include html_url",
+                metadata={"failure_class": "transport_failure"},
+            )
         return url

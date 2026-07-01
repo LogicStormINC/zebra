@@ -35,8 +35,26 @@ These errors intentionally distinguish operator remediation paths:
 - No durable token storage.
 - No OS keychain integration.
 - No Vault, KMS, or cloud secret manager integration.
-- No GitHub App installation token flow.
+- No live GitHub App installation token flow in the default operator path.
 - No durable or external secret backend yet.
+
+## Secret-Store Direction
+
+Phase 19 introduces the local contract that future non-environment broker backends should depend on:
+
+- `SecretStore` is the Port for retrieving secret material by handle.
+- `SecretMaterial` carries `handle`, `backend`, optional `version`, and runtime `value`.
+- `SecretMaterial.redacted()` must replace raw values with `<redacted>`.
+- `SecretMissingError` means the requested handle does not exist.
+- `SecretUnavailableError` means the backing store cannot currently serve reads.
+- `LocalSecretStore` is the first local backend, backed by per-handle JSON documents under a local root directory.
+- `get_secret_value(...)` is the broker-facing helper for retrieving raw secret material through the Port.
+
+This contract exists so future broker backends can consume secret material without:
+
+- reading raw secret storage directly from API composition
+- leaking secret values into repr, durable metadata, or operator-facing audit state
+- coupling integrations to a specific storage backend such as OS keychain, Vault, or KMS
 
 ## SCM Adapter Status
 
@@ -59,3 +77,39 @@ Delivery audit metadata may include non-secret credential observability fields:
 - `credential_backend=environment` for the current local backend implementation
 
 These fields are intended for operator diagnosis only. They must never contain raw token material.
+
+## GitHub App Skeleton
+
+Phase 19 adds a guarded `GitHubAppCredentialBroker` skeleton:
+
+- the broker reads a private-key secret through `SecretStore`
+- the adapter exchanges that key through a `GitHubAppTokenTransport`
+- the resulting installation token is returned as a normal `CredentialCapability`
+
+Current limits:
+
+- no production transport is wired into default API composition
+- no operator-facing GitHub App configuration flow exists yet
+- the skeleton is intended for integration hardening and test injection only until a later phase broadens the execution path
+
+## Egress Control Foundation
+
+Phase 20 starts by defining a deterministic network-profile contract in `agent-security`.
+
+Current local contract:
+
+- `NetworkProfileName` defines the allowed profiles: `none`, `setup-only`, `domain-allowlist`, `mcp-proxy-only`, `git-proxy-only`, and `full-trusted-local`
+- `DEFAULT_NETWORK_PROFILE` is `none`, preserving fail-closed local defaults
+- `parse_network_profile(...)` normalizes and validates operator input before runtime adapters consume it
+- `domain-allowlist` requires at least one bare hostname entry
+- non-allowlist profiles reject domain allowlists so ambiguous egress intent fails early
+- SCM pull-request execution now evaluates this contract before remote transport side effects occur
+- current local gateway wiring reads:
+  - `ZEBRA_SCM_NETWORK_PROFILE`
+  - `ZEBRA_SCM_NETWORK_DOMAIN_ALLOWLIST`
+- current direct GitHub transport is allowed only for:
+  - `full-trusted-local`
+  - `domain-allowlist` containing the configured GitHub API host
+- `git-proxy-only` and `mcp-proxy-only` remain blocked until proxy-backed transports exist
+
+This phase only establishes the contract. It does not yet permit remote SCM transport by itself. Later Phase 20 work should consume this model to block or allow specific networked execution paths deterministically.

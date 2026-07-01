@@ -6,6 +6,8 @@ from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_tools.contracts import ToolContract
 from agent_tools.errors import ToolArgumentError, ToolRegistryError, UnknownToolError
 from agent_tools.executor import ToolExecutor
+from agent_tools.mcp_gateway import McpProxyToolGateway
+from agent_tools.mcp_proxy import McpProxyRequest, McpProxyResponse
 from agent_tools.registry import ToolRegistry
 
 
@@ -74,3 +76,46 @@ def test_tool_registry_rejects_duplicate_tool_registration() -> None:
 
     with pytest.raises(ToolRegistryError, match="already registered"):
         registry.register(contract, handler)
+
+
+def test_tool_executor_routes_mcp_tool_through_proxy_gateway() -> None:
+    proxy_transport = _FakeMcpProxyTransport()
+    executor = ToolExecutor(
+        ToolRegistry(),
+        mcp_proxy_gateway=McpProxyToolGateway(transport=proxy_transport),
+    )
+
+    result = executor.execute(
+        _tool_call(
+            "mcp.github.create_pull_request",
+            {"title": "Add feature"},
+        )
+    )
+
+    assert result.status is ToolCallStatus.EXECUTED
+    assert result.output == "proxy-ok"
+    assert result.metadata["route"] == "proxy"
+    assert result.metadata["proxy_target"] == "github.create_pull_request"
+    assert result.metadata["proxy_transport"] == "mcp_proxy"
+    assert result.metadata["server_name"] == "github"
+    assert proxy_transport.last_request is not None
+    assert proxy_transport.last_request.target.tool_name == "create_pull_request"
+
+
+def test_tool_executor_still_rejects_unknown_non_mcp_tool() -> None:
+    executor = ToolExecutor(
+        ToolRegistry(),
+        mcp_proxy_gateway=McpProxyToolGateway(transport=_FakeMcpProxyTransport()),
+    )
+
+    with pytest.raises(UnknownToolError, match="unknown tool"):
+        executor.execute(_tool_call("external.tool", {}))
+
+
+class _FakeMcpProxyTransport:
+    def __init__(self) -> None:
+        self.last_request: McpProxyRequest | None = None
+
+    def execute(self, request: McpProxyRequest) -> McpProxyResponse:
+        self.last_request = request
+        return McpProxyResponse(output="proxy-ok", metadata={"transport": "fake-proxy"})

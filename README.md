@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 17 is closed and Phase 18 SCM delivery audit observability is in progress. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution behind explicit provider, dry-run, credential, and policy gates.
+Phase 43 is closed and Phase 44 artifact audit metadata contract coverage is now in review on `codex/p44-test-01-artifact-audit-contract-coverage`. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates, a real local snapshot backend for workspace-backed runtime handles, snapshot-backed suspend or resume control wiring across CLI, API, and worker execution, manifest-aware snapshot compatibility checks, explicit retained-snapshot cleanup, durable artifact payload storage, worker-side artifact capture for supported text outputs, artifact detail plus content retrieval over the local API, CLI artifact inspect and read surfaces, audit-backed artifact read tracing, lifecycle-aware artifact payload metadata, deterministic policy-driven artifact retention defaults, storage-side expiry sweep primitives for retained local payloads, lifecycle readback for payload-backed artifacts, deterministic artifact access classification, manual artifact prune controls over both API and CLI, access-class enforcement plus audit parity for artifact actions, additive access explainability metadata across operator read surfaces, consolidated Phase 34 API and CLI access projection helpers, a cross-surface contract matrix for allowed, denied, missing, and pruned artifact access paths, explicit `status="ok"` envelopes for successful API artifact detail and content reads, CLI inspect envelopes that now include `preview_state`, `lifecycle`, and pruned-payload unavailable semantics aligned with API behavior, a shared `agent-storage` artifact projection serializer for payload lookup, lifecycle, retrieval, and base envelope assembly, both API and CLI artifact adapters adopted onto that shared projection path, a shared `agent-security` artifact access projection helper for explainability payload assembly and policy-rank evaluation, both API and CLI artifact access adapters adopted onto that shared security projection path, a shared `agent-security` artifact access audit metadata helper reused by API read and prune audit paths, shared API-side denial or unavailable response helpers for artifact read adapters, shared CLI-side denial or unavailable response helpers for artifact read adapters, shared prune denied or unavailable response helpers for both API and CLI artifact control adapters, shared prune success response helpers for both API and CLI artifact control adapters, a shared artifact control audit metadata helper in `agent-security`, a converged lower-level artifact audit metadata builder behind the read-side and control-side wrappers, and explicit delivery-audit endpoint regression coverage that preserves current artifact read and prune metadata semantics.
 
-The next milestone is `Phase 18 - SCM Delivery Audit And Broker Observability`. The current implementation lanes are:
+The next milestone is `Phase 44 - Artifact Audit Metadata Contract Coverage`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -38,6 +38,18 @@ The next milestone is `Phase 18 - SCM Delivery Audit And Broker Observability`. 
 - guarded GitHub pull-request execution is available only behind explicit provider, dry-run, token, and policy gates
 - SCM execution audit metadata now records normalized provider, status, URL, commit SHA, dry-run flag, and unavailable reasons
 - SCM token redaction regression coverage now checks PR plans, API responses, delivery audit records, and settings snapshots
+- `agent-security` now exposes deterministic network-profile contracts for upcoming egress guards, with `none` preserved as the fail-closed default
+- GitHub PR execution now enforces explicit egress checks before credential lookup or transport side effects; direct transport remains blocked unless `full-trusted-local` or a matching `domain-allowlist` profile is configured
+- `docs/operator_runbook.md` now documents egress profiles, failure-class interpretation, and safe rollback to `network_profile=none`
+- `agent-integrations` now exposes a standalone SCM proxy transport contract and deterministic serializable request/response models for future proxy-backed execution paths
+- GitHub PR execution can now route through a proxy-backed adapter when `ZEBRA_SCM_GITHUB_TRANSPORT=proxy` and `ZEBRA_SCM_PROXY_ENDPOINT` are configured
+- `agent-tools` and `agent-security` now expose MCP proxy starter contracts plus egress classification metadata for `mcp.<server>.<tool>` calls
+- `docs/operator_runbook.md` now documents proxy-backed SCM execution, MCP proxy starter routing, remediation, and rollback to safe defaults
+- `ToolExecutor` can now execute `mcp.<server>.<tool>` calls through an MCP proxy gateway when that gateway is wired in, without changing local builtin tool behavior
+- proxy-backed SCM audit and MCP proxy execution metadata now share stable `route` / `proxy_target` / `proxy_transport` fields
+- local policy evaluation and approval requests now distinguish local tool paths, proxy-routed MCP tool paths, and fail-closed blocked MCP routes deterministically
+- `docs/Phase22_Proxy_Execution_And_Gateway_Wiring_验收记录.md` records the completed proxy gateway execution phase and its remaining deferrals
+- `docs/Phase23_Proxy_Approval_Projection_And_Operator_Readback_验收记录.md` records the completed proxy-aware approval readback phase and its remaining deferrals
 - remote SCM operator safety runbook coverage documents dry-run first, explicit opt-in, audit inspection, token rules, and rollback steps
 - credential capability domain modeling covers provider, audience, scopes, expiry, and redacted serialization
 - credential broker Port definition covers SCM credential requests, in-memory test broker, and missing/denied/unavailable errors
@@ -49,7 +61,31 @@ The next milestone is `Phase 18 - SCM Delivery Audit And Broker Observability`. 
 - broker-backed SCM operator docs cover default environment broker execution, token rules, audit inspection, and fallback boundary
 - SCM delivery audit now records non-secret credential source and backend metadata for broker-backed and explicit env-fallback GitHub PR execution
 - broker-missing credential failures now retain source metadata without exposing token values
-- credential failure classification is the next ready implementation lane
+- SCM delivery audit now classifies credential_missing, credential_denied, credential_unavailable, and transport_failure for operator remediation
+- secret-store Port and redaction contract now exist in `agent-security`
+- local secret-store backend now reads per-handle secret documents without exposing raw values in repr or redacted snapshots
+- GitHub App-backed credential adapter skeleton now exists for test injection and guarded integration hardening
+- projection rebuild, durable SQLite projection rows, and repeated approval reads now keep the same proxy-aware `approval_context` vocabulary for `route`, `target`, `network_profile`, and `scope`
+- `docs/Phase24_Durable_Approval_Projection_And_Operator_Queue_验收记录.md` records the completed durable approval projection and operator queue phase
+- durable workspace projection storage now exists for `workspace_root`, `policy_profile`, lifecycle status, current sequence, and last attempt number
+- runtime contracts now expose explicit lifecycle methods for `provision`, `snapshot`, `restore`, `fork`, `suspend`, and `resume`, and the local adapter now supports filesystem-backed snapshot, restore, and fork flows for the supported subset
+- worker recovery and execution now reuse durable workspace projection state instead of raw bootstrap payloads for workspace lifecycle control
+- `docs/Phase25_Durable_Workspace_And_Snapshot_Foundations_验收记录.md` records the completed durable workspace and snapshot foundations phase
+- `docs/local_snapshot_runtime.md` documents the supported local snapshot subset, storage layout, retention model, and explicit unsupported paths
+- local suspend and resume now emit durable control-plane events, persist snapshot metadata in workspace projections, and restore suspended workspaces onto fresh runtime-managed directories before worker execution
+- `docs/Phase26_Local_Snapshot_Operator_Controls_验收记录.md` records the completed local snapshot operator controls phase
+- session readback now includes projection-backed workspace lifecycle and snapshot metadata when durable workspace state exists
+- CLI inspect and resume-read output now includes durable workspace lifecycle state and suspended snapshot metadata when available
+- local snapshot housekeeping now classifies retained payloads as valid, missing, or incompatible before restore proceeds
+- worker resume now deletes consumed snapshot payloads explicitly after a successful local restore
+- `docs/Phase27_Workspace_Lifecycle_Readback_And_Snapshot_Housekeeping_验收记录.md` records the completed workspace lifecycle readback and snapshot housekeeping phase
+- durable local artifact payload storage now exists with SQLite-backed metadata and explicit missing-payload inspection for later retrieval wiring
+- worker execution now persists supported text tool outputs into the local artifact payload store when no explicit artifact URI is already provided
+- session artifact APIs now support detail and content readback with explicit indexed-only and payload-availability semantics
+- CLI now supports `artifact inspect` and `artifact read` for local artifact inspection without going through the HTTP API
+- artifact previews now expose explicit redaction/truncation state, and artifact detail/content reads are now recorded in delivery audit
+- `docs/Phase28_Durable_Artifact_Storage_And_Retrieval_验收记录.md` records the completed durable artifact storage and retrieval phase
+- Phase 43 shared artifact audit metadata convergence is complete, and explicit artifact audit contract coverage is the next ready implementation lane
 
 Read in this order:
 
@@ -85,7 +121,7 @@ uv run pytest
 
 ## Operator Entry
 
-For the current local operator workflow, start with `docs/operator_runbook.md`. It covers:
+For the current local operator workflow, start with `docs/operator_runbook.md`. For local snapshot runtime semantics, also read `docs/local_snapshot_runtime.md`. For denied versus unavailable artifact access paths, also read `docs/artifact_access_operator_guidance.md`. The operator runbook covers:
 
 - CLI session creation, durable execution, inspection, and approval
 - writable local API session creation, execution, resume triggering, and approval decisions
@@ -93,4 +129,4 @@ For the current local operator workflow, start with `docs/operator_runbook.md`. 
 - local FastAPI serving
 - SSE session stream replay
 
-For the latest phase closeout summary, see `docs/Phase17_Credential_Backend_Hardening_验收记录.md`.
+For the latest completed phase closeout summary, see `docs/Phase37_Shared_Artifact_Access_Projection_And_Adapter_Reuse_验收记录.md`.

@@ -20,22 +20,35 @@ from agent_core.domain.identifiers import SessionId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_integrations import build_model_gateway
 from agent_security import PolicyProfile
-from agent_storage import SQLiteEventStore, SQLiteLeaseStore, SQLiteProjectionStore
+from agent_storage import (
+    SQLiteEventStore,
+    SQLiteLeaseStore,
+    SQLiteProjectionStore,
+    SQLiteWorkspaceProjectionStore,
+)
 from zebra_agent_config import ZebraAgentSettings, load_settings
 from zebra_agent_worker import (
     SessionClaimService,
+    SessionControlError,
+    SessionControlService,
     SessionExecutionService,
     SessionRecoveryService,
     SessionResumeService,
 )
 
+from zebra_agent_cli.artifact_read import (
+    prune_artifact,
+    read_artifact_content,
+    read_artifact_detail,
+)
 from zebra_agent_cli.execution import (
     execute_durable_run,
     serialize_run_execution,
     serialize_trace_events,
 )
+from zebra_agent_cli.workspace_read import serialize_workspace_projection
 
-CommandName = Literal["run", "resume", "inspect", "approve", "model"]
+CommandName = Literal["run", "resume", "suspend", "inspect", "approve", "model", "artifact"]
 
 
 @dataclass(frozen=True)
@@ -65,6 +78,8 @@ def execute(
         return _run_result(namespace, active_settings)
     if command == "resume":
         return _resume_result(namespace, active_settings)
+    if command == "suspend":
+        return _suspend_result(namespace, active_settings)
     if command == "inspect":
         return _session_result(
             "inspect",
@@ -73,6 +88,8 @@ def execute(
         )
     if command == "approve":
         return _approval_result(namespace, _database_path(namespace.database, active_settings))
+    if command == "artifact":
+        return _artifact_result(namespace, _database_path(namespace.database, active_settings))
     if command == "model":
         return _model_result(namespace, active_settings)
     raise ValueError(f"unsupported CLI command: {command}")
@@ -107,9 +124,37 @@ def _parser() -> argparse.ArgumentParser:
     resume.add_argument("--worker-id", default="local-worker")
     resume.add_argument("--lease-ttl-seconds", type=int, default=30)
 
+    suspend = subcommands.add_parser("suspend", help="Suspend a local session.")
+    suspend.add_argument("session_id")
+    suspend.add_argument("--database")
+
     inspect = subcommands.add_parser("inspect", help="Inspect a session.")
     inspect.add_argument("session_id")
     inspect.add_argument("--database")
+
+    artifact = subcommands.add_parser("artifact", help="Inspect or read session artifacts.")
+    artifact_subcommands = artifact.add_subparsers(dest="artifact_command", required=True)
+    artifact_inspect = artifact_subcommands.add_parser(
+        "inspect",
+        help="Inspect one session artifact.",
+    )
+    artifact_inspect.add_argument("session_id")
+    artifact_inspect.add_argument("artifact_id")
+    artifact_inspect.add_argument("--database")
+    artifact_read = artifact_subcommands.add_parser(
+        "read",
+        help="Read one payload-backed session artifact.",
+    )
+    artifact_read.add_argument("session_id")
+    artifact_read.add_argument("artifact_id")
+    artifact_read.add_argument("--database")
+    artifact_prune = artifact_subcommands.add_parser(
+        "prune",
+        help="Prune one managed payload-backed session artifact.",
+    )
+    artifact_prune.add_argument("session_id")
+    artifact_prune.add_argument("artifact_id")
+    artifact_prune.add_argument("--database")
 
     approve = subcommands.add_parser("approve", help="Record an approval decision.")
     approve.add_argument("session_id")
@@ -184,7 +229,8 @@ def _session_result(
     session_id: str,
     database_path: Path,
 ) -> CliCommandResult:
-    session = SQLiteProjectionStore(database_path).get_session(SessionId(UUID(session_id)))
+    session_key = SessionId(UUID(session_id))
+    session = SQLiteProjectionStore(database_path).get_session(session_key)
     if session is None:
         return CliCommandResult(
             command=command,
@@ -194,16 +240,18 @@ def _session_result(
                 "status": "not_found",
             },
         )
-    return CliCommandResult(
-        command=command,
-        payload={
-            "session_id": session_id,
-            "database": str(database_path),
-            "title": session.title,
-            "status": session.status.value,
-            "current_sequence": session.current_sequence,
-        },
-    )
+    payload: dict[str, object] = {
+        "session_id": session_id,
+        "database": str(database_path),
+        "title": session.title,
+        "status": session.status.value,
+        "current_sequence": session.current_sequence,
+    }
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(session_key)
+    serialized_workspace = serialize_workspace_projection(workspace)
+    if serialized_workspace is not None:
+        payload["workspace"] = serialized_workspace
+    return CliCommandResult(command=command, payload=payload)
 
 
 def _resume_result(
@@ -243,6 +291,38 @@ def _resume_result(
             "current_sequence": result.session.current_sequence,
             "assistant_message": result.attempt_result.metadata.get("assistant_message"),
             "trace": serialize_trace_events(result.events),
+        },
+    )
+
+
+def _suspend_result(
+    namespace: argparse.Namespace,
+    settings: ZebraAgentSettings,
+) -> CliCommandResult:
+    database_path = _database_path(namespace.database, settings)
+    try:
+        result = SessionControlService(database_path).suspend_session(
+            SessionId(UUID(namespace.session_id))
+        )
+    except SessionControlError as error:
+        return CliCommandResult(
+            command="suspend",
+            payload={
+                "session_id": namespace.session_id,
+                "database": str(database_path),
+                "status": "not_suspendable",
+                "reason": str(error),
+            },
+        )
+    return CliCommandResult(
+        command="suspend",
+        payload={
+            "session_id": namespace.session_id,
+            "database": str(database_path),
+            "suspended": True,
+            "status": "suspended",
+            "workspace_status": result.workspace.status.value,
+            "snapshot_id": result.workspace.snapshot_id,
         },
     )
 
@@ -338,3 +418,31 @@ def _model_result(
             ],
         },
     )
+
+
+def _artifact_result(
+    namespace: argparse.Namespace,
+    database_path: Path,
+) -> CliCommandResult:
+    if namespace.artifact_command == "inspect":
+        payload = read_artifact_detail(
+            database_path=database_path,
+            session_id=namespace.session_id,
+            artifact_id=namespace.artifact_id,
+        )
+        return CliCommandResult(command="artifact", payload=payload)
+    if namespace.artifact_command == "read":
+        payload = read_artifact_content(
+            database_path=database_path,
+            session_id=namespace.session_id,
+            artifact_id=namespace.artifact_id,
+        )
+        return CliCommandResult(command="artifact", payload=payload)
+    if namespace.artifact_command == "prune":
+        payload = prune_artifact(
+            database_path=database_path,
+            session_id=namespace.session_id,
+            artifact_id=namespace.artifact_id,
+        )
+        return CliCommandResult(command="artifact", payload=payload)
+    raise ValueError(f"unsupported artifact command: {namespace.artifact_command}")

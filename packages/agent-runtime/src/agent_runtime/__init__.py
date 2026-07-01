@@ -1,5 +1,11 @@
 """Runtime package for Zebra Agent."""
 
+from agent_core.ports.runtime import (
+    RuntimeCapabilityError,
+    RuntimeHandle,
+    RuntimeSnapshot,
+)
+
 from agent_runtime.adapters.local import LocalRuntime
 from agent_runtime.git_commit import (
     WorkspaceCommitCommand,
@@ -22,6 +28,9 @@ __all__ = [
     "LocalToolGateway",
     "LocalWorkspace",
     "LocalWorktree",
+    "RuntimeCapabilityError",
+    "RuntimeHandle",
+    "RuntimeSnapshot",
     "WorkspaceCommitCommand",
     "WorkspaceCommitError",
     "WorkspaceCommitResult",

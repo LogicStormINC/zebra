@@ -1,5 +1,5 @@
 from agent_core.domain.events import EventActor, EventType
-from agent_core.domain.policies import PolicyDecisionType
+from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.tools import ToolCallStatus
 from agent_core.harness.hooks import (
     NoopPlanner,
@@ -116,13 +116,11 @@ class SingleAttemptOrchestrator:
             HarnessEventDraft(
                 event_type=EventType.POLICY_DECISION_MADE,
                 actor=EventActor.POLICY,
-                payload={
-                    "attempt_number": context.attempt.number,
-                    "decision": decision.decision.value,
-                    "reason": decision.reason,
-                    "policy_profile": decision.policy_profile,
-                    "tool_name": tool_call.name,
-                },
+                payload=_policy_decision_payload(
+                    attempt_number=context.attempt.number,
+                    tool_name=tool_call.name,
+                    decision=decision,
+                ),
             )
         )
         if decision.decision is not PolicyDecisionType.ALLOW:
@@ -131,12 +129,11 @@ class SingleAttemptOrchestrator:
                     HarnessEventDraft(
                         event_type=EventType.APPROVAL_REQUESTED,
                         actor=EventActor.POLICY,
-                        payload={
-                            "attempt_number": context.attempt.number,
-                            "reason": decision.reason,
-                            "policy_profile": decision.policy_profile,
-                            "tool_name": tool_call.name,
-                        },
+                        payload=_approval_requested_payload(
+                            attempt_number=context.attempt.number,
+                            tool_name=tool_call.name,
+                            decision=decision,
+                        ),
                     )
                 )
             return HarnessAttemptResult(
@@ -231,3 +228,50 @@ class SingleAttemptOrchestrator:
             },
             emitted_events=tuple(emitted_events),
         )
+
+
+def _policy_decision_payload(
+    *,
+    attempt_number: int,
+    tool_name: str,
+    decision: PolicyDecision,
+) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "attempt_number": attempt_number,
+        "decision": decision.decision.value,
+        "reason": decision.reason,
+        "policy_profile": decision.policy_profile,
+        "tool_name": tool_name,
+    }
+    _extend_proxy_policy_payload(payload, decision)
+    return payload
+
+
+def _approval_requested_payload(
+    *,
+    attempt_number: int,
+    tool_name: str,
+    decision: PolicyDecision,
+) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "attempt_number": attempt_number,
+        "reason": decision.reason,
+        "policy_profile": decision.policy_profile,
+        "tool_name": tool_name,
+    }
+    _extend_proxy_policy_payload(payload, decision)
+    return payload
+
+
+def _extend_proxy_policy_payload(
+    payload: dict[str, object],
+    decision: PolicyDecision,
+) -> None:
+    if decision.route is not None:
+        payload["route"] = decision.route
+    if decision.target is not None:
+        payload["target"] = decision.target
+    if decision.network_profile is not None:
+        payload["network_profile"] = decision.network_profile
+    if decision.scope:
+        payload["scope"] = list(decision.scope)

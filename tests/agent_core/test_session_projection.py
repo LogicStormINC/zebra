@@ -208,3 +208,127 @@ def test_rebuild_session_requires_title_in_created_event() -> None:
             payload={},
             created_at=created_at,
         )
+
+
+def test_rebuild_session_persists_proxy_approval_context() -> None:
+    session_id = new_session_id()
+    created_at = datetime(2026, 6, 18, 11, 0, tzinfo=UTC)
+
+    session = rebuild_session(
+        [
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=0,
+                event_type=EventType.SESSION_CREATED,
+                actor=EventActor.SYSTEM,
+                payload={"title": "proxy approval"},
+                created_at=created_at,
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=1,
+                event_type=EventType.TASK_PREPARED,
+                actor=EventActor.HARNESS,
+                payload={"title": "proxy approval", "user_input": "continue"},
+                created_at=created_at + timedelta(milliseconds=500),
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=2,
+                event_type=EventType.HARNESS_ATTEMPT_STARTED,
+                actor=EventActor.HARNESS,
+                created_at=created_at + timedelta(milliseconds=750),
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=3,
+                event_type=EventType.APPROVAL_REQUESTED,
+                actor=EventActor.POLICY,
+                payload={
+                    "tool_name": "mcp.github.create_pull_request",
+                    "reason": "proxy-routed external tool execution in test",
+                    "policy_profile": "full_access",
+                    "route": "mcp_proxy",
+                    "target": "github.create_pull_request",
+                    "network_profile": "mcp-proxy-only",
+                    "scope": [
+                        "tool:mcp.github.create_pull_request",
+                        "route:mcp_proxy",
+                    ],
+                },
+                created_at=created_at + timedelta(seconds=1),
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=4,
+                event_type=EventType.APPROVAL_GRANTED,
+                actor=EventActor.USER,
+                payload={"operator": "alice", "reason": "approved"},
+                created_at=created_at + timedelta(seconds=2),
+            ),
+        ]
+    )
+
+    assert session.status is SessionStatus.RUNNING
+    assert session.approval_context is not None
+    assert session.approval_context.tool_name == "mcp.github.create_pull_request"
+    assert session.approval_context.route == "mcp_proxy"
+    assert session.approval_context.target == "github.create_pull_request"
+    assert session.approval_context.network_profile == "mcp-proxy-only"
+    assert session.approval_context.scope == (
+        "tool:mcp.github.create_pull_request",
+        "route:mcp_proxy",
+    )
+
+
+def test_rebuild_session_applies_suspend_and_resume_transitions() -> None:
+    session_id = new_session_id()
+    created_at = datetime(2026, 6, 29, 20, 0, tzinfo=UTC)
+
+    session = rebuild_session(
+        [
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=0,
+                event_type=EventType.SESSION_CREATED,
+                actor=EventActor.SYSTEM,
+                payload={"title": "suspend and resume"},
+                created_at=created_at,
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=1,
+                event_type=EventType.TASK_PREPARED,
+                actor=EventActor.HARNESS,
+                payload={"title": "suspend and resume", "user_input": "continue"},
+                created_at=created_at + timedelta(seconds=1),
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=2,
+                event_type=EventType.SESSION_SUSPENDED,
+                actor=EventActor.SYSTEM,
+                payload={
+                    "runtime_name": "local",
+                    "snapshot_id": "snap-001",
+                    "snapshot_path": "/tmp/snap-001",
+                },
+                created_at=created_at + timedelta(seconds=2),
+            ),
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=3,
+                event_type=EventType.SESSION_RESUMED,
+                actor=EventActor.SYSTEM,
+                payload={
+                    "runtime_name": "local",
+                    "snapshot_id": "snap-001",
+                    "workspace_root": "/tmp/restored-001",
+                },
+                created_at=created_at + timedelta(seconds=3),
+            ),
+        ]
+    )
+
+    assert session.status is SessionStatus.READY
+    assert session.current_sequence == 3

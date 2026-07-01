@@ -4,6 +4,13 @@ from enum import StrEnum
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.tools import ToolCall
 
+from agent_security.mcp_proxy_policy import (
+    ToolEgressMetadata,
+    ToolEgressRoute,
+    classify_tool_egress,
+)
+from agent_security.network_profile import DEFAULT_NETWORK_PROFILE, NetworkProfile
+
 
 class PolicyProfile(StrEnum):
     READ_ONLY = "read_only"
@@ -23,6 +30,9 @@ class ApprovalRequest:
     risk: ApprovalRisk
     reason: str
     scope: tuple[str, ...]
+    route: ToolEgressRoute | None = None
+    target: str | None = None
+    network_profile: str | None = None
 
     def __post_init__(self) -> None:
         if not self.tool_name.strip():
@@ -34,6 +44,10 @@ class ApprovalRequest:
         for item in self.scope:
             if not item.strip():
                 raise ValueError("approval request scope must not contain blanks")
+        if self.target is not None and not self.target.strip():
+            raise ValueError("approval request target must not be blank")
+        if self.network_profile is not None and not self.network_profile.strip():
+            raise ValueError("approval request network_profile must not be blank")
 
 
 READ_ONLY_TOOLS = frozenset({"files.read", "git.status"})
@@ -53,12 +67,18 @@ PATH_ARGUMENTS_BY_TOOL = {
 @dataclass(frozen=True)
 class LocalPolicyEngine:
     profile: PolicyProfile = PolicyProfile.READ_ONLY
+    network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE
 
     def evaluate_tool_call(self, tool_call: ToolCall) -> PolicyDecision:
         tool_name = tool_call.name
         path_risk_reason = _path_risk_reason(tool_call)
         if path_risk_reason is not None:
             return _deny(self.profile, path_risk_reason)
+        egress = classify_tool_egress(tool_call, network_profile=self.network_profile)
+        if egress.route is ToolEgressRoute.BLOCKED:
+            return _deny(self.profile, _blocked_route_reason(egress))
+        if egress.route is ToolEgressRoute.MCP_PROXY:
+            return _approval(self.profile, _proxy_route_reason(egress))
         if self.profile is PolicyProfile.READ_ONLY:
             return _decision_for_read_only(tool_name, self.profile)
         if self.profile is PolicyProfile.WORKSPACE_WRITE:
@@ -73,15 +93,21 @@ def policy_profile() -> str:
 def build_approval_request(
     tool_call: ToolCall,
     decision: PolicyDecision,
+    *,
+    network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
 ) -> ApprovalRequest | None:
     if decision.decision is not PolicyDecisionType.REQUIRE_APPROVAL:
         return None
+    egress = classify_tool_egress(tool_call, network_profile=network_profile)
     return ApprovalRequest(
         tool_name=tool_call.name,
         policy_profile=decision.policy_profile,
         risk=_approval_risk(decision.reason),
         reason=decision.reason,
-        scope=_approval_scope(tool_call),
+        scope=_approval_scope(tool_call, egress),
+        route=egress.route,
+        target=egress.target,
+        network_profile=egress.network_profile,
     )
 
 
@@ -90,7 +116,7 @@ def _decision_for_read_only(
     profile: PolicyProfile,
 ) -> PolicyDecision:
     if tool_name in READ_ONLY_TOOLS:
-        return _allow(profile, f"{tool_name} is allowed by read-only policy")
+        return _allow(profile, f"{tool_name} is allowed by read-only policy on local route")
     return _deny(profile, f"{tool_name} is not allowed by read-only policy")
 
 
@@ -99,9 +125,15 @@ def _decision_for_workspace_write(
     profile: PolicyProfile,
 ) -> PolicyDecision:
     if tool_name in WORKSPACE_WRITE_TOOLS:
-        return _allow(profile, f"{tool_name} is allowed by workspace-write policy")
+        return _allow(
+            profile,
+            f"{tool_name} is allowed by workspace-write policy on local route",
+        )
     if tool_name == "command.run":
-        return _approval(profile, "command.run requires approval in workspace-write policy")
+        return _approval(
+            profile,
+            "command.run requires approval in workspace-write policy on local route",
+        )
     return _deny(profile, f"{tool_name} is not a known workspace-write tool")
 
 
@@ -115,7 +147,7 @@ def _decision_for_full_access(
         if risk_reason is not None:
             return _approval(profile, risk_reason)
     if tool_name in FULL_ACCESS_TOOLS:
-        return _allow(profile, f"{tool_name} is allowed by full-access policy")
+        return _allow(profile, f"{tool_name} is allowed by full-access policy on local route")
     return _deny(profile, f"{tool_name} is not a known full-access tool")
 
 
@@ -199,8 +231,15 @@ def _approval_risk(reason: str) -> ApprovalRisk:
     return ApprovalRisk.MEDIUM
 
 
-def _approval_scope(tool_call: ToolCall) -> tuple[str, ...]:
+def _approval_scope(
+    tool_call: ToolCall,
+    egress: ToolEgressMetadata,
+) -> tuple[str, ...]:
     entries = [f"tool:{tool_call.name}"]
+    entries.append(f"route:{egress.route.value}")
+    entries.append(f"network_profile:{egress.network_profile}")
+    if egress.target is not None:
+        entries.append(f"target:{egress.target}")
     command = tool_call.arguments.get("command")
     if isinstance(command, list | tuple) and command:
         executable = command[0]
@@ -233,4 +272,20 @@ def _deny(profile: PolicyProfile, reason: str) -> PolicyDecision:
         decision=PolicyDecisionType.DENY,
         reason=reason,
         policy_profile=profile.value,
+    )
+
+
+def _proxy_route_reason(egress: ToolEgressMetadata) -> str:
+    target = egress.target or egress.tool_name
+    return (
+        f"{egress.tool_name} requires approval for proxy-routed external tool execution "
+        f"to {target} under network profile {egress.network_profile}"
+    )
+
+
+def _blocked_route_reason(egress: ToolEgressMetadata) -> str:
+    target = egress.target or egress.tool_name
+    return (
+        f"{egress.tool_name} is blocked on external route {target} because network profile "
+        f"{egress.network_profile} does not allow mcp proxy egress"
     )

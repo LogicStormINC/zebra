@@ -1,5 +1,5 @@
 from agent_core.domain.events import EventType, SessionEvent
-from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 
 
 class SessionProjectionError(ValueError):
@@ -48,12 +48,14 @@ def apply_event(session: Session, event: SessionEvent) -> Session:
     if next_status is not None and next_status is not projected.status:
         projected = projected.transition_to(next_status, updated_at=event.created_at)
 
-    return projected.model_copy(
-        update={
-            "updated_at": event.created_at,
-            "current_sequence": event.sequence,
-        }
-    )
+    updates: dict[str, object] = {
+        "updated_at": event.created_at,
+        "current_sequence": event.sequence,
+    }
+    approval_context = _approval_context_from_event(event)
+    if approval_context is not None:
+        updates["approval_context"] = approval_context
+    return projected.model_copy(update=updates)
 
 
 def _session_title_from_event(event: SessionEvent) -> str:
@@ -75,8 +77,43 @@ def _next_status_for_event(event: SessionEvent) -> SessionStatus | None:
         EventType.APPROVAL_REQUESTED: SessionStatus.WAITING_APPROVAL,
         EventType.APPROVAL_GRANTED: SessionStatus.RUNNING,
         EventType.APPROVAL_REJECTED: SessionStatus.FAILED,
+        EventType.SESSION_SUSPENDED: SessionStatus.SUSPENDED,
+        EventType.SESSION_RESUMED: SessionStatus.READY,
         EventType.SESSION_COMPLETED: SessionStatus.COMPLETED,
         EventType.SESSION_FAILED: SessionStatus.FAILED,
         EventType.SESSION_CANCELLED: SessionStatus.CANCELLED,
     }
     return status_map.get(event.event_type)
+
+
+def _approval_context_from_event(event: SessionEvent) -> ApprovalContext | None:
+    if event.event_type is not EventType.APPROVAL_REQUESTED:
+        return None
+    tool_name = _optional_payload_string(event, "tool_name")
+    reason = _optional_payload_string(event, "reason")
+    policy_profile = _optional_payload_string(event, "policy_profile")
+    if tool_name is None or reason is None or policy_profile is None:
+        return None
+    return ApprovalContext(
+        tool_name=tool_name,
+        reason=reason,
+        policy_profile=policy_profile,
+        route=_optional_payload_string(event, "route"),
+        target=_optional_payload_string(event, "target"),
+        network_profile=_optional_payload_string(event, "network_profile"),
+        scope=_payload_scope(event),
+    )
+
+
+def _optional_payload_string(event: SessionEvent, key: str) -> str | None:
+    value = event.payload.get(key)
+    if isinstance(value, str) and value.strip():
+        return value
+    return None
+
+
+def _payload_scope(event: SessionEvent) -> tuple[str, ...]:
+    scope = event.payload.get("scope")
+    if not isinstance(scope, list | tuple):
+        return ()
+    return tuple(item for item in scope if isinstance(item, str) and item.strip())

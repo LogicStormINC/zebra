@@ -17,9 +17,41 @@ class SessionStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
+class ApprovalContext(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    tool_name: str
+    reason: str
+    policy_profile: str
+    route: str | None = None
+    target: str | None = None
+    network_profile: str | None = None
+    scope: tuple[str, ...] = ()
+
+    def to_mapping(self) -> dict[str, object]:
+        mapping: dict[str, object] = {
+            "tool_name": self.tool_name,
+            "reason": self.reason,
+            "policy_profile": self.policy_profile,
+        }
+        if self.route is not None:
+            mapping["route"] = self.route
+        if self.target is not None:
+            mapping["target"] = self.target
+        if self.network_profile is not None:
+            mapping["network_profile"] = self.network_profile
+        if self.scope:
+            mapping["scope"] = list(self.scope)
+        return mapping
+
+
 _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
     SessionStatus.CREATED: {SessionStatus.READY, SessionStatus.CANCELLED},
-    SessionStatus.READY: {SessionStatus.RUNNING, SessionStatus.CANCELLED},
+    SessionStatus.READY: {
+        SessionStatus.RUNNING,
+        SessionStatus.SUSPENDED,
+        SessionStatus.CANCELLED,
+    },
     SessionStatus.RUNNING: {
         SessionStatus.WAITING_APPROVAL,
         SessionStatus.SUSPENDED,
@@ -48,6 +80,7 @@ class Session(BaseModel):
     created_at: datetime
     updated_at: datetime
     current_sequence: int = Field(default=0, ge=0)
+    approval_context: ApprovalContext | None = None
 
     @classmethod
     def create(cls, *, title: str, created_at: datetime | None = None) -> "Session":
