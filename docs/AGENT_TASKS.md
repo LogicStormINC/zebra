@@ -6359,8 +6359,8 @@ implementation phase.
 
 ### P51-TEST-01 - Approval Decision Cross-Surface Contract Matrix
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P50-CLOSE-01`
 - Branch: `codex/p51-test-01-approval-decision-contract-matrix`
@@ -6379,13 +6379,13 @@ future operator decision changes do not drift across control surfaces.
 
 #### Acceptance
 
-- [ ] API and CLI approval decision output parity is explicit and regression-tested.
-- [ ] Grant, reject, invalid-state, and missing-session paths remain backward compatible across both surfaces.
-- [ ] Stable approval decision result fields stay locked without overfitting CLI-only context.
+- [x] API and CLI approval decision output parity is explicit and regression-tested.
+- [x] Grant, reject, invalid-state, and missing-session paths remain backward compatible across both surfaces.
+- [x] Stable approval decision result fields stay locked without overfitting CLI-only context.
 
 ### P51-CLOSE-01 - Phase 51 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P51-TEST-01`

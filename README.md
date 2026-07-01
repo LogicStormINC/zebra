@@ -87,6 +87,7 @@ The next milestone is `Phase 51 - Approval Decision Cross-Surface Parity`. The c
 - `docs/Phase28_Durable_Artifact_Storage_And_Retrieval_验收记录.md` records the completed durable artifact storage and retrieval phase
 - Phase 50 approval queue CLI and operator parity is complete with API and CLI coverage
 - Phase 50 now has both local CLI approval reads and a dedicated approval queue/detail API-vs-CLI contract matrix with CLI-local `database` normalization
+- Phase 51 now has a dedicated approval decision API-vs-CLI contract matrix with CLI-local `database` normalization
 - the next ready implementation lane is approval decision cross-surface parity
 
 Read in this order:

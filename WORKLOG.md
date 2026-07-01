@@ -1,5 +1,18 @@
 # Progress Log
 
+## 2026-07-01 Phase 51 Approval Decision Contract Matrix
+
+- claimed `P51-TEST-01` on `codex/p51-test-01-approval-decision-contract-matrix`
+- aligning CLI approval decision payloads with API responses while preserving CLI-local `database` context
+- adding cross-surface regression coverage for grant, reject, invalid-state, and missing-session approval decisions
+- validation:
+  - `make sync`
+  - `uv run pytest tests/test_approval_decision_contract_matrix.py tests/api/test_approval_api_app.py tests/api/test_http_approvals.py tests/cli/test_cli_commands.py`
+  - `uv run ruff check --fix apps/cli/src/zebra_agent_cli/cli.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/approval_decision_write.py apps/cli/src/zebra_agent_cli/cli.py tests/test_approval_decision_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
 ## 2026-07-01 Phase 50 Closeout And Phase 51 Planning
 
 - claimed `P50-CLOSE-01` on `codex/p50-closeout-next-plan`
