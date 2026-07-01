@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 50 ready; approval queue CLI and operator parity is next on top of the completed Phase 49 session pull-request operator parity baseline.
+> Current execution range: Phase 51 ready; approval decision cross-surface parity is next on top of the completed Phase 50 approval queue CLI and operator parity baseline.
 
 ## Global Rules
 
@@ -6332,8 +6332,8 @@ future approval-read changes do not drift across operator control paths.
 
 ### P50-CLOSE-01 - Phase 50 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P50-TEST-01`
 - Branch: `codex/p50-closeout-next-plan`
@@ -6352,5 +6352,58 @@ implementation phase.
 
 #### Acceptance
 
-- [ ] Approval queue operator parity evidence is recorded.
+- [x] Approval queue operator parity evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 51 Task Board
+
+### P51-TEST-01 - Approval Decision Cross-Surface Contract Matrix
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `TEST`
+- Depends on: `P50-CLOSE-01`
+- Branch: `codex/p51-test-01-approval-decision-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI approval decision output so
+future operator decision changes do not drift across control surfaces.
+
+#### Deliverables
+
+- cross-surface approval decision regression matrix
+- normalization rules for CLI-local context when needed
+- documented parity boundary for API and CLI approval decision results
+
+#### Acceptance
+
+- [ ] API and CLI approval decision output parity is explicit and regression-tested.
+- [ ] Grant, reject, invalid-state, and missing-session paths remain backward compatible across both surfaces.
+- [ ] Stable approval decision result fields stay locked without overfitting CLI-only context.
+
+### P51-CLOSE-01 - Phase 51 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P51-TEST-01`
+- Branch: `codex/p51-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 51 with approval decision operator parity evidence and define the
+next implementation phase.
+
+#### Deliverables
+
+- Phase 51 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Approval decision operator parity evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.
