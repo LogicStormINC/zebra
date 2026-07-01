@@ -6168,8 +6168,8 @@ local delivery changes do not drift across operator control paths.
 
 ### P48-CLOSE-01 - Phase 48 Closeout And Next Planning
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P48-TEST-01`
 - Branch: `codex/p48-closeout-next-plan`
@@ -6188,5 +6188,88 @@ implementation phase.
 
 #### Acceptance
 
-- [ ] Session commit operator parity evidence is recorded.
+- [x] Session commit operator parity evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 49 Task Board
+
+### P49-CLI-01 - Session Pull Request CLI Delivery Surface
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P48-CLOSE-01`
+- Branch: `codex/p49-cli-01-session-pull-request-read`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose a local CLI control surface for session pull-request planning and
+guarded execution so operators do not need the HTTP API for routine local SCM
+delivery completion.
+
+#### Deliverables
+
+- CLI command for session pull-request execution
+- machine-readable local output for dry-run, created, unavailable,
+  policy-blocked, and missing-session pull-request paths
+- regression coverage for idempotent replay and invalid pull-request payload
+  handling
+
+#### Acceptance
+
+- [ ] Operators can open one session pull request from the CLI.
+- [ ] Pull-request success and failure states stay explicit and machine-readable.
+- [ ] Existing API pull-request behavior remains backward compatible.
+
+### P49-TEST-01 - Session Pull Request Cross-Surface Contract Matrix
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `TEST`
+- Depends on: `P49-CLI-01`
+- Branch: `codex/p49-test-01-session-pull-request-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI session pull-request output so
+future delivery changes do not drift across operator control paths.
+
+#### Deliverables
+
+- cross-surface session pull-request regression matrix
+- normalization rules for CLI-local context and transport-specific request
+  metadata
+- documented parity boundary for API and CLI pull-request results
+
+#### Acceptance
+
+- [ ] API and CLI session pull-request output parity is explicit and regression-tested.
+- [ ] Stable pull-request result fields stay locked without overfitting transport-specific context.
+- [ ] Dry-run, created, unavailable, missing-session, and idempotent replay paths remain backward compatible across both surfaces.
+
+### P49-CLOSE-01 - Phase 49 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P49-TEST-01`
+- Branch: `codex/p49-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 49 with session pull-request operator parity evidence and define
+the next implementation phase.
+
+#### Deliverables
+
+- Phase 49 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Session pull-request operator parity evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.
