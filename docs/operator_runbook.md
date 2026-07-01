@@ -376,6 +376,15 @@ curl -X POST http://127.0.0.1:8000/sessions/<session_id>/commit \
   -d '{"message":"Implement reviewed changes"}'
 ```
 
+Create the same local Git commit directly from the CLI without the HTTP API:
+
+```bash
+uv run zebra-agent commit <session_id> \
+  --message "Implement reviewed changes" \
+  --idempotency-key commit-<unique-retry-key> \
+  --database .zebra-agent/operator-runbook.sqlite
+```
+
 Plan a pull request for a committed session workspace:
 
 ```bash

@@ -4248,3 +4248,22 @@
   - `README.md`
 - 验证：
   - `make check`
+
+## 2026-07-01 P48-CLI-01 Session Commit CLI Delivery Surface
+
+- 执行 `P48-CLI-01 - Session Commit CLI Delivery Surface`
+- 行为更新：
+  - 新增 `apps/cli/src/zebra_agent_cli/session_commit_write.py`
+  - 新增顶层 CLI 命令 `zebra-agent commit <session_id> --message ...`
+  - CLI 复用现有 `SessionCommitApi`，继承 policy、idempotency、delivery-audit 与 runtime commit 语义
+  - 本地 CLI 现在可直接执行 session commit，不再依赖 HTTP API
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `docs/operator_runbook.md`
+- 验证：
+  - `uv run pytest tests/cli/test_cli_session_commit.py tests/api/test_session_commit.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli_types.py apps/cli/src/zebra_agent_cli/session_commit_write.py tests/cli/test_cli_session_commit.py`
+  - `uv run mypy packages apps`
+  - `make check`
