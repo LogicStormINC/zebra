@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 43 ready; shared artifact audit metadata convergence is next on top of the completed Phase 42 control-audit helper baseline.
+> Current execution range: Phase 45 ready; delivery-audit CLI and operator parity is next on top of the completed Phase 44 audit contract coverage baseline.
 
 ## Global Rules
 
@@ -5825,7 +5825,7 @@ next implementation phase.
 
 ### P44-TEST-01 - Artifact Audit Metadata Contract Coverage
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P43-CLOSE-01`
@@ -5851,11 +5851,11 @@ so read-side and control-side audit metadata boundaries stay stable.
 
 ### P44-CLOSE-01 - Phase 44 Closeout And Next Planning
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P44-TEST-01`
-- Branch: `codex/p44-closeout-next-plan`
+- Branch: `codex/p44-closeout-next-plan-clean`
 - Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
@@ -5871,5 +5871,84 @@ implementation phase.
 
 #### Acceptance
 
-- [ ] Artifact audit contract evidence is recorded.
+- [x] Artifact audit contract evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 45 Task Board
+
+### P45-CLI-01 - Delivery Audit CLI Read Surface
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P44-CLOSE-01`
+- Branch: `codex/p45-cli-01-delivery-audit-read`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose a local CLI read surface for session delivery-audit inspection so
+operators do not need the HTTP API for routine audit lookup.
+
+#### Deliverables
+
+- CLI command for session delivery-audit inspection
+- machine-readable local output for delivery-audit records
+- regression coverage for populated, empty, and missing-session audit reads
+
+#### Acceptance
+
+- [ ] Operators can inspect one session's delivery-audit history from the CLI.
+- [ ] Missing-session and empty-history semantics stay explicit and machine-readable.
+- [ ] Existing API delivery-audit behavior remains backward compatible.
+
+### P45-TEST-01 - Delivery Audit Cross-Surface Contract Matrix
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `TEST`
+- Depends on: `P45-CLI-01`
+- Branch: `codex/p45-test-01-delivery-audit-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI delivery-audit output so future
+audit-surface changes do not drift across operators' read paths.
+
+#### Deliverables
+
+- cross-surface delivery-audit regression matrix
+- normalization rules for non-deterministic audit fields when needed
+- documented parity boundary for API and CLI audit reads
+
+#### Acceptance
+
+- [ ] API and CLI delivery-audit output parity is explicit and regression-tested.
+- [ ] Stable audit fields stay locked without overfitting transient timestamps.
+- [ ] Artifact and SCM audit records remain backward compatible across both surfaces.
+
+### P45-CLOSE-01 - Phase 45 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P45-TEST-01`
+- Branch: `codex/p45-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 45 with delivery-audit operator parity evidence and define the
+next implementation phase.
+
+#### Deliverables
+
+- Phase 45 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Delivery-audit operator parity evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

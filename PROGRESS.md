@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 44 - Artifact Audit Metadata Contract Coverage`
-- Repository status: `phase 44 ready`
+- Active phase: `Phase 45 - Delivery Audit CLI And Operator Parity`
+- Repository status: `phase 45 ready`
 - Current focus:
-  - add explicit artifact delivery-audit contract coverage
-  - normalize non-deterministic audit fields where parity needs stable comparison
+  - add local CLI delivery-audit inspection parity
+  - lock cross-surface delivery-audit output parity
 - Phase 38 shared artifact access audit metadata helper is complete on `codex/p38-obs-01-artifact-access-audit-helper`, centralizing deterministic allow, deny, and prune audit metadata assembly in `agent-security` and reusing it across API read and prune audit paths
 - Phase 38 API shared denial-response adoption is complete on `codex/p38-api-01-artifact-denial-response-adoption`, centralizing API read-side deny and unavailable response shaping while preserving the current operator-facing access contract
 - Phase 38 is closed with `docs/Phase38_Shared_Artifact_Audit_Metadata_And_Denial_Response_Reuse_验收记录.md`
@@ -264,9 +264,12 @@
 
 - `P35-API-01 - Artifact Success Envelope Normalization` is complete on `codex/p35-api-01-artifact-success-envelope-normalization`
 - `P35-CLI-01 - Artifact Envelope Consistency Parity` is complete on `codex/p35-cli-01-artifact-envelope-consistency-parity`
-- `P44-TEST-01 - Artifact Audit Metadata Contract Coverage` is in review on `codex/p44-test-01-artifact-audit-contract-coverage`
+- `P44-TEST-01 - Artifact Audit Metadata Contract Coverage` is complete on `codex/p44-test-01-artifact-audit-contract-coverage`
 - artifact delivery-audit regression coverage now locks one read-side denied path and one control-side success path, preserving the current `reason`, `retrieval_status`, `payload_artifact_id`, and `lifecycle_status` metadata boundaries while treating `created_at` as the only normalized non-deterministic field
-- `P44-CLOSE-01 - Phase 44 Closeout And Next Planning` is the documentation closeout lane for the artifact audit contract phase
+- Phase 44 is closed with `docs/Phase44_Artifact_Audit_Metadata_Contract_Coverage_验收记录.md`
+- `P45-CLI-01 - Delivery Audit CLI Read Surface` is ready on `codex/p45-cli-01-delivery-audit-read`
+- `P45-TEST-01 - Delivery Audit Cross-Surface Contract Matrix` is ready on `codex/p45-test-01-delivery-audit-contract-matrix`
+- `P45-CLOSE-01 - Phase 45 Closeout And Next Planning` is the documentation closeout lane for delivery-audit operator parity
 
 ## Active Documents
 
