@@ -284,7 +284,8 @@
 - Phase 47 is closed with `docs/Phase47_Session_Stream_CLI_And_Operator_Parity_验收记录.md`
 - `P48-CLI-01 - Session Commit CLI Delivery Surface` is complete on `codex/p48-cli-01-session-commit-read`
 - local operators can now create one session commit from the CLI with explicit committed, policy-blocked, unavailable, missing-session, invalid-request, and idempotent replay semantics
-- `P48-TEST-01 - Session Commit Cross-Surface Contract Matrix` is ready on `codex/p48-test-01-session-commit-contract-matrix`
+- `P48-TEST-01 - Session Commit Cross-Surface Contract Matrix` is complete on `codex/p48-test-01-session-commit-contract-matrix`
+- session commit parity rules are now locked through a shared contract matrix covering committed success, policy-blocked, clean-workspace unavailable, missing-session, and cross-surface idempotent replay while treating CLI-local `database` context as transport-specific
 - `P48-CLOSE-01 - Phase 48 Closeout And Next Planning` is the documentation closeout lane for session commit operator parity
 
 ## Active Documents
