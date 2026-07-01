@@ -4099,3 +4099,21 @@
   - `README.md`
 - 验证：
   - `make check`
+
+## 2026-07-01 P45-CLI-01 Delivery Audit CLI Read Surface
+
+- 执行 `P45-CLI-01 - Delivery Audit CLI Read Surface`
+- 行为更新：
+  - 新增 `apps/cli/src/zebra_agent_cli/delivery_audit_read.py`
+  - 新增顶层 CLI 命令 `zebra-agent delivery-audit <session_id>`
+  - 本地 CLI 现在可直接读取 session delivery-audit 历史，不再依赖 HTTP API
+  - 显式锁定 populated、empty、missing-session 三类 machine-readable 输出语义
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make sync`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/delivery_audit_read.py tests/cli/test_cli_delivery_audit.py`
+  - `uv run mypy packages apps`
+  - `uv run pytest tests/cli/test_cli_delivery_audit.py tests/cli/test_cli_commands.py tests/cli/test_cli_artifacts.py`
