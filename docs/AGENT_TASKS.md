@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 48 ready; session commit CLI and operator parity is next on top of the completed Phase 47 session stream operator parity baseline.
+> Current execution range: Phase 50 ready; approval queue CLI and operator parity is next on top of the completed Phase 49 session pull-request operator parity baseline.
 
 ## Global Rules
 
@@ -6251,8 +6251,8 @@ future delivery changes do not drift across operator control paths.
 
 ### P49-CLOSE-01 - Phase 49 Closeout And Next Planning
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P49-TEST-01`
 - Branch: `codex/p49-closeout-next-plan`
@@ -6271,5 +6271,86 @@ the next implementation phase.
 
 #### Acceptance
 
-- [ ] Session pull-request operator parity evidence is recorded.
+- [x] Session pull-request operator parity evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 50 Task Board
+
+### P50-CLI-01 - Approval Queue CLI Read Surface
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P49-CLOSE-01`
+- Branch: `codex/p50-cli-01-approval-queue-read`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose local CLI read surfaces for approval queue and approval detail inspection
+so operators do not need the HTTP API for routine approval triage.
+
+#### Deliverables
+
+- CLI command for approval queue inspection
+- CLI command for approval detail inspection
+- machine-readable local output for waiting-approval list, detail, and
+  missing-approval paths
+- regression coverage for queue and detail CLI reads
+
+#### Acceptance
+
+- [ ] Operators can inspect the waiting approval queue from the CLI.
+- [ ] Operators can inspect one approval detail from the CLI.
+- [ ] Existing API approval read behavior remains backward compatible.
+
+### P50-TEST-01 - Approval Queue Cross-Surface Contract Matrix
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `TEST`
+- Depends on: `P50-CLI-01`
+- Branch: `codex/p50-test-01-approval-queue-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI approval queue or detail output so
+future approval-read changes do not drift across operator control paths.
+
+#### Deliverables
+
+- cross-surface approval queue and detail regression matrix
+- normalization rules for CLI-local context when needed
+- documented parity boundary for API and CLI approval reads
+
+#### Acceptance
+
+- [ ] API and CLI approval queue or detail output parity is explicit and regression-tested.
+- [ ] Stable approval result fields stay locked without overfitting CLI-only context.
+- [ ] Waiting-approval list, detail, and missing-approval paths remain backward compatible across both surfaces.
+
+### P50-CLOSE-01 - Phase 50 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P50-TEST-01`
+- Branch: `codex/p50-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 50 with approval queue operator parity evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 50 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Approval queue operator parity evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

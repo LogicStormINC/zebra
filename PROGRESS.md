@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 49 - Session Pull Request CLI And Operator Parity`
-- Repository status: `phase 49 in progress`
+- Active phase: `Phase 50 - Approval Queue CLI And Operator Parity`
+- Repository status: `phase 50 ready`
 - Current focus:
-  - lock API and CLI session pull-request parity in `P49-TEST-01`
-  - preserve stable pull-request result fields without overfitting CLI-local context
+  - add local CLI approval queue and detail read surfaces in `P50-CLI-01`
+  - preserve stable approval read fields without overfitting CLI-local context
 - Phase 38 shared artifact access audit metadata helper is complete on `codex/p38-obs-01-artifact-access-audit-helper`, centralizing deterministic allow, deny, and prune audit metadata assembly in `agent-security` and reusing it across API read and prune audit paths
 - Phase 38 API shared denial-response adoption is complete on `codex/p38-api-01-artifact-denial-response-adoption`, centralizing API read-side deny and unavailable response shaping while preserving the current operator-facing access contract
 - Phase 38 is closed with `docs/Phase38_Shared_Artifact_Audit_Metadata_And_Denial_Response_Reuse_验收记录.md`
@@ -291,7 +291,10 @@
 - local operators can now open one session pull request from the CLI with explicit dry-run, created, unavailable, policy-blocked, missing-session, invalid-request, and idempotent replay semantics
 - `P49-TEST-01 - Session Pull Request Cross-Surface Contract Matrix` is complete on `codex/p49-test-01-session-pull-request-contract-matrix`
 - session pull-request parity rules are now locked through a shared contract matrix covering dry-run, created, policy-blocked, unavailable, missing-session, and cross-surface idempotent replay while treating CLI-local `database` context as transport-specific
-- `P49-CLOSE-01 - Phase 49 Closeout And Next Planning` is the documentation closeout lane for session pull-request operator parity
+- Phase 49 is closed with `docs/Phase49_Session_Pull_Request_CLI_And_Operator_Parity_验收记录.md`
+- `P50-CLI-01 - Approval Queue CLI Read Surface` is ready on `codex/p50-cli-01-approval-queue-read`
+- `P50-TEST-01 - Approval Queue Cross-Surface Contract Matrix` is locked behind the CLI read surface
+- `P50-CLOSE-01 - Phase 50 Closeout And Next Planning` is the documentation closeout lane for approval queue operator parity
 
 ## Active Documents
 
