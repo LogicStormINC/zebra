@@ -6115,8 +6115,8 @@ implementation phase.
 
 ### P48-CLI-01 - Session Commit CLI Delivery Surface
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P47-CLOSE-01`
 - Branch: `codex/p48-cli-01-session-commit-read`
@@ -6136,9 +6136,9 @@ not need the HTTP API for routine local delivery completion.
 
 #### Acceptance
 
-- [ ] Operators can create one session commit from the CLI.
-- [ ] Commit success and failure states stay explicit and machine-readable.
-- [ ] Existing API commit behavior remains backward compatible.
+- [x] Operators can create one session commit from the CLI.
+- [x] Commit success and failure states stay explicit and machine-readable.
+- [x] Existing API commit behavior remains backward compatible.
 
 ### P48-TEST-01 - Session Commit Cross-Surface Contract Matrix
 

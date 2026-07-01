@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 import argparse
-import json
 from collections.abc import Sequence
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal
 from uuid import UUID
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
@@ -41,42 +38,16 @@ from zebra_agent_cli.artifact_read import (
     read_artifact_content,
     read_artifact_detail,
 )
-from zebra_agent_cli.delivery_audit_read import read_delivery_audit
+from zebra_agent_cli.cli_types import CliCommandResult, CommandName
 from zebra_agent_cli.execution import (
     execute_durable_run,
     serialize_run_execution,
     serialize_trace_events,
 )
-from zebra_agent_cli.session_diff_read import read_session_diff
-from zebra_agent_cli.session_stream_read import read_session_stream
+from zebra_agent_cli.read_commands import add_read_subparsers, read_command_result
+from zebra_agent_cli.session_commit_write import commit_session
 from zebra_agent_cli.workspace_read import serialize_workspace_projection
 
-CommandName = Literal[
-    "run",
-    "resume",
-    "suspend",
-    "inspect",
-    "approve",
-    "model",
-    "artifact",
-    "diff",
-    "stream",
-    "delivery-audit",
-]
-
-@dataclass(frozen=True)
-class CliCommandResult:
-    command: CommandName
-    payload: dict[str, object]
-
-    def to_json(self) -> str:
-        return json.dumps(
-            {
-                "command": self.command,
-                **self.payload,
-            },
-            sort_keys=True,
-        )
 
 def execute(
     argv: Sequence[str],
@@ -102,28 +73,22 @@ def execute(
         return _approval_result(namespace, _database_path(namespace.database, active_settings))
     if command == "artifact":
         return _artifact_result(namespace, _database_path(namespace.database, active_settings))
-    if command == "diff":
-        return CliCommandResult(
-            command="diff",
-            payload=read_session_diff(
-                database_path=_database_path(namespace.database, active_settings),
-                session_id=namespace.session_id,
-            ),
+    if command in {"diff", "stream", "delivery-audit"}:
+        return read_command_result(
+            command,
+            session_id=namespace.session_id,
+            database_path=_database_path(namespace.database, active_settings),
         )
-    if command == "stream":
+    if command == "commit":
         return CliCommandResult(
-            command="stream",
-            payload=read_session_stream(
+            command="commit",
+            payload=commit_session(
                 database_path=_database_path(namespace.database, active_settings),
                 session_id=namespace.session_id,
-            ),
-        )
-    if command == "delivery-audit":
-        return CliCommandResult(
-            command="delivery-audit",
-            payload=read_delivery_audit(
-                database_path=_database_path(namespace.database, active_settings),
-                session_id=namespace.session_id,
+                message=namespace.message,
+                author_name=namespace.author_name,
+                author_email=namespace.author_email,
+                idempotency_key=namespace.idempotency_key,
             ),
         )
     if command == "model":
@@ -168,20 +133,15 @@ def _parser() -> argparse.ArgumentParser:
     inspect.add_argument("session_id")
     inspect.add_argument("--database")
 
-    diff = subcommands.add_parser("diff", help="Read one session workspace diff.")
-    diff.add_argument("session_id")
-    diff.add_argument("--database")
+    add_read_subparsers(subcommands)
 
-    stream = subcommands.add_parser("stream", help="Read one persisted session event stream.")
-    stream.add_argument("session_id")
-    stream.add_argument("--database")
-
-    delivery_audit = subcommands.add_parser(
-        "delivery-audit",
-        help="Read one session delivery-audit history.",
-    )
-    delivery_audit.add_argument("session_id")
-    delivery_audit.add_argument("--database")
+    commit = subcommands.add_parser("commit", help="Create one local commit for a session.")
+    commit.add_argument("session_id")
+    commit.add_argument("--message", required=True)
+    commit.add_argument("--author-name", default="Zebra Agent")
+    commit.add_argument("--author-email", default="zebra-agent@example.local")
+    commit.add_argument("--idempotency-key")
+    commit.add_argument("--database")
 
     artifact = subcommands.add_parser("artifact", help="Inspect or read session artifacts.")
     artifact_subcommands = artifact.add_subparsers(dest="artifact_command", required=True)
