@@ -301,6 +301,20 @@ uv run zebra-agent delivery-audit <session_id> \
   --database .zebra-agent/operator-runbook.sqlite
 ```
 
+Inspect the waiting approval queue directly from the local CLI:
+
+```bash
+uv run zebra-agent approval queue \
+  --database .zebra-agent/operator-runbook.sqlite
+```
+
+Inspect one approval detail directly from the local CLI:
+
+```bash
+uv run zebra-agent approval inspect <approval_id> \
+  --database .zebra-agent/operator-runbook.sqlite
+```
+
 Append one more user message to an existing session:
 
 ```bash

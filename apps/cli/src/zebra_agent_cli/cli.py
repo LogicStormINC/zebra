@@ -74,11 +74,17 @@ def execute(
         return _approval_result(namespace, _database_path(namespace.database, active_settings))
     if command == "artifact":
         return _artifact_result(namespace, _database_path(namespace.database, active_settings))
+    if command == "approval":
+        return read_command_result(
+            command,
+            database_path=_database_path(namespace.database, active_settings),
+            approval_id=getattr(namespace, "approval_id", None),
+        )
     if command in {"diff", "stream", "delivery-audit"}:
         return read_command_result(
             command,
-            session_id=namespace.session_id,
             database_path=_database_path(namespace.database, active_settings),
+            session_id=namespace.session_id,
         )
     if command == "commit":
         return CliCommandResult(

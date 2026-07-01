@@ -6278,8 +6278,8 @@ the next implementation phase.
 
 ### P50-CLI-01 - Approval Queue CLI Read Surface
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P49-CLOSE-01`
 - Branch: `codex/p50-cli-01-approval-queue-read`
@@ -6300,9 +6300,9 @@ so operators do not need the HTTP API for routine approval triage.
 
 #### Acceptance
 
-- [ ] Operators can inspect the waiting approval queue from the CLI.
-- [ ] Operators can inspect one approval detail from the CLI.
-- [ ] Existing API approval read behavior remains backward compatible.
+- [x] Operators can inspect the waiting approval queue from the CLI.
+- [x] Operators can inspect one approval detail from the CLI.
+- [x] Existing API approval read behavior remains backward compatible.
 
 ### P50-TEST-01 - Approval Queue Cross-Surface Contract Matrix
 

@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026-07-01 Phase 50 CLI Approval Queue Read
+
+- claimed `P50-CLI-01` on `codex/p50-cli-01-approval-queue-read`
+- added local CLI `approval queue` and `approval inspect` read surfaces
+- kept the change path-scoped to `apps/cli/` and `tests/cli/`; did not widen into API or shared package extraction
+- validation:
+  - `make sync`
+  - `uv run pytest tests/cli/test_cli_approval_read.py tests/api/test_api_app.py tests/api/test_http_approvals.py tests/api/test_routes.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/approval_read.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py apps/cli/src/zebra_agent_cli/read_commands.py tests/cli/test_cli_approval_read.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
 ## 2026-06-28 Phase 19 Closeout And Phase 20 Planning
 
 - 执行 `P19-CLOSE-01 - Phase 19 Closeout And Next Planning`

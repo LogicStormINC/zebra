@@ -9,6 +9,7 @@ CommandName = Literal[
     "resume",
     "suspend",
     "inspect",
+    "approval",
     "approve",
     "model",
     "artifact",
