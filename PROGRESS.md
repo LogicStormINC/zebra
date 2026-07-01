@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 46 - Session Diff CLI And Operator Parity`
-- Repository status: `phase 46 in progress`
+- Active phase: `Phase 47 - Session Stream CLI And Operator Parity`
+- Repository status: `phase 47 ready`
 - Current focus:
-  - close Phase 46 with acceptance evidence
-  - define the next implementation slice after session diff operator parity
+  - add local CLI session stream inspection parity
+  - lock cross-surface session stream output parity
 - Phase 38 shared artifact access audit metadata helper is complete on `codex/p38-obs-01-artifact-access-audit-helper`, centralizing deterministic allow, deny, and prune audit metadata assembly in `agent-security` and reusing it across API read and prune audit paths
 - Phase 38 API shared denial-response adoption is complete on `codex/p38-api-01-artifact-denial-response-adoption`, centralizing API read-side deny and unavailable response shaping while preserving the current operator-facing access contract
 - Phase 38 is closed with `docs/Phase38_Shared_Artifact_Audit_Metadata_And_Denial_Response_Reuse_验收记录.md`
@@ -276,7 +276,10 @@
 - local operators can now inspect one session workspace diff from the CLI with explicit `ok`, `not_found`, and `diff_unavailable` semantics plus stable `clean`, `git_status`, and unified `diff` fields
 - `P46-TEST-01 - Session Diff Cross-Surface Contract Matrix` is complete on `codex/p46-test-01-session-diff-contract-matrix`
 - session diff parity rules are now locked through a shared contract matrix covering dirty, clean, missing-session, and non-git diff reads while treating CLI-local `database` context as a CLI-only field
-- `P46-CLOSE-01 - Phase 46 Closeout And Next Planning` is the documentation closeout lane for session diff operator parity
+- Phase 46 is closed with `docs/Phase46_Session_Diff_CLI_And_Operator_Parity_验收记录.md`
+- `P47-CLI-01 - Session Stream CLI Read Surface` is ready on `codex/p47-cli-01-session-stream-read`
+- `P47-TEST-01 - Session Stream Cross-Surface Contract Matrix` is ready on `codex/p47-test-01-session-stream-contract-matrix`
+- `P47-CLOSE-01 - Phase 47 Closeout And Next Planning` is the documentation closeout lane for session stream operator parity
 
 ## Active Documents
 

@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 46 ready; session diff CLI and operator parity is next on top of the completed Phase 45 delivery-audit operator parity baseline.
+> Current execution range: Phase 47 ready; session stream CLI and operator parity is next on top of the completed Phase 46 session diff operator parity baseline.
 
 ## Global Rules
 
@@ -6009,8 +6009,8 @@ workspace-inspection changes do not drift across operator read paths.
 
 ### P46-CLOSE-01 - Phase 46 Closeout And Next Planning
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P46-TEST-01`
 - Branch: `codex/p46-closeout-next-plan`
@@ -6029,5 +6029,84 @@ implementation phase.
 
 #### Acceptance
 
-- [ ] Session diff operator parity evidence is recorded.
+- [x] Session diff operator parity evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 47 Task Board
+
+### P47-CLI-01 - Session Stream CLI Read Surface
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P46-CLOSE-01`
+- Branch: `codex/p47-cli-01-session-stream-read`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose a local CLI read surface for session event-stream inspection so
+operators do not need the HTTP API for routine persisted replay lookup.
+
+#### Deliverables
+
+- CLI command for session stream inspection
+- machine-readable local output for ordered persisted session events
+- regression coverage for missing-session and bootstrap-only stream reads
+
+#### Acceptance
+
+- [ ] Operators can inspect one session event stream from the CLI.
+- [ ] Ordered event replay stays explicit and machine-readable.
+- [ ] Existing API stream behavior remains backward compatible.
+
+### P47-TEST-01 - Session Stream Cross-Surface Contract Matrix
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `TEST`
+- Depends on: `P47-CLI-01`
+- Branch: `codex/p47-test-01-session-stream-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API event replay and CLI session stream output
+so future operator replay changes do not drift across read paths.
+
+#### Deliverables
+
+- cross-surface session stream regression matrix
+- normalization rules for SSE frame versus CLI JSON event-list context
+- documented parity boundary for API and CLI stream reads
+
+#### Acceptance
+
+- [ ] API and CLI session stream output parity is explicit and regression-tested.
+- [ ] Stable event fields stay locked without overfitting transport-specific framing.
+- [ ] Bootstrap-only and later event replay remain backward compatible across both surfaces.
+
+### P47-CLOSE-01 - Phase 47 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P47-TEST-01`
+- Branch: `codex/p47-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 47 with session stream operator parity evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 47 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Session stream operator parity evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

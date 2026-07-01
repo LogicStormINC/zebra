@@ -4183,3 +4183,18 @@
 - 验证：
   - `uv run pytest tests/test_session_diff_contract_matrix.py tests/api/test_session_diff.py tests/cli/test_cli_session_diff.py`
   - `uv run ruff check tests/test_session_diff_contract_matrix.py`
+
+## 2026-07-01 Phase 46 Closeout And Phase 47 Planning
+
+- 执行 `P46-CLOSE-01 - Phase 46 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase46_Session_Diff_CLI_And_Operator_Parity_验收记录.md`
+  - 归档 Phase 46 的 session diff CLI parity 与 cross-surface contract matrix 验收结论
+  - 将下一阶段定义为 `Phase 47 - Session Stream CLI And Operator Parity`
+  - 新增 `P47-CLI-01`、`P47-TEST-01`、`P47-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
