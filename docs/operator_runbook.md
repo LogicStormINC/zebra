@@ -285,6 +285,14 @@ Read delivery audit records for one session:
 curl http://127.0.0.1:8000/sessions/<session_id>/delivery-audit
 ```
 
+Read the same delivery audit records directly from the local CLI without the
+HTTP API:
+
+```bash
+uv run zebra-agent delivery-audit <session_id> \
+  --database .zebra-agent/operator-runbook.sqlite
+```
+
 Append one more user message to an existing session:
 
 ```bash
