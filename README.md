@@ -86,6 +86,7 @@ The next milestone is `Phase 50 - Approval Queue CLI And Operator Parity`. The c
 - artifact previews now expose explicit redaction/truncation state, and artifact detail/content reads are now recorded in delivery audit
 - `docs/Phase28_Durable_Artifact_Storage_And_Retrieval_验收记录.md` records the completed durable artifact storage and retrieval phase
 - Phase 49 session pull-request operator parity is complete with API and CLI coverage, and approval queue CLI parity is the next ready implementation lane
+- the current Phase 50 branch adds local `approval queue` and `approval inspect` CLI reads for operators who do not want to go through the HTTP API
 
 Read in this order:
 
