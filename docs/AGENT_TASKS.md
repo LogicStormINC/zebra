@@ -6306,8 +6306,8 @@ so operators do not need the HTTP API for routine approval triage.
 
 ### P50-TEST-01 - Approval Queue Cross-Surface Contract Matrix
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P50-CLI-01`
 - Branch: `codex/p50-test-01-approval-queue-contract-matrix`
@@ -6326,13 +6326,13 @@ future approval-read changes do not drift across operator control paths.
 
 #### Acceptance
 
-- [ ] API and CLI approval queue or detail output parity is explicit and regression-tested.
-- [ ] Stable approval result fields stay locked without overfitting CLI-only context.
-- [ ] Waiting-approval list, detail, and missing-approval paths remain backward compatible across both surfaces.
+- [x] API and CLI approval queue or detail output parity is explicit and regression-tested.
+- [x] Stable approval result fields stay locked without overfitting CLI-only context.
+- [x] Waiting-approval list, detail, and missing-approval paths remain backward compatible across both surfaces.
 
 ### P50-CLOSE-01 - Phase 50 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P50-TEST-01`

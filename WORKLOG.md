@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026-07-01 Phase 50 Approval Read Contract Matrix
+
+- claimed `P50-TEST-01` on `codex/p50-test-01-approval-queue-contract-matrix`
+- adding API and CLI approval queue/detail parity coverage with CLI-local `database` normalization
+- work stays in `tests/` plus required task-board progress surfaces
+- validation:
+  - `make sync`
+  - `uv run pytest tests/test_approval_read_contract_matrix.py tests/cli/test_cli_approval_read.py tests/api/test_api_app.py tests/api/test_http_approvals.py tests/api/test_routes.py`
+  - `uv run ruff check tests/test_approval_read_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
 ## 2026-07-01 Phase 50 CLI Approval Queue Read
 
 - claimed `P50-CLI-01` on `codex/p50-cli-01-approval-queue-read`

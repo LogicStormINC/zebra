@@ -5,9 +5,10 @@
 - Active phase: `Phase 50 - Approval Queue CLI And Operator Parity`
 - Repository status: `phase 50 in progress`
 - Current focus:
-  - add approval queue and detail cross-surface parity coverage in `P50-TEST-01`
-  - lock the CLI-local `database` field outside the API parity boundary
+  - close Phase 50 with acceptance evidence in `P50-CLOSE-01`
+  - define the next operator-facing implementation lane after approval queue parity
   - `P50-CLI-01` is complete on `codex/p50-cli-01-approval-queue-read` with local `approval queue` and `approval inspect` read surfaces
+  - `P50-TEST-01` is complete on `codex/p50-test-01-approval-queue-contract-matrix` with approval queue/detail parity coverage and CLI-local `database` normalization
 - Phase 38 shared artifact access audit metadata helper is complete on `codex/p38-obs-01-artifact-access-audit-helper`, centralizing deterministic allow, deny, and prune audit metadata assembly in `agent-security` and reusing it across API read and prune audit paths
 - Phase 38 API shared denial-response adoption is complete on `codex/p38-api-01-artifact-denial-response-adoption`, centralizing API read-side deny and unavailable response shaping while preserving the current operator-facing access contract
 - Phase 38 is closed with `docs/Phase38_Shared_Artifact_Audit_Metadata_And_Denial_Response_Reuse_验收记录.md`
