@@ -48,6 +48,7 @@ from zebra_agent_cli.execution import (
     serialize_trace_events,
 )
 from zebra_agent_cli.session_diff_read import read_session_diff
+from zebra_agent_cli.session_stream_read import read_session_stream
 from zebra_agent_cli.workspace_read import serialize_workspace_projection
 
 CommandName = Literal[
@@ -59,9 +60,9 @@ CommandName = Literal[
     "model",
     "artifact",
     "diff",
+    "stream",
     "delivery-audit",
 ]
-
 
 @dataclass(frozen=True)
 class CliCommandResult:
@@ -76,7 +77,6 @@ class CliCommandResult:
             },
             sort_keys=True,
         )
-
 
 def execute(
     argv: Sequence[str],
@@ -106,6 +106,14 @@ def execute(
         return CliCommandResult(
             command="diff",
             payload=read_session_diff(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+            ),
+        )
+    if command == "stream":
+        return CliCommandResult(
+            command="stream",
+            payload=read_session_stream(
                 database_path=_database_path(namespace.database, active_settings),
                 session_id=namespace.session_id,
             ),
@@ -163,6 +171,10 @@ def _parser() -> argparse.ArgumentParser:
     diff = subcommands.add_parser("diff", help="Read one session workspace diff.")
     diff.add_argument("session_id")
     diff.add_argument("--database")
+
+    stream = subcommands.add_parser("stream", help="Read one persisted session event stream.")
+    stream.add_argument("session_id")
+    stream.add_argument("--database")
 
     delivery_audit = subcommands.add_parser(
         "delivery-audit",

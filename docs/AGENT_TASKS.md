@@ -6036,8 +6036,8 @@ implementation phase.
 
 ### P47-CLI-01 - Session Stream CLI Read Surface
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P46-CLOSE-01`
 - Branch: `codex/p47-cli-01-session-stream-read`
@@ -6056,9 +6056,9 @@ operators do not need the HTTP API for routine persisted replay lookup.
 
 #### Acceptance
 
-- [ ] Operators can inspect one session event stream from the CLI.
-- [ ] Ordered event replay stays explicit and machine-readable.
-- [ ] Existing API stream behavior remains backward compatible.
+- [x] Operators can inspect one session event stream from the CLI.
+- [x] Ordered event replay stays explicit and machine-readable.
+- [x] Existing API stream behavior remains backward compatible.
 
 ### P47-TEST-01 - Session Stream Cross-Surface Contract Matrix
 
