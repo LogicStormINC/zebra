@@ -1,5 +1,16 @@
 # Progress Log
 
+## 2026-07-01 Phase 51 Closeout And Phase 52 Planning
+
+- claimed `P51-CLOSE-01` on `codex/p51-closeout-next-plan`
+- added `docs/Phase51_Approval_Decision_Cross_Surface_Parity_验收记录.md`
+- closed Phase 51 after approval decision parity landed on `main`
+- set the next active milestone to `Phase 52 - Session Message Append CLI And Operator Parity`
+- added starter tasks:
+  - `P52-CLI-01 - Session Message Append CLI Surface`
+  - `P52-TEST-01 - Session Message Append Cross-Surface Contract Matrix`
+  - `P52-CLOSE-01 - Phase 52 Closeout And Next Planning`
+
 ## 2026-07-01 Phase 51 Approval Decision Contract Matrix
 
 - claimed `P51-TEST-01` on `codex/p51-test-01-approval-decision-contract-matrix`
