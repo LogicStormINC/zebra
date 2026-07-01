@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 47 ready; session stream CLI and operator parity is next on top of the completed Phase 46 session diff operator parity baseline.
+> Current execution range: Phase 48 ready; session commit CLI and operator parity is next on top of the completed Phase 47 session stream operator parity baseline.
 
 ## Global Rules
 
@@ -6088,8 +6088,8 @@ so future operator replay changes do not drift across read paths.
 
 ### P47-CLOSE-01 - Phase 47 Closeout And Next Planning
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P47-TEST-01`
 - Branch: `codex/p47-closeout-next-plan`
@@ -6108,5 +6108,85 @@ implementation phase.
 
 #### Acceptance
 
-- [ ] Session stream operator parity evidence is recorded.
+- [x] Session stream operator parity evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 48 Task Board
+
+### P48-CLI-01 - Session Commit CLI Delivery Surface
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P47-CLOSE-01`
+- Branch: `codex/p48-cli-01-session-commit-read`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose a local CLI control surface for session commit execution so operators do
+not need the HTTP API for routine local delivery completion.
+
+#### Deliverables
+
+- CLI command for session commit execution
+- machine-readable local output for committed, unavailable, policy-blocked, and
+  missing-session commit paths
+- regression coverage for idempotent replay and invalid commit payload handling
+
+#### Acceptance
+
+- [ ] Operators can create one session commit from the CLI.
+- [ ] Commit success and failure states stay explicit and machine-readable.
+- [ ] Existing API commit behavior remains backward compatible.
+
+### P48-TEST-01 - Session Commit Cross-Surface Contract Matrix
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `TEST`
+- Depends on: `P48-CLI-01`
+- Branch: `codex/p48-test-01-session-commit-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI session commit output so future
+local delivery changes do not drift across operator control paths.
+
+#### Deliverables
+
+- cross-surface session commit regression matrix
+- normalization rules for CLI-local context and idempotency replay metadata
+- documented parity boundary for API and CLI commit results
+
+#### Acceptance
+
+- [ ] API and CLI session commit output parity is explicit and regression-tested.
+- [ ] Stable commit result fields stay locked without overfitting transport-specific context.
+- [ ] Success, unavailable, missing-session, and idempotent replay paths remain backward compatible across both surfaces.
+
+### P48-CLOSE-01 - Phase 48 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P48-TEST-01`
+- Branch: `codex/p48-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 48 with session commit operator parity evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 48 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Session commit operator parity evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

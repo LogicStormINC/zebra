@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 47 - Session Stream CLI And Operator Parity`
-- Repository status: `phase 47 in progress`
+- Active phase: `Phase 48 - Session Commit CLI And Operator Parity`
+- Repository status: `phase 48 ready`
 - Current focus:
-  - close Phase 47 with acceptance evidence
-  - define the next implementation slice after session stream operator parity
+  - add local CLI session commit execution parity
+  - lock cross-surface session commit output parity
 - Phase 38 shared artifact access audit metadata helper is complete on `codex/p38-obs-01-artifact-access-audit-helper`, centralizing deterministic allow, deny, and prune audit metadata assembly in `agent-security` and reusing it across API read and prune audit paths
 - Phase 38 API shared denial-response adoption is complete on `codex/p38-api-01-artifact-denial-response-adoption`, centralizing API read-side deny and unavailable response shaping while preserving the current operator-facing access contract
 - Phase 38 is closed with `docs/Phase38_Shared_Artifact_Audit_Metadata_And_Denial_Response_Reuse_验收记录.md`
@@ -281,7 +281,10 @@
 - local operators can now inspect one persisted session event stream from the CLI with explicit `ok` and `not_found` semantics plus ordered event payload replay
 - `P47-TEST-01 - Session Stream Cross-Surface Contract Matrix` is complete on `codex/p47-test-01-session-stream-contract-matrix`
 - session stream parity rules are now locked through a shared contract matrix covering populated replay, bootstrap-only replay, and missing-session reads while treating SSE framing and CLI-local `database` context as transport-specific fields
-- `P47-CLOSE-01 - Phase 47 Closeout And Next Planning` is the documentation closeout lane for session stream operator parity
+- Phase 47 is closed with `docs/Phase47_Session_Stream_CLI_And_Operator_Parity_验收记录.md`
+- `P48-CLI-01 - Session Commit CLI Delivery Surface` is ready on `codex/p48-cli-01-session-commit-read`
+- `P48-TEST-01 - Session Commit Cross-Surface Contract Matrix` is ready on `codex/p48-test-01-session-commit-contract-matrix`
+- `P48-CLOSE-01 - Phase 48 Closeout And Next Planning` is the documentation closeout lane for session commit operator parity
 
 ## Active Documents
 
