@@ -3871,3 +3871,215 @@
   - `README.md`
 - 验证：
   - `make check`
+
+## 2026-07-01 Phase 40 API Shared Artifact Control Response Adoption
+
+- 执行 `P40-API-01 - API Shared Artifact Control Response Adoption`
+- 行为更新：
+  - `apps/api/src/zebra_agent_api/artifact_access.py` 新增 shared prune-control denied 与 unavailable response helper
+  - `apps/api/src/zebra_agent_api/session_artifact_control.py` 改为复用共享 helper 路径，移除 adapter 内联的 prune conflict body 组装
+  - API prune denied 与 unavailable contract 保持原样，不引入额外 `access` 字段
+  - 新增 external reference prune unavailable 回归，锁定 shared control-unavailable helper 的返回语义
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run ruff check apps/api/src/zebra_agent_api/artifact_access.py apps/api/src/zebra_agent_api/session_artifact_control.py tests/api/test_session_artifacts.py`
+  - `uv run mypy packages apps`
+  - `uv run pytest tests/api/test_session_artifacts.py`
+
+## 2026-07-01 Phase 40 CLI Shared Artifact Control Response Adoption
+
+- 执行 `P40-CLI-01 - CLI Shared Artifact Control Response Adoption`
+- 行为更新：
+  - `apps/cli/src/zebra_agent_cli/artifact_access.py` 新增 shared prune-control denied 与 unavailable result helper
+  - `apps/cli/src/zebra_agent_cli/artifact_read.py` 改为复用共享 helper 路径，移除 CLI adapter 内联的 prune failure result 组装
+  - CLI prune denied 与 unavailable contract 保持原样，继续保留本地 `database` 字段
+  - 新增 external reference prune unavailable 回归，锁定 shared control-unavailable helper 的返回语义
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/artifact_access.py apps/cli/src/zebra_agent_cli/artifact_read.py tests/cli/test_cli_artifacts.py`
+  - `uv run mypy packages apps`
+  - `uv run pytest tests/cli/test_cli_artifacts.py`
+
+## 2026-07-01 Phase 40 Artifact Prune Contract Matrix Expansion
+
+- 执行 `P40-TEST-01 - Artifact Prune Contract Matrix Expansion`
+- 行为更新：
+  - 扩展 `tests/test_artifact_access_contract_matrix.py`
+  - 新增 `prune_denied` 与 `prune_unavailable_external_reference` 场景，显式锁定 API 与 CLI 的 prune failure envelope parity
+  - shared prune-control helper adoption 后的跨表面 contract 继续保持兼容
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/artifact_access.py apps/cli/src/zebra_agent_cli/artifact_read.py tests/cli/test_cli_artifacts.py tests/test_artifact_access_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `uv run pytest tests/api/test_session_artifacts.py tests/cli/test_cli_artifacts.py tests/test_artifact_access_contract_matrix.py`
+
+## 2026-07-01 Phase 40 Closeout And Phase 41 Planning
+
+- 执行 `P40-CLOSE-01 - Phase 40 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase40_Shared_Artifact_Control_Response_Reuse_And_Prune_Contract_Parity_验收记录.md`
+  - 归档 Phase 40 的 API/CLI prune failure helper adoption 与 prune contract matrix 扩展验收结论
+  - 将下一阶段定义为 `Phase 41 - Shared Artifact Control Success Projection And Prune Success Parity`
+  - 新增 `P41-API-01`、`P41-CLI-01`、`P41-TEST-01`、`P41-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
+
+## 2026-07-01 Phase 41 API Shared Artifact Control Success Projection
+
+- 执行 `P41-API-01 - API Shared Artifact Control Success Projection`
+- 行为更新：
+  - `apps/api/src/zebra_agent_api/artifact_access.py` 新增 shared prune-control success response helper
+  - `apps/api/src/zebra_agent_api/session_artifact_control.py` 改为复用共享 helper 路径，移除 API adapter 内联的 prune success body 组装
+  - API prune success contract 保持原样，继续暴露 `status`、`access_class`、`required_policy_profile`、`lifecycle`
+  - 补强 prune success 回归，显式锁定 `session_id`、`artifact_id` 与 lifecycle 字段边界
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run ruff check apps/api/src/zebra_agent_api/artifact_access.py apps/api/src/zebra_agent_api/session_artifact_control.py tests/api/test_session_artifacts.py`
+  - `uv run mypy packages apps`
+  - `uv run pytest tests/api/test_session_artifacts.py`
+
+## 2026-07-01 Phase 41 CLI Shared Artifact Control Success Projection
+
+- 执行 `P41-CLI-01 - CLI Shared Artifact Control Success Projection`
+- 行为更新：
+  - `apps/cli/src/zebra_agent_cli/artifact_access.py` 新增 shared prune-control success result helper
+  - `apps/cli/src/zebra_agent_cli/artifact_read.py` 改为复用共享 helper 路径，移除 CLI adapter 内联的 prune success result 组装
+  - CLI prune success contract 保持原样，继续保留 `database`、`access`、`access_class`、`required_policy_profile`、`lifecycle`
+  - 补强 CLI prune success 回归，显式锁定 success result 的字段边界
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/artifact_access.py apps/cli/src/zebra_agent_cli/artifact_read.py tests/cli/test_cli_artifacts.py`
+  - `uv run mypy packages apps`
+  - `uv run pytest tests/cli/test_cli_artifacts.py`
+
+## 2026-07-01 Phase 41 Artifact Prune Success Contract Matrix Expansion
+
+- 执行 `P41-TEST-01 - Artifact Prune Success Contract Matrix Expansion`
+- 行为更新：
+  - 扩展 `tests/test_artifact_access_contract_matrix.py`
+  - 新增 `prune_success` 与 `prune_already_pruned` 场景，显式锁定 API 与 CLI 的 prune success envelope parity
+  - 对非稳定时间戳做 lifecycle 归一化，锁定稳定 contract 而不是瞬时值
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run ruff check tests/test_artifact_access_contract_matrix.py apps/cli/src/zebra_agent_cli/artifact_access.py apps/cli/src/zebra_agent_cli/artifact_read.py tests/cli/test_cli_artifacts.py`
+  - `uv run mypy packages apps`
+  - `uv run pytest tests/api/test_session_artifacts.py tests/cli/test_cli_artifacts.py tests/test_artifact_access_contract_matrix.py`
+
+## 2026-07-01 Phase 41 Closeout And Phase 42 Planning
+
+- 执行 `P41-CLOSE-01 - Phase 41 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase41_Shared_Artifact_Control_Success_Projection_And_Prune_Success_Parity_验收记录.md`
+  - 归档 Phase 41 的 API/CLI prune success helper adoption 与 success contract matrix 扩展验收结论
+  - 将下一阶段定义为 `Phase 42 - Shared Artifact Control Audit Metadata Helper`
+  - 新增 `P42-OBS-01`、`P42-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
+
+## 2026-07-01 Phase 42 Shared Artifact Control Audit Metadata Helper
+
+- 执行 `P42-OBS-01 - Shared Artifact Control Audit Metadata Helper`
+- 行为更新：
+  - 新增 `packages/agent-security/src/agent_security/artifact_control_audit.py`
+  - 抽出 `build_artifact_control_audit_metadata()`，集中生成 prune denied、success、unavailable 的共享 audit metadata
+  - API prune audit path 现在复用同一条 `agent-security` helper 路径，移除 adapter 内联 metadata 组装
+  - 新增 security-layer 回归，锁定 shared control audit helper 的稳定输出
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run ruff check apps/api/src/zebra_agent_api/session_artifact_control.py packages/agent-security/src/agent_security tests/agent_security tests/api/test_session_artifacts.py`
+  - `uv run mypy packages apps`
+  - `uv run pytest tests/agent_security/test_artifact_control_audit.py tests/api/test_session_artifacts.py`
+
+## 2026-07-01 Phase 42 Closeout And Phase 43 Planning
+
+- 执行 `P42-CLOSE-01 - Phase 42 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase42_Shared_Artifact_Control_Audit_Metadata_Helper_验收记录.md`
+  - 归档 Phase 42 的 shared control audit helper adoption 验收结论
+  - 将下一阶段定义为 `Phase 43 - Shared Artifact Audit Metadata Convergence`
+  - 新增 `P43-OBS-01`、`P43-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
+
+## 2026-07-01 Phase 43 Shared Artifact Audit Metadata Convergence
+
+- 执行 `P43-OBS-01 - Shared Artifact Audit Metadata Convergence`
+- 行为更新：
+  - 新增 `packages/agent-security/src/agent_security/artifact_audit_metadata.py`
+  - read-side 与 control-side audit helper 现在都复用同一条底层 metadata builder
+  - `build_artifact_access_audit_metadata()` 与 `build_artifact_control_audit_metadata()` 保持兼容接口，但不再重复维护核心投影逻辑
+  - 新增 shared reason-field variant 回归，锁定 converged audit builder 的稳定输出
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run ruff check packages/agent-security/src/agent_security tests/agent_security apps/api/src/zebra_agent_api/session_artifact_control.py tests/api/test_session_artifacts.py`
+  - `uv run mypy packages apps`
+  - `uv run pytest tests/agent_security/test_artifact_access_audit.py tests/agent_security/test_artifact_control_audit.py tests/api/test_session_artifacts.py`
+
+## 2026-07-01 Phase 43 Closeout And Phase 44 Planning
+
+- 执行 `P43-CLOSE-01 - Phase 43 Closeout And Next Planning`
+- 行为更新：
+  - 新增 `docs/Phase43_Shared_Artifact_Audit_Metadata_Convergence_验收记录.md`
+  - 归档 Phase 43 的 shared artifact audit convergence 验收结论
+  - 将下一阶段定义为 `Phase 44 - Artifact Audit Metadata Contract Coverage`
+  - 新增 `P44-TEST-01`、`P44-CLOSE-01` 的 path-scoped 任务板
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make check`
+
+## 2026-07-01 P44-TEST-01 Artifact Audit Metadata Contract Coverage
+
+- 执行 `P44-TEST-01 - Artifact Audit Metadata Contract Coverage`
+- 行为更新：
+  - 新增 `tests/api/test_artifact_delivery_audit_contract.py`
+  - 为 `GET /sessions/{id}/delivery-audit` 增加 artifact read-side denied 与 control-side prune success 的端到端契约回归
+  - 显式锁定 `reason`、`retrieval_status`、`payload_artifact_id`、`lifecycle_status` 等 metadata 边界
+  - 将 `created_at` 作为唯一的非确定性字段，仅校验 ISO 时间格式
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run pytest tests/api/test_artifact_delivery_audit_contract.py tests/api/test_session_delivery_audit.py tests/api/test_session_artifacts.py`
+  - `uv run ruff check tests/api/test_artifact_delivery_audit_contract.py tests/api/test_session_delivery_audit.py tests/api/test_session_artifacts.py`
+  - `uv run mypy apps packages tests/api/test_artifact_delivery_audit_contract.py`
+  - `make check`

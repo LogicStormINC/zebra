@@ -2,17 +2,32 @@
 
 ## Current Phase
 
-- Active phase: `Phase 40 - Shared Artifact Control Response Reuse And Prune Contract Parity`
-- Repository status: `phase 40 ready`
+- Active phase: `Phase 44 - Artifact Audit Metadata Contract Coverage`
+- Repository status: `phase 44 ready`
 - Current focus:
-  - adopt shared prune denied and unavailable response shaping in API control adapters
-  - extend cross-surface prune contract parity coverage
+  - add explicit artifact delivery-audit contract coverage
+  - normalize non-deterministic audit fields where parity needs stable comparison
 - Phase 38 shared artifact access audit metadata helper is complete on `codex/p38-obs-01-artifact-access-audit-helper`, centralizing deterministic allow, deny, and prune audit metadata assembly in `agent-security` and reusing it across API read and prune audit paths
 - Phase 38 API shared denial-response adoption is complete on `codex/p38-api-01-artifact-denial-response-adoption`, centralizing API read-side deny and unavailable response shaping while preserving the current operator-facing access contract
 - Phase 38 is closed with `docs/Phase38_Shared_Artifact_Audit_Metadata_And_Denial_Response_Reuse_验收记录.md`
 - Phase 39 CLI shared denial-response adoption is complete on `codex/p39-cli-01-artifact-denial-response-adoption`, extracting a CLI helper path for denied and unavailable artifact read responses while preserving CLI-local `database` context and prune behavior
 - Phase 39 failure contract matrix expansion is complete on `codex/p39-test-01-artifact-failure-contract-matrix`, explicitly covering API and CLI parity for detail-denied and content failure envelopes after shared helper adoption
 - Phase 39 is closed with `docs/Phase39_CLI_Shared_Denial_Response_Reuse_And_Failure_Contract_Parity_验收记录.md`
+- Phase 40 API shared artifact control response adoption is complete on `codex/p40-api-01-artifact-control-response-adoption`, centralizing prune denied and unavailable response construction behind shared API helper paths while preserving current prune contracts
+- Phase 40 CLI shared artifact control response adoption is complete on `codex/p40-cli-01-artifact-control-response-adoption`, centralizing prune denied and unavailable response construction behind shared CLI helper paths while preserving current prune contracts
+- Phase 40 artifact prune contract matrix expansion is complete on `codex/p40-test-01-artifact-prune-contract-matrix`, explicitly covering API and CLI parity for prune denied and prune unavailable external-reference envelopes
+- Phase 40 is closed with `docs/Phase40_Shared_Artifact_Control_Response_Reuse_And_Prune_Contract_Parity_验收记录.md`
+- Phase 41 API shared artifact control success projection is complete on `codex/p41-api-01-artifact-control-success-projection`, centralizing prune success response projection behind a shared API helper path while preserving the current success contract
+- Phase 41 CLI shared artifact control success projection is complete on `codex/p41-cli-01-artifact-control-success-projection`, centralizing prune success response projection behind a shared CLI helper path while preserving CLI-local `database` context
+- Phase 41 artifact prune success contract matrix expansion is complete on `codex/p41-test-01-artifact-prune-success-contract-matrix`, explicitly covering API and CLI parity for `pruned` and `already_pruned` envelopes with stable lifecycle normalization
+- Phase 41 is closed with `docs/Phase41_Shared_Artifact_Control_Success_Projection_And_Prune_Success_Parity_验收记录.md`
+- Phase 42 shared artifact control audit metadata helper is complete on `codex/p42-obs-01-artifact-control-audit-helper`, centralizing prune denied, success, and unavailable audit payload assembly behind a shared `agent-security` helper boundary
+- Phase 42 is closed with `docs/Phase42_Shared_Artifact_Control_Audit_Metadata_Helper_验收记录.md`
+- Phase 43 shared artifact audit metadata convergence is complete on `codex/p43-obs-01-artifact-audit-convergence`, converging read-side and control-side audit helper semantics onto one shared lower-level builder while preserving current wrappers and adapter contracts
+- Phase 43 is closed with `docs/Phase43_Shared_Artifact_Audit_Metadata_Convergence_验收记录.md`
+- Phase 41 CLI shared artifact control success projection is complete on `codex/p41-cli-01-artifact-control-success-projection`, centralizing prune success response projection behind a shared CLI helper path while preserving CLI-local `database` context
+- Phase 41 artifact prune success contract matrix expansion is complete on `codex/p41-test-01-artifact-prune-success-contract-matrix`, explicitly covering API and CLI parity for `pruned` and `already_pruned` envelopes with stable lifecycle normalization
+- Phase 41 is closed with `docs/Phase41_Shared_Artifact_Control_Success_Projection_And_Prune_Success_Parity_验收记录.md`
 - Phase 37 shared artifact access projection serializer is complete on `codex/p37-sec-01-shared-artifact-access-projection`, centralizing access explainability payload assembly and policy-rank evaluation in `agent-security`
 - Phase 37 API shared access projection adoption is complete on `codex/p37-api-01-artifact-access-projection-adoption`, replacing API-local access explainability assembly with the shared security projection helper while preserving artifact access and prune contracts
 - Phase 37 CLI shared access projection adoption is complete on `codex/p37-cli-01-artifact-access-projection-adoption`, replacing CLI-local access explainability assembly with the shared security projection helper while preserving CLI-only local context fields
@@ -249,10 +264,9 @@
 
 - `P35-API-01 - Artifact Success Envelope Normalization` is complete on `codex/p35-api-01-artifact-success-envelope-normalization`
 - `P35-CLI-01 - Artifact Envelope Consistency Parity` is complete on `codex/p35-cli-01-artifact-envelope-consistency-parity`
-- `P40-API-01 - API Shared Artifact Control Response Adoption` is ready on `codex/p40-api-01-artifact-control-response-adoption`
-- `P40-CLI-01 - CLI Shared Artifact Control Response Adoption` unlocks after the API control-response helper slice lands
-- `P40-TEST-01 - Artifact Prune Contract Matrix Expansion` unlocks after both API and CLI control-response adoption slices land
-- `P40-CLOSE-01 - Phase 40 Closeout And Next Planning` is the documentation closeout lane for the shared prune-control response phase
+- `P44-TEST-01 - Artifact Audit Metadata Contract Coverage` is in review on `codex/p44-test-01-artifact-audit-contract-coverage`
+- artifact delivery-audit regression coverage now locks one read-side denied path and one control-side success path, preserving the current `reason`, `retrieval_status`, `payload_artifact_id`, and `lifecycle_status` metadata boundaries while treating `created_at` as the only normalized non-deterministic field
+- `P44-CLOSE-01 - Phase 44 Closeout And Next Planning` is the documentation closeout lane for the artifact audit contract phase
 
 ## Active Documents
 

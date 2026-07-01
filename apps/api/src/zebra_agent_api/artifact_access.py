@@ -107,6 +107,20 @@ def build_artifact_policy_denied_response(
     )
 
 
+def build_artifact_control_denied_response(
+    *,
+    session_id: str,
+    status: str,
+    action: str,
+    access: ArtifactAccessContext,
+) -> ApiResponse:
+    return conflict(
+        session_id=session_id,
+        status=status,
+        reason=artifact_policy_denied_reason(access, action=action),
+    )
+
+
 def build_artifact_unavailable_response(
     *,
     session_id: str,
@@ -118,6 +132,40 @@ def build_artifact_unavailable_response(
         status="artifact_unavailable",
         reason=reason,
         access=access,
+    )
+
+
+def build_artifact_control_unavailable_response(
+    *,
+    session_id: str,
+    status: str,
+    reason: str,
+) -> ApiResponse:
+    return conflict(
+        session_id=session_id,
+        status=status,
+        reason=reason,
+    )
+
+
+def build_artifact_control_success_response(
+    *,
+    session_id: str,
+    artifact_id: str,
+    status: str,
+    access: ArtifactAccessContext,
+    lifecycle: dict[str, object] | None,
+) -> ApiResponse:
+    return ApiResponse(
+        status_code=200,
+        body={
+            "session_id": session_id,
+            "artifact_id": artifact_id,
+            "status": status,
+            "access_class": access.access_class,
+            "required_policy_profile": access.required_policy_profile,
+            "lifecycle": lifecycle,
+        },
     )
 
 

@@ -27,6 +27,9 @@ from agent_storage import (
 
 from zebra_agent_cli.artifact_access import (
     ArtifactAccessContext,
+    build_artifact_control_denied_result,
+    build_artifact_control_success_result,
+    build_artifact_control_unavailable_result,
     build_artifact_policy_denied_result,
     build_artifact_unavailable_result,
     serialize_artifact_access,
@@ -186,29 +189,26 @@ def prune_artifact(
         artifact=resolved,
         payload=payload,
     )
-    access_class = access.access_class
-    required_profile = access.required_policy_profile
     if not access.allowed:
-        return {
-            "session_id": session_id,
-            "artifact_id": artifact_id,
-            "database": str(database_path),
-            "status": "artifact_prune_denied",
-            "reason": f"artifact_prune_requires_{required_profile}_policy",
-        }
+        return build_artifact_control_denied_result(
+            database_path=database_path,
+            session_id=session_id,
+            artifact_id=artifact_id,
+            status="artifact_prune_denied",
+            action="prune",
+            access=access,
+        )
     already_pruned = payload.pruned_at is not None
     pruned = payload_store.prune_payload(payload.artifact_id)
     assert pruned is not None
-    return {
-        "session_id": session_id,
-        "artifact_id": artifact_id,
-        "database": str(database_path),
-        "status": "already_pruned" if already_pruned else "pruned",
-        "access": serialize_artifact_access(access),
-        "access_class": access_class,
-        "required_policy_profile": required_profile,
-        "lifecycle": _lifecycle_body(pruned),
-    }
+    return build_artifact_control_success_result(
+        database_path=database_path,
+        session_id=session_id,
+        artifact_id=artifact_id,
+        status="already_pruned" if already_pruned else "pruned",
+        access=access,
+        lifecycle=_lifecycle_body(pruned),
+    )
 
 
 def _artifact_access_context(
@@ -273,13 +273,13 @@ def _unavailable_artifact(
     artifact_id: str,
     reason: str,
 ) -> dict[str, object]:
-    return {
-        "session_id": session_id,
-        "artifact_id": artifact_id,
-        "database": str(database_path),
-        "status": "artifact_prune_unavailable",
-        "reason": reason,
-    }
+    return build_artifact_control_unavailable_result(
+        database_path=database_path,
+        session_id=session_id,
+        artifact_id=artifact_id,
+        status="artifact_prune_unavailable",
+        reason=reason,
+    )
 
 
 def _payload_record_for_uri(

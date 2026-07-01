@@ -73,3 +73,59 @@ def build_artifact_unavailable_result(
         reason=reason,
         access=access,
     )
+
+
+def build_artifact_control_denied_result(
+    *,
+    database_path: Path,
+    session_id: str,
+    artifact_id: str,
+    status: str,
+    action: str,
+    access: ArtifactAccessContext,
+) -> dict[str, object]:
+    return {
+        "session_id": session_id,
+        "artifact_id": artifact_id,
+        "database": str(database_path),
+        "status": status,
+        "reason": artifact_policy_denied_reason(access, action=action),
+    }
+
+
+def build_artifact_control_unavailable_result(
+    *,
+    database_path: Path,
+    session_id: str,
+    artifact_id: str,
+    status: str,
+    reason: str,
+) -> dict[str, object]:
+    return {
+        "session_id": session_id,
+        "artifact_id": artifact_id,
+        "database": str(database_path),
+        "status": status,
+        "reason": reason,
+    }
+
+
+def build_artifact_control_success_result(
+    *,
+    database_path: Path,
+    session_id: str,
+    artifact_id: str,
+    status: str,
+    access: ArtifactAccessContext,
+    lifecycle: dict[str, object],
+) -> dict[str, object]:
+    return {
+        "session_id": session_id,
+        "artifact_id": artifact_id,
+        "database": str(database_path),
+        "status": status,
+        "access": serialize_artifact_access(access),
+        "access_class": access.access_class,
+        "required_policy_profile": access.required_policy_profile,
+        "lifecycle": lifecycle,
+    }

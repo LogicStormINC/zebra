@@ -491,11 +491,15 @@ def test_api_prune_session_artifact_prunes_operator_safe_payload(tmp_path: Path)
     )
 
     assert response.status_code == 200
+    assert response.body["session_id"] == str(session.session_id)
+    assert response.body["artifact_id"] == "tool-run:5"
     assert response.body["status"] == "pruned"
     assert response.body["access_class"] == "operator_safe"
     assert response.body["required_policy_profile"] == "workspace_write"
     assert response.body["lifecycle"]["status"] == "pruned"
     assert response.body["lifecycle"]["pruned_at"] is not None
+    assert response.body["lifecycle"]["retained_until"] is None
+    assert response.body["lifecycle"]["expired"] is False
     inspection = SQLiteArtifactPayloadStore(database_path).inspect_payload(payload.artifact_id)
     assert inspection is not None
     assert (
@@ -581,6 +585,40 @@ def test_api_prune_session_artifact_reports_indexed_only_unavailable(tmp_path: P
     audit = SQLiteDeliveryAuditStore(database_path).list_for_session(session.session_id)
     assert audit[-1].result_metadata["result_status"] == "artifact_prune_unavailable"
     assert audit[-1].result_metadata["unavailable_reason"] == "artifact_is_indexed_only"
+
+
+def test_api_prune_session_artifact_reports_external_reference_unavailable(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+    SQLiteToolRunStore(database_path).upsert(
+        ToolRunRecord(
+            session_id=session.session_id,
+            sequence=5,
+            tool_name="tests.run",
+            status="executed",
+            idempotency_key="tool-5",
+            output="see external artifact",
+            artifact_uri="https://example.com/result.json",
+            created_at=_created_at(),
+        )
+    )
+
+    response = create_app(database_path).prune_session_artifact(
+        str(session.session_id),
+        "tool-run:5",
+    )
+
+    assert response.status_code == 409
+    assert response.body == {
+        "session_id": str(session.session_id),
+        "status": "artifact_prune_unavailable",
+        "reason": "artifact_uses_external_reference",
+    }
+    audit = SQLiteDeliveryAuditStore(database_path).list_for_session(session.session_id)
+    assert audit[-1].result_metadata["result_status"] == "artifact_prune_unavailable"
+    assert audit[-1].result_metadata["unavailable_reason"] == "artifact_uses_external_reference"
 
 
 def test_route_adapter_handles_session_artifact_prune(tmp_path: Path) -> None:

@@ -27,6 +27,10 @@ from zebra_agent_cli.cli import execute
         ("content_denied", PolicyProfile.WORKSPACE_WRITE.value),
         ("content_unavailable", PolicyProfile.WORKSPACE_WRITE.value),
         ("content_pruned", PolicyProfile.WORKSPACE_WRITE.value),
+        ("prune_denied", PolicyProfile.WORKSPACE_WRITE.value),
+        ("prune_unavailable_external_reference", PolicyProfile.WORKSPACE_WRITE.value),
+        ("prune_success", PolicyProfile.WORKSPACE_WRITE.value),
+        ("prune_already_pruned", PolicyProfile.WORKSPACE_WRITE.value),
         ("content_allowed", PolicyProfile.FULL_ACCESS.value),
     ],
 )
@@ -184,6 +188,170 @@ def test_artifact_access_contract_matrix(
         assert cli_response["reason"] == "artifact_payload_pruned"
         return
 
+    if scenario == "prune_denied":
+        _seed_payload_backed_tool_artifact(
+            database_path,
+            session.session_id,
+            mime_type="application/json",
+            payload=b'{"token":"secret"}',
+            output='{"token":"secret"}',
+            file_name="result.json",
+        )
+        api_response = create_app(database_path).prune_session_artifact(
+            str(session.session_id),
+            "tool-run:5",
+        )
+        cli_response = execute(
+            [
+                "artifact",
+                "prune",
+                str(session.session_id),
+                "tool-run:5",
+                "--database",
+                str(database_path),
+            ]
+        ).payload
+
+        assert api_response.status_code == 409
+        assert _project_control_result(api_response.body) == _project_control_result(
+            cli_response
+        )
+        return
+
+    if scenario == "prune_unavailable_external_reference":
+        SQLiteToolRunStore(database_path).upsert(
+            ToolRunRecord(
+                session_id=session.session_id,
+                sequence=5,
+                tool_name="tests.run",
+                status="executed",
+                idempotency_key="tool-5",
+                output="see external artifact",
+                artifact_uri="https://example.com/result.json",
+                created_at=_created_at(),
+            )
+        )
+        api_response = create_app(database_path).prune_session_artifact(
+            str(session.session_id),
+            "tool-run:5",
+        )
+        cli_response = execute(
+            [
+                "artifact",
+                "prune",
+                str(session.session_id),
+                "tool-run:5",
+                "--database",
+                str(database_path),
+            ]
+        ).payload
+
+        assert api_response.status_code == 409
+        assert _project_control_result(api_response.body) == _project_control_result(
+            cli_response
+        )
+        return
+
+    if scenario == "prune_success":
+        api_database_path = tmp_path / "api-prune-success.sqlite"
+        api_session = _seed_session(api_database_path)
+        _seed_workspace_policy(
+            api_database_path,
+            api_session.session_id,
+            PolicyProfile.WORKSPACE_WRITE.value,
+        )
+        _seed_payload_backed_tool_artifact(api_database_path, api_session.session_id)
+
+        cli_database_path = tmp_path / "cli-prune-success.sqlite"
+        cli_session = _seed_session(cli_database_path)
+        _seed_workspace_policy(
+            cli_database_path,
+            cli_session.session_id,
+            PolicyProfile.WORKSPACE_WRITE.value,
+        )
+        _seed_payload_backed_tool_artifact(cli_database_path, cli_session.session_id)
+
+        api_response = create_app(api_database_path).prune_session_artifact(
+            str(api_session.session_id),
+            "tool-run:5",
+        )
+        cli_response = execute(
+            [
+                "artifact",
+                "prune",
+                str(cli_session.session_id),
+                "tool-run:5",
+                "--database",
+                str(cli_database_path),
+            ]
+        ).payload
+
+        assert api_response.status_code == 200
+        assert _project_prune_success_result(api_response.body) == _project_prune_success_result(
+            cli_response
+        )
+        return
+
+    if scenario == "prune_already_pruned":
+        api_database_path = tmp_path / "api-prune-already.sqlite"
+        api_session = _seed_session(api_database_path)
+        _seed_workspace_policy(
+            api_database_path,
+            api_session.session_id,
+            PolicyProfile.WORKSPACE_WRITE.value,
+        )
+        _seed_payload_backed_tool_artifact(api_database_path, api_session.session_id)
+
+        cli_database_path = tmp_path / "cli-prune-already.sqlite"
+        cli_session = _seed_session(cli_database_path)
+        _seed_workspace_policy(
+            cli_database_path,
+            cli_session.session_id,
+            PolicyProfile.WORKSPACE_WRITE.value,
+        )
+        _seed_payload_backed_tool_artifact(cli_database_path, cli_session.session_id)
+
+        first_api_response = create_app(api_database_path).prune_session_artifact(
+            str(api_session.session_id),
+            "tool-run:5",
+        )
+        first_cli_response = execute(
+            [
+                "artifact",
+                "prune",
+                str(cli_session.session_id),
+                "tool-run:5",
+                "--database",
+                str(cli_database_path),
+            ]
+        ).payload
+
+        assert first_api_response.status_code == 200
+        assert _project_prune_success_result(
+            first_api_response.body
+        ) == _project_prune_success_result(first_cli_response)
+
+        api_response = create_app(api_database_path).prune_session_artifact(
+            str(api_session.session_id),
+            "tool-run:5",
+        )
+        cli_response = execute(
+            [
+                "artifact",
+                "prune",
+                str(cli_session.session_id),
+                "tool-run:5",
+                "--database",
+                str(cli_database_path),
+            ]
+        ).payload
+
+        assert api_response.status_code == 200
+        assert _project_prune_success_result(api_response.body) == _project_prune_success_result(
+            cli_response
+        )
+        return
+
     _seed_payload_backed_tool_artifact(
         database_path,
         session.session_id,
@@ -244,6 +412,29 @@ def _project_detail_artifact(payload: dict[str, object]) -> dict[str, object]:
             "retrieval": artifact["retrieval"],
             "lifecycle": artifact["lifecycle"],
             "access": artifact["access"],
+        },
+    }
+
+
+def _project_control_result(payload: dict[str, object]) -> dict[str, object]:
+    return {
+        "status": payload["status"],
+        "reason": payload["reason"],
+    }
+
+
+def _project_prune_success_result(payload: dict[str, object]) -> dict[str, object]:
+    lifecycle = payload["lifecycle"]
+    assert isinstance(lifecycle, dict)
+    return {
+        "status": payload["status"],
+        "access_class": payload["access_class"],
+        "required_policy_profile": payload["required_policy_profile"],
+        "lifecycle": {
+            "status": lifecycle["status"],
+            "retained_until": lifecycle["retained_until"],
+            "expired": lifecycle["expired"],
+            "has_pruned_at": lifecycle["pruned_at"] is not None,
         },
     }
 

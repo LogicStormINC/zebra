@@ -2,6 +2,7 @@ from agent_security import (
     ArtifactAccessProjection,
     build_artifact_access_audit_metadata,
 )
+from agent_security.artifact_audit_metadata import build_artifact_audit_metadata
 
 
 def test_build_artifact_access_audit_metadata_for_allowed_payload() -> None:
@@ -75,4 +76,27 @@ def test_build_artifact_access_audit_metadata_for_prune_result_without_retrieval
         "result_status": "pruned",
         "payload_artifact_id": "2d77d7ca-1ee7-46b4-8d0d-51e32c8c0cff",
         "lifecycle_status": "pruned",
+    }
+
+
+def test_build_artifact_audit_metadata_supports_shared_reason_field_variants() -> None:
+    projection = ArtifactAccessProjection(
+        access_class="operator_safe",
+        required_policy_profile="workspace_write",
+        session_policy_profile="workspace_write",
+    )
+
+    assert build_artifact_audit_metadata(
+        artifact_id="tool-run:5",
+        result_status="artifact_prune_unavailable",
+        projection=projection,
+        reason="artifact_uses_external_reference",
+        reason_field="unavailable_reason",
+    ) == {
+        "artifact_id": "tool-run:5",
+        "access_class": "operator_safe",
+        "required_policy_profile": "workspace_write",
+        "session_policy_profile": "workspace_write",
+        "result_status": "artifact_prune_unavailable",
+        "unavailable_reason": "artifact_uses_external_reference",
     }

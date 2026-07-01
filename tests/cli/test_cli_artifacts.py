@@ -316,10 +316,16 @@ def test_cli_artifact_prune_prunes_operator_safe_payload(tmp_path: Path) -> None
         ]
     )
 
+    assert result.payload["session_id"] == str(session.session_id)
+    assert result.payload["artifact_id"] == "tool-run:5"
+    assert result.payload["database"] == str(database_path)
     assert result.payload["status"] == "pruned"
+    assert result.payload["access"]["class"] == "operator_safe"
     assert result.payload["access_class"] == "operator_safe"
     assert result.payload["required_policy_profile"] == "workspace_write"
     assert result.payload["lifecycle"]["status"] == "pruned"
+    assert result.payload["lifecycle"]["retained_until"] is None
+    assert result.payload["lifecycle"]["expired"] is False
 
 
 def test_cli_artifact_prune_is_idempotent(tmp_path: Path) -> None:
@@ -410,6 +416,42 @@ def test_cli_artifact_prune_reports_indexed_only_unavailable(tmp_path: Path) -> 
         "database": str(database_path),
         "status": "artifact_prune_unavailable",
         "reason": "artifact_is_indexed_only",
+    }
+
+
+def test_cli_artifact_prune_reports_external_reference_unavailable(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+    SQLiteToolRunStore(database_path).upsert(
+        ToolRunRecord(
+            session_id=session.session_id,
+            sequence=5,
+            tool_name="tests.run",
+            status="executed",
+            idempotency_key="tool-5",
+            output="see external artifact",
+            artifact_uri="https://example.com/result.json",
+            created_at=_created_at(),
+        )
+    )
+
+    result = execute(
+        [
+            "artifact",
+            "prune",
+            str(session.session_id),
+            "tool-run:5",
+            "--database",
+            str(database_path),
+        ]
+    )
+
+    assert result.payload == {
+        "session_id": str(session.session_id),
+        "artifact_id": "tool-run:5",
+        "database": str(database_path),
+        "status": "artifact_prune_unavailable",
+        "reason": "artifact_uses_external_reference",
     }
 
 

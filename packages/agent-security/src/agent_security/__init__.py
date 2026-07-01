@@ -11,6 +11,7 @@ from agent_security.artifact_access_projection import (
     policy_rank,
     serialize_artifact_access_projection,
 )
+from agent_security.artifact_control_audit import build_artifact_control_audit_metadata
 from agent_security.artifact_retention import (
     EXTENDED_ARTIFACT_RETENTION,
     SHORT_LIVED_ARTIFACT_RETENTION,
@@ -118,6 +119,7 @@ __all__ = [
     "ToolEgressRoute",
     "build_approval_request",
     "build_artifact_access_audit_metadata",
+    "build_artifact_control_audit_metadata",
     "build_artifact_access_projection",
     "classify_artifact_access",
     "classify_tool_egress",

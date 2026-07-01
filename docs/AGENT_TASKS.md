@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 40 ready; shared prune-control response reuse and prune-contract parity are next on top of the completed Phase 39 CLI failure-helper baseline.
+> Current execution range: Phase 43 ready; shared artifact audit metadata convergence is next on top of the completed Phase 42 control-audit helper baseline.
 
 ## Global Rules
 
@@ -5508,8 +5508,8 @@ implementation phase.
 
 ### P40-API-01 - API Shared Artifact Control Response Adoption
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `API`
 - Depends on: `P39-CLOSE-01`
 - Branch: `codex/p40-api-01-artifact-control-response-adoption`
@@ -5528,14 +5528,14 @@ adapters without changing the current operator-facing prune contract.
 
 #### Acceptance
 
-- [ ] API prune denied and unavailable response shaping uses the shared helper path.
-- [ ] Existing API prune payloads remain backward compatible.
-- [ ] API prune regression coverage stays green.
+- [x] API prune denied and unavailable response shaping uses the shared helper path.
+- [x] Existing API prune payloads remain backward compatible.
+- [x] API prune regression coverage stays green.
 
 ### P40-CLI-01 - CLI Shared Artifact Control Response Adoption
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P40-API-01`
 - Branch: `codex/p40-cli-01-artifact-control-response-adoption`
@@ -5555,14 +5555,14 @@ contracts.
 
 #### Acceptance
 
-- [ ] CLI prune denied and unavailable response shaping uses the shared helper path.
-- [ ] Existing CLI prune payloads remain backward compatible.
-- [ ] CLI-local context fields stay explicit.
+- [x] CLI prune denied and unavailable response shaping uses the shared helper path.
+- [x] Existing CLI prune payloads remain backward compatible.
+- [x] CLI-local context fields stay explicit.
 
 ### P40-TEST-01 - Artifact Prune Contract Matrix Expansion
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P40-API-01`, `P40-CLI-01`
 - Branch: `codex/p40-test-01-artifact-prune-contract-matrix`
@@ -5581,14 +5581,14 @@ across API and CLI stays stable after adapter adoption.
 
 #### Acceptance
 
-- [ ] Cross-surface prune contract parity is covered explicitly.
-- [ ] Shared prune helper adoption stays backward compatible across API and CLI.
-- [ ] Regression coverage stays green after matrix expansion.
+- [x] Cross-surface prune contract parity is covered explicitly.
+- [x] Shared prune helper adoption stays backward compatible across API and CLI.
+- [x] Regression coverage stays green after matrix expansion.
 
 ### P40-CLOSE-01 - Phase 40 Closeout And Next Planning
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P40-API-01`, `P40-CLI-01`, `P40-TEST-01`
 - Branch: `codex/p40-closeout-next-plan`
@@ -5607,5 +5607,269 @@ implementation phase.
 
 #### Acceptance
 
-- [ ] Shared prune-control response evidence is recorded.
+- [x] Shared prune-control response evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 41 Task Board
+
+### P41-API-01 - API Shared Artifact Control Success Projection
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `API`
+- Depends on: `P40-CLOSE-01`
+- Branch: `codex/p41-api-01-artifact-control-success-projection`
+- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Adopt a shared prune success projection path in API control adapters without
+changing the current operator-facing success contract.
+
+#### Deliverables
+
+- API adoption of shared prune success response projection helper paths
+- preservation of current API prune success payloads and lifecycle semantics
+- regression coverage for unchanged API prune success contracts
+
+#### Acceptance
+
+- [x] API prune success response shaping uses the shared helper path.
+- [x] Existing API prune success payloads remain backward compatible.
+- [x] API prune success regression coverage stays green.
+
+### P41-CLI-01 - CLI Shared Artifact Control Success Projection
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P41-API-01`
+- Branch: `codex/p41-cli-01-artifact-control-success-projection`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Adopt a shared prune success projection path in CLI control adapters while
+preserving CLI-local operator context fields.
+
+#### Deliverables
+
+- CLI adoption of shared prune success response projection helper paths
+- preservation of CLI-local `database` context and current success semantics
+- regression coverage for unchanged CLI prune success contracts
+
+#### Acceptance
+
+- [ ] CLI prune success response shaping uses the shared helper path.
+- [ ] Existing CLI prune success payloads remain backward compatible.
+- [ ] CLI-local context fields stay explicit.
+
+### P41-TEST-01 - Artifact Prune Success Contract Matrix Expansion
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `TEST`
+- Depends on: `P41-API-01`, `P41-CLI-01`
+- Branch: `codex/p41-test-01-artifact-prune-success-contract-matrix`
+- Owned paths: `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expand cross-surface control contract coverage so shared prune success
+projection reuse across API and CLI stays stable after adapter adoption.
+
+#### Deliverables
+
+- expanded artifact prune success contract matrix
+- explicit parity coverage for `pruned` and `already_pruned` responses
+- documentation notes for cross-surface prune success expectations
+
+#### Acceptance
+
+- [x] Cross-surface prune success parity is covered explicitly.
+- [x] Shared prune success helper adoption stays backward compatible across API and CLI.
+- [x] Regression coverage stays green after matrix expansion.
+
+### P41-CLOSE-01 - Phase 41 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P41-API-01`, `P41-CLI-01`, `P41-TEST-01`
+- Branch: `codex/p41-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 41 with shared prune success projection evidence and define the
+next implementation phase.
+
+#### Deliverables
+
+- Phase 41 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Shared prune success projection evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 42 Task Board
+
+### P42-OBS-01 - Shared Artifact Control Audit Metadata Helper
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OBS`
+- Depends on: `P41-CLOSE-01`
+- Branch: `codex/p42-obs-01-artifact-control-audit-helper`
+- Owned paths: `apps/api/`, `apps/cli/`, `packages/agent-security/`, `tests/api/`, `tests/cli/`, `tests/agent_security/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Extract a shared artifact control audit-metadata helper so prune success and
+failure audit payload assembly stops drifting across API and CLI adapters.
+
+#### Deliverables
+
+- shared artifact control audit metadata helper
+- deterministic metadata projection for prune success, denied, and unavailable cases
+- regression coverage for audit metadata stability
+
+#### Acceptance
+
+- [x] Shared control audit metadata logic is reusable and deterministic.
+- [x] Existing prune audit metadata semantics remain backward compatible.
+- [x] Regression coverage protects the control audit metadata boundary.
+
+### P42-CLOSE-01 - Phase 42 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P42-OBS-01`
+- Branch: `codex/p42-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 42 with shared control audit-metadata evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 42 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Shared control audit-metadata evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 43 Task Board
+
+### P43-OBS-01 - Shared Artifact Audit Metadata Convergence
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OBS`
+- Depends on: `P42-CLOSE-01`
+- Branch: `codex/p43-obs-01-artifact-audit-convergence`
+- Owned paths: `apps/api/`, `packages/agent-security/`, `tests/api/`, `tests/agent_security/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Converge overlapping read-side and control-side artifact audit helper
+semantics so artifact audit metadata has a clearer single vocabulary boundary.
+
+#### Deliverables
+
+- converged shared artifact audit metadata helper boundary
+- preservation of current API artifact audit semantics
+- regression coverage for stable read and control audit metadata
+
+#### Acceptance
+
+- [x] Shared artifact audit metadata helper semantics are converged and deterministic.
+- [x] Existing artifact audit metadata contracts remain backward compatible.
+- [x] Regression coverage protects the converged audit boundary.
+
+### P43-CLOSE-01 - Phase 43 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P43-OBS-01`
+- Branch: `codex/p43-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 43 with shared artifact audit convergence evidence and define the
+next implementation phase.
+
+#### Deliverables
+
+- Phase 43 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [x] Shared artifact audit convergence evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 44 Task Board
+
+### P44-TEST-01 - Artifact Audit Metadata Contract Coverage
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `TEST`
+- Depends on: `P43-CLOSE-01`
+- Branch: `codex/p44-test-01-artifact-audit-contract-coverage`
+- Owned paths: `tests/`, `apps/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add explicit regression coverage for artifact delivery-audit payload semantics
+so read-side and control-side audit metadata boundaries stay stable.
+
+#### Deliverables
+
+- artifact audit metadata contract coverage
+- stable normalization rules for non-deterministic audit fields when needed
+- documentation notes for preserved audit metadata boundaries
+
+#### Acceptance
+
+- [x] Artifact audit metadata contract coverage is explicit and stable.
+- [x] Existing audit metadata semantics remain backward compatible.
+- [x] Regression coverage stays green after audit contract expansion.
+
+### P44-CLOSE-01 - Phase 44 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P44-TEST-01`
+- Branch: `codex/p44-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 44 with artifact audit contract evidence and define the next
+implementation phase.
+
+#### Deliverables
+
+- Phase 44 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Artifact audit contract evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.
