@@ -4117,3 +4117,21 @@
   - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/delivery_audit_read.py tests/cli/test_cli_delivery_audit.py`
   - `uv run mypy packages apps`
   - `uv run pytest tests/cli/test_cli_delivery_audit.py tests/cli/test_cli_commands.py tests/cli/test_cli_artifacts.py`
+
+## 2026-07-01 P45-TEST-01 Delivery Audit Cross-Surface Contract Matrix
+
+- 执行 `P45-TEST-01 - Delivery Audit Cross-Surface Contract Matrix`
+- 行为更新：
+  - 新增 `tests/test_delivery_audit_contract_matrix.py`
+  - 显式锁定 API 与 CLI 在 populated、empty、missing-session 三类 delivery-audit 读取路径上的共享契约
+  - 将 CLI 本地 `database` 上下文字段视为 CLI-only 差异，不纳入 cross-surface 共享契约比较
+  - 用同一条 matrix 同时覆盖 SCM audit record 与空历史或缺失 session 边界
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `make sync`
+  - `uv run pytest tests/test_delivery_audit_contract_matrix.py tests/api/test_session_delivery_audit.py tests/api/test_artifact_delivery_audit_contract.py tests/cli/test_cli_delivery_audit.py`
+  - `uv run ruff check tests/test_delivery_audit_contract_matrix.py`
+  - `uv run mypy packages apps`

@@ -5,8 +5,8 @@
 - Active phase: `Phase 45 - Delivery Audit CLI And Operator Parity`
 - Repository status: `phase 45 in progress`
 - Current focus:
-  - lock cross-surface delivery-audit output parity
-  - document stable API and CLI audit-read boundaries
+  - close Phase 45 with acceptance evidence
+  - define the next implementation slice
 - Phase 38 shared artifact access audit metadata helper is complete on `codex/p38-obs-01-artifact-access-audit-helper`, centralizing deterministic allow, deny, and prune audit metadata assembly in `agent-security` and reusing it across API read and prune audit paths
 - Phase 38 API shared denial-response adoption is complete on `codex/p38-api-01-artifact-denial-response-adoption`, centralizing API read-side deny and unavailable response shaping while preserving the current operator-facing access contract
 - Phase 38 is closed with `docs/Phase38_Shared_Artifact_Audit_Metadata_And_Denial_Response_Reuse_验收记录.md`
@@ -269,7 +269,8 @@
 - Phase 44 is closed with `docs/Phase44_Artifact_Audit_Metadata_Contract_Coverage_验收记录.md`
 - `P45-CLI-01 - Delivery Audit CLI Read Surface` is in review on `codex/p45-cli-01-delivery-audit-read`
 - CLI now exposes local session delivery-audit inspection with explicit `ok`, `not_found`, and empty-history semantics aligned to the existing API read surface
-- `P45-TEST-01 - Delivery Audit Cross-Surface Contract Matrix` is ready on `codex/p45-test-01-delivery-audit-contract-matrix`
+- `P45-TEST-01 - Delivery Audit Cross-Surface Contract Matrix` is in review on `codex/p45-test-01-delivery-audit-contract-matrix`
+- delivery-audit parity rules are now locked through a shared contract matrix that normalizes CLI-local context fields while asserting stable API and CLI agreement on shared audit payload semantics
 - `P45-CLOSE-01 - Phase 45 Closeout And Next Planning` is the documentation closeout lane for delivery-audit operator parity
 
 ## Active Documents

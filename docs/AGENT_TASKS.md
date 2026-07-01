@@ -5904,8 +5904,8 @@ operators do not need the HTTP API for routine audit lookup.
 
 ### P45-TEST-01 - Delivery Audit Cross-Surface Contract Matrix
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P45-CLI-01`
 - Branch: `codex/p45-test-01-delivery-audit-contract-matrix`
@@ -5924,9 +5924,9 @@ audit-surface changes do not drift across operators' read paths.
 
 #### Acceptance
 
-- [ ] API and CLI delivery-audit output parity is explicit and regression-tested.
-- [ ] Stable audit fields stay locked without overfitting transient timestamps.
-- [ ] Artifact and SCM audit records remain backward compatible across both surfaces.
+- [x] API and CLI delivery-audit output parity is explicit and regression-tested.
+- [x] Stable audit fields stay locked without overfitting transient timestamps.
+- [x] Artifact and SCM audit records remain backward compatible across both surfaces.
 
 ### P45-CLOSE-01 - Phase 45 Closeout And Next Planning
 
