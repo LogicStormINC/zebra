@@ -5957,8 +5957,8 @@ next implementation phase.
 
 ### P46-CLI-01 - Session Diff CLI Read Surface
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P45-CLOSE-01`
 - Branch: `codex/p46-cli-01-session-diff-read`
@@ -5977,9 +5977,9 @@ operators do not need the HTTP API for routine diff lookup.
 
 #### Acceptance
 
-- [ ] Operators can inspect one session workspace diff from the CLI.
-- [ ] Clean, dirty, and unavailable diff states stay explicit and machine-readable.
-- [ ] Existing API diff behavior remains backward compatible.
+- [x] Operators can inspect one session workspace diff from the CLI.
+- [x] Clean, dirty, and unavailable diff states stay explicit and machine-readable.
+- [x] Existing API diff behavior remains backward compatible.
 
 ### P46-TEST-01 - Session Diff Cross-Surface Contract Matrix
 
