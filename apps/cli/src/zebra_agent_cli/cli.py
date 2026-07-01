@@ -7,12 +7,6 @@ from pathlib import Path
 from uuid import UUID
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
-from agent_core.application.approvals import (
-    ApprovalDecisionAction,
-    ApprovalDecisionCommand,
-    ApprovalDecisionService,
-)
-from agent_core.application.session_projection import apply_event
 from agent_core.domain.identifiers import SessionId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_integrations import build_model_gateway
@@ -33,6 +27,7 @@ from zebra_agent_worker import (
     SessionResumeService,
 )
 
+from zebra_agent_cli.approval_decision_write import record_approval_decision
 from zebra_agent_cli.artifact_read import (
     prune_artifact,
     read_artifact_content,
@@ -377,56 +372,15 @@ def _approval_result(
     namespace: argparse.Namespace,
     database_path: Path,
 ) -> CliCommandResult:
-    session_id = SessionId(UUID(namespace.session_id))
-    projection_store = SQLiteProjectionStore(database_path)
-    session = projection_store.get_session(session_id)
-    if session is None:
-        return CliCommandResult(
-            command="approve",
-            payload={
-                "session_id": namespace.session_id,
-                "database": str(database_path),
-                "status": "not_found",
-            },
-        )
-    action = (
-        ApprovalDecisionAction.GRANT
-        if namespace.decision == "approve"
-        else ApprovalDecisionAction.REJECT
-    )
-    reason = namespace.reason or f"{namespace.decision} via CLI"
-    try:
-        event = ApprovalDecisionService().build_event(
-            session=session,
-            next_sequence=session.current_sequence + 1,
-            command=ApprovalDecisionCommand(
-                action=action,
-                operator=namespace.operator,
-                reason=reason,
-            ),
-        )
-    except ValueError as exc:
-        return CliCommandResult(
-            command="approve",
-            payload={
-                "session_id": namespace.session_id,
-                "database": str(database_path),
-                "status": "invalid_state",
-                "reason": str(exc),
-            },
-        )
-    SQLiteEventStore(database_path).append(event)
-    updated_session = projection_store.save_session(apply_event(session, event))
     return CliCommandResult(
         command="approve",
-        payload={
-            "session_id": namespace.session_id,
-            "database": str(database_path),
-            "decision": namespace.decision,
-            "event_type": event.event_type.value,
-            "sequence": event.sequence,
-            "status": updated_session.status.value,
-        },
+        payload=record_approval_decision(
+            database_path=database_path,
+            approval_id=namespace.session_id,
+            decision=namespace.decision,
+            operator=namespace.operator,
+            reason=namespace.reason,
+        ),
     )
 
 

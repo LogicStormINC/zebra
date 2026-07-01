@@ -3,13 +3,14 @@
 ## Current Phase
 
 - Active phase: `Phase 51 - Approval Decision Cross-Surface Parity`
-- Repository status: `phase 51 ready`
+- Repository status: `phase 51 in progress`
 - Current focus:
-  - start approval decision cross-surface parity work in `P51-TEST-01`
-  - lock API and CLI approval decision results while keeping CLI-local `database` context outside the shared contract
+  - close Phase 51 with acceptance evidence in `P51-CLOSE-01`
+  - define the next operator-facing implementation lane after approval decision parity
   - `P50-CLI-01` is complete on `codex/p50-cli-01-approval-queue-read` with local `approval queue` and `approval inspect` read surfaces
   - `P50-TEST-01` is complete on `codex/p50-test-01-approval-queue-contract-matrix` with approval queue/detail parity coverage and CLI-local `database` normalization
   - Phase 50 is closed with `docs/Phase50_Approval_Queue_CLI_And_Operator_Parity_验收记录.md`
+  - `P51-TEST-01` is complete on `codex/p51-test-01-approval-decision-contract-matrix` with approval decision parity coverage and CLI-local `database` normalization
 - Phase 38 shared artifact access audit metadata helper is complete on `codex/p38-obs-01-artifact-access-audit-helper`, centralizing deterministic allow, deny, and prune audit metadata assembly in `agent-security` and reusing it across API read and prune audit paths
 - Phase 38 API shared denial-response adoption is complete on `codex/p38-api-01-artifact-denial-response-adoption`, centralizing API read-side deny and unavailable response shaping while preserving the current operator-facing access contract
 - Phase 38 is closed with `docs/Phase38_Shared_Artifact_Audit_Metadata_And_Denial_Response_Reuse_验收记录.md`
