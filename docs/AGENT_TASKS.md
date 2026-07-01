@@ -6142,8 +6142,8 @@ not need the HTTP API for routine local delivery completion.
 
 ### P48-TEST-01 - Session Commit Cross-Surface Contract Matrix
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P48-CLI-01`
 - Branch: `codex/p48-test-01-session-commit-contract-matrix`
@@ -6162,9 +6162,9 @@ local delivery changes do not drift across operator control paths.
 
 #### Acceptance
 
-- [ ] API and CLI session commit output parity is explicit and regression-tested.
-- [ ] Stable commit result fields stay locked without overfitting transport-specific context.
-- [ ] Success, unavailable, missing-session, and idempotent replay paths remain backward compatible across both surfaces.
+- [x] API and CLI session commit output parity is explicit and regression-tested.
+- [x] Stable commit result fields stay locked without overfitting transport-specific context.
+- [x] Success, unavailable, missing-session, and idempotent replay paths remain backward compatible across both surfaces.
 
 ### P48-CLOSE-01 - Phase 48 Closeout And Next Planning
 
