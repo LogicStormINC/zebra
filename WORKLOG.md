@@ -4198,3 +4198,21 @@
   - `README.md`
 - 验证：
   - `make check`
+
+## 2026-07-01 P47-CLI-01 Session Stream CLI Read Surface
+
+- 执行 `P47-CLI-01 - Session Stream CLI Read Surface`
+- 行为更新：
+  - 新增 `apps/cli/src/zebra_agent_cli/session_stream_read.py`
+  - 新增顶层 CLI 命令 `zebra-agent stream <session_id>`
+  - 复用现有 session stream 事件投影格式作为 CLI 本地读面
+  - 本地 CLI 现在可直接读取 persisted session event stream，不再依赖 HTTP API
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run pytest tests/cli/test_cli_session_stream.py tests/api/test_api_app.py tests/api/test_http_app.py tests/api/test_routes.py -k stream`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/session_stream_read.py tests/cli/test_cli_session_stream.py`
+  - `uv run mypy packages apps`
+  - `make check`

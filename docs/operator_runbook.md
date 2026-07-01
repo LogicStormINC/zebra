@@ -400,6 +400,14 @@ Replay the persisted session event stream over SSE:
 curl -N http://127.0.0.1:8000/sessions/<session_id>/stream
 ```
 
+Read the same persisted session event stream directly from the local CLI
+without the HTTP API:
+
+```bash
+uv run zebra-agent stream <session_id> \
+  --database .zebra-agent/operator-runbook.sqlite
+```
+
 When auth is enabled:
 
 ```bash
