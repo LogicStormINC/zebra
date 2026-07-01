@@ -4168,3 +4168,18 @@
   - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/session_diff_read.py tests/cli/test_cli_session_diff.py`
   - `uv run mypy packages apps`
   - `make check`
+
+## 2026-07-01 P46-TEST-01 Session Diff Cross-Surface Contract Matrix
+
+- 执行 `P46-TEST-01 - Session Diff Cross-Surface Contract Matrix`
+- 行为更新：
+  - 新增 `tests/test_session_diff_contract_matrix.py`
+  - 显式锁定 API 与 CLI 在 dirty、clean、missing-session、non-git 四类 session diff 读取路径上的共享契约
+  - 将 CLI 本地 `database` 上下文字段排除在 cross-surface 共享契约之外
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+- 验证：
+  - `uv run pytest tests/test_session_diff_contract_matrix.py tests/api/test_session_diff.py tests/cli/test_cli_session_diff.py`
+  - `uv run ruff check tests/test_session_diff_contract_matrix.py`

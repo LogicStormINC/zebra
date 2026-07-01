@@ -5983,8 +5983,8 @@ operators do not need the HTTP API for routine diff lookup.
 
 ### P46-TEST-01 - Session Diff Cross-Surface Contract Matrix
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P46-CLI-01`
 - Branch: `codex/p46-test-01-session-diff-contract-matrix`
@@ -6003,9 +6003,9 @@ workspace-inspection changes do not drift across operator read paths.
 
 #### Acceptance
 
-- [ ] API and CLI session diff output parity is explicit and regression-tested.
-- [ ] Stable diff fields stay locked without overfitting local path noise.
-- [ ] Clean, dirty, and unavailable diff states remain backward compatible across both surfaces.
+- [x] API and CLI session diff output parity is explicit and regression-tested.
+- [x] Stable diff fields stay locked without overfitting local path noise.
+- [x] Clean, dirty, and unavailable diff states remain backward compatible across both surfaces.
 
 ### P46-CLOSE-01 - Phase 46 Closeout And Next Planning
 
