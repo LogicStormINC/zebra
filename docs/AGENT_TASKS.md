@@ -6224,8 +6224,8 @@ delivery completion.
 
 ### P49-TEST-01 - Session Pull Request Cross-Surface Contract Matrix
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P49-CLI-01`
 - Branch: `codex/p49-test-01-session-pull-request-contract-matrix`
@@ -6245,9 +6245,9 @@ future delivery changes do not drift across operator control paths.
 
 #### Acceptance
 
-- [ ] API and CLI session pull-request output parity is explicit and regression-tested.
-- [ ] Stable pull-request result fields stay locked without overfitting transport-specific context.
-- [ ] Dry-run, created, unavailable, missing-session, and idempotent replay paths remain backward compatible across both surfaces.
+- [x] API and CLI session pull-request output parity is explicit and regression-tested.
+- [x] Stable pull-request result fields stay locked without overfitting transport-specific context.
+- [x] Dry-run, created, unavailable, missing-session, and idempotent replay paths remain backward compatible across both surfaces.
 
 ### P49-CLOSE-01 - Phase 49 Closeout And Next Planning
 

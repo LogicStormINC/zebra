@@ -4324,3 +4324,23 @@
   - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py apps/cli/src/zebra_agent_cli/session_pull_request_write.py tests/cli/test_cli_session_pull_request.py`
   - `uv run mypy packages apps`
   - `make check`
+
+## 2026-07-01 P49-TEST-01 Session Pull Request Cross-Surface Contract Matrix
+
+- 执行 `P49-TEST-01 - Session Pull Request Cross-Surface Contract Matrix`
+- 行为更新：
+  - 新增 `tests/test_session_pull_request_contract_matrix.py`
+  - 显式锁定 API 与 CLI 在 dry-run、created、policy-blocked、unavailable、missing-session 路径上的共享 pull-request 契约
+  - 使用 cross-surface idempotency replay 覆盖 `API -> CLI` 与 `CLI -> API` 两个方向
+  - 将 CLI 本地 `database` 字段排除在共享契约边界之外
+- 文档更新：
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `WORKLOG.md`
+- 验证：
+  - `make sync`
+  - `uv run pytest tests/test_session_pull_request_contract_matrix.py tests/cli/test_cli_session_pull_request.py tests/api/test_session_pull_request.py`
+  - `uv run ruff check tests/test_session_pull_request_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`

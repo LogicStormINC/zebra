@@ -289,7 +289,8 @@
 - Phase 48 is closed with `docs/Phase48_Session_Commit_CLI_And_Operator_Parity_验收记录.md`
 - `P49-CLI-01 - Session Pull Request CLI Delivery Surface` is complete on `codex/p49-cli-01-session-pull-request-read`
 - local operators can now open one session pull request from the CLI with explicit dry-run, created, unavailable, policy-blocked, missing-session, invalid-request, and idempotent replay semantics
-- `P49-TEST-01 - Session Pull Request Cross-Surface Contract Matrix` is ready on `codex/p49-test-01-session-pull-request-contract-matrix`
+- `P49-TEST-01 - Session Pull Request Cross-Surface Contract Matrix` is complete on `codex/p49-test-01-session-pull-request-contract-matrix`
+- session pull-request parity rules are now locked through a shared contract matrix covering dry-run, created, policy-blocked, unavailable, missing-session, and cross-surface idempotent replay while treating CLI-local `database` context as transport-specific
 - `P49-CLOSE-01 - Phase 49 Closeout And Next Planning` is the documentation closeout lane for session pull-request operator parity
 
 ## Active Documents
