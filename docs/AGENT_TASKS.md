@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 55 ready; session inspect CLI and operator parity is next on top of the completed Phase 54 session artifact list cross-surface parity baseline.
+> Current execution range: Phase 56 ready; session resume execute CLI and operator parity is next on top of the completed Phase 55 session inspect cross-surface parity baseline.
 
 ## Global Rules
 
@@ -6706,8 +6706,8 @@ inspection changes do not drift across operator read surfaces.
 
 ### P55-CLOSE-01 - Phase 55 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P55-TEST-01`
 - Branch: `codex/p55-closeout-next-plan`
@@ -6726,5 +6726,86 @@ next implementation phase.
 
 #### Acceptance
 
-- [ ] Session inspect operator parity evidence is recorded.
+- [x] Session inspect operator parity evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 56 Task Board
+
+### P56-CLI-01 - Session Resume Execute CLI Parity Alignment
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P55-CLOSE-01`
+- Branch: `codex/p56-cli-01-session-resume-execute-parity`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Align local CLI `resume --execute` output and failure shaping with the current
+API session resume execution surface so operator control semantics do not drift
+across entry points.
+
+#### Deliverables
+
+- CLI resume execute parity alignment for stable API resume fields
+- machine-readable local output for resumed, missing-session, invalid-request,
+  lease-conflict, and not-resumable paths
+- regression coverage for aligned resume execute behavior
+
+#### Acceptance
+
+- [ ] Operators can resume execution from the CLI with parity-aligned output.
+- [ ] Stable API resume execute fields and failure classes remain visible from the CLI where they are part of the shared operator contract.
+- [ ] Existing API resume execute behavior remains backward compatible.
+
+### P56-TEST-01 - Session Resume Execute Cross-Surface Contract Matrix
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `TEST`
+- Depends on: `P56-CLI-01`
+- Branch: `codex/p56-test-01-session-resume-execute-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI session resume execute output so
+future resume changes do not drift across operator control surfaces.
+
+#### Deliverables
+
+- cross-surface session resume execute regression matrix
+- normalization rules for CLI-local context when needed
+- documented parity boundary for API and CLI resume execute results
+
+#### Acceptance
+
+- [ ] API and CLI session resume execute output parity is explicit and regression-tested.
+- [ ] Resumed, missing-session, invalid-request, lease-conflict, and not-resumable paths remain backward compatible across both surfaces.
+- [ ] Stable resume execute result fields stay locked without overfitting CLI-only context.
+
+### P56-CLOSE-01 - Phase 56 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P56-TEST-01`
+- Branch: `codex/p56-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 56 with session resume execute operator parity evidence and define
+the next implementation phase.
+
+#### Deliverables
+
+- Phase 56 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Session resume execute operator parity evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

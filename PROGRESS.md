@@ -2,10 +2,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 55 - Session Inspect CLI And Operator Parity`
-- Repository status: `phase 55 ready`
+- Active phase: `Phase 56 - Session Resume Execute CLI And Operator Parity`
+- Repository status: `phase 56 ready`
 - Current focus:
-  - start `P55-CLOSE-01` to record Phase 55 acceptance evidence and define the next phase
+  - start `P56-CLI-01` to align local CLI `resume --execute` failure shaping with the API resume execution surface
+  - `P55-CLOSE-01` is complete on `codex/p55-closeout-next-plan` with Phase 55 acceptance evidence and Phase 56 starter tasks
+  - Phase 55 is closed with `docs/Phase55_Session_Inspect_CLI_And_Operator_Parity_验收记录.md`
   - `P55-TEST-01` is complete on `codex/p55-test-01-session-inspect-contract-matrix` with session inspect parity coverage and CLI-local `database` normalization
   - `P55-CLI-01` is complete on `codex/p55-cli-01-session-inspect-parity` with CLI inspect approval-context parity alignment
   - `P54-CLOSE-01` is complete on `codex/p54-closeout-next-plan` with Phase 54 acceptance evidence and Phase 55 starter tasks
