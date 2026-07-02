@@ -6761,8 +6761,8 @@ across entry points.
 
 ### P56-TEST-01 - Session Resume Execute Cross-Surface Contract Matrix
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P56-CLI-01`
 - Branch: `codex/p56-test-01-session-resume-execute-contract-matrix`
@@ -6781,13 +6781,13 @@ future resume changes do not drift across operator control surfaces.
 
 #### Acceptance
 
-- [ ] API and CLI session resume execute output parity is explicit and regression-tested.
-- [ ] Resumed, missing-session, invalid-request, lease-conflict, and not-resumable paths remain backward compatible across both surfaces.
-- [ ] Stable resume execute result fields stay locked without overfitting CLI-only context.
+- [x] API and CLI session resume execute output parity is explicit and regression-tested.
+- [x] Resumed, missing-session, invalid-request, lease-conflict, and not-resumable paths remain backward compatible across both surfaces.
+- [x] Stable resume execute result fields stay locked without overfitting CLI-only context.
 
 ### P56-CLOSE-01 - Phase 56 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P56-TEST-01`
