@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 56 ready; session resume execute CLI and operator parity is next on top of the completed Phase 55 session inspect cross-surface parity baseline.
+> Current execution range: Phase 56 closeout is complete; resume execute CLI and operator parity is recorded, and next-priority planning is pending definition.
 
 ## Global Rules
 
@@ -6787,8 +6787,8 @@ future resume changes do not drift across operator control surfaces.
 
 ### P56-CLOSE-01 - Phase 56 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P56-TEST-01`
 - Branch: `codex/p56-closeout-next-plan`
@@ -6796,16 +6796,16 @@ future resume changes do not drift across operator control surfaces.
 
 #### Goal
 
-Close Phase 56 with session resume execute operator parity evidence and define
-the next implementation phase.
+Close Phase 56 with session resume execute operator parity evidence and record the
+current next-implementation planning status.
 
 #### Deliverables
 
 - Phase 56 acceptance record
-- next phase starter tasks
+- current implementation lane and next-priority status
 - updated progress and README state
 
 #### Acceptance
 
-- [ ] Session resume execute operator parity evidence is recorded.
-- [ ] Next phase starter tasks are ready and path-scoped.
+- [x] Session resume execute operator parity evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
