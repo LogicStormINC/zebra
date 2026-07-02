@@ -1,5 +1,16 @@
 # Progress Log
 
+## 2026-07-02 Phase 52 Closeout And Phase 53 Planning
+
+- claimed `P52-CLOSE-01` on `codex/p52-closeout-next-plan`
+- added `docs/Phase52_Session_Message_Append_CLI_And_Operator_Parity_验收记录.md`
+- closed Phase 52 after session message append CLI delivery and cross-surface parity landed on `main`
+- set the next active milestone to `Phase 53 - Session Control CLI And Operator Parity`
+- added starter tasks:
+  - `P53-CLI-01 - Session Cancel CLI Surface`
+  - `P53-TEST-01 - Session Control Cross-Surface Contract Matrix`
+  - `P53-CLOSE-01 - Phase 53 Closeout And Next Planning`
+
 ## 2026-07-02 Phase 52 Session Message Append Contract Matrix
 
 - claimed `P52-TEST-01` on `codex/p52-test-01-session-message-contract-matrix`

@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 52 ready; session message append CLI and operator parity is next on top of the completed Phase 51 approval decision cross-surface parity baseline.
+> Current execution range: Phase 53 ready; session control CLI and operator parity is next on top of the completed Phase 52 session message append cross-surface parity baseline.
 
 ## Global Rules
 
@@ -6465,8 +6465,8 @@ future continuation changes do not drift across operator control surfaces.
 
 ### P52-CLOSE-01 - Phase 52 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P52-TEST-01`
 - Branch: `codex/p52-closeout-next-plan`
@@ -6485,5 +6485,85 @@ the next implementation phase.
 
 #### Acceptance
 
-- [ ] Session message append operator parity evidence is recorded.
+- [x] Session message append operator parity evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 53 Task Board
+
+### P53-CLI-01 - Session Cancel CLI Surface
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P52-CLOSE-01`
+- Branch: `codex/p53-cli-01-session-cancel`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose a local CLI cancel surface for durable session control so operators do
+not need the HTTP API for routine cancel actions.
+
+#### Deliverables
+
+- CLI command for cancelling one existing session
+- machine-readable local output for cancelled, invalid-state, and not-found
+  cancel paths
+- regression coverage for CLI cancel behavior
+
+#### Acceptance
+
+- [ ] Operators can cancel one session from the CLI.
+- [ ] Invalid-state and missing-session cancel failures remain deterministic from the CLI.
+- [ ] Existing API cancel behavior remains backward compatible.
+
+### P53-TEST-01 - Session Control Cross-Surface Contract Matrix
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `TEST`
+- Depends on: `P53-CLI-01`
+- Branch: `codex/p53-test-01-session-control-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI session control output so future
+cancel or suspend changes do not drift across operator control surfaces.
+
+#### Deliverables
+
+- cross-surface session control regression matrix
+- normalization rules for CLI-local context when needed
+- documented parity boundary for API and CLI cancel and suspend results
+
+#### Acceptance
+
+- [ ] API and CLI session control output parity is explicit and regression-tested.
+- [ ] Cancelled, invalid-state, missing-session, suspended, invalid-request, and not-found control paths remain backward compatible across both surfaces.
+- [ ] Stable control result fields stay locked without overfitting CLI-only context.
+
+### P53-CLOSE-01 - Phase 53 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P53-TEST-01`
+- Branch: `codex/p53-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 53 with session control operator parity evidence and define the
+next implementation phase.
+
+#### Deliverables
+
+- Phase 53 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Session control operator parity evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.
