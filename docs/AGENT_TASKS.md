@@ -6789,9 +6789,9 @@ future resume changes do not drift across operator control surfaces.
 
 - Status: `Done`
 - Owner: `Codex`
-- Suggested role: `DOC`
-- Depends on: `P56-TEST-01`
-- Branch: `codex/p56-closeout-next-plan`
+ - Suggested role: `DOC`
+ - Depends on: `P56-TEST-01`
+ - Branch: `codex/p56-closeout-next-plan`
 - Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
