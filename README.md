@@ -90,7 +90,8 @@ The next milestone is `Phase 53 - Session Control CLI And Operator Parity`. The 
 - Phase 51 now has a dedicated approval decision API-vs-CLI contract matrix with CLI-local `database` normalization
 - Phase 52 now has a local CLI session message append surface for durable session continuation
 - Phase 52 now has a dedicated session message append API-vs-CLI contract matrix with CLI-local `database` normalization
-- the next ready implementation lane is session control CLI and operator parity
+- Phase 53 now has a restored cancel control entry plus a local CLI cancel surface for durable session control
+- the next ready implementation lane is session control cross-surface parity
 
 Read in this order:
 

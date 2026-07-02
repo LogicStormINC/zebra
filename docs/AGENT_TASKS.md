@@ -6490,22 +6490,24 @@ the next implementation phase.
 
 ## Phase 53 Task Board
 
-### P53-CLI-01 - Session Cancel CLI Surface
+### P53-CLI-01 - Session Cancel Control Surface
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P52-CLOSE-01`
 - Branch: `codex/p53-cli-01-session-cancel`
-- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+- Owned paths: `apps/cli/`, `apps/api/`, `apps/worker/`, `tests/cli/`, `tests/api/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Expose a local CLI cancel surface for durable session control so operators do
-not need the HTTP API for routine cancel actions.
+Expose a local session cancel control surface by restoring the missing control
+entry and wiring a local CLI path so operators do not need the HTTP API for
+routine cancel actions.
 
 #### Deliverables
 
+- restored cancel control entry with deterministic response models
 - CLI command for cancelling one existing session
 - machine-readable local output for cancelled, invalid-state, and not-found
   cancel paths
@@ -6513,13 +6515,13 @@ not need the HTTP API for routine cancel actions.
 
 #### Acceptance
 
-- [ ] Operators can cancel one session from the CLI.
-- [ ] Invalid-state and missing-session cancel failures remain deterministic from the CLI.
-- [ ] Existing API cancel behavior remains backward compatible.
+- [x] Operators can cancel one session from the CLI.
+- [x] Invalid-state and missing-session cancel failures remain deterministic from the CLI.
+- [x] Existing API cancel behavior is restored and remains backward compatible.
 
 ### P53-TEST-01 - Session Control Cross-Surface Contract Matrix
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `TEST`
 - Depends on: `P53-CLI-01`
