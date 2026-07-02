@@ -1,5 +1,5 @@
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
@@ -489,6 +489,149 @@ def test_cli_resume_command_execute_reports_tool_trace(
     ]
 
 
+def test_cli_resume_command_execute_reports_missing_session(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    result = execute(
+        [
+            "resume",
+            "00000000-0000-0000-0000-000000000001",
+            "--execute",
+            "--database",
+            str(database_path),
+        ],
+        settings=_settings(database_path),
+    )
+
+    assert result.payload == {
+        "session_id": "00000000-0000-0000-0000-000000000001",
+        "database": str(database_path),
+        "status": "not_found",
+    }
+
+
+def test_cli_resume_command_execute_reports_not_resumable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, tmp_path)
+    settings = _settings(database_path)
+
+    def fake_build_model_gateway(active_settings: ZebraAgentSettings):
+        del active_settings
+        return FakeGateway(
+            completion=ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content="Resume execution complete.",
+                    created_at=_created_at(),
+                )
+            )
+        )
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        fake_build_model_gateway,
+    )
+    first = execute(
+        [
+            "resume",
+            str(session_id),
+            "--execute",
+            "--database",
+            str(database_path),
+        ],
+        settings=settings,
+    )
+    second = execute(
+        [
+            "resume",
+            str(session_id),
+            "--execute",
+            "--database",
+            str(database_path),
+        ],
+        settings=settings,
+    )
+
+    assert first.payload["status"] == SessionStatus.COMPLETED.value
+    assert second.payload == {
+        "session_id": str(session_id),
+        "database": str(database_path),
+        "status": "not_resumable",
+        "reason": "cannot_resume_terminal_session",
+    }
+
+
+def test_cli_resume_command_execute_reports_lease_conflict(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, tmp_path)
+    _seed_active_lease(database_path, session_id, worker_id="worker-held")
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: FakeGateway(
+            completion=ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content="unused",
+                    created_at=_created_at(),
+                )
+            )
+        ),
+    )
+
+    result = execute(
+        [
+            "resume",
+            str(session_id),
+            "--execute",
+            "--worker-id",
+            "worker-b",
+            "--database",
+            str(database_path),
+        ],
+        settings=_settings(database_path),
+    )
+
+    assert result.payload == {
+        "session_id": str(session_id),
+        "database": str(database_path),
+        "status": "lease_conflict",
+        "reason": "session_already_leased",
+    }
+
+
+def test_cli_resume_command_execute_rejects_invalid_request(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    result = execute(
+        [
+            "resume",
+            str(session_id),
+            "--execute",
+            "--lease-ttl-seconds",
+            "0",
+            "--database",
+            str(database_path),
+        ],
+        settings=_settings(database_path),
+    )
+
+    assert result.payload == {
+        "status": "invalid_request",
+        "reason": "lease_ttl_seconds must be greater than zero",
+        "database": str(database_path),
+    }
+
+
 def test_cli_inspect_command_reads_local_session(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session = SQLiteProjectionStore(database_path).save_session(
@@ -793,3 +936,13 @@ def _seed_ready_session(database_path: Path, workspace_root: Path) -> SessionId:
         event_store.append(event)
     SQLiteProjectionStore(database_path).save_session(bootstrap.session)
     return bootstrap.session.session_id
+
+
+def _seed_active_lease(database_path: Path, session_id: SessionId, *, worker_id: str) -> None:
+    now = datetime.now(UTC)
+    SQLiteLeaseStore(database_path).acquire(
+        session_id,
+        worker_id=worker_id,
+        acquired_at=now,
+        expires_at=now + timedelta(minutes=1),
+    )

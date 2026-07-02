@@ -11,6 +11,15 @@
   - `P56-TEST-01 - Session Resume Execute Cross-Surface Contract Matrix`
   - `P56-CLOSE-01 - Phase 56 Closeout And Next Planning`
 
+## 2026-07-02 Phase 56 Session Resume Execute CLI Parity Alignment
+
+- claimed `P56-CLI-01` on `codex/p56-cli-01-session-resume-execute-parity`
+- aligned local CLI `resume --execute` failure shaping with the API resume execution surface
+- covered invalid-request, missing-session, lease-conflict, and not-resumable resume execute paths
+- validation:
+  - `uv run pytest tests/cli/test_cli_commands.py tests/api/test_http_app.py tests/api/test_routes.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py tests/cli/test_cli_commands.py`
+
 ## 2026-07-02 Phase 55 Session Inspect Contract Matrix
 
 - claimed `P55-TEST-01` on `codex/p55-test-01-session-inspect-contract-matrix`

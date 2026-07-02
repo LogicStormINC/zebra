@@ -5,7 +5,8 @@
 - Active phase: `Phase 56 - Session Resume Execute CLI And Operator Parity`
 - Repository status: `phase 56 ready`
 - Current focus:
-  - start `P56-CLI-01` to align local CLI `resume --execute` failure shaping with the API resume execution surface
+  - start `P56-TEST-01` to lock API and CLI resume execute parity
+  - `P56-CLI-01` is complete on `codex/p56-cli-01-session-resume-execute-parity` with CLI resume execute failure shaping aligned to API resume execution semantics
   - `P55-CLOSE-01` is complete on `codex/p55-closeout-next-plan` with Phase 55 acceptance evidence and Phase 56 starter tasks
   - Phase 55 is closed with `docs/Phase55_Session_Inspect_CLI_And_Operator_Parity_验收记录.md`
   - `P55-TEST-01` is complete on `codex/p55-test-01-session-inspect-contract-matrix` with session inspect parity coverage and CLI-local `database` normalization

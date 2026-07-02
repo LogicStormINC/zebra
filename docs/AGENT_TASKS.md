@@ -6733,8 +6733,8 @@ next implementation phase.
 
 ### P56-CLI-01 - Session Resume Execute CLI Parity Alignment
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P55-CLOSE-01`
 - Branch: `codex/p56-cli-01-session-resume-execute-parity`
@@ -6755,13 +6755,13 @@ across entry points.
 
 #### Acceptance
 
-- [ ] Operators can resume execution from the CLI with parity-aligned output.
-- [ ] Stable API resume execute fields and failure classes remain visible from the CLI where they are part of the shared operator contract.
-- [ ] Existing API resume execute behavior remains backward compatible.
+- [x] Operators can resume execution from the CLI with parity-aligned output.
+- [x] Stable API resume execute fields and failure classes remain visible from the CLI where they are part of the shared operator contract.
+- [x] Existing API resume execute behavior remains backward compatible.
 
 ### P56-TEST-01 - Session Resume Execute Cross-Surface Contract Matrix
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `TEST`
 - Depends on: `P56-CLI-01`
