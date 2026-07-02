@@ -6601,8 +6601,8 @@ so artifact discovery does not depend on the HTTP API.
 
 ### P54-TEST-01 - Session Artifact List Cross-Surface Contract Matrix
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P54-CLI-01`
 - Branch: `codex/p54-test-01-session-artifact-list-contract-matrix`
@@ -6621,13 +6621,13 @@ artifact inventory changes do not drift across operator control surfaces.
 
 #### Acceptance
 
-- [ ] API and CLI artifact list output parity is explicit and regression-tested.
-- [ ] Non-empty, empty, and missing-session artifact list paths remain backward compatible across both surfaces.
-- [ ] Stable artifact list result fields stay locked without overfitting CLI-only context.
+- [x] API and CLI artifact list output parity is explicit and regression-tested.
+- [x] Non-empty, empty, and missing-session artifact list paths remain backward compatible across both surfaces.
+- [x] Stable artifact list result fields stay locked without overfitting CLI-only context.
 
 ### P54-CLOSE-01 - Phase 54 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P54-TEST-01`

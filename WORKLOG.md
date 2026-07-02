@@ -1,5 +1,15 @@
 # Progress Log
 
+## 2026-07-02 Phase 54 Session Artifact List Contract Matrix
+
+- claimed `P54-TEST-01` on `codex/p54-test-01-session-artifact-list-contract-matrix`
+- locking API and CLI parity for session artifact list output
+- expect one explicit CLI-local normalization for `database`, with shared artifact payloads compared otherwise field-for-field
+- completed `P54-TEST-01` with a dedicated session artifact list cross-surface regression matrix
+- validation:
+  - `uv run pytest tests/test_session_artifact_list_contract_matrix.py tests/cli/test_cli_artifacts.py tests/api/test_session_artifacts.py tests/api/test_session_artifact_access_projection.py`
+  - `uv run ruff check tests/test_session_artifact_list_contract_matrix.py`
+
 ## 2026-07-02 Phase 54 Session Artifact List CLI Surface
 
 - claimed `P54-CLI-01` on `codex/p54-cli-01-session-artifact-list`

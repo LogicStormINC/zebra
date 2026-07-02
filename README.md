@@ -93,7 +93,8 @@ The next milestone is `Phase 54 - Session Artifact List CLI And Operator Parity`
 - Phase 52 now has a dedicated session message append API-vs-CLI contract matrix with CLI-local `database` normalization
 - Phase 53 now has a restored cancel control entry plus a local CLI cancel surface for durable session control
 - Phase 53 now has a dedicated session control API-vs-CLI contract matrix with CLI-local `database` normalization and suspend `snapshot_id` normalization
-- the next ready implementation lane is session artifact list cross-surface contract parity
+- Phase 54 now has a dedicated session artifact list API-vs-CLI contract matrix with CLI-local `database` normalization
+- the next ready implementation lane is Phase 54 closeout and next planning
 
 Read in this order:
 
