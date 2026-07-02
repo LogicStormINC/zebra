@@ -1,5 +1,16 @@
 # Progress Log
 
+## 2026-07-02 Phase 57 Local Memory Store Foundation
+
+- claimed `P57-MEM-01` on `codex/p57-mem-01-memory-store-foundation`
+- starting the first durable memory foundation with typed core contracts and a local SQLite store
+- scope is intentionally limited to derived memory persistence and query semantics; memory extraction and Redis adapters remain later tasks
+- completed `P57-MEM-01` with `MemoryRecord` / `MemoryQuery`, `MemoryStorePort`, and `SQLiteMemoryStore`
+- validation:
+  - `uv run pytest tests/agent_core/test_memories.py tests/agent_storage/test_sqlite_memories.py`
+  - `uv run ruff check packages/agent-core/src/agent_core/domain/memories.py packages/agent-core/src/agent_core/ports/memory_store.py packages/agent-storage/src/agent_storage/memories.py tests/agent_core/test_memories.py tests/agent_storage/test_sqlite_memories.py`
+  - `uv run mypy packages apps`
+
 ## 2026-07-02 Phase 56 Session Resume Execute Closeout
 
 - claimed `P56-CLOSE-01` on `codex/p56-closeout-next-plan`

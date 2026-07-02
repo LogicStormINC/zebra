@@ -6809,3 +6809,32 @@ current next-implementation planning status.
 
 - [x] Session resume execute operator parity evidence is recorded.
 - [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 57 Task Board
+
+### P57-MEM-01 - Local Memory Store Foundation
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE`
+- Depends on: `P56-CLOSE-01`
+- Branch: `codex/p57-mem-01-memory-store-foundation`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Establish the first durable memory foundation so Zebra Agent can persist
+derived repo or user knowledge without treating memory as the source of truth
+for session recovery.
+
+#### Deliverables
+
+- typed memory domain models for scope, lifecycle, and provenance
+- core memory store Port with deterministic query inputs
+- local SQLite memory store adapter with roundtrip coverage
+
+#### Acceptance
+
+- [x] Memory records are typed and validate scope, lifecycle, and provenance fields deterministically.
+- [x] `agent-core` exposes a memory store Port without introducing Redis or network dependencies.
+- [x] SQLite storage can upsert and query memory records by repo or user scope with deterministic ordering.

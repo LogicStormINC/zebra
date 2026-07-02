@@ -19,6 +19,13 @@ from agent_core.domain.artifacts import ArtifactRef
 from agent_core.domain.delivery_audit import DeliveryAuditRecord
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.leases import WorkerLease
+from agent_core.domain.memories import (
+    MemoryQuery,
+    MemoryRecord,
+    MemoryStatus,
+    MemoryType,
+    MemoryVisibility,
+)
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
@@ -41,6 +48,11 @@ __all__ = [
     "EventActor",
     "EventType",
     "MessageRole",
+    "MemoryQuery",
+    "MemoryRecord",
+    "MemoryStatus",
+    "MemoryType",
+    "MemoryVisibility",
     "ModelCallRecord",
     "PolicyDecision",
     "PolicyDecisionType",

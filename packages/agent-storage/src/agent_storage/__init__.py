@@ -19,6 +19,7 @@ from agent_storage.idempotency import (
     new_idempotency_record,
 )
 from agent_storage.leases import LeaseConflictError, SQLiteLeaseStore
+from agent_storage.memories import SQLiteMemoryStore
 from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.projections import SQLiteProjectionStore
 from agent_storage.sqlite import SQLiteEventStore
@@ -31,6 +32,7 @@ __all__ = [
     "IdempotencyRecord",
     "LeaseConflictError",
     "SessionArtifact",
+    "SQLiteMemoryStore",
     "payload_for_artifact_uri",
     "serialize_artifact_lifecycle",
     "serialize_artifact_retrieval",

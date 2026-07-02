@@ -2,9 +2,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 56 - Session Resume Execute CLI And Operator Parity Closeout`
-- Repository status: `phase 56 closeout complete`
+- Active phase: `Phase 57 - Local Memory Store Foundation`
+- Repository status: `phase 57 in progress`
 - Current focus:
+  - `P57-MEM-01` is complete on `codex/p57-mem-01-memory-store-foundation` with typed memory models, a core store Port, and a local SQLite memory adapter without making Redis a kernel dependency
+  - the next memory follow-up lane is not yet defined
   - `P56-CLOSE-01` is complete on `codex/p56-closeout-next-plan` with session resume execute phase-closure evidence on `docs/Phase56_Session_Resume_Execute_CLI_And_Operator_Parity_验收记录.md`
   - `P56-TEST-01` is complete on `codex/p56-test-01-session-resume-execute-contract-matrix` with resume execute parity coverage and CLI-local `database` normalization
   - `P56-CLI-01` is complete on `codex/p56-cli-01-session-resume-execute-parity` with CLI resume execute failure shaping aligned to API resume execution semantics
