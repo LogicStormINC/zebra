@@ -103,6 +103,7 @@ The next milestone is currently not defined yet; phase 56 closeout and next plan
 - Phase 56 is now closed with an operator parity acceptance record; next implementation lane is currently not yet defined
 - Phase 57 now has a local memory-store foundation for typed derived memory records, a core store Port, and a local SQLite adapter
 - Phase 57 is continuing with deterministic extraction of `procedure` memory candidates from successful tool executions
+- Phase 57 is now wiring memory candidate persistence into the worker completion path for completed local sessions
 
 Read in this order:
 

@@ -6865,3 +6865,30 @@ without making memory a prerequisite for recovery.
 - [x] Successful `command.run` and `tests.run` events can yield `procedure` memory candidates with provenance.
 - [x] Extraction emits machine-checkable `memory_candidate_extracted` event payloads without persisting secrets or raw approval-only data.
 - [x] Repeated matching tool runs within one session do not create duplicate candidates.
+
+### P57-MEM-03 - Worker Memory Candidate Persistence Wiring
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `RUNTIME`
+- Depends on: `P57-MEM-02`
+- Branch: `codex/p57-mem-02-memory-candidate-extraction`
+- Owned paths: `apps/worker/`, `packages/agent-storage/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Wire deterministic memory candidate extraction into the real worker completion
+path so completed sessions persist local procedure-memory candidates and expose
+the emitted session events for later inspection.
+
+#### Deliverables
+
+- worker execution hook for completed sessions
+- local repo-scope identifier derivation from the workspace root
+- regression coverage for persisted memory records and emitted session events
+
+#### Acceptance
+
+- [x] Worker execution persists `procedure` memory candidates after successful session completion.
+- [x] Completed session event streams include `memory_candidate_extracted` after `session_completed`.
+- [x] Failed sessions do not emit or persist memory candidates.

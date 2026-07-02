@@ -5,7 +5,9 @@ from pathlib import Path
 import pytest
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
+from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId, new_message_id, new_tool_call_id
+from agent_core.domain.memories import MemoryQuery, MemoryStatus, MemoryType
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
@@ -16,6 +18,7 @@ from agent_core.domain.workspaces import WorkspaceStatus
 from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
+    SQLiteMemoryStore,
     SQLiteModelCallStore,
     SQLiteProjectionStore,
     SQLiteToolRunStore,
@@ -84,6 +87,73 @@ def test_worker_execution_service_indexes_tool_run(tmp_path: Path, monkeypatch) 
     assert Path(tool_runs[0].artifact_uri.removeprefix("file://")).read_text(
         encoding="utf-8"
     ) == "worker readme\n"
+
+
+def test_worker_execution_service_persists_memory_candidate_on_success(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    (tmp_path / "Makefile").write_text("check:\n\t@echo validated\n", encoding="utf-8")
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _tests_run_gateway(settings=settings),
+    )
+
+    result = _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-a",
+        executed_at=_created_at(),
+    )
+
+    records = SQLiteMemoryStore(database_path).list(
+        MemoryQuery(
+            repo_id=str(tmp_path.resolve()),
+            statuses=(MemoryStatus.CANDIDATE,),
+        )
+    )
+
+    assert result.session.status is SessionStatus.COMPLETED
+    assert len(records) == 1
+    assert records[0].memory_type is MemoryType.PROCEDURE
+    assert records[0].source_session_id == session_id
+    assert records[0].repo_id == str(tmp_path.resolve())
+    assert any(
+        event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED
+        for event in result.events
+    )
+
+
+def test_worker_execution_service_does_not_persist_memory_candidate_on_failure(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _failing_tests_run_gateway(settings=settings),
+    )
+
+    result = _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-a",
+        executed_at=_created_at(),
+    )
+
+    records = SQLiteMemoryStore(database_path).list(
+        MemoryQuery(repo_id=str(tmp_path.resolve()), statuses=(MemoryStatus.CANDIDATE,))
+    )
+
+    assert result.session.status is SessionStatus.FAILED
+    assert records == []
+    assert all(
+        event.event_type is not EventType.MEMORY_CANDIDATE_EXTRACTED
+        for event in result.events
+    )
 
 
 def _build_execution_service(database_path: Path) -> SessionExecutionService:
@@ -272,6 +342,68 @@ def _tool_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGateway:
                             tool_call_id=new_tool_call_id(),
                             name="files.read",
                             arguments={"path": "README.md"},
+                            created_at=_created_at(),
+                        ),
+                    ),
+                    call_metadata=ModelCallMetadata(
+                        provider="test",
+                        model_name="test-model",
+                        usage=ModelUsage(total_tokens=9),
+                    ),
+                )
+            ),
+        )
+    )
+
+
+def _tests_run_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGateway:
+    del settings
+    return ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="Run smoke validation.",
+                        created_at=_created_at(),
+                    ),
+                    tool_calls=(
+                        ToolCall(
+                            tool_call_id=new_tool_call_id(),
+                            name="tests.run",
+                            arguments={"preset": "check"},
+                            created_at=_created_at(),
+                        ),
+                    ),
+                    call_metadata=ModelCallMetadata(
+                        provider="test",
+                        model_name="test-model",
+                        usage=ModelUsage(total_tokens=9),
+                    ),
+                )
+            ),
+        )
+    )
+
+
+def _failing_tests_run_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGateway:
+    del settings
+    return ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="Run failing smoke validation.",
+                        created_at=_created_at(),
+                    ),
+                    tool_calls=(
+                        ToolCall(
+                            tool_call_id=new_tool_call_id(),
+                            name="tests.run",
+                            arguments={"preset": "failing"},
                             created_at=_created_at(),
                         ),
                     ),

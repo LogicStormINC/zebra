@@ -5,6 +5,7 @@
 - Active phase: `Phase 57 - Local Memory Store Foundation`
 - Repository status: `phase 57 in progress`
 - Current focus:
+  - `P57-MEM-03` is complete on `codex/p57-mem-02-memory-candidate-extraction` with deterministic `procedure` memory candidate persistence wired into the worker completion path
   - `P57-MEM-02` is complete on `codex/p57-mem-02-memory-candidate-extraction` with deterministic `procedure` memory candidate extraction from successful `command.run` and `tests.run` session events
   - `P57-MEM-01` is complete on `codex/p57-mem-01-memory-store-foundation` with typed memory models, a core store Port, and a local SQLite memory adapter without making Redis a kernel dependency
   - the next memory follow-up lane is not yet defined

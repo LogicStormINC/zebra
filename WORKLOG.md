@@ -22,6 +22,17 @@
   - `uv run ruff check packages/agent-core/src/agent_core/application/memory_candidates.py packages/agent-core/src/agent_core/contracts/events.py packages/agent-core/src/agent_core/domain/events.py packages/agent-core/src/agent_core/application/__init__.py tests/agent_core/test_memory_candidates.py tests/agent_core/test_event_contracts.py`
   - `make check`
 
+## 2026-07-02 Phase 57 Worker Memory Candidate Persistence
+
+- claimed `P57-MEM-03` on `codex/p57-mem-02-memory-candidate-extraction`
+- wiring completed worker sessions to persist local procedure-memory candidates and append `memory_candidate_extracted` events
+- repo scope for local mode uses the resolved `workspace_root` string to avoid directory-name collisions
+- completed `P57-MEM-03` by wiring `SessionExecutionService` to persist local memory candidates after `session_completed`
+- validation:
+  - `uv run pytest tests/worker/test_execution.py`
+  - `uv run ruff check apps/worker/src/zebra_agent_worker/execution.py tests/worker/test_execution.py`
+  - `make check`
+
 ## 2026-07-02 Phase 56 Session Resume Execute Closeout
 
 - claimed `P56-CLOSE-01` on `codex/p56-closeout-next-plan`
