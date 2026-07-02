@@ -88,6 +88,7 @@ The next milestone is `Phase 52 - Session Message Append CLI And Operator Parity
 - Phase 50 approval queue CLI and operator parity is complete with API and CLI coverage
 - Phase 50 now has both local CLI approval reads and a dedicated approval queue/detail API-vs-CLI contract matrix with CLI-local `database` normalization
 - Phase 51 now has a dedicated approval decision API-vs-CLI contract matrix with CLI-local `database` normalization
+- Phase 52 now has a local CLI session message append surface for durable session continuation
 - the next ready implementation lane is session message append CLI and operator parity
 
 Read in this order:

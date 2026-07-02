@@ -6412,8 +6412,8 @@ next implementation phase.
 
 ### P52-CLI-01 - Session Message Append CLI Surface
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P51-CLOSE-01`
 - Branch: `codex/p52-cli-01-session-message-append`
@@ -6433,13 +6433,13 @@ operators do not need the HTTP API for routine follow-up prompts.
 
 #### Acceptance
 
-- [ ] Operators can append one more user message from the CLI.
-- [ ] Terminal-session append failures remain deterministic from the CLI.
-- [ ] Existing API append behavior remains backward compatible.
+- [x] Operators can append one more user message from the CLI.
+- [x] Terminal-session append failures remain deterministic from the CLI.
+- [x] Existing API append behavior remains backward compatible.
 
 ### P52-TEST-01 - Session Message Append Cross-Surface Contract Matrix
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `TEST`
 - Depends on: `P52-CLI-01`

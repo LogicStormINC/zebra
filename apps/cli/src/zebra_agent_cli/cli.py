@@ -41,6 +41,7 @@ from zebra_agent_cli.execution import (
 )
 from zebra_agent_cli.read_commands import add_read_subparsers, read_command_result
 from zebra_agent_cli.session_commit_write import commit_session
+from zebra_agent_cli.session_message_append_write import append_session_message
 from zebra_agent_cli.session_pull_request_write import open_session_pull_request
 from zebra_agent_cli.workspace_read import serialize_workspace_projection
 
@@ -55,6 +56,15 @@ def execute(
     command = namespace.command
     if command == "run":
         return _run_result(namespace, active_settings)
+    if command == "message":
+        return CliCommandResult(
+            command="message",
+            payload=append_session_message(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+                content=namespace.content,
+            ),
+        )
     if command == "resume":
         return _resume_result(namespace, active_settings)
     if command == "suspend":
@@ -134,6 +144,14 @@ def _parser() -> argparse.ArgumentParser:
         choices=tuple(profile.value for profile in PolicyProfile),
         default=PolicyProfile.WORKSPACE_WRITE.value,
     )
+
+    message = subcommands.add_parser(
+        "message",
+        help="Append one more user message to an existing session.",
+    )
+    message.add_argument("session_id")
+    message.add_argument("--content", required=True)
+    message.add_argument("--database")
 
     resume = subcommands.add_parser("resume", help="Resume a suspended session.")
     resume.add_argument("session_id")
