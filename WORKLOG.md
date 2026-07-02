@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026-07-02 Phase 53 Session Control Contract Matrix
+
+- claimed `P53-TEST-01` on `codex/p53-test-01-session-control-contract-matrix`
+- aligning cancel and suspend CLI payloads with API control responses while preserving CLI-local `database` context
+- adding cross-surface regression coverage for cancelled, invalid-state, missing-session, and suspended control results
+- validation:
+  - `make sync`
+  - `uv run pytest tests/test_session_control_contract_matrix.py tests/cli/test_cli_session_cancel.py tests/cli/test_cli_commands.py tests/api/test_http_session_cancel.py tests/api/test_http_app.py tests/api/test_route_session_cancel.py tests/api/test_routes.py tests/worker/test_control.py tests/worker/test_execution.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/session_suspend_write.py apps/cli/src/zebra_agent_cli/cli.py tests/test_session_control_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
 ## 2026-07-02 Phase 53 Session Cancel Control Surface
 
 - claimed `P53-CLI-01` on `codex/p53-cli-01-session-cancel`
