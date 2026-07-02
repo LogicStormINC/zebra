@@ -7,9 +7,17 @@ from agent_security.artifact_access import (
 from agent_security.artifact_access_audit import build_artifact_access_audit_metadata
 from agent_security.artifact_access_projection import (
     ArtifactAccessProjection,
+    artifact_policy_denied_reason,
     build_artifact_access_projection,
+    build_session_artifact_access_projection,
     policy_rank,
+    serialize_artifact_access_outcome_fields,
     serialize_artifact_access_projection,
+    serialize_artifact_access_snapshot_attachment,
+    serialize_artifact_control_access_fields,
+    serialize_artifact_control_outcome_fields,
+    serialize_artifact_control_success_outcome_fields,
+    serialize_session_artifact_access_projection,
 )
 from agent_security.artifact_control_audit import build_artifact_control_audit_metadata
 from agent_security.artifact_retention import (
@@ -121,6 +129,8 @@ __all__ = [
     "build_artifact_access_audit_metadata",
     "build_artifact_control_audit_metadata",
     "build_artifact_access_projection",
+    "artifact_policy_denied_reason",
+    "build_session_artifact_access_projection",
     "classify_artifact_access",
     "classify_tool_egress",
     "parse_network_profile",
@@ -129,5 +139,11 @@ __all__ = [
     "required_policy_profile_for_artifact_access",
     "resolve_artifact_retained_until",
     "resolve_artifact_retention_policy",
+    "serialize_artifact_access_outcome_fields",
+    "serialize_artifact_access_snapshot_attachment",
+    "serialize_artifact_control_access_fields",
+    "serialize_artifact_control_outcome_fields",
+    "serialize_artifact_control_success_outcome_fields",
     "serialize_artifact_access_projection",
+    "serialize_session_artifact_access_projection",
 ]

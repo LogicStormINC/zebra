@@ -8,6 +8,7 @@ from agent_integrations import (
     GitHubPullRequestGateway,
     GitHubPullRequestPayload,
 )
+from agent_security import NetworkProfile, NetworkProfileName
 from agent_storage import SQLiteDeliveryAuditStore, SQLiteEventStore, SQLiteProjectionStore
 from zebra_agent_api.session_pull_request import SessionPullRequestApi
 
@@ -25,6 +26,7 @@ def test_api_pull_request_response_and_audit_do_not_expose_github_token(
             token="secret-token",
             execution_enabled=True,
         ),
+        network_profile=NetworkProfile(name=NetworkProfileName.FULL_TRUSTED_LOCAL),
         transport=_FakeGitHubTransport(url="https://github.example/pulls/1"),
     )
 

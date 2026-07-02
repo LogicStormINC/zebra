@@ -28,6 +28,13 @@ def payload_for_artifact_uri(
     return payload_store.get_payload(artifact_id)
 
 
+def resolve_payload_for_artifact_uri(
+    database_path: str | Path,
+    uri: str | None,
+) -> StoredArtifactPayload | None:
+    return payload_for_artifact_uri(SQLiteArtifactPayloadStore(database_path), uri)
+
+
 def serialize_artifact_lifecycle(
     payload: StoredArtifactPayload | None,
     *,
@@ -47,6 +54,18 @@ def serialize_artifact_lifecycle(
             and retained_until <= effective_now
         ),
     }
+
+
+def lifecycle_for_artifact_uri(
+    payload_store: SQLiteArtifactPayloadStore,
+    uri: str | None,
+    *,
+    now: datetime | None = None,
+) -> dict[str, object] | None:
+    return serialize_artifact_lifecycle(
+        payload_for_artifact_uri(payload_store, uri),
+        now=now,
+    )
 
 
 def serialize_artifact_retrieval(
@@ -80,6 +99,16 @@ def serialize_artifact_retrieval(
         "retrievable": available,
         "uri": uri,
     }
+
+
+def artifact_content_unavailable_reason(retrieval_status: str) -> str | None:
+    mapping = {
+        "indexed_only": "artifact_is_indexed_only",
+        "external_reference": "artifact_uses_external_reference",
+        "payload_missing": "artifact_payload_missing",
+        "payload_pruned": "artifact_payload_pruned",
+    }
+    return mapping.get(retrieval_status)
 
 
 def serialize_session_artifact_projection(

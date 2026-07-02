@@ -9,9 +9,8 @@ from agent_security import build_artifact_control_audit_metadata
 from agent_storage import (
     SessionArtifact,
     SQLiteArtifactPayloadStore,
-    SQLiteArtifactStore,
-    SQLiteProjectionStore,
-    payload_for_artifact_uri,
+    resolve_payload_for_artifact_uri,
+    resolve_session_artifact,
     serialize_artifact_lifecycle,
 )
 
@@ -34,7 +33,7 @@ class SessionArtifactControlApi:
         if isinstance(artifact, ApiResponse):
             return artifact
         payload_store = SQLiteArtifactPayloadStore(self.database_path)
-        payload = payload_for_artifact_uri(payload_store, artifact.uri)
+        payload = resolve_payload_for_artifact_uri(self.database_path, artifact.uri)
         if artifact.uri is None:
             return self._unavailable(
                 session_id,
@@ -106,16 +105,18 @@ class SessionArtifactControlApi:
         session_id: str,
         artifact_id: str,
     ) -> SessionArtifact | ApiResponse:
-        session_key = SessionId(UUID(session_id))
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
-        if session is None:
+        resolution = resolve_session_artifact(
+            self.database_path,
+            SessionId(UUID(session_id)),
+            artifact_id,
+        )
+        if not resolution.session_exists:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        for artifact in SQLiteArtifactStore(self.database_path).list_for_session(session_key):
-            if artifact.artifact_id == artifact_id:
-                return artifact
+        if resolution.artifact is not None:
+            return resolution.artifact
         return ApiResponse(
             status_code=404,
             body={

@@ -41,6 +41,7 @@ from zebra_agent_cli.artifact_read import (
     read_artifact_content,
     read_artifact_detail,
 )
+from zebra_agent_cli.delivery_audit import read_delivery_audit
 from zebra_agent_cli.execution import (
     execute_durable_run,
     serialize_run_execution,
@@ -48,7 +49,16 @@ from zebra_agent_cli.execution import (
 )
 from zebra_agent_cli.workspace_read import serialize_workspace_projection
 
-CommandName = Literal["run", "resume", "suspend", "inspect", "approve", "model", "artifact"]
+CommandName = Literal[
+    "run",
+    "resume",
+    "suspend",
+    "inspect",
+    "approve",
+    "model",
+    "artifact",
+    "delivery-audit",
+]
 
 
 @dataclass(frozen=True)
@@ -90,6 +100,14 @@ def execute(
         return _approval_result(namespace, _database_path(namespace.database, active_settings))
     if command == "artifact":
         return _artifact_result(namespace, _database_path(namespace.database, active_settings))
+    if command == "delivery-audit":
+        return CliCommandResult(
+            command="delivery-audit",
+            payload=read_delivery_audit(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+            ),
+        )
     if command == "model":
         return _model_result(namespace, active_settings)
     raise ValueError(f"unsupported CLI command: {command}")
@@ -162,6 +180,13 @@ def _parser() -> argparse.ArgumentParser:
     approve.add_argument("--reason", default="")
     approve.add_argument("--operator", default="local-operator")
     approve.add_argument("--database")
+
+    delivery_audit = subcommands.add_parser(
+        "delivery-audit",
+        help="Inspect session delivery audit records.",
+    )
+    delivery_audit.add_argument("session_id")
+    delivery_audit.add_argument("--database")
 
     model = subcommands.add_parser("model", help="Run one prompt through the configured model.")
     model.add_argument("prompt")
