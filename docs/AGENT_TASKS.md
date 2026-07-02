@@ -74,8 +74,8 @@ Add local workspace abstractions that prepare later file, patch, and git tools w
 
 ### P2-TOOL-01 - Tool Contracts And Execution Results
 
-- Status: `Review`
-- Owner: `UNASSIGNED`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CTX`
 - Depends on: `Phase 1 completed`
 - Branch: `codex/p2-tool-01-tool-results`
