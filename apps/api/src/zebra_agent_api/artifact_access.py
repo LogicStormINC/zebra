@@ -4,24 +4,24 @@ from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
 
+from agent_core.domain import ArtifactAccessDescriptor
 from agent_core.domain.artifact_payloads import StoredArtifactPayload
 from agent_core.domain.identifiers import SessionId
 from agent_security import (
     ArtifactAccessProjection,
-    artifact_policy_denied_reason,
+    PolicyProfile,
     build_artifact_access_audit_metadata,
-    build_session_artifact_access_projection,
-    serialize_artifact_access_outcome_fields,
-    serialize_artifact_control_outcome_fields,
-    serialize_artifact_control_success_outcome_fields,
+    build_artifact_access_projection,
+    serialize_artifact_access_projection,
 )
 from agent_security import (
     policy_rank as shared_policy_rank,
 )
 from agent_storage import (
     SessionArtifact,
-    resolve_payload_for_artifact_uri,
-    session_policy_profile_for_session,
+    SQLiteArtifactPayloadStore,
+    SQLiteWorkspaceProjectionStore,
+    payload_for_artifact_uri,
 )
 
 from zebra_agent_api.responses import ApiResponse, conflict
@@ -56,18 +56,25 @@ def classify_session_artifact_access(
     artifact: SessionArtifact,
 ) -> ArtifactAccessContext:
     payload = payload_record_for_uri(database_path, artifact.uri)
-    projection = build_session_artifact_access_projection(
-        kind=artifact.kind,
-        mime_type=payload.mime_type if payload is not None else None,
-        uri=artifact.uri,
-        preview_redacted=artifact.preview_state["redacted"],
-        preview_truncated=artifact.preview_state["truncated"],
+    projection = build_artifact_access_projection(
+        ArtifactAccessDescriptor(
+            kind=artifact.kind,
+            mime_type=payload.mime_type if payload is not None else None,
+            uri=artifact.uri,
+            preview_redacted=artifact.preview_state["redacted"],
+            preview_truncated=artifact.preview_state["truncated"],
+        ),
         session_policy_profile=session_policy_profile(database_path, session_id),
     )
     return ArtifactAccessContext(
         projection=projection,
         payload=payload,
     )
+
+
+def serialize_artifact_access(access: ArtifactAccessContext) -> dict[str, object]:
+    return serialize_artifact_access_projection(access.projection)
+
 
 def build_artifact_access_response(
     *,
@@ -76,17 +83,12 @@ def build_artifact_access_response(
     reason: str,
     access: ArtifactAccessContext,
 ) -> ApiResponse:
-    outcome = serialize_artifact_access_outcome_fields(
-        access,
-        status=status,
-        reason=reason,
-    )
     response = conflict(
         session_id=session_id,
         status=status,
         reason=reason,
     )
-    response.body["access"] = outcome["access"]
+    response.body["access"] = serialize_artifact_access(access)
     return response
 
 
@@ -112,15 +114,10 @@ def build_artifact_control_denied_response(
     action: str,
     access: ArtifactAccessContext,
 ) -> ApiResponse:
-    reason = artifact_policy_denied_reason(access, action=action)
-    _ = serialize_artifact_control_outcome_fields(
-        status=status,
-        reason=reason,
-    )
     return conflict(
         session_id=session_id,
         status=status,
-        reason=reason,
+        reason=artifact_policy_denied_reason(access, action=action),
     )
 
 
@@ -144,10 +141,6 @@ def build_artifact_control_unavailable_response(
     status: str,
     reason: str,
 ) -> ApiResponse:
-    _ = serialize_artifact_control_outcome_fields(
-        status=status,
-        reason=reason,
-    )
     return conflict(
         session_id=session_id,
         status=status,
@@ -168,11 +161,10 @@ def build_artifact_control_success_response(
         body={
             "session_id": session_id,
             "artifact_id": artifact_id,
-            **serialize_artifact_control_success_outcome_fields(
-                access,
-                status=status,
-                lifecycle=lifecycle,
-            ),
+            "status": status,
+            "access_class": access.access_class,
+            "required_policy_profile": access.required_policy_profile,
+            "lifecycle": lifecycle,
         },
     )
 
@@ -195,18 +187,29 @@ def build_artifact_access_metadata(
         extra=extra,
     )
 
+
+def artifact_policy_denied_reason(
+    access: ArtifactAccessContext,
+    *,
+    action: str,
+) -> str:
+    return f"artifact_{action}_requires_{access.required_policy_profile}_policy"
+
+
 def payload_record_for_uri(
     database_path: Path,
     uri: str | None,
 ) -> StoredArtifactPayload | None:
-    return resolve_payload_for_artifact_uri(database_path, uri)
+    return payload_for_artifact_uri(SQLiteArtifactPayloadStore(database_path), uri)
 
 
 def session_policy_profile(database_path: Path, session_id: str) -> str:
-    return session_policy_profile_for_session(
-        database_path,
-        SessionId(UUID(session_id)),
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(
+        SessionId(UUID(session_id))
     )
+    if workspace is None or workspace.policy_profile is None:
+        return PolicyProfile.WORKSPACE_WRITE.value
+    return workspace.policy_profile
 
 
 def policy_rank(policy_profile: str) -> int:

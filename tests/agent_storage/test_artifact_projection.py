@@ -10,10 +10,7 @@ from agent_storage import (
     SQLiteArtifactStore,
     SQLiteModelCallStore,
     SQLiteToolRunStore,
-    artifact_content_unavailable_reason,
-    lifecycle_for_artifact_uri,
     payload_for_artifact_uri,
-    resolve_payload_for_artifact_uri,
     serialize_artifact_lifecycle,
     serialize_artifact_retrieval,
     serialize_session_artifact_projection,
@@ -35,25 +32,6 @@ def test_payload_for_artifact_uri_returns_stored_payload(tmp_path: Path) -> None
     )
 
     resolved = payload_for_artifact_uri(payload_store, stored.uri)
-
-    assert resolved == stored
-
-
-def test_resolve_payload_for_artifact_uri_returns_stored_payload(tmp_path: Path) -> None:
-    database_path = tmp_path / "projection.db"
-    payload_store = SQLiteArtifactPayloadStore(database_path)
-    stored = payload_store.store_payload(
-        ArtifactPayloadWrite(
-            session_id=new_session_id(),
-            kind="tool_output",
-            mime_type="text/plain",
-            payload=b"pytest passed\n",
-            file_name="pytest.log",
-            created_at=datetime(2026, 6, 30, 12, 0, tzinfo=UTC),
-        )
-    )
-
-    resolved = resolve_payload_for_artifact_uri(database_path, stored.uri)
 
     assert resolved == stored
 
@@ -111,44 +89,6 @@ def test_serialize_artifact_retrieval_reports_pruned_payload(tmp_path: Path) -> 
         "retrievable": False,
         "uri": stored.uri,
     }
-
-
-def test_lifecycle_for_artifact_uri_uses_shared_payload_lookup(tmp_path: Path) -> None:
-    database_path = tmp_path / "projection.db"
-    payload_store = SQLiteArtifactPayloadStore(database_path)
-    stored = payload_store.store_payload(
-        ArtifactPayloadWrite(
-            session_id=new_session_id(),
-            kind="tool_output",
-            mime_type="text/plain",
-            payload=b"pytest passed\n",
-            created_at=datetime(2026, 6, 30, 12, 0, tzinfo=UTC),
-        )
-    )
-
-    lifecycle = lifecycle_for_artifact_uri(
-        payload_store,
-        stored.uri,
-        now=datetime(2026, 6, 30, 12, 0, tzinfo=UTC),
-    )
-
-    assert lifecycle == {
-        "status": "active",
-        "retained_until": None,
-        "pruned_at": None,
-        "expired": False,
-    }
-
-
-def test_artifact_content_unavailable_reason_maps_shared_status_values() -> None:
-    assert artifact_content_unavailable_reason("indexed_only") == "artifact_is_indexed_only"
-    assert (
-        artifact_content_unavailable_reason("external_reference")
-        == "artifact_uses_external_reference"
-    )
-    assert artifact_content_unavailable_reason("payload_missing") == "artifact_payload_missing"
-    assert artifact_content_unavailable_reason("payload_pruned") == "artifact_payload_pruned"
-    assert artifact_content_unavailable_reason("payload_available") is None
 
 
 def test_serialize_session_artifact_projection_builds_shared_envelope(

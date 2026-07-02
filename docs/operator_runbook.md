@@ -266,6 +266,14 @@ Review the current Git diff for a session workspace:
 curl http://127.0.0.1:8000/sessions/<session_id>/diff
 ```
 
+Read the same session workspace diff directly from the local CLI without the
+HTTP API:
+
+```bash
+uv run zebra-agent diff <session_id> \
+  --database .zebra-agent/operator-runbook.sqlite
+```
+
 Expected result:
 
 - JSON output with `clean=true` or `clean=false`
@@ -285,12 +293,43 @@ Read delivery audit records for one session:
 curl http://127.0.0.1:8000/sessions/<session_id>/delivery-audit
 ```
 
+Read the same delivery audit records directly from the local CLI without the
+HTTP API:
+
+```bash
+uv run zebra-agent delivery-audit <session_id> \
+  --database .zebra-agent/operator-runbook.sqlite
+```
+
+Inspect the waiting approval queue directly from the local CLI:
+
+```bash
+uv run zebra-agent approval queue \
+  --database .zebra-agent/operator-runbook.sqlite
+```
+
+Inspect one approval detail directly from the local CLI:
+
+```bash
+uv run zebra-agent approval inspect <approval_id> \
+  --database .zebra-agent/operator-runbook.sqlite
+```
+
 Append one more user message to an existing session:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/sessions/<session_id>/messages \
   -H "Content-Type: application/json" \
   -d '{"content":"Please continue from the latest checkpoint."}'
+```
+
+Append the same follow-up user message directly from the local CLI without the
+HTTP API:
+
+```bash
+uv run zebra-agent message <session_id> \
+  --content "Please continue from the latest checkpoint." \
+  --database .zebra-agent/operator-runbook.sqlite
 ```
 
 The local HTTP API exposes the same approval decision path. In the current
@@ -360,6 +399,15 @@ curl -X POST http://127.0.0.1:8000/sessions/<session_id>/commit \
   -d '{"message":"Implement reviewed changes"}'
 ```
 
+Create the same local Git commit directly from the CLI without the HTTP API:
+
+```bash
+uv run zebra-agent commit <session_id> \
+  --message "Implement reviewed changes" \
+  --idempotency-key commit-<unique-retry-key> \
+  --database .zebra-agent/operator-runbook.sqlite
+```
+
 Plan a pull request for a committed session workspace:
 
 ```bash
@@ -367,6 +415,17 @@ curl -X POST http://127.0.0.1:8000/sessions/<session_id>/pull-request \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: pr-<unique-retry-key>" \
   -d '{"title":"Implement reviewed changes","body":"Summary and validation notes."}'
+```
+
+Open the same pull-request plan directly from the local CLI without the HTTP
+API:
+
+```bash
+uv run zebra-agent pull-request <session_id> \
+  --title "Implement reviewed changes" \
+  --body "Summary and validation notes." \
+  --idempotency-key pr-<unique-retry-key> \
+  --database .zebra-agent/operator-runbook.sqlite
 ```
 
 Expected result in the current local-only runtime:
@@ -382,6 +441,14 @@ Replay the persisted session event stream over SSE:
 
 ```bash
 curl -N http://127.0.0.1:8000/sessions/<session_id>/stream
+```
+
+Read the same persisted session event stream directly from the local CLI
+without the HTTP API:
+
+```bash
+uv run zebra-agent stream <session_id> \
+  --database .zebra-agent/operator-runbook.sqlite
 ```
 
 When auth is enabled:

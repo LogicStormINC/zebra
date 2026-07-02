@@ -1,34 +1,22 @@
 from __future__ import annotations
 
 import argparse
-import json
 from collections.abc import Sequence
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal
 from uuid import UUID
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
-from agent_core.application.approvals import (
-    ApprovalDecisionAction,
-    ApprovalDecisionCommand,
-    ApprovalDecisionService,
-)
-from agent_core.application.session_projection import apply_event
 from agent_core.domain.identifiers import SessionId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_integrations import build_model_gateway
 from agent_security import PolicyProfile
 from agent_storage import (
-    LeaseConflictError,
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
 )
-from zebra_agent_api.responses import ApiResponse
-from zebra_agent_api.session_payloads import parse_resume_session_payload
 from zebra_agent_config import ZebraAgentSettings, load_settings
 from zebra_agent_worker import (
     SessionClaimService,
@@ -42,44 +30,25 @@ from zebra_agent_worker import (
     WorkerExecutionError,
 )
 
+from zebra_agent_cli.approval_decision_write import record_approval_decision
 from zebra_agent_cli.artifact_read import (
     prune_artifact,
     read_artifact_content,
     read_artifact_detail,
 )
-from zebra_agent_cli.delivery_audit import read_delivery_audit
+from zebra_agent_cli.cli_types import CliCommandResult, CommandName
 from zebra_agent_cli.execution import (
     execute_durable_run,
     serialize_run_execution,
     serialize_trace_events,
 )
+from zebra_agent_cli.read_commands import add_read_subparsers, read_command_result
+from zebra_agent_cli.session_cancel_write import cancel_session
+from zebra_agent_cli.session_commit_write import commit_session
+from zebra_agent_cli.session_message_append_write import append_session_message
+from zebra_agent_cli.session_pull_request_write import open_session_pull_request
+from zebra_agent_cli.session_suspend_write import suspend_session
 from zebra_agent_cli.workspace_read import serialize_workspace_projection
-
-CommandName = Literal[
-    "run",
-    "resume",
-    "suspend",
-    "inspect",
-    "approve",
-    "model",
-    "artifact",
-    "delivery-audit",
-]
-
-
-@dataclass(frozen=True)
-class CliCommandResult:
-    command: CommandName
-    payload: dict[str, object]
-
-    def to_json(self) -> str:
-        return json.dumps(
-            {
-                "command": self.command,
-                **self.payload,
-            },
-            sort_keys=True,
-        )
 
 
 def execute(
@@ -92,6 +61,23 @@ def execute(
     command = namespace.command
     if command == "run":
         return _run_result(namespace, active_settings)
+    if command == "message":
+        return CliCommandResult(
+            command="message",
+            payload=append_session_message(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+                content=namespace.content,
+            ),
+        )
+    if command == "cancel":
+        return CliCommandResult(
+            command="cancel",
+            payload=cancel_session(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+            ),
+        )
     if command == "resume":
         return _resume_result(namespace, active_settings)
     if command == "suspend":
@@ -106,12 +92,43 @@ def execute(
         return _approval_result(namespace, _database_path(namespace.database, active_settings))
     if command == "artifact":
         return _artifact_result(namespace, _database_path(namespace.database, active_settings))
-    if command == "delivery-audit":
+    if command == "approval":
+        return read_command_result(
+            command,
+            database_path=_database_path(namespace.database, active_settings),
+            approval_id=getattr(namespace, "approval_id", None),
+        )
+    if command in {"diff", "stream", "delivery-audit"}:
+        return read_command_result(
+            command,
+            database_path=_database_path(namespace.database, active_settings),
+            session_id=namespace.session_id,
+        )
+    if command == "commit":
         return CliCommandResult(
-            command="delivery-audit",
-            payload=read_delivery_audit(
+            command="commit",
+            payload=commit_session(
                 database_path=_database_path(namespace.database, active_settings),
                 session_id=namespace.session_id,
+                message=namespace.message,
+                author_name=namespace.author_name,
+                author_email=namespace.author_email,
+                idempotency_key=namespace.idempotency_key,
+            ),
+        )
+    if command == "pull-request":
+        return CliCommandResult(
+            command="pull-request",
+            payload=open_session_pull_request(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+                title=namespace.title,
+                body=namespace.body,
+                base_branch=namespace.base_branch,
+                head_branch=namespace.head_branch,
+                dry_run=not namespace.execute,
+                idempotency_key=namespace.idempotency_key,
+                settings=active_settings,
             ),
         )
     if command == "model":
@@ -141,6 +158,18 @@ def _parser() -> argparse.ArgumentParser:
         default=PolicyProfile.WORKSPACE_WRITE.value,
     )
 
+    message = subcommands.add_parser(
+        "message",
+        help="Append one more user message to an existing session.",
+    )
+    message.add_argument("session_id")
+    message.add_argument("--content", required=True)
+    message.add_argument("--database")
+
+    cancel = subcommands.add_parser("cancel", help="Cancel a local session.")
+    cancel.add_argument("session_id")
+    cancel.add_argument("--database")
+
     resume = subcommands.add_parser("resume", help="Resume a suspended session.")
     resume.add_argument("session_id")
     resume.add_argument("--database")
@@ -155,6 +184,29 @@ def _parser() -> argparse.ArgumentParser:
     inspect = subcommands.add_parser("inspect", help="Inspect a session.")
     inspect.add_argument("session_id")
     inspect.add_argument("--database")
+
+    add_read_subparsers(subcommands)
+
+    commit = subcommands.add_parser("commit", help="Create one local commit for a session.")
+    commit.add_argument("session_id")
+    commit.add_argument("--message", required=True)
+    commit.add_argument("--author-name", default="Zebra Agent")
+    commit.add_argument("--author-email", default="zebra-agent@example.local")
+    commit.add_argument("--idempotency-key")
+    commit.add_argument("--database")
+
+    pull_request = subcommands.add_parser(
+        "pull-request",
+        help="Open one session pull request plan or guarded execution.",
+    )
+    pull_request.add_argument("session_id")
+    pull_request.add_argument("--title", required=True)
+    pull_request.add_argument("--body", default="")
+    pull_request.add_argument("--base-branch", default="main")
+    pull_request.add_argument("--head-branch")
+    pull_request.add_argument("--execute", action="store_true")
+    pull_request.add_argument("--idempotency-key")
+    pull_request.add_argument("--database")
 
     artifact = subcommands.add_parser("artifact", help="Inspect or read session artifacts.")
     artifact_subcommands = artifact.add_subparsers(dest="artifact_command", required=True)
@@ -382,31 +434,12 @@ def _suspend_result(
     namespace: argparse.Namespace,
     settings: ZebraAgentSettings,
 ) -> CliCommandResult:
-    database_path = _database_path(namespace.database, settings)
-    try:
-        result = SessionControlService(database_path).suspend_session(
-            SessionId(UUID(namespace.session_id))
-        )
-    except SessionControlError as error:
-        return CliCommandResult(
-            command="suspend",
-            payload={
-                "session_id": namespace.session_id,
-                "database": str(database_path),
-                "status": "not_suspendable",
-                "reason": str(error),
-            },
-        )
     return CliCommandResult(
         command="suspend",
-        payload={
-            "session_id": namespace.session_id,
-            "database": str(database_path),
-            "suspended": True,
-            "status": "suspended",
-            "workspace_status": result.workspace.status.value,
-            "snapshot_id": result.workspace.snapshot_id,
-        },
+        payload=suspend_session(
+            database_path=_database_path(namespace.database, settings),
+            session_id=namespace.session_id,
+        ),
     )
 
 
@@ -414,56 +447,15 @@ def _approval_result(
     namespace: argparse.Namespace,
     database_path: Path,
 ) -> CliCommandResult:
-    session_id = SessionId(UUID(namespace.session_id))
-    projection_store = SQLiteProjectionStore(database_path)
-    session = projection_store.get_session(session_id)
-    if session is None:
-        return CliCommandResult(
-            command="approve",
-            payload={
-                "session_id": namespace.session_id,
-                "database": str(database_path),
-                "status": "not_found",
-            },
-        )
-    action = (
-        ApprovalDecisionAction.GRANT
-        if namespace.decision == "approve"
-        else ApprovalDecisionAction.REJECT
-    )
-    reason = namespace.reason or f"{namespace.decision} via CLI"
-    try:
-        event = ApprovalDecisionService().build_event(
-            session=session,
-            next_sequence=session.current_sequence + 1,
-            command=ApprovalDecisionCommand(
-                action=action,
-                operator=namespace.operator,
-                reason=reason,
-            ),
-        )
-    except ValueError as exc:
-        return CliCommandResult(
-            command="approve",
-            payload={
-                "session_id": namespace.session_id,
-                "database": str(database_path),
-                "status": "invalid_state",
-                "reason": str(exc),
-            },
-        )
-    SQLiteEventStore(database_path).append(event)
-    updated_session = projection_store.save_session(apply_event(session, event))
     return CliCommandResult(
         command="approve",
-        payload={
-            "session_id": namespace.session_id,
-            "database": str(database_path),
-            "decision": namespace.decision,
-            "event_type": event.event_type.value,
-            "sequence": event.sequence,
-            "status": updated_session.status.value,
-        },
+        payload=record_approval_decision(
+            database_path=database_path,
+            approval_id=namespace.session_id,
+            decision=namespace.decision,
+            operator=namespace.operator,
+            reason=namespace.reason,
+        ),
     )
 
 

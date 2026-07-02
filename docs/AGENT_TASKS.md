@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 62 closed; phase 63 planning is next.
+> Current execution range: Phase 53 ready; session control CLI and operator parity is next on top of the completed Phase 52 session message append cross-surface parity baseline.
 
 ## Global Rules
 
@@ -5855,7 +5855,7 @@ so read-side and control-side audit metadata boundaries stay stable.
 - Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P44-TEST-01`
-- Branch: `codex/p44-closeout-next-plan`
+- Branch: `codex/p44-closeout-next-plan-clean`
 - Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
@@ -5876,7 +5876,7 @@ implementation phase.
 
 ## Phase 45 Task Board
 
-### P45-CLI-01 - CLI Delivery Audit Read Surface
+### P45-CLI-01 - Delivery Audit CLI Read Surface
 
 - Status: `Done`
 - Owner: `Codex`
@@ -5887,46 +5887,46 @@ implementation phase.
 
 #### Goal
 
-Expose session delivery-audit inspection through the local CLI so operators can
-review durable audit records without starting the API surface.
+Expose a local CLI read surface for session delivery-audit inspection so
+operators do not need the HTTP API for routine audit lookup.
 
 #### Deliverables
 
-- CLI delivery-audit read command
-- storage-backed projection of session delivery-audit records
-- focused CLI regression coverage for empty and populated audit output
+- CLI command for session delivery-audit inspection
+- machine-readable local output for delivery-audit records
+- regression coverage for populated, empty, and missing-session audit reads
 
 #### Acceptance
 
-- [x] CLI can read session delivery-audit records from the local database.
-- [x] Empty audit state is explicit and deterministic.
-- [x] Existing API delivery-audit behavior remains unchanged.
+- [x] Operators can inspect one session's delivery-audit history from the CLI.
+- [x] Missing-session and empty-history semantics stay explicit and machine-readable.
+- [x] Existing API delivery-audit behavior remains backward compatible.
 
-### P45-TEST-01 - Delivery Audit API And CLI Contract Matrix
+### P45-TEST-01 - Delivery Audit Cross-Surface Contract Matrix
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P45-CLI-01`
 - Branch: `codex/p45-test-01-delivery-audit-contract-matrix`
-- Owned paths: `tests/`, `apps/api/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Lock operator-facing delivery-audit payload parity across API and CLI once the
-CLI read surface exists.
+Lock stable parity rules between API and CLI delivery-audit output so future
+audit-surface changes do not drift across operators' read paths.
 
 #### Deliverables
 
-- delivery-audit API and CLI contract matrix
-- stable normalization rules for non-deterministic audit fields
-- documentation notes for preserved cross-surface audit vocabulary
+- cross-surface delivery-audit regression matrix
+- normalization rules for non-deterministic audit fields when needed
+- documented parity boundary for API and CLI audit reads
 
 #### Acceptance
 
-- [x] Delivery-audit payload parity is explicit across API and CLI.
-- [x] Non-deterministic fields are normalized narrowly and consistently.
-- [x] Regression coverage stays green after the parity matrix lands.
+- [x] API and CLI delivery-audit output parity is explicit and regression-tested.
+- [x] Stable audit fields stay locked without overfitting transient timestamps.
+- [x] Artifact and SCM audit records remain backward compatible across both surfaces.
 
 ### P45-CLOSE-01 - Phase 45 Closeout And Next Planning
 
@@ -5934,13 +5934,13 @@ CLI read surface exists.
 - Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P45-TEST-01`
-- Branch: `codex/p45-closeout-next-plan`
+- Branch: `codex/p45-closeout-next-plan-clean`
 - Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Close Phase 45 with CLI delivery-audit parity evidence and define the next
-implementation phase.
+Close Phase 45 with delivery-audit operator parity evidence and define the
+next implementation phase.
 
 #### Deliverables
 
@@ -5950,102 +5950,76 @@ implementation phase.
 
 #### Acceptance
 
-- [x] CLI delivery-audit parity evidence is recorded.
+- [x] Delivery-audit operator parity evidence is recorded.
 - [x] Next phase starter tasks are ready and path-scoped.
 
 ## Phase 46 Task Board
 
-### P46-STO-01 - Shared Delivery Audit Projection Serializer
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `STORAGE`
-- Depends on: `P45-CLOSE-01`
-- Branch: `codex/p46-sto-01-delivery-audit-projection`
-- Owned paths: `packages/agent-storage/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared delivery-audit projection serializer so operator-facing
-payload assembly stops drifting across API and CLI adapters.
-
-#### Deliverables
-
-- shared delivery-audit projection serializer
-- focused serializer regression coverage
-- preserved current operator payload vocabulary
-
-#### Acceptance
-
-- [x] One shared serializer projects delivery-audit records deterministically.
-- [x] Existing payload keys and semantics remain backward compatible.
-- [x] Focused regression coverage protects the shared serializer boundary.
-
-### P46-API-01 - API Shared Delivery Audit Projection Adoption
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `API`
-- Depends on: `P46-STO-01`
-- Branch: `codex/p46-api-01-delivery-audit-projection-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared delivery-audit projection serializer in the API read surface
-without changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared serializer
-- unchanged delivery-audit API behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API delivery-audit reads use the shared serializer.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P46-CLI-01 - CLI Shared Delivery Audit Projection Adoption
+### P46-CLI-01 - Session Diff CLI Read Surface
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CLI`
-- Depends on: `P46-STO-01`
-- Branch: `codex/p46-cli-01-delivery-audit-projection-adoption`
+- Depends on: `P45-CLOSE-01`
+- Branch: `codex/p46-cli-01-session-diff-read`
 - Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Adopt the shared delivery-audit projection serializer in the CLI read surface
-without changing the current operator contract.
+Expose a local CLI read surface for session workspace diff inspection so
+operators do not need the HTTP API for routine diff lookup.
 
 #### Deliverables
 
-- CLI adoption of the shared serializer
-- unchanged delivery-audit CLI behavior
-- focused CLI regression coverage
+- CLI command for session diff inspection
+- machine-readable local output for clean, dirty, and unavailable diff states
+- regression coverage for missing-session and non-git workspace diff reads
 
 #### Acceptance
 
-- [x] CLI delivery-audit reads use the shared serializer.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
+- [x] Operators can inspect one session workspace diff from the CLI.
+- [x] Clean, dirty, and unavailable diff states stay explicit and machine-readable.
+- [x] Existing API diff behavior remains backward compatible.
+
+### P46-TEST-01 - Session Diff Cross-Surface Contract Matrix
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `TEST`
+- Depends on: `P46-CLI-01`
+- Branch: `codex/p46-test-01-session-diff-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI session diff output so future
+workspace-inspection changes do not drift across operator read paths.
+
+#### Deliverables
+
+- cross-surface session diff regression matrix
+- normalization rules for non-deterministic diff context when needed
+- documented parity boundary for API and CLI diff reads
+
+#### Acceptance
+
+- [x] API and CLI session diff output parity is explicit and regression-tested.
+- [x] Stable diff fields stay locked without overfitting local path noise.
+- [x] Clean, dirty, and unavailable diff states remain backward compatible across both surfaces.
 
 ### P46-CLOSE-01 - Phase 46 Closeout And Next Planning
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `DOC`
-- Depends on: `P46-API-01`, `P46-CLI-01`
+- Depends on: `P46-TEST-01`
 - Branch: `codex/p46-closeout-next-plan`
 - Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Close Phase 46 with shared delivery-audit projection reuse evidence and define
-the next implementation phase.
+Close Phase 46 with session diff operator parity evidence and define the next
+implementation phase.
 
 #### Deliverables
 
@@ -6055,103 +6029,76 @@ the next implementation phase.
 
 #### Acceptance
 
-- [x] Shared delivery-audit projection evidence is recorded.
+- [x] Session diff operator parity evidence is recorded.
 - [x] Next phase starter tasks are ready and path-scoped.
 
 ## Phase 47 Task Board
 
-### P47-STO-01 - Shared Delivery Audit Read Helper
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `STORAGE`
-- Depends on: `P46-CLOSE-01`
-- Branch: `codex/p47-sto-01-delivery-audit-read-helper`
-- Owned paths: `packages/agent-storage/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared helper for session existence checks and delivery-audit
-record lookup so API and CLI delivery-audit reads stop duplicating the same
-read orchestration.
-
-#### Deliverables
-
-- shared delivery-audit read helper
-- focused helper regression coverage
-- preserved current read semantics
-
-#### Acceptance
-
-- [x] One shared helper loads delivery-audit records deterministically.
-- [x] Not-found and success semantics remain backward compatible.
-- [x] Focused regression coverage protects the shared read boundary.
-
-### P47-API-01 - API Shared Delivery Audit Read Helper Adoption
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `API`
-- Depends on: `P47-STO-01`
-- Branch: `codex/p47-api-01-delivery-audit-read-helper-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared delivery-audit read helper in the API surface without
-changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared read helper
-- unchanged API delivery-audit behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API delivery-audit reads use the shared read helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P47-CLI-01 - CLI Shared Delivery Audit Read Helper Adoption
+### P47-CLI-01 - Session Stream CLI Read Surface
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CLI`
-- Depends on: `P47-STO-01`
-- Branch: `codex/p47-cli-01-delivery-audit-read-helper-adoption`
+- Depends on: `P46-CLOSE-01`
+- Branch: `codex/p47-cli-01-session-stream-read`
 - Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Adopt the shared delivery-audit read helper in the CLI surface without
-changing the current operator contract.
+Expose a local CLI read surface for session event-stream inspection so
+operators do not need the HTTP API for routine persisted replay lookup.
 
 #### Deliverables
 
-- CLI adoption of the shared read helper
-- unchanged CLI delivery-audit behavior
-- focused CLI regression coverage
+- CLI command for session stream inspection
+- machine-readable local output for ordered persisted session events
+- regression coverage for missing-session and bootstrap-only stream reads
 
 #### Acceptance
 
-- [x] CLI delivery-audit reads use the shared read helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
+- [x] Operators can inspect one session event stream from the CLI.
+- [x] Ordered event replay stays explicit and machine-readable.
+- [x] Existing API stream behavior remains backward compatible.
+
+### P47-TEST-01 - Session Stream Cross-Surface Contract Matrix
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `TEST`
+- Depends on: `P47-CLI-01`
+- Branch: `codex/p47-test-01-session-stream-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API event replay and CLI session stream output
+so future operator replay changes do not drift across read paths.
+
+#### Deliverables
+
+- cross-surface session stream regression matrix
+- normalization rules for SSE frame versus CLI JSON event-list context
+- documented parity boundary for API and CLI stream reads
+
+#### Acceptance
+
+- [x] API and CLI session stream output parity is explicit and regression-tested.
+- [x] Stable event fields stay locked without overfitting transport-specific framing.
+- [x] Bootstrap-only and later event replay remain backward compatible across both surfaces.
 
 ### P47-CLOSE-01 - Phase 47 Closeout And Next Planning
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `DOC`
-- Depends on: `P47-API-01`, `P47-CLI-01`
+- Depends on: `P47-TEST-01`
 - Branch: `codex/p47-closeout-next-plan`
 - Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Close Phase 47 with shared delivery-audit read reuse evidence and define the
-next implementation phase.
+Close Phase 47 with session stream operator parity evidence and define the next
+implementation phase.
 
 #### Deliverables
 
@@ -6161,104 +6108,77 @@ next implementation phase.
 
 #### Acceptance
 
-- [x] Shared delivery-audit read evidence is recorded.
+- [x] Session stream operator parity evidence is recorded.
 - [x] Next phase starter tasks are ready and path-scoped.
 
 ## Phase 48 Task Board
 
-### P48-STO-01 - Shared Session Artifact Resolution Helper
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `STORAGE`
-- Depends on: `P47-CLOSE-01`
-- Branch: `codex/p48-sto-01-session-artifact-resolution`
-- Owned paths: `packages/agent-storage/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared helper for resolving a session artifact by `session_id` and
-`artifact_id` so API and CLI artifact flows stop duplicating the same lookup
-orchestration.
-
-#### Deliverables
-
-- shared session artifact resolution helper
-- focused helper regression coverage
-- preserved current not-found semantics
-
-#### Acceptance
-
-- [x] One shared helper resolves session artifacts deterministically.
-- [x] Missing session and missing artifact semantics remain backward compatible.
-- [x] Focused regression coverage protects the shared lookup boundary.
-
-### P48-API-01 - API Shared Session Artifact Resolution Adoption
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `API`
-- Depends on: `P48-STO-01`
-- Branch: `codex/p48-api-01-session-artifact-resolution-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact resolution helper in API artifact detail, content,
-list-adjacent, and control surfaces without changing the current operator
-contract.
-
-#### Deliverables
-
-- API adoption of the shared artifact resolution helper
-- unchanged API artifact behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API artifact resolution uses the shared helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P48-CLI-01 - CLI Shared Session Artifact Resolution Adoption
+### P48-CLI-01 - Session Commit CLI Delivery Surface
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CLI`
-- Depends on: `P48-STO-01`
-- Branch: `codex/p48-cli-01-session-artifact-resolution-adoption`
+- Depends on: `P47-CLOSE-01`
+- Branch: `codex/p48-cli-01-session-commit-read`
 - Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Adopt the shared artifact resolution helper in CLI artifact commands without
-changing the current operator contract.
+Expose a local CLI control surface for session commit execution so operators do
+not need the HTTP API for routine local delivery completion.
 
 #### Deliverables
 
-- CLI adoption of the shared artifact resolution helper
-- unchanged CLI artifact behavior
-- focused CLI regression coverage
+- CLI command for session commit execution
+- machine-readable local output for committed, unavailable, policy-blocked, and
+  missing-session commit paths
+- regression coverage for idempotent replay and invalid commit payload handling
 
 #### Acceptance
 
-- [x] CLI artifact resolution uses the shared helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
+- [x] Operators can create one session commit from the CLI.
+- [x] Commit success and failure states stay explicit and machine-readable.
+- [x] Existing API commit behavior remains backward compatible.
+
+### P48-TEST-01 - Session Commit Cross-Surface Contract Matrix
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `TEST`
+- Depends on: `P48-CLI-01`
+- Branch: `codex/p48-test-01-session-commit-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI session commit output so future
+local delivery changes do not drift across operator control paths.
+
+#### Deliverables
+
+- cross-surface session commit regression matrix
+- normalization rules for CLI-local context and idempotency replay metadata
+- documented parity boundary for API and CLI commit results
+
+#### Acceptance
+
+- [x] API and CLI session commit output parity is explicit and regression-tested.
+- [x] Stable commit result fields stay locked without overfitting transport-specific context.
+- [x] Success, unavailable, missing-session, and idempotent replay paths remain backward compatible across both surfaces.
 
 ### P48-CLOSE-01 - Phase 48 Closeout And Next Planning
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `DOC`
-- Depends on: `P48-API-01`, `P48-CLI-01`
+- Depends on: `P48-TEST-01`
 - Branch: `codex/p48-closeout-next-plan`
 - Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Close Phase 48 with shared artifact resolution reuse evidence and define the
-next implementation phase.
+Close Phase 48 with session commit operator parity evidence and define the next
+implementation phase.
 
 #### Deliverables
 
@@ -6268,102 +6188,79 @@ next implementation phase.
 
 #### Acceptance
 
-- [x] Shared artifact resolution evidence is recorded.
+- [x] Session commit operator parity evidence is recorded.
 - [x] Next phase starter tasks are ready and path-scoped.
 
 ## Phase 49 Task Board
 
-### P49-STO-01 - Shared Artifact Content Availability Helper
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `STORAGE`
-- Depends on: `P48-CLOSE-01`
-- Branch: `codex/p49-sto-01-artifact-content-availability`
-- Owned paths: `packages/agent-storage/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared helper for artifact content retrieval-status evaluation and
-unavailable-reason mapping so API and CLI content reads stop duplicating the
-same availability semantics.
-
-#### Deliverables
-
-- shared artifact content availability helper
-- focused helper regression coverage
-- preserved current unavailable-reason vocabulary
-
-#### Acceptance
-
-- [x] One shared helper classifies artifact content availability deterministically.
-- [x] Existing unavailable reasons remain backward compatible.
-- [x] Focused regression coverage protects the shared availability boundary.
-
-### P49-API-01 - API Shared Artifact Content Availability Adoption
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `API`
-- Depends on: `P49-STO-01`
-- Branch: `codex/p49-api-01-artifact-content-availability-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact content availability helper in API artifact content
-reads without changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared availability helper
-- unchanged API artifact content behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API artifact content reads use the shared availability helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P49-CLI-01 - CLI Shared Artifact Content Availability Adoption
+### P49-CLI-01 - Session Pull Request CLI Delivery Surface
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CLI`
-- Depends on: `P49-STO-01`
-- Branch: `codex/p49-cli-01-artifact-content-availability-adoption`
+- Depends on: `P48-CLOSE-01`
+- Branch: `codex/p49-cli-01-session-pull-request-read`
 - Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Adopt the shared artifact content availability helper in CLI artifact read
-commands without changing the current operator contract.
+Expose a local CLI control surface for session pull-request planning and
+guarded execution so operators do not need the HTTP API for routine local SCM
+delivery completion.
 
 #### Deliverables
 
-- CLI adoption of the shared availability helper
-- unchanged CLI artifact read behavior
-- focused CLI regression coverage
+- CLI command for session pull-request execution
+- machine-readable local output for dry-run, created, unavailable,
+  policy-blocked, and missing-session pull-request paths
+- regression coverage for idempotent replay and invalid pull-request payload
+  handling
 
 #### Acceptance
 
-- [x] CLI artifact read commands use the shared availability helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
+- [x] Operators can open one session pull request from the CLI.
+- [x] Pull-request success and failure states stay explicit and machine-readable.
+- [x] Existing API pull-request behavior remains backward compatible.
+
+### P49-TEST-01 - Session Pull Request Cross-Surface Contract Matrix
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `TEST`
+- Depends on: `P49-CLI-01`
+- Branch: `codex/p49-test-01-session-pull-request-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI session pull-request output so
+future delivery changes do not drift across operator control paths.
+
+#### Deliverables
+
+- cross-surface session pull-request regression matrix
+- normalization rules for CLI-local context and transport-specific request
+  metadata
+- documented parity boundary for API and CLI pull-request results
+
+#### Acceptance
+
+- [x] API and CLI session pull-request output parity is explicit and regression-tested.
+- [x] Stable pull-request result fields stay locked without overfitting transport-specific context.
+- [x] Dry-run, created, unavailable, missing-session, and idempotent replay paths remain backward compatible across both surfaces.
 
 ### P49-CLOSE-01 - Phase 49 Closeout And Next Planning
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `DOC`
-- Depends on: `P49-API-01`, `P49-CLI-01`
+- Depends on: `P49-TEST-01`
 - Branch: `codex/p49-closeout-next-plan`
 - Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Close Phase 49 with shared artifact content availability evidence and define
+Close Phase 49 with session pull-request operator parity evidence and define
 the next implementation phase.
 
 #### Deliverables
@@ -6374,102 +6271,78 @@ the next implementation phase.
 
 #### Acceptance
 
-- [x] Shared artifact content availability evidence is recorded.
+- [x] Session pull-request operator parity evidence is recorded.
 - [x] Next phase starter tasks are ready and path-scoped.
 
 ## Phase 50 Task Board
 
-### P50-STO-01 - Shared Artifact Lifecycle Lookup Helper
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `STORAGE`
-- Depends on: `P49-CLOSE-01`
-- Branch: `codex/p50-sto-01-artifact-lifecycle-lookup`
-- Owned paths: `packages/agent-storage/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared helper for artifact lifecycle lookup by URI so API and CLI
-artifact flows stop duplicating the same payload-to-lifecycle assembly.
-
-#### Deliverables
-
-- shared artifact lifecycle lookup helper
-- focused helper regression coverage
-- preserved current lifecycle payload semantics
-
-#### Acceptance
-
-- [x] One shared helper builds artifact lifecycle payloads deterministically.
-- [x] Existing lifecycle payload semantics remain backward compatible.
-- [x] Focused regression coverage protects the shared lifecycle boundary.
-
-### P50-API-01 - API Shared Artifact Lifecycle Lookup Adoption
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `API`
-- Depends on: `P50-STO-01`
-- Branch: `codex/p50-api-01-artifact-lifecycle-lookup-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact lifecycle lookup helper in API artifact read surfaces
-without changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared lifecycle helper
-- unchanged API artifact behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API artifact lifecycle lookup uses the shared helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P50-CLI-01 - CLI Shared Artifact Lifecycle Lookup Adoption
+### P50-CLI-01 - Approval Queue CLI Read Surface
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CLI`
-- Depends on: `P50-STO-01`
-- Branch: `codex/p50-cli-01-artifact-lifecycle-lookup-adoption`
+- Depends on: `P49-CLOSE-01`
+- Branch: `codex/p50-cli-01-approval-queue-read`
 - Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Adopt the shared artifact lifecycle lookup helper in CLI artifact commands
-without changing the current operator contract.
+Expose local CLI read surfaces for approval queue and approval detail inspection
+so operators do not need the HTTP API for routine approval triage.
 
 #### Deliverables
 
-- CLI adoption of the shared lifecycle helper
-- unchanged CLI artifact behavior
-- focused CLI regression coverage
+- CLI command for approval queue inspection
+- CLI command for approval detail inspection
+- machine-readable local output for waiting-approval list, detail, and
+  missing-approval paths
+- regression coverage for queue and detail CLI reads
 
 #### Acceptance
 
-- [x] CLI artifact lifecycle lookup uses the shared helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
+- [x] Operators can inspect the waiting approval queue from the CLI.
+- [x] Operators can inspect one approval detail from the CLI.
+- [x] Existing API approval read behavior remains backward compatible.
+
+### P50-TEST-01 - Approval Queue Cross-Surface Contract Matrix
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `TEST`
+- Depends on: `P50-CLI-01`
+- Branch: `codex/p50-test-01-approval-queue-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI approval queue or detail output so
+future approval-read changes do not drift across operator control paths.
+
+#### Deliverables
+
+- cross-surface approval queue and detail regression matrix
+- normalization rules for CLI-local context when needed
+- documented parity boundary for API and CLI approval reads
+
+#### Acceptance
+
+- [x] API and CLI approval queue or detail output parity is explicit and regression-tested.
+- [x] Stable approval result fields stay locked without overfitting CLI-only context.
+- [x] Waiting-approval list, detail, and missing-approval paths remain backward compatible across both surfaces.
 
 ### P50-CLOSE-01 - Phase 50 Closeout And Next Planning
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `DOC`
-- Depends on: `P50-API-01`, `P50-CLI-01`
+- Depends on: `P50-TEST-01`
 - Branch: `codex/p50-closeout-next-plan`
 - Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Close Phase 50 with shared artifact lifecycle lookup evidence and define the
-next implementation phase.
+Close Phase 50 with approval queue operator parity evidence and define the next
+implementation phase.
 
 #### Deliverables
 
@@ -6479,101 +6352,49 @@ next implementation phase.
 
 #### Acceptance
 
-- [x] Shared artifact lifecycle lookup evidence is recorded.
+- [x] Approval queue operator parity evidence is recorded.
 - [x] Next phase starter tasks are ready and path-scoped.
 
 ## Phase 51 Task Board
 
-### P51-STO-01 - Shared Artifact Payload Lookup Helper
+### P51-TEST-01 - Approval Decision Cross-Surface Contract Matrix
 
 - Status: `Done`
 - Owner: `Codex`
-- Suggested role: `STORAGE`
+- Suggested role: `TEST`
 - Depends on: `P50-CLOSE-01`
-- Branch: `codex/p51-sto-01-artifact-payload-lookup`
-- Owned paths: `packages/agent-storage/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+- Branch: `codex/p51-test-01-approval-decision-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Extract one shared helper for artifact payload lookup by URI so API and CLI
-artifact flows stop duplicating the same payload resolution path.
+Lock stable parity rules between API and CLI approval decision output so
+future operator decision changes do not drift across control surfaces.
 
 #### Deliverables
 
-- shared artifact payload lookup helper
-- focused helper regression coverage
-- preserved current payload lookup semantics
+- cross-surface approval decision regression matrix
+- normalization rules for CLI-local context when needed
+- documented parity boundary for API and CLI approval decision results
 
 #### Acceptance
 
-- [x] One shared helper resolves artifact payloads deterministically.
-- [x] Existing payload lookup semantics remain backward compatible.
-- [x] Focused regression coverage protects the shared payload boundary.
-
-### P51-API-01 - API Shared Artifact Payload Lookup Adoption
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `API`
-- Depends on: `P51-STO-01`
-- Branch: `codex/p51-api-01-artifact-payload-lookup-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact payload lookup helper in API artifact access and
-control surfaces without changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared payload helper
-- unchanged API artifact behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API artifact payload lookup uses the shared helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P51-CLI-01 - CLI Shared Artifact Payload Lookup Adoption
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `CLI`
-- Depends on: `P51-STO-01`
-- Branch: `codex/p51-cli-01-artifact-payload-lookup-adoption`
-- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact payload lookup helper in CLI artifact flows without
-changing the current operator contract.
-
-#### Deliverables
-
-- CLI adoption of the shared payload helper
-- unchanged CLI artifact behavior
-- focused CLI regression coverage
-
-#### Acceptance
-
-- [x] CLI artifact payload lookup uses the shared helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
+- [x] API and CLI approval decision output parity is explicit and regression-tested.
+- [x] Grant, reject, invalid-state, and missing-session paths remain backward compatible across both surfaces.
+- [x] Stable approval decision result fields stay locked without overfitting CLI-only context.
 
 ### P51-CLOSE-01 - Phase 51 Closeout And Next Planning
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `DOC`
-- Depends on: `P51-API-01`, `P51-CLI-01`
+- Depends on: `P51-TEST-01`
 - Branch: `codex/p51-closeout-next-plan`
 - Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Close Phase 51 with shared artifact payload lookup evidence and define the
+Close Phase 51 with approval decision operator parity evidence and define the
 next implementation phase.
 
 #### Deliverables
@@ -6584,101 +6405,76 @@ next implementation phase.
 
 #### Acceptance
 
-- [x] Shared artifact payload lookup evidence is recorded.
+- [x] Approval decision operator parity evidence is recorded.
 - [x] Next phase starter tasks are ready and path-scoped.
 
 ## Phase 52 Task Board
 
-### P52-STO-01 - Shared Session Policy Profile Lookup Helper
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `STORAGE`
-- Depends on: `P51-CLOSE-01`
-- Branch: `codex/p52-sto-01-session-policy-profile-lookup`
-- Owned paths: `packages/agent-storage/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared helper for reading the session policy profile from workspace
-state so API and CLI artifact flows stop duplicating the same lookup logic.
-
-#### Deliverables
-
-- shared session policy profile lookup helper
-- focused helper regression coverage
-- preserved current defaulting semantics
-
-#### Acceptance
-
-- [x] One shared helper reads session policy profiles deterministically.
-- [x] Existing defaulting semantics remain backward compatible.
-- [x] Focused regression coverage protects the shared policy-profile boundary.
-
-### P52-API-01 - API Shared Session Policy Profile Lookup Adoption
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `API`
-- Depends on: `P52-STO-01`
-- Branch: `codex/p52-api-01-session-policy-profile-lookup-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared session policy profile lookup helper in API artifact access
-classification without changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared policy-profile helper
-- unchanged API artifact access behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API artifact access classification uses the shared helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P52-CLI-01 - CLI Shared Session Policy Profile Lookup Adoption
+### P52-CLI-01 - Session Message Append CLI Surface
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CLI`
-- Depends on: `P52-STO-01`
-- Branch: `codex/p52-cli-01-session-policy-profile-lookup-adoption`
+- Depends on: `P51-CLOSE-01`
+- Branch: `codex/p52-cli-01-session-message-append`
 - Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Adopt the shared session policy profile lookup helper in CLI artifact access
-classification without changing the current operator contract.
+Expose a local CLI append surface for durable session continuation so
+operators do not need the HTTP API for routine follow-up prompts.
 
 #### Deliverables
 
-- CLI adoption of the shared policy-profile helper
-- unchanged CLI artifact access behavior
-- focused CLI regression coverage
+- CLI command for appending one user message to an existing session
+- machine-readable local output for appended, invalid-request, not-found, and
+  terminal-session append paths
+- regression coverage for CLI append behavior
 
 #### Acceptance
 
-- [x] CLI artifact access classification uses the shared helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
+- [x] Operators can append one more user message from the CLI.
+- [x] Terminal-session append failures remain deterministic from the CLI.
+- [x] Existing API append behavior remains backward compatible.
+
+### P52-TEST-01 - Session Message Append Cross-Surface Contract Matrix
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `TEST`
+- Depends on: `P52-CLI-01`
+- Branch: `codex/p52-test-01-session-message-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI session message append output so
+future continuation changes do not drift across operator control surfaces.
+
+#### Deliverables
+
+- cross-surface session message append regression matrix
+- normalization rules for CLI-local context when needed
+- documented parity boundary for API and CLI append results
+
+#### Acceptance
+
+- [x] API and CLI append output parity is explicit and regression-tested.
+- [x] Appended, invalid-request, not-found, and terminal-session append paths remain backward compatible across both surfaces.
+- [x] Stable append result fields stay locked without overfitting CLI-only context.
 
 ### P52-CLOSE-01 - Phase 52 Closeout And Next Planning
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `DOC`
-- Depends on: `P52-API-01`, `P52-CLI-01`
+- Depends on: `P52-TEST-01`
 - Branch: `codex/p52-closeout-next-plan`
 - Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Close Phase 52 with shared session policy profile lookup evidence and define
+Close Phase 52 with session message append operator parity evidence and define
 the next implementation phase.
 
 #### Deliverables
@@ -6689,102 +6485,79 @@ the next implementation phase.
 
 #### Acceptance
 
-- [x] Shared session policy profile lookup evidence is recorded.
+- [x] Session message append operator parity evidence is recorded.
 - [x] Next phase starter tasks are ready and path-scoped.
 
 ## Phase 53 Task Board
 
-### P53-SEC-01 - Shared Artifact Access Classification Helper
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `SEC`
-- Depends on: `P52-CLOSE-01`
-- Branch: `codex/p53-sec-01-artifact-access-classification`
-- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared helper for artifact access projection classification so API
-and CLI artifact flows stop duplicating the same projection-assembly logic.
-
-#### Deliverables
-
-- shared artifact access classification helper
-- focused helper regression coverage
-- preserved current access projection semantics
-
-#### Acceptance
-
-- [x] One shared helper classifies artifact access deterministically.
-- [x] Existing access projection semantics remain backward compatible.
-- [x] Focused regression coverage protects the shared access boundary.
-
-### P53-API-01 - API Shared Artifact Access Classification Adoption
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `API`
-- Depends on: `P53-SEC-01`
-- Branch: `codex/p53-api-01-artifact-access-classification-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact access classification helper in API artifact flows
-without changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared access helper
-- unchanged API artifact access behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API artifact flows use the shared access helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P53-CLI-01 - CLI Shared Artifact Access Classification Adoption
+### P53-CLI-01 - Session Cancel Control Surface
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CLI`
-- Depends on: `P53-SEC-01`
-- Branch: `codex/p53-cli-01-artifact-access-classification-adoption`
-- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+- Depends on: `P52-CLOSE-01`
+- Branch: `codex/p53-cli-01-session-cancel`
+- Owned paths: `apps/cli/`, `apps/api/`, `apps/worker/`, `tests/cli/`, `tests/api/`, `tests/worker/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Adopt the shared artifact access classification helper in CLI artifact flows
-without changing the current operator contract.
+Expose a local session cancel control surface by restoring the missing control
+entry and wiring a local CLI path so operators do not need the HTTP API for
+routine cancel actions.
 
 #### Deliverables
 
-- CLI adoption of the shared access helper
-- unchanged CLI artifact access behavior
-- focused CLI regression coverage
+- restored cancel control entry with deterministic response models
+- CLI command for cancelling one existing session
+- machine-readable local output for cancelled, invalid-state, and not-found
+  cancel paths
+- regression coverage for CLI cancel behavior
 
 #### Acceptance
 
-- [x] CLI artifact flows use the shared access helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
+- [x] Operators can cancel one session from the CLI.
+- [x] Invalid-state and missing-session cancel failures remain deterministic from the CLI.
+- [x] Existing API cancel behavior is restored and remains backward compatible.
 
-### P53-CLOSE-01 - Phase 53 Closeout And Next Planning
+### P53-TEST-01 - Session Control Cross-Surface Contract Matrix
 
 - Status: `Done`
 - Owner: `Codex`
+- Suggested role: `TEST`
+- Depends on: `P53-CLI-01`
+- Branch: `codex/p53-test-01-session-control-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI session control output so future
+cancel or suspend changes do not drift across operator control surfaces.
+
+#### Deliverables
+
+- cross-surface session control regression matrix
+- normalization rules for CLI-local context when needed
+- documented parity boundary for API and CLI cancel and suspend results
+
+#### Acceptance
+
+- [x] API and CLI session control output parity is explicit and regression-tested.
+- [x] Cancelled, invalid-state, missing-session, suspended, invalid-request, and not-found control paths remain backward compatible across both surfaces.
+- [x] Stable control result fields stay locked without overfitting CLI-only context.
+
+### P53-CLOSE-01 - Phase 53 Closeout And Next Planning
+
+- Status: `Ready`
+- Owner: `Unassigned`
 - Suggested role: `DOC`
-- Depends on: `P53-API-01`, `P53-CLI-01`
+- Depends on: `P53-TEST-01`
 - Branch: `codex/p53-closeout-next-plan`
 - Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Close Phase 53 with shared artifact access classification evidence and define
-the next implementation phase.
+Close Phase 53 with session control operator parity evidence and define the
+next implementation phase.
 
 #### Deliverables
 
@@ -6794,928 +6567,5 @@ the next implementation phase.
 
 #### Acceptance
 
-- [x] Shared artifact access classification evidence is recorded.
-- [x] Next phase starter tasks are ready and path-scoped.
-
-## Phase 54 Task Board
-
-### P54-SEC-01 - Shared Artifact Access Serialization Helper
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `SEC`
-- Depends on: `P53-CLOSE-01`
-- Branch: `codex/p54-sec-01-artifact-access-serialization`
-- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared helper for operator-facing artifact access serialization so
-API and CLI artifact flows stop wrapping the same projection payload
-separately.
-
-#### Deliverables
-
-- shared artifact access serialization helper
-- focused helper regression coverage
-- preserved current serialized access payload semantics
-
-#### Acceptance
-
-- [x] One shared helper serializes artifact access deterministically.
-- [x] Existing serialized access payload semantics remain backward compatible.
-- [x] Focused regression coverage protects the shared serialization boundary.
-
-### P54-API-01 - API Shared Artifact Access Serialization Adoption
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `API`
-- Depends on: `P54-SEC-01`
-- Branch: `codex/p54-api-01-artifact-access-serialization-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact access serialization helper in API artifact flows
-without changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared serialization helper
-- unchanged API artifact access behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API artifact flows use the shared serialization helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P54-CLI-01 - CLI Shared Artifact Access Serialization Adoption
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `CLI`
-- Depends on: `P54-SEC-01`
-- Branch: `codex/p54-cli-01-artifact-access-serialization-adoption`
-- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact access serialization helper in CLI artifact flows
-without changing the current operator contract.
-
-#### Deliverables
-
-- CLI adoption of the shared serialization helper
-- unchanged CLI artifact access behavior
-- focused CLI regression coverage
-
-#### Acceptance
-
-- [x] CLI artifact flows use the shared serialization helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
-
-### P54-CLOSE-01 - Phase 54 Closeout And Next Planning
-
-- Status: `Done`
-- Owner: `Codex`
-- Suggested role: `DOC`
-- Depends on: `P54-API-01`, `P54-CLI-01`
-- Branch: `codex/p54-closeout-next-plan`
-- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Close Phase 54 with shared artifact access serialization evidence and define
-the next implementation phase.
-
-#### Deliverables
-
-- Phase 54 acceptance record
-- next phase starter tasks
-- updated progress and README state
-
-#### Acceptance
-
-- [x] Shared artifact access serialization evidence is recorded.
-- [x] Next phase starter tasks are ready and path-scoped.
-
-## Phase 55 Task Board
-
-### P55-SEC-01 - Shared Artifact Access Denied Reason Helper
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `SEC`
-- Depends on: `P54-CLOSE-01`
-- Branch: `codex/p55-sec-01-artifact-access-denied-reason`
-- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared helper for artifact access denied-reason construction so API
-and CLI artifact flows stop wrapping the same reason semantics separately.
-
-#### Deliverables
-
-- shared artifact access denied-reason helper
-- focused helper regression coverage
-- preserved current denied-reason vocabulary
-
-#### Acceptance
-
-- [x] One shared helper builds artifact access denied reasons deterministically.
-- [x] Existing denied-reason vocabulary remains backward compatible.
-- [x] Focused regression coverage protects the shared denied-reason boundary.
-
-### P55-API-01 - API Shared Artifact Access Denied Reason Adoption
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `API`
-- Depends on: `P55-SEC-01`
-- Branch: `codex/p55-api-01-artifact-access-denied-reason-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact access denied-reason helper in API artifact flows
-without changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared denied-reason helper
-- unchanged API artifact access behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API artifact flows use the shared denied-reason helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P55-CLI-01 - CLI Shared Artifact Access Denied Reason Adoption
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `CLI`
-- Depends on: `P55-SEC-01`
-- Branch: `codex/p55-cli-01-artifact-access-denied-reason-adoption`
-- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact access denied-reason helper in CLI artifact flows
-without changing the current operator contract.
-
-#### Deliverables
-
-- CLI adoption of the shared denied-reason helper
-- unchanged CLI artifact access behavior
-- focused CLI regression coverage
-
-#### Acceptance
-
-- [x] CLI artifact flows use the shared denied-reason helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
-
-### P55-CLOSE-01 - Phase 55 Closeout And Next Planning
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `DOC`
-- Depends on: `P55-API-01`, `P55-CLI-01`
-- Branch: `codex/p55-closeout-next-plan`
-- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Close Phase 55 with shared artifact access denied-reason evidence and define
-the next implementation phase.
-
-#### Deliverables
-
-- Phase 55 acceptance record
-- next phase starter tasks
-- updated progress and README state
-
-#### Acceptance
-
-- [x] Shared artifact access denied-reason evidence is recorded.
-- [x] Next phase starter tasks are ready and path-scoped.
-
-## Phase 56 Task Board
-
-### P56-SEC-01 - Shared Artifact Control Success Access Fields Helper
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `SEC`
-- Depends on: `P55-CLOSE-01`
-- Branch: `codex/p56-sec-01-artifact-control-success-access-fields`
-- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared helper for artifact control success access field projection
-so API and CLI prune success flows stop assembling the same access-class and
-required-policy fields separately.
-
-#### Deliverables
-
-- shared control success access fields helper
-- focused helper regression coverage
-- preserved current success-field vocabulary
-
-#### Acceptance
-
-- [x] One shared helper projects control success access fields deterministically.
-- [x] Existing control success access-field vocabulary remains backward compatible.
-- [x] Focused regression coverage protects the shared success-field boundary.
-
-### P56-API-01 - API Shared Artifact Control Success Access Fields Adoption
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `API`
-- Depends on: `P56-SEC-01`
-- Branch: `codex/p56-api-01-artifact-control-success-access-fields-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact control success access fields helper in API prune
-success flows without changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared control success access fields helper
-- unchanged API prune success behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API prune success flows use the shared access fields helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P56-CLI-01 - CLI Shared Artifact Control Success Access Fields Adoption
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `CLI`
-- Depends on: `P56-SEC-01`
-- Branch: `codex/p56-cli-01-artifact-control-success-access-fields-adoption`
-- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact control success access fields helper in CLI prune
-success flows without changing the current operator contract.
-
-#### Deliverables
-
-- CLI adoption of the shared control success access fields helper
-- unchanged CLI prune success behavior
-- focused CLI regression coverage
-
-#### Acceptance
-
-- [x] CLI prune success flows use the shared access fields helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
-
-### P56-CLOSE-01 - Phase 56 Closeout And Next Planning
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `DOC`
-- Depends on: `P56-API-01`, `P56-CLI-01`
-- Branch: `codex/p56-closeout-next-plan`
-- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Close Phase 56 with shared artifact control success access-field evidence and
-define the next implementation phase.
-
-#### Deliverables
-
-- Phase 56 acceptance record
-- next phase starter tasks
-- updated progress and README state
-
-#### Acceptance
-
-- [x] Shared artifact control success access-field evidence is recorded.
-- [x] Next phase starter tasks are ready and path-scoped.
-
-## Phase 57 Task Board
-
-### P57-SEC-01 - Shared Artifact Access Outcome Fields Helper
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `SEC`
-- Depends on: `P56-CLOSE-01`
-- Branch: `codex/p57-sec-01-artifact-access-outcome-fields`
-- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared helper for artifact access read-failure outcome fields so
-API and CLI stop assembling the same `status` / `reason` / `access` trio
-separately.
-
-#### Deliverables
-
-- shared artifact access outcome fields helper
-- focused helper regression coverage
-- preserved current outcome-field vocabulary
-
-#### Acceptance
-
-- [x] One shared helper projects read-failure outcome fields deterministically.
-- [x] Existing outcome-field vocabulary remains backward compatible.
-- [x] Focused regression coverage protects the shared outcome-field boundary.
-
-### P57-API-01 - API Shared Artifact Access Outcome Fields Adoption
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `API`
-- Depends on: `P57-SEC-01`
-- Branch: `codex/p57-api-01-artifact-access-outcome-fields-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact access outcome fields helper in API read-failure
-flows without changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared access outcome fields helper
-- unchanged API read-failure behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API read-failure flows use the shared outcome fields helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P57-CLI-01 - CLI Shared Artifact Access Outcome Fields Adoption
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `CLI`
-- Depends on: `P57-SEC-01`
-- Branch: `codex/p57-cli-01-artifact-access-outcome-fields-adoption`
-- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact access outcome fields helper in CLI read-failure
-flows without changing the current operator contract.
-
-#### Deliverables
-
-- CLI adoption of the shared access outcome fields helper
-- unchanged CLI read-failure behavior
-- focused CLI regression coverage
-
-#### Acceptance
-
-- [x] CLI read-failure flows use the shared outcome fields helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
-
-### P57-CLOSE-01 - Phase 57 Closeout And Next Planning
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `DOC`
-- Depends on: `P57-API-01`, `P57-CLI-01`
-- Branch: `codex/p57-closeout-next-plan`
-- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Close Phase 57 with shared artifact access outcome-field evidence and define
-the next implementation phase.
-
-#### Deliverables
-
-- Phase 57 acceptance record
-- next phase starter tasks
-- updated progress and README state
-
-#### Acceptance
-
-- [x] Shared artifact access outcome-field evidence is recorded.
-- [x] Next phase starter tasks are ready and path-scoped.
-
-## Phase 58 Task Board
-
-### P58-SEC-01 - Shared Artifact Control Outcome Fields Helper
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `SEC`
-- Depends on: `P57-CLOSE-01`
-- Branch: `codex/p58-sec-01-artifact-control-outcome-fields`
-- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared helper for artifact control failure outcome fields so API
-and CLI stop assembling the same control `status` / `reason` pair separately.
-
-#### Deliverables
-
-- shared artifact control outcome fields helper
-- focused helper regression coverage
-- preserved current control outcome vocabulary
-
-#### Acceptance
-
-- [x] One shared helper projects control failure outcome fields deterministically.
-- [x] Existing control outcome vocabulary remains backward compatible.
-- [x] Focused regression coverage protects the shared control outcome boundary.
-
-### P58-API-01 - API Shared Artifact Control Outcome Fields Adoption
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `API`
-- Depends on: `P58-SEC-01`
-- Branch: `codex/p58-api-01-artifact-control-outcome-fields-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact control outcome fields helper in API prune failure
-flows without changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared control outcome fields helper
-- unchanged API prune failure behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API prune failure flows use the shared control outcome fields helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P58-CLI-01 - CLI Shared Artifact Control Outcome Fields Adoption
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `CLI`
-- Depends on: `P58-SEC-01`
-- Branch: `codex/p58-cli-01-artifact-control-outcome-fields-adoption`
-- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact control outcome fields helper in CLI prune failure
-flows without changing the current operator contract.
-
-#### Deliverables
-
-- CLI adoption of the shared control outcome fields helper
-- unchanged CLI prune failure behavior
-- focused CLI regression coverage
-
-#### Acceptance
-
-- [x] CLI prune failure flows use the shared control outcome fields helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
-
-### P58-CLOSE-01 - Phase 58 Closeout And Next Planning
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `DOC`
-- Depends on: `P58-API-01`, `P58-CLI-01`
-- Branch: `codex/p58-closeout-next-plan`
-- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Close Phase 58 with shared artifact control outcome-field evidence and define
-the next implementation phase.
-
-#### Deliverables
-
-- Phase 58 acceptance record
-- next phase starter tasks
-- updated progress and README state
-
-#### Acceptance
-
-- [x] Shared artifact control outcome-field evidence is recorded.
-- [x] Next phase starter tasks are ready and path-scoped.
-
-## Phase 59 Task Board
-
-### P59-SEC-01 - Shared Artifact Control Success Outcome Helper
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `SEC`
-- Depends on: `P58-CLOSE-01`
-- Branch: `codex/p59-sec-01-artifact-control-success-outcome`
-- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared helper for artifact control success outcome projection so
-API and CLI stop assembling the same success `status` and shared access fields
-separately.
-
-#### Deliverables
-
-- shared artifact control success outcome helper
-- focused helper regression coverage
-- preserved current control success vocabulary
-
-#### Acceptance
-
-- [x] One shared helper projects control success outcome fields deterministically.
-- [x] Existing control success vocabulary remains backward compatible.
-- [x] Focused regression coverage protects the shared control success boundary.
-
-### P59-API-01 - API Shared Artifact Control Success Outcome Adoption
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `API`
-- Depends on: `P59-SEC-01`
-- Branch: `codex/p59-api-01-artifact-control-success-outcome-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact control success outcome helper in API prune success
-flows without changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared control success outcome helper
-- unchanged API prune success behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API prune success flows use the shared control success outcome helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P59-CLI-01 - CLI Shared Artifact Control Success Outcome Adoption
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `CLI`
-- Depends on: `P59-SEC-01`
-- Branch: `codex/p59-cli-01-artifact-control-success-outcome-adoption`
-- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact control success outcome helper in CLI prune success
-flows without changing the current operator contract.
-
-#### Deliverables
-
-- CLI adoption of the shared control success outcome helper
-- unchanged CLI prune success behavior
-- focused CLI regression coverage
-
-#### Acceptance
-
-- [x] CLI prune success flows use the shared control success outcome helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
-
-### P59-CLOSE-01 - Phase 59 Closeout And Next Planning
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `DOC`
-- Depends on: `P59-API-01`, `P59-CLI-01`
-- Branch: `codex/p59-closeout-next-plan`
-- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Close Phase 59 with shared artifact control success outcome evidence and define
-the next implementation phase.
-
-#### Deliverables
-
-- Phase 59 acceptance record
-- next phase starter tasks
-- updated progress and README state
-
-#### Acceptance
-
-- [x] Shared artifact control success outcome evidence is recorded.
-- [x] Next phase starter tasks are ready and path-scoped.
-
-## Phase 60 Task Board
-
-### P60-SEC-01 - Shared Artifact Control Success Lifecycle Helper
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `SEC`
-- Depends on: `P59-CLOSE-01`
-- Branch: `codex/p60-sec-01-artifact-control-success-lifecycle`
-- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared helper for artifact control success lifecycle attachment so
-API and CLI stop attaching the same `lifecycle` field separately.
-
-#### Deliverables
-
-- shared artifact control success lifecycle helper
-- focused helper regression coverage
-- preserved current control success lifecycle vocabulary
-
-#### Acceptance
-
-- [x] One shared helper projects control success lifecycle fields deterministically.
-- [x] Existing control success lifecycle vocabulary remains backward compatible.
-- [x] Focused regression coverage protects the shared lifecycle boundary.
-
-### P60-API-01 - API Shared Artifact Control Success Lifecycle Adoption
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `API`
-- Depends on: `P60-SEC-01`
-- Branch: `codex/p60-api-01-artifact-control-success-lifecycle-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact control success lifecycle helper in API prune success
-flows without changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared control success lifecycle helper
-- unchanged API prune success behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API prune success flows use the shared control success lifecycle helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P60-CLI-01 - CLI Shared Artifact Control Success Lifecycle Adoption
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `CLI`
-- Depends on: `P60-SEC-01`
-- Branch: `codex/p60-cli-01-artifact-control-success-lifecycle-adoption`
-- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact control success lifecycle helper in CLI prune success
-flows without changing the current operator contract.
-
-#### Deliverables
-
-- CLI adoption of the shared control success lifecycle helper
-- unchanged CLI prune success behavior
-- focused CLI regression coverage
-
-#### Acceptance
-
-- [x] CLI prune success flows use the shared control success lifecycle helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
-
-### P60-CLOSE-01 - Phase 60 Closeout And Next Planning
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `DOC`
-- Depends on: `P60-API-01`, `P60-CLI-01`
-- Branch: `codex/p60-closeout-next-plan`
-- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Close Phase 60 with shared artifact control success lifecycle evidence and
-define the next implementation phase.
-
-#### Deliverables
-
-- Phase 60 acceptance record
-- next phase starter tasks
-- updated progress and README state
-
-#### Acceptance
-
-- [x] Shared artifact control success lifecycle evidence is recorded.
-- [x] Next phase starter tasks are ready and path-scoped.
-
-## Phase 61 Task Board
-
-### P61-API-01 - API Shared Artifact Access Snapshot Reuse
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `API`
-- Depends on: `P60-CLOSE-01`
-- Branch: `codex/p61-api-01-artifact-access-snapshot-reuse`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Replace the API-local artifact access serialization wrapper with the shared
-serializer directly, without changing current operator payload semantics.
-
-#### Deliverables
-
-- API direct reuse of shared artifact access serialization
-- removed API-local wrapper
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API artifact flows use the shared serializer directly for access snapshots.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P61-CLI-01 - CLI Shared Artifact Access Snapshot Reuse
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `CLI`
-- Depends on: `P61-API-01`
-- Branch: `codex/p61-cli-01-artifact-access-snapshot-reuse`
-- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Replace the CLI-local artifact access serialization wrapper with the shared
-serializer directly, without changing current operator payload semantics.
-
-#### Deliverables
-
-- CLI direct reuse of shared artifact access serialization
-- removed CLI-local wrapper
-- focused CLI regression coverage
-
-#### Acceptance
-
-- [x] CLI artifact flows use the shared serializer directly for access snapshots.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
-
-### P61-CLOSE-01 - Phase 61 Closeout And Next Planning
-
-- Status: `Done`
-- Owner: `UNASSIGNED`
-- Suggested role: `DOC`
-- Depends on: `P61-API-01`, `P61-CLI-01`
-- Branch: `codex/p61-closeout-next-plan`
-- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Close Phase 61 with shared artifact access snapshot reuse evidence and define
-the next implementation phase.
-
-#### Deliverables
-
-- Phase 61 acceptance record
-- next phase starter tasks
-- updated progress and README state
-
-#### Acceptance
-
-- [x] Shared artifact access snapshot reuse evidence is recorded.
-- [x] Next phase starter tasks are ready and path-scoped.
-
-## Phase 62 Task Board
-
-### P62-SEC-01 - Shared Artifact Access Snapshot Attachment Helper
-
-- Status: `Done`
-- Owner: `Unassigned`
-- Suggested role: `SEC`
-- Depends on: `P61-CLOSE-01`
-- Branch: `codex/p62-sec-01-artifact-access-snapshot-attachment`
-- Owned paths: `packages/agent-security/`, `tests/agent_security/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Extract one shared helper for attaching serialized artifact access snapshots so
-API and CLI stop assembling the same `"access"` field separately.
-
-#### Deliverables
-
-- shared artifact access snapshot attachment helper
-- focused helper regression coverage
-- preserved current access snapshot vocabulary
-
-#### Acceptance
-
-- [x] One shared helper attaches artifact access snapshots deterministically.
-- [x] Existing access snapshot vocabulary remains backward compatible.
-- [x] Focused regression coverage protects the shared snapshot-attachment boundary.
-
-### P62-API-01 - API Shared Artifact Access Snapshot Attachment Adoption
-
-- Status: `Done`
-- Owner: `Unassigned`
-- Suggested role: `API`
-- Depends on: `P62-SEC-01`
-- Branch: `codex/p62-api-01-artifact-access-snapshot-attachment-adoption`
-- Owned paths: `apps/api/`, `tests/api/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact access snapshot attachment helper in API artifact
-success flows without changing the current operator contract.
-
-#### Deliverables
-
-- API adoption of the shared snapshot attachment helper
-- unchanged API artifact success behavior
-- focused API regression coverage
-
-#### Acceptance
-
-- [x] API artifact success flows use the shared snapshot attachment helper.
-- [x] Existing API operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after API adoption.
-
-### P62-CLI-01 - CLI Shared Artifact Access Snapshot Attachment Adoption
-
-- Status: `Done`
-- Owner: `Unassigned`
-- Suggested role: `CLI`
-- Depends on: `P62-SEC-01`
-- Branch: `codex/p62-cli-01-artifact-access-snapshot-attachment-adoption`
-- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Adopt the shared artifact access snapshot attachment helper in CLI artifact
-success flows without changing the current operator contract.
-
-#### Deliverables
-
-- CLI adoption of the shared snapshot attachment helper
-- unchanged CLI artifact success behavior
-- focused CLI regression coverage
-
-#### Acceptance
-
-- [x] CLI artifact success flows use the shared snapshot attachment helper.
-- [x] Existing CLI operator payload semantics remain unchanged.
-- [x] Regression coverage stays green after CLI adoption.
-
-### P62-CLOSE-01 - Phase 62 Closeout And Next Planning
-
-- Status: `Done`
-- Owner: `Unassigned`
-- Suggested role: `DOC`
-- Depends on: `P62-API-01`, `P62-CLI-01`
-- Branch: `codex/p62-closeout-next-plan`
-- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
-
-#### Goal
-
-Close Phase 62 with shared artifact access snapshot attachment evidence and
-define the next implementation phase.
-
-#### Deliverables
-
-- Phase 62 acceptance record
-- next phase starter tasks
-- updated progress and README state
-
-#### Acceptance
-
-- [x] Shared artifact access snapshot attachment evidence is recorded.
-- [x] Next phase starter tasks are ready and path-scoped.
+- [ ] Session control operator parity evidence is recorded.
+- [ ] Next phase starter tasks are ready and path-scoped.

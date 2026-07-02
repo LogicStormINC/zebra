@@ -2,6 +2,7 @@
 
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 from zebra_agent_worker.control import (
+    CancelledSession,
     SessionControlError,
     SessionControlService,
     SuspendedSession,
@@ -29,6 +30,7 @@ from zebra_agent_worker.tool_run_index import ToolRunIndexer
 
 __all__ = [
     "ClaimedSession",
+    "CancelledSession",
     "ExecutedSession",
     "ModelCallIndexer",
     "RecoveredSession",

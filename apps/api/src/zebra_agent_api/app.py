@@ -50,6 +50,7 @@ from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_artifact_control import SessionArtifactControlApi
 from zebra_agent_api.session_commit import SessionCommitApi
+from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
     parse_append_session_message_payload,
@@ -226,39 +227,11 @@ class ZebraAgentApi:
             },
         )
 
+    def cancel_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
+        return cancel_session_control(self.database_path, session_id, payload)
+
     def suspend_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
-        parsed = parse_suspend_session_payload(payload)
-        if isinstance(parsed, ApiResponse):
-            return parsed
-        del parsed
-
-        try:
-            result = SessionControlService(self.database_path).suspend_session(
-                SessionId(UUID(session_id))
-            )
-        except SessionControlError as error:
-            message = str(error)
-            if message == "session was not found":
-                return ApiResponse(
-                    status_code=404,
-                    body={"session_id": session_id, "status": "not_found"},
-                )
-            return conflict(
-                session_id=session_id,
-                status="not_suspendable",
-                reason=message.replace(" ", "_"),
-            )
-
-        return ApiResponse(
-            status_code=200,
-            body={
-                "session_id": session_id,
-                "suspended": True,
-                "status": "suspended",
-                "workspace_status": result.workspace.status.value,
-                "snapshot_id": result.workspace.snapshot_id,
-            },
-        )
+        return suspend_session_control(self.database_path, session_id, payload)
 
     def append_session_message(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
         parsed = parse_append_session_message_payload(payload)

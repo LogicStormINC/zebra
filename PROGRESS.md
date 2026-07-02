@@ -2,11 +2,21 @@
 
 ## Current Phase
 
-- Active phase: `Phase 62 - Shared Artifact Access Snapshot Attachment`
-- Repository status: `phase 63 ready`
+- Active phase: `Phase 53 - Session Control CLI And Operator Parity`
+- Repository status: `phase 53 ready for closeout`
 - Current focus:
-  - Phase 62 is complete and repository state is ready for phase 63 planning.
-  - shared helper extraction and API/CLI adoption are done; closeout records are in docs.
+  - close Phase 53 with acceptance evidence in `P53-CLOSE-01`
+  - `P53-TEST-01` is complete on `codex/p53-test-01-session-control-contract-matrix` with cancel and suspend parity coverage plus CLI-local normalization
+  - `P53-CLI-01` is complete on `codex/p53-cli-01-session-cancel` with restored cancel control and local CLI cancel support
+  - `P52-CLOSE-01` is complete on `codex/p52-closeout-next-plan` with Phase 52 acceptance evidence and Phase 53 starter tasks
+  - Phase 52 is closed with `docs/Phase52_Session_Message_Append_CLI_And_Operator_Parity_验收记录.md`
+  - `P50-CLI-01` is complete on `codex/p50-cli-01-approval-queue-read` with local `approval queue` and `approval inspect` read surfaces
+  - `P50-TEST-01` is complete on `codex/p50-test-01-approval-queue-contract-matrix` with approval queue/detail parity coverage and CLI-local `database` normalization
+  - Phase 50 is closed with `docs/Phase50_Approval_Queue_CLI_And_Operator_Parity_验收记录.md`
+  - `P51-TEST-01` is complete on `codex/p51-test-01-approval-decision-contract-matrix` with approval decision parity coverage and CLI-local `database` normalization
+  - Phase 51 is closed with `docs/Phase51_Approval_Decision_Cross_Surface_Parity_验收记录.md`
+  - `P52-CLI-01` is complete on `codex/p52-cli-01-session-message-append` with local session message append support
+  - `P52-TEST-01` is complete on `codex/p52-test-01-session-message-contract-matrix` with append parity coverage and CLI-local `database` normalization
 - Phase 38 shared artifact access audit metadata helper is complete on `codex/p38-obs-01-artifact-access-audit-helper`, centralizing deterministic allow, deny, and prune audit metadata assembly in `agent-security` and reusing it across API read and prune audit paths
 - Phase 38 API shared denial-response adoption is complete on `codex/p38-api-01-artifact-denial-response-adoption`, centralizing API read-side deny and unavailable response shaping while preserving the current operator-facing access contract
 - Phase 38 is closed with `docs/Phase38_Shared_Artifact_Audit_Metadata_And_Denial_Response_Reuse_验收记录.md`
@@ -265,131 +275,36 @@
 - `P35-API-01 - Artifact Success Envelope Normalization` is complete on `codex/p35-api-01-artifact-success-envelope-normalization`
 - `P35-CLI-01 - Artifact Envelope Consistency Parity` is complete on `codex/p35-cli-01-artifact-envelope-consistency-parity`
 - `P44-TEST-01 - Artifact Audit Metadata Contract Coverage` is complete on `codex/p44-test-01-artifact-audit-contract-coverage`
-- `P44-CLOSE-01 - Phase 44 Closeout And Next Planning` is complete on `codex/p44-closeout-next-plan`
 - artifact delivery-audit regression coverage now locks one read-side denied path and one control-side success path, preserving the current `reason`, `retrieval_status`, `payload_artifact_id`, and `lifecycle_status` metadata boundaries while treating `created_at` as the only normalized non-deterministic field
 - Phase 44 is closed with `docs/Phase44_Artifact_Audit_Metadata_Contract_Coverage_验收记录.md`
-- `P45-CLI-01 - CLI Delivery Audit Read Surface` is complete on `codex/p45-cli-01-delivery-audit-read`
-- `P45-TEST-01 - Delivery Audit API And CLI Contract Matrix` is complete on `codex/p45-test-01-delivery-audit-contract-matrix`
-- `P45-CLOSE-01 - Phase 45 Closeout And Next Planning` is complete on `codex/p45-closeout-next-plan`
-- session delivery-audit records are now readable through the local CLI via `delivery-audit`
-- delivery-audit API and CLI operator parity is now locked for `not_found`, empty, and recorded-record scenarios
-- Phase 45 is closed with `docs/Phase45_CLI_Delivery_Audit_Read_Parity_验收记录.md`
-- `P46-STO-01 - Shared Delivery Audit Projection Serializer` is complete on `codex/p46-sto-01-delivery-audit-projection`
-- `P46-API-01 - API Shared Delivery Audit Projection Adoption` is complete on `codex/p46-api-01-delivery-audit-projection-adoption`
-- `P46-CLI-01 - CLI Shared Delivery Audit Projection Adoption` is complete on `codex/p46-cli-01-delivery-audit-projection-adoption`
-- `P46-CLOSE-01 - Phase 46 Closeout And Next Planning` is complete on `codex/p46-closeout-next-plan`
-- delivery-audit record serialization is now shared through `agent-storage`
-- both API and CLI delivery-audit read surfaces now reuse the same projection serializer
-- Phase 46 is closed with `docs/Phase46_Shared_Delivery_Audit_Projection_Reuse_验收记录.md`
-- `P47-STO-01 - Shared Delivery Audit Read Helper` is complete on `codex/p47-sto-01-delivery-audit-read-helper`
-- `P47-API-01 - API Shared Delivery Audit Read Helper Adoption` is complete on `codex/p47-api-01-delivery-audit-read-helper-adoption`
-- `P47-CLI-01 - CLI Shared Delivery Audit Read Helper Adoption` is complete on `codex/p47-cli-01-delivery-audit-read-helper-adoption`
-- `P47-CLOSE-01 - Phase 47 Closeout And Next Planning` is complete on `codex/p47-closeout-next-plan`
-- delivery-audit session existence checks and record lookup are now shared through `agent-storage`
-- both API and CLI delivery-audit read surfaces now reuse the same read helper and projection serializer
-- Phase 47 is closed with `docs/Phase47_Shared_Delivery_Audit_Read_Orchestration_验收记录.md`
-- `P48-STO-01 - Shared Session Artifact Resolution Helper` is complete on `codex/p48-sto-01-session-artifact-resolution`
-- `P48-API-01 - API Shared Session Artifact Resolution Adoption` is complete on `codex/p48-api-01-session-artifact-resolution-adoption`
-- `P48-CLI-01 - CLI Shared Session Artifact Resolution Adoption` is complete on `codex/p48-cli-01-session-artifact-resolution-adoption`
-- `P48-CLOSE-01 - Phase 48 Closeout And Next Planning` is complete on `codex/p48-closeout-next-plan`
-- session artifact lookup by `session_id` and `artifact_id` is now shared through `agent-storage`
-- both API and CLI artifact flows now reuse the same artifact resolution helper
-- Phase 48 is closed with `docs/Phase48_Shared_Session_Artifact_Resolution_验收记录.md`
-- `P49-STO-01 - Shared Artifact Content Availability Helper` is complete on `codex/p49-sto-01-artifact-content-availability`
-- `P49-API-01 - API Shared Artifact Content Availability Adoption` is complete on `codex/p49-api-01-artifact-content-availability-adoption`
-- `P49-CLI-01 - CLI Shared Artifact Content Availability Adoption` is complete on `codex/p49-cli-01-artifact-content-availability-adoption`
-- `P49-CLOSE-01 - Phase 49 Closeout And Next Planning` is complete on `codex/p49-closeout-next-plan`
-- artifact content unavailable-reason mapping is now shared through `agent-storage`
-- both API and CLI artifact content reads now reuse the same availability semantics
-- Phase 49 is closed with `docs/Phase49_Shared_Artifact_Content_Availability_Semantics_验收记录.md`
-- `P50-STO-01 - Shared Artifact Lifecycle Lookup Helper` is complete on `codex/p50-sto-01-artifact-lifecycle-lookup`
-- `P50-API-01 - API Shared Artifact Lifecycle Lookup Adoption` is complete on `codex/p50-api-01-artifact-lifecycle-lookup-adoption`
-- `P50-CLI-01 - CLI Shared Artifact Lifecycle Lookup Adoption` is complete on `codex/p50-cli-01-artifact-lifecycle-lookup-adoption`
-- `P50-CLOSE-01 - Phase 50 Closeout And Next Planning` is complete on `codex/p50-closeout-next-plan`
-- artifact lifecycle lookup is now shared through `agent-storage`
-- both API and CLI artifact flows now reuse the same lifecycle lookup helper
-- Phase 50 is closed with `docs/Phase50_Shared_Artifact_Lifecycle_Lookup_验收记录.md`
-- `P51-STO-01 - Shared Artifact Payload Lookup Helper` is complete on `codex/p51-sto-01-artifact-payload-lookup`
-- `P51-API-01 - API Shared Artifact Payload Lookup Adoption` is complete on `codex/p51-api-01-artifact-payload-lookup-adoption`
-- `P51-CLI-01 - CLI Shared Artifact Payload Lookup Adoption` is complete on `codex/p51-cli-01-artifact-payload-lookup-adoption`
-- `P51-CLOSE-01 - Phase 51 Closeout And Next Planning` is complete on `codex/p51-closeout-next-plan`
-- artifact payload lookup is now shared through `agent-storage`
-- both API and CLI artifact flows now reuse the same payload lookup helper
-- Phase 51 is closed with `docs/Phase51_Shared_Artifact_Payload_Lookup_验收记录.md`
-- `P52-STO-01 - Shared Session Policy Profile Lookup Helper` is complete on `codex/p52-sto-01-session-policy-profile-lookup`
-- `P52-API-01 - API Shared Session Policy Profile Lookup Adoption` is complete on `codex/p52-api-01-session-policy-profile-lookup-adoption`
-- `P52-CLI-01 - CLI Shared Session Policy Profile Lookup Adoption` is complete on `codex/p52-cli-01-session-policy-profile-lookup-adoption`
-- `P52-CLOSE-01 - Phase 52 Closeout And Next Planning` is complete on `codex/p52-closeout-next-plan`
-- session policy profile lookup is now shared through `agent-storage`
-- both API and CLI artifact access flows now reuse the same workspace-policy lookup helper
-- Phase 52 is closed with `docs/Phase52_Shared_Session_Policy_Profile_Lookup_验收记录.md`
-- `P53-SEC-01 - Shared Artifact Access Classification Helper` is complete on `codex/p53-sec-01-artifact-access-classification`
-- `P53-API-01 - API Shared Artifact Access Classification Adoption` is complete on `codex/p53-api-01-artifact-access-classification-adoption`
-- `P53-CLI-01 - CLI Shared Artifact Access Classification Adoption` is complete on `codex/p53-cli-01-artifact-access-classification-adoption`
-- `P53-CLOSE-01 - Phase 53 Closeout And Next Planning` is complete on `codex/p53-closeout-next-plan`
-- artifact access classification is now shared through `agent-security`
-- both API and CLI artifact access flows now reuse the same access projection assembly helper
-- Phase 53 is closed with `docs/Phase53_Shared_Artifact_Access_Classification_验收记录.md`
-- `P54-SEC-01 - Shared Artifact Access Serialization Helper` is complete on `codex/p54-sec-01-artifact-access-serialization`
-- `P54-API-01 - API Shared Artifact Access Serialization Adoption` is complete on `codex/p54-api-01-artifact-access-serialization-adoption`
-- `P54-CLI-01 - CLI Shared Artifact Access Serialization Adoption` is complete on `codex/p54-cli-01-artifact-access-serialization-adoption`
-- `P54-CLOSE-01 - Phase 54 Closeout And Next Planning` is complete on `codex/p54-closeout-next-plan`
-- artifact access serialization is now shared through `agent-security`
-- both API and CLI artifact access flows now reuse the same access serialization helper
-- Phase 54 is closed with `docs/Phase54_Shared_Artifact_Access_Serialization_验收记录.md`
-- `P55-SEC-01 - Shared Artifact Access Denied Reason Helper` is complete on `codex/p55-sec-01-artifact-access-denied-reason`
-- `P55-API-01 - API Shared Artifact Access Denied Reason Adoption` is complete on `codex/p55-api-01-artifact-access-denied-reason-adoption`
-- `P55-CLI-01 - CLI Shared Artifact Access Denied Reason Adoption` is complete on `codex/p55-cli-01-artifact-access-denied-reason-adoption`
-- `P55-CLOSE-01 - Phase 55 Closeout And Next Planning` is complete on `codex/p55-closeout-next-plan`
-- artifact access denied-reason shaping is now shared through `agent-security`
-- both API and CLI artifact flows now reuse the same denied-reason helper
-- Phase 55 is closed with `docs/Phase55_Shared_Artifact_Access_Denied_Reason_Shaping_验收记录.md`
-- `P56-SEC-01 - Shared Artifact Control Success Access Fields Helper` is complete on `codex/p56-sec-01-artifact-control-success-access-fields`
-- `P56-API-01 - API Shared Artifact Control Success Access Fields Adoption` is complete on `codex/p56-api-01-artifact-control-success-access-fields-adoption`
-- `P56-CLI-01 - CLI Shared Artifact Control Success Access Fields Adoption` is complete on `codex/p56-cli-01-artifact-control-success-access-fields-adoption`
-- `P56-CLOSE-01 - Phase 56 Closeout And Next Planning` is complete on `codex/p56-closeout-next-plan`
-- artifact control success access field projection is now shared through `agent-security`
-- both API and CLI prune success flows now reuse the same access field helper
-- Phase 56 is closed with `docs/Phase56_Shared_Artifact_Control_Success_Access_Field_Projection_验收记录.md`
-- `P57-SEC-01 - Shared Artifact Access Outcome Fields Helper` is complete on `codex/p57-sec-01-artifact-access-outcome-fields`
-- `P57-API-01 - API Shared Artifact Access Outcome Fields Adoption` is complete on `codex/p57-api-01-artifact-access-outcome-fields-adoption`
-- `P57-CLI-01 - CLI Shared Artifact Access Outcome Fields Adoption` is complete on `codex/p57-cli-01-artifact-access-outcome-fields-adoption`
-- `P57-CLOSE-01 - Phase 57 Closeout And Next Planning` is complete on `codex/p57-closeout-next-plan`
-- artifact access outcome field projection is now shared through `agent-security`
-- both API and CLI read-failure flows now reuse the same outcome fields helper
-- Phase 57 is closed with `docs/Phase57_Shared_Artifact_Access_Outcome_Field_Projection_验收记录.md`
-- `P58-SEC-01 - Shared Artifact Control Outcome Fields Helper` is complete on `codex/p58-sec-01-artifact-control-outcome-fields`
-- `P58-API-01 - API Shared Artifact Control Outcome Fields Adoption` is complete on `codex/p58-api-01-artifact-control-outcome-fields-adoption`
-- `P58-CLI-01 - CLI Shared Artifact Control Outcome Fields Adoption` is complete on `codex/p58-cli-01-artifact-control-outcome-fields-adoption`
-- `P58-CLOSE-01 - Phase 58 Closeout And Next Planning` is complete on `codex/p58-closeout-next-plan`
-- artifact control outcome field projection is now shared through `agent-security`
-- both API and CLI control failure flows now reuse the same outcome fields helper
-- Phase 58 is closed with `docs/Phase58_Shared_Artifact_Control_Outcome_Field_Projection_验收记录.md`
-- `P59-SEC-01 - Shared Artifact Control Success Outcome Helper` is complete on `codex/p59-sec-01-artifact-control-success-outcome`
-- `P59-API-01 - API Shared Artifact Control Success Outcome Adoption` is complete on `codex/p59-api-01-artifact-control-success-outcome-adoption`
-- `P59-CLI-01 - CLI Shared Artifact Control Success Outcome Adoption` is complete on `codex/p59-cli-01-artifact-control-success-outcome-adoption`
-- `P59-CLOSE-01 - Phase 59 Closeout And Next Planning` is complete on `codex/p59-closeout-next-plan`
-- artifact control success outcome projection is now shared through `agent-security`
-- both API and CLI control success flows now reuse the same success outcome helper
-- Phase 59 is closed with `docs/Phase59_Shared_Artifact_Control_Success_Outcome_Projection_验收记录.md`
-- `P60-SEC-01 - Shared Artifact Control Success Lifecycle Helper` is complete on `codex/p60-sec-01-artifact-control-success-lifecycle`
-- `P60-API-01 - API Shared Artifact Control Success Lifecycle Adoption` is complete on `codex/p60-api-01-artifact-control-success-lifecycle-adoption`
-- `P60-CLI-01 - CLI Shared Artifact Control Success Lifecycle Adoption` is complete on `codex/p60-cli-01-artifact-control-success-lifecycle-adoption`
-- `P60-CLOSE-01 - Phase 60 Closeout And Next Planning` is complete on `codex/p60-closeout-next-plan`
-- artifact control success lifecycle attachment is now shared through `agent-security`
-- both API and CLI control success flows now reuse the same lifecycle attachment helper
-- Phase 60 is closed with `docs/Phase60_Shared_Artifact_Control_Success_Lifecycle_Attachment_验收记录.md`
-- `P61-API-01 - API Shared Artifact Access Snapshot Reuse` is complete on `codex/p61-api-01-artifact-access-snapshot-reuse`
-- `P61-CLI-01 - CLI Shared Artifact Access Snapshot Reuse` is complete on `codex/p61-cli-01-artifact-access-snapshot-reuse`
-- `P61-CLOSE-01 - Phase 61 Closeout And Next Planning` is complete on `codex/p61-closeout-next-plan`
-- direct artifact access snapshot reuse is now complete across API and CLI adapters
-- Phase 61 is closed with `docs/Phase61_Shared_Artifact_Access_Snapshot_Field_Reuse_验收记录.md`
-- `P62-SEC-01 - Shared Artifact Access Snapshot Attachment Helper` is complete on `codex/p62-sec-01-artifact-access-snapshot-attachment`
-- `P62-API-01 - API Shared Artifact Access Snapshot Attachment Adoption` is complete on `codex/p62-api-01-artifact-access-snapshot-attachment-adoption`
-- `P62-CLI-01 - CLI Shared Artifact Access Snapshot Attachment Adoption` is complete on `codex/p62-cli-01-artifact-access-snapshot-attachment-adoption`
-- `P62-CLOSE-01 - Phase 62 Closeout And Next Planning` is complete on `codex/p62-closeout-next-plan`
-- shared artifact access snapshot attachment is now centralized through `agent-security`
-- Phase 62 is closed with `docs/Phase62_Shared_Artifact_Access_Snapshot_Attachment_验收记录.md`
+- `P45-CLI-01 - Delivery Audit CLI Read Surface` is complete on `codex/p45-cli-01-delivery-audit-read`
+- CLI now exposes local session delivery-audit inspection with explicit `ok`, `not_found`, and empty-history semantics aligned to the existing API read surface
+- `P45-TEST-01 - Delivery Audit Cross-Surface Contract Matrix` is complete on `codex/p45-test-01-delivery-audit-contract-matrix`
+- delivery-audit parity rules are now locked through a shared contract matrix that normalizes CLI-local context fields while asserting stable API and CLI agreement on shared audit payload semantics
+- Phase 45 is closed with `docs/Phase45_Delivery_Audit_CLI_And_Operator_Parity_验收记录.md`
+- `P46-CLI-01 - Session Diff CLI Read Surface` is complete on `codex/p46-cli-01-session-diff-read`
+- local operators can now inspect one session workspace diff from the CLI with explicit `ok`, `not_found`, and `diff_unavailable` semantics plus stable `clean`, `git_status`, and unified `diff` fields
+- `P46-TEST-01 - Session Diff Cross-Surface Contract Matrix` is complete on `codex/p46-test-01-session-diff-contract-matrix`
+- session diff parity rules are now locked through a shared contract matrix covering dirty, clean, missing-session, and non-git diff reads while treating CLI-local `database` context as a CLI-only field
+- Phase 46 is closed with `docs/Phase46_Session_Diff_CLI_And_Operator_Parity_验收记录.md`
+- `P47-CLI-01 - Session Stream CLI Read Surface` is complete on `codex/p47-cli-01-session-stream-read`
+- local operators can now inspect one persisted session event stream from the CLI with explicit `ok` and `not_found` semantics plus ordered event payload replay
+- `P47-TEST-01 - Session Stream Cross-Surface Contract Matrix` is complete on `codex/p47-test-01-session-stream-contract-matrix`
+- session stream parity rules are now locked through a shared contract matrix covering populated replay, bootstrap-only replay, and missing-session reads while treating SSE framing and CLI-local `database` context as transport-specific fields
+- Phase 47 is closed with `docs/Phase47_Session_Stream_CLI_And_Operator_Parity_验收记录.md`
+- `P48-CLI-01 - Session Commit CLI Delivery Surface` is complete on `codex/p48-cli-01-session-commit-read`
+- local operators can now create one session commit from the CLI with explicit committed, policy-blocked, unavailable, missing-session, invalid-request, and idempotent replay semantics
+- `P48-TEST-01 - Session Commit Cross-Surface Contract Matrix` is complete on `codex/p48-test-01-session-commit-contract-matrix`
+- session commit parity rules are now locked through a shared contract matrix covering committed success, policy-blocked, clean-workspace unavailable, missing-session, and cross-surface idempotent replay while treating CLI-local `database` context as transport-specific
+- Phase 48 is closed with `docs/Phase48_Session_Commit_CLI_And_Operator_Parity_验收记录.md`
+- `P49-CLI-01 - Session Pull Request CLI Delivery Surface` is complete on `codex/p49-cli-01-session-pull-request-read`
+- local operators can now open one session pull request from the CLI with explicit dry-run, created, unavailable, policy-blocked, missing-session, invalid-request, and idempotent replay semantics
+- `P49-TEST-01 - Session Pull Request Cross-Surface Contract Matrix` is complete on `codex/p49-test-01-session-pull-request-contract-matrix`
+- session pull-request parity rules are now locked through a shared contract matrix covering dry-run, created, policy-blocked, unavailable, missing-session, and cross-surface idempotent replay while treating CLI-local `database` context as transport-specific
+- Phase 49 is closed with `docs/Phase49_Session_Pull_Request_CLI_And_Operator_Parity_验收记录.md`
+- `P50-CLI-01 - Approval Queue CLI Read Surface` is ready on `codex/p50-cli-01-approval-queue-read`
+- `P50-TEST-01 - Approval Queue Cross-Surface Contract Matrix` is locked behind the CLI read surface
+- `P50-CLOSE-01 - Phase 50 Closeout And Next Planning` is the documentation closeout lane for approval queue operator parity
 
 ## Active Documents
 

@@ -18,9 +18,8 @@ from agent_storage import (
     SQLiteEventStore,
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
-    artifact_content_unavailable_reason,
-    lifecycle_for_artifact_uri,
-    resolve_session_artifact,
+    payload_for_artifact_uri,
+    serialize_artifact_lifecycle,
     serialize_artifact_retrieval,
     serialize_session_artifact_projection,
 )
@@ -32,6 +31,7 @@ from zebra_agent_api.artifact_access import (
     build_artifact_policy_denied_response,
     build_artifact_unavailable_response,
     classify_session_artifact_access,
+    serialize_artifact_access,
 )
 from zebra_agent_api.delivery_audit import record_delivery_audit
 from zebra_agent_api.responses import ApiResponse, conflict
@@ -259,11 +259,70 @@ class SessionReadApi:
             lifecycle=lifecycle,
         )
         status = str(retrieval["status"])
-        unavailable_reason = artifact_content_unavailable_reason(status)
-        if unavailable_reason is not None:
+        if status == "indexed_only":
             response = build_artifact_unavailable_response(
                 session_id=session_id,
-                reason=unavailable_reason,
+                reason="artifact_is_indexed_only",
+                access=access,
+            )
+            record_delivery_audit(
+                database_path=self.database_path,
+                session_id=session_id,
+                action="session.artifact.content",
+                response=response,
+                policy_profile=access.session_policy_profile,
+                result_metadata=build_artifact_access_metadata(
+                    access,
+                    artifact=artifact,
+                    result_status="artifact_unavailable",
+                    retrieval_status=status,
+                ),
+            )
+            return response
+        if status == "external_reference":
+            response = build_artifact_unavailable_response(
+                session_id=session_id,
+                reason="artifact_uses_external_reference",
+                access=access,
+            )
+            record_delivery_audit(
+                database_path=self.database_path,
+                session_id=session_id,
+                action="session.artifact.content",
+                response=response,
+                policy_profile=access.session_policy_profile,
+                result_metadata=build_artifact_access_metadata(
+                    access,
+                    artifact=artifact,
+                    result_status="artifact_unavailable",
+                    retrieval_status=status,
+                ),
+            )
+            return response
+        if status == "payload_missing":
+            response = build_artifact_unavailable_response(
+                session_id=session_id,
+                reason="artifact_payload_missing",
+                access=access,
+            )
+            record_delivery_audit(
+                database_path=self.database_path,
+                session_id=session_id,
+                action="session.artifact.content",
+                response=response,
+                policy_profile=access.session_policy_profile,
+                result_metadata=build_artifact_access_metadata(
+                    access,
+                    artifact=artifact,
+                    result_status="artifact_unavailable",
+                    retrieval_status=status,
+                ),
+            )
+            return response
+        if status == "payload_pruned":
+            response = build_artifact_unavailable_response(
+                session_id=session_id,
+                reason="artifact_payload_pruned",
                 access=access,
             )
             record_delivery_audit(
@@ -288,7 +347,7 @@ class SessionReadApi:
                 "session_id": session_id,
                 "artifact_id": artifact.artifact_id,
                 "status": "ok",
-                **serialize_artifact_access_snapshot_attachment(access.projection),
+                "access": serialize_artifact_access(access),
                 "encoding": "base64",
                 "content_base64": base64.b64encode(payload).decode("ascii"),
                 "size_bytes": len(payload),
@@ -318,18 +377,17 @@ class SessionReadApi:
         session_id: str,
         artifact_id: str,
     ) -> SessionArtifact | ApiResponse:
-        resolution = resolve_session_artifact(
-            self.database_path,
-            SessionId(UUID(session_id)),
-            artifact_id,
-        )
-        if not resolution.session_exists:
+        session_key = SessionId(UUID(session_id))
+        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        if resolution.artifact is not None:
-            return resolution.artifact
+        artifacts = SQLiteArtifactStore(self.database_path).list_for_session(session_key)
+        for artifact in artifacts:
+            if artifact.artifact_id == artifact_id:
+                return artifact
         return ApiResponse(
             status_code=404,
             body={
@@ -355,11 +413,10 @@ class SessionReadApi:
             artifact,
             lifecycle=lifecycle,
         )
-        return {
-            **projection,
-            **serialize_artifact_access_snapshot_attachment(resolved_access.projection),
-        }
+        projection["access"] = serialize_artifact_access(resolved_access)
+        return projection
 
 
 def _artifact_lifecycle(database_path: Path, uri: str | None) -> dict[str, object] | None:
-    return lifecycle_for_artifact_uri(SQLiteArtifactPayloadStore(database_path), uri)
+    payload = payload_for_artifact_uri(SQLiteArtifactPayloadStore(database_path), uri)
+    return serialize_artifact_lifecycle(payload)

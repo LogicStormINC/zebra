@@ -35,6 +35,12 @@ class SuspendedSession:
 
 
 @dataclass(frozen=True)
+class CancelledSession:
+    event: SessionEvent
+    workspace: WorkspaceProjection
+
+
+@dataclass(frozen=True)
 class RestoredWorkspace:
     event: SessionEvent
     workspace: WorkspaceProjection
@@ -92,6 +98,35 @@ class SessionControlService:
         self._projection_store.save_session(updated_session)
         self._workspace_store.save_workspace(updated_workspace)
         return SuspendedSession(event=event, workspace=updated_workspace)
+
+    def cancel_session(
+        self,
+        session_id: SessionId,
+        *,
+        cancelled_at: datetime | None = None,
+    ) -> CancelledSession:
+        recovery = self._recover(session_id)
+        if recovery.session.status not in {
+            SessionStatus.READY,
+            SessionStatus.RUNNING,
+            SessionStatus.WAITING_APPROVAL,
+            SessionStatus.SUSPENDED,
+        }:
+            raise SessionControlError("session cannot be cancelled from its current state")
+
+        event = SessionEvent.create(
+            session_id=session_id,
+            sequence=recovery.session.current_sequence + 1,
+            event_type=EventType.SESSION_CANCELLED,
+            actor=EventActor.SYSTEM,
+            created_at=cancelled_at or datetime.now(UTC),
+        )
+        self._event_store.append(event)
+        updated_session = apply_session_event(recovery.session, event)
+        updated_workspace = apply_workspace_event(recovery.workspace, event)
+        self._projection_store.save_session(updated_session)
+        self._workspace_store.save_workspace(updated_workspace)
+        return CancelledSession(event=event, workspace=updated_workspace)
 
     def restore_suspended_workspace(
         self,

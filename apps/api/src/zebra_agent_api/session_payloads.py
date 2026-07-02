@@ -24,6 +24,10 @@ class SuspendSessionPayload(TypedDict):
     pass
 
 
+class CancelSessionPayload(TypedDict):
+    pass
+
+
 class AppendSessionMessagePayload(TypedDict):
     content: str
 
@@ -107,6 +111,14 @@ def parse_suspend_session_payload(
 ) -> SuspendSessionPayload | ApiResponse:
     if payload:
         return bad_request("suspend does not accept request fields yet")
+    return {}
+
+
+def parse_cancel_session_payload(
+    payload: dict[str, object],
+) -> CancelSessionPayload | ApiResponse:
+    if payload:
+        return bad_request("cancel does not accept request fields yet")
     return {}
 
 

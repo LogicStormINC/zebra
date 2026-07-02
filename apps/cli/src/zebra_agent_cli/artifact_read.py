@@ -5,23 +5,24 @@ from pathlib import Path
 from urllib.parse import urlparse
 from uuid import UUID
 
+from agent_core.domain import ArtifactAccessDescriptor
 from agent_core.domain.artifact_payloads import StoredArtifactPayload
 from agent_core.domain.identifiers import SessionId
 from agent_security import (
-    build_session_artifact_access_projection,
+    PolicyProfile,
+    build_artifact_access_projection,
     policy_rank,
-    serialize_artifact_access_snapshot_attachment,
 )
 from agent_storage import (
     SessionArtifact,
     SQLiteArtifactPayloadStore,
-    artifact_content_unavailable_reason,
-    lifecycle_for_artifact_uri,
-    resolve_payload_for_artifact_uri,
-    resolve_session_artifact,
+    SQLiteArtifactStore,
+    SQLiteProjectionStore,
+    SQLiteWorkspaceProjectionStore,
+    payload_for_artifact_uri,
+    serialize_artifact_lifecycle,
     serialize_artifact_retrieval,
     serialize_session_artifact_projection,
-    session_policy_profile_for_session,
 )
 
 from zebra_agent_cli.artifact_access import (
@@ -31,6 +32,7 @@ from zebra_agent_cli.artifact_access import (
     build_artifact_control_unavailable_result,
     build_artifact_policy_denied_result,
     build_artifact_unavailable_result,
+    serialize_artifact_access,
 )
 
 
@@ -71,12 +73,10 @@ def read_artifact_detail(
         resolved,
         lifecycle=lifecycle,
     )
+    projection["access"] = serialize_artifact_access(access)
     return {
         "session_id": session_id,
-        "artifact": {
-            **projection,
-            **serialize_artifact_access_snapshot_attachment(access),
-        },
+        "artifact": projection,
         "database": str(database_path),
         "status": "ok",
     }
@@ -119,13 +119,12 @@ def read_artifact_content(
         lifecycle=_artifact_lifecycle(database_path, resolved.uri),
     )
     status = str(retrieval["status"])
-    unavailable_reason = artifact_content_unavailable_reason(status)
-    if unavailable_reason is not None:
+    if status != "payload_available":
         return build_artifact_unavailable_result(
             database_path=database_path,
             session_id=session_id,
             artifact_id=artifact_id,
-            reason=unavailable_reason,
+            reason=_artifact_unavailable_reason(status),
             access=access,
         )
     assert resolved.uri is not None
@@ -135,7 +134,7 @@ def read_artifact_content(
         "artifact_id": artifact_id,
         "database": str(database_path),
         "status": "ok",
-        **serialize_artifact_access_snapshot_attachment(access),
+        "access": serialize_artifact_access(access),
         "encoding": "base64",
         "content_base64": base64.b64encode(payload).decode("ascii"),
         "size_bytes": len(payload),
@@ -176,7 +175,7 @@ def prune_artifact(
             reason="artifact_uses_external_reference",
         )
     payload_store = SQLiteArtifactPayloadStore(database_path)
-    payload = _payload_record_for_uri(database_path, resolved.uri)
+    payload = _payload_record_for_uri(payload_store, resolved.uri)
     if payload is None:
         return _unavailable_artifact(
             database_path=database_path,
@@ -220,15 +219,17 @@ def _artifact_access_context(
     payload: StoredArtifactPayload | None = None,
 ) -> ArtifactAccessContext:
     resolved_payload = payload or _payload_record_for_uri(
-        database_path,
+        SQLiteArtifactPayloadStore(database_path),
         artifact.uri,
     )
-    return build_session_artifact_access_projection(
-        kind=artifact.kind,
-        mime_type=resolved_payload.mime_type if resolved_payload is not None else None,
-        uri=artifact.uri,
-        preview_redacted=artifact.preview_state["redacted"],
-        preview_truncated=artifact.preview_state["truncated"],
+    return build_artifact_access_projection(
+        ArtifactAccessDescriptor(
+            kind=artifact.kind,
+            mime_type=resolved_payload.mime_type if resolved_payload is not None else None,
+            uri=artifact.uri,
+            preview_redacted=artifact.preview_state["redacted"],
+            preview_truncated=artifact.preview_state["truncated"],
+        ),
         session_policy_profile=_session_policy_profile(database_path, session_id),
     )
 
@@ -239,16 +240,30 @@ def _resolve_artifact(
     session_id: str,
     artifact_id: str,
 ) -> SessionArtifact | None:
-    resolution = resolve_session_artifact(
-        database_path,
-        SessionId(UUID(session_id)),
-        artifact_id,
-    )
-    return resolution.artifact
+    session_key = SessionId(UUID(session_id))
+    session = SQLiteProjectionStore(database_path).get_session(session_key)
+    if session is None:
+        return None
+    artifacts = SQLiteArtifactStore(database_path).list_for_session(session_key)
+    for artifact in artifacts:
+        if artifact.artifact_id == artifact_id:
+            return artifact
+    return None
 
 
 def _artifact_lifecycle(database_path: Path, uri: str | None) -> dict[str, object] | None:
-    return lifecycle_for_artifact_uri(SQLiteArtifactPayloadStore(database_path), uri)
+    payload = payload_for_artifact_uri(SQLiteArtifactPayloadStore(database_path), uri)
+    return serialize_artifact_lifecycle(payload)
+
+
+def _artifact_unavailable_reason(status: str) -> str:
+    mapping = {
+        "indexed_only": "artifact_is_indexed_only",
+        "external_reference": "artifact_uses_external_reference",
+        "payload_missing": "artifact_payload_missing",
+        "payload_pruned": "artifact_payload_pruned",
+    }
+    return mapping[status]
 
 
 def _unavailable_artifact(
@@ -268,17 +283,19 @@ def _unavailable_artifact(
 
 
 def _payload_record_for_uri(
-    database_path: Path,
+    payload_store: SQLiteArtifactPayloadStore,
     uri: str | None,
 ) -> StoredArtifactPayload | None:
-    return resolve_payload_for_artifact_uri(database_path, uri)
+    return payload_for_artifact_uri(payload_store, uri)
 
 
 def _session_policy_profile(database_path: Path, session_id: str) -> str:
-    return session_policy_profile_for_session(
-        database_path,
-        SessionId(UUID(session_id)),
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(
+        SessionId(UUID(session_id))
     )
+    if workspace is None or workspace.policy_profile is None:
+        return PolicyProfile.WORKSPACE_WRITE.value
+    return workspace.policy_profile
 
 
 def _policy_satisfies_requirement(

@@ -1,15 +1,11 @@
 from datetime import UTC, datetime
 from pathlib import Path
-from uuid import UUID
 
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import SessionId, new_session_id
+from agent_core.domain.identifiers import new_session_id
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
-from agent_storage import (
-    SQLiteWorkspaceProjectionStore,
-    session_policy_profile_for_session,
-)
+from agent_storage import SQLiteWorkspaceProjectionStore
 
 
 def test_sqlite_workspace_projection_store_round_trips_workspace_projection(
@@ -119,37 +115,3 @@ def test_sqlite_workspace_projection_store_persists_snapshot_metadata(tmp_path: 
     assert loaded.runtime_name == "local"
     assert loaded.snapshot_id == "snap-002"
     assert loaded.snapshot_path == "/tmp/snapshots/snap-002"
-
-
-def test_session_policy_profile_for_session_uses_workspace_policy(tmp_path: Path) -> None:
-    store = SQLiteWorkspaceProjectionStore(tmp_path / "workspace.db")
-    created_at = datetime(2026, 6, 29, 19, 0, tzinfo=UTC)
-    projection = WorkspaceProjection.model_validate(
-        {
-            "session_id": new_session_id(),
-            "workspace_root": "/tmp/workspace-policy",
-            "prepared_at": created_at,
-            "updated_at": created_at,
-            "current_sequence": 1,
-            "status": WorkspaceStatus.RUNNING,
-            "policy_profile": "full_access",
-        }
-    )
-    store.save_workspace(projection)
-
-    assert (
-        session_policy_profile_for_session(tmp_path / "workspace.db", projection.session_id)
-        == "full_access"
-    )
-
-
-def test_session_policy_profile_for_session_defaults_when_workspace_missing(
-    tmp_path: Path,
-) -> None:
-    assert (
-        session_policy_profile_for_session(
-            tmp_path / "workspace.db",
-            SessionId(UUID("00000000-0000-0000-0000-000000000001")),
-        )
-        == "workspace_write"
-    )

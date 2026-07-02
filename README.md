@@ -14,9 +14,9 @@ The current repository direction is:
 
 ## Current Status
 
-Phase 62 is now complete with shared artifact access snapshot attachment extracted and adopted by API/CLI success flows. The repository now uses the shared `agent-security` helper for serialized access snapshot attachment across adapter success paths.
+Phase 52 is closed and Phase 53 session control CLI and operator parity is now the active milestone. The repository now has a complete local delivery surface plus guarded GitHub pull-request execution, SCM proxy routing, concrete MCP proxy gateway execution, proxy-aware approval events, durable approval projections, projection-backed approval reads, trace normalization behind explicit provider, dry-run, network-profile, credential, and policy gates, a real local snapshot backend for workspace-backed runtime handles, snapshot-backed suspend or resume control wiring across CLI, API, and worker execution, manifest-aware snapshot compatibility checks, explicit retained-snapshot cleanup, durable artifact payload storage, worker-side artifact capture for supported text outputs, artifact detail plus content retrieval over the local API, CLI artifact inspect and read surfaces, audit-backed artifact read tracing, lifecycle-aware artifact payload metadata, deterministic policy-driven artifact retention defaults, storage-side expiry sweep primitives for retained local payloads, lifecycle readback for payload-backed artifacts, deterministic artifact access classification, manual artifact prune controls over both API and CLI, access-class enforcement plus audit parity for artifact actions, additive access explainability metadata across operator read surfaces, consolidated Phase 34 API and CLI access projection helpers, a cross-surface contract matrix for allowed, denied, missing, and pruned artifact access paths, explicit `status="ok"` envelopes for successful API artifact detail and content reads, CLI inspect envelopes that now include `preview_state`, `lifecycle`, and pruned-payload unavailable semantics aligned with API behavior, a shared `agent-storage` artifact projection serializer for payload lookup, lifecycle, retrieval, and base envelope assembly, both API and CLI artifact adapters adopted onto that shared projection path, a shared `agent-security` artifact access projection helper for explainability payload assembly and policy-rank evaluation, both API and CLI artifact access adapters adopted onto that shared security projection path, a shared `agent-security` artifact access audit metadata helper reused by API read and prune audit paths, shared API-side denial or unavailable response helpers for artifact read adapters, shared CLI-side denial or unavailable response helpers for artifact read adapters, shared prune denied or unavailable response helpers for both API and CLI artifact control adapters, shared prune success response helpers for both API and CLI artifact control adapters, a shared artifact control audit metadata helper in `agent-security`, a converged lower-level artifact audit metadata builder behind the read-side and control-side wrappers, explicit delivery-audit endpoint regression coverage that preserves current artifact read and prune metadata semantics, a local CLI delivery-audit read surface for session-level operator inspection, a local CLI diff read surface for session-level workspace inspection, a local CLI stream read surface for session-level event replay inspection, a local CLI commit delivery surface for session-level code delivery, a local CLI pull-request delivery surface for session-level SCM delivery, a local CLI approval queue/detail read surface for operator triage, a local CLI approval decision write surface aligned with API decision results, a local CLI session message append surface aligned with API append results, and dedicated cross-surface contract matrices that lock API and CLI parity on shared delivery-audit, session diff, session stream, session commit, session pull-request, approval read, approval decision, and session message append fields.
 
-The next milestone is `Phase 63`. The current implementation lanes are:
+The next milestone is `Phase 53 - Session Control CLI And Operator Parity`. The current implementation lanes are:
 
 - `POST /sessions/{id}/messages` is now available on the current development line
 - `POST /sessions/{id}/cancel` and `POST /sessions/{id}/suspend` are now available on the current development line
@@ -102,7 +102,14 @@ The next milestone is `Phase 63`. The current implementation lanes are:
 - CLI now supports `artifact inspect` and `artifact read` for local artifact inspection without going through the HTTP API
 - artifact previews now expose explicit redaction/truncation state, and artifact detail/content reads are now recorded in delivery audit
 - `docs/Phase28_Durable_Artifact_Storage_And_Retrieval_验收记录.md` records the completed durable artifact storage and retrieval phase
-- Phase 62 shared artifact access snapshot attachment is now complete, and phase 63 is ready for planning.
+- Phase 50 approval queue CLI and operator parity is complete with API and CLI coverage
+- Phase 50 now has both local CLI approval reads and a dedicated approval queue/detail API-vs-CLI contract matrix with CLI-local `database` normalization
+- Phase 51 now has a dedicated approval decision API-vs-CLI contract matrix with CLI-local `database` normalization
+- Phase 52 now has a local CLI session message append surface for durable session continuation
+- Phase 52 now has a dedicated session message append API-vs-CLI contract matrix with CLI-local `database` normalization
+- Phase 53 now has a restored cancel control entry plus a local CLI cancel surface for durable session control
+- Phase 53 now has a dedicated session control API-vs-CLI contract matrix with CLI-local `database` normalization and suspend `snapshot_id` normalization
+- the next ready implementation lane is Phase 53 closeout and next planning
 
 Read in this order:
 
@@ -146,4 +153,4 @@ For the current local operator workflow, start with `docs/operator_runbook.md`. 
 - local FastAPI serving
 - SSE session stream replay
 
-For the latest completed phase closeout summary, see `docs/Phase62_Shared_Artifact_Access_Snapshot_Attachment_验收记录.md`.
+For the latest completed phase closeout summary, see `docs/Phase52_Session_Message_Append_CLI_And_Operator_Parity_验收记录.md`.

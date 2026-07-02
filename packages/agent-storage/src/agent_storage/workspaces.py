@@ -3,7 +3,6 @@ from pathlib import Path
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 from agent_core.ports.workspace_projection_store import WorkspaceProjectionStorePort
-from agent_security import PolicyProfile
 
 from agent_storage.database import SQLiteDatabase
 
@@ -143,13 +142,3 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     ADD COLUMN snapshot_path TEXT
                     """
                 )
-
-
-def session_policy_profile_for_session(
-    database_path: str | Path,
-    session_id: SessionId,
-) -> str:
-    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(session_id)
-    if workspace is None or workspace.policy_profile is None:
-        return PolicyProfile.WORKSPACE_WRITE.value
-    return workspace.policy_profile

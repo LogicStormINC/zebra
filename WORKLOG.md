@@ -1,15 +1,121 @@
 # Progress Log
 
-## 2026-07-02 Phase 62 Closeout And Next Planning
+## 2026-07-02 Phase 53 Session Control Contract Matrix
 
-- 执行 `P62-SEC-01 - Shared Artifact Access Snapshot Attachment Helper`
-- 执行 `P62-API-01 - API Shared Artifact Access Snapshot Attachment Adoption`
-- 执行 `P62-CLI-01 - CLI Shared Artifact Access Snapshot Attachment Adoption`
-- 执行 `P62-CLOSE-01 - Phase 62 Closeout And Next Planning`
-- 新增验收记录：
-  - `docs/Phase62_Shared_Artifact_Access_Snapshot_Attachment_验收记录.md`
-- 通过 `agent-security` 抽象集中访问快照附着逻辑，替换 API/CLI 成功路径中的重复 `access` 拼装逻辑，保持现有 access payload 不变。
-- 更新 `README.md`、`PROGRESS.md`、`docs/AGENT_TASKS.md`、`WORKLOG.md` 与 `tests/agent_security/test_artifact_access_projection.py`。
+- claimed `P53-TEST-01` on `codex/p53-test-01-session-control-contract-matrix`
+- aligning cancel and suspend CLI payloads with API control responses while preserving CLI-local `database` context
+- adding cross-surface regression coverage for cancelled, invalid-state, missing-session, and suspended control results
+- validation:
+  - `make sync`
+  - `uv run pytest tests/test_session_control_contract_matrix.py tests/cli/test_cli_session_cancel.py tests/cli/test_cli_commands.py tests/api/test_http_session_cancel.py tests/api/test_http_app.py tests/api/test_route_session_cancel.py tests/api/test_routes.py tests/worker/test_control.py tests/worker/test_execution.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/session_suspend_write.py apps/cli/src/zebra_agent_cli/cli.py tests/test_session_control_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-02 Phase 53 Session Cancel Control Surface
+
+- claimed `P53-CLI-01` on `codex/p53-cli-01-session-cancel`
+- corrected the task boundary after finding that cancel control was not actually wired in the current codebase
+- restoring the missing cancel control entry and adding local CLI cancel support with deterministic operator-facing results
+- validation:
+  - `make sync`
+  - `uv run pytest tests/cli/test_cli_session_cancel.py tests/cli/test_cli_commands.py tests/api/test_http_session_cancel.py tests/api/test_http_app.py tests/api/test_route_session_cancel.py tests/api/test_routes.py tests/worker/test_control.py tests/worker/test_execution.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/session_cancel_write.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py apps/api/src/zebra_agent_api/session_control.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/api/src/zebra_agent_api/session_payloads.py apps/worker/src/zebra_agent_worker/control.py apps/worker/src/zebra_agent_worker/__init__.py tests/cli/test_cli_session_cancel.py tests/api/test_http_session_cancel.py tests/api/test_route_session_cancel.py tests/worker/test_control.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-02 Phase 52 Closeout And Phase 53 Planning
+
+- claimed `P52-CLOSE-01` on `codex/p52-closeout-next-plan`
+- added `docs/Phase52_Session_Message_Append_CLI_And_Operator_Parity_验收记录.md`
+- closed Phase 52 after session message append CLI delivery and cross-surface parity landed on `main`
+- set the next active milestone to `Phase 53 - Session Control CLI And Operator Parity`
+- added starter tasks:
+  - `P53-CLI-01 - Session Cancel CLI Surface`
+  - `P53-TEST-01 - Session Control Cross-Surface Contract Matrix`
+  - `P53-CLOSE-01 - Phase 53 Closeout And Next Planning`
+
+## 2026-07-02 Phase 52 Session Message Append Contract Matrix
+
+- claimed `P52-TEST-01` on `codex/p52-test-01-session-message-contract-matrix`
+- locking API and CLI append parity for appended, invalid-request, not-found, and terminal-session responses
+- normalizing CLI-local `database` context out of the shared append contract
+- validation:
+  - `make sync`
+  - `uv run pytest tests/test_session_message_append_contract_matrix.py tests/cli/test_cli_session_message_append.py tests/api/test_http_app.py tests/api/test_routes.py`
+  - `uv run ruff check tests/test_session_message_append_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-02 Phase 52 Session Message Append CLI
+
+- claimed `P52-CLI-01` on `codex/p52-cli-01-session-message-append`
+- adding local CLI append support for durable session continuation
+- keeping the append result contract aligned with the API while preserving CLI-local `database` context
+- validation:
+  - `make sync`
+  - `uv run pytest tests/cli/test_cli_session_message_append.py tests/api/test_http_app.py tests/api/test_routes.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/session_message_append_write.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/cli/test_cli_session_message_append.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-01 Phase 51 Closeout And Phase 52 Planning
+
+- claimed `P51-CLOSE-01` on `codex/p51-closeout-next-plan`
+- added `docs/Phase51_Approval_Decision_Cross_Surface_Parity_验收记录.md`
+- closed Phase 51 after approval decision parity landed on `main`
+- set the next active milestone to `Phase 52 - Session Message Append CLI And Operator Parity`
+- added starter tasks:
+  - `P52-CLI-01 - Session Message Append CLI Surface`
+  - `P52-TEST-01 - Session Message Append Cross-Surface Contract Matrix`
+  - `P52-CLOSE-01 - Phase 52 Closeout And Next Planning`
+
+## 2026-07-01 Phase 51 Approval Decision Contract Matrix
+
+- claimed `P51-TEST-01` on `codex/p51-test-01-approval-decision-contract-matrix`
+- aligning CLI approval decision payloads with API responses while preserving CLI-local `database` context
+- adding cross-surface regression coverage for grant, reject, invalid-state, and missing-session approval decisions
+- validation:
+  - `make sync`
+  - `uv run pytest tests/test_approval_decision_contract_matrix.py tests/api/test_approval_api_app.py tests/api/test_http_approvals.py tests/cli/test_cli_commands.py`
+  - `uv run ruff check --fix apps/cli/src/zebra_agent_cli/cli.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/approval_decision_write.py apps/cli/src/zebra_agent_cli/cli.py tests/test_approval_decision_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-01 Phase 50 Closeout And Phase 51 Planning
+
+- claimed `P50-CLOSE-01` on `codex/p50-closeout-next-plan`
+- added `docs/Phase50_Approval_Queue_CLI_And_Operator_Parity_验收记录.md`
+- closed Phase 50 after approval queue CLI delivery and cross-surface parity landed on `main`
+- set the next active milestone to `Phase 51 - Approval Decision Cross-Surface Parity`
+- added starter tasks:
+  - `P51-TEST-01 - Approval Decision Cross-Surface Contract Matrix`
+  - `P51-CLOSE-01 - Phase 51 Closeout And Next Planning`
+
+## 2026-07-01 Phase 50 Approval Read Contract Matrix
+
+- claimed `P50-TEST-01` on `codex/p50-test-01-approval-queue-contract-matrix`
+- adding API and CLI approval queue/detail parity coverage with CLI-local `database` normalization
+- work stays in `tests/` plus required task-board progress surfaces
+- validation:
+  - `make sync`
+  - `uv run pytest tests/test_approval_read_contract_matrix.py tests/cli/test_cli_approval_read.py tests/api/test_api_app.py tests/api/test_http_approvals.py tests/api/test_routes.py`
+  - `uv run ruff check tests/test_approval_read_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-01 Phase 50 CLI Approval Queue Read
+
+- claimed `P50-CLI-01` on `codex/p50-cli-01-approval-queue-read`
+- added local CLI `approval queue` and `approval inspect` read surfaces
+- kept the change path-scoped to `apps/cli/` and `tests/cli/`; did not widen into API or shared package extraction
+- validation:
+  - `make sync`
+  - `uv run pytest tests/cli/test_cli_approval_read.py tests/api/test_api_app.py tests/api/test_http_approvals.py tests/api/test_routes.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/approval_read.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py apps/cli/src/zebra_agent_cli/read_commands.py tests/cli/test_cli_approval_read.py`
+  - `uv run mypy packages apps`
+  - `make check`
 
 ## 2026-06-28 Phase 19 Closeout And Phase 20 Planning
 
@@ -4095,63 +4201,66 @@
   - `uv run mypy apps packages tests/api/test_artifact_delivery_audit_contract.py`
   - `make check`
 
-## 2026-07-02 Phase 44 Closeout And Phase 45 Planning
+## 2026-07-01 Phase 44 Closeout And Phase 45 Planning
 
 - 执行 `P44-CLOSE-01 - Phase 44 Closeout And Next Planning`
 - 行为更新：
   - 新增 `docs/Phase44_Artifact_Audit_Metadata_Contract_Coverage_验收记录.md`
-  - 归档 Phase 44 的 artifact delivery-audit contract 验收结论
-  - 将下一阶段定义为 `Phase 45 - CLI Delivery Audit Read Parity`
+  - 归档 Phase 44 的 artifact delivery-audit contract coverage 验收结论
+  - 将下一阶段定义为 `Phase 45 - Delivery Audit CLI And Operator Parity`
   - 新增 `P45-CLI-01`、`P45-TEST-01`、`P45-CLOSE-01` 的 path-scoped 任务板
+  - 记录主线已合并到 `main`，Phase 44 closeout 基于最新 `origin/main` 完成
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
 - 验证：
-  - `uv run pytest tests/test_artifact_access_contract_matrix.py tests/api/test_artifact_delivery_audit_contract.py tests/agent_security/test_artifact_access_audit.py tests/agent_security/test_artifact_control_audit.py`
   - `make check`
 
-## 2026-07-02 P45-CLI-01 CLI Delivery Audit Read Surface
+## 2026-07-01 P45-CLI-01 Delivery Audit CLI Read Surface
 
-- 执行 `P45-CLI-01 - CLI Delivery Audit Read Surface`
+- 执行 `P45-CLI-01 - Delivery Audit CLI Read Surface`
 - 行为更新：
-  - 新增 `apps/cli/src/zebra_agent_cli/delivery_audit.py`
-  - CLI 新增 `delivery-audit` 读取命令
-  - 本地 CLI 现在可以直接从 SQLite delivery-audit store 读取 session 审计记录
-  - 新增 `tests/cli/test_cli_delivery_audit.py`，覆盖 not found、empty、recorded 三类读取结果
+  - 新增 `apps/cli/src/zebra_agent_cli/delivery_audit_read.py`
+  - 新增顶层 CLI 命令 `zebra-agent delivery-audit <session_id>`
+  - 本地 CLI 现在可直接读取 session delivery-audit 历史，不再依赖 HTTP API
+  - 显式锁定 populated、empty、missing-session 三类 machine-readable 输出语义
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
 - 验证：
-  - `uv run pytest tests/cli/test_cli_delivery_audit.py tests/api/test_session_delivery_audit.py`
-  - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/delivery_audit.py tests/cli/test_cli_delivery_audit.py tests/api/test_session_delivery_audit.py`
-  - `uv run mypy packages apps tests/cli/test_cli_delivery_audit.py tests/api/test_session_delivery_audit.py`
+  - `make sync`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/delivery_audit_read.py tests/cli/test_cli_delivery_audit.py`
+  - `uv run mypy packages apps`
+  - `uv run pytest tests/cli/test_cli_delivery_audit.py tests/cli/test_cli_commands.py tests/cli/test_cli_artifacts.py`
 
-## 2026-07-02 P45-TEST-01 Delivery Audit API And CLI Contract Matrix
+## 2026-07-01 P45-TEST-01 Delivery Audit Cross-Surface Contract Matrix
 
-- 执行 `P45-TEST-01 - Delivery Audit API And CLI Contract Matrix`
+- 执行 `P45-TEST-01 - Delivery Audit Cross-Surface Contract Matrix`
 - 行为更新：
   - 新增 `tests/test_delivery_audit_contract_matrix.py`
-  - 显式锁定 delivery-audit 在 API 与 CLI 间的 `not_found`、empty、recorded-record 三类 operator payload parity
-  - parity projection 只排除了 CLI 本地独有的 `database` 字段，没有放宽其余 payload 语义
+  - 显式锁定 API 与 CLI 在 populated、empty、missing-session 三类 delivery-audit 读取路径上的共享契约
+  - 将 CLI 本地 `database` 上下文字段视为 CLI-only 差异，不纳入 cross-surface 共享契约比较
+  - 用同一条 matrix 同时覆盖 SCM audit record 与空历史或缺失 session 边界
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
 - 验证：
-  - `uv run pytest tests/cli/test_cli_delivery_audit.py tests/api/test_session_delivery_audit.py tests/test_delivery_audit_contract_matrix.py`
-  - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/delivery_audit.py tests/cli/test_cli_delivery_audit.py tests/api/test_session_delivery_audit.py tests/test_delivery_audit_contract_matrix.py`
-  - `uv run mypy packages apps tests/cli/test_cli_delivery_audit.py tests/api/test_session_delivery_audit.py tests/test_delivery_audit_contract_matrix.py`
+  - `make sync`
+  - `uv run pytest tests/test_delivery_audit_contract_matrix.py tests/api/test_session_delivery_audit.py tests/api/test_artifact_delivery_audit_contract.py tests/cli/test_cli_delivery_audit.py`
+  - `uv run ruff check tests/test_delivery_audit_contract_matrix.py`
+  - `uv run mypy packages apps`
 
-## 2026-07-02 Phase 45 Closeout And Phase 46 Planning
+## 2026-07-01 Phase 45 Closeout And Phase 46 Planning
 
 - 执行 `P45-CLOSE-01 - Phase 45 Closeout And Next Planning`
 - 行为更新：
-  - 新增 `docs/Phase45_CLI_Delivery_Audit_Read_Parity_验收记录.md`
-  - 归档 Phase 45 的 CLI delivery-audit parity 验收结论
-  - 将下一阶段定义为 `Phase 46 - Shared Delivery Audit Projection Reuse`
-  - 新增 `P46-STO-01`、`P46-API-01`、`P46-CLI-01`、`P46-CLOSE-01` 的 path-scoped 任务板
+  - 新增 `docs/Phase45_Delivery_Audit_CLI_And_Operator_Parity_验收记录.md`
+  - 归档 Phase 45 的 delivery-audit CLI parity 与 cross-surface contract matrix 验收结论
+  - 将下一阶段定义为 `Phase 46 - Session Diff CLI And Operator Parity`
+  - 新增 `P46-CLI-01`、`P46-TEST-01`、`P46-CLOSE-01` 的 path-scoped 任务板
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
@@ -4159,47 +4268,47 @@
 - 验证：
   - `make check`
 
-## 2026-07-02 P46-STO-01 Shared Delivery Audit Projection Serializer
+## 2026-07-01 P46-CLI-01 Session Diff CLI Read Surface
 
-- 执行 `P46-STO-01 - Shared Delivery Audit Projection Serializer`
+- 执行 `P46-CLI-01 - Session Diff CLI Read Surface`
 - 行为更新：
-  - 新增 `packages/agent-storage/src/agent_storage/delivery_audit_projection.py`
-  - 提供 `serialize_delivery_audit_record()` 与 `serialize_session_delivery_audit_projection()`
-  - 新增 `tests/agent_storage/test_delivery_audit_projection.py` 锁定 shared serializer 的 deterministic payload
+  - 新增 `apps/cli/src/zebra_agent_cli/session_diff_read.py`
+  - 新增顶层 CLI 命令 `zebra-agent diff <session_id>`
+  - 复用现有 workspace diff service 与 session bootstrap 事件中的 `workspace_root`
+  - 本地 CLI 现在可直接读取 session workspace diff，不再依赖 HTTP API
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
 - 验证：
-  - `uv run pytest tests/agent_storage/test_delivery_audit_projection.py tests/agent_storage/test_delivery_audit.py`
-  - `uv run ruff check packages/agent-storage/src/agent_storage/delivery_audit_projection.py packages/agent-storage/src/agent_storage/__init__.py tests/agent_storage/test_delivery_audit_projection.py`
-  - `uv run mypy packages apps tests/agent_storage/test_delivery_audit_projection.py`
+  - `uv run pytest tests/cli/test_cli_session_diff.py tests/api/test_session_diff.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/session_diff_read.py tests/cli/test_cli_session_diff.py`
+  - `uv run mypy packages apps`
+  - `make check`
 
-## 2026-07-02 P46-API-01 And P46-CLI-01 Shared Delivery Audit Projection Adoption
+## 2026-07-01 P46-TEST-01 Session Diff Cross-Surface Contract Matrix
 
-- 执行 `P46-API-01 - API Shared Delivery Audit Projection Adoption`
-- 执行 `P46-CLI-01 - CLI Shared Delivery Audit Projection Adoption`
+- 执行 `P46-TEST-01 - Session Diff Cross-Surface Contract Matrix`
 - 行为更新：
-  - API `session_delivery_audit.py` 现在通过 shared serializer 组装成功 payload
-  - CLI `delivery_audit.py` 现在通过 shared serializer 组装 shared payload，并保留本地 `database` 字段
-  - 现有 delivery-audit API/CLI parity contract 未变化
+  - 新增 `tests/test_session_diff_contract_matrix.py`
+  - 显式锁定 API 与 CLI 在 dirty、clean、missing-session、non-git 四类 session diff 读取路径上的共享契约
+  - 将 CLI 本地 `database` 上下文字段排除在 cross-surface 共享契约之外
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
 - 验证：
-  - `uv run pytest tests/agent_storage/test_delivery_audit_projection.py tests/cli/test_cli_delivery_audit.py tests/api/test_session_delivery_audit.py tests/test_delivery_audit_contract_matrix.py`
-  - `uv run ruff check packages/agent-storage/src/agent_storage/delivery_audit_projection.py packages/agent-storage/src/agent_storage/__init__.py apps/api/src/zebra_agent_api/session_delivery_audit.py apps/cli/src/zebra_agent_cli/delivery_audit.py tests/agent_storage/test_delivery_audit_projection.py tests/cli/test_cli_delivery_audit.py tests/api/test_session_delivery_audit.py tests/test_delivery_audit_contract_matrix.py`
-  - `uv run mypy packages apps tests/agent_storage/test_delivery_audit_projection.py tests/cli/test_cli_delivery_audit.py tests/api/test_session_delivery_audit.py tests/test_delivery_audit_contract_matrix.py`
+  - `uv run pytest tests/test_session_diff_contract_matrix.py tests/api/test_session_diff.py tests/cli/test_cli_session_diff.py`
+  - `uv run ruff check tests/test_session_diff_contract_matrix.py`
 
-## 2026-07-02 Phase 46 Closeout And Phase 47 Planning
+## 2026-07-01 Phase 46 Closeout And Phase 47 Planning
 
 - 执行 `P46-CLOSE-01 - Phase 46 Closeout And Next Planning`
 - 行为更新：
-  - 新增 `docs/Phase46_Shared_Delivery_Audit_Projection_Reuse_验收记录.md`
-  - 归档 Phase 46 的 shared delivery-audit projection reuse 验收结论
-  - 将下一阶段定义为 `Phase 47 - Shared Delivery Audit Read Orchestration`
-  - 新增 `P47-STO-01`、`P47-API-01`、`P47-CLI-01`、`P47-CLOSE-01` 的 path-scoped 任务板
+  - 新增 `docs/Phase46_Session_Diff_CLI_And_Operator_Parity_验收记录.md`
+  - 归档 Phase 46 的 session diff CLI parity 与 cross-surface contract matrix 验收结论
+  - 将下一阶段定义为 `Phase 47 - Session Stream CLI And Operator Parity`
+  - 新增 `P47-CLI-01`、`P47-TEST-01`、`P47-CLOSE-01` 的 path-scoped 任务板
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
@@ -4207,47 +4316,49 @@
 - 验证：
   - `make check`
 
-## 2026-07-02 P47-STO-01 Shared Delivery Audit Read Helper
+## 2026-07-01 P47-CLI-01 Session Stream CLI Read Surface
 
-- 执行 `P47-STO-01 - Shared Delivery Audit Read Helper`
+- 执行 `P47-CLI-01 - Session Stream CLI Read Surface`
 - 行为更新：
-  - 新增 `packages/agent-storage/src/agent_storage/delivery_audit_read.py`
-  - 提供 `read_session_delivery_audit_records()`，统一 session existence check 与 audit-record lookup
-  - 新增 `tests/agent_storage/test_delivery_audit_read.py` 锁定 missing session 与 existing session 的 helper 语义
+  - 新增 `apps/cli/src/zebra_agent_cli/session_stream_read.py`
+  - 新增顶层 CLI 命令 `zebra-agent stream <session_id>`
+  - 复用现有 session stream 事件投影格式作为 CLI 本地读面
+  - 本地 CLI 现在可直接读取 persisted session event stream，不再依赖 HTTP API
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
 - 验证：
-  - `uv run pytest tests/agent_storage/test_delivery_audit_read.py tests/agent_storage/test_delivery_audit_projection.py`
-  - `uv run ruff check packages/agent-storage/src/agent_storage/delivery_audit_read.py packages/agent-storage/src/agent_storage/delivery_audit_projection.py packages/agent-storage/src/agent_storage/__init__.py tests/agent_storage/test_delivery_audit_read.py tests/agent_storage/test_delivery_audit_projection.py`
-  - `uv run mypy packages apps tests/agent_storage/test_delivery_audit_read.py tests/agent_storage/test_delivery_audit_projection.py`
+  - `uv run pytest tests/cli/test_cli_session_stream.py tests/api/test_api_app.py tests/api/test_http_app.py tests/api/test_routes.py -k stream`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/session_stream_read.py tests/cli/test_cli_session_stream.py`
+  - `uv run mypy packages apps`
+  - `make check`
 
-## 2026-07-02 P47-API-01 And P47-CLI-01 Shared Delivery Audit Read Helper Adoption
+## 2026-07-01 P47-TEST-01 Session Stream Cross-Surface Contract Matrix
 
-- 执行 `P47-API-01 - API Shared Delivery Audit Read Helper Adoption`
-- 执行 `P47-CLI-01 - CLI Shared Delivery Audit Read Helper Adoption`
+- 执行 `P47-TEST-01 - Session Stream Cross-Surface Contract Matrix`
 - 行为更新：
-  - API `session_delivery_audit.py` 现在通过 shared read helper 统一 not-found 与 record lookup
-  - CLI `delivery_audit.py` 现在通过 shared read helper 统一 not-found 与 record lookup
-  - 现有 delivery-audit API/CLI contract 与 CLI `database` context 均保持不变
+  - 新增 `tests/test_session_stream_contract_matrix.py`
+  - 显式锁定 API SSE replay 与 CLI stream 在 populated、bootstrap-only、missing-session 三类读取路径上的共享契约
+  - 将 SSE framing 与 CLI 本地 `database` 上下文字段排除在 cross-surface 共享契约之外
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
 - 验证：
-  - `uv run pytest tests/agent_storage/test_delivery_audit_read.py tests/agent_storage/test_delivery_audit_projection.py tests/cli/test_cli_delivery_audit.py tests/api/test_session_delivery_audit.py tests/test_delivery_audit_contract_matrix.py`
-  - `uv run ruff check packages/agent-storage/src/agent_storage/delivery_audit_read.py packages/agent-storage/src/agent_storage/delivery_audit_projection.py packages/agent-storage/src/agent_storage/__init__.py apps/api/src/zebra_agent_api/session_delivery_audit.py apps/cli/src/zebra_agent_cli/delivery_audit.py tests/agent_storage/test_delivery_audit_read.py tests/agent_storage/test_delivery_audit_projection.py tests/cli/test_cli_delivery_audit.py tests/api/test_session_delivery_audit.py tests/test_delivery_audit_contract_matrix.py`
-  - `uv run mypy packages apps tests/agent_storage/test_delivery_audit_read.py tests/agent_storage/test_delivery_audit_projection.py tests/cli/test_cli_delivery_audit.py tests/api/test_session_delivery_audit.py tests/test_delivery_audit_contract_matrix.py`
+  - `uv run pytest tests/test_session_stream_contract_matrix.py tests/cli/test_cli_session_stream.py tests/api/test_api_app.py tests/api/test_http_app.py tests/api/test_routes.py -k stream`
+  - `uv run ruff check tests/test_session_stream_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
 
-## 2026-07-02 Phase 47 Closeout And Phase 48 Planning
+## 2026-07-01 Phase 47 Closeout And Phase 48 Planning
 
 - 执行 `P47-CLOSE-01 - Phase 47 Closeout And Next Planning`
 - 行为更新：
-  - 新增 `docs/Phase47_Shared_Delivery_Audit_Read_Orchestration_验收记录.md`
-  - 归档 Phase 47 的 shared delivery-audit read orchestration 验收结论
-  - 将下一阶段定义为 `Phase 48 - Shared Session Artifact Resolution`
-  - 新增 `P48-STO-01`、`P48-API-01`、`P48-CLI-01`、`P48-CLOSE-01` 的 path-scoped 任务板
+  - 新增 `docs/Phase47_Session_Stream_CLI_And_Operator_Parity_验收记录.md`
+  - 归档 Phase 47 的 session stream CLI parity 与 cross-surface contract matrix 验收结论
+  - 将下一阶段定义为 `Phase 48 - Session Commit CLI And Operator Parity`
+  - 新增 `P48-CLI-01`、`P48-TEST-01`、`P48-CLOSE-01` 的 path-scoped 任务板
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
@@ -4255,443 +4366,114 @@
 - 验证：
   - `make check`
 
-## 2026-07-02 P48-STO-01 Shared Session Artifact Resolution Helper
+## 2026-07-01 P48-CLI-01 Session Commit CLI Delivery Surface
 
-- 执行 `P48-STO-01 - Shared Session Artifact Resolution Helper`
+- 执行 `P48-CLI-01 - Session Commit CLI Delivery Surface`
 - 行为更新：
-  - 新增 `packages/agent-storage/src/agent_storage/artifact_resolution.py`
-  - 提供 `SessionArtifactResolution` 与 `resolve_session_artifact()`
-  - 新增 `tests/agent_storage/test_artifact_resolution.py` 锁定 missing session、missing artifact 与 matching artifact 三类解析语义
+  - 新增 `apps/cli/src/zebra_agent_cli/session_commit_write.py`
+  - 新增顶层 CLI 命令 `zebra-agent commit <session_id> --message ...`
+  - CLI 复用现有 `SessionCommitApi`，继承 policy、idempotency、delivery-audit 与 runtime commit 语义
+  - 本地 CLI 现在可直接执行 session commit，不再依赖 HTTP API
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
+  - `docs/operator_runbook.md`
 - 验证：
-  - `uv run pytest tests/agent_storage/test_artifact_resolution.py`
-  - `uv run ruff check packages/agent-storage/src/agent_storage/artifact_resolution.py packages/agent-storage/src/agent_storage/__init__.py tests/agent_storage/test_artifact_resolution.py`
-  - `uv run mypy packages apps tests/agent_storage/test_artifact_resolution.py`
+  - `uv run pytest tests/cli/test_cli_session_commit.py tests/api/test_session_commit.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli_types.py apps/cli/src/zebra_agent_cli/session_commit_write.py tests/cli/test_cli_session_commit.py`
+  - `uv run mypy packages apps`
+  - `make check`
 
-## 2026-07-02 P48-API-01 And P48-CLI-01 Shared Session Artifact Resolution Adoption
+## 2026-07-01 P48-TEST-01 Session Commit Cross-Surface Contract Matrix
 
-- 执行 `P48-API-01 - API Shared Session Artifact Resolution Adoption`
-- 执行 `P48-CLI-01 - CLI Shared Session Artifact Resolution Adoption`
+- 执行 `P48-TEST-01 - Session Commit Cross-Surface Contract Matrix`
 - 行为更新：
-  - API `SessionReadApi` 与 `SessionArtifactControlApi` 现在通过 shared artifact resolution helper 统一 artifact lookup
-  - CLI `artifact_read.py` 现在通过同一 helper 统一 artifact lookup
-  - 现有 session-not-found 与 artifact-not-found 语义保持不变
+  - 新增 `tests/test_session_commit_contract_matrix.py`
+  - 显式锁定 API 与 CLI 在 committed、policy-blocked、clean-workspace unavailable、missing-session 路径上的共享 commit 契约
+  - 使用 cross-surface idempotency replay 覆盖 API->CLI 与 CLI->API 两个方向
+  - 将 CLI 本地 `database` 字段排除在共享契约边界之外
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
+  - `WORKLOG.md`
 - 验证：
-  - `uv run pytest tests/agent_storage/test_artifact_resolution.py tests/test_artifact_access_contract_matrix.py tests/api/test_session_artifacts.py tests/cli/test_cli_artifacts.py`
-  - `uv run ruff check packages/agent-storage/src/agent_storage/artifact_resolution.py packages/agent-storage/src/agent_storage/__init__.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/session_artifact_control.py apps/cli/src/zebra_agent_cli/artifact_read.py tests/agent_storage/test_artifact_resolution.py`
-  - `uv run mypy packages apps tests/agent_storage/test_artifact_resolution.py`
+  - `make sync`
+  - `uv run pytest tests/test_session_commit_contract_matrix.py tests/cli/test_cli_session_commit.py tests/api/test_session_commit.py`
+  - `uv run ruff check tests/test_session_commit_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
 
-## 2026-07-02 Phase 48 Closeout And Phase 49 Planning
+## 2026-07-01 Phase 48 Closeout And Phase 49 Planning
 
 - 执行 `P48-CLOSE-01 - Phase 48 Closeout And Next Planning`
 - 行为更新：
-  - 新增 `docs/Phase48_Shared_Session_Artifact_Resolution_验收记录.md`
-  - 归档 Phase 48 的 shared session artifact resolution 验收结论
-  - 将下一阶段定义为 `Phase 49 - Shared Artifact Content Availability Semantics`
-  - 新增 `P49-STO-01`、`P49-API-01`、`P49-CLI-01`、`P49-CLOSE-01` 的 path-scoped 任务板
+  - 新增 `docs/Phase48_Session_Commit_CLI_And_Operator_Parity_验收记录.md`
+  - 归档 Phase 48 的 session commit CLI parity 与 cross-surface contract matrix 验收结论
+  - 将下一阶段定义为 `Phase 49 - Session Pull Request CLI And Operator Parity`
+  - 新增 `P49-CLI-01`、`P49-TEST-01`、`P49-CLOSE-01` 的 path-scoped 任务板
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
+  - `WORKLOG.md`
 - 验证：
   - `make check`
 
-## 2026-07-02 P49-STO-01 Shared Artifact Content Availability Helper
+## 2026-07-01 P49-CLI-01 Session Pull Request CLI Delivery Surface
 
-- 执行 `P49-STO-01 - Shared Artifact Content Availability Helper`
+- 执行 `P49-CLI-01 - Session Pull Request CLI Delivery Surface`
 - 行为更新：
-  - 在 `packages/agent-storage/src/agent_storage/artifact_projection.py` 新增 `artifact_content_unavailable_reason()`
-  - 将 artifact content retrieval status 到 unavailable reason 的映射沉到 `agent-storage`
-  - 在 `tests/agent_storage/test_artifact_projection.py` 增加 shared availability mapping 回归
+  - 新增 `apps/cli/src/zebra_agent_cli/session_pull_request_write.py`
+  - 新增顶层 CLI 命令 `zebra-agent pull-request <session_id> --title ...`
+  - CLI 复用现有 `ZebraAgentApi.open_session_pull_request` 组合路径，继承 SCM gateway、policy、idempotency、delivery-audit 与 guarded execution 语义
+  - 本地 CLI 现在可直接执行 session pull-request 规划或显式 guarded execution，不再依赖 HTTP API
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
+  - `docs/operator_runbook.md`
+  - `WORKLOG.md`
 - 验证：
-  - `uv run pytest tests/agent_storage/test_artifact_projection.py`
-  - `uv run ruff check packages/agent-storage/src/agent_storage/artifact_projection.py packages/agent-storage/src/agent_storage/__init__.py tests/agent_storage/test_artifact_projection.py`
-  - `uv run mypy packages apps tests/agent_storage/test_artifact_projection.py`
+  - `make sync`
+  - `uv run pytest tests/cli/test_cli_session_pull_request.py tests/api/test_session_pull_request.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py apps/cli/src/zebra_agent_cli/session_pull_request_write.py tests/cli/test_cli_session_pull_request.py`
+  - `uv run mypy packages apps`
+  - `make check`
 
-## 2026-07-02 P49-API-01 And P49-CLI-01 Shared Artifact Content Availability Adoption
+## 2026-07-01 P49-TEST-01 Session Pull Request Cross-Surface Contract Matrix
 
-- 执行 `P49-API-01 - API Shared Artifact Content Availability Adoption`
-- 执行 `P49-CLI-01 - CLI Shared Artifact Content Availability Adoption`
+- 执行 `P49-TEST-01 - Session Pull Request Cross-Surface Contract Matrix`
 - 行为更新：
-  - API `session_read.py` 现在通过 shared helper 统一 artifact content unavailable reason
-  - CLI `artifact_read.py` 现在通过 shared helper 统一 artifact content unavailable reason
-  - 现有 unavailable reason 词汇和 artifact content operator contract 保持不变
+  - 新增 `tests/test_session_pull_request_contract_matrix.py`
+  - 显式锁定 API 与 CLI 在 dry-run、created、policy-blocked、unavailable、missing-session 路径上的共享 pull-request 契约
+  - 使用 cross-surface idempotency replay 覆盖 `API -> CLI` 与 `CLI -> API` 两个方向
+  - 将 CLI 本地 `database` 字段排除在共享契约边界之外
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
+  - `WORKLOG.md`
 - 验证：
-  - `uv run pytest tests/agent_storage/test_artifact_projection.py tests/test_artifact_access_contract_matrix.py tests/api/test_session_artifacts.py tests/cli/test_cli_artifacts.py`
-  - `uv run ruff check packages/agent-storage/src/agent_storage/artifact_projection.py packages/agent-storage/src/agent_storage/__init__.py apps/api/src/zebra_agent_api/session_read.py apps/cli/src/zebra_agent_cli/artifact_read.py tests/agent_storage/test_artifact_projection.py`
-  - `uv run mypy packages apps tests/agent_storage/test_artifact_projection.py`
+  - `make sync`
+  - `uv run pytest tests/test_session_pull_request_contract_matrix.py tests/cli/test_cli_session_pull_request.py tests/api/test_session_pull_request.py`
+  - `uv run ruff check tests/test_session_pull_request_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
 
-## 2026-07-02 Phase 49 Closeout And Phase 50 Planning
+## 2026-07-01 Phase 49 Closeout And Phase 50 Planning
 
 - 执行 `P49-CLOSE-01 - Phase 49 Closeout And Next Planning`
 - 行为更新：
-  - 新增 `docs/Phase49_Shared_Artifact_Content_Availability_Semantics_验收记录.md`
-  - 归档 Phase 49 的 shared artifact content availability 验收结论
-  - 将下一阶段定义为 `Phase 50 - Shared Artifact Lifecycle Lookup`
-  - 新增 `P50-STO-01`、`P50-API-01`、`P50-CLI-01`、`P50-CLOSE-01` 的 path-scoped 任务板
+  - 新增 `docs/Phase49_Session_Pull_Request_CLI_And_Operator_Parity_验收记录.md`
+  - 归档 Phase 49 的 session pull-request CLI parity 与 cross-surface contract matrix 验收结论
+  - 将下一阶段定义为 `Phase 50 - Approval Queue CLI And Operator Parity`
+  - 新增 `P50-CLI-01`、`P50-TEST-01`、`P50-CLOSE-01` 的 path-scoped 任务板
 - 文档更新：
   - `docs/AGENT_TASKS.md`
   - `PROGRESS.md`
   - `README.md`
-- 验证：
-  - `make check`
-
-## 2026-07-02 P50-STO-01 Shared Artifact Lifecycle Lookup Helper
-
-- 执行 `P50-STO-01 - Shared Artifact Lifecycle Lookup Helper`
-- 行为更新：
-  - 在 `packages/agent-storage/src/agent_storage/artifact_projection.py` 新增 `lifecycle_for_artifact_uri()`
-  - 将 `payload_for_artifact_uri + serialize_artifact_lifecycle` 的组合 lookup 下沉到 `agent-storage`
-  - 在 `tests/agent_storage/test_artifact_projection.py` 增加 shared lifecycle lookup 回归
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `uv run pytest tests/agent_storage/test_artifact_projection.py`
-  - `uv run ruff check packages/agent-storage/src/agent_storage/artifact_projection.py packages/agent-storage/src/agent_storage/__init__.py tests/agent_storage/test_artifact_projection.py`
-  - `uv run mypy packages apps tests/agent_storage/test_artifact_projection.py`
-
-## 2026-07-02 P50-API-01 And P50-CLI-01 Shared Artifact Lifecycle Lookup Adoption
-
-- 执行 `P50-API-01 - API Shared Artifact Lifecycle Lookup Adoption`
-- 执行 `P50-CLI-01 - CLI Shared Artifact Lifecycle Lookup Adoption`
-- 行为更新：
-  - API `session_read.py` 现在通过 shared helper 统一 artifact lifecycle lookup
-  - CLI `artifact_read.py` 现在通过 shared helper 统一 artifact lifecycle lookup
-  - 现有 lifecycle payload 和 artifact operator contract 保持不变
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `uv run pytest tests/agent_storage/test_artifact_projection.py tests/test_artifact_access_contract_matrix.py tests/api/test_session_artifacts.py tests/cli/test_cli_artifacts.py`
-  - `uv run ruff check packages/agent-storage/src/agent_storage/artifact_projection.py packages/agent-storage/src/agent_storage/__init__.py apps/api/src/zebra_agent_api/session_read.py apps/cli/src/zebra_agent_cli/artifact_read.py tests/agent_storage/test_artifact_projection.py`
-  - `uv run mypy packages apps tests/agent_storage/test_artifact_projection.py`
-
-## 2026-07-02 Phase 50 Closeout And Phase 51 Planning
-
-- 执行 `P50-CLOSE-01 - Phase 50 Closeout And Next Planning`
-- 行为更新：
-  - 新增 `docs/Phase50_Shared_Artifact_Lifecycle_Lookup_验收记录.md`
-  - 归档 Phase 50 的 shared artifact lifecycle lookup 验收结论
-  - 将下一阶段定义为 `Phase 51 - Shared Artifact Payload Lookup`
-  - 新增 `P51-STO-01`、`P51-API-01`、`P51-CLI-01`、`P51-CLOSE-01` 的 path-scoped 任务板
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `make check`
-
-## 2026-07-02 P51-STO-01 Shared Artifact Payload Lookup Helper
-
-- 执行 `P51-STO-01 - Shared Artifact Payload Lookup Helper`
-- 行为更新：
-  - 在 `packages/agent-storage/src/agent_storage/artifact_projection.py` 新增 `resolve_payload_for_artifact_uri()`
-  - 将 `database_path + uri -> payload` 的 lookup 路径沉到 `agent-storage`
-  - 在 `tests/agent_storage/test_artifact_projection.py` 增加 shared payload lookup 回归
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `uv run pytest tests/agent_storage/test_artifact_projection.py`
-  - `uv run ruff check packages/agent-storage/src/agent_storage/artifact_projection.py packages/agent-storage/src/agent_storage/__init__.py tests/agent_storage/test_artifact_projection.py`
-  - `uv run mypy packages apps tests/agent_storage/test_artifact_projection.py`
-
-## 2026-07-02 P51-API-01 And P51-CLI-01 Shared Artifact Payload Lookup Adoption
-
-- 执行 `P51-API-01 - API Shared Artifact Payload Lookup Adoption`
-- 执行 `P51-CLI-01 - CLI Shared Artifact Payload Lookup Adoption`
-- 行为更新：
-  - API `artifact_access.py` 与 `session_artifact_control.py` 现在通过 shared payload helper 统一 payload lookup
-  - CLI `artifact_read.py` 现在通过 shared payload helper 统一 payload lookup
-  - 现有 payload lookup 语义和 artifact operator contract 保持不变
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `uv run pytest tests/agent_storage/test_artifact_projection.py tests/test_artifact_access_contract_matrix.py tests/api/test_session_artifacts.py tests/cli/test_cli_artifacts.py`
-  - `uv run ruff check packages/agent-storage/src/agent_storage/artifact_projection.py packages/agent-storage/src/agent_storage/__init__.py apps/api/src/zebra_agent_api/artifact_access.py apps/api/src/zebra_agent_api/session_artifact_control.py apps/cli/src/zebra_agent_cli/artifact_read.py tests/agent_storage/test_artifact_projection.py`
-  - `uv run mypy packages apps tests/agent_storage/test_artifact_projection.py`
-
-## 2026-07-02 Phase 51 Closeout And Phase 52 Planning
-
-- 执行 `P51-CLOSE-01 - Phase 51 Closeout And Next Planning`
-- 行为更新：
-  - 新增 `docs/Phase51_Shared_Artifact_Payload_Lookup_验收记录.md`
-  - 归档 Phase 51 的 shared artifact payload lookup 验收结论
-  - 将下一阶段定义为 `Phase 52 - Shared Session Policy Profile Lookup`
-  - 新增 `P52-STO-01`、`P52-API-01`、`P52-CLI-01`、`P52-CLOSE-01` 的 path-scoped 任务板
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `make check`
-
-## 2026-07-02 P52-STO-01 Shared Session Policy Profile Lookup Helper
-
-- 执行 `P52-STO-01 - Shared Session Policy Profile Lookup Helper`
-- 行为更新：
-  - 在 `packages/agent-storage/src/agent_storage/workspaces.py` 新增 `session_policy_profile_for_session()`
-  - 将 workspace policy_profile 读取和 `workspace_write` 默认值下沉到 `agent-storage`
-  - 在 `tests/agent_storage/test_sqlite_workspace_store.py` 增加 shared policy-profile lookup 回归
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `uv run pytest tests/agent_storage/test_sqlite_workspace_store.py`
-  - `uv run ruff check packages/agent-storage/src/agent_storage/workspaces.py packages/agent-storage/src/agent_storage/__init__.py tests/agent_storage/test_sqlite_workspace_store.py`
-  - `uv run mypy packages apps tests/agent_storage/test_sqlite_workspace_store.py`
-
-## 2026-07-02 P52-API-01 And P52-CLI-01 Shared Session Policy Profile Lookup Adoption
-
-- 执行 `P52-API-01 - API Shared Session Policy Profile Lookup Adoption`
-- 执行 `P52-CLI-01 - CLI Shared Session Policy Profile Lookup Adoption`
-- 行为更新：
-  - API `artifact_access.py` 现在通过 shared helper 统一 session policy profile lookup
-  - CLI `artifact_read.py` 现在通过 shared helper 统一 session policy profile lookup
-  - 现有 `workspace_write` 默认行为和 artifact access contract 保持不变
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `uv run pytest tests/agent_storage/test_sqlite_workspace_store.py tests/test_artifact_access_contract_matrix.py tests/api/test_session_artifacts.py tests/cli/test_cli_artifacts.py`
-  - `uv run ruff check packages/agent-storage/src/agent_storage/workspaces.py packages/agent-storage/src/agent_storage/__init__.py apps/api/src/zebra_agent_api/artifact_access.py apps/cli/src/zebra_agent_cli/artifact_read.py tests/agent_storage/test_sqlite_workspace_store.py`
-  - `uv run mypy packages apps tests/agent_storage/test_sqlite_workspace_store.py`
-
-## 2026-07-02 Phase 52 Closeout And Phase 53 Planning
-
-- 执行 `P52-CLOSE-01 - Phase 52 Closeout And Next Planning`
-- 行为更新：
-  - 新增 `docs/Phase52_Shared_Session_Policy_Profile_Lookup_验收记录.md`
-  - 归档 Phase 52 的 shared session policy profile lookup 验收结论
-  - 将下一阶段定义为 `Phase 53 - Shared Artifact Access Classification`
-  - 新增 `P53-SEC-01`、`P53-API-01`、`P53-CLI-01`、`P53-CLOSE-01` 的 path-scoped 任务板
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `make check`
-
-## 2026-07-02 P53-SEC-01 Shared Artifact Access Classification Helper
-
-- 执行 `P53-SEC-01 - Shared Artifact Access Classification Helper`
-- 行为更新：
-  - 在 `packages/agent-security/src/agent_security/artifact_access_projection.py` 新增 `build_session_artifact_access_projection()`
-  - 将 session artifact access descriptor 的组装逻辑下沉到 `agent-security`
-  - 在 `tests/agent_security/test_artifact_access_projection.py` 增加 shared classification helper 回归
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `uv run pytest tests/agent_security/test_artifact_access_projection.py`
-  - `uv run ruff check packages/agent-security/src/agent_security/artifact_access_projection.py packages/agent-security/src/agent_security/__init__.py tests/agent_security/test_artifact_access_projection.py`
-  - `uv run mypy packages apps tests/agent_security/test_artifact_access_projection.py`
-
-## 2026-07-02 P53-API-01 And P53-CLI-01 Shared Artifact Access Classification Adoption
-
-- 执行 `P53-API-01 - API Shared Artifact Access Classification Adoption`
-- 执行 `P53-CLI-01 - CLI Shared Artifact Access Classification Adoption`
-- 行为更新：
-  - API `artifact_access.py` 现在通过 shared helper 统一 artifact access projection 组装
-  - CLI `artifact_read.py` 现在通过 shared helper 统一 artifact access projection 组装
-  - 现有 artifact access contract 和 access projection 语义保持不变
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `uv run pytest tests/agent_security/test_artifact_access_projection.py tests/test_artifact_access_contract_matrix.py tests/api/test_session_artifacts.py tests/cli/test_cli_artifacts.py`
-  - `uv run ruff check packages/agent-security/src/agent_security/artifact_access_projection.py packages/agent-security/src/agent_security/__init__.py apps/api/src/zebra_agent_api/artifact_access.py apps/cli/src/zebra_agent_cli/artifact_read.py tests/agent_security/test_artifact_access_projection.py`
-  - `uv run mypy packages apps tests/agent_security/test_artifact_access_projection.py`
-
-## 2026-07-02 Phase 53 Closeout And Phase 54 Planning
-
-- 执行 `P53-CLOSE-01 - Phase 53 Closeout And Next Planning`
-- 行为更新：
-  - 新增 `docs/Phase53_Shared_Artifact_Access_Classification_验收记录.md`
-  - 归档 Phase 53 的 shared artifact access classification 验收结论
-  - 将下一阶段定义为 `Phase 54 - Shared Artifact Access Serialization`
-  - 新增 `P54-SEC-01`、`P54-API-01`、`P54-CLI-01`、`P54-CLOSE-01` 的 path-scoped 任务板
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `make check`
-
-## 2026-07-02 P54-SEC-01 Shared Artifact Access Serialization Helper
-
-- 执行 `P54-SEC-01 - Shared Artifact Access Serialization Helper`
-- 行为更新：
-  - 在 `packages/agent-security/src/agent_security/artifact_access_projection.py` 新增 `serialize_session_artifact_access_projection()`
-  - 将 operator-facing artifact access serialization 下沉到 `agent-security`
-  - 在 `tests/agent_security/test_artifact_access_projection.py` 增加 shared serialization helper 回归
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `uv run pytest tests/agent_security/test_artifact_access_projection.py`
-  - `uv run ruff check packages/agent-security/src/agent_security/artifact_access_projection.py packages/agent-security/src/agent_security/__init__.py tests/agent_security/test_artifact_access_projection.py`
-  - `uv run mypy packages apps tests/agent_security/test_artifact_access_projection.py`
-
-## 2026-07-02 P54-API-01 And P54-CLI-01 Shared Artifact Access Serialization Adoption
-
-- 执行 `P54-API-01 - API Shared Artifact Access Serialization Adoption`
-- 执行 `P54-CLI-01 - CLI Shared Artifact Access Serialization Adoption`
-- 行为更新：
-  - API `artifact_access.py` 现在通过 shared helper 统一 artifact access serialization
-  - CLI `artifact_access.py` 现在通过 shared helper 统一 artifact access serialization
-  - 现有 access payload 和 artifact contract 保持不变
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `uv run pytest tests/agent_security/test_artifact_access_projection.py tests/test_artifact_access_contract_matrix.py tests/api/test_session_artifacts.py tests/cli/test_cli_artifacts.py`
-  - `uv run ruff check packages/agent-security/src/agent_security/artifact_access_projection.py packages/agent-security/src/agent_security/__init__.py apps/api/src/zebra_agent_api/artifact_access.py apps/cli/src/zebra_agent_cli/artifact_access.py tests/agent_security/test_artifact_access_projection.py`
-  - `uv run mypy packages apps tests/agent_security/test_artifact_access_projection.py`
-
-## 2026-07-02 Phase 54 Closeout And Phase 55 Planning
-
-- 执行 `P54-CLOSE-01 - Phase 54 Closeout And Next Planning`
-- 行为更新：
-  - 新增 `docs/Phase54_Shared_Artifact_Access_Serialization_验收记录.md`
-  - 归档 Phase 54 的 shared artifact access serialization 验收结论
-  - 将下一阶段定义为 `Phase 55 - Shared Artifact Access Denied Reason Shaping`
-  - 新增 `P55-SEC-01`、`P55-API-01`、`P55-CLI-01`、`P55-CLOSE-01` 的 path-scoped 任务板
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `make check`
-
-## 2026-07-02 Phase 55 Closeout And Phase 56 Planning
-
-- 执行 `P55-CLOSE-01 - Phase 55 Closeout And Next Planning`
-- 行为更新：
-  - 新增 `docs/Phase55_Shared_Artifact_Access_Denied_Reason_Shaping_验收记录.md`
-  - 归档 Phase 55 的 shared artifact access denied-reason 验收结论
-  - 将下一阶段定义为 `Phase 56 - Shared Artifact Control Success Access Field Projection`
-  - 新增 `P56-SEC-01`、`P56-API-01`、`P56-CLI-01`、`P56-CLOSE-01` 的 path-scoped 任务板
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `make check`
-
-## 2026-07-02 Phase 56 Closeout And Phase 57 Planning
-
-- 执行 `P56-CLOSE-01 - Phase 56 Closeout And Next Planning`
-- 行为更新：
-  - 新增 `docs/Phase56_Shared_Artifact_Control_Success_Access_Field_Projection_验收记录.md`
-  - 归档 Phase 56 的 shared artifact control success access field projection 验收结论
-  - 将下一阶段定义为 `Phase 57 - Shared Artifact Access Outcome Field Projection`
-  - 新增 `P57-SEC-01`、`P57-API-01`、`P57-CLI-01`、`P57-CLOSE-01` 的 path-scoped 任务板
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `make check`
-
-## 2026-07-02 Phase 57 Closeout And Phase 58 Planning
-
-- 执行 `P57-CLOSE-01 - Phase 57 Closeout And Next Planning`
-- 行为更新：
-  - 新增 `docs/Phase57_Shared_Artifact_Access_Outcome_Field_Projection_验收记录.md`
-  - 归档 Phase 57 的 shared artifact access outcome field projection 验收结论
-  - 将下一阶段定义为 `Phase 58 - Shared Artifact Control Outcome Field Projection`
-  - 新增 `P58-SEC-01`、`P58-API-01`、`P58-CLI-01`、`P58-CLOSE-01` 的 path-scoped 任务板
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `make check`
-
-## 2026-07-02 Phase 58 Closeout And Phase 59 Planning
-
-- 执行 `P58-CLOSE-01 - Phase 58 Closeout And Next Planning`
-- 行为更新：
-  - 新增 `docs/Phase58_Shared_Artifact_Control_Outcome_Field_Projection_验收记录.md`
-  - 归档 Phase 58 的 shared artifact control outcome field projection 验收结论
-  - 将下一阶段定义为 `Phase 59 - Shared Artifact Control Success Outcome Projection`
-  - 新增 `P59-SEC-01`、`P59-API-01`、`P59-CLI-01`、`P59-CLOSE-01` 的 path-scoped 任务板
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `make check`
-
-## 2026-07-02 Phase 59 Closeout And Phase 60 Planning
-
-- 执行 `P59-CLOSE-01 - Phase 59 Closeout And Next Planning`
-- 行为更新：
-  - 新增 `docs/Phase59_Shared_Artifact_Control_Success_Outcome_Projection_验收记录.md`
-  - 归档 Phase 59 的 shared artifact control success outcome projection 验收结论
-  - 将下一阶段定义为 `Phase 60 - Shared Artifact Control Success Lifecycle Attachment`
-  - 新增 `P60-SEC-01`、`P60-API-01`、`P60-CLI-01`、`P60-CLOSE-01` 的 path-scoped 任务板
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `make check`
-
-## 2026-07-02 Phase 60 Closeout And Phase 61 Planning
-
-- 执行 `P60-CLOSE-01 - Phase 60 Closeout And Next Planning`
-- 行为更新：
-  - 新增 `docs/Phase60_Shared_Artifact_Control_Success_Lifecycle_Attachment_验收记录.md`
-  - 归档 Phase 60 的 shared artifact control success lifecycle attachment 验收结论
-  - 将下一阶段定义为 `Phase 61 - Shared Artifact Access Snapshot Field Reuse`
-  - 新增 `P61-API-01`、`P61-CLI-01`、`P61-CLOSE-01` 的 path-scoped 任务板
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
-- 验证：
-  - `make check`
-
-## 2026-07-02 Phase 61 Closeout And Phase 62 Planning
-
-- 执行 `P61-CLOSE-01 - Phase 61 Closeout And Next Planning`
-- 行为更新：
-  - 新增 `docs/Phase61_Shared_Artifact_Access_Snapshot_Field_Reuse_验收记录.md`
-  - 归档 Phase 61 的 shared artifact access snapshot reuse 验收结论
-  - 将下一阶段定义为 `Phase 62 - Shared Artifact Access Snapshot Attachment`
-  - 新增 `P62-SEC-01`、`P62-API-01`、`P62-CLI-01`、`P62-CLOSE-01` 的 path-scoped 任务板
-- 文档更新：
-  - `docs/AGENT_TASKS.md`
-  - `PROGRESS.md`
-  - `README.md`
+  - `WORKLOG.md`
 - 验证：
   - `make check`

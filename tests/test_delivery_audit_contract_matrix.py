@@ -1,50 +1,27 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
-import pytest
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.domain.delivery_audit import DeliveryAuditRecord
 from agent_core.domain.identifiers import SessionId
-from agent_storage import SQLiteDeliveryAuditStore, SQLiteEventStore, SQLiteProjectionStore
+from agent_storage import (
+    SQLiteDeliveryAuditStore,
+    SQLiteEventStore,
+    SQLiteProjectionStore,
+)
 from zebra_agent_api.app import create_app
 from zebra_agent_cli.cli import execute
 
 
-@pytest.mark.parametrize("scenario", ["not_found", "empty", "recorded"])
-def test_delivery_audit_contract_matrix(tmp_path: Path, scenario: str) -> None:
+def test_delivery_audit_contract_matrix_populated_records_match_across_api_and_cli(
+    tmp_path: Path,
+) -> None:
     database_path = tmp_path / "sessions.sqlite"
-
-    if scenario == "not_found":
-        missing_session_id = "00000000-0000-0000-0000-000000000001"
-        api_response = create_app(database_path).get_session_delivery_audit(missing_session_id)
-        cli_response = execute(
-            ["delivery-audit", missing_session_id, "--database", str(database_path)]
-        ).payload
-
-        assert api_response.status_code == 404
-        assert _project_not_found(api_response.body) == _project_not_found(cli_response)
-        return
-
-    existing_session_id = _seed_ready_session(database_path, tmp_path)
-
-    if scenario == "empty":
-        api_response = create_app(database_path).get_session_delivery_audit(
-            str(existing_session_id)
-        )
-        cli_response = execute(
-            ["delivery-audit", str(existing_session_id), "--database", str(database_path)]
-        ).payload
-
-        assert api_response.status_code == 200
-        assert _project_delivery_audit(api_response.body) == _project_delivery_audit(
-            cli_response
-        )
-        return
-
+    session_id = _seed_ready_session(database_path, tmp_path)
     created_at = datetime(2026, 6, 23, 12, 0, tzinfo=UTC)
     SQLiteDeliveryAuditStore(database_path).append(
         DeliveryAuditRecord(
-            session_id=existing_session_id,
+            session_id=session_id,
             action="session.pull_request",
             status="dry_run",
             status_code=200,
@@ -66,27 +43,88 @@ def test_delivery_audit_contract_matrix(tmp_path: Path, scenario: str) -> None:
         )
     )
 
-    api_response = create_app(database_path).get_session_delivery_audit(
-        str(existing_session_id)
+    api_response = create_app(database_path).get_session_delivery_audit(str(session_id))
+    cli_result = execute(
+        [
+            "delivery-audit",
+            str(session_id),
+            "--database",
+            str(database_path),
+        ]
     )
-    cli_response = execute(
-        ["delivery-audit", str(existing_session_id), "--database", str(database_path)]
-    ).payload
 
     assert api_response.status_code == 200
-    assert _project_delivery_audit(api_response.body) == _project_delivery_audit(cli_response)
+    assert _normalize_api_delivery_audit(api_response.body) == _normalize_cli_delivery_audit(
+        cli_result.payload
+    )
 
 
-def _project_not_found(payload: dict[str, object]) -> dict[str, object]:
+def test_delivery_audit_contract_matrix_empty_history_matches_across_api_and_cli(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    api_response = create_app(database_path).get_session_delivery_audit(str(session_id))
+    cli_result = execute(
+        [
+            "delivery-audit",
+            str(session_id),
+            "--database",
+            str(database_path),
+        ]
+    )
+
+    assert api_response.status_code == 200
+    assert _normalize_api_delivery_audit(api_response.body) == _normalize_cli_delivery_audit(
+        cli_result.payload
+    )
+
+
+def test_delivery_audit_contract_matrix_missing_session_matches_across_api_and_cli(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = "00000000-0000-0000-0000-000000000001"
+
+    api_response = create_app(database_path).get_session_delivery_audit(session_id)
+    cli_result = execute(
+        [
+            "delivery-audit",
+            session_id,
+            "--database",
+            str(database_path),
+        ]
+    )
+
+    assert api_response.status_code == 404
+    assert _normalize_api_delivery_audit(api_response.body) == _normalize_cli_delivery_audit(
+        cli_result.payload
+    )
+
+
+def _normalize_api_delivery_audit(payload: dict[str, object]) -> dict[str, object]:
+    if payload.get("status") == "not_found":
+        return {
+            "session_id": payload["session_id"],
+            "status": "not_found",
+        }
     return {
         "session_id": payload["session_id"],
-        "status": payload["status"],
+        "status": "ok",
+        "delivery_audit": payload["delivery_audit"],
     }
 
 
-def _project_delivery_audit(payload: dict[str, object]) -> dict[str, object]:
+def _normalize_cli_delivery_audit(payload: dict[str, object]) -> dict[str, object]:
+    if payload.get("status") == "not_found":
+        return {
+            "session_id": payload["session_id"],
+            "status": "not_found",
+        }
     return {
         "session_id": payload["session_id"],
+        "status": "ok",
         "delivery_audit": payload["delivery_audit"],
     }
 
@@ -94,7 +132,7 @@ def _project_delivery_audit(payload: dict[str, object]) -> dict[str, object]:
 def _seed_ready_session(database_path: Path, workspace_root: Path) -> SessionId:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
-            title="Delivery audit session",
+            title="Delivery audit contract matrix",
             user_input="Inspect delivery audit.",
             workspace_root=workspace_root.resolve(),
             policy_profile="full_access",
