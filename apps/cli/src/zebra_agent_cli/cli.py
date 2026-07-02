@@ -20,8 +20,6 @@ from agent_storage import (
 from zebra_agent_config import ZebraAgentSettings, load_settings
 from zebra_agent_worker import (
     SessionClaimService,
-    SessionControlError,
-    SessionControlService,
     SessionExecutionService,
     SessionRecoveryService,
     SessionResumeService,
@@ -44,6 +42,7 @@ from zebra_agent_cli.session_cancel_write import cancel_session
 from zebra_agent_cli.session_commit_write import commit_session
 from zebra_agent_cli.session_message_append_write import append_session_message
 from zebra_agent_cli.session_pull_request_write import open_session_pull_request
+from zebra_agent_cli.session_suspend_write import suspend_session
 from zebra_agent_cli.workspace_read import serialize_workspace_projection
 
 
@@ -371,31 +370,12 @@ def _suspend_result(
     namespace: argparse.Namespace,
     settings: ZebraAgentSettings,
 ) -> CliCommandResult:
-    database_path = _database_path(namespace.database, settings)
-    try:
-        result = SessionControlService(database_path).suspend_session(
-            SessionId(UUID(namespace.session_id))
-        )
-    except SessionControlError as error:
-        return CliCommandResult(
-            command="suspend",
-            payload={
-                "session_id": namespace.session_id,
-                "database": str(database_path),
-                "status": "not_suspendable",
-                "reason": str(error),
-            },
-        )
     return CliCommandResult(
         command="suspend",
-        payload={
-            "session_id": namespace.session_id,
-            "database": str(database_path),
-            "suspended": True,
-            "status": "suspended",
-            "workspace_status": result.workspace.status.value,
-            "snapshot_id": result.workspace.snapshot_id,
-        },
+        payload=suspend_session(
+            database_path=_database_path(namespace.database, settings),
+            session_id=namespace.session_id,
+        ),
     )
 
 

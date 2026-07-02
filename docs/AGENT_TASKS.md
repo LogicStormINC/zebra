@@ -6521,8 +6521,8 @@ routine cancel actions.
 
 ### P53-TEST-01 - Session Control Cross-Surface Contract Matrix
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P53-CLI-01`
 - Branch: `codex/p53-test-01-session-control-contract-matrix`
@@ -6541,13 +6541,13 @@ cancel or suspend changes do not drift across operator control surfaces.
 
 #### Acceptance
 
-- [ ] API and CLI session control output parity is explicit and regression-tested.
-- [ ] Cancelled, invalid-state, missing-session, suspended, invalid-request, and not-found control paths remain backward compatible across both surfaces.
-- [ ] Stable control result fields stay locked without overfitting CLI-only context.
+- [x] API and CLI session control output parity is explicit and regression-tested.
+- [x] Cancelled, invalid-state, missing-session, suspended, invalid-request, and not-found control paths remain backward compatible across both surfaces.
+- [x] Stable control result fields stay locked without overfitting CLI-only context.
 
 ### P53-CLOSE-01 - Phase 53 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P53-TEST-01`
