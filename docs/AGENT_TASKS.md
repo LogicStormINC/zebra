@@ -6439,8 +6439,8 @@ operators do not need the HTTP API for routine follow-up prompts.
 
 ### P52-TEST-01 - Session Message Append Cross-Surface Contract Matrix
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P52-CLI-01`
 - Branch: `codex/p52-test-01-session-message-contract-matrix`
@@ -6459,13 +6459,13 @@ future continuation changes do not drift across operator control surfaces.
 
 #### Acceptance
 
-- [ ] API and CLI append output parity is explicit and regression-tested.
-- [ ] Appended, invalid-request, not-found, and terminal-session append paths remain backward compatible across both surfaces.
-- [ ] Stable append result fields stay locked without overfitting CLI-only context.
+- [x] API and CLI append output parity is explicit and regression-tested.
+- [x] Appended, invalid-request, not-found, and terminal-session append paths remain backward compatible across both surfaces.
+- [x] Stable append result fields stay locked without overfitting CLI-only context.
 
 ### P52-CLOSE-01 - Phase 52 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P52-TEST-01`

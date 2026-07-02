@@ -3,10 +3,10 @@
 ## Current Phase
 
 - Active phase: `Phase 52 - Session Message Append CLI And Operator Parity`
-- Repository status: `phase 52 ready for test parity`
+- Repository status: `phase 52 ready for closeout`
 - Current focus:
-  - lock session message append API and CLI parity in `P52-TEST-01`
-  - keep CLI-local `database` context outside the shared append contract
+  - close Phase 52 with acceptance evidence in `P52-CLOSE-01`
+  - `P52-TEST-01` is complete on `codex/p52-test-01-session-message-contract-matrix` with append parity coverage and CLI-local `database` normalization
   - `P50-CLI-01` is complete on `codex/p50-cli-01-approval-queue-read` with local `approval queue` and `approval inspect` read surfaces
   - `P50-TEST-01` is complete on `codex/p50-test-01-approval-queue-contract-matrix` with approval queue/detail parity coverage and CLI-local `database` normalization
   - Phase 50 is closed with `docs/Phase50_Approval_Queue_CLI_And_Operator_Parity_验收记录.md`
