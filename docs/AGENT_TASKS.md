@@ -5640,7 +5640,7 @@ changing the current operator-facing success contract.
 
 ### P41-CLI-01 - CLI Shared Artifact Control Success Projection
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `Unassigned`
 - Suggested role: `CLI`
 - Depends on: `P41-API-01`
@@ -5660,13 +5660,13 @@ preserving CLI-local operator context fields.
 
 #### Acceptance
 
-- [ ] CLI prune success response shaping uses the shared helper path.
-- [ ] Existing CLI prune success payloads remain backward compatible.
-- [ ] CLI-local context fields stay explicit.
+- [x] CLI prune success response shaping uses the shared helper path.
+- [x] Existing CLI prune success payloads remain backward compatible.
+- [x] CLI-local context fields stay explicit.
 
 ### P41-TEST-01 - Artifact Prune Success Contract Matrix Expansion
 
-- Status: `Locked`
+- Status: `Done`
 - Owner: `Unassigned`
 - Suggested role: `TEST`
 - Depends on: `P41-API-01`, `P41-CLI-01`
