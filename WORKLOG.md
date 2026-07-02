@@ -11,6 +11,17 @@
   - `uv run ruff check packages/agent-core/src/agent_core/domain/memories.py packages/agent-core/src/agent_core/ports/memory_store.py packages/agent-storage/src/agent_storage/memories.py tests/agent_core/test_memories.py tests/agent_storage/test_sqlite_memories.py`
   - `uv run mypy packages apps`
 
+## 2026-07-02 Phase 57 Memory Candidate Extraction
+
+- claimed `P57-MEM-02` on `codex/p57-mem-02-memory-candidate-extraction`
+- extracting deterministic `procedure` memory candidates from successful `command.run` and `tests.run` session events
+- keeping this slice narrow: typed extraction service plus emitted session events, without wiring worker triggers or Redis adapters yet
+- completed `P57-MEM-02` with `MemoryCandidateExtractionService` and `memory_candidate_extracted` event payload validation
+- validation:
+  - `uv run pytest tests/agent_core/test_memory_candidates.py tests/agent_core/test_event_contracts.py`
+  - `uv run ruff check packages/agent-core/src/agent_core/application/memory_candidates.py packages/agent-core/src/agent_core/contracts/events.py packages/agent-core/src/agent_core/domain/events.py packages/agent-core/src/agent_core/application/__init__.py tests/agent_core/test_memory_candidates.py tests/agent_core/test_event_contracts.py`
+  - `make check`
+
 ## 2026-07-02 Phase 56 Session Resume Execute Closeout
 
 - claimed `P56-CLOSE-01` on `codex/p56-closeout-next-plan`

@@ -6838,3 +6838,30 @@ for session recovery.
 - [x] Memory records are typed and validate scope, lifecycle, and provenance fields deterministically.
 - [x] `agent-core` exposes a memory store Port without introducing Redis or network dependencies.
 - [x] SQLite storage can upsert and query memory records by repo or user scope with deterministic ordering.
+
+### P57-MEM-02 - Memory Candidate Extraction From Successful Tool Runs
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE`
+- Depends on: `P57-MEM-01`
+- Branch: `codex/p57-mem-02-memory-candidate-extraction`
+- Owned paths: `packages/agent-core/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Extract deterministic procedure-memory candidates from successful session tool
+execution so later adapters can persist operator-verified workflow knowledge
+without making memory a prerequisite for recovery.
+
+#### Deliverables
+
+- `MemoryCandidateExtracted` event contract and payload schema
+- extraction service for successful `command.run` and `tests.run` events
+- deterministic de-duplication and regression coverage for extracted candidates
+
+#### Acceptance
+
+- [x] Successful `command.run` and `tests.run` events can yield `procedure` memory candidates with provenance.
+- [x] Extraction emits machine-checkable `memory_candidate_extracted` event payloads without persisting secrets or raw approval-only data.
+- [x] Repeated matching tool runs within one session do not create duplicate candidates.
