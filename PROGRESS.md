@@ -5,7 +5,8 @@
 - Active phase: `Phase 54 - Session Artifact List CLI And Operator Parity`
 - Repository status: `phase 54 ready`
 - Current focus:
-  - start `P54-CLI-01` to add local session artifact list inventory from the CLI
+  - start `P54-TEST-01` to lock API and CLI session artifact list parity
+  - `P54-CLI-01` is complete on `codex/p54-cli-01-session-artifact-list` with local artifact list inventory plus deterministic empty and missing-session results
   - `P53-CLOSE-01` is complete on `codex/p53-closeout-next-plan` with Phase 53 acceptance evidence and Phase 54 starter tasks
   - Phase 53 is closed with `docs/Phase53_Session_Control_CLI_And_Operator_Parity_验收记录.md`
   - `P53-TEST-01` is complete on `codex/p53-test-01-session-control-contract-matrix` with cancel and suspend parity coverage plus CLI-local normalization

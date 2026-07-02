@@ -19,6 +19,89 @@ from agent_storage import (
 from zebra_agent_cli.cli import execute
 
 
+def test_cli_artifact_list_returns_indexed_artifacts(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+    _seed_workspace_policy(database_path, session.session_id, PolicyProfile.WORKSPACE_WRITE.value)
+    _seed_indexed_artifacts(database_path, session.session_id)
+    _seed_payload_backed_tool_artifact(database_path, session.session_id)
+
+    result = execute(
+        [
+            "artifact",
+            "list",
+            str(session.session_id),
+            "--database",
+            str(database_path),
+        ]
+    )
+
+    assert result.command == "artifact"
+    assert result.payload["session_id"] == str(session.session_id)
+    assert result.payload["database"] == str(database_path)
+    assert [artifact["artifact_id"] for artifact in result.payload["artifacts"]] == [
+        "model-call:4",
+        "tool-run:5",
+    ]
+    assert result.payload["artifacts"][0]["retrieval"] == {
+        "status": "indexed_only",
+        "retrievable": False,
+        "uri": None,
+    }
+    assert result.payload["artifacts"][0]["access"] == {
+        "class": "operator_safe",
+        "required_policy_profile": "workspace_write",
+        "session_policy_profile": "workspace_write",
+        "allowed": True,
+    }
+    assert result.payload["artifacts"][1]["retrieval"] == {
+        "status": "payload_available",
+        "retrievable": True,
+        "uri": result.payload["artifacts"][1]["uri"],
+    }
+
+
+def test_cli_artifact_list_returns_empty_list(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+
+    result = execute(
+        [
+            "artifact",
+            "list",
+            str(session.session_id),
+            "--database",
+            str(database_path),
+        ]
+    )
+
+    assert result.payload == {
+        "session_id": str(session.session_id),
+        "database": str(database_path),
+        "artifacts": [],
+    }
+
+
+def test_cli_artifact_list_returns_not_found_for_missing_session(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    result = execute(
+        [
+            "artifact",
+            "list",
+            "00000000-0000-0000-0000-000000000000",
+            "--database",
+            str(database_path),
+        ]
+    )
+
+    assert result.payload == {
+        "session_id": "00000000-0000-0000-0000-000000000000",
+        "database": str(database_path),
+        "status": "not_found",
+    }
+
+
 def test_cli_artifact_inspect_reports_payload_backed_retrieval(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session = _seed_session(database_path)

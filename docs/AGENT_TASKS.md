@@ -6574,8 +6574,8 @@ next implementation phase.
 
 ### P54-CLI-01 - Session Artifact List CLI Surface
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P53-CLOSE-01`
 - Branch: `codex/p54-cli-01-session-artifact-list`
@@ -6595,13 +6595,13 @@ so artifact discovery does not depend on the HTTP API.
 
 #### Acceptance
 
-- [ ] Operators can list session artifacts from the CLI.
-- [ ] Empty and missing-session artifact list paths remain deterministic from the CLI.
-- [ ] Existing API artifact list behavior remains backward compatible.
+- [x] Operators can list session artifacts from the CLI.
+- [x] Empty and missing-session artifact list paths remain deterministic from the CLI.
+- [x] Existing API artifact list behavior remains backward compatible.
 
 ### P54-TEST-01 - Session Artifact List Cross-Surface Contract Matrix
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `TEST`
 - Depends on: `P54-CLI-01`

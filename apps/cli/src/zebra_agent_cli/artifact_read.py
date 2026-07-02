@@ -36,6 +36,30 @@ from zebra_agent_cli.artifact_access import (
 )
 
 
+def list_artifacts(
+    *,
+    database_path: Path,
+    session_id: str,
+) -> dict[str, object]:
+    session_key = SessionId(UUID(session_id))
+    session = SQLiteProjectionStore(database_path).get_session(session_key)
+    if session is None:
+        return {
+            "session_id": session_id,
+            "database": str(database_path),
+            "status": "not_found",
+        }
+    artifacts = SQLiteArtifactStore(database_path).list_for_session(session_key)
+    return {
+        "session_id": session_id,
+        "database": str(database_path),
+        "artifacts": [
+            _serialize_artifact_projection(database_path, session_id, artifact)
+            for artifact in artifacts
+        ],
+    }
+
+
 def read_artifact_detail(
     *,
     database_path: Path,
@@ -232,6 +256,26 @@ def _artifact_access_context(
         ),
         session_policy_profile=_session_policy_profile(database_path, session_id),
     )
+
+
+def _serialize_artifact_projection(
+    database_path: Path,
+    session_id: str,
+    artifact: SessionArtifact,
+) -> dict[str, object]:
+    lifecycle = _artifact_lifecycle(database_path, artifact.uri)
+    projection = serialize_session_artifact_projection(
+        artifact,
+        lifecycle=lifecycle,
+    )
+    projection["access"] = serialize_artifact_access(
+        _artifact_access_context(
+            database_path=database_path,
+            session_id=session_id,
+            artifact=artifact,
+        )
+    )
+    return projection
 
 
 def _resolve_artifact(

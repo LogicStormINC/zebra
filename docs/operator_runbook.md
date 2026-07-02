@@ -127,6 +127,19 @@ Expected result:
 - `status=cancelled`
 - `workspace_status=cancelled`
 
+List session artifacts directly from the local CLI:
+
+```bash
+uv run zebra-agent artifact list <session_id> \
+  --database .zebra-agent/operator-runbook.sqlite
+```
+
+Expected result:
+
+- JSON output with `session_id`
+- `artifacts` containing zero or more indexed session artifacts
+- deterministic `status=not_found` when the session does not exist
+
 Read the current session projection without executing:
 
 ```bash

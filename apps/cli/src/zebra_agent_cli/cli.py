@@ -27,6 +27,7 @@ from zebra_agent_worker import (
 
 from zebra_agent_cli.approval_decision_write import record_approval_decision
 from zebra_agent_cli.artifact_read import (
+    list_artifacts,
     prune_artifact,
     read_artifact_content,
     read_artifact_detail,
@@ -205,6 +206,12 @@ def _parser() -> argparse.ArgumentParser:
 
     artifact = subcommands.add_parser("artifact", help="Inspect or read session artifacts.")
     artifact_subcommands = artifact.add_subparsers(dest="artifact_command", required=True)
+    artifact_list = artifact_subcommands.add_parser(
+        "list",
+        help="List session artifacts.",
+    )
+    artifact_list.add_argument("session_id")
+    artifact_list.add_argument("--database")
     artifact_inspect = artifact_subcommands.add_parser(
         "inspect",
         help="Inspect one session artifact.",
@@ -435,6 +442,12 @@ def _artifact_result(
     namespace: argparse.Namespace,
     database_path: Path,
 ) -> CliCommandResult:
+    if namespace.artifact_command == "list":
+        payload = list_artifacts(
+            database_path=database_path,
+            session_id=namespace.session_id,
+        )
+        return CliCommandResult(command="artifact", payload=payload)
     if namespace.artifact_command == "inspect":
         payload = read_artifact_detail(
             database_path=database_path,

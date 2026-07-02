@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026-07-02 Phase 54 Session Artifact List CLI Surface
+
+- claimed `P54-CLI-01` on `codex/p54-cli-01-session-artifact-list`
+- implementing a local `zebra-agent artifact list <session_id>` surface
+- targeting deterministic non-empty, empty, and missing-session CLI results
+- keeping the CLI payload aligned with the existing API artifact list envelope where practical
+- completed `P54-CLI-01` with local artifact list inventory over the existing CLI artifact projection path
+- validation:
+  - `make sync`
+  - `uv run pytest tests/cli/test_cli_artifacts.py tests/cli/test_cli_commands.py`
+  - `make check`
+
 ## 2026-07-02 Phase 53 Closeout And Phase 54 Planning
 
 - claimed `P53-CLOSE-01` on `codex/p53-closeout-next-plan`
