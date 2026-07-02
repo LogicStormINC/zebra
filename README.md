@@ -97,7 +97,8 @@ The next milestone is `Phase 56 - Session Resume Execute CLI And Operator Parity
 - Phase 55 now has CLI inspect approval-context parity aligned with the API session read surface
 - Phase 55 now has a dedicated session inspect API-vs-CLI contract matrix with CLI-local `database` normalization
 - Phase 56 now has CLI resume execute failure shaping aligned with the API resume execution surface
-- the next ready implementation lane is session resume execute cross-surface contract parity
+- Phase 56 now has a dedicated session resume execute API-vs-CLI contract matrix with CLI-local `database` normalization
+- the next ready implementation lane is Phase 56 closeout and next planning
 
 Read in this order:
 

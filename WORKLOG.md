@@ -1,5 +1,15 @@
 # Progress Log
 
+## 2026-07-02 Phase 56 Session Resume Execute Contract Matrix
+
+- claimed `P56-TEST-01` on `codex/p56-test-01-session-resume-execute-contract-matrix`
+- locking API and CLI parity for session resume execute output
+- expect one explicit CLI-local normalization for `database`, with shared resume execute payloads compared otherwise field-for-field
+- completed `P56-TEST-01` with a dedicated session resume execute cross-surface regression matrix
+- validation:
+  - `uv run pytest tests/test_session_resume_execute_contract_matrix.py tests/cli/test_cli_commands.py tests/api/test_http_app.py tests/api/test_routes.py`
+  - `uv run ruff check tests/test_session_resume_execute_contract_matrix.py`
+
 ## 2026-07-02 Phase 55 Closeout And Phase 56 Planning
 
 - claimed `P55-CLOSE-01` on `codex/p55-closeout-next-plan`
