@@ -3,9 +3,11 @@
 ## Current Phase
 
 - Active phase: `Phase 53 - Session Control CLI And Operator Parity`
-- Repository status: `phase 53 ready`
+- Repository status: `phase 53 ready for test parity`
 - Current focus:
-  - start `P53-CLI-01` to add local session cancel control from the CLI
+  - lock session control API and CLI parity in `P53-TEST-01`
+  - keep CLI-local `database` context outside the shared cancel and suspend contract
+  - `P53-CLI-01` is complete on `codex/p53-cli-01-session-cancel` with restored cancel control and local CLI cancel support
   - `P52-CLOSE-01` is complete on `codex/p52-closeout-next-plan` with Phase 52 acceptance evidence and Phase 53 starter tasks
   - Phase 52 is closed with `docs/Phase52_Session_Message_Append_CLI_And_Operator_Parity_验收记录.md`
   - `P50-CLI-01` is complete on `codex/p50-cli-01-approval-queue-read` with local `approval queue` and `approval inspect` read surfaces

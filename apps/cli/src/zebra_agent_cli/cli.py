@@ -40,6 +40,7 @@ from zebra_agent_cli.execution import (
     serialize_trace_events,
 )
 from zebra_agent_cli.read_commands import add_read_subparsers, read_command_result
+from zebra_agent_cli.session_cancel_write import cancel_session
 from zebra_agent_cli.session_commit_write import commit_session
 from zebra_agent_cli.session_message_append_write import append_session_message
 from zebra_agent_cli.session_pull_request_write import open_session_pull_request
@@ -63,6 +64,14 @@ def execute(
                 database_path=_database_path(namespace.database, active_settings),
                 session_id=namespace.session_id,
                 content=namespace.content,
+            ),
+        )
+    if command == "cancel":
+        return CliCommandResult(
+            command="cancel",
+            payload=cancel_session(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
             ),
         )
     if command == "resume":
@@ -152,6 +161,10 @@ def _parser() -> argparse.ArgumentParser:
     message.add_argument("session_id")
     message.add_argument("--content", required=True)
     message.add_argument("--database")
+
+    cancel = subcommands.add_parser("cancel", help="Cancel a local session.")
+    cancel.add_argument("session_id")
+    cancel.add_argument("--database")
 
     resume = subcommands.add_parser("resume", help="Resume a suspended session.")
     resume.add_argument("session_id")

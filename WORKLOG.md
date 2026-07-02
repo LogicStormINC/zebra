@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026-07-02 Phase 53 Session Cancel Control Surface
+
+- claimed `P53-CLI-01` on `codex/p53-cli-01-session-cancel`
+- corrected the task boundary after finding that cancel control was not actually wired in the current codebase
+- restoring the missing cancel control entry and adding local CLI cancel support with deterministic operator-facing results
+- validation:
+  - `make sync`
+  - `uv run pytest tests/cli/test_cli_session_cancel.py tests/cli/test_cli_commands.py tests/api/test_http_session_cancel.py tests/api/test_http_app.py tests/api/test_route_session_cancel.py tests/api/test_routes.py tests/worker/test_control.py tests/worker/test_execution.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/session_cancel_write.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py apps/api/src/zebra_agent_api/session_control.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/api/src/zebra_agent_api/session_payloads.py apps/worker/src/zebra_agent_worker/control.py apps/worker/src/zebra_agent_worker/__init__.py tests/cli/test_cli_session_cancel.py tests/api/test_http_session_cancel.py tests/api/test_route_session_cancel.py tests/worker/test_control.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
 ## 2026-07-02 Phase 52 Closeout And Phase 53 Planning
 
 - claimed `P52-CLOSE-01` on `codex/p52-closeout-next-plan`
