@@ -323,6 +323,15 @@ curl -X POST http://127.0.0.1:8000/sessions/<session_id>/messages \
   -d '{"content":"Please continue from the latest checkpoint."}'
 ```
 
+Append the same follow-up user message directly from the local CLI without the
+HTTP API:
+
+```bash
+uv run zebra-agent message <session_id> \
+  --content "Please continue from the latest checkpoint." \
+  --database .zebra-agent/operator-runbook.sqlite
+```
+
 The local HTTP API exposes the same approval decision path. In the current
 local MVP, the approval id is the waiting session id:
 

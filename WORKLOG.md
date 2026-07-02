@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026-07-02 Phase 52 Session Message Append CLI
+
+- claimed `P52-CLI-01` on `codex/p52-cli-01-session-message-append`
+- adding local CLI append support for durable session continuation
+- keeping the append result contract aligned with the API while preserving CLI-local `database` context
+- validation:
+  - `make sync`
+  - `uv run pytest tests/cli/test_cli_session_message_append.py tests/api/test_http_app.py tests/api/test_routes.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/session_message_append_write.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/cli/test_cli_session_message_append.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
 ## 2026-07-01 Phase 51 Closeout And Phase 52 Planning
 
 - claimed `P51-CLOSE-01` on `codex/p51-closeout-next-plan`

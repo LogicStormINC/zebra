@@ -6,6 +6,7 @@ from typing import Literal
 
 CommandName = Literal[
     "run",
+    "message",
     "resume",
     "suspend",
     "inspect",
