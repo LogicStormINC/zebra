@@ -46,5 +46,8 @@ def test_delivery_audit_records_created_pull_request_metadata(tmp_path: Path) ->
         "url": "https://github.example/pulls/1",
         "credential_source": "broker",
         "credential_backend": "environment",
+        "route": None,
+        "proxy_target": None,
+        "proxy_transport": None,
     }
     assert "secret-token" not in str(records[0].result_metadata)
