@@ -1,5 +1,15 @@
 # Progress Log
 
+## 2026-07-02 Phase 55 Session Inspect Contract Matrix
+
+- claimed `P55-TEST-01` on `codex/p55-test-01-session-inspect-contract-matrix`
+- locking API and CLI parity for session inspect output
+- expect one explicit CLI-local normalization for `database`, with shared session read fields compared otherwise field-for-field
+- completed `P55-TEST-01` with a dedicated session inspect cross-surface regression matrix
+- validation:
+  - `uv run pytest tests/test_session_inspect_contract_matrix.py tests/cli/test_cli_commands.py tests/api/test_api_app.py`
+  - `uv run ruff check tests/test_session_inspect_contract_matrix.py`
+
 ## 2026-07-02 Phase 55 Session Inspect CLI Parity Alignment
 
 - claimed `P55-CLI-01` on `codex/p55-cli-01-session-inspect-parity`

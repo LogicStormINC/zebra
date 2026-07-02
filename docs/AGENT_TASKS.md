@@ -6680,8 +6680,8 @@ so routine session inspection does not drift across operator entry points.
 
 ### P55-TEST-01 - Session Inspect Cross-Surface Contract Matrix
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TEST`
 - Depends on: `P55-CLI-01`
 - Branch: `codex/p55-test-01-session-inspect-contract-matrix`
@@ -6700,13 +6700,13 @@ inspection changes do not drift across operator read surfaces.
 
 #### Acceptance
 
-- [ ] API and CLI session inspect output parity is explicit and regression-tested.
-- [ ] Populated and missing-session inspect paths remain backward compatible across both surfaces.
-- [ ] Stable inspect result fields stay locked without overfitting CLI-only context.
+- [x] API and CLI session inspect output parity is explicit and regression-tested.
+- [x] Populated and missing-session inspect paths remain backward compatible across both surfaces.
+- [x] Stable inspect result fields stay locked without overfitting CLI-only context.
 
 ### P55-CLOSE-01 - Phase 55 Closeout And Next Planning
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `DOC`
 - Depends on: `P55-TEST-01`

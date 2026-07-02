@@ -5,7 +5,8 @@
 - Active phase: `Phase 55 - Session Inspect CLI And Operator Parity`
 - Repository status: `phase 55 ready`
 - Current focus:
-  - start `P55-TEST-01` to lock API and CLI session inspect parity
+  - start `P55-CLOSE-01` to record Phase 55 acceptance evidence and define the next phase
+  - `P55-TEST-01` is complete on `codex/p55-test-01-session-inspect-contract-matrix` with session inspect parity coverage and CLI-local `database` normalization
   - `P55-CLI-01` is complete on `codex/p55-cli-01-session-inspect-parity` with CLI inspect approval-context parity alignment
   - `P54-CLOSE-01` is complete on `codex/p54-closeout-next-plan` with Phase 54 acceptance evidence and Phase 55 starter tasks
   - Phase 54 is closed with `docs/Phase54_Session_Artifact_List_CLI_And_Operator_Parity_验收记录.md`

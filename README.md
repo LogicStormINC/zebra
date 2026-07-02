@@ -95,7 +95,8 @@ The next milestone is `Phase 55 - Session Inspect CLI And Operator Parity`. The 
 - Phase 53 now has a dedicated session control API-vs-CLI contract matrix with CLI-local `database` normalization and suspend `snapshot_id` normalization
 - Phase 54 now has a dedicated session artifact list API-vs-CLI contract matrix with CLI-local `database` normalization
 - Phase 55 now has CLI inspect approval-context parity aligned with the API session read surface
-- the next ready implementation lane is session inspect cross-surface contract parity
+- Phase 55 now has a dedicated session inspect API-vs-CLI contract matrix with CLI-local `database` normalization
+- the next ready implementation lane is Phase 55 closeout and next planning
 
 Read in this order:
 
