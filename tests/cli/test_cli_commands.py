@@ -9,7 +9,7 @@ from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId, new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
-from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_core.domain.tools import ToolCall
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 from agent_storage import (
@@ -541,6 +541,38 @@ def test_cli_inspect_command_includes_workspace_projection(tmp_path: Path) -> No
             "snapshot_id": "snap-cli-2",
             "snapshot_path": "/tmp/zebra-agent-runtime/snap-cli-2",
         },
+    }
+
+
+def test_cli_inspect_command_includes_approval_context(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="Inspect approval context").model_copy(
+            update={
+                "status": SessionStatus.WAITING_APPROVAL,
+                "approval_context": ApprovalContext(
+                    tool_name="mcp.github.create_pr",
+                    reason="Approval required before opening a pull request.",
+                    policy_profile="workspace_write",
+                    route="mcp_proxy",
+                    target="github",
+                    network_profile="domain-allowlist",
+                    scope=("pull_requests:write",),
+                ),
+            }
+        )
+    )
+
+    result = execute(["inspect", str(session.session_id), "--database", str(database_path)])
+
+    assert result.payload["approval_context"] == {
+        "tool_name": "mcp.github.create_pr",
+        "reason": "Approval required before opening a pull request.",
+        "policy_profile": "workspace_write",
+        "route": "mcp_proxy",
+        "target": "github",
+        "network_profile": "domain-allowlist",
+        "scope": ["pull_requests:write"],
     }
 
 

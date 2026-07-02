@@ -6654,8 +6654,8 @@ the next implementation phase.
 
 ### P55-CLI-01 - Session Inspect CLI Parity Alignment
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CLI`
 - Depends on: `P54-CLOSE-01`
 - Branch: `codex/p55-cli-01-session-inspect-parity`
@@ -6674,13 +6674,13 @@ so routine session inspection does not drift across operator entry points.
 
 #### Acceptance
 
-- [ ] Operators can inspect session state from the CLI with parity-aligned output.
-- [ ] Stable API session read fields remain visible from the CLI where they are part of the shared operator contract.
-- [ ] Existing API session inspect behavior remains backward compatible.
+- [x] Operators can inspect session state from the CLI with parity-aligned output.
+- [x] Stable API session read fields remain visible from the CLI where they are part of the shared operator contract.
+- [x] Existing API session inspect behavior remains backward compatible.
 
 ### P55-TEST-01 - Session Inspect Cross-Surface Contract Matrix
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `Unassigned`
 - Suggested role: `TEST`
 - Depends on: `P55-CLI-01`

@@ -114,6 +114,13 @@ Inspect the same session:
 uv run zebra-agent inspect <session_id>
 ```
 
+Expected result:
+
+- JSON output with `session_id`, `title`, `status`, and `current_sequence`
+- `workspace` when durable workspace projection state exists
+- `approval_context` when the session is currently blocked on approval and the
+  durable session projection carries proxy-aware approval metadata
+
 Cancel a local session:
 
 ```bash

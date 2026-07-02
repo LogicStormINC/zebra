@@ -17,6 +17,7 @@ from agent_storage import (
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
 )
+from zebra_agent_api.approval_context import serialize_approval_context
 from zebra_agent_config import ZebraAgentSettings, load_settings
 from zebra_agent_worker import (
     SessionClaimService,
@@ -329,6 +330,9 @@ def _session_result(
     serialized_workspace = serialize_workspace_projection(workspace)
     if serialized_workspace is not None:
         payload["workspace"] = serialized_workspace
+    approval_context = serialize_approval_context(session.approval_context)
+    if approval_context is not None:
+        payload["approval_context"] = approval_context
     return CliCommandResult(command=command, payload=payload)
 
 

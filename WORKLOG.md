@@ -1,5 +1,16 @@
 # Progress Log
 
+## 2026-07-02 Phase 55 Session Inspect CLI Parity Alignment
+
+- claimed `P55-CLI-01` on `codex/p55-cli-01-session-inspect-parity`
+- aligning local CLI `inspect` output with the API session read surface
+- targeting `approval_context` parity while preserving the existing CLI-local `database` field
+- completed `P55-CLI-01` by reusing the API approval-context serializer in the CLI inspect path
+- validation:
+  - `uv run pytest tests/cli/test_cli_commands.py tests/api/test_api_app.py`
+  - `uv run ruff check apps/cli/src/zebra_agent_cli/cli.py tests/cli/test_cli_commands.py`
+  - `make check`
+
 ## 2026-07-02 Phase 54 Closeout And Phase 55 Planning
 
 - claimed `P54-CLOSE-01` on `codex/p54-closeout-next-plan`
