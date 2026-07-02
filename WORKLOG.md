@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026-07-02 Phase 52 Session Message Append Contract Matrix
+
+- claimed `P52-TEST-01` on `codex/p52-test-01-session-message-contract-matrix`
+- locking API and CLI append parity for appended, invalid-request, not-found, and terminal-session responses
+- normalizing CLI-local `database` context out of the shared append contract
+- validation:
+  - `make sync`
+  - `uv run pytest tests/test_session_message_append_contract_matrix.py tests/cli/test_cli_session_message_append.py tests/api/test_http_app.py tests/api/test_routes.py`
+  - `uv run ruff check tests/test_session_message_append_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
 ## 2026-07-02 Phase 52 Session Message Append CLI
 
 - claimed `P52-CLI-01` on `codex/p52-cli-01-session-message-append`
