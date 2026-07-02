@@ -42,6 +42,154 @@ def test_memory_candidate_extraction_deduplicates_matching_successful_tool_runs(
     assert result.events[0].payload["repo_id"] == "zebra-agent"
 
 
+def test_memory_candidate_extraction_reads_project_rule_from_agents_local_commands() -> None:
+    session = _completed_session()
+    service = MemoryCandidateExtractionService(_InMemoryMemoryStore())
+
+    result = service.extract(
+        session=session,
+        events=[
+            _tool_event(
+                session=session,
+                sequence=4,
+                tool_name="files.read",
+                output="""# Zebra Agent Repository Rules
+
+## Local Commands
+
+- `make sync`
+- `make test`
+- `make check`
+
+## Definition Of Done
+""",
+                metadata={
+                    "path": "AGENTS.md",
+                    "byte_count": 120,
+                    "truncated": False,
+                },
+            )
+        ],
+        next_sequence=5,
+        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
+    )
+
+    assert len(result.records) == 1
+    assert result.records[0].memory_type is MemoryType.PROJECT_RULE
+    assert result.records[0].text == (
+        "Use the repo default commands: `make sync`, `make test`, `make check`."
+    )
+    assert result.events[0].payload["memory_type"] == "project_rule"
+
+
+def test_memory_candidate_extraction_reads_architecture_fact_from_agents_package_rules() -> None:
+    session = _completed_session()
+    service = MemoryCandidateExtractionService(_InMemoryMemoryStore())
+
+    result = service.extract(
+        session=session,
+        events=[
+            _tool_event(
+                session=session,
+                sequence=4,
+                tool_name="files.read",
+                output="""# Zebra Agent Repository Rules
+
+### packages/
+
+- packages may depend on `agent-core`
+- `agent-core` must not depend on other `agent-*` packages
+""",
+                metadata={
+                    "path": "AGENTS.md",
+                    "byte_count": 140,
+                    "truncated": False,
+                },
+            )
+        ],
+        next_sequence=5,
+        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
+    )
+
+    assert len(result.records) == 1
+    assert result.records[0].memory_type is MemoryType.ARCHITECTURE_FACT
+    assert result.records[0].text == (
+        "Workspace packages may depend on `agent-core`, but `agent-core` must not "
+        "depend on other `agent-*` packages."
+    )
+    assert result.events[0].payload["memory_type"] == "architecture_fact"
+
+
+def test_memory_candidate_extraction_reads_multiple_doc_candidates_from_agents() -> None:
+    session = _completed_session()
+    service = MemoryCandidateExtractionService(_InMemoryMemoryStore())
+
+    result = service.extract(
+        session=session,
+        events=[
+            _tool_event(
+                session=session,
+                sequence=4,
+                tool_name="files.read",
+                output="""# Zebra Agent Repository Rules
+
+## Local Commands
+
+- `make sync`
+- `make check`
+
+### packages/
+
+- packages may depend on `agent-core`
+- `agent-core` must not depend on other `agent-*` packages
+""",
+                metadata={
+                    "path": "AGENTS.md",
+                    "byte_count": 220,
+                    "truncated": False,
+                },
+            )
+        ],
+        next_sequence=5,
+        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
+    )
+
+    assert [record.memory_type for record in result.records] == [
+        MemoryType.PROJECT_RULE,
+        MemoryType.ARCHITECTURE_FACT,
+    ]
+    assert [event.payload["memory_type"] for event in result.events] == [
+        "project_rule",
+        "architecture_fact",
+    ]
+
+
+def test_memory_candidate_extraction_reads_preference_from_explicit_user_message() -> None:
+    session = _completed_session()
+    service = MemoryCandidateExtractionService(_InMemoryMemoryStore())
+
+    result = service.extract(
+        session=session,
+        events=[
+            SessionEvent.create(
+                session_id=session.session_id,
+                sequence=4,
+                event_type=EventType.USER_MESSAGE_RECEIVED,
+                actor=EventActor.USER,
+                payload={"content": "Preference: Prefer concise CLI output."},
+                created_at=_now(),
+            )
+        ],
+        next_sequence=5,
+        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
+    )
+
+    assert len(result.records) == 1
+    assert result.records[0].memory_type is MemoryType.PREFERENCE
+    assert result.records[0].text == "Prefer concise CLI output."
+    assert result.events[0].payload["memory_type"] == "preference"
+
+
 def test_memory_candidate_extraction_skips_sensitive_or_failed_commands() -> None:
     session = _completed_session()
     service = MemoryCandidateExtractionService(_InMemoryMemoryStore())
@@ -138,6 +286,7 @@ def _tool_event(
     tool_name: str,
     metadata: dict[str, object],
     status: str = "executed",
+    output: str = "ok",
 ) -> SessionEvent:
     return SessionEvent.create(
         session_id=session.session_id,
@@ -148,7 +297,7 @@ def _tool_event(
             "attempt_number": 1,
             "tool_name": tool_name,
             "status": status,
-            "output": "ok",
+            "output": output,
             "metadata": metadata,
         },
         created_at=_now(),

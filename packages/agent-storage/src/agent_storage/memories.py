@@ -84,6 +84,37 @@ class SQLiteMemoryStore(MemoryStorePort):
             )
         return record
 
+    def get(self, memory_id: MemoryId) -> MemoryRecord | None:
+        with self._database.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    memory_id,
+                    memory_type,
+                    text,
+                    confidence,
+                    status,
+                    visibility,
+                    tenant_id,
+                    user_id,
+                    repo_id,
+                    source_session_id,
+                    source_event_start,
+                    source_event_end,
+                    source_commit_sha,
+                    superseded_by,
+                    expires_at,
+                    created_at,
+                    updated_at
+                FROM memory_records
+                WHERE memory_id = ?
+                """,
+                (str(memory_id),),
+            ).fetchone()
+        if row is None:
+            return None
+        return _memory_record_from_row(row)
+
     def list(self, query: MemoryQuery) -> list[MemoryRecord]:
         clauses = ["1 = 1"]
         parameters: list[object] = []

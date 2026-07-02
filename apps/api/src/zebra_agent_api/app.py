@@ -9,6 +9,7 @@ from agent_core.application import (
     ApprovalDecisionAction,
     ApprovalDecisionCommand,
     ApprovalDecisionService,
+    MemoryReviewAction,
     SessionBootstrapCommand,
     SessionBootstrapService,
     SessionMessageAppendCommand,
@@ -29,6 +30,7 @@ from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
+    list_confirmed_repo_memories,
 )
 from zebra_agent_config import ZebraAgentSettings, load_settings
 from zebra_agent_worker import (
@@ -49,6 +51,7 @@ from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_artifact_control import SessionArtifactControlApi
 from zebra_agent_api.session_commit import SessionCommitApi
 from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
+from zebra_agent_api.session_memory_control import review_session_memory
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
     parse_append_session_message_payload,
@@ -91,6 +94,9 @@ class ZebraAgentApi:
     def get_session_diff(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session_diff(session_id)
 
+    def get_session_memory(self, session_id: str) -> ApiResponse:
+        return SessionReadApi(self.database_path).get_session_memory(session_id)
+
     def get_session_artifacts(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session_artifacts(session_id)
 
@@ -114,6 +120,36 @@ class ZebraAgentApi:
 
     def get_session_delivery_audit(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session_delivery_audit(session_id)
+
+    def confirm_session_memory(
+        self,
+        session_id: str,
+        memory_id: str,
+        payload: dict[str, object],
+    ) -> ApiResponse:
+        return review_session_memory(
+            database_path=self.database_path,
+            session_id=session_id,
+            memory_id=memory_id,
+            payload=payload,
+            action=MemoryReviewAction.CONFIRM,
+            decision="confirm",
+        )
+
+    def expire_session_memory(
+        self,
+        session_id: str,
+        memory_id: str,
+        payload: dict[str, object],
+    ) -> ApiResponse:
+        return review_session_memory(
+            database_path=self.database_path,
+            session_id=session_id,
+            memory_id=memory_id,
+            payload=payload,
+            action=MemoryReviewAction.EXPIRE,
+            decision="expire",
+        )
 
     def commit_session(
         self,
@@ -312,12 +348,17 @@ class ZebraAgentApi:
 
     def _create_and_execute_session(self, parsed: CreateSessionPayload) -> ApiResponse:
         workspace_root = Path(str(parsed["workspace"])).expanduser().resolve()
+        confirmed_memories = list_confirmed_repo_memories(
+            self.database_path,
+            repo_id=str(workspace_root),
+        )
         result = run_local_harness(
             prompt=str(parsed["prompt"]),
             title=str(parsed["title"]),
             workspace_root=workspace_root,
             model_gateway=build_model_gateway(self.settings),
             policy_profile=PolicyProfile(str(parsed["policy_profile"])),
+            confirmed_memories=confirmed_memories,
         )
         event_store = SQLiteEventStore(self.database_path)
         for event in result.events:

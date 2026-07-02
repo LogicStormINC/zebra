@@ -12,12 +12,13 @@ from agent_core.harness import (
     HarnessModelStep,
     HarnessTask,
 )
-from agent_core.ports.context_compiler import RuntimeEvidenceInput
+from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 
 
 class RecordingContextCompiler:
     def __init__(self) -> None:
         self.calls: list[tuple[RuntimeEvidenceInput, ...]] = []
+        self.memory_calls: list[tuple[ConfirmedMemoryInput, ...]] = []
 
     def build_system_prompt(
         self,
@@ -26,8 +27,10 @@ class RecordingContextCompiler:
         workspace_root: Path,
         max_tokens: int,
         runtime_evidence: tuple[RuntimeEvidenceInput, ...] = (),
+        confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
     ) -> str | None:
         self.calls.append(runtime_evidence)
+        self.memory_calls.append(confirmed_memories)
         return f"evidence={len(runtime_evidence)}"
 
 
@@ -99,6 +102,7 @@ def test_retry_attempt_receives_prior_runtime_evidence(tmp_path: Path) -> None:
 
     assert seen_evidence_sizes == [0, 5]
     assert len(compiler.calls) == 1
+    assert compiler.memory_calls == [()]
     assert [evidence.kind for evidence in compiler.calls[0]] == [
         "conversation_summary",
         "planner_summary",

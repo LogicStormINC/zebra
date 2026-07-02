@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from agent_core.domain.memories import MemoryType
+
 
 @dataclass(frozen=True)
 class RuntimeEvidenceInput:
@@ -20,6 +22,16 @@ class RuntimeEvidenceInput:
             raise ValueError("artifact_uri must not be blank when set")
 
 
+@dataclass(frozen=True)
+class ConfirmedMemoryInput:
+    memory_type: MemoryType
+    text: str
+
+    def __post_init__(self) -> None:
+        if not self.text.strip():
+            raise ValueError("text must not be blank")
+
+
 class ContextCompilerPort(Protocol):
     def build_system_prompt(
         self,
@@ -28,4 +40,5 @@ class ContextCompilerPort(Protocol):
         workspace_root: Path,
         max_tokens: int,
         runtime_evidence: tuple[RuntimeEvidenceInput, ...] = (),
+        confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
     ) -> str | None: ...

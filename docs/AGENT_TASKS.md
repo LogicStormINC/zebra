@@ -6892,3 +6892,192 @@ the emitted session events for later inspection.
 - [x] Worker execution persists `procedure` memory candidates after successful session completion.
 - [x] Completed session event streams include `memory_candidate_extracted` after `session_completed`.
 - [x] Failed sessions do not emit or persist memory candidates.
+
+### P57-MEM-04 - Session Memory Read Surface
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OPERATOR`
+- Depends on: `P57-MEM-03`
+- Branch: `codex/p57-mem-02-memory-candidate-extraction`
+- Owned paths: `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose persisted session-scoped memory inventory over the existing local API and
+CLI read surfaces so operators can inspect candidate or confirmed repo memories
+without opening the SQLite store directly.
+
+#### Deliverables
+
+- `GET /sessions/{id}/memory` local API read surface
+- `zebra-agent memory <session_id>` local CLI read surface
+- cross-surface regression coverage for ok, missing-session, and unavailable-scope results
+
+#### Acceptance
+
+- [x] Session memory reads derive repo scope from the persisted session workspace root.
+- [x] API and CLI expose deterministic memory envelopes without leaking deleted records by default.
+- [x] Cross-surface tests cover successful readback, missing sessions, and missing workspace scope.
+
+### P57-MEM-05 - Memory Candidate Review Controls
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `OPERATOR`
+- Depends on: `P57-MEM-04`
+- Branch: `codex/p57-mem-02-memory-candidate-extraction`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add the first durable operator review controls for persisted memory candidates so
+local sessions can promote verified candidates to `confirmed` or mark stale
+candidates as `expired` without direct SQLite edits.
+
+#### Deliverables
+
+- core memory review service and durable review event contract
+- local API controls for confirm and expire decisions
+- local CLI memory review command with API-vs-CLI contract coverage
+
+#### Acceptance
+
+- [x] Only `candidate` memory records can be reviewed through the operator controls.
+- [x] Confirm and expire decisions persist updated memory status and append a durable session review event.
+- [x] API and CLI review surfaces match on success and invalid-state envelopes.
+
+### P57-MEM-06 - Confirmed Memory Context Injection
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P57-MEM-05`
+- Branch: `codex/p57-mem-02-memory-candidate-extraction`
+- Owned paths: `packages/agent-core/`, `packages/agent-context/`, `packages/agent-storage/`, `packages/agent-runtime/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Inject repo-scoped confirmed memory into the local context compiler so verified
+rules and procedures can influence subsequent harness runs without turning
+memory into a recovery dependency.
+
+#### Deliverables
+
+- confirmed-memory input path on the harness context-compiler contract
+- local confirmed-memory lookup helper for repo scope
+- runtime, API, CLI, and worker wiring that feeds confirmed memory into the system prompt
+
+#### Acceptance
+
+- [x] Confirmed repo memories render into the stable section of the compiled system prompt.
+- [x] Local harness execution paths use the real `LocalContextCompiler` instead of bypassing it.
+- [x] API and CLI execute paths prove confirmed memory can be loaded from SQLite and injected into model requests.
+
+### P57-MEM-07 - Confirmed Memory Ranking And Typed Prompt Labels
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P57-MEM-06`
+- Branch: `codex/p57-mem-02-memory-candidate-extraction`
+- Owned paths: `packages/agent-core/`, `packages/agent-context/`, `packages/agent-storage/`, `packages/agent-runtime/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Keep confirmed memory useful as the stable prompt section grows by preserving
+memory type semantics, ranking higher-signal records ahead of lower-signal
+ones, and deduplicating exact repeats before injection.
+
+#### Deliverables
+
+- typed confirmed-memory input on the context-compiler and harness contracts
+- deterministic repo-memory ranking helper with exact duplicate collapse
+- memory-type-aware stable prompt titles across local execution surfaces
+
+#### Acceptance
+
+- [x] Confirmed repo memory retrieval preserves `memory_type` instead of flattening records to plain text.
+- [x] Repo memory injection prefers higher-priority memory types and drops exact normalized duplicates before prompt assembly.
+- [x] Stable prompt rendering labels confirmed memories by type, such as `Project Rule` and `Procedure`.
+
+### P57-MEM-08 - Confirmed Memory Supersession On Review
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P57-MEM-07`
+- Branch: `codex/p57-mem-02-memory-candidate-extraction`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Prevent repo memory review from accumulating competing confirmed records of the
+same type and scope by recording a deterministic supersession outcome when a
+newer memory is confirmed.
+
+#### Deliverables
+
+- confirm-review conflict rule for prior confirmed memories in the same scope
+- durable `superseded` state transition updates during confirm review
+- API and CLI parity coverage for supersession payloads and persisted state
+
+#### Acceptance
+
+- [x] Confirming a candidate memory supersedes prior `confirmed` memories with the same scope and `memory_type`.
+- [x] Memory review events record superseded memory identifiers when a confirm decision replaces older records.
+- [x] API and CLI review surfaces preserve parity for both ordinary confirm responses and supersession cases.
+
+### P57-MEM-09 - Doc-Derived Project Rule Candidate Extraction
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P57-MEM-08`
+- Branch: `codex/p57-mem-02-memory-candidate-extraction`
+- Owned paths: `packages/agent-core/`, `apps/worker/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Broaden memory extraction beyond `procedure` without adding a new ingestion
+surface by deriving a narrow `project_rule` candidate from successful reads of
+the repository governance document.
+
+#### Deliverables
+
+- deterministic `files.read` extraction path for root `AGENTS.md`
+- `project_rule` candidate derived from the `Local Commands` section
+- worker coverage proving doc-derived project-rule candidates persist on completed runs
+
+#### Acceptance
+
+- [x] Successful reads of root `AGENTS.md` can emit a `project_rule` candidate without relying on model summarization.
+- [x] The extracted rule is constrained to explicit `Local Commands` entries and skips truncated file reads.
+- [x] Worker execution persists the new `project_rule` candidate type and emits `memory_candidate_extracted` with the correct type.
+
+### P57-MEM-10 - Doc-Derived Architecture Fact Candidate Extraction
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P57-MEM-09`
+- Branch: `codex/p57-mem-02-memory-candidate-extraction`
+- Owned paths: `packages/agent-core/`, `apps/worker/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Continue broadening derived memory beyond `procedure` and `project_rule` by
+capturing one narrow class of module-boundary knowledge from the repo
+governance document without introducing semantic summarization.
+
+#### Deliverables
+
+- `files.read` extraction path that can emit multiple doc-derived candidates from root `AGENTS.md`
+- deterministic `architecture_fact` candidate derived from the package dependency boundary rules
+- worker coverage proving one governance read can persist both `project_rule` and `architecture_fact` candidates
+
+#### Acceptance
+
+- [x] Successful reads of root `AGENTS.md` can emit an `architecture_fact` candidate from explicit package dependency rules.
+- [x] A single governance-document read may persist multiple candidate types when distinct deterministic sections are present.
+- [x] Worker execution persists `architecture_fact` candidates and emits `memory_candidate_extracted` with the correct type.

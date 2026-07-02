@@ -33,6 +33,79 @@
   - `uv run ruff check apps/worker/src/zebra_agent_worker/execution.py tests/worker/test_execution.py`
   - `make check`
 
+## 2026-07-02 Phase 57 Session Memory Read Surface
+
+- claimed `P57-MEM-04` on `codex/p57-mem-02-memory-candidate-extraction`
+- exposing persisted session memory inventory over the local API and CLI without adding write or review semantics yet
+- keeping this slice session-scoped by deriving repo scope from the persisted session workspace root
+- validation:
+  - `uv run pytest tests/api/test_session_memory.py tests/cli/test_cli_session_memory.py tests/test_session_memory_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/session_memory_read.py tests/api/test_session_memory.py tests/cli/test_cli_session_memory.py tests/test_session_memory_contract_matrix.py`
+  - `make check`
+
+## 2026-07-02 Phase 57 Memory Candidate Review Controls
+
+- claimed `P57-MEM-05` on `codex/p57-mem-02-memory-candidate-extraction`
+- added the first durable operator review path for memory candidates with confirm and expire decisions
+- kept the state machine intentionally narrow: only `candidate -> confirmed` and `candidate -> expired`, with `memory_review_recorded` appended onto the source session stream
+- split CLI parser construction into `cli_parser.py` so `cli.py` returns below the repository hard file limit
+- validation:
+  - `uv run pytest tests/agent_core/test_memory_reviews.py tests/agent_core/test_event_contracts.py tests/agent_storage/test_sqlite_memories.py tests/api/test_memory_review.py tests/cli/test_cli_memory_review.py tests/test_session_memory_review_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-02 Phase 57 Confirmed Memory Context Injection
+
+- claimed `P57-MEM-06` on `codex/p57-mem-02-memory-candidate-extraction`
+- wired confirmed repo memory into the stable section of the local context compiler prompt
+- corrected a mainline gap by routing local harness execution through `LocalContextCompiler` instead of bypassing it
+- kept retrieval intentionally narrow to repo-scoped `confirmed` memory text so memory remains an additive hint, not a recovery dependency
+- validation:
+  - `uv run pytest tests/agent_context/test_adapter.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_harness_runtime_evidence.py tests/agent_runtime/test_harness_runner.py tests/agent_storage/test_sqlite_memories.py tests/api/test_api_app.py -k confirmed_memory tests/cli/test_cli_commands.py -k confirmed_memory`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-02 Phase 57 Confirmed Memory Ranking And Typed Prompt Labels
+
+- claimed `P57-MEM-07` on `codex/p57-mem-02-memory-candidate-extraction`
+- upgraded confirmed-memory injection from plain strings to typed inputs so prompt assembly can preserve memory semantics
+- ranked repo-scoped confirmed memories by type priority, then recency, and collapsed normalized duplicates before prompt injection
+- updated stable prompt labels from generic confirmed-memory numbering to type-aware titles such as `Project Rule` and `Procedure`
+- validation:
+  - `uv run pytest tests/agent_storage/test_sqlite_memories.py tests/agent_context/test_adapter.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_harness_runtime_evidence.py tests/agent_runtime/test_harness_runner.py`
+  - `uv run pytest tests/api/test_api_app.py -k confirmed_memory tests/cli/test_cli_commands.py -k confirmed_memory`
+  - `uv run mypy packages apps`
+
+## 2026-07-02 Phase 57 Confirmed Memory Supersession On Review
+
+- claimed `P57-MEM-08` on `codex/p57-mem-02-memory-candidate-extraction`
+- added deterministic supersession so confirming a candidate memory retires older confirmed memories with the same scope and `memory_type`
+- kept the conflict rule intentionally narrow to existing `confirmed` records and reused the existing `memory_review_recorded` event instead of adding a new review event type
+- extended API and CLI review responses to report `superseded_memory_ids` while preserving success and invalid-state parity
+- validation:
+  - `uv run pytest tests/agent_core/test_memory_reviews.py tests/agent_core/test_event_contracts.py tests/api/test_memory_review.py tests/cli/test_cli_memory_review.py tests/test_session_memory_review_contract_matrix.py`
+  - `uv run mypy packages apps`
+
+## 2026-07-02 Phase 57 Doc-Derived Project Rule Candidate Extraction
+
+- claimed `P57-MEM-09` on `codex/p57-mem-02-memory-candidate-extraction`
+- broadened memory extraction beyond `procedure` by adding a deterministic `project_rule` candidate path on successful `files.read` of root `AGENTS.md`
+- kept the extraction intentionally narrow to the explicit `Local Commands` section and skipped truncated governance reads to avoid model-authored summaries or partial-doc rules
+- worker persistence now covers both tool-derived `procedure` candidates and doc-derived `project_rule` candidates
+- validation:
+  - `uv run pytest tests/agent_core/test_memory_candidates.py tests/worker/test_execution.py -k 'memory_candidate or project_rule or agents_read'`
+  - `uv run mypy packages apps`
+
+## 2026-07-02 Phase 57 Doc-Derived Architecture Fact Candidate Extraction
+
+- claimed `P57-MEM-10` on `codex/p57-mem-02-memory-candidate-extraction`
+- extended the same root `AGENTS.md` read path so one deterministic governance read can emit multiple memory candidates
+- added a narrow `architecture_fact` extraction rule from the explicit package dependency boundary bullets around `agent-core`
+- kept the extraction rule text literal and section-scoped instead of attempting broader module summarization
+- validation:
+  - `uv run pytest tests/agent_core/test_memory_candidates.py tests/worker/test_execution.py -k 'memory_candidate or project_rule or architecture_fact or agents_read'`
+  - `uv run mypy packages apps`
+
 ## 2026-07-02 Phase 56 Session Resume Execute Closeout
 
 - claimed `P56-CLOSE-01` on `codex/p56-closeout-next-plan`

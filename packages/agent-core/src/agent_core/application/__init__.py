@@ -10,6 +10,13 @@ from agent_core.application.memory_candidates import (
     MemoryCandidateExtractionResult,
     MemoryCandidateExtractionService,
 )
+from agent_core.application.memory_reviews import (
+    MemoryReviewAction,
+    MemoryReviewCommand,
+    MemoryReviewResult,
+    MemoryReviewService,
+    memory_review_scope_query,
+)
 from agent_core.application.session_bootstrap import (
     BootstrappedSession,
     SessionBootstrapCommand,
@@ -28,6 +35,11 @@ __all__ = [
     "MemoryCandidateExtractionCommand",
     "MemoryCandidateExtractionResult",
     "MemoryCandidateExtractionService",
+    "MemoryReviewAction",
+    "MemoryReviewCommand",
+    "MemoryReviewResult",
+    "MemoryReviewService",
+    "memory_review_scope_query",
     "SessionBootstrapCommand",
     "SessionBootstrapService",
     "SessionMessageAppendCommand",

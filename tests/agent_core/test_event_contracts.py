@@ -56,6 +56,25 @@ def test_validate_event_payload_accepts_memory_candidate_extracted_shape() -> No
     assert payload["repo_id"] == "zebra-agent"
 
 
+def test_validate_event_payload_accepts_memory_review_recorded_shape() -> None:
+    payload = validate_event_payload(
+        EventType.MEMORY_REVIEW_RECORDED,
+        {
+            "memory_id": "mem-1",
+            "memory_type": "procedure",
+            "previous_status": "candidate",
+            "status": "confirmed",
+            "operator": "alice",
+            "reason": "validated locally",
+            "superseded_memory_ids": ["mem-0"],
+        },
+    )
+
+    assert payload["status"] == "confirmed"
+    assert payload["operator"] == "alice"
+    assert payload["superseded_memory_ids"] == ["mem-0"]
+
+
 def test_validate_event_payload_rejects_unknown_fields() -> None:
     with pytest.raises(
         EventPayloadValidationError,

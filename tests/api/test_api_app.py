@@ -1,14 +1,16 @@
 from pathlib import Path
+from uuid import UUID
 
 import zebra_agent_api.app as api_app_module
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import SessionId, new_message_id, new_tool_call_id
+from agent_core.domain.identifiers import MemoryId, SessionId, new_message_id, new_tool_call_id
+from agent_core.domain.memories import MemoryRecord, MemoryStatus, MemoryType, MemoryVisibility
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_core.domain.tools import ToolCall
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
-from agent_storage import SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
+from agent_storage import SQLiteMemoryStore, SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
 from zebra_agent_api.app import create_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
@@ -369,6 +371,62 @@ def test_api_create_session_execute_runs_builtin_tool(
             ],
         }
     ]
+
+
+def test_api_create_session_execute_injects_confirmed_memory_into_system_prompt(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    requests: list[tuple[SessionMessage, ...]] = []
+    SQLiteMemoryStore(database_path).upsert(
+        MemoryRecord(
+            memory_id=MemoryId(UUID("00000000-0000-0000-0000-000000000141")),
+            memory_type=MemoryType.PROCEDURE,
+            text="Run make check before push.",
+            confidence=0.9,
+            status=MemoryStatus.CONFIRMED,
+            visibility=MemoryVisibility.REPO,
+            repo_id=str(tmp_path.resolve()),
+            source_session_id=SessionId(UUID("00000000-0000-0000-0000-000000000042")),
+            created_at=_created_at(),
+            updated_at=_created_at(),
+        )
+    )
+
+    def fake_build_model_gateway(settings: ZebraAgentSettings):
+        del settings
+
+        class RecordingGateway:
+            def complete(self, messages: list[SessionMessage]) -> ModelCompletion:
+                requests.append(tuple(messages))
+                return ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="API execution complete.",
+                        created_at=_created_at(),
+                    )
+                )
+
+        return RecordingGateway()
+
+    monkeypatch.setattr(api_app_module, "build_model_gateway", fake_build_model_gateway)
+
+    response = create_app(database_path, settings=_settings(database_path)).create_session(
+        {
+            "prompt": "Inspect the workspace",
+            "title": "API execute session with memory",
+            "workspace": str(tmp_path),
+            "execute": True,
+        }
+    )
+
+    assert response.status_code == 201
+    assert requests
+    assert requests[0][0].role is MessageRole.SYSTEM
+    assert "Procedure 1" in requests[0][0].content
+    assert "Run make check before push." in requests[0][0].content
 
 
 def test_api_create_session_rejects_invalid_request(tmp_path: Path) -> None:

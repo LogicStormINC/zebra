@@ -5,10 +5,17 @@
 - Active phase: `Phase 57 - Local Memory Store Foundation`
 - Repository status: `phase 57 in progress`
 - Current focus:
+  - `P57-MEM-10` is complete on `codex/p57-mem-02-memory-candidate-extraction` with deterministic `architecture_fact` candidate extraction from root `AGENTS.md` package-boundary rules
+  - `P57-MEM-09` is complete on `codex/p57-mem-02-memory-candidate-extraction` with deterministic `project_rule` candidate extraction from successful root `AGENTS.md` reads
+  - `P57-MEM-08` is complete on `codex/p57-mem-02-memory-candidate-extraction` with deterministic supersession of older confirmed memories during confirm review plus API/CLI parity coverage
+  - `P57-MEM-07` is complete on `codex/p57-mem-02-memory-candidate-extraction` with typed confirmed-memory inputs, deterministic repo-memory ranking, normalized duplicate collapse, and type-aware stable prompt labels
+  - `P57-MEM-06` is complete on `codex/p57-mem-02-memory-candidate-extraction` with confirmed repo memory retrieval and stable-section context injection wired across local harness execution paths
+  - `P57-MEM-05` is complete on `codex/p57-mem-02-memory-candidate-extraction` with durable confirm and expire controls for session-scoped memory candidates over the local API and CLI
+  - `P57-MEM-04` is complete on `codex/p57-mem-02-memory-candidate-extraction` with session-scoped memory inventory readback over the local API and CLI
   - `P57-MEM-03` is complete on `codex/p57-mem-02-memory-candidate-extraction` with deterministic `procedure` memory candidate persistence wired into the worker completion path
   - `P57-MEM-02` is complete on `codex/p57-mem-02-memory-candidate-extraction` with deterministic `procedure` memory candidate extraction from successful `command.run` and `tests.run` session events
   - `P57-MEM-01` is complete on `codex/p57-mem-01-memory-store-foundation` with typed memory models, a core store Port, and a local SQLite memory adapter without making Redis a kernel dependency
-  - the next memory follow-up lane is not yet defined
+  - the next memory follow-up lane is broader extraction for `preference`
   - `P56-CLOSE-01` is complete on `codex/p56-closeout-next-plan` with session resume execute phase-closure evidence on `docs/Phase56_Session_Resume_Execute_CLI_And_Operator_Parity_验收记录.md`
   - `P56-TEST-01` is complete on `codex/p56-test-01-session-resume-execute-contract-matrix` with resume execute parity coverage and CLI-local `database` normalization
   - `P56-CLI-01` is complete on `codex/p56-cli-01-session-resume-execute-parity` with CLI resume execute failure shaping aligned to API resume execution semantics

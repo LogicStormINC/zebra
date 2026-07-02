@@ -111,6 +111,8 @@ def _classify_item(item: ContextItem) -> PromptSectionKind:
         ContextItemKind.TOOL_OUTPUT_SUMMARY,
     }:
         return PromptSectionKind.DYNAMIC
+    if item.kind is ContextItemKind.CONFIRMED_MEMORY:
+        return PromptSectionKind.STABLE
     if item.kind is ContextItemKind.REPO_MAP:
         return PromptSectionKind.SEMI_STABLE
     locator = item.provenance.locator.lower()

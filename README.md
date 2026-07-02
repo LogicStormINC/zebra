@@ -104,6 +104,13 @@ The next milestone is currently not defined yet; phase 56 closeout and next plan
 - Phase 57 now has a local memory-store foundation for typed derived memory records, a core store Port, and a local SQLite adapter
 - Phase 57 is continuing with deterministic extraction of `procedure` memory candidates from successful tool executions
 - Phase 57 is now wiring memory candidate persistence into the worker completion path for completed local sessions
+- `GET /sessions/{id}/memory` and `zebra-agent memory <session_id>` are now available for local session memory inspection
+- `POST /sessions/{id}/memory/{memory_id}/confirm`, `POST /sessions/{id}/memory/{memory_id}/expire`, and `zebra-agent memory-review <session_id> <memory_id>` are now available for local memory candidate review
+- confirmed repo memory now renders into the stable system-prompt context for local API, CLI, runtime, and worker harness execution
+- confirmed repo memory injection now keeps `memory_type`, ranks higher-priority records first, removes normalized duplicates, and labels prompt sections by memory type
+- confirming a newer memory now supersedes older confirmed memories of the same scope and type, and review responses expose the affected memory ids
+- successful reads of root `AGENTS.md` can now emit a narrow `project_rule` memory candidate from the `Local Commands` section
+- the same root `AGENTS.md` read path can now also emit a narrow `architecture_fact` candidate from explicit package dependency boundary rules
 
 Read in this order:
 

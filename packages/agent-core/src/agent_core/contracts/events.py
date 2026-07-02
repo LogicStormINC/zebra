@@ -151,6 +151,44 @@ class MemoryCandidateExtractedPayload(BaseModel):
         return stripped
 
 
+class MemoryReviewRecordedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    memory_id: str
+    memory_type: str
+    previous_status: str
+    status: str
+    operator: str
+    reason: str
+    superseded_memory_ids: list[str] = []
+
+    @field_validator(
+        "memory_id",
+        "memory_type",
+        "previous_status",
+        "status",
+        "operator",
+        "reason",
+    )
+    @classmethod
+    def ensure_field_not_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("field must not be blank")
+        return stripped
+
+    @field_validator("superseded_memory_ids")
+    @classmethod
+    def ensure_superseded_ids_are_non_blank(cls, value: list[str]) -> list[str]:
+        normalized: list[str] = []
+        for item in value:
+            stripped = item.strip()
+            if not stripped:
+                raise ValueError("field must not be blank")
+            normalized.append(stripped)
+        return normalized
+
+
 class SessionSuspendedPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -191,6 +229,7 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SESSION_RESUMED: SessionResumedPayload,
     EventType.TOOL_EXECUTION_COMPLETED: ToolExecutionCompletedPayload,
     EventType.MEMORY_CANDIDATE_EXTRACTED: MemoryCandidateExtractedPayload,
+    EventType.MEMORY_REVIEW_RECORDED: MemoryReviewRecordedPayload,
 }
 
 

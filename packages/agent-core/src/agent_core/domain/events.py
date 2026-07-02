@@ -32,6 +32,7 @@ class EventType(StrEnum):
     PATCH_APPLIED = "patch_applied"
     TESTS_COMPLETED = "tests_completed"
     MEMORY_CANDIDATE_EXTRACTED = "memory_candidate_extracted"
+    MEMORY_REVIEW_RECORDED = "memory_review_recorded"
     SESSION_SUSPENDED = "session_suspended"
     SESSION_RESUMED = "session_resumed"
     SESSION_COMPLETED = "session_completed"

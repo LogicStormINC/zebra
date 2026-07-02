@@ -6,7 +6,7 @@ from typing import Any
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session
-from agent_core.ports.context_compiler import RuntimeEvidenceInput
+from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 
 
 class HarnessAttemptOutcome(StrEnum):
@@ -33,6 +33,7 @@ class HarnessTask:
     workspace_root: Path | None = None
     context_token_budget: int = 200
     runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
+    confirmed_memories: tuple[ConfirmedMemoryInput, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.title.strip():
@@ -49,6 +50,13 @@ class HarnessTask:
             raise ValueError("harness task workspace_root must be absolute when set")
         if self.context_token_budget <= 0:
             raise ValueError("harness task context_token_budget must be positive")
+        for memory in self.confirmed_memories:
+            if not isinstance(memory, ConfirmedMemoryInput):
+                raise ValueError(
+                    "harness task confirmed_memories must contain ConfirmedMemoryInput values"
+                )
+            if not memory.text.strip():
+                raise ValueError("harness task confirmed_memories must not contain blanks")
 
 
 @dataclass(frozen=True)

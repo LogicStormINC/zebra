@@ -6,7 +6,8 @@ from uuid import UUID
 import pytest
 import zebra_agent_cli.cli as cli_module
 from agent_core.domain.events import EventType
-from agent_core.domain.identifiers import SessionId, new_message_id, new_tool_call_id
+from agent_core.domain.identifiers import MemoryId, SessionId, new_message_id, new_tool_call_id
+from agent_core.domain.memories import MemoryRecord, MemoryStatus, MemoryType, MemoryVisibility
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
@@ -15,6 +16,7 @@ from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
+    SQLiteMemoryStore,
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
 )
@@ -235,6 +237,75 @@ def test_cli_run_command_execute_runs_file_read_tool(
             ],
         }
     ]
+
+
+def test_cli_run_command_execute_injects_confirmed_memory_into_system_prompt(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    requests: list[tuple[SessionMessage, ...]] = []
+    SQLiteMemoryStore(database_path).upsert(
+        MemoryRecord(
+            memory_id=MemoryId(UUID("00000000-0000-0000-0000-000000000142")),
+            memory_type=MemoryType.PROCEDURE,
+            text="Run make check before push.",
+            confidence=0.9,
+            status=MemoryStatus.CONFIRMED,
+            visibility=MemoryVisibility.REPO,
+            repo_id=str(tmp_path.resolve()),
+            source_session_id=SessionId(UUID("00000000-0000-0000-0000-000000000043")),
+            created_at=_created_at(),
+            updated_at=_created_at(),
+        )
+    )
+
+    def fake_build_model_gateway(settings: ZebraAgentSettings):
+        del settings
+
+        class RecordingGateway:
+            def complete(self, messages: list[SessionMessage]) -> ModelCompletion:
+                requests.append(tuple(messages))
+                return ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="CLI execution complete.",
+                        created_at=_created_at(),
+                    ),
+                    call_metadata=ModelCallMetadata(
+                        provider="test",
+                        model_name="test-model",
+                        latency_ms=7,
+                        usage=ModelUsage(total_tokens=12),
+                    ),
+                )
+
+        return RecordingGateway()
+
+    monkeypatch.setattr(cli_module, "build_model_gateway", fake_build_model_gateway)
+    monkeypatch.setattr("zebra_agent_cli.execution.build_model_gateway", fake_build_model_gateway)
+
+    result = execute(
+        [
+            "run",
+            "Inspect workspace",
+            "--title",
+            "CLI execute with memory",
+            "--workspace",
+            str(tmp_path),
+            "--execute",
+            "--database",
+            str(database_path),
+        ],
+        settings=_settings(database_path),
+    )
+
+    assert result.payload["executed"] is True
+    assert requests
+    assert requests[0][0].role is MessageRole.SYSTEM
+    assert "Procedure 1" in requests[0][0].content
+    assert "Run make check before push." in requests[0][0].content
 
 
 def test_cli_resume_command_reads_local_session(tmp_path: Path) -> None:

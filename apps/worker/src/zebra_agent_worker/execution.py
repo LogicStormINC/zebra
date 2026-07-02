@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from agent_context import LocalContextCompiler
 from agent_core.application import (
     MemoryCandidateExtractionCommand,
     MemoryCandidateExtractionService,
@@ -17,6 +18,7 @@ from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.harness import (
     HarnessAttempt,
     HarnessContext,
+    HarnessModelStep,
     HarnessTask,
     SingleAttemptOrchestrator,
 )
@@ -32,6 +34,7 @@ from agent_storage import (
     SQLiteProjectionStore,
     SQLiteToolRunStore,
     SQLiteWorkspaceProjectionStore,
+    list_confirmed_repo_memories,
 )
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
@@ -134,6 +137,7 @@ class SessionExecutionService:
             build_model_gateway(self._settings),
             LocalPolicyEngine(profile=PolicyProfile(task.policy_profile)),
             LocalToolGateway(task.workspace_root),
+            model_step=HarnessModelStep(context_compiler=LocalContextCompiler()),
         ).run(
             HarnessContext(
                 task=HarnessTask(
@@ -143,6 +147,10 @@ class SessionExecutionService:
                     max_model_calls=task.max_model_calls,
                     max_tool_calls=task.max_tool_calls,
                     workspace_root=task.workspace_root,
+                    confirmed_memories=list_confirmed_repo_memories(
+                        self._database_path,
+                        repo_id=str(task.workspace_root.resolve()),
+                    ),
                 ),
                 session=claimed.recovery.session,
                 attempt=HarnessAttempt(number=1, started_at=started_at),

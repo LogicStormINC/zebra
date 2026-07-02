@@ -20,6 +20,10 @@ from agent_storage.idempotency import (
 )
 from agent_storage.leases import LeaseConflictError, SQLiteLeaseStore
 from agent_storage.memories import SQLiteMemoryStore
+from agent_storage.memory_lookup import (
+    list_confirmed_repo_memories,
+    list_confirmed_repo_memory_texts,
+)
 from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.projections import SQLiteProjectionStore
 from agent_storage.sqlite import SQLiteEventStore
@@ -32,7 +36,9 @@ __all__ = [
     "IdempotencyRecord",
     "LeaseConflictError",
     "SessionArtifact",
+    "list_confirmed_repo_memories",
     "SQLiteMemoryStore",
+    "list_confirmed_repo_memory_texts",
     "payload_for_artifact_uri",
     "serialize_artifact_lifecycle",
     "serialize_artifact_retrieval",

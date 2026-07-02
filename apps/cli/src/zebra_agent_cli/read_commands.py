@@ -7,6 +7,7 @@ from zebra_agent_cli.approval_read import list_approvals, read_approval_detail
 from zebra_agent_cli.cli_types import CliCommandResult, CommandName
 from zebra_agent_cli.delivery_audit_read import read_delivery_audit
 from zebra_agent_cli.session_diff_read import read_session_diff
+from zebra_agent_cli.session_memory_read import read_session_memory
 from zebra_agent_cli.session_stream_read import read_session_stream
 
 
@@ -31,6 +32,10 @@ def add_read_subparsers(subcommands: argparse._SubParsersAction[argparse.Argumen
     diff = subcommands.add_parser("diff", help="Read one session workspace diff.")
     diff.add_argument("session_id")
     diff.add_argument("--database")
+
+    memory = subcommands.add_parser("memory", help="Read one session memory inventory.")
+    memory.add_argument("session_id")
+    memory.add_argument("--database")
 
     stream = subcommands.add_parser("stream", help="Read one persisted session event stream.")
     stream.add_argument("session_id")
@@ -69,6 +74,15 @@ def read_command_result(
         return CliCommandResult(
             command="diff",
             payload=read_session_diff(
+                database_path=database_path,
+                session_id=session_id,
+            ),
+        )
+    if command == "memory":
+        assert session_id is not None
+        return CliCommandResult(
+            command="memory",
+            payload=read_session_memory(
                 database_path=database_path,
                 session_id=session_id,
             ),

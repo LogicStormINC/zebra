@@ -7,12 +7,14 @@ from urllib.parse import urlparse
 from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.memories import MemoryQuery, MemoryStatus
 from agent_runtime import WorkspaceDiffError, WorkspaceDiffService
 from agent_storage import (
     SessionArtifact,
     SQLiteArtifactPayloadStore,
     SQLiteArtifactStore,
     SQLiteEventStore,
+    SQLiteMemoryStore,
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
     payload_for_artifact_uri,
@@ -133,6 +135,43 @@ class SessionReadApi:
                 "clean": diff.clean,
                 "git_status": diff.git_status,
                 "diff": diff.diff,
+            },
+        )
+
+    def get_session_memory(self, session_id: str) -> ApiResponse:
+        session_key = SessionId(UUID(session_id))
+        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        if session is None:
+            return ApiResponse(
+                status_code=404,
+                body={"session_id": session_id, "status": "not_found"},
+            )
+        workspace_root = session_workspace_root(
+            SQLiteEventStore(self.database_path).list_for_session(session_key)
+        )
+        if workspace_root is None:
+            return conflict(
+                session_id=session_id,
+                status="memory_unavailable",
+                reason="session workspace_root is unavailable",
+            )
+        records = SQLiteMemoryStore(self.database_path).list(
+            MemoryQuery(
+                repo_id=str(workspace_root),
+                statuses=(
+                    MemoryStatus.CANDIDATE,
+                    MemoryStatus.CONFIRMED,
+                    MemoryStatus.SUPERSEDED,
+                    MemoryStatus.EXPIRED,
+                ),
+            )
+        )
+        return ApiResponse(
+            status_code=200,
+            body={
+                "session_id": session_id,
+                "repo_id": str(workspace_root),
+                "memories": [record.model_dump(mode="json") for record in records],
             },
         )
 

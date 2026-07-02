@@ -9,7 +9,11 @@ from agent_core.domain.memories import (
     MemoryType,
     MemoryVisibility,
 )
-from agent_storage import SQLiteMemoryStore
+from agent_storage import (
+    SQLiteMemoryStore,
+    list_confirmed_repo_memories,
+    list_confirmed_repo_memory_texts,
+)
 
 
 def test_sqlite_memory_store_roundtrips_repo_records_in_deterministic_order(
@@ -72,6 +76,24 @@ def test_sqlite_memory_store_updates_existing_record(tmp_path: Path) -> None:
     assert records[0].status is MemoryStatus.CONFIRMED
 
 
+def test_sqlite_memory_store_gets_record_by_id(tmp_path: Path) -> None:
+    store = SQLiteMemoryStore(tmp_path / "get.sqlite")
+    record = _record(
+        memory_type=MemoryType.PROCEDURE,
+        text="Run focused pytest first.",
+        visibility=MemoryVisibility.REPO,
+        repo_id="zebra-agent",
+        status=MemoryStatus.CANDIDATE,
+        updated_at=_now(),
+    )
+
+    store.upsert(record)
+
+    loaded = store.get(record.memory_id)
+
+    assert loaded == record
+
+
 def test_sqlite_memory_store_filters_by_user_scope_and_status(tmp_path: Path) -> None:
     store = SQLiteMemoryStore(tmp_path / "user-scope.sqlite")
     confirmed = _record(
@@ -101,6 +123,94 @@ def test_sqlite_memory_store_filters_by_user_scope_and_status(tmp_path: Path) ->
 
     assert [record.memory_id for record in confirmed_records] == [confirmed.memory_id]
     assert [record.memory_id for record in candidate_records] == [candidate.memory_id]
+
+
+def test_list_confirmed_repo_memory_texts_returns_confirmed_records_only(tmp_path: Path) -> None:
+    store = SQLiteMemoryStore(tmp_path / "memory-texts.sqlite")
+    store.upsert(
+        _record(
+            memory_type=MemoryType.PROJECT_RULE,
+            text="Use uv instead of Poetry.",
+            visibility=MemoryVisibility.REPO,
+            repo_id="zebra-agent",
+            status=MemoryStatus.CONFIRMED,
+            updated_at=_now(),
+        )
+    )
+    store.upsert(
+        _record(
+            memory_type=MemoryType.PROCEDURE,
+            text="Run make check before push.",
+            visibility=MemoryVisibility.REPO,
+            repo_id="zebra-agent",
+            status=MemoryStatus.CANDIDATE,
+            updated_at=_now() + timedelta(minutes=1),
+        )
+    )
+
+    texts = list_confirmed_repo_memory_texts(
+        tmp_path / "memory-texts.sqlite",
+        repo_id="zebra-agent",
+    )
+
+    assert texts == ("Use uv instead of Poetry.",)
+
+
+def test_list_confirmed_repo_memories_ranks_and_deduplicates_records(
+    tmp_path: Path,
+) -> None:
+    store = SQLiteMemoryStore(tmp_path / "memory-ranked.sqlite")
+    store.upsert(
+        _record(
+            memory_type=MemoryType.PROCEDURE,
+            text="Run make check before push.",
+            visibility=MemoryVisibility.REPO,
+            repo_id="zebra-agent",
+            status=MemoryStatus.CONFIRMED,
+            updated_at=_now(),
+        )
+    )
+    store.upsert(
+        _record(
+            memory_type=MemoryType.PROJECT_RULE,
+            text="Use uv instead of Poetry.",
+            visibility=MemoryVisibility.REPO,
+            repo_id="zebra-agent",
+            status=MemoryStatus.CONFIRMED,
+            updated_at=_now() + timedelta(minutes=1),
+        )
+    )
+    store.upsert(
+        _record(
+            memory_type=MemoryType.PROCEDURE,
+            text="Run   make check before push.",
+            visibility=MemoryVisibility.REPO,
+            repo_id="zebra-agent",
+            status=MemoryStatus.CONFIRMED,
+            updated_at=_now() + timedelta(minutes=2),
+        )
+    )
+    store.upsert(
+        _record(
+            memory_type=MemoryType.ARCHITECTURE_FACT,
+            text="Harness workers remain stateless.",
+            visibility=MemoryVisibility.REPO,
+            repo_id="zebra-agent",
+            status=MemoryStatus.CONFIRMED,
+            updated_at=_now() + timedelta(minutes=3),
+        )
+    )
+
+    memories = list_confirmed_repo_memories(
+        tmp_path / "memory-ranked.sqlite",
+        repo_id="zebra-agent",
+    )
+
+    assert [(memory.memory_type, memory.text) for memory in memories] == [
+        (MemoryType.PROJECT_RULE, "Use uv instead of Poetry."),
+        (MemoryType.ARCHITECTURE_FACT, "Harness workers remain stateless."),
+        (MemoryType.PROCEDURE, "Run   make check before push."),
+    ]
 
 
 def _record(

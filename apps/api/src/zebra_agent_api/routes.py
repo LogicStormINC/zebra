@@ -47,6 +47,10 @@ class RouteAdapter:
                 return self.app.suspend_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "resume":
                 return self.app.resume_session(parts[0], request.body or {})
+            if len(parts) == 4 and parts[1] == "memory" and parts[3] == "confirm":
+                return self.app.confirm_session_memory(parts[0], parts[2], request.body or {})
+            if len(parts) == 4 and parts[1] == "memory" and parts[3] == "expire":
+                return self.app.expire_session_memory(parts[0], parts[2], request.body or {})
             if len(parts) == 4 and parts[1] == "artifacts" and parts[3] == "prune":
                 return self.app.prune_session_artifact(parts[0], parts[2])
             if len(parts) == 2 and parts[1] == "commit":
@@ -71,6 +75,8 @@ class RouteAdapter:
                 return self.app.get_session_stream(parts[0])
             if len(parts) == 2 and parts[1] == "diff":
                 return self.app.get_session_diff(parts[0])
+            if len(parts) == 2 and parts[1] == "memory":
+                return self.app.get_session_memory(parts[0])
             if len(parts) == 2 and parts[1] == "artifacts":
                 return self.app.get_session_artifacts(parts[0])
             if len(parts) == 3 and parts[1] == "artifacts":
