@@ -1,5 +1,5 @@
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
@@ -20,6 +20,7 @@ from agent_storage import (
 )
 from zebra_agent_cli.cli import execute, main
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
+from zebra_agent_worker import WorkerExecutionError
 
 
 def test_cli_run_command_creates_local_session(
@@ -373,6 +374,173 @@ def test_cli_resume_command_execute_runs_worker_session(
     assert updated_session is not None
     assert updated_session.status is SessionStatus.COMPLETED
     assert SQLiteLeaseStore(database_path).get(session_id) is None
+
+
+def test_cli_resume_command_execute_reports_missing_session(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    result = execute(
+        [
+            "resume",
+            "00000000-0000-0000-0000-000000000001",
+            "--execute",
+            "--database",
+            str(database_path),
+        ],
+        settings=_settings(database_path),
+    )
+
+    assert result.command == "resume"
+    assert result.payload == {
+        "session_id": "00000000-0000-0000-0000-000000000001",
+        "database": str(database_path),
+        "status": "not_found",
+    }
+
+
+def test_cli_resume_command_execute_reports_terminal_session(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    def fake_build_model_gateway(settings: ZebraAgentSettings):
+        del settings
+        return FakeGateway(
+            completion=ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content="First resume run.",
+                    created_at=_created_at(),
+                ),
+                call_metadata=ModelCallMetadata(
+                    provider="test",
+                    model_name="test-model",
+                    latency_ms=7,
+                    usage=ModelUsage(total_tokens=9),
+                ),
+            )
+        )
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        fake_build_model_gateway,
+    )
+    first = execute(
+        [
+            "resume",
+            str(session_id),
+            "--execute",
+            "--database",
+            str(database_path),
+        ],
+        settings=_settings(database_path),
+    )
+    second = execute(
+        [
+            "resume",
+            str(session_id),
+            "--execute",
+            "--database",
+            str(database_path),
+        ],
+        settings=_settings(database_path),
+    )
+    assert first.payload["status"] == SessionStatus.COMPLETED.value
+    assert second.payload == {
+        "session_id": str(session_id),
+        "database": str(database_path),
+        "status": "not_resumable",
+        "reason": "cannot_resume_terminal_session",
+    }
+
+
+def test_cli_resume_command_execute_rejects_invalid_payload(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    result = execute(
+        [
+            "resume",
+            str(session_id),
+            "--execute",
+            "--lease-ttl-seconds",
+            "0",
+            "--database",
+            str(database_path),
+        ],
+        settings=_settings(database_path),
+    )
+
+    assert result.command == "resume"
+    assert result.payload == {
+        "status": "invalid_request",
+        "reason": "lease_ttl_seconds must be greater than zero",
+        "database": str(database_path),
+    }
+
+
+def test_cli_resume_command_execute_rejects_lease_conflict(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, tmp_path)
+    _seed_active_lease(database_path, session_id)
+
+    result = execute(
+        [
+            "resume",
+            str(session_id),
+            "--execute",
+            "--database",
+            str(database_path),
+        ],
+        settings=_settings(database_path),
+    )
+
+    assert result.command == "resume"
+    assert result.payload == {
+        "session_id": str(session_id),
+        "database": str(database_path),
+        "status": "lease_conflict",
+        "reason": "session_already_leased",
+    }
+
+
+def test_cli_resume_command_execute_reports_execution_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    class _FailingExecutionService:
+        def __init__(self, **kwargs: object) -> None:
+            del kwargs
+
+        def execute_session(self, *args: object, **kwargs: object) -> object:
+            del args, kwargs
+            raise WorkerExecutionError("runtime failure")
+
+    monkeypatch.setattr(cli_module, "SessionExecutionService", _FailingExecutionService)
+    result = execute(
+        [
+            "resume",
+            str(session_id),
+            "--execute",
+            "--database",
+            str(database_path),
+        ],
+        settings=_settings(database_path),
+    )
+
+    assert result.command == "resume"
+    assert result.payload == {
+        "session_id": str(session_id),
+        "database": str(database_path),
+        "status": "execution_error",
+        "reason": "runtime failure",
+    }
 
 
 def test_cli_resume_command_execute_restores_suspended_workspace(
@@ -761,3 +929,13 @@ def _seed_ready_session(database_path: Path, workspace_root: Path) -> SessionId:
         event_store.append(event)
     SQLiteProjectionStore(database_path).save_session(bootstrap.session)
     return bootstrap.session.session_id
+
+
+def _seed_active_lease(database_path: Path, session_id: SessionId) -> None:
+    now = datetime.now(UTC)
+    SQLiteLeaseStore(database_path).acquire(
+        session_id,
+        worker_id="other-worker",
+        acquired_at=now,
+        expires_at=now + timedelta(minutes=5),
+    )

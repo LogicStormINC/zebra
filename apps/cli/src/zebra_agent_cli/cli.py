@@ -21,19 +21,25 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_integrations import build_model_gateway
 from agent_security import PolicyProfile
 from agent_storage import (
+    LeaseConflictError,
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
 )
+from zebra_agent_api.responses import ApiResponse
+from zebra_agent_api.session_payloads import parse_resume_session_payload
 from zebra_agent_config import ZebraAgentSettings, load_settings
 from zebra_agent_worker import (
     SessionClaimService,
     SessionControlError,
     SessionControlService,
     SessionExecutionService,
+    SessionRecoveryError,
     SessionRecoveryService,
+    SessionResumeError,
     SessionResumeService,
+    WorkerExecutionError,
 )
 
 from zebra_agent_cli.artifact_read import (
@@ -287,6 +293,18 @@ def _resume_result(
     if not namespace.execute:
         return _session_result("resume", namespace.session_id, database_path)
 
+    parsed = parse_resume_session_payload(
+        {
+            "worker_id": namespace.worker_id,
+            "lease_ttl_seconds": namespace.lease_ttl_seconds,
+        }
+    )
+    if isinstance(parsed, ApiResponse):
+        return CliCommandResult(
+            command="resume",
+            payload={**parsed.body, "database": str(database_path)},
+        )
+
     session_id = SessionId(UUID(namespace.session_id))
     claim_service = SessionClaimService(
         SQLiteLeaseStore(database_path),
@@ -295,23 +313,63 @@ def _resume_result(
             SQLiteProjectionStore(database_path),
         ),
     )
-    result = SessionExecutionService(
-        database_path=database_path,
-        claim_service=claim_service,
-        resume_service=SessionResumeService(claim_service),
-        settings=settings,
-    ).execute_session(
-        session_id,
-        worker_id=namespace.worker_id,
-        lease_ttl_seconds=namespace.lease_ttl_seconds,
-    )
+    try:
+        result = SessionExecutionService(
+            database_path=database_path,
+            claim_service=claim_service,
+            resume_service=SessionResumeService(claim_service),
+            settings=settings,
+        ).execute_session(
+            session_id,
+            worker_id=parsed["worker_id"],
+            lease_ttl_seconds=parsed["lease_ttl_seconds"],
+        )
+    except SessionRecoveryError:
+        return CliCommandResult(
+            command="resume",
+            payload={
+                "session_id": namespace.session_id,
+                "database": str(database_path),
+                "status": "not_found",
+            },
+        )
+    except SessionResumeError:
+        return CliCommandResult(
+            command="resume",
+            payload={
+                "session_id": namespace.session_id,
+                "database": str(database_path),
+                "status": "not_resumable",
+                "reason": "cannot_resume_terminal_session",
+            },
+        )
+    except LeaseConflictError:
+        return CliCommandResult(
+            command="resume",
+            payload={
+                "session_id": namespace.session_id,
+                "database": str(database_path),
+                "status": "lease_conflict",
+                "reason": "session_already_leased",
+            },
+        )
+    except WorkerExecutionError as error:
+        return CliCommandResult(
+            command="resume",
+            payload={
+                "session_id": namespace.session_id,
+                "database": str(database_path),
+                "status": "execution_error",
+                "reason": str(error),
+            },
+        )
     return CliCommandResult(
         command="resume",
         payload={
             "session_id": namespace.session_id,
             "database": str(database_path),
             "executed": True,
-            "worker_id": namespace.worker_id,
+            "worker_id": parsed["worker_id"],
             "status": result.session.status.value,
             "current_sequence": result.session.current_sequence,
             "assistant_message": result.attempt_result.metadata.get("assistant_message"),
