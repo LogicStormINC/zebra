@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 51 ready; approval decision cross-surface parity is next on top of the completed Phase 50 approval queue CLI and operator parity baseline.
+> Current execution range: Phase 52 ready; session message append CLI and operator parity is next on top of the completed Phase 51 approval decision cross-surface parity baseline.
 
 ## Global Rules
 
@@ -6385,8 +6385,8 @@ future operator decision changes do not drift across control surfaces.
 
 ### P51-CLOSE-01 - Phase 51 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P51-TEST-01`
 - Branch: `codex/p51-closeout-next-plan`
@@ -6405,5 +6405,85 @@ next implementation phase.
 
 #### Acceptance
 
-- [ ] Approval decision operator parity evidence is recorded.
+- [x] Approval decision operator parity evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 52 Task Board
+
+### P52-CLI-01 - Session Message Append CLI Surface
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P51-CLOSE-01`
+- Branch: `codex/p52-cli-01-session-message-append`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose a local CLI append surface for durable session continuation so
+operators do not need the HTTP API for routine follow-up prompts.
+
+#### Deliverables
+
+- CLI command for appending one user message to an existing session
+- machine-readable local output for appended, invalid-request, not-found, and
+  terminal-session append paths
+- regression coverage for CLI append behavior
+
+#### Acceptance
+
+- [ ] Operators can append one more user message from the CLI.
+- [ ] Terminal-session append failures remain deterministic from the CLI.
+- [ ] Existing API append behavior remains backward compatible.
+
+### P52-TEST-01 - Session Message Append Cross-Surface Contract Matrix
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `TEST`
+- Depends on: `P52-CLI-01`
+- Branch: `codex/p52-test-01-session-message-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI session message append output so
+future continuation changes do not drift across operator control surfaces.
+
+#### Deliverables
+
+- cross-surface session message append regression matrix
+- normalization rules for CLI-local context when needed
+- documented parity boundary for API and CLI append results
+
+#### Acceptance
+
+- [ ] API and CLI append output parity is explicit and regression-tested.
+- [ ] Appended, invalid-request, not-found, and terminal-session append paths remain backward compatible across both surfaces.
+- [ ] Stable append result fields stay locked without overfitting CLI-only context.
+
+### P52-CLOSE-01 - Phase 52 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P52-TEST-01`
+- Branch: `codex/p52-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 52 with session message append operator parity evidence and define
+the next implementation phase.
+
+#### Deliverables
+
+- Phase 52 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Session message append operator parity evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.
