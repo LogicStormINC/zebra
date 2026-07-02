@@ -12,16 +12,17 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_integrations import build_model_gateway
 from agent_security import PolicyProfile
 from agent_storage import (
+    LeaseConflictError,
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
 )
+from zebra_agent_api.responses import ApiResponse
+from zebra_agent_api.session_payloads import parse_resume_session_payload
 from zebra_agent_config import ZebraAgentSettings, load_settings
 from zebra_agent_worker import (
     SessionClaimService,
-    SessionControlError,
-    SessionControlService,
     SessionExecutionService,
     SessionRecoveryError,
     SessionRecoveryService,
@@ -238,13 +239,6 @@ def _parser() -> argparse.ArgumentParser:
     approve.add_argument("--reason", default="")
     approve.add_argument("--operator", default="local-operator")
     approve.add_argument("--database")
-
-    delivery_audit = subcommands.add_parser(
-        "delivery-audit",
-        help="Inspect session delivery audit records.",
-    )
-    delivery_audit.add_argument("session_id")
-    delivery_audit.add_argument("--database")
 
     model = subcommands.add_parser("model", help="Run one prompt through the configured model.")
     model.add_argument("prompt")

@@ -10,6 +10,7 @@ from agent_security.artifact_access_projection import (
     build_artifact_access_projection,
     policy_rank,
     serialize_artifact_access_projection,
+    serialize_artifact_access_snapshot_attachment,
 )
 from agent_security.artifact_control_audit import build_artifact_control_audit_metadata
 from agent_security.artifact_retention import (
@@ -130,4 +131,5 @@ __all__ = [
     "resolve_artifact_retained_until",
     "resolve_artifact_retention_policy",
     "serialize_artifact_access_projection",
+    "serialize_artifact_access_snapshot_attachment",
 ]

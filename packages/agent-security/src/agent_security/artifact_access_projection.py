@@ -48,6 +48,12 @@ def serialize_artifact_access_projection(
     }
 
 
+def serialize_artifact_access_snapshot_attachment(
+    projection: ArtifactAccessProjection,
+) -> dict[str, object]:
+    return {"access": serialize_artifact_access_projection(projection)}
+
+
 def policy_rank(policy_profile: str) -> int:
     return _policy_rank(policy_profile)
 
