@@ -2,10 +2,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 54 - Session Artifact List CLI And Operator Parity`
-- Repository status: `phase 54 ready`
+- Active phase: `Phase 55 - Session Inspect CLI And Operator Parity`
+- Repository status: `phase 55 ready`
 - Current focus:
-  - start `P54-CLOSE-01` to record Phase 54 acceptance evidence and define the next phase
+  - start `P55-CLI-01` to align local CLI session inspect output with the current API session read surface
+  - `P54-CLOSE-01` is complete on `codex/p54-closeout-next-plan` with Phase 54 acceptance evidence and Phase 55 starter tasks
+  - Phase 54 is closed with `docs/Phase54_Session_Artifact_List_CLI_And_Operator_Parity_验收记录.md`
   - `P54-TEST-01` is complete on `codex/p54-test-01-session-artifact-list-contract-matrix` with artifact list parity coverage and CLI-local `database` normalization
   - `P54-CLI-01` is complete on `codex/p54-cli-01-session-artifact-list` with local artifact list inventory plus deterministic empty and missing-session results
   - `P53-CLOSE-01` is complete on `codex/p53-closeout-next-plan` with Phase 53 acceptance evidence and Phase 54 starter tasks

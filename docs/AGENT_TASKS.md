@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 54 ready; session artifact list CLI and operator parity is next on top of the completed Phase 53 session control cross-surface parity baseline.
+> Current execution range: Phase 55 ready; session inspect CLI and operator parity is next on top of the completed Phase 54 session artifact list cross-surface parity baseline.
 
 ## Global Rules
 
@@ -6627,8 +6627,8 @@ artifact inventory changes do not drift across operator control surfaces.
 
 ### P54-CLOSE-01 - Phase 54 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P54-TEST-01`
 - Branch: `codex/p54-closeout-next-plan`
@@ -6647,5 +6647,84 @@ the next implementation phase.
 
 #### Acceptance
 
-- [ ] Session artifact list operator parity evidence is recorded.
+- [x] Session artifact list operator parity evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 55 Task Board
+
+### P55-CLI-01 - Session Inspect CLI Parity Alignment
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P54-CLOSE-01`
+- Branch: `codex/p55-cli-01-session-inspect-parity`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Align the local CLI inspect payload with the current API session read surface
+so routine session inspection does not drift across operator entry points.
+
+#### Deliverables
+
+- CLI inspect parity alignment for stable API session read fields
+- machine-readable local output for populated and missing-session inspect paths
+- regression coverage for aligned inspect payload behavior
+
+#### Acceptance
+
+- [ ] Operators can inspect session state from the CLI with parity-aligned output.
+- [ ] Stable API session read fields remain visible from the CLI where they are part of the shared operator contract.
+- [ ] Existing API session inspect behavior remains backward compatible.
+
+### P55-TEST-01 - Session Inspect Cross-Surface Contract Matrix
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `TEST`
+- Depends on: `P55-CLI-01`
+- Branch: `codex/p55-test-01-session-inspect-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI session inspect output so future
+inspection changes do not drift across operator read surfaces.
+
+#### Deliverables
+
+- cross-surface session inspect regression matrix
+- normalization rules for CLI-local context when needed
+- documented parity boundary for API and CLI inspect results
+
+#### Acceptance
+
+- [ ] API and CLI session inspect output parity is explicit and regression-tested.
+- [ ] Populated and missing-session inspect paths remain backward compatible across both surfaces.
+- [ ] Stable inspect result fields stay locked without overfitting CLI-only context.
+
+### P55-CLOSE-01 - Phase 55 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P55-TEST-01`
+- Branch: `codex/p55-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 55 with session inspect operator parity evidence and define the
+next implementation phase.
+
+#### Deliverables
+
+- Phase 55 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Session inspect operator parity evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.
