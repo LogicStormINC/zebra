@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 53 ready; session control CLI and operator parity is next on top of the completed Phase 52 session message append cross-surface parity baseline.
+> Current execution range: Phase 54 ready; session artifact list CLI and operator parity is next on top of the completed Phase 53 session control cross-surface parity baseline.
 
 ## Global Rules
 
@@ -6547,8 +6547,8 @@ cancel or suspend changes do not drift across operator control surfaces.
 
 ### P53-CLOSE-01 - Phase 53 Closeout And Next Planning
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P53-TEST-01`
 - Branch: `codex/p53-closeout-next-plan`
@@ -6567,5 +6567,85 @@ next implementation phase.
 
 #### Acceptance
 
-- [ ] Session control operator parity evidence is recorded.
+- [x] Session control operator parity evidence is recorded.
+- [x] Next phase starter tasks are ready and path-scoped.
+
+## Phase 54 Task Board
+
+### P54-CLI-01 - Session Artifact List CLI Surface
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CLI`
+- Depends on: `P53-CLOSE-01`
+- Branch: `codex/p54-cli-01-session-artifact-list`
+- Owned paths: `apps/cli/`, `tests/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose a local CLI artifact list surface for session-level operator inventory
+so artifact discovery does not depend on the HTTP API.
+
+#### Deliverables
+
+- CLI command for listing session artifacts
+- machine-readable local output for non-empty, empty, and missing-session
+  artifact list paths
+- regression coverage for CLI artifact list behavior
+
+#### Acceptance
+
+- [ ] Operators can list session artifacts from the CLI.
+- [ ] Empty and missing-session artifact list paths remain deterministic from the CLI.
+- [ ] Existing API artifact list behavior remains backward compatible.
+
+### P54-TEST-01 - Session Artifact List Cross-Surface Contract Matrix
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `TEST`
+- Depends on: `P54-CLI-01`
+- Branch: `codex/p54-test-01-session-artifact-list-contract-matrix`
+- Owned paths: `tests/`, `apps/cli/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Lock stable parity rules between API and CLI artifact list output so future
+artifact inventory changes do not drift across operator control surfaces.
+
+#### Deliverables
+
+- cross-surface session artifact list regression matrix
+- normalization rules for CLI-local context when needed
+- documented parity boundary for API and CLI artifact list results
+
+#### Acceptance
+
+- [ ] API and CLI artifact list output parity is explicit and regression-tested.
+- [ ] Non-empty, empty, and missing-session artifact list paths remain backward compatible across both surfaces.
+- [ ] Stable artifact list result fields stay locked without overfitting CLI-only context.
+
+### P54-CLOSE-01 - Phase 54 Closeout And Next Planning
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P54-TEST-01`
+- Branch: `codex/p54-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 54 with session artifact list operator parity evidence and define
+the next implementation phase.
+
+#### Deliverables
+
+- Phase 54 acceptance record
+- next phase starter tasks
+- updated progress and README state
+
+#### Acceptance
+
+- [ ] Session artifact list operator parity evidence is recorded.
 - [ ] Next phase starter tasks are ready and path-scoped.

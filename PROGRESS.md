@@ -2,10 +2,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 53 - Session Control CLI And Operator Parity`
-- Repository status: `phase 53 ready for closeout`
+- Active phase: `Phase 54 - Session Artifact List CLI And Operator Parity`
+- Repository status: `phase 54 ready`
 - Current focus:
-  - close Phase 53 with acceptance evidence in `P53-CLOSE-01`
+  - start `P54-CLI-01` to add local session artifact list inventory from the CLI
+  - `P53-CLOSE-01` is complete on `codex/p53-closeout-next-plan` with Phase 53 acceptance evidence and Phase 54 starter tasks
+  - Phase 53 is closed with `docs/Phase53_Session_Control_CLI_And_Operator_Parity_验收记录.md`
   - `P53-TEST-01` is complete on `codex/p53-test-01-session-control-contract-matrix` with cancel and suspend parity coverage plus CLI-local normalization
   - `P53-CLI-01` is complete on `codex/p53-cli-01-session-cancel` with restored cancel control and local CLI cancel support
   - `P52-CLOSE-01` is complete on `codex/p52-closeout-next-plan` with Phase 52 acceptance evidence and Phase 53 starter tasks

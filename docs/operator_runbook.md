@@ -8,7 +8,7 @@ Phase 26.
 Scope:
 
 - local workspace bootstrap
-- CLI session creation, execution, suspend, resume, inspection, and approval
+- CLI session creation, execution, cancel, suspend, resume, inspection, and approval
 - local HTTP API serving
 - session diff, artifacts, delivery audit, and SSE replay
 - local snapshot-backed suspend and resume behavior
@@ -49,6 +49,7 @@ If this variable is unset, the current local API remains open.
 Current local Phase 26 control semantics:
 
 - `run` creates a ready session or executes it immediately
+- `cancel` moves a non-terminal session to `cancelled`
 - `resume --execute` runs a ready session through the worker-backed execution path
 - `suspend` snapshots a workspace-backed session and moves the durable state to
   `suspended`
@@ -112,6 +113,19 @@ Inspect the same session:
 ```bash
 uv run zebra-agent inspect <session_id>
 ```
+
+Cancel a local session:
+
+```bash
+uv run zebra-agent cancel <session_id>
+```
+
+Expected result:
+
+- JSON output with `command=cancel`
+- `cancelled=true`
+- `status=cancelled`
+- `workspace_status=cancelled`
 
 Read the current session projection without executing:
 
@@ -228,6 +242,22 @@ Expected result:
 - `status=suspended`
 - `workspace_status=suspended`
 - `snapshot_id`
+
+Cancel a session through the API:
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${ZEBRA_API_AUTH_TOKEN}" \
+  -d '{}' \
+  http://127.0.0.1:8000/sessions/<session_id>/cancel
+```
+
+Expected result:
+
+- JSON output with `cancelled=true`
+- `status=cancelled`
+- `workspace_status=cancelled`
 
 Resume execution through the API layer:
 
