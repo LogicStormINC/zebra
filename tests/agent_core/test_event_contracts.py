@@ -67,12 +67,14 @@ def test_validate_event_payload_accepts_memory_review_recorded_shape() -> None:
             "operator": "alice",
             "reason": "validated locally",
             "superseded_memory_ids": ["mem-0"],
+            "duplicate_of_memory_id": "mem-2",
         },
     )
 
     assert payload["status"] == "confirmed"
     assert payload["operator"] == "alice"
     assert payload["superseded_memory_ids"] == ["mem-0"]
+    assert payload["duplicate_of_memory_id"] == "mem-2"
 
 
 def test_validate_event_payload_rejects_unknown_fields() -> None:

@@ -10,6 +10,10 @@ from agent_core.application.memory_candidates import (
     MemoryCandidateExtractionResult,
     MemoryCandidateExtractionService,
 )
+from agent_core.application.memory_inventory import (
+    serialize_memory_inventory,
+    serialize_scoped_memory_inventory,
+)
 from agent_core.application.memory_reviews import (
     MemoryReviewAction,
     MemoryReviewCommand,
@@ -35,6 +39,8 @@ __all__ = [
     "MemoryCandidateExtractionCommand",
     "MemoryCandidateExtractionResult",
     "MemoryCandidateExtractionService",
+    "serialize_memory_inventory",
+    "serialize_scoped_memory_inventory",
     "MemoryReviewAction",
     "MemoryReviewCommand",
     "MemoryReviewResult",

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_core.domain.memories import MemoryQuery, MemoryStatus, MemoryType, MemoryVisibility
@@ -22,7 +23,9 @@ def list_confirmed_repo_memories(
     *,
     repo_id: str,
     limit: int = 8,
+    as_of: datetime | None = None,
 ) -> tuple[ConfirmedMemoryInput, ...]:
+    effective_as_of = as_of or datetime.now(UTC)
     records = SQLiteMemoryStore(database_path).list(
         MemoryQuery(
             repo_id=repo_id,
@@ -43,6 +46,8 @@ def list_confirmed_repo_memories(
     unique: list[ConfirmedMemoryInput] = []
     seen: set[tuple[MemoryType, str]] = set()
     for record in ranked:
+        if record.expires_at is not None and record.expires_at <= effective_as_of:
+            continue
         key = (record.memory_type, _normalize_memory_text(record.text))
         if key in seen:
             continue
@@ -63,6 +68,7 @@ def list_confirmed_repo_memory_texts(
     *,
     repo_id: str,
     limit: int = 8,
+    as_of: datetime | None = None,
 ) -> tuple[str, ...]:
     return tuple(
         memory.text
@@ -70,6 +76,7 @@ def list_confirmed_repo_memory_texts(
             database_path,
             repo_id=repo_id,
             limit=limit,
+            as_of=as_of,
         )
     )
 

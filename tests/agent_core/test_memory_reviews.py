@@ -41,6 +41,7 @@ def test_memory_review_service_confirms_candidate_memory() -> None:
         "operator": "alice",
         "reason": "validated locally",
         "superseded_memory_ids": [],
+        "duplicate_of_memory_id": None,
     }
 
 
@@ -61,6 +62,7 @@ def test_memory_review_service_expires_candidate_memory() -> None:
     assert result.record.status is MemoryStatus.EXPIRED
     assert result.event.payload["status"] == "expired"
     assert result.event.payload["superseded_memory_ids"] == []
+    assert result.event.payload["duplicate_of_memory_id"] is None
 
 
 def test_memory_review_service_supersedes_prior_confirmed_memory_on_confirm() -> None:
@@ -94,6 +96,77 @@ def test_memory_review_service_supersedes_prior_confirmed_memory_on_confirm() ->
     assert result.superseded_records[0].superseded_by == record.memory_id
     assert result.superseded_records[0].updated_at == reviewed_at
     assert result.event.payload["superseded_memory_ids"] == [str(prior.memory_id)]
+    assert result.event.payload["duplicate_of_memory_id"] is None
+
+
+def test_memory_review_service_keeps_prior_preferences_when_confirming_preference() -> None:
+    session = _completed_session()
+    reviewed_at = datetime(2026, 7, 2, 11, 1, tzinfo=UTC)
+    record = _candidate_record(session).model_copy(
+        update={
+            "memory_type": MemoryType.PREFERENCE,
+            "text": "Prefer concise CLI output.",
+        }
+    )
+    prior = _candidate_record(session).model_copy(
+        update={
+            "memory_id": MemoryId(UUID("00000000-0000-0000-0000-000000000123")),
+            "memory_type": MemoryType.PREFERENCE,
+            "text": "Prefer focused test runs first.",
+            "status": MemoryStatus.CONFIRMED,
+        }
+    )
+
+    result = MemoryReviewService().review(
+        session=session,
+        record=record,
+        next_sequence=4,
+        command=MemoryReviewCommand(
+            action=MemoryReviewAction.CONFIRM,
+            operator="alice",
+            reason="captured explicit preference",
+            created_at=reviewed_at,
+        ),
+        existing_records=(prior,),
+    )
+
+    assert result.record.status is MemoryStatus.CONFIRMED
+    assert result.superseded_records == ()
+    assert result.event.payload["superseded_memory_ids"] == []
+    assert result.event.payload["duplicate_of_memory_id"] is None
+
+
+def test_memory_review_service_expires_duplicate_confirm_against_existing_confirmed() -> None:
+    session = _completed_session()
+    reviewed_at = datetime(2026, 7, 2, 11, 1, tzinfo=UTC)
+    record = _candidate_record(session)
+    prior = _candidate_record(session).model_copy(
+        update={
+            "memory_id": MemoryId(UUID("00000000-0000-0000-0000-000000000124")),
+            "status": MemoryStatus.CONFIRMED,
+            "text": "run   make check before push",
+        }
+    )
+
+    result = MemoryReviewService().review(
+        session=session,
+        record=record,
+        next_sequence=4,
+        command=MemoryReviewCommand(
+            action=MemoryReviewAction.CONFIRM,
+            operator="alice",
+            reason="duplicate verified command",
+            created_at=reviewed_at,
+        ),
+        existing_records=(prior,),
+    )
+
+    assert result.record.status is MemoryStatus.EXPIRED
+    assert result.superseded_records == ()
+    assert result.duplicate_of is not None
+    assert result.duplicate_of.memory_id == prior.memory_id
+    assert result.event.payload["status"] == "expired"
+    assert result.event.payload["duplicate_of_memory_id"] == str(prior.memory_id)
 
 
 def test_memory_review_service_rejects_non_candidate_memory() -> None:

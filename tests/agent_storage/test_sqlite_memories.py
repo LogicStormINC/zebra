@@ -213,6 +213,42 @@ def test_list_confirmed_repo_memories_ranks_and_deduplicates_records(
     ]
 
 
+def test_list_confirmed_repo_memories_skips_expired_records(tmp_path: Path) -> None:
+    store = SQLiteMemoryStore(tmp_path / "memory-freshness.sqlite")
+    store.upsert(
+        _record(
+            memory_type=MemoryType.PROJECT_RULE,
+            text="Expired rule.",
+            visibility=MemoryVisibility.REPO,
+            repo_id="zebra-agent",
+            status=MemoryStatus.CONFIRMED,
+            updated_at=_now(),
+            expires_at=_now() + timedelta(minutes=5),
+        )
+    )
+    store.upsert(
+        _record(
+            memory_type=MemoryType.PROCEDURE,
+            text="Fresh procedure.",
+            visibility=MemoryVisibility.REPO,
+            repo_id="zebra-agent",
+            status=MemoryStatus.CONFIRMED,
+            updated_at=_now() + timedelta(minutes=1),
+            expires_at=_now() + timedelta(minutes=30),
+        )
+    )
+
+    memories = list_confirmed_repo_memories(
+        tmp_path / "memory-freshness.sqlite",
+        repo_id="zebra-agent",
+        as_of=_now() + timedelta(minutes=10),
+    )
+
+    assert [(memory.memory_type, memory.text) for memory in memories] == [
+        (MemoryType.PROCEDURE, "Fresh procedure."),
+    ]
+
+
 def _record(
     *,
     memory_type: MemoryType,
@@ -223,6 +259,7 @@ def _record(
     user_id: str | None = None,
     status: MemoryStatus = MemoryStatus.CONFIRMED,
     confidence: float = 0.9,
+    expires_at: datetime | None = None,
 ) -> MemoryRecord:
     return MemoryRecord(
         memory_id=new_memory_id(),
@@ -236,6 +273,7 @@ def _record(
         source_session_id=new_session_id(),
         source_event_start=1,
         source_event_end=3,
+        expires_at=expires_at,
         created_at=_now(),
         updated_at=updated_at,
     )

@@ -41,6 +41,7 @@ def test_api_confirm_session_memory_records_review(tmp_path: Path) -> None:
         "status": "completed",
         "memory_status": "confirmed",
         "superseded_memory_ids": [],
+        "duplicate_of_memory_id": None,
     }
     assert updated is not None
     assert updated.status is MemoryStatus.CONFIRMED
@@ -64,6 +65,7 @@ def test_api_expire_session_memory_records_review(tmp_path: Path) -> None:
     assert response.status_code == 200
     assert response.body["decision"] == "expire"
     assert response.body["memory_status"] == "expired"
+    assert response.body["duplicate_of_memory_id"] is None
 
 
 def test_api_memory_review_rejects_non_candidate_record(tmp_path: Path) -> None:
@@ -117,9 +119,81 @@ def test_api_confirm_session_memory_supersedes_prior_confirmed_memory(tmp_path: 
 
     assert response.status_code == 200
     assert response.body["superseded_memory_ids"] == [str(prior.memory_id)]
+    assert response.body["duplicate_of_memory_id"] is None
     assert superseded is not None
     assert superseded.status is MemoryStatus.SUPERSEDED
     assert superseded.superseded_by == record.memory_id
+
+
+def test_api_confirm_preference_memory_keeps_prior_confirmed_preference(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    session_id = _seed_completed_session(database_path, workspace)
+    record = _candidate_record(session_id, str(workspace.resolve())).model_copy(
+        update={
+            "memory_type": MemoryType.PREFERENCE,
+            "text": "Prefer concise CLI output.",
+        }
+    )
+    prior = record.model_copy(
+        update={
+            "memory_id": MemoryId(UUID("00000000-0000-0000-0000-000000000136")),
+            "status": MemoryStatus.CONFIRMED,
+            "text": "Prefer focused test runs first.",
+        }
+    )
+    SQLiteMemoryStore(database_path).upsert(record)
+    SQLiteMemoryStore(database_path).upsert(prior)
+
+    response = create_app(database_path).confirm_session_memory(
+        str(session_id),
+        str(record.memory_id),
+        {"operator": "alice", "reason": "captured explicit preference"},
+    )
+
+    persisted_prior = SQLiteMemoryStore(database_path).get(prior.memory_id)
+
+    assert response.status_code == 200
+    assert response.body["superseded_memory_ids"] == []
+    assert response.body["duplicate_of_memory_id"] is None
+    assert persisted_prior is not None
+    assert persisted_prior.status is MemoryStatus.CONFIRMED
+    assert persisted_prior.superseded_by is None
+
+
+def test_api_confirm_duplicate_memory_expires_candidate_against_confirmed_match(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    session_id = _seed_completed_session(database_path, workspace)
+    record = _candidate_record(session_id, str(workspace.resolve()))
+    prior = record.model_copy(
+        update={
+            "memory_id": MemoryId(UUID("00000000-0000-0000-0000-000000000138")),
+            "status": MemoryStatus.CONFIRMED,
+            "text": "run   make check before push",
+        }
+    )
+    SQLiteMemoryStore(database_path).upsert(record)
+    SQLiteMemoryStore(database_path).upsert(prior)
+
+    response = create_app(database_path).confirm_session_memory(
+        str(session_id),
+        str(record.memory_id),
+        {"operator": "alice", "reason": "duplicate verified command"},
+    )
+
+    updated = SQLiteMemoryStore(database_path).get(record.memory_id)
+
+    assert response.status_code == 200
+    assert response.body["memory_status"] == "expired"
+    assert response.body["superseded_memory_ids"] == []
+    assert response.body["duplicate_of_memory_id"] == str(prior.memory_id)
+    assert updated is not None
+    assert updated.status is MemoryStatus.EXPIRED
 
 
 def test_route_adapter_handles_memory_confirm(tmp_path: Path) -> None:

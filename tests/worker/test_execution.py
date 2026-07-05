@@ -1,13 +1,20 @@
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import UUID
 
 import pytest
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.events import EventType
-from agent_core.domain.identifiers import SessionId, new_message_id, new_tool_call_id
-from agent_core.domain.memories import MemoryQuery, MemoryStatus, MemoryType
+from agent_core.domain.identifiers import MemoryId, SessionId, new_message_id, new_tool_call_id
+from agent_core.domain.memories import (
+    MemoryQuery,
+    MemoryRecord,
+    MemoryStatus,
+    MemoryType,
+    MemoryVisibility,
+)
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
@@ -216,6 +223,94 @@ def test_worker_execution_service_persists_architecture_fact_candidate_from_agen
     assert any(
         event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED
         and event.payload["memory_type"] == "architecture_fact"
+        for event in result.events
+    )
+
+
+def test_worker_execution_service_expires_stale_confirmed_doc_memory_after_agents_refresh(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    (tmp_path / "AGENTS.md").write_text(
+        "# Zebra Agent Repository Rules\n\n"
+        "## Local Commands\n\n"
+        "- `make sync`\n"
+        "- `make check`\n",
+        encoding="utf-8",
+    )
+    session_id = _seed_ready_session(database_path, tmp_path)
+    SQLiteMemoryStore(database_path).upsert(
+        _confirmed_memory(
+            session_id=session_id,
+            repo_id=str(tmp_path.resolve()),
+            memory_type=MemoryType.PROJECT_RULE,
+            text="Use the repo default commands: `make sync`, `make test`, `make check`.",
+        )
+    )
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _agents_read_gateway(settings=settings),
+    )
+
+    result = _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-a",
+        executed_at=_created_at(),
+    )
+
+    records = SQLiteMemoryStore(database_path).list(
+        MemoryQuery(repo_id=str(tmp_path.resolve()), statuses=(MemoryStatus.EXPIRED,))
+    )
+
+    assert result.session.status is SessionStatus.COMPLETED
+    assert any(record.memory_type is MemoryType.PROJECT_RULE for record in records)
+    assert any(
+        event.event_type is EventType.MEMORY_REVIEW_RECORDED
+        and event.payload["status"] == "expired"
+        and event.payload["reason"] == "stale after AGENTS.md refresh"
+        for event in result.events
+    )
+
+
+def test_worker_execution_service_expires_stale_confirmed_procedure_after_refresh(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    (tmp_path / "Makefile").write_text("check:\n\t@echo validated\n", encoding="utf-8")
+    session_id = _seed_ready_session(database_path, tmp_path)
+    SQLiteMemoryStore(database_path).upsert(
+        _confirmed_memory(
+            session_id=session_id,
+            repo_id=str(tmp_path.resolve()),
+            memory_type=MemoryType.PROCEDURE,
+            text="Run `make test` from `.`.",
+        )
+    )
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _procedure_refresh_gateway(settings=settings),
+    )
+
+    result = _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-a",
+        executed_at=_created_at(),
+    )
+
+    records = SQLiteMemoryStore(database_path).list(
+        MemoryQuery(repo_id=str(tmp_path.resolve()), statuses=(MemoryStatus.EXPIRED,))
+    )
+
+    assert result.session.status is SessionStatus.COMPLETED
+    assert any(record.memory_type is MemoryType.PROCEDURE for record in records)
+    assert any(
+        event.event_type is EventType.MEMORY_REVIEW_RECORDED
+        and event.payload["status"] == "expired"
+        and event.payload["reason"] == "stale after procedure refresh"
         for event in result.events
     )
 
@@ -564,6 +659,37 @@ def _tests_run_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGateway:
     )
 
 
+def _procedure_refresh_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGateway:
+    del settings
+    return ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="Refresh repo procedure.",
+                        created_at=_created_at(),
+                    ),
+                    tool_calls=(
+                        ToolCall(
+                            tool_call_id=new_tool_call_id(),
+                            name="tests.run",
+                            arguments={"preset": "check"},
+                            created_at=_created_at(),
+                        ),
+                    ),
+                    call_metadata=ModelCallMetadata(
+                        provider="test",
+                        model_name="test-model",
+                        usage=ModelUsage(total_tokens=9),
+                    ),
+                )
+            ),
+        )
+    )
+
+
 def _failing_tests_run_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGateway:
     del settings
     return ScriptedModelGateway(
@@ -597,3 +723,26 @@ def _failing_tests_run_gateway(*, settings: ZebraAgentSettings) -> ScriptedModel
 
 def _created_at() -> datetime:
     return datetime(2026, 6, 22, 14, 0, tzinfo=UTC)
+
+
+def _confirmed_memory(
+    *,
+    session_id: SessionId,
+    repo_id: str,
+    memory_type: MemoryType,
+    text: str,
+) -> MemoryRecord:
+    return MemoryRecord(
+        memory_id=MemoryId(UUID("00000000-0000-0000-0000-000000000140")),
+        memory_type=memory_type,
+        text=text,
+        confidence=0.9,
+        status=MemoryStatus.CONFIRMED,
+        visibility=MemoryVisibility.REPO,
+        repo_id=repo_id,
+        source_session_id=session_id,
+        source_event_start=1,
+        source_event_end=1,
+        created_at=_created_at(),
+        updated_at=_created_at(),
+    )

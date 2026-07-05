@@ -46,7 +46,20 @@ from zebra_agent_cli.execution import (
     serialize_run_execution,
     serialize_trace_events,
 )
-from zebra_agent_cli.memory_review_write import record_memory_review
+from zebra_agent_cli.memory_review_write import (
+    preview_queue_memory_review,
+    preview_queue_tenant_memory_review,
+    preview_queue_user_memory_review,
+    record_bulk_memory_review,
+    record_bulk_tenant_memory_review,
+    record_bulk_user_memory_review,
+    record_memory_review,
+    record_queue_memory_review,
+    record_queue_tenant_memory_review,
+    record_queue_user_memory_review,
+    record_tenant_memory_review,
+    record_user_memory_review,
+)
 from zebra_agent_cli.read_commands import read_command_result
 from zebra_agent_cli.session_cancel_write import cancel_session
 from zebra_agent_cli.session_commit_write import commit_session
@@ -107,6 +120,129 @@ def execute(
                 reason=namespace.reason,
             ),
         )
+    if command == "memory-bulk-review":
+        return CliCommandResult(
+            command="memory-bulk-review",
+            payload=record_bulk_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+                memory_ids=list(namespace.memory_ids),
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-review-queue":
+        return CliCommandResult(
+            command="memory-review-queue",
+            payload=record_queue_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-review-queue-preview":
+        return CliCommandResult(
+            command="memory-review-queue-preview",
+            payload=preview_queue_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+                decision=namespace.decision,
+                memory_type=namespace.memory_type,
+            ),
+        )
+    if command == "memory-user-review":
+        return CliCommandResult(
+            command="memory-user-review",
+            payload=record_user_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                user_id=namespace.user_id,
+                memory_id=namespace.memory_id,
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-user-bulk-review":
+        return CliCommandResult(
+            command="memory-user-bulk-review",
+            payload=record_bulk_user_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                user_id=namespace.user_id,
+                memory_ids=list(namespace.memory_ids),
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-user-review-queue":
+        return CliCommandResult(
+            command="memory-user-review-queue",
+            payload=record_queue_user_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                user_id=namespace.user_id,
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-user-review-queue-preview":
+        return CliCommandResult(
+            command="memory-user-review-queue-preview",
+            payload=preview_queue_user_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                user_id=namespace.user_id,
+                decision=namespace.decision,
+                memory_type=namespace.memory_type,
+            ),
+        )
+    if command == "memory-tenant-review":
+        return CliCommandResult(
+            command="memory-tenant-review",
+            payload=record_tenant_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                tenant_id=namespace.tenant_id,
+                memory_id=namespace.memory_id,
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-tenant-bulk-review":
+        return CliCommandResult(
+            command="memory-tenant-bulk-review",
+            payload=record_bulk_tenant_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                tenant_id=namespace.tenant_id,
+                memory_ids=list(namespace.memory_ids),
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-tenant-review-queue":
+        return CliCommandResult(
+            command="memory-tenant-review-queue",
+            payload=record_queue_tenant_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                tenant_id=namespace.tenant_id,
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-tenant-review-queue-preview":
+        return CliCommandResult(
+            command="memory-tenant-review-queue-preview",
+            payload=preview_queue_tenant_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                tenant_id=namespace.tenant_id,
+                decision=namespace.decision,
+                memory_type=namespace.memory_type,
+            ),
+        )
     if command == "artifact":
         return _artifact_result(namespace, _database_path(namespace.database, active_settings))
     if command == "approval":
@@ -115,11 +251,59 @@ def execute(
             database_path=_database_path(namespace.database, active_settings),
             approval_id=getattr(namespace, "approval_id", None),
         )
-    if command in {"diff", "memory", "stream", "delivery-audit"}:
+    if command in {
+        "diff",
+        "memory",
+        "memory-action-hints",
+        "memory-escalations",
+        "memory-follow-up-windows",
+        "memory-overdue-flags",
+        "memory-overdue-age-buckets",
+        "memory-overdue-types",
+        "memory-overdue-visibility",
+        "memory-overdue-trends",
+        "memory-overdue-interventions",
+        "memory-overdue-escalation-lanes",
+        "memory-overdue-recovery-paths",
+        "memory-overdue-resolution-checkpoints",
+        "memory-overdue-resolution-outcomes",
+        "memory-overdue-closure-decisions",
+        "memory-overdue-archive-recommendations",
+        "memory-overdue-retention-guidance",
+        "memory-overdue-retention-windows",
+        "memory-overdue-retention-breaches",
+        "memory-overdue-retention-breach-aging",
+        "memory-overdue-retention-breach-actions",
+        "memory-overdue-retention-breach-lanes",
+        "memory-overdue-retention-breach-owner-targets",
+        "memory-overdue-retention-breach-follow-through-modes",
+        "memory-overdue-retention-breach-follow-through-outcomes",
+        "memory-overdue-retention-breach-follow-through-completion-states",
+        "memory-overdue-retention-breach-follow-through-verification-states",
+        "memory-overdue-retention-breach-follow-through-verification-outcomes",
+        "memory-aging",
+        "memory-governance",
+        "memory-overview",
+        "memory-pressure",
+        "memory-velocity",
+        "memory-queue",
+        "memory-queue-summary",
+        "memory-user",
+        "memory-user-queue",
+        "memory-user-queue-summary",
+        "memory-tenant",
+        "memory-tenant-queue",
+        "memory-tenant-queue-summary",
+        "stream",
+        "delivery-audit",
+    }:
         return read_command_result(
             command,
             database_path=_database_path(namespace.database, active_settings),
-            session_id=namespace.session_id,
+            session_id=getattr(namespace, "session_id", None),
+            user_id=getattr(namespace, "user_id", None),
+            tenant_id=getattr(namespace, "tenant_id", None),
+            as_of=getattr(namespace, "as_of", None),
         )
     if command == "commit":
         return CliCommandResult(

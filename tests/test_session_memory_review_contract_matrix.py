@@ -101,6 +101,7 @@ def _normalize_http(payload: dict[str, object]) -> dict[str, object]:
         "status": payload["status"],
         "memory_status": payload["memory_status"],
         "superseded_memory_ids": payload["superseded_memory_ids"],
+        "duplicate_of_memory_id": payload["duplicate_of_memory_id"],
     }
 
 
@@ -117,6 +118,7 @@ def _normalize_cli(payload: dict[str, object]) -> dict[str, object]:
         "status": payload["status"],
         "memory_status": payload["memory_status"],
         "superseded_memory_ids": payload["superseded_memory_ids"],
+        "duplicate_of_memory_id": payload["duplicate_of_memory_id"],
     }
 
 

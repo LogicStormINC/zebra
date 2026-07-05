@@ -6,8 +6,13 @@ from agent_core.application import (
     MemoryCandidateExtractionService,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import new_session_id
-from agent_core.domain.memories import MemoryRecord, MemoryType
+from agent_core.domain.identifiers import new_memory_id, new_session_id
+from agent_core.domain.memories import (
+    MemoryRecord,
+    MemoryStatus,
+    MemoryType,
+    MemoryVisibility,
+)
 from agent_core.domain.sessions import Session, SessionStatus
 
 
@@ -190,6 +195,174 @@ def test_memory_candidate_extraction_reads_preference_from_explicit_user_message
     assert result.events[0].payload["memory_type"] == "preference"
 
 
+def test_expires_stale_confirmed_doc_memory_after_agents_refresh() -> None:
+    session = _completed_session()
+    store = _InMemoryMemoryStore(
+        records=[
+            _memory_record(
+                session,
+                memory_type=MemoryType.PROJECT_RULE,
+                text="Use the repo default commands: `make sync`, `make test`, `make check`.",
+                status=MemoryStatus.CONFIRMED,
+            )
+        ]
+    )
+    service = MemoryCandidateExtractionService(store)
+
+    result = service.extract(
+        session=session,
+        events=[
+            _tool_event(
+                session=session,
+                sequence=4,
+                tool_name="files.read",
+                output="""# Zebra Agent Repository Rules
+
+## Local Commands
+
+- `make sync`
+- `make check`
+""",
+                metadata={
+                    "path": "AGENTS.md",
+                    "byte_count": 100,
+                    "truncated": False,
+                },
+            )
+        ],
+        next_sequence=5,
+        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
+    )
+
+    expired = [
+        record
+        for record in store.records
+        if record.status is MemoryStatus.EXPIRED and record.memory_type is MemoryType.PROJECT_RULE
+    ]
+
+    assert len(result.records) == 1
+    assert result.records[0].text == "Use the repo default commands: `make sync`, `make check`."
+    assert len(expired) == 1
+    assert any(
+        event.event_type is EventType.MEMORY_REVIEW_RECORDED
+        and event.payload["status"] == "expired"
+        for event in result.events
+    )
+
+
+def test_memory_candidate_extraction_keeps_confirmed_doc_memory_without_agents_refresh() -> None:
+    session = _completed_session()
+    confirmed = _memory_record(
+        session,
+        memory_type=MemoryType.PROJECT_RULE,
+        text="Use the repo default commands: `make sync`, `make test`, `make check`.",
+        status=MemoryStatus.CONFIRMED,
+    )
+    store = _InMemoryMemoryStore(records=[confirmed])
+    service = MemoryCandidateExtractionService(store)
+
+    result = service.extract(
+        session=session,
+        events=[],
+        next_sequence=5,
+        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
+    )
+
+    assert result.records == ()
+    assert result.events == ()
+    assert store.records[0].status is MemoryStatus.CONFIRMED
+
+
+def test_expires_stale_confirmed_procedure_memory_after_procedure_refresh() -> None:
+    session = _completed_session()
+    store = _InMemoryMemoryStore(
+        records=[
+            _memory_record(
+                session,
+                memory_type=MemoryType.PROCEDURE,
+                text="Run `make test` from `.`.",
+                status=MemoryStatus.CONFIRMED,
+            )
+        ]
+    )
+    service = MemoryCandidateExtractionService(store)
+
+    result = service.extract(
+        session=session,
+        events=[
+            _tool_event(
+                session=session,
+                sequence=4,
+                tool_name="tests.run",
+                metadata={
+                    "preset": "smoke",
+                    "command": ["make", "check"],
+                    "cwd": ".",
+                    "exit_code": 0,
+                    "stderr": "",
+                    "timed_out": False,
+                },
+            )
+        ],
+        next_sequence=5,
+        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
+    )
+
+    expired = [
+        record
+        for record in store.records
+        if record.status is MemoryStatus.EXPIRED and record.memory_type is MemoryType.PROCEDURE
+    ]
+
+    assert len(result.records) == 1
+    assert result.records[0].text == "Run validation preset 'smoke' as `make check` from `.`."
+    assert len(expired) == 1
+    assert any(
+        event.event_type is EventType.MEMORY_REVIEW_RECORDED
+        and event.payload["reason"] == "stale after procedure refresh"
+        for event in result.events
+    )
+
+
+def test_procedure_refresh_does_not_expire_confirmed_preference() -> None:
+    session = _completed_session()
+    confirmed = _memory_record(
+        session,
+        memory_type=MemoryType.PREFERENCE,
+        text="Prefer concise CLI output.",
+        status=MemoryStatus.CONFIRMED,
+    )
+    store = _InMemoryMemoryStore(records=[confirmed])
+    service = MemoryCandidateExtractionService(store)
+
+    result = service.extract(
+        session=session,
+        events=[
+            _tool_event(
+                session=session,
+                sequence=4,
+                tool_name="command.run",
+                metadata={
+                    "command": ["make", "check"],
+                    "cwd": ".",
+                    "exit_code": 0,
+                    "stderr": "",
+                    "timed_out": False,
+                },
+            )
+        ],
+        next_sequence=5,
+        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
+    )
+
+    assert len(result.records) == 1
+    assert any(record.memory_type is MemoryType.PROCEDURE for record in result.records)
+    assert store.records[0].status is MemoryStatus.CONFIRMED
+    assert not any(
+        event.event_type is EventType.MEMORY_REVIEW_RECORDED for event in result.events
+    )
+
+
 def test_memory_candidate_extraction_skips_sensitive_or_failed_commands() -> None:
     session = _completed_session()
     service = MemoryCandidateExtractionService(_InMemoryMemoryStore())
@@ -250,8 +423,8 @@ def test_memory_candidate_extraction_requires_completed_session() -> None:
 
 
 class _InMemoryMemoryStore:
-    def __init__(self) -> None:
-        self.records: list[MemoryRecord] = []
+    def __init__(self, records: list[MemoryRecord] | None = None) -> None:
+        self.records: list[MemoryRecord] = list(records or [])
 
     def upsert(self, record: MemoryRecord) -> MemoryRecord:
         self.records = [
@@ -263,8 +436,18 @@ class _InMemoryMemoryStore:
         return record
 
     def list(self, query) -> list[MemoryRecord]:
-        del query
-        return list(self.records)
+        records = list(self.records)
+        if getattr(query, "repo_id", None) is not None:
+            records = [record for record in records if record.repo_id == query.repo_id]
+        if getattr(query, "visibility", None) is not None:
+            records = [record for record in records if record.visibility is query.visibility]
+        if getattr(query, "statuses", ()):
+            statuses = set(query.statuses)
+            records = [record for record in records if record.status in statuses]
+        if getattr(query, "memory_types", ()):
+            memory_types = set(query.memory_types)
+            records = [record for record in records if record.memory_type in memory_types]
+        return records[: query.limit]
 
 
 def _completed_session() -> Session:
@@ -306,3 +489,26 @@ def _tool_event(
 
 def _now() -> datetime:
     return datetime(2026, 7, 2, 19, 0, tzinfo=UTC)
+
+
+def _memory_record(
+    session: Session,
+    *,
+    memory_type: MemoryType,
+    text: str,
+    status: MemoryStatus,
+) -> MemoryRecord:
+    return MemoryRecord(
+        memory_id=new_memory_id(),
+        memory_type=memory_type,
+        text=text,
+        confidence=0.8,
+        status=status,
+        visibility=MemoryVisibility.REPO,
+        repo_id="zebra-agent",
+        source_session_id=session.session_id,
+        source_event_start=2,
+        source_event_end=2,
+        created_at=_now(),
+        updated_at=_now(),
+    )

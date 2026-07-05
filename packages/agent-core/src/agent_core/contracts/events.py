@@ -161,6 +161,7 @@ class MemoryReviewRecordedPayload(BaseModel):
     operator: str
     reason: str
     superseded_memory_ids: list[str] = []
+    duplicate_of_memory_id: str | None = None
 
     @field_validator(
         "memory_id",
@@ -187,6 +188,16 @@ class MemoryReviewRecordedPayload(BaseModel):
                 raise ValueError("field must not be blank")
             normalized.append(stripped)
         return normalized
+
+    @field_validator("duplicate_of_memory_id")
+    @classmethod
+    def ensure_duplicate_of_id_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("field must not be blank when provided")
+        return stripped
 
 
 class SessionSuspendedPayload(BaseModel):

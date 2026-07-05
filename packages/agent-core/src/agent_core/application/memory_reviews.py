@@ -9,9 +9,18 @@ from agent_core.domain.memories import (
     MemoryQuery,
     MemoryRecord,
     MemoryStatus,
+    MemoryType,
     MemoryVisibility,
 )
 from agent_core.domain.sessions import Session
+
+_SINGLE_ACTIVE_MEMORY_TYPES = frozenset(
+    {
+        MemoryType.PROJECT_RULE,
+        MemoryType.ARCHITECTURE_FACT,
+        MemoryType.PROCEDURE,
+    }
+)
 
 
 class MemoryReviewAction(StrEnum):
@@ -40,6 +49,7 @@ class MemoryReviewResult:
     record: MemoryRecord
     event: SessionEvent
     superseded_records: tuple[MemoryRecord, ...] = ()
+    duplicate_of: MemoryRecord | None = None
 
 
 @dataclass(frozen=True)
@@ -65,11 +75,16 @@ class MemoryReviewService:
             else MemoryStatus.EXPIRED
         )
         reviewed_at = command.created_at or datetime.now(session.updated_at.tzinfo)
-        superseded_records = (
-            _supersede_records(record, existing_records, reviewed_at)
+        duplicate_of = (
+            _duplicate_confirmed_record(record, existing_records)
             if command.action is MemoryReviewAction.CONFIRM
-            else ()
+            else None
         )
+        if duplicate_of is not None:
+            next_status = MemoryStatus.EXPIRED
+        superseded_records: tuple[MemoryRecord, ...] = ()
+        if command.action is MemoryReviewAction.CONFIRM and duplicate_of is None:
+            superseded_records = _supersede_records(record, existing_records, reviewed_at)
         updated_record = record.model_copy(
             update={
                 "status": next_status,
@@ -91,12 +106,16 @@ class MemoryReviewService:
                 "superseded_memory_ids": [
                     str(existing.memory_id) for existing in superseded_records
                 ],
+                "duplicate_of_memory_id": (
+                    None if duplicate_of is None else str(duplicate_of.memory_id)
+                ),
             },
             created_at=reviewed_at,
         )
         return MemoryReviewResult(
             record=updated_record,
             superseded_records=superseded_records,
+            duplicate_of=duplicate_of,
             event=event,
         )
 
@@ -132,6 +151,8 @@ def _supersede_records(
     existing_records: tuple[MemoryRecord, ...],
     reviewed_at: datetime,
 ) -> tuple[MemoryRecord, ...]:
+    if record.memory_type not in _SINGLE_ACTIVE_MEMORY_TYPES:
+        return ()
     superseded: list[MemoryRecord] = []
     for existing in existing_records:
         if existing.memory_id == record.memory_id:
@@ -154,6 +175,26 @@ def _supersede_records(
     return tuple(superseded)
 
 
+def _duplicate_confirmed_record(
+    record: MemoryRecord,
+    existing_records: tuple[MemoryRecord, ...],
+) -> MemoryRecord | None:
+    normalized_text = _normalize_memory_text(record.text)
+    for existing in existing_records:
+        if existing.memory_id == record.memory_id:
+            continue
+        if existing.status is not MemoryStatus.CONFIRMED:
+            continue
+        if existing.memory_type is not record.memory_type:
+            continue
+        if not _same_scope(existing, record):
+            continue
+        if _normalize_memory_text(existing.text) != normalized_text:
+            continue
+        return existing
+    return None
+
+
 def _same_scope(left: MemoryRecord, right: MemoryRecord) -> bool:
     if left.visibility is not right.visibility:
         return False
@@ -162,3 +203,7 @@ def _same_scope(left: MemoryRecord, right: MemoryRecord) -> bool:
     if left.visibility is MemoryVisibility.USER:
         return left.user_id == right.user_id
     return left.tenant_id == right.tenant_id
+
+
+def _normalize_memory_text(text: str) -> str:
+    return " ".join(text.strip().split())

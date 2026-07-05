@@ -118,6 +118,136 @@ def build_parser() -> argparse.ArgumentParser:
     memory_review.add_argument("--operator", default="local-operator")
     memory_review.add_argument("--database")
 
+    memory_bulk_review = subcommands.add_parser(
+        "memory-bulk-review",
+        help="Record bulk memory candidate review decisions for one session scope.",
+    )
+    memory_bulk_review.add_argument("session_id")
+    memory_bulk_review.add_argument("memory_ids", nargs="+")
+    memory_bulk_review.add_argument("--decision", choices=("confirm", "expire"), required=True)
+    memory_bulk_review.add_argument("--reason", default="")
+    memory_bulk_review.add_argument("--operator", default="local-operator")
+    memory_bulk_review.add_argument("--database")
+
+    memory_review_queue = subcommands.add_parser(
+        "memory-review-queue",
+        help="Review the current session-scoped memory queue in one action.",
+    )
+    memory_review_queue.add_argument("session_id")
+    memory_review_queue.add_argument("--decision", choices=("confirm", "expire"), required=True)
+    memory_review_queue.add_argument("--reason", default="")
+    memory_review_queue.add_argument("--operator", default="local-operator")
+    memory_review_queue.add_argument("--database")
+
+    memory_review_queue_preview = subcommands.add_parser(
+        "memory-review-queue-preview",
+        help="Preview the current session-scoped memory queue review target set.",
+    )
+    memory_review_queue_preview.add_argument("session_id")
+    memory_review_queue_preview.add_argument(
+        "--decision", choices=("confirm", "expire"), required=True
+    )
+    memory_review_queue_preview.add_argument("--memory-type")
+    memory_review_queue_preview.add_argument("--database")
+
+    memory_user_review = subcommands.add_parser(
+        "memory-user-review",
+        help="Record a user-scoped memory candidate review decision.",
+    )
+    memory_user_review.add_argument("user_id")
+    memory_user_review.add_argument("memory_id")
+    memory_user_review.add_argument("--decision", choices=("confirm", "expire"), required=True)
+    memory_user_review.add_argument("--reason", default="")
+    memory_user_review.add_argument("--operator", default="local-operator")
+    memory_user_review.add_argument("--database")
+
+    memory_user_bulk_review = subcommands.add_parser(
+        "memory-user-bulk-review",
+        help="Record bulk user-scoped memory candidate review decisions.",
+    )
+    memory_user_bulk_review.add_argument("user_id")
+    memory_user_bulk_review.add_argument("memory_ids", nargs="+")
+    memory_user_bulk_review.add_argument("--decision", choices=("confirm", "expire"), required=True)
+    memory_user_bulk_review.add_argument("--reason", default="")
+    memory_user_bulk_review.add_argument("--operator", default="local-operator")
+    memory_user_bulk_review.add_argument("--database")
+
+    memory_user_review_queue = subcommands.add_parser(
+        "memory-user-review-queue",
+        help="Review the current user-scoped memory queue in one action.",
+    )
+    memory_user_review_queue.add_argument("user_id")
+    memory_user_review_queue.add_argument(
+        "--decision", choices=("confirm", "expire"), required=True
+    )
+    memory_user_review_queue.add_argument("--reason", default="")
+    memory_user_review_queue.add_argument("--operator", default="local-operator")
+    memory_user_review_queue.add_argument("--database")
+
+    memory_user_review_queue_preview = subcommands.add_parser(
+        "memory-user-review-queue-preview",
+        help="Preview the current user-scoped memory queue review target set.",
+    )
+    memory_user_review_queue_preview.add_argument("user_id")
+    memory_user_review_queue_preview.add_argument(
+        "--decision", choices=("confirm", "expire"), required=True
+    )
+    memory_user_review_queue_preview.add_argument("--memory-type")
+    memory_user_review_queue_preview.add_argument("--database")
+
+    memory_tenant_review = subcommands.add_parser(
+        "memory-tenant-review",
+        help="Record a tenant-scoped memory candidate review decision.",
+    )
+    memory_tenant_review.add_argument("tenant_id")
+    memory_tenant_review.add_argument("memory_id")
+    memory_tenant_review.add_argument("--decision", choices=("confirm", "expire"), required=True)
+    memory_tenant_review.add_argument("--reason", default="")
+    memory_tenant_review.add_argument("--operator", default="local-operator")
+    memory_tenant_review.add_argument("--database")
+
+    memory_tenant_bulk_review = subcommands.add_parser(
+        "memory-tenant-bulk-review",
+        help="Record bulk tenant-scoped memory candidate review decisions.",
+    )
+    memory_tenant_bulk_review.add_argument("tenant_id")
+    memory_tenant_bulk_review.add_argument("memory_ids", nargs="+")
+    memory_tenant_bulk_review.add_argument(
+        "--decision",
+        choices=("confirm", "expire"),
+        required=True,
+    )
+    memory_tenant_bulk_review.add_argument("--reason", default="")
+    memory_tenant_bulk_review.add_argument("--operator", default="local-operator")
+    memory_tenant_bulk_review.add_argument("--database")
+
+    memory_tenant_review_queue = subcommands.add_parser(
+        "memory-tenant-review-queue",
+        help="Review the current tenant-scoped memory queue in one action.",
+    )
+    memory_tenant_review_queue.add_argument("tenant_id")
+    memory_tenant_review_queue.add_argument(
+        "--decision",
+        choices=("confirm", "expire"),
+        required=True,
+    )
+    memory_tenant_review_queue.add_argument("--reason", default="")
+    memory_tenant_review_queue.add_argument("--operator", default="local-operator")
+    memory_tenant_review_queue.add_argument("--database")
+
+    memory_tenant_review_queue_preview = subcommands.add_parser(
+        "memory-tenant-review-queue-preview",
+        help="Preview the current tenant-scoped memory queue review target set.",
+    )
+    memory_tenant_review_queue_preview.add_argument("tenant_id")
+    memory_tenant_review_queue_preview.add_argument(
+        "--decision",
+        choices=("confirm", "expire"),
+        required=True,
+    )
+    memory_tenant_review_queue_preview.add_argument("--memory-type")
+    memory_tenant_review_queue_preview.add_argument("--database")
+
     model = subcommands.add_parser("model", help="Run one prompt through the configured model.")
     model.add_argument("prompt")
 

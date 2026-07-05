@@ -2,7 +2,7 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 56 closeout is complete; resume execute CLI and operator parity is recorded, and next-priority planning is pending definition.
+> Current execution range: Phase 101 closeout is complete; scoped queue-sweep filtered preview evidence is recorded, and the next memory workflow priority is not yet defined.
 
 ## Global Rules
 
@@ -7081,3 +7081,2538 @@ governance document without introducing semantic summarization.
 - [x] Successful reads of root `AGENTS.md` can emit an `architecture_fact` candidate from explicit package dependency rules.
 - [x] A single governance-document read may persist multiple candidate types when distinct deterministic sections are present.
 - [x] Worker execution persists `architecture_fact` candidates and emits `memory_candidate_extracted` with the correct type.
+
+### P57-MEM-11 - Explicit User Preference Candidate Extraction
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P57-MEM-10`
+- Branch: `codex/p57-mem-02-memory-candidate-extraction`
+- Owned paths: `packages/agent-core/`, `apps/worker/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add the first narrow `preference` extraction path by reusing durable user
+message events and only accepting explicitly marked preference statements.
+
+#### Deliverables
+
+- deterministic `preference` candidate extraction from `USER_MESSAGE_RECEIVED` events
+- explicit message marker rule requiring `Preference:` prefix
+- worker coverage proving explicit user preferences persist without depending on tool execution
+
+#### Acceptance
+
+- [x] Completed sessions can emit `preference` candidates from explicit user messages without relying on free-form summarization.
+- [x] Preference extraction is limited to explicitly marked `Preference:` messages and ignores ordinary task prompts.
+- [x] Worker execution persists `preference` candidates and emits `memory_candidate_extracted` with the correct type.
+
+### P57-MEM-12 - Confirmed Memory Freshness Filtering
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P57-MEM-11`
+- Branch: `codex/p57-mem-02-memory-candidate-extraction`
+- Owned paths: `packages/agent-storage/`, `tests/agent_storage/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Prevent stale confirmed memories from entering the stable prompt context once a
+memory has an explicit expiration timestamp.
+
+#### Deliverables
+
+- `as_of`-aware confirmed repo memory lookup
+- expiration filtering before ranking, deduplication, and prompt injection
+- storage-level regression coverage for expired and still-fresh confirmed memories
+
+#### Acceptance
+
+- [x] Confirmed repo memories with `expires_at <= as_of` are excluded from confirmed-memory lookup.
+- [x] Unexpired confirmed repo memories remain eligible for ranking and injection.
+- [x] Existing API, CLI, runtime, and worker callers continue to use the default current-time freshness check without changing their public contracts.
+
+### P57-MEM-13 - Type-Aware Memory Review Conflict Policy
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P57-MEM-12`
+- Branch: `codex/p57-mem-02-memory-candidate-extraction`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Make memory review conflict handling match the growing memory type set instead
+of applying one supersession rule to every confirmed memory category.
+
+#### Deliverables
+
+- type-aware review conflict policy for confirmed-memory supersession
+- retained single-active behavior for `project_rule`, `architecture_fact`, and `procedure`
+- coexistence behavior for confirmed `preference` memories with API and CLI parity coverage
+
+#### Acceptance
+
+- [x] Confirming `project_rule`, `architecture_fact`, and `procedure` candidates still supersedes prior confirmed records in the same scope and type.
+- [x] Confirming a `preference` candidate does not supersede prior confirmed preferences in the same scope.
+- [x] API and CLI review responses preserve parity for both superseding and non-superseding confirm flows.
+
+### P57-MEM-14 - Duplicate Confirm Review Handling
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P57-MEM-13`
+- Branch: `codex/p57-mem-02-memory-candidate-extraction`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Stop confirmed-memory review from accumulating redundant duplicates when a
+candidate exactly matches an already confirmed memory in the same scope and
+type.
+
+#### Deliverables
+
+- duplicate-match detection on confirm review using normalized memory text
+- duplicate confirm outcome that expires the candidate instead of creating another confirmed record
+- API and CLI parity coverage exposing the matching confirmed memory id
+
+#### Acceptance
+
+- [x] Confirming a candidate that exactly matches an existing confirmed memory does not create a second confirmed record.
+- [x] Duplicate confirm review returns the matching confirmed memory id in both the durable event payload and API/CLI responses.
+- [x] Existing supersession behavior remains intact for non-duplicate confirmed replacements.
+
+### P57-MEM-15 - Stale Doc Memory Invalidation On Governance Refresh
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P57-MEM-14`
+- Branch: `codex/p57-mem-02-memory-candidate-extraction`
+- Owned paths: `packages/agent-core/`, `apps/worker/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Invalidate confirmed doc-derived memory when a later full governance-document
+read shows that the previously confirmed rule or architecture fact no longer
+appears in the repo source of truth.
+
+#### Deliverables
+
+- post-extraction stale invalidation for confirmed doc-derived memories after full root `AGENTS.md` refresh
+- durable invalidation event emission using the existing memory review event contract
+- worker and core coverage proving stale confirmed doc memories expire only when the governance document is fully reread
+
+#### Acceptance
+
+- [x] A completed session that fully rereads root `AGENTS.md` expires confirmed `project_rule` and `architecture_fact` memories that no longer appear in the extracted doc-derived candidate set.
+- [x] Sessions that do not fully reread root `AGENTS.md` leave confirmed doc-derived memories untouched.
+- [x] Worker execution emits durable invalidation events for stale doc-derived confirmed memories.
+
+### P57-CLOSE-01 - Phase 57 Closeout And Phase 58 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P57-MEM-15`
+- Branch: `codex/p58-mem-01-session-memory-lifecycle-readback`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 57 with local memory acceptance evidence and define the next memory
+implementation lane without leaving the task registry stale.
+
+#### Deliverables
+
+- Phase 57 acceptance record
+- synchronized progress and README state for the closed memory-foundation phase
+- Phase 58 starter tasks for lifecycle visibility and broader invalidation
+
+#### Acceptance
+
+- [x] Phase 57 local memory foundation and governance-refresh evidence is recorded.
+- [x] `docs/AGENT_TASKS.md`, `PROGRESS.md`, and `README.md` agree on the current active lane.
+
+## Phase 58 Task Board
+
+### P58-MEM-01 - Session Memory Lifecycle Readback
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P57-CLOSE-01`
+- Branch: `codex/p58-mem-01-session-memory-lifecycle-readback`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Make session memory inventory reads explain current memory state by projecting
+the latest durable memory-review metadata into both API and CLI read surfaces.
+
+#### Deliverables
+
+- shared memory-inventory serializer that attaches latest review lifecycle metadata by memory id
+- API and CLI session-memory read surfaces exposing `last_review`
+- regression coverage for ordinary memory rows and auto-expired governance-memory rows
+
+#### Acceptance
+
+- [x] Session memory inventory rows now include explicit `last_review` metadata when a durable review event exists.
+- [x] Auto-expired governance-memory rows expose the system operator and invalidation reason on both API and CLI read paths.
+- [x] API and CLI session-memory read outputs keep parity for shared lifecycle fields.
+
+### P58-MEM-02 - Broader Stale Confirmed Memory Invalidation
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P58-MEM-01`
+- Branch: `codex/p58-mem-02-broader-stale-memory-invalidation`
+- Owned paths: `packages/agent-core/`, `apps/worker/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Broaden the current narrow governance-refresh invalidation rule so stale
+confirmed singleton repo memories can expire from deterministic re-extraction
+without hard-coding only one document source.
+
+#### Deliverables
+
+- source-family-aware stale invalidation rules for deterministic singleton repo memories
+- worker coverage proving stale invalidation still only fires after a complete eligible source refresh
+- updated lifecycle notes documenting which memory types participate in auto-expiry
+
+#### Acceptance
+
+- [x] Stale invalidation is no longer hard-coded only to the current root `AGENTS.md` helper path.
+- [x] Invalidation still stays deterministic and limited to singleton repo memory categories.
+- [x] Durable invalidation events remain stable for downstream lifecycle readback.
+
+### P58-CLOSE-01 - Phase 58 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P58-MEM-02`
+- Branch: `codex/p58-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 58 with lifecycle visibility and broader invalidation evidence, then
+record the next memory or operator lane.
+
+#### Deliverables
+
+- Phase 58 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 58 lifecycle and invalidation evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 59 Task Board
+
+### P59-MEM-01 - Memory Source Provenance Readback
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P58-CLOSE-01`
+- Branch: `codex/p59-mem-01-memory-source-provenance-readback`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expose deterministic memory source provenance on operator read surfaces so
+reviewers can see where a memory came from without replaying the full event
+stream.
+
+#### Deliverables
+
+- shared provenance serializer for memory inventory rows
+- API and CLI parity coverage for provenance-bearing memory inventory payloads
+- lifecycle notes documenting how provenance interacts with reviewed and auto-expired records
+
+#### Acceptance
+
+- [x] Session memory inventory rows expose deterministic source provenance for reviewed and candidate records.
+- [x] API and CLI memory inventory outputs keep parity for shared provenance fields.
+- [x] Existing lifecycle readback fields remain backward compatible.
+
+### P59-CLOSE-01 - Phase 59 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P59-MEM-01`
+- Branch: `codex/p59-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 59 with provenance readback evidence and define the next memory
+scope or operator lane.
+
+#### Deliverables
+
+- Phase 59 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 59 provenance evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 60 Task Board
+
+### P60-MEM-01 - User And Tenant Memory Operator Inventory
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P59-CLOSE-01`
+- Branch: `codex/p60-mem-01-user-tenant-memory-inventory`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Expand operator memory readback beyond repo scope by introducing deterministic
+inventory surfaces for user-scoped and tenant-scoped memory.
+
+#### Deliverables
+
+- shared inventory query path for repo, user, and tenant memory scopes
+- API and CLI parity coverage for user and tenant memory inventory reads
+- lifecycle and provenance notes documenting cross-scope differences
+
+#### Acceptance
+
+- [x] Operators can read user-scoped and tenant-scoped memory inventories through local API and CLI surfaces.
+- [x] Shared lifecycle and provenance fields stay consistent across repo, user, and tenant scopes.
+- [x] Existing repo-memory inventory contracts remain backward compatible.
+
+### P60-CLOSE-01 - Phase 60 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P60-MEM-01`
+- Branch: `codex/p60-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 60 with cross-scope memory inventory evidence and define the next
+memory operator or review lane.
+
+#### Deliverables
+
+- Phase 60 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 60 cross-scope memory inventory evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 61 Task Board
+
+### P61-MEM-01 - Cross-Scope Memory Review Controls
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P60-CLOSE-01`
+- Branch: `codex/p61-mem-01-cross-scope-memory-review`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Extend local operator memory review beyond repo-session candidate paths so
+user-scoped and tenant-scoped memory can be reviewed through explicit local
+surfaces.
+
+#### Deliverables
+
+- shared review path for user-scoped and tenant-scoped memory records
+- API and CLI parity coverage for cross-scope confirm and expire flows
+- lifecycle notes documenting how cross-scope review relates to existing
+  session-derived provenance
+
+#### Acceptance
+
+- [x] Operators can confirm or expire eligible user-scoped and tenant-scoped memory through local API and CLI surfaces.
+- [x] Cross-scope review responses preserve the current lifecycle payload contract.
+- [x] Existing repo-memory review behavior remains backward compatible.
+
+### P61-CLOSE-01 - Phase 61 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P61-MEM-01`
+- Branch: `codex/p61-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 61 with cross-scope review evidence and define the next operator or
+memory workflow lane.
+
+#### Deliverables
+
+- Phase 61 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 61 cross-scope review evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 62 Task Board
+
+### P62-MEM-01 - Scope-Aware Memory Review Queue
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P61-CLOSE-01`
+- Branch: `codex/p62-mem-01-memory-review-queue`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve operator review throughput by introducing scope-aware memory candidate
+listing and filtering before batch workflows are considered.
+
+#### Deliverables
+
+- shared listing path for candidate memory across repo, user, and tenant scopes
+- API and CLI parity coverage for scope-aware review queue reads
+- lifecycle and provenance notes documenting how queue filtering interacts with reviewed records
+
+#### Acceptance
+
+- [x] Operators can list pending candidate memory by scope before choosing one record to review.
+- [x] API and CLI queue outputs preserve the current shared lifecycle and provenance fields where applicable.
+- [x] Existing inventory and review controls remain backward compatible.
+
+### P62-CLOSE-01 - Phase 62 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P62-MEM-01`
+- Branch: `codex/p62-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 62 with scope-aware review queue evidence and define the next
+operator throughput lane.
+
+#### Deliverables
+
+- Phase 62 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 62 review queue evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 63 Task Board
+
+### P63-MEM-01 - Bulk Memory Review Decisions
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P62-CLOSE-01`
+- Branch: `codex/p63-mem-01-bulk-memory-review-decisions`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve operator throughput after queue discovery by allowing explicit
+multi-record confirm or expire decisions within one scope.
+
+#### Deliverables
+
+- shared bulk review command path over scoped candidate memory ids
+- API and CLI parity coverage for bulk confirm or expire results
+- deterministic partial-failure semantics that preserve existing review event contracts
+
+#### Acceptance
+
+- [x] Operators can confirm or expire multiple candidate memories in one scoped action.
+- [x] Bulk review responses distinguish applied, skipped, and invalid records without changing current single-review behavior.
+- [x] Existing queue and single-record review controls remain backward compatible.
+
+### P63-CLOSE-01 - Phase 63 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P63-MEM-01`
+- Branch: `codex/p63-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 63 with bulk review evidence and define the next operator memory
+workflow lane.
+
+#### Deliverables
+
+- Phase 63 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 63 bulk review evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 64 Task Board
+
+### P64-MEM-01 - Cross-Scope Memory Queue Summary
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P63-CLOSE-01`
+- Branch: `codex/p64-mem-01-cross-scope-memory-queue-summary`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve operator visibility by surfacing pending memory counts and queue status
+across repo-session, user, and tenant scopes without changing existing review
+flows.
+
+#### Deliverables
+
+- shared queue summary read path for pending memory counts by scope
+- API and CLI parity coverage for queue summary reads
+- additive summary payloads that coexist with current queue detail and bulk review surfaces
+
+#### Acceptance
+
+- [x] Operators can read pending memory counts by scope before opening full queue detail.
+- [x] API and CLI summary outputs remain additive and backward compatible with current queue and bulk review paths.
+- [x] Current explicit scope boundaries remain preserved in summary reads.
+
+### P64-CLOSE-01 - Phase 64 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P64-MEM-01`
+- Branch: `codex/p64-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 64 with queue summary evidence and define the next operator memory
+workflow lane.
+
+#### Deliverables
+
+- Phase 64 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 64 queue summary evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 65 Task Board
+
+### P65-MEM-01 - Cross-Scope Memory Operations Overview
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P64-CLOSE-01`
+- Branch: `codex/p65-mem-01-cross-scope-memory-operations-overview`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve operator coordination by exposing one combined local overview of memory
+queue health across repo-session, user, and tenant scopes.
+
+#### Deliverables
+
+- shared overview read path that aggregates current queue summary signals across scopes
+- API and CLI parity coverage for cross-scope overview reads
+- additive overview payloads that preserve current per-scope summary and detail contracts
+
+#### Acceptance
+
+- [x] Operators can inspect a combined overview of queue health across supported scopes.
+- [x] API and CLI overview outputs remain additive and backward compatible with current summary, queue, and bulk review paths.
+- [x] Scope-specific drill-down remains possible without changing existing per-scope endpoints or commands.
+
+### P65-CLOSE-01 - Phase 65 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P65-MEM-01`
+- Branch: `codex/p65-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 65 with operator-overview evidence and define the next memory
+workflow lane.
+
+#### Deliverables
+
+- Phase 65 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 65 operator-overview evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 66 Task Board
+
+### P66-MEM-01 - Memory Review Governance Signals
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P65-CLOSE-01`
+- Branch: `codex/p66-mem-01-memory-review-governance-signals`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve operator governance decisions by exposing lightweight review activity
+and backlog breakdown signals on top of the current overview surfaces.
+
+#### Deliverables
+
+- shared governance-signal read path for pending backlog and recent review activity
+- API and CLI parity coverage for governance-signal reads
+- additive payloads that preserve current overview, summary, queue, and bulk review contracts
+
+#### Acceptance
+
+- [x] Operators can inspect lightweight governance signals without opening full event history.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Existing scope boundaries remain explicit in the exposed governance signals.
+
+### P66-CLOSE-01 - Phase 66 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P66-MEM-01`
+- Branch: `codex/p66-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 66 with governance-signal evidence and define the next memory
+workflow lane.
+
+#### Deliverables
+
+- Phase 66 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 66 governance-signal evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 67 Task Board
+
+### P67-MEM-01 - Memory Backlog Aging Signals
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P66-CLOSE-01`
+- Branch: `codex/p67-mem-01-memory-backlog-aging-signals`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve operator prioritization by exposing deterministic backlog aging signals
+for pending memory without requiring full queue inspection.
+
+#### Deliverables
+
+- shared aging-signal read path for oldest pending memory and age buckets
+- API and CLI parity coverage for backlog aging reads
+- additive payloads that preserve current governance, overview, summary, and queue contracts
+
+#### Acceptance
+
+- [x] Operators can inspect backlog aging signals for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Existing scope boundaries remain explicit in the exposed aging signals.
+
+### P67-CLOSE-01 - Phase 67 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P67-MEM-01`
+- Branch: `codex/p67-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 67 with backlog-aging evidence and define the next memory workflow
+lane.
+
+#### Deliverables
+
+- Phase 67 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 67 backlog-aging evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 68 Task Board
+
+### P68-MEM-01 - Memory Review Velocity Signals
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P67-CLOSE-01`
+- Branch: `codex/p68-mem-01-memory-review-velocity-signals`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve operator prioritization by exposing deterministic recent review
+throughput signals on top of the current governance and aging surfaces.
+
+#### Deliverables
+
+- shared velocity-signal read path for recent review counts and latest review windows
+- API and CLI parity coverage for review-velocity reads
+- additive payloads that preserve current aging, governance, overview, summary, and queue contracts
+
+#### Acceptance
+
+- [x] Operators can inspect recent review throughput for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Existing scope boundaries remain explicit in the exposed velocity signals.
+
+### P68-CLOSE-01 - Phase 68 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P68-MEM-01`
+- Branch: `codex/p68-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 68 with review-velocity evidence and define the next memory
+workflow lane.
+
+#### Deliverables
+
+- Phase 68 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 68 review-velocity evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 69 Task Board
+
+### P69-MEM-01 - Memory Backlog Pressure Signals
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P68-CLOSE-01`
+- Branch: `codex/p69-mem-01-memory-backlog-pressure-signals`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve operator prioritization by exposing one deterministic backlog pressure
+summary that combines current backlog size, backlog aging, and recent review
+throughput.
+
+#### Deliverables
+
+- shared pressure-signal read path for current backlog pressure classification
+- API and CLI parity coverage for pressure reads
+- additive payloads that preserve current velocity, aging, governance, overview, summary, and queue contracts
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic backlog pressure signals for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Existing scope boundaries remain explicit in the exposed pressure signals.
+
+### P69-CLOSE-01 - Phase 69 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P69-MEM-01`
+- Branch: `codex/p69-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 69 with backlog-pressure evidence and define the next memory
+workflow lane.
+
+#### Deliverables
+
+- Phase 69 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 69 backlog-pressure evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 70 Task Board
+
+### P70-MEM-01 - Memory Pressure Action Hints
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P69-CLOSE-01`
+- Branch: `codex/p70-mem-01-memory-pressure-action-hints`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve operator execution by exposing deterministic action hints on top of the
+current backlog pressure, aging, and review-velocity signals.
+
+#### Deliverables
+
+- shared action-hint read path for recommended next operator focus
+- API and CLI parity coverage for action-hint reads
+- additive payloads that preserve current pressure, velocity, aging, governance, overview, summary, and queue contracts
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic action hints for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Existing scope boundaries remain explicit in the exposed action hints.
+
+### P70-CLOSE-01 - Phase 70 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P70-MEM-01`
+- Branch: `codex/p70-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 70 with pressure-action-hint evidence and define the next memory
+workflow lane.
+
+#### Deliverables
+
+- Phase 70 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 70 pressure-action-hint evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 71 Task Board
+
+### P71-MEM-01 - Memory Pressure Escalation Recommendations
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P70-CLOSE-01`
+- Branch: `codex/p71-mem-01-memory-pressure-escalation-recommendations`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve sustained memory-operations triage by exposing deterministic escalation
+recommendations for scopes that stay stalled or repeatedly re-enter high
+pressure.
+
+#### Deliverables
+
+- shared escalation-recommendation read path derived from current pressure and action-hint signals
+- API and CLI parity coverage for escalation reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic escalation recommendations for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Escalation recommendations stay explicitly scoped and local-first.
+
+### P71-CLOSE-01 - Phase 71 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P71-MEM-01`
+- Branch: `codex/p71-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 71 with escalation evidence and define the next memory workflow
+lane.
+
+#### Deliverables
+
+- Phase 71 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 71 escalation evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 72 Task Board
+
+### P72-MEM-01 - Memory Escalation Follow-Up Windows
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P71-CLOSE-01`
+- Branch: `codex/p72-mem-01-memory-escalation-follow-up-windows`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve escalation execution by exposing deterministic follow-up timing
+guidance for scopes that remain local versus scopes that need re-check or
+re-open handling.
+
+#### Deliverables
+
+- shared follow-up-window read path derived from current escalation and pressure signals
+- API and CLI parity coverage for follow-up-window reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic follow-up windows for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Follow-up windows stay explicitly scoped and local-first.
+
+### P72-CLOSE-01 - Phase 72 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P72-MEM-01`
+- Branch: `codex/p72-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 72 with follow-up-window evidence and define the next memory
+workflow lane.
+
+#### Deliverables
+
+- Phase 72 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 72 follow-up-window evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 73 Task Board
+
+### P73-MEM-01 - Memory Follow-Up Overdue Flags
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P72-CLOSE-01`
+- Branch: `codex/p73-mem-01-memory-follow-up-overdue-flags`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve operator timing discipline by exposing deterministic overdue status for
+follow-up windows that have already lapsed at read time.
+
+#### Deliverables
+
+- shared overdue-flag read path derived from current follow-up-window evidence
+- API and CLI parity coverage for overdue-flag reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue follow-up flags for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue flags stay explicitly scoped and local-first.
+
+### P73-CLOSE-01 - Phase 73 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P73-MEM-01`
+- Branch: `codex/p73-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 73 with overdue-flag evidence and define the next memory workflow
+lane.
+
+#### Deliverables
+
+- Phase 73 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 73 overdue-flag evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 74 Task Board
+
+### P74-MEM-01 - Memory Overdue Age Buckets
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P73-CLOSE-01`
+- Branch: `codex/p74-mem-01-memory-overdue-age-buckets`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue triage by exposing deterministic overdue age buckets for
+follow-up items that have already lapsed.
+
+#### Deliverables
+
+- shared overdue-age read path derived from current overdue evidence
+- API and CLI parity coverage for overdue-age reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue age buckets for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue age buckets stay explicitly scoped and local-first.
+
+### P74-CLOSE-01 - Phase 74 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P74-MEM-01`
+- Branch: `codex/p74-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 74 with overdue-age evidence and define the next memory workflow
+lane.
+
+#### Deliverables
+
+- Phase 74 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 74 overdue-age evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 75 Task Board
+
+### P75-MEM-01 - Memory Overdue Type Rollups
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P74-CLOSE-01`
+- Branch: `codex/p75-mem-01-memory-overdue-type-rollups`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue triage by exposing deterministic memory-type rollups for
+currently overdue scopes.
+
+#### Deliverables
+
+- shared overdue-type read path derived from current overdue scope evidence
+- API and CLI parity coverage for overdue-type reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue memory-type rollups for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue memory-type rollups stay explicitly scoped and local-first.
+
+### P75-CLOSE-01 - Phase 75 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P75-MEM-01`
+- Branch: `codex/p75-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 75 with overdue-type evidence and define the next memory workflow
+lane.
+
+#### Deliverables
+
+- Phase 75 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 75 overdue-type evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 76 Task Board
+
+### P76-MEM-01 - Memory Overdue Visibility Rollups
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P75-CLOSE-01`
+- Branch: `codex/p76-mem-01-memory-overdue-visibility-rollups`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue triage by exposing deterministic overdue visibility rollups for
+currently overdue scopes.
+
+#### Deliverables
+
+- shared overdue-visibility read path derived from current overdue scope evidence
+- API and CLI parity coverage for overdue-visibility reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue visibility rollups for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue visibility rollups stay explicitly scoped and local-first.
+
+### P76-CLOSE-01 - Phase 76 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P76-MEM-01`
+- Branch: `codex/p76-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 76 with overdue-visibility evidence and define the next memory
+workflow lane.
+
+#### Deliverables
+
+- Phase 76 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 76 overdue-visibility evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 77 Task Board
+
+### P77-MEM-01 - Memory Overdue Trend Signals
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P76-CLOSE-01`
+- Branch: `codex/p77-mem-01-memory-overdue-trend-signals`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue triage by exposing deterministic overdue trend signals for
+currently overdue scopes.
+
+#### Deliverables
+
+- shared overdue-trend read path derived from current overdue scope evidence
+- API and CLI parity coverage for overdue-trend reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue trend signals for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue trend signals stay explicitly scoped and local-first.
+
+### P77-CLOSE-01 - Phase 77 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P77-MEM-01`
+- Branch: `codex/p77-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 77 with overdue-trend evidence and define the next memory
+workflow lane.
+
+#### Deliverables
+
+- Phase 77 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 77 overdue-trend evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 78 Task Board
+
+### P78-MEM-01 - Memory Overdue Intervention Hints
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P77-CLOSE-01`
+- Branch: `codex/p78-mem-01-memory-overdue-intervention-hints`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue triage by exposing deterministic overdue intervention hints for
+currently overdue scopes.
+
+#### Deliverables
+
+- shared overdue-intervention read path derived from current overdue scope evidence
+- API and CLI parity coverage for overdue-intervention reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue intervention hints for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue intervention hints stay explicitly scoped and local-first.
+
+### P78-CLOSE-01 - Phase 78 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P78-MEM-01`
+- Branch: `codex/p78-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 78 with overdue-intervention evidence and define the next memory
+workflow lane.
+
+#### Deliverables
+
+- Phase 78 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 78 overdue-intervention evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 79 Task Board
+
+### P79-MEM-01 - Memory Overdue Escalation Lanes
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P78-CLOSE-01`
+- Branch: `codex/p79-mem-01-memory-overdue-escalation-lanes`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue triage by exposing deterministic overdue escalation lanes for
+currently overdue scopes.
+
+#### Deliverables
+
+- shared overdue-escalation-lane read path derived from current overdue scope evidence
+- API and CLI parity coverage for overdue-escalation-lane reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue escalation lanes for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue escalation lanes stay explicitly scoped and local-first.
+
+### P79-CLOSE-01 - Phase 79 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P79-MEM-01`
+- Branch: `codex/p79-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 79 with overdue-escalation-lane evidence and define the next
+memory workflow lane.
+
+#### Deliverables
+
+- Phase 79 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 79 overdue-escalation-lane evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 80 Task Board
+
+### P80-MEM-01 - Memory Overdue Recovery Paths
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P79-CLOSE-01`
+- Branch: `codex/p80-mem-01-memory-overdue-recovery-paths`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue recovery planning by exposing deterministic recovery paths for
+currently overdue scopes after escalation-lane selection.
+
+#### Deliverables
+
+- shared overdue-recovery-path read path derived from current overdue escalation-lane evidence
+- API and CLI parity coverage for overdue-recovery-path reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue recovery paths for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue recovery paths stay explicitly scoped and local-first.
+
+### P80-CLOSE-01 - Phase 80 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P80-MEM-01`
+- Branch: `codex/p80-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 80 with overdue-recovery-path evidence and define the next memory
+workflow lane.
+
+#### Deliverables
+
+- Phase 80 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 80 overdue-recovery-path evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 81 Task Board
+
+### P81-MEM-01 - Memory Overdue Resolution Checkpoints
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P80-CLOSE-01`
+- Branch: `codex/p81-mem-01-memory-overdue-resolution-checkpoints`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue recovery tracking by exposing deterministic resolution
+checkpoints for currently overdue scopes after recovery-path selection.
+
+#### Deliverables
+
+- shared overdue-resolution-checkpoint read path derived from current overdue recovery-path evidence
+- API and CLI parity coverage for overdue-resolution-checkpoint reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue resolution checkpoints for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue resolution checkpoints stay explicitly scoped and local-first.
+
+### P81-CLOSE-01 - Phase 81 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P81-MEM-01`
+- Branch: `codex/p81-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 81 with overdue-resolution-checkpoint evidence and define the next
+memory workflow lane.
+
+#### Deliverables
+
+- Phase 81 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 81 overdue-resolution-checkpoint evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 82 Task Board
+
+### P82-MEM-01 - Memory Overdue Resolution Outcomes
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P81-CLOSE-01`
+- Branch: `codex/p82-mem-01-memory-overdue-resolution-outcomes`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue closure tracking by exposing deterministic resolution outcomes
+for currently overdue scopes after resolution-checkpoint selection.
+
+#### Deliverables
+
+- shared overdue-resolution-outcome read path derived from current overdue resolution-checkpoint evidence
+- API and CLI parity coverage for overdue-resolution-outcome reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue resolution outcomes for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue resolution outcomes stay explicitly scoped and local-first.
+
+### P82-CLOSE-01 - Phase 82 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P82-MEM-01`
+- Branch: `codex/p82-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 82 with overdue-resolution-outcome evidence and define the next
+memory workflow lane.
+
+#### Deliverables
+
+- Phase 82 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 82 overdue-resolution-outcome evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 83 Task Board
+
+### P83-MEM-01 - Memory Overdue Closure Decisions
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P82-CLOSE-01`
+- Branch: `codex/p83-mem-01-memory-overdue-closure-decisions`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue final handling by exposing deterministic closure decisions for
+currently overdue scopes after resolution-outcome selection.
+
+#### Deliverables
+
+- shared overdue-closure-decision read path derived from current overdue resolution-outcome evidence
+- API and CLI parity coverage for overdue-closure-decision reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue closure decisions for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue closure decisions stay explicitly scoped and local-first.
+
+### P83-CLOSE-01 - Phase 83 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P83-MEM-01`
+- Branch: `codex/p83-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 83 with overdue-closure-decision evidence and define the next
+memory workflow lane.
+
+#### Deliverables
+
+- Phase 83 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 83 overdue-closure-decision evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 84 Task Board
+
+### P84-MEM-01 - Memory Overdue Archive Recommendations
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P83-CLOSE-01`
+- Branch: `codex/p84-mem-01-memory-overdue-archive-recommendations`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue aftercare handling by exposing deterministic archive
+recommendations for currently overdue scopes after closure-decision selection.
+
+#### Deliverables
+
+- shared overdue-archive-recommendation read path derived from current overdue closure-decision evidence
+- API and CLI parity coverage for overdue-archive-recommendation reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue archive recommendations for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue archive recommendations stay explicitly scoped and local-first.
+
+### P84-CLOSE-01 - Phase 84 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P84-MEM-01`
+- Branch: `codex/p84-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 84 with overdue-archive-recommendation evidence and define the next
+memory workflow lane.
+
+#### Deliverables
+
+- Phase 84 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 84 overdue-archive-recommendation evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 85 Task Board
+
+### P85-MEM-01 - Memory Overdue Retention Guidance
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P84-CLOSE-01`
+- Branch: `codex/p85-mem-01-memory-overdue-retention-guidance`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue aftercare by exposing deterministic retention guidance for
+currently overdue scopes after archive-recommendation selection.
+
+#### Deliverables
+
+- shared overdue-retention-guidance read path derived from current overdue archive-recommendation evidence
+- API and CLI parity coverage for overdue-retention-guidance reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue retention guidance for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue retention guidance stays explicitly scoped and local-first.
+
+### P85-CLOSE-01 - Phase 85 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P85-MEM-01`
+- Branch: `codex/p85-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 85 with overdue-retention-guidance evidence and define the next
+memory workflow lane.
+
+#### Deliverables
+
+- Phase 85 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 85 overdue-retention-guidance evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 86 Task Board
+
+### P86-MEM-01 - Memory Overdue Retention Windows
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P85-CLOSE-01`
+- Branch: `codex/p86-mem-01-memory-overdue-retention-windows`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue aftercare timing by exposing deterministic retention windows
+for currently overdue scopes after retention-guidance selection.
+
+#### Deliverables
+
+- shared overdue-retention-window read path derived from current overdue retention-guidance evidence
+- API and CLI parity coverage for overdue-retention-window reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue retention windows for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue retention windows stay explicitly scoped and local-first.
+
+### P86-CLOSE-01 - Phase 86 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P86-MEM-01`
+- Branch: `codex/p86-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 86 with overdue-retention-window evidence and define the next
+memory workflow lane.
+
+#### Deliverables
+
+- Phase 86 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 86 overdue-retention-window evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 87 Task Board
+
+### P87-MEM-01 - Memory Overdue Retention Breaches
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P86-CLOSE-01`
+- Branch: `codex/p87-mem-01-memory-overdue-retention-breaches`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue aftercare escalation by exposing deterministic retention breach
+classifications for currently overdue scopes after retention-window selection.
+
+#### Deliverables
+
+- shared overdue-retention-breach read path derived from current overdue retention-window evidence
+- API and CLI parity coverage for overdue-retention-breach reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue retention breaches for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue retention breaches stay explicitly scoped and local-first.
+
+### P87-CLOSE-01 - Phase 87 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P87-MEM-01`
+- Branch: `codex/p87-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 87 with overdue-retention-breach evidence and define the next
+memory workflow lane.
+
+#### Deliverables
+
+- Phase 87 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 87 overdue-retention-breach evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 88 Task Board
+
+### P88-MEM-01 - Memory Overdue Retention Breach Aging
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P87-CLOSE-01`
+- Branch: `codex/p88-mem-01-memory-overdue-retention-breach-aging`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue aftercare escalation depth by exposing deterministic retention
+breach aging for currently overdue scopes after retention-breach selection.
+
+#### Deliverables
+
+- shared overdue-retention-breach-aging read path derived from current overdue retention-breach evidence
+- API and CLI parity coverage for overdue-retention-breach-aging reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue retention breach aging for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue retention breach aging stays explicitly scoped and local-first.
+
+### P88-CLOSE-01 - Phase 88 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P88-MEM-01`
+- Branch: `codex/p88-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 88 with overdue-retention-breach-aging evidence and define the
+next memory workflow lane.
+
+#### Deliverables
+
+- Phase 88 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 88 overdue-retention-breach-aging evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 89 Task Board
+
+### P89-MEM-01 - Memory Overdue Retention Breach Actions
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P88-CLOSE-01`
+- Branch: `codex/p89-mem-01-memory-overdue-retention-breach-actions`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue aftercare actionability by exposing deterministic retention
+breach actions for currently overdue scopes after breach-aging selection.
+
+#### Deliverables
+
+- shared overdue-retention-breach-action read path derived from current overdue retention-breach-aging evidence
+- API and CLI parity coverage for overdue-retention-breach-action reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue retention breach actions for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue retention breach actions stay explicitly scoped and local-first.
+
+### P89-CLOSE-01 - Phase 89 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P89-MEM-01`
+- Branch: `codex/p89-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 89 with overdue-retention-breach-action evidence and define the
+next memory workflow lane.
+
+#### Deliverables
+
+- Phase 89 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 89 overdue-retention-breach-action evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 90 Task Board
+
+### P90-MEM-01 - Memory Overdue Retention Breach Lanes
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P89-CLOSE-01`
+- Branch: `codex/p90-mem-01-memory-overdue-retention-breach-lanes`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue aftercare routing by exposing deterministic retention breach
+lanes for currently overdue scopes after breach-action selection.
+
+#### Deliverables
+
+- shared overdue-retention-breach-lane read path derived from current overdue retention-breach-action evidence
+- API and CLI parity coverage for overdue-retention-breach-lane reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue retention breach lanes for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue retention breach lanes stay explicitly scoped and local-first.
+
+### P90-CLOSE-01 - Phase 90 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P90-MEM-01`
+- Branch: `codex/p90-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 90 with overdue-retention-breach-lane evidence and define the
+next memory workflow lane.
+
+#### Deliverables
+
+- Phase 90 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 90 overdue-retention-breach-lane evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 91 Task Board
+
+### P91-MEM-01 - Memory Overdue Retention Breach Owner Targets
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P90-CLOSE-01`
+- Branch: `codex/p91-mem-01-memory-overdue-retention-breach-owner-targets`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue aftercare routing clarity by exposing deterministic retention
+breach owner targets for currently overdue scopes after breach-lane selection.
+
+#### Deliverables
+
+- shared overdue-retention-breach-owner-target read path derived from current overdue retention-breach-lane evidence
+- API and CLI parity coverage for overdue-retention-breach-owner-target reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue retention breach owner targets for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue retention breach owner targets stay explicitly scoped and local-first.
+
+### P91-CLOSE-01 - Phase 91 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P91-MEM-01`
+- Branch: `codex/p91-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 91 with overdue-retention-breach-owner-target evidence and define
+the next memory workflow lane.
+
+#### Deliverables
+
+- Phase 91 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 91 overdue-retention-breach-owner-target evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 92 Task Board
+
+### P92-MEM-01 - Memory Overdue Retention Breach Follow-Through Modes
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P91-CLOSE-01`
+- Branch: `codex/p92-mem-01-memory-overdue-retention-breach-follow-through-modes`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue aftercare execution clarity by exposing deterministic retention
+breach follow-through modes for currently overdue scopes after owner-target
+selection.
+
+#### Deliverables
+
+- shared overdue-retention-breach-follow-through-mode read path derived from current overdue retention-breach-owner-target evidence
+- API and CLI parity coverage for overdue-retention-breach-follow-through-mode reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue retention breach follow-through modes for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue retention breach follow-through modes stay explicitly scoped and local-first.
+
+### P92-CLOSE-01 - Phase 92 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P92-MEM-01`
+- Branch: `codex/p92-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 92 with overdue-retention-breach-follow-through-mode evidence and
+define the next memory workflow lane.
+
+#### Deliverables
+
+- Phase 92 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 92 overdue-retention-breach-follow-through-mode evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 93 Task Board
+
+### P93-MEM-01 - Memory Overdue Retention Breach Follow-Through Outcomes
+
+- Status: `Done`
+- Owner: `Unassigned`
+- Suggested role: `CTX`
+- Depends on: `P92-CLOSE-01`
+- Branch: `codex/p93-mem-01-memory-overdue-retention-breach-follow-through-outcomes`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue aftercare completion clarity by exposing deterministic
+follow-through outcomes for currently overdue scopes after follow-through mode
+selection.
+
+#### Deliverables
+
+- shared overdue-retention-breach-follow-through-outcome read path derived from current overdue retention-breach-follow-through-mode evidence
+- API and CLI parity coverage for overdue-retention-breach-follow-through-outcome reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue retention breach follow-through outcomes for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue retention breach follow-through outcomes stay explicitly scoped and local-first.
+
+### P93-CLOSE-01 - Phase 93 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P93-MEM-01`
+- Branch: `codex/p93-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 93 with overdue-retention-breach-follow-through-outcome evidence
+and define the next memory workflow lane.
+
+#### Deliverables
+
+- Phase 93 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 93 overdue-retention-breach-follow-through-outcome evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 94 Task Board
+
+### P94-MEM-01 - Memory Overdue Retention Breach Follow-Through Completion States
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P93-CLOSE-01`
+- Branch: `codex/p94-mem-01-memory-overdue-retention-breach-follow-through-completion-states`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue aftercare closure visibility by exposing deterministic
+follow-through completion states for currently overdue scopes after
+follow-through outcome selection.
+
+#### Deliverables
+
+- shared overdue-retention-breach-follow-through-completion-state read path derived from current overdue retention-breach-follow-through-outcome evidence
+- API and CLI parity coverage for overdue-retention-breach-follow-through-completion-state reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue retention breach follow-through completion states for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue retention breach follow-through completion states stay explicitly scoped and local-first.
+
+### P94-CLOSE-01 - Phase 94 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P94-MEM-01`
+- Branch: `codex/p94-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 94 with overdue-retention-breach-follow-through-completion-state
+evidence and define the next memory workflow lane.
+
+#### Deliverables
+
+- Phase 94 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 94 overdue-retention-breach-follow-through-completion-state evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 95 Task Board
+
+### P95-MEM-01 - Memory Overdue Retention Breach Follow-Through Verification States
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX`
+- Depends on: `P94-CLOSE-01`
+- Branch: `codex/p95-mem-01-memory-overdue-retention-breach-follow-through-verification-states`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue aftercare signoff visibility by exposing deterministic
+follow-through verification states for currently overdue scopes after
+follow-through completion-state selection.
+
+#### Deliverables
+
+- shared overdue-retention-breach-follow-through-verification-state read path derived from current overdue retention-breach-follow-through-completion-state evidence
+- API and CLI parity coverage for overdue-retention-breach-follow-through-verification-state reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue retention breach follow-through verification states for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue retention breach follow-through verification states stay explicitly scoped and local-first.
+
+### P95-CLOSE-01 - Phase 95 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P95-MEM-01`
+- Branch: `codex/p95-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 95 with overdue-retention-breach-follow-through-verification-state
+evidence and define the next memory workflow lane.
+
+#### Deliverables
+
+- Phase 95 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 95 overdue-retention-breach-follow-through-verification-state evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 96 Task Board
+
+### P96-MEM-01 - Memory Overdue Retention Breach Follow-Through Verification Outcomes
+
+- Status: `Done`
+- Owner: `Unassigned`
+- Suggested role: `CTX`
+- Depends on: `P95-CLOSE-01`
+- Branch: `codex/p96-mem-01-memory-overdue-retention-breach-follow-through-verification-outcomes`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve overdue aftercare verification result visibility by exposing
+deterministic follow-through verification outcomes for currently overdue scopes
+after follow-through verification-state selection.
+
+#### Deliverables
+
+- shared overdue-retention-breach-follow-through-verification-outcome read path derived from current overdue retention-breach-follow-through-verification-state evidence
+- API and CLI parity coverage for overdue-retention-breach-follow-through-verification-outcome reads
+- additive payloads that preserve current memory operation contracts and explicit scope boundaries
+
+#### Acceptance
+
+- [x] Operators can inspect deterministic overdue retention breach follow-through verification outcomes for supported scopes.
+- [x] API and CLI outputs remain additive and backward compatible with current memory operation read paths.
+- [x] Overdue retention breach follow-through verification outcomes stay explicitly scoped and local-first.
+
+### P96-CLOSE-01 - Phase 96 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P96-MEM-01`
+- Branch: `codex/p96-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 96 with overdue-retention-breach-follow-through-verification-outcome
+evidence and record that this overdue-retention-breach follow-through sublane is
+complete while the next memory workflow lane remains undefined.
+
+#### Deliverables
+
+- Phase 96 acceptance record
+- current implementation lane and next-priority status
+- synchronized progress and README state
+
+#### Acceptance
+
+- [x] Phase 96 overdue-retention-breach-follow-through-verification-outcome evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 97 Task Board
+
+### P97-MEM-01 - Scoped Queue Sweep Review Controls
+
+- Status: `Done`
+- Owner: `Unassigned`
+- Suggested role: `CTX`
+- Depends on: `P96-CLOSE-01`
+- Branch: `codex/p97-mem-01-scoped-queue-sweep-review-controls`
+- Owned paths: `apps/api/`, `apps/cli/`, `packages/agent-core/`, `packages/agent-storage/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Improve operator throughput by letting one scoped action review the current
+candidate queue directly, without requiring callers to enumerate every memory
+id ahead of time.
+
+#### Deliverables
+
+- scoped queue-sweep review controls for repo-session, user, and tenant memory
+- API and CLI parity coverage for queue-sweep confirm or expire actions
+- additive result payloads that preserve current single-record and explicit-id
+  bulk-review contracts
+
+#### Acceptance
+
+- [x] Operators can confirm or expire the current scoped memory queue in one action.
+- [x] Queue-sweep responses stay additive and keep current memory review semantics.
+- [x] Queue-sweep controls remain explicitly scope-bound and local-first.
+
+### P97-CLOSE-01 - Phase 97 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P97-MEM-01`
+- Branch: `codex/p97-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 97 with scoped queue-sweep review evidence and synchronize the next
+memory workflow priority.
+
+#### Deliverables
+
+- Phase 97 acceptance record
+- synchronized progress and README state
+- current implementation lane and next-priority decision
+
+#### Acceptance
+
+- [x] Phase 97 scoped queue-sweep review evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 98 Task Board
+
+### P98-MEM-01 - Scoped Queue Sweep Preview Controls
+
+- Status: `Done`
+- Owner: `Unassigned`
+- Suggested role: `CTX`
+- Depends on: `P97-CLOSE-01`
+- Branch: `codex/p98-mem-01-scoped-queue-sweep-preview-controls`
+- Owned paths: `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a no-side-effect preview surface for scoped queue-sweep review so operators
+can inspect the exact candidate set that a queue confirm or expire action would
+touch before executing it.
+
+#### Deliverables
+
+- scoped queue-sweep preview controls for repo-session, user, and tenant memory
+- API and CLI parity coverage for queue-sweep preview payloads
+- additive preview payloads that expose exact queued ids and records without
+  mutating review state
+
+#### Acceptance
+
+- [x] Operators can preview the exact scoped queue-sweep target set before review.
+- [x] Preview responses stay additive and side-effect free.
+- [x] Repo-session preview reflects the same `source_session_id` narrowing used by queue sweep execution.
+
+### P98-CLOSE-01 - Phase 98 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P98-MEM-01`
+- Branch: `codex/p98-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 98 with scoped queue-sweep preview evidence and synchronize the
+next memory workflow priority.
+
+#### Deliverables
+
+- Phase 98 acceptance record
+- synchronized progress and README state
+- current implementation lane and next-priority decision
+
+#### Acceptance
+
+- [x] Phase 98 scoped queue-sweep preview evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 99 Task Board
+
+### P99-MEM-01 - Scoped Queue Sweep Dry-Run Summaries
+
+- Status: `Done`
+- Owner: `Unassigned`
+- Suggested role: `CTX`
+- Depends on: `P98-CLOSE-01`
+- Branch: `codex/p99-mem-01-scoped-queue-sweep-dry-run-summaries`
+- Owned paths: `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add dry-run summary metadata to scoped queue-sweep preview responses so
+operators can see not only the exact target set, but also the projected review
+outcome shape before confirm or expire execution.
+
+#### Deliverables
+
+- dry-run summary metadata on scoped queue-sweep preview responses for repo-session, user, and tenant memory
+- API and CLI parity coverage for projected queue-sweep summary payloads
+- additive preview payloads that expose projected post-review status and counts without mutating review state
+
+#### Acceptance
+
+- [x] Operators can see projected queue-sweep outcome summaries before execution.
+- [x] Dry-run summary payloads stay additive and side-effect free.
+- [x] Projected summary fields stay parity-aligned across API and CLI preview surfaces.
+
+### P99-CLOSE-01 - Phase 99 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P99-MEM-01`
+- Branch: `codex/p99-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 99 with scoped queue-sweep dry-run summary evidence and synchronize
+the next memory workflow priority.
+
+#### Deliverables
+
+- Phase 99 acceptance record
+- synchronized progress and README state
+- current implementation lane and next-priority decision
+
+#### Acceptance
+
+- [x] Phase 99 scoped queue-sweep dry-run summary evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 100 Task Board
+
+### P100-MEM-01 - Scoped Queue Sweep Target Explanations
+
+- Status: `Done`
+- Owner: `Unassigned`
+- Suggested role: `CTX`
+- Depends on: `P99-CLOSE-01`
+- Branch: `codex/p100-mem-01-scoped-queue-sweep-target-explanations`
+- Owned paths: `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add explanation metadata to scoped queue-sweep preview responses so operators
+can see why each memory record is in the current preview target set.
+
+#### Deliverables
+
+- target explanation metadata on scoped queue-sweep preview responses for repo-session, user, and tenant memory
+- API and CLI parity coverage for queue-sweep target explanation payloads
+- additive preview payloads that expose per-record target reasons and aggregate explanation counts without mutating review state
+
+#### Acceptance
+
+- [x] Operators can inspect why each record is in the scoped queue-sweep preview target set.
+- [x] Target explanation payloads stay additive and side-effect free.
+- [x] Explanation fields stay parity-aligned across API and CLI preview surfaces.
+
+### P100-CLOSE-01 - Phase 100 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P100-MEM-01`
+- Branch: `codex/p100-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 100 with scoped queue-sweep target explanation evidence and synchronize
+the next memory workflow priority.
+
+#### Deliverables
+
+- Phase 100 acceptance record
+- synchronized progress and README state
+- current implementation lane and next-priority decision
+
+#### Acceptance
+
+- [x] Phase 100 scoped queue-sweep target explanation evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 101 Task Board
+
+### P101-MEM-01 - Scoped Queue Sweep Filtered Preview Controls
+
+- Status: `Done`
+- Owner: `Unassigned`
+- Suggested role: `CTX`
+- Depends on: `P100-CLOSE-01`
+- Branch: `codex/p101-mem-01-scoped-queue-sweep-filtered-preview-controls`
+- Owned paths: `apps/api/`, `apps/cli/`, `tests/`, `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add a minimal filtered preview control for scoped queue-sweep preview so
+operators can narrow the current target set before execution without changing
+queue-sweep review semantics.
+
+#### Deliverables
+
+- scoped queue-sweep preview filtering for repo-session, user, and tenant memory
+- API and CLI parity coverage for filtered preview payloads
+- additive preview payloads that expose filter inputs and filtered counts without mutating review state
+
+#### Acceptance
+
+- [x] Operators can narrow preview targets with one supported filter before execution.
+- [x] Filtered preview payloads stay additive and side-effect free.
+- [x] Filter fields stay parity-aligned across API and CLI preview surfaces.
+
+### P101-CLOSE-01 - Phase 101 Closeout And Next Planning
+
+- Status: `Done`
+- Owner: `Unassigned`
+- Suggested role: `DOC`
+- Depends on: `P101-MEM-01`
+- Branch: `codex/p101-closeout-next-plan`
+- Owned paths: `docs/`, `README.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close Phase 101 with scoped queue-sweep filtered preview evidence and
+synchronize the next memory workflow priority.
+
+#### Deliverables
+
+- Phase 101 acceptance record
+- synchronized progress and README state
+- current implementation lane and next-priority decision
+
+#### Acceptance
+
+- [x] Phase 101 scoped queue-sweep filtered preview evidence is recorded.
+- [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
