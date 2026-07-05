@@ -37,6 +37,46 @@ class RouteAdapter:
             parts = _approval_path_parts(request.path)
             if len(parts) == 1:
                 return self.app.get_approval(parts[0])
+        if method == "GET" and request.path.startswith("/users/"):
+            parts = _users_path_parts(request.path)
+            if len(parts) == 2 and parts[1] == "memory":
+                return self.app.get_user_memory(parts[0])
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue":
+                return self.app.get_user_memory_queue(parts[0])
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue-summary":
+                return self.app.get_user_memory_queue_summary(parts[0])
+        if method == "POST" and request.path.startswith("/users/"):
+            parts = _users_path_parts(request.path)
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue-preview":
+                return self.app.preview_user_memory_queue(parts[0], request.body or {})
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue":
+                return self.app.review_user_memory_queue(parts[0], request.body or {})
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "bulk-review":
+                return self.app.bulk_review_user_memory(parts[0], request.body or {})
+            if len(parts) == 4 and parts[1] == "memory" and parts[3] == "confirm":
+                return self.app.confirm_user_memory(parts[0], parts[2], request.body or {})
+            if len(parts) == 4 and parts[1] == "memory" and parts[3] == "expire":
+                return self.app.expire_user_memory(parts[0], parts[2], request.body or {})
+        if method == "GET" and request.path.startswith("/tenants/"):
+            parts = _tenants_path_parts(request.path)
+            if len(parts) == 2 and parts[1] == "memory":
+                return self.app.get_tenant_memory(parts[0])
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue":
+                return self.app.get_tenant_memory_queue(parts[0])
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue-summary":
+                return self.app.get_tenant_memory_queue_summary(parts[0])
+        if method == "POST" and request.path.startswith("/tenants/"):
+            parts = _tenants_path_parts(request.path)
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue-preview":
+                return self.app.preview_tenant_memory_queue(parts[0], request.body or {})
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue":
+                return self.app.review_tenant_memory_queue(parts[0], request.body or {})
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "bulk-review":
+                return self.app.bulk_review_tenant_memory(parts[0], request.body or {})
+            if len(parts) == 4 and parts[1] == "memory" and parts[3] == "confirm":
+                return self.app.confirm_tenant_memory(parts[0], parts[2], request.body or {})
+            if len(parts) == 4 and parts[1] == "memory" and parts[3] == "expire":
+                return self.app.expire_tenant_memory(parts[0], parts[2], request.body or {})
         if method == "POST" and request.path.startswith("/sessions/"):
             parts = _session_path_parts(request.path)
             if len(parts) == 2 and parts[1] == "messages":
@@ -47,6 +87,150 @@ class RouteAdapter:
                 return self.app.suspend_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "resume":
                 return self.app.resume_session(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "memory-overview":
+                return self.app.get_memory_operations_overview(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "memory-governance":
+                return self.app.get_memory_review_governance_signals(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "memory-aging":
+                return self.app.get_memory_backlog_aging_signals(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "memory-velocity":
+                return self.app.get_memory_review_velocity_signals(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "memory-pressure":
+                return self.app.get_memory_backlog_pressure_signals(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "memory-action-hints":
+                return self.app.get_memory_pressure_action_hints(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "memory-escalations":
+                return self.app.get_memory_pressure_escalation_recommendations(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-follow-up-windows":
+                return self.app.get_memory_escalation_follow_up_windows(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-flags":
+                return self.app.get_memory_follow_up_overdue_flags(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-age-buckets":
+                return self.app.get_memory_overdue_age_buckets(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "memory-overdue-types":
+                return self.app.get_memory_overdue_type_rollups(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "memory-overdue-visibility":
+                return self.app.get_memory_overdue_visibility_rollups(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-trends":
+                return self.app.get_memory_overdue_trend_signals(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "memory-overdue-interventions":
+                return self.app.get_memory_overdue_intervention_hints(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-escalation-lanes":
+                return self.app.get_memory_overdue_escalation_lanes(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-recovery-paths":
+                return self.app.get_memory_overdue_recovery_paths(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-resolution-checkpoints":
+                return self.app.get_memory_overdue_resolution_checkpoints(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-resolution-outcomes":
+                return self.app.get_memory_overdue_resolution_outcomes(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-closure-decisions":
+                return self.app.get_memory_overdue_closure_decisions(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-archive-recommendations":
+                return self.app.get_memory_overdue_archive_recommendations(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-retention-guidance":
+                return self.app.get_memory_overdue_retention_guidance(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-retention-windows":
+                return self.app.get_memory_overdue_retention_windows(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-retention-breaches":
+                return self.app.get_memory_overdue_retention_breaches(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-retention-breach-aging":
+                return self.app.get_memory_overdue_retention_breach_aging(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-retention-breach-actions":
+                return self.app.get_memory_overdue_retention_breach_actions(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-retention-breach-lanes":
+                return self.app.get_memory_overdue_retention_breach_lanes(
+                    parts[0], request.body or {}
+                )
+            if len(parts) == 2 and parts[1] == "memory-overdue-retention-breach-owner-targets":
+                return self.app.get_memory_overdue_retention_breach_owner_targets(
+                    parts[0], request.body or {}
+                )
+            if (
+                len(parts) == 2
+                and parts[1] == "memory-overdue-retention-breach-follow-through-modes"
+            ):
+                return self.app.get_memory_overdue_retention_breach_follow_through_modes(
+                    parts[0], request.body or {}
+                )
+            if (
+                len(parts) == 2
+                and parts[1] == "memory-overdue-retention-breach-follow-through-outcomes"
+            ):
+                return self.app.get_memory_overdue_retention_breach_follow_through_outcomes(
+                    parts[0], request.body or {}
+                )
+            if (
+                len(parts) == 2
+                and parts[1]
+                == "memory-overdue-retention-breach-follow-through-completion-states"
+            ):
+                return (
+                    self.app.get_memory_overdue_retention_breach_follow_through_completion_states(
+                        parts[0], request.body or {}
+                    )
+                )
+            if (
+                len(parts) == 2
+                and parts[1]
+                == "memory-overdue-retention-breach-follow-through-verification-states"
+            ):
+                return (
+                    self.app.get_memory_overdue_retention_breach_follow_through_verification_states(
+                        parts[0], request.body or {}
+                    )
+                )
+            if (
+                len(parts) == 2
+                and parts[1]
+                == "memory-overdue-retention-breach-follow-through-verification-outcomes"
+            ):
+                return (
+                    self.app.get_memory_overdue_retention_breach_follow_through_verification_outcomes(
+                        parts[0], request.body or {}
+                    )
+                )
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue-preview":
+                return self.app.preview_session_memory_queue(parts[0], request.body or {})
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue":
+                return self.app.review_session_memory_queue(parts[0], request.body or {})
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "bulk-review":
+                return self.app.bulk_review_session_memory(parts[0], request.body or {})
+            if len(parts) == 4 and parts[1] == "memory" and parts[3] == "confirm":
+                return self.app.confirm_session_memory(parts[0], parts[2], request.body or {})
+            if len(parts) == 4 and parts[1] == "memory" and parts[3] == "expire":
+                return self.app.expire_session_memory(parts[0], parts[2], request.body or {})
             if len(parts) == 4 and parts[1] == "artifacts" and parts[3] == "prune":
                 return self.app.prune_session_artifact(parts[0], parts[2])
             if len(parts) == 2 and parts[1] == "commit":
@@ -71,6 +255,12 @@ class RouteAdapter:
                 return self.app.get_session_stream(parts[0])
             if len(parts) == 2 and parts[1] == "diff":
                 return self.app.get_session_diff(parts[0])
+            if len(parts) == 2 and parts[1] == "memory":
+                return self.app.get_session_memory(parts[0])
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue":
+                return self.app.get_session_memory_queue(parts[0])
+            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue-summary":
+                return self.app.get_session_memory_queue_summary(parts[0])
             if len(parts) == 2 and parts[1] == "artifacts":
                 return self.app.get_session_artifacts(parts[0])
             if len(parts) == 3 and parts[1] == "artifacts":
@@ -92,6 +282,20 @@ def _session_path_parts(path: str) -> tuple[str, ...]:
 
 def _approval_path_parts(path: str) -> tuple[str, ...]:
     suffix = path.removeprefix("/approvals/")
+    if not suffix:
+        return ()
+    return tuple(part for part in suffix.split("/") if part)
+
+
+def _users_path_parts(path: str) -> tuple[str, ...]:
+    suffix = path.removeprefix("/users/")
+    if not suffix:
+        return ()
+    return tuple(part for part in suffix.split("/") if part)
+
+
+def _tenants_path_parts(path: str) -> tuple[str, ...]:
+    suffix = path.removeprefix("/tenants/")
     if not suffix:
         return ()
     return tuple(part for part in suffix.split("/") if part)

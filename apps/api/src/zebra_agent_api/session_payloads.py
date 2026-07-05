@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import TypedDict
 
+from agent_core.domain.memories import MemoryType
 from agent_security import PolicyProfile
 
 from zebra_agent_api.responses import ApiResponse, bad_request
@@ -37,6 +39,13 @@ class ApprovalDecisionPayload(TypedDict):
     reason: str
 
 
+class BulkMemoryReviewPayload(TypedDict):
+    decision: str
+    operator: str
+    reason: str
+    memory_ids: list[str]
+
+
 class CommitSessionPayload(TypedDict):
     message: str
     author_name: str
@@ -49,6 +58,17 @@ class PullRequestPayload(TypedDict):
     base_branch: str
     head_branch: str | None
     dry_run: bool
+
+
+class MemoryOverviewPayload(TypedDict):
+    user_id: str | None
+    tenant_id: str | None
+    as_of: datetime | None
+
+
+class QueueSweepPreviewPayload(TypedDict):
+    decision: str
+    memory_type: str | None
 
 
 def parse_create_session_payload(
@@ -150,6 +170,38 @@ def parse_approval_decision_payload(
     }
 
 
+def parse_bulk_memory_review_payload(
+    payload: dict[str, object],
+) -> BulkMemoryReviewPayload | ApiResponse:
+    decision = payload.get("decision")
+    if decision not in {"confirm", "expire"}:
+        return bad_request("decision must be either 'confirm' or 'expire'")
+
+    parsed = parse_approval_decision_payload(
+        payload,
+        default_reason=f"{decision} via API",
+    )
+    if isinstance(parsed, ApiResponse):
+        return parsed
+
+    memory_ids = payload.get("memory_ids")
+    if not isinstance(memory_ids, list) or not memory_ids:
+        return bad_request("memory_ids must be a non-empty list of memory ids")
+
+    normalized_memory_ids: list[str] = []
+    for memory_id in memory_ids:
+        if not isinstance(memory_id, str) or not memory_id.strip():
+            return bad_request("memory_ids must contain non-blank strings")
+        normalized_memory_ids.append(memory_id.strip())
+
+    return {
+        "decision": decision,
+        "operator": parsed["operator"],
+        "reason": parsed["reason"],
+        "memory_ids": normalized_memory_ids,
+    }
+
+
 def parse_commit_session_payload(
     payload: dict[str, object],
 ) -> CommitSessionPayload | ApiResponse:
@@ -201,4 +253,58 @@ def parse_pull_request_payload(
         "base_branch": base_branch.strip(),
         "head_branch": head_branch.strip() if isinstance(head_branch, str) else None,
         "dry_run": dry_run,
+    }
+
+
+def parse_memory_overview_payload(
+    payload: dict[str, object],
+) -> MemoryOverviewPayload | ApiResponse:
+    user_id = payload.get("user_id")
+    if user_id is not None and (not isinstance(user_id, str) or not user_id.strip()):
+        return bad_request("user_id must be a non-blank string when provided")
+
+    tenant_id = payload.get("tenant_id")
+    if tenant_id is not None and (not isinstance(tenant_id, str) or not tenant_id.strip()):
+        return bad_request("tenant_id must be a non-blank string when provided")
+
+    as_of = payload.get("as_of")
+    parsed_as_of: datetime | None = None
+    if as_of is not None:
+        if not isinstance(as_of, str) or not as_of.strip():
+            return bad_request("as_of must be a non-blank ISO 8601 string when provided")
+        try:
+            parsed_as_of = datetime.fromisoformat(as_of.strip())
+        except ValueError:
+            return bad_request("as_of must be a valid ISO 8601 datetime when provided")
+        if parsed_as_of.tzinfo is None:
+            return bad_request("as_of must include timezone information")
+        parsed_as_of = parsed_as_of.astimezone(UTC)
+
+    return {
+        "user_id": user_id.strip() if isinstance(user_id, str) else None,
+        "tenant_id": tenant_id.strip() if isinstance(tenant_id, str) else None,
+        "as_of": parsed_as_of,
+    }
+
+
+def parse_queue_sweep_preview_payload(
+    payload: dict[str, object],
+) -> QueueSweepPreviewPayload | ApiResponse:
+    decision = payload.get("decision")
+    if decision not in {"confirm", "expire"}:
+        return bad_request("decision must be either 'confirm' or 'expire'")
+
+    memory_type = payload.get("memory_type")
+    if memory_type is not None:
+        if not isinstance(memory_type, str) or not memory_type.strip():
+            return bad_request("memory_type must be a non-blank string when provided")
+        try:
+            MemoryType(memory_type.strip())
+        except ValueError:
+            return bad_request("memory_type is not supported")
+        memory_type = memory_type.strip()
+
+    return {
+        "decision": decision,
+        "memory_type": memory_type,
     }

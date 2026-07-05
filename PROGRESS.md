@@ -2,9 +2,162 @@
 
 ## Current Phase
 
-- Active phase: `Phase 56 - Session Resume Execute CLI And Operator Parity Closeout`
-- Repository status: `phase 56 closeout complete`
+- Active phase: `Phase 101 - Scoped Queue Sweep Filtered Preview Controls`
+- Repository status: `phase 101 closed; scoped queue-sweep filtered preview controls are complete`
 - Current focus:
+  - `P101-CLOSE-01` is complete on `codex/p101-closeout-next-plan` with Phase 101 acceptance evidence on `docs/Phase101_Scoped_Queue_Sweep_Filtered_Preview_Controls_验收记录.md`
+  - `Phase 101` is closed with `docs/Phase101_Scoped_Queue_Sweep_Filtered_Preview_Controls_验收记录.md`
+  - `P101-MEM-01` is complete on `codex/p101-mem-01-scoped-queue-sweep-filtered-preview-controls` with one minimal narrowing filter for repo-session, user, and tenant queue-sweep previews plus API and CLI parity coverage
+  - The next memory workflow priority is not yet defined
+  - `P100-CLOSE-01` is complete on `codex/p100-closeout-next-plan` with Phase 100 acceptance evidence on `docs/Phase100_Scoped_Queue_Sweep_Target_Explanations_验收记录.md`
+  - `Phase 100` is closed with `docs/Phase100_Scoped_Queue_Sweep_Target_Explanations_验收记录.md`
+  - `P100-MEM-01` is complete on `codex/p100-mem-01-scoped-queue-sweep-target-explanations` with per-record target reasons and aggregate explanation counts for repo-session, user, and tenant queue-sweep previews plus API and CLI parity coverage
+  - `P99-CLOSE-01` is complete on `codex/p99-closeout-next-plan` with Phase 99 acceptance evidence on `docs/Phase99_Scoped_Queue_Sweep_Dry_Run_Summaries_验收记录.md`
+  - `Phase 99` is closed with `docs/Phase99_Scoped_Queue_Sweep_Dry_Run_Summaries_验收记录.md`
+  - `P99-MEM-01` is complete on `codex/p99-mem-01-scoped-queue-sweep-dry-run-summaries` with projected outcome summaries for repo-session, user, and tenant queue-sweep previews plus API and CLI parity coverage
+  - `P98-CLOSE-01` is complete on `codex/p98-closeout-next-plan` with Phase 98 acceptance evidence on `docs/Phase98_Scoped_Queue_Sweep_Preview_Controls_验收记录.md`
+  - `Phase 98` is closed with `docs/Phase98_Scoped_Queue_Sweep_Preview_Controls_验收记录.md`
+  - `P98-MEM-01` is complete on `codex/p98-mem-01-scoped-queue-sweep-preview-controls` with side-effect-free preview controls for repo-session, user, and tenant queue sweeps plus API and CLI parity coverage
+  - `P97-CLOSE-01` is complete on `codex/p97-closeout-next-plan` with Phase 97 acceptance evidence on `docs/Phase97_Scoped_Queue_Sweep_Review_Controls_验收记录.md`
+  - `Phase 97` is closed with `docs/Phase97_Scoped_Queue_Sweep_Review_Controls_验收记录.md`
+  - `P97-MEM-01` is complete on `codex/p97-mem-01-scoped-queue-sweep-review-controls` with scoped queue-sweep review controls for repo-session, user, and tenant memory plus API and CLI parity coverage
+  - `P96-CLOSE-01` is complete on `codex/p96-closeout-next-plan` with Phase 96 acceptance evidence on `docs/Phase96_Memory_Overdue_Retention_Breach_Follow_Through_Verification_Outcomes_验收记录.md`
+  - `Phase 96` is closed with `docs/Phase96_Memory_Overdue_Retention_Breach_Follow_Through_Verification_Outcomes_验收记录.md`
+  - `P96-MEM-01` is complete on `codex/p96-mem-01-memory-overdue-retention-breach-follow-through-verification-outcomes` with additive overdue retention breach follow-through verification outcomes and highest-priority overdue-retention-breach-follow-through-verification-outcome rollups across supported scopes
+  - The overdue-retention-breach follow-through sublane is complete
+  - `P95-CLOSE-01` is complete on `codex/p95-closeout-next-plan` with Phase 95 acceptance evidence on `docs/Phase95_Memory_Overdue_Retention_Breach_Follow_Through_Verification_States_验收记录.md`
+  - `Phase 95` is closed with `docs/Phase95_Memory_Overdue_Retention_Breach_Follow_Through_Verification_States_验收记录.md`
+  - `P95-MEM-01` is complete on `codex/p95-mem-01-memory-overdue-retention-breach-follow-through-verification-states` with additive overdue retention breach follow-through verification states and highest-priority overdue-retention-breach-follow-through-verification rollups across supported scopes
+  - `P94-CLOSE-01` is complete on `codex/p94-closeout-next-plan` with Phase 94 acceptance evidence on `docs/Phase94_Memory_Overdue_Retention_Breach_Follow_Through_Completion_States_验收记录.md`
+  - `Phase 94` is closed with `docs/Phase94_Memory_Overdue_Retention_Breach_Follow_Through_Completion_States_验收记录.md`
+  - `P94-MEM-01` is complete on `codex/p94-mem-01-memory-overdue-retention-breach-follow-through-completion-states` with additive overdue retention breach follow-through completion states and highest-priority overdue-retention-breach-follow-through-completion rollups across supported scopes
+  - `P93-CLOSE-01` is complete on `codex/p93-closeout-next-plan` with Phase 93 acceptance evidence on `docs/Phase93_Memory_Overdue_Retention_Breach_Follow_Through_Outcomes_验收记录.md`
+  - `Phase 93` is closed with `docs/Phase93_Memory_Overdue_Retention_Breach_Follow_Through_Outcomes_验收记录.md`
+  - `P93-MEM-01` is complete on `codex/p93-mem-01-memory-overdue-retention-breach-follow-through-outcomes` with additive overdue retention breach follow-through outcomes and highest-priority overdue-retention-breach-follow-through-outcome rollups across supported scopes
+  - `P92-CLOSE-01` is complete on `codex/p92-closeout-next-plan` with Phase 92 acceptance evidence on `docs/Phase92_Memory_Overdue_Retention_Breach_Follow_Through_Modes_验收记录.md`
+  - `Phase 92` is closed with `docs/Phase92_Memory_Overdue_Retention_Breach_Follow_Through_Modes_验收记录.md`
+  - `P92-MEM-01` is complete on `codex/p92-mem-01-memory-overdue-retention-breach-follow-through-modes` with additive overdue retention breach follow-through modes and highest-priority overdue-retention-breach-follow-through rollups across supported scopes
+  - `P91-CLOSE-01` is complete on `codex/p91-closeout-next-plan` with Phase 91 acceptance evidence on `docs/Phase91_Memory_Overdue_Retention_Breach_Owner_Targets_验收记录.md`
+  - `Phase 91` is closed with `docs/Phase91_Memory_Overdue_Retention_Breach_Owner_Targets_验收记录.md`
+  - `P91-MEM-01` is complete on `codex/p91-mem-01-memory-overdue-retention-breach-owner-targets` with additive overdue retention breach owner targets and highest-priority overdue-retention-breach-owner-target rollups across supported scopes
+  - `P90-CLOSE-01` is complete on `codex/p90-closeout-next-plan` with Phase 90 acceptance evidence on `docs/Phase90_Memory_Overdue_Retention_Breach_Lanes_验收记录.md`
+  - `Phase 90` is closed with `docs/Phase90_Memory_Overdue_Retention_Breach_Lanes_验收记录.md`
+  - `P90-MEM-01` is complete on `codex/p90-mem-01-memory-overdue-retention-breach-lanes` with additive overdue retention breach lanes and highest-priority overdue-retention-breach-lane rollups across supported scopes
+  - `P89-CLOSE-01` is complete on `codex/p89-closeout-next-plan` with Phase 89 acceptance evidence on `docs/Phase89_Memory_Overdue_Retention_Breach_Actions_验收记录.md`
+  - `Phase 89` is closed with `docs/Phase89_Memory_Overdue_Retention_Breach_Actions_验收记录.md`
+  - `P89-MEM-01` is complete on `codex/p89-mem-01-memory-overdue-retention-breach-actions` with additive overdue retention breach actions and highest-priority overdue-retention-breach-action rollups across supported scopes
+  - `P88-CLOSE-01` is complete on `codex/p88-closeout-next-plan` with Phase 88 acceptance evidence on `docs/Phase88_Memory_Overdue_Retention_Breach_Aging_验收记录.md`
+  - `Phase 88` is closed with `docs/Phase88_Memory_Overdue_Retention_Breach_Aging_验收记录.md`
+  - `P88-MEM-01` is complete on `codex/p88-mem-01-memory-overdue-retention-breach-aging` with additive overdue retention breach aging buckets and highest-priority overdue-retention-breach-aging rollups across supported scopes
+  - `P87-CLOSE-01` is complete on `codex/p87-closeout-next-plan` with Phase 87 acceptance evidence on `docs/Phase87_Memory_Overdue_Retention_Breaches_验收记录.md`
+  - `Phase 87` is closed with `docs/Phase87_Memory_Overdue_Retention_Breaches_验收记录.md`
+  - `P87-MEM-01` is complete on `codex/p87-mem-01-memory-overdue-retention-breaches` with additive overdue retention breaches, breach due-at timestamps, and highest-priority overdue-retention-breach rollups across supported scopes
+  - `P86-CLOSE-01` is complete on `codex/p86-closeout-next-plan` with Phase 86 acceptance evidence on `docs/Phase86_Memory_Overdue_Retention_Windows_验收记录.md`
+  - `Phase 86` is closed with `docs/Phase86_Memory_Overdue_Retention_Windows_验收记录.md`
+  - `P86-MEM-01` is complete on `codex/p86-mem-01-memory-overdue-retention-windows` with additive overdue retention windows, due-at timestamps, and highest-priority overdue-retention-window rollups across supported scopes
+  - `P85-CLOSE-01` is complete on `codex/p85-closeout-next-plan` with Phase 85 acceptance evidence on `docs/Phase85_Memory_Overdue_Retention_Guidance_验收记录.md`
+  - `Phase 85` is closed with `docs/Phase85_Memory_Overdue_Retention_Guidance_验收记录.md`
+  - `P85-MEM-01` is complete on `codex/p85-mem-01-memory-overdue-retention-guidance` with additive overdue retention guidance, retention buckets, and highest-priority overdue-retention rollups across supported scopes
+  - `P84-CLOSE-01` is complete on `codex/p84-closeout-next-plan` with Phase 84 acceptance evidence on `docs/Phase84_Memory_Overdue_Archive_Recommendations_验收记录.md`
+  - `Phase 84` is closed with `docs/Phase84_Memory_Overdue_Archive_Recommendations_验收记录.md`
+  - `P84-MEM-01` is complete on `codex/p84-mem-01-memory-overdue-archive-recommendations` with additive overdue archive recommendations and highest-priority overdue-archive rollups across supported scopes
+  - `P83-CLOSE-01` is complete on `codex/p83-closeout-next-plan` with Phase 83 acceptance evidence on `docs/Phase83_Memory_Overdue_Closure_Decisions_验收记录.md`
+  - `Phase 83` is closed with `docs/Phase83_Memory_Overdue_Closure_Decisions_验收记录.md`
+  - `P83-MEM-01` is complete on `codex/p83-mem-01-memory-overdue-closure-decisions` with additive overdue closure decisions and highest-priority overdue-closure rollups across supported scopes
+  - `P82-CLOSE-01` is complete on `codex/p82-closeout-next-plan` with Phase 82 acceptance evidence on `docs/Phase82_Memory_Overdue_Resolution_Outcomes_验收记录.md`
+  - `Phase 82` is closed with `docs/Phase82_Memory_Overdue_Resolution_Outcomes_验收记录.md`
+  - `P82-MEM-01` is complete on `codex/p82-mem-01-memory-overdue-resolution-outcomes` with additive overdue resolution outcomes and highest-priority overdue-resolution-outcome rollups across supported scopes
+  - `P81-CLOSE-01` is complete on `codex/p81-closeout-next-plan` with Phase 81 acceptance evidence on `docs/Phase81_Memory_Overdue_Resolution_Checkpoints_验收记录.md`
+  - `Phase 81` is closed with `docs/Phase81_Memory_Overdue_Resolution_Checkpoints_验收记录.md`
+  - `P81-MEM-01` is complete on `codex/p81-mem-01-memory-overdue-resolution-checkpoints` with additive overdue resolution checkpoints and highest-priority overdue-resolution rollups across supported scopes
+  - `P80-CLOSE-01` is complete on `codex/p80-closeout-next-plan` with Phase 80 acceptance evidence on `docs/Phase80_Memory_Overdue_Recovery_Paths_验收记录.md`
+  - `Phase 80` is closed with `docs/Phase80_Memory_Overdue_Recovery_Paths_验收记录.md`
+  - `P80-MEM-01` is complete on `codex/p80-mem-01-memory-overdue-recovery-paths` with additive overdue recovery paths and highest-priority overdue-recovery rollups across supported scopes
+  - `P79-CLOSE-01` is complete on `codex/p79-closeout-next-plan` with Phase 79 acceptance evidence on `docs/Phase79_Memory_Overdue_Escalation_Lanes_验收记录.md`
+  - `Phase 79` is closed with `docs/Phase79_Memory_Overdue_Escalation_Lanes_验收记录.md`
+  - `P79-MEM-01` is complete on `codex/p79-mem-01-memory-overdue-escalation-lanes` with additive overdue escalation lanes and highest-priority overdue-escalation rollups across supported scopes
+  - `P78-CLOSE-01` is complete on `codex/p78-closeout-next-plan` with Phase 78 acceptance evidence on `docs/Phase78_Memory_Overdue_Intervention_Hints_验收记录.md`
+  - `Phase 78` is closed with `docs/Phase78_Memory_Overdue_Intervention_Hints_验收记录.md`
+  - `P78-MEM-01` is complete on `codex/p78-mem-01-memory-overdue-intervention-hints` with additive overdue intervention hints and highest-priority overdue-intervention rollups across supported scopes
+  - `P77-CLOSE-01` is complete on `codex/p77-closeout-next-plan` with Phase 77 acceptance evidence on `docs/Phase77_Memory_Overdue_Trend_Signals_验收记录.md`
+  - `Phase 77` is closed with `docs/Phase77_Memory_Overdue_Trend_Signals_验收记录.md`
+  - `P77-MEM-01` is complete on `codex/p77-mem-01-memory-overdue-trend-signals` with additive overdue trend signals and highest-priority overdue-trend rollups across supported scopes
+  - `P76-CLOSE-01` is complete on `codex/p76-closeout-next-plan` with Phase 76 acceptance evidence on `docs/Phase76_Memory_Overdue_Visibility_Rollups_验收记录.md`
+  - `Phase 76` is closed with `docs/Phase76_Memory_Overdue_Visibility_Rollups_验收记录.md`
+  - `P76-MEM-01` is complete on `codex/p76-mem-01-memory-overdue-visibility-rollups` with additive overdue visibility counts and highest-priority overdue-visibility rollups across supported scopes
+  - `P75-CLOSE-01` is complete on `codex/p75-closeout-next-plan` with Phase 75 acceptance evidence on `docs/Phase75_Memory_Overdue_Type_Rollups_验收记录.md`
+  - `Phase 75` is closed with `docs/Phase75_Memory_Overdue_Type_Rollups_验收记录.md`
+  - `P75-MEM-01` is complete on `codex/p75-mem-01-memory-overdue-type-rollups` with additive overdue memory-type counts and highest-priority overdue-type rollups across supported scopes
+  - `P74-CLOSE-01` is complete on `codex/p74-closeout-next-plan` with Phase 74 acceptance evidence on `docs/Phase74_Memory_Overdue_Age_Buckets_验收记录.md`
+  - `Phase 74` is closed with `docs/Phase74_Memory_Overdue_Age_Buckets_验收记录.md`
+  - `P74-MEM-01` is complete on `codex/p74-mem-01-memory-overdue-age-buckets` with additive overdue age buckets and highest-priority overdue-age rollups across supported scopes
+  - `P73-CLOSE-01` is complete on `codex/p73-closeout-next-plan` with Phase 73 acceptance evidence on `docs/Phase73_Memory_Follow_Up_Overdue_Flags_验收记录.md`
+  - `Phase 73` is closed with `docs/Phase73_Memory_Follow_Up_Overdue_Flags_验收记录.md`
+  - `P73-MEM-01` is complete on `codex/p73-mem-01-memory-follow-up-overdue-flags` with additive overdue flags and highest-priority overdue rollups across supported scopes
+  - `P72-CLOSE-01` is complete on `codex/p72-closeout-next-plan` with Phase 72 acceptance evidence on `docs/Phase72_Memory_Escalation_Follow_Up_Windows_验收记录.md`
+  - `Phase 72` is closed with `docs/Phase72_Memory_Escalation_Follow_Up_Windows_验收记录.md`
+  - `P72-MEM-01` is complete on `codex/p72-mem-01-memory-escalation-follow-up-windows` with additive follow-up windows and highest-priority follow-up rollups across supported scopes
+  - `P71-CLOSE-01` is complete on `codex/p71-closeout-next-plan` with Phase 71 acceptance evidence on `docs/Phase71_Memory_Pressure_Escalation_Recommendations_验收记录.md`
+  - `Phase 71` is closed with `docs/Phase71_Memory_Pressure_Escalation_Recommendations_验收记录.md`
+  - `P71-MEM-01` is complete on `codex/p71-mem-01-memory-pressure-escalation-recommendations` with additive escalation recommendations and highest-priority escalation rollups across supported scopes
+  - `P70-CLOSE-01` is complete on `codex/p70-closeout-next-plan` with Phase 70 acceptance evidence on `docs/Phase70_Memory_Pressure_Action_Hints_验收记录.md`
+  - `Phase 70` is closed with `docs/Phase70_Memory_Pressure_Action_Hints_验收记录.md`
+  - `P70-MEM-01` is complete on `codex/p70-mem-01-memory-pressure-action-hints` with additive action hints and highest-priority operator rollups across supported scopes
+  - `P69-CLOSE-01` is complete on `codex/p69-closeout-next-plan` with Phase 69 acceptance evidence on `docs/Phase69_Memory_Backlog_Pressure_Signals_验收记录.md`
+  - `Phase 69` is closed with `docs/Phase69_Memory_Backlog_Pressure_Signals_验收记录.md`
+  - `P69-MEM-01` is complete on `codex/p69-mem-01-memory-backlog-pressure-signals` with additive pressure classification and highest-pressure rollups across supported scopes
+  - `P68-CLOSE-01` is complete on `codex/p68-closeout-next-plan` with Phase 68 acceptance evidence on `docs/Phase68_Memory_Review_Velocity_Signals_验收记录.md`
+  - `Phase 68` is closed with `docs/Phase68_Memory_Review_Velocity_Signals_验收记录.md`
+  - `P68-MEM-01` is complete on `codex/p68-mem-01-memory-review-velocity-signals` with additive recent review-throughput signals and latest review windows across supported scopes
+  - `P67-CLOSE-01` is complete on `codex/p67-closeout-next-plan` with Phase 67 acceptance evidence on `docs/Phase67_Memory_Backlog_Aging_Signals_验收记录.md`
+  - `Phase 67` is closed with `docs/Phase67_Memory_Backlog_Aging_Signals_验收记录.md`
+  - `P67-MEM-01` is complete on `codex/p67-mem-01-memory-backlog-aging-signals` with additive backlog-aging signals for oldest pending memory and age buckets across supported scopes
+  - `P66-CLOSE-01` is complete on `codex/p66-closeout-next-plan` with Phase 66 acceptance evidence on `docs/Phase66_Memory_Review_Governance_Signals_验收记录.md`
+  - `Phase 66` is closed with `docs/Phase66_Memory_Review_Governance_Signals_验收记录.md`
+  - `P66-MEM-01` is complete on `codex/p66-mem-01-memory-review-governance-signals` with additive governance signals for backlog and latest review activity across supported scopes
+  - `P65-CLOSE-01` is complete on `codex/p65-closeout-next-plan` with Phase 65 acceptance evidence on `docs/Phase65_Cross_Scope_Memory_Operations_Overview_验收记录.md`
+  - `Phase 65` is closed with `docs/Phase65_Cross_Scope_Memory_Operations_Overview_验收记录.md`
+  - `P65-MEM-01` is complete on `codex/p65-mem-01-cross-scope-memory-operations-overview` with one combined API and CLI overview of queue health across repo-session, user, and tenant scopes
+  - `P64-CLOSE-01` is complete on `codex/p64-closeout-next-plan` with Phase 64 acceptance evidence on `docs/Phase64_Cross_Scope_Memory_Queue_Summary_验收记录.md`
+  - `Phase 64` is closed with `docs/Phase64_Cross_Scope_Memory_Queue_Summary_验收记录.md`
+  - `P64-MEM-01` is complete on `codex/p64-mem-01-cross-scope-memory-queue-summary` with additive queue summary reads plus API and CLI parity across repo-session, user, and tenant scopes
+  - `P63-CLOSE-01` is complete on `codex/p63-closeout-next-plan` with Phase 63 acceptance evidence on `docs/Phase63_Bulk_Memory_Review_Decisions_验收记录.md`
+  - `Phase 63` is closed with `docs/Phase63_Bulk_Memory_Review_Decisions_验收记录.md`
+  - `P63-MEM-01` is complete on `codex/p63-mem-01-bulk-memory-review-decisions` with scoped bulk memory confirm or expire controls plus applied/skipped/invalid parity across API and CLI
+  - `P62-CLOSE-01` is complete on `codex/p62-closeout-next-plan` with Phase 62 acceptance evidence on `docs/Phase62_Scope_Aware_Memory_Review_Queue_验收记录.md`
+  - `Phase 62` is closed with `docs/Phase62_Scope_Aware_Memory_Review_Queue_验收记录.md`
+  - `P62-MEM-01` is complete on `codex/p62-mem-01-memory-review-queue` with shared repo, user, and tenant candidate-only memory queue reads plus API and CLI parity coverage
+  - `P61-CLOSE-01` is complete on `codex/p61-closeout-next-plan` with Phase 61 acceptance evidence on `docs/Phase61_Cross_Scope_Memory_Review_Controls_验收记录.md`
+  - `Phase 61` is closed with `docs/Phase61_Cross_Scope_Memory_Review_Controls_验收记录.md`
+  - `P61-MEM-01` is complete on `codex/p61-mem-01-cross-scope-memory-review` with API and CLI review controls now extended across repo, user, and tenant memory scopes
+  - `P60-CLOSE-01` is complete on `codex/p60-closeout-next-plan` with Phase 60 acceptance evidence on `docs/Phase60_Cross_Scope_Memory_Operator_Inventory_验收记录.md`
+  - `Phase 60` is closed with `docs/Phase60_Cross_Scope_Memory_Operator_Inventory_验收记录.md`
+  - `P60-MEM-01` is complete on `codex/p60-mem-01-user-tenant-memory-inventory` with shared repo, user, and tenant memory inventory reads plus API and CLI parity coverage
+  - `P59-CLOSE-01` is complete on `codex/p59-closeout-next-plan` with Phase 59 acceptance evidence on `docs/Phase59_Memory_Source_Provenance_Readback_验收记录.md`
+  - `Phase 59` is closed with `docs/Phase59_Memory_Source_Provenance_Readback_验收记录.md`
+  - `P59-MEM-01` is complete on `codex/p59-mem-01-memory-source-provenance-readback` with deterministic `source` provenance now projected onto API and CLI session memory inventory rows
+  - `P58-CLOSE-01` is complete on `codex/p58-closeout-next-plan` with Phase 58 acceptance evidence on `docs/Phase58_Memory_Lifecycle_Readback_And_Broader_Invalidation_验收记录.md`
+  - `Phase 58` is closed with `docs/Phase58_Memory_Lifecycle_Readback_And_Broader_Invalidation_验收记录.md`
+  - `P58-MEM-02` is complete on `codex/p58-mem-02-broader-stale-memory-invalidation` with refresh-target-driven stale invalidation for deterministic singleton repo memories across governance and procedure refresh families
+  - `P58-MEM-01` is complete on `codex/p58-mem-01-session-memory-lifecycle-readback` with `last_review` lifecycle metadata now projected into API and CLI session memory inventory reads
+  - `P57-CLOSE-01` is complete on `codex/p58-mem-01-session-memory-lifecycle-readback` with Phase 57 acceptance evidence on `docs/Phase57_Local_Memory_Lifecycle_And_Governance_Refresh_验收记录.md`
+  - `Phase 57` is closed with `docs/Phase57_Local_Memory_Lifecycle_And_Governance_Refresh_验收记录.md`
+  - `P57-MEM-15` is complete on `codex/p57-mem-02-memory-candidate-extraction` with automatic stale invalidation of confirmed doc-derived memory after full `AGENTS.md` refresh
+  - `P57-MEM-14` is complete on `codex/p57-mem-02-memory-candidate-extraction` with duplicate confirm handling that expires redundant candidates and reports the matching confirmed memory id
+  - `P57-MEM-13` is complete on `codex/p57-mem-02-memory-candidate-extraction` with type-aware review conflict handling so confirmed preferences can coexist while single-active memory types still supersede
+  - `P57-MEM-12` is complete on `codex/p57-mem-02-memory-candidate-extraction` with `as_of`-aware freshness filtering for confirmed repo memory lookup
+  - `P57-MEM-11` is complete on `codex/p57-mem-02-memory-candidate-extraction` with deterministic `preference` candidate extraction from explicit user message markers
+  - `P57-MEM-10` is complete on `codex/p57-mem-02-memory-candidate-extraction` with deterministic `architecture_fact` candidate extraction from root `AGENTS.md` package-boundary rules
+  - `P57-MEM-09` is complete on `codex/p57-mem-02-memory-candidate-extraction` with deterministic `project_rule` candidate extraction from successful root `AGENTS.md` reads
+  - `P57-MEM-08` is complete on `codex/p57-mem-02-memory-candidate-extraction` with deterministic supersession of older confirmed memories during confirm review plus API/CLI parity coverage
+  - `P57-MEM-07` is complete on `codex/p57-mem-02-memory-candidate-extraction` with typed confirmed-memory inputs, deterministic repo-memory ranking, normalized duplicate collapse, and type-aware stable prompt labels
+  - `P57-MEM-06` is complete on `codex/p57-mem-02-memory-candidate-extraction` with confirmed repo memory retrieval and stable-section context injection wired across local harness execution paths
+  - `P57-MEM-05` is complete on `codex/p57-mem-02-memory-candidate-extraction` with durable confirm and expire controls for session-scoped memory candidates over the local API and CLI
+  - `P57-MEM-04` is complete on `codex/p57-mem-02-memory-candidate-extraction` with session-scoped memory inventory readback over the local API and CLI
+  - `P57-MEM-03` is complete on `codex/p57-mem-02-memory-candidate-extraction` with deterministic `procedure` memory candidate persistence wired into the worker completion path
+  - `P57-MEM-02` is complete on `codex/p57-mem-02-memory-candidate-extraction` with deterministic `procedure` memory candidate extraction from successful `command.run` and `tests.run` session events
+  - `P57-MEM-01` is complete on `codex/p57-mem-01-memory-store-foundation` with typed memory models, a core store Port, and a local SQLite memory adapter without making Redis a kernel dependency
+  - the next memory follow-up lane is scope-aware review queue and filtering so operators can triage candidate memory before review
   - `P56-CLOSE-01` is complete on `codex/p56-closeout-next-plan` with session resume execute phase-closure evidence on `docs/Phase56_Session_Resume_Execute_CLI_And_Operator_Parity_验收记录.md`
   - `P56-TEST-01` is complete on `codex/p56-test-01-session-resume-execute-contract-matrix` with resume execute parity coverage and CLI-local `database` normalization
   - `P56-CLI-01` is complete on `codex/p56-cli-01-session-resume-execute-parity` with CLI resume execute failure shaping aligned to API resume execution semantics

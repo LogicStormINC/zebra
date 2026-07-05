@@ -5,6 +5,7 @@ from pathlib import Path
 
 class ContextItemKind(StrEnum):
     REPO_MAP = "repo_map"
+    CONFIRMED_MEMORY = "confirmed_memory"
     FILE_SNIPPET = "file_snippet"
     RELATED_FILE = "related_file"
     CONVERSATION_SUMMARY = "conversation_summary"
@@ -18,6 +19,7 @@ RUNTIME_EVIDENCE_KINDS = frozenset(
     }
 )
 RUNTIME_EVIDENCE_SOURCE_TYPES = frozenset({"session_projection", "tool_trace"})
+MEMORY_SOURCE_TYPES = frozenset({"confirmed_memory"})
 
 
 class TrustLevel(StrEnum):
@@ -76,6 +78,7 @@ class ContextCompileRequest:
     workspace_root: Path
     budget: ContextBudget = field(default_factory=lambda: ContextBudget(max_tokens=1200))
     runtime_evidence_items: tuple[ContextItem, ...] = ()
+    memory_items: tuple[ContextItem, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.task_input.strip():
@@ -95,6 +98,11 @@ class ContextCompileRequest:
                 raise ValueError(
                     "runtime_evidence_items must come from session projection or tool trace"
                 )
+        for item in self.memory_items:
+            if item.kind is not ContextItemKind.CONFIRMED_MEMORY:
+                raise ValueError("memory_items must use confirmed_memory kind")
+            if item.provenance.source_type not in MEMORY_SOURCE_TYPES:
+                raise ValueError("memory_items must come from confirmed_memory sources")
 
 
 @dataclass(frozen=True)

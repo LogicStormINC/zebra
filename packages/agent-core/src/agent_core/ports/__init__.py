@@ -7,6 +7,7 @@ from agent_core.ports.context_compiler import ContextCompilerPort, RuntimeEviden
 from agent_core.ports.delivery_audit_store import DeliveryAuditStorePort
 from agent_core.ports.event_store import EventStorePort
 from agent_core.ports.lease_store import LeaseStorePort
+from agent_core.ports.memory_store import MemoryStorePort
 from agent_core.ports.model_call_store import ModelCallStorePort
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.policy_engine import PolicyEnginePort
@@ -31,6 +32,7 @@ __all__ = [
     "DeliveryAuditStorePort",
     "EventStorePort",
     "LeaseStorePort",
+    "MemoryStorePort",
     "ModelCallStorePort",
     "ModelGatewayPort",
     "PolicyEnginePort",

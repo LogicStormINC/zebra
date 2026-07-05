@@ -1,0 +1,121 @@
+from datetime import UTC, datetime
+from pathlib import Path
+from uuid import UUID
+
+from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import MemoryId, SessionId
+from agent_core.domain.memories import MemoryRecord, MemoryStatus, MemoryType, MemoryVisibility
+from agent_storage import SQLiteEventStore, SQLiteMemoryStore, SQLiteProjectionStore
+from zebra_agent_cli.cli import execute
+
+
+def test_cli_memory_backlog_aging_signals_report_oldest_pending_and_buckets(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "memory.sqlite"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    session_id = _seed_completed_session(database_path, workspace)
+    store = SQLiteMemoryStore(database_path)
+    store.upsert(
+        _memory_record(
+            memory_id="00000000-0000-0000-0000-000000000331",
+            session_id=session_id,
+            visibility=MemoryVisibility.REPO,
+            memory_type=MemoryType.PROCEDURE,
+            text="Fresh repo memory.",
+            repo_id=str(workspace.resolve()),
+            created_at=datetime(2026, 7, 8, 0, 0, tzinfo=UTC),
+        )
+    )
+    store.upsert(
+        _memory_record(
+            memory_id="00000000-0000-0000-0000-000000000332",
+            session_id=session_id,
+            visibility=MemoryVisibility.USER,
+            memory_type=MemoryType.PREFERENCE,
+            text="Aged user memory.",
+            user_id="user-1",
+            created_at=datetime(2026, 7, 1, 0, 0, tzinfo=UTC),
+        )
+    )
+
+    result = execute(
+        [
+            "memory-aging",
+            str(session_id),
+            "--user-id",
+            "user-1",
+            "--as-of",
+            "2026-07-09T00:00:00+00:00",
+            "--database",
+            str(database_path),
+        ]
+    )
+
+    assert result.command == "memory-aging"
+    assert result.payload["scope_count"] == 2
+    assert result.payload["total_pending_count"] == 2
+    assert result.payload["pending_age_bucket_totals"]["gte_7d"] == 1
+    assert result.payload["oldest_pending_scope_kind"] == "user"
+    assert result.payload["oldest_pending_age_days"] == 8
+
+
+def _seed_completed_session(database_path: Path, workspace_root: Path) -> SessionId:
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="CLI memory aging signals",
+            user_input="Inspect backlog aging.",
+            workspace_root=workspace_root.resolve(),
+        )
+    )
+    event_store = SQLiteEventStore(database_path)
+    for event in bootstrap.events:
+        event_store.append(event)
+    completed = bootstrap.session.model_copy(
+        update={
+            "status": bootstrap.session.status.COMPLETED,
+            "current_sequence": 3,
+        }
+    )
+    event_store.append(
+        SessionEvent.create(
+            session_id=completed.session_id,
+            sequence=3,
+            event_type=EventType.SESSION_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={"reason": "done"},
+            created_at=datetime(2026, 7, 8, 9, 0, tzinfo=UTC),
+        )
+    )
+    SQLiteProjectionStore(database_path).save_session(completed)
+    return completed.session_id
+
+
+def _memory_record(
+    *,
+    memory_id: str,
+    session_id: SessionId,
+    visibility: MemoryVisibility,
+    memory_type: MemoryType,
+    text: str,
+    created_at: datetime,
+    repo_id: str | None = None,
+    user_id: str | None = None,
+) -> MemoryRecord:
+    return MemoryRecord(
+        memory_id=MemoryId(UUID(memory_id)),
+        memory_type=memory_type,
+        text=text,
+        confidence=0.8,
+        status=MemoryStatus.CANDIDATE,
+        visibility=visibility,
+        repo_id=repo_id,
+        user_id=user_id,
+        source_session_id=session_id,
+        source_event_start=3,
+        source_event_end=3,
+        created_at=created_at,
+        updated_at=created_at,
+    )

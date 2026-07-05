@@ -4,6 +4,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from agent_context import LocalContextCompiler
+from agent_core.application import (
+    MemoryCandidateExtractionCommand,
+    MemoryCandidateExtractionService,
+)
 from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import apply_event as apply_workspace_event
 from agent_core.domain.events import EventActor, EventType, SessionEvent
@@ -13,6 +18,7 @@ from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.harness import (
     HarnessAttempt,
     HarnessContext,
+    HarnessModelStep,
     HarnessTask,
     SingleAttemptOrchestrator,
 )
@@ -23,10 +29,12 @@ from agent_security import LocalPolicyEngine, PolicyProfile
 from agent_storage import (
     SQLiteArtifactPayloadStore,
     SQLiteEventStore,
+    SQLiteMemoryStore,
     SQLiteModelCallStore,
     SQLiteProjectionStore,
     SQLiteToolRunStore,
     SQLiteWorkspaceProjectionStore,
+    list_confirmed_repo_memories,
 )
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
@@ -87,6 +95,9 @@ class SessionExecutionService:
             SQLiteToolRunStore(database_path),
             SQLiteArtifactPayloadStore(database_path),
         )
+        self._memory_extraction_service = MemoryCandidateExtractionService(
+            SQLiteMemoryStore(database_path)
+        )
 
     def execute_session(
         self,
@@ -126,6 +137,7 @@ class SessionExecutionService:
             build_model_gateway(self._settings),
             LocalPolicyEngine(profile=PolicyProfile(task.policy_profile)),
             LocalToolGateway(task.workspace_root),
+            model_step=HarnessModelStep(context_compiler=LocalContextCompiler()),
         ).run(
             HarnessContext(
                 task=HarnessTask(
@@ -135,6 +147,10 @@ class SessionExecutionService:
                     max_model_calls=task.max_model_calls,
                     max_tool_calls=task.max_tool_calls,
                     workspace_root=task.workspace_root,
+                    confirmed_memories=list_confirmed_repo_memories(
+                        self._database_path,
+                        repo_id=str(task.workspace_root.resolve()),
+                    ),
                 ),
                 session=claimed.recovery.session,
                 attempt=HarnessAttempt(number=1, started_at=started_at),
@@ -143,6 +159,7 @@ class SessionExecutionService:
         emitted_events = _append_execution_events(
             session=claimed.recovery.session,
             attempt_result=attempt_result,
+            memory_extraction_service=self._memory_extraction_service,
             event_store=self._event_store,
             projection_store=self._projection_store,
             workspace_projection=claimed.recovery.workspace,
@@ -197,6 +214,7 @@ def _append_execution_events(
     *,
     session: Session,
     attempt_result: HarnessAttemptResult,
+    memory_extraction_service: MemoryCandidateExtractionService,
     event_store: SQLiteEventStore,
     projection_store: SQLiteProjectionStore,
     workspace_projection: WorkspaceProjection,
@@ -250,6 +268,26 @@ def _append_execution_events(
             "metadata": attempt_result.metadata,
         },
     )
+    if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
+        extraction = memory_extraction_service.extract(
+            session=current_session,
+            events=event_store.list_for_session(current_session.session_id),
+            next_sequence=next_sequence,
+            command=MemoryCandidateExtractionCommand(
+                repo_id=_local_repo_id(current_workspace.workspace_root),
+                extracted_at=started_at,
+            ),
+        )
+        for event in extraction.events:
+            event_store.append(event)
+            model_call_indexer.index_event(event)
+            tool_run_indexer.index_event(event)
+            current_session = apply_event(current_session, event)
+            current_workspace = apply_workspace_event(current_workspace, event)
+            projection_store.save_session(current_session)
+            workspace_store.save_workspace(current_workspace)
+            events.append(event)
+            next_sequence = event.sequence + 1
     return tuple(events)
 
 
@@ -257,3 +295,7 @@ def _optional_positive_int(value: object) -> int | None:
     if not isinstance(value, int) or isinstance(value, bool):
         return None
     return value if value > 0 else None
+
+
+def _local_repo_id(workspace_root: str) -> str:
+    return str(Path(workspace_root).expanduser().resolve())

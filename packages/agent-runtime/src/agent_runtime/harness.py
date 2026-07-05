@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from agent_context import LocalContextCompiler
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
-from agent_core.harness import HarnessLoop, HarnessTask, SingleAttemptOrchestrator
+from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
 from agent_core.harness.models import HarnessLoopResult
+from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_security import LocalPolicyEngine, PolicyProfile
@@ -36,6 +38,7 @@ def run_local_harness(
     workspace_root: Path,
     model_gateway: ModelGatewayPort,
     policy_profile: PolicyProfile = PolicyProfile.WORKSPACE_WRITE,
+    confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
 ) -> HarnessLoopResult:
     return HarnessLoop().run(
         HarnessTask(
@@ -45,11 +48,13 @@ def run_local_harness(
             max_model_calls=1,
             max_tool_calls=1,
             workspace_root=workspace_root,
+            confirmed_memories=confirmed_memories,
         ),
         SingleAttemptOrchestrator(
             model_gateway,
             LocalPolicyEngine(profile=policy_profile),
             LocalToolGateway(workspace_root),
+            model_step=HarnessModelStep(context_compiler=LocalContextCompiler()),
         ).run,
     )
 

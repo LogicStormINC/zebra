@@ -97,6 +97,109 @@ class ToolExecutionCompletedPayload(BaseModel):
         return stripped
 
 
+class MemoryCandidateExtractedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    memory_id: str
+    memory_type: str
+    status: str
+    visibility: str
+    text: str
+    confidence: float
+    source_event_start: int
+    source_event_end: int
+    repo_id: str | None = None
+    user_id: str | None = None
+    tenant_id: str | None = None
+
+    @field_validator(
+        "memory_id",
+        "memory_type",
+        "status",
+        "visibility",
+        "text",
+    )
+    @classmethod
+    def ensure_field_not_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("field must not be blank")
+        return stripped
+
+    @field_validator("confidence")
+    @classmethod
+    def ensure_confidence_in_range(cls, value: float) -> float:
+        if value < 0 or value > 1:
+            raise ValueError("confidence must be between 0 and 1")
+        return value
+
+    @field_validator("source_event_start", "source_event_end")
+    @classmethod
+    def ensure_non_negative_sequence(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("source event sequence must be non-negative")
+        return value
+
+    @field_validator("repo_id", "user_id", "tenant_id")
+    @classmethod
+    def ensure_optional_text_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("field must not be blank when provided")
+        return stripped
+
+
+class MemoryReviewRecordedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    memory_id: str
+    memory_type: str
+    previous_status: str
+    status: str
+    operator: str
+    reason: str
+    superseded_memory_ids: list[str] = []
+    duplicate_of_memory_id: str | None = None
+
+    @field_validator(
+        "memory_id",
+        "memory_type",
+        "previous_status",
+        "status",
+        "operator",
+        "reason",
+    )
+    @classmethod
+    def ensure_field_not_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("field must not be blank")
+        return stripped
+
+    @field_validator("superseded_memory_ids")
+    @classmethod
+    def ensure_superseded_ids_are_non_blank(cls, value: list[str]) -> list[str]:
+        normalized: list[str] = []
+        for item in value:
+            stripped = item.strip()
+            if not stripped:
+                raise ValueError("field must not be blank")
+            normalized.append(stripped)
+        return normalized
+
+    @field_validator("duplicate_of_memory_id")
+    @classmethod
+    def ensure_duplicate_of_id_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("field must not be blank when provided")
+        return stripped
+
+
 class SessionSuspendedPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -136,6 +239,8 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SESSION_SUSPENDED: SessionSuspendedPayload,
     EventType.SESSION_RESUMED: SessionResumedPayload,
     EventType.TOOL_EXECUTION_COMPLETED: ToolExecutionCompletedPayload,
+    EventType.MEMORY_CANDIDATE_EXTRACTED: MemoryCandidateExtractedPayload,
+    EventType.MEMORY_REVIEW_RECORDED: MemoryReviewRecordedPayload,
 }
 
 

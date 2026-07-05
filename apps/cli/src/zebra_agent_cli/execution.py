@@ -9,7 +9,11 @@ from agent_core.harness.projection import HarnessTraceProjector
 from agent_integrations import build_model_gateway
 from agent_runtime import run_local_harness
 from agent_security import PolicyProfile
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_storage import (
+    SQLiteEventStore,
+    SQLiteProjectionStore,
+    list_confirmed_repo_memories,
+)
 from zebra_agent_config import ZebraAgentSettings
 
 
@@ -39,12 +43,17 @@ def execute_durable_run(
     settings: ZebraAgentSettings,
     policy_profile: PolicyProfile = PolicyProfile.WORKSPACE_WRITE,
 ) -> DurableRunResult:
+    confirmed_memories = list_confirmed_repo_memories(
+        database_path,
+        repo_id=str(workspace_root.resolve()),
+    )
     result = run_local_harness(
         prompt=prompt,
         title=title,
         workspace_root=workspace_root,
         model_gateway=build_model_gateway(settings),
         policy_profile=policy_profile,
+        confirmed_memories=confirmed_memories,
     )
     event_store = SQLiteEventStore(database_path)
     for event in result.events:

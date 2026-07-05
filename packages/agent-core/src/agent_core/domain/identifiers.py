@@ -7,6 +7,9 @@ MessageId = NewType("MessageId", UUID)
 ToolCallId = NewType("ToolCallId", UUID)
 ArtifactId = NewType("ArtifactId", UUID)
 CorrelationId = NewType("CorrelationId", UUID)
+MemoryId = NewType("MemoryId", UUID)
+
+
 def new_session_id() -> SessionId:
     return SessionId(uuid4())
 
@@ -29,3 +32,7 @@ def new_artifact_id() -> ArtifactId:
 
 def new_correlation_id() -> CorrelationId:
     return CorrelationId(uuid4())
+
+
+def new_memory_id() -> MemoryId:
+    return MemoryId(uuid4())

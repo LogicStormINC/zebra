@@ -1,5 +1,576 @@
 # Progress Log
 
+## 2026-07-05 Phase 101 Scoped Queue Sweep Filtered Preview Controls
+
+- claimed `P101-MEM-01` on `codex/p101-mem-01-scoped-queue-sweep-filtered-preview-controls`
+- added one minimal narrowing filter to scoped queue-sweep preview responses for repo-session, user, and tenant memory so operators can inspect a reduced target set before execution
+- kept the implementation side-effect free by filtering only preview payloads and leaving queue-sweep review execution semantics unchanged
+- completed `P101-MEM-01` with API and CLI `memory_type` preview filtering plus preview and review contract regression coverage
+- completed `P101-CLOSE-01` with Phase 101 acceptance evidence and synchronized next-priority state
+- validation:
+  - `uv run pytest tests/api/test_memory_queue_sweep_preview.py tests/cli/test_cli_memory_queue_sweep_preview.py tests/test_memory_queue_sweep_preview_contract_matrix.py tests/api/test_memory_queue_sweep_review.py tests/cli/test_cli_memory_queue_sweep_review.py tests/test_memory_queue_sweep_review_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/session_payloads.py apps/api/src/zebra_agent_api/session_memory_control.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_parser.py apps/cli/src/zebra_agent_cli/memory_review_write.py tests/api/test_memory_queue_sweep_preview.py tests/cli/test_cli_memory_queue_sweep_preview.py tests/test_memory_queue_sweep_preview_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-05 Phase 100 Scoped Queue Sweep Target Explanations
+
+- claimed `P100-MEM-01` on `codex/p100-mem-01-scoped-queue-sweep-target-explanations`
+- added per-record target reasons and aggregate explanation counts to scoped queue-sweep preview responses for repo-session, user, and tenant memory so operators can inspect why each record is in the current target set
+- kept the implementation side-effect free by layering explanation metadata on top of the existing preview target set rather than introducing a second preview selection path
+- completed `P100-MEM-01` with API and CLI explanation metadata plus preview and review contract regression coverage
+- completed `P100-CLOSE-01` with Phase 100 acceptance evidence and synchronized next-priority state
+- validation:
+  - `uv run pytest tests/api/test_memory_queue_sweep_preview.py tests/cli/test_cli_memory_queue_sweep_preview.py tests/test_memory_queue_sweep_preview_contract_matrix.py tests/api/test_memory_queue_sweep_review.py tests/cli/test_cli_memory_queue_sweep_review.py tests/test_memory_queue_sweep_review_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/session_memory_control.py apps/cli/src/zebra_agent_cli/memory_review_write.py tests/api/test_memory_queue_sweep_preview.py tests/cli/test_cli_memory_queue_sweep_preview.py tests/test_memory_queue_sweep_preview_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-05 Phase 99 Scoped Queue Sweep Dry-Run Summaries
+
+- claimed `P99-MEM-01` on `codex/p99-mem-01-scoped-queue-sweep-dry-run-summaries`
+- added projected outcome summaries to scoped queue-sweep preview responses for repo-session, user, and tenant memory so operators can inspect target size and projected post-review shape before execution
+- kept the implementation side-effect free by reusing the current preview target set and layering only additive projected status plus per-type summary metadata on top
+- completed `P99-MEM-01` with API and CLI projected preview metadata plus preview and review contract regression coverage
+- completed `P99-CLOSE-01` with Phase 99 acceptance evidence and synchronized next-priority state
+- validation:
+  - `uv run pytest tests/api/test_memory_queue_sweep_preview.py tests/cli/test_cli_memory_queue_sweep_preview.py tests/test_memory_queue_sweep_preview_contract_matrix.py tests/api/test_memory_queue_sweep_review.py tests/cli/test_cli_memory_queue_sweep_review.py tests/test_memory_queue_sweep_review_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/session_memory_control.py apps/cli/src/zebra_agent_cli/memory_review_write.py tests/api/test_memory_queue_sweep_preview.py tests/cli/test_cli_memory_queue_sweep_preview.py tests/test_memory_queue_sweep_preview_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-05 Phase 98 Scoped Queue Sweep Preview Controls
+
+- claimed `P98-MEM-01` on `codex/p98-mem-01-scoped-queue-sweep-preview-controls`
+- added side-effect-free scoped queue-sweep preview controls for repo-session, user, and tenant memory so operators can inspect the exact target set before confirm or expire execution
+- kept the implementation local-first by reusing the current queue query path and the same repo-session `source_session_id` narrowing already used by queue sweep execution
+- completed `P98-MEM-01` with API and CLI preview entrypoints plus a dedicated API or CLI contract matrix
+- completed `P98-CLOSE-01` with Phase 98 acceptance evidence and synchronized next-priority state
+- validation:
+  - `uv run pytest tests/api/test_memory_queue_sweep_preview.py tests/cli/test_cli_memory_queue_sweep_preview.py tests/test_memory_queue_sweep_preview_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/session_memory_control.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/memory_review_write.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_parser.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_queue_sweep_preview.py tests/cli/test_cli_memory_queue_sweep_preview.py tests/test_memory_queue_sweep_preview_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-05 Phase 97 Scoped Queue Sweep Review Controls
+
+- claimed `P97-MEM-01` on `codex/p97-mem-01-scoped-queue-sweep-review-controls`
+- added scoped queue-sweep review controls for repo-session, user, and tenant memory without introducing a second review state machine
+- kept the implementation local-first by deriving the current candidate set from existing scoped queue queries and reusing current bulk review semantics
+- completed `P97-MEM-01` with API and CLI queue-sweep review entrypoints plus a dedicated API or CLI contract matrix
+- completed `P97-CLOSE-01` with Phase 97 acceptance evidence and synchronized next-priority state
+- validation:
+  - `uv run pytest tests/api/test_memory_queue_sweep_review.py tests/cli/test_cli_memory_queue_sweep_review.py tests/test_memory_queue_sweep_review_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/session_memory_control.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/memory_review_write.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_parser.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_queue_sweep_review.py tests/cli/test_cli_memory_queue_sweep_review.py tests/test_memory_queue_sweep_review_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-05 Phase 96 Memory Overdue Retention Breach Follow-Through Verification Outcomes
+
+- claimed `P96-MEM-01` on `codex/p96-mem-01-memory-overdue-retention-breach-follow-through-verification-outcomes`
+- added one additive overdue-retention-breach-follow-through-verification-outcome layer on top of the current overdue-retention-breach-follow-through-verification-state read path
+- kept the implementation local-first by deriving verification outcomes from current overdue breach follow-through-verification-state evidence instead of adding verification result persistence
+- completed `P96-MEM-01` with per-scope overdue retention breach follow-through verification outcomes and cross-scope highest-priority overdue-retention-breach-follow-through-verification-outcome rollups across API and CLI
+- completed `P96-CLOSE-01` with Phase 96 acceptance evidence and a synchronized closeout marker that the overdue-retention-breach follow-through sublane is complete
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_retention_breach_follow_through_verification_outcomes.py tests/cli/test_cli_memory_overdue_retention_breach_follow_through_verification_outcomes.py tests/test_memory_overdue_retention_breach_follow_through_verification_outcomes_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_retention_breach_follow_through_verification_outcomes.py tests/cli/test_cli_memory_overdue_retention_breach_follow_through_verification_outcomes.py tests/test_memory_overdue_retention_breach_follow_through_verification_outcomes_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-05 Phase 95 Memory Overdue Retention Breach Follow-Through Verification States
+
+- claimed `P95-MEM-01` on `codex/p95-mem-01-memory-overdue-retention-breach-follow-through-verification-states`
+- added one additive overdue-retention-breach-follow-through-verification-state layer on top of the current overdue-retention-breach-follow-through-completion-state read path
+- kept the implementation local-first by deriving verification states from current overdue breach follow-through-completion-state evidence instead of adding verification persistence
+- completed `P95-MEM-01` with per-scope overdue retention breach follow-through verification states and cross-scope highest-priority overdue-retention-breach-follow-through-verification rollups across API and CLI
+- completed `P95-CLOSE-01` with Phase 95 acceptance evidence and Phase 96 planning for overdue retention breach follow-through verification outcomes
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_retention_breach_follow_through_verification_states.py tests/cli/test_cli_memory_overdue_retention_breach_follow_through_verification_states.py tests/test_memory_overdue_retention_breach_follow_through_verification_states_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_retention_breach_follow_through_verification_states.py tests/cli/test_cli_memory_overdue_retention_breach_follow_through_verification_states.py tests/test_memory_overdue_retention_breach_follow_through_verification_states_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+## 2026-07-05 Phase 94 Memory Overdue Retention Breach Follow-Through Completion States
+
+- claimed `P94-MEM-01` on `codex/p94-mem-01-memory-overdue-retention-breach-follow-through-completion-states`
+- added one additive overdue-retention-breach-follow-through-completion-state layer on top of the current overdue-retention-breach-follow-through-outcome read path
+- kept the implementation local-first by deriving completion states from current overdue breach follow-through-outcome evidence instead of adding completion persistence
+- completed `P94-MEM-01` with per-scope overdue retention breach follow-through completion states and cross-scope highest-priority overdue-retention-breach-follow-through-completion rollups across API and CLI
+- completed `P94-CLOSE-01` with Phase 94 acceptance evidence and Phase 95 planning for overdue retention breach follow-through verification states
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_retention_breach_follow_through_completion_states.py tests/cli/test_cli_memory_overdue_retention_breach_follow_through_completion_states.py tests/test_memory_overdue_retention_breach_follow_through_completion_states_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_retention_breach_follow_through_completion_states.py tests/cli/test_cli_memory_overdue_retention_breach_follow_through_completion_states.py tests/test_memory_overdue_retention_breach_follow_through_completion_states_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+## 2026-07-05 Phase 93 Memory Overdue Retention Breach Follow-Through Outcomes
+
+- claimed `P93-MEM-01` on `codex/p93-mem-01-memory-overdue-retention-breach-follow-through-outcomes`
+- added one additive overdue-retention-breach-follow-through-outcome layer on top of the current overdue-retention-breach-follow-through-mode read path
+- kept the implementation local-first by deriving follow-through outcomes from current overdue breach follow-through-mode evidence instead of adding completion state
+- completed `P93-MEM-01` with per-scope overdue retention breach follow-through outcomes and cross-scope highest-priority overdue-retention-breach-follow-through-outcome rollups across API and CLI
+- completed `P93-CLOSE-01` with Phase 93 acceptance evidence and Phase 94 planning for overdue retention breach follow-through completion states
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_retention_breach_follow_through_outcomes.py tests/cli/test_cli_memory_overdue_retention_breach_follow_through_outcomes.py tests/test_memory_overdue_retention_breach_follow_through_outcomes_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_retention_breach_follow_through_outcomes.py tests/cli/test_cli_memory_overdue_retention_breach_follow_through_outcomes.py tests/test_memory_overdue_retention_breach_follow_through_outcomes_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-04 Phase 92 Memory Overdue Retention Breach Follow-Through Modes
+
+- claimed `P92-MEM-01` on `codex/p92-mem-01-memory-overdue-retention-breach-follow-through-modes`
+- added one additive overdue-retention-breach-follow-through-mode layer on top of the current overdue-retention-breach-owner-target read path
+- kept the implementation local-first by deriving follow-through modes from current overdue breach owner-target evidence instead of adding workflow state
+- completed `P92-MEM-01` with per-scope overdue retention breach follow-through modes and cross-scope highest-priority overdue-retention-breach-follow-through rollups across API and CLI
+- completed `P92-CLOSE-01` with Phase 92 acceptance evidence and Phase 93 planning for overdue retention breach follow-through outcomes
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_retention_breach_follow_through_modes.py tests/cli/test_cli_memory_overdue_retention_breach_follow_through_modes.py tests/test_memory_overdue_retention_breach_follow_through_modes_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_retention_breach_follow_through_modes.py tests/cli/test_cli_memory_overdue_retention_breach_follow_through_modes.py tests/test_memory_overdue_retention_breach_follow_through_modes_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 91 Memory Overdue Retention Breach Owner Targets
+
+- claimed `P91-MEM-01` on `codex/p91-mem-01-memory-overdue-retention-breach-owner-targets`
+- added one additive overdue-retention-breach-owner-target layer on top of the current overdue-retention-breach-lane read path
+- kept the implementation local-first by deriving owner targets from current overdue breach lane evidence instead of adding identity state
+- completed `P91-MEM-01` with per-scope overdue retention breach owner targets and cross-scope highest-priority overdue-retention-breach-owner-target rollups across API and CLI
+- completed `P91-CLOSE-01` with Phase 91 acceptance evidence and Phase 92 planning for overdue retention breach follow-through modes
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_retention_breach_owner_targets.py tests/cli/test_cli_memory_overdue_retention_breach_owner_targets.py tests/test_memory_overdue_retention_breach_owner_targets_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_retention_breach_owner_targets.py tests/cli/test_cli_memory_overdue_retention_breach_owner_targets.py tests/test_memory_overdue_retention_breach_owner_targets_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 90 Memory Overdue Retention Breach Lanes
+
+- claimed `P90-MEM-01` on `codex/p90-mem-01-memory-overdue-retention-breach-lanes`
+- added one additive overdue-retention-breach-lane layer on top of the current overdue-retention-breach-action read path
+- kept the implementation local-first by deriving breach lanes from current overdue breach action evidence instead of adding ownership state
+- completed `P90-MEM-01` with per-scope overdue retention breach lanes and cross-scope highest-priority overdue-retention-breach-lane rollups across API and CLI
+- completed `P90-CLOSE-01` with Phase 90 acceptance evidence and Phase 91 planning for overdue retention breach owner targets
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_retention_breach_lanes.py tests/cli/test_cli_memory_overdue_retention_breach_lanes.py tests/test_memory_overdue_retention_breach_lanes_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_retention_breach_lanes.py tests/cli/test_cli_memory_overdue_retention_breach_lanes.py tests/test_memory_overdue_retention_breach_lanes_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 89 Memory Overdue Retention Breach Actions
+
+- claimed `P89-MEM-01` on `codex/p89-mem-01-memory-overdue-retention-breach-actions`
+- added one additive overdue-retention-breach-action layer on top of the current overdue-retention-breach-aging read path
+- kept the implementation local-first by deriving breach actions from current overdue breach age evidence instead of adding workflow state
+- completed `P89-MEM-01` with per-scope overdue retention breach actions and cross-scope highest-priority overdue-retention-breach-action rollups across API and CLI
+- completed `P89-CLOSE-01` with Phase 89 acceptance evidence and Phase 90 planning for overdue retention breach lanes
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_retention_breach_actions.py tests/cli/test_cli_memory_overdue_retention_breach_actions.py tests/test_memory_overdue_retention_breach_actions_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_retention_breach_actions.py tests/cli/test_cli_memory_overdue_retention_breach_actions.py tests/test_memory_overdue_retention_breach_actions_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 88 Memory Overdue Retention Breach Aging
+
+- claimed `P88-MEM-01` on `codex/p88-mem-01-memory-overdue-retention-breach-aging`
+- added one additive overdue-retention-breach-aging layer on top of the current overdue-retention-breach read path
+- kept the implementation local-first by deriving breach aging from current overdue evidence instead of adding scheduler state
+- completed `P88-MEM-01` with per-scope overdue retention breach aging buckets and cross-scope highest-priority overdue-retention-breach-aging rollups across API and CLI
+- completed `P88-CLOSE-01` with Phase 88 acceptance evidence and Phase 89 planning for overdue retention breach actions
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_retention_breach_aging.py tests/cli/test_cli_memory_overdue_retention_breach_aging.py tests/test_memory_overdue_retention_breach_aging_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_retention_breach_aging.py tests/cli/test_cli_memory_overdue_retention_breach_aging.py tests/test_memory_overdue_retention_breach_aging_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 87 Memory Overdue Retention Breaches
+
+- claimed `P87-MEM-01` on `codex/p87-mem-01-memory-overdue-retention-breaches`
+- added one additive overdue-retention-breach layer on top of the current overdue-retention-window read path
+- kept the implementation local-first by deriving breach severity from current overdue evidence instead of adding scheduler state
+- completed `P87-MEM-01` with per-scope overdue retention breaches, breach due-at timestamps, and cross-scope highest-priority overdue-retention-breach rollups across API and CLI
+- completed `P87-CLOSE-01` with Phase 87 acceptance evidence and Phase 88 planning for overdue retention breach aging
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_retention_breaches.py tests/cli/test_cli_memory_overdue_retention_breaches.py tests/test_memory_overdue_retention_breaches_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_retention_breaches.py tests/cli/test_cli_memory_overdue_retention_breaches.py tests/test_memory_overdue_retention_breaches_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 86 Memory Overdue Retention Windows
+
+- claimed `P86-MEM-01` on `codex/p86-mem-01-memory-overdue-retention-windows`
+- added one additive overdue-retention-window layer on top of the current overdue-retention-guidance read path
+- kept the implementation local-first by deriving revisit windows from current overdue evidence instead of adding scheduler state
+- completed `P86-MEM-01` with per-scope overdue retention windows, due-at timestamps, and cross-scope highest-priority overdue-retention-window rollups across API and CLI
+- completed `P86-CLOSE-01` with Phase 86 acceptance evidence and Phase 87 planning for overdue retention breaches
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_retention_windows.py tests/cli/test_cli_memory_overdue_retention_windows.py tests/test_memory_overdue_retention_windows_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_retention_windows.py tests/cli/test_cli_memory_overdue_retention_windows.py tests/test_memory_overdue_retention_windows_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 85 Memory Overdue Retention Guidance
+
+- claimed `P85-MEM-01` on `codex/p85-mem-01-memory-overdue-retention-guidance`
+- added one additive overdue-retention-guidance layer on top of the current overdue-archive-recommendation read path
+- kept the implementation local-first by deriving retention posture from current overdue evidence instead of adding workflow state
+- completed `P85-MEM-01` with per-scope overdue retention guidance, retention buckets, and cross-scope highest-priority overdue-retention rollups across API and CLI
+- completed `P85-CLOSE-01` with Phase 85 acceptance evidence and Phase 86 planning for overdue retention windows
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_retention_guidance.py tests/cli/test_cli_memory_overdue_retention_guidance.py tests/test_memory_overdue_retention_guidance_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_retention_guidance.py tests/cli/test_cli_memory_overdue_retention_guidance.py tests/test_memory_overdue_retention_guidance_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 84 Memory Overdue Archive Recommendations
+
+- claimed `P84-MEM-01` on `codex/p84-mem-01-memory-overdue-archive-recommendations`
+- added one additive overdue-archive-recommendation layer on top of the current overdue-closure-decision read path
+- kept the implementation local-first by deriving archive posture from current overdue evidence instead of adding workflow state
+- completed `P84-MEM-01` with per-scope overdue archive recommendations and cross-scope highest-priority overdue-archive rollups across API and CLI
+- completed `P84-CLOSE-01` with Phase 84 acceptance evidence and Phase 85 planning for overdue retention guidance
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_archive_recommendations.py tests/cli/test_cli_memory_overdue_archive_recommendations.py tests/test_memory_overdue_archive_recommendations_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_archive_recommendations.py tests/cli/test_cli_memory_overdue_archive_recommendations.py tests/test_memory_overdue_archive_recommendations_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 83 Memory Overdue Closure Decisions
+
+- claimed `P83-MEM-01` on `codex/p83-mem-01-memory-overdue-closure-decisions`
+- added one additive overdue-closure-decision layer on top of the current overdue-resolution-outcome read path
+- kept the implementation local-first by deriving final handling decisions from current overdue evidence instead of adding workflow state
+- completed `P83-MEM-01` with per-scope overdue closure decisions and cross-scope highest-priority overdue-closure rollups across API and CLI
+- completed `P83-CLOSE-01` with Phase 83 acceptance evidence and Phase 84 planning for overdue archive recommendations
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_closure_decisions.py tests/cli/test_cli_memory_overdue_closure_decisions.py tests/test_memory_overdue_closure_decisions_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_closure_decisions.py tests/cli/test_cli_memory_overdue_closure_decisions.py tests/test_memory_overdue_closure_decisions_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 82 Memory Overdue Resolution Outcomes
+
+- claimed `P82-MEM-01` on `codex/p82-mem-01-memory-overdue-resolution-outcomes`
+- added one additive overdue-resolution-outcome layer on top of the current overdue-resolution-checkpoint read path
+- kept the implementation local-first by deriving result states from current overdue evidence instead of adding workflow state
+- completed `P82-MEM-01` with per-scope overdue resolution outcomes and cross-scope highest-priority overdue-resolution-outcome rollups across API and CLI
+- completed `P82-CLOSE-01` with Phase 82 acceptance evidence and Phase 83 planning for overdue closure decisions
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_resolution_outcomes.py tests/cli/test_cli_memory_overdue_resolution_outcomes.py tests/test_memory_overdue_resolution_outcomes_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_resolution_outcomes.py tests/cli/test_cli_memory_overdue_resolution_outcomes.py tests/test_memory_overdue_resolution_outcomes_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 81 Memory Overdue Resolution Checkpoints
+
+- claimed `P81-MEM-01` on `codex/p81-mem-01-memory-overdue-resolution-checkpoints`
+- added one additive overdue-resolution-checkpoint layer on top of the current overdue-recovery-path read path
+- kept the implementation local-first by deriving closure checkpoints from current overdue evidence instead of adding workflow state
+- completed `P81-MEM-01` with per-scope overdue resolution checkpoints and cross-scope highest-priority overdue-resolution rollups across API and CLI
+- completed `P81-CLOSE-01` with Phase 81 acceptance evidence and Phase 82 planning for overdue resolution outcomes
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_resolution_checkpoints.py tests/cli/test_cli_memory_overdue_resolution_checkpoints.py tests/test_memory_overdue_resolution_checkpoints_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_resolution_checkpoints.py tests/cli/test_cli_memory_overdue_resolution_checkpoints.py tests/test_memory_overdue_resolution_checkpoints_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 80 Memory Overdue Recovery Paths
+
+- claimed `P80-MEM-01` on `codex/p80-mem-01-memory-overdue-recovery-paths`
+- added one additive overdue-recovery-path layer on top of the current overdue-escalation-lane read path
+- kept the implementation local-first by deriving recovery planning from current overdue evidence instead of adding workflow state
+- completed `P80-MEM-01` with per-scope overdue recovery paths and cross-scope highest-priority overdue-recovery rollups across API and CLI
+- completed `P80-CLOSE-01` with Phase 80 acceptance evidence and Phase 81 planning for overdue resolution checkpoints
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_recovery_paths.py tests/cli/test_cli_memory_overdue_recovery_paths.py tests/test_memory_overdue_recovery_paths_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_recovery_paths.py tests/cli/test_cli_memory_overdue_recovery_paths.py tests/test_memory_overdue_recovery_paths_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 79 Memory Overdue Escalation Lanes
+
+- claimed `P79-MEM-01` on `codex/p79-mem-01-memory-overdue-escalation-lanes`
+- added one additive overdue-escalation-lane layer on top of the current overdue-intervention read path
+- kept the implementation local-first by deriving handling lanes from current overdue evidence instead of adding workflow state
+- completed `P79-MEM-01` with per-scope overdue escalation lanes and cross-scope highest-priority overdue-escalation rollups across API and CLI
+- completed `P79-CLOSE-01` with Phase 79 acceptance evidence and Phase 80 planning for overdue recovery paths
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_escalation_lanes.py tests/cli/test_cli_memory_overdue_escalation_lanes.py tests/test_memory_overdue_escalation_lanes_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_escalation_lanes.py tests/cli/test_cli_memory_overdue_escalation_lanes.py tests/test_memory_overdue_escalation_lanes_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 78 Memory Overdue Intervention Hints
+
+- claimed `P78-MEM-01` on `codex/p78-mem-01-memory-overdue-intervention-hints`
+- added one additive overdue-intervention layer on top of the current overdue-trend read path
+- kept the implementation local-first by deriving next-step hints from current overdue evidence instead of adding workflow state
+- completed `P78-MEM-01` with per-scope overdue intervention hints and cross-scope highest-priority overdue-intervention rollups across API and CLI
+- completed `P78-CLOSE-01` with Phase 78 acceptance evidence and Phase 79 planning for overdue escalation lanes
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_intervention_hints.py tests/cli/test_cli_memory_overdue_intervention_hints.py tests/test_memory_overdue_intervention_hints_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_intervention_hints.py tests/cli/test_cli_memory_overdue_intervention_hints.py tests/test_memory_overdue_intervention_hints_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 77 Memory Overdue Trend Signals
+
+- claimed `P77-MEM-01` on `codex/p77-mem-01-memory-overdue-trend-signals`
+- added one additive overdue-trend layer on top of the current overdue-age read path
+- kept the implementation local-first by deriving trend state from current overdue evidence instead of adding historical storage
+- completed `P77-MEM-01` with per-scope overdue trend classification and cross-scope highest-priority overdue-trend rollups across API and CLI
+- completed `P77-CLOSE-01` with Phase 77 acceptance evidence and Phase 78 planning for overdue intervention hints
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_trend_signals.py tests/cli/test_cli_memory_overdue_trend_signals.py tests/test_memory_overdue_trend_signals_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_trend_signals.py tests/cli/test_cli_memory_overdue_trend_signals.py tests/test_memory_overdue_trend_signals_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 76 Memory Overdue Visibility Rollups
+
+- claimed `P76-MEM-01` on `codex/p76-mem-01-memory-overdue-visibility-rollups`
+- added one additive overdue-visibility layer on top of the current overdue-age, overdue-flag, and overdue-type read path
+- kept the implementation local-first by reusing the current queue inventory and existing overdue scope evidence instead of adding a new projection
+- completed `P76-MEM-01` with per-scope overdue visibility counts, target-memory visibility readback, and cross-scope highest-priority overdue-visibility rollups across API and CLI
+- completed `P76-CLOSE-01` with Phase 76 acceptance evidence and Phase 77 planning for overdue trend signals
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_visibility_rollups.py tests/cli/test_cli_memory_overdue_visibility_rollups.py tests/test_memory_overdue_visibility_rollups_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_visibility_rollups.py tests/cli/test_cli_memory_overdue_visibility_rollups.py tests/test_memory_overdue_visibility_rollups_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 75 Memory Overdue Type Rollups
+
+- claimed `P75-MEM-01` on `codex/p75-mem-01-memory-overdue-type-rollups`
+- added one additive overdue-type layer on top of the current overdue-age and overdue-flag read path
+- kept the implementation local-first by reusing the current queue inventory and existing overdue scope evidence instead of adding a new projection
+- completed `P75-MEM-01` with per-scope overdue memory-type counts, target-memory type readback, and cross-scope highest-priority overdue-type rollups across API and CLI
+- completed `P75-CLOSE-01` with Phase 75 acceptance evidence and Phase 76 planning for overdue visibility rollups
+- validation:
+  - `uv run pytest tests/api/test_memory_overdue_type_rollups.py tests/cli/test_cli_memory_overdue_type_rollups.py tests/test_memory_overdue_type_rollups_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/session_memory_read.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py tests/api/test_memory_overdue_type_rollups.py tests/cli/test_cli_memory_overdue_type_rollups.py tests/test_memory_overdue_type_rollups_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-02 Phase 57 Local Memory Store Foundation
+
+- claimed `P57-MEM-01` on `codex/p57-mem-01-memory-store-foundation`
+- starting the first durable memory foundation with typed core contracts and a local SQLite store
+- scope is intentionally limited to derived memory persistence and query semantics; memory extraction and Redis adapters remain later tasks
+- completed `P57-MEM-01` with `MemoryRecord` / `MemoryQuery`, `MemoryStorePort`, and `SQLiteMemoryStore`
+- validation:
+  - `uv run pytest tests/agent_core/test_memories.py tests/agent_storage/test_sqlite_memories.py`
+  - `uv run ruff check packages/agent-core/src/agent_core/domain/memories.py packages/agent-core/src/agent_core/ports/memory_store.py packages/agent-storage/src/agent_storage/memories.py tests/agent_core/test_memories.py tests/agent_storage/test_sqlite_memories.py`
+  - `uv run mypy packages apps`
+
+## 2026-07-02 Phase 57 Memory Candidate Extraction
+
+- claimed `P57-MEM-02` on `codex/p57-mem-02-memory-candidate-extraction`
+- extracting deterministic `procedure` memory candidates from successful `command.run` and `tests.run` session events
+- keeping this slice narrow: typed extraction service plus emitted session events, without wiring worker triggers or Redis adapters yet
+- completed `P57-MEM-02` with `MemoryCandidateExtractionService` and `memory_candidate_extracted` event payload validation
+- validation:
+  - `uv run pytest tests/agent_core/test_memory_candidates.py tests/agent_core/test_event_contracts.py`
+  - `uv run ruff check packages/agent-core/src/agent_core/application/memory_candidates.py packages/agent-core/src/agent_core/contracts/events.py packages/agent-core/src/agent_core/domain/events.py packages/agent-core/src/agent_core/application/__init__.py tests/agent_core/test_memory_candidates.py tests/agent_core/test_event_contracts.py`
+  - `make check`
+
+## 2026-07-02 Phase 57 Worker Memory Candidate Persistence
+
+- claimed `P57-MEM-03` on `codex/p57-mem-02-memory-candidate-extraction`
+- wiring completed worker sessions to persist local procedure-memory candidates and append `memory_candidate_extracted` events
+- repo scope for local mode uses the resolved `workspace_root` string to avoid directory-name collisions
+- completed `P57-MEM-03` by wiring `SessionExecutionService` to persist local memory candidates after `session_completed`
+- validation:
+  - `uv run pytest tests/worker/test_execution.py`
+  - `uv run ruff check apps/worker/src/zebra_agent_worker/execution.py tests/worker/test_execution.py`
+  - `make check`
+
+## 2026-07-02 Phase 57 Session Memory Read Surface
+
+- claimed `P57-MEM-04` on `codex/p57-mem-02-memory-candidate-extraction`
+- exposing persisted session memory inventory over the local API and CLI without adding write or review semantics yet
+- keeping this slice session-scoped by deriving repo scope from the persisted session workspace root
+- validation:
+  - `uv run pytest tests/api/test_session_memory.py tests/cli/test_cli_session_memory.py tests/test_session_memory_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/cli_types.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/session_memory_read.py tests/api/test_session_memory.py tests/cli/test_cli_session_memory.py tests/test_session_memory_contract_matrix.py`
+  - `make check`
+
+## 2026-07-02 Phase 57 Memory Candidate Review Controls
+
+- claimed `P57-MEM-05` on `codex/p57-mem-02-memory-candidate-extraction`
+- added the first durable operator review path for memory candidates with confirm and expire decisions
+- kept the state machine intentionally narrow: only `candidate -> confirmed` and `candidate -> expired`, with `memory_review_recorded` appended onto the source session stream
+- split CLI parser construction into `cli_parser.py` so `cli.py` returns below the repository hard file limit
+- validation:
+  - `uv run pytest tests/agent_core/test_memory_reviews.py tests/agent_core/test_event_contracts.py tests/agent_storage/test_sqlite_memories.py tests/api/test_memory_review.py tests/cli/test_cli_memory_review.py tests/test_session_memory_review_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-02 Phase 57 Confirmed Memory Context Injection
+
+- claimed `P57-MEM-06` on `codex/p57-mem-02-memory-candidate-extraction`
+- wired confirmed repo memory into the stable section of the local context compiler prompt
+- corrected a mainline gap by routing local harness execution through `LocalContextCompiler` instead of bypassing it
+- kept retrieval intentionally narrow to repo-scoped `confirmed` memory text so memory remains an additive hint, not a recovery dependency
+- validation:
+  - `uv run pytest tests/agent_context/test_adapter.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_harness_runtime_evidence.py tests/agent_runtime/test_harness_runner.py tests/agent_storage/test_sqlite_memories.py tests/api/test_api_app.py -k confirmed_memory tests/cli/test_cli_commands.py -k confirmed_memory`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-02 Phase 57 Confirmed Memory Ranking And Typed Prompt Labels
+
+- claimed `P57-MEM-07` on `codex/p57-mem-02-memory-candidate-extraction`
+- upgraded confirmed-memory injection from plain strings to typed inputs so prompt assembly can preserve memory semantics
+- ranked repo-scoped confirmed memories by type priority, then recency, and collapsed normalized duplicates before prompt injection
+- updated stable prompt labels from generic confirmed-memory numbering to type-aware titles such as `Project Rule` and `Procedure`
+- validation:
+  - `uv run pytest tests/agent_storage/test_sqlite_memories.py tests/agent_context/test_adapter.py tests/agent_core/test_harness_model_step.py tests/agent_core/test_harness_runtime_evidence.py tests/agent_runtime/test_harness_runner.py`
+  - `uv run pytest tests/api/test_api_app.py -k confirmed_memory tests/cli/test_cli_commands.py -k confirmed_memory`
+  - `uv run mypy packages apps`
+
+## 2026-07-02 Phase 57 Confirmed Memory Supersession On Review
+
+- claimed `P57-MEM-08` on `codex/p57-mem-02-memory-candidate-extraction`
+- added deterministic supersession so confirming a candidate memory retires older confirmed memories with the same scope and `memory_type`
+- kept the conflict rule intentionally narrow to existing `confirmed` records and reused the existing `memory_review_recorded` event instead of adding a new review event type
+- extended API and CLI review responses to report `superseded_memory_ids` while preserving success and invalid-state parity
+- validation:
+  - `uv run pytest tests/agent_core/test_memory_reviews.py tests/agent_core/test_event_contracts.py tests/api/test_memory_review.py tests/cli/test_cli_memory_review.py tests/test_session_memory_review_contract_matrix.py`
+  - `uv run mypy packages apps`
+
+## 2026-07-02 Phase 57 Doc-Derived Project Rule Candidate Extraction
+
+- claimed `P57-MEM-09` on `codex/p57-mem-02-memory-candidate-extraction`
+- broadened memory extraction beyond `procedure` by adding a deterministic `project_rule` candidate path on successful `files.read` of root `AGENTS.md`
+- kept the extraction intentionally narrow to the explicit `Local Commands` section and skipped truncated governance reads to avoid model-authored summaries or partial-doc rules
+- worker persistence now covers both tool-derived `procedure` candidates and doc-derived `project_rule` candidates
+- validation:
+  - `uv run pytest tests/agent_core/test_memory_candidates.py tests/worker/test_execution.py -k 'memory_candidate or project_rule or agents_read'`
+  - `uv run mypy packages apps`
+
+## 2026-07-02 Phase 57 Doc-Derived Architecture Fact Candidate Extraction
+
+- claimed `P57-MEM-10` on `codex/p57-mem-02-memory-candidate-extraction`
+- extended the same root `AGENTS.md` read path so one deterministic governance read can emit multiple memory candidates
+- added a narrow `architecture_fact` extraction rule from the explicit package dependency boundary bullets around `agent-core`
+- kept the extraction rule text literal and section-scoped instead of attempting broader module summarization
+- validation:
+  - `uv run pytest tests/agent_core/test_memory_candidates.py tests/worker/test_execution.py -k 'memory_candidate or project_rule or architecture_fact or agents_read'`
+  - `uv run mypy packages apps`
+
+## 2026-07-02 Phase 57 Explicit User Preference Candidate Extraction
+
+- claimed `P57-MEM-11` on `codex/p57-mem-02-memory-candidate-extraction`
+- added a narrow `preference` extraction path on durable `USER_MESSAGE_RECEIVED` events using the explicit `Preference:` prefix as the only accepted marker
+- kept preference extraction separate from free-form task prompts so ordinary execution requests do not get promoted into repo memory
+- split memory-candidate source rules into dedicated modules so file boundaries stay within the repository target size while the extraction matrix grows
+- validation:
+  - `uv run pytest tests/agent_core/test_memory_candidates.py tests/worker/test_execution.py -k 'memory_candidate or project_rule or architecture_fact or preference or agents_read'`
+  - `uv run mypy packages apps`
+
+## 2026-07-03 Phase 57 Confirmed Memory Freshness Filtering
+
+- claimed `P57-MEM-12` on `codex/p57-mem-02-memory-candidate-extraction`
+- added `as_of`-aware filtering to confirmed repo memory lookup so records with expired `expires_at` values do not enter stable prompt context
+- kept API, CLI, runtime, and worker contracts unchanged by defaulting lookup time to the current UTC timestamp
+- validation:
+  - `uv run pytest tests/agent_storage/test_sqlite_memories.py`
+  - `uv run mypy packages apps`
+
+## 2026-07-03 Phase 57 Type-Aware Memory Review Conflict Policy
+
+- claimed `P57-MEM-13` on `codex/p57-mem-02-memory-candidate-extraction`
+- narrowed review supersession so only single-active memory types (`project_rule`, `architecture_fact`, `procedure`) retire prior confirmed records in the same scope
+- left confirmed `preference` memories coexistent so explicit user preferences no longer evict each other during confirm review
+- validation:
+  - `uv run pytest tests/agent_core/test_memory_reviews.py tests/api/test_memory_review.py tests/cli/test_cli_memory_review.py tests/test_session_memory_review_contract_matrix.py`
+  - `uv run mypy packages apps`
+
+## 2026-07-03 Phase 57 Duplicate Confirm Review Handling
+
+- claimed `P57-MEM-14` on `codex/p57-mem-02-memory-candidate-extraction`
+- added duplicate confirm detection so a candidate that normalizes to the same text as an existing confirmed memory is expired instead of becoming another confirmed record
+- surfaced the matching confirmed memory id through the durable review event payload and both API and CLI review responses
+- validation:
+  - `uv run pytest tests/agent_core/test_event_contracts.py tests/agent_core/test_memory_reviews.py tests/api/test_memory_review.py tests/cli/test_cli_memory_review.py tests/test_session_memory_review_contract_matrix.py`
+  - `uv run mypy packages apps`
+
+## 2026-07-03 Phase 57 Stale Doc Memory Invalidation On Governance Refresh
+
+- claimed `P57-MEM-15` on `codex/p57-mem-02-memory-candidate-extraction`
+- added post-extraction invalidation so a full successful root `AGENTS.md` reread expires confirmed doc-derived memories whose normalized text no longer appears in the current extracted governance set
+- kept the invalidation scope intentionally narrow to confirmed `project_rule` and `architecture_fact` repo memories and only when the governance document was fully reread
+- validation:
+  - `uv run pytest tests/agent_core/test_memory_candidates.py tests/worker/test_execution.py -k 'memory_candidate or agents_refresh or stale or architecture_fact or project_rule or preference'`
+  - `uv run mypy packages apps`
+
+## 2026-07-03 Phase 57 Closeout And Phase 58 Lifecycle Readback
+
+- claimed `P57-CLOSE-01` and `P58-MEM-01` on `codex/p58-mem-01-session-memory-lifecycle-readback`
+- closed `Phase 57` with `docs/Phase57_Local_Memory_Lifecycle_And_Governance_Refresh_验收记录.md`
+- added shared memory inventory serialization so API and CLI session-memory reads expose `last_review` lifecycle metadata from the latest durable review event
+- verified auto-expired governance-memory rows now surface system operator and invalidation reason during session-memory readback
+- synchronized Phase 58 starter tasks and repository progress state across `docs/AGENT_TASKS.md`, `PROGRESS.md`, and `README.md`
+- validation:
+  - `uv run pytest tests/api/test_session_memory.py tests/cli/test_cli_session_memory.py tests/test_session_memory_read_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/session_read.py apps/cli/src/zebra_agent_cli/session_memory_read.py packages/agent-core/src/agent_core/application/memory_inventory.py tests/api/test_session_memory.py tests/cli/test_cli_session_memory.py tests/test_session_memory_read_contract_matrix.py`
+  - `make check`
+
+## 2026-07-03 Phase 58 Broader Invalidation And Closeout
+
+- claimed `P58-MEM-02` and `P58-CLOSE-01`
+- replaced the hard-coded governance-only stale invalidation path with refresh-target-driven invalidation for deterministic singleton repo memories
+- kept auto-expire limited to `project_rule`, `architecture_fact`, and `procedure`, while leaving `preference` memories out of the singleton invalidation path
+- added worker and core regression coverage for stale confirmed procedure expiry after a successful procedure refresh
+- closed `Phase 58` with `docs/Phase58_Memory_Lifecycle_Readback_And_Broader_Invalidation_验收记录.md`
+- added `Phase 59` starter tasks for memory source provenance readback and next planning
+- validation:
+  - `uv run pytest tests/agent_core/test_memory_candidates.py tests/worker/test_execution.py -k 'stale or procedure_refresh or agents_refresh or preference or architecture_fact or project_rule'`
+  - `uv run ruff check packages/agent-core/src/agent_core/application tests/agent_core/test_memory_candidates.py tests/worker/test_execution.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 59 Memory Source Provenance Readback
+
+- claimed `P59-MEM-01` on `codex/p59-mem-01-memory-source-provenance-readback`
+- added shared `source` provenance projection on session memory inventory rows without changing the memory storage schema
+- kept provenance deterministic by reconstructing it from `source_event_start/source_event_end` against the persisted session event stream
+- covered tool-derived procedure memory, governance doc reads, and explicit user-message preference memory across API, CLI, and the session-memory contract matrix
+- validation:
+  - `uv run pytest tests/api/test_session_memory.py tests/cli/test_cli_session_memory.py tests/test_session_memory_read_contract_matrix.py`
+
+## 2026-07-03 Phase 59 Closeout And Phase 60 Planning
+
+- claimed `P59-CLOSE-01`
+- closed `Phase 59` with `docs/Phase59_Memory_Source_Provenance_Readback_验收记录.md`
+- synchronized `docs/AGENT_TASKS.md`, `PROGRESS.md`, and `README.md` so the phase state and next lane no longer lag the code
+- added `Phase 60` starter tasks for user-scoped and tenant-scoped memory operator inventory
+
+## 2026-07-03 Phase 60 Cross-Scope Memory Inventory And Closeout
+
+- claimed `P60-MEM-01` and `P60-CLOSE-01`
+- added shared cross-scope memory inventory reads for repo, user, and tenant scopes
+- exposed local API surfaces for user-memory and tenant-memory inventory plus matching CLI commands
+- kept provenance and lifecycle payloads aligned across all supported memory scopes
+- closed `Phase 60` with `docs/Phase60_Cross_Scope_Memory_Operator_Inventory_验收记录.md`
+- added `Phase 61` starter tasks for cross-scope memory review controls
+- validation:
+  - `uv run pytest tests/api/test_memory_scope_inventory.py tests/cli/test_cli_memory_scope_inventory.py tests/test_memory_scope_inventory_contract_matrix.py tests/api/test_session_memory.py tests/cli/test_cli_session_memory.py tests/test_session_memory_read_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api apps/cli/src/zebra_agent_cli packages/agent-core/src/agent_core/application tests/api/test_memory_scope_inventory.py tests/cli/test_cli_memory_scope_inventory.py tests/test_memory_scope_inventory_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 61 Cross-Scope Memory Review And Closeout
+
+- claimed `P61-MEM-01` and `P61-CLOSE-01`
+- extended local memory review controls from repo-session paths to user-scoped and tenant-scoped memory while keeping durable review events anchored to source sessions
+- added local API routes and CLI commands for cross-scope confirm and expire flows
+- preserved the existing lifecycle payload contract across repo, user, and tenant review responses
+- closed `Phase 61` with `docs/Phase61_Cross_Scope_Memory_Review_Controls_验收记录.md`
+- added `Phase 62` starter tasks for scope-aware memory review queue reads
+- validation:
+  - `uv run pytest tests/api/test_memory_review.py tests/cli/test_cli_memory_review.py tests/test_session_memory_review_contract_matrix.py tests/api/test_memory_scope_review.py tests/cli/test_cli_memory_scope_review.py tests/test_memory_scope_review_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api apps/cli/src/zebra_agent_cli packages/agent-core/src/agent_core/application tests/api/test_memory_scope_review.py tests/cli/test_cli_memory_scope_review.py tests/test_memory_scope_review_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
 ## 2026-07-02 Phase 56 Session Resume Execute Closeout
 
 - claimed `P56-CLOSE-01` on `codex/p56-closeout-next-plan`
@@ -2530,7 +3101,274 @@
   - `P12-API-01 - Delivery Audit Read API`
 - 验证：
   - `make check`
-  - `make test`
+
+## 2026-07-03 Phase 62 Scope-Aware Memory Review Queue
+
+- 执行 `P62-MEM-01 - Scope-Aware Memory Review Queue`
+- 行为更新：
+  - 新增 repo-session、user、tenant 三个 scope 的 candidate-only memory queue 读路径
+  - 新增 API 路由 `/sessions/{id}/memory/queue`、`/users/{id}/memory/queue`、`/tenants/{id}/memory/queue`
+  - 新增 CLI 命令 `memory-queue`、`memory-user-queue`、`memory-tenant-queue`
+  - 复用现有 inventory serializer，保留 `source` provenance 与 `last_review` lifecycle 字段
+- 文档更新：
+  - `docs/Phase62_Scope_Aware_Memory_Review_Queue_验收记录.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `WORKLOG.md`
+- 验证：
+  - `uv run pytest tests/api/test_memory_scope_queue.py tests/cli/test_cli_memory_scope_queue.py tests/test_memory_scope_queue_contract_matrix.py tests/api/test_session_memory.py tests/cli/test_cli_session_memory.py tests/test_session_memory_read_contract_matrix.py tests/api/test_memory_scope_inventory.py tests/cli/test_cli_memory_scope_inventory.py tests/test_memory_scope_inventory_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api apps/cli/src/zebra_agent_cli tests/api/test_memory_scope_queue.py tests/cli/test_cli_memory_scope_queue.py tests/test_memory_scope_queue_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 63 Bulk Memory Review Decisions
+
+- 执行 `P63-MEM-01 - Bulk Memory Review Decisions`
+- 行为更新：
+  - 新增 repo-session、user、tenant 三个 scope 的 bulk memory review 控制面
+  - API 新增 `/sessions/{id}/memory/bulk-review`、`/users/{id}/memory/bulk-review`、`/tenants/{id}/memory/bulk-review`
+  - CLI 新增 `memory-bulk-review`、`memory-user-bulk-review`、`memory-tenant-bulk-review`
+  - bulk 响应显式区分 `applied`、`skipped`、`invalid`，并保留现有单条 review 语义不变
+- 文档更新：
+  - `docs/Phase63_Bulk_Memory_Review_Decisions_验收记录.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `WORKLOG.md`
+- 验证：
+  - `uv run pytest tests/api/test_memory_scope_bulk_review.py tests/cli/test_cli_memory_scope_bulk_review.py tests/test_memory_scope_bulk_review_contract_matrix.py tests/api/test_memory_scope_review.py tests/cli/test_cli_memory_scope_review.py tests/test_memory_scope_review_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api apps/cli/src/zebra_agent_cli tests/api/test_memory_scope_bulk_review.py tests/cli/test_cli_memory_scope_bulk_review.py tests/test_memory_scope_bulk_review_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 64 Cross-Scope Memory Queue Summary
+
+- 执行 `P64-MEM-01 - Cross-Scope Memory Queue Summary`
+- 行为更新：
+  - 新增 repo-session、user、tenant 三个 scope 的 queue summary 读面
+  - API 新增 `/sessions/{id}/memory/queue-summary`、`/users/{id}/memory/queue-summary`、`/tenants/{id}/memory/queue-summary`
+  - CLI 新增 `memory-queue-summary`、`memory-user-queue-summary`、`memory-tenant-queue-summary`
+  - summary 响应新增 `pending_count`、`queue_status`、`latest_memory_id`、`latest_updated_at`
+- 文档更新：
+  - `docs/Phase64_Cross_Scope_Memory_Queue_Summary_验收记录.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `WORKLOG.md`
+- 验证：
+  - `uv run pytest tests/api/test_memory_scope_queue_summary.py tests/cli/test_cli_memory_scope_queue_summary.py tests/test_memory_scope_queue_summary_contract_matrix.py tests/api/test_memory_scope_queue.py tests/cli/test_cli_memory_scope_queue.py tests/test_memory_scope_queue_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api apps/cli/src/zebra_agent_cli tests/api/test_memory_scope_queue_summary.py tests/cli/test_cli_memory_scope_queue_summary.py tests/test_memory_scope_queue_summary_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 65 Cross-Scope Memory Operations Overview
+
+- 执行 `P65-MEM-01 - Cross-Scope Memory Operations Overview`
+- 行为更新：
+  - 新增一条以 session 为锚点、可选拼接 user 与 tenant scope 的 memory operations overview 读面
+  - API 新增 `POST /sessions/{id}/memory-overview`
+  - CLI 新增 `memory-overview <session_id> [--user-id ...] [--tenant-id ...]`
+  - overview 响应新增 `scope_count`、`total_pending_count` 与 per-scope `scopes[]` 健康摘要
+- 文档更新：
+  - `docs/Phase65_Cross_Scope_Memory_Operations_Overview_验收记录.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `WORKLOG.md`
+- 验证：
+  - `uv run pytest tests/api/test_memory_operations_overview.py tests/cli/test_cli_memory_operations_overview.py tests/test_memory_operations_overview_contract_matrix.py tests/api/test_memory_scope_queue_summary.py tests/cli/test_cli_memory_scope_queue_summary.py tests/test_memory_scope_queue_summary_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api apps/cli/src/zebra_agent_cli tests/api/test_memory_operations_overview.py tests/cli/test_cli_memory_operations_overview.py tests/test_memory_operations_overview_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 66 Memory Review Governance Signals
+
+- 执行 `P66-MEM-01 - Memory Review Governance Signals`
+- 行为更新：
+  - 新增一条以 session 为锚点、可选拼接 user 与 tenant scope 的 memory governance 读面
+  - API 新增 `POST /sessions/{id}/memory-governance`
+  - CLI 新增 `memory-governance <session_id> [--user-id ...] [--tenant-id ...]`
+  - governance 响应新增 `pending_by_type`、`reviewed_count`、`review_status_counts`、`latest_reviewed_at`、`latest_review_status`、`latest_review_operator`
+- 文档更新：
+  - `docs/Phase66_Memory_Review_Governance_Signals_验收记录.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `WORKLOG.md`
+- 验证：
+  - `uv run pytest tests/api/test_memory_review_governance_signals.py tests/cli/test_cli_memory_review_governance_signals.py tests/test_memory_review_governance_signals_contract_matrix.py tests/api/test_memory_operations_overview.py tests/cli/test_cli_memory_operations_overview.py tests/test_memory_operations_overview_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api apps/cli/src/zebra_agent_cli tests/api/test_memory_review_governance_signals.py tests/cli/test_cli_memory_review_governance_signals.py tests/test_memory_review_governance_signals_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 67 Memory Backlog Aging Signals
+
+- 执行 `P67-MEM-01 - Memory Backlog Aging Signals`
+- 行为更新：
+  - 新增一条以 session 为锚点、可选拼接 user 与 tenant scope 的 memory backlog aging 读面
+  - API 新增 `POST /sessions/{id}/memory-aging`
+  - CLI 新增 `memory-aging <session_id> [--user-id ...] [--tenant-id ...] [--as-of ...]`
+  - aging 响应新增 `reference_at`、`pending_age_buckets`、`oldest_pending_memory_id`、`oldest_pending_captured_at`、`oldest_pending_age_seconds`、`oldest_pending_age_days`
+  - 聚合响应新增 `pending_age_bucket_totals` 与跨 scope 的 oldest pending rollup
+- 文档更新：
+  - `docs/Phase67_Memory_Backlog_Aging_Signals_验收记录.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `WORKLOG.md`
+- 验证：
+  - `uv run pytest tests/api/test_memory_backlog_aging_signals.py tests/cli/test_cli_memory_backlog_aging_signals.py tests/test_memory_backlog_aging_signals_contract_matrix.py tests/api/test_memory_review_governance_signals.py tests/cli/test_cli_memory_review_governance_signals.py tests/test_memory_review_governance_signals_contract_matrix.py tests/api/test_memory_operations_overview.py tests/cli/test_cli_memory_operations_overview.py tests/test_memory_operations_overview_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api apps/cli/src/zebra_agent_cli tests/api/test_memory_backlog_aging_signals.py tests/cli/test_cli_memory_backlog_aging_signals.py tests/test_memory_backlog_aging_signals_contract_matrix.py tests/api/test_memory_review_governance_signals.py tests/cli/test_cli_memory_review_governance_signals.py tests/test_memory_review_governance_signals_contract_matrix.py tests/api/test_memory_operations_overview.py tests/cli/test_cli_memory_operations_overview.py tests/test_memory_operations_overview_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 68 Memory Review Velocity Signals
+
+- 执行 `P68-MEM-01 - Memory Review Velocity Signals`
+- 行为更新：
+  - 新增一条以 session 为锚点、可选拼接 user 与 tenant scope 的 memory review velocity 读面
+  - API 新增 `POST /sessions/{id}/memory-velocity`
+  - CLI 新增 `memory-velocity <session_id> [--user-id ...] [--tenant-id ...] [--as-of ...]`
+  - velocity 响应新增 `reviewed_last_24h_count`、`reviewed_last_7d_count`、`reviewed_last_30d_count`、`latest_review_window`
+  - 聚合响应新增 `total_reviewed_last_24h_count`、`total_reviewed_last_7d_count`、`total_reviewed_last_30d_count` 与跨 scope 的 latest review rollup
+- 文档更新：
+  - `docs/Phase68_Memory_Review_Velocity_Signals_验收记录.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `WORKLOG.md`
+- 验证：
+  - `uv run pytest tests/api/test_memory_review_velocity_signals.py tests/cli/test_cli_memory_review_velocity_signals.py tests/test_memory_review_velocity_signals_contract_matrix.py tests/api/test_memory_backlog_aging_signals.py tests/cli/test_cli_memory_backlog_aging_signals.py tests/test_memory_backlog_aging_signals_contract_matrix.py tests/api/test_memory_review_governance_signals.py tests/cli/test_cli_memory_review_governance_signals.py tests/test_memory_review_governance_signals_contract_matrix.py tests/api/test_memory_operations_overview.py tests/cli/test_cli_memory_operations_overview.py tests/test_memory_operations_overview_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api apps/cli/src/zebra_agent_cli tests/api/test_memory_review_velocity_signals.py tests/cli/test_cli_memory_review_velocity_signals.py tests/test_memory_review_velocity_signals_contract_matrix.py tests/api/test_memory_backlog_aging_signals.py tests/cli/test_cli_memory_backlog_aging_signals.py tests/test_memory_backlog_aging_signals_contract_matrix.py tests/api/test_memory_review_governance_signals.py tests/cli/test_cli_memory_review_governance_signals.py tests/test_memory_review_governance_signals_contract_matrix.py tests/api/test_memory_operations_overview.py tests/cli/test_cli_memory_operations_overview.py tests/test_memory_operations_overview_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 69 Memory Backlog Pressure Signals
+
+- 执行 `P69-MEM-01 - Memory Backlog Pressure Signals`
+- 行为更新：
+  - 新增一条以 session 为锚点、可选拼接 user 与 tenant scope 的 memory backlog pressure 读面
+  - API 新增 `POST /sessions/{id}/memory-pressure`
+  - CLI 新增 `memory-pressure <session_id> [--user-id ...] [--tenant-id ...] [--as-of ...]`
+  - pressure 响应新增 `pressure_level` 与 `pressure_reasons`
+  - 聚合响应新增 `pressure_level_counts`、`highest_pressure_level`、`highest_pressure_scope_kind`、`highest_pressure_scope_id`、`highest_pressure_reasons`
+- 文档更新：
+  - `docs/Phase69_Memory_Backlog_Pressure_Signals_验收记录.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `WORKLOG.md`
+- 验证：
+  - `uv run pytest tests/api/test_memory_backlog_pressure_signals.py tests/cli/test_cli_memory_backlog_pressure_signals.py tests/test_memory_backlog_pressure_signals_contract_matrix.py tests/api/test_memory_review_velocity_signals.py tests/cli/test_cli_memory_review_velocity_signals.py tests/test_memory_review_velocity_signals_contract_matrix.py tests/api/test_memory_backlog_aging_signals.py tests/cli/test_cli_memory_backlog_aging_signals.py tests/test_memory_backlog_aging_signals_contract_matrix.py tests/api/test_memory_review_governance_signals.py tests/cli/test_cli_memory_review_governance_signals.py tests/test_memory_review_governance_signals_contract_matrix.py tests/api/test_memory_operations_overview.py tests/cli/test_cli_memory_operations_overview.py tests/test_memory_operations_overview_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api apps/cli/src/zebra_agent_cli tests/api/test_memory_backlog_pressure_signals.py tests/cli/test_cli_memory_backlog_pressure_signals.py tests/test_memory_backlog_pressure_signals_contract_matrix.py tests/api/test_memory_review_velocity_signals.py tests/cli/test_cli_memory_review_velocity_signals.py tests/test_memory_review_velocity_signals_contract_matrix.py tests/api/test_memory_backlog_aging_signals.py tests/cli/test_cli_memory_backlog_aging_signals.py tests/test_memory_backlog_aging_signals_contract_matrix.py tests/api/test_memory_review_governance_signals.py tests/cli/test_cli_memory_review_governance_signals.py tests/test_memory_review_governance_signals_contract_matrix.py tests/api/test_memory_operations_overview.py tests/cli/test_cli_memory_operations_overview.py tests/test_memory_operations_overview_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 70 Memory Pressure Action Hints
+
+- 执行 `P70-MEM-01 - Memory Pressure Action Hints`
+- 行为更新：
+  - 新增一条以 session 为锚点、可选拼接 user 与 tenant scope 的 memory pressure action hint 读面
+  - API 新增 `POST /sessions/{id}/memory-action-hints`
+  - CLI 新增 `memory-action-hints <session_id> [--user-id ...] [--tenant-id ...] [--as-of ...]`
+  - scope 响应新增 `action_hint`、`action_priority`、`action_target_memory_id`、`action_reasons`
+  - 聚合响应新增 `action_hint_counts`、`highest_priority_action_hint`、`highest_priority_action_priority`、`highest_priority_action_scope_kind`、`highest_priority_action_scope_id`、`highest_priority_action_target_memory_id`、`highest_priority_action_reasons`
+- 文档更新：
+  - `docs/Phase70_Memory_Pressure_Action_Hints_验收记录.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `WORKLOG.md`
+- 验证：
+  - `uv run pytest tests/api/test_memory_pressure_action_hints.py tests/cli/test_cli_memory_pressure_action_hints.py tests/test_memory_pressure_action_hints_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/cli_types.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/session_memory_read.py tests/api/test_memory_pressure_action_hints.py tests/cli/test_cli_memory_pressure_action_hints.py tests/test_memory_pressure_action_hints_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 71 Memory Pressure Escalation Recommendations
+
+- 执行 `P71-MEM-01 - Memory Pressure Escalation Recommendations`
+- 行为更新：
+  - 新增一条以 session 为锚点、可选拼接 user 与 tenant scope 的 memory escalation 读面
+  - API 新增 `POST /sessions/{id}/memory-escalations`
+  - CLI 新增 `memory-escalations <session_id> [--user-id ...] [--tenant-id ...] [--as-of ...]`
+  - scope 响应新增 `escalation_recommendation`、`escalation_priority`、`escalation_target_memory_id`、`escalation_reasons`
+  - 聚合响应新增 `escalation_recommendation_counts`、`highest_priority_escalation_recommendation`、`highest_priority_escalation_priority`、`highest_priority_escalation_scope_kind`、`highest_priority_escalation_scope_id`、`highest_priority_escalation_target_memory_id`、`highest_priority_escalation_reasons`
+- 文档更新：
+  - `docs/Phase71_Memory_Pressure_Escalation_Recommendations_验收记录.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `WORKLOG.md`
+- 验证：
+  - `uv run pytest tests/api/test_memory_pressure_escalations.py tests/cli/test_cli_memory_pressure_escalations.py tests/test_memory_pressure_escalations_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/cli_types.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/session_memory_read.py tests/api/test_memory_pressure_escalations.py tests/cli/test_cli_memory_pressure_escalations.py tests/test_memory_pressure_escalations_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 72 Memory Escalation Follow-Up Windows
+
+- 执行 `P72-MEM-01 - Memory Escalation Follow-Up Windows`
+- 行为更新：
+  - 新增一条以 session 为锚点、可选拼接 user 与 tenant scope 的 memory follow-up-window 读面
+  - API 新增 `POST /sessions/{id}/memory-follow-up-windows`
+  - CLI 新增 `memory-follow-up-windows <session_id> [--user-id ...] [--tenant-id ...] [--as-of ...]`
+  - scope 响应新增 `follow_up_window`、`follow_up_priority`、`follow_up_due_at`、`follow_up_target_memory_id`、`follow_up_reasons`
+  - 聚合响应新增 `follow_up_window_counts`、`highest_priority_follow_up_window`、`highest_priority_follow_up_priority`、`highest_priority_follow_up_scope_kind`、`highest_priority_follow_up_scope_id`、`highest_priority_follow_up_due_at`、`highest_priority_follow_up_target_memory_id`、`highest_priority_follow_up_reasons`
+- 文档更新：
+  - `docs/Phase72_Memory_Escalation_Follow_Up_Windows_验收记录.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `WORKLOG.md`
+- 验证：
+  - `uv run pytest tests/api/test_memory_follow_up_windows.py tests/cli/test_cli_memory_follow_up_windows.py tests/test_memory_follow_up_windows_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/cli_types.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/session_memory_read.py tests/api/test_memory_follow_up_windows.py tests/cli/test_cli_memory_follow_up_windows.py tests/test_memory_follow_up_windows_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 73 Memory Follow-Up Overdue Flags
+
+- 执行 `P73-MEM-01 - Memory Follow-Up Overdue Flags`
+- 行为更新：
+  - 新增一条以 session 为锚点、可选拼接 user 与 tenant scope 的 memory overdue 读面
+  - API 新增 `POST /sessions/{id}/memory-overdue-flags`
+  - CLI 新增 `memory-overdue-flags <session_id> [--user-id ...] [--tenant-id ...] [--as-of ...]`
+  - scope 响应新增 `follow_up_overdue`、`follow_up_overdue_priority`、`follow_up_overdue_since`、`follow_up_overdue_target_memory_id`、`follow_up_overdue_reasons`
+  - 聚合响应新增 `overdue_scope_count`、`highest_priority_overdue_scope_kind`、`highest_priority_overdue_scope_id`、`highest_priority_overdue_priority`、`highest_priority_overdue_since`、`highest_priority_overdue_target_memory_id`、`highest_priority_overdue_reasons`
+- 文档更新：
+  - `docs/Phase73_Memory_Follow_Up_Overdue_Flags_验收记录.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `WORKLOG.md`
+- 验证：
+  - `uv run pytest tests/api/test_memory_overdue_flags.py tests/cli/test_cli_memory_overdue_flags.py tests/test_memory_overdue_flags_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/cli_types.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/session_memory_read.py tests/api/test_memory_overdue_flags.py tests/cli/test_cli_memory_overdue_flags.py tests/test_memory_overdue_flags_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
+
+## 2026-07-03 Phase 74 Memory Overdue Age Buckets
+
+- 执行 `P74-MEM-01 - Memory Overdue Age Buckets`
+- 行为更新：
+  - 新增一条以 session 为锚点、可选拼接 user 与 tenant scope 的 memory overdue-age 读面
+  - API 新增 `POST /sessions/{id}/memory-overdue-age-buckets`
+  - CLI 新增 `memory-overdue-age-buckets <session_id> [--user-id ...] [--tenant-id ...] [--as-of ...]`
+  - scope 响应新增 `overdue_age_bucket`、`overdue_age_seconds`、`overdue_age_days`、`overdue_age_reasons`
+  - 聚合响应新增 `overdue_age_bucket_counts`、`highest_priority_overdue_age_bucket`、`highest_priority_overdue_age_scope_kind`、`highest_priority_overdue_age_scope_id`、`highest_priority_overdue_age_seconds`、`highest_priority_overdue_age_days`、`highest_priority_overdue_age_target_memory_id`、`highest_priority_overdue_age_reasons`
+- 文档更新：
+  - `docs/Phase74_Memory_Overdue_Age_Buckets_验收记录.md`
+  - `docs/AGENT_TASKS.md`
+  - `PROGRESS.md`
+  - `README.md`
+  - `WORKLOG.md`
+- 验证：
+  - `uv run pytest tests/api/test_memory_overdue_age_buckets.py tests/cli/test_cli_memory_overdue_age_buckets.py tests/test_memory_overdue_age_buckets_contract_matrix.py`
+  - `uv run ruff check apps/api/src/zebra_agent_api/memory_inventory_read.py apps/api/src/zebra_agent_api/session_read.py apps/api/src/zebra_agent_api/app.py apps/api/src/zebra_agent_api/routes.py apps/cli/src/zebra_agent_cli/cli_types.py apps/cli/src/zebra_agent_cli/read_commands.py apps/cli/src/zebra_agent_cli/cli.py apps/cli/src/zebra_agent_cli/session_memory_read.py tests/api/test_memory_overdue_age_buckets.py tests/cli/test_cli_memory_overdue_age_buckets.py tests/test_memory_overdue_age_buckets_contract_matrix.py`
+  - `uv run mypy packages apps`
+  - `make check`
 
 ## 2026-06-23 Phase 12 SCM Provider Settings
 

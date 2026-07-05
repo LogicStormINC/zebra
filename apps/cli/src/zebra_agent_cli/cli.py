@@ -39,13 +39,28 @@ from zebra_agent_cli.artifact_read import (
     read_artifact_content,
     read_artifact_detail,
 )
+from zebra_agent_cli.cli_parser import build_parser
 from zebra_agent_cli.cli_types import CliCommandResult, CommandName
 from zebra_agent_cli.execution import (
     execute_durable_run,
     serialize_run_execution,
     serialize_trace_events,
 )
-from zebra_agent_cli.read_commands import add_read_subparsers, read_command_result
+from zebra_agent_cli.memory_review_write import (
+    preview_queue_memory_review,
+    preview_queue_tenant_memory_review,
+    preview_queue_user_memory_review,
+    record_bulk_memory_review,
+    record_bulk_tenant_memory_review,
+    record_bulk_user_memory_review,
+    record_memory_review,
+    record_queue_memory_review,
+    record_queue_tenant_memory_review,
+    record_queue_user_memory_review,
+    record_tenant_memory_review,
+    record_user_memory_review,
+)
+from zebra_agent_cli.read_commands import read_command_result
 from zebra_agent_cli.session_cancel_write import cancel_session
 from zebra_agent_cli.session_commit_write import commit_session
 from zebra_agent_cli.session_message_append_write import append_session_message
@@ -59,7 +74,7 @@ def execute(
     *,
     settings: ZebraAgentSettings | None = None,
 ) -> CliCommandResult:
-    namespace = _parser().parse_args(list(argv))
+    namespace = build_parser().parse_args(list(argv))
     active_settings = settings or load_settings()
     command = namespace.command
     if command == "run":
@@ -93,6 +108,141 @@ def execute(
         )
     if command == "approve":
         return _approval_result(namespace, _database_path(namespace.database, active_settings))
+    if command == "memory-review":
+        return CliCommandResult(
+            command="memory-review",
+            payload=record_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+                memory_id=namespace.memory_id,
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-bulk-review":
+        return CliCommandResult(
+            command="memory-bulk-review",
+            payload=record_bulk_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+                memory_ids=list(namespace.memory_ids),
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-review-queue":
+        return CliCommandResult(
+            command="memory-review-queue",
+            payload=record_queue_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-review-queue-preview":
+        return CliCommandResult(
+            command="memory-review-queue-preview",
+            payload=preview_queue_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                session_id=namespace.session_id,
+                decision=namespace.decision,
+                memory_type=namespace.memory_type,
+            ),
+        )
+    if command == "memory-user-review":
+        return CliCommandResult(
+            command="memory-user-review",
+            payload=record_user_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                user_id=namespace.user_id,
+                memory_id=namespace.memory_id,
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-user-bulk-review":
+        return CliCommandResult(
+            command="memory-user-bulk-review",
+            payload=record_bulk_user_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                user_id=namespace.user_id,
+                memory_ids=list(namespace.memory_ids),
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-user-review-queue":
+        return CliCommandResult(
+            command="memory-user-review-queue",
+            payload=record_queue_user_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                user_id=namespace.user_id,
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-user-review-queue-preview":
+        return CliCommandResult(
+            command="memory-user-review-queue-preview",
+            payload=preview_queue_user_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                user_id=namespace.user_id,
+                decision=namespace.decision,
+                memory_type=namespace.memory_type,
+            ),
+        )
+    if command == "memory-tenant-review":
+        return CliCommandResult(
+            command="memory-tenant-review",
+            payload=record_tenant_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                tenant_id=namespace.tenant_id,
+                memory_id=namespace.memory_id,
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-tenant-bulk-review":
+        return CliCommandResult(
+            command="memory-tenant-bulk-review",
+            payload=record_bulk_tenant_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                tenant_id=namespace.tenant_id,
+                memory_ids=list(namespace.memory_ids),
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-tenant-review-queue":
+        return CliCommandResult(
+            command="memory-tenant-review-queue",
+            payload=record_queue_tenant_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                tenant_id=namespace.tenant_id,
+                decision=namespace.decision,
+                operator=namespace.operator,
+                reason=namespace.reason,
+            ),
+        )
+    if command == "memory-tenant-review-queue-preview":
+        return CliCommandResult(
+            command="memory-tenant-review-queue-preview",
+            payload=preview_queue_tenant_memory_review(
+                database_path=_database_path(namespace.database, active_settings),
+                tenant_id=namespace.tenant_id,
+                decision=namespace.decision,
+                memory_type=namespace.memory_type,
+            ),
+        )
     if command == "artifact":
         return _artifact_result(namespace, _database_path(namespace.database, active_settings))
     if command == "approval":
@@ -101,11 +251,59 @@ def execute(
             database_path=_database_path(namespace.database, active_settings),
             approval_id=getattr(namespace, "approval_id", None),
         )
-    if command in {"diff", "stream", "delivery-audit"}:
+    if command in {
+        "diff",
+        "memory",
+        "memory-action-hints",
+        "memory-escalations",
+        "memory-follow-up-windows",
+        "memory-overdue-flags",
+        "memory-overdue-age-buckets",
+        "memory-overdue-types",
+        "memory-overdue-visibility",
+        "memory-overdue-trends",
+        "memory-overdue-interventions",
+        "memory-overdue-escalation-lanes",
+        "memory-overdue-recovery-paths",
+        "memory-overdue-resolution-checkpoints",
+        "memory-overdue-resolution-outcomes",
+        "memory-overdue-closure-decisions",
+        "memory-overdue-archive-recommendations",
+        "memory-overdue-retention-guidance",
+        "memory-overdue-retention-windows",
+        "memory-overdue-retention-breaches",
+        "memory-overdue-retention-breach-aging",
+        "memory-overdue-retention-breach-actions",
+        "memory-overdue-retention-breach-lanes",
+        "memory-overdue-retention-breach-owner-targets",
+        "memory-overdue-retention-breach-follow-through-modes",
+        "memory-overdue-retention-breach-follow-through-outcomes",
+        "memory-overdue-retention-breach-follow-through-completion-states",
+        "memory-overdue-retention-breach-follow-through-verification-states",
+        "memory-overdue-retention-breach-follow-through-verification-outcomes",
+        "memory-aging",
+        "memory-governance",
+        "memory-overview",
+        "memory-pressure",
+        "memory-velocity",
+        "memory-queue",
+        "memory-queue-summary",
+        "memory-user",
+        "memory-user-queue",
+        "memory-user-queue-summary",
+        "memory-tenant",
+        "memory-tenant-queue",
+        "memory-tenant-queue-summary",
+        "stream",
+        "delivery-audit",
+    }:
         return read_command_result(
             command,
             database_path=_database_path(namespace.database, active_settings),
-            session_id=namespace.session_id,
+            session_id=getattr(namespace, "session_id", None),
+            user_id=getattr(namespace, "user_id", None),
+            tenant_id=getattr(namespace, "tenant_id", None),
+            as_of=getattr(namespace, "as_of", None),
         )
     if command == "commit":
         return CliCommandResult(
@@ -143,116 +341,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     result = execute(argv or ())
     print(result.to_json())
     return 0
-
-
-def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="zebra-agent")
-    subcommands = parser.add_subparsers(dest="command", required=True)
-
-    run = subcommands.add_parser("run", help="Create a local agent task.")
-    run.add_argument("prompt")
-    run.add_argument("--title", default="Untitled task")
-    run.add_argument("--workspace", default=".")
-    run.add_argument("--database")
-    run.add_argument("--execute", action="store_true")
-    run.add_argument(
-        "--policy-profile",
-        choices=tuple(profile.value for profile in PolicyProfile),
-        default=PolicyProfile.WORKSPACE_WRITE.value,
-    )
-
-    message = subcommands.add_parser(
-        "message",
-        help="Append one more user message to an existing session.",
-    )
-    message.add_argument("session_id")
-    message.add_argument("--content", required=True)
-    message.add_argument("--database")
-
-    cancel = subcommands.add_parser("cancel", help="Cancel a local session.")
-    cancel.add_argument("session_id")
-    cancel.add_argument("--database")
-
-    resume = subcommands.add_parser("resume", help="Resume a suspended session.")
-    resume.add_argument("session_id")
-    resume.add_argument("--database")
-    resume.add_argument("--execute", action="store_true")
-    resume.add_argument("--worker-id", default="local-worker")
-    resume.add_argument("--lease-ttl-seconds", type=int, default=30)
-
-    suspend = subcommands.add_parser("suspend", help="Suspend a local session.")
-    suspend.add_argument("session_id")
-    suspend.add_argument("--database")
-
-    inspect = subcommands.add_parser("inspect", help="Inspect a session.")
-    inspect.add_argument("session_id")
-    inspect.add_argument("--database")
-
-    add_read_subparsers(subcommands)
-
-    commit = subcommands.add_parser("commit", help="Create one local commit for a session.")
-    commit.add_argument("session_id")
-    commit.add_argument("--message", required=True)
-    commit.add_argument("--author-name", default="Zebra Agent")
-    commit.add_argument("--author-email", default="zebra-agent@example.local")
-    commit.add_argument("--idempotency-key")
-    commit.add_argument("--database")
-
-    pull_request = subcommands.add_parser(
-        "pull-request",
-        help="Open one session pull request plan or guarded execution.",
-    )
-    pull_request.add_argument("session_id")
-    pull_request.add_argument("--title", required=True)
-    pull_request.add_argument("--body", default="")
-    pull_request.add_argument("--base-branch", default="main")
-    pull_request.add_argument("--head-branch")
-    pull_request.add_argument("--execute", action="store_true")
-    pull_request.add_argument("--idempotency-key")
-    pull_request.add_argument("--database")
-
-    artifact = subcommands.add_parser("artifact", help="Inspect or read session artifacts.")
-    artifact_subcommands = artifact.add_subparsers(dest="artifact_command", required=True)
-    artifact_list = artifact_subcommands.add_parser(
-        "list",
-        help="List session artifacts.",
-    )
-    artifact_list.add_argument("session_id")
-    artifact_list.add_argument("--database")
-    artifact_inspect = artifact_subcommands.add_parser(
-        "inspect",
-        help="Inspect one session artifact.",
-    )
-    artifact_inspect.add_argument("session_id")
-    artifact_inspect.add_argument("artifact_id")
-    artifact_inspect.add_argument("--database")
-    artifact_read = artifact_subcommands.add_parser(
-        "read",
-        help="Read one payload-backed session artifact.",
-    )
-    artifact_read.add_argument("session_id")
-    artifact_read.add_argument("artifact_id")
-    artifact_read.add_argument("--database")
-    artifact_prune = artifact_subcommands.add_parser(
-        "prune",
-        help="Prune one managed payload-backed session artifact.",
-    )
-    artifact_prune.add_argument("session_id")
-    artifact_prune.add_argument("artifact_id")
-    artifact_prune.add_argument("--database")
-
-    approve = subcommands.add_parser("approve", help="Record an approval decision.")
-    approve.add_argument("session_id")
-    approve.add_argument("--decision", choices=("approve", "reject"), required=True)
-    approve.add_argument("--reason", default="")
-    approve.add_argument("--operator", default="local-operator")
-    approve.add_argument("--database")
-
-    model = subcommands.add_parser("model", help="Run one prompt through the configured model.")
-    model.add_argument("prompt")
-
-    return parser
-
 
 def _run_result(
     namespace: argparse.Namespace,
