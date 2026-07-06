@@ -138,9 +138,9 @@ export function SessionInspectorCard({
                 children: (
                   <Bubble.List
                     items={bubbleItems(stream)}
-                    roles={{
+                    role={{
                       assistant: { placement: "start" },
-                      user: { placement: "end", variant: "shadow" },
+                      user: { placement: "end" },
                     }}
                     className="rounded-2xl bg-slate-50 p-4"
                   />

@@ -46,7 +46,7 @@ from zebra_agent_worker import (
 from zebra_agent_api.approval_context import serialize_approval_context
 from zebra_agent_api.approval_read import ApprovalReadApi
 from zebra_agent_api.credential_broker import build_default_credential_broker
-from zebra_agent_api.responses import ApiResponse, conflict
+from zebra_agent_api.responses import ApiResponse, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_artifact_control import SessionArtifactControlApi
 from zebra_agent_api.session_commit import SessionCommitApi
@@ -882,11 +882,18 @@ class ZebraAgentApi:
             self.database_path,
             repo_id=str(workspace_root),
         )
+        try:
+            model_gateway = build_model_gateway(self.settings)
+        except ValueError as error:
+            return service_unavailable(
+                status="model_gateway_unavailable",
+                reason=str(error),
+            )
         result = run_local_harness(
             prompt=str(parsed["prompt"]),
             title=str(parsed["title"]),
             workspace_root=workspace_root,
-            model_gateway=build_model_gateway(self.settings),
+            model_gateway=model_gateway,
             policy_profile=PolicyProfile(str(parsed["policy_profile"])),
             confirmed_memories=confirmed_memories,
         )

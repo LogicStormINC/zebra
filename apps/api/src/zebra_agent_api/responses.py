@@ -28,3 +28,13 @@ def conflict(*, session_id: str, status: str, reason: str) -> ApiResponse:
             "reason": reason,
         },
     )
+
+
+def service_unavailable(*, status: str, reason: str) -> ApiResponse:
+    return ApiResponse(
+        status_code=503,
+        body={
+            "status": status,
+            "reason": reason,
+        },
+    )

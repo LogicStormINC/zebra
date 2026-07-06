@@ -25,13 +25,11 @@ export function SessionComposerCard({ creating, onCreate }: SessionComposerCardP
           loading={creating}
           placeholder="Describe the coding task for Zebra Agent"
           prefix={<SendOutlined />}
-          footer={({ components }) => (
+          footer={() => (
             <Space>
               <Typography.Text type="secondary">Enter 提交，Shift+Enter 换行</Typography.Text>
-              <components.ClearButton />
             </Space>
           )}
-          actions={(origin) => <Space>{origin}</Space>}
           onSubmit={async (message) => {
             const normalized = message.trim();
             if (!normalized) {

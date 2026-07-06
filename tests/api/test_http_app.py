@@ -299,6 +299,34 @@ def test_http_app_executes_session_create(tmp_path: Path, monkeypatch) -> None:
     assert response.json()["assistant_message"] == "HTTP execution complete."
 
 
+def test_http_app_executes_session_create_reports_missing_api_key(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    def fake_build_model_gateway(_: ZebraAgentSettings) -> object:
+        del _
+        raise ValueError("missing API key in environment variable TEST_API_KEY")
+
+    monkeypatch.setattr(api_app_module, "build_model_gateway", fake_build_model_gateway)
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post(
+        "/sessions",
+        json={
+            "prompt": "Inspect the workspace",
+            "title": "HTTP execute session",
+            "workspace": str(tmp_path),
+            "execute": True,
+        },
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "model_gateway_unavailable",
+        "reason": "missing API key in environment variable TEST_API_KEY",
+    }
+
+
 def test_http_app_executes_session_resume(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(worker_execution_module, "build_model_gateway", _fake_resume_gateway)
     database_path = tmp_path / "sessions.sqlite"

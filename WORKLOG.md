@@ -1,5 +1,39 @@
 # Progress Log
 
+## 2026-07-05 UI Desktop Workspace Bootstrap
+
+- created `UI/desktop` as a dedicated frontend workspace for future Zebra Agent operator UI development
+- scaffolded a minimal `Tauri + React + Tailwind CSS + TanStack Query + Ant Design + Ant Design X` desktop shell
+- installed frontend dependencies with `pnpm install`
+- verified frontend bundling with `pnpm build`
+- added `UI/desktop/.cargo-home/config.toml` plus Tauri scripts pinned to local `CARGO_HOME` so Rust artifacts stay local to the UI workspace
+- validation blocker: local `cargo check` still inherits a broken global `~/.cargo/config.toml` mirror replacement to `ustc`, so Tauri Rust dependency fetch is not yet verifiable on this machine without fixing the global Cargo source
+- replaced the static landing page with a live operator surface backed by TanStack Query and typed API adapters
+- wired frontend reads for health, approvals, session detail, event replay, repo memory inventory, and cross-scope memory overview
+- wired frontend write for `POST /sessions`, with returned `session_id` promoted into the active inspector state
+- validated the integrated frontend again with `cd UI/desktop && pnpm build`
+- expanded the UI to cover approval decisions, session suspend or resume or cancel controls, workspace diff inspection, artifact list/detail/content inspection, and delivery audit reads
+- validated the expanded UI again with `cd UI/desktop && pnpm build`
+- validation note: `pnpm build` still emits a Vite warning because this environment resolves to `Node 20.10.0`, but the build completes successfully
+- expanded the UI again to cover session message append, commit, pull-request, and direct candidate-memory confirm or expire actions
+- validated the expanded UI again with `cd UI/desktop && pnpm build`
+- added a dedicated memory queue operator card covering preview, queue sweep, and bulk review across session, user, and tenant scopes
+- added a companion scope memory snapshot card so operators can read session, user, or tenant inventory plus queue summary before cross-scope review actions
+- added session artifact prune control to the desktop inspector so operators can close the loop from artifact inspection to lifecycle writeback
+- added selected-approval detail readback to the desktop control panel so approval actions are paired with route, target, scope, and policy context
+- added a compact memory governance card that reads backlog totals and highest-priority action hints for the active session scopes
+- split `UI/desktop` type and API foundations into smaller modules, then expanded the governance card to include pressure and escalation signals
+- expanded the governance card again to include follow-up windows and overdue flags for the active scopes
+- expanded the governance card again to include overdue age buckets and overdue type or visibility rollups
+- expanded the governance card again to include overdue trend signals and overdue intervention hints
+- split the governance surface into a dedicated query hook plus smaller presentation panels so the card stays under the repository file-length target
+- split overdue memory frontend types into a dedicated module before the next governance slice pushed `memory.ts` past the repository target length
+- expanded the governance card again to include overdue escalation lanes, recovery paths, resolution checkpoints, and resolution outcomes
+- validated the expanded governance surface again with `cd UI/desktop && pnpm build`
+- expanded the governance card again to include overdue closure decisions, archive recommendations, retention guidance, and retention windows
+- split the governance scope list into a dedicated component so the panel can keep growing without crossing the repository target length
+- validated the expanded governance surface again with `cd UI/desktop && pnpm build`
+
 ## 2026-07-05 Phase 101 Scoped Queue Sweep Filtered Preview Controls
 
 - claimed `P101-MEM-01` on `codex/p101-mem-01-scoped-queue-sweep-filtered-preview-controls`

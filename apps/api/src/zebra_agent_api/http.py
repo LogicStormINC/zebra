@@ -9,13 +9,14 @@ from typing import Any
 from agent_integrations import GitHubPullRequestTransport
 from agent_security import CredentialBroker
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
 from zebra_agent_api.app import create_app
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
 
-HTTP_METHODS = ["DELETE", "GET", "PATCH", "POST", "PUT"]
+HTTP_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
 
 
 def create_http_app(
@@ -37,9 +38,31 @@ def create_http_app(
         )
     )
     app = FastAPI(title="Zebra Agent API")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        allow_credentials=False,
+    )
+
+    @app.middleware("http")
+    async def _preflight_middleware(request: Request, call_next):
+        if request.method.upper() == "OPTIONS":
+            origin = request.headers.get("origin", "*")
+            requested_headers = request.headers.get("access-control-request-headers", "*")
+            response = Response(status_code=204)
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Methods"] = ", ".join(HTTP_METHODS)
+            response.headers["Access-Control-Allow-Headers"] = requested_headers
+            response.headers["Access-Control-Max-Age"] = "600"
+            return response
+        return await call_next(request)
 
     async def handle(request: Request, full_path: str = "") -> Response:
         del full_path
+        if request.method.upper() == "OPTIONS":
+            return Response(status_code=200)
         auth_error = _authorize_request(request, active_settings)
         if auth_error is not None:
             return auth_error
@@ -120,6 +143,8 @@ def _coerce_events(events: object) -> list[dict[str, Any]]:
 
 
 def _authorize_request(request: Request, settings: ZebraAgentSettings) -> JSONResponse | None:
+    if request.method.upper() == "OPTIONS":
+        return None
     if request.url.path == "/health":
         return None
     expected_token = settings.api.auth_token

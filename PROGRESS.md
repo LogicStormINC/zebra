@@ -1,5 +1,23 @@
 # Progress
 
+## Addendum
+
+- 2026-07-05: bootstrapped `UI/desktop` as an isolated desktop UI workspace using `Tauri + React + Tailwind CSS + TanStack Query + Ant Design + Ant Design X`.
+- 2026-07-05: upgraded `UI/desktop` from a static shell to a live operator surface wired to the local HTTP API for health, approvals, session creation, session detail, stream replay, repo memory inventory, and cross-scope memory overview reads. This does not change the backend phase sequence, but it does establish the first reusable frontend integration seam.
+- 2026-07-05: expanded the desktop operator surface to cover approval decisions, session suspend or resume or cancel controls, workspace diff readback, session artifact inspection and content reads, and delivery-audit inspection. The frontend now spans both read and write operator flows for the local API, though Tauri Rust-side validation is still blocked by the machine-level Cargo mirror configuration.
+- 2026-07-05: expanded the same desktop surface again to cover session message append, local commit delivery, pull-request planning or execution, and direct candidate-memory review decisions. The UI now reaches most of the current local operator API, with the remaining gap shifting from endpoint coverage toward product polish, stream ergonomics, and environment validation.
+- 2026-07-05: expanded the desktop surface again to cover scoped memory queue preview, queue-sweep review, and bulk-review operations for session, user, and tenant scopes. The UI now reaches the newer queue-sweep memory control surfaces rather than only the single-record review endpoints.
+- 2026-07-05: expanded the desktop surface once more to expose active scope memory snapshots for session, user, and tenant inventory plus queue-summary reads, so cross-scope queue review no longer happens without local readback.
+- 2026-07-05: expanded the desktop surface again to cover session artifact prune control, completing a first local artifact lifecycle write path from the UI alongside existing artifact inspection and delivery-audit readback.
+- 2026-07-05: expanded the desktop surface again to read explicit approval detail for the selected waiting session, so approval actions in the UI now sit next to the concrete route, target, scope, and policy context they act on.
+- 2026-07-05: expanded the desktop surface again with one compact memory governance card wired to governance and action-hint signals, so operators can see backlog health and the highest-priority next review action without dropping to CLI.
+- 2026-07-05: split the frontend type and API foundations into smaller modules before they crossed the repository hard limits, and expanded the memory governance card again to include pressure and escalation signals for the active scopes.
+- 2026-07-05: expanded the same governance card further to include follow-up windows and overdue flags, so the UI now carries the continuous triage chain from backlog pressure through escalation into overdue handling cues.
+- 2026-07-05: expanded the same governance card again to include overdue age buckets plus overdue type and visibility rollups, so operators can now see not just that a scope is overdue, but how overdue it is and what kind of memory is accumulating there.
+- 2026-07-05: expanded the same governance card again to include overdue trend signals and overdue intervention hints, and split the frontend governance surface into smaller files before the card crossed repository size limits.
+- 2026-07-05: expanded the same governance card again to include overdue escalation lanes, recovery paths, resolution checkpoints, and resolution outcomes, and split overdue frontend types into a dedicated module so the UI can keep scaling without crossing repository file-size targets.
+- 2026-07-05: expanded the same governance card again to include overdue closure decisions, archive recommendations, retention guidance, and retention windows, and split the scope-list rendering into a dedicated component so the governance view can keep extending without breaching repository file targets.
+
 ## Current Phase
 
 - Active phase: `Phase 101 - Scoped Queue Sweep Filtered Preview Controls`

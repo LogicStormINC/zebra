@@ -1,0 +1,23 @@
+export default {
+  whatIsAntDesignX: "什么是 Ant Design X？",
+  today: "今天",
+  howToQuicklyInstallAndImportComponents: "如何快速安装并引入 Ant Design X？",
+  yesterday: "昨天",
+  newAgiHybridInterface: "AGI 与传统工具混合的交互界面",
+  aiMessage_1: "你可以使用 Ant Design X 的 `Bubble`、`Sender`、`Conversations` 等组件来实现会话式交互。\n\n示例会话支持流式输出、历史记录和重试。",
+  aiMessage_2:
+    "推荐方式：安装 `@ant-design/x` 与 `@ant-design/x-sdk`，按会话创建 `useXChat` + `useXConversations`。",
+  itIsNowANewConversation: "当前会话暂无内容，先点发送开始对话。",
+  newConversation: "新建会话",
+  curConversation: "当前",
+  delete: "删除",
+  retry: "重试",
+  noData: "暂无返回",
+  requestAborted: "请求已中断",
+  requestFailed: "请求失败",
+  slotTextStart: "切换到",
+  slotTextEnd: "模型",
+  agentName: "Ant Design X 小助手",
+  placeholder: "请输入问题...",
+  deepThink: "深度思考",
+};

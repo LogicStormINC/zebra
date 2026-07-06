@@ -443,6 +443,32 @@ def test_api_create_session_rejects_invalid_request(tmp_path: Path) -> None:
     }
 
 
+def test_api_create_session_execute_reports_missing_api_key(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    def fake_build_model_gateway(_: ZebraAgentSettings) -> object:
+        del _
+        raise ValueError("missing API key in environment variable TEST_API_KEY")
+
+    monkeypatch.setattr(api_app_module, "build_model_gateway", fake_build_model_gateway)
+
+    response = create_app(database_path, settings=_settings(database_path)).create_session(
+        {
+            "prompt": "Inspect the workspace",
+            "title": "API execute session",
+            "workspace": str(tmp_path),
+            "execute": True,
+        }
+    )
+
+    assert response.status_code == 503
+    assert response.body["status"] == "model_gateway_unavailable"
+    assert response.body["reason"] == "missing API key in environment variable TEST_API_KEY"
+
+
 def _settings(database_path: Path) -> ZebraAgentSettings:
     return ZebraAgentSettings(
         profile="test",
