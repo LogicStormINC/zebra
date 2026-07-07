@@ -688,8 +688,11 @@ class ZebraAgentApi:
         *,
         idempotency_key: str | None = None,
     ) -> ApiResponse:
+        session_key = self._parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         return SessionCommitApi(self.database_path).commit(
-            session_id,
+            str(session_key),
             payload,
             idempotency_key=idempotency_key,
         )
@@ -701,6 +704,9 @@ class ZebraAgentApi:
         *,
         idempotency_key: str | None = None,
     ) -> ApiResponse:
+        session_key = self._parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         try:
             gateway = build_pull_request_gateway(
                 self.settings.scm,
@@ -717,7 +723,7 @@ class ZebraAgentApi:
             self.database_path,
             pull_request_gateway=gateway,
         ).open_pull_request(
-            session_id,
+            str(session_key),
             payload,
             idempotency_key=idempotency_key,
         )

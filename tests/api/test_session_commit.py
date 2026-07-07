@@ -105,6 +105,20 @@ def test_api_commit_session_returns_not_found(tmp_path: Path) -> None:
     }
 
 
+def test_api_commit_session_rejects_invalid_session_id(tmp_path: Path) -> None:
+    response = create_app(tmp_path / "sessions.sqlite").commit_session(
+        "not-a-valid-uuid",
+        {"message": "Commit"},
+    )
+
+    assert response.status_code == 400
+    assert response.body == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
+
+
 def test_api_commit_session_rejects_invalid_payload(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     workspace = _git_workspace(tmp_path / "workspace")
@@ -258,6 +272,22 @@ def test_http_app_session_commit_forwards_idempotency_key(tmp_path: Path) -> Non
     assert replayed_response.status_code == 201
     assert replayed_response.json() == first_response.json()
     assert replayed_response.json()["idempotency_key"] == "http-commit-1"
+
+
+def test_http_app_session_commit_rejects_invalid_session_id(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post(
+        "/sessions/not-a-valid-uuid/commit",
+        json={"message": "Commit"},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
 
 
 def _seed_ready_session(

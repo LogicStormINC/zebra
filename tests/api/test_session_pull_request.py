@@ -649,6 +649,20 @@ def test_api_pull_request_returns_not_found(tmp_path: Path) -> None:
     }
 
 
+def test_api_pull_request_rejects_invalid_session_id(tmp_path: Path) -> None:
+    response = create_app(tmp_path / "sessions.sqlite").open_session_pull_request(
+        "not-a-valid-uuid",
+        {"title": "Add feature"},
+    )
+
+    assert response.status_code == 400
+    assert response.body == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
+
+
 def test_api_pull_request_rejects_invalid_payload(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     workspace = _git_workspace(tmp_path / "workspace")
@@ -774,6 +788,22 @@ def test_http_app_session_pull_request_requires_bearer_token_when_configured(
     assert response.json() == {
         "status": "unauthorized",
         "reason": "missing_or_invalid_bearer_token",
+    }
+
+
+def test_http_app_session_pull_request_rejects_invalid_session_id(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post(
+        "/sessions/not-a-valid-uuid/pull-request",
+        json={"title": "Add feature"},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
     }
 
 
