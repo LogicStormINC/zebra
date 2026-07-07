@@ -52,6 +52,19 @@ def test_api_get_session_diff_returns_not_found(tmp_path: Path) -> None:
     }
 
 
+def test_api_get_session_diff_rejects_invalid_session_id(tmp_path: Path) -> None:
+    response = create_app(tmp_path / "sessions.sqlite").get_session_diff(
+        "not-a-valid-uuid"
+    )
+
+    assert response.status_code == 400
+    assert response.body == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
+
+
 def test_api_get_session_diff_rejects_non_git_workspace(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     workspace = tmp_path / "not-git"

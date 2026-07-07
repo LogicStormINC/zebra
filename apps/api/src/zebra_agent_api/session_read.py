@@ -143,12 +143,28 @@ from zebra_agent_api.session_payloads import parse_memory_overview_payload
 from zebra_agent_api.workspace_read import serialize_workspace_projection
 
 
+def _parse_session_id(session_id: str) -> SessionId | ApiResponse:
+    try:
+        return SessionId(UUID(session_id))
+    except ValueError:
+        return ApiResponse(
+            status_code=400,
+            body={
+                "session_id": session_id,
+                "status": "invalid_request",
+                "reason": "session_id must be a valid UUID",
+            },
+        )
+
+
 @dataclass(frozen=True)
 class SessionReadApi:
     database_path: Path
 
     def get_session(self, session_id: str) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -177,7 +193,9 @@ class SessionReadApi:
         )
 
     def get_session_stream(self, session_id: str) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -207,7 +225,9 @@ class SessionReadApi:
         )
 
     def get_session_diff(self, session_id: str) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -243,7 +263,9 @@ class SessionReadApi:
         )
 
     def get_session_memory(self, session_id: str) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -271,7 +293,9 @@ class SessionReadApi:
         )
 
     def get_session_memory_queue(self, session_id: str) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -299,7 +323,9 @@ class SessionReadApi:
         )
 
     def get_session_memory_queue_summary(self, session_id: str) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -331,7 +357,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -400,7 +428,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -471,7 +501,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -567,7 +599,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -672,7 +706,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -768,7 +804,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -860,7 +898,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -962,7 +1002,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -1061,7 +1103,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -1159,7 +1203,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -1266,7 +1312,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -1372,7 +1420,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -1486,7 +1536,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -1587,7 +1639,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -1690,7 +1744,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -1791,7 +1847,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -1890,7 +1948,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -1997,7 +2057,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -2098,7 +2160,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -2199,7 +2263,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -2308,7 +2374,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -2417,7 +2485,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -2524,7 +2594,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -2631,7 +2703,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -2735,7 +2809,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -2839,7 +2915,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -2939,7 +3017,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -3049,7 +3129,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -3153,7 +3235,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -3263,7 +3347,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -3375,7 +3461,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -3492,7 +3580,9 @@ class SessionReadApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -3689,7 +3779,9 @@ class SessionReadApi:
         )
 
     def get_session_artifacts(self, session_id: str) -> ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -3926,7 +4018,9 @@ class SessionReadApi:
         session_id: str,
         artifact_id: str,
     ) -> SessionArtifact | ApiResponse:
-        session_key = SessionId(UUID(session_id))
+        session_key = _parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         session = SQLiteProjectionStore(self.database_path).get_session(session_key)
         if session is None:
             return ApiResponse(

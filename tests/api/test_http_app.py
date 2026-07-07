@@ -44,6 +44,19 @@ def test_http_app_serves_session_lookup(tmp_path: Path) -> None:
     assert response.json()["title"] == "HTTP session"
 
 
+def test_http_app_session_lookup_rejects_invalid_session_id(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.get("/sessions/not-a-valid-uuid")
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
+
+
 def test_http_app_serves_proxy_approval_context_on_session_lookup(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session = Session.create(title="Waiting approval").model_copy(
@@ -238,6 +251,19 @@ def test_http_app_stream_missing_session_returns_not_found(tmp_path: Path) -> No
     assert response.json() == {
         "session_id": "00000000-0000-0000-0000-000000000001",
         "status": "not_found",
+    }
+
+
+def test_http_app_stream_rejects_invalid_session_id(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.get("/sessions/not-a-valid-uuid/stream")
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
     }
 
 

@@ -44,6 +44,19 @@ def test_route_adapter_handles_session_lookup(tmp_path: Path) -> None:
     assert response.body["title"] == "Route session"
 
 
+def test_route_adapter_rejects_invalid_session_id_for_session_lookup(tmp_path: Path) -> None:
+    adapter = RouteAdapter(create_app(tmp_path / "sessions.sqlite"))
+
+    response = adapter.handle(RouteRequest(method="GET", path="/sessions/not-a-valid-uuid"))
+
+    assert response.status_code == 400
+    assert response.body == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
+
+
 def test_route_adapter_handles_session_lookup_with_workspace_projection(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session = SQLiteProjectionStore(database_path).save_session(
