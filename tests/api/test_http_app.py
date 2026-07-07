@@ -327,6 +327,28 @@ def test_http_app_executes_session_create_reports_missing_api_key(
     }
 
 
+def test_http_app_executes_session_resume_reports_missing_api_key(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    def fake_build_model_gateway(_: ZebraAgentSettings) -> object:
+        del _
+        raise ValueError("missing API key in environment variable DEEPSEEK_API_KEY")
+
+    monkeypatch.setattr(worker_execution_module, "build_model_gateway", fake_build_model_gateway)
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    client = TestClient(create_http_app(database_path))
+
+    response = client.post(f"/sessions/{session_id}/resume", json={})
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "model_gateway_unavailable",
+        "reason": "missing API key in environment variable DEEPSEEK_API_KEY",
+    }
+
+
 def test_http_app_executes_session_resume(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(worker_execution_module, "build_model_gateway", _fake_resume_gateway)
     database_path = tmp_path / "sessions.sqlite"
@@ -533,6 +555,22 @@ def test_http_app_resume_missing_session_returns_not_found(tmp_path: Path) -> No
     assert response.json() == {
         "session_id": "00000000-0000-0000-0000-000000000001",
         "status": "not_found",
+    }
+
+
+def test_http_app_resume_rejects_invalid_session_id(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post(
+        "/sessions/not-a-valid-uuid/resume",
+        json={},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
     }
 
 

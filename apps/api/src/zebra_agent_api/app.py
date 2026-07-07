@@ -735,6 +735,9 @@ class ZebraAgentApi:
         parsed = parse_resume_session_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
+        session_key = self._parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
 
         claim_service = SessionClaimService(
             SQLiteLeaseStore(self.database_path),
@@ -750,7 +753,7 @@ class ZebraAgentApi:
                 resume_service=SessionResumeService(claim_service),
                 settings=self.settings,
             ).execute_session(
-                SessionId(UUID(session_id)),
+                session_key,
                 worker_id=parsed["worker_id"],
                 lease_ttl_seconds=parsed["lease_ttl_seconds"],
             )
@@ -775,6 +778,11 @@ class ZebraAgentApi:
             return conflict(
                 session_id=session_id,
                 status="execution_error",
+                reason=str(error),
+            )
+        except ValueError as error:
+            return service_unavailable(
+                status="model_gateway_unavailable",
                 reason=str(error),
             )
         return ApiResponse(
@@ -834,6 +842,20 @@ class ZebraAgentApi:
                 "current_sequence": updated_session.current_sequence,
             },
         )
+
+
+    def _parse_session_id(self, session_id: str) -> SessionId | ApiResponse:
+        try:
+            return SessionId(UUID(session_id))
+        except ValueError:
+            return ApiResponse(
+                status_code=400,
+                body={
+                    "session_id": session_id,
+                    "status": "invalid_request",
+                    "reason": "session_id must be a valid UUID",
+                },
+            )
 
     def approve(self, approval_id: str, payload: dict[str, object]) -> ApiResponse:
         return self._record_approval_decision(
