@@ -101,6 +101,19 @@ def test_http_app_approval_rejects_invalid_state(tmp_path: Path) -> None:
     }
 
 
+def test_http_app_approval_rejects_invalid_session_id(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post("/approvals/not-a-valid-uuid/approve", json={})
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
+
+
 def test_http_app_approval_rejects_invalid_payload(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session = _seed_waiting_session(database_path)

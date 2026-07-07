@@ -799,17 +799,26 @@ class ZebraAgentApi:
         )
 
     def cancel_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
-        return cancel_session_control(self.database_path, session_id, payload)
+        session_key = self._parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
+        return cancel_session_control(self.database_path, str(session_key), payload)
 
     def suspend_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
-        return suspend_session_control(self.database_path, session_id, payload)
+        session_key = self._parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
+        return suspend_session_control(self.database_path, str(session_key), payload)
 
     def append_session_message(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
         parsed = parse_append_session_message_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
 
-        session_key = SessionId(UUID(session_id))
+        session_key = self._parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
+
         projection_store = SQLiteProjectionStore(self.database_path)
         session = projection_store.get_session(session_key)
         if session is None:
@@ -955,7 +964,10 @@ class ZebraAgentApi:
         if isinstance(parsed, ApiResponse):
             return parsed
 
-        session_key = SessionId(UUID(approval_id))
+        session_key = self._parse_session_id(approval_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
+
         projection_store = SQLiteProjectionStore(self.database_path)
         session = projection_store.get_session(session_key)
         if session is None:

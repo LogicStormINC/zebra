@@ -37,6 +37,19 @@ def test_http_app_cancel_missing_session_returns_not_found(tmp_path: Path) -> No
     }
 
 
+def test_http_app_cancel_rejects_invalid_session_id(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post("/sessions/not-a-valid-uuid/cancel", json={})
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
+
+
 def test_http_app_cancel_terminal_session_returns_conflict(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session_id = _seed_ready_session(database_path, workspace_root=tmp_path)

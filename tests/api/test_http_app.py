@@ -498,6 +498,22 @@ def test_http_app_message_append_terminal_session_returns_conflict(tmp_path: Pat
     }
 
 
+def test_http_app_message_append_rejects_invalid_session_id(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post(
+        "/sessions/not-a-valid-uuid/messages",
+        json={"content": "Continue."},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
+
+
 def test_http_app_resume_requires_bearer_token_when_configured(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
@@ -523,6 +539,19 @@ def test_http_app_suspend_requires_bearer_token_when_configured(tmp_path: Path) 
     assert response.json() == {
         "status": "unauthorized",
         "reason": "missing_or_invalid_bearer_token",
+    }
+
+
+def test_http_app_suspend_rejects_invalid_session_id(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post("/sessions/not-a-valid-uuid/suspend", json={})
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
     }
 
 
