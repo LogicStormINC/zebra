@@ -1,9 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Card, List, Space, Spin, Statistic, Tag, Typography, Alert, Radio } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
+import { createStyles } from "antd-style";
 import type { ZebraApiClient } from "../lib/zebra-api";
 import { buildMemoryScopeOptions, useMemoryScopeSurface } from "../lib/use-memory-scope-surface";
 import type { MemoryScopeKind } from "../types";
+
+const useStyle = createStyles(({ css }) => ({
+  secondaryText: css`
+    margin-bottom: 0;
+    color: rgba(255, 255, 255, 0.58) !important;
+  `,
+  loadingArea: css`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(var(--zebra-space-xl) + var(--zebra-space-xl));
+  `,
+  titleBlock: css`
+    margin-top: var(--zebra-space-2xs);
+  `,
+}));
 
 interface ScopeMemoryCardProps {
   api: ZebraApiClient;
@@ -35,6 +52,7 @@ export function ScopeMemoryCard({
   }, [scopes, selectedScope]);
 
   const surface = useMemoryScopeSurface(api, sessionId, userId, tenantId, selectedScope);
+  const { styles } = useStyle();
 
   return (
     <Card
@@ -46,7 +64,7 @@ export function ScopeMemoryCard({
       }
     >
       <Space direction="vertical" size="large" className="w-full">
-        <Typography.Paragraph className="!mb-0 !text-slate-600">
+        <Typography.Paragraph className={styles.secondaryText}>
           Read the active scope inventory and queue summary before doing queue-sweep or bulk-review operations.
         </Typography.Paragraph>
         {surface.errorText ? (
@@ -61,13 +79,13 @@ export function ScopeMemoryCard({
           />
         ) : null}
         {scopes.length ? (
-          <div>
-            <Typography.Text strong>Read Scope</Typography.Text>
-            <Radio.Group
-              className="mt-2"
-              optionType="button"
-              buttonStyle="solid"
-              value={selectedScope}
+              <div>
+                <Typography.Text strong>Read Scope</Typography.Text>
+                <Radio.Group
+                  className={styles.titleBlock}
+                  optionType="button"
+                  buttonStyle="solid"
+                  value={selectedScope}
               onChange={(event) => setSelectedScope(event.target.value)}
               options={scopes.map((scope) => ({
                 label: `${scope.label}: ${scope.targetId}`,
@@ -77,7 +95,7 @@ export function ScopeMemoryCard({
           </div>
         ) : null}
         {surface.loading ? (
-          <div className="flex min-h-32 items-center justify-center">
+          <div className={styles.loadingArea}>
             <Spin />
           </div>
         ) : null}

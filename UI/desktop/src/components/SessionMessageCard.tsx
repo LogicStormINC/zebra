@@ -1,5 +1,13 @@
 import { Sender } from "@ant-design/x";
 import { Card, Space, Typography } from "antd";
+import { createStyles } from "antd-style";
+
+const useStyle = createStyles(({ css }) => ({
+  secondaryText: css`
+    margin-bottom: 0;
+    color: rgba(255, 255, 255, 0.58) !important;
+  `,
+}));
 
 interface SessionMessageCardProps {
   disabled: boolean;
@@ -7,10 +15,11 @@ interface SessionMessageCardProps {
 }
 
 export function SessionMessageCard({ disabled, onSubmit }: SessionMessageCardProps) {
+  const { styles } = useStyle();
   return (
     <Card title="Append Message">
       <Space direction="vertical" size="middle" className="w-full">
-        <Typography.Paragraph className="!mb-0 !text-slate-600">
+        <Typography.Paragraph className={styles.secondaryText}>
           这里直接打 `POST /sessions/:session_id/messages`，用于给当前 session 补充新的 operator 指令。
         </Typography.Paragraph>
         <Sender

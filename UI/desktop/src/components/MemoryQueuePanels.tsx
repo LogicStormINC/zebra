@@ -1,5 +1,12 @@
 import { Button, Checkbox, Empty, List, Space, Statistic, Tag, Typography } from "antd";
+import { createStyles } from "antd-style";
 import type { MemoryQueuePreviewResponse, MemoryQueueReviewResponse } from "../types";
+
+const useStyle = createStyles(({ css }) => ({
+  titleBlock: css`
+    margin-bottom: 0;
+  `,
+}));
 
 interface MemoryQueuePreviewPanelProps {
   preview: MemoryQueuePreviewResponse;
@@ -85,9 +92,10 @@ interface MemoryQueueReviewPanelProps {
 }
 
 export function MemoryQueueReviewPanel({ review }: MemoryQueueReviewPanelProps) {
+  const { styles } = useStyle();
   return (
     <Space direction="vertical" size="middle" className="w-full">
-      <Typography.Title level={5} className="!mb-0">
+      <Typography.Title level={5} className={styles.titleBlock}>
         Review Result
       </Typography.Title>
       <Space size="large" wrap>

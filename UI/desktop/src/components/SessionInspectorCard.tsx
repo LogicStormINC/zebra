@@ -1,5 +1,6 @@
 import { Bubble, Prompts } from "@ant-design/x";
 import { Alert, Button, Card, Descriptions, List, Modal, Space, Spin, Statistic, Tabs, Tag, Typography } from "antd";
+import { createStyles } from "antd-style";
 import type {
   ArtifactSummary,
   DeliveryAuditRecord,
@@ -11,6 +12,82 @@ import type {
   SessionMemoryResponse,
   SessionSummary,
 } from "../types";
+
+const useStyle = createStyles(({ css }) => ({
+  loadingArea: css`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(var(--zebra-space-xxl) + var(--zebra-space-xxl));
+  `,
+  scopeList: css`
+    min-width: min(100%, var(--zebra-sidebar-width-max));
+    flex: 1;
+  `,
+  eventPayload: css`
+    margin-top: var(--zebra-space-2xs);
+    margin-bottom: 0;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    font-size: var(--zebra-font-size-2xs);
+    line-height: var(--zebra-line-height-relaxed);
+    color: rgba(255, 255, 255, 0.6);
+  `,
+  bubbleList: css`
+    border-radius: var(--zebra-radius-card);
+    background: var(--zebra-surface-background);
+    padding: var(--zebra-space-md);
+  `,
+  preBlock: css`
+    margin: 0;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    border-radius: var(--zebra-radius-card);
+    padding: var(--zebra-space-md);
+    font-size: var(--zebra-font-size-2xs);
+    line-height: var(--zebra-line-height-relaxed);
+    color: rgba(255, 255, 255, 0.86);
+    background: var(--zebra-surface-background);
+  `,
+  preBlockDark: css`
+    margin: 0;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    border-radius: var(--zebra-radius-card);
+    padding: var(--zebra-space-md);
+    font-size: var(--zebra-font-size-2xs);
+    line-height: var(--zebra-line-height-relaxed);
+    color: rgba(241, 245, 249, 0.95);
+    background: #101010;
+  `,
+  preBlockSmall: css`
+    margin: 0;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    border-radius: var(--zebra-radius-soft);
+    padding: var(--zebra-space-sm);
+    font-size: var(--zebra-font-size-2xs);
+    line-height: var(--zebra-line-height-relaxed);
+    color: rgba(255, 255, 255, 0.86);
+    background: var(--zebra-surface-background);
+  `,
+  secondaryText: css`
+    margin-bottom: 0;
+    color: rgba(255, 255, 255, 0.58) !important;
+  `,
+  artifactContent: css`
+    margin: 0;
+    overflow: auto;
+    white-space: pre-wrap;
+    border-radius: var(--zebra-radius-card);
+    padding: var(--zebra-space-md);
+    font-size: var(--zebra-font-size-2xs);
+    line-height: var(--zebra-line-height-relaxed);
+    color: rgba(255, 255, 255, 0.88);
+    background: var(--zebra-surface-background);
+    max-height: calc(var(--zebra-space-xxl) * 8);
+  `,
+}));
 
 interface SessionInspectorCardProps {
   session: SessionSummary | undefined;
@@ -32,7 +109,7 @@ interface SessionInspectorCardProps {
   onExpireMemory: (memoryId: string) => void;
 }
 
-function bubbleItems(events: SessionEvent[] | undefined) {
+function bubbleItems(events: SessionEvent[] | undefined, eventPayloadClass: string) {
   return (events ?? []).map((event) => ({
     key: event.event_id,
     role: event.actor === "assistant" ? "assistant" : "user",
@@ -40,9 +117,7 @@ function bubbleItems(events: SessionEvent[] | undefined) {
     messageRender: () => (
       <div>
         <Typography.Text strong>{event.event_type}</Typography.Text>
-        <pre className="mb-0 mt-2 overflow-x-auto whitespace-pre-wrap text-xs text-slate-600">
-          {JSON.stringify(event.payload, null, 2)}
-        </pre>
+        <pre className={eventPayloadClass}>{JSON.stringify(event.payload, null, 2)}</pre>
       </div>
     ),
   }));
@@ -67,11 +142,13 @@ export function SessionInspectorCard({
   onConfirmMemory,
   onExpireMemory,
 }: SessionInspectorCardProps) {
+  const { styles } = useStyle();
+
   return (
     <Card title="Session Inspector">
       {errorText ? <Alert type="warning" showIcon message="Session unavailable" description={errorText} /> : null}
       {isLoading ? (
-        <div className="flex min-h-72 items-center justify-center">
+        <div className={styles.loadingArea}>
           <Spin />
         </div>
       ) : null}
@@ -111,7 +188,7 @@ export function SessionInspectorCard({
                     <Statistic title="Scopes" value={overview?.scope_count ?? 0} />
                     <Statistic title="Repo memories" value={memory?.memories.length ?? 0} />
                     <List
-                      className="min-w-[320px] flex-1"
+                      className={styles.scopeList}
                       dataSource={overview?.scopes ?? []}
                       renderItem={(scope) => (
                         <List.Item>
@@ -137,12 +214,12 @@ export function SessionInspectorCard({
                 label: "Event Stream",
                 children: (
                   <Bubble.List
-                    items={bubbleItems(stream)}
+                    items={bubbleItems(stream, styles.eventPayload)}
                     role={{
                       assistant: { placement: "start" },
                       user: { placement: "end" },
                     }}
-                    className="rounded-2xl bg-slate-50 p-4"
+                    className={styles.bubbleList}
                   />
                 ),
               },
@@ -194,9 +271,9 @@ export function SessionInspectorCard({
                       <Typography.Text type="secondary">{diff.workspace}</Typography.Text>
                     </Space>
                     <Typography.Title level={5}>Git Status</Typography.Title>
-                    <pre className="mb-0 overflow-x-auto rounded-2xl bg-slate-50 p-4 text-xs">{diff.git_status || "(empty)"}</pre>
+                    <pre className={styles.preBlock}>{diff.git_status || "(empty)"}</pre>
                     <Typography.Title level={5}>Diff</Typography.Title>
-                    <pre className="mb-0 overflow-x-auto rounded-2xl bg-slate-950 p-4 text-xs text-slate-100">{diff.diff || "(empty)"}</pre>
+                    <pre className={styles.preBlockDark}>{diff.diff || "(empty)"}</pre>
                   </Space>
                 ) : (
                   <Alert type="info" showIcon message="Diff not loaded" />
@@ -239,7 +316,7 @@ export function SessionInspectorCard({
                             <Tag color="purple">{artifact.retrieval.status}</Tag>
                           </Space>
                           <Typography.Text strong>{artifact.label}</Typography.Text>
-                          <Typography.Paragraph className="!mb-0 !text-slate-600">
+                          <Typography.Paragraph className={styles.secondaryText}>
                             {artifact.preview ?? "(no preview)"}
                           </Typography.Paragraph>
                         </Space>
@@ -266,7 +343,7 @@ export function SessionInspectorCard({
                           <Typography.Text type="secondary">
                             {record.created_at}
                           </Typography.Text>
-                          <pre className="mb-0 overflow-x-auto rounded-xl bg-slate-50 p-3 text-xs">
+                          <pre className={styles.preBlockSmall}>
                             {JSON.stringify(record.result_metadata, null, 2)}
                           </pre>
                         </Space>
@@ -295,17 +372,13 @@ export function SessionInspectorCard({
                   <Tag color="purple">{selectedArtifact.retrieval.status}</Tag>
                 </Space>
                 <Typography.Title level={5}>Preview</Typography.Title>
-                <pre className="mb-0 overflow-x-auto rounded-2xl bg-slate-50 p-4 text-xs">
-                  {selectedArtifact.preview ?? "(no preview)"}
-                </pre>
+                <pre className={styles.preBlock}>{selectedArtifact.preview ?? "(no preview)"}</pre>
                 <Typography.Title level={5}>Metadata</Typography.Title>
-                <pre className="mb-0 overflow-x-auto rounded-2xl bg-slate-950 p-4 text-xs text-slate-100">
-                  {JSON.stringify(selectedArtifact.metadata, null, 2)}
-                </pre>
+                <pre className={styles.preBlockDark}>{JSON.stringify(selectedArtifact.metadata, null, 2)}</pre>
                 {artifactContentPreview ? (
                   <>
                     <Typography.Title level={5}>Content</Typography.Title>
-                    <pre className="mb-0 max-h-[320px] overflow-auto rounded-2xl bg-slate-50 p-4 text-xs">
+                    <pre className={styles.artifactContent}>
                       {artifactContentPreview}
                     </pre>
                   </>

@@ -1,6 +1,18 @@
 import { SafetyCertificateOutlined } from "@ant-design/icons";
 import { Alert, Card, List, Space, Tag, Typography } from "antd";
+import { createStyles } from "antd-style";
 import type { ApprovalSummary } from "../types";
+
+const useStyle = createStyles(({ css }) => ({
+  listItem: css`
+    align-items: flex-start !important;
+    cursor: pointer;
+  `,
+  secondaryText: css`
+    margin-bottom: 0 !important;
+    color: rgba(255, 255, 255, 0.58) !important;
+  `,
+}));
 
 interface ApprovalsCardProps {
   approvals: ApprovalSummary[] | undefined;
@@ -10,6 +22,8 @@ interface ApprovalsCardProps {
 }
 
 export function ApprovalsCard({ approvals, isLoading, errorText, onSelect }: ApprovalsCardProps) {
+  const { styles } = useStyle();
+
   return (
     <Card title="Approval Inbox" extra={<SafetyCertificateOutlined />}>
       <Space direction="vertical" size="middle" className="w-full">
@@ -20,7 +34,7 @@ export function ApprovalsCard({ approvals, isLoading, errorText, onSelect }: App
           locale={{ emptyText: "No waiting approvals." }}
           renderItem={(approval) => (
             <List.Item
-              className="cursor-pointer !items-start"
+              className={styles.listItem}
               onClick={() => onSelect(approval.approval_id, approval.session_id)}
             >
               <Space direction="vertical" size={6} className="w-full">
@@ -33,7 +47,7 @@ export function ApprovalsCard({ approvals, isLoading, errorText, onSelect }: App
                 <Typography.Text strong>{approval.title}</Typography.Text>
                 <Typography.Text type="secondary">{approval.session_id}</Typography.Text>
                 {approval.approval_context?.reason ? (
-                  <Typography.Paragraph className="!mb-0 !text-slate-600">
+                  <Typography.Paragraph className={styles.secondaryText}>
                     {approval.approval_context.reason}
                   </Typography.Paragraph>
                 ) : null}

@@ -106,3 +106,20 @@ def test_load_settings_does_not_store_scm_token_value() -> None:
 
     assert settings.scm.github_token_env == "GITHUB_TOKEN"
     assert "secret-token" not in repr(settings.scm)
+
+
+def test_load_settings_auto_loads_dotenv_local(monkeypatch, tmp_path) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".env.local").write_text(
+        "DEEPSEEK_API_KEY=local-secret\nDEEPSEEK_BASE_URL=https://local.deepseek.test\nDEEPSEEK_MODEL=local-model\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.delenv("DEEPSEEK_BASE_URL", raising=False)
+    monkeypatch.delenv("DEEPSEEK_MODEL", raising=False)
+
+    settings = load_settings(env={})
+
+    assert settings.model.base_url == "https://local.deepseek.test"
+    assert settings.model.model == "local-model"
+    assert settings.model.api_key_env == "DEEPSEEK_API_KEY"

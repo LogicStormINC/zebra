@@ -6,8 +6,16 @@ import {
   StopOutlined,
 } from "@ant-design/icons";
 import { Alert, Button, Card, Descriptions, Input, Space, Tag, Typography } from "antd";
+import { createStyles } from "antd-style";
 import { useState } from "react";
 import type { ApprovalSummary, SessionSummary } from "../types";
+
+const useStyle = createStyles(({ css }) => ({
+  secondaryText: css`
+    margin-bottom: 0 !important;
+    color: rgba(255, 255, 255, 0.58) !important;
+  `,
+}));
 
 interface SessionControlCardProps {
   session: SessionSummary | undefined;
@@ -34,6 +42,7 @@ export function SessionControlCard({
 }: SessionControlCardProps) {
   const [operator, setOperator] = useState("desktop-operator");
   const [reason, setReason] = useState("");
+  const { styles } = useStyle();
 
   const approvalPayload = {
     operator: operator.trim() || "desktop-operator",
@@ -122,7 +131,7 @@ export function SessionControlCard({
                 Cancel
               </Button>
             </Space>
-            <Typography.Paragraph className="!mb-0 !text-slate-600">
+            <Typography.Paragraph className={styles.secondaryText}>
               当前用最小控制面直接对接审批与会话控制接口。后续如果补流式状态更新，再把这些动作迁到更细的工作流面板。
             </Typography.Paragraph>
           </>

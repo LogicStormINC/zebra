@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import UTC, datetime
+from pathlib import Path
 from time import perf_counter
 from typing import Any
 
@@ -77,7 +78,10 @@ def build_model_gateway(
     env: Mapping[str, str] | None = None,
     client: httpx.Client | None = None,
 ) -> OpenAICompatibleModelGateway:
-    values = env or {}
+    values = dict(env or {})
+    if env is None:
+        values.update(_read_defaults(Path(".env")))
+        values.update(_read_defaults(Path(".env.local")))
     api_key = values.get(settings.model.api_key_env)
     if api_key is None:
         import os
@@ -95,6 +99,19 @@ def build_model_gateway(
         model_name=settings.model.model,
         client=client,
     )
+
+
+def _read_defaults(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    defaults: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", maxsplit=1)
+        defaults[key.strip()] = value.strip()
+    return defaults
 
 
 def _serialize_message(message: SessionMessage) -> dict[str, str]:

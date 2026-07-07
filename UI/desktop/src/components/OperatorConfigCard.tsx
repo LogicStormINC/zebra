@@ -1,6 +1,7 @@
 import { DatabaseOutlined, ReloadOutlined } from "@ant-design/icons";
 import { Prompts } from "@ant-design/x";
 import { Button, Card, Form, Input, Space, Typography } from "antd";
+import { createStyles } from "antd-style";
 import type { OperatorConfig } from "../types";
 
 const promptItems = [
@@ -21,6 +22,13 @@ const promptItems = [
   },
 ];
 
+const useStyle = createStyles(({ css }) => ({
+  secondaryText: css`
+    margin-bottom: 0;
+    color: rgba(255, 255, 255, 0.58) !important;
+  `,
+}));
+
 interface OperatorConfigCardProps {
   config: OperatorConfig;
   onChange: (patch: Partial<OperatorConfig>) => void;
@@ -28,6 +36,7 @@ interface OperatorConfigCardProps {
 }
 
 export function OperatorConfigCard({ config, onChange, onReset }: OperatorConfigCardProps) {
+  const { styles } = useStyle();
   return (
     <Card
       title="Operator Config"
@@ -38,7 +47,7 @@ export function OperatorConfigCard({ config, onChange, onReset }: OperatorConfig
       }
     >
       <Space direction="vertical" size="large" className="w-full">
-        <Typography.Paragraph className="!mb-0 !text-slate-600">
+        <Typography.Paragraph className={styles.secondaryText}>
           UI 直接对接本地 Zebra Agent HTTP API。`/health` 不需要鉴权，其它读写路径在你配置
           `ZEBRA_API_AUTH_TOKEN` 后通常需要 `Bearer token`。
         </Typography.Paragraph>

@@ -110,6 +110,33 @@ def test_build_model_gateway_uses_configured_env_name() -> None:
     ).call_metadata.provider == "deepseek"
 
 
+def test_build_model_gateway_loads_api_key_from_dotenv_local(monkeypatch, tmp_path) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".env.local").write_text(
+        "DEEPSEEK_API_KEY=dot-env-secret\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+
+    gateway = build_model_gateway(
+        _settings(),
+        client=httpx.Client(transport=httpx.MockTransport(_handle_basic_completion_no_capture)),
+    )
+    assert (
+        gateway.complete(
+            [
+                SessionMessage(
+                    message_id=_message_id(),
+                    role=MessageRole.USER,
+                    content="Hello",
+                    created_at=_created_at(),
+                )
+            ]
+        ).assistant_message.content
+        == "Hi there"
+    )
+
+
 def _settings() -> ZebraAgentSettings:
     return ZebraAgentSettings(
         profile="test",

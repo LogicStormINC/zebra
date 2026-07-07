@@ -17,14 +17,16 @@ The current repository direction is:
 The repository now includes an isolated frontend workspace at `UI/desktop`.
 
 - stack: `Tauri + React + Tailwind CSS + TanStack Query + Ant Design + Ant Design X`
-- install: `cd UI/desktop && pnpm install`
-- web build check: `cd UI/desktop && pnpm build`
-- rust shell check: `cd UI/desktop && pnpm tauri:check`
-- desktop shell dev: `cd UI/desktop && pnpm tauri:dev`
+- runtime: `Node 22.17.0` pinned via `volta`, `pnpm 10.28.2`
+- install: `cd UI/desktop && ~/.volta/bin/pnpm install`
+- web build check: `cd UI/desktop && ~/.volta/bin/pnpm build`
+- rust shell check: `cd UI/desktop && ~/.volta/bin/pnpm tauri:check`
+- desktop shell dev: `cd UI/desktop && ~/.volta/bin/pnpm tauri:dev`
 - current live reads: `/health`, `/approvals`, `/approvals/{id}`, `/sessions/{id}`, `/sessions/{id}/stream`, `/sessions/{id}/diff`, `/sessions/{id}/memory`, `/sessions/{id}/memory/queue-summary`, `/users/{id}/memory`, `/users/{id}/memory/queue-summary`, `/tenants/{id}/memory`, `/tenants/{id}/memory/queue-summary`, `/sessions/{id}/memory-overview`, `/sessions/{id}/memory-governance`, `/sessions/{id}/memory-action-hints`, `/sessions/{id}/memory-pressure`, `/sessions/{id}/memory-escalations`, `/sessions/{id}/memory-follow-up-windows`, `/sessions/{id}/memory-overdue-flags`, `/sessions/{id}/memory-overdue-age-buckets`, `/sessions/{id}/memory-overdue-types`, `/sessions/{id}/memory-overdue-visibility`, `/sessions/{id}/memory-overdue-trends`, `/sessions/{id}/memory-overdue-interventions`, `/sessions/{id}/memory-overdue-escalation-lanes`, `/sessions/{id}/memory-overdue-recovery-paths`, `/sessions/{id}/memory-overdue-resolution-checkpoints`, `/sessions/{id}/memory-overdue-resolution-outcomes`, `/sessions/{id}/memory-overdue-closure-decisions`, `/sessions/{id}/memory-overdue-archive-recommendations`, `/sessions/{id}/memory-overdue-retention-guidance`, `/sessions/{id}/memory-overdue-retention-windows`, `/sessions/{id}/artifacts*`, `/sessions/{id}/delivery-audit`
 - current live writes: `POST /sessions`, `POST /sessions/{id}/messages`, `POST /approvals/{id}/approve`, `POST /approvals/{id}/reject`, `POST /sessions/{id}/suspend`, `POST /sessions/{id}/resume`, `POST /sessions/{id}/cancel`, `POST /sessions/{id}/commit`, `POST /sessions/{id}/pull-request`, `POST /sessions/{id}/memory/{memory_id}/confirm`, `POST /sessions/{id}/memory/{memory_id}/expire`, `POST /sessions/{id}/memory/review-queue-preview`, `POST /sessions/{id}/memory/review-queue`, `POST /sessions/{id}/memory/bulk-review`, `POST /users/{id}/memory/review-queue-preview`, `POST /users/{id}/memory/review-queue`, `POST /users/{id}/memory/bulk-review`, `POST /tenants/{id}/memory/review-queue-preview`, `POST /tenants/{id}/memory/review-queue`, `POST /tenants/{id}/memory/bulk-review`, `POST /sessions/{id}/artifacts/{artifact_id}/prune`
 
 This workspace is intentionally kept outside `apps/` and `packages/` so frontend tooling stays isolated from the Python runtime path. Tauri scripts pin `CARGO_HOME` to `UI/desktop/.cargo-home` so Rust artifacts for the desktop shell stay local to the UI workspace.
+If your shell still resolves `pnpm` or `node` to Homebrew or another global install, either prepend `~/.volta/bin` to `PATH` or use the explicit `~/.volta/bin/pnpm ...` form above.
 
 ## Current Status
 

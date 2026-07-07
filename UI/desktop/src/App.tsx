@@ -1,286 +1,97 @@
-import { DeleteOutlined } from "@ant-design/icons";
-import {
-  Actions,
-  Bubble,
-  BubbleListProps,
-  Conversations,
-  Sender,
-  SenderProps,
-  XProvider,
-} from "@ant-design/x";
-import { useXConversations } from "@ant-design/x-sdk";
-import XMarkdown from "@ant-design/x-markdown";
-import { Flex, GetRef, message } from "antd";
-import { createStyles } from "antd-style";
-import { clsx } from "clsx";
+import { GetRef, message } from "antd";
 import dayjs from "dayjs";
+import { Sender } from "@ant-design/x";
+import { useXConversations } from "@ant-design/x-sdk";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import "@ant-design/x-markdown/themes/light.css";
-import "@ant-design/x-markdown/themes/dark.css";
-import { BubbleListRef } from "@ant-design/x/es/bubble";
-import { useMarkdownTheme } from "./x-markdown/demo/_utils";
-import { useOperatorConfig } from "./lib/operator-config";
-import { ZebraApiError, zebraApi } from "./lib/zebra-api";
-import type { SessionEvent } from "./types";
+import { CodexWorkspace } from "./components/CodexWorkspace";
 import locale from "./_utils/local";
+import type { ChatMessage, ConversationSeed } from "./lib/chat-surface";
+import {
+  DEFAULT_CONVERSATIONS,
+  isAppendToTerminalError,
+  streamEventsToMessages,
+  toErrorMessage,
+} from "./lib/chat-surface";
+import { useOperatorConfig } from "./lib/operator-config";
+import type { SessionResultSurface } from "./lib/session-results";
+import { zebraApi } from "./lib/zebra-api";
+import type { SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "./types";
 
-const useStyle = createStyles(({ token, css }) => {
+function buildConversation(label: string, group: string): ConversationSeed {
   return {
-    layout: css`
-      width: 100%;
-      height: 100vh;
-      display: flex;
-      background: ${token.colorBgContainer};
-      overflow: hidden;
-    `,
-    side: css`
-      background: ${token.colorBgLayout};
-      width: 280px;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      padding: 0 12px;
-      box-sizing: border-box;
-    `,
-    logo: css`
-      display: flex;
-      align-items: center;
-      justify-content: start;
-      padding: 0 24px;
-      box-sizing: border-box;
-      gap: 8px;
-      margin: 24px 0;
-
-      span {
-        font-weight: bold;
-        color: ${token.colorText};
-        font-size: 16px;
-      }
-    `,
-    conversations: css`
-      overflow-y: auto;
-      margin-top: 12px;
-      padding: 0;
-      flex: 1;
-      .ant-conversations-list {
-        padding-inline-start: 0;
-      }
-    `,
-    chat: css`
-      height: 100%;
-      width: calc(100% - 240px);
-      overflow: auto;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      .ant-bubble-content-updating {
-        background-image: linear-gradient(90deg, #ff6b23 0%, #af3cb8 31%, #53b6ff 89%);
-        background-size: 100% 2px;
-        background-repeat: no-repeat;
-        background-position: bottom;
-      }
-    `,
-    chatList: css`
-      flex: 1;
-      overflow-y: auto;
-      margin-block-start: ${token.margin}px;
-    `,
-    chatSender: css`
-      padding: ${token.paddingXS}px;
-    `,
-    startPage: css`
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      height: 100%;
-    `,
-    agentName: css`
-      margin-block-start: 25%;
-      font-size: 32px;
-      margin-block-end: 38px;
-      font-weight: 600;
-    `,
+    key: Date.now().toString(),
+    label,
+    group,
   };
-});
-
-interface ChatBubbleMessage {
-  key: string;
-  role: "assistant" | "user";
-  status?: "success" | "error" | "loading";
-  content: string;
 }
 
-const DEFAULT_CONVERSATIONS_ITEMS = [
-  {
-    key: "default-0",
-    label: locale.whatIsAntDesignX,
-    group: locale.today,
-  },
-  {
-    key: "default-1",
-    label: locale.howToQuicklyInstallAndImportComponents,
-    group: locale.today,
-  },
-  {
-    key: "default-2",
-    label: locale.newAgiHybridInterface,
-    group: locale.yesterday,
-  },
-];
-
-const slotConfig: SenderProps["slotConfig"] = [
-  { type: "text", value: locale.slotTextStart },
-  {
-    type: "select",
-    key: "destination",
-    props: {
-      defaultValue: "Zebra Agent",
-      options: ["Zebra Agent", "Local Mode"],
-    },
-  },
-  { type: "text", value: locale.slotTextEnd },
-];
-
-function readText(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
+function buildEmptyConversation(): ConversationSeed {
+  return buildConversation(locale.newConversation, locale.today);
 }
 
-function toErrorMessage(error: unknown): string {
-  if (error instanceof ZebraApiError && typeof error.payload === "object" && error.payload && "reason" in error.payload) {
-    return `${String(error.payload.reason)} (HTTP ${error.statusCode})`;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Unknown error";
+function decodeArtifactContent(contentBase64: string) {
+  const binary = window.atob(contentBase64);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
 }
 
-function isAppendToTerminalError(error: unknown): boolean {
-  if (!(error instanceof ZebraApiError) || typeof error.payload !== "object" || error.payload === null) {
-    return false;
-  }
-  const payload = error.payload as { status?: unknown; reason?: unknown };
-  return (
-    error.statusCode === 409 &&
-    payload.status === "not_appendable" &&
-    payload.reason === "cannot_append_to_terminal_session"
-  );
-}
-
-function streamEventsToMessages(events: SessionEvent[]): ChatBubbleMessage[] {
-  return [...events]
-    .sort((left, right) => left.sequence - right.sequence)
-    .flatMap((event): ChatBubbleMessage[] => {
-      if (event.event_type === "user_message_received") {
-        const content = readText(event.payload.content);
-        if (!content) {
-          return [];
-        }
-        return [
-          {
-            key: event.event_id,
-            role: "user",
-            status: "success",
-            content,
-          },
-        ];
-      }
-      if (event.event_type === "model_response_received") {
-        const content = readText(event.payload.assistant_message);
-        if (!content) {
-          return [];
-        }
-        return [
-          {
-            key: event.event_id,
-            role: "assistant",
-            status: "success",
-            content,
-          },
-        ];
-      }
-      return [];
-    });
-}
-
-const Footer: React.FC<{
-  content: string;
-  status?: string;
-}> = ({ content, status }) => {
-  return status !== "loading" ? <div style={{ display: "flex" }}><Actions items={[{ key: "copy", actionRender: <Actions.Copy text={content} /> }]} /></div> : null;
-};
-
-const getRole = (className: string): BubbleListProps["role"] => ({
-  assistant: {
-    placement: "start",
-    footer: (content, { status }) => <Footer content={(typeof content === "string" ? content : "") as string} status={status} />,
-    contentRender: (content, { status }) => {
-      const newContent = (typeof content === "string" ? content : "").replace(/\n\n/g, "<br/><br/>");
-      return (
-        <XMarkdown
-          paragraphTag="div"
-          className={className}
-          streaming={{
-            hasNextChunk: status === "updating",
-            enableAnimation: true,
-          }}
-        >
-          {newContent}
-        </XMarkdown>
-      );
-    },
-  },
-  user: { placement: "end" },
-});
-
-const App = () => {
-  const [className] = useMarkdownTheme();
+export default function App() {
   const senderRef = useRef<GetRef<typeof Sender>>(null);
-
+  const listRef = useRef<HTMLDivElement>(null);
   const { config, patchConfig } = useOperatorConfig();
   const api = useMemo(() => zebraApi(config), [config]);
 
   const { conversations, addConversation, setConversations } = useXConversations({
-    defaultConversations: DEFAULT_CONVERSATIONS_ITEMS,
+    defaultConversations: DEFAULT_CONVERSATIONS,
   });
-  const [curConversation, setCurConversation] = useState<string>(DEFAULT_CONVERSATIONS_ITEMS[0].key);
-  const [activeConversation, setActiveConversation] = useState<string>(DEFAULT_CONVERSATIONS_ITEMS[0].key);
+  const [currentConversation, setCurrentConversation] = useState<string>(DEFAULT_CONVERSATIONS[0].key);
   const [conversationToSessionId, setConversationToSessionId] = useState<Record<string, string>>({});
-  const [conversationMessages, setConversationMessages] = useState<Record<string, ChatBubbleMessage[]>>({});
-  const [isRequesting, setIsRequesting] = useState<boolean>(false);
-
-  const listRef = useRef<BubbleListRef>(null);
-  const messages = conversationMessages[curConversation] ?? [];
-
+  const [conversationEvents, setConversationEvents] = useState<Record<string, SessionEvent[]>>({});
+  const [conversationMessages, setConversationMessages] = useState<Record<string, ChatMessage[]>>({});
+  const [resultSurfaces, setResultSurfaces] = useState<Record<string, SessionResultSurface | null>>({});
+  const [sessionSummaries, setSessionSummaries] = useState<Record<string, SessionSummary | null>>({});
+  const [artifactContentPreview, setArtifactContentPreview] = useState<string | null>(null);
+  const [artifactDetail, setArtifactDetail] = useState<SessionArtifactDetailResponse | null>(null);
+  const [artifactLoading, setArtifactLoading] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [controlsBusy, setControlsBusy] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
 
-  const { styles } = useStyle();
+  const events = conversationEvents[currentConversation] ?? [];
+  const messages = conversationMessages[currentConversation] ?? [];
+  const activeConversation = conversations.find((item) => item.key === currentConversation);
+  const activeLabel = activeConversation?.label ?? locale.agentName;
+  const currentSessionId = conversationToSessionId[currentConversation] ?? config.sessionId;
+  const resultSurface = resultSurfaces[currentConversation] ?? null;
+  const sessionSummary = sessionSummaries[currentConversation] ?? null;
 
   useEffect(() => {
-    if (senderRef.current) {
-      senderRef.current.focus({ cursor: "end" });
-    }
+    senderRef.current?.focus({ cursor: "end" });
   }, []);
 
   useEffect(() => {
-    if (!config.sessionId) {
+    if (!config.sessionId || !currentConversation) {
       return;
     }
     setConversationToSessionId((current) => {
-      if (current[curConversation]) {
+      if (current[currentConversation]) {
         return current;
       }
       return {
         ...current,
-        [curConversation]: config.sessionId,
+        [currentConversation]: config.sessionId,
       };
     });
-  }, [config.sessionId, curConversation]);
+  }, [config.sessionId, currentConversation]);
 
   const syncConversationFromStream = useCallback(
     async (conversationKey: string, sessionId: string) => {
       const response = await api.stream(sessionId);
       const nextMessages = streamEventsToMessages(response.events);
+      setConversationEvents((current) => ({
+        ...current,
+        [conversationKey]: response.events,
+      }));
       setConversationMessages((current) => ({
         ...current,
         [conversationKey]: nextMessages,
@@ -289,73 +100,253 @@ const App = () => {
     [api],
   );
 
+  const loadSessionSummary = useCallback(
+    async (conversationKey: string, sessionId: string) => {
+      try {
+        const summary = await api.session(sessionId);
+        setSessionSummaries((current) => ({
+          ...current,
+          [conversationKey]: summary,
+        }));
+        return summary;
+      } catch {
+        setSessionSummaries((current) => ({
+          ...current,
+          [conversationKey]: null,
+        }));
+        return null;
+      }
+    },
+    [api],
+  );
+
+  const loadResultSurface = useCallback(
+    async (conversationKey: string, sessionId: string) => {
+      const [diffResult, artifactResult, deliveryAuditResult] = await Promise.allSettled([
+        api.diff(sessionId),
+        api.artifacts(sessionId),
+        api.deliveryAudit(sessionId),
+      ]);
+      setResultSurfaces((current) => ({
+        ...current,
+        [conversationKey]: {
+          diff: diffResult.status === "fulfilled" ? diffResult.value : null,
+          artifacts: artifactResult.status === "fulfilled" ? artifactResult.value : null,
+          deliveryAudit: deliveryAuditResult.status === "fulfilled" ? deliveryAuditResult.value : null,
+        },
+      }));
+    },
+    [api],
+  );
+
+  const refreshConversation = useCallback(
+    async (conversationKey: string) => {
+      const sessionId = conversationToSessionId[conversationKey];
+      if (!sessionId) {
+        return;
+      }
+      await Promise.all([
+        syncConversationFromStream(conversationKey, sessionId),
+        loadSessionSummary(conversationKey, sessionId),
+        loadResultSurface(conversationKey, sessionId),
+      ]);
+    },
+    [conversationToSessionId, loadResultSurface, loadSessionSummary, syncConversationFromStream],
+  );
+
+  const runControlAction = useCallback(
+    async (handler: () => Promise<unknown>) => {
+      setControlsBusy(true);
+      try {
+        await handler();
+        if (currentConversation) {
+          await refreshConversation(currentConversation);
+        }
+      } catch (error: unknown) {
+        messageApi.error(toErrorMessage(error));
+      } finally {
+        setControlsBusy(false);
+      }
+    },
+    [currentConversation, messageApi, refreshConversation],
+  );
+
   useEffect(() => {
-    const sessionId = conversationToSessionId[curConversation];
+    if (!currentConversation) {
+      return;
+    }
+    const sessionId = conversationToSessionId[currentConversation];
     if (!sessionId) {
       setConversationMessages((current) => {
-        if (current[curConversation]?.length) {
+        if (current[currentConversation]) {
           return current;
         }
         return {
           ...current,
-          [curConversation]: [],
+          [currentConversation]: [],
+        };
+      });
+      setConversationEvents((current) => ({
+        ...current,
+        [currentConversation]: [],
+      }));
+      return;
+    }
+    void syncConversationFromStream(currentConversation, sessionId).catch((error: unknown) => {
+      messageApi.error(toErrorMessage(error));
+    });
+  }, [currentConversation, conversationToSessionId, messageApi, syncConversationFromStream]);
+
+  useEffect(() => {
+    if (!currentConversation) {
+      return;
+    }
+    const sessionId = conversationToSessionId[currentConversation];
+    if (!sessionId) {
+      setSessionSummaries((current) => {
+        if (current[currentConversation] === null) {
+          return current;
+        }
+        return {
+          ...current,
+          [currentConversation]: null,
         };
       });
       return;
     }
-    void syncConversationFromStream(curConversation, sessionId).catch((error: unknown) => {
-      messageApi.error(toErrorMessage(error));
-    });
-  }, [curConversation, conversationToSessionId, syncConversationFromStream, messageApi]);
+    void loadSessionSummary(currentConversation, sessionId);
+  }, [conversationToSessionId, currentConversation, loadSessionSummary]);
 
-  const appendMessageToConversation = useCallback((conversationKey: string, message: ChatBubbleMessage) => {
-    setConversationMessages((current) => {
-      const next = [...(current[conversationKey] ?? []), message];
-      return {
+  useEffect(() => {
+    if (!currentConversation) {
+      return;
+    }
+    const sessionId = conversationToSessionId[currentConversation];
+    if (!sessionId) {
+      setResultSurfaces((current) => ({
         ...current,
-        [conversationKey]: next,
-      };
+        [currentConversation]: null,
+      }));
+      return;
+    }
+    void loadResultSurface(currentConversation, sessionId);
+  }, [conversationToSessionId, currentConversation, loadResultSurface]);
+
+  useEffect(() => {
+    if (!listRef.current) {
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      if (!listRef.current) {
+        return;
+      }
+      listRef.current.scrollTo({
+        top: listRef.current.scrollHeight,
+        behavior: "smooth",
+      });
     });
+  }, [messages.length, currentConversation]);
+
+  const appendMessageToConversation = useCallback((conversationKey: string, nextMessage: ChatMessage) => {
+    setConversationMessages((current) => ({
+      ...current,
+      [conversationKey]: [...(current[conversationKey] ?? []), nextMessage],
+    }));
   }, []);
+
+  const createConversation = useCallback(() => {
+    const nextConversation = buildEmptyConversation();
+    addConversation(nextConversation);
+    setCurrentConversation(nextConversation.key);
+  }, [addConversation]);
+
+  const deleteConversation = useCallback(
+    (conversationKey: string) => {
+      const nextConversations = conversations.filter((item) => item.key !== conversationKey);
+      setConversations(nextConversations);
+      setConversationToSessionId((current) => {
+        const next = { ...current };
+        delete next[conversationKey];
+        return next;
+      });
+      setConversationMessages((current) => {
+        const next = { ...current };
+        delete next[conversationKey];
+        return next;
+      });
+      setConversationEvents((current) => {
+        const next = { ...current };
+        delete next[conversationKey];
+        return next;
+      });
+      if (conversationKey !== currentConversation) {
+        return;
+      }
+      if (nextConversations.length > 0) {
+        setCurrentConversation(nextConversations[0].key);
+        return;
+      }
+      const fallback = buildEmptyConversation();
+      addConversation(fallback);
+      setCurrentConversation(fallback.key);
+    },
+    [addConversation, conversations, currentConversation, setConversations],
+  );
+
+  const renameCurrentConversation = useCallback(
+    (title: string) => {
+      setConversations(
+        conversations.map((item) =>
+          item.key === currentConversation
+            ? {
+                ...item,
+                label: title,
+                group: dayjs().format("HH:mm"),
+              }
+            : item,
+        ),
+      );
+    },
+    [conversations, currentConversation, setConversations],
+  );
 
   const submitMessage = useCallback(
     async (input: string) => {
       const trimmed = input.trim();
-      if (!trimmed) {
+      if (!trimmed || !currentConversation) {
         return;
       }
 
-      const localMessage: ChatBubbleMessage = {
+      appendMessageToConversation(currentConversation, {
         key: `local-user-${Date.now()}`,
         role: "user",
         status: "success",
         content: trimmed,
-      };
-      appendMessageToConversation(curConversation, localMessage);
+      });
       setIsRequesting(true);
       senderRef.current?.clear?.();
-      setActiveConversation(curConversation);
 
       try {
-        let sessionId = conversationToSessionId[curConversation];
+        let sessionId = conversationToSessionId[currentConversation];
         if (!sessionId) {
-          const title = trimmed.slice(0, 48) || locale.agentName;
+          const title = trimmed.slice(0, 36) || locale.newConversation;
           const created = await api.createSession({ title, prompt: trimmed, execute: true });
           sessionId = created.session_id;
           patchConfig({ sessionId });
+          renameCurrentConversation(title);
           setConversationToSessionId((current) => ({
             ...current,
-            [curConversation]: sessionId,
+            [currentConversation]: sessionId!,
           }));
           if (!created.assistant_message) {
-            appendMessageToConversation(curConversation, {
+            appendMessageToConversation(currentConversation, {
               key: `local-assistant-${Date.now()}`,
               role: "assistant",
               status: "loading",
               content: locale.noData,
             });
           }
-      } else {
+        } else {
           try {
             await api.appendMessage(sessionId, { content: trimmed });
             await api.resume(sessionId);
@@ -363,171 +354,174 @@ const App = () => {
             if (!isAppendToTerminalError(error)) {
               throw error;
             }
-
-            const title = trimmed.slice(0, 48) || locale.agentName;
-            const created = await api.createSession({
-              title,
-              prompt: trimmed,
-              execute: true,
-            });
+            const title = trimmed.slice(0, 36) || locale.newConversation;
+            const created = await api.createSession({ title, prompt: trimmed, execute: true });
             sessionId = created.session_id;
             patchConfig({ sessionId });
+            renameCurrentConversation(title);
             setConversationToSessionId((current) => ({
               ...current,
-              [curConversation]: sessionId,
+              [currentConversation]: sessionId!,
             }));
             if (!created.assistant_message) {
-              appendMessageToConversation(curConversation, {
+              appendMessageToConversation(currentConversation, {
                 key: `local-assistant-${Date.now()}`,
                 role: "assistant",
                 status: "loading",
                 content: locale.noData,
               });
             }
-            await syncConversationFromStream(curConversation, sessionId);
+            await syncConversationFromStream(currentConversation, sessionId);
             return;
           }
         }
 
-        await syncConversationFromStream(curConversation, sessionId);
+        await syncConversationFromStream(currentConversation, sessionId);
       } catch (error: unknown) {
         messageApi.error(toErrorMessage(error));
       } finally {
         setIsRequesting(false);
-        listRef.current?.scrollTo({ top: "bottom" });
       }
     },
-    [appendMessageToConversation, api, conversationToSessionId, curConversation, messageApi, patchConfig, syncConversationFromStream],
+    [
+      api,
+      appendMessageToConversation,
+      conversationToSessionId,
+      currentConversation,
+      messageApi,
+      patchConfig,
+      renameCurrentConversation,
+      syncConversationFromStream,
+    ],
+  );
+
+  const suspendSession = useCallback(() => {
+    const sessionId = currentSessionId;
+    if (!sessionId) {
+      return;
+    }
+    void runControlAction(() => api.suspend(sessionId));
+  }, [api.suspend, currentSessionId, runControlAction]);
+
+  const resumeSession = useCallback(() => {
+    const sessionId = currentSessionId;
+    if (!sessionId) {
+      return;
+    }
+    void runControlAction(() => api.resume(sessionId));
+  }, [api.resume, currentSessionId, runControlAction]);
+
+  const cancelSession = useCallback(() => {
+    const sessionId = currentSessionId;
+    if (!sessionId) {
+      return;
+    }
+    void runControlAction(() => api.cancel(sessionId));
+  }, [api.cancel, currentSessionId, runControlAction]);
+
+  const openArtifact = useCallback(
+    async (artifactId: string) => {
+      const sessionId = conversationToSessionId[currentConversation];
+      if (!sessionId) {
+        return;
+      }
+      setArtifactLoading(true);
+      setArtifactDetail(null);
+      setArtifactContentPreview(null);
+      try {
+        const detail = await api.artifactDetail(sessionId, artifactId);
+        setArtifactDetail(detail);
+        if (detail.artifact.retrieval.retrievable) {
+          const content = await api.artifactContent(sessionId, artifactId);
+          setArtifactContentPreview(decodeArtifactContent(content.content_base64));
+        }
+      } catch (error: unknown) {
+        messageApi.error(toErrorMessage(error));
+      } finally {
+        setArtifactLoading(false);
+      }
+    },
+    [api, conversationToSessionId, currentConversation, messageApi],
+  );
+
+  const copyText = useCallback(
+    async (value: string, successText: string) => {
+      try {
+        await navigator.clipboard.writeText(value);
+        messageApi.success(successText);
+      } catch (error: unknown) {
+        messageApi.error(toErrorMessage(error));
+      }
+    },
+    [messageApi],
   );
 
   return (
-    <XProvider locale={locale as any}>
+    <>
       {contextHolder}
-      <div className={styles.layout}>
-        <div className={styles.side}>
-          <div className={styles.logo}>
-            <img
-              src="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*eco6RrQhxbMAAAAAAAAAAAAADgCCAQ/original"
-              draggable={false}
-              alt="logo"
-              width={24}
-              height={24}
-            />
-            <span>Ant Design X</span>
-          </div>
-          <Conversations
-            creation={{
-              onClick: () => {
-                const now = dayjs().valueOf().toString();
-                addConversation({
-                  key: now,
-                  label: `${locale.newConversation} ${conversations.length + 1}`,
-                  group: locale.today,
-                });
-                setCurConversation(now);
-                setActiveConversation(now);
-              },
-            }}
-            items={conversations
-              .map((item: { key: string; label?: string; group?: string }) => ({
-                ...item,
-                label: item.key === activeConversation
-                  ? `[${locale.curConversation}]${item.label ?? ""}`
-                  : item.label ?? "",
-              }))
-              .sort((left: { key: string }, right: { key: string }) =>
-                left.key === activeConversation ? -1 : right.key === activeConversation ? 1 : 0,
-              )}
-            className={styles.conversations}
-            activeKey={curConversation}
-            onActiveChange={(val) => {
-              setCurConversation(val);
-              setActiveConversation(val);
-            }}
-            groupable
-            styles={{ item: { padding: "0 8px" } }}
-            menu={(conversation: { key: string }) => ({
-              items: [
-                {
-                  label: locale.delete,
-                  key: "delete",
-                  icon: <DeleteOutlined />,
-                  danger: true,
-                  onClick: () => {
-                    const newList = conversations.filter((item: { key: string }) => item.key !== conversation.key);
-                    const newConversations = newList;
-                    setConversations(newConversations);
-                    setConversationToSessionId((current) => {
-                      const next = { ...current };
-                      delete next[conversation.key];
-                      return next;
-                    });
-                    setConversationMessages((current) => {
-                      const next = { ...current };
-                      delete next[conversation.key];
-                      return next;
-                    });
-                    if (conversation.key === curConversation) {
-                      setCurConversation(newConversations[0]?.key ?? "");
-                      setActiveConversation(newConversations[0]?.key ?? "");
-                    }
-                  },
-                },
-              ],
-            })}
-          />
-        </div>
-        <div className={styles.chat}>
-          <div className={styles.chatList}>
-            {messages.length !== 0 && (
-              <Bubble.List
-                ref={listRef}
-                styles={{
-                  root: {
-                    maxWidth: 940,
-                    marginBlockEnd: 24,
-                  },
-                }}
-                items={messages.map((item) => ({
-                  ...item,
-                  key: item.key,
-                  role: item.role,
-                  status: item.status,
-                }))}
-                role={getRole(className)}
-              />
-            )}
-          </div>
-          <div className={clsx(styles.chatSender, { [styles.startPage]: messages.length === 0 })}>
-            {messages.length === 0 && <div className={styles.agentName}>{locale.agentName}</div>}
-            <Sender
-              suffix={false}
-              ref={senderRef}
-              key={curConversation}
-              slotConfig={slotConfig}
-              loading={isRequesting}
-              onSubmit={(val) => {
-                void submitMessage(val);
-              }}
-              onCancel={() => {
-                messageApi.info("当前不支持中断请求");
-              }}
-              placeholder={locale.placeholder}
-              footer={(actionNode) => {
-                return (
-                  <Flex justify="space-between" align="center">
-                    <Flex gap="small" align="center" />
-                    <Flex align="center">{actionNode}</Flex>
-                  </Flex>
-                );
-              }}
-              autoSize={{ minRows: 3, maxRows: 6 }}
-            />
-          </div>
-        </div>
-      </div>
-    </XProvider>
+      <CodexWorkspace
+        activeLabel={activeLabel}
+        apiBaseUrl={config.apiBaseUrl}
+        artifactContentPreview={artifactContentPreview}
+        artifactDetail={artifactDetail}
+        artifactLoading={artifactLoading}
+        conversations={conversations as ConversationSeed[]}
+        conversationSessionIds={conversationToSessionId}
+        currentConversation={currentConversation}
+        currentSessionId={currentSessionId}
+        events={events}
+        isRequesting={isRequesting}
+        listRef={listRef}
+        messages={messages}
+        onCancel={() => {
+          messageApi.info("当前不支持中断请求");
+        }}
+        onCloseArtifact={() => {
+          setArtifactDetail(null);
+          setArtifactContentPreview(null);
+        }}
+        onCopySessionId={() => {
+          if (!currentSessionId) {
+            return;
+          }
+          void copyText(currentSessionId, locale.sessionIdCopied);
+        }}
+        onCopyWorkspacePath={() => {
+          const workspacePath = sessionSummary?.workspace?.workspace_root;
+          if (!workspacePath) {
+            return;
+          }
+          void copyText(workspacePath, locale.workspacePathCopied);
+        }}
+        onCreateConversation={createConversation}
+        onDeleteConversation={deleteConversation}
+        onCancelSession={cancelSession}
+        onResumeSession={resumeSession}
+        onSuspendSession={suspendSession}
+        onOpenArtifact={(artifactId) => {
+          void openArtifact(artifactId);
+        }}
+        onRefreshConversation={() => {
+          void refreshConversation(currentConversation).catch((error: unknown) => {
+            messageApi.error(toErrorMessage(error));
+          });
+        }}
+        onScrollToLatest={() => {
+          listRef.current?.scrollTo({
+            top: listRef.current.scrollHeight,
+            behavior: "smooth",
+          });
+        }}
+        onSelectConversation={setCurrentConversation}
+        onSubmit={(value) => {
+          void submitMessage(value);
+        }}
+        controlsBusy={controlsBusy}
+        resultSurface={resultSurface}
+        sessionSummaries={sessionSummaries}
+        sessionSummary={sessionSummary}
+        senderRef={senderRef}
+      />
+    </>
   );
-};
-
-export default App;
+}

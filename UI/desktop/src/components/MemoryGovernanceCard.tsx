@@ -1,8 +1,22 @@
 import { Alert, Button, Card, Space, Spin, Typography } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
+import { createStyles } from "antd-style";
 import type { ZebraApiClient } from "../lib/zebra-api";
 import { MemoryGovernancePanels } from "./MemoryGovernancePanels";
 import { useMemoryGovernanceSurface } from "../lib/use-memory-governance-surface";
+
+const useStyle = createStyles(({ css }) => ({
+  secondaryText: css`
+    margin-bottom: 0;
+    color: rgba(255, 255, 255, 0.58) !important;
+  `,
+  loadingArea: css`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(var(--zebra-space-xl) + var(--zebra-space-xl));
+  `,
+}));
 
 interface MemoryGovernanceCardProps {
   api: ZebraApiClient;
@@ -13,6 +27,7 @@ interface MemoryGovernanceCardProps {
 
 export function MemoryGovernanceCard(props: MemoryGovernanceCardProps) {
   const surface = useMemoryGovernanceSurface(props);
+  const { styles } = useStyle();
 
   return (
     <Card
@@ -28,7 +43,7 @@ export function MemoryGovernanceCard(props: MemoryGovernanceCardProps) {
       }
     >
       <Space direction="vertical" size="large" className="w-full">
-        <Typography.Paragraph className="!mb-0 !text-slate-600">
+        <Typography.Paragraph className={styles.secondaryText}>
           Read backlog health, review status, and highest-priority memory action before doing queue review.
         </Typography.Paragraph>
         {!props.sessionId.trim() ? (
@@ -48,7 +63,7 @@ export function MemoryGovernanceCard(props: MemoryGovernanceCardProps) {
           />
         ) : null}
         {surface.isLoading ? (
-          <div className="flex min-h-32 items-center justify-center">
+          <div className={styles.loadingArea}>
             <Spin />
           </div>
         ) : null}

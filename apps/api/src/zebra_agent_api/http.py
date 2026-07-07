@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
@@ -47,7 +47,9 @@ def create_http_app(
     )
 
     @app.middleware("http")
-    async def _preflight_middleware(request: Request, call_next):
+    async def _preflight_middleware(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         if request.method.upper() == "OPTIONS":
             origin = request.headers.get("origin", "*")
             requested_headers = request.headers.get("access-control-request-headers", "*")

@@ -10,6 +10,7 @@ import {
   Spin,
   Typography,
 } from "antd";
+import { createStyles } from "antd-style";
 import type {
   MemoryQueuePreviewResponse,
   MemoryQueueReviewResponse,
@@ -22,6 +23,29 @@ import {
 } from "../lib/use-memory-scope-surface";
 import { MemoryQueuePreviewPanel, MemoryQueueReviewPanel } from "./MemoryQueuePanels";
 import { formatOperatorError } from "../lib/use-operator-workbench";
+
+const useStyle = createStyles(({ css }) => ({
+  secondaryText: css`
+    margin-bottom: 0;
+    color: rgba(255, 255, 255, 0.58) !important;
+  `,
+  titleBlock: css`
+    margin-top: var(--zebra-space-2xs);
+  `,
+  loadingArea: css`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(var(--zebra-space-xl) + var(--zebra-space-xl));
+  `,
+  inputSmall: css`
+    min-width: min(100%, var(--zebra-sidebar-width-min));
+  `,
+  inputWide: css`
+    min-width: min(100%, var(--zebra-sidebar-width-max));
+    flex: 1;
+  `,
+}));
 
 interface MemoryQueueCardProps {
   api: ZebraApiClient;
@@ -52,6 +76,7 @@ export function MemoryQueueCard({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const { styles } = useStyle();
 
   useEffect(() => {
     if (!scopes.length) {
@@ -132,7 +157,7 @@ export function MemoryQueueCard({
   return (
     <Card title="Memory Queue Operations">
       <Space direction="vertical" size="large" className="w-full">
-        <Typography.Paragraph className="!mb-0 !text-slate-600">
+        <Typography.Paragraph className={styles.secondaryText}>
           Preview queued candidate memories for the active scope, then either sweep the full queue or bulk-review a selected subset.
         </Typography.Paragraph>
         {errorText ? <Alert type="warning" showIcon message="Memory queue request failed" description={errorText} /> : null}
@@ -149,7 +174,7 @@ export function MemoryQueueCard({
               <div>
                 <Typography.Text strong>Scope</Typography.Text>
                 <Radio.Group
-                  className="mt-2"
+                  className={styles.titleBlock}
                   optionType="button"
                   buttonStyle="solid"
                   value={selectedScope}
@@ -169,7 +194,7 @@ export function MemoryQueueCard({
               <div>
                 <Typography.Text strong>Decision</Typography.Text>
                 <Radio.Group
-                  className="mt-2"
+                  className={styles.titleBlock}
                   optionType="button"
                   buttonStyle="solid"
                   value={decision}
@@ -182,21 +207,21 @@ export function MemoryQueueCard({
               </div>
               <Space wrap className="w-full">
                 <Input
-                  className="min-w-[220px]"
+                  className={styles.inputSmall}
                   placeholder="memory_type filter, e.g. procedure"
                   value={memoryType}
                   onChange={(event) => setMemoryType(event.target.value)}
                   disabled={disabled || loading}
                 />
                 <Input
-                  className="min-w-[220px]"
+                  className={styles.inputSmall}
                   placeholder="operator (optional)"
                   value={operator}
                   onChange={(event) => setOperator(event.target.value)}
                   disabled={disabled || loading}
                 />
                 <Input
-                  className="min-w-[280px] flex-1"
+                  className={styles.inputWide}
                   placeholder="reason (optional)"
                   value={reason}
                   onChange={(event) => setReason(event.target.value)}
@@ -252,7 +277,7 @@ export function MemoryQueueCard({
               </Space>
             </Space>
             {loading ? (
-              <div className="flex min-h-32 items-center justify-center">
+              <div className={styles.loadingArea}>
                 <Spin />
               </div>
             ) : null}

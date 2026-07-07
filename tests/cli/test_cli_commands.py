@@ -987,8 +987,8 @@ class FakeGateway:
         self._completion = completion
 
     def complete(self, messages: list[SessionMessage]) -> ModelCompletion:
-        assert len(messages) == 1
-        assert messages[0].role is MessageRole.USER
+        assert len(messages) in {1, 2}
+        assert messages[-1].role is MessageRole.USER
         return self._completion
 
 

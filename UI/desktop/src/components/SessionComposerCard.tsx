@@ -2,7 +2,15 @@ import { SendOutlined } from "@ant-design/icons";
 import { Sender } from "@ant-design/x";
 import { Button, Card, Input, Space, Switch, Typography } from "antd";
 import { useState } from "react";
+import { createStyles } from "antd-style";
 import type { CreateSessionResponse } from "../types";
+
+const useStyle = createStyles(({ css }) => ({
+  secondaryText: css`
+    margin-bottom: 0;
+    color: rgba(255, 255, 255, 0.58) !important;
+  `,
+}));
 
 interface SessionComposerCardProps {
   creating: boolean;
@@ -10,13 +18,14 @@ interface SessionComposerCardProps {
 }
 
 export function SessionComposerCard({ creating, onCreate }: SessionComposerCardProps) {
+  const { styles } = useStyle();
   const [title, setTitle] = useState("Desktop operator session");
   const [execute, setExecute] = useState(false);
 
   return (
     <Card title="Create Session" extra={<Switch checked={execute} onChange={setExecute} checkedChildren="Execute" unCheckedChildren="Plan" />}>
       <Space direction="vertical" size="middle" className="w-full">
-        <Typography.Paragraph className="!mb-0 !text-slate-600">
+        <Typography.Paragraph className={styles.secondaryText}>
           这里直接打 `POST /sessions`。创建成功后，UI 会自动把返回的 `session_id` 切成当前观察对象。
         </Typography.Paragraph>
         <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Session title" />
