@@ -14,18 +14,19 @@ const useStyle = createStyles(({ css }) => {
   return {
     shell: css`
       width: 100%;
-      min-height: 100vh;
+      height: 100dvh;
+      min-height: 0;
+      overflow: hidden;
       display: grid;
-      grid-template-columns: 1fr;
-      row-gap: var(--zebra-space-sm);
-      background:
-        radial-gradient(circle at top left, rgba(255, 255, 255, 0.05), transparent 26%),
-        linear-gradient(180deg, #191919 0%, #141414 100%);
-      color: rgba(255, 255, 255, 0.92);
+      grid-template-columns: var(--zebra-sidebar-width) minmax(0, 1fr);
+      background: var(--zebra-page-background);
+      color: var(--zebra-text-primary);
       @media (min-width: 1020px) {
-        grid-template-columns: minmax(var(--zebra-sidebar-width), auto) minmax(0, 1fr);
-        column-gap: var(--zebra-space-sm);
-        row-gap: 0;
+        grid-template-columns: 280px minmax(0, 1fr);
+      }
+      @media (max-width: 767px) {
+        --zebra-sidebar-width: 72px;
+        column-gap: 0;
       }
     `,
   };
@@ -42,6 +43,7 @@ interface CodexWorkspaceProps {
   currentConversation: string;
   currentSessionId?: string;
   events: SessionEvent[];
+  isWorkspaceIdle: boolean;
   isRequesting: boolean;
   listRef: React.RefObject<HTMLDivElement | null>;
   messages: ChatMessage[];
@@ -76,6 +78,7 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
           conversations={props.conversations}
           conversationSessionIds={props.conversationSessionIds}
           currentConversation={props.currentConversation}
+          isWorkspaceIdle={props.isWorkspaceIdle}
           onCreateConversation={props.onCreateConversation}
           onDeleteConversation={props.onDeleteConversation}
           onSelectConversation={props.onSelectConversation}
@@ -87,6 +90,8 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
           artifactContentPreview={props.artifactContentPreview}
           artifactDetail={props.artifactDetail}
           artifactLoading={props.artifactLoading}
+          conversations={props.conversations}
+          conversationSessionIds={props.conversationSessionIds}
           currentConversation={props.currentConversation}
           currentSessionId={props.currentSessionId}
           events={props.events}
@@ -105,8 +110,10 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
           onRefreshConversation={props.onRefreshConversation}
           controlsBusy={props.controlsBusy}
           onScrollToLatest={props.onScrollToLatest}
+          onSelectConversation={props.onSelectConversation}
           onSubmit={props.onSubmit}
           resultSurface={props.resultSurface}
+          sessionSummaries={props.sessionSummaries}
           sessionSummary={props.sessionSummary}
           senderRef={props.senderRef}
         />

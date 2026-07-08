@@ -103,7 +103,7 @@ const useStyle = createStyles(({ css }) => {
       background: rgba(255, 255, 255, 0.06);
       color: rgba(255, 255, 255, 0.68);
       font-size: var(--zebra-font-size-2xs);
-      font-weight: 700;
+      font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       flex: 0 0 auto;

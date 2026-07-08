@@ -16,66 +16,99 @@ import type { SessionSummary } from "../types";
 const useStyle = createStyles(({ css }) => {
   return {
     sidebar: css`
-      background: rgba(31, 31, 31, 0.92);
-      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      background: #181818;
+      border-right: 1px solid var(--zebra-surface-border);
       width: 100%;
-      padding: var(--zebra-space-md) var(--zebra-space-sm) calc(var(--zebra-space-sm) * 0.9);
+      padding: var(--zebra-space-sm);
       display: flex;
       flex-direction: column;
-      min-height: 100vh;
-      backdrop-filter: blur(20px);
+      height: 100dvh;
+      min-height: 0;
+      overflow: hidden;
       @media (max-width: 1019px) {
-        min-height: auto;
-        border-right: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        border-right: 1px solid var(--zebra-surface-border);
         padding-bottom: var(--zebra-space-sm);
+      }
+      @media (max-width: 767px) {
+        padding: var(--zebra-space-sm) var(--zebra-space-xs);
       }
     `,
     sidebarTop: css`
       display: flex;
       flex-direction: column;
       gap: var(--zebra-space-2xs);
-      margin-bottom: var(--zebra-space-md);
+      margin-bottom: var(--zebra-space-sm);
+      flex: 0 0 auto;
+      @media (max-width: 767px) {
+        align-items: center;
+        margin-bottom: var(--zebra-space-sm);
+      }
     `,
     navButton: css`
       display: flex;
       align-items: center;
       gap: var(--zebra-space-sm);
       width: 100%;
+      height: 42px;
       background: transparent;
       border: none;
-      color: rgba(255, 255, 255, 0.92);
-      border-radius: var(--zebra-radius-soft);
-      padding: var(--zebra-space-xs) var(--zebra-space-sm);
+      color: var(--zebra-text-primary);
+      border-radius: 10px;
+      padding: 0 var(--zebra-space-sm);
       text-align: left;
-      font-size: var(--zebra-font-size-sm);
+      font-size: 14px;
+      line-height: 22px;
       font-weight: var(--zebra-font-weight-medium);
       cursor: pointer;
       transition: background 160ms ease, color 160ms ease;
       &:hover {
         background: rgba(255, 255, 255, 0.06);
       }
+      @media (max-width: 767px) {
+        justify-content: center;
+        padding: var(--zebra-space-xs);
+        span:last-child {
+          display: none;
+        }
+      }
     `,
     staticNav: css`
       cursor: default;
-      color: rgba(255, 255, 255, 0.82);
+      color: var(--zebra-text-muted);
     `,
     navIcon: css`
       width: var(--zebra-icon-size-xs);
       display: inline-flex;
       justify-content: center;
-      color: rgba(255, 255, 255, 0.72);
+      color: var(--zebra-text-muted);
     `,
     section: css`
       margin-top: var(--zebra-space-xs);
+      min-width: 0;
+      @media (max-width: 767px) {
+        margin-top: var(--zebra-space-2xs);
+      }
     `,
     sectionTitle: css`
       padding: var(--zebra-space-xs) var(--zebra-space-sm) calc(var(--zebra-space-xs) - var(--zebra-space-3xs));
-      color: rgba(255, 255, 255, 0.45);
-      font-size: var(--zebra-font-size-sm);
-      font-weight: 600;
+      color: var(--zebra-text-subtle);
+      font-size: 12px;
+      line-height: 18px;
+      font-weight: var(--zebra-font-weight-medium);
       letter-spacing: 0.05em;
       text-transform: uppercase;
+      @media (max-width: 767px) {
+        display: none;
+      }
+    `,
+    sidebarScroll: css`
+      min-height: 0;
+      flex: 1 1 auto;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 2px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--zebra-sidebar-track) transparent;
     `,
     conversationList: css`
       display: flex;
@@ -87,53 +120,71 @@ const useStyle = createStyles(({ css }) => {
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       gap: var(--zebra-space-sm);
-      padding: var(--zebra-space-xs) var(--zebra-space-sm);
-      border-radius: var(--zebra-radius-soft);
-      color: rgba(255, 255, 255, 0.74);
+      min-height: 42px;
+      padding: 0 var(--zebra-space-sm);
+      border-radius: 10px;
+      color: #d4d4d8;
       transition: background 160ms ease, color 160ms ease;
       cursor: pointer;
       &:hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: rgba(255, 255, 255, 0.96);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--zebra-text-primary);
       }
       &:hover .codex-delete-button {
         opacity: 1;
       }
+      @media (max-width: 767px) {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 0;
+        padding: var(--zebra-space-xs);
+      }
     `,
     conversationItemActive: css`
-      background: rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.96);
-      .codex-delete-button {
-        opacity: 1;
-      }
+      background: rgba(255, 255, 255, 0.075);
+      color: var(--zebra-text-primary);
     `,
     conversationMain: css`
       min-width: 0;
       display: flex;
       flex-direction: column;
       gap: var(--zebra-space-2xs);
+      @media (max-width: 767px) {
+        align-items: center;
+      }
     `,
     conversationLabel: css`
       display: flex;
       align-items: center;
       gap: var(--zebra-space-xs);
       min-width: 0;
-      font-size: var(--zebra-font-size-md);
+      font-size: 14px;
+      line-height: 22px;
       font-weight: var(--zebra-font-weight-medium);
+      @media (max-width: 767px) {
+        justify-content: center;
+      }
     `,
     conversationText: css`
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       min-width: 0;
+      @media (max-width: 767px) {
+        display: none;
+      }
     `,
     conversationMeta: css`
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: var(--zebra-space-xs);
-      color: rgba(255, 255, 255, 0.42);
-      font-size: var(--zebra-font-size-xs);
+      color: var(--zebra-text-subtle);
+      font-size: 12px;
+      line-height: 18px;
+      @media (max-width: 767px) {
+        display: none;
+      }
     `,
     statusDot: css`
       width: var(--zebra-icon-dot);
@@ -163,16 +214,31 @@ const useStyle = createStyles(({ css }) => {
     deleteButton: css`
       opacity: 0;
       transition: opacity 160ms ease;
+      @media (max-width: 767px) {
+        display: none;
+      }
     `,
     projectCard: css`
+      width: 100%;
       display: flex;
       align-items: center;
       gap: var(--zebra-space-xs);
       padding: var(--zebra-space-sm);
-      border-radius: var(--zebra-radius-soft);
+      border-radius: 10px;
       background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      color: rgba(255, 255, 255, 0.92);
+      border: 1px solid var(--zebra-surface-border-soft);
+      color: var(--zebra-text-primary);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: background 160ms ease, border-color 160ms ease;
+      &:hover {
+        background: rgba(255, 255, 255, 0.055);
+      }
+    `,
+    projectCardActive: css`
+      background: rgba(255, 255, 255, 0.075);
+      border-color: transparent;
     `,
     projectIcon: css`
       width: var(--zebra-icon-size-sm);
@@ -191,17 +257,25 @@ const useStyle = createStyles(({ css }) => {
       flex-direction: column;
       gap: var(--zebra-space-3xs);
       span:last-child {
-        color: rgba(255, 255, 255, 0.45);
-        font-size: var(--zebra-font-size-xs);
+        color: var(--zebra-text-subtle);
+        font-size: 12px;
+        line-height: 18px;
+      }
+      @media (max-width: 767px) {
+        display: none;
       }
     `,
     profile: css`
-      margin-top: auto;
+      flex: 0 0 auto;
       padding-top: var(--zebra-space-sm);
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      border-top: 1px solid var(--zebra-surface-border-soft);
       display: flex;
       align-items: center;
       gap: var(--zebra-space-sm);
+      @media (max-width: 767px) {
+        justify-content: center;
+        padding-top: var(--zebra-space-xs);
+      }
     `,
     avatar: css`
       width: var(--zebra-icon-size-lg);
@@ -210,17 +284,21 @@ const useStyle = createStyles(({ css }) => {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #525252, #2d2d2d);
+      background: #27272a;
       color: white;
-      font-weight: 700;
+      font-weight: 600;
     `,
     profileMeta: css`
       display: flex;
       flex-direction: column;
       gap: var(--zebra-space-3xs);
       span:last-child {
-        color: rgba(255, 255, 255, 0.45);
-        font-size: var(--zebra-font-size-xs);
+        color: var(--zebra-text-subtle);
+        font-size: 12px;
+        line-height: 18px;
+      }
+      @media (max-width: 767px) {
+        display: none;
       }
     `,
   };
@@ -230,6 +308,7 @@ interface CodexSidebarProps {
   conversations: ConversationSeed[];
   conversationSessionIds: Record<string, string>;
   currentConversation: string;
+  isWorkspaceIdle: boolean;
   onCreateConversation: () => void;
   onDeleteConversation: (key: string) => void;
   onSelectConversation: (key: string) => void;
@@ -242,9 +321,19 @@ function groupConversations(conversations: ConversationSeed[]) {
   return { pinned, recent };
 }
 
+function statusLabel(status: string | undefined): string {
+  if (status === "running") return locale.statusRunning;
+  if (status === "waiting_approval" || status === "waiting_user") return locale.statusWaiting;
+  if (status === "completed") return locale.statusDone;
+  if (status === "failed") return locale.statusFailed;
+  if (status === "review") return locale.statusReview;
+  return locale.statusDraft;
+}
+
 function ConversationSection({
   currentConversation,
   conversationSessionIds,
+  isWorkspaceIdle,
   items,
   onDeleteConversation,
   onSelectConversation,
@@ -252,6 +341,7 @@ function ConversationSection({
 }: {
   currentConversation: string;
   conversationSessionIds: Record<string, string>;
+  isWorkspaceIdle: boolean;
   items: ConversationSeed[];
   onDeleteConversation: (key: string) => void;
   onSelectConversation: (key: string) => void;
@@ -273,7 +363,7 @@ function ConversationSection({
   return (
     <>
       {items.map((item) => {
-        const isActive = item.key === currentConversation;
+        const isActive = !isWorkspaceIdle && item.key === currentConversation;
         const summary = sessionSummaries[item.key];
         const sessionId = conversationSessionIds[item.key];
         const status = summary?.status ?? "draft";
@@ -299,7 +389,7 @@ function ConversationSection({
                 <span className={styles.conversationText}>{item.label}</span>
               </div>
               <div className={styles.conversationMeta}>
-                <span>{status}</span>
+                <span>{statusLabel(status)}</span>
                 <span className={styles.sessionMetaRight}>{sessionId ? sessionId.slice(0, 6) : item.group}</span>
               </div>
             </div>
@@ -326,6 +416,7 @@ export function CodexSidebar({
   conversations,
   conversationSessionIds,
   currentConversation,
+  isWorkspaceIdle,
   onCreateConversation,
   onDeleteConversation,
   onSelectConversation,
@@ -363,46 +454,54 @@ export function CodexSidebar({
         </div>
       </div>
 
-      <section className={styles.section}>
-        <div className={styles.sectionTitle}>{locale.pinned}</div>
-        <div className={styles.conversationList}>
-          <ConversationSection
-            conversationSessionIds={conversationSessionIds}
-            currentConversation={currentConversation}
-            items={pinned}
-            onDeleteConversation={onDeleteConversation}
-            onSelectConversation={onSelectConversation}
-            sessionSummaries={sessionSummaries}
-          />
-        </div>
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.sectionTitle}>{locale.recent}</div>
-        <div className={styles.conversationList}>
-          <ConversationSection
-            conversationSessionIds={conversationSessionIds}
-            currentConversation={currentConversation}
-            items={recent}
-            onDeleteConversation={onDeleteConversation}
-            onSelectConversation={onSelectConversation}
-            sessionSummaries={sessionSummaries}
-          />
-        </div>
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.sectionTitle}>{locale.projects}</div>
-        <div className={styles.projectCard}>
-          <span className={styles.projectIcon}>
-            <CodeOutlined />
-          </span>
-          <div className={styles.projectMeta}>
-            <span>zebra-agent</span>
-            <span>{locale.projectHint}</span>
+      <div className={styles.sidebarScroll}>
+        <section className={styles.section}>
+          <div className={styles.sectionTitle}>{locale.pinned}</div>
+          <div className={styles.conversationList}>
+            <ConversationSection
+              conversationSessionIds={conversationSessionIds}
+              currentConversation={currentConversation}
+              isWorkspaceIdle={isWorkspaceIdle}
+              items={pinned}
+              onDeleteConversation={onDeleteConversation}
+              onSelectConversation={onSelectConversation}
+              sessionSummaries={sessionSummaries}
+            />
           </div>
-        </div>
-      </section>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionTitle}>{locale.recent}</div>
+          <div className={styles.conversationList}>
+            <ConversationSection
+              conversationSessionIds={conversationSessionIds}
+              currentConversation={currentConversation}
+              isWorkspaceIdle={isWorkspaceIdle}
+              items={recent}
+              onDeleteConversation={onDeleteConversation}
+              onSelectConversation={onSelectConversation}
+              sessionSummaries={sessionSummaries}
+            />
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionTitle}>{locale.projects}</div>
+          <button
+            className={clsx(styles.projectCard, isWorkspaceIdle && styles.projectCardActive)}
+            onClick={onCreateConversation}
+            type="button"
+          >
+            <span className={styles.projectIcon}>
+              <CodeOutlined />
+            </span>
+            <div className={styles.projectMeta}>
+              <span>zebra-agent</span>
+              <span>{locale.projectHint}</span>
+            </div>
+          </button>
+        </section>
+      </div>
 
       <div className={styles.profile}>
         <span className={styles.avatar}>ZA</span>

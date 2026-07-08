@@ -14,7 +14,7 @@ import { Sender } from "@ant-design/x";
 import { Button, Dropdown, Flex, GetRef } from "antd";
 import React from "react";
 import locale from "../_utils/local";
-import type { ChatMessage } from "../lib/chat-surface";
+import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { SessionResultSurface } from "../lib/session-results";
 import type { SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
 import { AssistantMessageBlock } from "./AssistantMessageBlock";
@@ -33,6 +33,8 @@ interface CodexConversationPaneProps {
   artifactLoading: boolean;
   currentConversation: string;
   currentSessionId?: string;
+  conversations: ConversationSeed[];
+  conversationSessionIds: Record<string, string>;
   events: SessionEvent[];
   isRequesting: boolean;
   listRef: React.RefObject<HTMLDivElement | null>;
@@ -48,9 +50,11 @@ interface CodexConversationPaneProps {
   onOpenArtifact: (artifactId: string) => void;
   onRefreshConversation: () => void;
   onScrollToLatest: () => void;
+  onSelectConversation: (key: string) => void;
   onSubmit: (value: string) => void;
   controlsBusy: boolean;
   resultSurface: SessionResultSurface | null;
+  sessionSummaries: Record<string, SessionSummary | null>;
   sessionSummary: SessionSummary | null;
   senderRef: React.RefObject<GetRef<typeof Sender> | null>;
 }
@@ -63,6 +67,8 @@ export function CodexConversationPane({
   artifactLoading,
   currentConversation,
   currentSessionId,
+  conversations,
+  conversationSessionIds,
   events,
   isRequesting,
   listRef,
@@ -78,13 +84,83 @@ export function CodexConversationPane({
   onOpenArtifact,
   onRefreshConversation,
   onScrollToLatest,
+  onSelectConversation,
   onSubmit,
   controlsBusy,
   resultSurface,
+  sessionSummaries,
   sessionSummary,
   senderRef,
 }: CodexConversationPaneProps) {
   const { styles } = useConversationPaneStyle();
+  const [composerValue, setComposerValue] = React.useState("");
+  const canSubmit = composerValue.trim().length > 0;
+  const hasThread = Boolean(currentSessionId) || messages.length > 0 || events.length > 0;
+  const headerTitle = hasThread ? activeLabel : locale.idleProjectName;
+  const headerMeta = hasThread
+    ? currentSessionId
+      ? `${sessionSummary?.workspace?.policy_profile ?? locale.accessWorkspaceWrite} · ${currentSessionId.slice(0, 8)}`
+      : locale.idleState
+    : locale.idleState;
+  const suggestedActions = [
+    { label: locale.hintDocs, prompt: "阅读项目文档，并总结当前主线开发状态。" },
+    { label: locale.hintExplain, prompt: "解释当前项目结构和核心模块职责。" },
+    { label: locale.hintDebug, prompt: "定位当前项目里最需要修复的一个问题，并给出实现方案。" },
+    { label: locale.hintImplement, prompt: "基于当前项目状态，继续实现下一个最小功能切片。" },
+    { label: locale.hintShip, prompt: "为当前实现补充必要测试，并运行验证命令。" },
+  ];
+  const recentThreads = conversations.filter((item) => item.key !== currentConversation).slice(0, 5);
+  const statusLabel = (status: string | undefined) => {
+    if (status === "running") return locale.statusRunning;
+    if (status === "waiting_approval" || status === "waiting_user") return locale.statusWaiting;
+    if (status === "completed") return locale.statusDone;
+    if (status === "failed") return locale.statusFailed;
+    if (status === "review") return locale.statusReview;
+    return locale.statusDraft;
+  };
+  const renderComposer = (variant: "idle" | "thread") => (
+    <div className={variant === "idle" ? styles.idleComposerCard : styles.composerCard}>
+      <div className={styles.sender}>
+        <Sender
+          autoSize={variant === "idle" ? { minRows: 2, maxRows: 6 } : { minRows: 2, maxRows: 3 }}
+          footer={(actionNode) => (
+            <Flex align="center" className={styles.composerFooter} justify="space-between">
+              <Flex align="center" className={styles.composerTools} gap={8}>
+                <span className={styles.modeSegment}>
+                  <span className={styles.modePill}>{locale.modeAsk}</span>
+                  <span className={styles.modePillActive}>{locale.modeAct}</span>
+                </span>
+                <button className={styles.toolbarButton} type="button">{locale.attach}</button>
+                <button className={styles.toolbarButton} type="button">{locale.accessWorkspaceWrite}</button>
+                <button className={styles.toolbarButton} type="button">{locale.modelDeepSeek}</button>
+              </Flex>
+              <span className={`${styles.sendSlot} ${canSubmit ? "" : styles.sendSlotDisabled}`}>
+                {actionNode}
+              </span>
+            </Flex>
+          )}
+          key={`${variant}-${currentConversation}`}
+          loading={isRequesting}
+          onCancel={onCancel}
+          onChange={(value) => {
+            setComposerValue(value);
+          }}
+          onSubmit={(value) => {
+            const trimmed = value.trim();
+            if (!trimmed) {
+              return;
+            }
+            onSubmit(trimmed);
+            setComposerValue("");
+          }}
+          placeholder={locale.placeholder}
+          ref={senderRef}
+          suffix={false}
+          value={composerValue}
+        />
+      </div>
+    </div>
+  );
   const workspaceMenuItems = [
     {
       key: "copy-workspace",
@@ -167,8 +243,8 @@ export function CodexConversationPane({
             <FileTextOutlined />
           </span>
           <div className={styles.titleBlock}>
-            <h1>{activeLabel}</h1>
-            <span className={styles.titleMeta}>{currentSessionId ? currentSessionId.slice(0, 8) : locale.idleState}</span>
+            <h1>{headerTitle}</h1>
+            <span className={styles.titleMeta}>{headerMeta}</span>
           </div>
         </div>
         <div className={styles.headerActions}>
@@ -192,69 +268,76 @@ export function CodexConversationPane({
       <div className={styles.center}>
         <div className={styles.stream} ref={listRef}>
           <div className={styles.streamInner}>
-            {sessionSummary ? <SessionContextCard apiBaseUrl={apiBaseUrl} session={sessionSummary} /> : null}
-            <SessionResultWorkbench
-              artifactContentPreview={artifactContentPreview}
-              artifactDetail={artifactDetail}
-              onSelectArtifact={onOpenArtifact}
-              surface={resultSurface}
-            />
-            <SessionExecutionTrace events={events} />
-            {messages.length === 0 ? (
-              <div className={styles.emptyState}>
-                <span className={styles.eyebrow}>{locale.emptyEyebrow}</span>
-                <h2 className={styles.emptyTitle}>{locale.emptyTitle}</h2>
-                <div className={styles.emptyCopy}>{locale.emptyDescription}</div>
-                <div className={styles.hintRow}>
-                  <span className={styles.hintChip}>{locale.hintDocs}</span>
-                  <span className={styles.hintChip}>{locale.hintDebug}</span>
-                  <span className={styles.hintChip}>{locale.hintShip}</span>
-                </div>
+            {!hasThread ? (
+              <div className={styles.idleWorkspace}>
+                <h2 className={styles.idleQuestion}>{locale.idlePromptTitle}</h2>
+                <div className={styles.idleSubtitle}>{locale.idlePromptSubtitle}</div>
+                {renderComposer("idle")}
+                <section className={styles.idleSection}>
+                  <div className={styles.idleSectionTitle}>{locale.suggestedActions}</div>
+                  <div className={styles.actionGrid}>
+                    {suggestedActions.map((action) => (
+                      <button
+                        className={styles.quickAction}
+                        key={action.label}
+                        onClick={() => onSubmit(action.prompt)}
+                        type="button"
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+                <section className={styles.idleSection}>
+                  <div className={styles.idleSectionTitle}>{locale.recentThreads}</div>
+                  <div className={styles.recentGroup}>{locale.todayGroup}</div>
+                  <div className={styles.recentList}>
+                    {recentThreads.map((item) => (
+                      <button
+                        className={styles.recentThread}
+                        key={item.key}
+                        onClick={() => onSelectConversation(item.key)}
+                        type="button"
+                      >
+                        <span>{item.label}</span>
+                        <span>
+                          {statusLabel(sessionSummaries[item.key]?.status)} · {item.group === locale.pinned ? locale.todayGroup : item.group} · {locale.accessWorkspaceWrite.replace("权限: ", "")}
+                        </span>
+                      </button>
+                    ))}
+                    {recentThreads.length === 0 ? (
+                      <div className={styles.recentEmpty}>{locale.noRecentSessions}</div>
+                    ) : null}
+                  </div>
+                </section>
               </div>
             ) : (
-              <div className={styles.messageStack}>
-                {messages.map((item) =>
-                  item.role === "assistant" ? (
-                    <AssistantMessageBlock key={item.key} message={item} />
-                  ) : (
-                    <div className={styles.userWrap} key={item.key}>
-                      <div className={styles.userCard}>{item.content}</div>
-                    </div>
-                  ),
-                )}
-              </div>
+              <>
+                {sessionSummary ? <SessionContextCard apiBaseUrl={apiBaseUrl} session={sessionSummary} /> : null}
+                <SessionResultWorkbench
+                  artifactContentPreview={artifactContentPreview}
+                  artifactDetail={artifactDetail}
+                  onSelectArtifact={onOpenArtifact}
+                  surface={resultSurface}
+                />
+                <SessionExecutionTrace events={events} />
+                <div className={styles.messageStack}>
+                  {messages.map((item) =>
+                    item.role === "assistant" ? (
+                      <AssistantMessageBlock key={item.key} message={item} />
+                    ) : (
+                      <div className={styles.userWrap} key={item.key}>
+                        <div className={styles.userCard}>{item.content}</div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>
 
-        <div className={styles.composerDock}>
-          <div className={styles.composerCard}>
-            <div className={styles.sender}>
-              <Sender
-                autoSize={{ minRows: 3, maxRows: 7 }}
-                footer={(actionNode) => (
-                  <Flex align="center" className={styles.composerFooter} justify="space-between">
-                    <span className={styles.permissionTag}>
-                      <span />
-                      <span>{locale.permissionFullAccess}</span>
-                    </span>
-                    <Flex align="center" gap={16}>
-                      <span className={styles.footerMeta}>{locale.modelLabel}</span>
-                      {actionNode}
-                    </Flex>
-                  </Flex>
-                )}
-                key={currentConversation}
-                loading={isRequesting}
-                onCancel={onCancel}
-                onSubmit={onSubmit}
-                placeholder={locale.placeholder}
-                ref={senderRef}
-                suffix={false}
-              />
-            </div>
-          </div>
-        </div>
+        {hasThread ? <div className={styles.composerDock}>{renderComposer("thread")}</div> : null}
       </div>
       <ArtifactDetailDrawer
         contentPreview={artifactContentPreview}

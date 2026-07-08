@@ -17,6 +17,8 @@ import type { SessionResultSurface } from "./lib/session-results";
 import { zebraApi } from "./lib/zebra-api";
 import type { SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "./types";
 
+const WORKSPACE_HOME_KEY = "__workspace-home__";
+
 function buildConversation(label: string, group: string): ConversationSeed {
   return {
     key: Date.now().toString(),
@@ -44,7 +46,7 @@ export default function App() {
   const { conversations, addConversation, setConversations } = useXConversations({
     defaultConversations: DEFAULT_CONVERSATIONS,
   });
-  const [currentConversation, setCurrentConversation] = useState<string>(DEFAULT_CONVERSATIONS[0].key);
+  const [currentConversation, setCurrentConversation] = useState<string>(WORKSPACE_HOME_KEY);
   const [conversationToSessionId, setConversationToSessionId] = useState<Record<string, string>>({});
   const [conversationEvents, setConversationEvents] = useState<Record<string, SessionEvent[]>>({});
   const [conversationMessages, setConversationMessages] = useState<Record<string, ChatMessage[]>>({});
@@ -61,9 +63,15 @@ export default function App() {
   const messages = conversationMessages[currentConversation] ?? [];
   const activeConversation = conversations.find((item) => item.key === currentConversation);
   const activeLabel = activeConversation?.label ?? locale.agentName;
-  const currentSessionId = conversationToSessionId[currentConversation] ?? config.sessionId;
+  const currentSessionId =
+    currentConversation === WORKSPACE_HOME_KEY
+      ? undefined
+      : conversationToSessionId[currentConversation] ?? config.sessionId;
   const resultSurface = resultSurfaces[currentConversation] ?? null;
   const sessionSummary = sessionSummaries[currentConversation] ?? null;
+  const isWorkspaceIdle =
+    currentConversation === WORKSPACE_HOME_KEY ||
+    (!currentSessionId && events.length === 0 && messages.length === 0);
 
   useEffect(() => {
     senderRef.current?.focus({ cursor: "end" });
@@ -255,10 +263,8 @@ export default function App() {
   }, []);
 
   const createConversation = useCallback(() => {
-    const nextConversation = buildEmptyConversation();
-    addConversation(nextConversation);
-    setCurrentConversation(nextConversation.key);
-  }, [addConversation]);
+    setCurrentConversation(WORKSPACE_HOME_KEY);
+  }, []);
 
   const deleteConversation = useCallback(
     (conversationKey: string) => {
@@ -282,22 +288,16 @@ export default function App() {
       if (conversationKey !== currentConversation) {
         return;
       }
-      if (nextConversations.length > 0) {
-        setCurrentConversation(nextConversations[0].key);
-        return;
-      }
-      const fallback = buildEmptyConversation();
-      addConversation(fallback);
-      setCurrentConversation(fallback.key);
+      setCurrentConversation(WORKSPACE_HOME_KEY);
     },
-    [addConversation, conversations, currentConversation, setConversations],
+    [conversations, currentConversation, setConversations],
   );
 
-  const renameCurrentConversation = useCallback(
-    (title: string) => {
+  const renameConversation = useCallback(
+    (conversationKey: string, title: string) => {
       setConversations(
         conversations.map((item) =>
-          item.key === currentConversation
+          item.key === conversationKey
             ? {
                 ...item,
                 label: title,
@@ -307,7 +307,7 @@ export default function App() {
         ),
       );
     },
-    [conversations, currentConversation, setConversations],
+    [conversations, setConversations],
   );
 
   const submitMessage = useCallback(
@@ -316,8 +316,15 @@ export default function App() {
       if (!trimmed || !currentConversation) {
         return;
       }
+      let conversationKey = currentConversation;
+      if (conversationKey === WORKSPACE_HOME_KEY) {
+        const nextConversation = buildEmptyConversation();
+        addConversation(nextConversation);
+        conversationKey = nextConversation.key;
+        setCurrentConversation(nextConversation.key);
+      }
 
-      appendMessageToConversation(currentConversation, {
+      appendMessageToConversation(conversationKey, {
         key: `local-user-${Date.now()}`,
         role: "user",
         status: "success",
@@ -327,19 +334,19 @@ export default function App() {
       senderRef.current?.clear?.();
 
       try {
-        let sessionId = conversationToSessionId[currentConversation];
+        let sessionId = conversationToSessionId[conversationKey];
         if (!sessionId) {
           const title = trimmed.slice(0, 36) || locale.newConversation;
           const created = await api.createSession({ title, prompt: trimmed, execute: true });
           sessionId = created.session_id;
           patchConfig({ sessionId });
-          renameCurrentConversation(title);
+          renameConversation(conversationKey, title);
           setConversationToSessionId((current) => ({
             ...current,
-            [currentConversation]: sessionId!,
+            [conversationKey]: sessionId!,
           }));
           if (!created.assistant_message) {
-            appendMessageToConversation(currentConversation, {
+            appendMessageToConversation(conversationKey, {
               key: `local-assistant-${Date.now()}`,
               role: "assistant",
               status: "loading",
@@ -358,25 +365,25 @@ export default function App() {
             const created = await api.createSession({ title, prompt: trimmed, execute: true });
             sessionId = created.session_id;
             patchConfig({ sessionId });
-            renameCurrentConversation(title);
+            renameConversation(conversationKey, title);
             setConversationToSessionId((current) => ({
               ...current,
-              [currentConversation]: sessionId!,
+              [conversationKey]: sessionId!,
             }));
             if (!created.assistant_message) {
-              appendMessageToConversation(currentConversation, {
+              appendMessageToConversation(conversationKey, {
                 key: `local-assistant-${Date.now()}`,
                 role: "assistant",
                 status: "loading",
                 content: locale.noData,
               });
             }
-            await syncConversationFromStream(currentConversation, sessionId);
+            await syncConversationFromStream(conversationKey, sessionId);
             return;
           }
         }
 
-        await syncConversationFromStream(currentConversation, sessionId);
+        await syncConversationFromStream(conversationKey, sessionId);
       } catch (error: unknown) {
         messageApi.error(toErrorMessage(error));
       } finally {
@@ -388,9 +395,10 @@ export default function App() {
       appendMessageToConversation,
       conversationToSessionId,
       currentConversation,
+      addConversation,
       messageApi,
       patchConfig,
-      renameCurrentConversation,
+      renameConversation,
       syncConversationFromStream,
     ],
   );
@@ -495,6 +503,7 @@ export default function App() {
         }}
         onCreateConversation={createConversation}
         onDeleteConversation={deleteConversation}
+        isWorkspaceIdle={isWorkspaceIdle}
         onCancelSession={cancelSession}
         onResumeSession={resumeSession}
         onSuspendSession={suspendSession}

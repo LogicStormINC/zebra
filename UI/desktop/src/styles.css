@@ -1,82 +1,51 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: "OpenAI Sans";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src:
-    url("https://cdn.openai.com/common/fonts/openai-sans/OpenAISans-Regular.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "OpenAI Sans";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src:
-    url("https://cdn.openai.com/common/fonts/openai-sans/OpenAISans-Medium.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "OpenAI Sans";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src:
-    url("https://cdn.openai.com/common/fonts/openai-sans/OpenAISans-Semibold.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "OpenAI Sans";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src:
-    url("https://cdn.openai.com/common/fonts/openai-sans/OpenAISans-Bold.woff2") format("woff2");
-}
-
 :root {
-  color: #f3f3f3;
-  background: #161616;
-  font-family: "OpenAI Sans", "Söhne", "Söhne Mono", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  color: #f4f4f5;
+  background: #0f0f10;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: var(--zebra-line-height-base);
   font-weight: var(--zebra-font-weight-base);
   font-size: var(--zebra-font-size-base);
   color-scheme: dark;
 
   --zebra-font-family-ui:
-    "OpenAI Sans", "Söhne", "Söhne Mono", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --zebra-font-family-code: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --zebra-font-family-mono: var(--zebra-font-family-code);
-  --zebra-page-background: #161616;
-  --zebra-surface-background: rgba(255, 255, 255, 0.045);
+  --zebra-page-background: #0f0f10;
+  --zebra-panel-background: #171717;
+  --zebra-panel-soft-background: #1f1f1f;
+  --zebra-surface-background: rgba(255, 255, 255, 0.04);
   --zebra-surface-border: rgba(255, 255, 255, 0.08);
   --zebra-surface-border-soft: rgba(255, 255, 255, 0.06);
-  --zebra-shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.16);
-  --zebra-shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.18);
-  --zebra-shadow-md: 0 9px 24px rgba(0, 0, 0, 0.2);
-  --zebra-shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.22);
-  --zebra-shadow-chip: 0 0 0 4px rgba(16, 163, 127, 0.13);
-  --zebra-shadow-running: 0 0 0 4px rgba(16, 163, 127, 0.12);
-  --zebra-shadow-ambient: 0 0 0 4px rgba(16, 163, 127, 0.1);
+  --zebra-text-primary: #f4f4f5;
+  --zebra-text-muted: #a1a1aa;
+  --zebra-text-subtle: #71717a;
+  --zebra-shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.14);
+  --zebra-shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.16);
+  --zebra-shadow-md: 0 12px 32px rgba(0, 0, 0, 0.24);
+  --zebra-shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.35);
+  --zebra-shadow-chip: 0 0 0 4px rgba(245, 158, 11, 0.12);
+  --zebra-shadow-running: 0 0 0 4px rgba(245, 158, 11, 0.12);
+  --zebra-shadow-ambient: 0 0 0 4px rgba(245, 158, 11, 0.1);
   --zebra-sidebar-track: rgba(255, 255, 255, 0.1);
-  --zebra-brand-color: #10a37f;
+  --zebra-brand-color: #f59e0b;
   --zebra-font-size-code: 13px;
   --zebra-line-height-card: 1.45;
 
   --zebra-font-size-2xs: 12px;
-  --zebra-font-size-xs: 14px;
-  --zebra-font-size-sm: 15px;
-  --zebra-font-size-md: 16px;
-  --zebra-font-size-base: 16px;
-  --zebra-font-size-lg: 18px;
+  --zebra-font-size-xs: 12px;
+  --zebra-font-size-sm: 14px;
+  --zebra-font-size-md: 15px;
+  --zebra-font-size-base: 14px;
+  --zebra-font-size-lg: 17px;
   --zebra-font-size-xl: 20px;
-  --zebra-font-size-2xl: clamp(28px, 2.9vw, 36px);
-  --zebra-font-size-display: clamp(26px, 3.1vw, 42px);
-  --zebra-line-height-tight: 1.32;
-  --zebra-line-height-base: 1.48;
-  --zebra-line-height-relaxed: 1.72;
+  --zebra-font-size-2xl: 40px;
+  --zebra-font-size-display: 40px;
+  --zebra-line-height-tight: 1.2;
+  --zebra-line-height-base: 1.57;
+  --zebra-line-height-relaxed: 1.65;
   --zebra-font-weight-base: 400;
   --zebra-font-weight-medium: 500;
   --zebra-font-weight-semibold: 600;
@@ -91,20 +60,20 @@
   --zebra-space-xl: 24px;
   --zebra-space-2xl: 32px;
   --zebra-space-xxl: 40px;
-  --zebra-space-xxxl: 52px;
-  --zebra-content-max: min(100%, 900px);
+  --zebra-space-xxxl: 56px;
+  --zebra-content-max: min(100%, 980px);
   --zebra-content-card-max: min(82%, 640px);
-  --zebra-sidebar-width-min: 236px;
-  --zebra-sidebar-width-max: 310px;
-  --zebra-sidebar-width: clamp(var(--zebra-sidebar-width-min), 30vw, var(--zebra-sidebar-width-max));
+  --zebra-sidebar-width-min: 280px;
+  --zebra-sidebar-width-max: 280px;
+  --zebra-sidebar-width: 280px;
   --zebra-grid-min: 190px;
   --zebra-grid-wide: 228px;
   --zebra-grid-context: 212px;
   --zebra-grid-detail: 240px;
-  --zebra-empty-title-max: min(100%, 620px);
-  --zebra-empty-copy-max: min(100%, 660px);
+  --zebra-empty-title-max: min(100%, 820px);
+  --zebra-empty-copy-max: min(100%, 720px);
   --zebra-grid-gap: 12px;
-  --zebra-empty-min: clamp(220px, 40vh, 320px);
+  --zebra-empty-min: auto;
   --zebra-topbar-height: 56px;
   --zebra-layout-breakpoint-sm: 768px;
   --zebra-layout-breakpoint-md: 1020px;
@@ -125,12 +94,12 @@
   --zebra-radius-sm: 10px;
   --zebra-radius-card: 12px;
   --zebra-radius-soft: 10px;
-  --zebra-radius-composer: 34px;
+  --zebra-radius-composer: 24px;
   --zebra-radius-pill: 999px;
   --zebra-radius-large: 14px;
   --zebra-radius-xs: 8px;
-  --zebra-layout-max: min(100%, 940px);
-  --zebra-pane-max: min(100%, 940px);
+  --zebra-layout-max: min(100%, 980px);
+  --zebra-pane-max: min(100%, 980px);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -140,34 +109,34 @@
 
 @media (min-width: 768px) {
   :root {
-    --zebra-font-size-base: 16px;
-    --zebra-font-size-sm: 16px;
-    --zebra-font-size-md: 17px;
-    --zebra-font-size-lg: 18px;
+    --zebra-font-size-base: 14px;
+    --zebra-font-size-sm: 14px;
+    --zebra-font-size-md: 15px;
+    --zebra-font-size-lg: 17px;
     --zebra-font-size-xl: 20px;
-    --zebra-font-size-2xl: 35px;
+    --zebra-font-size-2xl: 40px;
     --zebra-font-size-display: 40px;
-    --zebra-content-max: min(100%, 960px);
-    --zebra-sidebar-width: clamp(244px, 24vw, 322px);
-    --zebra-space-lg: 20px;
-    --zebra-space-xl: 28px;
-    --zebra-space-2xl: 36px;
-    --zebra-space-xxl: 44px;
-    --zebra-space-xxxl: 62px;
+    --zebra-content-max: min(100%, 980px);
+    --zebra-sidebar-width: 280px;
+    --zebra-space-lg: 18px;
+    --zebra-space-xl: 24px;
+    --zebra-space-2xl: 32px;
+    --zebra-space-xxl: 40px;
+    --zebra-space-xxxl: 56px;
     --zebra-grid-gap: 15px;
   }
 }
 
 @media (min-width: 1280px) {
   :root {
-    --zebra-font-size-lg: 19px;
-    --zebra-font-size-xl: 22px;
-    --zebra-font-size-2xl: 37px;
-    --zebra-font-size-display: 44px;
-    --zebra-content-max: min(100%, 1100px);
-    --zebra-space-lg: 22px;
-    --zebra-space-xl: 30px;
-    --zebra-space-2xl: 40px;
+    --zebra-font-size-lg: 17px;
+    --zebra-font-size-xl: 20px;
+    --zebra-font-size-2xl: 40px;
+    --zebra-font-size-display: 40px;
+    --zebra-content-max: min(100%, 980px);
+    --zebra-space-lg: 18px;
+    --zebra-space-xl: 24px;
+    --zebra-space-2xl: 32px;
     --zebra-grid-gap: 16px;
   }
 }
@@ -209,21 +178,24 @@
 
 html {
   background: var(--zebra-page-background);
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.05), transparent 24%),
-    linear-gradient(180deg, #191919 0%, #141414 100%);
-  color: #f3f3f3;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--zebra-page-background);
+  color: var(--zebra-text-primary);
 }
 
 #root {
-  min-height: 100vh;
-  overflow-x: hidden;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 button,
@@ -239,7 +211,7 @@ select,
 }
 
 ::selection {
-  background: rgba(16, 163, 127, 0.22);
+  background: rgba(245, 158, 11, 0.22);
 }
 
 pre,
