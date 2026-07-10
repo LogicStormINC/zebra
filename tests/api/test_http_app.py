@@ -44,6 +44,19 @@ def test_http_app_serves_session_lookup(tmp_path: Path) -> None:
     assert response.json()["title"] == "HTTP session"
 
 
+def test_http_app_session_lookup_rejects_invalid_session_id(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.get("/sessions/not-a-valid-uuid")
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
+
+
 def test_http_app_serves_proxy_approval_context_on_session_lookup(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session = Session.create(title="Waiting approval").model_copy(
@@ -241,6 +254,19 @@ def test_http_app_stream_missing_session_returns_not_found(tmp_path: Path) -> No
     }
 
 
+def test_http_app_stream_rejects_invalid_session_id(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.get("/sessions/not-a-valid-uuid/stream")
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
+
+
 def test_http_app_creates_session(tmp_path: Path) -> None:
     client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
 
@@ -297,6 +323,56 @@ def test_http_app_executes_session_create(tmp_path: Path, monkeypatch) -> None:
     assert response.status_code == 201
     assert response.json()["executed"] is True
     assert response.json()["assistant_message"] == "HTTP execution complete."
+
+
+def test_http_app_executes_session_create_reports_missing_api_key(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    def fake_build_model_gateway(_: ZebraAgentSettings) -> object:
+        del _
+        raise ValueError("missing API key in environment variable TEST_API_KEY")
+
+    monkeypatch.setattr(api_app_module, "build_model_gateway", fake_build_model_gateway)
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post(
+        "/sessions",
+        json={
+            "prompt": "Inspect the workspace",
+            "title": "HTTP execute session",
+            "workspace": str(tmp_path),
+            "execute": True,
+        },
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "model_gateway_unavailable",
+        "reason": "missing API key in environment variable TEST_API_KEY",
+    }
+
+
+def test_http_app_executes_session_resume_reports_missing_api_key(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    def fake_build_model_gateway(_: ZebraAgentSettings) -> object:
+        del _
+        raise ValueError("missing API key in environment variable DEEPSEEK_API_KEY")
+
+    monkeypatch.setattr(worker_execution_module, "build_model_gateway", fake_build_model_gateway)
+    database_path = tmp_path / "sessions.sqlite"
+    session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    client = TestClient(create_http_app(database_path))
+
+    response = client.post(f"/sessions/{session_id}/resume", json={})
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "model_gateway_unavailable",
+        "reason": "missing API key in environment variable DEEPSEEK_API_KEY",
+    }
 
 
 def test_http_app_executes_session_resume(tmp_path: Path, monkeypatch) -> None:
@@ -448,6 +524,22 @@ def test_http_app_message_append_terminal_session_returns_conflict(tmp_path: Pat
     }
 
 
+def test_http_app_message_append_rejects_invalid_session_id(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post(
+        "/sessions/not-a-valid-uuid/messages",
+        json={"content": "Continue."},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
+
+
 def test_http_app_resume_requires_bearer_token_when_configured(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
@@ -473,6 +565,19 @@ def test_http_app_suspend_requires_bearer_token_when_configured(tmp_path: Path) 
     assert response.json() == {
         "status": "unauthorized",
         "reason": "missing_or_invalid_bearer_token",
+    }
+
+
+def test_http_app_suspend_rejects_invalid_session_id(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post("/sessions/not-a-valid-uuid/suspend", json={})
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
     }
 
 
@@ -505,6 +610,22 @@ def test_http_app_resume_missing_session_returns_not_found(tmp_path: Path) -> No
     assert response.json() == {
         "session_id": "00000000-0000-0000-0000-000000000001",
         "status": "not_found",
+    }
+
+
+def test_http_app_resume_rejects_invalid_session_id(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post(
+        "/sessions/not-a-valid-uuid/resume",
+        json={},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
     }
 
 

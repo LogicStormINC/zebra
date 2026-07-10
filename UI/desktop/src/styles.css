@@ -1,0 +1,229 @@
+@import "tailwindcss";
+
+:root {
+  color: #f4f4f5;
+  background: #0f0f10;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: var(--zebra-line-height-base);
+  font-weight: var(--zebra-font-weight-base);
+  font-size: var(--zebra-font-size-base);
+  color-scheme: dark;
+
+  --zebra-font-family-ui:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --zebra-font-family-code: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --zebra-font-family-mono: var(--zebra-font-family-code);
+  --zebra-page-background: #0f0f10;
+  --zebra-panel-background: #171717;
+  --zebra-panel-soft-background: #1f1f1f;
+  --zebra-surface-background: rgba(255, 255, 255, 0.04);
+  --zebra-surface-border: rgba(255, 255, 255, 0.08);
+  --zebra-surface-border-soft: rgba(255, 255, 255, 0.06);
+  --zebra-text-primary: #f4f4f5;
+  --zebra-text-muted: #a1a1aa;
+  --zebra-text-subtle: #71717a;
+  --zebra-shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.14);
+  --zebra-shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.16);
+  --zebra-shadow-md: 0 12px 32px rgba(0, 0, 0, 0.24);
+  --zebra-shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.35);
+  --zebra-shadow-chip: 0 0 0 4px rgba(245, 158, 11, 0.12);
+  --zebra-shadow-running: 0 0 0 4px rgba(245, 158, 11, 0.12);
+  --zebra-shadow-ambient: 0 0 0 4px rgba(245, 158, 11, 0.1);
+  --zebra-sidebar-track: rgba(255, 255, 255, 0.1);
+  --zebra-brand-color: #f59e0b;
+  --zebra-font-size-code: 13px;
+  --zebra-line-height-card: 1.45;
+
+  --zebra-font-size-2xs: 12px;
+  --zebra-font-size-xs: 12px;
+  --zebra-font-size-sm: 14px;
+  --zebra-font-size-md: 15px;
+  --zebra-font-size-base: 14px;
+  --zebra-font-size-lg: 17px;
+  --zebra-font-size-xl: 20px;
+  --zebra-font-size-2xl: 40px;
+  --zebra-font-size-display: 40px;
+  --zebra-line-height-tight: 1.2;
+  --zebra-line-height-base: 1.57;
+  --zebra-line-height-relaxed: 1.65;
+  --zebra-font-weight-base: 400;
+  --zebra-font-weight-medium: 500;
+  --zebra-font-weight-semibold: 600;
+  --zebra-font-weight-bold: 700;
+
+  --zebra-space-3xs: 4px;
+  --zebra-space-2xs: 7px;
+  --zebra-space-xs: 9px;
+  --zebra-space-sm: 12px;
+  --zebra-space-md: 14px;
+  --zebra-space-lg: 18px;
+  --zebra-space-xl: 24px;
+  --zebra-space-2xl: 32px;
+  --zebra-space-xxl: 40px;
+  --zebra-space-xxxl: 56px;
+  --zebra-content-max: min(100%, 980px);
+  --zebra-content-card-max: min(82%, 640px);
+  --zebra-sidebar-width-min: 280px;
+  --zebra-sidebar-width-max: 280px;
+  --zebra-sidebar-width: 280px;
+  --zebra-grid-min: 190px;
+  --zebra-grid-wide: 228px;
+  --zebra-grid-context: 212px;
+  --zebra-grid-detail: 240px;
+  --zebra-empty-title-max: min(100%, 820px);
+  --zebra-empty-copy-max: min(100%, 720px);
+  --zebra-grid-gap: 12px;
+  --zebra-empty-min: auto;
+  --zebra-topbar-height: 56px;
+  --zebra-layout-breakpoint-sm: 768px;
+  --zebra-layout-breakpoint-md: 1020px;
+  --zebra-layout-breakpoint-lg: 1280px;
+  --zebra-control-height-small: 38px;
+  --zebra-control-height-medium: 42px;
+  --zebra-control-height-large: 46px;
+  --zebra-icon-dot: 8px;
+  --zebra-icon-size-xs: 20px;
+  --zebra-icon-size-sm: 24px;
+  --zebra-icon-size: 28px;
+  --zebra-icon-size-lg: 32px;
+  --zebra-line-indent-step: 2px;
+  --zebra-timeline-edge: 6px;
+  --zebra-timeline-width: 2px;
+  --zebra-border-width: 1px;
+  --zebra-border-width-soft: 1px;
+  --zebra-radius-sm: 10px;
+  --zebra-radius-card: 12px;
+  --zebra-radius-soft: 10px;
+  --zebra-radius-composer: 24px;
+  --zebra-radius-pill: 999px;
+  --zebra-radius-large: 14px;
+  --zebra-radius-xs: 8px;
+  --zebra-layout-max: min(100%, 980px);
+  --zebra-pane-max: min(100%, 980px);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --zebra-font-size-base: 14px;
+    --zebra-font-size-sm: 14px;
+    --zebra-font-size-md: 15px;
+    --zebra-font-size-lg: 17px;
+    --zebra-font-size-xl: 20px;
+    --zebra-font-size-2xl: 40px;
+    --zebra-font-size-display: 40px;
+    --zebra-content-max: min(100%, 980px);
+    --zebra-sidebar-width: 280px;
+    --zebra-space-lg: 18px;
+    --zebra-space-xl: 24px;
+    --zebra-space-2xl: 32px;
+    --zebra-space-xxl: 40px;
+    --zebra-space-xxxl: 56px;
+    --zebra-grid-gap: 15px;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --zebra-font-size-lg: 17px;
+    --zebra-font-size-xl: 20px;
+    --zebra-font-size-2xl: 40px;
+    --zebra-font-size-display: 40px;
+    --zebra-content-max: min(100%, 980px);
+    --zebra-space-lg: 18px;
+    --zebra-space-xl: 24px;
+    --zebra-space-2xl: 32px;
+    --zebra-grid-gap: 16px;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --zebra-font-size-base: 15px;
+    --zebra-font-size-sm: 14px;
+    --zebra-font-size-md: 15px;
+    --zebra-font-size-lg: 16px;
+    --zebra-font-size-xl: 17px;
+    --zebra-font-size-2xl: 28px;
+    --zebra-font-size-display: clamp(24px, 6.6vw, 32px);
+    --zebra-content-max: min(100%, 96vw);
+    --zebra-content-card-max: min(100%, 96vw);
+    --zebra-space-xs: 9px;
+    --zebra-space-sm: 12px;
+    --zebra-space-md: 14px;
+    --zebra-space-lg: 18px;
+    --zebra-space-xl: 22px;
+    --zebra-space-2xl: 30px;
+    --zebra-space-xxl: 36px;
+    --zebra-space-xxxl: 46px;
+    --zebra-grid-gap: 12px;
+    --zebra-layout-max: min(100%, 680px);
+    --zebra-pane-max: min(100%, 680px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--zebra-page-background);
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--zebra-page-background);
+  color: var(--zebra-text-primary);
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+button,
+input,
+textarea,
+select,
+.ant-typography {
+  font: inherit;
+}
+
+:where(h1, h2, h3, h4, h5, h6, p, li, dd, dt) {
+  margin-block-start: 0;
+}
+
+::selection {
+  background: rgba(245, 158, 11, 0.22);
+}
+
+pre,
+code {
+  font-family: var(--zebra-font-family-code);
+}
+
+pre {
+  font-size: var(--zebra-font-size-sm);
+  line-height: var(--zebra-line-height-relaxed);
+}
+
+code {
+  font-size: var(--zebra-font-size-code);
+}

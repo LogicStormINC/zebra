@@ -12,3 +12,8 @@ build/
 *.pyc
 uv.lock
 evals/reports/
+node_modules/
+.pnpm-store/
+UI/**/node_modules/
+UI/**/dist/
+UI/**/src-tauri/target/

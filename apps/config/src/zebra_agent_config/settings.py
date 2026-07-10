@@ -53,8 +53,17 @@ def load_settings(
     defaults_path: Path | None = None,
 ) -> ZebraAgentSettings:
     values = dict(_read_defaults(defaults_path or Path("configs/default.env")))
-    values.update(env or os.environ)
+    values.update(_read_defaults(Path(".env")))
+    values.update(_read_defaults(Path(".env.local")))
+    values.update(os.environ if env is None else env)
     provider = _read(values, "ZEBRA_MODEL_PROVIDER", default="deepseek")
+    if provider == "deepseek":
+        deepseek_base_url = _read_optional(values, "DEEPSEEK_BASE_URL")
+        if deepseek_base_url:
+            values["ZEBRA_MODEL_BASE_URL"] = deepseek_base_url
+        deepseek_model = _read_optional(values, "DEEPSEEK_MODEL")
+        if deepseek_model:
+            values["ZEBRA_MODEL_NAME"] = deepseek_model
     return ZebraAgentSettings(
         profile=_read(values, "ZEBRA_PROFILE", default="local"),
         database_url=_read(

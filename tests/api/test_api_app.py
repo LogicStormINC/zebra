@@ -118,6 +118,19 @@ def test_api_get_session_returns_not_found(tmp_path: Path) -> None:
     }
 
 
+def test_api_get_session_rejects_invalid_session_id(tmp_path: Path) -> None:
+    response = create_app(tmp_path / "sessions.sqlite").get_session(
+        "not-a-valid-uuid"
+    )
+
+    assert response.status_code == 400
+    assert response.body == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
+
+
 def test_api_lists_waiting_approvals_from_projection(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     first = _waiting_session("First approval").model_copy(update={"current_sequence": 3})
@@ -222,6 +235,19 @@ def test_api_get_session_stream_returns_not_found(tmp_path: Path) -> None:
     assert response.body == {
         "session_id": "00000000-0000-0000-0000-000000000001",
         "status": "not_found",
+    }
+
+
+def test_api_get_session_stream_rejects_invalid_session_id(tmp_path: Path) -> None:
+    response = create_app(tmp_path / "sessions.sqlite").get_session_stream(
+        "not-a-valid-uuid"
+    )
+
+    assert response.status_code == 400
+    assert response.body == {
+        "session_id": "not-a-valid-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
     }
 
 
@@ -441,6 +467,32 @@ def test_api_create_session_rejects_invalid_request(tmp_path: Path) -> None:
         "status": "invalid_request",
         "reason": "prompt must be a non-blank string",
     }
+
+
+def test_api_create_session_execute_reports_missing_api_key(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    def fake_build_model_gateway(_: ZebraAgentSettings) -> object:
+        del _
+        raise ValueError("missing API key in environment variable TEST_API_KEY")
+
+    monkeypatch.setattr(api_app_module, "build_model_gateway", fake_build_model_gateway)
+
+    response = create_app(database_path, settings=_settings(database_path)).create_session(
+        {
+            "prompt": "Inspect the workspace",
+            "title": "API execute session",
+            "workspace": str(tmp_path),
+            "execute": True,
+        }
+    )
+
+    assert response.status_code == 503
+    assert response.body["status"] == "model_gateway_unavailable"
+    assert response.body["reason"] == "missing API key in environment variable TEST_API_KEY"
 
 
 def _settings(database_path: Path) -> ZebraAgentSettings:

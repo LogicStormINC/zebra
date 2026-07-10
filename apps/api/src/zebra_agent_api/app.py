@@ -46,7 +46,7 @@ from zebra_agent_worker import (
 from zebra_agent_api.approval_context import serialize_approval_context
 from zebra_agent_api.approval_read import ApprovalReadApi
 from zebra_agent_api.credential_broker import build_default_credential_broker
-from zebra_agent_api.responses import ApiResponse, conflict
+from zebra_agent_api.responses import ApiResponse, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_artifact_control import SessionArtifactControlApi
 from zebra_agent_api.session_commit import SessionCommitApi
@@ -688,8 +688,11 @@ class ZebraAgentApi:
         *,
         idempotency_key: str | None = None,
     ) -> ApiResponse:
+        session_key = self._parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         return SessionCommitApi(self.database_path).commit(
-            session_id,
+            str(session_key),
             payload,
             idempotency_key=idempotency_key,
         )
@@ -701,6 +704,9 @@ class ZebraAgentApi:
         *,
         idempotency_key: str | None = None,
     ) -> ApiResponse:
+        session_key = self._parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
         try:
             gateway = build_pull_request_gateway(
                 self.settings.scm,
@@ -717,7 +723,7 @@ class ZebraAgentApi:
             self.database_path,
             pull_request_gateway=gateway,
         ).open_pull_request(
-            session_id,
+            str(session_key),
             payload,
             idempotency_key=idempotency_key,
         )
@@ -735,6 +741,9 @@ class ZebraAgentApi:
         parsed = parse_resume_session_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
+        session_key = self._parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
 
         claim_service = SessionClaimService(
             SQLiteLeaseStore(self.database_path),
@@ -750,7 +759,7 @@ class ZebraAgentApi:
                 resume_service=SessionResumeService(claim_service),
                 settings=self.settings,
             ).execute_session(
-                SessionId(UUID(session_id)),
+                session_key,
                 worker_id=parsed["worker_id"],
                 lease_ttl_seconds=parsed["lease_ttl_seconds"],
             )
@@ -777,6 +786,11 @@ class ZebraAgentApi:
                 status="execution_error",
                 reason=str(error),
             )
+        except ValueError as error:
+            return service_unavailable(
+                status="model_gateway_unavailable",
+                reason=str(error),
+            )
         return ApiResponse(
             status_code=200,
             body={
@@ -791,17 +805,26 @@ class ZebraAgentApi:
         )
 
     def cancel_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
-        return cancel_session_control(self.database_path, session_id, payload)
+        session_key = self._parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
+        return cancel_session_control(self.database_path, str(session_key), payload)
 
     def suspend_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
-        return suspend_session_control(self.database_path, session_id, payload)
+        session_key = self._parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
+        return suspend_session_control(self.database_path, str(session_key), payload)
 
     def append_session_message(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
         parsed = parse_append_session_message_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
 
-        session_key = SessionId(UUID(session_id))
+        session_key = self._parse_session_id(session_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
+
         projection_store = SQLiteProjectionStore(self.database_path)
         session = projection_store.get_session(session_key)
         if session is None:
@@ -834,6 +857,20 @@ class ZebraAgentApi:
                 "current_sequence": updated_session.current_sequence,
             },
         )
+
+
+    def _parse_session_id(self, session_id: str) -> SessionId | ApiResponse:
+        try:
+            return SessionId(UUID(session_id))
+        except ValueError:
+            return ApiResponse(
+                status_code=400,
+                body={
+                    "session_id": session_id,
+                    "status": "invalid_request",
+                    "reason": "session_id must be a valid UUID",
+                },
+            )
 
     def approve(self, approval_id: str, payload: dict[str, object]) -> ApiResponse:
         return self._record_approval_decision(
@@ -882,11 +919,18 @@ class ZebraAgentApi:
             self.database_path,
             repo_id=str(workspace_root),
         )
+        try:
+            model_gateway = build_model_gateway(self.settings)
+        except ValueError as error:
+            return service_unavailable(
+                status="model_gateway_unavailable",
+                reason=str(error),
+            )
         result = run_local_harness(
             prompt=str(parsed["prompt"]),
             title=str(parsed["title"]),
             workspace_root=workspace_root,
-            model_gateway=build_model_gateway(self.settings),
+            model_gateway=model_gateway,
             policy_profile=PolicyProfile(str(parsed["policy_profile"])),
             confirmed_memories=confirmed_memories,
         )
@@ -926,7 +970,10 @@ class ZebraAgentApi:
         if isinstance(parsed, ApiResponse):
             return parsed
 
-        session_key = SessionId(UUID(approval_id))
+        session_key = self._parse_session_id(approval_id)
+        if isinstance(session_key, ApiResponse):
+            return session_key
+
         projection_store = SQLiteProjectionStore(self.database_path)
         session = projection_store.get_session(session_key)
         if session is None:
