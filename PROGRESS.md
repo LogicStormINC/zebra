@@ -2,7 +2,7 @@
 
 ## Addendum
 
-- 2026-07-10: completed implementation and browser acceptance for `P102-UI-01`: the Codex-style desktop workspace now restores its local task index, reloads session state, verifies the Zebra service identity, exposes runtime configuration, and only presents workspace metadata backed by session evidence. The task is in review pending commit and merge.
+- 2026-07-10: merged `P102-UI-01` through GitHub PR `#40`; the Codex-style desktop workspace now restores its local task index, reloads session state, verifies the Zebra service identity, exposes runtime configuration, and only presents workspace metadata backed by session evidence.
 - 2026-07-05: bootstrapped `UI/desktop` as an isolated desktop UI workspace using `Tauri + React + Tailwind CSS + TanStack Query + Ant Design + Ant Design X`.
 - 2026-07-05: upgraded `UI/desktop` from a static shell to a live operator surface wired to the local HTTP API for health, approvals, session creation, session detail, stream replay, repo memory inventory, and cross-scope memory overview reads. This does not change the backend phase sequence, but it does establish the first reusable frontend integration seam.
 - 2026-07-05: expanded the desktop operator surface to cover approval decisions, session suspend or resume or cancel controls, workspace diff readback, session artifact inspection and content reads, and delivery-audit inspection. The frontend now spans both read and write operator flows for the local API, though Tauri Rust-side validation is still blocked by the machine-level Cargo mirror configuration.
@@ -21,12 +21,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 102 - Desktop Workspace Product Foundation`
-- Repository status: `phase 102 implementation accepted; P102-UI-01 is in review pending commit and merge`
+- Active phase: `Phase 103 - Live Execution And Approval Interaction`
+- Repository status: `phase 102 closed; P103-UI-01 is ready`
 - Current focus:
-  - `P102-UI-01` is in review on `codex/p102-ui-01-desktop-product-foundation`; implementation and browser acceptance are complete
-  - validation passed for `make check`, frontend build, focused state projection checks, CORS preflight, service identity rejection, runtime configuration switching, and persisted session restoration
-  - Phase 102 can close after the focused branch is committed and merged; approval and delivery workflows remain the next product-logic lane
+  - `P103-UI-01` is ready to add incremental execution events, real cancellation, and approval actions to the active desktop task surface
+  - `P102-UI-01` was merged through GitHub PR `#40` after `make check`, frontend build, state projection checks, CORS preflight, service identity rejection, runtime configuration switching, and persisted session restoration passed
+  - `P102-CLOSE-01` records the Phase 102 closeout and the explicit Phase 103 ownership boundary
   - `P101-CLOSE-01` is complete on `codex/p101-closeout-next-plan` with Phase 101 acceptance evidence on `docs/Phase101_Scoped_Queue_Sweep_Filtered_Preview_Controls_验收记录.md`
   - `Phase 101` is closed with `docs/Phase101_Scoped_Queue_Sweep_Filtered_Preview_Controls_验收记录.md`
   - `P101-MEM-01` is complete on `codex/p101-mem-01-scoped-queue-sweep-filtered-preview-controls` with one minimal narrowing filter for repo-session, user, and tenant queue-sweep previews plus API and CLI parity coverage
