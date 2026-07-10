@@ -1,20 +1,16 @@
 import {
-  AppstoreOutlined,
-  ClockCircleOutlined,
   CodeOutlined,
   DeleteOutlined,
   EditOutlined,
-  SearchOutlined,
 } from "@ant-design/icons";
 import { Button, Tooltip } from "antd";
 import { createStyles } from "antd-style";
 import { clsx } from "clsx";
 import locale from "../_utils/local";
+import { sessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-status";
 import type { ConversationSeed } from "../lib/chat-surface";
 import type { SessionSummary } from "../types";
-
-const useStyle = createStyles(({ css }) => {
-  return {
+const useStyle = createStyles(({ css }) => ({
     sidebar: css`
       background: #181818;
       border-right: 1px solid var(--zebra-surface-border);
@@ -25,10 +21,6 @@ const useStyle = createStyles(({ css }) => {
       height: 100dvh;
       min-height: 0;
       overflow: hidden;
-      @media (max-width: 1019px) {
-        border-right: 1px solid var(--zebra-surface-border);
-        padding-bottom: var(--zebra-space-sm);
-      }
       @media (max-width: 767px) {
         padding: var(--zebra-space-sm) var(--zebra-space-xs);
       }
@@ -71,10 +63,6 @@ const useStyle = createStyles(({ css }) => {
           display: none;
         }
       }
-    `,
-    staticNav: css`
-      cursor: default;
-      color: var(--zebra-text-muted);
     `,
     navIcon: css`
       width: var(--zebra-icon-size-xs);
@@ -120,8 +108,8 @@ const useStyle = createStyles(({ css }) => {
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       gap: var(--zebra-space-sm);
-      min-height: 42px;
-      padding: 0 var(--zebra-space-sm);
+      min-height: 52px;
+      padding: 6px var(--zebra-space-sm);
       border-radius: 10px;
       color: #d4d4d8;
       transition: background 160ms ease, color 160ms ease;
@@ -175,13 +163,12 @@ const useStyle = createStyles(({ css }) => {
       }
     `,
     conversationMeta: css`
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--zebra-space-xs);
       color: var(--zebra-text-subtle);
       font-size: 12px;
       line-height: 18px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       @media (max-width: 767px) {
         display: none;
       }
@@ -205,11 +192,6 @@ const useStyle = createStyles(({ css }) => {
     statusRunning: css`
       background: #f59e0b;
       box-shadow: var(--zebra-shadow-running);
-    `,
-    sessionMetaRight: css`
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     `,
     deleteButton: css`
       opacity: 0;
@@ -301,17 +283,16 @@ const useStyle = createStyles(({ css }) => {
         display: none;
       }
     `,
-  };
-});
-
+}));
 interface CodexSidebarProps {
   conversations: ConversationSeed[];
-  conversationSessionIds: Record<string, string>;
   currentConversation: string;
   isWorkspaceIdle: boolean;
   onCreateConversation: () => void;
   onDeleteConversation: (key: string) => void;
   onSelectConversation: (key: string) => void;
+  projectMeta: string;
+  runtimeLabel: string;
   sessionSummaries: Record<string, SessionSummary | null>;
 }
 
@@ -321,18 +302,13 @@ function groupConversations(conversations: ConversationSeed[]) {
   return { pinned, recent };
 }
 
-function statusLabel(status: string | undefined): string {
-  if (status === "running") return locale.statusRunning;
-  if (status === "waiting_approval" || status === "waiting_user") return locale.statusWaiting;
-  if (status === "completed") return locale.statusDone;
-  if (status === "failed") return locale.statusFailed;
-  if (status === "review") return locale.statusReview;
-  return locale.statusDraft;
+function threadMeta(summary: SessionSummary | null | undefined, group: string): string {
+  const dayLabel = group === locale.pinned ? locale.todayGroup : group;
+  return `${sessionStatusLabel(summary?.status)} · ${dayLabel} · ${sessionWorkspaceLabel(summary)}`;
 }
 
 function ConversationSection({
   currentConversation,
-  conversationSessionIds,
   isWorkspaceIdle,
   items,
   onDeleteConversation,
@@ -340,7 +316,6 @@ function ConversationSection({
   sessionSummaries,
 }: {
   currentConversation: string;
-  conversationSessionIds: Record<string, string>;
   isWorkspaceIdle: boolean;
   items: ConversationSeed[];
   onDeleteConversation: (key: string) => void;
@@ -365,7 +340,6 @@ function ConversationSection({
       {items.map((item) => {
         const isActive = !isWorkspaceIdle && item.key === currentConversation;
         const summary = sessionSummaries[item.key];
-        const sessionId = conversationSessionIds[item.key];
         const status = summary?.status ?? "draft";
         return (
           <div
@@ -374,6 +348,15 @@ function ConversationSection({
             onClick={() => {
               onSelectConversation(item.key);
             }}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" && event.key !== " ") {
+                return;
+              }
+              event.preventDefault();
+              onSelectConversation(item.key);
+            }}
+            role="button"
+            tabIndex={0}
           >
             <div className={styles.conversationMain}>
               <div className={styles.conversationLabel}>
@@ -388,10 +371,7 @@ function ConversationSection({
                 />
                 <span className={styles.conversationText}>{item.label}</span>
               </div>
-              <div className={styles.conversationMeta}>
-                <span>{statusLabel(status)}</span>
-                <span className={styles.sessionMetaRight}>{sessionId ? sessionId.slice(0, 6) : item.group}</span>
-              </div>
+              <div className={styles.conversationMeta}>{threadMeta(summary, item.group)}</div>
             </div>
             <Tooltip title={locale.delete}>
               <Button
@@ -414,12 +394,13 @@ function ConversationSection({
 
 export function CodexSidebar({
   conversations,
-  conversationSessionIds,
   currentConversation,
   isWorkspaceIdle,
   onCreateConversation,
   onDeleteConversation,
   onSelectConversation,
+  projectMeta,
+  runtimeLabel,
   sessionSummaries,
 }: CodexSidebarProps) {
   const { styles } = useStyle();
@@ -434,47 +415,29 @@ export function CodexSidebar({
           </span>
           <span>{locale.newConversation}</span>
         </button>
-        <div className={clsx(styles.navButton, styles.staticNav)}>
-          <span className={styles.navIcon}>
-            <SearchOutlined />
-          </span>
-          <span>{locale.search}</span>
-        </div>
-        <div className={clsx(styles.navButton, styles.staticNav)}>
-          <span className={styles.navIcon}>
-            <ClockCircleOutlined />
-          </span>
-          <span>{locale.scheduled}</span>
-        </div>
-        <div className={clsx(styles.navButton, styles.staticNav)}>
-          <span className={styles.navIcon}>
-            <AppstoreOutlined />
-          </span>
-          <span>{locale.plugins}</span>
-        </div>
       </div>
 
       <div className={styles.sidebarScroll}>
-        <section className={styles.section}>
-          <div className={styles.sectionTitle}>{locale.pinned}</div>
-          <div className={styles.conversationList}>
-            <ConversationSection
-              conversationSessionIds={conversationSessionIds}
-              currentConversation={currentConversation}
-              isWorkspaceIdle={isWorkspaceIdle}
-              items={pinned}
-              onDeleteConversation={onDeleteConversation}
-              onSelectConversation={onSelectConversation}
-              sessionSummaries={sessionSummaries}
-            />
-          </div>
-        </section>
+        {pinned.length > 0 ? (
+          <section className={styles.section}>
+            <div className={styles.sectionTitle}>{locale.pinned}</div>
+            <div className={styles.conversationList}>
+              <ConversationSection
+                currentConversation={currentConversation}
+                isWorkspaceIdle={isWorkspaceIdle}
+                items={pinned}
+                onDeleteConversation={onDeleteConversation}
+                onSelectConversation={onSelectConversation}
+                sessionSummaries={sessionSummaries}
+              />
+            </div>
+          </section>
+        ) : null}
 
         <section className={styles.section}>
           <div className={styles.sectionTitle}>{locale.recent}</div>
           <div className={styles.conversationList}>
             <ConversationSection
-              conversationSessionIds={conversationSessionIds}
               currentConversation={currentConversation}
               isWorkspaceIdle={isWorkspaceIdle}
               items={recent}
@@ -497,7 +460,7 @@ export function CodexSidebar({
             </span>
             <div className={styles.projectMeta}>
               <span>zebra-agent</span>
-              <span>{locale.projectHint}</span>
+              <span>{projectMeta}</span>
             </div>
           </button>
         </section>
@@ -507,7 +470,7 @@ export function CodexSidebar({
         <span className={styles.avatar}>ZA</span>
         <div className={styles.profileMeta}>
           <span>{locale.profileName}</span>
-          <span>{locale.profilePlan}</span>
+          <span>{runtimeLabel}</span>
         </div>
       </div>
     </aside>

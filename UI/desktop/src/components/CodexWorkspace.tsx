@@ -1,12 +1,16 @@
 import { XProvider } from "@ant-design/x";
+import { Drawer } from "antd";
 import { createStyles } from "antd-style";
-import React from "react";
+import React, { useState } from "react";
 import locale from "../_utils/local";
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { SessionResultSurface } from "../lib/session-results";
-import type { SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
+import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
+import { projectWorkspaceLabel } from "../lib/workspace-projection";
+import type { OperatorConfig, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
 import { CodexConversationPane } from "./CodexConversationPane";
 import { CodexSidebar } from "./CodexSidebar";
+import { OperatorConfigCard } from "./OperatorConfigCard";
 import type { GetRef } from "antd";
 import type { Sender } from "@ant-design/x";
 
@@ -34,12 +38,10 @@ const useStyle = createStyles(({ css }) => {
 
 interface CodexWorkspaceProps {
   activeLabel: string;
-  apiBaseUrl: string;
   artifactContentPreview: string | null;
   artifactDetail: SessionArtifactDetailResponse | null;
   artifactLoading: boolean;
   conversations: ConversationSeed[];
-  conversationSessionIds: Record<string, string>;
   currentConversation: string;
   currentSessionId?: string;
   events: SessionEvent[];
@@ -47,10 +49,14 @@ interface CodexWorkspaceProps {
   isRequesting: boolean;
   listRef: React.RefObject<HTMLDivElement | null>;
   messages: ChatMessage[];
+  operatorConfig: OperatorConfig;
   onCancel: () => void;
   onCloseArtifact: () => void;
   onCopySessionId: () => void;
   onCopyWorkspacePath: () => void;
+  onPatchConfig: (patch: Partial<OperatorConfig>) => void;
+  onResetConfig: () => void;
+  onRetryRuntime: () => void;
   onCreateConversation: () => void;
   onDeleteConversation: (key: string) => void;
   onCancelSession: () => void;
@@ -63,6 +69,7 @@ interface CodexWorkspaceProps {
   onSubmit: (value: string) => void;
   controlsBusy: boolean;
   resultSurface: SessionResultSurface | null;
+  runtimeStatus: RuntimeConnectionStatus;
   sessionSummaries: Record<string, SessionSummary | null>;
   sessionSummary: SessionSummary | null;
   senderRef: React.RefObject<GetRef<typeof Sender> | null>;
@@ -70,54 +77,77 @@ interface CodexWorkspaceProps {
 
 export function CodexWorkspace(props: CodexWorkspaceProps) {
   const { styles } = useStyle();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const runtimeLabel = props.runtimeStatus === "connected"
+    ? locale.runtimeConnected
+    : props.runtimeStatus === "checking"
+      ? locale.runtimeChecking
+      : locale.runtimeDisconnected;
+  const workspaceRoot = props.sessionSummary?.workspace?.workspace_root;
+  const projectMeta = workspaceRoot
+    ? `${projectWorkspaceLabel(workspaceRoot, locale.workspaceUnbound)} · ${props.sessionSummary?.workspace?.status ?? locale.notBound}`
+    : locale.workspaceUnbound;
 
   return (
     <XProvider locale={locale as any}>
-      <div className={styles.shell}>
-        <CodexSidebar
-          conversations={props.conversations}
-          conversationSessionIds={props.conversationSessionIds}
-          currentConversation={props.currentConversation}
-          isWorkspaceIdle={props.isWorkspaceIdle}
-          onCreateConversation={props.onCreateConversation}
-          onDeleteConversation={props.onDeleteConversation}
-          onSelectConversation={props.onSelectConversation}
-          sessionSummaries={props.sessionSummaries}
-        />
-        <CodexConversationPane
-          activeLabel={props.activeLabel}
-          apiBaseUrl={props.apiBaseUrl}
-          artifactContentPreview={props.artifactContentPreview}
-          artifactDetail={props.artifactDetail}
-          artifactLoading={props.artifactLoading}
-          conversations={props.conversations}
-          conversationSessionIds={props.conversationSessionIds}
-          currentConversation={props.currentConversation}
-          currentSessionId={props.currentSessionId}
-          events={props.events}
-          isRequesting={props.isRequesting}
-          listRef={props.listRef}
-          messages={props.messages}
-          onCancel={props.onCancel}
-          onCloseArtifact={props.onCloseArtifact}
-          onCopySessionId={props.onCopySessionId}
-          onCopyWorkspacePath={props.onCopyWorkspacePath}
-          onCreateConversation={props.onCreateConversation}
-          onCancelSession={props.onCancelSession}
-          onResumeSession={props.onResumeSession}
-          onSuspendSession={props.onSuspendSession}
-          onOpenArtifact={props.onOpenArtifact}
-          onRefreshConversation={props.onRefreshConversation}
-          controlsBusy={props.controlsBusy}
-          onScrollToLatest={props.onScrollToLatest}
-          onSelectConversation={props.onSelectConversation}
-          onSubmit={props.onSubmit}
-          resultSurface={props.resultSurface}
-          sessionSummaries={props.sessionSummaries}
-          sessionSummary={props.sessionSummary}
-          senderRef={props.senderRef}
-        />
-      </div>
+      <>
+        <div className={styles.shell}>
+          <CodexSidebar
+            conversations={props.conversations}
+            currentConversation={props.currentConversation}
+            isWorkspaceIdle={props.isWorkspaceIdle}
+            onCreateConversation={props.onCreateConversation}
+            onDeleteConversation={props.onDeleteConversation}
+            onSelectConversation={props.onSelectConversation}
+            projectMeta={projectMeta}
+            runtimeLabel={runtimeLabel}
+            sessionSummaries={props.sessionSummaries}
+          />
+          <CodexConversationPane
+            activeLabel={props.activeLabel}
+            artifactContentPreview={props.artifactContentPreview}
+            artifactDetail={props.artifactDetail}
+            artifactLoading={props.artifactLoading}
+            conversations={props.conversations}
+            controlsBusy={props.controlsBusy}
+            currentConversation={props.currentConversation}
+            currentSessionId={props.currentSessionId}
+            events={props.events}
+            isRequesting={props.isRequesting}
+            isWorkspaceIdle={props.isWorkspaceIdle}
+            listRef={props.listRef}
+            messages={props.messages}
+            onCancel={props.onCancel}
+            onCancelSession={props.onCancelSession}
+            onCloseArtifact={props.onCloseArtifact}
+            onCopySessionId={props.onCopySessionId}
+            onCopyWorkspacePath={props.onCopyWorkspacePath}
+            onCreateConversation={props.onCreateConversation}
+            onOpenArtifact={props.onOpenArtifact}
+            onOpenSettings={() => setSettingsOpen(true)}
+            onRefreshConversation={props.onRefreshConversation}
+            onResumeSession={props.onResumeSession}
+            onScrollToLatest={props.onScrollToLatest}
+            onSelectConversation={props.onSelectConversation}
+            onSubmit={props.onSubmit}
+            onSuspendSession={props.onSuspendSession}
+            resultSurface={props.resultSurface}
+            runtimeStatus={props.runtimeStatus}
+            senderRef={props.senderRef}
+            sessionSummaries={props.sessionSummaries}
+            sessionSummary={props.sessionSummary}
+          />
+        </div>
+        <Drawer onClose={() => setSettingsOpen(false)} open={settingsOpen} title={locale.runtimeSettings} width={460}>
+          <OperatorConfigCard
+            config={props.operatorConfig}
+            onChange={props.onPatchConfig}
+            onReset={props.onResetConfig}
+            onRetry={props.onRetryRuntime}
+            runtimeStatus={props.runtimeStatus}
+          />
+        </Drawer>
+      </>
     </XProvider>
   );
 }

@@ -1,35 +1,23 @@
 import { GetRef, message } from "antd";
-import dayjs from "dayjs";
 import { Sender } from "@ant-design/x";
-import { useXConversations } from "@ant-design/x-sdk";
+import { useQuery } from "@tanstack/react-query";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CodexWorkspace } from "./components/CodexWorkspace";
 import locale from "./_utils/local";
-import type { ChatMessage, ConversationSeed } from "./lib/chat-surface";
+import type { ChatMessage } from "./lib/chat-surface";
 import {
-  DEFAULT_CONVERSATIONS,
   isAppendToTerminalError,
   streamEventsToMessages,
   toErrorMessage,
 } from "./lib/chat-surface";
 import { useOperatorConfig } from "./lib/operator-config";
+import { projectRuntimeConnection } from "./lib/runtime-connection";
 import type { SessionResultSurface } from "./lib/session-results";
+import { useWorkspaceSessionIndex } from "./lib/use-workspace-session-index";
 import { zebraApi } from "./lib/zebra-api";
 import type { SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "./types";
 
 const WORKSPACE_HOME_KEY = "__workspace-home__";
-
-function buildConversation(label: string, group: string): ConversationSeed {
-  return {
-    key: Date.now().toString(),
-    label,
-    group,
-  };
-}
-
-function buildEmptyConversation(): ConversationSeed {
-  return buildConversation(locale.newConversation, locale.today);
-}
 
 function decodeArtifactContent(contentBase64: string) {
   const binary = window.atob(contentBase64);
@@ -40,18 +28,34 @@ function decodeArtifactContent(contentBase64: string) {
 export default function App() {
   const senderRef = useRef<GetRef<typeof Sender>>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const { config, patchConfig } = useOperatorConfig();
+  const { config, patchConfig, resetConfig } = useOperatorConfig();
   const api = useMemo(() => zebraApi(config), [config]);
-
-  const { conversations, addConversation, setConversations } = useXConversations({
-    defaultConversations: DEFAULT_CONVERSATIONS,
+  const healthQuery = useQuery({
+    queryKey: ["runtime-health", config.apiBaseUrl],
+    queryFn: api.health,
+    retry: false,
+    refetchInterval: 5_000,
   });
+  const runtimeStatus = projectRuntimeConnection(
+    healthQuery.data?.status,
+    healthQuery.data?.service,
+    healthQuery.isFetching,
+  );
+
+  const {
+    conversations,
+    createIndexedConversation,
+    removeIndexedConversation,
+    renameConversation,
+    sessionIds: conversationToSessionId,
+    sessionSummaries,
+    setSessionIds: setConversationToSessionId,
+    setSessionSummaries,
+  } = useWorkspaceSessionIndex(api, config.sessionId.trim());
   const [currentConversation, setCurrentConversation] = useState<string>(WORKSPACE_HOME_KEY);
-  const [conversationToSessionId, setConversationToSessionId] = useState<Record<string, string>>({});
   const [conversationEvents, setConversationEvents] = useState<Record<string, SessionEvent[]>>({});
   const [conversationMessages, setConversationMessages] = useState<Record<string, ChatMessage[]>>({});
   const [resultSurfaces, setResultSurfaces] = useState<Record<string, SessionResultSurface | null>>({});
-  const [sessionSummaries, setSessionSummaries] = useState<Record<string, SessionSummary | null>>({});
   const [artifactContentPreview, setArtifactContentPreview] = useState<string | null>(null);
   const [artifactDetail, setArtifactDetail] = useState<SessionArtifactDetailResponse | null>(null);
   const [artifactLoading, setArtifactLoading] = useState(false);
@@ -64,33 +68,14 @@ export default function App() {
   const activeConversation = conversations.find((item) => item.key === currentConversation);
   const activeLabel = activeConversation?.label ?? locale.agentName;
   const currentSessionId =
-    currentConversation === WORKSPACE_HOME_KEY
-      ? undefined
-      : conversationToSessionId[currentConversation] ?? config.sessionId;
+    currentConversation === WORKSPACE_HOME_KEY ? undefined : conversationToSessionId[currentConversation];
   const resultSurface = resultSurfaces[currentConversation] ?? null;
   const sessionSummary = sessionSummaries[currentConversation] ?? null;
-  const isWorkspaceIdle =
-    currentConversation === WORKSPACE_HOME_KEY ||
-    (!currentSessionId && events.length === 0 && messages.length === 0);
+  const isWorkspaceIdle = currentConversation === WORKSPACE_HOME_KEY;
 
   useEffect(() => {
     senderRef.current?.focus({ cursor: "end" });
   }, []);
-
-  useEffect(() => {
-    if (!config.sessionId || !currentConversation) {
-      return;
-    }
-    setConversationToSessionId((current) => {
-      if (current[currentConversation]) {
-        return current;
-      }
-      return {
-        ...current,
-        [currentConversation]: config.sessionId,
-      };
-    });
-  }, [config.sessionId, currentConversation]);
 
   const syncConversationFromStream = useCallback(
     async (conversationKey: string, sessionId: string) => {
@@ -112,20 +97,14 @@ export default function App() {
     async (conversationKey: string, sessionId: string) => {
       try {
         const summary = await api.session(sessionId);
-        setSessionSummaries((current) => ({
-          ...current,
-          [conversationKey]: summary,
-        }));
+        setSessionSummaries((current) => ({ ...current, [conversationKey]: summary }));
         return summary;
       } catch {
-        setSessionSummaries((current) => ({
-          ...current,
-          [conversationKey]: null,
-        }));
+        setSessionSummaries((current) => ({ ...current, [conversationKey]: null }));
         return null;
       }
     },
-    [api],
+    [api, setSessionSummaries],
   );
 
   const loadResultSurface = useCallback(
@@ -211,26 +190,6 @@ export default function App() {
     }
     const sessionId = conversationToSessionId[currentConversation];
     if (!sessionId) {
-      setSessionSummaries((current) => {
-        if (current[currentConversation] === null) {
-          return current;
-        }
-        return {
-          ...current,
-          [currentConversation]: null,
-        };
-      });
-      return;
-    }
-    void loadSessionSummary(currentConversation, sessionId);
-  }, [conversationToSessionId, currentConversation, loadSessionSummary]);
-
-  useEffect(() => {
-    if (!currentConversation) {
-      return;
-    }
-    const sessionId = conversationToSessionId[currentConversation];
-    if (!sessionId) {
       setResultSurfaces((current) => ({
         ...current,
         [currentConversation]: null,
@@ -268,13 +227,8 @@ export default function App() {
 
   const deleteConversation = useCallback(
     (conversationKey: string) => {
-      const nextConversations = conversations.filter((item) => item.key !== conversationKey);
-      setConversations(nextConversations);
-      setConversationToSessionId((current) => {
-        const next = { ...current };
-        delete next[conversationKey];
-        return next;
-      });
+      const sessionId = conversationToSessionId[conversationKey];
+      removeIndexedConversation(conversationKey);
       setConversationMessages((current) => {
         const next = { ...current };
         delete next[conversationKey];
@@ -285,29 +239,18 @@ export default function App() {
         delete next[conversationKey];
         return next;
       });
+      setResultSurfaces((current) => {
+        const next = { ...current };
+        delete next[conversationKey];
+        return next;
+      });
+      if (sessionId && sessionId === config.sessionId) patchConfig({ sessionId: "" });
       if (conversationKey !== currentConversation) {
         return;
       }
       setCurrentConversation(WORKSPACE_HOME_KEY);
     },
-    [conversations, currentConversation, setConversations],
-  );
-
-  const renameConversation = useCallback(
-    (conversationKey: string, title: string) => {
-      setConversations(
-        conversations.map((item) =>
-          item.key === conversationKey
-            ? {
-                ...item,
-                label: title,
-                group: dayjs().format("HH:mm"),
-              }
-            : item,
-        ),
-      );
-    },
-    [conversations, setConversations],
+    [config.sessionId, conversationToSessionId, currentConversation, patchConfig, removeIndexedConversation],
   );
 
   const submitMessage = useCallback(
@@ -317,11 +260,11 @@ export default function App() {
         return;
       }
       let conversationKey = currentConversation;
+      let createdFromWorkspaceHome = false;
       if (conversationKey === WORKSPACE_HOME_KEY) {
-        const nextConversation = buildEmptyConversation();
-        addConversation(nextConversation);
-        conversationKey = nextConversation.key;
-        setCurrentConversation(nextConversation.key);
+        conversationKey = createIndexedConversation(trimmed.slice(0, 36));
+        createdFromWorkspaceHome = true;
+        setCurrentConversation(conversationKey);
       }
 
       appendMessageToConversation(conversationKey, {
@@ -340,7 +283,9 @@ export default function App() {
           const created = await api.createSession({ title, prompt: trimmed, execute: true });
           sessionId = created.session_id;
           patchConfig({ sessionId });
-          renameConversation(conversationKey, title);
+          if (!createdFromWorkspaceHome) {
+            renameConversation(conversationKey, title);
+          }
           setConversationToSessionId((current) => ({
             ...current,
             [conversationKey]: sessionId!,
@@ -365,7 +310,9 @@ export default function App() {
             const created = await api.createSession({ title, prompt: trimmed, execute: true });
             sessionId = created.session_id;
             patchConfig({ sessionId });
-            renameConversation(conversationKey, title);
+            if (!createdFromWorkspaceHome) {
+              renameConversation(conversationKey, title);
+            }
             setConversationToSessionId((current) => ({
               ...current,
               [conversationKey]: sessionId!,
@@ -395,7 +342,7 @@ export default function App() {
       appendMessageToConversation,
       conversationToSessionId,
       currentConversation,
-      addConversation,
+      createIndexedConversation,
       messageApi,
       patchConfig,
       renameConversation,
@@ -469,18 +416,17 @@ export default function App() {
       {contextHolder}
       <CodexWorkspace
         activeLabel={activeLabel}
-        apiBaseUrl={config.apiBaseUrl}
         artifactContentPreview={artifactContentPreview}
         artifactDetail={artifactDetail}
         artifactLoading={artifactLoading}
-        conversations={conversations as ConversationSeed[]}
-        conversationSessionIds={conversationToSessionId}
+        conversations={conversations}
         currentConversation={currentConversation}
         currentSessionId={currentSessionId}
         events={events}
         isRequesting={isRequesting}
         listRef={listRef}
         messages={messages}
+        operatorConfig={config}
         onCancel={() => {
           messageApi.info("当前不支持中断请求");
         }}
@@ -500,6 +446,11 @@ export default function App() {
             return;
           }
           void copyText(workspacePath, locale.workspacePathCopied);
+        }}
+        onPatchConfig={patchConfig}
+        onResetConfig={resetConfig}
+        onRetryRuntime={() => {
+          void healthQuery.refetch();
         }}
         onCreateConversation={createConversation}
         onDeleteConversation={deleteConversation}
@@ -527,6 +478,7 @@ export default function App() {
         }}
         controlsBusy={controlsBusy}
         resultSurface={resultSurface}
+        runtimeStatus={runtimeStatus}
         sessionSummaries={sessionSummaries}
         sessionSummary={sessionSummary}
         senderRef={senderRef}

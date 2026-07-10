@@ -113,13 +113,13 @@ export const useConversationPaneStyle = createStyles(({ css }) => {
       min-height: 0;
       display: flex;
       flex-direction: column;
-      padding: 0 40px 40px 64px;
+      padding: 0 30px 40px;
       overflow: hidden;
       @media (max-width: 768px) {
         padding: 0 var(--zebra-space-xs) var(--zebra-space-xs);
       }
       @media (min-width: 1280px) {
-        padding: 0 40px 40px 64px;
+        padding: 0 40px 40px 56px;
       }
     `,
     stream: css`
@@ -149,15 +149,15 @@ export const useConversationPaneStyle = createStyles(({ css }) => {
       }
     `,
     idleWorkspace: css`
-      width: min(840px, 100%);
+      width: min(860px, 100%);
       margin: 0 auto;
-      padding-top: 112px;
+      padding-top: 104px;
       display: flex;
       flex-direction: column;
       align-items: stretch;
-      gap: 16px;
+      gap: 14px;
       @media (max-height: 760px) {
-        padding-top: 88px;
+        padding-top: 82px;
       }
       @media (max-width: 768px) {
         padding-top: 32px;
@@ -184,16 +184,16 @@ export const useConversationPaneStyle = createStyles(({ css }) => {
       margin: 0;
       text-align: center;
       color: var(--zebra-text-primary);
-      font-size: 17px;
-      line-height: 24px;
+      font-size: 20px;
+      line-height: 28px;
       font-weight: 600;
     `,
     idleSubtitle: css`
-      margin-top: -8px;
+      margin-top: -6px;
       text-align: center;
       color: rgba(255, 255, 255, 0.52);
-      font-size: 14px;
-      line-height: 22px;
+      font-size: 13px;
+      line-height: 20px;
     `,
     idleSection: css`
       display: flex;
@@ -279,26 +279,6 @@ export const useConversationPaneStyle = createStyles(({ css }) => {
       line-height: 22px;
       padding: 6px 10px;
     `,
-    messageStack: css`
-      display: flex;
-      flex-direction: column;
-      gap: var(--zebra-space-lg);
-    `,
-    userWrap: css`
-      display: flex;
-      justify-content: flex-end;
-    `,
-    userCard: css`
-      max-width: var(--zebra-content-card-max);
-      padding: var(--zebra-space-md) var(--zebra-space-lg);
-      border-radius: var(--zebra-radius-large);
-      background: var(--zebra-panel-soft-background);
-      border: 1px solid var(--zebra-surface-border);
-      color: var(--zebra-text-primary);
-      font-size: 14px;
-      line-height: 22px;
-      box-shadow: var(--zebra-shadow-sm);
-    `,
     composerDock: css`
       width: var(--zebra-content-max);
       margin: 0 auto;
@@ -324,7 +304,7 @@ export const useConversationPaneStyle = createStyles(({ css }) => {
       }
     `,
     idleComposerCard: css`
-      min-height: 156px;
+      min-height: 150px;
       max-height: 260px;
       background: #1b1b1c;
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -332,6 +312,17 @@ export const useConversationPaneStyle = createStyles(({ css }) => {
       box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
       padding: var(--zebra-space-sm);
       overflow: hidden;
+      .ant-sender {
+        min-height: 126px;
+        display: flex;
+        flex-direction: column;
+      }
+      .ant-sender-content {
+        flex: 1;
+      }
+      .ant-sender-footer {
+        flex: 0 0 auto;
+      }
     `,
     composerFooter: css`
       padding: 0 var(--zebra-space-xs) var(--zebra-space-xs);
@@ -401,6 +392,12 @@ export const useConversationPaneStyle = createStyles(({ css }) => {
       &:hover {
         background: rgba(255, 255, 255, 0.07);
         color: rgba(255, 255, 255, 0.82);
+      }
+      &:last-child {
+        color: rgba(255, 255, 255, 0.44);
+      }
+      &:last-child:hover {
+        color: rgba(255, 255, 255, 0.68);
       }
       @media (max-width: 767px) {
         display: none;

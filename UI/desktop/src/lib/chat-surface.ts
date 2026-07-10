@@ -14,24 +14,6 @@ export interface ConversationSeed {
   group: string;
 }
 
-export const DEFAULT_CONVERSATIONS: ConversationSeed[] = [
-  {
-    key: "default-0",
-    label: "查看项目文档",
-    group: "置顶",
-  },
-  {
-    key: "default-1",
-    label: "修复本地会话流程",
-    group: "置顶",
-  },
-  {
-    key: "default-2",
-    label: "对齐 Codex 风格桌面 UI",
-    group: "置顶",
-  },
-];
-
 function readText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }

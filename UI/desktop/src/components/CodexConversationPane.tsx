@@ -8,34 +8,33 @@ import {
   FolderOpenOutlined,
   ReloadOutlined,
   PlayCircleOutlined,
+  SettingOutlined,
   StopOutlined,
 } from "@ant-design/icons";
 import { Sender } from "@ant-design/x";
 import { Button, Dropdown, Flex, GetRef } from "antd";
 import React from "react";
 import locale from "../_utils/local";
+import { sessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-status";
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { SessionResultSurface } from "../lib/session-results";
+import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
 import type { SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
-import { AssistantMessageBlock } from "./AssistantMessageBlock";
 import { ArtifactDetailDrawer } from "./ArtifactDetailDrawer";
-import { SessionExecutionTrace } from "./SessionExecutionTrace";
-import { SessionContextCard } from "./SessionContextCard";
-import { SessionResultWorkbench } from "./SessionResultWorkbench";
+import { SessionThreadWorkspace } from "./SessionThreadWorkspace";
 import { useConversationPaneStyle } from "./CodexConversationPane.styles";
 
 
 interface CodexConversationPaneProps {
   activeLabel: string;
-  apiBaseUrl: string;
   artifactContentPreview: string | null;
   artifactDetail: SessionArtifactDetailResponse | null;
   artifactLoading: boolean;
   currentConversation: string;
   currentSessionId?: string;
   conversations: ConversationSeed[];
-  conversationSessionIds: Record<string, string>;
   events: SessionEvent[];
+  isWorkspaceIdle: boolean;
   isRequesting: boolean;
   listRef: React.RefObject<HTMLDivElement | null>;
   messages: ChatMessage[];
@@ -44,6 +43,7 @@ interface CodexConversationPaneProps {
   onCopySessionId: () => void;
   onCopyWorkspacePath: () => void;
   onCreateConversation: () => void;
+  onOpenSettings: () => void;
   onCancelSession: () => void;
   onResumeSession: () => void;
   onSuspendSession: () => void;
@@ -54,6 +54,7 @@ interface CodexConversationPaneProps {
   onSubmit: (value: string) => void;
   controlsBusy: boolean;
   resultSurface: SessionResultSurface | null;
+  runtimeStatus: RuntimeConnectionStatus;
   sessionSummaries: Record<string, SessionSummary | null>;
   sessionSummary: SessionSummary | null;
   senderRef: React.RefObject<GetRef<typeof Sender> | null>;
@@ -61,15 +62,14 @@ interface CodexConversationPaneProps {
 
 export function CodexConversationPane({
   activeLabel,
-  apiBaseUrl,
   artifactContentPreview,
   artifactDetail,
   artifactLoading,
   currentConversation,
   currentSessionId,
   conversations,
-  conversationSessionIds,
   events,
+  isWorkspaceIdle,
   isRequesting,
   listRef,
   messages,
@@ -78,6 +78,7 @@ export function CodexConversationPane({
   onCopySessionId,
   onCopyWorkspacePath,
   onCreateConversation,
+  onOpenSettings,
   onCancelSession,
   onResumeSession,
   onSuspendSession,
@@ -88,6 +89,7 @@ export function CodexConversationPane({
   onSubmit,
   controlsBusy,
   resultSurface,
+  runtimeStatus,
   sessionSummaries,
   sessionSummary,
   senderRef,
@@ -95,13 +97,19 @@ export function CodexConversationPane({
   const { styles } = useConversationPaneStyle();
   const [composerValue, setComposerValue] = React.useState("");
   const canSubmit = composerValue.trim().length > 0;
-  const hasThread = Boolean(currentSessionId) || messages.length > 0 || events.length > 0;
+  const hasThread = !isWorkspaceIdle;
+  const hasSessionThread = Boolean(currentSessionId) || messages.length > 0 || events.length > 0;
   const headerTitle = hasThread ? activeLabel : locale.idleProjectName;
+  const runtimeLabel = runtimeStatus === "connected"
+    ? locale.runtimeConnected
+    : runtimeStatus === "checking"
+      ? locale.runtimeChecking
+      : locale.runtimeDisconnected;
   const headerMeta = hasThread
     ? currentSessionId
-      ? `${sessionSummary?.workspace?.policy_profile ?? locale.accessWorkspaceWrite} · ${currentSessionId.slice(0, 8)}`
-      : locale.idleState
-    : locale.idleState;
+      ? `${sessionStatusLabel(sessionSummary?.status)} · ${sessionWorkspaceLabel(sessionSummary)} · ${currentSessionId.slice(0, 8)}`
+      : `${locale.statusDraft} · ${locale.notBound} · ${locale.notStarted}`
+    : runtimeLabel;
   const suggestedActions = [
     { label: locale.hintDocs, prompt: "阅读项目文档，并总结当前主线开发状态。" },
     { label: locale.hintExplain, prompt: "解释当前项目结构和核心模块职责。" },
@@ -110,19 +118,16 @@ export function CodexConversationPane({
     { label: locale.hintShip, prompt: "为当前实现补充必要测试，并运行验证命令。" },
   ];
   const recentThreads = conversations.filter((item) => item.key !== currentConversation).slice(0, 5);
-  const statusLabel = (status: string | undefined) => {
-    if (status === "running") return locale.statusRunning;
-    if (status === "waiting_approval" || status === "waiting_user") return locale.statusWaiting;
-    if (status === "completed") return locale.statusDone;
-    if (status === "failed") return locale.statusFailed;
-    if (status === "review") return locale.statusReview;
-    return locale.statusDraft;
+  const threadMeta = (item: ConversationSeed) => {
+    const dayLabel = item.group === locale.pinned ? locale.todayGroup : item.group;
+    const summary = sessionSummaries[item.key];
+    return `${sessionStatusLabel(summary?.status)} · ${dayLabel} · ${sessionWorkspaceLabel(summary)}`;
   };
   const renderComposer = (variant: "idle" | "thread") => (
     <div className={variant === "idle" ? styles.idleComposerCard : styles.composerCard}>
       <div className={styles.sender}>
         <Sender
-          autoSize={variant === "idle" ? { minRows: 2, maxRows: 6 } : { minRows: 2, maxRows: 3 }}
+          autoSize={variant === "idle" ? { minRows: 1, maxRows: 6 } : { minRows: 2, maxRows: 3 }}
           footer={(actionNode) => (
             <Flex align="center" className={styles.composerFooter} justify="space-between">
               <Flex align="center" className={styles.composerTools} gap={8}>
@@ -153,7 +158,7 @@ export function CodexConversationPane({
             onSubmit(trimmed);
             setComposerValue("");
           }}
-          placeholder={locale.placeholder}
+          placeholder={variant === "thread" ? locale.threadComposerHint : locale.placeholder}
           ref={senderRef}
           suffix={false}
           value={composerValue}
@@ -249,10 +254,22 @@ export function CodexConversationPane({
         </div>
         <div className={styles.headerActions}>
           <Dropdown menu={{ items: workspaceMenuItems }} trigger={["click"]}>
-            <Button className={styles.workspaceBadge} icon={<FolderOpenOutlined />} type="default">
+            <Button
+              className={styles.workspaceBadge}
+              disabled={!sessionSummary?.workspace?.workspace_root}
+              icon={<FolderOpenOutlined />}
+              type="default"
+            >
               {locale.workspaceBadge}
             </Button>
           </Dropdown>
+          <Button
+            aria-label={locale.runtimeSettings}
+            className={styles.actionButton}
+            icon={<SettingOutlined />}
+            onClick={onOpenSettings}
+            type="default"
+          />
           <Button
             className={styles.actionButton}
             icon={<ReloadOutlined />}
@@ -268,7 +285,7 @@ export function CodexConversationPane({
       <div className={styles.center}>
         <div className={styles.stream} ref={listRef}>
           <div className={styles.streamInner}>
-            {!hasThread ? (
+            {isWorkspaceIdle ? (
               <div className={styles.idleWorkspace}>
                 <h2 className={styles.idleQuestion}>{locale.idlePromptTitle}</h2>
                 <div className={styles.idleSubtitle}>{locale.idlePromptSubtitle}</div>
@@ -289,7 +306,7 @@ export function CodexConversationPane({
                   </div>
                 </section>
                 <section className={styles.idleSection}>
-                  <div className={styles.idleSectionTitle}>{locale.recentThreads}</div>
+                  <div className={styles.idleSectionTitle}>{locale.continueTasks}</div>
                   <div className={styles.recentGroup}>{locale.todayGroup}</div>
                   <div className={styles.recentList}>
                     {recentThreads.map((item) => (
@@ -300,9 +317,7 @@ export function CodexConversationPane({
                         type="button"
                       >
                         <span>{item.label}</span>
-                        <span>
-                          {statusLabel(sessionSummaries[item.key]?.status)} · {item.group === locale.pinned ? locale.todayGroup : item.group} · {locale.accessWorkspaceWrite.replace("权限: ", "")}
-                        </span>
+                        <span>{threadMeta(item)}</span>
                       </button>
                     ))}
                     {recentThreads.length === 0 ? (
@@ -312,27 +327,17 @@ export function CodexConversationPane({
                 </section>
               </div>
             ) : (
-              <>
-                {sessionSummary ? <SessionContextCard apiBaseUrl={apiBaseUrl} session={sessionSummary} /> : null}
-                <SessionResultWorkbench
-                  artifactContentPreview={artifactContentPreview}
-                  artifactDetail={artifactDetail}
-                  onSelectArtifact={onOpenArtifact}
-                  surface={resultSurface}
-                />
-                <SessionExecutionTrace events={events} />
-                <div className={styles.messageStack}>
-                  {messages.map((item) =>
-                    item.role === "assistant" ? (
-                      <AssistantMessageBlock key={item.key} message={item} />
-                    ) : (
-                      <div className={styles.userWrap} key={item.key}>
-                        <div className={styles.userCard}>{item.content}</div>
-                      </div>
-                    ),
-                  )}
-                </div>
-              </>
+              <SessionThreadWorkspace
+                activeLabel={activeLabel}
+                artifactContentPreview={artifactContentPreview}
+                artifactDetail={artifactDetail}
+                events={events}
+                isDraft={!hasSessionThread}
+                messages={messages}
+                onOpenArtifact={onOpenArtifact}
+                resultSurface={resultSurface}
+                sessionSummary={sessionSummary}
+              />
             )}
           </div>
         </div>

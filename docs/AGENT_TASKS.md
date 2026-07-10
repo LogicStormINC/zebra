@@ -9616,3 +9616,35 @@ synchronize the next memory workflow priority.
 
 - [x] Phase 101 scoped queue-sweep filtered preview evidence is recorded.
 - [x] Current implementation lane and next-priority decision are synchronized in `docs/AGENT_TASKS.md`.
+
+## Phase 102 Task Board
+
+### P102-UI-01 - Desktop Workspace Product Foundation
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `APP`
+- Depends on: `P101-CLOSE-01`
+- Branch: `codex/p102-ui-01-desktop-product-foundation`
+- Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Turn the desktop shell into a truthful local-first workspace foundation before
+adding approval and delivery workflows.
+
+#### Deliverables
+
+- Codex-style idle and thread workspace with durable local task navigation
+- health-backed runtime connection state instead of hard-coded availability
+- explicit local API configuration entry using the existing operator config
+- session-backed workspace metadata where available, with honest unavailable states
+- focused frontend checks for new non-trivial state projection logic
+
+#### Acceptance
+
+- [x] Restarting the desktop UI restores indexed tasks and reloads session state from the API.
+- [x] API connectivity is reflected truthfully in the header and project surface.
+- [x] Operators can inspect and update the local API URL and bearer token from the workspace.
+- [x] Workspace metadata is not presented as real Git state when no backend evidence exists.
+- [x] `pnpm build` and focused frontend checks pass.
