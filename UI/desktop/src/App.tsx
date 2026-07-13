@@ -5,17 +5,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { CodexWorkspace } from "./components/CodexWorkspace";
 import locale from "./_utils/local";
 import type { ChatMessage } from "./lib/chat-surface";
-import {
-  isAppendToTerminalError,
-  streamEventsToMessages,
-  toErrorMessage,
-} from "./lib/chat-surface";
+import { isAppendToTerminalError, streamEventsToMessages, toErrorMessage } from "./lib/chat-surface";
 import { useOperatorConfig } from "./lib/operator-config";
 import { mergeSessionEvents, pollWhile } from "./lib/live-session";
 import { projectRuntimeConnection } from "./lib/runtime-connection";
 import { decodeArtifactContent, type SessionResultSurface } from "./lib/session-results";
 import { useWorkspaceSessionIndex } from "./lib/use-workspace-session-index";
 import { useActiveApproval } from "./lib/use-active-approval";
+import { useSessionDelivery } from "./lib/use-session-delivery";
 import { zebraApi } from "./lib/zebra-api";
 import type { SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "./types";
 
@@ -140,6 +137,7 @@ export default function App() {
     [currentConversation, refreshConversation],
   );
   const activeApproval = useActiveApproval(api, currentSessionId, sessionSummary?.status, refreshCurrentConversation);
+  const delivery = useSessionDelivery(api, currentSessionId, refreshCurrentConversation);
 
   const executeSession = useCallback(
     async (conversationKey: string, sessionId: string) => {
@@ -265,7 +263,7 @@ export default function App() {
   );
 
   const submitMessage = useCallback(
-    async (input: string) => {
+    async (input: string, policyProfile = "workspace_write") => {
       const trimmed = input.trim();
       if (!trimmed || !currentConversation) {
         return;
@@ -291,7 +289,7 @@ export default function App() {
         let sessionId = conversationToSessionId[conversationKey];
         if (!sessionId) {
           const title = trimmed.slice(0, 36) || locale.newConversation;
-          const created = await api.createSession({ title, prompt: trimmed, execute: false });
+          const created = await api.createSession({ title, prompt: trimmed, execute: false, policy_profile: policyProfile });
           sessionId = created.session_id;
           patchConfig({ sessionId });
           if (!createdFromWorkspaceHome) {
@@ -317,7 +315,7 @@ export default function App() {
               throw error;
             }
             const title = trimmed.slice(0, 36) || locale.newConversation;
-            const created = await api.createSession({ title, prompt: trimmed, execute: false });
+            const created = await api.createSession({ title, prompt: trimmed, execute: false, policy_profile: policyProfile });
             sessionId = created.session_id;
             patchConfig({ sessionId });
             if (!createdFromWorkspaceHome) {
@@ -354,7 +352,6 @@ export default function App() {
       messageApi,
       patchConfig,
       renameConversation,
-      syncConversationFromStream,
     ],
   );
 
@@ -430,6 +427,7 @@ export default function App() {
         conversations={conversations}
         currentConversation={currentConversation}
         currentSessionId={currentSessionId}
+        delivery={delivery}
         events={events}
         isRequesting={isRequesting}
         listRef={listRef}
@@ -484,8 +482,8 @@ export default function App() {
           });
         }}
         onSelectConversation={setCurrentConversation}
-        onSubmit={(value) => {
-          void submitMessage(value);
+        onSubmit={(value, policyProfile) => {
+          void submitMessage(value, policyProfile);
         }}
         controlsBusy={controlsBusy}
         resultSurface={resultSurface}

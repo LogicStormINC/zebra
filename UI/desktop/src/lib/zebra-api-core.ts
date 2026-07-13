@@ -59,7 +59,7 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
       ),
     deliveryAudit: (sessionId: string) =>
       requestJson<SessionDeliveryAuditResponse>(baseUrl, `/sessions/${sessionId}/delivery-audit`, { authToken }),
-    createSession: (payload: { title: string; prompt: string; workspace?: string; execute?: boolean }) =>
+    createSession: (payload: { title: string; prompt: string; workspace?: string; execute?: boolean; policy_profile?: string }) =>
       requestJson<CreateSessionResponse>(baseUrl, "/sessions", {
         method: "POST",
         authToken,

@@ -19,6 +19,7 @@ import { sessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-sta
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { SessionResultSurface } from "../lib/session-results";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
+import type { SessionDeliveryController } from "../lib/session-delivery";
 import type { ApprovalSummary, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
 import { ArtifactDetailDrawer } from "./ArtifactDetailDrawer";
 import { SessionThreadWorkspace } from "./SessionThreadWorkspace";
@@ -35,6 +36,7 @@ interface CodexConversationPaneProps {
   artifactLoading: boolean;
   currentConversation: string;
   currentSessionId?: string;
+  delivery: SessionDeliveryController;
   conversations: ConversationSeed[];
   events: SessionEvent[];
   isWorkspaceIdle: boolean;
@@ -56,7 +58,7 @@ interface CodexConversationPaneProps {
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
   onScrollToLatest: () => void;
   onSelectConversation: (key: string) => void;
-  onSubmit: (value: string) => void;
+  onSubmit: (value: string, policyProfile?: string) => void;
   controlsBusy: boolean;
   resultSurface: SessionResultSurface | null;
   runtimeStatus: RuntimeConnectionStatus;
@@ -75,6 +77,7 @@ export function CodexConversationPane({
   artifactLoading,
   currentConversation,
   currentSessionId,
+  delivery,
   conversations,
   events,
   isWorkspaceIdle,
@@ -106,6 +109,7 @@ export function CodexConversationPane({
 }: CodexConversationPaneProps) {
   const { styles } = useConversationPaneStyle();
   const [composerValue, setComposerValue] = React.useState("");
+  const [policyProfile, setPolicyProfile] = React.useState("workspace_write");
   const canSubmit = composerValue.trim().length > 0;
   const hasThread = !isWorkspaceIdle;
   const hasSessionThread = Boolean(currentSessionId) || messages.length > 0 || events.length > 0;
@@ -146,7 +150,14 @@ export function CodexConversationPane({
                   <span className={styles.modePillActive}>{locale.modeAct}</span>
                 </span>
                 <button className={styles.toolbarButton} type="button">{locale.attach}</button>
-                <button className={styles.toolbarButton} type="button">{locale.accessWorkspaceWrite}</button>
+                <Dropdown menu={{ items: [
+                  { key: "workspace_write", label: "权限: 工作区写入", onClick: () => setPolicyProfile("workspace_write") },
+                  { key: "full_access", label: "权限: 完整访问（允许交付）", onClick: () => setPolicyProfile("full_access") },
+                ] }} trigger={["click"]}>
+                  <button className={styles.toolbarButton} type="button">
+                    {policyProfile === "full_access" ? "权限: 完整访问" : locale.accessWorkspaceWrite}
+                  </button>
+                </Dropdown>
                 <button className={styles.toolbarButton} type="button">{locale.modelDeepSeek}</button>
               </Flex>
               <span className={`${styles.sendSlot} ${canSubmit ? "" : styles.sendSlotDisabled}`}>
@@ -165,7 +176,7 @@ export function CodexConversationPane({
             if (!trimmed) {
               return;
             }
-            onSubmit(trimmed);
+            onSubmit(trimmed, policyProfile);
             setComposerValue("");
           }}
           placeholder={variant === "thread" ? locale.threadComposerHint : locale.placeholder}
@@ -307,7 +318,7 @@ export function CodexConversationPane({
                       <button
                         className={styles.quickAction}
                         key={action.label}
-                        onClick={() => onSubmit(action.prompt)}
+                        onClick={() => onSubmit(action.prompt, policyProfile)}
                         type="button"
                       >
                         {action.label}
@@ -344,6 +355,7 @@ export function CodexConversationPane({
                 approvalErrorText={approvalErrorText}
                 artifactContentPreview={artifactContentPreview}
                 artifactDetail={artifactDetail}
+                delivery={delivery}
                 events={events}
                 isDraft={!hasSessionThread}
                 messages={messages}

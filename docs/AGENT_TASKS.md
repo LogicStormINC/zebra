@@ -9723,11 +9723,11 @@ product boundary without reopening live execution or approval scope.
 
 ### P104-UI-01 - Result Review And Safe Delivery Interaction
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P103-CLOSE-01`
-- Suggested branch: `codex/p104-ui-01-result-review-delivery`
+- Branch: `codex/p104-ui-01-result-review-delivery`
 - Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
 #### Goal
@@ -9745,8 +9745,8 @@ legacy workbench logic.
 
 #### Acceptance
 
-- [ ] Operators can review available change and validation evidence before committing.
-- [ ] Commit creation uses the existing typed API and refreshes durable session and delivery state.
-- [ ] Pull-request flow defaults to a side-effect-free plan and requires an explicit action to execute.
-- [ ] Delivery actions are disabled when the active session or required evidence is unavailable.
-- [ ] Focused frontend checks, `pnpm build`, and `make check` pass.
+- [x] Operators can review available change and validation evidence before committing.
+- [x] Commit creation uses the existing typed API and refreshes durable session and delivery state.
+- [x] Pull-request flow defaults to a side-effect-free plan and requires an explicit action to execute.
+- [x] Delivery actions are disabled when the active session, evidence, or required policy is unavailable.
+- [x] Focused frontend checks, `pnpm build`, and `make check` pass.

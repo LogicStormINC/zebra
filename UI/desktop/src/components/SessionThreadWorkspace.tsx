@@ -4,10 +4,12 @@ import locale from "../_utils/local";
 import type { ChatMessage } from "../lib/chat-surface";
 import { extractChangedFiles } from "../lib/session-results";
 import type { SessionResultSurface } from "../lib/session-results";
+import type { SessionDeliveryController } from "../lib/session-delivery";
 import type { ApprovalSummary, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
 import { AssistantMessageBlock } from "./AssistantMessageBlock";
 import { SessionExecutionTrace } from "./SessionExecutionTrace";
 import { SessionApprovalPanel } from "./SessionApprovalPanel";
+import { SessionDeliveryPanel } from "./SessionDeliveryPanel";
 import { SessionResultWorkbench } from "./SessionResultWorkbench";
 import { useSessionThreadWorkspaceStyle } from "./SessionThreadWorkspace.styles";
 
@@ -96,6 +98,7 @@ interface SessionThreadWorkspaceProps {
   approvalErrorText: string | null;
   artifactContentPreview: string | null;
   artifactDetail: SessionArtifactDetailResponse | null;
+  delivery: SessionDeliveryController;
   events: SessionEvent[];
   isDraft: boolean;
   messages: ChatMessage[];
@@ -113,6 +116,7 @@ export function SessionThreadWorkspace({
   approvalErrorText,
   artifactContentPreview,
   artifactDetail,
+  delivery,
   events,
   isDraft,
   messages,
@@ -215,6 +219,13 @@ export function SessionThreadWorkspace({
             artifactContentPreview={artifactContentPreview}
             artifactDetail={artifactDetail}
             onSelectArtifact={onOpenArtifact}
+            surface={resultSurface}
+          />
+          <SessionDeliveryPanel
+            controller={delivery}
+            policyProfile={sessionSummary?.workspace?.policy_profile}
+            sessionId={sessionSummary?.session_id}
+            sessionStatus={sessionSummary?.status}
             surface={resultSurface}
           />
           <SessionExecutionTrace events={events} />
