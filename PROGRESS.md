@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-13: completed `P103-UI-01` implementation and browser acceptance on `codex/p103-ui-01-live-execution-approvals`; the active desktop task now consumes SSE events incrementally, polls durable session state during execution, sends real cancellation requests, and exposes approval context with approve or reject actions. Cancel and approval state convergence were verified against the local API. A complete provider-backed model reply remains an environment check because this worktree has no `DEEPSEEK_API_KEY`.
 - 2026-07-10: merged `P102-UI-01` through GitHub PR `#40`; the Codex-style desktop workspace now restores its local task index, reloads session state, verifies the Zebra service identity, exposes runtime configuration, and only presents workspace metadata backed by session evidence.
 - 2026-07-05: bootstrapped `UI/desktop` as an isolated desktop UI workspace using `Tauri + React + Tailwind CSS + TanStack Query + Ant Design + Ant Design X`.
 - 2026-07-05: upgraded `UI/desktop` from a static shell to a live operator surface wired to the local HTTP API for health, approvals, session creation, session detail, stream replay, repo memory inventory, and cross-scope memory overview reads. This does not change the backend phase sequence, but it does establish the first reusable frontend integration seam.
@@ -22,9 +23,10 @@
 ## Current Phase
 
 - Active phase: `Phase 103 - Live Execution And Approval Interaction`
-- Repository status: `phase 102 closed; P103-UI-01 is ready`
+- Repository status: `phase 102 closed; P103-UI-01 is in review`
 - Current focus:
-  - `P103-UI-01` is ready to add incremental execution events, real cancellation, and approval actions to the active desktop task surface
+  - `P103-UI-01` is in review after `941` backend tests, Ruff, Mypy, the eval release gate, focused frontend checks, the production build, and browser validation of incremental events, real cancellation, approval decisions, and durable state convergence
+  - Provider-backed completion remains an environment validation item because `DEEPSEEK_API_KEY` is absent from the isolated worktree; the observed API failure correctly reported the missing key rather than a frontend integration error
   - `P102-UI-01` was merged through GitHub PR `#40` after `make check`, frontend build, state projection checks, CORS preflight, service identity rejection, runtime configuration switching, and persisted session restoration passed
   - `P102-CLOSE-01` records the Phase 102 closeout and the explicit Phase 103 ownership boundary
   - `P101-CLOSE-01` is complete on `codex/p101-closeout-next-plan` with Phase 101 acceptance evidence on `docs/Phase101_Scoped_Queue_Sweep_Filtered_Preview_Controls_验收记录.md`

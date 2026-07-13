@@ -1,4 +1,5 @@
 import type { SessionEvent, SessionStreamResponse } from "../types";
+import { readSseEvents } from "./live-session";
 
 export class ZebraApiError extends Error {
   statusCode: number;
@@ -53,26 +54,11 @@ export async function requestJson<T>(
   return payload as T;
 }
 
-function parseEventStream(raw: string): SessionEvent[] {
-  return raw
-    .split("\n\n")
-    .map((chunk) => chunk.trim())
-    .filter(Boolean)
-    .map((chunk) => {
-      const dataLine = chunk
-        .split("\n")
-        .find((line) => line.startsWith("data: "));
-      if (!dataLine) {
-        throw new Error("Missing SSE data payload");
-      }
-      return JSON.parse(dataLine.slice(6)) as SessionEvent;
-    });
-}
-
 export async function requestEventStream(
   baseUrl: string,
   path: string,
   authToken?: string,
+  onEvent?: (event: SessionEvent) => void,
 ): Promise<SessionStreamResponse> {
   const headers: Record<string, string> = {
     Accept: "text/event-stream",
@@ -81,8 +67,8 @@ export async function requestEventStream(
     headers.Authorization = `Bearer ${authToken}`;
   }
   const response = await fetch(`${normalizeBaseUrl(baseUrl)}${path}`, { headers });
-  const raw = await response.text();
   if (!response.ok) {
+    const raw = await response.text();
     let payload: unknown = raw;
     try {
       payload = JSON.parse(raw);
@@ -91,8 +77,24 @@ export async function requestEventStream(
     }
     throw new ZebraApiError("Failed to read event stream", response.status, payload);
   }
+  if (!response.body) throw new Error("Missing event stream body");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const events: SessionEvent[] = [];
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    const parsed = readSseEvents(done ? `${buffer}\n\n` : buffer);
+    buffer = parsed.remainder;
+    parsed.events.forEach((event) => {
+      events.push(event);
+      onEvent?.(event);
+    });
+    if (done) break;
+  }
   return {
     session_id: path.split("/")[2] ?? "",
-    events: parseEventStream(raw),
+    events,
   };
 }

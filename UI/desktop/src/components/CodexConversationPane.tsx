@@ -19,7 +19,7 @@ import { sessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-sta
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { SessionResultSurface } from "../lib/session-results";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
-import type { SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
+import type { ApprovalSummary, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
 import { ArtifactDetailDrawer } from "./ArtifactDetailDrawer";
 import { SessionThreadWorkspace } from "./SessionThreadWorkspace";
 import { useConversationPaneStyle } from "./CodexConversationPane.styles";
@@ -27,6 +27,9 @@ import { useConversationPaneStyle } from "./CodexConversationPane.styles";
 
 interface CodexConversationPaneProps {
   activeLabel: string;
+  activeApproval: ApprovalSummary | undefined;
+  approvalBusy: boolean;
+  approvalErrorText: string | null;
   artifactContentPreview: string | null;
   artifactDetail: SessionArtifactDetailResponse | null;
   artifactLoading: boolean;
@@ -48,7 +51,9 @@ interface CodexConversationPaneProps {
   onResumeSession: () => void;
   onSuspendSession: () => void;
   onOpenArtifact: (artifactId: string) => void;
+  onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onRefreshConversation: () => void;
+  onReject: (approval: ApprovalSummary) => Promise<unknown>;
   onScrollToLatest: () => void;
   onSelectConversation: (key: string) => void;
   onSubmit: (value: string) => void;
@@ -62,6 +67,9 @@ interface CodexConversationPaneProps {
 
 export function CodexConversationPane({
   activeLabel,
+  activeApproval,
+  approvalBusy,
+  approvalErrorText,
   artifactContentPreview,
   artifactDetail,
   artifactLoading,
@@ -83,7 +91,9 @@ export function CodexConversationPane({
   onResumeSession,
   onSuspendSession,
   onOpenArtifact,
+  onApprove,
   onRefreshConversation,
+  onReject,
   onScrollToLatest,
   onSelectConversation,
   onSubmit,
@@ -329,12 +339,17 @@ export function CodexConversationPane({
             ) : (
               <SessionThreadWorkspace
                 activeLabel={activeLabel}
+                activeApproval={activeApproval}
+                approvalBusy={approvalBusy}
+                approvalErrorText={approvalErrorText}
                 artifactContentPreview={artifactContentPreview}
                 artifactDetail={artifactDetail}
                 events={events}
                 isDraft={!hasSessionThread}
                 messages={messages}
                 onOpenArtifact={onOpenArtifact}
+                onApprove={onApprove}
+                onReject={onReject}
                 resultSurface={resultSurface}
                 sessionSummary={sessionSummary}
               />

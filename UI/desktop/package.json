@@ -12,6 +12,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "check:runtime": "node --experimental-strip-types checks/runtime-connection.check.ts",
+    "check:live": "node --experimental-strip-types checks/live-session.check.ts",
     "preview": "vite preview",
     "tauri:dev": "CARGO_HOME=$PWD/.cargo-home tauri dev",
     "tauri:build": "CARGO_HOME=$PWD/.cargo-home tauri build",

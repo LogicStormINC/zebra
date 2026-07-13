@@ -11,19 +11,15 @@ import {
   toErrorMessage,
 } from "./lib/chat-surface";
 import { useOperatorConfig } from "./lib/operator-config";
+import { mergeSessionEvents, pollWhile } from "./lib/live-session";
 import { projectRuntimeConnection } from "./lib/runtime-connection";
-import type { SessionResultSurface } from "./lib/session-results";
+import { decodeArtifactContent, type SessionResultSurface } from "./lib/session-results";
 import { useWorkspaceSessionIndex } from "./lib/use-workspace-session-index";
+import { useActiveApproval } from "./lib/use-active-approval";
 import { zebraApi } from "./lib/zebra-api";
 import type { SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "./types";
 
 const WORKSPACE_HOME_KEY = "__workspace-home__";
-
-function decodeArtifactContent(contentBase64: string) {
-  const binary = window.atob(contentBase64);
-  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
-}
 
 export default function App() {
   const senderRef = useRef<GetRef<typeof Sender>>(null);
@@ -36,11 +32,7 @@ export default function App() {
     retry: false,
     refetchInterval: 5_000,
   });
-  const runtimeStatus = projectRuntimeConnection(
-    healthQuery.data?.status,
-    healthQuery.data?.service,
-    healthQuery.isFetching,
-  );
+  const runtimeStatus = projectRuntimeConnection(healthQuery.data?.status, healthQuery.data?.service, healthQuery.isFetching);
 
   const {
     conversations,
@@ -79,16 +71,18 @@ export default function App() {
 
   const syncConversationFromStream = useCallback(
     async (conversationKey: string, sessionId: string) => {
-      const response = await api.stream(sessionId);
-      const nextMessages = streamEventsToMessages(response.events);
-      setConversationEvents((current) => ({
-        ...current,
-        [conversationKey]: response.events,
-      }));
-      setConversationMessages((current) => ({
-        ...current,
-        [conversationKey]: nextMessages,
-      }));
+      const applyEvents = (incoming: SessionEvent[]) => setConversationEvents((current) => {
+        return { ...current, [conversationKey]: mergeSessionEvents(current[conversationKey] ?? [], incoming) };
+      });
+      const applyMessages = (incoming: SessionEvent[]) => setConversationMessages((current) => {
+        const messages = new Map((current[conversationKey] ?? []).map((message) => [message.key, message]));
+        streamEventsToMessages(incoming).forEach((message) => messages.set(message.key, message));
+        return { ...current, [conversationKey]: [...messages.values()] };
+      });
+      const apply = (incoming: SessionEvent[]) => { applyEvents(incoming); applyMessages(incoming); };
+      const response = await api.stream(sessionId, (event) => apply([event]));
+      applyEvents(response.events);
+      setConversationMessages((current) => ({ ...current, [conversationKey]: streamEventsToMessages(response.events) }));
     },
     [api],
   );
@@ -139,6 +133,23 @@ export default function App() {
       ]);
     },
     [conversationToSessionId, loadResultSurface, loadSessionSummary, syncConversationFromStream],
+  );
+
+  const refreshCurrentConversation = useCallback(
+    () => refreshConversation(currentConversation),
+    [currentConversation, refreshConversation],
+  );
+  const activeApproval = useActiveApproval(api, currentSessionId, sessionSummary?.status, refreshCurrentConversation);
+
+  const executeSession = useCallback(
+    async (conversationKey: string, sessionId: string) => {
+      await pollWhile(api.resume(sessionId), () => Promise.all([
+        syncConversationFromStream(conversationKey, sessionId),
+        loadSessionSummary(conversationKey, sessionId),
+      ]));
+      await loadResultSurface(conversationKey, sessionId);
+    },
+    [api, loadResultSurface, loadSessionSummary, syncConversationFromStream],
   );
 
   const runControlAction = useCallback(
@@ -280,7 +291,7 @@ export default function App() {
         let sessionId = conversationToSessionId[conversationKey];
         if (!sessionId) {
           const title = trimmed.slice(0, 36) || locale.newConversation;
-          const created = await api.createSession({ title, prompt: trimmed, execute: true });
+          const created = await api.createSession({ title, prompt: trimmed, execute: false });
           sessionId = created.session_id;
           patchConfig({ sessionId });
           if (!createdFromWorkspaceHome) {
@@ -301,13 +312,12 @@ export default function App() {
         } else {
           try {
             await api.appendMessage(sessionId, { content: trimmed });
-            await api.resume(sessionId);
           } catch (error: unknown) {
             if (!isAppendToTerminalError(error)) {
               throw error;
             }
             const title = trimmed.slice(0, 36) || locale.newConversation;
-            const created = await api.createSession({ title, prompt: trimmed, execute: true });
+            const created = await api.createSession({ title, prompt: trimmed, execute: false });
             sessionId = created.session_id;
             patchConfig({ sessionId });
             if (!createdFromWorkspaceHome) {
@@ -325,12 +335,9 @@ export default function App() {
                 content: locale.noData,
               });
             }
-            await syncConversationFromStream(conversationKey, sessionId);
-            return;
           }
         }
-
-        await syncConversationFromStream(conversationKey, sessionId);
+        await executeSession(conversationKey, sessionId);
       } catch (error: unknown) {
         messageApi.error(toErrorMessage(error));
       } finally {
@@ -343,6 +350,7 @@ export default function App() {
       conversationToSessionId,
       currentConversation,
       createIndexedConversation,
+      executeSession,
       messageApi,
       patchConfig,
       renameConversation,
@@ -363,8 +371,8 @@ export default function App() {
     if (!sessionId) {
       return;
     }
-    void runControlAction(() => api.resume(sessionId));
-  }, [api.resume, currentSessionId, runControlAction]);
+    void runControlAction(() => executeSession(currentConversation, sessionId));
+  }, [currentConversation, currentSessionId, executeSession, runControlAction]);
 
   const cancelSession = useCallback(() => {
     const sessionId = currentSessionId;
@@ -427,9 +435,11 @@ export default function App() {
         listRef={listRef}
         messages={messages}
         operatorConfig={config}
-        onCancel={() => {
-          messageApi.info("当前不支持中断请求");
-        }}
+        activeApproval={activeApproval.approval}
+        approvalBusy={activeApproval.busy}
+        approvalErrorText={activeApproval.errorText}
+        onApprove={activeApproval.approve}
+        onCancel={cancelSession}
         onCloseArtifact={() => {
           setArtifactDetail(null);
           setArtifactContentPreview(null);
@@ -461,6 +471,7 @@ export default function App() {
         onOpenArtifact={(artifactId) => {
           void openArtifact(artifactId);
         }}
+        onReject={activeApproval.reject}
         onRefreshConversation={() => {
           void refreshConversation(currentConversation).catch((error: unknown) => {
             messageApi.error(toErrorMessage(error));

@@ -1,0 +1,35 @@
+import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import { Alert, Button, Descriptions, Space } from "antd";
+import type { ApprovalSummary } from "../types";
+
+interface SessionApprovalPanelProps {
+  approval: ApprovalSummary | undefined;
+  busy: boolean;
+  errorText: string | null;
+  onApprove: (approval: ApprovalSummary) => Promise<unknown>;
+  onReject: (approval: ApprovalSummary) => Promise<unknown>;
+}
+
+export function SessionApprovalPanel({ approval, busy, errorText, onApprove, onReject }: SessionApprovalPanelProps) {
+  if (!approval && !errorText) return null;
+  return (
+    <section aria-label="等待审批">
+      {errorText ? <Alert showIcon type="warning" message="审批信息读取失败" description={errorText} /> : null}
+      {approval ? (
+        <Space direction="vertical" size="middle" className="w-full">
+          <Alert showIcon type="warning" message="任务等待审批" description={approval.approval_context?.reason} />
+          <Descriptions bordered column={1} size="small">
+            <Descriptions.Item label="操作">{approval.approval_context?.route ?? approval.approval_context?.tool_name ?? "未知"}</Descriptions.Item>
+            <Descriptions.Item label="目标">{approval.approval_context?.target ?? "未提供"}</Descriptions.Item>
+            <Descriptions.Item label="权限策略">{approval.approval_context?.policy_profile ?? "未提供"}</Descriptions.Item>
+            <Descriptions.Item label="范围">{approval.approval_context?.scope?.join(", ") || "未提供"}</Descriptions.Item>
+          </Descriptions>
+          <Space>
+            <Button type="primary" icon={<CheckCircleOutlined />} loading={busy} onClick={() => void onApprove(approval)}>批准</Button>
+            <Button danger icon={<CloseCircleOutlined />} disabled={busy} onClick={() => void onReject(approval)}>拒绝</Button>
+          </Space>
+        </Space>
+      ) : null}
+    </section>
+  );
+}
