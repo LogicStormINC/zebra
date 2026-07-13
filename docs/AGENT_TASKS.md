@@ -9672,7 +9672,7 @@ product-logic boundary without reopening implementation scope.
 
 ### P103-UI-01 - Live Execution And Approval Interaction
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P102-CLOSE-01`
@@ -9699,3 +9699,54 @@ surface.
 - [x] Waiting approvals expose concrete context and approve or reject controls.
 - [x] Refresh or reconnect converges to the same durable session state.
 - [x] Focused frontend checks, `pnpm build`, and `make check` pass.
+
+### P103-CLOSE-01 - Phase 103 Closeout And Phase 104 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P103-UI-01`
+- Branch: `codex/p103-closeout-phase104-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 103 acceptance state and define the next desktop
+product boundary without reopening live execution or approval scope.
+
+#### Acceptance
+
+- [x] `P103-UI-01` is recorded as merged through PR `#42` and done.
+- [x] Phase 104 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 104 Task Board
+
+### P104-UI-01 - Result Review And Safe Delivery Interaction
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P103-CLOSE-01`
+- Suggested branch: `codex/p104-ui-01-result-review-delivery`
+- Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Make the existing diff, artifact, validation, commit, and pull-request APIs
+operable from the active Codex task workspace without duplicating backend or
+legacy workbench logic.
+
+#### Deliverables
+
+- one task-local review surface that makes changed files, artifacts, validation evidence, and unresolved delivery risks visible before writes
+- commit creation from the active task with explicit operator input and durable delivery-audit refresh
+- pull-request planning by default, followed by an explicit execution action rather than an ambiguous single-step write
+- deterministic loading, success, unavailable, and failure states for delivery actions
+
+#### Acceptance
+
+- [ ] Operators can review available change and validation evidence before committing.
+- [ ] Commit creation uses the existing typed API and refreshes durable session and delivery state.
+- [ ] Pull-request flow defaults to a side-effect-free plan and requires an explicit action to execute.
+- [ ] Delivery actions are disabled when the active session or required evidence is unavailable.
+- [ ] Focused frontend checks, `pnpm build`, and `make check` pass.
