@@ -6,6 +6,7 @@ import locale from "../_utils/local";
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { SessionResultSurface } from "../lib/session-results";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
+import type { SessionDeliveryController } from "../lib/session-delivery";
 import { projectWorkspaceLabel } from "../lib/workspace-projection";
 import type { ApprovalSummary, OperatorConfig, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
 import { CodexConversationPane } from "./CodexConversationPane";
@@ -47,6 +48,7 @@ interface CodexWorkspaceProps {
   conversations: ConversationSeed[];
   currentConversation: string;
   currentSessionId?: string;
+  delivery: SessionDeliveryController;
   events: SessionEvent[];
   isWorkspaceIdle: boolean;
   isRequesting: boolean;
@@ -71,7 +73,7 @@ interface CodexWorkspaceProps {
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
   onScrollToLatest: () => void;
   onSelectConversation: (key: string) => void;
-  onSubmit: (value: string) => void;
+  onSubmit: (value: string, policyProfile?: string) => void;
   controlsBusy: boolean;
   resultSurface: SessionResultSurface | null;
   runtimeStatus: RuntimeConnectionStatus;
@@ -120,6 +122,7 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             controlsBusy={props.controlsBusy}
             currentConversation={props.currentConversation}
             currentSessionId={props.currentSessionId}
+            delivery={props.delivery}
             events={props.events}
             isRequesting={props.isRequesting}
             isWorkspaceIdle={props.isWorkspaceIdle}
