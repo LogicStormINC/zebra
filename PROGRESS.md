@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-13: merged `P104-UI-01` through GitHub PR `#44` and closed Phase 104; Phase 105 is limited to truthful task-launch configuration, explicit workspace binding, and removal of unsupported Composer affordances.
 - 2026-07-13: completed `P104-UI-01` implementation and browser acceptance on `codex/p104-ui-01-result-review-delivery`; the active task workspace now combines Diff, artifacts, delivery audit, typed Commit, plan-first Pull Request, policy-aware availability, and explicit remote execution confirmation. Browser validation covered workspace-write denial, full-access local-only dry-run, durable audit refresh, and provider-gated execution.
 - 2026-07-13: merged `P103-UI-01` through GitHub PR `#42` and closed Phase 103; Phase 104 is limited to mounting existing result-review and delivery APIs into the active Codex task workspace with plan-first pull-request behavior.
 - 2026-07-13: completed `P103-UI-01` implementation and browser acceptance on `codex/p103-ui-01-live-execution-approvals`; the active desktop task now consumes SSE events incrementally, polls durable session state during execution, sends real cancellation requests, and exposes approval context with approve or reject actions. Cancel and approval state convergence were verified against the local API. A complete provider-backed model reply remains an environment check because this worktree has no `DEEPSEEK_API_KEY`.
@@ -24,10 +25,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 104 - Result Review And Safe Delivery Interaction`
-- Repository status: `phase 103 closed; P104-UI-01 is in review`
+- Active phase: `Phase 105 - Task Launch Configuration And Workspace Binding`
+- Repository status: `phase 104 closed; P105-UI-01 is ready`
 - Current focus:
-  - `P104-UI-01` is in review after `941` backend tests, Ruff, Mypy, the eval release gate, focused delivery, live execution, and runtime checks, the production build, and browser validation of policy denial, plan-first pull requests, and delivery-audit convergence
+  - `P105-UI-01` is ready to bind new tasks to an explicit workspace and supported policy while replacing unsupported Composer attachment and model controls with truthful states
+  - `P104-UI-01` was merged through GitHub PR `#44` after `941` backend tests, Ruff, Mypy, the eval release gate, focused delivery, live execution, and runtime checks, the production build, and browser validation of policy denial, plan-first pull requests, and delivery-audit convergence
+  - `P104-CLOSE-01` records the Phase 104 closeout and the explicit Phase 105 ownership boundary
   - `P103-UI-01` was merged through GitHub PR `#42` after `941` backend tests, Ruff, Mypy, the eval release gate, focused frontend checks, the production build, and browser validation of incremental events, real cancellation, approval decisions, and durable state convergence
   - `P103-CLOSE-01` records the Phase 103 closeout and the explicit Phase 104 ownership boundary
   - Provider-backed completion remains an environment validation item because `DEEPSEEK_API_KEY` is absent from the isolated worktree; the observed API failure correctly reported the missing key rather than a frontend integration error

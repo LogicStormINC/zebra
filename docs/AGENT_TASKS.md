@@ -9723,7 +9723,7 @@ product boundary without reopening live execution or approval scope.
 
 ### P104-UI-01 - Result Review And Safe Delivery Interaction
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P103-CLOSE-01`
@@ -9750,3 +9750,55 @@ legacy workbench logic.
 - [x] Pull-request flow defaults to a side-effect-free plan and requires an explicit action to execute.
 - [x] Delivery actions are disabled when the active session, evidence, or required policy is unavailable.
 - [x] Focused frontend checks, `pnpm build`, and `make check` pass.
+
+### P104-CLOSE-01 - Phase 104 Closeout And Phase 105 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P104-UI-01`
+- Branch: `codex/p104-closeout-phase105-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 104 acceptance state and define the next desktop
+product boundary without reopening result review or delivery scope.
+
+#### Acceptance
+
+- [x] `P104-UI-01` is recorded as merged through PR `#44` and done.
+- [x] Phase 105 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 105 Task Board
+
+### P105-UI-01 - Task Launch Configuration And Workspace Binding
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P104-CLOSE-01`
+- Suggested branch: `codex/p105-ui-01-task-launch-configuration`
+- Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Replace placeholder Composer controls with a truthful task-launch contract
+that binds new sessions to an explicit workspace and supported policy while
+representing model and attachment capabilities honestly.
+
+#### Deliverables
+
+- explicit workspace path configuration for new tasks using the existing create-session `workspace` field
+- a compact preflight summary of workspace, policy, and configured runtime model before submission
+- persisted launch defaults that do not rewrite existing session configuration
+- unsupported attachment and model-selection controls removed, disabled, or clearly represented as fixed capabilities
+- deterministic validation for missing workspace, unsupported policy, and restored launch defaults
+
+#### Acceptance
+
+- [ ] New desktop tasks send the selected workspace and policy through the existing typed create-session API.
+- [ ] Operators can verify launch configuration before starting a task.
+- [ ] Existing sessions continue to display their durable workspace and policy rather than current draft defaults.
+- [ ] The UI does not imply that attachments or arbitrary model switching work when the backend has no such contract.
+- [ ] Focused frontend checks, `pnpm build`, and `make check` pass.
