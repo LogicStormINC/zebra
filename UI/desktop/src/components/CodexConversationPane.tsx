@@ -12,7 +12,7 @@ import {
   StopOutlined,
 } from "@ant-design/icons";
 import { Sender } from "@ant-design/x";
-import { Button, Dropdown, Flex, GetRef } from "antd";
+import { Button, Dropdown, Flex, GetRef, Input, Popover } from "antd";
 import React from "react";
 import locale from "../_utils/local";
 import { sessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-status";
@@ -20,9 +20,12 @@ import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { SessionResultSurface } from "../lib/session-results";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
 import type { SessionDeliveryController } from "../lib/session-delivery";
+import { compactWorkspaceLabel, validateTaskLaunchConfig, type TaskLaunchConfig } from "../lib/task-launch-config";
+import { useTaskLaunchConfig } from "../lib/use-task-launch-config";
 import type { ApprovalSummary, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
 import { ArtifactDetailDrawer } from "./ArtifactDetailDrawer";
 import { SessionThreadWorkspace } from "./SessionThreadWorkspace";
+import { useTaskLaunchStyle } from "./TaskLaunchConfig.styles";
 import { useConversationPaneStyle } from "./CodexConversationPane.styles";
 
 
@@ -58,7 +61,7 @@ interface CodexConversationPaneProps {
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
   onScrollToLatest: () => void;
   onSelectConversation: (key: string) => void;
-  onSubmit: (value: string, policyProfile?: string) => void;
+  onSubmit: (value: string, launchConfig: TaskLaunchConfig) => void;
   controlsBusy: boolean;
   resultSurface: SessionResultSurface | null;
   runtimeStatus: RuntimeConnectionStatus;
@@ -108,11 +111,19 @@ export function CodexConversationPane({
   senderRef,
 }: CodexConversationPaneProps) {
   const { styles } = useConversationPaneStyle();
+  const { styles: launchStyles } = useTaskLaunchStyle();
   const [composerValue, setComposerValue] = React.useState("");
-  const [policyProfile, setPolicyProfile] = React.useState("workspace_write");
-  const canSubmit = composerValue.trim().length > 0;
+  const launch = useTaskLaunchConfig();
   const hasThread = !isWorkspaceIdle;
   const hasSessionThread = Boolean(currentSessionId) || messages.length > 0 || events.length > 0;
+  const launchEditable = !currentSessionId;
+  const durableWorkspace = sessionSummary?.workspace?.workspace_root ?? "";
+  const durablePolicy = sessionSummary?.workspace?.policy_profile === "full_access" ? "full_access" : "workspace_write";
+  const effectiveLaunchConfig: TaskLaunchConfig = launchEditable
+    ? launch.config
+    : { workspace: durableWorkspace, policyProfile: durablePolicy };
+  const launchError = validateTaskLaunchConfig(effectiveLaunchConfig);
+  const canSubmit = composerValue.trim().length > 0 && !launchError;
   const headerTitle = hasThread ? activeLabel : locale.idleProjectName;
   const runtimeLabel = runtimeStatus === "connected"
     ? locale.runtimeConnected
@@ -137,8 +148,27 @@ export function CodexConversationPane({
     const summary = sessionSummaries[item.key];
     return `${sessionStatusLabel(summary?.status)} · ${dayLabel} · ${sessionWorkspaceLabel(summary)}`;
   };
+  const workspaceEditor = (
+    <div className={launchStyles.editor}>
+      <strong>新任务工作区</strong>
+      <Input
+        onChange={(event) => launch.patchConfig({ workspace: event.target.value })}
+        placeholder="绝对路径或 ."
+        status={launch.config.workspace.trim() ? undefined : "error"}
+        value={launch.config.workspace}
+      />
+      <span>路径由本地 API 解析；`.` 表示 API 服务当前目录。</span>
+    </div>
+  );
   const renderComposer = (variant: "idle" | "thread") => (
     <div className={variant === "idle" ? styles.idleComposerCard : styles.composerCard}>
+      <div className={launchStyles.summary} role="status">
+        <strong>{launchEditable ? "启动配置" : "会话配置"}</strong>
+        <span title={effectiveLaunchConfig.workspace}>工作区 · {compactWorkspaceLabel(effectiveLaunchConfig.workspace)}</span>
+        <span>权限 · {effectiveLaunchConfig.policyProfile === "full_access" ? "完整访问" : "工作区写入"}</span>
+        <span>模型 · API 运行时配置</span>
+        {launchError ? <em>{launchError}</em> : null}
+      </div>
       <div className={styles.sender}>
         <Sender
           autoSize={variant === "idle" ? { minRows: 1, maxRows: 6 } : { minRows: 2, maxRows: 3 }}
@@ -149,16 +179,22 @@ export function CodexConversationPane({
                   <span className={styles.modePill}>{locale.modeAsk}</span>
                   <span className={styles.modePillActive}>{locale.modeAct}</span>
                 </span>
-                <button className={styles.toolbarButton} type="button">{locale.attach}</button>
-                <Dropdown menu={{ items: [
-                  { key: "workspace_write", label: "权限: 工作区写入", onClick: () => setPolicyProfile("workspace_write") },
-                  { key: "full_access", label: "权限: 完整访问（允许交付）", onClick: () => setPolicyProfile("full_access") },
-                ] }} trigger={["click"]}>
-                  <button className={styles.toolbarButton} type="button">
-                    {policyProfile === "full_access" ? "权限: 完整访问" : locale.accessWorkspaceWrite}
-                  </button>
-                </Dropdown>
-                <button className={styles.toolbarButton} type="button">{locale.modelDeepSeek}</button>
+                {launchEditable ? (
+                  <Popover content={workspaceEditor} placement="topLeft" trigger="click">
+                    <button className={styles.toolbarButton} type="button">工作区: {compactWorkspaceLabel(launch.config.workspace)}</button>
+                  </Popover>
+                ) : <span className={launchStyles.staticBadge}>工作区: {compactWorkspaceLabel(durableWorkspace)}</span>}
+                {launchEditable ? (
+                  <Dropdown menu={{ items: [
+                    { key: "workspace_write", label: "权限: 工作区写入", onClick: () => launch.patchConfig({ policyProfile: "workspace_write" }) },
+                    { key: "full_access", label: "权限: 完整访问（允许交付）", onClick: () => launch.patchConfig({ policyProfile: "full_access" }) },
+                  ] }} trigger={["click"]}>
+                    <button className={styles.toolbarButton} type="button">
+                      {launch.config.policyProfile === "full_access" ? "权限: 完整访问" : locale.accessWorkspaceWrite}
+                    </button>
+                  </Dropdown>
+                ) : <span className={launchStyles.staticBadge}>权限: {durablePolicy === "full_access" ? "完整访问" : "工作区写入"}</span>}
+                <span className={launchStyles.staticBadge}>模型: API 运行时配置</span>
               </Flex>
               <span className={`${styles.sendSlot} ${canSubmit ? "" : styles.sendSlotDisabled}`}>
                 {actionNode}
@@ -173,10 +209,10 @@ export function CodexConversationPane({
           }}
           onSubmit={(value) => {
             const trimmed = value.trim();
-            if (!trimmed) {
+            if (!trimmed || launchError) {
               return;
             }
-            onSubmit(trimmed, policyProfile);
+            onSubmit(trimmed, effectiveLaunchConfig);
             setComposerValue("");
           }}
           placeholder={variant === "thread" ? locale.threadComposerHint : locale.placeholder}
@@ -318,7 +354,8 @@ export function CodexConversationPane({
                       <button
                         className={styles.quickAction}
                         key={action.label}
-                        onClick={() => onSubmit(action.prompt, policyProfile)}
+                        disabled={Boolean(launchError)}
+                        onClick={() => onSubmit(action.prompt, effectiveLaunchConfig)}
                         type="button"
                       >
                         {action.label}

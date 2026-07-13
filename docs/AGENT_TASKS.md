@@ -9774,11 +9774,11 @@ product boundary without reopening result review or delivery scope.
 
 ### P105-UI-01 - Task Launch Configuration And Workspace Binding
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P104-CLOSE-01`
-- Suggested branch: `codex/p105-ui-01-task-launch-configuration`
+- Branch: `codex/p105-ui-01-task-launch-configuration`
 - Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
 #### Goal
@@ -9797,8 +9797,8 @@ representing model and attachment capabilities honestly.
 
 #### Acceptance
 
-- [ ] New desktop tasks send the selected workspace and policy through the existing typed create-session API.
-- [ ] Operators can verify launch configuration before starting a task.
-- [ ] Existing sessions continue to display their durable workspace and policy rather than current draft defaults.
-- [ ] The UI does not imply that attachments or arbitrary model switching work when the backend has no such contract.
-- [ ] Focused frontend checks, `pnpm build`, and `make check` pass.
+- [x] New desktop tasks send the selected workspace and policy through the existing typed create-session API.
+- [x] Operators can verify launch configuration before starting a task.
+- [x] Existing sessions continue to display their durable workspace and policy rather than current draft defaults.
+- [x] The UI does not imply that attachments or arbitrary model switching work when the backend has no such contract.
+- [x] Focused frontend checks, `pnpm build`, and `make check` pass.

@@ -14,6 +14,7 @@
     "check:runtime": "node --experimental-strip-types checks/runtime-connection.check.ts",
     "check:live": "node --experimental-strip-types checks/live-session.check.ts",
     "check:delivery": "node --experimental-strip-types checks/session-delivery.check.ts",
+    "check:launch": "node --experimental-strip-types checks/task-launch-config.check.ts",
     "preview": "vite preview",
     "tauri:dev": "CARGO_HOME=$PWD/.cargo-home tauri dev",
     "tauri:build": "CARGO_HOME=$PWD/.cargo-home tauri build",
