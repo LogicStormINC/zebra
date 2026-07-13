@@ -7,7 +7,7 @@ import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { SessionResultSurface } from "../lib/session-results";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
 import { projectWorkspaceLabel } from "../lib/workspace-projection";
-import type { OperatorConfig, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
+import type { ApprovalSummary, OperatorConfig, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
 import { CodexConversationPane } from "./CodexConversationPane";
 import { CodexSidebar } from "./CodexSidebar";
 import { OperatorConfigCard } from "./OperatorConfigCard";
@@ -38,6 +38,9 @@ const useStyle = createStyles(({ css }) => {
 
 interface CodexWorkspaceProps {
   activeLabel: string;
+  activeApproval: ApprovalSummary | undefined;
+  approvalBusy: boolean;
+  approvalErrorText: string | null;
   artifactContentPreview: string | null;
   artifactDetail: SessionArtifactDetailResponse | null;
   artifactLoading: boolean;
@@ -63,7 +66,9 @@ interface CodexWorkspaceProps {
   onResumeSession: () => void;
   onSuspendSession: () => void;
   onOpenArtifact: (artifactId: string) => void;
+  onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onRefreshConversation: () => void;
+  onReject: (approval: ApprovalSummary) => Promise<unknown>;
   onScrollToLatest: () => void;
   onSelectConversation: (key: string) => void;
   onSubmit: (value: string) => void;
@@ -105,6 +110,9 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
           />
           <CodexConversationPane
             activeLabel={props.activeLabel}
+            activeApproval={props.activeApproval}
+            approvalBusy={props.approvalBusy}
+            approvalErrorText={props.approvalErrorText}
             artifactContentPreview={props.artifactContentPreview}
             artifactDetail={props.artifactDetail}
             artifactLoading={props.artifactLoading}
@@ -125,7 +133,9 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             onCreateConversation={props.onCreateConversation}
             onOpenArtifact={props.onOpenArtifact}
             onOpenSettings={() => setSettingsOpen(true)}
+            onApprove={props.onApprove}
             onRefreshConversation={props.onRefreshConversation}
+            onReject={props.onReject}
             onResumeSession={props.onResumeSession}
             onScrollToLatest={props.onScrollToLatest}
             onSelectConversation={props.onSelectConversation}

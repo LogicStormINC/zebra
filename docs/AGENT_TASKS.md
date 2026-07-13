@@ -9672,11 +9672,11 @@ product-logic boundary without reopening implementation scope.
 
 ### P103-UI-01 - Live Execution And Approval Interaction
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P102-CLOSE-01`
-- Suggested branch: `codex/p103-ui-01-live-execution-approvals`
+- Branch: `codex/p103-ui-01-live-execution-approvals`
 - Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
 #### Goal
@@ -9694,8 +9694,8 @@ surface.
 
 #### Acceptance
 
-- [ ] Operators see session events incrementally while a task executes.
-- [ ] Stop sends the real cancel request and projects the resulting terminal state.
-- [ ] Waiting approvals expose concrete context and approve or reject controls.
-- [ ] Refresh or reconnect converges to the same durable session state.
-- [ ] Focused frontend checks, `pnpm build`, and `make check` pass.
+- [x] Operators see session events incrementally while a task executes.
+- [x] Stop sends the real cancel request and projects the resulting terminal state.
+- [x] Waiting approvals expose concrete context and approve or reject controls.
+- [x] Refresh or reconnect converges to the same durable session state.
+- [x] Focused frontend checks, `pnpm build`, and `make check` pass.

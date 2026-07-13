@@ -6,6 +6,11 @@ import type {
   SessionDiffResponse,
 } from "../types";
 
+export function decodeArtifactContent(contentBase64: string) {
+  const binary = window.atob(contentBase64);
+  return new TextDecoder().decode(Uint8Array.from(binary, (char) => char.charCodeAt(0)));
+}
+
 export interface SessionResultSurface {
   diff: SessionDiffResponse | null;
   artifacts: SessionArtifactsResponse | null;

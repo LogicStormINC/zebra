@@ -4,9 +4,10 @@ import locale from "../_utils/local";
 import type { ChatMessage } from "../lib/chat-surface";
 import { extractChangedFiles } from "../lib/session-results";
 import type { SessionResultSurface } from "../lib/session-results";
-import type { SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
+import type { ApprovalSummary, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
 import { AssistantMessageBlock } from "./AssistantMessageBlock";
 import { SessionExecutionTrace } from "./SessionExecutionTrace";
+import { SessionApprovalPanel } from "./SessionApprovalPanel";
 import { SessionResultWorkbench } from "./SessionResultWorkbench";
 import { useSessionThreadWorkspaceStyle } from "./SessionThreadWorkspace.styles";
 
@@ -90,24 +91,34 @@ function shortWorkspace(path?: string) {
 
 interface SessionThreadWorkspaceProps {
   activeLabel: string;
+  activeApproval: ApprovalSummary | undefined;
+  approvalBusy: boolean;
+  approvalErrorText: string | null;
   artifactContentPreview: string | null;
   artifactDetail: SessionArtifactDetailResponse | null;
   events: SessionEvent[];
   isDraft: boolean;
   messages: ChatMessage[];
   onOpenArtifact: (artifactId: string) => void;
+  onApprove: (approval: ApprovalSummary) => Promise<unknown>;
+  onReject: (approval: ApprovalSummary) => Promise<unknown>;
   resultSurface: SessionResultSurface | null;
   sessionSummary: SessionSummary | null;
 }
 
 export function SessionThreadWorkspace({
   activeLabel,
+  activeApproval,
+  approvalBusy,
+  approvalErrorText,
   artifactContentPreview,
   artifactDetail,
   events,
   isDraft,
   messages,
   onOpenArtifact,
+  onApprove,
+  onReject,
   resultSurface,
   sessionSummary,
 }: SessionThreadWorkspaceProps) {
@@ -193,6 +204,13 @@ export function SessionThreadWorkspace({
           })}
         </div>
         {!isDraft ? <>
+          <SessionApprovalPanel
+            approval={activeApproval}
+            busy={approvalBusy}
+            errorText={approvalErrorText}
+            onApprove={onApprove}
+            onReject={onReject}
+          />
           <SessionResultWorkbench
             artifactContentPreview={artifactContentPreview}
             artifactDetail={artifactDetail}

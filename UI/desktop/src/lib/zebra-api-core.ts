@@ -12,6 +12,7 @@ import type {
   SessionCommitResponse,
   SessionDeliveryAuditResponse,
   SessionDiffResponse,
+  SessionEvent,
   SessionMessageAppendResponse,
   SessionPullRequestResponse,
   SessionSummary,
@@ -30,7 +31,8 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
     approval: (approvalId: string) =>
       requestJson<ApprovalSummary>(baseUrl, `/approvals/${approvalId}`, { authToken }),
     session: (sessionId: string) => requestJson<SessionSummary>(baseUrl, `/sessions/${sessionId}`, { authToken }),
-    stream: (sessionId: string) => requestEventStream(baseUrl, `/sessions/${sessionId}/stream`, authToken),
+    stream: (sessionId: string, onEvent?: (event: SessionEvent) => void) =>
+      requestEventStream(baseUrl, `/sessions/${sessionId}/stream`, authToken, onEvent),
     diff: (sessionId: string) =>
       requestJson<SessionDiffResponse>(baseUrl, `/sessions/${sessionId}/diff`, { authToken }),
     artifacts: (sessionId: string) =>
