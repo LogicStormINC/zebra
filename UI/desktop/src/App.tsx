@@ -10,6 +10,7 @@ import { useOperatorConfig } from "./lib/operator-config";
 import { mergeSessionEvents, pollWhile } from "./lib/live-session";
 import { projectRuntimeConnection } from "./lib/runtime-connection";
 import { decodeArtifactContent, type SessionResultSurface } from "./lib/session-results";
+import type { TaskLaunchConfig } from "./lib/task-launch-config";
 import { useWorkspaceSessionIndex } from "./lib/use-workspace-session-index";
 import { useActiveApproval } from "./lib/use-active-approval";
 import { useSessionDelivery } from "./lib/use-session-delivery";
@@ -263,7 +264,7 @@ export default function App() {
   );
 
   const submitMessage = useCallback(
-    async (input: string, policyProfile = "workspace_write") => {
+    async (input: string, launchConfig: TaskLaunchConfig) => {
       const trimmed = input.trim();
       if (!trimmed || !currentConversation) {
         return;
@@ -289,7 +290,7 @@ export default function App() {
         let sessionId = conversationToSessionId[conversationKey];
         if (!sessionId) {
           const title = trimmed.slice(0, 36) || locale.newConversation;
-          const created = await api.createSession({ title, prompt: trimmed, execute: false, policy_profile: policyProfile });
+          const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile });
           sessionId = created.session_id;
           patchConfig({ sessionId });
           if (!createdFromWorkspaceHome) {
@@ -315,7 +316,7 @@ export default function App() {
               throw error;
             }
             const title = trimmed.slice(0, 36) || locale.newConversation;
-            const created = await api.createSession({ title, prompt: trimmed, execute: false, policy_profile: policyProfile });
+            const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile });
             sessionId = created.session_id;
             patchConfig({ sessionId });
             if (!createdFromWorkspaceHome) {
@@ -482,8 +483,8 @@ export default function App() {
           });
         }}
         onSelectConversation={setCurrentConversation}
-        onSubmit={(value, policyProfile) => {
-          void submitMessage(value, policyProfile);
+        onSubmit={(value, launchConfig) => {
+          void submitMessage(value, launchConfig);
         }}
         controlsBusy={controlsBusy}
         resultSurface={resultSurface}

@@ -230,6 +230,10 @@ export const useConversationPaneStyle = createStyles(({ css }) => {
         background: rgba(255, 255, 255, 0.1);
         border-color: rgba(255, 255, 255, 0.12);
       }
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
     `,
     recentGroup: css`
       color: var(--zebra-text-muted);
@@ -290,7 +294,7 @@ export const useConversationPaneStyle = createStyles(({ css }) => {
       }
     `,
     composerCard: css`
-      min-height: 96px;
+      min-height: 126px;
       max-height: 240px;
       background: #1b1b1c;
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -304,8 +308,8 @@ export const useConversationPaneStyle = createStyles(({ css }) => {
       }
     `,
     idleComposerCard: css`
-      min-height: 150px;
-      max-height: 260px;
+      min-height: 180px;
+      max-height: 290px;
       background: #1b1b1c;
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 22px;

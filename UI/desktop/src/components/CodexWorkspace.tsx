@@ -7,6 +7,7 @@ import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { SessionResultSurface } from "../lib/session-results";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
 import type { SessionDeliveryController } from "../lib/session-delivery";
+import type { TaskLaunchConfig } from "../lib/task-launch-config";
 import { projectWorkspaceLabel } from "../lib/workspace-projection";
 import type { ApprovalSummary, OperatorConfig, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
 import { CodexConversationPane } from "./CodexConversationPane";
@@ -73,7 +74,7 @@ interface CodexWorkspaceProps {
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
   onScrollToLatest: () => void;
   onSelectConversation: (key: string) => void;
-  onSubmit: (value: string, policyProfile?: string) => void;
+  onSubmit: (value: string, launchConfig: TaskLaunchConfig) => void;
   controlsBusy: boolean;
   resultSurface: SessionResultSurface | null;
   runtimeStatus: RuntimeConnectionStatus;
