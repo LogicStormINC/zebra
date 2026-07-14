@@ -12,6 +12,7 @@ class ToolContract:
     required_arguments: tuple[str, ...] = ()
     description: str = ""
     argument_properties: Mapping[str, Mapping[str, object]] = field(default_factory=dict)
+    parallel_safe: bool = False
 
     def __post_init__(self) -> None:
         if not self.name.strip():

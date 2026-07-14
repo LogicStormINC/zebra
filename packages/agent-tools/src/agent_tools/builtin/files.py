@@ -8,6 +8,7 @@ from agent_tools.errors import ToolArgumentError
 
 file_read_contract = ToolContract(
     name="files.read",
+    parallel_safe=True,
     required_arguments=("path",),
     description="Read a file from the current workspace.",
     argument_properties={

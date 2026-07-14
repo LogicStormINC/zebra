@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-14: completed `P116-HAR-01` implementation on `codex/p116-har-01-bounded-safe-concurrent-batches`; tool contracts now default to non-parallel and explicitly mark only `files.read` and `git.status` as parallel-safe. Fully eligible provider batches complete policy, duplicate, and budget preflight before a standard-library thread pool starts, enforce a configurable bound, and project results and events in provider order. Mixed, unknown, write-capable, approval continuation, and single-call paths remain sequential. Concurrent failures observe every already-started sibling and make no rollback claim. A real `deepseek-v4-flash` batch entered the production concurrent path with size 2 and limit 3, read two isolated files, and returned the exact `SAFE-A|SAFE-B` answer. All `975` tests, Ruff, Mypy across `212` source files, and the 8-case eval release gate passed.
 - 2026-07-14: merged `P115-HAR-01` through GitHub PR `#66` and closed Phase 115; Phase 116 is limited to bounded concurrency for complete batches whose members are all explicitly parallel-safe. Mixed, unknown, write-capable, denied, or approval-required batches retain deterministic sequential handling. Dependency graphs, call reordering, concurrent writes, subagents, and distributed scheduling remain later boundaries.
 - 2026-07-14: completed `P115-HAR-01` implementation on `codex/p115-har-01-deterministic-multi-call-batches`; one provider assistant turn now retains its complete ordered tool-call batch, each call receives independent proposal, policy, execution, verification, and budget handling, and all matching tool results reach the next model request without silently dropping siblings. Denied, repeated, failed, or over-budget members stop before the remaining tail. Approval events persist the exact pending call, prior conversation, counters, and unconsumed tail; resume skips re-proposal of the granted call, continues later calls through normal policy, and now preserves all continuation execution events. A real `deepseek-v4-flash` response returned two `files.read` calls at once and converged in two model calls to the exact `BATCH-A|BATCH-B` answer. All `965` tests, Ruff, Mypy across `211` files, and the 8-case eval release gate passed.
 - 2026-07-14: merged `P114-HAR-01` through GitHub PR `#64` and closed Phase 114; Phase 115 is limited to consuming complete provider tool-call batches in deterministic order with per-call policy, budgets, and exact approval continuation. True concurrent execution, automatic reordering, and subagent scheduling remain later boundaries.
@@ -48,9 +49,9 @@
 ## Current Phase
 
 - Active phase: `Phase 116 - Bounded Safe Concurrent Tool Batches`
-- Repository status: `phase 115 closed; P116-HAR-01 is ready`
+- Repository status: `phase 115 closed; P116-HAR-01 is in review`
 - Current focus:
-  - `P116-HAR-01` is ready to add explicit parallel-safety metadata and bounded concurrent execution for fully eligible read-only batches while retaining sequential fallback everywhere else
+  - `P116-HAR-01` is in review after deterministic concurrency, preflight, fallback, failure-observation, full-repository, and real `deepseek-v4-flash` acceptance
   - `P115-HAR-01` was merged through GitHub PR `#66` after deterministic, full-repository, middle-batch approval, and real `deepseek-v4-flash` acceptance of complete provider batch consumption
   - `P115-CLOSE-01` records the Phase 115 closeout and the explicit Phase 116 ownership boundary
   - `P114-HAR-01` was merged through GitHub PR `#64` after deterministic, full-repository, later-step approval, and real `deepseek-v4-flash` acceptance of a bounded sequential observe-act loop

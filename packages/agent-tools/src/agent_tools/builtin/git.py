@@ -9,6 +9,7 @@ from agent_tools.errors import ToolArgumentError
 
 git_status_contract = ToolContract(
     name="git.status",
+    parallel_safe=True,
     description="Run a readonly git status inside the current workspace.",
     argument_properties={
         "cwd": {"type": "string", "description": "Optional workspace-relative directory."},

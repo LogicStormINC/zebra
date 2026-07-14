@@ -61,6 +61,8 @@ def run_local_harness(
                 available_tools=tool_gateway.model_tools,
             ),
             synthesize_tool_results=True,
+            parallel_safe_tools=tool_gateway.parallel_safe_tools,
+            max_parallel_tool_calls=3,
         ).run,
     )
 
@@ -81,11 +83,16 @@ class LocalToolGateway(ToolGatewayPort):
         for tool in tools:
             registry.register(tool.contract, tool.handle)
         self._model_tools = registry.model_tools()
+        self._parallel_safe_tools = registry.parallel_safe_names()
         self._executor = ToolExecutor(registry)
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
         return self._model_tools
+
+    @property
+    def parallel_safe_tools(self) -> frozenset[str]:
+        return self._parallel_safe_tools
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
         try:

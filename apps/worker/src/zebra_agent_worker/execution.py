@@ -148,6 +148,8 @@ class SessionExecutionService:
                 available_tools=tool_gateway.model_tools,
             ),
             synthesize_tool_results=True,
+            parallel_safe_tools=tool_gateway.parallel_safe_tools,
+            max_parallel_tool_calls=3,
         )
         context = HarnessContext(
             task=HarnessTask(

@@ -33,6 +33,8 @@ class SingleAttemptOrchestrator:
         verifier: VerifierHook | None = None,
         tool_selector: ToolCallSelectionStrategy | None = None,
         synthesize_tool_results: bool = False,
+        parallel_safe_tools: frozenset[str] = frozenset(),
+        max_parallel_tool_calls: int = 1,
     ) -> None:
         self._model_gateway = model_gateway
         self._model_step = model_step or HarnessModelStep()
@@ -45,6 +47,8 @@ class SingleAttemptOrchestrator:
             verifier=verifier or NoopVerifier(),
             tool_selector=tool_selector or FirstToolCallSelectionStrategy(),
             synthesize_tool_results=synthesize_tool_results,
+            parallel_safe_tools=parallel_safe_tools,
+            max_parallel_tool_calls=max_parallel_tool_calls,
         )
 
     def run(self, context: HarnessContext) -> HarnessAttemptResult:

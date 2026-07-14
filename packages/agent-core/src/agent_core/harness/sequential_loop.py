@@ -32,6 +32,8 @@ class SequentialToolLoop:
         verifier: VerifierHook,
         tool_selector: ToolCallSelectionStrategy,
         synthesize_tool_results: bool,
+        parallel_safe_tools: frozenset[str],
+        max_parallel_tool_calls: int,
     ) -> None:
         self._model_gateway = model_gateway
         self._model_step = model_step
@@ -42,6 +44,8 @@ class SequentialToolLoop:
             tool_gateway=tool_gateway,
             model_step=model_step,
             verifier=verifier,
+            parallel_safe_tools=parallel_safe_tools,
+            max_parallel_tool_calls=max_parallel_tool_calls,
         )
 
     def continue_approved(

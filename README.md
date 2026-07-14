@@ -24,9 +24,12 @@ ordered batch. Each result returns under the original assistant batch identity
 before the next model request. Model and tool budgets reserve a final-answer turn,
 and denied, repeated, or over-budget batch members stop before later calls execute.
 Calls requiring human approval preserve the exact pending call, completed results,
-and unconsumed batch tail; a grant resumes without replaying prior tools. Concurrent
-tool execution, automatic call reordering, subagents, and distributed workflow
-scheduling remain later boundaries.
+and unconsumed batch tail; a grant resumes without replaying prior tools. Complete
+batches run concurrently only when every tool contract is explicitly parallel-safe,
+with policy, duplicate, and budget preflight before the bounded pool starts. Results
+and events retain provider order. Mixed, unknown, write-capable, and approval batches
+stay sequential. Automatic call reordering, dependency graphs, concurrent writes,
+subagents, and distributed workflow scheduling remain later boundaries.
 
 ## Desktop UI Workspace
 

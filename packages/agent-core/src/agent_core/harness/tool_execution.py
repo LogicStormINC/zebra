@@ -35,6 +35,23 @@ def execute_tool_call(
             )
         )
     tool_result = tool_gateway.execute(tool_call)
+    return record_tool_result(
+        context,
+        tool_call,
+        tool_result,
+        verifier=verifier,
+        emitted_events=emitted_events,
+    )
+
+
+def record_tool_result(
+    context: HarnessContext,
+    tool_call: ToolCall,
+    tool_result: ToolResult,
+    *,
+    verifier: VerifierHook,
+    emitted_events: list[HarnessEventDraft],
+) -> ToolExecutionStep:
     emitted_events.append(
         HarnessEventDraft(
             event_type=(
