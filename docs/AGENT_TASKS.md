@@ -10391,7 +10391,7 @@ boundaries.
 
 ### P116-HAR-01 - Bounded Safe Concurrent Tool Batches
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE`
 - Depends on: `P115-CLOSE-01`
@@ -10432,3 +10432,70 @@ fallback for every other batch.
 - concurrent approval flows
 - subagent delegation or distributed workflow scheduling
 - cancellation guarantees for work that has already started
+
+### P116-CLOSE-01 - Phase 116 Closeout And Phase 117 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P116-HAR-01`
+- Branch: `codex/p116-closeout-phase117-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 116 acceptance state and define bounded conversation
+compaction for longer provider-backed tool loops before introducing subagent
+delegation.
+
+#### Acceptance
+
+- [x] `P116-HAR-01` is recorded as merged through PR `#68` and done.
+- [x] Phase 117 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 117 Task Board
+
+### P117-CTX-01 - Bounded Harness Conversation Compaction
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / CTX`
+- Depends on: `P116-CLOSE-01`
+- Branch: `codex/p117-ctx-01-bounded-conversation-compaction`
+- Owned paths: `packages/agent-core/`, `packages/agent-context/`, `packages/agent-integrations/`, `packages/agent-runtime/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Keep longer general-agent tool loops within a deterministic dynamic-conversation
+budget by compacting completed older exchanges before the next provider request,
+without breaking tool-call identity, approval recovery, or the stable context
+prefix.
+
+#### Deliverables
+
+- deterministic message-size estimation and a configurable dynamic-conversation budget
+- reuse of the existing conversation and tool-output compaction capabilities behind a core Port
+- compaction of completed older assistant/tool exchanges while retaining the original user goal and recent working set
+- preservation of complete assistant/tool call pairs, provider call ids, and every unresolved or approval-pending call
+- durable compaction evidence with before/after estimates and retained/removed counts, excluding raw sensitive output
+- exact approval continuation and final-answer synthesis from compacted conversation state
+- deterministic and real-provider acceptance evidence for a longer multi-step task
+
+#### Acceptance
+
+- [ ] A conversation above the configured dynamic budget is compacted before the next provider request and its deterministic estimate falls within the supported bound.
+- [ ] The stable system prefix, original user goal, latest working exchange, and valid assistant/tool pairing remain present after compaction.
+- [ ] Pending, failed, or approval-required calls are never summarized away or detached from their provider call ids.
+- [ ] Conversations below the threshold remain byte-for-byte equivalent, and repeated compaction produces the same canonical messages.
+- [ ] Compaction events expose only counts, estimates, and provenance metadata rather than raw tool output or secrets.
+- [ ] Approval pause and resume continue from the compacted canonical conversation without replaying completed tools.
+- [ ] Existing text-only, sequential, complete-batch, safe-concurrent, failure, and HITL behavior remains compatible.
+- [ ] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider compacted-loop acceptance pass.
+
+#### Explicit Non-Goals
+
+- model-generated or semantic summaries
+- embedding retrieval, vector databases, or repository indexing changes
+- provider-specific tokenizer guarantees or automatic context-window expansion
+- compaction of unresolved tool calls or approval evidence
+- subagent delegation, nested agents, or distributed scheduling
