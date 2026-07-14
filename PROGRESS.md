@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-14: merged `P107-UI-01` through GitHub PR `#50` and closed Phase 107; Phase 108 is limited to replacing the remaining hard-coded desktop project identity with selected-project or durable-session workspace evidence.
 - 2026-07-14: completed `P107-UI-01` implementation and browser acceptance on `codex/p107-ui-01-workspace-project-navigation`; the desktop now projects project navigation from configured launch state plus durable workspace roots, filters task lists by exact normalized workspace identity, keeps unbound tasks visible, and updates only the new-task launch target when a project is selected. Browser validation covered two durable workspaces, the unbound bucket, Composer workspace synchronization, unchanged existing-session configuration, and a viewport-bound `1200x762` layout. All `946` backend tests, Ruff, Mypy, the eval release gate, focused project, index, launch, delivery, live, and runtime checks, and the production build passed.
 - 2026-07-14: merged `P106-APP-01` through GitHub PR `#48` and closed Phase 106; Phase 107 is limited to replacing the hard-coded desktop project card with workspace-backed project navigation derived from durable session evidence and the configured launch workspace.
 - 2026-07-14: completed `P106-APP-01` implementation and browser acceptance on `codex/p106-app-01-durable-session-discovery`; the projection store now provides bounded newest-first recent sessions, authenticated `GET /sessions` returns compact summaries through the same workspace and approval serializer as session detail, and the desktop reconciles those durable records with local drafts and explicit local hide tombstones. Browser validation recovered a real session after clearing the task index, preserved an unsent draft across reconciliation, and kept a locally hidden durable session out of the list after reload. All `946` backend tests, Ruff, Mypy, the eval release gate, focused index, launch, delivery, live, and runtime checks, and the production build passed.
@@ -30,10 +31,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 107 - Workspace-Backed Project Navigation`
-- Repository status: `phase 106 closed; P107-UI-01 is in review`
+- Active phase: `Phase 108 - Project-Aware Workspace Identity`
+- Repository status: `phase 107 closed; P108-UI-01 is ready`
 - Current focus:
-  - `P107-UI-01` is in review on `codex/p107-ui-01-workspace-project-navigation` after full backend and frontend gates plus browser validation of durable project grouping, exact-workspace task filtering, unbound visibility, launch-target synchronization, and existing-session immutability
+  - `P108-UI-01` is ready to align the idle workspace and active-session inspector with selected or durable workspace identity without inventing backend project metadata
+  - `P107-UI-01` was merged through GitHub PR `#50` after full backend and frontend gates plus browser validation of durable project grouping, exact-workspace task filtering, unbound visibility, launch-target synchronization, and existing-session immutability
+  - `P107-CLOSE-01` records the Phase 107 closeout and the explicit Phase 108 ownership boundary
   - `P106-APP-01` was merged through GitHub PR `#48` after full backend and frontend gates plus browser validation of fresh-profile recovery, local-draft preservation, durable workspace readback, and local hide persistence
   - `P106-CLOSE-01` records the Phase 106 closeout and the explicit Phase 107 ownership boundary
   - `P105-UI-01` was merged through GitHub PR `#46` after full backend and frontend gates plus browser validation of launch preflight, invalid-workspace blocking, request payloads, durable session configuration, and restored defaults
