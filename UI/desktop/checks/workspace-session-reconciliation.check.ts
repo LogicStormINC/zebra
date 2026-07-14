@@ -40,6 +40,15 @@ assert.deepEqual(result.sessionIds, {
 assert.equal(result.sessionSummaries.existing, older);
 assert.deepEqual(result.hiddenSessionIds, ["session-hidden"]);
 
+const restored = reconcileWorkspaceSessionIndex(
+  { conversations: result.conversations, sessionIds: result.sessionIds, hiddenSessionIds: [] },
+  [hidden, newest, older],
+);
+assert.equal(restored.conversations[1]?.key, "session:session-hidden");
+assert.equal(restored.sessionIds["session:session-hidden"], "session-hidden");
+assert.equal(restored.sessionSummaries["session:session-hidden"], hidden);
+assert.deepEqual(restored.hiddenSessionIds, []);
+
 function session(sessionId: string, title: string, updatedAt: string): RecentSessionSummary {
   return {
     session_id: sessionId,

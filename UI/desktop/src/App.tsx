@@ -16,7 +16,6 @@ import { useActiveApproval } from "./lib/use-active-approval";
 import { useSessionDelivery } from "./lib/use-session-delivery";
 import { zebraApi } from "./lib/zebra-api";
 import type { SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "./types";
-
 const WORKSPACE_HOME_KEY = "__workspace-home__";
 
 export default function App() {
@@ -31,12 +30,13 @@ export default function App() {
     refetchInterval: 5_000,
   });
   const runtimeStatus = projectRuntimeConnection(healthQuery.data?.status, healthQuery.data?.service, healthQuery.isFetching);
-
   const {
     conversations,
     createIndexedConversation,
+    hiddenSessionCount,
     removeIndexedConversation,
     renameConversation,
+    restoreHiddenSessions,
     sessionIds: conversationToSessionId,
     sessionSummaries,
     setSessionIds: setConversationToSessionId,
@@ -52,7 +52,6 @@ export default function App() {
   const [isRequesting, setIsRequesting] = useState(false);
   const [controlsBusy, setControlsBusy] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
-
   const events = conversationEvents[currentConversation] ?? [];
   const messages = conversationMessages[currentConversation] ?? [];
   const activeConversation = conversations.find((item) => item.key === currentConversation);
@@ -62,7 +61,6 @@ export default function App() {
   const resultSurface = resultSurfaces[currentConversation] ?? null;
   const sessionSummary = sessionSummaries[currentConversation] ?? null;
   const isWorkspaceIdle = currentConversation === WORKSPACE_HOME_KEY;
-
   useEffect(() => {
     senderRef.current?.focus({ cursor: "end" });
   }, []);
@@ -463,7 +461,10 @@ export default function App() {
         }}
         onCreateConversation={createConversation}
         onDeleteConversation={deleteConversation}
+        onRestoreHiddenSessions={() => void restoreHiddenSessions().catch((error: unknown) => messageApi.error(toErrorMessage(error)))}
+        hiddenSessionCount={hiddenSessionCount}
         isWorkspaceIdle={isWorkspaceIdle}
+        sessionIds={conversationToSessionId}
         onCancelSession={cancelSession}
         onResumeSession={resumeSession}
         onSuspendSession={suspendSession}

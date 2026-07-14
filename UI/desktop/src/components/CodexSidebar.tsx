@@ -1,6 +1,8 @@
 import {
   DeleteOutlined,
   EditOutlined,
+  EyeInvisibleOutlined,
+  UndoOutlined,
 } from "@ant-design/icons";
 import { Button, Tooltip } from "antd";
 import { createStyles } from "antd-style";
@@ -119,7 +121,7 @@ const useStyle = createStyles(({ css }) => ({
         background: rgba(255, 255, 255, 0.06);
         color: var(--zebra-text-primary);
       }
-      &:hover .codex-delete-button {
+      &:hover .codex-task-action {
         opacity: 1;
       }
       @media (max-width: 767px) {
@@ -241,14 +243,17 @@ const useStyle = createStyles(({ css }) => ({
 interface CodexSidebarProps {
   conversations: ConversationSeed[];
   currentConversation: string;
+  hiddenSessionCount: number;
   isWorkspaceIdle: boolean;
   onCreateConversation: () => void;
   onDeleteConversation: (key: string) => void;
+  onRestoreHiddenSessions: () => void;
   onSelectProject: (project: WorkspaceProject) => void;
   onSelectConversation: (key: string) => void;
   projects: WorkspaceProject[];
   runtimeLabel: string;
   selectedProjectId: string;
+  sessionIds: Record<string, string>;
   sessionSummaries: Record<string, SessionSummary | null>;
 }
 
@@ -269,6 +274,7 @@ function ConversationSection({
   items,
   onDeleteConversation,
   onSelectConversation,
+  sessionIds,
   sessionSummaries,
 }: {
   currentConversation: string;
@@ -276,6 +282,7 @@ function ConversationSection({
   items: ConversationSeed[];
   onDeleteConversation: (key: string) => void;
   onSelectConversation: (key: string) => void;
+  sessionIds: Record<string, string>;
   sessionSummaries: Record<string, SessionSummary | null>;
 }) {
   const { styles } = useStyle();
@@ -296,6 +303,7 @@ function ConversationSection({
       {items.map((item) => {
         const isActive = !isWorkspaceIdle && item.key === currentConversation;
         const summary = sessionSummaries[item.key];
+        const isDurable = Boolean(sessionIds[item.key]);
         const status = summary?.status ?? "draft";
         return (
           <div
@@ -329,10 +337,11 @@ function ConversationSection({
               </div>
               <div className={styles.conversationMeta}>{threadMeta(summary, item.group)}</div>
             </div>
-            <Tooltip title={locale.delete}>
+            <Tooltip title={isDurable ? locale.hideTask : locale.deleteDraft}>
               <Button
-                className={clsx("codex-delete-button", styles.deleteButton)}
-                icon={<DeleteOutlined />}
+                aria-label={isDurable ? locale.hideTask : locale.deleteDraft}
+                className={clsx("codex-task-action", styles.deleteButton)}
+                icon={isDurable ? <EyeInvisibleOutlined /> : <DeleteOutlined />}
                 onClick={(event) => {
                   event.stopPropagation();
                   onDeleteConversation(item.key);
@@ -351,14 +360,17 @@ function ConversationSection({
 export function CodexSidebar({
   conversations,
   currentConversation,
+  hiddenSessionCount,
   isWorkspaceIdle,
   onCreateConversation,
   onDeleteConversation,
+  onRestoreHiddenSessions,
   onSelectProject,
   onSelectConversation,
   projects,
   runtimeLabel,
   selectedProjectId,
+  sessionIds,
   sessionSummaries,
 }: CodexSidebarProps) {
   const { styles } = useStyle();
@@ -386,6 +398,7 @@ export function CodexSidebar({
                 items={pinned}
                 onDeleteConversation={onDeleteConversation}
                 onSelectConversation={onSelectConversation}
+                sessionIds={sessionIds}
                 sessionSummaries={sessionSummaries}
               />
             </div>
@@ -401,10 +414,18 @@ export function CodexSidebar({
               items={recent}
               onDeleteConversation={onDeleteConversation}
               onSelectConversation={onSelectConversation}
+              sessionIds={sessionIds}
               sessionSummaries={sessionSummaries}
             />
           </div>
         </section>
+
+        {hiddenSessionCount > 0 ? (
+          <button className={styles.navButton} onClick={onRestoreHiddenSessions} type="button">
+            <span className={styles.navIcon}><UndoOutlined /></span>
+            <span>{locale.restoreHiddenTasks} ({hiddenSessionCount})</span>
+          </button>
+        ) : null}
 
         <WorkspaceProjectSection
           onSelectProject={onSelectProject}

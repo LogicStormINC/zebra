@@ -57,6 +57,7 @@ interface CodexWorkspaceProps {
   currentSessionId?: string;
   delivery: SessionDeliveryController;
   events: SessionEvent[];
+  hiddenSessionCount: number;
   isWorkspaceIdle: boolean;
   isRequesting: boolean;
   listRef: React.RefObject<HTMLDivElement | null>;
@@ -68,6 +69,7 @@ interface CodexWorkspaceProps {
   onCopyWorkspacePath: () => void;
   onPatchConfig: (patch: Partial<OperatorConfig>) => void;
   onResetConfig: () => void;
+  onRestoreHiddenSessions: () => void;
   onRetryRuntime: () => void;
   onCreateConversation: () => void;
   onDeleteConversation: (key: string) => void;
@@ -85,6 +87,7 @@ interface CodexWorkspaceProps {
   resultSurface: SessionResultSurface | null;
   runtimeStatus: RuntimeConnectionStatus;
   sessionSummaries: Record<string, SessionSummary | null>;
+  sessionIds: Record<string, string>;
   sessionSummary: SessionSummary | null;
   senderRef: React.RefObject<GetRef<typeof Sender> | null>;
 }
@@ -129,14 +132,17 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
           <CodexSidebar
             conversations={visibleConversations}
             currentConversation={props.currentConversation}
+            hiddenSessionCount={props.hiddenSessionCount}
             isWorkspaceIdle={props.isWorkspaceIdle}
             onCreateConversation={props.onCreateConversation}
             onDeleteConversation={props.onDeleteConversation}
+            onRestoreHiddenSessions={props.onRestoreHiddenSessions}
             onSelectProject={selectProject}
             onSelectConversation={props.onSelectConversation}
             projects={projects}
             runtimeLabel={runtimeLabel}
             selectedProjectId={selectedProject?.id ?? UNBOUND_PROJECT_ID}
+            sessionIds={props.sessionIds}
             sessionSummaries={props.sessionSummaries}
           />
           <CodexConversationPane

@@ -152,11 +152,25 @@ export function useWorkspaceSessionIndex(api: ZebraApiClient, fallbackSessionId:
     });
   }, [conversations, sessionIds, setConversations]);
 
+  const restoreHiddenSessions = useCallback(async () => {
+    const { sessions } = await api.sessions(MAX_CONVERSATIONS);
+    const reconciled = reconcileWorkspaceSessionIndex(
+      { conversations: conversations as ConversationSeed[], sessionIds, hiddenSessionIds: [] },
+      sessions,
+    );
+    setConversations(reconciled.conversations);
+    setSessionIds(reconciled.sessionIds);
+    setSessionSummaries((current) => ({ ...current, ...reconciled.sessionSummaries }));
+    setHiddenSessionIds([]);
+  }, [api, conversations, sessionIds, setConversations]);
+
   return {
     conversations: conversations as ConversationSeed[],
     createIndexedConversation,
+    hiddenSessionCount: hiddenSessionIds.length,
     removeIndexedConversation,
     renameConversation,
+    restoreHiddenSessions,
     sessionIds,
     sessionSummaries,
     setSessionIds,
