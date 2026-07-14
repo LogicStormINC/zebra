@@ -10086,7 +10086,7 @@ boundary without reopening desktop positioning or approval-resume scope.
 
 ### P111-MDL-01 - Provider Tool Discovery And Safe Execution
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE`
 - Depends on: `P110-CLOSE-01`
@@ -10121,3 +10121,61 @@ harness rather than returning a textual imitation of a tool call.
 - resuming the exact pending tool call after an approval decision
 - multi-tool or parallel tool-call execution
 - adding code-delivery UI or product defaults
+
+### P111-CLOSE-01 - Phase 111 Closeout And Phase 112 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P111-MDL-01`
+- Branch: `codex/p111-closeout-phase112-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 111 acceptance state and define the bounded tool-result
+synthesis task without reopening approval continuation or multi-tool execution.
+
+#### Acceptance
+
+- [x] `P111-MDL-01` is recorded as merged through PR `#58` and done.
+- [x] Phase 112 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 112 Task Board
+
+### P112-HAR-01 - Tool Result Synthesis And Final Response
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE`
+- Depends on: `P111-CLOSE-01`
+- Branch: `codex/p112-har-01-tool-result-synthesis`
+- Owned paths: `packages/agent-core/`, `packages/agent-integrations/`, `packages/agent-runtime/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Feed one policy-allowed tool result back to the provider and persist the final
+assistant answer so provider-backed tasks finish with a result-grounded response.
+
+#### Deliverables
+
+- provider-neutral assistant tool-call and tool-result message contracts
+- OpenAI-compatible serialization with preserved provider tool-call identity
+- opt-in single-tool result synthesis in the existing orchestrator
+- production local runtime and worker composition with a two-call model budget
+- deterministic and real-provider final-response acceptance evidence
+
+#### Acceptance
+
+- [ ] The second provider request contains the original assistant tool call and matching tool-result message.
+- [ ] The final assistant answer replaces the synthetic tool-proposal text in terminal metadata and durable readback.
+- [ ] Both model calls are represented in events and counted against the model-call budget.
+- [ ] Text-only tasks remain single-call and existing non-synthesizing orchestrator composition stays backward compatible.
+- [ ] A real provider reads an isolated proof payload and returns a final answer grounded in that payload.
+- [ ] Targeted tests, `make test`, and `make check` pass.
+
+#### Explicit Non-Goals
+
+- approval decision continuation of a pending tool call
+- additional or parallel tool calls after the first result
+- frontend redesign or code-delivery workflow changes
