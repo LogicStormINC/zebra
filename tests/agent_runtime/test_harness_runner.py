@@ -222,6 +222,54 @@ def test_run_local_harness_executes_preapproved_minimax_image_tool(tmp_path) -> 
     assert result.attempt_result.metadata["assistant_message"] == "The image was read."
 
 
+def test_run_local_harness_executes_five_image_calls(tmp_path) -> None:
+    transport = _FakeMcpTransport()
+    calls = tuple(
+        ToolCall(
+            tool_call_id=new_tool_call_id(),
+            name="mcp.minimax.understand_image",
+            arguments={"prompt": "Extract facts.", "image_source": f"material-{index}.jpg"},
+            created_at=_created_at(),
+        )
+        for index in range(1, 6)
+    )
+    result = run_local_harness(
+        prompt="Read all five screenshots.",
+        title="Runtime image batch test",
+        workspace_root=tmp_path.resolve(),
+        model_gateway=ScriptedModelGateway(
+            responses=(
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content="Reading screenshots.",
+                            created_at=_created_at(),
+                        ),
+                        tool_calls=calls,
+                    )
+                ),
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content="All screenshots were read.",
+                            created_at=_created_at(),
+                        )
+                    )
+                ),
+            )
+        ),
+        mcp_proxy_transport=transport,
+    )
+
+    assert result.session.status is SessionStatus.COMPLETED
+    assert result.run_result.tool_calls_used == 5
+    assert result.attempt_result.metadata["assistant_message"] == "All screenshots were read."
+
+
 class _FakeMcpTransport:
     def execute(self, request: McpProxyRequest) -> McpProxyResponse:
         return McpProxyResponse(output=request.target.tool_name)
