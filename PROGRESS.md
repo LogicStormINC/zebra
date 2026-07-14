@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-14: merged `P110-INT-01` through GitHub PR `#56` and closed Phase 110; Phase 111 is limited to advertising executable typed tools to the real provider and proving one policy-allowed provider-selected tool execution, while exact approval continuation remains a later boundary.
 - 2026-07-14: completed `P110-INT-01` implementation and browser acceptance on `codex/p110-int-01-provider-backed-desktop-execution`; Zebra Agent is now documented and presented as a general executing-agent runtime and workspace rather than a code-delivery product. Normal tasks no longer render or request Diff, artifact, delivery-audit, Commit, or Pull Request surfaces; generic activity stages and context/log inspection remain. A projection-backed HITL session showed operation, target, policy, scope, and approve/reject controls only while approval was active, and the panel disappeared after approval. A real `deepseek-v4-flash` task reached `completed`, streamed its response without reload, and restored the selected task, title, workspace, seven events, response, and terminal status after reload. The provider credential remained in ignored `.env.local`; all focused frontend checks, the production build, `946` backend tests, Ruff, Mypy, and the 8-case eval release gate passed.
 - 2026-07-14: merged `P109-UI-01` through GitHub PR `#54` and closed Phase 109; Phase 110 is limited to proving one provider-backed desktop execution from durable creation through terminal readback and fixing only defects exposed by that real flow.
 - 2026-07-14: completed `P109-UI-01` implementation and browser acceptance on `codex/p109-ui-01-reversible-task-visibility`; local drafts now expose explicit deletion while durable sessions expose local hiding, persisted tombstones survive reload, and an in-product restore control rehydrates hidden recent sessions from an authoritative `GET /sessions` snapshot without any backend delete request. Browser validation covered durable hide, storage persistence, reload, restore, preserved title/workspace/status/session binding, distinct draft deletion, and a viewport-bound layout. All `946` backend tests, Ruff, Mypy, the eval release gate, focused project, index, launch, delivery, live, and runtime checks, and the production build passed.
@@ -36,10 +37,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 110 - General Agent Desktop And Provider Closure`
-- Repository status: `phase 109 closed; P110-INT-01 is in review`
+- Active phase: `Phase 111 - Provider Tool Discovery And Safe Execution`
+- Repository status: `phase 110 closed; P111-MDL-01 is ready`
 - Current focus:
-  - `P110-INT-01` is in review after the product-positioning correction, default code-delivery UI removal, approval-driven HITL validation, real DeepSeek completion, active-task reload restoration, and full repository gates
+  - `P111-MDL-01` is ready to bridge the executable typed tool catalog into provider requests and prove one real provider-selected safe execution
+  - `P110-INT-01` was merged through GitHub PR `#56` after the product-positioning correction, default code-delivery UI removal, approval-driven HITL validation, real DeepSeek completion, active-task reload restoration, and full repository gates
+  - `P110-CLOSE-01` records the Phase 110 closeout and the explicit Phase 111 ownership boundary
   - `P109-UI-01` was merged through GitHub PR `#54` after full backend and frontend gates plus browser validation of truthful draft/session actions, persisted local hiding, no backend deletion, immediate authoritative restoration, and viewport containment
   - `P109-CLOSE-01` records the Phase 109 closeout and the explicit Phase 110 ownership boundary
   - `P108-UI-01` was merged through GitHub PR `#52` after full backend and frontend gates plus browser validation of selected-project titles, explicit unbound identity, durable session identity, full-path accessibility, and viewport containment
