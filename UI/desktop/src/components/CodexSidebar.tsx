@@ -1,5 +1,4 @@
 import {
-  CodeOutlined,
   DeleteOutlined,
   EditOutlined,
 } from "@ant-design/icons";
@@ -9,7 +8,9 @@ import { clsx } from "clsx";
 import locale from "../_utils/local";
 import { sessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-status";
 import type { ConversationSeed } from "../lib/chat-surface";
+import type { WorkspaceProject } from "../lib/workspace-projects";
 import type { SessionSummary } from "../types";
+import { WorkspaceProjectSection } from "./WorkspaceProjectSection";
 const useStyle = createStyles(({ css }) => ({
     sidebar: css`
       background: #181818;
@@ -200,53 +201,6 @@ const useStyle = createStyles(({ css }) => ({
         display: none;
       }
     `,
-    projectCard: css`
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: var(--zebra-space-xs);
-      padding: var(--zebra-space-sm);
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--zebra-surface-border-soft);
-      color: var(--zebra-text-primary);
-      font: inherit;
-      text-align: left;
-      cursor: pointer;
-      transition: background 160ms ease, border-color 160ms ease;
-      &:hover {
-        background: rgba(255, 255, 255, 0.055);
-      }
-    `,
-    projectCardActive: css`
-      background: rgba(255, 255, 255, 0.075);
-      border-color: transparent;
-    `,
-    projectIcon: css`
-      width: var(--zebra-icon-size-sm);
-      height: var(--zebra-icon-size-sm);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: var(--zebra-radius-xs);
-      background: rgba(242, 140, 56, 0.16);
-      color: #ffbc82;
-      font-size: var(--zebra-font-size-md);
-    `,
-    projectMeta: css`
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: var(--zebra-space-3xs);
-      span:last-child {
-        color: var(--zebra-text-subtle);
-        font-size: 12px;
-        line-height: 18px;
-      }
-      @media (max-width: 767px) {
-        display: none;
-      }
-    `,
     profile: css`
       flex: 0 0 auto;
       padding-top: var(--zebra-space-sm);
@@ -290,9 +244,11 @@ interface CodexSidebarProps {
   isWorkspaceIdle: boolean;
   onCreateConversation: () => void;
   onDeleteConversation: (key: string) => void;
+  onSelectProject: (project: WorkspaceProject) => void;
   onSelectConversation: (key: string) => void;
-  projectMeta: string;
+  projects: WorkspaceProject[];
   runtimeLabel: string;
+  selectedProjectId: string;
   sessionSummaries: Record<string, SessionSummary | null>;
 }
 
@@ -398,9 +354,11 @@ export function CodexSidebar({
   isWorkspaceIdle,
   onCreateConversation,
   onDeleteConversation,
+  onSelectProject,
   onSelectConversation,
-  projectMeta,
+  projects,
   runtimeLabel,
+  selectedProjectId,
   sessionSummaries,
 }: CodexSidebarProps) {
   const { styles } = useStyle();
@@ -448,22 +406,11 @@ export function CodexSidebar({
           </div>
         </section>
 
-        <section className={styles.section}>
-          <div className={styles.sectionTitle}>{locale.projects}</div>
-          <button
-            className={clsx(styles.projectCard, isWorkspaceIdle && styles.projectCardActive)}
-            onClick={onCreateConversation}
-            type="button"
-          >
-            <span className={styles.projectIcon}>
-              <CodeOutlined />
-            </span>
-            <div className={styles.projectMeta}>
-              <span>zebra-agent</span>
-              <span>{projectMeta}</span>
-            </div>
-          </button>
-        </section>
+        <WorkspaceProjectSection
+          onSelectProject={onSelectProject}
+          projects={projects}
+          selectedProjectId={selectedProjectId}
+        />
       </div>
 
       <div className={styles.profile}>

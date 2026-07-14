@@ -9877,11 +9877,11 @@ navigation boundary without reopening durable session discovery scope.
 
 ### P107-UI-01 - Workspace-Backed Project Navigation
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P106-CLOSE-01`
-- Suggested branch: `codex/p107-ui-01-workspace-project-navigation`
+- Branch: `codex/p107-ui-01-workspace-project-navigation`
 - Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
 #### Goal
@@ -9900,8 +9900,8 @@ workspace, without introducing a second project database.
 
 #### Acceptance
 
-- [ ] The project section no longer hard-codes `zebra-agent` when durable workspace evidence is available.
-- [ ] Selecting a project shows only its tasks and prepares new tasks for that workspace.
-- [ ] Existing session workspace and policy remain durable and are not rewritten by project selection.
-- [ ] Drafts and sessions without workspace evidence remain visible in an explicit unbound project.
-- [ ] Focused frontend checks, `pnpm build`, and `make check` pass.
+- [x] The project section no longer hard-codes `zebra-agent` when durable workspace evidence is available.
+- [x] Selecting a project shows only its tasks and prepares new tasks for that workspace.
+- [x] Existing session workspace and policy remain durable and are not rewritten by project selection.
+- [x] Drafts and sessions without workspace evidence remain visible in an explicit unbound project.
+- [x] Focused frontend checks, `pnpm build`, and `make check` pass.
