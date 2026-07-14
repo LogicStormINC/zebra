@@ -9980,11 +9980,11 @@ visibility boundary without reopening workspace identity scope.
 
 ### P109-UI-01 - Reversible Task Visibility
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P108-CLOSE-01`
-- Suggested branch: `codex/p109-ui-01-reversible-task-visibility`
+- Branch: `codex/p109-ui-01-reversible-task-visibility`
 - Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
 #### Goal
@@ -10001,8 +10001,8 @@ and reversible durable-session hiding, without inventing a backend delete API.
 
 #### Acceptance
 
-- [ ] Local drafts are presented as deletable while durable sessions are presented as hideable.
-- [ ] Hiding a durable task never sends a backend delete request and survives reload.
-- [ ] Operators can restore hidden recent tasks without clearing browser storage or restarting the app.
-- [ ] Restoring tasks preserves durable title, workspace, status, and session binding.
-- [ ] Focused frontend checks, `pnpm build`, and `make check` pass.
+- [x] Local drafts are presented as deletable while durable sessions are presented as hideable.
+- [x] Hiding a durable task never sends a backend delete request and survives reload.
+- [x] Operators can restore hidden recent tasks without clearing browser storage or restarting the app.
+- [x] Restoring tasks preserves durable title, workspace, status, and session binding.
+- [x] Focused frontend checks, `pnpm build`, and `make check` pass.
