@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-14: completed `P114-HAR-01` implementation on `codex/p114-har-01-bounded-sequential-tool-loop`; one attempt now carries provider-neutral assistant and tool turns through a bounded sequential loop, reserves the last model call for a final answer, blocks repeated name-and-argument actions, and persists prior conversation plus counters when a later call requires approval. Approval resume executes the exact pending call without replaying completed tools, while text-only, one-tool, rejection, and uncertain-side-effect behavior remains covered. Production defaults are now four model calls and three tool calls. A real `deepseek-v4-flash` run called `files.read` twice in sequence and returned the exact combined `ALPHA|BETA` proof. All `960` tests, Ruff, Mypy across `210` files, and the 8-case eval release gate passed.
 - 2026-07-14: merged `P113-HITL-01` through GitHub PR `#62` and closed Phase 113; Phase 114 is limited to a budgeted sequential tool loop that preserves exact approval continuation on later steps. Parallel tool execution, subagent delegation, and generic distributed scheduling remain later boundaries.
 - 2026-07-14: completed `P113-HITL-01` implementation on `codex/p113-hitl-01-exact-approved-tool-continuation`; approval-required attempts now remain durably `waiting_approval` instead of being overwritten by `session_failed`, approval context preserves immutable tool identity, arguments, provider call id, original assistant turn, and a canonical fingerprint, and grants bind to that exact call. Worker resume executes the recovered call without a replacement model proposal, returns its result for final synthesis, blocks duplicate terminal resume, and refuses automatic replay after uncertain execution start. The desktop approve action now chains the existing resume endpoint before durable refresh. A local `command.run` acceptance covered waiting, exact readback, grant, one execution, final response, and duplicate protection. All `956` backend tests, Ruff, Mypy across `205` files, the 8-case eval release gate, focused desktop approval check, and production frontend build passed.
 - 2026-07-14: merged `P112-HAR-01` through GitHub PR `#60` and closed Phase 112; Phase 113 is limited to binding approval to one immutable pending tool call, executing that exact call after grant, and converging to a grounded final answer without a replacement model proposal. Multi-tool execution and automatic replay of uncertain side effects remain later boundaries.
@@ -44,9 +45,9 @@
 ## Current Phase
 
 - Active phase: `Phase 114 - Bounded Sequential Tool Loop`
-- Repository status: `phase 113 closed; P114-HAR-01 is ready`
+- Repository status: `phase 113 closed; P114-HAR-01 is in review`
 - Current focus:
-  - `P114-HAR-01` is ready to extend the one-tool flow into a budgeted sequential observe-act loop while preserving exact approval continuation for later calls
+  - `P114-HAR-01` is in review after deterministic, full-repository, later-step approval, and real `deepseek-v4-flash` acceptance of a bounded sequential observe-act loop
   - `P113-HITL-01` was merged through GitHub PR `#62` after backend and desktop acceptance of immutable approval binding, exact one-call continuation, grounded final synthesis, duplicate protection, and uncertain-execution replay refusal
   - `P113-CLOSE-01` records the Phase 113 closeout and the explicit Phase 114 ownership boundary
   - `P112-HAR-01` was merged through GitHub PR `#60` after deterministic, full-repository, and real `deepseek-v4-flash` acceptance of one-tool result synthesis and durable final-answer readback

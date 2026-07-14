@@ -10268,8 +10268,8 @@ tool-loop task without reopening parallel execution or distributed scheduling.
 
 ### P114-HAR-01 - Bounded Sequential Tool Loop
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE`
 - Depends on: `P113-CLOSE-01`
 - Branch: `codex/p114-har-01-bounded-sequential-tool-loop`
@@ -10292,12 +10292,12 @@ configured budget or safety boundary stops the loop.
 
 #### Acceptance
 
-- [ ] A provider can request a tool, observe its result, request a different tool, and then return a grounded final answer.
-- [ ] Every model and tool call is durably represented and counted against its configured budget.
-- [ ] Exhausted budgets and repeated identical calls stop deterministically without an unbounded provider loop.
-- [ ] A later approval-required call pauses with exact call identity and resumes without replaying completed tools.
-- [ ] Existing text-only, single-tool, rejection, and uncertain-side-effect protections remain compatible.
-- [ ] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider multi-step acceptance pass.
+- [x] A provider can request a tool, observe its result, request a different tool, and then return a grounded final answer.
+- [x] Every model and tool call is durably represented and counted against its configured budget.
+- [x] Exhausted budgets and repeated identical calls stop deterministically without an unbounded provider loop.
+- [x] A later approval-required call pauses with exact call identity and resumes without replaying completed tools.
+- [x] Existing text-only, single-tool, rejection, and uncertain-side-effect protections remain compatible.
+- [x] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider multi-step acceptance pass.
 
 #### Explicit Non-Goals
 

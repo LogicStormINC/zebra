@@ -18,11 +18,13 @@ The current repository direction is:
 
 Provider-backed local runs advertise the executable registry as typed JSON Schema
 tools. The OpenAI-compatible adapter keeps internal dotted names while using
-provider-safe function aliases on the wire. One attempt currently executes at
-most one selected tool, returns that result to the provider, and persists the
-grounded final answer. Calls requiring human approval pause with immutable call
-identity and arguments; a grant resumes that exact call and then synthesizes the
-final answer. Additional or parallel tool calls remain a later loop boundary.
+provider-safe function aliases on the wire. One attempt can execute a bounded
+sequence of selected tools, return each result to the provider, and persist the
+grounded final answer. Model and tool budgets reserve a final-answer turn, and
+repeated identical actions stop deterministically. Calls requiring human approval
+pause with immutable call identity, arguments, and prior conversation state; a
+grant resumes that exact call without replaying completed tools. Parallel tool
+execution, subagents, and distributed workflow scheduling remain later boundaries.
 
 ## Desktop UI Workspace
 
