@@ -138,10 +138,14 @@ class SessionExecutionService:
             workspace=claimed.recovery.workspace,
             fallback_title=claimed.recovery.session.title,
         )
-        tool_gateway = LocalToolGateway(task.workspace_root)
+        model_gateway = build_model_gateway(self._settings)
+        tool_gateway = LocalToolGateway(
+            task.workspace_root,
+            model_gateway=model_gateway,
+        )
         context_compiler = LocalContextCompiler()
         orchestrator = SingleAttemptOrchestrator(
-            build_model_gateway(self._settings),
+            model_gateway,
             LocalPolicyEngine(profile=PolicyProfile(task.policy_profile)),
             tool_gateway,
             model_step=HarnessModelStep(
@@ -172,6 +176,7 @@ class SessionExecutionService:
         try:
             continuation = recover_approved_continuation(session_events)
         except ApprovedContinuationError as exc:
+            tool_gateway.close()
             self._claim_service.release_claim(claimed)
             raise WorkerExecutionError(str(exc)) from exc
         if continuation is not None:
@@ -186,19 +191,22 @@ class SessionExecutionService:
             session=claimed.recovery.session,
             attempt=context.attempt,
         )
-        attempt_result = (
-            orchestrator.continue_approved_tool_call(
-                context,
-                initial_completion=continuation.completion,
-                tool_call=continuation.tool_call,
-                remaining_tool_calls=continuation.remaining_tool_calls,
-                conversation=continuation.conversation,
-                model_calls_used=continuation.model_calls_used,
-                tool_calls_executed=continuation.tool_calls_executed,
+        try:
+            attempt_result = (
+                orchestrator.continue_approved_tool_call(
+                    context,
+                    initial_completion=continuation.completion,
+                    tool_call=continuation.tool_call,
+                    remaining_tool_calls=continuation.remaining_tool_calls,
+                    conversation=continuation.conversation,
+                    model_calls_used=continuation.model_calls_used,
+                    tool_calls_executed=continuation.tool_calls_executed,
+                )
+                if continuation is not None
+                else orchestrator.run(context)
             )
-            if continuation is not None
-            else orchestrator.run(context)
-        )
+        finally:
+            tool_gateway.close()
         emitted_events = _append_execution_events(
             session=claimed.recovery.session,
             attempt_result=attempt_result,

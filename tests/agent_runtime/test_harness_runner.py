@@ -144,6 +144,7 @@ def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
 
     tools = gateway.tool_requests[0]
     assert tuple(tool.name for tool in tools) == (
+        "agent.research",
         "command.run",
         "files.read",
         "git.status",

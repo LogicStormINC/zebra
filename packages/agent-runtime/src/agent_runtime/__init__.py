@@ -15,6 +15,16 @@ from agent_runtime.git_commit import (
 )
 from agent_runtime.git_diff import WorkspaceDiffError, WorkspaceDiffResult, WorkspaceDiffService
 from agent_runtime.harness import LocalToolGateway, run_local_harness
+from agent_runtime.research import (
+    LocalResearchSubagentRunner,
+    ReadOnlyToolGateway,
+    ResearchSubagentTool,
+)
+from agent_runtime.subagents import (
+    LocalResearchSubagentCoordinator,
+    SubagentLimitError,
+    UnknownSubagentError,
+)
 from agent_runtime.workspace import (
     LocalWorkspace,
     LocalWorktree,
@@ -25,12 +35,18 @@ from agent_runtime.workspace import (
 
 __all__ = [
     "LocalRuntime",
+    "LocalResearchSubagentCoordinator",
+    "LocalResearchSubagentRunner",
     "LocalToolGateway",
     "LocalWorkspace",
     "LocalWorktree",
+    "ReadOnlyToolGateway",
+    "ResearchSubagentTool",
     "RuntimeCapabilityError",
     "RuntimeHandle",
     "RuntimeSnapshot",
+    "SubagentLimitError",
+    "UnknownSubagentError",
     "WorkspaceCommitCommand",
     "WorkspaceCommitError",
     "WorkspaceCommitResult",

@@ -10524,8 +10524,8 @@ review agents, or distributed scheduling.
 
 ### P118-SUB-01 - Bounded Read-Only Research Subagent
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE / CTX / RUNTIME`
 - Depends on: `P117-CLOSE-01`
 - Branch: `codex/p118-sub-01-bounded-read-only-research`
@@ -10549,15 +10549,15 @@ it, expand the parent's authority, recursively delegate, or outlive its parent.
 
 #### Acceptance
 
-- [ ] A parent run can delegate one research task, collect its structured result, and use that result in the final provider answer.
-- [ ] Child results include a bounded summary, concrete source references, confidence, and terminal status.
-- [ ] A child inherits the parent workspace and a read-only authority ceiling even when the parent has a broader policy profile.
-- [ ] File mutation, command execution, network access, credential access, and recursive delegation are unavailable to the child.
-- [ ] Child count, concurrency, model-call, tool-call, and depth limits reject excess work before it starts.
-- [ ] Join, cancellation, child failure, and parent cancellation converge deterministically without orphaned local work or unsafe replay claims.
-- [ ] Parent-child events expose identities, budgets, status, and provenance but do not copy raw sensitive findings into control metadata.
-- [ ] Existing text-only, tool-loop, batch, compaction, approval, and safe-concurrent behavior remains compatible.
-- [ ] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider parent-to-child acceptance pass.
+- [x] A parent run can delegate one research task, collect its structured result, and use that result in the final provider answer.
+- [x] Child results include a bounded summary, concrete source references, confidence, and terminal status.
+- [x] A child inherits the parent workspace and a read-only authority ceiling even when the parent has a broader policy profile.
+- [x] File mutation, command execution, network access, credential access, and recursive delegation are unavailable to the child.
+- [x] Child count, concurrency, model-call, tool-call, and depth limits reject excess work before it starts.
+- [x] Join, cancellation, child failure, and parent cancellation converge deterministically without orphaned local work or unsafe replay claims.
+- [x] Parent-child events expose identities, budgets, status, and provenance but do not copy raw sensitive findings into control metadata.
+- [x] Existing text-only, tool-loop, batch, compaction, approval, and safe-concurrent behavior remains compatible.
+- [x] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider parent-to-child acceptance pass.
 
 #### Explicit Non-Goals
 

@@ -23,6 +23,8 @@ from agent_tools import (
 from agent_tools.errors import ToolRegistryError
 
 from agent_runtime.adapters.local import LocalRuntime
+from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
+from agent_runtime.subagents import LocalResearchSubagentCoordinator
 from agent_runtime.workspace import LocalWorkspace
 
 DEFAULT_TEST_PRESETS = {
@@ -41,36 +43,44 @@ def run_local_harness(
     policy_profile: PolicyProfile = PolicyProfile.WORKSPACE_WRITE,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
 ) -> HarnessLoopResult:
-    tool_gateway = LocalToolGateway(workspace_root)
+    tool_gateway = LocalToolGateway(workspace_root, model_gateway=model_gateway)
     context_compiler = LocalContextCompiler()
-    return HarnessLoop().run(
-        HarnessTask(
-            title=title,
-            user_input=prompt,
-            max_attempts=1,
-            max_model_calls=4,
-            max_tool_calls=3,
-            workspace_root=workspace_root,
-            confirmed_memories=confirmed_memories,
-        ),
-        SingleAttemptOrchestrator(
-            model_gateway,
-            LocalPolicyEngine(profile=policy_profile),
-            tool_gateway,
-            model_step=HarnessModelStep(
-                context_compiler=context_compiler,
-                available_tools=tool_gateway.model_tools,
-                conversation_compactor=context_compiler,
+    try:
+        return HarnessLoop().run(
+            HarnessTask(
+                title=title,
+                user_input=prompt,
+                max_attempts=1,
+                max_model_calls=4,
+                max_tool_calls=3,
+                workspace_root=workspace_root,
+                confirmed_memories=confirmed_memories,
             ),
-            synthesize_tool_results=True,
-            parallel_safe_tools=tool_gateway.parallel_safe_tools,
-            max_parallel_tool_calls=3,
-        ).run,
-    )
+            SingleAttemptOrchestrator(
+                model_gateway,
+                LocalPolicyEngine(profile=policy_profile),
+                tool_gateway,
+                model_step=HarnessModelStep(
+                    context_compiler=context_compiler,
+                    available_tools=tool_gateway.model_tools,
+                    conversation_compactor=context_compiler,
+                ),
+                synthesize_tool_results=True,
+                parallel_safe_tools=tool_gateway.parallel_safe_tools,
+                max_parallel_tool_calls=3,
+            ).run,
+        )
+    finally:
+        tool_gateway.close()
 
 
 class LocalToolGateway(ToolGatewayPort):
-    def __init__(self, workspace_root: Path) -> None:
+    def __init__(
+        self,
+        workspace_root: Path,
+        *,
+        model_gateway: ModelGatewayPort | None = None,
+    ) -> None:
         self._workspace = LocalWorkspace(workspace_root)
         self._workspace.ensure()
         runtime = LocalRuntime()
@@ -84,6 +94,13 @@ class LocalToolGateway(ToolGatewayPort):
         )
         for tool in tools:
             registry.register(tool.contract, tool.handle)
+        self._subagents: LocalResearchSubagentCoordinator | None = None
+        if model_gateway is not None:
+            self._subagents = LocalResearchSubagentCoordinator(
+                LocalResearchSubagentRunner(model_gateway)
+            )
+            research = ResearchSubagentTool(self._subagents, workspace_root)
+            registry.register(research.contract, research.handle)
         self._model_tools = registry.model_tools()
         self._parallel_safe_tools = registry.parallel_safe_names()
         self._executor = ToolExecutor(registry)
@@ -109,3 +126,7 @@ class LocalToolGateway(ToolGatewayPort):
                     "detail": str(exc),
                 },
             )
+
+    def close(self) -> None:
+        if self._subagents is not None:
+            self._subagents.close()
