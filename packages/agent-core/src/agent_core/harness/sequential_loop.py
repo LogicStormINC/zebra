@@ -10,7 +10,10 @@ from agent_core.harness.models import (
     HarnessContext,
     HarnessEventDraft,
 )
-from agent_core.harness.orchestration_events import model_response_event
+from agent_core.harness.orchestration_events import (
+    context_compacted_event,
+    model_response_event,
+)
 from agent_core.harness.selection import ToolCallSelectionStrategy
 from agent_core.harness.tool_batch import ToolBatchExecutor
 from agent_core.ports.model_gateway import ModelGatewayPort
@@ -190,6 +193,30 @@ class SequentialToolLoop:
                 messages,
                 created_at=context.attempt.started_at,
             )
+        compaction = self._model_step.compact_conversation(
+            messages,
+            user_goal=context.task.user_input,
+            created_at=context.attempt.started_at,
+        )
+        if compaction is not None and compaction.compacted:
+            messages[:] = compaction.messages
+            emitted_events.append(
+                context_compacted_event(
+                    compaction,
+                    attempt_number=context.attempt.number,
+                )
+            )
+            previous_count = metadata.get("conversation_compaction_count", 0)
+            compaction_count = (
+                previous_count
+                if isinstance(previous_count, int) and not isinstance(previous_count, bool)
+                else 0
+            )
+            metadata = {
+                **metadata,
+                "conversation_compaction_count": compaction_count + 1,
+                "conversation_tokens_after_compaction": compaction.after_tokens,
+            }
         completion = self._model_step.request_completion(
             messages,
             self._model_gateway,

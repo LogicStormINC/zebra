@@ -10457,8 +10457,8 @@ delegation.
 
 ### P117-CTX-01 - Bounded Harness Conversation Compaction
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE / CTX`
 - Depends on: `P116-CLOSE-01`
 - Branch: `codex/p117-ctx-01-bounded-conversation-compaction`
@@ -10483,14 +10483,14 @@ prefix.
 
 #### Acceptance
 
-- [ ] A conversation above the configured dynamic budget is compacted before the next provider request and its deterministic estimate falls within the supported bound.
-- [ ] The stable system prefix, original user goal, latest working exchange, and valid assistant/tool pairing remain present after compaction.
-- [ ] Pending, failed, or approval-required calls are never summarized away or detached from their provider call ids.
-- [ ] Conversations below the threshold remain byte-for-byte equivalent, and repeated compaction produces the same canonical messages.
-- [ ] Compaction events expose only counts, estimates, and provenance metadata rather than raw tool output or secrets.
-- [ ] Approval pause and resume continue from the compacted canonical conversation without replaying completed tools.
-- [ ] Existing text-only, sequential, complete-batch, safe-concurrent, failure, and HITL behavior remains compatible.
-- [ ] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider compacted-loop acceptance pass.
+- [x] A conversation above the configured dynamic budget is compacted before the next provider request and its deterministic estimate falls within the supported bound.
+- [x] The stable system prefix, original user goal, latest working exchange, and valid assistant/tool pairing remain present after compaction.
+- [x] Pending, failed, or approval-required calls are never summarized away or detached from their provider call ids.
+- [x] Conversations below the threshold remain byte-for-byte equivalent, and repeated compaction produces the same canonical messages.
+- [x] Compaction events expose only counts, estimates, and provenance metadata rather than raw tool output or secrets.
+- [x] Approval pause and resume continue from the compacted canonical conversation without replaying completed tools.
+- [x] Existing text-only, sequential, complete-batch, safe-concurrent, failure, and HITL behavior remains compatible.
+- [x] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider compacted-loop acceptance pass.
 
 #### Explicit Non-Goals
 

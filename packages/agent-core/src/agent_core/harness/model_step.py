@@ -6,6 +6,10 @@ from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
 from agent_core.domain.tools import ToolCall, ToolResult
 from agent_core.harness.models import HarnessTask
 from agent_core.ports.context_compiler import ContextCompilerPort
+from agent_core.ports.conversation_compactor import (
+    ConversationCompactionResult,
+    ConversationCompactorPort,
+)
 from agent_core.ports.model_gateway import ModelGatewayPort
 
 
@@ -15,9 +19,31 @@ class HarnessModelStep:
         context_compiler: ContextCompilerPort | None = None,
         *,
         available_tools: tuple[ModelToolDefinition, ...] = (),
+        conversation_compactor: ConversationCompactorPort | None = None,
+        conversation_token_budget: int = 800,
     ) -> None:
+        if conversation_token_budget <= 0:
+            raise ValueError("conversation_token_budget must be positive")
         self._context_compiler = context_compiler
         self._available_tools = available_tools
+        self._conversation_compactor = conversation_compactor
+        self._conversation_token_budget = conversation_token_budget
+
+    def compact_conversation(
+        self,
+        messages: list[SessionMessage],
+        *,
+        user_goal: str,
+        created_at: datetime,
+    ) -> ConversationCompactionResult | None:
+        if self._conversation_compactor is None:
+            return None
+        return self._conversation_compactor.compact_conversation(
+            tuple(messages),
+            user_goal=user_goal,
+            max_tokens=self._conversation_token_budget,
+            created_at=created_at,
+        )
 
     def request_initial_completion(
         self,

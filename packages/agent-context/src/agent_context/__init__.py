@@ -9,6 +9,12 @@ from agent_context.compaction import (
     compact_tool_outputs,
 )
 from agent_context.compiler import compile_context
+from agent_context.conversation import (
+    PROVENANCE,
+    SUMMARY_MARKER,
+    compact_message_history,
+    estimate_message_tokens,
+)
 from agent_context.models import (
     CompiledContext,
     ContextBudget,
@@ -38,6 +44,7 @@ __all__ = [
     "LocalContextCompiler",
     "compact_conversation",
     "compact_tool_outputs",
+    "compact_message_history",
     "ConversationCompactionRequest",
     "ContextBudget",
     "ContextCompileRequest",
@@ -48,6 +55,7 @@ __all__ = [
     "PromptLayout",
     "PromptSection",
     "PromptSectionKind",
+    "PROVENANCE",
     "ScannedFile",
     "build_repo_map_item",
     "compile_context",
@@ -55,9 +63,11 @@ __all__ = [
     "recall_related_files",
     "scan_workspace_files",
     "score_file",
+    "SUMMARY_MARKER",
     "ToolOutputCompactionRequest",
     "ToolOutputEvidence",
     "TrustLevel",
     "prompt_injection_metadata",
+    "estimate_message_tokens",
     "trust_level_for_item",
 ]
