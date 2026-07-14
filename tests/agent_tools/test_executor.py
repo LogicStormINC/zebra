@@ -78,6 +78,21 @@ def test_tool_registry_rejects_duplicate_tool_registration() -> None:
         registry.register(contract, handler)
 
 
+def test_tool_registry_exposes_only_explicit_parallel_safe_tools() -> None:
+    registry = ToolRegistry()
+
+    def handler(call: ToolCall) -> ToolResult:
+        return ToolResult(
+            tool_call_id=call.tool_call_id,
+            status=ToolCallStatus.EXECUTED,
+        )
+
+    registry.register(ToolContract(name="files.read", parallel_safe=True), handler)
+    registry.register(ToolContract(name="command.run"), handler)
+
+    assert registry.parallel_safe_names() == frozenset({"files.read"})
+
+
 def test_tool_executor_routes_mcp_tool_through_proxy_gateway() -> None:
     proxy_transport = _FakeMcpProxyTransport()
     executor = ToolExecutor(

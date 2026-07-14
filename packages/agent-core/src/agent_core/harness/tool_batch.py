@@ -1,32 +1,23 @@
-from dataclasses import dataclass
-
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.policies import PolicyDecisionType
 from agent_core.domain.tools import ToolCall, ToolCallStatus
 from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
+from agent_core.harness.concurrent_batch import (
+    ConcurrentToolBatchExecutor,
+    ToolBatchResult,
+    selection_evidence,
+)
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_step import HarnessModelStep
-from agent_core.harness.models import (
-    HarnessAttemptOutcome,
-    HarnessAttemptResult,
-    HarnessContext,
-    HarnessEventDraft,
-)
+from agent_core.harness.models import HarnessAttemptOutcome, HarnessContext, HarnessEventDraft
 from agent_core.harness.orchestration_events import policy_decision_payload
 from agent_core.harness.policy_step import policy_stop_result
 from agent_core.harness.selection import ToolCallSelection
 from agent_core.harness.tool_execution import execute_tool_call
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.tool_gateway import ToolGatewayPort
-
-
-@dataclass(frozen=True)
-class ToolBatchResult:
-    terminal_result: HarnessAttemptResult | None
-    tool_calls_executed: int
-    metadata: dict[str, object]
 
 
 class ToolBatchExecutor:
@@ -37,11 +28,21 @@ class ToolBatchExecutor:
         tool_gateway: ToolGatewayPort,
         model_step: HarnessModelStep,
         verifier: VerifierHook,
+        parallel_safe_tools: frozenset[str],
+        max_parallel_tool_calls: int,
     ) -> None:
         self._policy_engine = policy_engine
         self._tool_gateway = tool_gateway
         self._model_step = model_step
         self._verifier = verifier
+        self._concurrent = ConcurrentToolBatchExecutor(
+            policy_engine=policy_engine,
+            tool_gateway=tool_gateway,
+            model_step=model_step,
+            verifier=verifier,
+            parallel_safe_tools=parallel_safe_tools,
+            max_parallel_tool_calls=max_parallel_tool_calls,
+        )
 
     def execute(
         self,
@@ -62,6 +63,24 @@ class ToolBatchExecutor:
     ) -> ToolBatchResult:
         if not tool_calls:
             raise ValueError("tool batch must not be empty")
+        if self._concurrent.can_execute(
+            tool_calls,
+            execute_all=execute_all,
+            first_execution_started=first_execution_started,
+        ):
+            return self._concurrent.execute(
+                context,
+                messages=messages,
+                completion=completion,
+                tool_calls=tool_calls,
+                emitted_events=emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                tool_call_limit=tool_call_limit,
+                fingerprints=fingerprints,
+                metadata=metadata,
+                first_selection=first_selection,
+            )
         for index, tool_call in enumerate(tool_calls):
             if tool_calls_executed >= tool_call_limit:
                 return self._terminal(
@@ -79,7 +98,7 @@ class ToolBatchExecutor:
                 )
             approved_continuation = index == 0 and first_execution_started
             if not approved_continuation:
-                selection_summary, selection_metadata = _selection_evidence(
+                selection_summary, selection_metadata = selection_evidence(
                     index=index,
                     count=len(tool_calls),
                     first_selection=first_selection,
@@ -208,17 +227,3 @@ class ToolBatchExecutor:
             tool_calls_executed,
             metadata,
         )
-
-
-def _selection_evidence(
-    *,
-    index: int,
-    count: int,
-    first_selection: ToolCallSelection | None,
-) -> tuple[str, dict[str, object]]:
-    if index == 0 and first_selection is not None:
-        return first_selection.summary, first_selection.metadata
-    return (
-        "selected provider-order tool call",
-        {"selected_index": index, "candidate_count": count},
-    )

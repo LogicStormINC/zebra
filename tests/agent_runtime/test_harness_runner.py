@@ -8,7 +8,7 @@ from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tools import ToolCall
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
-from agent_runtime import run_local_harness
+from agent_runtime import LocalToolGateway, run_local_harness
 
 
 def test_run_local_harness_completes_without_tool_calls(tmp_path) -> None:
@@ -18,8 +18,8 @@ def test_run_local_harness_completes_without_tool_calls(tmp_path) -> None:
         workspace_root=tmp_path.resolve(),
         model_gateway=ScriptedModelGateway(
             responses=(
-                    ScriptedModelResponse(
-                        completion=ModelCompletion(
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
                         assistant_message=SessionMessage(
                             message_id=new_message_id(),
                             role=MessageRole.ASSISTANT,
@@ -152,6 +152,12 @@ def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
     )
     file_read = next(tool for tool in tools if tool.name == "files.read")
     assert file_read.parameters["required"] == ["path"]
+
+
+def test_local_tool_gateway_exposes_only_parallel_safe_builtins(tmp_path) -> None:
+    gateway = LocalToolGateway(tmp_path.resolve())
+
+    assert gateway.parallel_safe_tools == frozenset({"files.read", "git.status"})
 
 
 def _created_at() -> datetime:

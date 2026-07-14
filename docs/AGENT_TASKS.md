@@ -10391,8 +10391,8 @@ boundaries.
 
 ### P116-HAR-01 - Bounded Safe Concurrent Tool Batches
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE`
 - Depends on: `P115-CLOSE-01`
 - Branch: `codex/p116-har-01-bounded-safe-concurrent-batches`
@@ -10417,13 +10417,13 @@ fallback for every other batch.
 
 #### Acceptance
 
-- [ ] Two independent parallel-safe calls overlap in execution and both results reach the next model request in provider order.
-- [ ] The configured concurrency limit is enforced for a larger eligible batch.
-- [ ] Mixed, unknown, write-capable, denied, and approval-required batches execute or pause through the existing sequential path.
-- [ ] Policy, duplicate, and budget rejection occurs before any member of a candidate concurrent batch starts.
-- [ ] One concurrent member failure is recorded explicitly; already-started siblings are observed to completion and no rollback or unsafe replay is claimed.
-- [ ] Existing text-only, sequential, HITL continuation, uncertain-side-effect, and complete-batch behavior remains compatible.
-- [ ] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider concurrent-batch acceptance pass.
+- [x] Two independent parallel-safe calls overlap in execution and both results reach the next model request in provider order.
+- [x] The configured concurrency limit is enforced for a larger eligible batch.
+- [x] Mixed, unknown, write-capable, denied, and approval-required batches execute or pause through the existing sequential path.
+- [x] Policy, duplicate, and budget rejection occurs before any member of a candidate concurrent batch starts.
+- [x] One concurrent member failure is recorded explicitly; already-started siblings are observed to completion and no rollback or unsafe replay is claimed.
+- [x] Existing text-only, sequential, HITL continuation, uncertain-side-effect, and complete-batch behavior remains compatible.
+- [x] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider concurrent-batch acceptance pass.
 
 #### Explicit Non-Goals
 
