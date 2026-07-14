@@ -1,5 +1,5 @@
 ---
-title: "Codex-like 工程 Agent 平台最终架构设计"
+title: "Codex-like 通用执行型 Agent 平台最终架构设计"
 subtitle: "本地优先、可私有化、云端可扩展、长时运行且安全可控"
 author: "架构设计最终版"
 date: "2026-06-18"
@@ -14,32 +14,43 @@ lang: zh-CN
 |---|---|
 | 文档版本 | v1.0 Final |
 | 目标读者 | 架构师、Agent/Harness 开发者、平台工程师、安全工程师、产品负责人 |
-| 适用范围 | Codex-like Coding Agent、工程自动化 Agent、私有化 Agent Runtime |
+| 适用范围 | 通用执行型 Agent、工程自动化 Agent、私有化 Agent Runtime |
 | 核心定位 | 本地优先，可扩展到团队协作、私有云及多租户云端 |
 | 架构基线 | 公开前沿实践 + 可落地工程约束 |
 | 关键原则 | Event Store 是事实源；Harness 无状态；Sandbox 无凭证、可销毁、可恢复 |
 
-> **最终结论**：本方案不再以“Orchestrator 持有会话状态 + Docker 执行 + Redis Memory”为核心，而采用“持久会话事件流 + 无状态 Harness + Context Compiler + Typed Tool Gateway + Policy/Credential/Egress 控制 + 可恢复沙箱 + Eval 闭环”的目标架构。该组合接近 2026 年公开的一线长时运行 Coding Agent 架构，同时保留从本地 MVP 渐进落地的工程路径。
+> **最终结论**：本方案不再以“Orchestrator 持有会话状态 + Docker 执行 + Redis Memory”为核心，而采用“持久会话事件流 + 无状态 Harness + Context Compiler + Typed Tool Gateway + Policy/Credential/Egress 控制 + 可恢复沙箱 + Eval 闭环”的目标架构。该组合借鉴 Claude Code、Codex 等执行型 Agent 的 Harness 与交互模式，但 Zebra Agent 的产品目标是构建可承载多类任务的 Agent Runtime 与工作台，不是把写代码或 Git 交付作为默认目的。
+
+## 产品定位覆盖说明（2026-07-14）
+
+本节是当前产品定位基线，并覆盖本文其他章节中将 Coding Agent、代码修改、
+Diff、Commit 或 Pull Request 描述为默认产品闭环的旧表述。
+
+- Zebra Agent 是通用执行型 Agent 平台；代码仓库只是可选工作空间，编程只是可选任务域。
+- 默认交互围绕任务、上下文、工具调用、执行事件、结果和可恢复会话组织。
+- 文件、Shell、Git、SCM 和代码索引继续作为 Typed Tool Gateway 的可选能力存在。
+- 前端不得把代码变更、Commit 或 Pull Request 作为每个任务的固定主流程。
+- 只有后端产生明确的 approval 时才进入 HITL；界面仅展示该审批的操作、目标、范围、风险和批准或拒绝动作。
+- 无 approval 的普通任务应保持自主执行，不显示休眠的人工操作表单。
 
 # 1. 执行摘要
 
 ## 1.1 项目定位
 
-建设一个能够在真实代码仓库中长期运行的工程 Agent 平台，完成以下闭环：
+建设一个能够在真实工作空间中长期运行的通用执行型 Agent 平台，完成以下闭环：
 
 ```text
 用户任务
-  → 解析项目规则和代码结构
+  → 解析任务规则和可用上下文
   → 制定计划
   → 受控调用工具
-  → 修改代码
-  → 执行测试、Lint、Typecheck
-  → 根据失败证据继续修复
-  → 输出 Diff / Commit / Pull Request
+  → 产出并验证任务结果
+  → 根据失败证据继续执行或请求 HITL
+  → 返回结果或等待明确的人类决策
   → 记录可重放事件、审计证据和可失效经验
 ```
 
-平台首先服务于本地开发者，随后扩展到团队协作、Git 托管平台和私有云；其核心竞争力不是聊天界面，而是**可靠执行、精准上下文、安全控制、崩溃恢复和可持续评测**。
+平台首先服务于本地用户和 Agent 构建者，随后扩展到团队协作、专业工具集成和私有云；其核心竞争力不是聊天界面或代码生成，而是**可靠执行、精准上下文、安全控制、崩溃恢复和可持续评测**。
 
 ## 1.2 最终架构公式
 

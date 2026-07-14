@@ -9,13 +9,12 @@ import { isAppendToTerminalError, streamEventsToMessages, toErrorMessage } from 
 import { useOperatorConfig } from "./lib/operator-config";
 import { mergeSessionEvents, pollWhile } from "./lib/live-session";
 import { projectRuntimeConnection } from "./lib/runtime-connection";
-import { decodeArtifactContent, type SessionResultSurface } from "./lib/session-results";
 import type { TaskLaunchConfig } from "./lib/task-launch-config";
 import { useWorkspaceSessionIndex } from "./lib/use-workspace-session-index";
+import { useWorkspaceSelection } from "./lib/use-workspace-selection";
 import { useActiveApproval } from "./lib/use-active-approval";
-import { useSessionDelivery } from "./lib/use-session-delivery";
 import { zebraApi } from "./lib/zebra-api";
-import type { SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "./types";
+import type { SessionEvent, SessionSummary } from "./types";
 const WORKSPACE_HOME_KEY = "__workspace-home__";
 
 export default function App() {
@@ -42,13 +41,9 @@ export default function App() {
     setSessionIds: setConversationToSessionId,
     setSessionSummaries,
   } = useWorkspaceSessionIndex(api, config.sessionId.trim());
-  const [currentConversation, setCurrentConversation] = useState<string>(WORKSPACE_HOME_KEY);
+  const [currentConversation, setCurrentConversation] = useWorkspaceSelection(conversations, WORKSPACE_HOME_KEY);
   const [conversationEvents, setConversationEvents] = useState<Record<string, SessionEvent[]>>({});
   const [conversationMessages, setConversationMessages] = useState<Record<string, ChatMessage[]>>({});
-  const [resultSurfaces, setResultSurfaces] = useState<Record<string, SessionResultSurface | null>>({});
-  const [artifactContentPreview, setArtifactContentPreview] = useState<string | null>(null);
-  const [artifactDetail, setArtifactDetail] = useState<SessionArtifactDetailResponse | null>(null);
-  const [artifactLoading, setArtifactLoading] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
   const [controlsBusy, setControlsBusy] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
@@ -58,7 +53,6 @@ export default function App() {
   const activeLabel = activeConversation?.label ?? locale.agentName;
   const currentSessionId =
     currentConversation === WORKSPACE_HOME_KEY ? undefined : conversationToSessionId[currentConversation];
-  const resultSurface = resultSurfaces[currentConversation] ?? null;
   const sessionSummary = sessionSummaries[currentConversation] ?? null;
   const isWorkspaceIdle = currentConversation === WORKSPACE_HOME_KEY;
   useEffect(() => {
@@ -97,25 +91,6 @@ export default function App() {
     [api, setSessionSummaries],
   );
 
-  const loadResultSurface = useCallback(
-    async (conversationKey: string, sessionId: string) => {
-      const [diffResult, artifactResult, deliveryAuditResult] = await Promise.allSettled([
-        api.diff(sessionId),
-        api.artifacts(sessionId),
-        api.deliveryAudit(sessionId),
-      ]);
-      setResultSurfaces((current) => ({
-        ...current,
-        [conversationKey]: {
-          diff: diffResult.status === "fulfilled" ? diffResult.value : null,
-          artifacts: artifactResult.status === "fulfilled" ? artifactResult.value : null,
-          deliveryAudit: deliveryAuditResult.status === "fulfilled" ? deliveryAuditResult.value : null,
-        },
-      }));
-    },
-    [api],
-  );
-
   const refreshConversation = useCallback(
     async (conversationKey: string) => {
       const sessionId = conversationToSessionId[conversationKey];
@@ -125,10 +100,9 @@ export default function App() {
       await Promise.all([
         syncConversationFromStream(conversationKey, sessionId),
         loadSessionSummary(conversationKey, sessionId),
-        loadResultSurface(conversationKey, sessionId),
       ]);
     },
-    [conversationToSessionId, loadResultSurface, loadSessionSummary, syncConversationFromStream],
+    [conversationToSessionId, loadSessionSummary, syncConversationFromStream],
   );
 
   const refreshCurrentConversation = useCallback(
@@ -136,7 +110,6 @@ export default function App() {
     [currentConversation, refreshConversation],
   );
   const activeApproval = useActiveApproval(api, currentSessionId, sessionSummary?.status, refreshCurrentConversation);
-  const delivery = useSessionDelivery(api, currentSessionId, refreshCurrentConversation);
 
   const executeSession = useCallback(
     async (conversationKey: string, sessionId: string) => {
@@ -144,9 +117,8 @@ export default function App() {
         syncConversationFromStream(conversationKey, sessionId),
         loadSessionSummary(conversationKey, sessionId),
       ]));
-      await loadResultSurface(conversationKey, sessionId);
     },
-    [api, loadResultSurface, loadSessionSummary, syncConversationFromStream],
+    [api, loadSessionSummary, syncConversationFromStream],
   );
 
   const runControlAction = useCallback(
@@ -193,21 +165,6 @@ export default function App() {
   }, [currentConversation, conversationToSessionId, messageApi, syncConversationFromStream]);
 
   useEffect(() => {
-    if (!currentConversation) {
-      return;
-    }
-    const sessionId = conversationToSessionId[currentConversation];
-    if (!sessionId) {
-      setResultSurfaces((current) => ({
-        ...current,
-        [currentConversation]: null,
-      }));
-      return;
-    }
-    void loadResultSurface(currentConversation, sessionId);
-  }, [conversationToSessionId, currentConversation, loadResultSurface]);
-
-  useEffect(() => {
     if (!listRef.current) {
       return;
     }
@@ -243,11 +200,6 @@ export default function App() {
         return next;
       });
       setConversationEvents((current) => {
-        const next = { ...current };
-        delete next[conversationKey];
-        return next;
-      });
-      setResultSurfaces((current) => {
         const next = { ...current };
         delete next[conversationKey];
         return next;
@@ -378,31 +330,6 @@ export default function App() {
     void runControlAction(() => api.cancel(sessionId));
   }, [api.cancel, currentSessionId, runControlAction]);
 
-  const openArtifact = useCallback(
-    async (artifactId: string) => {
-      const sessionId = conversationToSessionId[currentConversation];
-      if (!sessionId) {
-        return;
-      }
-      setArtifactLoading(true);
-      setArtifactDetail(null);
-      setArtifactContentPreview(null);
-      try {
-        const detail = await api.artifactDetail(sessionId, artifactId);
-        setArtifactDetail(detail);
-        if (detail.artifact.retrieval.retrievable) {
-          const content = await api.artifactContent(sessionId, artifactId);
-          setArtifactContentPreview(decodeArtifactContent(content.content_base64));
-        }
-      } catch (error: unknown) {
-        messageApi.error(toErrorMessage(error));
-      } finally {
-        setArtifactLoading(false);
-      }
-    },
-    [api, conversationToSessionId, currentConversation, messageApi],
-  );
-
   const copyText = useCallback(
     async (value: string, successText: string) => {
       try {
@@ -420,13 +347,9 @@ export default function App() {
       {contextHolder}
       <CodexWorkspace
         activeLabel={activeLabel}
-        artifactContentPreview={artifactContentPreview}
-        artifactDetail={artifactDetail}
-        artifactLoading={artifactLoading}
         conversations={conversations}
         currentConversation={currentConversation}
         currentSessionId={currentSessionId}
-        delivery={delivery}
         events={events}
         isRequesting={isRequesting}
         listRef={listRef}
@@ -437,10 +360,6 @@ export default function App() {
         approvalErrorText={activeApproval.errorText}
         onApprove={activeApproval.approve}
         onCancel={cancelSession}
-        onCloseArtifact={() => {
-          setArtifactDetail(null);
-          setArtifactContentPreview(null);
-        }}
         onCopySessionId={() => {
           if (!currentSessionId) {
             return;
@@ -468,9 +387,6 @@ export default function App() {
         onCancelSession={cancelSession}
         onResumeSession={resumeSession}
         onSuspendSession={suspendSession}
-        onOpenArtifact={(artifactId) => {
-          void openArtifact(artifactId);
-        }}
         onReject={activeApproval.reject}
         onRefreshConversation={() => {
           void refreshConversation(currentConversation).catch((error: unknown) => {
@@ -488,7 +404,6 @@ export default function App() {
           void submitMessage(value, launchConfig);
         }}
         controlsBusy={controlsBusy}
-        resultSurface={resultSurface}
         runtimeStatus={runtimeStatus}
         sessionSummaries={sessionSummaries}
         sessionSummary={sessionSummary}

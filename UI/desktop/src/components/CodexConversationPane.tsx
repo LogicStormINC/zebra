@@ -17,12 +17,9 @@ import React from "react";
 import locale from "../_utils/local";
 import { sessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-status";
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
-import type { SessionResultSurface } from "../lib/session-results";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
-import type { SessionDeliveryController } from "../lib/session-delivery";
 import { compactWorkspaceLabel, validateTaskLaunchConfig, type TaskLaunchConfig } from "../lib/task-launch-config";
-import type { ApprovalSummary, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
-import { ArtifactDetailDrawer } from "./ArtifactDetailDrawer";
+import type { ApprovalSummary, SessionEvent, SessionSummary } from "../types";
 import { SessionThreadWorkspace } from "./SessionThreadWorkspace";
 import { useTaskLaunchStyle } from "./TaskLaunchConfig.styles";
 import { useConversationPaneStyle } from "./CodexConversationPane.styles";
@@ -33,12 +30,8 @@ interface CodexConversationPaneProps {
   activeApproval: ApprovalSummary | undefined;
   approvalBusy: boolean;
   approvalErrorText: string | null;
-  artifactContentPreview: string | null;
-  artifactDetail: SessionArtifactDetailResponse | null;
-  artifactLoading: boolean;
   currentConversation: string;
   currentSessionId?: string;
-  delivery: SessionDeliveryController;
   conversations: ConversationSeed[];
   events: SessionEvent[];
   idleProjectLabel: string;
@@ -49,7 +42,6 @@ interface CodexConversationPaneProps {
   messages: ChatMessage[];
   launchConfig: TaskLaunchConfig;
   onCancel: () => void;
-  onCloseArtifact: () => void;
   onCopySessionId: () => void;
   onCopyWorkspacePath: () => void;
   onCreateConversation: () => void;
@@ -57,7 +49,6 @@ interface CodexConversationPaneProps {
   onCancelSession: () => void;
   onResumeSession: () => void;
   onSuspendSession: () => void;
-  onOpenArtifact: (artifactId: string) => void;
   onPatchLaunchConfig: (patch: Partial<TaskLaunchConfig>) => void;
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onRefreshConversation: () => void;
@@ -66,7 +57,6 @@ interface CodexConversationPaneProps {
   onSelectConversation: (key: string) => void;
   onSubmit: (value: string, launchConfig: TaskLaunchConfig) => void;
   controlsBusy: boolean;
-  resultSurface: SessionResultSurface | null;
   runtimeStatus: RuntimeConnectionStatus;
   sessionSummaries: Record<string, SessionSummary | null>;
   sessionSummary: SessionSummary | null;
@@ -78,12 +68,8 @@ export function CodexConversationPane({
   activeApproval,
   approvalBusy,
   approvalErrorText,
-  artifactContentPreview,
-  artifactDetail,
-  artifactLoading,
   currentConversation,
   currentSessionId,
-  delivery,
   conversations,
   events,
   idleProjectLabel,
@@ -94,7 +80,6 @@ export function CodexConversationPane({
   messages,
   launchConfig,
   onCancel,
-  onCloseArtifact,
   onCopySessionId,
   onCopyWorkspacePath,
   onCreateConversation,
@@ -102,7 +87,6 @@ export function CodexConversationPane({
   onCancelSession,
   onResumeSession,
   onSuspendSession,
-  onOpenArtifact,
   onPatchLaunchConfig,
   onApprove,
   onRefreshConversation,
@@ -111,7 +95,6 @@ export function CodexConversationPane({
   onSelectConversation,
   onSubmit,
   controlsBusy,
-  resultSurface,
   runtimeStatus,
   sessionSummaries,
   sessionSummary,
@@ -142,11 +125,11 @@ export function CodexConversationPane({
       : `${locale.statusDraft} · ${locale.notBound} · ${locale.notStarted}`
     : runtimeLabel;
   const suggestedActions = [
-    { label: locale.hintDocs, prompt: "阅读项目文档，并总结当前主线开发状态。" },
-    { label: locale.hintExplain, prompt: "解释当前项目结构和核心模块职责。" },
-    { label: locale.hintDebug, prompt: "定位当前项目里最需要修复的一个问题，并给出实现方案。" },
-    { label: locale.hintImplement, prompt: "基于当前项目状态，继续实现下一个最小功能切片。" },
-    { label: locale.hintShip, prompt: "为当前实现补充必要测试，并运行验证命令。" },
+    { label: locale.hintDocs, prompt: "阅读当前工作空间中的资料，并总结关键结论。" },
+    { label: locale.hintExplain, prompt: "解释当前任务上下文、约束和可用信息。" },
+    { label: locale.hintDebug, prompt: "分析当前问题，给出有证据的原因和处理方案。" },
+    { label: locale.hintImplement, prompt: "根据当前目标，使用可用工具完成下一步任务。" },
+    { label: locale.hintShip, prompt: "验证当前结果，并列出验证证据和未解决风险。" },
   ];
   const recentThreads = conversations.filter((item) => item.key !== currentConversation).slice(0, 5);
   const threadMeta = (item: ConversationSeed) => {
@@ -195,7 +178,7 @@ export function CodexConversationPane({
                 {launchEditable ? (
                   <Dropdown menu={{ items: [
                     { key: "workspace_write", label: "权限: 工作区写入", onClick: () => onPatchLaunchConfig({ policyProfile: "workspace_write" }) },
-                    { key: "full_access", label: "权限: 完整访问（允许交付）", onClick: () => onPatchLaunchConfig({ policyProfile: "full_access" }) },
+                    { key: "full_access", label: "权限: 完整访问（全部受控工具）", onClick: () => onPatchLaunchConfig({ policyProfile: "full_access" }) },
                   ] }} trigger={["click"]}>
                     <button className={styles.toolbarButton} type="button">
                       {launchConfig.policyProfile === "full_access" ? "权限: 完整访问" : locale.accessWorkspaceWrite}
@@ -296,13 +279,6 @@ export function CodexConversationPane({
       onClick: onCopySessionId,
       disabled: !currentSessionId,
     },
-    {
-      key: "close-artifact",
-      icon: <FileTextOutlined />,
-      label: locale.closeArtifactPanel,
-      onClick: onCloseArtifact,
-      disabled: !artifactDetail && !artifactLoading,
-    },
   ];
 
   return (
@@ -398,16 +374,11 @@ export function CodexConversationPane({
                 activeApproval={activeApproval}
                 approvalBusy={approvalBusy}
                 approvalErrorText={approvalErrorText}
-                artifactContentPreview={artifactContentPreview}
-                artifactDetail={artifactDetail}
-                delivery={delivery}
                 events={events}
                 isDraft={!hasSessionThread}
                 messages={messages}
-                onOpenArtifact={onOpenArtifact}
                 onApprove={onApprove}
                 onReject={onReject}
-                resultSurface={resultSurface}
                 sessionSummary={sessionSummary}
               />
             )}
@@ -416,13 +387,6 @@ export function CodexConversationPane({
 
         {hasThread ? <div className={styles.composerDock}>{renderComposer("thread")}</div> : null}
       </div>
-      <ArtifactDetailDrawer
-        contentPreview={artifactContentPreview}
-        detail={artifactDetail}
-        loading={artifactLoading}
-        onClose={onCloseArtifact}
-        open={artifactLoading || artifactDetail !== null}
-      />
     </main>
   );
 }

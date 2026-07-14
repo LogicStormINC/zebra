@@ -2,28 +2,23 @@ import { CheckOutlined } from "@ant-design/icons";
 import React from "react";
 import locale from "../_utils/local";
 import type { ChatMessage } from "../lib/chat-surface";
-import { extractChangedFiles } from "../lib/session-results";
-import type { SessionResultSurface } from "../lib/session-results";
-import type { SessionDeliveryController } from "../lib/session-delivery";
 import { compactWorkspaceLabel } from "../lib/task-launch-config";
-import type { ApprovalSummary, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
+import type { ApprovalSummary, SessionEvent, SessionSummary } from "../types";
 import { AssistantMessageBlock } from "./AssistantMessageBlock";
 import { SessionExecutionTrace } from "./SessionExecutionTrace";
 import { SessionApprovalPanel } from "./SessionApprovalPanel";
-import { SessionDeliveryPanel } from "./SessionDeliveryPanel";
-import { SessionResultWorkbench } from "./SessionResultWorkbench";
 import { useSessionThreadWorkspaceStyle } from "./SessionThreadWorkspace.styles";
 
-type InspectorTab = "context" | "files" | "logs" | "changes";
+type InspectorTab = "context" | "logs";
 type StageState = "pending" | "active" | "done";
-type StageKey = "planning" | "reading" | "running" | "editing" | "testing" | "completed" | "review";
+type StageKey = "planning" | "context" | "tools" | "result" | "verification" | "completed" | "review";
 
 const STAGES = [
   { key: "planning", label: locale.stagePlanning },
-  { key: "reading", label: locale.stageReading },
-  { key: "running", label: locale.stageRunning },
-  { key: "editing", label: locale.stageEditing },
-  { key: "testing", label: locale.stageTesting },
+  { key: "context", label: locale.stageContext },
+  { key: "tools", label: locale.stageTools },
+  { key: "result", label: locale.stageResult },
+  { key: "verification", label: locale.stageVerification },
   { key: "completed", label: locale.stageCompleted },
   { key: "review", label: locale.stageReview },
 ] as const;
@@ -35,7 +30,6 @@ const PLANNING_EVENTS = new Set([
   "plan_proposed",
   "plan_approved",
   "model_request_started",
-  "model_response_received",
   "harness_attempt_started",
 ]);
 const TOOL_EVENTS = new Set(["tool_execution_started", "tool_execution_completed", "tool_execution_failed"]);
@@ -52,8 +46,8 @@ const EVENT_LABELS: Record<string, string> = {
   tool_execution_started: "工具开始执行",
   tool_execution_completed: "工具执行完成",
   tool_execution_failed: "工具执行失败",
-  patch_applied: "代码变更已应用",
-  tests_completed: "测试已完成",
+  patch_applied: "任务结果已更新",
+  tests_completed: "结果验证已完成",
   approval_requested: "等待用户确认",
   approval_granted: "用户已确认",
   approval_rejected: "用户已拒绝",
@@ -70,15 +64,14 @@ function eventStage(event: SessionEvent): StageKey | null {
   if (PLANNING_EVENTS.has(event.event_type)) return "planning";
   if (["approval_requested", "approval_granted", "approval_rejected"].includes(event.event_type)) return "review";
   if (["session_completed", "session_failed", "session_cancelled"].includes(event.event_type)) return "completed";
-  if (event.event_type === "patch_applied") return "editing";
-  if (event.event_type === "tests_completed") return "testing";
+  if (["model_response_received", "patch_applied"].includes(event.event_type)) return "result";
+  if (event.event_type === "tests_completed") return "verification";
   if (!TOOL_EVENTS.has(event.event_type)) return null;
 
   const name = toolName(event);
-  if (["test", "pytest"].some((fragment) => name.includes(fragment))) return "testing";
-  if (["write", "edit", "patch"].some((fragment) => name.includes(fragment))) return "editing";
-  if (["read", "search", "list", "glob"].some((fragment) => name.includes(fragment))) return "reading";
-  return "running";
+  if (["test", "check", "verify"].some((fragment) => name.includes(fragment))) return "verification";
+  if (["read", "search", "list", "glob", "retrieve"].some((fragment) => name.includes(fragment))) return "context";
+  return "tools";
 }
 
 function formatTime(value: string) {
@@ -91,16 +84,11 @@ interface SessionThreadWorkspaceProps {
   activeApproval: ApprovalSummary | undefined;
   approvalBusy: boolean;
   approvalErrorText: string | null;
-  artifactContentPreview: string | null;
-  artifactDetail: SessionArtifactDetailResponse | null;
-  delivery: SessionDeliveryController;
   events: SessionEvent[];
   isDraft: boolean;
   messages: ChatMessage[];
-  onOpenArtifact: (artifactId: string) => void;
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
-  resultSurface: SessionResultSurface | null;
   sessionSummary: SessionSummary | null;
 }
 
@@ -109,23 +97,15 @@ export function SessionThreadWorkspace({
   activeApproval,
   approvalBusy,
   approvalErrorText,
-  artifactContentPreview,
-  artifactDetail,
-  delivery,
   events,
   isDraft,
   messages,
-  onOpenArtifact,
   onApprove,
   onReject,
-  resultSurface,
   sessionSummary,
 }: SessionThreadWorkspaceProps) {
   const { styles } = useSessionThreadWorkspaceStyle();
   const [inspectorTab, setInspectorTab] = React.useState<InspectorTab>("context");
-  const files = extractChangedFiles(resultSurface?.diff ?? null);
-  const artifacts = resultSurface?.artifacts?.artifacts ?? [];
-  const audit = resultSurface?.deliveryAudit?.delivery_audit ?? [];
   const workspaceRoot = sessionSummary?.workspace?.workspace_root;
   const projectLabel = workspaceRoot ? compactWorkspaceLabel(workspaceRoot) : locale.unboundProject;
   const populatedStages = STAGES.map((stage) => ({
@@ -136,9 +116,7 @@ export function SessionThreadWorkspace({
   const terminal = ["completed", "failed", "cancelled", "canceled", "stopped"].includes(sessionSummary?.status ?? "");
   const tabs: Array<{ key: InspectorTab; label: string }> = [
     { key: "context", label: locale.inspectorContext },
-    { key: "files", label: locale.inspectorFiles },
     { key: "logs", label: locale.inspectorLogs },
-    { key: "changes", label: locale.inspectorChanges },
   ];
 
   const stageState = (index: number, count: number): StageState => {
@@ -158,26 +136,13 @@ export function SessionThreadWorkspace({
         <div className={styles.inspectorRow}><span>{locale.sequence}</span><span>{sessionSummary?.current_sequence ?? events.length}</span></div>
       </div>;
     }
-    if (inspectorTab === "files") {
-      return files.length ? <div className={styles.inspectorList}>{files.map((file) => (
-        <div className={styles.inspectorRow} key={`${file.status}-${file.path}`}><span>{file.status}</span><span title={file.path}>{file.path}</span></div>
-      ))}</div> : <p className={styles.empty}>{locale.noWorkspaceChanges}</p>;
-    }
-    if (inspectorTab === "logs") {
-      const logs = events.slice(-5).reverse();
-      return logs.length ? <div className={styles.inspectorList}>{logs.map((event) => (
-        <div className={styles.logRow} key={event.event_id}>
-          <span>{EVENT_LABELS[event.event_type] ?? event.event_type}</span>
-          <span>#{event.sequence} · {formatTime(event.created_at)}</span>
-        </div>
-      ))}</div> : <p className={styles.empty}>{locale.noLogsYet}</p>;
-    }
-    return <div className={styles.inspectorList}>
-      <div className={styles.inspectorRow}><span>{locale.gitStatus}</span><span>{resultSurface?.diff?.clean === false ? "dirty" : "clean"}</span></div>
-      <div className={styles.inspectorRow}><span>{locale.changedFiles}</span><span>{files.length}</span></div>
-      <div className={styles.inspectorRow}><span>{locale.generatedArtifacts}</span><span>{artifacts.length}</span></div>
-      <div className={styles.inspectorRow}><span>{locale.deliveryRecords}</span><span>{audit.length}</span></div>
-    </div>;
+    const logs = events.slice(-5).reverse();
+    return logs.length ? <div className={styles.inspectorList}>{logs.map((event) => (
+      <div className={styles.logRow} key={event.event_id}>
+        <span>{EVENT_LABELS[event.event_type] ?? event.event_type}</span>
+        <span>#{event.sequence} · {formatTime(event.created_at)}</span>
+      </div>
+    ))}</div> : <p className={styles.empty}>{locale.noLogsYet}</p>;
   };
 
   return (
@@ -211,19 +176,6 @@ export function SessionThreadWorkspace({
             errorText={approvalErrorText}
             onApprove={onApprove}
             onReject={onReject}
-          />
-          <SessionResultWorkbench
-            artifactContentPreview={artifactContentPreview}
-            artifactDetail={artifactDetail}
-            onSelectArtifact={onOpenArtifact}
-            surface={resultSurface}
-          />
-          <SessionDeliveryPanel
-            controller={delivery}
-            policyProfile={sessionSummary?.workspace?.policy_profile}
-            sessionId={sessionSummary?.session_id}
-            sessionStatus={sessionSummary?.status}
-            surface={resultSurface}
           />
           <SessionExecutionTrace events={events} />
           <div className={styles.messageStack}>{messages.map((message) => message.role === "assistant" ? (

@@ -4,9 +4,7 @@ import { createStyles } from "antd-style";
 import React, { useState } from "react";
 import locale from "../_utils/local";
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
-import type { SessionResultSurface } from "../lib/session-results";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
-import type { SessionDeliveryController } from "../lib/session-delivery";
 import { compactWorkspaceLabel, type TaskLaunchConfig } from "../lib/task-launch-config";
 import { useTaskLaunchConfig } from "../lib/use-task-launch-config";
 import {
@@ -15,7 +13,7 @@ import {
   workspaceProjectId,
   type WorkspaceProject,
 } from "../lib/workspace-projects";
-import type { ApprovalSummary, OperatorConfig, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
+import type { ApprovalSummary, OperatorConfig, SessionEvent, SessionSummary } from "../types";
 import { CodexConversationPane } from "./CodexConversationPane";
 import { CodexSidebar } from "./CodexSidebar";
 import { OperatorConfigCard } from "./OperatorConfigCard";
@@ -49,13 +47,9 @@ interface CodexWorkspaceProps {
   activeApproval: ApprovalSummary | undefined;
   approvalBusy: boolean;
   approvalErrorText: string | null;
-  artifactContentPreview: string | null;
-  artifactDetail: SessionArtifactDetailResponse | null;
-  artifactLoading: boolean;
   conversations: ConversationSeed[];
   currentConversation: string;
   currentSessionId?: string;
-  delivery: SessionDeliveryController;
   events: SessionEvent[];
   hiddenSessionCount: number;
   isWorkspaceIdle: boolean;
@@ -64,7 +58,6 @@ interface CodexWorkspaceProps {
   messages: ChatMessage[];
   operatorConfig: OperatorConfig;
   onCancel: () => void;
-  onCloseArtifact: () => void;
   onCopySessionId: () => void;
   onCopyWorkspacePath: () => void;
   onPatchConfig: (patch: Partial<OperatorConfig>) => void;
@@ -76,7 +69,6 @@ interface CodexWorkspaceProps {
   onCancelSession: () => void;
   onResumeSession: () => void;
   onSuspendSession: () => void;
-  onOpenArtifact: (artifactId: string) => void;
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onRefreshConversation: () => void;
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
@@ -84,7 +76,6 @@ interface CodexWorkspaceProps {
   onSelectConversation: (key: string) => void;
   onSubmit: (value: string, launchConfig: TaskLaunchConfig) => void;
   controlsBusy: boolean;
-  resultSurface: SessionResultSurface | null;
   runtimeStatus: RuntimeConnectionStatus;
   sessionSummaries: Record<string, SessionSummary | null>;
   sessionIds: Record<string, string>;
@@ -150,14 +141,10 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             activeApproval={props.activeApproval}
             approvalBusy={props.approvalBusy}
             approvalErrorText={props.approvalErrorText}
-            artifactContentPreview={props.artifactContentPreview}
-            artifactDetail={props.artifactDetail}
-            artifactLoading={props.artifactLoading}
             conversations={visibleConversations}
             controlsBusy={props.controlsBusy}
             currentConversation={props.currentConversation}
             currentSessionId={props.currentSessionId}
-            delivery={props.delivery}
             events={props.events}
             isRequesting={props.isRequesting}
             isWorkspaceIdle={props.isWorkspaceIdle}
@@ -168,11 +155,9 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             messages={props.messages}
             onCancel={props.onCancel}
             onCancelSession={props.onCancelSession}
-            onCloseArtifact={props.onCloseArtifact}
             onCopySessionId={props.onCopySessionId}
             onCopyWorkspacePath={props.onCopyWorkspacePath}
             onCreateConversation={props.onCreateConversation}
-            onOpenArtifact={props.onOpenArtifact}
             onOpenSettings={() => setSettingsOpen(true)}
             onPatchLaunchConfig={patchLaunchConfig}
             onApprove={props.onApprove}
@@ -183,7 +168,6 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             onSelectConversation={props.onSelectConversation}
             onSubmit={props.onSubmit}
             onSuspendSession={props.onSuspendSession}
-            resultSurface={props.resultSurface}
             runtimeStatus={props.runtimeStatus}
             senderRef={props.senderRef}
             sessionSummaries={props.sessionSummaries}

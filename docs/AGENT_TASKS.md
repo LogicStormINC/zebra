@@ -10028,24 +10028,26 @@ execution closure task without broadening the desktop product surface.
 
 ## Phase 110 Task Board
 
-### P110-INT-01 - Provider-Backed Desktop Execution Closure
+### P110-INT-01 - General Agent Desktop And Provider Closure
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P109-CLOSE-01`
-- Suggested branch: `codex/p110-int-01-provider-backed-desktop-execution`
-- Owned paths: `UI/desktop/`, `apps/api/`, `apps/config/`, `packages/agent-integrations/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+- Branch: `codex/p110-int-01-provider-backed-desktop-execution`
+- Owned paths: `UI/desktop/`, `apps/api/`, `apps/config/`, `packages/agent-integrations/`, `tests/`, `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`, `docs/实施任务拆解与阶段验收.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
 
 #### Goal
 
-Prove one real local desktop task from durable creation through provider-backed
-execution and final readback, fixing only integration defects exposed by that
-flow while keeping provider secrets untracked.
+Align the desktop with Zebra Agent's general executing-agent positioning, then
+prove one real local task from durable creation through provider-backed execution
+and final readback while keeping provider secrets untracked.
 
 #### Deliverables
 
 - local ignored provider configuration using the supported `deepseek-v4-flash` model
+- default task UI centered on generic execution rather than code delivery
+- HITL controls rendered only from a concrete active approval
 - browser-observed create, execute, SSE event, final message, and durable status convergence
 - truthful frontend error handling for any provider or execution failure found in the flow
 - deterministic regression coverage for each code defect fixed during acceptance
@@ -10053,8 +10055,10 @@ flow while keeping provider secrets untracked.
 
 #### Acceptance
 
-- [ ] No provider credential is staged, committed, logged, or returned by an API response.
-- [ ] A real desktop task reaches a terminal durable state through the configured provider.
-- [ ] The task timeline and assistant response converge without a manual page reload.
-- [ ] Reloading the task preserves its title, workspace, messages, events, and terminal status.
-- [ ] Focused integration checks, `pnpm build`, `make test`, and `make check` pass.
+- [x] No provider credential is staged, committed, logged, or returned by an API response.
+- [x] Normal tasks show no fixed Diff, Commit, or Pull Request workflow.
+- [x] HITL approval context and actions appear only while a concrete approval is active.
+- [x] A real desktop task reaches a terminal durable state through the configured provider.
+- [x] The task timeline and assistant response converge without a manual page reload.
+- [x] Reloading the task preserves its title, workspace, messages, events, and terminal status.
+- [x] Focused integration checks, `pnpm build`, `make test`, and `make check` pass.
