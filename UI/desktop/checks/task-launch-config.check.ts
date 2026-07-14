@@ -16,3 +16,6 @@ assert.equal(validateTaskLaunchConfig({ workspace: "  ", policyProfile: "workspa
 assert.equal(validateTaskLaunchConfig({ workspace: "/repo", policyProfile: "unknown" } as TaskLaunchConfig), "不支持当前权限策略");
 assert.equal(validateTaskLaunchConfig({ workspace: "/repo", policyProfile: "full_access" }), null);
 assert.equal(compactWorkspaceLabel("/Users/operator/zebra-agent/"), "zebra-agent");
+assert.equal(compactWorkspaceLabel("relative-workspace/"), "relative-workspace");
+assert.equal(compactWorkspaceLabel("/"), "/");
+assert.equal(compactWorkspaceLabel(""), "未配置");

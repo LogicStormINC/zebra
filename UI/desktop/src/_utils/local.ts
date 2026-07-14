@@ -37,7 +37,6 @@ export default {
   noArtifactsYet: "当前会话还没有可读产物。",
   deliveryRecords: "交付记录",
   noDeliveryRecords: "当前还没有 commit / PR 交付记录。",
-  idleProjectName: "zebra-agent",
   idlePromptTitle: "下一步任务",
   idlePromptSubtitle: "当前项目已就绪，可以开始一个本地工程任务。",
   suggestedActions: "建议操作",
