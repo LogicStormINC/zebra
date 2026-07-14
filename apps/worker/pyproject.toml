@@ -9,6 +9,7 @@ dependencies = [
     "agent-runtime",
     "agent-storage",
     "agent-security",
+    "agent-tools",
     "zebra-agent-config",
 ]
 
@@ -21,6 +22,7 @@ agent-integrations = { workspace = true }
 agent-runtime = { workspace = true }
 agent-storage = { workspace = true }
 agent-security = { workspace = true }
+agent-tools = { workspace = true }
 zebra-agent-config = { workspace = true }
 
 [build-system]

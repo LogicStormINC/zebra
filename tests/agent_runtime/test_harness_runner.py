@@ -9,6 +9,7 @@ from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tools import ToolCall
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_runtime import LocalToolGateway, run_local_harness
+from agent_tools import McpProxyRequest, McpProxyResponse
 
 
 def test_run_local_harness_completes_without_tool_calls(tmp_path) -> None:
@@ -159,6 +160,71 @@ def test_local_tool_gateway_exposes_only_parallel_safe_builtins(tmp_path) -> Non
     gateway = LocalToolGateway(tmp_path.resolve())
 
     assert gateway.parallel_safe_tools == frozenset({"files.read", "git.status"})
+
+
+def test_local_tool_gateway_advertises_enabled_minimax_image_tool(tmp_path) -> None:
+    transport = _FakeMcpTransport()
+    gateway = LocalToolGateway(tmp_path.resolve(), mcp_proxy_transport=transport)
+
+    names = tuple(tool.name for tool in gateway.model_tools)
+
+    assert "mcp.minimax.understand_image" in names
+    assert "mcp.minimax.understand_image" not in gateway.parallel_safe_tools
+
+
+def test_run_local_harness_executes_preapproved_minimax_image_tool(tmp_path) -> None:
+    transport = _FakeMcpTransport()
+    result = run_local_harness(
+        prompt="Read the screenshot.",
+        title="Runtime image tool test",
+        workspace_root=tmp_path.resolve(),
+        model_gateway=ScriptedModelGateway(
+            responses=(
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content="Reading the screenshot.",
+                            created_at=_created_at(),
+                        ),
+                        tool_calls=(
+                            ToolCall(
+                                tool_call_id=new_tool_call_id(),
+                                name="mcp.minimax.understand_image",
+                                arguments={
+                                    "prompt": "Extract visible transactions.",
+                                    "image_source": "broker.png",
+                                },
+                                created_at=_created_at(),
+                            ),
+                        ),
+                    )
+                ),
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content="The image was read.",
+                            created_at=_created_at(),
+                        )
+                    )
+                ),
+            )
+        ),
+        mcp_proxy_transport=transport,
+    )
+
+    assert result.session.status is SessionStatus.COMPLETED
+    assert result.attempt_result.metadata["tool_name"] == "mcp.minimax.understand_image"
+    assert result.attempt_result.metadata["tool_output"] == "understand_image"
+    assert result.attempt_result.metadata["assistant_message"] == "The image was read."
+
+
+class _FakeMcpTransport:
+    def execute(self, request: McpProxyRequest) -> McpProxyResponse:
+        return McpProxyResponse(output=request.target.tool_name)
 
 
 def _created_at() -> datetime:

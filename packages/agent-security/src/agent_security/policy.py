@@ -68,6 +68,7 @@ PATH_ARGUMENTS_BY_TOOL = {
 class LocalPolicyEngine:
     profile: PolicyProfile = PolicyProfile.READ_ONLY
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE
+    preapproved_mcp_tools: frozenset[str] = frozenset()
 
     def evaluate_tool_call(self, tool_call: ToolCall) -> PolicyDecision:
         tool_name = tool_call.name
@@ -78,6 +79,11 @@ class LocalPolicyEngine:
         if egress.route is ToolEgressRoute.BLOCKED:
             return _deny(self.profile, _blocked_route_reason(egress))
         if egress.route is ToolEgressRoute.MCP_PROXY:
+            if tool_name in self.preapproved_mcp_tools:
+                return _allow(
+                    self.profile,
+                    f"{tool_name} is explicitly preapproved on the MCP proxy route",
+                )
             return _approval(self.profile, _proxy_route_reason(egress))
         if self.profile is PolicyProfile.READ_ONLY:
             return _decision_for_read_only(tool_name, self.profile)

@@ -217,6 +217,15 @@ uv sync --all-packages --group dev
 uv run pytest
 ```
 
+## Optional FinOS Image Understanding
+
+Zebra can expose one opt-in, workspace-bounded MiniMax image tool for FinOS broker
+screenshots while retaining the configured text model as the planning Agent. The
+feature is disabled by default, accepts only task-local JPEG, PNG, or WebP files,
+and never writes FinOS Core or Journal state. See
+[`docs/FinOS_Image_Understanding_MCP.md`](docs/FinOS_Image_Understanding_MCP.md)
+for configuration, evidence, and rollback rules.
+
 ## Operator Entry
 
 For the current local operator workflow, start with `docs/operator_runbook.md`. For local snapshot runtime semantics, also read `docs/local_snapshot_runtime.md`. For denied versus unavailable artifact access paths, also read `docs/artifact_access_operator_guidance.md`. The operator runbook covers:

@@ -9,10 +9,12 @@ from agent_core.application.mock_model import ScriptedModelGateway, ScriptedMode
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
+from agent_core.domain.tools import ToolCall
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
+from agent_tools import McpProxyRequest, McpProxyResponse
 from fastapi.testclient import TestClient
 from zebra_agent_api import create_http_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
@@ -300,7 +302,16 @@ def test_http_app_executes_session_create(tmp_path: Path, monkeypatch) -> None:
                             role=MessageRole.ASSISTANT,
                             content="HTTP execution complete.",
                             created_at=_created_at(),
-                        )
+                        ),
+                        call_metadata=ModelCallMetadata(
+                            provider="test-provider",
+                            model_name="test-model",
+                            usage=ModelUsage(
+                                input_tokens=8,
+                                output_tokens=3,
+                                total_tokens=11,
+                            ),
+                        ),
                     )
                 ),
             )
@@ -323,6 +334,88 @@ def test_http_app_executes_session_create(tmp_path: Path, monkeypatch) -> None:
     assert response.status_code == 201
     assert response.json()["executed"] is True
     assert response.json()["assistant_message"] == "HTTP execution complete."
+    assert response.json()["usage"] == {
+        "provider": "test-provider",
+        "model": "test-model",
+        "input_tokens": 8,
+        "output_tokens": 3,
+        "total_tokens": 11,
+        "tool_calls": 0,
+    }
+
+
+def test_http_app_executes_enabled_minimax_image_tool(tmp_path: Path, monkeypatch) -> None:
+    from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
+    from agent_core.domain.identifiers import new_message_id, new_tool_call_id
+    from agent_core.domain.messages import MessageRole, SessionMessage
+    from agent_core.domain.modeling import ModelCompletion
+
+    class FakeTransport:
+        def execute(self, request: McpProxyRequest) -> McpProxyResponse:
+            assert request.arguments["image_source"] == "broker.png"
+            return McpProxyResponse(output="BUY 100 shares")
+
+    gateway = ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="Reading screenshot.",
+                        created_at=_created_at(),
+                    ),
+                    tool_calls=(
+                        ToolCall(
+                            tool_call_id=new_tool_call_id(),
+                            name="mcp.minimax.understand_image",
+                            arguments={
+                                "prompt": "Extract visible trades.",
+                                "image_source": "broker.png",
+                            },
+                            created_at=_created_at(),
+                        ),
+                    ),
+                )
+            ),
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="BUY 100 shares",
+                        created_at=_created_at(),
+                    )
+                )
+            ),
+        )
+    )
+    monkeypatch.setattr(api_app_module, "build_model_gateway", lambda _settings: gateway)
+    monkeypatch.setattr(
+        api_app_module,
+        "build_minimax_image_mcp_transport",
+        lambda _settings, *, workspace_root: FakeTransport(),
+    )
+    (tmp_path / "broker.png").write_bytes(b"image")
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post(
+        "/sessions",
+        json={
+            "prompt": "Read broker.png",
+            "title": "HTTP image session",
+            "workspace": str(tmp_path),
+            "execute": True,
+            "policy_profile": "read_only",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["assistant_message"] == "BUY 100 shares"
+    assert response.json()["usage"]["tool_calls"] == 1
+    assert response.json()["trace"][0]["tools"][0]["tool_name"] == (
+        "mcp.minimax.understand_image"
+    )
 
 
 def test_http_app_executes_session_create_reports_missing_api_key(

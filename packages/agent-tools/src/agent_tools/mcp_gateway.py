@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 
+from agent_tools.errors import McpProxyTransportError
 from agent_tools.mcp_proxy import McpProxyTransport, build_mcp_proxy_request
 
 
@@ -16,7 +17,23 @@ class McpProxyToolGateway:
             tool_call,
             metadata={"route": "mcp_proxy"},
         )
-        response = self.transport.execute(request)
+        try:
+            response = self.transport.execute(request)
+        except McpProxyTransportError as exc:
+            return ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.FAILED,
+                output="",
+                metadata={
+                    "reason": "mcp_proxy_error",
+                    "detail": str(exc),
+                    "route": "proxy",
+                    "proxy_target": (
+                        f"{request.target.server_name}.{request.target.tool_name}"
+                    ),
+                    "proxy_transport": "mcp_proxy",
+                },
+            )
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
             status=ToolCallStatus.EXECUTED,

@@ -10,15 +10,19 @@ from agent_core.harness.models import HarnessLoopResult
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
-from agent_security import LocalPolicyEngine, PolicyProfile
+from agent_security import LocalPolicyEngine, PolicyProfile, parse_network_profile
 from agent_tools import (
+    MINIMAX_IMAGE_TOOL_NAME,
     CommandRunTool,
     FileReadTool,
     GitStatusTool,
+    McpProxyToolGateway,
+    McpProxyTransport,
     PatchApplyTool,
     TestsRunTool,
     ToolExecutor,
     ToolRegistry,
+    minimax_image_tool_contract,
 )
 from agent_tools.errors import ToolRegistryError
 
@@ -42,8 +46,13 @@ def run_local_harness(
     model_gateway: ModelGatewayPort,
     policy_profile: PolicyProfile = PolicyProfile.WORKSPACE_WRITE,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
+    mcp_proxy_transport: McpProxyTransport | None = None,
 ) -> HarnessLoopResult:
-    tool_gateway = LocalToolGateway(workspace_root, model_gateway=model_gateway)
+    tool_gateway = LocalToolGateway(
+        workspace_root,
+        model_gateway=model_gateway,
+        mcp_proxy_transport=mcp_proxy_transport,
+    )
     context_compiler = LocalContextCompiler()
     try:
         return HarnessLoop().run(
@@ -58,7 +67,17 @@ def run_local_harness(
             ),
             SingleAttemptOrchestrator(
                 model_gateway,
-                LocalPolicyEngine(profile=policy_profile),
+                LocalPolicyEngine(
+                    profile=policy_profile,
+                    network_profile=parse_network_profile(
+                        "mcp-proxy-only" if mcp_proxy_transport is not None else "none"
+                    ),
+                    preapproved_mcp_tools=(
+                        frozenset({MINIMAX_IMAGE_TOOL_NAME})
+                        if mcp_proxy_transport is not None
+                        else frozenset()
+                    ),
+                ),
                 tool_gateway,
                 model_step=HarnessModelStep(
                     context_compiler=context_compiler,
@@ -80,6 +99,7 @@ class LocalToolGateway(ToolGatewayPort):
         workspace_root: Path,
         *,
         model_gateway: ModelGatewayPort | None = None,
+        mcp_proxy_transport: McpProxyTransport | None = None,
     ) -> None:
         self._workspace = LocalWorkspace(workspace_root)
         self._workspace.ensure()
@@ -94,6 +114,9 @@ class LocalToolGateway(ToolGatewayPort):
         )
         for tool in tools:
             registry.register(tool.contract, tool.handle)
+        if mcp_proxy_transport is not None:
+            mcp_gateway = McpProxyToolGateway(mcp_proxy_transport)
+            registry.register(minimax_image_tool_contract(), mcp_gateway.execute)
         self._subagents: LocalResearchSubagentCoordinator | None = None
         if model_gateway is not None:
             self._subagents = LocalResearchSubagentCoordinator(

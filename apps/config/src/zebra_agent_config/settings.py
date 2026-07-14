@@ -20,6 +20,13 @@ class ApiSettings:
 
 
 @dataclass(frozen=True)
+class MiniMaxVisionSettings:
+    enabled: bool
+    api_key_env: str
+    api_host: str
+
+
+@dataclass(frozen=True)
 class ScmSettings:
     provider: str
     github_owner: str | None
@@ -35,6 +42,13 @@ class ZebraAgentSettings:
     database_url: str
     api: ApiSettings
     model: ModelSettings
+    minimax_vision: MiniMaxVisionSettings = field(
+        default_factory=lambda: MiniMaxVisionSettings(
+            enabled=False,
+            api_key_env="MINIMAX_API_KEY",
+            api_host="https://api.minimaxi.com",
+        )
+    )
     scm: ScmSettings = field(
         default_factory=lambda: ScmSettings(
             provider="local-only",
@@ -83,6 +97,23 @@ def load_settings(
             ),
             base_url=_read(values, "ZEBRA_MODEL_BASE_URL", default="https://api.deepseek.com"),
             model=_read(values, "ZEBRA_MODEL_NAME", default="deepseek-v4-flash"),
+        ),
+        minimax_vision=MiniMaxVisionSettings(
+            enabled=_read_bool(
+                values,
+                "ZEBRA_MINIMAX_VISION_ENABLED",
+                default=False,
+            ),
+            api_key_env=_read(
+                values,
+                "ZEBRA_MINIMAX_API_KEY_ENV",
+                default="MINIMAX_API_KEY",
+            ),
+            api_host=_read(
+                values,
+                "ZEBRA_MINIMAX_API_HOST",
+                default="https://api.minimaxi.com",
+            ),
         ),
         scm=_load_scm_settings(values),
     )

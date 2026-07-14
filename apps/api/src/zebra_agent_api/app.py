@@ -20,6 +20,7 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.harness.models import HarnessLoopResult
 from agent_integrations import (
     GitHubPullRequestTransport,
+    build_minimax_image_mcp_transport,
     build_model_gateway,
     build_pull_request_gateway,
 )
@@ -925,6 +926,10 @@ class ZebraAgentApi:
         )
         try:
             model_gateway = build_model_gateway(self.settings)
+            minimax_transport = build_minimax_image_mcp_transport(
+                self.settings,
+                workspace_root=workspace_root,
+            )
         except ValueError as error:
             return service_unavailable(
                 status="model_gateway_unavailable",
@@ -937,6 +942,7 @@ class ZebraAgentApi:
             model_gateway=model_gateway,
             policy_profile=PolicyProfile(str(parsed["policy_profile"])),
             confirmed_memories=confirmed_memories,
+            mcp_proxy_transport=minimax_transport,
         )
         event_store = SQLiteEventStore(self.database_path)
         for event in result.events:
@@ -956,6 +962,7 @@ class ZebraAgentApi:
                 "attempts_used": result.run_result.attempts_used,
                 "policy_profile": str(parsed["policy_profile"]),
                 "trace": _trace_payload(result),
+                "usage": _usage_payload(result),
             },
         )
 
@@ -1067,3 +1074,35 @@ def _trace_payload(result: HarnessLoopResult) -> list[dict[str, object]]:
         }
         for attempt in trace.attempts
     ]
+
+
+def _usage_payload(result: HarnessLoopResult) -> dict[str, object]:
+    model_events = [
+        event
+        for event in result.events
+        if event.event_type.value == "model_response_received"
+    ]
+    tool_calls = sum(
+        event.event_type.value
+        in {"tool_execution_completed", "tool_execution_failed"}
+        for event in result.events
+    )
+    latest = model_events[-1].payload if model_events else {}
+    return {
+        "provider": latest.get("provider") or "",
+        "model": latest.get("model_name") or "",
+        "input_tokens": sum(
+            _usage_int(event.payload.get("input_tokens")) for event in model_events
+        ),
+        "output_tokens": sum(
+            _usage_int(event.payload.get("output_tokens")) for event in model_events
+        ),
+        "total_tokens": sum(
+            _usage_int(event.payload.get("total_tokens")) for event in model_events
+        ),
+        "tool_calls": tool_calls,
+    }
+
+
+def _usage_int(value: object) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0

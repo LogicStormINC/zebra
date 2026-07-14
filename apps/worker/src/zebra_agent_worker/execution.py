@@ -23,9 +23,9 @@ from agent_core.harness import (
     SingleAttemptOrchestrator,
 )
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
-from agent_integrations import build_model_gateway
+from agent_integrations import build_minimax_image_mcp_transport, build_model_gateway
 from agent_runtime import LocalToolGateway
-from agent_security import LocalPolicyEngine, PolicyProfile
+from agent_security import LocalPolicyEngine, PolicyProfile, parse_network_profile
 from agent_storage import (
     SQLiteArtifactPayloadStore,
     SQLiteEventStore,
@@ -36,6 +36,7 @@ from agent_storage import (
     SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
 )
+from agent_tools import MINIMAX_IMAGE_TOOL_NAME
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
 from zebra_agent_worker.approved_continuation import (
@@ -139,14 +140,29 @@ class SessionExecutionService:
             fallback_title=claimed.recovery.session.title,
         )
         model_gateway = build_model_gateway(self._settings)
+        minimax_transport = build_minimax_image_mcp_transport(
+            self._settings,
+            workspace_root=task.workspace_root,
+        )
         tool_gateway = LocalToolGateway(
             task.workspace_root,
             model_gateway=model_gateway,
+            mcp_proxy_transport=minimax_transport,
         )
         context_compiler = LocalContextCompiler()
         orchestrator = SingleAttemptOrchestrator(
             model_gateway,
-            LocalPolicyEngine(profile=PolicyProfile(task.policy_profile)),
+            LocalPolicyEngine(
+                profile=PolicyProfile(task.policy_profile),
+                network_profile=parse_network_profile(
+                    "mcp-proxy-only" if minimax_transport is not None else "none"
+                ),
+                preapproved_mcp_tools=(
+                    frozenset({MINIMAX_IMAGE_TOOL_NAME})
+                    if minimax_transport is not None
+                    else frozenset()
+                ),
+            ),
             tool_gateway,
             model_step=HarnessModelStep(
                 context_compiler=context_compiler,

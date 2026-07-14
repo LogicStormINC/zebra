@@ -7,6 +7,10 @@ from agent_integrations.github_app import (
     GitHubAppInstallationToken,
     GitHubAppTokenTransport,
 )
+from agent_integrations.minimax_image_mcp import (
+    MiniMaxImageMcpTransport,
+    build_minimax_image_mcp_transport,
+)
 from agent_integrations.openai_compatible import (
     OpenAICompatibleModelGateway,
     build_model_gateway,
@@ -46,6 +50,7 @@ __all__ = [
     "GitHubProxyPullRequestTransport",
     "GitHubPullRequestTransport",
     "OpenAICompatibleModelGateway",
+    "MiniMaxImageMcpTransport",
     "PullRequestPlan",
     "PullRequestRequest",
     "ScmIntegrationError",
@@ -55,6 +60,7 @@ __all__ = [
     "ScmProxyTransport",
     "ScmUnavailableError",
     "build_model_gateway",
+    "build_minimax_image_mcp_transport",
     "build_pull_request_gateway",
     "build_github_pull_request_proxy_request",
 ]

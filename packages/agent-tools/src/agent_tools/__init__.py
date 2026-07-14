@@ -13,11 +13,13 @@ if TYPE_CHECKING:
     from agent_tools.executor import ToolExecutor
     from agent_tools.mcp_gateway import McpProxyToolGateway
     from agent_tools.mcp_proxy import (
+        MINIMAX_IMAGE_TOOL_NAME,
         McpProxyRequest,
         McpProxyResponse,
         McpProxyTransport,
         McpToolTarget,
         build_mcp_proxy_request,
+        minimax_image_tool_contract,
         parse_mcp_tool_name,
     )
     from agent_tools.registry import ToolRegistry
@@ -31,6 +33,7 @@ __all__ = [
     "McpProxyTransport",
     "McpProxyToolGateway",
     "McpToolTarget",
+    "MINIMAX_IMAGE_TOOL_NAME",
     "PatchApplyTool",
     "RegisteredTool",
     "TestsRunTool",
@@ -41,6 +44,7 @@ __all__ = [
     "command_run_contract",
     "file_read_contract",
     "git_status_contract",
+    "minimax_image_tool_contract",
     "parse_mcp_tool_name",
     "patch_apply_contract",
     "tests_run_contract",
@@ -50,6 +54,7 @@ _EXPORTS = {
     "CommandRunTool": ("agent_tools.builtin.command", "CommandRunTool"),
     "FileReadTool": ("agent_tools.builtin.files", "FileReadTool"),
     "GitStatusTool": ("agent_tools.builtin.git", "GitStatusTool"),
+    "MINIMAX_IMAGE_TOOL_NAME": ("agent_tools.mcp_proxy", "MINIMAX_IMAGE_TOOL_NAME"),
     "McpProxyRequest": ("agent_tools.mcp_proxy", "McpProxyRequest"),
     "McpProxyResponse": ("agent_tools.mcp_proxy", "McpProxyResponse"),
     "McpProxyTransport": ("agent_tools.mcp_proxy", "McpProxyTransport"),
@@ -65,6 +70,10 @@ _EXPORTS = {
     "command_run_contract": ("agent_tools.builtin.command", "command_run_contract"),
     "file_read_contract": ("agent_tools.builtin.files", "file_read_contract"),
     "git_status_contract": ("agent_tools.builtin.git", "git_status_contract"),
+    "minimax_image_tool_contract": (
+        "agent_tools.mcp_proxy",
+        "minimax_image_tool_contract",
+    ),
     "parse_mcp_tool_name": ("agent_tools.mcp_proxy", "parse_mcp_tool_name"),
     "patch_apply_contract": ("agent_tools.builtin.patch", "patch_apply_contract"),
     "tests_run_contract": ("agent_tools.builtin.tests", "tests_run_contract"),

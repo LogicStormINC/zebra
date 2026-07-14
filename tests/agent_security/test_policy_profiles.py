@@ -246,6 +246,28 @@ def test_mcp_tool_requires_approval_when_proxy_route_is_enabled() -> None:
     )
 
 
+def test_exact_preapproved_mcp_tool_is_allowed_without_approving_other_targets() -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.READ_ONLY,
+        network_profile=parse_network_profile("mcp-proxy-only"),
+        preapproved_mcp_tools=frozenset({"mcp.minimax.understand_image"}),
+    )
+
+    allowed = engine.evaluate_tool_call(
+        _tool_call(
+            "mcp.minimax.understand_image",
+            {"prompt": "extract", "image_source": "material-1.png"},
+        )
+    )
+    other = engine.evaluate_tool_call(
+        _tool_call("mcp.github.create_pull_request", {"title": "No"})
+    )
+
+    assert allowed.decision is PolicyDecisionType.ALLOW
+    assert "explicitly preapproved" in allowed.reason
+    assert other.decision is PolicyDecisionType.REQUIRE_APPROVAL
+
+
 def test_path_traversal_is_denied_for_file_read() -> None:
     engine = LocalPolicyEngine(profile=PolicyProfile.READ_ONLY)
 

@@ -14,6 +14,9 @@ def test_load_settings_reads_default_profile() -> None:
     assert settings.model.api_key_env == "DEEPSEEK_API_KEY"
     assert settings.model.base_url == "https://api.deepseek.com"
     assert settings.model.model == "deepseek-v4-flash"
+    assert settings.minimax_vision.enabled is False
+    assert settings.minimax_vision.api_key_env == "MINIMAX_API_KEY"
+    assert settings.minimax_vision.api_host == "https://api.minimaxi.com"
     assert settings.scm.provider == "local-only"
     assert settings.scm.github_owner is None
     assert settings.scm.github_repo is None
@@ -35,6 +38,9 @@ def test_load_settings_allows_env_override(tmp_path: Path) -> None:
             "ZEBRA_MODEL_API_KEY_ENV": "TEST_API_KEY",
             "ZEBRA_MODEL_BASE_URL": "https://example.test",
             "ZEBRA_MODEL_NAME": "test-model",
+            "ZEBRA_MINIMAX_VISION_ENABLED": "true",
+            "ZEBRA_MINIMAX_API_KEY_ENV": "MINIMAX_TOKEN_PLAN_KEY",
+            "ZEBRA_MINIMAX_API_HOST": "https://api.minimax.io",
             "ZEBRA_SCM_PROVIDER": "github",
             "ZEBRA_GITHUB_OWNER": "octo-org",
             "ZEBRA_GITHUB_REPO": "zebra-agent",
@@ -52,6 +58,9 @@ def test_load_settings_allows_env_override(tmp_path: Path) -> None:
     assert settings.model.api_key_env == "TEST_API_KEY"
     assert settings.model.base_url == "https://example.test"
     assert settings.model.model == "test-model"
+    assert settings.minimax_vision.enabled is True
+    assert settings.minimax_vision.api_key_env == "MINIMAX_TOKEN_PLAN_KEY"
+    assert settings.minimax_vision.api_host == "https://api.minimax.io"
     assert settings.scm.provider == "github"
     assert settings.scm.github_owner == "octo-org"
     assert settings.scm.github_repo == "zebra-agent"

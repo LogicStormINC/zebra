@@ -4,7 +4,12 @@ import pytest
 from agent_core.domain.identifiers import new_tool_call_id
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_tools.contracts import ToolContract
-from agent_tools.errors import ToolArgumentError, ToolRegistryError, UnknownToolError
+from agent_tools.errors import (
+    McpProxyTransportError,
+    ToolArgumentError,
+    ToolRegistryError,
+    UnknownToolError,
+)
 from agent_tools.executor import ToolExecutor
 from agent_tools.mcp_gateway import McpProxyToolGateway
 from agent_tools.mcp_proxy import McpProxyRequest, McpProxyResponse
@@ -127,6 +132,23 @@ def test_tool_executor_still_rejects_unknown_non_mcp_tool() -> None:
         executor.execute(_tool_call("external.tool", {}))
 
 
+def test_mcp_proxy_transport_failure_returns_failed_tool_result() -> None:
+    executor = ToolExecutor(
+        ToolRegistry(),
+        mcp_proxy_gateway=McpProxyToolGateway(transport=_FailingMcpProxyTransport()),
+    )
+
+    result = executor.execute(
+        _tool_call(
+            "mcp.minimax.understand_image",
+            {"prompt": "extract", "image_source": "material-1.png"},
+        )
+    )
+
+    assert result.status is ToolCallStatus.FAILED
+    assert result.metadata["reason"] == "mcp_proxy_error"
+
+
 class _FakeMcpProxyTransport:
     def __init__(self) -> None:
         self.last_request: McpProxyRequest | None = None
@@ -134,3 +156,8 @@ class _FakeMcpProxyTransport:
     def execute(self, request: McpProxyRequest) -> McpProxyResponse:
         self.last_request = request
         return McpProxyResponse(output="proxy-ok", metadata={"transport": "fake-proxy"})
+
+
+class _FailingMcpProxyTransport:
+    def execute(self, request: McpProxyRequest) -> McpProxyResponse:
+        raise McpProxyTransportError("provider unavailable")

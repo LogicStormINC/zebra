@@ -1,5 +1,6 @@
 from zebra_agent_config.settings import (
     ApiSettings,
+    MiniMaxVisionSettings,
     ModelSettings,
     ScmSettings,
     ZebraAgentSettings,
@@ -8,6 +9,7 @@ from zebra_agent_config.settings import (
 
 __all__ = [
     "ApiSettings",
+    "MiniMaxVisionSettings",
     "ModelSettings",
     "ScmSettings",
     "ZebraAgentSettings",

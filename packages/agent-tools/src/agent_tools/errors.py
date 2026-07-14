@@ -8,3 +8,7 @@ class UnknownToolError(ToolRegistryError):
 
 class ToolArgumentError(ToolRegistryError):
     """Raised when a tool call does not satisfy its contract."""
+
+
+class McpProxyTransportError(ToolRegistryError):
+    """Raised when an MCP proxy request cannot be executed safely."""

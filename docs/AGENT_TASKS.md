@@ -10567,3 +10567,46 @@ it, expand the parent's authority, recursively delegate, or outlive its parent.
 - durable cross-process child recovery or distributed scheduling
 - A2A, remote agents, multi-tenant quotas, or automatic model routing
 - Tree-sitter, LSP, vector retrieval, or repository indexing changes
+
+## FinOS Integration Task Board
+
+### FINOS-MCP-01 - Workspace-Bounded MiniMax Image Understanding
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `RUNTIME / SECURITY / INTEGRATION`
+- Depends on: `Phase 22 MCP proxy execution foundation`
+- Branch: `codex/finos-vision-mcp`
+- Owned paths: `packages/agent-integrations/`, `packages/agent-runtime/`, `packages/agent-security/`, `packages/agent-tools/`, `apps/api/`, `apps/config/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `docs/FinOS_Image_Understanding_MCP.md`, `PROGRESS.md`, `README.md`, `.env.example`, `configs/default.env`, `pyproject.toml`, `uv.lock`
+
+#### Goal
+
+Keep Zebra as the FinOS Agent runtime while adding one explicitly enabled,
+workspace-bounded MiniMax `understand_image` MCP tool for user-supplied journal
+screenshots. Zebra remains text-first; image understanding returns untrusted
+tool evidence to the existing Agent loop instead of replacing it.
+
+#### Deliverables
+
+- opt-in MiniMax MCP configuration with secrets supplied only through an environment variable
+- one advertised `mcp.minimax.understand_image` tool using the existing MCP proxy contract
+- workspace-bound local-image validation for JPEG, PNG, and WebP files up to 20 MB
+- exact read-only policy allowance for that configured tool without broad MCP auto-approval
+- tool-call evidence and failure metadata that preserve the existing Zebra trace
+- focused tests plus a real FinOS screenshot acceptance run
+
+#### Acceptance
+
+- [x] With MiniMax disabled, Zebra exposes no image tool and retains current behavior.
+- [x] With MiniMax enabled, the model can call `mcp.minimax.understand_image` and receive text evidence from a task-local image.
+- [x] URLs, data URLs, unsupported formats, oversized files, and paths outside the task workspace fail before provider egress.
+- [x] No other MCP target receives automatic read-only approval.
+- [x] Image-tool output is treated as untrusted evidence and reaches the next Zebra model step.
+- [ ] Targeted tests, `make test`, `make check`, and one deployed FinOS journal flow pass.
+
+#### Explicit Non-Goals
+
+- native multimodal `SessionMessage` content
+- replacing Zebra with a direct model API
+- a general MCP marketplace or arbitrary server configuration UI
+- autonomous Core or Journal writes from image recognition
