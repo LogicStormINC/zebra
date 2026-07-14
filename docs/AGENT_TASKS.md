@@ -10030,7 +10030,7 @@ execution closure task without broadening the desktop product surface.
 
 ### P110-INT-01 - General Agent Desktop And Provider Closure
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P109-CLOSE-01`
@@ -10062,3 +10062,62 @@ and final readback while keeping provider secrets untracked.
 - [x] The task timeline and assistant response converge without a manual page reload.
 - [x] Reloading the task preserves its title, workspace, messages, events, and terminal status.
 - [x] Focused integration checks, `pnpm build`, `make test`, and `make check` pass.
+
+### P110-CLOSE-01 - Phase 110 Closeout And Phase 111 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P110-INT-01`
+- Branch: `codex/p110-closeout-phase111-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 110 acceptance state and define the provider tool-discovery
+boundary without reopening desktop positioning or approval-resume scope.
+
+#### Acceptance
+
+- [x] `P110-INT-01` is recorded as merged through PR `#56` and done.
+- [x] Phase 111 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 111 Task Board
+
+### P111-MDL-01 - Provider Tool Discovery And Safe Execution
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE`
+- Depends on: `P110-CLOSE-01`
+- Branch: `codex/p111-mdl-01-provider-tool-discovery`
+- Owned paths: `packages/agent-core/`, `packages/agent-integrations/`, `packages/agent-tools/`, `packages/agent-runtime/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Expose the active typed tool catalog to OpenAI-compatible providers and prove that
+a real provider can select and execute one policy-allowed tool through the existing
+harness rather than returning a textual imitation of a tool call.
+
+#### Deliverables
+
+- provider-neutral model request contracts for available tools
+- deterministic OpenAI-compatible function-tool serialization
+- runtime composition that advertises the same registered tools it can execute
+- regression coverage for tool request payloads, malformed contracts, and safe execution
+- real-provider acceptance evidence with no credential disclosure
+
+#### Acceptance
+
+- [ ] The model gateway receives typed tool definitions without depending on `agent-tools`.
+- [ ] OpenAI-compatible requests serialize deterministic function names, descriptions, and JSON schemas.
+- [ ] The local API and CLI advertise only tools present in their executable registry.
+- [ ] A real provider proposes a registered safe tool and the harness executes it through policy and tool gateways.
+- [ ] Text-only model completion remains backward compatible when no tools are available or selected.
+- [ ] Targeted tests, `make test`, and `make check` pass.
+
+#### Explicit Non-Goals
+
+- resuming the exact pending tool call after an approval decision
+- multi-tool or parallel tool-call execution
+- adding code-delivery UI or product defaults
