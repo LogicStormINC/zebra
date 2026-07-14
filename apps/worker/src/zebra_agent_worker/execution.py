@@ -187,6 +187,9 @@ class SessionExecutionService:
                 context,
                 initial_completion=continuation.completion,
                 tool_call=continuation.tool_call,
+                conversation=continuation.conversation,
+                model_calls_used=continuation.model_calls_used,
+                tool_calls_executed=continuation.tool_calls_executed,
             )
             if continuation is not None
             else orchestrator.run(context)
@@ -247,9 +250,7 @@ class SessionExecutionService:
             )
             next_sequence += 1
         return ClaimedSession(
-            recovery=self._recovery_service.recover_session(
-                claimed.recovery.session.session_id
-            ),
+            recovery=self._recovery_service.recover_session(claimed.recovery.session.session_id),
             lease=claimed.lease,
         )
 

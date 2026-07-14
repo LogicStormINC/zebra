@@ -27,8 +27,8 @@ def test_session_bootstrap_service_builds_ready_session_events() -> None:
         "workspace_root": "/tmp/bootstrap",
         "policy_profile": "workspace_write",
         "max_attempts": 1,
-        "max_model_calls": 2,
-        "max_tool_calls": 1,
+        "max_model_calls": 4,
+        "max_tool_calls": 3,
     }
     assert result.session.status is SessionStatus.READY
     assert result.session.current_sequence == 2

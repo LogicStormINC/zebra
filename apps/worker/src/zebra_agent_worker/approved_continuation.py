@@ -16,6 +16,9 @@ class ApprovedContinuationError(ValueError):
 class ApprovedContinuation:
     completion: ModelCompletion
     tool_call: ToolCall
+    conversation: tuple[SessionMessage, ...] = ()
+    model_calls_used: int = 1
+    tool_calls_executed: int = 0
 
 
 def recover_approved_continuation(
@@ -70,6 +73,15 @@ def recover_approved_continuation(
             tool_calls=(tool_call,),
         ),
         tool_call=tool_call,
+        conversation=_conversation(requested.payload.get("conversation")),
+        model_calls_used=_non_negative_int(
+            requested.payload.get("model_calls_used"),
+            default=1,
+        ),
+        tool_calls_executed=_non_negative_int(
+            requested.payload.get("tool_calls_executed"),
+            default=0,
+        ),
     )
 
 
@@ -82,3 +94,22 @@ def _required_string(payload: dict[str, object], key: str) -> str:
 
 def _optional_string(value: object) -> str | None:
     return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def _conversation(value: object) -> tuple[SessionMessage, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise ApprovedContinuationError("pending tool call conversation is invalid")
+    try:
+        return tuple(SessionMessage.model_validate(item) for item in value)
+    except ValueError as exc:
+        raise ApprovedContinuationError("pending tool call conversation is invalid") from exc
+
+
+def _non_negative_int(value: object, *, default: int) -> int:
+    if value is None:
+        return default
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise ApprovedContinuationError("pending tool call counters are invalid")
+    return value

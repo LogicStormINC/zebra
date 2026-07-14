@@ -27,8 +27,42 @@ class HarnessModelStep:
         created_at: datetime | None = None,
     ) -> ModelCompletion:
         now = created_at or datetime.now(UTC)
-        messages = self._build_initial_messages(task, created_at=now)
-        return model_gateway.complete(messages, tools=self._available_tools)
+        messages = self.build_initial_messages(task, created_at=now)
+        return self.request_completion(messages, model_gateway, allow_tools=True)
+
+    def request_completion(
+        self,
+        messages: list[SessionMessage],
+        model_gateway: ModelGatewayPort,
+        *,
+        allow_tools: bool,
+    ) -> ModelCompletion:
+        return model_gateway.complete(
+            messages,
+            tools=self._available_tools if allow_tools else (),
+        )
+
+    def append_tool_exchange(
+        self,
+        messages: list[SessionMessage],
+        *,
+        completion: ModelCompletion,
+        tool_call: ToolCall,
+        tool_result: ToolResult,
+        created_at: datetime,
+    ) -> None:
+        messages.extend(
+            (
+                completion.assistant_message.model_copy(update={"tool_calls": (tool_call,)}),
+                SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.TOOL,
+                    content=tool_result.output or f"Tool {tool_result.status.value}.",
+                    created_at=created_at,
+                    tool_call_id=tool_call.provider_call_id or str(tool_call.tool_call_id),
+                ),
+            )
+        )
 
     def request_tool_result_completion(
         self,
@@ -41,34 +75,36 @@ class HarnessModelStep:
         created_at: datetime | None = None,
     ) -> ModelCompletion:
         now = created_at or datetime.now(UTC)
-        messages = self._build_initial_messages(task, created_at=now)
-        messages.extend(
-            (
-                initial_completion.assistant_message.model_copy(
-                    update={"tool_calls": (tool_call,)}
+        messages = self.build_initial_messages(task, created_at=now)
+        self.append_tool_exchange(
+            messages,
+            completion=initial_completion,
+            tool_call=tool_call,
+            tool_result=tool_result,
+            created_at=now,
+        )
+        self.append_final_answer_instruction(messages, created_at=now)
+        return self.request_completion(messages, model_gateway, allow_tools=False)
+
+    @staticmethod
+    def append_final_answer_instruction(
+        messages: list[SessionMessage],
+        *,
+        created_at: datetime,
+    ) -> None:
+        messages.append(
+            SessionMessage(
+                message_id=new_message_id(),
+                role=MessageRole.USER,
+                content=(
+                    "The tool budget is complete. Answer the original request using "
+                    "the available tool results. Do not request or invoke another tool."
                 ),
-                SessionMessage(
-                    message_id=new_message_id(),
-                    role=MessageRole.TOOL,
-                    content=tool_result.output or f"Tool {tool_result.status.value}.",
-                    created_at=now,
-                    tool_call_id=tool_call.provider_call_id
-                    or str(tool_call.tool_call_id),
-                ),
-                SessionMessage(
-                    message_id=new_message_id(),
-                    role=MessageRole.USER,
-                    content=(
-                        "The requested tool has completed. Answer the original request "
-                        "using its result. Do not request or invoke another tool."
-                    ),
-                    created_at=now,
-                ),
+                created_at=created_at,
             )
         )
-        return model_gateway.complete(messages)
 
-    def _build_initial_messages(
+    def build_initial_messages(
         self,
         task: HarnessTask,
         *,
