@@ -13,11 +13,11 @@ interface SessionApprovalPanelProps {
 export function SessionApprovalPanel({ approval, busy, errorText, onApprove, onReject }: SessionApprovalPanelProps) {
   if (!approval && !errorText) return null;
   return (
-    <section aria-label="等待审批">
+    <section aria-label="需要人工确认">
       {errorText ? <Alert showIcon type="warning" message="审批信息读取失败" description={errorText} /> : null}
       {approval ? (
         <Space direction="vertical" size="middle" className="w-full">
-          <Alert showIcon type="warning" message="任务等待审批" description={approval.approval_context?.reason} />
+          <Alert showIcon type="warning" message="Agent 需要人工确认" description={approval.approval_context?.reason} />
           <Descriptions bordered column={1} size="small">
             <Descriptions.Item label="操作">{approval.approval_context?.route ?? approval.approval_context?.tool_name ?? "未知"}</Descriptions.Item>
             <Descriptions.Item label="目标">{approval.approval_context?.target ?? "未提供"}</Descriptions.Item>

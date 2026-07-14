@@ -2,7 +2,11 @@
 
 # Zebra Agent
 
-Zebra Agent is a local-first engineering agent platform for real code repositories.
+Zebra Agent is a local-first runtime and workspace for general-purpose executing agents.
+
+It borrows durable sessions, typed tools, sandboxing, recovery, and HITL patterns
+from products such as Claude Code and Codex. Coding and Git delivery remain
+optional tool domains; they are not the default product goal or desktop flow.
 
 The current repository direction is:
 
@@ -16,6 +20,10 @@ The current repository direction is:
 
 The repository now includes an isolated frontend workspace at `UI/desktop`.
 
+The desktop defaults to task, context, execution, and result surfaces. Human
+controls appear only for a concrete backend approval; dormant Commit or Pull
+Request forms do not belong in the normal task timeline.
+
 - stack: `Tauri + React + Tailwind CSS + TanStack Query + Ant Design + Ant Design X`
 - runtime: `Node 22.17.0` pinned via `volta`, `pnpm 10.28.2`
 - install: `cd UI/desktop && ~/.volta/bin/pnpm install`
@@ -27,6 +35,18 @@ The repository now includes an isolated frontend workspace at `UI/desktop`.
 
 This workspace is intentionally kept outside `apps/` and `packages/` so frontend tooling stays isolated from the Python runtime path. Tauri scripts pin `CARGO_HOME` to `UI/desktop/.cargo-home` so Rust artifacts for the desktop shell stay local to the UI workspace.
 If your shell still resolves `pnpm` or `node` to Homebrew or another global install, either prepend `~/.volta/bin` to `PATH` or use the explicit `~/.volta/bin/pnpm ...` form above.
+
+### Provider-backed local run
+
+1. Create ignored `.env.local` values for `DEEPSEEK_API_KEY`,
+   `DEEPSEEK_BASE_URL=https://api.deepseek.com`, and
+   `DEEPSEEK_MODEL=deepseek-v4-flash`.
+2. Start the API with `make api-serve`.
+3. Start the desktop web shell with `make ui-dev`, or use `make ui-tauri-check`
+   before `pnpm tauri:dev` when validating the native shell.
+
+Provider credentials are read by the local API only. They must not be placed in
+frontend storage, request payloads, API responses, tracked environment files, or logs.
 
 ## Current Status
 
