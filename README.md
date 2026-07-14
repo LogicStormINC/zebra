@@ -32,9 +32,16 @@ stay sequential. Before follow-up provider calls, completed older exchanges may 
 deterministically compacted to a configured conversation budget. The stable system
 prefix, original goal, latest working exchange, complete assistant/tool pairs, and
 pending approval evidence remain canonical; compaction events contain only estimates,
-counts, and provenance. Automatic call reordering, semantic summaries, dependency
-graphs, concurrent writes, subagents, and distributed workflow scheduling remain
-later boundaries.
+counts, and provenance.
+
+The parent agent can delegate one bounded workspace investigation through
+`agent.research`. The local child reuses the same Harness but receives only
+`files.read` and `git.status` under a read-only policy, cannot recursively delegate,
+and returns a structured summary with sources and confidence. Child count, depth,
+concurrency, model, and tool ceilings are enforced by the runtime coordinator, while
+lifecycle events omit raw findings. Automatic call reordering, semantic summaries,
+dependency graphs, write-capable subagents, reviewer roles, separate child worktrees,
+and distributed workflow scheduling remain later boundaries.
 
 ## Desktop UI Workspace
 

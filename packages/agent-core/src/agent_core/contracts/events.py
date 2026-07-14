@@ -136,6 +136,56 @@ class ContextCompactedPayload(BaseModel):
         return stripped
 
 
+class SubagentLifecyclePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    attempt_number: int
+    subagent_id: str
+    status: str
+    max_model_calls: int
+    max_tool_calls: int
+    max_depth: int
+    model_calls_used: int = 0
+    tool_calls_used: int = 0
+    source_count: int = 0
+    confidence: float = 0.0
+    provenance: str
+
+    @field_validator(
+        "attempt_number",
+        "max_model_calls",
+        "max_tool_calls",
+        "max_depth",
+    )
+    @classmethod
+    def ensure_positive_count(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("subagent limits must be positive")
+        return value
+
+    @field_validator("model_calls_used", "tool_calls_used", "source_count")
+    @classmethod
+    def ensure_non_negative_count(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("subagent usage must not be negative")
+        return value
+
+    @field_validator("subagent_id", "status", "provenance")
+    @classmethod
+    def ensure_text_not_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("subagent lifecycle fields must not be blank")
+        return stripped
+
+    @field_validator("confidence")
+    @classmethod
+    def ensure_confidence_in_range(cls, value: float) -> float:
+        if not 0.0 <= value <= 1.0:
+            raise ValueError("subagent confidence must be between zero and one")
+        return value
+
+
 class MemoryCandidateExtractedPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -279,6 +329,10 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SESSION_RESUMED: SessionResumedPayload,
     EventType.TOOL_EXECUTION_COMPLETED: ToolExecutionCompletedPayload,
     EventType.CONTEXT_COMPACTED: ContextCompactedPayload,
+    EventType.SUBAGENT_STARTED: SubagentLifecyclePayload,
+    EventType.SUBAGENT_COMPLETED: SubagentLifecyclePayload,
+    EventType.SUBAGENT_FAILED: SubagentLifecyclePayload,
+    EventType.SUBAGENT_CANCELLED: SubagentLifecyclePayload,
     EventType.MEMORY_CANDIDATE_EXTRACTED: MemoryCandidateExtractedPayload,
     EventType.MEMORY_REVIEW_RECORDED: MemoryReviewRecordedPayload,
 }

@@ -52,6 +52,13 @@ def record_tool_result(
     verifier: VerifierHook,
     emitted_events: list[HarnessEventDraft],
 ) -> ToolExecutionStep:
+    emitted_events.extend(
+        _subagent_lifecycle_events(
+            context,
+            tool_call=tool_call,
+            tool_result=tool_result,
+        )
+    )
     emitted_events.append(
         HarnessEventDraft(
             event_type=(
@@ -98,3 +105,82 @@ def record_tool_result(
             "verification_metadata": verification.metadata,
         },
     )
+
+
+def _subagent_lifecycle_events(
+    context: HarnessContext,
+    *,
+    tool_call: ToolCall,
+    tool_result: ToolResult,
+) -> tuple[HarnessEventDraft, ...]:
+    if tool_call.name != "agent.research":
+        return ()
+    metadata = tool_result.metadata
+    subagent_id = metadata.get("subagent_id")
+    status = metadata.get("subagent_status")
+    provenance = metadata.get("provenance")
+    if not isinstance(subagent_id, str) or not subagent_id:
+        return ()
+    if not isinstance(status, str) or not status:
+        return ()
+    if not isinstance(provenance, str) or not provenance:
+        return ()
+    limits = {
+        "max_model_calls": _metadata_int(metadata, "max_model_calls", minimum=1),
+        "max_tool_calls": _metadata_int(metadata, "max_tool_calls", minimum=1),
+        "max_depth": _metadata_int(metadata, "max_depth", minimum=1),
+    }
+    base: dict[str, object] = {
+        "attempt_number": context.attempt.number,
+        "subagent_id": subagent_id,
+        "status": "running",
+        **limits,
+        "model_calls_used": 0,
+        "tool_calls_used": 0,
+        "source_count": 0,
+        "confidence": 0.0,
+        "provenance": provenance,
+    }
+    terminal = {
+        **base,
+        "status": status,
+        "model_calls_used": _metadata_int(metadata, "model_calls_used"),
+        "tool_calls_used": _metadata_int(metadata, "tool_calls_used"),
+        "source_count": _metadata_int(metadata, "source_count"),
+        "confidence": _metadata_float(metadata, "confidence"),
+    }
+    terminal_type = {
+        "completed": EventType.SUBAGENT_COMPLETED,
+        "cancelled": EventType.SUBAGENT_CANCELLED,
+    }.get(status, EventType.SUBAGENT_FAILED)
+    return (
+        HarnessEventDraft(
+            event_type=EventType.SUBAGENT_STARTED,
+            actor=EventActor.HARNESS,
+            payload=base,
+        ),
+        HarnessEventDraft(
+            event_type=terminal_type,
+            actor=EventActor.HARNESS,
+            payload=terminal,
+        ),
+    )
+
+
+def _metadata_int(
+    metadata: dict[str, object],
+    key: str,
+    *,
+    minimum: int = 0,
+) -> int:
+    value = metadata.get(key)
+    if isinstance(value, int) and not isinstance(value, bool) and value >= minimum:
+        return value
+    return minimum
+
+
+def _metadata_float(metadata: dict[str, object], key: str) -> float:
+    value = metadata.get(key)
+    if isinstance(value, int | float) and not isinstance(value, bool):
+        return min(1.0, max(0.0, float(value)))
+    return 0.0
