@@ -566,6 +566,19 @@ def _assistant_only_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGat
     )
 
 
+def _final_response(content: str) -> ScriptedModelResponse:
+    return ScriptedModelResponse(
+        completion=ModelCompletion(
+            assistant_message=SessionMessage(
+                message_id=new_message_id(),
+                role=MessageRole.ASSISTANT,
+                content=content,
+                created_at=_created_at(),
+            )
+        )
+    )
+
+
 def _tool_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGateway:
     del settings
     return ScriptedModelGateway(
@@ -593,6 +606,7 @@ def _tool_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGateway:
                     ),
                 )
             ),
+            _final_response("README content returned."),
         )
     )
 
@@ -624,6 +638,7 @@ def _agents_read_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGatewa
                     ),
                 )
             ),
+            _final_response("AGENTS instructions returned."),
         )
     )
 
@@ -655,6 +670,7 @@ def _tests_run_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGateway:
                     ),
                 )
             ),
+            _final_response("Smoke validation completed."),
         )
     )
 
@@ -686,6 +702,7 @@ def _procedure_refresh_gateway(*, settings: ZebraAgentSettings) -> ScriptedModel
                     ),
                 )
             ),
+            _final_response("Repository procedure refreshed."),
         )
     )
 
@@ -717,6 +734,7 @@ def _failing_tests_run_gateway(*, settings: ZebraAgentSettings) -> ScriptedModel
                     ),
                 )
             ),
+            _final_response("Smoke validation failed."),
         )
     )
 

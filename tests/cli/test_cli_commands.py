@@ -225,7 +225,7 @@ def test_cli_run_command_execute_runs_file_read_tool(
     assert result.payload["trace"] == [
         {
             "attempt_number": 1,
-            "assistant_message": "I will read the README.",
+            "assistant_message": "Tool result: workspace readme",
             "tools": [
                 {
                     "tool_name": "files.read",
@@ -552,7 +552,7 @@ def test_cli_resume_command_execute_reports_tool_trace(
     assert result.payload["trace"] == [
         {
             "attempt_number": 1,
-            "assistant_message": "Reading README on resume.",
+            "assistant_message": "Tool result: resume readme",
             "tools": [
                 {
                     "tool_name": "files.read",
@@ -1003,6 +1003,19 @@ class FakeGateway:
         *,
         tools: tuple[ModelToolDefinition, ...] = (),
     ) -> ModelCompletion:
+        tool_message = next(
+            (message for message in messages if message.role is MessageRole.TOOL),
+            None,
+        )
+        if tool_message is not None:
+            return ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content=f"Tool result: {tool_message.content}",
+                    created_at=_created_at(),
+                )
+            )
         assert len(messages) in {1, 2}
         assert messages[-1].role is MessageRole.USER
         return self._completion

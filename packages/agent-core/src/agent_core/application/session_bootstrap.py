@@ -16,7 +16,7 @@ class SessionBootstrapCommand:
     workspace_root: Path
     policy_profile: str | None = None
     max_attempts: int = 1
-    max_model_calls: int | None = 1
+    max_model_calls: int | None = 2
     max_tool_calls: int | None = 1
     created_at: datetime | None = None
 

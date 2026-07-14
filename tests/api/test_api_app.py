@@ -359,6 +359,16 @@ def test_api_create_session_execute_runs_builtin_tool(
                         ),
                     )
                 ),
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content="README content: api readme",
+                            created_at=_created_at(),
+                        )
+                    )
+                ),
             )
         )
 
@@ -376,7 +386,7 @@ def test_api_create_session_execute_runs_builtin_tool(
     assert response.body["trace"] == [
         {
             "attempt_number": 1,
-            "assistant_message": "Reading README.",
+            "assistant_message": "README content: api readme",
             "tools": [
                 {
                     "tool_name": "files.read",

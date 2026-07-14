@@ -19,8 +19,9 @@ The current repository direction is:
 Provider-backed local runs advertise the executable registry as typed JSON Schema
 tools. The OpenAI-compatible adapter keeps internal dotted names while using
 provider-safe function aliases on the wire. One attempt currently executes at
-most one selected tool; feeding its result back to the model for a synthesized
-answer remains a separate loop boundary.
+most one selected tool, returns that result to the provider, and persists the
+grounded final answer. Approval continuation and additional tool calls remain
+explicit later loop boundaries.
 
 ## Desktop UI Workspace
 

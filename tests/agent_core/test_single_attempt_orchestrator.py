@@ -138,6 +138,83 @@ def test_single_attempt_orchestrator_runs_model_to_tool_success_path() -> None:
     ]
 
 
+def test_single_attempt_orchestrator_synthesizes_tool_result_when_enabled() -> None:
+    created_at = datetime(2026, 6, 19, 22, 3, tzinfo=UTC)
+    tool_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="files.read",
+        arguments={"path": "proof.txt"},
+        created_at=created_at,
+        provider_call_id="call_proof",
+    )
+    gateway = ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="Reading the proof.",
+                        created_at=created_at,
+                    ),
+                    tool_calls=(tool_call,),
+                )
+            ),
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="The proof says zebra-ready.",
+                        created_at=created_at,
+                    )
+                )
+            ),
+        )
+    )
+    orchestrator = SingleAttemptOrchestrator(
+        gateway,
+        AllowAllPolicyEngine(),
+        StaticToolGateway(
+            ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.EXECUTED,
+                output="zebra-ready",
+            )
+        ),
+        synthesize_tool_results=True,
+    )
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Read proof",
+            user_input="Read proof.txt.",
+            max_model_calls=2,
+        ),
+        orchestrator.run,
+        created_at=created_at,
+    )
+
+    assert result.attempt_result.metadata["assistant_message"] == (
+        "The proof says zebra-ready."
+    )
+    assert result.run_result.model_calls_used == 2
+    assert [message.role for message in gateway.requests[1]] == [
+        MessageRole.USER,
+        MessageRole.ASSISTANT,
+        MessageRole.TOOL,
+        MessageRole.USER,
+    ]
+    assert gateway.requests[1][-2].tool_call_id == "call_proof"
+    assert gateway.requests[1][-2].content == "zebra-ready"
+    assert "Do not request or invoke another tool" in gateway.requests[1][-1].content
+    model_events = [
+        event for event in result.events if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+    ]
+    assert len(model_events) == 2
+    assert model_events[-1].payload["response_stage"] == "final"
+
+
 def test_single_attempt_orchestrator_marks_failed_tool_execution() -> None:
     created_at = datetime(2026, 6, 19, 22, 5, tzinfo=UTC)
     tool_call = ToolCall(

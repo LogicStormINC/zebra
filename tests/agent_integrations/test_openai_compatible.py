@@ -145,6 +145,78 @@ def test_openai_compatible_gateway_rejects_unadvertised_tool_call() -> None:
         gateway.complete([_user_message("Run something")], tools=(tool,))
 
 
+def test_openai_compatible_gateway_serializes_tool_result_conversation() -> None:
+    requests: list[dict[str, object]] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        requests.append(json.loads(request.content.decode("utf-8")))
+        if len(requests) == 1:
+            return _tool_call_response("files__read", '{"path":"proof.txt"}')
+        return _json_response(
+            {
+                "model": "deepseek-v4-flash",
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": "The proof says zebra-ready.",
+                        }
+                    }
+                ],
+            }
+        )
+
+    gateway = OpenAICompatibleModelGateway(
+        provider_name="deepseek",
+        base_url="https://api.deepseek.com",
+        api_key="secret",
+        model_name="deepseek-v4-flash",
+        client=httpx.Client(transport=httpx.MockTransport(handle)),
+    )
+    tool = ModelToolDefinition(
+        name="files.read",
+        description="Read a workspace file.",
+        parameters={"type": "object", "properties": {}},
+    )
+    user_message = _user_message("Read proof.txt")
+    first = gateway.complete([user_message], tools=(tool,))
+    tool_call = first.tool_calls[0]
+
+    final = gateway.complete(
+        [
+            user_message,
+            first.assistant_message,
+            SessionMessage(
+                message_id=_message_id(),
+                role=MessageRole.TOOL,
+                content="zebra-ready",
+                created_at=_created_at(),
+                tool_call_id=tool_call.provider_call_id,
+            ),
+        ]
+    )
+
+    assert requests[1]["messages"][-2:] == [
+        {
+            "role": "assistant",
+            "content": "Tool calls proposed.",
+            "tool_calls": [
+                {
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {
+                        "name": "files__read",
+                        "arguments": '{"path":"proof.txt"}',
+                    },
+                }
+            ],
+        },
+        {"role": "tool", "content": "zebra-ready", "tool_call_id": "call_1"},
+    ]
+    assert "tools" not in requests[1]
+    assert final.assistant_message.content == "The proof says zebra-ready."
+
+
 def test_build_model_gateway_raises_when_api_key_is_missing() -> None:
     with pytest.raises(ValueError, match="missing API key"):
         build_model_gateway(_settings(), env={})

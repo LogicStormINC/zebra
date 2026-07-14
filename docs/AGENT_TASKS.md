@@ -10145,8 +10145,8 @@ synthesis task without reopening approval continuation or multi-tool execution.
 
 ### P112-HAR-01 - Tool Result Synthesis And Final Response
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE`
 - Depends on: `P111-CLOSE-01`
 - Branch: `codex/p112-har-01-tool-result-synthesis`
@@ -10167,12 +10167,12 @@ assistant answer so provider-backed tasks finish with a result-grounded response
 
 #### Acceptance
 
-- [ ] The second provider request contains the original assistant tool call and matching tool-result message.
-- [ ] The final assistant answer replaces the synthetic tool-proposal text in terminal metadata and durable readback.
-- [ ] Both model calls are represented in events and counted against the model-call budget.
-- [ ] Text-only tasks remain single-call and existing non-synthesizing orchestrator composition stays backward compatible.
-- [ ] A real provider reads an isolated proof payload and returns a final answer grounded in that payload.
-- [ ] Targeted tests, `make test`, and `make check` pass.
+- [x] The second provider request contains the original assistant tool call and matching tool-result message.
+- [x] The final assistant answer replaces the synthetic tool-proposal text in terminal metadata and durable readback.
+- [x] Both model calls are represented in events and counted against the model-call budget.
+- [x] Text-only tasks remain single-call and existing non-synthesizing orchestrator composition stays backward compatible.
+- [x] A real provider reads an isolated proof payload and returns a final answer grounded in that payload.
+- [x] Targeted tests, `make test`, and `make check` pass.
 
 #### Explicit Non-Goals
 

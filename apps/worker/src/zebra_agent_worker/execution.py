@@ -142,6 +142,7 @@ class SessionExecutionService:
                 context_compiler=LocalContextCompiler(),
                 available_tools=tool_gateway.model_tools,
             ),
+            synthesize_tool_results=True,
         ).run(
             HarnessContext(
                 task=HarnessTask(
