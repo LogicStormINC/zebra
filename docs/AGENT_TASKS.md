@@ -9774,7 +9774,7 @@ product boundary without reopening result review or delivery scope.
 
 ### P105-UI-01 - Task Launch Configuration And Workspace Binding
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P104-CLOSE-01`
@@ -9802,3 +9802,54 @@ representing model and attachment capabilities honestly.
 - [x] Existing sessions continue to display their durable workspace and policy rather than current draft defaults.
 - [x] The UI does not imply that attachments or arbitrary model switching work when the backend has no such contract.
 - [x] Focused frontend checks, `pnpm build`, and `make check` pass.
+
+### P105-CLOSE-01 - Phase 105 Closeout And Phase 106 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P105-UI-01`
+- Branch: `codex/p105-closeout-phase106-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 105 acceptance state and define the next durable task
+discovery boundary without reopening launch configuration scope.
+
+#### Acceptance
+
+- [x] `P105-UI-01` is recorded as merged through PR `#46` and done.
+- [x] Phase 106 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 106 Task Board
+
+### P106-APP-01 - Durable Recent Session Discovery
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P105-CLOSE-01`
+- Suggested branch: `codex/p106-app-01-durable-session-discovery`
+- Owned paths: `packages/agent-core/src/agent_core/ports/projection_store.py`, `packages/agent-storage/src/agent_storage/projections.py`, `apps/api/src/zebra_agent_api/`, `tests/api/`, `tests/agent_storage/`, `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Make durable sessions discoverable after local browser state is lost by adding
+one bounded recent-session API and using it as the desktop task index without
+discarding unsent local drafts.
+
+#### Deliverables
+
+- a projection-store query for recent sessions with deterministic newest-first ordering and a bounded limit
+- an authenticated `GET /sessions` response that returns compact durable session summaries without replaying every event stream
+- desktop startup reconciliation that imports durable sessions, preserves local drafts, and removes stale local bindings only when the API provides authoritative evidence
+- deterministic backend and frontend checks for ordering, limit validation, deduplication, and local-draft preservation
+
+#### Acceptance
+
+- [ ] A fresh desktop storage profile can discover recent durable sessions from the configured API.
+- [ ] Recent-session results are bounded, newest first, and use the same durable status, workspace, and policy projections as session detail.
+- [ ] Desktop reconciliation does not duplicate sessions or discard unsent local drafts.
+- [ ] Authentication and invalid-limit behavior match existing API conventions.
+- [ ] Focused backend and frontend checks, `pnpm build`, and `make check` pass.
