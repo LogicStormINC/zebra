@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from agent_context import LocalContextCompiler
+from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
 from agent_core.harness.models import HarnessLoopResult
@@ -40,6 +41,7 @@ def run_local_harness(
     policy_profile: PolicyProfile = PolicyProfile.WORKSPACE_WRITE,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
 ) -> HarnessLoopResult:
+    tool_gateway = LocalToolGateway(workspace_root)
     return HarnessLoop().run(
         HarnessTask(
             title=title,
@@ -53,8 +55,11 @@ def run_local_harness(
         SingleAttemptOrchestrator(
             model_gateway,
             LocalPolicyEngine(profile=policy_profile),
-            LocalToolGateway(workspace_root),
-            model_step=HarnessModelStep(context_compiler=LocalContextCompiler()),
+            tool_gateway,
+            model_step=HarnessModelStep(
+                context_compiler=LocalContextCompiler(),
+                available_tools=tool_gateway.model_tools,
+            ),
         ).run,
     )
 
@@ -74,7 +79,12 @@ class LocalToolGateway(ToolGatewayPort):
         )
         for tool in tools:
             registry.register(tool.contract, tool.handle)
+        self._model_tools = registry.model_tools()
         self._executor = ToolExecutor(registry)
+
+    @property
+    def model_tools(self) -> tuple[ModelToolDefinition, ...]:
+        return self._model_tools
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
         try:

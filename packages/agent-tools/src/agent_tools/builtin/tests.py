@@ -12,6 +12,11 @@ tests_run_contract = ToolContract(
     name="tests.run",
     required_arguments=("preset",),
     description="Run a predefined validation command inside the current workspace.",
+    argument_properties={
+        "preset": {"type": "string", "description": "Configured validation preset name."},
+        "cwd": {"type": "string", "description": "Optional workspace-relative directory."},
+        "timeout_seconds": {"type": "number", "exclusiveMinimum": 0},
+    },
 )
 
 

@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 
 from agent_core.domain.tools import ToolCall, ToolResult
@@ -11,6 +11,7 @@ class ToolContract:
     name: str
     required_arguments: tuple[str, ...] = ()
     description: str = ""
+    argument_properties: Mapping[str, Mapping[str, object]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.name.strip():

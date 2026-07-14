@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-14: completed `P111-MDL-01` implementation and real-provider acceptance on `codex/p111-mdl-01-provider-tool-discovery`; `agent-core` now defines provider-neutral model tool contracts, the executable `ToolRegistry` deterministically projects its registered builtins into JSON Schema definitions, and the OpenAI-compatible adapter maps dotted internal names to provider-safe aliases while rejecting unadvertised calls. Local API, CLI, and worker execution now advertise the same tools they execute. A real `deepseek-v4-flash` run selected `files.read`, passed the `workspace_write` policy, and read the isolated proof payload through the local tool gateway. The ignored credential remained untracked; `950` tests, Ruff, Mypy across `204` files, and the 8-case eval release gate passed. Tool-result synthesis and exact approval continuation remain explicit later boundaries.
 - 2026-07-14: merged `P110-INT-01` through GitHub PR `#56` and closed Phase 110; Phase 111 is limited to advertising executable typed tools to the real provider and proving one policy-allowed provider-selected tool execution, while exact approval continuation remains a later boundary.
 - 2026-07-14: completed `P110-INT-01` implementation and browser acceptance on `codex/p110-int-01-provider-backed-desktop-execution`; Zebra Agent is now documented and presented as a general executing-agent runtime and workspace rather than a code-delivery product. Normal tasks no longer render or request Diff, artifact, delivery-audit, Commit, or Pull Request surfaces; generic activity stages and context/log inspection remain. A projection-backed HITL session showed operation, target, policy, scope, and approve/reject controls only while approval was active, and the panel disappeared after approval. A real `deepseek-v4-flash` task reached `completed`, streamed its response without reload, and restored the selected task, title, workspace, seven events, response, and terminal status after reload. The provider credential remained in ignored `.env.local`; all focused frontend checks, the production build, `946` backend tests, Ruff, Mypy, and the 8-case eval release gate passed.
 - 2026-07-14: merged `P109-UI-01` through GitHub PR `#54` and closed Phase 109; Phase 110 is limited to proving one provider-backed desktop execution from durable creation through terminal readback and fixing only defects exposed by that real flow.
@@ -38,9 +39,9 @@
 ## Current Phase
 
 - Active phase: `Phase 111 - Provider Tool Discovery And Safe Execution`
-- Repository status: `phase 110 closed; P111-MDL-01 is ready`
+- Repository status: `phase 110 closed; P111-MDL-01 is in review`
 - Current focus:
-  - `P111-MDL-01` is ready to bridge the executable typed tool catalog into provider requests and prove one real provider-selected safe execution
+  - `P111-MDL-01` is in review after registry-backed JSON Schema advertisement, provider-safe tool-name mapping, real DeepSeek `files.read` execution, and full repository gates
   - `P110-INT-01` was merged through GitHub PR `#56` after the product-positioning correction, default code-delivery UI removal, approval-driven HITL validation, real DeepSeek completion, active-task reload restoration, and full repository gates
   - `P110-CLOSE-01` records the Phase 110 closeout and the explicit Phase 111 ownership boundary
   - `P109-UI-01` was merged through GitHub PR `#54` after full backend and frontend gates plus browser validation of truthful draft/session actions, persisted local hiding, no backend deletion, immediate authoritative restoration, and viewport containment

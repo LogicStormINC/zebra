@@ -10,6 +10,9 @@ file_read_contract = ToolContract(
     name="files.read",
     required_arguments=("path",),
     description="Read a file from the current workspace.",
+    argument_properties={
+        "path": {"type": "string", "description": "Workspace-relative file path."},
+    },
 )
 
 

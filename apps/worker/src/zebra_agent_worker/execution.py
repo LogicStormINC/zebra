@@ -133,11 +133,15 @@ class SessionExecutionService:
             workspace=claimed.recovery.workspace,
             fallback_title=claimed.recovery.session.title,
         )
+        tool_gateway = LocalToolGateway(task.workspace_root)
         attempt_result = SingleAttemptOrchestrator(
             build_model_gateway(self._settings),
             LocalPolicyEngine(profile=PolicyProfile(task.policy_profile)),
-            LocalToolGateway(task.workspace_root),
-            model_step=HarnessModelStep(context_compiler=LocalContextCompiler()),
+            tool_gateway,
+            model_step=HarnessModelStep(
+                context_compiler=LocalContextCompiler(),
+                available_tools=tool_gateway.model_tools,
+            ),
         ).run(
             HarnessContext(
                 task=HarnessTask(

@@ -10086,8 +10086,8 @@ boundary without reopening desktop positioning or approval-resume scope.
 
 ### P111-MDL-01 - Provider Tool Discovery And Safe Execution
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE`
 - Depends on: `P110-CLOSE-01`
 - Branch: `codex/p111-mdl-01-provider-tool-discovery`
@@ -10109,12 +10109,12 @@ harness rather than returning a textual imitation of a tool call.
 
 #### Acceptance
 
-- [ ] The model gateway receives typed tool definitions without depending on `agent-tools`.
-- [ ] OpenAI-compatible requests serialize deterministic function names, descriptions, and JSON schemas.
-- [ ] The local API and CLI advertise only tools present in their executable registry.
-- [ ] A real provider proposes a registered safe tool and the harness executes it through policy and tool gateways.
-- [ ] Text-only model completion remains backward compatible when no tools are available or selected.
-- [ ] Targeted tests, `make test`, and `make check` pass.
+- [x] The model gateway receives typed tool definitions without depending on `agent-tools`.
+- [x] OpenAI-compatible requests serialize deterministic function names, descriptions, and JSON schemas.
+- [x] The local API and CLI advertise only tools present in their executable registry.
+- [x] A real provider proposes a registered safe tool and the harness executes it through policy and tool gateways.
+- [x] Text-only model completion remains backward compatible when no tools are available or selected.
+- [x] Targeted tests, `make test`, and `make check` pass.
 
 #### Explicit Non-Goals
 

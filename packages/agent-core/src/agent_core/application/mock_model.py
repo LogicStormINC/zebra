@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from agent_core.domain.messages import SessionMessage
-from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
 from agent_core.ports.model_gateway import ModelGatewayPort
 
 
@@ -17,15 +17,26 @@ class ScriptedModelGateway(ModelGatewayPort):
         self._responses = responses
         self._cursor = 0
         self._requests: list[tuple[SessionMessage, ...]] = []
+        self._tool_requests: list[tuple[ModelToolDefinition, ...]] = []
 
     @property
     def requests(self) -> tuple[tuple[SessionMessage, ...], ...]:
         return tuple(self._requests)
 
-    def complete(self, messages: list[SessionMessage]) -> ModelCompletion:
+    @property
+    def tool_requests(self) -> tuple[tuple[ModelToolDefinition, ...], ...]:
+        return tuple(self._tool_requests)
+
+    def complete(
+        self,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...] = (),
+    ) -> ModelCompletion:
         if self._cursor >= len(self._responses):
             raise RuntimeError("scripted model gateway has no remaining responses")
         self._requests.append(tuple(messages))
+        self._tool_requests.append(tools)
         response = self._responses[self._cursor]
         self._cursor += 1
         return response.completion

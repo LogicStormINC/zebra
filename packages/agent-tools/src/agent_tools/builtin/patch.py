@@ -12,6 +12,9 @@ patch_apply_contract = ToolContract(
     name="patch.apply",
     required_arguments=("patch",),
     description="Apply a constrained unified diff inside the current workspace.",
+    argument_properties={
+        "patch": {"type": "string", "description": "Unified diff to apply."},
+    },
 )
 
 

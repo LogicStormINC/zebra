@@ -9,7 +9,12 @@ from typing import Any
 import httpx
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
+from agent_core.domain.modeling import (
+    ModelCallMetadata,
+    ModelCompletion,
+    ModelToolDefinition,
+    ModelUsage,
+)
 from agent_core.domain.tools import ToolCall
 from zebra_agent_config import ZebraAgentSettings
 
@@ -34,12 +39,23 @@ class OpenAICompatibleModelGateway:
         self._timeout_s = timeout_s
         self._client = client
 
-    def complete(self, messages: list[SessionMessage]) -> ModelCompletion:
+    def complete(
+        self,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...] = (),
+    ) -> ModelCompletion:
         request_body = {
             "model": self._model_name,
             "messages": [_serialize_message(message) for message in messages],
             "stream": False,
         }
+        tool_names = _provider_tool_names(tools)
+        if tools:
+            request_body["tools"] = [
+                _serialize_tool(tool, provider_name=provider_name)
+                for tool, provider_name in zip(tools, tool_names, strict=True)
+            ]
         started = perf_counter()
         response_data = self._post_chat_completion(request_body)
         latency_ms = int((perf_counter() - started) * 1000)
@@ -48,6 +64,10 @@ class OpenAICompatibleModelGateway:
             provider_name=self._provider_name,
             default_model_name=self._model_name,
             latency_ms=latency_ms,
+            internal_tool_names={
+                provider_name: tool.name
+                for tool, provider_name in zip(tools, tool_names, strict=True)
+            },
         )
 
     def _post_chat_completion(self, body: dict[str, Any]) -> dict[str, Any]:
@@ -121,12 +141,41 @@ def _serialize_message(message: SessionMessage) -> dict[str, str]:
     }
 
 
+def _provider_tool_names(tools: tuple[ModelToolDefinition, ...]) -> tuple[str, ...]:
+    names = tuple(tool.name.replace(".", "__") for tool in tools)
+    if len(set(names)) != len(names):
+        raise ValueError("model tool names collide after provider normalization")
+    for name in names:
+        if not name or len(name) > 64 or any(
+            not (character.isascii() and (character.isalnum() or character in "_-"))
+            for character in name
+        ):
+            raise ValueError(f"model tool name is not provider compatible: {name}")
+    return names
+
+
+def _serialize_tool(
+    tool: ModelToolDefinition,
+    *,
+    provider_name: str,
+) -> dict[str, object]:
+    return {
+        "type": "function",
+        "function": {
+            "name": provider_name,
+            "description": tool.description,
+            "parameters": dict(tool.parameters),
+        },
+    }
+
+
 def _parse_completion(
     payload: dict[str, Any],
     *,
     provider_name: str,
     default_model_name: str,
     latency_ms: int,
+    internal_tool_names: Mapping[str, str] | None = None,
 ) -> ModelCompletion:
     choices = payload.get("choices")
     if not isinstance(choices, list) or not choices:
@@ -137,7 +186,10 @@ def _parse_completion(
     message = first_choice.get("message")
     if not isinstance(message, dict):
         raise ValueError("model gateway choice must include a message object")
-    tool_calls = _parse_tool_calls(message.get("tool_calls"))
+    tool_calls = _parse_tool_calls(
+        message.get("tool_calls"),
+        internal_tool_names=internal_tool_names or {},
+    )
     content = _assistant_content(message.get("content"), has_tool_calls=bool(tool_calls))
     created_at = datetime.now(UTC)
     return ModelCompletion(
@@ -165,7 +217,11 @@ def _assistant_content(value: object, *, has_tool_calls: bool) -> str:
     raise ValueError("model gateway assistant message content must not be blank")
 
 
-def _parse_tool_calls(value: object) -> list[ToolCall]:
+def _parse_tool_calls(
+    value: object,
+    *,
+    internal_tool_names: Mapping[str, str],
+) -> list[ToolCall]:
     if value is None:
         return []
     if not isinstance(value, list):
@@ -181,6 +237,11 @@ def _parse_tool_calls(value: object) -> list[ToolCall]:
         name = function.get("name")
         if not isinstance(name, str) or not name.strip():
             raise ValueError("tool_call function name must not be blank")
+        if internal_tool_names:
+            try:
+                name = internal_tool_names[name]
+            except KeyError as exc:
+                raise ValueError(f"model returned an unadvertised tool call: {name}") from exc
         arguments = _parse_tool_arguments(function.get("arguments"))
         parsed.append(
             ToolCall(

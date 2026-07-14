@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from agent_core.domain.messages import MessageRole, SessionMessage
@@ -15,6 +16,23 @@ class ModelUsage:
             value = getattr(self, field_name)
             if value is not None and value < 0:
                 raise ValueError(f"{field_name} must not be negative")
+
+
+@dataclass(frozen=True)
+class ModelToolDefinition:
+    name: str
+    description: str
+    parameters: Mapping[str, object]
+
+    def __post_init__(self) -> None:
+        if not self.name.strip():
+            raise ValueError("model tool name must not be blank")
+        if not self.description.strip():
+            raise ValueError("model tool description must not be blank")
+        if self.parameters.get("type") != "object":
+            raise ValueError("model tool parameters must be an object JSON schema")
+        if not isinstance(self.parameters.get("properties"), Mapping):
+            raise ValueError("model tool parameters must define object properties")
 
 
 @dataclass(frozen=True)
