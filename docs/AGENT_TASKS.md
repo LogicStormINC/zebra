@@ -10524,7 +10524,7 @@ review agents, or distributed scheduling.
 
 ### P118-SUB-01 - Bounded Read-Only Research Subagent
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / CTX / RUNTIME`
 - Depends on: `P117-CLOSE-01`
@@ -10566,4 +10566,72 @@ it, expand the parent's authority, recursively delegate, or outlive its parent.
 - independent child worktrees or merge coordination
 - durable cross-process child recovery or distributed scheduling
 - A2A, remote agents, multi-tenant quotas, or automatic model routing
+- Tree-sitter, LSP, vector retrieval, or repository indexing changes
+
+### P118-CLOSE-01 - Phase 118 Closeout And Phase 119 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P118-SUB-01`
+- Branch: `codex/p118-closeout-phase119-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 118 acceptance state and define one bounded parallel
+read-only research fan-out slice by reusing the existing safe-batch executor,
+without adding role frameworks, adaptive graphs, or distributed scheduling.
+
+#### Acceptance
+
+- [x] `P118-SUB-01` is recorded as merged through PR `#72` and done.
+- [x] Phase 119 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 119 Task Board
+
+### P119-SUB-01 - Bounded Parallel Research Fan-Out
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / RUNTIME`
+- Depends on: `P118-CLOSE-01`
+- Branch: `codex/p119-sub-01-bounded-parallel-research-fanout`
+- Owned paths: `packages/agent-core/`, `packages/agent-runtime/`, `packages/agent-security/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Allow one parent provider response to fan out a small fixed number of independent
+`agent.research` calls concurrently, then return every sourced child result to the
+parent in provider order under aggregate child and concurrency bounds.
+
+#### Deliverables
+
+- explicit parallel-safe classification for independent read-only research calls
+- configurable local child and concurrency limits with a conservative production default
+- reuse of safe-batch policy, duplicate, and budget preflight before any fan-out starts
+- concurrent child execution with deterministic provider-order tool results and lifecycle events
+- aggregate child usage, source, completion, failure, and cancellation evidence
+- parent teardown propagation that cancels and joins every unfinished child
+- deterministic timing, ordering, bound, failure, cancellation, and real-provider acceptance evidence
+
+#### Acceptance
+
+- [ ] Two independent `agent.research` calls from one provider response overlap and both sourced results reach the next parent model request in provider order.
+- [ ] The configured child and concurrency limits are enforced for a larger research batch with no unbounded task or thread creation.
+- [ ] Policy, duplicate, parent tool budget, and child aggregate-bound rejection occurs before a candidate fan-out starts.
+- [ ] Every child retains the same workspace and read-only authority ceiling, and no child can recursively delegate.
+- [ ] One child failure is explicit while already-started siblings are observed to terminal state; no rollback or unsafe replay is claimed.
+- [ ] Parent cancellation or teardown propagates to every unfinished child and joins local work before the coordinator closes.
+- [ ] Child lifecycle and aggregate evidence contains identities, order, usage, sources, status, confidence, and provenance without raw findings in control metadata.
+- [ ] Mixed, write-capable, approval-required, single-research, sequential, compaction, and HITL behavior remains compatible.
+- [ ] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider parallel research acceptance pass.
+
+#### Explicit Non-Goals
+
+- adaptive dependency graphs, recursive fan-out, or child-created children
+- write-capable children, shared-worktree mutation, or merge coordination
+- Reviewer, Coder, or other fixed role frameworks
+- dynamic model routing or per-child provider selection
+- durable cross-process children, distributed scheduling, A2A, or remote agents
 - Tree-sitter, LSP, vector retrieval, or repository indexing changes
