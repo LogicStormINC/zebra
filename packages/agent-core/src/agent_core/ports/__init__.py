@@ -4,6 +4,10 @@ from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.artifact_store import ArtifactStorePort
 from agent_core.ports.clock import ClockPort
 from agent_core.ports.context_compiler import ContextCompilerPort, RuntimeEvidenceInput
+from agent_core.ports.conversation_compactor import (
+    ConversationCompactionResult,
+    ConversationCompactorPort,
+)
 from agent_core.ports.delivery_audit_store import DeliveryAuditStorePort
 from agent_core.ports.event_store import EventStorePort
 from agent_core.ports.lease_store import LeaseStorePort
@@ -29,6 +33,8 @@ __all__ = [
     "ArtifactStorePort",
     "ClockPort",
     "ContextCompilerPort",
+    "ConversationCompactionResult",
+    "ConversationCompactorPort",
     "DeliveryAuditStorePort",
     "EventStorePort",
     "LeaseStorePort",

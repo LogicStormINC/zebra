@@ -4,6 +4,7 @@ from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.policies import PolicyDecision
 from agent_core.domain.tools import ToolCall
 from agent_core.harness.models import HarnessEventDraft
+from agent_core.ports.conversation_compactor import ConversationCompactionResult
 
 
 def model_response_event(
@@ -31,6 +32,26 @@ def model_response_event(
         event_type=EventType.MODEL_RESPONSE_RECEIVED,
         actor=EventActor.HARNESS,
         payload=payload,
+    )
+
+
+def context_compacted_event(
+    result: ConversationCompactionResult,
+    *,
+    attempt_number: int,
+) -> HarnessEventDraft:
+    return HarnessEventDraft(
+        event_type=EventType.CONTEXT_COMPACTED,
+        actor=EventActor.HARNESS,
+        payload={
+            "attempt_number": attempt_number,
+            "before_tokens": result.before_tokens,
+            "after_tokens": result.after_tokens,
+            "removed_message_count": result.removed_message_count,
+            "retained_message_count": result.retained_message_count,
+            "within_budget": result.within_budget,
+            "provenance": result.provenance,
+        },
     )
 
 

@@ -42,6 +42,7 @@ def run_local_harness(
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
 ) -> HarnessLoopResult:
     tool_gateway = LocalToolGateway(workspace_root)
+    context_compiler = LocalContextCompiler()
     return HarnessLoop().run(
         HarnessTask(
             title=title,
@@ -57,8 +58,9 @@ def run_local_harness(
             LocalPolicyEngine(profile=policy_profile),
             tool_gateway,
             model_step=HarnessModelStep(
-                context_compiler=LocalContextCompiler(),
+                context_compiler=context_compiler,
                 available_tools=tool_gateway.model_tools,
+                conversation_compactor=context_compiler,
             ),
             synthesize_tool_results=True,
             parallel_safe_tools=tool_gateway.parallel_safe_tools,

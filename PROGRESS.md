@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-14: completed `P117-CTX-01` implementation on `codex/p117-ctx-01-bounded-conversation-compaction`; provider follow-up calls now apply a deterministic dynamic-conversation budget through an `agent-core` port implemented by `agent-context`. Compaction preserves the stable system prefix, original goal, latest working exchange, complete assistant/tool pairs, and unresolved approval state while replacing only completed older evidence with a bounded summary. Metrics-only `context_compacted` events record estimates, counts, and provenance without raw tool output. Approval continuation resumes the exact pending call without replaying earlier tools. A real `deepseek-v4-flash` run read two files sequentially, compacted the estimate from `2616` to `521` tokens, and returned the exact `COMPACT-OK` answer in three model calls. All `980` tests, Ruff, Mypy across `214` source files, and the 8-case eval release gate passed.
 - 2026-07-14: merged `P116-HAR-01` through GitHub PR `#68` and closed Phase 116; Phase 117 is limited to deterministic compaction of completed older conversation and tool-result exchanges inside the provider loop. Stable context, the original goal, recent working state, complete tool-call pairs, and unresolved approval evidence must remain intact. Model-generated summaries, vector retrieval, provider-specific token guarantees, and subagent delegation remain later boundaries.
 - 2026-07-14: completed `P116-HAR-01` implementation on `codex/p116-har-01-bounded-safe-concurrent-batches`; tool contracts now default to non-parallel and explicitly mark only `files.read` and `git.status` as parallel-safe. Fully eligible provider batches complete policy, duplicate, and budget preflight before a standard-library thread pool starts, enforce a configurable bound, and project results and events in provider order. Mixed, unknown, write-capable, approval continuation, and single-call paths remain sequential. Concurrent failures observe every already-started sibling and make no rollback claim. A real `deepseek-v4-flash` batch entered the production concurrent path with size 2 and limit 3, read two isolated files, and returned the exact `SAFE-A|SAFE-B` answer. All `975` tests, Ruff, Mypy across `212` source files, and the 8-case eval release gate passed.
 - 2026-07-14: merged `P115-HAR-01` through GitHub PR `#66` and closed Phase 115; Phase 116 is limited to bounded concurrency for complete batches whose members are all explicitly parallel-safe. Mixed, unknown, write-capable, denied, or approval-required batches retain deterministic sequential handling. Dependency graphs, call reordering, concurrent writes, subagents, and distributed scheduling remain later boundaries.
@@ -50,9 +51,9 @@
 ## Current Phase
 
 - Active phase: `Phase 117 - Bounded Harness Conversation Compaction`
-- Repository status: `phase 116 closed; P117-CTX-01 is ready`
+- Repository status: `phase 116 closed; P117-CTX-01 is in review`
 - Current focus:
-  - `P117-CTX-01` is ready to enforce a deterministic dynamic-conversation budget by compacting only completed older exchanges while preserving stable context and unresolved tool state
+  - `P117-CTX-01` is in review on `codex/p117-ctx-01-bounded-conversation-compaction` after deterministic, approval-continuation, full-repository, and real `deepseek-v4-flash` acceptance
   - `P116-HAR-01` was merged through GitHub PR `#68` after deterministic concurrency, preflight, fallback, failure-observation, full-repository, and real `deepseek-v4-flash` acceptance
   - `P116-CLOSE-01` records the Phase 116 closeout and the explicit Phase 117 ownership boundary
   - `P115-HAR-01` was merged through GitHub PR `#66` after deterministic, full-repository, middle-batch approval, and real `deepseek-v4-flash` acceptance of complete provider batch consumption

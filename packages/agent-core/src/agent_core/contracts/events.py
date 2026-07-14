@@ -97,6 +97,45 @@ class ToolExecutionCompletedPayload(BaseModel):
         return stripped
 
 
+class ContextCompactedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    attempt_number: int
+    before_tokens: int
+    after_tokens: int
+    removed_message_count: int
+    retained_message_count: int
+    within_budget: bool
+    provenance: str
+
+    @field_validator("attempt_number")
+    @classmethod
+    def ensure_positive_attempt_number(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("attempt_number must be positive")
+        return value
+
+    @field_validator(
+        "before_tokens",
+        "after_tokens",
+        "removed_message_count",
+        "retained_message_count",
+    )
+    @classmethod
+    def ensure_non_negative_count(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("compaction counts must not be negative")
+        return value
+
+    @field_validator("provenance")
+    @classmethod
+    def ensure_provenance_not_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("provenance must not be blank")
+        return stripped
+
+
 class MemoryCandidateExtractedPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -239,6 +278,7 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SESSION_SUSPENDED: SessionSuspendedPayload,
     EventType.SESSION_RESUMED: SessionResumedPayload,
     EventType.TOOL_EXECUTION_COMPLETED: ToolExecutionCompletedPayload,
+    EventType.CONTEXT_COMPACTED: ContextCompactedPayload,
     EventType.MEMORY_CANDIDATE_EXTRACTED: MemoryCandidateExtractedPayload,
     EventType.MEMORY_REVIEW_RECORDED: MemoryReviewRecordedPayload,
 }

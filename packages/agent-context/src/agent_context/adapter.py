@@ -1,7 +1,10 @@
+from datetime import datetime
 from pathlib import Path
 
 from agent_core.domain.memories import MemoryType
+from agent_core.domain.messages import SessionMessage
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
+from agent_core.ports.conversation_compactor import ConversationCompactionResult
 
 from agent_context.compaction import (
     ConversationCompactionRequest,
@@ -11,6 +14,7 @@ from agent_context.compaction import (
     compact_tool_outputs,
 )
 from agent_context.compiler import compile_context
+from agent_context.conversation import compact_message_history
 from agent_context.models import (
     ContextBudget,
     ContextCompileRequest,
@@ -23,6 +27,21 @@ from agent_context.scanner import estimate_tokens
 
 
 class LocalContextCompiler:
+    def compact_conversation(
+        self,
+        messages: tuple[SessionMessage, ...],
+        *,
+        user_goal: str,
+        max_tokens: int,
+        created_at: datetime,
+    ) -> ConversationCompactionResult:
+        return compact_message_history(
+            messages,
+            user_goal=user_goal,
+            max_tokens=max_tokens,
+            created_at=created_at,
+        )
+
     def build_system_prompt(
         self,
         *,
@@ -54,21 +73,17 @@ def _compact_runtime_evidence(
 ) -> tuple[ContextItem, ...]:
     items: list[ContextItem] = []
     planner_summaries = tuple(
-        evidence.summary
-        for evidence in runtime_evidence
-        if evidence.kind == "planner_summary"
+        evidence.summary for evidence in runtime_evidence if evidence.kind == "planner_summary"
     )
     verifier_failures = tuple(
         evidence.summary
         for evidence in runtime_evidence
-        if evidence.kind == "verifier_summary"
-        and not bool((evidence.metadata or {}).get("passed"))
+        if evidence.kind == "verifier_summary" and not bool((evidence.metadata or {}).get("passed"))
     )
     verifier_acceptance = tuple(
         evidence.summary
         for evidence in runtime_evidence
-        if evidence.kind == "verifier_summary"
-        and bool((evidence.metadata or {}).get("passed"))
+        if evidence.kind == "verifier_summary" and bool((evidence.metadata or {}).get("passed"))
     )
     for evidence in runtime_evidence:
         if evidence.kind == "conversation_summary":

@@ -28,8 +28,13 @@ and unconsumed batch tail; a grant resumes without replaying prior tools. Comple
 batches run concurrently only when every tool contract is explicitly parallel-safe,
 with policy, duplicate, and budget preflight before the bounded pool starts. Results
 and events retain provider order. Mixed, unknown, write-capable, and approval batches
-stay sequential. Automatic call reordering, dependency graphs, concurrent writes,
-subagents, and distributed workflow scheduling remain later boundaries.
+stay sequential. Before follow-up provider calls, completed older exchanges may be
+deterministically compacted to a configured conversation budget. The stable system
+prefix, original goal, latest working exchange, complete assistant/tool pairs, and
+pending approval evidence remain canonical; compaction events contain only estimates,
+counts, and provenance. Automatic call reordering, semantic summaries, dependency
+graphs, concurrent writes, subagents, and distributed workflow scheduling remain
+later boundaries.
 
 ## Desktop UI Workspace
 
