@@ -9877,7 +9877,7 @@ navigation boundary without reopening durable session discovery scope.
 
 ### P107-UI-01 - Workspace-Backed Project Navigation
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P106-CLOSE-01`
@@ -9905,3 +9905,54 @@ workspace, without introducing a second project database.
 - [x] Existing session workspace and policy remain durable and are not rewritten by project selection.
 - [x] Drafts and sessions without workspace evidence remain visible in an explicit unbound project.
 - [x] Focused frontend checks, `pnpm build`, and `make check` pass.
+
+### P107-CLOSE-01 - Phase 107 Closeout And Phase 108 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P107-UI-01`
+- Branch: `codex/p107-closeout-phase108-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 107 acceptance state and define the next project
+identity boundary without reopening project discovery or navigation scope.
+
+#### Acceptance
+
+- [x] `P107-UI-01` is recorded as merged through PR `#50` and done.
+- [x] Phase 108 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 108 Task Board
+
+### P108-UI-01 - Project-Aware Workspace Identity
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P107-CLOSE-01`
+- Suggested branch: `codex/p108-ui-01-project-aware-workspace-identity`
+- Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Replace the remaining hard-coded project identity in the desktop workspace
+with the selected or durable workspace identity, without adding project
+metadata that the backend does not persist.
+
+#### Deliverables
+
+- idle workspace title derived from the selected project, including an explicit unbound label
+- active-session inspector project identity derived from that session's durable workspace rather than current launch state
+- full workspace paths retained as accessible context while compact labels remain readable
+- deterministic coverage for compact, root, relative, trailing-slash, and unbound project labels
+
+#### Acceptance
+
+- [ ] Switching projects updates the idle workspace identity consistently with sidebar selection and launch configuration.
+- [ ] Opening an existing session displays project identity from its durable workspace even when the new-task project differs.
+- [ ] Unbound tasks never inherit a configured or hard-coded project name.
+- [ ] Full workspace paths remain available without widening the compact desktop layout.
+- [ ] Focused frontend checks, `pnpm build`, and `make check` pass.
