@@ -10572,7 +10572,7 @@ it, expand the parent's authority, recursively delegate, or outlive its parent.
 
 ### FINOS-MCP-01 - Workspace-Bounded MiniMax Image Understanding
 
-- Status: `In Progress`
+- Status: `Completed`
 - Owner: `Codex`
 - Suggested role: `RUNTIME / SECURITY / INTEGRATION`
 - Depends on: `Phase 22 MCP proxy execution foundation`
@@ -10602,7 +10602,12 @@ tool evidence to the existing Agent loop instead of replacing it.
 - [x] URLs, data URLs, unsupported formats, oversized files, and paths outside the task workspace fail before provider egress.
 - [x] No other MCP target receives automatic read-only approval.
 - [x] Image-tool output is treated as untrusted evidence and reaches the next Zebra model step.
-- [ ] Targeted tests, `make test`, `make check`, and one deployed FinOS journal flow pass.
+- [x] Targeted tests, `make test`, `make check`, and one deployed FinOS journal flow pass.
+
+Deployed acceptance on 2026-07-14 used five real broker screenshots through
+the FinOS Web UI. All five MiniMax calls completed, the final DeepSeek response
+classified two accounts and produced the expected journal preview, and FinOS
+kept the result outside Core pending explicit user save and confirmation.
 
 #### Explicit Non-Goals
 
