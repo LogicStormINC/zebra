@@ -26,6 +26,17 @@ export interface SessionSummary {
   approval_context?: ApprovalContext;
 }
 
+export interface RecentSessionSummary extends SessionSummary {
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SessionListResponse {
+  sessions: RecentSessionSummary[];
+  count: number;
+  limit: number;
+}
+
 export interface SessionEvent {
   event_id: string;
   sequence: number;

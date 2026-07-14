@@ -13,6 +13,7 @@ class RouteRequest:
     path: str
     body: dict[str, Any] | None = None
     headers: dict[str, str] | None = None
+    query: dict[str, str] | None = None
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,8 @@ class RouteAdapter:
         method = request.method.upper()
         if method == "GET" and request.path == "/health":
             return self.app.health()
+        if method == "GET" and request.path == "/sessions":
+            return self.app.list_sessions(request.query or {})
         if method == "POST" and request.path == "/sessions":
             return self.app.create_session(request.body or {})
         if method == "POST" and request.path.startswith("/approvals/"):

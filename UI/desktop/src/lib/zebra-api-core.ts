@@ -15,6 +15,7 @@ import type {
   SessionEvent,
   SessionMessageAppendResponse,
   SessionPullRequestResponse,
+  SessionListResponse,
   SessionSummary,
 } from "../types";
 import { requestEventStream, requestJson } from "./zebra-api-helpers";
@@ -31,6 +32,7 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
     approval: (approvalId: string) =>
       requestJson<ApprovalSummary>(baseUrl, `/approvals/${approvalId}`, { authToken }),
     session: (sessionId: string) => requestJson<SessionSummary>(baseUrl, `/sessions/${sessionId}`, { authToken }),
+    sessions: (limit = 100) => requestJson<SessionListResponse>(baseUrl, `/sessions?limit=${limit}`, { authToken }),
     stream: (sessionId: string, onEvent?: (event: SessionEvent) => void) =>
       requestEventStream(baseUrl, `/sessions/${sessionId}/stream`, authToken, onEvent),
     diff: (sessionId: string) =>

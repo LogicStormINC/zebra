@@ -83,6 +83,55 @@ def test_sqlite_projection_store_respects_ready_session_limit(tmp_path: Path) ->
     assert [session.session_id for session in ready] == [first.session_id]
 
 
+def test_sqlite_projection_store_lists_recent_sessions_newest_first(tmp_path: Path) -> None:
+    store = SQLiteProjectionStore(tmp_path / "projections.db")
+    base_time = datetime(2026, 6, 20, 0, 0, tzinfo=UTC)
+    older = Session.create(title="older", created_at=base_time).model_copy(
+        update={"updated_at": base_time}
+    )
+    newest = Session.create(title="newest", created_at=base_time).model_copy(
+        update={
+            "status": SessionStatus.COMPLETED,
+            "updated_at": base_time.replace(minute=2),
+        }
+    )
+    middle = Session.create(title="middle", created_at=base_time).model_copy(
+        update={
+            "status": SessionStatus.RUNNING,
+            "updated_at": base_time.replace(minute=1),
+        }
+    )
+    for session in (older, newest, middle):
+        store.save_session(session)
+
+    recent = store.list_recent_sessions(limit=10)
+
+    assert [session.session_id for session in recent] == [
+        newest.session_id,
+        middle.session_id,
+        older.session_id,
+    ]
+
+
+def test_sqlite_projection_store_bounds_recent_sessions(tmp_path: Path) -> None:
+    store = SQLiteProjectionStore(tmp_path / "projections.db")
+    base_time = datetime(2026, 6, 20, 0, 10, tzinfo=UTC)
+    sessions = [
+        Session.create(title=f"session-{index}", created_at=base_time).model_copy(
+            update={"updated_at": base_time.replace(minute=10 + index)}
+        )
+        for index in range(3)
+    ]
+    for session in sessions:
+        store.save_session(session)
+
+    assert store.list_recent_sessions(limit=0) == []
+    assert [session.title for session in store.list_recent_sessions(limit=2)] == [
+        "session-2",
+        "session-1",
+    ]
+
+
 def test_sqlite_projection_store_round_trips_approval_context(tmp_path: Path) -> None:
     store = SQLiteProjectionStore(tmp_path / "projections.db")
     created_at = datetime(2026, 6, 29, 11, 0, tzinfo=UTC)

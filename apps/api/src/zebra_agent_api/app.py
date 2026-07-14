@@ -51,6 +51,7 @@ from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_artifact_control import SessionArtifactControlApi
 from zebra_agent_api.session_commit import SessionCommitApi
 from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
+from zebra_agent_api.session_list import SessionListApi
 from zebra_agent_api.session_memory_control import (
     preview_session_memory_queue,
     preview_tenant_memory_queue,
@@ -94,6 +95,9 @@ class ZebraAgentApi:
 
     def get_session(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session(session_id)
+
+    def list_sessions(self, query: Mapping[str, str]) -> ApiResponse:
+        return SessionListApi(self.database_path).list_sessions(query)
 
     def list_approvals(self) -> ApiResponse:
         return ApprovalReadApi(self.database_path).list_approvals()

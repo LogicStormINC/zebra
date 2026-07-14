@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-14: completed `P106-APP-01` implementation and browser acceptance on `codex/p106-app-01-durable-session-discovery`; the projection store now provides bounded newest-first recent sessions, authenticated `GET /sessions` returns compact summaries through the same workspace and approval serializer as session detail, and the desktop reconciles those durable records with local drafts and explicit local hide tombstones. Browser validation recovered a real session after clearing the task index, preserved an unsent draft across reconciliation, and kept a locally hidden durable session out of the list after reload. All `946` backend tests, Ruff, Mypy, the eval release gate, focused index, launch, delivery, live, and runtime checks, and the production build passed.
 - 2026-07-14: merged `P105-UI-01` through GitHub PR `#46` and closed Phase 105; Phase 106 is limited to bounded durable recent-session discovery and desktop index reconciliation so persisted sessions remain discoverable after browser-local state is lost.
 - 2026-07-13: completed `P105-UI-01` implementation and browser acceptance on `codex/p105-ui-01-task-launch-configuration`; new tasks now persist and preflight an explicit workspace plus supported policy, send both through the existing create-session API, and display durable session configuration after creation. Browser validation observed a `201` create response for `/tmp/zebra-agent-p105` with `full_access`, verified invalid-workspace submission blocking and restored launch defaults, and confirmed the page remained viewport-bound. Unsupported attachment and model-selection affordances were removed or represented as fixed API runtime state. All `941` backend tests, Ruff, Mypy, the eval release gate, focused launch, delivery, live, and runtime checks, and the production build passed.
 - 2026-07-13: merged `P104-UI-01` through GitHub PR `#44` and closed Phase 104; Phase 105 is limited to truthful task-launch configuration, explicit workspace binding, and removal of unsupported Composer affordances.
@@ -28,9 +29,9 @@
 ## Current Phase
 
 - Active phase: `Phase 106 - Durable Recent Session Discovery`
-- Repository status: `phase 105 closed; P106-APP-01 is ready`
+- Repository status: `phase 105 closed; P106-APP-01 is in review`
 - Current focus:
-  - `P106-APP-01` is ready to add one bounded recent-session API and reconcile the desktop task index from durable projections while preserving local drafts
+  - `P106-APP-01` is in review after full backend and frontend gates plus browser validation of fresh-profile recovery, local-draft preservation, durable workspace readback, and local hide persistence
   - `P105-UI-01` was merged through GitHub PR `#46` after full backend and frontend gates plus browser validation of launch preflight, invalid-workspace blocking, request payloads, durable session configuration, and restored defaults
   - `P105-CLOSE-01` records the Phase 105 closeout and the explicit Phase 106 ownership boundary
   - `P104-UI-01` was merged through GitHub PR `#44` after `941` backend tests, Ruff, Mypy, the eval release gate, focused delivery, live execution, and runtime checks, the production build, and browser validation of policy denial, plan-first pull requests, and delivery-audit convergence
