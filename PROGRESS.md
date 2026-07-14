@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-14: merged `P115-HAR-01` through GitHub PR `#66` and closed Phase 115; Phase 116 is limited to bounded concurrency for complete batches whose members are all explicitly parallel-safe. Mixed, unknown, write-capable, denied, or approval-required batches retain deterministic sequential handling. Dependency graphs, call reordering, concurrent writes, subagents, and distributed scheduling remain later boundaries.
 - 2026-07-14: completed `P115-HAR-01` implementation on `codex/p115-har-01-deterministic-multi-call-batches`; one provider assistant turn now retains its complete ordered tool-call batch, each call receives independent proposal, policy, execution, verification, and budget handling, and all matching tool results reach the next model request without silently dropping siblings. Denied, repeated, failed, or over-budget members stop before the remaining tail. Approval events persist the exact pending call, prior conversation, counters, and unconsumed tail; resume skips re-proposal of the granted call, continues later calls through normal policy, and now preserves all continuation execution events. A real `deepseek-v4-flash` response returned two `files.read` calls at once and converged in two model calls to the exact `BATCH-A|BATCH-B` answer. All `965` tests, Ruff, Mypy across `211` files, and the 8-case eval release gate passed.
 - 2026-07-14: merged `P114-HAR-01` through GitHub PR `#64` and closed Phase 114; Phase 115 is limited to consuming complete provider tool-call batches in deterministic order with per-call policy, budgets, and exact approval continuation. True concurrent execution, automatic reordering, and subagent scheduling remain later boundaries.
 - 2026-07-14: completed `P114-HAR-01` implementation on `codex/p114-har-01-bounded-sequential-tool-loop`; one attempt now carries provider-neutral assistant and tool turns through a bounded sequential loop, reserves the last model call for a final answer, blocks repeated name-and-argument actions, and persists prior conversation plus counters when a later call requires approval. Approval resume executes the exact pending call without replaying completed tools, while text-only, one-tool, rejection, and uncertain-side-effect behavior remains covered. Production defaults are now four model calls and three tool calls. A real `deepseek-v4-flash` run called `files.read` twice in sequence and returned the exact combined `ALPHA|BETA` proof. All `960` tests, Ruff, Mypy across `210` files, and the 8-case eval release gate passed.
@@ -46,10 +47,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 115 - Deterministic Multi-Call Batch Execution`
-- Repository status: `phase 114 closed; P115-HAR-01 is in review`
+- Active phase: `Phase 116 - Bounded Safe Concurrent Tool Batches`
+- Repository status: `phase 115 closed; P116-HAR-01 is ready`
 - Current focus:
-  - `P115-HAR-01` is in review after deterministic, full-repository, middle-batch approval, and real `deepseek-v4-flash` acceptance of complete provider batch consumption
+  - `P116-HAR-01` is ready to add explicit parallel-safety metadata and bounded concurrent execution for fully eligible read-only batches while retaining sequential fallback everywhere else
+  - `P115-HAR-01` was merged through GitHub PR `#66` after deterministic, full-repository, middle-batch approval, and real `deepseek-v4-flash` acceptance of complete provider batch consumption
+  - `P115-CLOSE-01` records the Phase 115 closeout and the explicit Phase 116 ownership boundary
   - `P114-HAR-01` was merged through GitHub PR `#64` after deterministic, full-repository, later-step approval, and real `deepseek-v4-flash` acceptance of a bounded sequential observe-act loop
   - `P114-CLOSE-01` records the Phase 114 closeout and the explicit Phase 115 ownership boundary
   - `P113-HITL-01` was merged through GitHub PR `#62` after backend and desktop acceptance of immutable approval binding, exact one-call continuation, grounded final synthesis, duplicate protection, and uncertain-execution replay refusal

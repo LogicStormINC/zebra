@@ -10329,7 +10329,7 @@ for complete provider tool-call batches before introducing true concurrency.
 
 ### P115-HAR-01 - Deterministic Multi-Call Batch Execution
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE`
 - Depends on: `P114-CLOSE-01`
@@ -10366,3 +10366,69 @@ duplicate protection, durable evidence, and exact approval continuation.
 - dependency-graph scheduling or automatic call reordering
 - subagent delegation or distributed workflow scheduling
 - automatic replay after uncertain external side effects
+
+### P115-CLOSE-01 - Phase 115 Closeout And Phase 116 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P115-HAR-01`
+- Branch: `codex/p115-closeout-phase116-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 115 acceptance state and define bounded concurrency for
+explicitly safe tool batches without weakening policy, approval, or recovery
+boundaries.
+
+#### Acceptance
+
+- [x] `P115-HAR-01` is recorded as merged through PR `#66` and done.
+- [x] Phase 116 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 116 Task Board
+
+### P116-HAR-01 - Bounded Safe Concurrent Tool Batches
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE`
+- Depends on: `P115-CLOSE-01`
+- Branch: `codex/p116-har-01-bounded-safe-concurrent-batches`
+- Owned paths: `packages/agent-core/`, `packages/agent-tools/`, `packages/agent-security/`, `packages/agent-runtime/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Reduce latency for independent retrieval and inspection work by executing one
+provider batch concurrently only when every member is explicitly classified as
+parallel-safe, while preserving provider-order results and deterministic
+fallback for every other batch.
+
+#### Deliverables
+
+- explicit tool capability metadata that distinguishes parallel-safe calls from unknown or side-effecting calls
+- a configurable concurrency bound with no unbounded task creation
+- preflight policy, duplicate, and budget checks before a safe batch starts
+- concurrent execution for fully eligible batches with provider-order result and event projection
+- sequential fallback for mixed, approval-required, unknown, or side-effecting batches
+- deterministic cancellation and failure semantics that never imply rollback of an already-started call
+- focused timing, ordering, fallback, failure, and real-provider acceptance evidence
+
+#### Acceptance
+
+- [ ] Two independent parallel-safe calls overlap in execution and both results reach the next model request in provider order.
+- [ ] The configured concurrency limit is enforced for a larger eligible batch.
+- [ ] Mixed, unknown, write-capable, denied, and approval-required batches execute or pause through the existing sequential path.
+- [ ] Policy, duplicate, and budget rejection occurs before any member of a candidate concurrent batch starts.
+- [ ] One concurrent member failure is recorded explicitly; already-started siblings are observed to completion and no rollback or unsafe replay is claimed.
+- [ ] Existing text-only, sequential, HITL continuation, uncertain-side-effect, and complete-batch behavior remains compatible.
+- [ ] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider concurrent-batch acceptance pass.
+
+#### Explicit Non-Goals
+
+- dependency-graph scheduling or automatic call reordering
+- concurrent write or externally side-effecting tools
+- concurrent approval flows
+- subagent delegation or distributed workflow scheduling
+- cancellation guarantees for work that has already started
