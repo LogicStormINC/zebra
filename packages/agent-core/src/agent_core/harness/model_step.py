@@ -51,16 +51,44 @@ class HarnessModelStep:
         tool_result: ToolResult,
         created_at: datetime,
     ) -> None:
-        messages.extend(
-            (
-                completion.assistant_message.model_copy(update={"tool_calls": (tool_call,)}),
-                SessionMessage(
-                    message_id=new_message_id(),
-                    role=MessageRole.TOOL,
-                    content=tool_result.output or f"Tool {tool_result.status.value}.",
-                    created_at=created_at,
-                    tool_call_id=tool_call.provider_call_id or str(tool_call.tool_call_id),
-                ),
+        self.append_tool_batch(
+            messages,
+            completion=completion,
+            tool_calls=(tool_call,),
+        )
+        self.append_tool_result(
+            messages,
+            tool_call=tool_call,
+            tool_result=tool_result,
+            created_at=created_at,
+        )
+
+    @staticmethod
+    def append_tool_batch(
+        messages: list[SessionMessage],
+        *,
+        completion: ModelCompletion,
+        tool_calls: tuple[ToolCall, ...],
+    ) -> None:
+        if not tool_calls:
+            raise ValueError("tool batch must not be empty")
+        messages.append(completion.assistant_message.model_copy(update={"tool_calls": tool_calls}))
+
+    @staticmethod
+    def append_tool_result(
+        messages: list[SessionMessage],
+        *,
+        tool_call: ToolCall,
+        tool_result: ToolResult,
+        created_at: datetime,
+    ) -> None:
+        messages.append(
+            SessionMessage(
+                message_id=new_message_id(),
+                role=MessageRole.TOOL,
+                content=tool_result.output or f"Tool {tool_result.status.value}.",
+                created_at=created_at,
+                tool_call_id=tool_call.provider_call_id or str(tool_call.tool_call_id),
             )
         )
 

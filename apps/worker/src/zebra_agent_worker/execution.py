@@ -187,6 +187,7 @@ class SessionExecutionService:
                 context,
                 initial_completion=continuation.completion,
                 tool_call=continuation.tool_call,
+                remaining_tool_calls=continuation.remaining_tool_calls,
                 conversation=continuation.conversation,
                 model_calls_used=continuation.model_calls_used,
                 tool_calls_executed=continuation.tool_calls_executed,

@@ -201,9 +201,9 @@ def test_later_approved_tool_resumes_with_prior_tool_history(
     assert approval_event.payload["model_calls_used"] == 2
     assert approval_event.payload["tool_calls_executed"] == 1
     assert [item["role"] for item in approval_event.payload["conversation"]][-3:] == [
-        "user",
         "assistant",
         "tool",
+        "assistant",
     ]
 
     create_app(database_path, settings=_settings(database_path)).approve(

@@ -24,6 +24,7 @@ def policy_stop_result(
     model_calls_used: int,
     tool_calls_executed: int,
     metadata: dict[str, object],
+    remaining_tool_calls: tuple[ToolCall, ...] = (),
 ) -> HarnessAttemptResult:
     waiting = decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
     if waiting:
@@ -39,6 +40,7 @@ def policy_stop_result(
                     conversation=messages,
                     model_calls_used=model_calls_used,
                     tool_calls_executed=tool_calls_executed,
+                    remaining_tool_calls=remaining_tool_calls,
                 ),
             )
         )

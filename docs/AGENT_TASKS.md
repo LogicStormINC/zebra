@@ -10329,8 +10329,8 @@ for complete provider tool-call batches before introducing true concurrency.
 
 ### P115-HAR-01 - Deterministic Multi-Call Batch Execution
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE`
 - Depends on: `P114-CLOSE-01`
 - Branch: `codex/p115-har-01-deterministic-multi-call-batches`
@@ -10353,12 +10353,12 @@ duplicate protection, durable evidence, and exact approval continuation.
 
 #### Acceptance
 
-- [ ] Two allowed calls from one provider response execute once in provider order and both results reach the next model request.
-- [ ] A denied, repeated, or over-budget batch member stops explicitly and leaves later members unexecuted.
-- [ ] An approval-required batch member pauses before execution and preserves the unconsumed tail durably.
-- [ ] Approval resume executes the exact pending call, then continues the preserved tail without replaying earlier calls.
-- [ ] Existing text-only, single-call, sequential-turn, rejection, and uncertain-side-effect behavior remains compatible.
-- [ ] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider batch acceptance pass.
+- [x] Two allowed calls from one provider response execute once in provider order and both results reach the next model request.
+- [x] A denied, repeated, or over-budget batch member stops explicitly and leaves later members unexecuted.
+- [x] An approval-required batch member pauses before execution and preserves the unconsumed tail durably.
+- [x] Approval resume executes the exact pending call, then continues the preserved tail without replaying earlier calls.
+- [x] Existing text-only, single-call, sequential-turn, rejection, and uncertain-side-effect behavior remains compatible.
+- [x] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider batch acceptance pass.
 
 #### Explicit Non-Goals
 
