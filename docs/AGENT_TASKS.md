@@ -10203,7 +10203,7 @@ continuation without reopening multi-tool execution.
 
 ### P113-HITL-01 - Exact Approved Tool Continuation
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE`
 - Depends on: `P112-CLOSE-01`
@@ -10244,3 +10244,64 @@ instead of asking the model to propose a replacement call.
 - automatic replay after an interruption with uncertain external side effects
 - generic distributed workflow scheduling
 - code-delivery-specific UI
+
+### P113-CLOSE-01 - Phase 113 Closeout And Phase 114 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P113-HITL-01`
+- Branch: `codex/p113-closeout-phase114-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 113 acceptance state and define one bounded sequential
+tool-loop task without reopening parallel execution or distributed scheduling.
+
+#### Acceptance
+
+- [x] `P113-HITL-01` is recorded as merged through PR `#62` and done.
+- [x] Phase 114 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 114 Task Board
+
+### P114-HAR-01 - Bounded Sequential Tool Loop
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE`
+- Depends on: `P113-CLOSE-01`
+- Branch: `codex/p114-har-01-bounded-sequential-tool-loop`
+- Owned paths: `packages/agent-core/`, `packages/agent-integrations/`, `packages/agent-runtime/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Allow one provider-backed attempt to execute a bounded sequence of tool calls,
+feeding each result back to the model until it returns a final answer or a
+configured budget or safety boundary stops the loop.
+
+#### Deliverables
+
+- provider-neutral conversation state for sequential assistant tool calls and tool results
+- deterministic loop accounting for model-call and tool-call budgets
+- production composition that permits another advertised tool after a successful result
+- repeated-call protection and explicit terminal behavior when a budget is exhausted
+- approval pause and exact continuation for a later tool step without replaying completed calls
+- deterministic and real-provider acceptance evidence for a multi-step task
+
+#### Acceptance
+
+- [ ] A provider can request a tool, observe its result, request a different tool, and then return a grounded final answer.
+- [ ] Every model and tool call is durably represented and counted against its configured budget.
+- [ ] Exhausted budgets and repeated identical calls stop deterministically without an unbounded provider loop.
+- [ ] A later approval-required call pauses with exact call identity and resumes without replaying completed tools.
+- [ ] Existing text-only, single-tool, rejection, and uncertain-side-effect protections remain compatible.
+- [ ] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider multi-step acceptance pass.
+
+#### Explicit Non-Goals
+
+- parallel tool-call execution from one provider response
+- subagent delegation or generic workflow scheduling
+- automatic replay after an interruption with uncertain external side effects
+- code-delivery-specific product behavior
