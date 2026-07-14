@@ -1,4 +1,5 @@
 from agent_core.domain.events import EventActor, EventType
+from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.tools import ToolCallStatus
 from agent_core.harness.hooks import (
@@ -34,6 +35,7 @@ class SingleAttemptOrchestrator:
         planner: PlannerHook | None = None,
         verifier: VerifierHook | None = None,
         tool_selector: ToolCallSelectionStrategy | None = None,
+        synthesize_tool_results: bool = False,
     ) -> None:
         self._model_gateway = model_gateway
         self._policy_engine = policy_engine
@@ -42,6 +44,7 @@ class SingleAttemptOrchestrator:
         self._planner = planner or NoopPlanner()
         self._verifier = verifier or NoopVerifier()
         self._tool_selector = tool_selector or FirstToolCallSelectionStrategy()
+        self._synthesize_tool_results = synthesize_tool_results
 
     def run(self, context: HarnessContext) -> HarnessAttemptResult:
         completion = self._model_step.request_initial_completion(
@@ -50,22 +53,9 @@ class SingleAttemptOrchestrator:
             created_at=context.attempt.started_at,
         )
         emitted_events = [
-            HarnessEventDraft(
-                event_type=EventType.MODEL_RESPONSE_RECEIVED,
-                actor=EventActor.HARNESS,
-                payload={
-                    "attempt_number": context.attempt.number,
-                    "assistant_message": completion.assistant_message.content,
-                    "tool_call_count": len(completion.tool_calls),
-                    "provider": completion.call_metadata.provider,
-                    "model_name": completion.call_metadata.model_name,
-                    "input_tokens": completion.call_metadata.usage.input_tokens,
-                    "output_tokens": completion.call_metadata.usage.output_tokens,
-                    "total_tokens": completion.call_metadata.usage.total_tokens,
-                    "latency_ms": completion.call_metadata.latency_ms,
-                    "cache_hit": completion.call_metadata.cache_hit,
-                    "cost_usd": completion.call_metadata.cost_usd,
-                },
+            _model_response_event(
+                completion,
+                attempt_number=context.attempt.number,
             )
         ]
         planner_result = self._planner.plan(context)
@@ -200,6 +190,33 @@ class SingleAttemptOrchestrator:
                 },
             )
         )
+        final_completion: ModelCompletion | None = None
+        if self._synthesize_tool_results and (
+            context.task.max_model_calls is None or context.task.max_model_calls >= 2
+        ):
+            final_completion = self._model_step.request_tool_result_completion(
+                context.task,
+                self._model_gateway,
+                initial_completion=completion,
+                tool_call=tool_call,
+                tool_result=tool_result,
+                created_at=context.attempt.started_at,
+            )
+            if final_completion.tool_calls:
+                raise ValueError("tool result synthesis must return a final assistant answer")
+            emitted_events.append(
+                _model_response_event(
+                    final_completion,
+                    attempt_number=context.attempt.number,
+                    response_stage="final",
+                )
+            )
+        assistant_message = (
+            final_completion.assistant_message.content
+            if final_completion is not None
+            else completion.assistant_message.content
+        )
+        model_calls_used = 2 if final_completion is not None else 1
         return HarnessAttemptResult(
             outcome=(
                 HarnessAttemptOutcome.COMPLETED
@@ -212,8 +229,8 @@ class SingleAttemptOrchestrator:
                 else f"tool call failed: {tool_call.name}"
             ),
             metadata={
-                "assistant_message": completion.assistant_message.content,
-                "model_calls_used": 1,
+                "assistant_message": assistant_message,
+                "model_calls_used": model_calls_used,
                 "plan_summary": planner_result.summary,
                 "tool_name": tool_call.name,
                 "tool_selection_summary": selection.summary,
@@ -228,6 +245,34 @@ class SingleAttemptOrchestrator:
             },
             emitted_events=tuple(emitted_events),
         )
+
+
+def _model_response_event(
+    completion: ModelCompletion,
+    *,
+    attempt_number: int,
+    response_stage: str | None = None,
+) -> HarnessEventDraft:
+    payload: dict[str, object] = {
+        "attempt_number": attempt_number,
+        "assistant_message": completion.assistant_message.content,
+        "tool_call_count": len(completion.tool_calls),
+        "provider": completion.call_metadata.provider,
+        "model_name": completion.call_metadata.model_name,
+        "input_tokens": completion.call_metadata.usage.input_tokens,
+        "output_tokens": completion.call_metadata.usage.output_tokens,
+        "total_tokens": completion.call_metadata.usage.total_tokens,
+        "latency_ms": completion.call_metadata.latency_ms,
+        "cache_hit": completion.call_metadata.cache_hit,
+        "cost_usd": completion.call_metadata.cost_usd,
+    }
+    if response_stage is not None:
+        payload["response_stage"] = response_stage
+    return HarnessEventDraft(
+        event_type=EventType.MODEL_RESPONSE_RECEIVED,
+        actor=EventActor.HARNESS,
+        payload=payload,
+    )
 
 
 def _policy_decision_payload(

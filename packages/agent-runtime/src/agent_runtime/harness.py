@@ -47,7 +47,7 @@ def run_local_harness(
             title=title,
             user_input=prompt,
             max_attempts=1,
-            max_model_calls=1,
+            max_model_calls=2,
             max_tool_calls=1,
             workspace_root=workspace_root,
             confirmed_memories=confirmed_memories,
@@ -60,6 +60,7 @@ def run_local_harness(
                 context_compiler=LocalContextCompiler(),
                 available_tools=tool_gateway.model_tools,
             ),
+            synthesize_tool_results=True,
         ).run,
     )
 

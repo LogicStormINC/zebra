@@ -20,6 +20,7 @@ class ToolCall(BaseModel):
     name: str
     arguments: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
+    provider_call_id: str | None = None
 
     @field_validator("name")
     @classmethod
@@ -27,6 +28,16 @@ class ToolCall(BaseModel):
         stripped = value.strip()
         if not stripped:
             raise ValueError("name must not be blank")
+        return stripped
+
+    @field_validator("provider_call_id")
+    @classmethod
+    def ensure_provider_call_id_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("provider_call_id must not be blank when set")
         return stripped
 
     @field_validator("created_at")

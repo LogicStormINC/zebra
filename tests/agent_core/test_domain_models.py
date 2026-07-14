@@ -37,6 +37,16 @@ def test_session_message_rejects_blank_content() -> None:
         )
 
 
+def test_tool_message_requires_tool_call_id() -> None:
+    with pytest.raises(ValidationError, match="tool messages require tool_call_id"):
+        SessionMessage(
+            message_id=new_message_id(),
+            role=MessageRole.TOOL,
+            content="tool output",
+            created_at=datetime(2026, 6, 18, 10, 0, tzinfo=UTC),
+        )
+
+
 def test_tool_models_can_be_instantiated() -> None:
     tool_call_id = new_tool_call_id()
     tool_call = ToolCall(

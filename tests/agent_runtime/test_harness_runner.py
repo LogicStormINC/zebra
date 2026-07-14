@@ -18,8 +18,8 @@ def test_run_local_harness_completes_without_tool_calls(tmp_path) -> None:
         workspace_root=tmp_path.resolve(),
         model_gateway=ScriptedModelGateway(
             responses=(
-                ScriptedModelResponse(
-                    completion=ModelCompletion(
+                    ScriptedModelResponse(
+                        completion=ModelCompletion(
                         assistant_message=SessionMessage(
                             message_id=new_message_id(),
                             role=MessageRole.ASSISTANT,
@@ -62,13 +62,27 @@ def test_run_local_harness_executes_builtin_file_read(tmp_path) -> None:
                         ),
                     )
                 ),
-            )
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content="The README contains: runtime readme",
+                            created_at=_created_at(),
+                        )
+                    )
+                ),
+            ),
         ),
     )
 
     assert result.session.status is SessionStatus.COMPLETED
     assert result.attempt_result.metadata["tool_name"] == "files.read"
     assert result.attempt_result.metadata["tool_output"] == "runtime readme\n"
+    assert result.attempt_result.metadata["assistant_message"] == (
+        "The README contains: runtime readme"
+    )
+    assert result.run_result.model_calls_used == 2
 
 
 def test_run_local_harness_injects_confirmed_memory_into_system_prompt(tmp_path) -> None:

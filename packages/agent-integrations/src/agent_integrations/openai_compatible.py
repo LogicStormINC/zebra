@@ -45,12 +45,12 @@ class OpenAICompatibleModelGateway:
         *,
         tools: tuple[ModelToolDefinition, ...] = (),
     ) -> ModelCompletion:
+        tool_names = _provider_tool_names(tools)
         request_body = {
             "model": self._model_name,
             "messages": [_serialize_message(message) for message in messages],
             "stream": False,
         }
-        tool_names = _provider_tool_names(tools)
         if tools:
             request_body["tools"] = [
                 _serialize_tool(tool, provider_name=provider_name)
@@ -134,15 +134,40 @@ def _read_defaults(path: Path) -> dict[str, str]:
     return defaults
 
 
-def _serialize_message(message: SessionMessage) -> dict[str, str]:
-    return {
+def _serialize_message(message: SessionMessage) -> dict[str, object]:
+    payload: dict[str, object] = {
         "role": message.role.value,
         "content": message.content,
     }
+    if message.tool_calls:
+        payload["tool_calls"] = [
+            {
+                "id": tool_call.provider_call_id or str(tool_call.tool_call_id),
+                "type": "function",
+                "function": {
+                    "name": _provider_tool_name(tool_call.name),
+                    "arguments": _serialize_tool_arguments(tool_call.arguments),
+                },
+            }
+            for tool_call in message.tool_calls
+        ]
+    if message.tool_call_id is not None:
+        payload["tool_call_id"] = message.tool_call_id
+    return payload
+
+
+def _serialize_tool_arguments(arguments: Mapping[str, object]) -> str:
+    import json
+
+    return json.dumps(arguments, separators=(",", ":"), sort_keys=True)
+
+
+def _provider_tool_name(name: str) -> str:
+    return name.replace(".", "__")
 
 
 def _provider_tool_names(tools: tuple[ModelToolDefinition, ...]) -> tuple[str, ...]:
-    names = tuple(tool.name.replace(".", "__") for tool in tools)
+    names = tuple(_provider_tool_name(tool.name) for tool in tools)
     if len(set(names)) != len(names):
         raise ValueError("model tool names collide after provider normalization")
     for name in names:
@@ -198,6 +223,7 @@ def _parse_completion(
             role=MessageRole.ASSISTANT,
             content=content,
             created_at=created_at,
+            tool_calls=tuple(tool_calls),
         ),
         tool_calls=tuple(tool_calls),
         call_metadata=ModelCallMetadata(
@@ -237,6 +263,9 @@ def _parse_tool_calls(
         name = function.get("name")
         if not isinstance(name, str) or not name.strip():
             raise ValueError("tool_call function name must not be blank")
+        provider_call_id = item.get("id")
+        if not isinstance(provider_call_id, str) or not provider_call_id.strip():
+            raise ValueError("tool_call id must not be blank")
         if internal_tool_names:
             try:
                 name = internal_tool_names[name]
@@ -249,6 +278,7 @@ def _parse_tool_calls(
                 name=name,
                 arguments=arguments,
                 created_at=created_at,
+                provider_call_id=provider_call_id,
             )
         )
     return parsed
