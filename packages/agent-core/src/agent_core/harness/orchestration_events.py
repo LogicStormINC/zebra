@@ -60,6 +60,7 @@ def approval_requested_payload(
     conversation: list[SessionMessage],
     model_calls_used: int,
     tool_calls_executed: int,
+    remaining_tool_calls: tuple[ToolCall, ...] = (),
 ) -> dict[str, object]:
     payload: dict[str, object] = {
         "attempt_number": attempt_number,
@@ -71,10 +72,14 @@ def approval_requested_payload(
         "assistant_message": assistant_message,
         "call_fingerprint": tool_call.approval_fingerprint,
     }
-    if tool_calls_executed:
+    if tool_calls_executed or remaining_tool_calls:
         payload["conversation"] = [message.model_dump(mode="json") for message in conversation]
         payload["model_calls_used"] = model_calls_used
         payload["tool_calls_executed"] = tool_calls_executed
+    if remaining_tool_calls:
+        payload["remaining_tool_calls"] = [
+            call.model_dump(mode="json") for call in remaining_tool_calls
+        ]
     if tool_call.provider_call_id is not None:
         payload["provider_call_id"] = tool_call.provider_call_id
     _extend_proxy_policy_payload(payload, decision)
