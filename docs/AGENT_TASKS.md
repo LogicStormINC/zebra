@@ -10457,7 +10457,7 @@ delegation.
 
 ### P117-CTX-01 - Bounded Harness Conversation Compaction
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / CTX`
 - Depends on: `P116-CLOSE-01`
@@ -10499,3 +10499,71 @@ prefix.
 - provider-specific tokenizer guarantees or automatic context-window expansion
 - compaction of unresolved tool calls or approval evidence
 - subagent delegation, nested agents, or distributed scheduling
+
+### P117-CLOSE-01 - Phase 117 Closeout And Phase 118 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P117-CTX-01`
+- Branch: `codex/p117-closeout-phase118-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 117 acceptance state and define one bounded local-first
+read-only Research Subagent slice without introducing write sharing, role-specific
+review agents, or distributed scheduling.
+
+#### Acceptance
+
+- [x] `P117-CTX-01` is recorded as merged through PR `#70` and done.
+- [x] Phase 118 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 118 Task Board
+
+### P118-SUB-01 - Bounded Read-Only Research Subagent
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / CTX / RUNTIME`
+- Depends on: `P117-CLOSE-01`
+- Branch: `codex/p118-sub-01-bounded-read-only-research`
+- Owned paths: `packages/agent-core/`, `packages/agent-tools/`, `packages/agent-security/`, `packages/agent-runtime/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Allow the primary local agent to delegate one bounded evidence-gathering task to
+a child Research Subagent that can inspect the same workspace but cannot mutate
+it, expand the parent's authority, recursively delegate, or outlive its parent.
+
+#### Deliverables
+
+- provider-neutral child-agent identity, task, lifecycle, budget, and result contracts
+- local-first `spawn`, `join`, `cancel`, and `collect` primitives behind an `agent-core` Port
+- one typed research-delegation capability that returns structured findings with sources and confidence
+- a strictly read-only child tool profile built from existing safe inspection tools
+- explicit limits for child count, model calls, tool calls, concurrency, and recursive depth
+- parent-child event evidence for start, completion, failure, and cancellation without raw sensitive output
+- deterministic and real-provider acceptance evidence for a parent answer grounded in child findings
+
+#### Acceptance
+
+- [ ] A parent run can delegate one research task, collect its structured result, and use that result in the final provider answer.
+- [ ] Child results include a bounded summary, concrete source references, confidence, and terminal status.
+- [ ] A child inherits the parent workspace and a read-only authority ceiling even when the parent has a broader policy profile.
+- [ ] File mutation, command execution, network access, credential access, and recursive delegation are unavailable to the child.
+- [ ] Child count, concurrency, model-call, tool-call, and depth limits reject excess work before it starts.
+- [ ] Join, cancellation, child failure, and parent cancellation converge deterministically without orphaned local work or unsafe replay claims.
+- [ ] Parent-child events expose identities, budgets, status, and provenance but do not copy raw sensitive findings into control metadata.
+- [ ] Existing text-only, tool-loop, batch, compaction, approval, and safe-concurrent behavior remains compatible.
+- [ ] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider parent-to-child acceptance pass.
+
+#### Explicit Non-Goals
+
+- write-capable child agents or shared-worktree mutation
+- Reviewer, Coder, or other fixed role frameworks
+- independent child worktrees or merge coordination
+- durable cross-process child recovery or distributed scheduling
+- A2A, remote agents, multi-tenant quotas, or automatic model routing
+- Tree-sitter, LSP, vector retrieval, or repository indexing changes
