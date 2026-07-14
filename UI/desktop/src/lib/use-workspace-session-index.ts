@@ -4,6 +4,7 @@ import { useXConversations } from "@ant-design/x-sdk";
 import type { SessionSummary } from "../types";
 import type { ConversationSeed } from "./chat-surface";
 import type { ZebraApiClient } from "./zebra-api";
+import { reconcileWorkspaceSessionIndex } from "./workspace-session-reconciliation";
 
 const STORAGE_KEY = "zebra-agent-desktop.workspace-index.v1";
 const MAX_CONVERSATIONS = 100;
@@ -11,11 +12,13 @@ const MAX_CONVERSATIONS = 100;
 interface StoredWorkspaceIndex {
   conversations: ConversationSeed[];
   sessionIds: Record<string, string>;
+  hiddenSessionIds: string[];
 }
 
 const EMPTY_INDEX: StoredWorkspaceIndex = {
   conversations: [],
   sessionIds: {},
+  hiddenSessionIds: [],
 };
 
 function isConversation(value: unknown): value is ConversationSeed {
@@ -40,7 +43,10 @@ function readWorkspaceIndex(): StoredWorkspaceIndex {
         ([key, value]) => conversationKeys.has(key) && typeof value === "string" && value.length > 0,
       ),
     ) as Record<string, string>;
-    return { conversations, sessionIds };
+    const hiddenSessionIds = Array.isArray(parsed.hiddenSessionIds)
+      ? parsed.hiddenSessionIds.filter((value): value is string => typeof value === "string").slice(0, MAX_CONVERSATIONS)
+      : [];
+    return { conversations, sessionIds, hiddenSessionIds };
   } catch {
     return EMPTY_INDEX;
   }
@@ -60,15 +66,33 @@ export function useWorkspaceSessionIndex(api: ZebraApiClient, fallbackSessionId:
     defaultConversations: initialIndex.conversations,
   });
   const [sessionIds, setSessionIds] = useState<Record<string, string>>(initialIndex.sessionIds);
+  const [hiddenSessionIds, setHiddenSessionIds] = useState(initialIndex.hiddenSessionIds);
   const [sessionSummaries, setSessionSummaries] = useState<Record<string, SessionSummary | null>>({});
   const migrationAttempted = useRef(false);
 
   useEffect(() => {
+    let cancelled = false;
+    void api.sessions(MAX_CONVERSATIONS).then(({ sessions }) => {
+      if (cancelled) return;
+      const reconciled = reconcileWorkspaceSessionIndex(
+        { conversations: conversations as ConversationSeed[], sessionIds, hiddenSessionIds },
+        sessions,
+      );
+      setConversations(reconciled.conversations);
+      setSessionIds(reconciled.sessionIds);
+      setSessionSummaries((current) => ({ ...current, ...reconciled.sessionSummaries }));
+    }).catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [api]);
+
+  useEffect(() => {
     window.localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ conversations: conversations.slice(0, MAX_CONVERSATIONS), sessionIds }),
+      JSON.stringify({ conversations: conversations.slice(0, MAX_CONVERSATIONS), sessionIds, hiddenSessionIds }),
     );
-  }, [conversations, sessionIds]);
+  }, [conversations, hiddenSessionIds, sessionIds]);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,6 +135,10 @@ export function useWorkspaceSessionIndex(api: ZebraApiClient, fallbackSessionId:
   }, [conversations, setConversations]);
 
   const removeIndexedConversation = useCallback((key: string) => {
+    const sessionId = sessionIds[key];
+    if (sessionId) {
+      setHiddenSessionIds((current) => current.includes(sessionId) ? current : [...current, sessionId]);
+    }
     setConversations(conversations.filter((item) => item.key !== key));
     setSessionIds((current) => {
       const next = { ...current };
@@ -122,7 +150,7 @@ export function useWorkspaceSessionIndex(api: ZebraApiClient, fallbackSessionId:
       delete next[key];
       return next;
     });
-  }, [conversations, setConversations]);
+  }, [conversations, sessionIds, setConversations]);
 
   return {
     conversations: conversations as ConversationSeed[],

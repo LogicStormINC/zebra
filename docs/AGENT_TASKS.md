@@ -9826,11 +9826,11 @@ discovery boundary without reopening launch configuration scope.
 
 ### P106-APP-01 - Durable Recent Session Discovery
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P105-CLOSE-01`
-- Suggested branch: `codex/p106-app-01-durable-session-discovery`
+- Branch: `codex/p106-app-01-durable-session-discovery`
 - Owned paths: `packages/agent-core/src/agent_core/ports/projection_store.py`, `packages/agent-storage/src/agent_storage/projections.py`, `apps/api/src/zebra_agent_api/`, `tests/api/`, `tests/agent_storage/`, `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
 #### Goal
@@ -9848,8 +9848,8 @@ discarding unsent local drafts.
 
 #### Acceptance
 
-- [ ] A fresh desktop storage profile can discover recent durable sessions from the configured API.
-- [ ] Recent-session results are bounded, newest first, and use the same durable status, workspace, and policy projections as session detail.
-- [ ] Desktop reconciliation does not duplicate sessions or discard unsent local drafts.
-- [ ] Authentication and invalid-limit behavior match existing API conventions.
-- [ ] Focused backend and frontend checks, `pnpm build`, and `make check` pass.
+- [x] A fresh desktop storage profile can discover recent durable sessions from the configured API.
+- [x] Recent-session results are bounded, newest first, and use the same durable status, workspace, and policy projections as session detail.
+- [x] Desktop reconciliation does not duplicate sessions or discard unsent local drafts.
+- [x] Authentication and invalid-limit behavior match existing API conventions.
+- [x] Focused backend and frontend checks, `pnpm build`, and `make check` pass.

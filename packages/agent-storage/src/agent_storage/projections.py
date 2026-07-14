@@ -117,6 +117,43 @@ class SQLiteProjectionStore(ProjectionStorePort):
             for row in rows
         ]
 
+    def list_recent_sessions(self, *, limit: int) -> list[Session]:
+        if limit <= 0:
+            return []
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    session_id,
+                    title,
+                    status,
+                    created_at,
+                    updated_at,
+                    current_sequence,
+                    approval_context_json
+                FROM session_projections
+                ORDER BY updated_at DESC, created_at DESC, session_id ASC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        return [
+            Session.model_validate(
+                {
+                    "session_id": row["session_id"],
+                    "title": row["title"],
+                    "status": SessionStatus(row["status"]),
+                    "created_at": row["created_at"],
+                    "updated_at": row["updated_at"],
+                    "current_sequence": row["current_sequence"],
+                    "approval_context": _approval_context_from_json(
+                        row["approval_context_json"]
+                    ),
+                }
+            )
+            for row in rows
+        ]
+
     def _initialize(self) -> None:
         with self._database.connect() as connection:
             connection.execute(

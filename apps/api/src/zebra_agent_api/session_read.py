@@ -22,7 +22,6 @@ from agent_storage import (
     serialize_session_artifact_projection,
 )
 
-from zebra_agent_api.approval_context import serialize_approval_context
 from zebra_agent_api.artifact_access import (
     ArtifactAccessContext,
     build_artifact_access_metadata,
@@ -140,7 +139,7 @@ from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.session_context import session_workspace_root
 from zebra_agent_api.session_delivery_audit import SessionDeliveryAuditApi
 from zebra_agent_api.session_payloads import parse_memory_overview_payload
-from zebra_agent_api.workspace_read import serialize_workspace_projection
+from zebra_agent_api.session_summary import serialize_session_summary
 
 
 def _parse_session_id(session_id: str) -> SessionId | ApiResponse:
@@ -174,22 +173,10 @@ class SessionReadApi:
                     "status": "not_found",
                 },
             )
-        body: dict[str, object] = {
-            "session_id": str(session.session_id),
-            "title": session.title,
-            "status": session.status.value,
-            "current_sequence": session.current_sequence,
-        }
         workspace = SQLiteWorkspaceProjectionStore(self.database_path).get_workspace(session_key)
-        serialized_workspace = serialize_workspace_projection(workspace)
-        if serialized_workspace is not None:
-            body["workspace"] = serialized_workspace
-        approval_context = serialize_approval_context(session.approval_context)
-        if approval_context is not None:
-            body["approval_context"] = approval_context
         return ApiResponse(
             status_code=200,
-            body=body,
+            body=serialize_session_summary(session, workspace),
         )
 
     def get_session_stream(self, session_id: str) -> ApiResponse:
