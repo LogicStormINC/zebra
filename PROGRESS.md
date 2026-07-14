@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-14: merged `P112-HAR-01` through GitHub PR `#60` and closed Phase 112; Phase 113 is limited to binding approval to one immutable pending tool call, executing that exact call after grant, and converging to a grounded final answer without a replacement model proposal. Multi-tool execution and automatic replay of uncertain side effects remain later boundaries.
 - 2026-07-14: completed `P112-HAR-01` implementation and real-provider acceptance on `codex/p112-har-01-tool-result-synthesis`; provider-neutral messages now preserve assistant tool calls and matching provider call ids, the OpenAI-compatible adapter serializes assistant and tool turns, and production local runtime and worker composition use a two-call budget to persist the final grounded answer. A real `deepseek-v4-flash` run read the isolated `ZEBRA_TOOL_RESULT_SYNTHESIS_OK` payload through `files.read`, returned that exact value as the final answer, and durably recorded both model responses plus `model_calls_used=2`. All `953` tests, Ruff, Mypy across `204` files, and the 8-case eval release gate passed. Approval continuation and additional tool calls remain explicit non-goals.
 - 2026-07-14: merged `P111-MDL-01` through GitHub PR `#58` and closed Phase 111; Phase 112 is limited to feeding one allowed tool result back to the provider for a final grounded answer, while approval continuation and multi-tool loops remain later boundaries.
 - 2026-07-14: completed `P111-MDL-01` implementation and real-provider acceptance on `codex/p111-mdl-01-provider-tool-discovery`; `agent-core` now defines provider-neutral model tool contracts, the executable `ToolRegistry` deterministically projects its registered builtins into JSON Schema definitions, and the OpenAI-compatible adapter maps dotted internal names to provider-safe aliases while rejecting unadvertised calls. Local API, CLI, and worker execution now advertise the same tools they execute. A real `deepseek-v4-flash` run selected `files.read`, passed the `workspace_write` policy, and read the isolated proof payload through the local tool gateway. The ignored credential remained untracked; `950` tests, Ruff, Mypy across `204` files, and the 8-case eval release gate passed. Tool-result synthesis and exact approval continuation remain explicit later boundaries.
@@ -40,10 +41,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 112 - Tool Result Synthesis And Final Response`
-- Repository status: `phase 111 closed; P112-HAR-01 is in review`
+- Active phase: `Phase 113 - Exact Approved Tool Continuation`
+- Repository status: `phase 112 closed; P113-HITL-01 is ready`
 - Current focus:
-  - `P112-HAR-01` is in review after deterministic, full-repository, and real `deepseek-v4-flash` acceptance of one-tool result synthesis and durable final-answer readback
+  - `P113-HITL-01` is ready to persist one immutable pending tool call, bind approval to it, execute it after grant without a replacement model proposal, and converge the desktop task to a grounded terminal answer
+  - `P112-HAR-01` was merged through GitHub PR `#60` after deterministic, full-repository, and real `deepseek-v4-flash` acceptance of one-tool result synthesis and durable final-answer readback
+  - `P112-CLOSE-01` records the Phase 112 closeout and the explicit Phase 113 ownership boundary
   - `P111-MDL-01` was merged through GitHub PR `#58` after registry-backed JSON Schema advertisement, provider-safe tool-name mapping, real DeepSeek `files.read` execution, and full repository gates
   - `P111-CLOSE-01` records the Phase 111 closeout and the explicit Phase 112 ownership boundary
   - `P110-INT-01` was merged through GitHub PR `#56` after the product-positioning correction, default code-delivery UI removal, approval-driven HITL validation, real DeepSeek completion, active-task reload restoration, and full repository gates
