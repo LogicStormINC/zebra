@@ -9929,7 +9929,7 @@ identity boundary without reopening project discovery or navigation scope.
 
 ### P108-UI-01 - Project-Aware Workspace Identity
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P107-CLOSE-01`
@@ -9956,3 +9956,53 @@ metadata that the backend does not persist.
 - [x] Unbound tasks never inherit a configured or hard-coded project name.
 - [x] Full workspace paths remain available without widening the compact desktop layout.
 - [x] Focused frontend checks, `pnpm build`, and `make check` pass.
+
+### P108-CLOSE-01 - Phase 108 Closeout And Phase 109 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P108-UI-01`
+- Branch: `codex/p108-closeout-phase109-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 108 acceptance state and define the next task
+visibility boundary without reopening workspace identity scope.
+
+#### Acceptance
+
+- [x] `P108-UI-01` is recorded as merged through PR `#52` and done.
+- [x] Phase 109 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 109 Task Board
+
+### P109-UI-01 - Reversible Task Visibility
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P108-CLOSE-01`
+- Suggested branch: `codex/p109-ui-01-reversible-task-visibility`
+- Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Replace misleading destructive task controls with truthful local draft deletion
+and reversible durable-session hiding, without inventing a backend delete API.
+
+#### Deliverables
+
+- distinct delete-draft and hide-durable-task labels and icons based on durable session binding
+- persisted local hide tombstones with an explicit restore-hidden-tasks control
+- immediate restoration from the latest authoritative recent-session snapshot
+- deterministic reconciliation coverage for hide persistence and restoration
+
+#### Acceptance
+
+- [ ] Local drafts are presented as deletable while durable sessions are presented as hideable.
+- [ ] Hiding a durable task never sends a backend delete request and survives reload.
+- [ ] Operators can restore hidden recent tasks without clearing browser storage or restarting the app.
+- [ ] Restoring tasks preserves durable title, workspace, status, and session binding.
+- [ ] Focused frontend checks, `pnpm build`, and `make check` pass.

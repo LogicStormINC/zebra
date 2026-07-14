@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-14: merged `P108-UI-01` through GitHub PR `#52` and closed Phase 108; Phase 109 is limited to replacing misleading task deletion semantics with explicit local draft deletion and reversible durable-session hiding.
 - 2026-07-14: completed `P108-UI-01` implementation and browser acceptance on `codex/p108-ui-01-project-aware-workspace-identity`; idle workspace titles now follow selected workspace projects, unbound navigation remains explicitly unbound, and active-session Inspector identity comes only from durable session workspace evidence with full paths retained as accessible titles. Browser validation covered B-to-A switching, unbound selection, durable B session readback, and a viewport-bound `1200x762` layout. All `946` backend tests, Ruff, Mypy, the eval release gate, focused project, index, launch, delivery, live, and runtime checks, and the production build passed.
 - 2026-07-14: merged `P107-UI-01` through GitHub PR `#50` and closed Phase 107; Phase 108 is limited to replacing the remaining hard-coded desktop project identity with selected-project or durable-session workspace evidence.
 - 2026-07-14: completed `P107-UI-01` implementation and browser acceptance on `codex/p107-ui-01-workspace-project-navigation`; the desktop now projects project navigation from configured launch state plus durable workspace roots, filters task lists by exact normalized workspace identity, keeps unbound tasks visible, and updates only the new-task launch target when a project is selected. Browser validation covered two durable workspaces, the unbound bucket, Composer workspace synchronization, unchanged existing-session configuration, and a viewport-bound `1200x762` layout. All `946` backend tests, Ruff, Mypy, the eval release gate, focused project, index, launch, delivery, live, and runtime checks, and the production build passed.
@@ -32,10 +33,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 108 - Project-Aware Workspace Identity`
-- Repository status: `phase 107 closed; P108-UI-01 is in review`
+- Active phase: `Phase 109 - Reversible Task Visibility`
+- Repository status: `phase 108 closed; P109-UI-01 is ready`
 - Current focus:
-  - `P108-UI-01` is in review on `codex/p108-ui-01-project-aware-workspace-identity` after full backend and frontend gates plus browser validation of selected-project titles, explicit unbound identity, durable session identity, full-path accessibility, and viewport containment
+  - `P109-UI-01` is ready to distinguish local draft deletion from durable-session hiding and add explicit restoration without a backend delete contract
+  - `P108-UI-01` was merged through GitHub PR `#52` after full backend and frontend gates plus browser validation of selected-project titles, explicit unbound identity, durable session identity, full-path accessibility, and viewport containment
+  - `P108-CLOSE-01` records the Phase 108 closeout and the explicit Phase 109 ownership boundary
   - `P107-UI-01` was merged through GitHub PR `#50` after full backend and frontend gates plus browser validation of durable project grouping, exact-workspace task filtering, unbound visibility, launch-target synchronization, and existing-session immutability
   - `P107-CLOSE-01` records the Phase 107 closeout and the explicit Phase 108 ownership boundary
   - `P106-APP-01` was merged through GitHub PR `#48` after full backend and frontend gates plus browser validation of fresh-profile recovery, local-draft preservation, durable workspace readback, and local hide persistence
