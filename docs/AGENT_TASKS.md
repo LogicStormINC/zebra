@@ -9826,7 +9826,7 @@ discovery boundary without reopening launch configuration scope.
 
 ### P106-APP-01 - Durable Recent Session Discovery
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P105-CLOSE-01`
@@ -9853,3 +9853,55 @@ discarding unsent local drafts.
 - [x] Desktop reconciliation does not duplicate sessions or discard unsent local drafts.
 - [x] Authentication and invalid-limit behavior match existing API conventions.
 - [x] Focused backend and frontend checks, `pnpm build`, and `make check` pass.
+
+### P106-CLOSE-01 - Phase 106 Closeout And Phase 107 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P106-APP-01`
+- Branch: `codex/p106-closeout-phase107-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 106 acceptance state and define the next workspace
+navigation boundary without reopening durable session discovery scope.
+
+#### Acceptance
+
+- [x] `P106-APP-01` is recorded as merged through PR `#48` and done.
+- [x] Phase 107 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 107 Task Board
+
+### P107-UI-01 - Workspace-Backed Project Navigation
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P106-CLOSE-01`
+- Suggested branch: `codex/p107-ui-01-workspace-project-navigation`
+- Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Replace the hard-coded single project card with workspace-backed project
+navigation derived from durable session evidence and the configured launch
+workspace, without introducing a second project database.
+
+#### Deliverables
+
+- deterministic project projection from durable session workspace roots plus the configured launch workspace
+- sidebar project cards with active project state and task filtering by selected workspace
+- project selection that updates the new-task workspace while existing sessions continue to display their durable workspace
+- an explicit unbound bucket for drafts or sessions without workspace evidence
+- focused checks for project identity, deduplication, ordering, filtering, and launch-workspace selection
+
+#### Acceptance
+
+- [ ] The project section no longer hard-codes `zebra-agent` when durable workspace evidence is available.
+- [ ] Selecting a project shows only its tasks and prepares new tasks for that workspace.
+- [ ] Existing session workspace and policy remain durable and are not rewritten by project selection.
+- [ ] Drafts and sessions without workspace evidence remain visible in an explicit unbound project.
+- [ ] Focused frontend checks, `pnpm build`, and `make check` pass.
