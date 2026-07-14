@@ -29,7 +29,7 @@ class OpenAICompatibleModelGateway:
         base_url: str,
         api_key: str,
         model_name: str,
-        timeout_s: float = 30.0,
+        timeout_s: float = 180.0,
         client: httpx.Client | None = None,
     ) -> None:
         self._provider_name = provider_name
