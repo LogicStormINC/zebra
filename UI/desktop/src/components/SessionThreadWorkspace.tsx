@@ -5,6 +5,7 @@ import type { ChatMessage } from "../lib/chat-surface";
 import { extractChangedFiles } from "../lib/session-results";
 import type { SessionResultSurface } from "../lib/session-results";
 import type { SessionDeliveryController } from "../lib/session-delivery";
+import { compactWorkspaceLabel } from "../lib/task-launch-config";
 import type { ApprovalSummary, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
 import { AssistantMessageBlock } from "./AssistantMessageBlock";
 import { SessionExecutionTrace } from "./SessionExecutionTrace";
@@ -85,12 +86,6 @@ function formatTime(value: string) {
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
 }
 
-function shortWorkspace(path?: string) {
-  if (!path) return locale.notBound;
-  const parts = path.split("/").filter(Boolean);
-  return parts[parts.length - 1] ?? path;
-}
-
 interface SessionThreadWorkspaceProps {
   activeLabel: string;
   activeApproval: ApprovalSummary | undefined;
@@ -131,6 +126,8 @@ export function SessionThreadWorkspace({
   const files = extractChangedFiles(resultSurface?.diff ?? null);
   const artifacts = resultSurface?.artifacts?.artifacts ?? [];
   const audit = resultSurface?.deliveryAudit?.delivery_audit ?? [];
+  const workspaceRoot = sessionSummary?.workspace?.workspace_root;
+  const projectLabel = workspaceRoot ? compactWorkspaceLabel(workspaceRoot) : locale.unboundProject;
   const populatedStages = STAGES.map((stage) => ({
     ...stage,
     events: events.filter((event) => eventStage(event) === stage.key),
@@ -154,8 +151,8 @@ export function SessionThreadWorkspace({
     if (isDraft) return <p className={styles.empty}>{locale.inspectorEmpty}</p>;
     if (inspectorTab === "context") {
       return <div className={styles.inspectorList}>
-        <div className={styles.inspectorRow}><span>{locale.project}</span><span>zebra-agent</span></div>
-        <div className={styles.inspectorRow}><span>{locale.workspace}</span><span>{shortWorkspace(sessionSummary?.workspace?.workspace_root)}</span></div>
+        <div className={styles.inspectorRow}><span>{locale.project}</span><span title={workspaceRoot ?? locale.workspaceUnbound}>{projectLabel}</span></div>
+        <div className={styles.inspectorRow}><span>{locale.workspace}</span><span title={workspaceRoot ?? locale.workspaceUnbound}>{workspaceRoot ? compactWorkspaceLabel(workspaceRoot) : locale.notBound}</span></div>
         <div className={styles.inspectorRow}><span>{locale.policy}</span><span>{sessionSummary?.workspace?.policy_profile ?? locale.notBound}</span></div>
         <div className={styles.inspectorRow}><span>{locale.attempt}</span><span>{sessionSummary?.workspace?.last_attempt_number ?? 0}</span></div>
         <div className={styles.inspectorRow}><span>{locale.sequence}</span><span>{sessionSummary?.current_sequence ?? events.length}</span></div>

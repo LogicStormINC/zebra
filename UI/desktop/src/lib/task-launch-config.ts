@@ -26,7 +26,9 @@ export function validateTaskLaunchConfig(config: TaskLaunchConfig): string | nul
 }
 
 export function compactWorkspaceLabel(workspace: string): string {
-  const normalized = workspace.trim().replace(/\/+$/, "");
-  if (!normalized || normalized === ".") return normalized || "未配置";
+  const trimmed = workspace.trim();
+  if (!trimmed || trimmed === ".") return trimmed || "未配置";
+  if (/^\/+$/u.test(trimmed)) return "/";
+  const normalized = trimmed.replace(/\/+$/, "");
   return normalized.split("/").filter(Boolean).pop() ?? normalized;
 }

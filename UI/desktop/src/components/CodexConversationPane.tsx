@@ -41,6 +41,8 @@ interface CodexConversationPaneProps {
   delivery: SessionDeliveryController;
   conversations: ConversationSeed[];
   events: SessionEvent[];
+  idleProjectLabel: string;
+  idleProjectPath: string | null;
   isWorkspaceIdle: boolean;
   isRequesting: boolean;
   listRef: React.RefObject<HTMLDivElement | null>;
@@ -84,6 +86,8 @@ export function CodexConversationPane({
   delivery,
   conversations,
   events,
+  idleProjectLabel,
+  idleProjectPath,
   isWorkspaceIdle,
   isRequesting,
   listRef,
@@ -126,7 +130,7 @@ export function CodexConversationPane({
     : { workspace: durableWorkspace, policyProfile: durablePolicy };
   const launchError = validateTaskLaunchConfig(effectiveLaunchConfig);
   const canSubmit = composerValue.trim().length > 0 && !launchError;
-  const headerTitle = hasThread ? activeLabel : locale.idleProjectName;
+  const headerTitle = hasThread ? activeLabel : idleProjectLabel;
   const runtimeLabel = runtimeStatus === "connected"
     ? locale.runtimeConnected
     : runtimeStatus === "checking"
@@ -309,7 +313,7 @@ export function CodexConversationPane({
             <FileTextOutlined />
           </span>
           <div className={styles.titleBlock}>
-            <h1>{headerTitle}</h1>
+            <h1 title={hasThread ? undefined : idleProjectPath ?? locale.workspaceUnbound}>{headerTitle}</h1>
             <span className={styles.titleMeta}>{headerMeta}</span>
           </div>
         </div>

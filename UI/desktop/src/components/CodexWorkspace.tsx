@@ -7,7 +7,7 @@ import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { SessionResultSurface } from "../lib/session-results";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
 import type { SessionDeliveryController } from "../lib/session-delivery";
-import type { TaskLaunchConfig } from "../lib/task-launch-config";
+import { compactWorkspaceLabel, type TaskLaunchConfig } from "../lib/task-launch-config";
 import { useTaskLaunchConfig } from "../lib/use-task-launch-config";
 import {
   projectWorkspaceNavigation,
@@ -107,6 +107,9 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
     () => workspaceProjectId(launch.config.workspace),
   );
   const selectedProject = projects.find((project) => project.id === selectedProjectId) ?? projects[0];
+  const selectedProjectLabel = selectedProject?.workspaceRoot
+    ? compactWorkspaceLabel(selectedProject.workspaceRoot)
+    : locale.unboundProject;
   const visibleKeys = new Set(selectedProject?.conversationKeys ?? []);
   const visibleConversations = props.conversations.filter((conversation) => visibleKeys.has(conversation.key));
   const patchLaunchConfig = (patch: Partial<TaskLaunchConfig>) => {
@@ -152,6 +155,8 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             events={props.events}
             isRequesting={props.isRequesting}
             isWorkspaceIdle={props.isWorkspaceIdle}
+            idleProjectLabel={selectedProjectLabel}
+            idleProjectPath={selectedProject?.workspaceRoot ?? null}
             listRef={props.listRef}
             launchConfig={launch.config}
             messages={props.messages}

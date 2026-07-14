@@ -9929,11 +9929,11 @@ identity boundary without reopening project discovery or navigation scope.
 
 ### P108-UI-01 - Project-Aware Workspace Identity
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P107-CLOSE-01`
-- Suggested branch: `codex/p108-ui-01-project-aware-workspace-identity`
+- Branch: `codex/p108-ui-01-project-aware-workspace-identity`
 - Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
 #### Goal
@@ -9951,8 +9951,8 @@ metadata that the backend does not persist.
 
 #### Acceptance
 
-- [ ] Switching projects updates the idle workspace identity consistently with sidebar selection and launch configuration.
-- [ ] Opening an existing session displays project identity from its durable workspace even when the new-task project differs.
-- [ ] Unbound tasks never inherit a configured or hard-coded project name.
-- [ ] Full workspace paths remain available without widening the compact desktop layout.
-- [ ] Focused frontend checks, `pnpm build`, and `make check` pass.
+- [x] Switching projects updates the idle workspace identity consistently with sidebar selection and launch configuration.
+- [x] Opening an existing session displays project identity from its durable workspace even when the new-task project differs.
+- [x] Unbound tasks never inherit a configured or hard-coded project name.
+- [x] Full workspace paths remain available without widening the compact desktop layout.
+- [x] Focused frontend checks, `pnpm build`, and `make check` pass.
