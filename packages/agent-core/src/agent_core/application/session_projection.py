@@ -55,6 +55,14 @@ def apply_event(session: Session, event: SessionEvent) -> Session:
     approval_context = _approval_context_from_event(event)
     if approval_context is not None:
         updates["approval_context"] = approval_context
+    elif event.event_type in {
+        EventType.APPROVAL_GRANTED,
+        EventType.APPROVAL_REJECTED,
+        EventType.SESSION_COMPLETED,
+        EventType.SESSION_FAILED,
+        EventType.SESSION_CANCELLED,
+    }:
+        updates["approval_context"] = None
     return projected.model_copy(update=updates)
 
 
@@ -102,6 +110,11 @@ def _approval_context_from_event(event: SessionEvent) -> ApprovalContext | None:
         target=_optional_payload_string(event, "target"),
         network_profile=_optional_payload_string(event, "network_profile"),
         scope=_payload_scope(event),
+        tool_call_id=_optional_payload_string(event, "tool_call_id"),
+        provider_call_id=_optional_payload_string(event, "provider_call_id"),
+        arguments=_payload_arguments(event),
+        assistant_message=_optional_payload_string(event, "assistant_message"),
+        call_fingerprint=_optional_payload_string(event, "call_fingerprint"),
     )
 
 
@@ -117,3 +130,8 @@ def _payload_scope(event: SessionEvent) -> tuple[str, ...]:
     if not isinstance(scope, list | tuple):
         return ()
     return tuple(item for item in scope if isinstance(item, str) and item.strip())
+
+
+def _payload_arguments(event: SessionEvent) -> dict[str, object]:
+    value = event.payload.get("arguments")
+    return dict(value) if isinstance(value, dict) else {}

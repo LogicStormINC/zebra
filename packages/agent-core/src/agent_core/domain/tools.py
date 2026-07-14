@@ -1,5 +1,7 @@
+import json
 from datetime import datetime
 from enum import StrEnum
+from hashlib import sha256
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -21,6 +23,17 @@ class ToolCall(BaseModel):
     arguments: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
     provider_call_id: str | None = None
+
+    @property
+    def approval_fingerprint(self) -> str:
+        payload = {
+            "arguments": self.arguments,
+            "name": self.name,
+            "provider_call_id": self.provider_call_id,
+            "tool_call_id": str(self.tool_call_id),
+        }
+        encoded = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
+        return sha256(encoded).hexdigest()
 
     @field_validator("name")
     @classmethod

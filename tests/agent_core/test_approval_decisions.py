@@ -7,7 +7,7 @@ from agent_core.application.approvals import (
     ApprovalDecisionService,
 )
 from agent_core.domain.events import EventType
-from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 
 
 def _waiting_session() -> Session:
@@ -58,6 +58,33 @@ def test_approval_decision_service_builds_rejected_event() -> None:
 
     assert event.event_type is EventType.APPROVAL_REJECTED
     assert event.payload["operator"] == "bob"
+
+
+def test_approval_grant_is_bound_to_pending_tool_call() -> None:
+    session = _waiting_session().model_copy(
+        update={
+            "approval_context": ApprovalContext(
+                tool_name="command.run",
+                reason="manual review",
+                policy_profile="workspace_write",
+                tool_call_id="00000000-0000-0000-0000-000000000113",
+                call_fingerprint="fingerprint-113",
+            )
+        }
+    )
+
+    event = ApprovalDecisionService().build_event(
+        session=session,
+        next_sequence=4,
+        command=ApprovalDecisionCommand(
+            action=ApprovalDecisionAction.GRANT,
+            operator="alice",
+            reason="safe to continue",
+        ),
+    )
+
+    assert event.payload["tool_call_id"] == "00000000-0000-0000-0000-000000000113"
+    assert event.payload["call_fingerprint"] == "fingerprint-113"
 
 
 def test_approval_decision_service_rejects_non_waiting_session() -> None:

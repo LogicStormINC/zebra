@@ -38,6 +38,10 @@ from agent_storage import (
 )
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
+from zebra_agent_worker.approved_continuation import (
+    ApprovedContinuationError,
+    recover_approved_continuation,
+)
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 from zebra_agent_worker.control import SessionControlError, SessionControlService
 from zebra_agent_worker.model_call_index import ModelCallIndexer
@@ -128,13 +132,14 @@ class SessionExecutionService:
                 recovery=self._recovery_service.recover_session(session_id),
                 lease=claimed.lease,
             )
+        session_events = self._event_store.list_for_session(session_id)
         task = _recover_task(
-            self._event_store.list_for_session(session_id),
+            session_events,
             workspace=claimed.recovery.workspace,
             fallback_title=claimed.recovery.session.title,
         )
         tool_gateway = LocalToolGateway(task.workspace_root)
-        attempt_result = SingleAttemptOrchestrator(
+        orchestrator = SingleAttemptOrchestrator(
             build_model_gateway(self._settings),
             LocalPolicyEngine(profile=PolicyProfile(task.policy_profile)),
             tool_gateway,
@@ -143,23 +148,48 @@ class SessionExecutionService:
                 available_tools=tool_gateway.model_tools,
             ),
             synthesize_tool_results=True,
-        ).run(
-            HarnessContext(
-                task=HarnessTask(
-                    title=task.title,
-                    user_input=task.user_input,
-                    max_attempts=task.max_attempts,
-                    max_model_calls=task.max_model_calls,
-                    max_tool_calls=task.max_tool_calls,
-                    workspace_root=task.workspace_root,
-                    confirmed_memories=list_confirmed_repo_memories(
-                        self._database_path,
-                        repo_id=str(task.workspace_root.resolve()),
-                    ),
+        )
+        context = HarnessContext(
+            task=HarnessTask(
+                title=task.title,
+                user_input=task.user_input,
+                max_attempts=task.max_attempts,
+                max_model_calls=task.max_model_calls,
+                max_tool_calls=task.max_tool_calls,
+                workspace_root=task.workspace_root,
+                confirmed_memories=list_confirmed_repo_memories(
+                    self._database_path,
+                    repo_id=str(task.workspace_root.resolve()),
                 ),
-                session=claimed.recovery.session,
-                attempt=HarnessAttempt(number=1, started_at=started_at),
+            ),
+            session=claimed.recovery.session,
+            attempt=HarnessAttempt(number=1, started_at=started_at),
+        )
+        try:
+            continuation = recover_approved_continuation(session_events)
+        except ApprovedContinuationError as exc:
+            self._claim_service.release_claim(claimed)
+            raise WorkerExecutionError(str(exc)) from exc
+        if continuation is not None:
+            claimed = self._mark_approved_continuation_started(
+                claimed,
+                tool_name=continuation.tool_call.name,
+                tool_call_id=str(continuation.tool_call.tool_call_id),
+                started_at=started_at,
             )
+        context = HarnessContext(
+            task=context.task,
+            session=claimed.recovery.session,
+            attempt=context.attempt,
+        )
+        attempt_result = (
+            orchestrator.continue_approved_tool_call(
+                context,
+                initial_completion=continuation.completion,
+                tool_call=continuation.tool_call,
+            )
+            if continuation is not None
+            else orchestrator.run(context)
         )
         emitted_events = _append_execution_events(
             session=claimed.recovery.session,
@@ -172,6 +202,7 @@ class SessionExecutionService:
             model_call_indexer=self._model_call_indexer,
             tool_run_indexer=self._tool_run_indexer,
             started_at=started_at,
+            attempt_already_started=continuation is not None,
         )
         final_session = self._projection_store.get_session(session_id)
         if final_session is None:
@@ -181,6 +212,45 @@ class SessionExecutionService:
             session=final_session,
             events=emitted_events,
             attempt_result=attempt_result,
+        )
+
+    def _mark_approved_continuation_started(
+        self,
+        claimed: ClaimedSession,
+        *,
+        tool_name: str,
+        tool_call_id: str,
+        started_at: datetime,
+    ) -> ClaimedSession:
+        next_sequence = claimed.recovery.session.current_sequence + 1
+        for event_type, payload in (
+            (EventType.HARNESS_ATTEMPT_STARTED, {"attempt_number": 1}),
+            (
+                EventType.TOOL_EXECUTION_STARTED,
+                {
+                    "attempt_number": 1,
+                    "tool_name": tool_name,
+                    "tool_call_id": tool_call_id,
+                    "approval_continuation": True,
+                },
+            ),
+        ):
+            self._event_store.append(
+                SessionEvent.create(
+                    session_id=claimed.recovery.session.session_id,
+                    sequence=next_sequence,
+                    event_type=event_type,
+                    actor=EventActor.HARNESS,
+                    payload=payload,
+                    created_at=started_at,
+                )
+            )
+            next_sequence += 1
+        return ClaimedSession(
+            recovery=self._recovery_service.recover_session(
+                claimed.recovery.session.session_id
+            ),
+            lease=claimed.lease,
         )
 
 
@@ -227,6 +297,7 @@ def _append_execution_events(
     model_call_indexer: ModelCallIndexer,
     tool_run_indexer: ToolRunIndexer,
     started_at: datetime,
+    attempt_already_started: bool = False,
 ) -> tuple[SessionEvent, ...]:
     current_session = session
     current_workspace = workspace_projection
@@ -255,24 +326,26 @@ def _append_execution_events(
         workspace_store.save_workspace(current_workspace)
         events.append(event)
 
-    append(
-        EventType.HARNESS_ATTEMPT_STARTED,
-        EventActor.HARNESS,
-        {"attempt_number": 1},
-    )
+    if not attempt_already_started:
+        append(
+            EventType.HARNESS_ATTEMPT_STARTED,
+            EventActor.HARNESS,
+            {"attempt_number": 1},
+        )
     for draft in attempt_result.emitted_events:
         append(draft.event_type, draft.actor, draft.payload)
-    append(
-        EventType.SESSION_COMPLETED
-        if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
-        else EventType.SESSION_FAILED,
-        EventActor.HARNESS,
-        {
-            "attempt_number": 1,
-            "summary": attempt_result.summary,
-            "metadata": attempt_result.metadata,
-        },
-    )
+    if attempt_result.outcome is not HarnessAttemptOutcome.WAITING_APPROVAL:
+        append(
+            EventType.SESSION_COMPLETED
+            if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+            else EventType.SESSION_FAILED,
+            EventActor.HARNESS,
+            {
+                "attempt_number": 1,
+                "summary": attempt_result.summary,
+                "metadata": attempt_result.metadata,
+            },
+        )
     if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
         extraction = memory_extraction_service.extract(
             session=current_session,

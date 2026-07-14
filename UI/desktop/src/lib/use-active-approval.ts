@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ApprovalSummary } from "../types";
 import { toErrorMessage } from "./chat-surface";
 import type { ZebraApiClient } from "./zebra-api";
+import { decideActiveApproval } from "./approval-continuation";
 
 export function useActiveApproval(
   api: ZebraApiClient,
@@ -23,8 +24,9 @@ export function useActiveApproval(
     enabled: Boolean(summary),
   });
   const decide = useMutation({
-    mutationFn: ({ approval, decision }: { approval: ApprovalSummary; decision: "approve" | "reject" }) =>
-      api[decision](approval.approval_id, { operator: "desktop-operator" }),
+    mutationFn: async ({ approval, decision }: { approval: ApprovalSummary; decision: "approve" | "reject" }) => {
+      return decideActiveApproval(api, approval, decision);
+    },
     onSuccess: async () => {
       await Promise.all([queue.refetch(), detail.refetch(), onChanged()]);
     },

@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import StrEnum
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 
 
 class ApprovalDecisionAction(StrEnum):
@@ -53,6 +53,20 @@ class ApprovalDecisionService:
             payload={
                 "operator": command.operator.strip(),
                 "reason": command.reason.strip(),
+                **_approval_binding(session.approval_context),
             },
             created_at=command.created_at,
         )
+
+
+def _approval_binding(context: ApprovalContext | None) -> dict[str, object]:
+    if not isinstance(context, ApprovalContext):
+        return {}
+    return {
+        key: value
+        for key, value in {
+            "tool_call_id": context.tool_call_id,
+            "call_fingerprint": context.call_fingerprint,
+        }.items()
+        if value is not None
+    }

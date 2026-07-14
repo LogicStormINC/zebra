@@ -277,18 +277,5 @@ def test_projection_rebuild_and_projection_store_keep_proxy_approval_context_con
     assert rebuilt.status.value == expected_status
     assert loaded is not None
     assert loaded.status.value == expected_status
-    assert rebuilt.approval_context is not None
-    assert loaded.approval_context is not None
-    assert rebuilt.approval_context.to_mapping() == {
-        "tool_name": "mcp.github.create_pull_request",
-        "reason": "proxy-routed external tool execution in test",
-        "policy_profile": "full_access",
-        "route": "mcp_proxy",
-        "target": "github.create_pull_request",
-        "network_profile": "mcp-proxy-only",
-        "scope": [
-            "tool:mcp.github.create_pull_request",
-            "route:mcp_proxy",
-        ],
-    }
-    assert loaded.approval_context.to_mapping() == rebuilt.approval_context.to_mapping()
+    assert rebuilt.approval_context is None
+    assert loaded.approval_context is None
