@@ -2,7 +2,12 @@
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.leases import WorkerLease
 from agent_core.domain.model_calls import ModelCallRecord
-from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
+from agent_core.domain.modeling import (
+    ModelCallMetadata,
+    ModelCompletion,
+    ModelToolDefinition,
+    ModelUsage,
+)
 from agent_core.domain.tool_runs import ToolRunRecord
 from agent_core.harness import (
     FirstToolCallSelectionStrategy,
@@ -74,6 +79,7 @@ __all__ = [
     "VerifierResult",
     "build_retry_plan_hint",
     "ModelCompletion",
+    "ModelToolDefinition",
     "ModelUsage",
     "ScriptedModelGateway",
     "ScriptedModelResponse",

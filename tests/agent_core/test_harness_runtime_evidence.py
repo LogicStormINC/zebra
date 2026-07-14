@@ -3,7 +3,7 @@ from pathlib import Path
 
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
 from agent_core.harness import (
     HarnessAttemptOutcome,
     HarnessAttemptResult,
@@ -38,7 +38,13 @@ class RecordingModelGateway:
     def __init__(self) -> None:
         self.requests: list[tuple[SessionMessage, ...]] = []
 
-    def complete(self, messages: list[SessionMessage]) -> ModelCompletion:
+    def complete(
+        self,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...] = (),
+    ) -> ModelCompletion:
+        del tools
         self.requests.append(tuple(messages))
         return ModelCompletion(
             assistant_message=SessionMessage(

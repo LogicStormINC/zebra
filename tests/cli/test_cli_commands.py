@@ -9,7 +9,12 @@ from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import MemoryId, SessionId, new_message_id, new_tool_call_id
 from agent_core.domain.memories import MemoryRecord, MemoryStatus, MemoryType, MemoryVisibility
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
+from agent_core.domain.modeling import (
+    ModelCallMetadata,
+    ModelCompletion,
+    ModelToolDefinition,
+    ModelUsage,
+)
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_core.domain.tools import ToolCall
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
@@ -264,7 +269,13 @@ def test_cli_run_command_execute_injects_confirmed_memory_into_system_prompt(
         del settings
 
         class RecordingGateway:
-            def complete(self, messages: list[SessionMessage]) -> ModelCompletion:
+            def complete(
+                self,
+                messages: list[SessionMessage],
+                *,
+                tools: tuple[ModelToolDefinition, ...] = (),
+            ) -> ModelCompletion:
+                assert tools
                 requests.append(tuple(messages))
                 return ModelCompletion(
                     assistant_message=SessionMessage(
@@ -986,7 +997,12 @@ class FakeGateway:
     def __init__(self, *, completion: ModelCompletion) -> None:
         self._completion = completion
 
-    def complete(self, messages: list[SessionMessage]) -> ModelCompletion:
+    def complete(
+        self,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...] = (),
+    ) -> ModelCompletion:
         assert len(messages) in {1, 2}
         assert messages[-1].role is MessageRole.USER
         return self._completion

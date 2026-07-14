@@ -5,6 +5,7 @@ import httpx
 import pytest
 from agent_core.domain.identifiers import MessageId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.modeling import ModelToolDefinition
 from agent_integrations import OpenAICompatibleModelGateway, build_model_gateway
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
@@ -84,6 +85,64 @@ def test_openai_compatible_gateway_parses_tool_calls() -> None:
     assert len(completion.tool_calls) == 1
     assert completion.tool_calls[0].name == "files.read"
     assert completion.tool_calls[0].arguments == {"path": "README.md"}
+
+
+def test_openai_compatible_gateway_serializes_tools_and_restores_internal_name() -> None:
+    captured: dict[str, object] = {}
+    client = httpx.Client(
+        transport=httpx.MockTransport(
+            lambda request: _handle_advertised_tool_call(request, captured)
+        )
+    )
+    gateway = OpenAICompatibleModelGateway(
+        provider_name="deepseek",
+        base_url="https://api.deepseek.com",
+        api_key="secret",
+        model_name="deepseek-v4-flash",
+        client=client,
+    )
+    tool = ModelToolDefinition(
+        name="files.read",
+        description="Read a workspace file.",
+        parameters={
+            "type": "object",
+            "properties": {"path": {"type": "string"}},
+            "required": ["path"],
+            "additionalProperties": False,
+        },
+    )
+
+    completion = gateway.complete([_user_message("Read README.md")], tools=(tool,))
+
+    assert captured["tools"] == [
+        {
+            "type": "function",
+            "function": {
+                "name": "files__read",
+                "description": "Read a workspace file.",
+                "parameters": dict(tool.parameters),
+            },
+        }
+    ]
+    assert completion.tool_calls[0].name == "files.read"
+
+
+def test_openai_compatible_gateway_rejects_unadvertised_tool_call() -> None:
+    gateway = OpenAICompatibleModelGateway(
+        provider_name="deepseek",
+        base_url="https://api.deepseek.com",
+        api_key="secret",
+        model_name="deepseek-v4-flash",
+        client=httpx.Client(transport=httpx.MockTransport(_handle_unknown_tool_call)),
+    )
+    tool = ModelToolDefinition(
+        name="files.read",
+        description="Read a workspace file.",
+        parameters={"type": "object", "properties": {}},
+    )
+
+    with pytest.raises(ValueError, match="unadvertised tool call"):
+        gateway.complete([_user_message("Run something")], tools=(tool,))
 
 
 def test_build_model_gateway_raises_when_api_key_is_missing() -> None:
@@ -222,6 +281,43 @@ def _handle_tool_call_completion(request: httpx.Request) -> httpx.Response:
     )
 
 
+def _handle_advertised_tool_call(
+    request: httpx.Request,
+    captured: dict[str, object],
+) -> httpx.Response:
+    payload = json.loads(request.content.decode("utf-8"))
+    captured["tools"] = payload["tools"]
+    return _tool_call_response("files__read", '{"path":"README.md"}')
+
+
+def _handle_unknown_tool_call(request: httpx.Request) -> httpx.Response:
+    del request
+    return _tool_call_response("command__run", '{"command":["pwd"]}')
+
+
+def _tool_call_response(name: str, arguments: str) -> httpx.Response:
+    return _json_response(
+        {
+            "model": "deepseek-v4-flash",
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "tool_calls": [
+                            {
+                                "id": "call_1",
+                                "type": "function",
+                                "function": {"name": name, "arguments": arguments},
+                            }
+                        ],
+                    }
+                }
+            ],
+        }
+    )
+
+
 def _json_response(payload: dict[str, object]) -> httpx.Response:
     return httpx.Response(status_code=200, json=payload)
 
@@ -232,3 +328,12 @@ def _created_at() -> datetime:
 
 def _message_id() -> MessageId:
     return new_message_id()
+
+
+def _user_message(content: str) -> SessionMessage:
+    return SessionMessage(
+        message_id=_message_id(),
+        role=MessageRole.USER,
+        content=content,
+        created_at=_created_at(),
+    )

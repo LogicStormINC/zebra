@@ -2,15 +2,21 @@ from datetime import UTC, datetime
 
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
 from agent_core.harness.models import HarnessTask
 from agent_core.ports.context_compiler import ContextCompilerPort
 from agent_core.ports.model_gateway import ModelGatewayPort
 
 
 class HarnessModelStep:
-    def __init__(self, context_compiler: ContextCompilerPort | None = None) -> None:
+    def __init__(
+        self,
+        context_compiler: ContextCompilerPort | None = None,
+        *,
+        available_tools: tuple[ModelToolDefinition, ...] = (),
+    ) -> None:
         self._context_compiler = context_compiler
+        self._available_tools = available_tools
 
     def request_initial_completion(
         self,
@@ -46,4 +52,4 @@ class HarnessModelStep:
                 created_at=now,
             )
         )
-        return model_gateway.complete(messages)
+        return model_gateway.complete(messages, tools=self._available_tools)

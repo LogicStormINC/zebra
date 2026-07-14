@@ -1,3 +1,5 @@
+from agent_core.domain.modeling import ModelToolDefinition
+
 from agent_tools.contracts import RegisteredTool, ToolContract, ToolHandler
 from agent_tools.errors import ToolRegistryError, UnknownToolError
 
@@ -28,3 +30,27 @@ class ToolRegistry:
 
     def names(self) -> tuple[str, ...]:
         return tuple(sorted(self._tools))
+
+    def model_tools(self) -> tuple[ModelToolDefinition, ...]:
+        definitions: list[ModelToolDefinition] = []
+        for name in self.names():
+            contract = self._tools[name].contract
+            properties = {
+                argument: dict(contract.argument_properties.get(argument, {}))
+                for argument in sorted(
+                    set(contract.argument_properties) | set(contract.required_arguments)
+                )
+            }
+            definitions.append(
+                ModelToolDefinition(
+                    name=contract.name,
+                    description=contract.description or f"Execute {contract.name}.",
+                    parameters={
+                        "type": "object",
+                        "properties": properties,
+                        "required": list(contract.required_arguments),
+                        "additionalProperties": False,
+                    },
+                )
+            )
+        return tuple(definitions)

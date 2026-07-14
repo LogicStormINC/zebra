@@ -9,6 +9,7 @@ from agent_core.domain.identifiers import (
     new_tool_call_id,
 )
 from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from pydantic import ValidationError
@@ -52,6 +53,15 @@ def test_tool_models_can_be_instantiated() -> None:
 
     assert tool_call.name == "command.run"
     assert result.status is ToolCallStatus.EXECUTED
+
+
+def test_model_tool_definition_rejects_non_object_parameter_schema() -> None:
+    with pytest.raises(ValueError, match="object JSON schema"):
+        ModelToolDefinition(
+            name="files.read",
+            description="Read a file.",
+            parameters={"type": "string", "properties": {}},
+        )
 
 
 def test_artifact_and_policy_models_can_be_instantiated() -> None:

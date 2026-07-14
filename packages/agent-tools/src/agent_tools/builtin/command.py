@@ -11,6 +11,16 @@ command_run_contract = ToolContract(
     name="command.run",
     required_arguments=("command",),
     description="Run a typed executable plus argv inside the current workspace.",
+    argument_properties={
+        "command": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 1,
+            "description": "Executable followed by argv, without shell parsing.",
+        },
+        "cwd": {"type": "string", "description": "Optional workspace-relative directory."},
+        "timeout_seconds": {"type": "number", "exclusiveMinimum": 0},
+    },
 )
 
 

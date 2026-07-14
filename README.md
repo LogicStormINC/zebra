@@ -16,6 +16,12 @@ The current repository direction is:
 - modular monolith for phase 1
 - explicit service boundaries only where security or runtime isolation requires them
 
+Provider-backed local runs advertise the executable registry as typed JSON Schema
+tools. The OpenAI-compatible adapter keeps internal dotted names while using
+provider-safe function aliases on the wire. One attempt currently executes at
+most one selected tool; feeding its result back to the model for a synthesized
+answer remains a separate loop boundary.
+
 ## Desktop UI Workspace
 
 The repository now includes an isolated frontend workspace at `UI/desktop`.

@@ -6,7 +6,12 @@ from agent_core.application import SessionBootstrapCommand, SessionBootstrapServ
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.identifiers import SessionId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
+from agent_core.domain.modeling import (
+    ModelCallMetadata,
+    ModelCompletion,
+    ModelToolDefinition,
+    ModelUsage,
+)
 from agent_core.domain.sessions import SessionStatus
 from agent_storage import (
     SQLiteEventStore,
@@ -249,7 +254,13 @@ class _FakeGateway:
     def __init__(self, *, completion: ModelCompletion) -> None:
         self._completion = completion
 
-    def complete(self, messages: list[SessionMessage]) -> ModelCompletion:
+    def complete(
+        self,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...] = (),
+    ) -> ModelCompletion:
+        assert tools
         assert len(messages) in {1, 2}
         assert messages[-1].role is MessageRole.USER
         return self._completion

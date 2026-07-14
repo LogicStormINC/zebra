@@ -105,5 +105,40 @@ def test_run_local_harness_injects_confirmed_memory_into_system_prompt(tmp_path)
     assert "Run make check before push." in gateway.requests[0][0].content
 
 
+def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
+    gateway = ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="No tool needed.",
+                        created_at=_created_at(),
+                    )
+                )
+            ),
+        )
+    )
+
+    run_local_harness(
+        prompt="Inspect the workspace.",
+        title="Runtime tool discovery test",
+        workspace_root=tmp_path.resolve(),
+        model_gateway=gateway,
+    )
+
+    tools = gateway.tool_requests[0]
+    assert tuple(tool.name for tool in tools) == (
+        "command.run",
+        "files.read",
+        "git.status",
+        "patch.apply",
+        "tests.run",
+    )
+    file_read = next(tool for tool in tools if tool.name == "files.read")
+    assert file_read.parameters["required"] == ["path"]
+
+
 def _created_at() -> datetime:
     return datetime(2026, 6, 22, 13, 0, tzinfo=UTC)

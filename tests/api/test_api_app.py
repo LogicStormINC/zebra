@@ -6,7 +6,7 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import MemoryId, SessionId, new_message_id, new_tool_call_id
 from agent_core.domain.memories import MemoryRecord, MemoryStatus, MemoryType, MemoryVisibility
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_core.domain.tools import ToolCall
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
@@ -424,7 +424,13 @@ def test_api_create_session_execute_injects_confirmed_memory_into_system_prompt(
         del settings
 
         class RecordingGateway:
-            def complete(self, messages: list[SessionMessage]) -> ModelCompletion:
+            def complete(
+                self,
+                messages: list[SessionMessage],
+                *,
+                tools: tuple[ModelToolDefinition, ...] = (),
+            ) -> ModelCompletion:
+                assert tools
                 requests.append(tuple(messages))
                 return ModelCompletion(
                     assistant_message=SessionMessage(
