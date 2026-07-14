@@ -9980,7 +9980,7 @@ visibility boundary without reopening workspace identity scope.
 
 ### P109-UI-01 - Reversible Task Visibility
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `APP`
 - Depends on: `P108-CLOSE-01`
@@ -10006,3 +10006,55 @@ and reversible durable-session hiding, without inventing a backend delete API.
 - [x] Operators can restore hidden recent tasks without clearing browser storage or restarting the app.
 - [x] Restoring tasks preserves durable title, workspace, status, and session binding.
 - [x] Focused frontend checks, `pnpm build`, and `make check` pass.
+
+### P109-CLOSE-01 - Phase 109 Closeout And Phase 110 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P109-UI-01`
+- Branch: `codex/p109-closeout-phase110-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 109 acceptance state and define a bounded real-provider
+execution closure task without broadening the desktop product surface.
+
+#### Acceptance
+
+- [x] `P109-UI-01` is recorded as merged through PR `#54` and done.
+- [x] Phase 110 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 110 Task Board
+
+### P110-INT-01 - Provider-Backed Desktop Execution Closure
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `APP`
+- Depends on: `P109-CLOSE-01`
+- Suggested branch: `codex/p110-int-01-provider-backed-desktop-execution`
+- Owned paths: `UI/desktop/`, `apps/api/`, `apps/config/`, `packages/agent-integrations/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Prove one real local desktop task from durable creation through provider-backed
+execution and final readback, fixing only integration defects exposed by that
+flow while keeping provider secrets untracked.
+
+#### Deliverables
+
+- local ignored provider configuration using the supported `deepseek-v4-flash` model
+- browser-observed create, execute, SSE event, final message, and durable status convergence
+- truthful frontend error handling for any provider or execution failure found in the flow
+- deterministic regression coverage for each code defect fixed during acceptance
+- concise startup and provider-readiness guidance aligned with the verified path
+
+#### Acceptance
+
+- [ ] No provider credential is staged, committed, logged, or returned by an API response.
+- [ ] A real desktop task reaches a terminal durable state through the configured provider.
+- [ ] The task timeline and assistant response converge without a manual page reload.
+- [ ] Reloading the task preserves its title, workspace, messages, events, and terminal status.
+- [ ] Focused integration checks, `pnpm build`, `make test`, and `make check` pass.
