@@ -12,6 +12,7 @@ from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvide
 class HarnessAttemptOutcome(StrEnum):
     COMPLETED = "completed"
     FAILED = "failed"
+    WAITING_APPROVAL = "waiting_approval"
 
 
 class HarnessStopReason(StrEnum):
@@ -21,6 +22,7 @@ class HarnessStopReason(StrEnum):
     RETRY_EXHAUSTED = "retry_exhausted"
     RETRY_ALLOWED = "retry_allowed"
     TOOL_CALL_BUDGET_EXHAUSTED = "tool_call_budget_exhausted"
+    APPROVAL_REQUIRED = "approval_required"
 
 
 @dataclass(frozen=True)

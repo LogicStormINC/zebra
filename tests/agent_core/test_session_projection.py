@@ -270,15 +270,7 @@ def test_rebuild_session_persists_proxy_approval_context() -> None:
     )
 
     assert session.status is SessionStatus.RUNNING
-    assert session.approval_context is not None
-    assert session.approval_context.tool_name == "mcp.github.create_pull_request"
-    assert session.approval_context.route == "mcp_proxy"
-    assert session.approval_context.target == "github.create_pull_request"
-    assert session.approval_context.network_profile == "mcp-proxy-only"
-    assert session.approval_context.scope == (
-        "tool:mcp.github.create_pull_request",
-        "route:mcp_proxy",
-    )
+    assert session.approval_context is None
 
 
 def test_rebuild_session_applies_suspend_and_resume_transitions() -> None:

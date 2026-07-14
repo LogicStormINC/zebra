@@ -1,7 +1,7 @@
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
-from agent_core.domain.tools import ToolCallStatus
+from agent_core.domain.tools import ToolCall, ToolCallStatus
 from agent_core.harness.hooks import (
     NoopPlanner,
     NoopVerifier,
@@ -121,13 +121,18 @@ class SingleAttemptOrchestrator:
                         actor=EventActor.POLICY,
                         payload=_approval_requested_payload(
                             attempt_number=context.attempt.number,
-                            tool_name=tool_call.name,
+                            tool_call=tool_call,
+                            assistant_message=completion.assistant_message.content,
                             decision=decision,
                         ),
                     )
                 )
             return HarnessAttemptResult(
-                outcome=HarnessAttemptOutcome.FAILED,
+                outcome=(
+                    HarnessAttemptOutcome.WAITING_APPROVAL
+                    if decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+                    else HarnessAttemptOutcome.FAILED
+                ),
                 summary=(
                     "tool call requires approval"
                     if decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
@@ -145,16 +150,58 @@ class SingleAttemptOrchestrator:
                 emitted_events=tuple(emitted_events),
             )
 
-        emitted_events.append(
-            HarnessEventDraft(
-                event_type=EventType.TOOL_EXECUTION_STARTED,
-                actor=EventActor.HARNESS,
-                payload={
-                    "attempt_number": context.attempt.number,
-                    "tool_name": tool_call.name,
-                },
-            )
+        return self._execute_tool_call(
+            context,
+            completion=completion,
+            tool_call=tool_call,
+            emitted_events=emitted_events,
+            model_calls_before_result=1,
+            metadata={
+                "plan_summary": planner_result.summary,
+                "tool_selection_summary": selection.summary,
+                "tool_selection_metadata": selection.metadata,
+            },
         )
+
+    def continue_approved_tool_call(
+        self,
+        context: HarnessContext,
+        *,
+        initial_completion: ModelCompletion,
+        tool_call: ToolCall,
+    ) -> HarnessAttemptResult:
+        return self._execute_tool_call(
+            context,
+            completion=initial_completion,
+            tool_call=tool_call,
+            emitted_events=[],
+            model_calls_before_result=0,
+            metadata={"approval_continuation": True},
+            emit_execution_started=False,
+        )
+
+    def _execute_tool_call(
+        self,
+        context: HarnessContext,
+        *,
+        completion: ModelCompletion,
+        tool_call: ToolCall,
+        emitted_events: list[HarnessEventDraft],
+        model_calls_before_result: int,
+        metadata: dict[str, object],
+        emit_execution_started: bool = True,
+    ) -> HarnessAttemptResult:
+        if emit_execution_started:
+            emitted_events.append(
+                HarnessEventDraft(
+                    event_type=EventType.TOOL_EXECUTION_STARTED,
+                    actor=EventActor.HARNESS,
+                    payload={
+                        "attempt_number": context.attempt.number,
+                        "tool_name": tool_call.name,
+                    },
+                )
+            )
         tool_result = self._tool_gateway.execute(tool_call)
         emitted_events.append(
             HarnessEventDraft(
@@ -216,7 +263,7 @@ class SingleAttemptOrchestrator:
             if final_completion is not None
             else completion.assistant_message.content
         )
-        model_calls_used = 2 if final_completion is not None else 1
+        model_calls_used = model_calls_before_result + int(final_completion is not None)
         return HarnessAttemptResult(
             outcome=(
                 HarnessAttemptOutcome.COMPLETED
@@ -231,10 +278,7 @@ class SingleAttemptOrchestrator:
             metadata={
                 "assistant_message": assistant_message,
                 "model_calls_used": model_calls_used,
-                "plan_summary": planner_result.summary,
                 "tool_name": tool_call.name,
-                "tool_selection_summary": selection.summary,
-                "tool_selection_metadata": selection.metadata,
                 "tool_status": tool_result.status.value,
                 "tool_calls_executed": 1,
                 "tool_output": tool_result.output,
@@ -242,6 +286,7 @@ class SingleAttemptOrchestrator:
                 "verification_summary": verifier_result.summary,
                 "verification_passed": verifier_result.passed,
                 "verification_metadata": verifier_result.metadata,
+                **metadata,
             },
             emitted_events=tuple(emitted_events),
         )
@@ -295,15 +340,22 @@ def _policy_decision_payload(
 def _approval_requested_payload(
     *,
     attempt_number: int,
-    tool_name: str,
+    tool_call: ToolCall,
+    assistant_message: str,
     decision: PolicyDecision,
 ) -> dict[str, object]:
     payload: dict[str, object] = {
         "attempt_number": attempt_number,
         "reason": decision.reason,
         "policy_profile": decision.policy_profile,
-        "tool_name": tool_name,
+        "tool_name": tool_call.name,
+        "arguments": tool_call.arguments,
+        "tool_call_id": str(tool_call.tool_call_id),
+        "assistant_message": assistant_message,
+        "call_fingerprint": tool_call.approval_fingerprint,
     }
+    if tool_call.provider_call_id is not None:
+        payload["provider_call_id"] = tool_call.provider_call_id
     _extend_proxy_policy_payload(payload, decision)
     return payload
 

@@ -309,7 +309,8 @@ def test_single_attempt_orchestrator_emits_approval_requested_event() -> None:
 
     assert result.attempt_result.summary == "tool call requires approval"
     assert result.attempt_result.metadata["policy_decision"] == "require_approval"
-    assert result.session.status.value == "failed"
+    assert result.session.status.value == "waiting_approval"
+    assert result.run_result.stop_reason.value == "approval_required"
     assert tool_gateway.executed_tool_call is None
     approval_event = next(
         event
@@ -321,6 +322,10 @@ def test_single_attempt_orchestrator_emits_approval_requested_event() -> None:
         "reason": "manual approval required in test",
         "policy_profile": "workspace_write",
         "tool_name": "command.run",
+        "arguments": tool_call.arguments,
+        "tool_call_id": str(tool_call.tool_call_id),
+        "assistant_message": "I will run tests.",
+        "call_fingerprint": tool_call.approval_fingerprint,
     }
     assert EventType.TOOL_EXECUTION_STARTED not in [
         event.event_type for event in result.events
@@ -404,6 +409,10 @@ def test_single_attempt_orchestrator_projects_proxy_approval_metadata() -> None:
         "reason": "proxy-routed external tool execution in test",
         "policy_profile": "full_access",
         "tool_name": "mcp.github.create_pull_request",
+        "arguments": tool_call.arguments,
+        "tool_call_id": str(tool_call.tool_call_id),
+        "assistant_message": "I will route the MCP call through the proxy path.",
+        "call_fingerprint": tool_call.approval_fingerprint,
         "route": "mcp_proxy",
         "target": "github.create_pull_request",
         "network_profile": "mcp-proxy-only",

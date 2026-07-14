@@ -100,6 +100,15 @@ class HarnessLoop:
             if run_result.can_retry:
                 continue
 
+            if attempt_result.outcome is HarnessAttemptOutcome.WAITING_APPROVAL:
+                return HarnessLoopResult(
+                    session=recorder.session,
+                    events=tuple(recorder.events),
+                    attempt_result=attempt_result,
+                    attempt_results=tuple(attempt_results),
+                    run_result=run_result,
+                )
+
             terminal_event_type = (
                 EventType.SESSION_COMPLETED
                 if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED

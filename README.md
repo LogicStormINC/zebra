@@ -20,8 +20,9 @@ Provider-backed local runs advertise the executable registry as typed JSON Schem
 tools. The OpenAI-compatible adapter keeps internal dotted names while using
 provider-safe function aliases on the wire. One attempt currently executes at
 most one selected tool, returns that result to the provider, and persists the
-grounded final answer. Approval continuation and additional tool calls remain
-explicit later loop boundaries.
+grounded final answer. Calls requiring human approval pause with immutable call
+identity and arguments; a grant resumes that exact call and then synthesizes the
+final answer. Additional or parallel tool calls remain a later loop boundary.
 
 ## Desktop UI Workspace
 

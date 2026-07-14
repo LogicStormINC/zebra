@@ -73,15 +73,4 @@ def record_approval_decision(
 def _serialize_approval_context(context: ApprovalContext | None) -> dict[str, object] | None:
     if context is None:
         return None
-    payload: dict[str, object] = {
-        "tool_name": context.tool_name,
-        "reason": context.reason,
-        "policy_profile": context.policy_profile,
-    }
-    for field in ("route", "target", "network_profile"):
-        value = getattr(context, field)
-        if isinstance(value, str) and value.strip():
-            payload[field] = value
-    if context.scope:
-        payload["scope"] = list(context.scope)
-    return payload
+    return context.to_mapping()

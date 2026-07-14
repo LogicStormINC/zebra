@@ -27,6 +27,11 @@ class ApprovalContext(BaseModel):
     target: str | None = None
     network_profile: str | None = None
     scope: tuple[str, ...] = ()
+    tool_call_id: str | None = None
+    provider_call_id: str | None = None
+    arguments: dict[str, object] = Field(default_factory=dict)
+    assistant_message: str | None = None
+    call_fingerprint: str | None = None
 
     def to_mapping(self) -> dict[str, object]:
         mapping: dict[str, object] = {
@@ -42,6 +47,17 @@ class ApprovalContext(BaseModel):
             mapping["network_profile"] = self.network_profile
         if self.scope:
             mapping["scope"] = list(self.scope)
+        for field in (
+            "tool_call_id",
+            "provider_call_id",
+            "assistant_message",
+            "call_fingerprint",
+        ):
+            value = getattr(self, field)
+            if value is not None:
+                mapping[field] = value
+        if self.arguments or self.tool_call_id is not None:
+            mapping["arguments"] = self.arguments
         return mapping
 
 

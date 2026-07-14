@@ -10203,8 +10203,8 @@ continuation without reopening multi-tool execution.
 
 ### P113-HITL-01 - Exact Approved Tool Continuation
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE`
 - Depends on: `P112-CLOSE-01`
 - Branch: `codex/p113-hitl-01-exact-approved-tool-continuation`
@@ -10229,14 +10229,14 @@ instead of asking the model to propose a replacement call.
 
 #### Acceptance
 
-- [ ] Approval readback identifies the exact immutable tool call and arguments being approved.
-- [ ] Granting approval cannot change the approved tool name, arguments, or call identity.
-- [ ] Resume executes the approved pending call without making a replacement initial model request.
-- [ ] The tool result is returned to the provider and the durable session reaches a grounded terminal state.
-- [ ] A repeated resume cannot execute an already consumed approved call again.
-- [ ] Rejection remains terminal and executes no tool.
-- [ ] The desktop approve action resumes execution and converges through existing durable stream and session reads.
-- [ ] Focused API, CLI, Worker, storage, and desktop tests plus repository gates pass.
+- [x] Approval readback identifies the exact immutable tool call and arguments being approved.
+- [x] Granting approval cannot change the approved tool name, arguments, or call identity.
+- [x] Resume executes the approved pending call without making a replacement initial model request.
+- [x] The tool result is returned to the provider and the durable session reaches a grounded terminal state.
+- [x] A repeated resume cannot execute an already consumed approved call again.
+- [x] Rejection remains terminal and executes no tool.
+- [x] The desktop approve action resumes execution and converges through existing durable stream and session reads.
+- [x] Focused API, CLI, Worker, storage, and desktop tests plus repository gates pass.
 
 #### Explicit Non-Goals
 
