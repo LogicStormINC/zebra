@@ -10145,7 +10145,7 @@ synthesis task without reopening approval continuation or multi-tool execution.
 
 ### P112-HAR-01 - Tool Result Synthesis And Final Response
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE`
 - Depends on: `P111-CLOSE-01`
@@ -10179,3 +10179,68 @@ assistant answer so provider-backed tasks finish with a result-grounded response
 - approval decision continuation of a pending tool call
 - additional or parallel tool calls after the first result
 - frontend redesign or code-delivery workflow changes
+
+### P112-CLOSE-01 - Phase 112 Closeout And Phase 113 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P112-HAR-01`
+- Branch: `codex/p112-closeout-phase113-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 112 acceptance state and define exact approved-tool
+continuation without reopening multi-tool execution.
+
+#### Acceptance
+
+- [x] `P112-HAR-01` is recorded as merged through PR `#60` and done.
+- [x] Phase 113 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 113 Task Board
+
+### P113-HITL-01 - Exact Approved Tool Continuation
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE`
+- Depends on: `P112-CLOSE-01`
+- Branch: `codex/p113-hitl-01-exact-approved-tool-continuation`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `packages/agent-runtime/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `UI/desktop/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Persist an immutable pending tool call at the approval boundary and, after a
+grant, resume by executing that exact call and synthesizing its final answer
+instead of asking the model to propose a replacement call.
+
+#### Deliverables
+
+- durable pending-call evidence with tool name, arguments, internal id,
+  provider call id, and the original assistant tool-call turn
+- approval decisions bound to the exact pending call rather than only a session
+- recovery that distinguishes an approved unconsumed call from a normal rerun
+- one guarded execution and final-response synthesis path for the recovered call
+- desktop approval flow that resumes the granted session and streams convergence
+- explicit interrupted-continuation handling without silently replaying an
+  uncertain side effect
+
+#### Acceptance
+
+- [ ] Approval readback identifies the exact immutable tool call and arguments being approved.
+- [ ] Granting approval cannot change the approved tool name, arguments, or call identity.
+- [ ] Resume executes the approved pending call without making a replacement initial model request.
+- [ ] The tool result is returned to the provider and the durable session reaches a grounded terminal state.
+- [ ] A repeated resume cannot execute an already consumed approved call again.
+- [ ] Rejection remains terminal and executes no tool.
+- [ ] The desktop approve action resumes execution and converges through existing durable stream and session reads.
+- [ ] Focused API, CLI, Worker, storage, and desktop tests plus repository gates pass.
+
+#### Explicit Non-Goals
+
+- multiple or parallel tool calls in one continuation
+- automatic replay after an interruption with uncertain external side effects
+- generic distributed workflow scheduling
+- code-delivery-specific UI
