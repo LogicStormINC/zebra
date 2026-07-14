@@ -21,7 +21,6 @@ import type { SessionResultSurface } from "../lib/session-results";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
 import type { SessionDeliveryController } from "../lib/session-delivery";
 import { compactWorkspaceLabel, validateTaskLaunchConfig, type TaskLaunchConfig } from "../lib/task-launch-config";
-import { useTaskLaunchConfig } from "../lib/use-task-launch-config";
 import type { ApprovalSummary, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
 import { ArtifactDetailDrawer } from "./ArtifactDetailDrawer";
 import { SessionThreadWorkspace } from "./SessionThreadWorkspace";
@@ -46,6 +45,7 @@ interface CodexConversationPaneProps {
   isRequesting: boolean;
   listRef: React.RefObject<HTMLDivElement | null>;
   messages: ChatMessage[];
+  launchConfig: TaskLaunchConfig;
   onCancel: () => void;
   onCloseArtifact: () => void;
   onCopySessionId: () => void;
@@ -56,6 +56,7 @@ interface CodexConversationPaneProps {
   onResumeSession: () => void;
   onSuspendSession: () => void;
   onOpenArtifact: (artifactId: string) => void;
+  onPatchLaunchConfig: (patch: Partial<TaskLaunchConfig>) => void;
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onRefreshConversation: () => void;
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
@@ -87,6 +88,7 @@ export function CodexConversationPane({
   isRequesting,
   listRef,
   messages,
+  launchConfig,
   onCancel,
   onCloseArtifact,
   onCopySessionId,
@@ -97,6 +99,7 @@ export function CodexConversationPane({
   onResumeSession,
   onSuspendSession,
   onOpenArtifact,
+  onPatchLaunchConfig,
   onApprove,
   onRefreshConversation,
   onReject,
@@ -113,14 +116,13 @@ export function CodexConversationPane({
   const { styles } = useConversationPaneStyle();
   const { styles: launchStyles } = useTaskLaunchStyle();
   const [composerValue, setComposerValue] = React.useState("");
-  const launch = useTaskLaunchConfig();
   const hasThread = !isWorkspaceIdle;
   const hasSessionThread = Boolean(currentSessionId) || messages.length > 0 || events.length > 0;
   const launchEditable = !currentSessionId;
   const durableWorkspace = sessionSummary?.workspace?.workspace_root ?? "";
   const durablePolicy = sessionSummary?.workspace?.policy_profile === "full_access" ? "full_access" : "workspace_write";
   const effectiveLaunchConfig: TaskLaunchConfig = launchEditable
-    ? launch.config
+    ? launchConfig
     : { workspace: durableWorkspace, policyProfile: durablePolicy };
   const launchError = validateTaskLaunchConfig(effectiveLaunchConfig);
   const canSubmit = composerValue.trim().length > 0 && !launchError;
@@ -152,10 +154,12 @@ export function CodexConversationPane({
     <div className={launchStyles.editor}>
       <strong>新任务工作区</strong>
       <Input
-        onChange={(event) => launch.patchConfig({ workspace: event.target.value })}
+        aria-label="新任务工作区"
+        name="task-workspace"
+        onChange={(event) => onPatchLaunchConfig({ workspace: event.target.value })}
         placeholder="绝对路径或 ."
-        status={launch.config.workspace.trim() ? undefined : "error"}
-        value={launch.config.workspace}
+        status={launchConfig.workspace.trim() ? undefined : "error"}
+        value={launchConfig.workspace}
       />
       <span>路径由本地 API 解析；`.` 表示 API 服务当前目录。</span>
     </div>
@@ -181,16 +185,16 @@ export function CodexConversationPane({
                 </span>
                 {launchEditable ? (
                   <Popover content={workspaceEditor} placement="topLeft" trigger="click">
-                    <button className={styles.toolbarButton} type="button">工作区: {compactWorkspaceLabel(launch.config.workspace)}</button>
+                    <button className={styles.toolbarButton} type="button">工作区: {compactWorkspaceLabel(launchConfig.workspace)}</button>
                   </Popover>
                 ) : <span className={launchStyles.staticBadge}>工作区: {compactWorkspaceLabel(durableWorkspace)}</span>}
                 {launchEditable ? (
                   <Dropdown menu={{ items: [
-                    { key: "workspace_write", label: "权限: 工作区写入", onClick: () => launch.patchConfig({ policyProfile: "workspace_write" }) },
-                    { key: "full_access", label: "权限: 完整访问（允许交付）", onClick: () => launch.patchConfig({ policyProfile: "full_access" }) },
+                    { key: "workspace_write", label: "权限: 工作区写入", onClick: () => onPatchLaunchConfig({ policyProfile: "workspace_write" }) },
+                    { key: "full_access", label: "权限: 完整访问（允许交付）", onClick: () => onPatchLaunchConfig({ policyProfile: "full_access" }) },
                   ] }} trigger={["click"]}>
                     <button className={styles.toolbarButton} type="button">
-                      {launch.config.policyProfile === "full_access" ? "权限: 完整访问" : locale.accessWorkspaceWrite}
+                      {launchConfig.policyProfile === "full_access" ? "权限: 完整访问" : locale.accessWorkspaceWrite}
                     </button>
                   </Dropdown>
                 ) : <span className={launchStyles.staticBadge}>权限: {durablePolicy === "full_access" ? "完整访问" : "工作区写入"}</span>}

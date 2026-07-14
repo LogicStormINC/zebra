@@ -8,7 +8,13 @@ import type { SessionResultSurface } from "../lib/session-results";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
 import type { SessionDeliveryController } from "../lib/session-delivery";
 import type { TaskLaunchConfig } from "../lib/task-launch-config";
-import { projectWorkspaceLabel } from "../lib/workspace-projection";
+import { useTaskLaunchConfig } from "../lib/use-task-launch-config";
+import {
+  projectWorkspaceNavigation,
+  UNBOUND_PROJECT_ID,
+  workspaceProjectId,
+  type WorkspaceProject,
+} from "../lib/workspace-projects";
 import type { ApprovalSummary, OperatorConfig, SessionArtifactDetailResponse, SessionEvent, SessionSummary } from "../types";
 import { CodexConversationPane } from "./CodexConversationPane";
 import { CodexSidebar } from "./CodexSidebar";
@@ -86,29 +92,48 @@ interface CodexWorkspaceProps {
 export function CodexWorkspace(props: CodexWorkspaceProps) {
   const { styles } = useStyle();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const launch = useTaskLaunchConfig();
   const runtimeLabel = props.runtimeStatus === "connected"
     ? locale.runtimeConnected
     : props.runtimeStatus === "checking"
       ? locale.runtimeChecking
       : locale.runtimeDisconnected;
-  const workspaceRoot = props.sessionSummary?.workspace?.workspace_root;
-  const projectMeta = workspaceRoot
-    ? `${projectWorkspaceLabel(workspaceRoot, locale.workspaceUnbound)} · ${props.sessionSummary?.workspace?.status ?? locale.notBound}`
-    : locale.workspaceUnbound;
+  const projects = projectWorkspaceNavigation(
+    props.conversations,
+    props.sessionSummaries,
+    launch.config.workspace,
+  );
+  const [selectedProjectId, setSelectedProjectId] = useState(
+    () => workspaceProjectId(launch.config.workspace),
+  );
+  const selectedProject = projects.find((project) => project.id === selectedProjectId) ?? projects[0];
+  const visibleKeys = new Set(selectedProject?.conversationKeys ?? []);
+  const visibleConversations = props.conversations.filter((conversation) => visibleKeys.has(conversation.key));
+  const patchLaunchConfig = (patch: Partial<TaskLaunchConfig>) => {
+    launch.patchConfig(patch);
+    if (patch.workspace?.trim()) setSelectedProjectId(workspaceProjectId(patch.workspace));
+  };
+  const selectProject = (project: WorkspaceProject) => {
+    setSelectedProjectId(project.id);
+    if (project.workspaceRoot) launch.patchConfig({ workspace: project.workspaceRoot });
+    props.onCreateConversation();
+  };
 
   return (
     <XProvider locale={locale as any}>
       <>
         <div className={styles.shell}>
           <CodexSidebar
-            conversations={props.conversations}
+            conversations={visibleConversations}
             currentConversation={props.currentConversation}
             isWorkspaceIdle={props.isWorkspaceIdle}
             onCreateConversation={props.onCreateConversation}
             onDeleteConversation={props.onDeleteConversation}
+            onSelectProject={selectProject}
             onSelectConversation={props.onSelectConversation}
-            projectMeta={projectMeta}
+            projects={projects}
             runtimeLabel={runtimeLabel}
+            selectedProjectId={selectedProject?.id ?? UNBOUND_PROJECT_ID}
             sessionSummaries={props.sessionSummaries}
           />
           <CodexConversationPane
@@ -119,7 +144,7 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             artifactContentPreview={props.artifactContentPreview}
             artifactDetail={props.artifactDetail}
             artifactLoading={props.artifactLoading}
-            conversations={props.conversations}
+            conversations={visibleConversations}
             controlsBusy={props.controlsBusy}
             currentConversation={props.currentConversation}
             currentSessionId={props.currentSessionId}
@@ -128,6 +153,7 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             isRequesting={props.isRequesting}
             isWorkspaceIdle={props.isWorkspaceIdle}
             listRef={props.listRef}
+            launchConfig={launch.config}
             messages={props.messages}
             onCancel={props.onCancel}
             onCancelSession={props.onCancelSession}
@@ -137,6 +163,7 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             onCreateConversation={props.onCreateConversation}
             onOpenArtifact={props.onOpenArtifact}
             onOpenSettings={() => setSettingsOpen(true)}
+            onPatchLaunchConfig={patchLaunchConfig}
             onApprove={props.onApprove}
             onRefreshConversation={props.onRefreshConversation}
             onReject={props.onReject}
