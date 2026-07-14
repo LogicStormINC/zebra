@@ -10268,7 +10268,7 @@ tool-loop task without reopening parallel execution or distributed scheduling.
 
 ### P114-HAR-01 - Bounded Sequential Tool Loop
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE`
 - Depends on: `P113-CLOSE-01`
@@ -10305,3 +10305,64 @@ configured budget or safety boundary stops the loop.
 - subagent delegation or generic workflow scheduling
 - automatic replay after an interruption with uncertain external side effects
 - code-delivery-specific product behavior
+
+### P114-CLOSE-01 - Phase 114 Closeout And Phase 115 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P114-HAR-01`
+- Branch: `codex/p114-closeout-phase115-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 114 acceptance state and define deterministic handling
+for complete provider tool-call batches before introducing true concurrency.
+
+#### Acceptance
+
+- [x] `P114-HAR-01` is recorded as merged through PR `#64` and done.
+- [x] Phase 115 has one non-overlapping ready task with explicit owned paths.
+
+## Phase 115 Task Board
+
+### P115-HAR-01 - Deterministic Multi-Call Batch Execution
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE`
+- Depends on: `P114-CLOSE-01`
+- Branch: `codex/p115-har-01-deterministic-multi-call-batches`
+- Owned paths: `packages/agent-core/`, `packages/agent-runtime/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Consume every tool call in one provider response as an ordered batch so calls
+are never silently discarded, while preserving per-call policy, budget,
+duplicate protection, durable evidence, and exact approval continuation.
+
+#### Deliverables
+
+- provider-order batch processing for all selected calls in one model response
+- one policy decision and durable execution trace per call
+- atomic pause context that preserves the approved call and unconsumed batch tail
+- approval continuation that resumes the pending call and then the remaining batch
+- batch-aware model and tool budget enforcement without partial silent success
+- deterministic and real-provider acceptance evidence for one multi-call response
+
+#### Acceptance
+
+- [ ] Two allowed calls from one provider response execute once in provider order and both results reach the next model request.
+- [ ] A denied, repeated, or over-budget batch member stops explicitly and leaves later members unexecuted.
+- [ ] An approval-required batch member pauses before execution and preserves the unconsumed tail durably.
+- [ ] Approval resume executes the exact pending call, then continues the preserved tail without replaying earlier calls.
+- [ ] Existing text-only, single-call, sequential-turn, rejection, and uncertain-side-effect behavior remains compatible.
+- [ ] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider batch acceptance pass.
+
+#### Explicit Non-Goals
+
+- concurrent execution of multiple tool calls
+- dependency-graph scheduling or automatic call reordering
+- subagent delegation or distributed workflow scheduling
+- automatic replay after uncertain external side effects
