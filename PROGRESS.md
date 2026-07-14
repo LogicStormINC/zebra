@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-14: merged `P105-UI-01` through GitHub PR `#46` and closed Phase 105; Phase 106 is limited to bounded durable recent-session discovery and desktop index reconciliation so persisted sessions remain discoverable after browser-local state is lost.
 - 2026-07-13: completed `P105-UI-01` implementation and browser acceptance on `codex/p105-ui-01-task-launch-configuration`; new tasks now persist and preflight an explicit workspace plus supported policy, send both through the existing create-session API, and display durable session configuration after creation. Browser validation observed a `201` create response for `/tmp/zebra-agent-p105` with `full_access`, verified invalid-workspace submission blocking and restored launch defaults, and confirmed the page remained viewport-bound. Unsupported attachment and model-selection affordances were removed or represented as fixed API runtime state. All `941` backend tests, Ruff, Mypy, the eval release gate, focused launch, delivery, live, and runtime checks, and the production build passed.
 - 2026-07-13: merged `P104-UI-01` through GitHub PR `#44` and closed Phase 104; Phase 105 is limited to truthful task-launch configuration, explicit workspace binding, and removal of unsupported Composer affordances.
 - 2026-07-13: completed `P104-UI-01` implementation and browser acceptance on `codex/p104-ui-01-result-review-delivery`; the active task workspace now combines Diff, artifacts, delivery audit, typed Commit, plan-first Pull Request, policy-aware availability, and explicit remote execution confirmation. Browser validation covered workspace-write denial, full-access local-only dry-run, durable audit refresh, and provider-gated execution.
@@ -26,10 +27,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 105 - Task Launch Configuration And Workspace Binding`
-- Repository status: `phase 104 closed; P105-UI-01 is in review`
+- Active phase: `Phase 106 - Durable Recent Session Discovery`
+- Repository status: `phase 105 closed; P106-APP-01 is ready`
 - Current focus:
-  - `P105-UI-01` is in review on `codex/p105-ui-01-task-launch-configuration` after full backend and frontend gates plus browser validation of launch preflight, invalid-workspace blocking, request payloads, durable session configuration, and restored defaults
+  - `P106-APP-01` is ready to add one bounded recent-session API and reconcile the desktop task index from durable projections while preserving local drafts
+  - `P105-UI-01` was merged through GitHub PR `#46` after full backend and frontend gates plus browser validation of launch preflight, invalid-workspace blocking, request payloads, durable session configuration, and restored defaults
+  - `P105-CLOSE-01` records the Phase 105 closeout and the explicit Phase 106 ownership boundary
   - `P104-UI-01` was merged through GitHub PR `#44` after `941` backend tests, Ruff, Mypy, the eval release gate, focused delivery, live execution, and runtime checks, the production build, and browser validation of policy denial, plan-first pull requests, and delivery-audit convergence
   - `P104-CLOSE-01` records the Phase 104 closeout and the explicit Phase 105 ownership boundary
   - `P103-UI-01` was merged through GitHub PR `#42` after `941` backend tests, Ruff, Mypy, the eval release gate, focused frontend checks, the production build, and browser validation of incremental events, real cancellation, approval decisions, and durable state convergence
