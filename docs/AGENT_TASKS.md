@@ -10592,7 +10592,7 @@ without adding role frameworks, adaptive graphs, or distributed scheduling.
 
 ### P119-SUB-01 - Bounded Parallel Research Fan-Out
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / RUNTIME`
 - Depends on: `P118-CLOSE-01`
@@ -10635,3 +10635,74 @@ parent in provider order under aggregate child and concurrency bounds.
 - dynamic model routing or per-child provider selection
 - durable cross-process children, distributed scheduling, A2A, or remote agents
 - Tree-sitter, LSP, vector retrieval, or repository indexing changes
+
+### P119-CLOSE-01 - Phase 119 Closeout And Phase 120 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P119-SUB-01`
+- Branch: `codex/p119-closeout-phase120-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 119 acceptance state and define one vertical slice that
+separates product-facing tool availability from security authority, so general
+agent tasks do not inherit coding-specific capabilities by default.
+
+#### Acceptance
+
+- [x] `P119-SUB-01` is recorded as merged through PR `#75` and done.
+- [x] Phase 120 has one non-overlapping ready task with explicit owned paths.
+- [x] A fixed Reviewer role is rejected because bounded `agent.research`
+  objectives already cover read-only independent review without another role API.
+
+## Phase 120 Task Board
+
+### P120-CAP-01 - Durable General And Coding Tool Profiles
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / RUNTIME / APP`
+- Depends on: `P119-CLOSE-01`
+- Branch: `codex/p120-cap-01-durable-tool-profiles`
+- Owned paths: `packages/agent-core/`, `packages/agent-runtime/`, `packages/agent-storage/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `UI/desktop/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Separate the fixed set of tools advertised and registered for a task from its
+security `policy_profile`, default new product tasks to a general-purpose tool
+surface, and retain the current coding-oriented surface as an explicit option.
+
+#### Deliverables
+
+- one provider-neutral typed tool-profile contract with fixed `general` and `coding` values
+- a `general` manifest containing `agent.research`, `command.run`, `files.read`, and `patch.apply`
+- a `coding` manifest that preserves the current tools and additionally includes `git.status` and `tests.run`
+- durable tool-profile persistence through session creation, events, projections, API and CLI readback, worker execution, and desktop task launch
+- deterministic registry filtering before model advertisement or tool execution
+- backward-compatible recovery of existing sessions that predate the field
+- focused backend, desktop, browser, and real-provider acceptance evidence
+
+#### Acceptance
+
+- [ ] A newly created task defaults to `general`; an explicit `coding` task retains the current complete executable tool manifest.
+- [ ] Existing sessions without durable tool-profile evidence recover as `coding`, preserving the behavior under which they were created.
+- [ ] The selected profile survives create, list, inspect, reload, worker claim, execution, suspend or resume, and approval continuation paths.
+- [ ] General tasks neither advertise nor execute `git.status` or `tests.run`; coding tasks advertise and execute them through the existing typed gateway.
+- [ ] Unknown profile values fail at the API, CLI, configuration, and projection trust boundaries instead of silently widening capabilities.
+- [ ] Tool profiles never bypass policy: every registered call still passes the same policy and approval checks, and selecting `coding` cannot increase file, network, command, or credential authority.
+- [ ] Research children retain their fixed read-only, non-recursive tool ceiling regardless of the parent profile.
+- [ ] The desktop defaults visibly and durably to general-purpose execution and offers coding tools only through an explicit launch selection.
+- [ ] Legacy behavior, HITL continuation, concurrent batches, compaction, and bounded Research fan-out remain compatible.
+- [ ] Targeted checks, full backend and desktop gates, browser persistence validation, and one real-provider manifest-selection acceptance pass.
+
+#### Explicit Non-Goals
+
+- treating a tool profile as a security boundary or replacing `policy_profile`
+- arbitrary user-authored manifests or per-call profile mutation
+- automatic profile inference from prompt text or dynamic model routing
+- removing coding tools from the product or changing their existing contracts
+- new network, browser, MCP, credential, or external SaaS capabilities
+- fixed Reviewer or Coder subagent roles, write-capable children, or worktree merge coordination
