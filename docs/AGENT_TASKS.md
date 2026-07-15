@@ -11294,3 +11294,99 @@ approval-before-egress, bounded output, and untrusted-content handling.
   networking
 - tool discovery bridges, Skill Registry, MCP discovery, SaaS connectors, or a
   default desktop search page
+
+### P126-CLOSE-01 - Phase 126 Closeout And Phase 127 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / SECURITY`
+- Depends on: `P126-WEB-01`
+- Branch: `codex/p126-closeout-phase127-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 126 acceptance state and define one bounded local Skill
+disclosure slice based on the current Hermes source without importing Hermes
+runtime authority or prematurely building a Skill marketplace.
+
+#### Acceptance
+
+- [x] `P126-WEB-01` is recorded as merged through PR `#89` and done.
+- [x] Phase 127 has one non-overlapping ready task with explicit owned paths.
+- [x] Hermes commit `47d853fdf` is the reviewed source reference for discovery,
+  exclusions, collision handling, and progressive disclosure; Zebra retains its
+  typed registry, Policy, session, event, recovery, and authority boundaries.
+
+## Phase 127 Task Board
+
+### P127-SKILL-01 - Bounded Local Skill Progressive Disclosure
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / SECURITY / TOOLS / RUNTIME / APP`
+- Depends on: `P126-CLOSE-01`
+- Branch: `codex/p127-skill-01-local-progressive-disclosure`
+- Owned paths: `packages/agent-core/`, `packages/agent-security/`, `packages/agent-tools/`, `packages/agent-runtime/`, `apps/config/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `UI/desktop/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`, `.env.example`
+
+#### Goal
+
+Let general and coding parent sessions discover configured local reusable
+workflows on demand, then read one bounded Skill document or supporting text file
+without treating Skill content as executable authority or loading all Skills into
+the model context.
+
+#### Deliverables
+
+- one explicit optional local Skill-root configuration shared by API, CLI,
+  direct runtime, and Worker recovery, with no configured roots as the default
+- one bounded deterministic catalog that recursively discovers `SKILL.md`, skips
+  dependency, cache, VCS, virtual-environment, and nested support-package paths,
+  and fails closed on ambiguous exposed names
+- typed `skills.list` and `skills.read` tools using metadata-first progressive
+  disclosure, strict schemas, stable ordering, count and content ceilings, and
+  no implicit Skill execution
+- canonical containment, symlink-escape, traversal, binary, encoding, hidden
+  secret-file, and oversized-content defenses for Skill and support-file reads
+- explicit untrusted-guidance labeling that cannot grant tool, filesystem,
+  command, network, credential, approval, or workspace-write authority
+- deterministic, full-repository, desktop/browser compatibility, Worker
+  recovery, and real-provider tool-selection acceptance evidence
+
+#### Acceptance
+
+- [ ] With no configured Skill roots, neither Skill tool is registered or
+  model-visible; invalid, missing, duplicate, or non-directory roots fail closed.
+- [ ] Discovery returns only bounded metadata for valid `SKILL.md` documents in
+  deterministic order and never injects full Skill bodies into the base prompt.
+- [ ] Exposed names and descriptions are bounded; duplicate names across roots
+  remain unavailable rather than selecting one by scan order.
+- [ ] `skills.read` accepts one known Skill plus an optional relative support-file
+  path, rejects absolute paths and traversal, and cannot escape the canonical
+  Skill directory through symlinks.
+- [ ] Only the primary `SKILL.md` and bounded UTF-8 files in approved support
+  directories are readable; dependency trees, hidden secret files, binaries,
+  oversized content, and nested Skill packages are excluded.
+- [ ] Returned content is labeled untrusted procedural guidance and causes no
+  command, template expansion, environment capture, tool call, or network access.
+- [ ] Every tool subsequently suggested by a Skill still passes the ordinary
+  registry, Policy, approval, Gateway, budget, event, and recovery paths.
+- [ ] General and coding parent sessions share the capability when configured;
+  fixed Research children remain unchanged and receive no Skill tools.
+- [ ] API, CLI, direct runtime, and Worker recovery construct the same catalog
+  from the same explicit configuration without process-global mutation.
+- [ ] Existing local tools, Web tools, plans, clarification, approvals, tool
+  batches, compaction, cancellation, and session recovery remain compatible.
+- [ ] Targeted tests, full backend/static/eval gates, desktop checks/build,
+  browser validation, and one real `deepseek-v4-flash` Skill pass succeed.
+
+#### Explicit Non-Goals
+
+- Skill installation, editing, deletion, generation, publishing, signing,
+  downloading, updating, marketplace, registry service, or remote Skill roots
+- automatic Skill selection, prompt-wide Skill-body injection, automatic script
+  execution, template interpolation, environment-variable expansion, or secrets
+- plugin discovery, MCP transport, tool-search bridges, dynamic tool loading,
+  arbitrary manifests, role-specific child Skills, or Research-child Skills
+- desktop Skill management pages, manual UI execution controls, Skill approvals,
+  analytics, ranking, recommendations, caching, indexing, or semantic retrieval
