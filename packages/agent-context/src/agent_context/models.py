@@ -10,6 +10,7 @@ class ContextItemKind(StrEnum):
     RELATED_FILE = "related_file"
     CONVERSATION_SUMMARY = "conversation_summary"
     TOOL_OUTPUT_SUMMARY = "tool_output_summary"
+    USER_ATTACHMENT = "user_attachment"
 
 
 RUNTIME_EVIDENCE_KINDS = frozenset(
@@ -20,6 +21,7 @@ RUNTIME_EVIDENCE_KINDS = frozenset(
 )
 RUNTIME_EVIDENCE_SOURCE_TYPES = frozenset({"session_projection", "tool_trace"})
 MEMORY_SOURCE_TYPES = frozenset({"confirmed_memory"})
+ATTACHMENT_SOURCE_TYPES = frozenset({"user_attachment"})
 
 
 class TrustLevel(StrEnum):
@@ -79,6 +81,7 @@ class ContextCompileRequest:
     budget: ContextBudget = field(default_factory=lambda: ContextBudget(max_tokens=1200))
     runtime_evidence_items: tuple[ContextItem, ...] = ()
     memory_items: tuple[ContextItem, ...] = ()
+    attachment_items: tuple[ContextItem, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.task_input.strip():
@@ -103,6 +106,11 @@ class ContextCompileRequest:
                 raise ValueError("memory_items must use confirmed_memory kind")
             if item.provenance.source_type not in MEMORY_SOURCE_TYPES:
                 raise ValueError("memory_items must come from confirmed_memory sources")
+        for item in self.attachment_items:
+            if item.kind is not ContextItemKind.USER_ATTACHMENT:
+                raise ValueError("attachment_items must use user_attachment kind")
+            if item.provenance.source_type not in ATTACHMENT_SOURCE_TYPES:
+                raise ValueError("attachment_items must come from user_attachment sources")
 
 
 @dataclass(frozen=True)

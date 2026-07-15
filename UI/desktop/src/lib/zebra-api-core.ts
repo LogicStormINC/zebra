@@ -19,6 +19,7 @@ import type {
   SessionSummary,
 } from "../types";
 import { requestEventStream, requestJson } from "./zebra-api-helpers";
+import type { TextAttachmentPayload } from "./text-attachments";
 
 interface CoreApiContext {
   baseUrl: string;
@@ -61,13 +62,13 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
       ),
     deliveryAudit: (sessionId: string) =>
       requestJson<SessionDeliveryAuditResponse>(baseUrl, `/sessions/${sessionId}/delivery-audit`, { authToken }),
-    createSession: (payload: { title: string; prompt: string; workspace?: string; execute?: boolean; policy_profile?: string; tool_profile?: string; network_profile?: string; network_allowlist?: string[] }) =>
+    createSession: (payload: { title: string; prompt: string; workspace?: string; execute?: boolean; policy_profile?: string; tool_profile?: string; network_profile?: string; network_allowlist?: string[]; attachments?: TextAttachmentPayload[] }) =>
       requestJson<CreateSessionResponse>(baseUrl, "/sessions", {
         method: "POST",
         authToken,
         body: payload,
       }),
-    appendMessage: (sessionId: string, payload: { content: string; clarification_id?: string }) =>
+    appendMessage: (sessionId: string, payload: { content: string; clarification_id?: string; attachments?: TextAttachmentPayload[] }) =>
       requestJson<SessionMessageAppendResponse>(baseUrl, `/sessions/${sessionId}/messages`, {
         method: "POST",
         authToken,

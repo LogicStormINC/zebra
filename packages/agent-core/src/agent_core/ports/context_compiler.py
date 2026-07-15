@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.memories import MemoryType
 
 
@@ -41,4 +42,5 @@ class ContextCompilerPort(Protocol):
         max_tokens: int,
         runtime_evidence: tuple[RuntimeEvidenceInput, ...] = (),
         confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
+        attachments: tuple[AttachmentContextInput, ...] = (),
     ) -> str | None: ...

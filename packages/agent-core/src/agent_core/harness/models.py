@@ -4,6 +4,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
+from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.plans import SessionPlan
 from agent_core.domain.sessions import Session
@@ -44,6 +45,7 @@ class HarnessTask:
     context_token_budget: int = 200
     runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = ()
+    attachments: tuple[AttachmentContextInput, ...] = ()
     task_plan: SessionPlan = field(default_factory=SessionPlan)
 
     def __post_init__(self) -> None:
@@ -68,6 +70,11 @@ class HarnessTask:
                 )
             if not memory.text.strip():
                 raise ValueError("harness task confirmed_memories must not contain blanks")
+        for attachment in self.attachments:
+            if not isinstance(attachment, AttachmentContextInput):
+                raise ValueError(
+                    "harness task attachments must contain AttachmentContextInput values"
+                )
 
 
 @dataclass(frozen=True)

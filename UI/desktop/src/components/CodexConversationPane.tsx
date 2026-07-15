@@ -18,9 +18,15 @@ import locale from "../_utils/local";
 import { sessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-status";
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
+import {
+  attachmentPayloads,
+  type PendingTextAttachment,
+  type TextAttachmentPayload,
+} from "../lib/text-attachments";
 import { compactWorkspaceLabel, validateTaskLaunchConfig, type TaskLaunchConfig } from "../lib/task-launch-config";
 import type { ApprovalSummary, SessionEvent, SessionSummary } from "../types";
 import { SessionThreadWorkspace } from "./SessionThreadWorkspace";
+import { ComposerAttachments } from "./ComposerAttachments";
 import { useTaskLaunchStyle } from "./TaskLaunchConfig.styles";
 import { useConversationPaneStyle } from "./CodexConversationPane.styles";
 
@@ -62,7 +68,7 @@ interface CodexConversationPaneProps {
   onRespondClarification: (clarificationId: string, content: string) => Promise<unknown>;
   onScrollToLatest: () => void;
   onSelectConversation: (key: string) => void;
-  onSubmit: (value: string, launchConfig: TaskLaunchConfig) => void;
+  onSubmit: (value: string, launchConfig: TaskLaunchConfig, attachments: TextAttachmentPayload[]) => Promise<boolean>;
   controlsBusy: boolean;
   runtimeStatus: RuntimeConnectionStatus;
   sessionSummaries: Record<string, SessionSummary | null>;
@@ -112,6 +118,10 @@ export function CodexConversationPane({
   const { styles } = useConversationPaneStyle();
   const { styles: launchStyles } = useTaskLaunchStyle();
   const [composerValue, setComposerValue] = React.useState("");
+  const [pendingAttachments, setPendingAttachments] = React.useState<PendingTextAttachment[]>([]);
+  React.useEffect(() => {
+    setPendingAttachments([]);
+  }, [currentConversation]);
   const hasThread = !isWorkspaceIdle;
   const hasSessionThread = Boolean(currentSessionId) || messages.length > 0 || events.length > 0;
   const launchEditable = !currentSessionId;
@@ -183,9 +193,19 @@ export function CodexConversationPane({
         <span>权限 · {effectiveLaunchConfig.policyProfile === "full_access" ? "完整访问" : "工作区写入"}</span>
         <span>能力 · {effectiveLaunchConfig.toolProfile === "coding" ? "编码工具" : "通用工具"}</span>
         <span>网络 · {effectiveLaunchConfig.networkProfile === "none" ? "无外部网络" : effectiveLaunchConfig.networkProfile}</span>
+        {sessionSummary?.attachments?.length ? (
+          <span title={sessionSummary.attachments.map((item) => item.file_name).join(", ")}>
+            材料 · {sessionSummary.attachments.length}
+          </span>
+        ) : null}
         <span>模型 · API 运行时配置</span>
         {launchError ? <em>{launchError}</em> : null}
       </div>
+      <ComposerAttachments
+        attachments={pendingAttachments}
+        disabled={isRequesting}
+        onChange={setPendingAttachments}
+      />
       <div className={styles.sender}>
         <Sender
           autoSize={variant === "idle" ? { minRows: 1, maxRows: 6 } : { minRows: 2, maxRows: 3 }}
@@ -249,13 +269,20 @@ export function CodexConversationPane({
           onChange={(value) => {
             setComposerValue(value);
           }}
-          onSubmit={(value) => {
+          onSubmit={async (value) => {
             const trimmed = value.trim();
             if (!trimmed || launchError) {
               return;
             }
-            onSubmit(trimmed, effectiveLaunchConfig);
-            setComposerValue("");
+            const submitted = await onSubmit(
+              trimmed,
+              effectiveLaunchConfig,
+              attachmentPayloads(pendingAttachments),
+            );
+            if (submitted) {
+              setComposerValue("");
+              setPendingAttachments([]);
+            }
           }}
           placeholder={variant === "thread" ? locale.threadComposerHint : locale.placeholder}
           ref={senderRef}
@@ -390,7 +417,15 @@ export function CodexConversationPane({
                         className={styles.quickAction}
                         key={action.label}
                         disabled={Boolean(launchError)}
-                        onClick={() => onSubmit(action.prompt, effectiveLaunchConfig)}
+                        onClick={() => {
+                          void onSubmit(
+                            action.prompt,
+                            effectiveLaunchConfig,
+                            attachmentPayloads(pendingAttachments),
+                          ).then((submitted) => {
+                            if (submitted) setPendingAttachments([]);
+                          });
+                        }}
                         type="button"
                       >
                         {action.label}

@@ -9,7 +9,12 @@ from agent_core.domain.identifiers import ArtifactId
 
 
 class ArtifactPayloadStorePort(Protocol):
-    def store_payload(self, payload: ArtifactPayloadWrite) -> StoredArtifactPayload: ...
+    def store_payload(
+        self,
+        payload: ArtifactPayloadWrite,
+        *,
+        artifact_id: ArtifactId | None = None,
+    ) -> StoredArtifactPayload: ...
 
     def get_payload(self, artifact_id: ArtifactId) -> StoredArtifactPayload | None: ...
 

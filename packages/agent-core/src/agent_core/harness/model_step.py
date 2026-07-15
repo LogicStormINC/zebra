@@ -166,13 +166,23 @@ class HarnessModelStep:
     ) -> list[SessionMessage]:
         messages: list[SessionMessage] = []
         if self._context_compiler is not None and task.workspace_root is not None:
-            system_prompt = self._context_compiler.build_system_prompt(
-                task_input=task.user_input,
-                workspace_root=task.workspace_root,
-                max_tokens=task.context_token_budget,
-                runtime_evidence=task.runtime_evidence,
-                confirmed_memories=task.confirmed_memories,
-            )
+            if task.attachments:
+                system_prompt = self._context_compiler.build_system_prompt(
+                    task_input=task.user_input,
+                    workspace_root=task.workspace_root,
+                    max_tokens=task.context_token_budget,
+                    runtime_evidence=task.runtime_evidence,
+                    confirmed_memories=task.confirmed_memories,
+                    attachments=task.attachments,
+                )
+            else:
+                system_prompt = self._context_compiler.build_system_prompt(
+                    task_input=task.user_input,
+                    workspace_root=task.workspace_root,
+                    max_tokens=task.context_token_budget,
+                    runtime_evidence=task.runtime_evidence,
+                    confirmed_memories=task.confirmed_memories,
+                )
             if system_prompt is not None:
                 messages.append(
                     SessionMessage(

@@ -26,6 +26,10 @@ from agent_storage.memory_lookup import (
 )
 from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.projections import SQLiteProjectionStore
+from agent_storage.session_attachments import (
+    load_attachment_contexts,
+    store_text_attachments,
+)
 from agent_storage.session_history import SQLiteSessionHistory
 from agent_storage.sqlite import SQLiteEventStore
 from agent_storage.tool_runs import SQLiteToolRunStore
@@ -40,6 +44,7 @@ __all__ = [
     "list_confirmed_repo_memories",
     "SQLiteMemoryStore",
     "list_confirmed_repo_memory_texts",
+    "load_attachment_contexts",
     "payload_for_artifact_uri",
     "serialize_artifact_lifecycle",
     "serialize_artifact_retrieval",
@@ -55,5 +60,6 @@ __all__ = [
     "SQLiteSessionHistory",
     "SQLiteToolRunStore",
     "SQLiteWorkspaceProjectionStore",
+    "store_text_attachments",
     "new_idempotency_record",
 ]

@@ -13,6 +13,9 @@ Current live frontend integration:
 - approval detail against `GET /approvals/{id}`
 - session creation against `POST /sessions`
 - session message append against `POST /sessions/{id}/messages`
+- bounded UTF-8 text attachment selection for both writes, with at most four
+  files, 64 KiB per file, 128 KiB aggregate, removable pending chips, actionable
+  validation errors, successful-submit clearing, and safe metadata readback
 - approval decisions against `POST /approvals/{id}/approve` and `POST /approvals/{id}/reject`
 - session controls against `POST /sessions/{id}/suspend`, `POST /sessions/{id}/resume`, and `POST /sessions/{id}/cancel`
 - local commit delivery against `POST /sessions/{id}/commit`

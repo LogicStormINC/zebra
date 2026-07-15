@@ -42,8 +42,13 @@ class SQLiteArtifactPayloadStore:
         self._root.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
-    def store_payload(self, payload: ArtifactPayloadWrite) -> StoredArtifactPayload:
-        artifact_id = new_artifact_id()
+    def store_payload(
+        self,
+        payload: ArtifactPayloadWrite,
+        *,
+        artifact_id: ArtifactId | None = None,
+    ) -> StoredArtifactPayload:
+        artifact_id = artifact_id or new_artifact_id()
         payload_path = self._payload_path(payload.session_id, artifact_id, payload.file_name)
         payload_path.parent.mkdir(parents=True, exist_ok=True)
         payload_path.write_bytes(payload.payload)

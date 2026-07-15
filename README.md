@@ -64,6 +64,11 @@ The repository now includes an isolated frontend workspace at `UI/desktop`.
 The desktop defaults to task, context, execution, and result surfaces. Human
 controls appear only for a concrete backend approval or clarification request;
 dormant Commit or Pull Request forms do not belong in the normal task timeline.
+Its Composer accepts bounded UTF-8 text attachments on new tasks and later
+ordinary messages. Attachment bytes remain in the durable local payload store;
+the UI and session API read back only safe metadata, while the parent model sees
+bounded content under an explicit untrusted-material boundary. Binary documents,
+remote URLs, OCR, vision, and Research-child attachment access are not supported.
 
 - stack: `Tauri + React + Tailwind CSS + TanStack Query + Ant Design + Ant Design X`
 - runtime: `Node 22.17.0` pinned via `volta`, `pnpm 10.28.2`

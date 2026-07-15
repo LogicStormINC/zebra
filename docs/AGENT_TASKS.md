@@ -11734,7 +11734,7 @@ without first copying it into the selected workspace.
 
 ### P131-INP-01 - Durable Bounded Text Attachments
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / STORAGE / API / HARNESS / UI / SECURITY`
 - Depends on: `P130-CLOSE-01`
@@ -11763,28 +11763,45 @@ tool, command, network, credential, approval, or Research-child authority.
 
 #### Acceptance
 
-- [ ] New tasks and later ordinary user messages accept zero or more bounded
+- [x] New tasks and later ordinary user messages accept zero or more bounded
   UTF-8 text attachments and preserve message-to-attachment correlation.
-- [ ] The API rejects unknown attachment fields, malformed base64, blank or
+- [x] The API rejects unknown attachment fields, malformed base64, blank or
   unsafe names, unsupported media types, invalid UTF-8, excessive count,
   excessive per-file bytes, and excessive aggregate bytes before model execution.
-- [ ] Accepted payload bytes, digest, size, media type, safe filename, session,
+- [x] Accepted payload bytes, digest, size, media type, safe filename, session,
   and originating message are durable and survive API or Worker restart.
-- [ ] Parent model context contains deterministic bounded attachment text under
+- [x] Parent model context contains deterministic bounded attachment text under
   an explicit untrusted-user-material boundary and never treats it as authority.
-- [ ] Recovery and later-message execution reconstruct the same attachment
+- [x] Recovery and later-message execution reconstruct the same attachment
   context exactly once without duplicating text into the visible chat message.
-- [ ] Session readback exposes safe attachment metadata but not base64 payloads,
+- [x] Session readback exposes safe attachment metadata but not base64 payloads,
   absolute storage paths, credentials, environment values, or hidden reasoning.
-- [ ] Desktop users can select, inspect, remove, submit, and recover attachment
+- [x] Desktop users can select, inspect, remove, submit, and recover attachment
   metadata; selection errors are actionable and pending files clear only on
   successful submission.
-- [ ] Existing text-only create and message payloads remain backward compatible,
+- [x] Existing text-only create and message payloads remain backward compatible,
   and approvals, clarification, plans, compaction, tools, cancellation, history,
   artifacts, API, CLI, Worker, and desktop behavior remain compatible.
-- [ ] Focused attachment matrices, all backend/static/eval gates, desktop checks
+- [x] Focused attachment matrices, all backend/static/eval gates, desktop checks
   and build, Tauri validation, browser acceptance, and one real provider pass
   over attached material succeed.
+
+#### Validation Evidence
+
+- `tests/test_text_attachments.py` covers strict input rejection, durable payload
+  and metadata recovery, parent context projection, Worker continuation,
+  fail-closed missing payloads, and clarification isolation.
+- All `1147` backend tests, Ruff, Mypy across `251` source files, and the 8-case
+  eval release gate passed.
+- All eleven desktop checks, the Node 22 production build, and offline Tauri
+  `cargo check` passed.
+- Live browser readback restored the completed attachment session, displayed
+  `provider-proof.txt` as one material, remained viewport-bound at `1512x771`,
+  emitted no console errors, and exposed no ordinary-state HITL controls.
+- A real `deepseek-v4-flash` run consumed inline attached material without a
+  workspace read and returned
+  `ATTACHMENT_FINAL_OK: ZEBRA_P131_PROVIDER_ATTACHMENT_B7F1`; readback retained
+  safe metadata without base64 content or storage locations.
 
 #### Explicit Non-Goals
 

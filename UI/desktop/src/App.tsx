@@ -11,6 +11,7 @@ import { useOperatorConfig } from "./lib/operator-config";
 import { mergeSessionEvents, pollWhile } from "./lib/live-session";
 import { projectRuntimeConnection } from "./lib/runtime-connection";
 import type { TaskLaunchConfig } from "./lib/task-launch-config";
+import type { TextAttachmentPayload } from "./lib/text-attachments";
 import { useWorkspaceSessionIndex } from "./lib/use-workspace-session-index";
 import { useWorkspaceSelection } from "./lib/use-workspace-selection";
 import { useActiveApproval } from "./lib/use-active-approval";
@@ -235,10 +236,10 @@ export default function App() {
   );
 
   const submitMessage = useCallback(
-    async (input: string, launchConfig: TaskLaunchConfig) => {
+    async (input: string, launchConfig: TaskLaunchConfig, attachments: TextAttachmentPayload[]) => {
       const trimmed = input.trim();
       if (!trimmed || !currentConversation) {
-        return;
+        return false;
       }
       let conversationKey = currentConversation;
       let createdFromWorkspaceHome = false;
@@ -261,7 +262,7 @@ export default function App() {
         let sessionId = conversationToSessionId[conversationKey];
         if (!sessionId) {
           const title = trimmed.slice(0, 36) || locale.newConversation;
-          const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile, network_profile: launchConfig.networkProfile, network_allowlist: launchConfig.networkAllowlist });
+          const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile, network_profile: launchConfig.networkProfile, network_allowlist: launchConfig.networkAllowlist, attachments });
           sessionId = created.session_id;
           patchConfig({ sessionId });
           if (!createdFromWorkspaceHome) {
@@ -281,13 +282,13 @@ export default function App() {
           }
         } else {
           try {
-            await api.appendMessage(sessionId, { content: trimmed });
+            await api.appendMessage(sessionId, { content: trimmed, attachments });
           } catch (error: unknown) {
             if (!isAppendToTerminalError(error)) {
               throw error;
             }
             const title = trimmed.slice(0, 36) || locale.newConversation;
-            const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile, network_profile: launchConfig.networkProfile, network_allowlist: launchConfig.networkAllowlist });
+            const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile, network_profile: launchConfig.networkProfile, network_allowlist: launchConfig.networkAllowlist, attachments });
             sessionId = created.session_id;
             patchConfig({ sessionId });
             if (!createdFromWorkspaceHome) {
@@ -308,8 +309,10 @@ export default function App() {
           }
         }
         await executeSession(conversationKey, sessionId);
+        return true;
       } catch (error: unknown) {
         messageApi.error(toErrorMessage(error));
+        return false;
       } finally {
         setIsRequesting(false);
       }
@@ -423,9 +426,7 @@ export default function App() {
           });
         }}
         onSelectConversation={setCurrentConversation}
-        onSubmit={(value, launchConfig) => {
-          void submitMessage(value, launchConfig);
-        }}
+        onSubmit={submitMessage}
         controlsBusy={controlsBusy}
         runtimeStatus={runtimeStatus}
         sessionSummaries={sessionSummaries}
