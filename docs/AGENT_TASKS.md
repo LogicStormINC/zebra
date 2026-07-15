@@ -11617,3 +11617,78 @@ relevant local material before choosing a file to search or read.
 - A real `deepseek-v4-flash` general/read-only run called `files.list` on
   `materials`, then `files.read`, and completed with
   `LIST_FINAL_OK: ZEBRA_P129_LIST_READ_8C41`.
+
+### P129-CLOSE-01 - Phase 129 Closeout And Phase 130 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / CORE / OBS`
+- Depends on: `P129-TOOL-01`
+- Branch: `codex/p129-closeout-phase130-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 129 acceptance state and define one narrow trace
+correlation slice for the same-name parallel-tool projection defect exposed by
+the real provider acceptance run.
+
+#### Acceptance
+
+- [x] `P129-TOOL-01` is recorded as merged through PR `#95` and done.
+- [x] The defect is scoped to trace evidence correlation; durable execution,
+  provider conversation, and ordered event persistence remain correct.
+- [x] Phase 130 has one non-overlapping task with explicit core, API, CLI,
+  test, and documentation ownership.
+
+## Phase 130 Task Board
+
+### P130-OBS-01 - Durable Tool Trace Correlation
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / OBS / API / CLI`
+- Depends on: `P129-CLOSE-01`
+- Branch: `codex/p130-obs-01-durable-tool-trace-correlation`
+- Owned paths: `packages/agent-core/`, `apps/api/`, `apps/cli/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Correlate each proposed, policy-evaluated, started, and completed or failed tool
+event by the existing internal `tool_call_id`, so core, API, and CLI traces keep
+the correct arguments and policy evidence for parallel same-name calls.
+
+#### Deliverables
+
+- additive `tool_call_id` correlation on tool proposal, policy, and terminal
+  execution events, matching the identifier already present on start events
+- one shared core projection strategy that tracks multiple pending calls by ID
+  while retaining deterministic provider/result order
+- API and CLI persisted-event serializers with equivalent correlation behavior
+- legacy-event compatibility for durable sessions written before Phase 130
+
+#### Acceptance
+
+- [ ] Every newly emitted proposal, policy, start, completion, and failure event
+  for an executable tool carries the same non-blank `tool_call_id`.
+- [ ] Parallel calls with the same tool name retain their own arguments, policy
+  context, output, and metadata in core, API, and CLI traces.
+- [ ] Parallel calls with different names and sequential calls preserve their
+  existing trace ordering and public response shape.
+- [ ] Legacy event streams without correlation IDs still project deterministically
+  using provider-order compatibility rather than dropping all arguments.
+- [ ] Unknown, duplicate, denied, approval-required, clarification, plan,
+  failed-tool, and resumed-continuation behavior remains unchanged.
+- [ ] Correlation metadata does not expose credentials, environment values,
+  hidden reasoning, or additional tool authority.
+- [ ] Focused core/API/CLI regression matrices, all backend/static/eval gates,
+  desktop compatibility checks/build, and one real provider batch pass succeed.
+
+#### Explicit Non-Goals
+
+- changing tool execution order, parallel scheduling, budgets, retry behavior,
+  policy decisions, approvals, cancellation, recovery, or provider messages
+- adding trace IDs to public response objects, changing event types, rewriting
+  historical databases, or migrating stored event payloads
+- distributed tracing, spans, OpenTelemetry export, remote observability,
+  analytics, dashboards, new desktop trace controls, or raw event UI
