@@ -10592,8 +10592,8 @@ without adding role frameworks, adaptive graphs, or distributed scheduling.
 
 ### P119-SUB-01 - Bounded Parallel Research Fan-Out
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE / RUNTIME`
 - Depends on: `P118-CLOSE-01`
 - Branch: `codex/p119-sub-01-bounded-parallel-research-fanout`
@@ -10617,15 +10617,15 @@ parent in provider order under aggregate child and concurrency bounds.
 
 #### Acceptance
 
-- [ ] Two independent `agent.research` calls from one provider response overlap and both sourced results reach the next parent model request in provider order.
-- [ ] The configured child and concurrency limits are enforced for a larger research batch with no unbounded task or thread creation.
-- [ ] Policy, duplicate, parent tool budget, and child aggregate-bound rejection occurs before a candidate fan-out starts.
-- [ ] Every child retains the same workspace and read-only authority ceiling, and no child can recursively delegate.
-- [ ] One child failure is explicit while already-started siblings are observed to terminal state; no rollback or unsafe replay is claimed.
-- [ ] Parent cancellation or teardown propagates to every unfinished child and joins local work before the coordinator closes.
-- [ ] Child lifecycle and aggregate evidence contains identities, order, usage, sources, status, confidence, and provenance without raw findings in control metadata.
-- [ ] Mixed, write-capable, approval-required, single-research, sequential, compaction, and HITL behavior remains compatible.
-- [ ] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider parallel research acceptance pass.
+- [x] Two independent `agent.research` calls from one provider response overlap and both sourced results reach the next parent model request in provider order.
+- [x] The configured child and concurrency limits are enforced for a larger research batch with no unbounded task or thread creation.
+- [x] Policy, duplicate, parent tool budget, and child aggregate-bound rejection occurs before a candidate fan-out starts.
+- [x] Every child retains the same workspace and read-only authority ceiling, and no child can recursively delegate.
+- [x] One child failure is explicit while already-started siblings are observed to terminal state; no rollback or unsafe replay is claimed.
+- [x] Parent cancellation or teardown propagates to every unfinished child and joins local work before the coordinator closes.
+- [x] Child lifecycle and aggregate evidence contains identities, order, usage, sources, status, confidence, and provenance without raw findings in control metadata.
+- [x] Mixed, write-capable, approval-required, single-research, sequential, compaction, and HITL behavior remains compatible.
+- [x] Targeted tests, `make test`, `make check`, the eval release gate, and one real-provider parallel research acceptance pass.
 
 #### Explicit Non-Goals
 

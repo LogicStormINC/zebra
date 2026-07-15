@@ -34,14 +34,18 @@ prefix, original goal, latest working exchange, complete assistant/tool pairs, a
 pending approval evidence remain canonical; compaction events contain only estimates,
 counts, and provenance.
 
-The parent agent can delegate one bounded workspace investigation through
-`agent.research`. The local child reuses the same Harness but receives only
-`files.read` and `git.status` under a read-only policy, cannot recursively delegate,
-and returns a structured summary with sources and confidence. Child count, depth,
-concurrency, model, and tool ceilings are enforced by the runtime coordinator, while
-lifecycle events omit raw findings. Automatic call reordering, semantic summaries,
-dependency graphs, write-capable subagents, reviewer roles, separate child worktrees,
-and distributed workflow scheduling remain later boundaries.
+The parent agent can delegate up to three independent workspace investigations in
+one provider batch through `agent.research`. Local children run concurrently through
+the existing safe-batch executor, while results and lifecycle evidence return in
+provider order. Each child reuses the same Harness but receives only `files.read`
+and `git.status` under a read-only policy, cannot recursively delegate, and returns
+a structured summary with sources and confidence. Policy, duplicate, parent tool
+budget, and aggregate child capacity are checked before fan-out; child count, depth,
+concurrency, model, and tool ceilings remain fixed, and parent teardown cancels and
+joins unfinished local children. Lifecycle metadata aggregates identities, status,
+usage, sources, confidence, and provenance without raw findings. Automatic call
+reordering, dependency graphs, write-capable subagents, reviewer roles, separate
+child worktrees, and distributed workflow scheduling remain later boundaries.
 
 ## Desktop UI Workspace
 

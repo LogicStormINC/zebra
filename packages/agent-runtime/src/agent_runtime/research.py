@@ -127,6 +127,7 @@ class ReadOnlyToolGateway(ToolGatewayPort):
 
 research_contract = ToolContract(
     name="agent.research",
+    parallel_safe=True,
     required_arguments=("objective",),
     description="Delegate one bounded read-only workspace research task.",
     argument_properties={

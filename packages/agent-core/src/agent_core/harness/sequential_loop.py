@@ -1,3 +1,5 @@
+from collections.abc import Mapping
+
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCall
@@ -36,6 +38,7 @@ class SequentialToolLoop:
         tool_selector: ToolCallSelectionStrategy,
         synthesize_tool_results: bool,
         parallel_safe_tools: frozenset[str],
+        parallel_batch_limits: Mapping[str, int] | None,
         max_parallel_tool_calls: int,
     ) -> None:
         self._model_gateway = model_gateway
@@ -48,6 +51,7 @@ class SequentialToolLoop:
             model_step=model_step,
             verifier=verifier,
             parallel_safe_tools=parallel_safe_tools,
+            parallel_batch_limits=parallel_batch_limits,
             max_parallel_tool_calls=max_parallel_tool_calls,
         )
 

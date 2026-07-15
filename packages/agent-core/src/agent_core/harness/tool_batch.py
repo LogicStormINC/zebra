@@ -1,3 +1,5 @@
+from collections.abc import Mapping
+
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import ModelCompletion
@@ -29,6 +31,7 @@ class ToolBatchExecutor:
         model_step: HarnessModelStep,
         verifier: VerifierHook,
         parallel_safe_tools: frozenset[str],
+        parallel_batch_limits: Mapping[str, int] | None,
         max_parallel_tool_calls: int,
     ) -> None:
         self._policy_engine = policy_engine
@@ -41,6 +44,7 @@ class ToolBatchExecutor:
             model_step=model_step,
             verifier=verifier,
             parallel_safe_tools=parallel_safe_tools,
+            parallel_batch_limits=parallel_batch_limits,
             max_parallel_tool_calls=max_parallel_tool_calls,
         )
 

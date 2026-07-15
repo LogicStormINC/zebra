@@ -32,6 +32,7 @@ DEFAULT_TEST_PRESETS = {
     "check": ("make", "check"),
     "test": ("make", "test"),
 }
+DEFAULT_RESEARCH_CHILD_LIMIT = 3
 
 
 def run_local_harness(
@@ -67,6 +68,7 @@ def run_local_harness(
                 ),
                 synthesize_tool_results=True,
                 parallel_safe_tools=tool_gateway.parallel_safe_tools,
+                parallel_batch_limits=tool_gateway.parallel_batch_limits,
                 max_parallel_tool_calls=3,
             ).run,
         )
@@ -80,7 +82,10 @@ class LocalToolGateway(ToolGatewayPort):
         workspace_root: Path,
         *,
         model_gateway: ModelGatewayPort | None = None,
+        research_child_limit: int = DEFAULT_RESEARCH_CHILD_LIMIT,
     ) -> None:
+        if research_child_limit <= 0:
+            raise ValueError("research_child_limit must be positive")
         self._workspace = LocalWorkspace(workspace_root)
         self._workspace.ensure()
         runtime = LocalRuntime()
@@ -97,12 +102,17 @@ class LocalToolGateway(ToolGatewayPort):
         self._subagents: LocalResearchSubagentCoordinator | None = None
         if model_gateway is not None:
             self._subagents = LocalResearchSubagentCoordinator(
-                LocalResearchSubagentRunner(model_gateway)
+                LocalResearchSubagentRunner(model_gateway),
+                max_children=research_child_limit,
+                max_concurrency=research_child_limit,
             )
             research = ResearchSubagentTool(self._subagents, workspace_root)
             registry.register(research.contract, research.handle)
         self._model_tools = registry.model_tools()
         self._parallel_safe_tools = registry.parallel_safe_names()
+        self._parallel_batch_limits = (
+            {"agent.research": research_child_limit} if model_gateway is not None else {}
+        )
         self._executor = ToolExecutor(registry)
 
     @property
@@ -112,6 +122,10 @@ class LocalToolGateway(ToolGatewayPort):
     @property
     def parallel_safe_tools(self) -> frozenset[str]:
         return self._parallel_safe_tools
+
+    @property
+    def parallel_batch_limits(self) -> dict[str, int]:
+        return dict(self._parallel_batch_limits)
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
         try:

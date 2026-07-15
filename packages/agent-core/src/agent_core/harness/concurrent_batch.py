@@ -1,3 +1,5 @@
+from collections import Counter
+from collections.abc import Mapping
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 
@@ -18,6 +20,7 @@ from agent_core.harness.models import (
 from agent_core.harness.orchestration_events import policy_decision_payload
 from agent_core.harness.policy_step import policy_stop_result
 from agent_core.harness.selection import ToolCallSelection
+from agent_core.harness.subagent_metadata import aggregate_subagent_metadata
 from agent_core.harness.tool_execution import record_tool_result
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.tool_gateway import ToolGatewayPort
@@ -39,6 +42,7 @@ class ConcurrentToolBatchExecutor:
         model_step: HarnessModelStep,
         verifier: VerifierHook,
         parallel_safe_tools: frozenset[str],
+        parallel_batch_limits: Mapping[str, int] | None,
         max_parallel_tool_calls: int,
     ) -> None:
         if max_parallel_tool_calls <= 0:
@@ -48,6 +52,13 @@ class ConcurrentToolBatchExecutor:
         self._model_step = model_step
         self._verifier = verifier
         self._parallel_safe_tools = parallel_safe_tools
+        self._parallel_batch_limits = dict(parallel_batch_limits or {})
+        invalid_limits = (
+            not name.strip() or limit <= 0
+            for name, limit in self._parallel_batch_limits.items()
+        )
+        if any(invalid_limits):
+            raise ValueError("parallel batch limits require named tools and positive limits")
         self._max_parallel_tool_calls = max_parallel_tool_calls
 
     def can_execute(
@@ -90,6 +101,23 @@ class ConcurrentToolBatchExecutor:
                 metadata={
                     **metadata,
                     "stop_reason": "tool_call_budget_exhausted",
+                    "remaining_tool_call_count": len(tool_calls),
+                },
+            )
+        exceeded = self._exceeded_batch_limit(tool_calls)
+        if exceeded is not None:
+            tool_name, limit = exceeded
+            return self._terminal(
+                summary=f"parallel batch limit exceeded before {tool_name} started",
+                completion=completion,
+                emitted_events=emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                metadata={
+                    **metadata,
+                    "stop_reason": "parallel_batch_limit_exceeded",
+                    "limited_tool_name": tool_name,
+                    "parallel_batch_limit": limit,
                     "remaining_tool_call_count": len(tool_calls),
                 },
             )
@@ -182,6 +210,10 @@ class ConcurrentToolBatchExecutor:
             if tool_result.status is not ToolCallStatus.EXECUTED:
                 failed_names.append(tool_call.name)
             batch_metadata = {**batch_metadata, **execution.metadata}
+            batch_metadata = aggregate_subagent_metadata(
+                batch_metadata,
+                tool_result,
+            )
         if failed_names:
             return self._terminal(
                 summary="concurrent tool batch failed: " + ", ".join(failed_names),
@@ -196,6 +228,17 @@ class ConcurrentToolBatchExecutor:
                 },
             )
         return ToolBatchResult(None, tool_calls_executed, batch_metadata)
+
+    def _exceeded_batch_limit(
+        self,
+        tool_calls: tuple[ToolCall, ...],
+    ) -> tuple[str, int] | None:
+        counts = Counter(call.name for call in tool_calls)
+        for tool_name in sorted(counts):
+            limit = self._parallel_batch_limits.get(tool_name)
+            if limit is not None and counts[tool_name] > limit:
+                return tool_name, limit
+        return None
 
     def _execute_all(self, tool_calls: tuple[ToolCall, ...]) -> tuple[ToolResult, ...]:
         with ThreadPoolExecutor(max_workers=self._max_parallel_tool_calls) as executor:
