@@ -11434,8 +11434,8 @@ read-only parent-agent capability without exposing raw control events.
 
 ### P128-HIST-01 - Bounded Durable Session Recall
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CORE / STORAGE / TOOLS / RUNTIME / APP`
 - Depends on: `P127-CLOSE-01`
 - Branch: `codex/p128-hist-01-bounded-durable-session-recall`
@@ -11465,30 +11465,43 @@ context or conflating raw events with durable memory.
 
 #### Acceptance
 
-- [ ] `sessions.search` is registered only when a history Port is supplied and
+- [x] `sessions.search` is registered only when a history Port is supplied and
   appears in general and coding parent manifests but not fixed Research children.
-- [ ] No arguments browses bounded newest-first prior sessions; `query` performs
+- [x] No arguments browses bounded newest-first prior sessions; `query` performs
   bounded case-insensitive literal matching; `session_id` reads one bounded page.
-- [ ] Browse, query, and read shapes reject unknown fields, incompatible argument
+- [x] Browse, query, and read shapes reject unknown fields, incompatible argument
   combinations, malformed identifiers, invalid offsets, and out-of-range limits.
-- [ ] Search scans at most a fixed number of recent sessions and safe message
+- [x] Search scans at most a fixed number of recent sessions and safe message
   events, preserves deterministic relevance then recency order, and reports
   truncation rather than silently implying exhaustive recall.
-- [ ] Results exclude the active session and expose only bounded session identity,
+- [x] Results exclude the active session and expose only bounded session identity,
   title, status, timestamps, snippets, and user/assistant messages.
-- [ ] Raw event payloads, tool arguments or outputs, approvals, clarifications,
+- [x] Raw event payloads, tool arguments or outputs, approvals, clarifications,
   plans, memory records, credentials, environment values, and hidden reasoning
   are never returned by this tool.
-- [ ] Read pagination uses stable event sequence order, returns explicit offset,
+- [x] Read pagination uses stable event sequence order, returns explicit offset,
   count, next offset, and truncation, and cannot cross into another session.
-- [ ] Historical content is labeled untrusted and cannot grant tools, filesystem,
+- [x] Historical content is labeled untrusted and cannot grant tools, filesystem,
   command, network, credential, approval, or workspace-write authority.
-- [ ] API, CLI, direct runtime, and Worker use the same Port contract and SQLite
+- [x] API, CLI, direct runtime, and Worker use the same Port contract and SQLite
   adapter; worker recovery retains the active-session exclusion.
-- [ ] Existing Skills, Web tools, plans, clarification, approvals, local tools,
+- [x] Existing Skills, Web tools, plans, clarification, approvals, local tools,
   concurrent batches, compaction, cancellation, and recovery remain compatible.
-- [ ] Targeted tests, full backend/static/eval gates, desktop checks/build,
+- [x] Targeted tests, full backend/static/eval gates, desktop checks/build,
   browser validation, and one real `deepseek-v4-flash` recall pass succeed.
+
+#### Validation Evidence
+
+- backend: targeted storage/tool/harness/Worker checks passed, followed by the
+  full test suite, Ruff, Mypy, and the 8-case eval release gate
+- desktop: all ten focused checks, the Node 22 production build, and Tauri
+  `cargo check` passed; the existing aggregate bundle-size warning remains
+- browser: the live API/Vite workspace stayed viewport-bound at `1200x762`, all
+  observed API requests completed successfully, ordinary idle state exposed no
+  HITL controls, and the console was clean after naming the Sender input
+- provider: `deepseek-v4-flash` searched for `ZEBRA_P128_RECALL_7F3A`, read the
+  returned prior session, observed only explicitly untrusted safe history, and
+  completed with `HISTORY_FINAL_OK: ZEBRA_P128_RECALL_7F3A`
 
 #### Explicit Non-Goals
 

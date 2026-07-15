@@ -26,6 +26,7 @@ from agent_storage.memory_lookup import (
 )
 from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.projections import SQLiteProjectionStore
+from agent_storage.session_history import SQLiteSessionHistory
 from agent_storage.sqlite import SQLiteEventStore
 from agent_storage.tool_runs import SQLiteToolRunStore
 from agent_storage.workspaces import SQLiteWorkspaceProjectionStore
@@ -51,6 +52,7 @@ __all__ = [
     "SQLiteLeaseStore",
     "SQLiteModelCallStore",
     "SQLiteProjectionStore",
+    "SQLiteSessionHistory",
     "SQLiteToolRunStore",
     "SQLiteWorkspaceProjectionStore",
     "new_idempotency_record",

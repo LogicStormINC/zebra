@@ -33,6 +33,7 @@ from agent_storage import (
     SQLiteMemoryStore,
     SQLiteModelCallStore,
     SQLiteProjectionStore,
+    SQLiteSessionHistory,
     SQLiteToolRunStore,
     SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
@@ -152,6 +153,8 @@ class SessionExecutionService:
             tool_profile=task.tool_profile,
             web_search_endpoint=self._settings.web_search_endpoint,
             skill_roots=self._settings.skill_roots,
+            session_history=SQLiteSessionHistory(self._database_path),
+            current_session_id=str(session_id),
         )
         context_compiler = LocalContextCompiler()
         orchestrator = SingleAttemptOrchestrator(

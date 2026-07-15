@@ -24,6 +24,7 @@ if TYPE_CHECKING:
         parse_mcp_tool_name,
     )
     from agent_tools.registry import ToolRegistry
+    from agent_tools.session_history import SessionSearchTool, sessions_search_contract
     from agent_tools.skills import (
         SkillsListTool,
         SkillsReadTool,
@@ -60,6 +61,7 @@ __all__ = [
     "PatchApplyTool",
     "PlanTool",
     "RegisteredTool",
+    "SessionSearchTool",
     "SkillsListTool",
     "SkillsReadTool",
     "TestsRunTool",
@@ -86,6 +88,7 @@ __all__ = [
     "parse_mcp_tool_name",
     "patch_apply_contract",
     "plan_contract",
+    "sessions_search_contract",
     "skills_list_contract",
     "skills_read_contract",
     "tests_run_contract",
@@ -109,6 +112,7 @@ _EXPORTS = {
     "SkillsListTool": ("agent_tools.skills", "SkillsListTool"),
     "SkillsReadTool": ("agent_tools.skills", "SkillsReadTool"),
     "RegisteredTool": ("agent_tools.contracts", "RegisteredTool"),
+    "SessionSearchTool": ("agent_tools.session_history", "SessionSearchTool"),
     "TestsRunTool": ("agent_tools.builtin.tests", "TestsRunTool"),
     "ToolContract": ("agent_tools.contracts", "ToolContract"),
     "ToolExecutor": ("agent_tools.executor", "ToolExecutor"),
@@ -132,6 +136,10 @@ _EXPORTS = {
     "parse_mcp_tool_name": ("agent_tools.mcp_proxy", "parse_mcp_tool_name"),
     "patch_apply_contract": ("agent_tools.builtin.patch", "patch_apply_contract"),
     "plan_contract": ("agent_tools.builtin.plan", "plan_contract"),
+    "sessions_search_contract": (
+        "agent_tools.session_history",
+        "sessions_search_contract",
+    ),
     "skills_list_contract": ("agent_tools.skills", "skills_list_contract"),
     "skills_read_contract": ("agent_tools.skills", "skills_read_contract"),
     "tests_run_contract": ("agent_tools.builtin.tests", "tests_run_contract"),
