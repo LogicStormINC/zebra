@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-14: merged `P118-SUB-01` through GitHub PR `#72` and closed Phase 118; Phase 119 is limited to bounded local parallel fan-out for independent `agent.research` calls from one provider batch. It reuses the existing safe-batch preflight and provider-order projection, raises child and concurrency limits only to a conservative fixed bound, preserves the read-only authority ceiling and no-recursion rule, and joins all local children on teardown. Adaptive dependency graphs, write-capable children, fixed Reviewer or Coder roles, separate worktrees, distributed recovery, A2A, and repository indexing remain later boundaries.
 - 2026-07-14: completed `P118-SUB-01` implementation on `codex/p118-sub-01-bounded-read-only-research`; `agent-core` now defines provider-neutral child identity, task, lifecycle, budget, source, result, and `spawn/join/cancel/collect` contracts. Production local runtime and worker composition advertise one `agent.research` capability backed by a single-child standard-library coordinator and the existing Harness. Children inherit the parent workspace but expose only `files.read` and `git.status` under `READ_ONLY` policy, cannot recursively delegate, and are bounded by child, concurrency, depth, model-call, and tool-call ceilings before work starts. Structured child results carry summaries, source references, confidence, status, and usage; lifecycle events contain only identities, bounds, counts, confidence, and provenance. A real `deepseek-v4-flash` parent delegated one file investigation, the child completed in two model calls and one tool call with one source at confidence `1.0`, and the parent returned the exact `PARENT-SUBAGENT-OK` answer. All `987` tests, Ruff, Mypy across `218` source files, and the 8-case eval release gate passed.
 - 2026-07-14: merged `P117-CTX-01` through GitHub PR `#70` and closed Phase 117; Phase 118 is limited to one bounded local-first read-only Research Subagent primitive. The child inherits the parent workspace under a strictly narrower inspection-only profile, returns structured sourced evidence, cannot recursively delegate, and remains subject to explicit child, concurrency, model, tool, and depth budgets. Write-capable children, Reviewer role behavior, separate worktrees, durable distributed child recovery, A2A, and repository indexing remain later boundaries.
 - 2026-07-14: completed `P117-CTX-01` implementation on `codex/p117-ctx-01-bounded-conversation-compaction`; provider follow-up calls now apply a deterministic dynamic-conversation budget through an `agent-core` port implemented by `agent-context`. Compaction preserves the stable system prefix, original goal, latest working exchange, complete assistant/tool pairs, and unresolved approval state while replacing only completed older evidence with a bounded summary. Metrics-only `context_compacted` events record estimates, counts, and provenance without raw tool output. Approval continuation resumes the exact pending call without replaying earlier tools. A real `deepseek-v4-flash` run read two files sequentially, compacted the estimate from `2616` to `521` tokens, and returned the exact `COMPACT-OK` answer in three model calls. All `980` tests, Ruff, Mypy across `214` source files, and the 8-case eval release gate passed.
@@ -52,10 +53,12 @@
 
 ## Current Phase
 
-- Active phase: `Phase 118 - Bounded Read-Only Research Subagent`
-- Repository status: `phase 117 closed; P118-SUB-01 is in review`
+- Active phase: `Phase 119 - Bounded Parallel Research Fan-Out`
+- Repository status: `phase 118 closed; P119-SUB-01 is ready`
 - Current focus:
-  - `P118-SUB-01` is in review on `codex/p118-sub-01-bounded-read-only-research` after lifecycle, authority-ceiling, cancellation, full-repository, and real `deepseek-v4-flash` acceptance
+  - `P119-SUB-01` is ready to reuse safe-batch execution for a fixed bounded parallel fan-out of independent read-only research children with provider-order results
+  - `P118-SUB-01` was merged through GitHub PR `#72` after lifecycle, authority-ceiling, cancellation, full-repository, and real `deepseek-v4-flash` acceptance
+  - `P118-CLOSE-01` records the Phase 118 closeout and the explicit Phase 119 ownership boundary
   - `P117-CTX-01` was merged through GitHub PR `#70` after deterministic compaction, approval-continuation, full-repository, and real `deepseek-v4-flash` acceptance
   - `P117-CLOSE-01` records the Phase 117 closeout and the explicit Phase 118 ownership boundary
   - `P116-HAR-01` was merged through GitHub PR `#68` after deterministic concurrency, preflight, fallback, failure-observation, full-repository, and real `deepseek-v4-flash` acceptance
