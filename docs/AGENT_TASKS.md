@@ -11514,3 +11514,92 @@ context or conflating raw events with durable memory.
   reasoning, memory mutation, session mutation, deletion, export, or import
 - desktop history management pages, search UI, manual transcript editing, HITL,
   notifications, recommendations, or automatic recall without a tool call
+
+### P128-CLOSE-01 - Phase 128 Closeout And Phase 129 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / SECURITY`
+- Depends on: `P128-HIST-01`
+- Branch: `codex/p128-closeout-phase129-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 128 acceptance state and define one bounded workspace
+inventory slice that lets a general agent discover local material without a
+known filename, search term, shell command, or prompt-wide repository dump.
+
+#### Acceptance
+
+- [x] `P128-HIST-01` is recorded as merged through PR `#93` and done.
+- [x] Phase 129 has one non-overlapping ready task with explicit owned paths.
+- [x] Updated Hermes commit `3f0b0e20e` is the reviewed source baseline;
+  Hermes `search_files(target="files")` informs bounded file discovery only,
+  while Zebra keeps a separate typed workspace-list contract, LocalWorkspace
+  containment, Policy, tool budgets, and deterministic output ceilings.
+
+## Phase 129 Task Board
+
+### P129-TOOL-01 - Bounded Workspace Inventory Tool
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `TOOLS / RUNTIME / SECURITY`
+- Depends on: `P128-CLOSE-01`
+- Branch: `codex/p129-tool-01-bounded-workspace-inventory`
+- Owned paths: `packages/agent-core/`, `packages/agent-tools/`, `packages/agent-runtime/`, `packages/agent-security/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Give general and coding parent sessions one typed read-only `files.list` tool
+for deterministic, bounded directory and shallow-tree discovery inside the
+active workspace, so document analysis and other non-coding tasks can locate
+relevant local material before choosing a file to search or read.
+
+#### Deliverables
+
+- one `files.list` contract with a workspace-relative root, bounded depth,
+  explicit offset and limit, and stable machine-readable metadata
+- deterministic directory-first then filename ordering over normalized relative
+  paths, with fixed scanned-entry and aggregate output-byte ceilings
+- LocalWorkspace containment plus fail-closed handling for missing paths,
+  non-directories, hidden roots, symlinks, and unsupported arguments
+- default exclusion of hidden entries, symlinks, VCS data, dependency trees,
+  virtual environments, caches, generated build trees, and oversized scans
+- parent general/coding registration and read-only Policy compatibility without
+  changing the fixed Research-child manifest or adding a desktop control surface
+
+#### Acceptance
+
+- [ ] `files.list` is model-visible and executable in general and coding parent
+  sessions, is parallel-safe, and remains absent from fixed Research children.
+- [ ] No path lists the workspace root; a relative directory path lists only
+  contained entries; depth is explicit and bounded from `1` through `4`.
+- [ ] Results are stable across repeated calls, directories sort before files,
+  and each entry exposes only normalized relative path, kind, and bounded size.
+- [ ] Offset and limit provide deterministic pagination with explicit
+  `returned_count`, `next_offset`, and `truncated` metadata.
+- [ ] The adapter scans at most a fixed entry ceiling and caps aggregate output;
+  hitting either ceiling is reported rather than implying a complete inventory.
+- [ ] Absolute paths, traversal, missing roots, file roots, hidden roots,
+  malformed depth/offset/limit values, and unknown fields fail before listing.
+- [ ] Hidden entries, symlinks, VCS internals, dependency trees, virtual
+  environments, caches, and generated build trees are never returned or followed.
+- [ ] Listing is read-only under every Policy profile and cannot grant file,
+  command, network, credential, approval, or workspace-write authority.
+- [ ] Existing file read/search, Skills, session recall, Web tools, plans,
+  clarification, approvals, batches, compaction, cancellation, and recovery work.
+- [ ] Targeted tests, full backend/static/eval gates, desktop checks/build,
+  browser compatibility, and one real `deepseek-v4-flash` list/read pass succeed.
+
+#### Explicit Non-Goals
+
+- file contents, hashes, MIME detection, recursive full-repository dumps,
+  persistent indexes, watchers, caches, semantic ranking, vectors, or summaries
+- directory creation, rename, move, delete, upload, attachment ingestion, file
+  mutation, shell fallback, Git mutation, or automatic file reads
+- exposing ignored dependencies, hidden files, symlinks, external mounts, Home,
+  credentials, environment values, raw filesystem metadata, or OS absolute paths
+- Research-child expansion, desktop file browser, preview UI, drag-and-drop,
+  browser automation, MCP, connectors, dynamic tool loading, or `tool_search`
