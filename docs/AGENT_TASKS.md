@@ -11013,7 +11013,7 @@ input without treating chat text or an in-process callback as durable state.
 
 ### P124-HITL-01 - Durable Clarification Request And Resume
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / TOOLS / RUNTIME / STORAGE / APP / UI`
 - Depends on: `P123-CLOSE-01`
@@ -11081,3 +11081,97 @@ or relying on a live worker thread.
   or cross-session clarification routing
 - granting Clarify to fixed Research children, inferring answers from unrelated
   messages, or resuming a terminal session
+
+### P124-CLOSE-01 - Phase 124 Closeout And Phase 125 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P124-HITL-01`
+- Branch: `codex/p124-closeout-phase125-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 124 acceptance state and define one durable session-plan
+slice so a general-purpose agent can expose real task decomposition and progress
+instead of relying on UI stages inferred from unrelated execution events.
+
+#### Acceptance
+
+- [x] `P124-HITL-01` is recorded as merged through PR `#85` and done.
+- [x] Phase 125 has one non-overlapping ready task with explicit owned paths.
+- [x] Hermes `todo` is used only as a reference for ordered steps, bounded
+  statuses, and full-list readback; its in-memory store and conversation-history
+  hydration are rejected in favor of Zebra session events and projections.
+
+## Phase 125 Task Board
+
+### P125-PLAN-01 - Durable Session Task Plan
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / TOOLS / SECURITY / STORAGE / RUNTIME / APP / UI`
+- Depends on: `P124-CLOSE-01`
+- Branch: `codex/p125-plan-01-durable-session-task-plan`
+- Owned paths: `packages/agent-core/`, `packages/agent-tools/`, `packages/agent-security/`, `packages/agent-runtime/`, `packages/agent-storage/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `UI/desktop/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Allow the parent model to maintain one bounded, ordered task plan as durable
+session state, return the complete authoritative plan after every update, and
+show real progress to operators without treating inferred UI stages or chat text
+as the plan source of truth.
+
+#### Deliverables
+
+- provider-neutral plan and step contracts with stable step identifiers,
+  bounded descriptions, deterministic order, and `pending`, `in_progress`,
+  `completed`, or `cancelled` status
+- one durable plan-update event plus deterministic session and SQLite projection
+  that survives replay, worker recovery, and active-context compaction
+- one typed parent-session `agent.plan` tool for full-list read or replace/update
+  operations, returning the complete current plan and status counts
+- safe API and CLI plan readback from the shared projection, with no independent
+  adapter-side reconstruction from raw chat or tool text
+- one compact desktop plan surface that renders only an authoritative non-empty
+  plan and does not expose unsupported manual editing
+- deterministic, full-repository, desktop, browser, recovery, compaction, and
+  real-provider acceptance evidence
+
+#### Acceptance
+
+- [ ] A plan contains at most 12 ordered steps; every step has one unique,
+  non-blank bounded identifier and description plus one supported status.
+- [ ] At most one step may be `in_progress`; malformed, duplicate, oversized,
+  or invalid-status updates fail structurally without changing durable state.
+- [ ] A valid update persists one bounded event and deterministically replaces
+  or updates the session projection without scanning chat history.
+- [ ] Read and update results return the complete authoritative plan plus stable
+  total, pending, in-progress, completed, and cancelled counts.
+- [ ] Active pending and in-progress steps remain available after replay,
+  worker recovery, clarification or approval continuation, and compaction;
+  completed steps are not presented as unfinished work.
+- [ ] `agent.plan` is parent-session only and cannot grant command, file,
+  network, credential, approval, or workspace-write authority.
+- [ ] Fixed Research children cannot mutate the parent plan or expose a hidden
+  recursive planning channel.
+- [ ] API, CLI, and desktop reads agree on step identifiers, order, text,
+  status, counts, and latest update evidence.
+- [ ] Desktop plan UI appears only for a concrete non-empty durable plan and
+  remains absent for idle, legacy, and empty-plan sessions.
+- [ ] Existing clarification and approval continuation, ordinary messages,
+  tool batches, compaction, Web Gateway, and recovery remain compatible.
+- [ ] Targeted tests, full backend/static/eval gates, desktop checks/build,
+  browser validation, and one real `deepseek-v4-flash` plan pass succeed.
+
+#### Explicit Non-Goals
+
+- project-wide kanban, cross-session dependencies, assignees, due dates,
+  reminders, notifications, cron scheduling, or distributed workflow dispatch
+- user-authored plan editing, plan approval gates, branching DAGs, nested steps,
+  arbitrary metadata, rich markdown, attachments, or more than 12 steps
+- deriving plans from UI stages, assistant prose, hidden chain of thought, or
+  planner-hook summaries without an explicit durable plan event
+- copying Hermes process-local stores, global todo files, history hydration,
+  256-item limits, or post-compression prompt mutation into Zebra Agent
