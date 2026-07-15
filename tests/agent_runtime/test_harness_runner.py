@@ -160,6 +160,48 @@ def test_run_local_harness_searches_then_reads_workspace_evidence(tmp_path) -> N
     assert result.attempt_result.metadata["assistant_message"] == "Found SEARCH-THEN-READ."
 
 
+def test_run_local_harness_lists_then_reads_workspace_evidence(tmp_path) -> None:
+    materials = tmp_path / "materials"
+    materials.mkdir()
+    (materials / "brief.txt").write_text("LIST-THEN-READ\n", encoding="utf-8")
+    list_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="files.list",
+        arguments={"path": "materials"},
+        created_at=_created_at(),
+    )
+    read_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="files.read",
+        arguments={"path": "materials/brief.txt"},
+        created_at=_created_at(),
+    )
+
+    result = run_local_harness(
+        prompt="Discover and read the material.",
+        title="Runtime list and read test",
+        workspace_root=tmp_path.resolve(),
+        model_gateway=ScriptedModelGateway(
+            responses=tuple(
+                ScriptedModelResponse(completion=completion)
+                for completion in (
+                    _completion("Listing.", list_call),
+                    _completion("Reading.", read_call),
+                    _completion("Found LIST-THEN-READ."),
+                )
+            )
+        ),
+    )
+
+    executed = [
+        event.payload["tool_name"]
+        for event in result.events
+        if event.event_type is EventType.TOOL_EXECUTION_COMPLETED
+    ]
+    assert executed == ["files.list", "files.read"]
+    assert result.attempt_result.metadata["assistant_message"] == "Found LIST-THEN-READ."
+
+
 def test_run_local_harness_lists_then_reads_configured_skill(tmp_path) -> None:
     skill_root = tmp_path / "skills"
     skill = skill_root / "evidence"
@@ -310,6 +352,7 @@ def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
         "agent.plan",
         "agent.research",
         "command.run",
+        "files.list",
         "files.read",
         "files.search",
         "patch.apply",
@@ -322,7 +365,9 @@ def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
 def test_local_tool_gateway_exposes_only_parallel_safe_builtins(tmp_path) -> None:
     gateway = LocalToolGateway(tmp_path.resolve())
 
-    assert gateway.parallel_safe_tools == frozenset({"files.read", "files.search"})
+    assert gateway.parallel_safe_tools == frozenset(
+        {"files.list", "files.read", "files.search"}
+    )
 
 
 def test_local_tool_gateway_registers_search_only_with_valid_configuration(tmp_path) -> None:
@@ -379,6 +424,7 @@ def test_local_tool_gateway_exposes_coding_profile_tools(tmp_path) -> None:
         "agent.clarify",
         "agent.plan",
         "command.run",
+        "files.list",
         "files.read",
         "files.search",
         "git.status",
@@ -387,7 +433,7 @@ def test_local_tool_gateway_exposes_coding_profile_tools(tmp_path) -> None:
         "web.fetch",
     )
     assert gateway.parallel_safe_tools == frozenset(
-        {"files.read", "files.search", "git.status"}
+        {"files.list", "files.read", "files.search", "git.status"}
     )
 
 

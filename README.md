@@ -138,6 +138,13 @@ workspace-relative root, with optional glob filtering and explicit pagination.
 It skips hidden, symlinked, binary, and oversized files and enforces fixed scan,
 result, line, and output-byte ceilings before content reaches the model.
 
+`files.list` lets general and coding parent sessions inspect one bounded
+workspace-relative directory or shallow tree before choosing material to search
+or read. Results use stable directory-first ordering, explicit depth and offset
+pagination, and fixed scan and output ceilings. Hidden entries, symlinks, VCS
+data, dependency trees, virtual environments, caches, and generated build trees
+are excluded; the tool is read-only and is not exposed to fixed Research children.
+
 Task tool egress also defaults independently to `network_profile=none`. Use the
 CLI `--network-profile` option or the desktop launch control to select a broader
 existing network profile explicitly; `domain-allowlist` additionally requires

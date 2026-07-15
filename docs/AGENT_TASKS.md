@@ -11543,8 +11543,8 @@ known filename, search term, shell command, or prompt-wide repository dump.
 
 ### P129-TOOL-01 - Bounded Workspace Inventory Tool
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `TOOLS / RUNTIME / SECURITY`
 - Depends on: `P128-CLOSE-01`
 - Branch: `codex/p129-tool-01-bounded-workspace-inventory`
@@ -11572,25 +11572,25 @@ relevant local material before choosing a file to search or read.
 
 #### Acceptance
 
-- [ ] `files.list` is model-visible and executable in general and coding parent
+- [x] `files.list` is model-visible and executable in general and coding parent
   sessions, is parallel-safe, and remains absent from fixed Research children.
-- [ ] No path lists the workspace root; a relative directory path lists only
+- [x] No path lists the workspace root; a relative directory path lists only
   contained entries; depth is explicit and bounded from `1` through `4`.
-- [ ] Results are stable across repeated calls, directories sort before files,
+- [x] Results are stable across repeated calls, directories sort before files,
   and each entry exposes only normalized relative path, kind, and bounded size.
-- [ ] Offset and limit provide deterministic pagination with explicit
+- [x] Offset and limit provide deterministic pagination with explicit
   `returned_count`, `next_offset`, and `truncated` metadata.
-- [ ] The adapter scans at most a fixed entry ceiling and caps aggregate output;
+- [x] The adapter scans at most a fixed entry ceiling and caps aggregate output;
   hitting either ceiling is reported rather than implying a complete inventory.
-- [ ] Absolute paths, traversal, missing roots, file roots, hidden roots,
+- [x] Absolute paths, traversal, missing roots, file roots, hidden roots,
   malformed depth/offset/limit values, and unknown fields fail before listing.
-- [ ] Hidden entries, symlinks, VCS internals, dependency trees, virtual
+- [x] Hidden entries, symlinks, VCS internals, dependency trees, virtual
   environments, caches, and generated build trees are never returned or followed.
-- [ ] Listing is read-only under every Policy profile and cannot grant file,
+- [x] Listing is read-only under every Policy profile and cannot grant file,
   command, network, credential, approval, or workspace-write authority.
-- [ ] Existing file read/search, Skills, session recall, Web tools, plans,
+- [x] Existing file read/search, Skills, session recall, Web tools, plans,
   clarification, approvals, batches, compaction, cancellation, and recovery work.
-- [ ] Targeted tests, full backend/static/eval gates, desktop checks/build,
+- [x] Targeted tests, full backend/static/eval gates, desktop checks/build,
   browser compatibility, and one real `deepseek-v4-flash` list/read pass succeed.
 
 #### Explicit Non-Goals
@@ -11603,3 +11603,17 @@ relevant local material before choosing a file to search or read.
   credentials, environment values, raw filesystem metadata, or OS absolute paths
 - Research-child expansion, desktop file browser, preview UI, drag-and-drop,
   browser automation, MCP, connectors, dynamic tool loading, or `tool_search`
+
+#### Validation Evidence
+
+- `76` focused tool, Harness, and Policy tests passed.
+- All `1132` backend tests, Ruff, Mypy across `245` source files, and the
+  8-case eval release gate passed.
+- All ten desktop contract checks, the Node `22.17.0` production build, and
+  Tauri `cargo check` passed.
+- Browser acceptance at `1200x762` connected to the isolated API with only 200
+  responses, no console warning/error/issue, no viewport overflow, and no idle
+  HITL controls.
+- A real `deepseek-v4-flash` general/read-only run called `files.list` on
+  `materials`, then `files.read`, and completed with
+  `LIST_FINAL_OK: ZEBRA_P129_LIST_READ_8C41`.

@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from agent_tools.builtin.command import CommandRunTool, command_run_contract
     from agent_tools.builtin.files import FileReadTool, file_read_contract
     from agent_tools.builtin.git import GitStatusTool, git_status_contract
+    from agent_tools.builtin.listing import WorkspaceListTool, files_list_contract
     from agent_tools.builtin.patch import PatchApplyTool, patch_apply_contract
     from agent_tools.builtin.plan import PlanTool, plan_contract
     from agent_tools.builtin.search import WorkspaceSearchTool, files_search_contract
@@ -69,6 +70,7 @@ __all__ = [
     "ToolExecutor",
     "ToolRegistry",
     "WebFetchTool",
+    "WorkspaceListTool",
     "WorkspaceSearchTool",
     "WebGatewayError",
     "WebGatewayRequest",
@@ -83,6 +85,7 @@ __all__ = [
     "command_run_contract",
     "clarify_contract",
     "file_read_contract",
+    "files_list_contract",
     "files_search_contract",
     "git_status_contract",
     "parse_mcp_tool_name",
@@ -100,6 +103,7 @@ _EXPORTS = {
     "ClarifyTool": ("agent_tools.builtin.clarify", "ClarifyTool"),
     "CommandRunTool": ("agent_tools.builtin.command", "CommandRunTool"),
     "FileReadTool": ("agent_tools.builtin.files", "FileReadTool"),
+    "WorkspaceListTool": ("agent_tools.builtin.listing", "WorkspaceListTool"),
     "WorkspaceSearchTool": ("agent_tools.builtin.search", "WorkspaceSearchTool"),
     "GitStatusTool": ("agent_tools.builtin.git", "GitStatusTool"),
     "McpProxyRequest": ("agent_tools.mcp_proxy", "McpProxyRequest"),
@@ -131,6 +135,7 @@ _EXPORTS = {
     "command_run_contract": ("agent_tools.builtin.command", "command_run_contract"),
     "clarify_contract": ("agent_tools.builtin.clarify", "clarify_contract"),
     "file_read_contract": ("agent_tools.builtin.files", "file_read_contract"),
+    "files_list_contract": ("agent_tools.builtin.listing", "files_list_contract"),
     "files_search_contract": ("agent_tools.builtin.search", "files_search_contract"),
     "git_status_contract": ("agent_tools.builtin.git", "git_status_contract"),
     "parse_mcp_tool_name": ("agent_tools.mcp_proxy", "parse_mcp_tool_name"),

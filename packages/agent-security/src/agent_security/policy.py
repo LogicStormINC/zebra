@@ -59,6 +59,7 @@ READ_ONLY_TOOLS = frozenset(
         "agent.clarify",
         "agent.plan",
         "agent.research",
+        "files.list",
         "files.read",
         "files.search",
         "git.status",
@@ -75,6 +76,7 @@ SENSITIVE_PATH_MARKERS = (".env", "credential", "id_rsa", "private_key", "secret
 EXFILTRATION_COMMANDS = frozenset({"curl", "nc", "netcat", "scp", "wget"})
 PATH_ARGUMENTS_BY_TOOL = {
     "command.run": ("cwd",),
+    "files.list": ("path",),
     "files.read": ("path",),
     "files.search": ("path",),
     "git.status": ("cwd",),
