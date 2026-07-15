@@ -10709,7 +10709,7 @@ surface, and retain the current coding-oriented surface as an explicit option.
 
 ### P120-CLOSE-01 - Phase 120 Closeout And Phase 121 Planning
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P120-CAP-01`
@@ -10733,7 +10733,7 @@ information tools.
 
 ### P121-NET-01 - Durable Per-Task Network Authority
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / SECURITY / APP`
 - Depends on: `P120-CLOSE-01`
@@ -10802,3 +10802,98 @@ information capability is advertised to the model.
   rules, redirect policy, DNS pinning, or production SSRF handling
 - controlling the model-provider connection itself through the task tool-egress
   profile
+
+### P121-CLOSE-01 - Phase 121 Closeout And Phase 122 Planning
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P121-NET-01`
+- Branch: `codex/p121-closeout-phase122-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 121 acceptance state and define the first external
+information slice without weakening the durable network, Policy, approval, or
+gateway boundaries.
+
+#### Acceptance
+
+- [x] `P121-NET-01` is recorded as merged through PR `#79` and done.
+- [x] Phase 122 has one non-overlapping ready task with explicit owned paths.
+- [x] Direct arbitrary URL execution is rejected in favor of one bounded,
+  read-only Web Gateway path controlled by durable network authority and Policy.
+
+## Phase 122 Task Board
+
+### P122-WEB-01 - Bounded Read-Only Web Gateway
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / SECURITY / TOOLS / INTEGRATIONS / APP`
+- Depends on: `P121-CLOSE-01`
+- Branch: `codex/p122-web-01-bounded-read-only-web-gateway`
+- Owned paths: `packages/agent-core/`, `packages/agent-security/`, `packages/agent-tools/`, `packages/agent-integrations/`, `packages/agent-runtime/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `UI/desktop/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Give general-purpose tasks one truthful external information capability by
+advertising a typed, read-only `web.fetch` tool whose execution is bounded by
+durable network authority, explicit Policy approval, and a dedicated Web
+Gateway transport rather than direct tool-process networking.
+
+#### Deliverables
+
+- one provider-neutral `web.fetch` contract for HTTPS text retrieval with a
+  validated URL and no caller-supplied credentials, headers, methods, or body
+- one Web Gateway request and response contract plus an injectable transport;
+  production composition uses the gateway and tests may use a fake transport
+- deterministic Policy routing that blocks `network_profile=none`, requires an
+  exact normalized hostname match for `domain-allowlist`, and requires approval
+  before any gateway transport invocation
+- bounded response handling with fixed timeout, byte ceiling, accepted textual
+  content types, stable metadata, and explicit unavailable or rejected results
+- general and coding profile advertisement through the existing typed registry,
+  with Research children retaining their no-network and no-Web ceiling
+- API, CLI, worker, approval-continuation, desktop HITL, browser, and
+  real-provider acceptance evidence
+
+#### Acceptance
+
+- [ ] `web.fetch` is visible in general and coding task manifests, but not in
+  fixed Research children or any unregistered arbitrary tool path.
+- [ ] Only `https` URLs with no userinfo and an exact allowlisted hostname reach
+  the approval boundary; localhost, IP literals, explicit ports, fragments,
+  malformed URLs, and non-allowlisted hosts fail closed.
+- [ ] No request reaches the gateway while Policy is denied or waiting for
+  approval; an exact approval continuation invokes the transport once.
+- [ ] Gateway execution permits only one GET, sends no task or model credentials,
+  does not follow redirects, and enforces timeout, content-type, and response
+  byte limits before returning text to the model.
+- [ ] External content is labeled untrusted and produces auditable route,
+  target, profile, status, content type, and byte-count evidence without
+  persisting response bodies in control metadata.
+- [ ] API, CLI, and Worker recover the durable network profile before Policy
+  evaluation; process-global configuration cannot widen a task.
+- [ ] The desktop shows Web access only as launch authority and approval-driven
+  HITL; it does not add a default browser or coding-delivery panel.
+- [ ] Existing local tools, MCP proxy routing, profile isolation, sequential or
+  concurrent loops, approvals, compaction, and subagent behavior remain
+  compatible.
+- [ ] Targeted tests, full backend and static gates, eval release gate, desktop
+  checks, production build, browser validation, and one real-provider tool
+  selection pass succeed.
+
+#### Explicit Non-Goals
+
+- Web search ranking, browser automation, JavaScript rendering, cookies,
+  authentication, form submission, uploads, or write-capable HTTP methods
+- redirects, wildcard domains, arbitrary ports, IP or CIDR allowlists, private
+  network access, caller-defined headers, or process environment credentials
+- claiming production-grade DNS pinning or a complete distributed egress proxy;
+  the local transport remains a bounded adapter behind the gateway contract
+- MCP server discovery, external SaaS connectors, crawling, indexing, caching,
+  or persistent Web memory
+- granting Research children network access or inferring network authority from
+  prompt text
