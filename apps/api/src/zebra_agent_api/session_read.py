@@ -7,6 +7,7 @@ from typing import cast
 from urllib.parse import urlparse
 from uuid import UUID
 
+from agent_core.application import attachment_refs_from_event
 from agent_core.domain.identifiers import SessionId
 from agent_runtime import WorkspaceDiffError, WorkspaceDiffService
 from agent_storage import (
@@ -174,9 +175,18 @@ class SessionReadApi:
                 },
             )
         workspace = SQLiteWorkspaceProjectionStore(self.database_path).get_workspace(session_key)
+        body = serialize_session_summary(session, workspace)
+        events = SQLiteEventStore(self.database_path).list_for_session(session_key)
+        attachments = [
+            ref.to_mapping()
+            for event in events
+            for ref in attachment_refs_from_event(event)
+        ]
+        if attachments:
+            body["attachments"] = attachments
         return ApiResponse(
             status_code=200,
-            body=serialize_session_summary(session, workspace),
+            body=body,
         )
 
     def get_session_stream(self, session_id: str) -> ApiResponse:

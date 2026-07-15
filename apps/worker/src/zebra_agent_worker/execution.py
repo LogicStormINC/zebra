@@ -14,7 +14,6 @@ from agent_core.application.workspace_projection import apply_event as apply_wor
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session
-from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.harness import (
     HarnessAttempt,
@@ -26,7 +25,7 @@ from agent_core.harness import (
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_integrations import build_model_gateway
 from agent_runtime import LocalToolGateway
-from agent_security import LocalPolicyEngine, NetworkProfile, PolicyProfile, parse_network_profile
+from agent_security import LocalPolicyEngine, PolicyProfile
 from agent_storage import (
     SQLiteArtifactPayloadStore,
     SQLiteEventStore,
@@ -53,6 +52,7 @@ from zebra_agent_worker.control import SessionControlError, SessionControlServic
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
+from zebra_agent_worker.task_recovery import recover_task
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 
 
@@ -65,19 +65,6 @@ class ExecutedSession:
     session: Session
     events: tuple[SessionEvent, ...]
     attempt_result: HarnessAttemptResult
-
-
-@dataclass(frozen=True)
-class _RecoveredTask:
-    title: str
-    user_input: str
-    workspace_root: Path
-    policy_profile: str
-    tool_profile: ToolProfile
-    network_profile: NetworkProfile
-    max_attempts: int
-    max_model_calls: int | None
-    max_tool_calls: int | None
 
 
 class SessionExecutionService:
@@ -103,9 +90,10 @@ class SessionExecutionService:
         )
         self._control_service = SessionControlService(database_path)
         self._model_call_indexer = ModelCallIndexer(SQLiteModelCallStore(database_path))
+        self._artifact_payload_store = SQLiteArtifactPayloadStore(database_path)
         self._tool_run_indexer = ToolRunIndexer(
             SQLiteToolRunStore(database_path),
-            SQLiteArtifactPayloadStore(database_path),
+            self._artifact_payload_store,
         )
         self._memory_extraction_service = MemoryCandidateExtractionService(
             SQLiteMemoryStore(database_path)
@@ -141,11 +129,16 @@ class SessionExecutionService:
                 lease=claimed.lease,
             )
         session_events = self._event_store.list_for_session(session_id)
-        task = _recover_task(
-            session_events,
-            workspace=claimed.recovery.workspace,
-            fallback_title=claimed.recovery.session.title,
-        )
+        try:
+            task = recover_task(
+                session_events,
+                workspace=claimed.recovery.workspace,
+                fallback_title=claimed.recovery.session.title,
+                attachment_store=self._artifact_payload_store,
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            self._claim_service.release_claim(claimed)
+            raise WorkerExecutionError(str(exc)) from exc
         model_gateway = build_model_gateway(self._settings)
         tool_gateway = LocalToolGateway(
             task.workspace_root,
@@ -191,6 +184,7 @@ class SessionExecutionService:
                     self._database_path,
                     repo_id=str(task.workspace_root.resolve()),
                 ),
+                attachments=task.attachments,
             ),
             session=claimed.recovery.session,
             attempt=HarnessAttempt(number=1, started_at=started_at),
@@ -361,42 +355,6 @@ class SessionExecutionService:
         )
 
 
-def _recover_task(
-    events: list[SessionEvent],
-    *,
-    workspace: WorkspaceProjection,
-    fallback_title: str,
-) -> _RecoveredTask:
-    user_input: str | None = None
-    task_payload: dict[str, object] | None = None
-    for event in events:
-        if event.event_type is EventType.USER_MESSAGE_RECEIVED:
-            content = event.payload.get("content")
-            if isinstance(content, str) and content.strip():
-                user_input = content.strip()
-        if event.event_type is EventType.TASK_PREPARED:
-            task_payload = event.payload
-    if user_input is None or task_payload is None:
-        raise WorkerExecutionError("queued session is missing bootstrap task input")
-    title = task_payload.get("title")
-    resolved_title = title.strip() if isinstance(title, str) and title.strip() else fallback_title
-    policy_profile = workspace.policy_profile or PolicyProfile.WORKSPACE_WRITE.value
-    return _RecoveredTask(
-        title=resolved_title,
-        user_input=user_input,
-        workspace_root=Path(workspace.workspace_root).expanduser().resolve(),
-        policy_profile=policy_profile,
-        tool_profile=workspace.tool_profile,
-        network_profile=parse_network_profile(
-            workspace.network_profile,
-            domain_allowlist=workspace.network_allowlist,
-        ),
-        max_attempts=_optional_positive_int(task_payload.get("max_attempts")) or 1,
-        max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
-        max_tool_calls=_optional_positive_int(task_payload.get("max_tool_calls")),
-    )
-
-
 def _append_execution_events(
     *,
     session: Session,
@@ -482,12 +440,6 @@ def _append_execution_events(
             events.append(event)
             next_sequence = event.sequence + 1
     return tuple(events)
-
-
-def _optional_positive_int(value: object) -> int | None:
-    if not isinstance(value, int) or isinstance(value, bool):
-        return None
-    return value if value > 0 else None
 
 
 def _local_repo_id(workspace_root: str) -> str:

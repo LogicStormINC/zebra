@@ -1,5 +1,14 @@
 import type { ApprovalContext } from "./core";
 
+export interface SessionAttachment {
+  attachment_id: string;
+  message_event_id: string;
+  file_name: string;
+  media_type: string;
+  size_bytes: number;
+  sha256: string;
+}
+
 export interface SessionWorkspaceSnapshot {
   runtime_name: string;
   snapshot_id: string;
@@ -51,6 +60,7 @@ export interface SessionSummary {
   approval_context?: ApprovalContext;
   clarification_context?: ClarificationContext;
   task_plan?: TaskPlan;
+  attachments?: SessionAttachment[];
 }
 
 export interface RecentSessionSummary extends SessionSummary {
@@ -95,6 +105,7 @@ export interface CreateSessionResponse {
   tool_profile?: "general" | "coding";
   network_profile?: string;
   network_allowlist?: string[];
+  attachments?: SessionAttachment[];
 }
 
 export interface ApprovalDecisionResponse {
@@ -134,6 +145,7 @@ export interface SessionMessageAppendResponse {
   current_sequence: number;
   clarification_resolved?: boolean;
   clarification_id?: string;
+  attachments?: SessionAttachment[];
 }
 
 export interface SessionCommitResponse {

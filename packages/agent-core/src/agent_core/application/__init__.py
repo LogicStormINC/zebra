@@ -21,6 +21,10 @@ from agent_core.application.memory_reviews import (
     MemoryReviewService,
     memory_review_scope_query,
 )
+from agent_core.application.session_attachments import (
+    attach_refs_to_user_event,
+    attachment_refs_from_event,
+)
 from agent_core.application.session_bootstrap import (
     BootstrappedSession,
     SessionBootstrapCommand,
@@ -35,6 +39,8 @@ __all__ = [
     "ApprovalDecisionAction",
     "ApprovalDecisionCommand",
     "ApprovalDecisionService",
+    "attach_refs_to_user_event",
+    "attachment_refs_from_event",
     "BootstrappedSession",
     "MemoryCandidateExtractionCommand",
     "MemoryCandidateExtractionResult",

@@ -16,6 +16,11 @@ from agent_core.domain.artifact_retention import (
     ArtifactRetentionProfile,
 )
 from agent_core.domain.artifacts import ArtifactRef
+from agent_core.domain.attachments import (
+    AttachmentContextInput,
+    SessionAttachmentRef,
+    TextAttachmentInput,
+)
 from agent_core.domain.clarifications import ClarificationContext
 from agent_core.domain.delivery_audit import DeliveryAuditRecord
 from agent_core.domain.events import EventActor, EventType, SessionEvent
@@ -47,6 +52,7 @@ __all__ = [
     "ArtifactPayloadStatus",
     "ArtifactPayloadWrite",
     "ArtifactRef",
+    "AttachmentContextInput",
     "DeliveryAuditRecord",
     "ClarificationContext",
     "EventActor",
@@ -68,6 +74,8 @@ __all__ = [
     "SessionStatus",
     "SessionPlan",
     "StoredArtifactPayload",
+    "SessionAttachmentRef",
+    "TextAttachmentInput",
     "ToolCall",
     "ToolCallStatus",
     "ToolProfile",

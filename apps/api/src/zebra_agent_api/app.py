@@ -14,9 +14,11 @@ from agent_core.application import (
     SessionBootstrapService,
     SessionMessageAppendCommand,
     SessionMessageAppendService,
+    attach_refs_to_user_event,
 )
 from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import rebuild_workspace
+from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.harness.models import HarnessLoopResult
@@ -29,12 +31,14 @@ from agent_runtime import run_local_harness
 from agent_security import CredentialBroker, PolicyProfile, parse_network_profile
 from agent_storage import (
     LeaseConflictError,
+    SQLiteArtifactPayloadStore,
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
     SQLiteSessionHistory,
     SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
+    store_text_attachments,
 )
 from zebra_agent_config import ZebraAgentSettings, load_settings
 from zebra_agent_worker import (
@@ -53,6 +57,7 @@ from zebra_agent_api.credential_broker import build_default_credential_broker
 from zebra_agent_api.responses import ApiResponse, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_artifact_control import SessionArtifactControlApi
+from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
 from zebra_agent_api.session_commit import SessionCommitApi
 from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
 from zebra_agent_api.session_list import SessionListApi
@@ -855,26 +860,37 @@ class ZebraAgentApi:
                     else str(exc)
                 ),
             )
+        attachment_refs = store_text_attachments(
+            SQLiteArtifactPayloadStore(self.database_path),
+            session_id=session_key,
+            message_event=event,
+            attachments=parsed["attachments"],
+            created_at=event.created_at,
+        )
+        event = attach_refs_to_user_event(event, attachment_refs)
         SQLiteEventStore(self.database_path).append(event)
         updated_session = projection_store.save_session(apply_event(session, event))
+        body: dict[str, object] = {
+            "session_id": session_id,
+            "appended": True,
+            **(
+                {
+                    "clarification_resolved": True,
+                    "clarification_id": parsed["clarification_id"],
+                }
+                if event.event_type.value == "clarification_responded"
+                else {}
+            ),
+            "content": parsed["content"],
+            "sequence": event.sequence,
+            "status": updated_session.status.value,
+            "current_sequence": updated_session.current_sequence,
+        }
+        if attachment_refs:
+            body["attachments"] = [ref.to_mapping() for ref in attachment_refs]
         return ApiResponse(
             status_code=201,
-            body={
-                "session_id": session_id,
-                "appended": True,
-                **(
-                    {
-                        "clarification_resolved": True,
-                        "clarification_id": parsed["clarification_id"],
-                    }
-                    if event.event_type.value == "clarification_responded"
-                    else {}
-                ),
-                "content": parsed["content"],
-                "sequence": event.sequence,
-                "status": updated_session.status.value,
-                "current_sequence": updated_session.current_sequence,
-            },
+            body=body,
         )
 
     def _parse_session_id(self, session_id: str) -> SessionId | ApiResponse:
@@ -918,12 +934,17 @@ class ZebraAgentApi:
                 network_allowlist=tuple(parsed["network_allowlist"]),
             )
         )
+        events, attachment_refs = persist_initial_attachments(
+            self.database_path,
+            tuple(bootstrap.events),
+            parsed["attachments"],
+        )
         event_store = SQLiteEventStore(self.database_path)
-        for event in bootstrap.events:
+        for event in events:
             event_store.append(event)
         SQLiteProjectionStore(self.database_path).save_session(bootstrap.session)
         SQLiteWorkspaceProjectionStore(self.database_path).save_workspace(
-            rebuild_workspace(list(bootstrap.events))
+            rebuild_workspace(list(events))
         )
         return ApiResponse(
             status_code=201,
@@ -937,6 +958,7 @@ class ZebraAgentApi:
                 "tool_profile": str(parsed["tool_profile"]),
                 "network_profile": str(parsed["network_profile"]),
                 "network_allowlist": parsed["network_allowlist"],
+                "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
 
@@ -968,13 +990,27 @@ class ZebraAgentApi:
             skill_roots=self.settings.skill_roots,
             session_history=SQLiteSessionHistory(self.database_path),
             confirmed_memories=confirmed_memories,
+            attachments=tuple(
+                AttachmentContextInput(
+                    attachment_id=attachment.attachment_id,
+                    file_name=attachment.file_name,
+                    media_type=attachment.media_type,
+                    text=attachment.payload.decode("utf-8"),
+                )
+                for attachment in parsed["attachments"]
+            ),
+        )
+        events, attachment_refs = persist_initial_attachments(
+            self.database_path,
+            tuple(result.events),
+            parsed["attachments"],
         )
         event_store = SQLiteEventStore(self.database_path)
-        for event in result.events:
+        for event in events:
             event_store.append(event)
         SQLiteProjectionStore(self.database_path).save_session(result.session)
         SQLiteWorkspaceProjectionStore(self.database_path).save_workspace(
-            rebuild_workspace(list(result.events))
+            rebuild_workspace(list(events))
         )
         return ApiResponse(
             status_code=201,
@@ -993,6 +1029,7 @@ class ZebraAgentApi:
                 "network_profile": str(parsed["network_profile"]),
                 "network_allowlist": parsed["network_allowlist"],
                 "trace": _trace_payload(result),
+                "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
 

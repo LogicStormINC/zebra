@@ -3,11 +3,13 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TypedDict
 
+from agent_core.domain.attachments import TextAttachmentInput
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_security import NetworkProfileError, PolicyProfile, parse_network_profile
 
 from zebra_agent_api.responses import ApiResponse, bad_request
+from zebra_agent_api.session_attachment_inputs import parse_text_attachment_inputs
 
 
 class CreateSessionPayload(TypedDict):
@@ -19,6 +21,7 @@ class CreateSessionPayload(TypedDict):
     tool_profile: str
     network_profile: str
     network_allowlist: list[str]
+    attachments: tuple[TextAttachmentInput, ...]
 
 
 class ResumeSessionPayload(TypedDict):
@@ -37,6 +40,7 @@ class CancelSessionPayload(TypedDict):
 class AppendSessionMessagePayload(TypedDict):
     content: str
     clarification_id: str | None
+    attachments: tuple[TextAttachmentInput, ...]
 
 
 class ApprovalDecisionPayload(TypedDict):
@@ -123,6 +127,10 @@ def parse_create_session_payload(
         network = parse_network_profile(network_profile, domain_allowlist=network_allowlist)
     except NetworkProfileError as exc:
         return bad_request(str(exc))
+    try:
+        attachments = parse_text_attachment_inputs(payload.get("attachments"))
+    except ValueError as exc:
+        return bad_request(str(exc))
 
     return {
         "prompt": prompt.strip(),
@@ -133,6 +141,7 @@ def parse_create_session_payload(
         "tool_profile": tool_profile,
         "network_profile": network.name.value,
         "network_allowlist": list(network.domain_allowlist),
+        "attachments": attachments,
     }
 
 
@@ -182,9 +191,16 @@ def parse_append_session_message_payload(
         not isinstance(clarification_id, str) or not clarification_id.strip()
     ):
         return bad_request("clarification_id must be a non-blank string when provided")
+    try:
+        attachments = parse_text_attachment_inputs(payload.get("attachments"))
+    except ValueError as exc:
+        return bad_request(str(exc))
+    if clarification_id is not None and attachments:
+        return bad_request("clarification responses do not accept attachments")
     return {
         "content": content.strip(),
         "clarification_id": clarification_id.strip() if clarification_id else None,
+        "attachments": attachments,
     }
 
 

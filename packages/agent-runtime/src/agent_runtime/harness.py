@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from agent_context import LocalContextCompiler
+from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
@@ -65,6 +66,7 @@ def run_local_harness(
     skill_roots: tuple[str, ...] = (),
     session_history: SessionHistoryPort | None = None,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
+    attachments: tuple[AttachmentContextInput, ...] = (),
 ) -> HarnessLoopResult:
     tool_gateway = LocalToolGateway(
         workspace_root,
@@ -89,6 +91,7 @@ def run_local_harness(
                 network_profile=network_profile.name.value,
                 network_allowlist=network_profile.domain_allowlist,
                 confirmed_memories=confirmed_memories,
+                attachments=attachments,
             ),
             SingleAttemptOrchestrator(
                 model_gateway,
