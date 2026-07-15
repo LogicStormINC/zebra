@@ -10805,7 +10805,7 @@ information capability is advertised to the model.
 
 ### P121-CLOSE-01 - Phase 121 Closeout And Phase 122 Planning
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P121-NET-01`
@@ -10829,8 +10829,8 @@ gateway boundaries.
 
 ### P122-WEB-01 - Bounded Read-Only Web Gateway
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE / SECURITY / TOOLS / INTEGRATIONS / APP`
 - Depends on: `P121-CLOSE-01`
 - Branch: `codex/p122-web-01-bounded-read-only-web-gateway`
@@ -10861,27 +10861,27 @@ Gateway transport rather than direct tool-process networking.
 
 #### Acceptance
 
-- [ ] `web.fetch` is visible in general and coding task manifests, but not in
+- [x] `web.fetch` is visible in general and coding task manifests, but not in
   fixed Research children or any unregistered arbitrary tool path.
-- [ ] Only `https` URLs with no userinfo and an exact allowlisted hostname reach
+- [x] Only `https` URLs with no userinfo and an exact allowlisted hostname reach
   the approval boundary; localhost, IP literals, explicit ports, fragments,
   malformed URLs, and non-allowlisted hosts fail closed.
-- [ ] No request reaches the gateway while Policy is denied or waiting for
+- [x] No request reaches the gateway while Policy is denied or waiting for
   approval; an exact approval continuation invokes the transport once.
-- [ ] Gateway execution permits only one GET, sends no task or model credentials,
+- [x] Gateway execution permits only one GET, sends no task or model credentials,
   does not follow redirects, and enforces timeout, content-type, and response
   byte limits before returning text to the model.
-- [ ] External content is labeled untrusted and produces auditable route,
+- [x] External content is labeled untrusted and produces auditable route,
   target, profile, status, content type, and byte-count evidence without
   persisting response bodies in control metadata.
-- [ ] API, CLI, and Worker recover the durable network profile before Policy
+- [x] API, CLI, and Worker recover the durable network profile before Policy
   evaluation; process-global configuration cannot widen a task.
-- [ ] The desktop shows Web access only as launch authority and approval-driven
+- [x] The desktop shows Web access only as launch authority and approval-driven
   HITL; it does not add a default browser or coding-delivery panel.
-- [ ] Existing local tools, MCP proxy routing, profile isolation, sequential or
+- [x] Existing local tools, MCP proxy routing, profile isolation, sequential or
   concurrent loops, approvals, compaction, and subagent behavior remain
   compatible.
-- [ ] Targeted tests, full backend and static gates, eval release gate, desktop
+- [x] Targeted tests, full backend and static gates, eval release gate, desktop
   checks, production build, browser validation, and one real-provider tool
   selection pass succeed.
 

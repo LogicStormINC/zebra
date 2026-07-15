@@ -150,6 +150,7 @@ def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
         "command.run",
         "files.read",
         "patch.apply",
+        "web.fetch",
     )
     file_read = next(tool for tool in tools if tool.name == "files.read")
     assert file_read.parameters["required"] == ["path"]
@@ -170,6 +171,7 @@ def test_local_tool_gateway_exposes_coding_profile_tools(tmp_path) -> None:
         "git.status",
         "patch.apply",
         "tests.run",
+        "web.fetch",
     )
     assert gateway.parallel_safe_tools == frozenset({"files.read", "git.status"})
 

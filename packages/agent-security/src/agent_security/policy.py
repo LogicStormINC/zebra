@@ -4,6 +4,10 @@ from enum import StrEnum
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.tools import ToolCall
 
+from agent_security.external_policy import (
+    blocked_route_reason,
+    external_approval_decision,
+)
 from agent_security.mcp_proxy_policy import (
     ToolEgressMetadata,
     ToolEgressRoute,
@@ -76,9 +80,13 @@ class LocalPolicyEngine:
             return _deny(self.profile, path_risk_reason)
         egress = classify_tool_egress(tool_call, network_profile=self.network_profile)
         if egress.route is ToolEgressRoute.BLOCKED:
-            return _deny(self.profile, _blocked_route_reason(egress))
-        if egress.route is ToolEgressRoute.MCP_PROXY:
-            return _approval(self.profile, _proxy_route_reason(egress))
+            return _deny(self.profile, blocked_route_reason(egress))
+        if egress.route in (ToolEgressRoute.MCP_PROXY, ToolEgressRoute.WEB_GATEWAY):
+            return external_approval_decision(
+                policy_profile=self.profile.value,
+                tool_call=tool_call,
+                egress=egress,
+            )
         if self.profile is PolicyProfile.READ_ONLY:
             return _decision_for_read_only(tool_name, self.profile)
         if self.profile is PolicyProfile.WORKSPACE_WRITE:
@@ -272,20 +280,4 @@ def _deny(profile: PolicyProfile, reason: str) -> PolicyDecision:
         decision=PolicyDecisionType.DENY,
         reason=reason,
         policy_profile=profile.value,
-    )
-
-
-def _proxy_route_reason(egress: ToolEgressMetadata) -> str:
-    target = egress.target or egress.tool_name
-    return (
-        f"{egress.tool_name} requires approval for proxy-routed external tool execution "
-        f"to {target} under network profile {egress.network_profile}"
-    )
-
-
-def _blocked_route_reason(egress: ToolEgressMetadata) -> str:
-    target = egress.target or egress.tool_name
-    return (
-        f"{egress.tool_name} is blocked on external route {target} because network profile "
-        f"{egress.network_profile} does not allow mcp proxy egress"
     )

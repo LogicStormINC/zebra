@@ -17,6 +17,7 @@ from agent_storage import (
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
 )
+from agent_tools.web_gateway import WebGatewayRequest, WebGatewayResponse
 from zebra_agent_api import create_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 from zebra_agent_worker import (
@@ -30,6 +31,20 @@ from zebra_agent_worker.approved_continuation import (
     ApprovedContinuationError,
     recover_approved_continuation,
 )
+
+
+class RecordingWebTransport:
+    def __init__(self) -> None:
+        self.requests: list[WebGatewayRequest] = []
+
+    def execute(self, request: WebGatewayRequest) -> WebGatewayResponse:
+        self.requests.append(request)
+        return WebGatewayResponse(
+            text="approved-web-output",
+            status_code=200,
+            content_type="text/plain",
+            byte_count=19,
+        )
 
 
 def test_granted_tool_call_resumes_exactly_once_without_reproposal(
@@ -94,6 +109,71 @@ def test_granted_tool_call_resumes_exactly_once_without_reproposal(
     assert sum(event.event_type is EventType.TOOL_EXECUTION_STARTED for event in events) == 1
     with pytest.raises(SessionResumeError, match="terminal session"):
         service.execute_session(session_id, worker_id="worker-a", executed_at=created_at)
+
+
+def test_web_gateway_waits_for_approval_then_executes_exactly_once(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "web-continuation.sqlite"
+    created_at = datetime(2026, 7, 15, 8, 0, tzinfo=UTC)
+    tool_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="web.fetch",
+        arguments={"url": "https://docs.example.com/guide"},
+        created_at=created_at,
+        provider_call_id="call_web_approved",
+    )
+    initial_gateway = _gateway("Reading approved Web content.", tool_call=tool_call)
+    final_gateway = _gateway("approved-web-output")
+    gateways = iter((initial_gateway, final_gateway))
+    transport = RecordingWebTransport()
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: next(gateways),
+    )
+    monkeypatch.setattr(
+        "agent_runtime.harness.LocalWebGatewayTransport",
+        lambda: transport,
+    )
+    session_id = _seed_session(
+        database_path,
+        tmp_path,
+        network_profile="domain-allowlist",
+        network_allowlist=("docs.example.com",),
+    )
+    service = _execution_service(database_path)
+
+    waiting = service.execute_session(
+        session_id, worker_id="worker-web", executed_at=created_at
+    )
+
+    assert waiting.session.status is SessionStatus.WAITING_APPROVAL
+    assert transport.requests == []
+    approval = create_app(database_path, settings=_settings(database_path)).get_approval(
+        str(session_id)
+    )
+    assert approval.body["approval_context"]["route"] == "web_gateway"
+    assert approval.body["approval_context"]["target"] == "docs.example.com"
+    create_app(database_path, settings=_settings(database_path)).approve(
+        str(session_id),
+        {"operator": "tester", "reason": "approved bounded Web read"},
+    )
+
+    completed = service.execute_session(
+        session_id, worker_id="worker-web", executed_at=created_at
+    )
+
+    assert completed.session.status is SessionStatus.COMPLETED
+    assert completed.attempt_result.metadata["assistant_message"] == "approved-web-output"
+    assert len(transport.requests) == 1
+    assert transport.requests[0].target.hostname == "docs.example.com"
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
+    assert sum(
+        event.event_type is EventType.TOOL_EXECUTION_STARTED
+        and event.payload.get("tool_name") == "web.fetch"
+        for event in events
+    ) == 1
 
 
 def test_approved_continuation_does_not_replay_uncertain_execution() -> None:
@@ -256,13 +336,21 @@ def _gateway(content: str, *, tool_call: ToolCall | None = None) -> ScriptedMode
     )
 
 
-def _seed_session(database_path: Path, workspace_root: Path):
+def _seed_session(
+    database_path: Path,
+    workspace_root: Path,
+    *,
+    network_profile: str = "none",
+    network_allowlist: tuple[str, ...] = (),
+):
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title="Approved continuation",
             user_input="Run the approved command.",
             workspace_root=workspace_root.resolve(),
             policy_profile="workspace_write",
+            network_profile=network_profile,
+            network_allowlist=network_allowlist,
         )
     )
     event_store = SQLiteEventStore(database_path)

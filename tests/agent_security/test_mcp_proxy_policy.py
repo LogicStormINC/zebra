@@ -39,6 +39,25 @@ def test_classify_tool_egress_marks_mcp_tool_as_proxy_routable() -> None:
     assert metadata.to_mapping()["route"] == "mcp_proxy"
 
 
+def test_classify_web_fetch_requires_exact_durable_allowlist_match() -> None:
+    allowed = classify_tool_egress(
+        _tool_call("web.fetch", {"url": "https://docs.example.com/guide"}),
+        network_profile=parse_network_profile(
+            "domain-allowlist", domain_allowlist=("docs.example.com",)
+        ),
+    )
+    blocked = classify_tool_egress(
+        _tool_call("web.fetch", {"url": "https://sub.docs.example.com/guide"}),
+        network_profile=parse_network_profile(
+            "domain-allowlist", domain_allowlist=("docs.example.com",)
+        ),
+    )
+
+    assert allowed.route is ToolEgressRoute.WEB_GATEWAY
+    assert allowed.target == "docs.example.com"
+    assert blocked.route is ToolEgressRoute.BLOCKED
+
+
 def _tool_call(name: str, arguments: dict[str, object]) -> ToolCall:
     return ToolCall(
         tool_call_id=new_tool_call_id(),

@@ -21,6 +21,14 @@ if TYPE_CHECKING:
         parse_mcp_tool_name,
     )
     from agent_tools.registry import ToolRegistry
+    from agent_tools.web_gateway import (
+        WebFetchTool,
+        WebGatewayError,
+        WebGatewayRequest,
+        WebGatewayResponse,
+        WebGatewayTransport,
+        web_fetch_contract,
+    )
 
 __all__ = [
     "CommandRunTool",
@@ -37,6 +45,11 @@ __all__ = [
     "ToolContract",
     "ToolExecutor",
     "ToolRegistry",
+    "WebFetchTool",
+    "WebGatewayError",
+    "WebGatewayRequest",
+    "WebGatewayResponse",
+    "WebGatewayTransport",
     "build_mcp_proxy_request",
     "command_run_contract",
     "file_read_contract",
@@ -44,6 +57,7 @@ __all__ = [
     "parse_mcp_tool_name",
     "patch_apply_contract",
     "tests_run_contract",
+    "web_fetch_contract",
 ]
 
 _EXPORTS = {
@@ -61,6 +75,11 @@ _EXPORTS = {
     "ToolContract": ("agent_tools.contracts", "ToolContract"),
     "ToolExecutor": ("agent_tools.executor", "ToolExecutor"),
     "ToolRegistry": ("agent_tools.registry", "ToolRegistry"),
+    "WebFetchTool": ("agent_tools.web_gateway", "WebFetchTool"),
+    "WebGatewayError": ("agent_tools.web_gateway", "WebGatewayError"),
+    "WebGatewayRequest": ("agent_tools.web_gateway", "WebGatewayRequest"),
+    "WebGatewayResponse": ("agent_tools.web_gateway", "WebGatewayResponse"),
+    "WebGatewayTransport": ("agent_tools.web_gateway", "WebGatewayTransport"),
     "build_mcp_proxy_request": ("agent_tools.mcp_proxy", "build_mcp_proxy_request"),
     "command_run_contract": ("agent_tools.builtin.command", "command_run_contract"),
     "file_read_contract": ("agent_tools.builtin.files", "file_read_contract"),
@@ -68,6 +87,7 @@ _EXPORTS = {
     "parse_mcp_tool_name": ("agent_tools.mcp_proxy", "parse_mcp_tool_name"),
     "patch_apply_contract": ("agent_tools.builtin.patch", "patch_apply_contract"),
     "tests_run_contract": ("agent_tools.builtin.tests", "tests_run_contract"),
+    "web_fetch_contract": ("agent_tools.web_gateway", "web_fetch_contract"),
 }
 
 

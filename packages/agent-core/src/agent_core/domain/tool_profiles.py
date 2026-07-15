@@ -7,7 +7,7 @@ class ToolProfile(StrEnum):
 
 
 GENERAL_TOOL_NAMES = frozenset(
-    {"agent.research", "command.run", "files.read", "patch.apply"}
+    {"agent.research", "command.run", "files.read", "patch.apply", "web.fetch"}
 )
 CODING_TOOL_NAMES = GENERAL_TOOL_NAMES | {"git.status", "tests.run"}
 

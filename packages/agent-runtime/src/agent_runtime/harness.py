@@ -20,12 +20,15 @@ from agent_tools import (
     TestsRunTool,
     ToolExecutor,
     ToolRegistry,
+    WebFetchTool,
+    WebGatewayTransport,
 )
 from agent_tools.errors import ToolRegistryError
 
 from agent_runtime.adapters.local import LocalRuntime
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
 from agent_runtime.subagents import LocalResearchSubagentCoordinator
+from agent_runtime.web_gateway import LocalWebGatewayTransport
 from agent_runtime.workspace import LocalWorkspace
 
 DEFAULT_TEST_PRESETS = {
@@ -95,6 +98,7 @@ class LocalToolGateway(ToolGatewayPort):
         model_gateway: ModelGatewayPort | None = None,
         research_child_limit: int = DEFAULT_RESEARCH_CHILD_LIMIT,
         tool_profile: ToolProfile = ToolProfile.GENERAL,
+        web_gateway_transport: WebGatewayTransport | None = None,
     ) -> None:
         if research_child_limit <= 0:
             raise ValueError("research_child_limit must be positive")
@@ -110,6 +114,7 @@ class LocalToolGateway(ToolGatewayPort):
             PatchApplyTool(runtime, self._workspace),
             TestsRunTool(runtime, self._workspace, DEFAULT_TEST_PRESETS),
             CommandRunTool(runtime, self._workspace),
+            WebFetchTool(web_gateway_transport or LocalWebGatewayTransport()),
         )
         enabled_names = tool_names_for_profile(tool_profile)
         for tool in tools:
