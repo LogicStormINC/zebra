@@ -14,6 +14,7 @@ def serialize_workspace_projection(
         "current_sequence": workspace.current_sequence,
         "prepared_at": workspace.prepared_at.isoformat(),
         "updated_at": workspace.updated_at.isoformat(),
+        "tool_profile": workspace.tool_profile.value,
     }
     if workspace.policy_profile is not None:
         body["policy_profile"] = workspace.policy_profile

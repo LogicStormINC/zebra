@@ -10,6 +10,7 @@ def serialize_workspace_projection(
         return None
     body: dict[str, object] = {
         "workspace_root": workspace.workspace_root,
+        "tool_profile": workspace.tool_profile.value,
         "status": workspace.status.value,
         "current_sequence": workspace.current_sequence,
         "prepared_at": workspace.prepared_at.isoformat(),

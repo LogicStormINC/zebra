@@ -13,6 +13,7 @@ export interface SessionWorkspace {
   prepared_at: string;
   updated_at: string;
   policy_profile: string;
+  tool_profile: "general" | "coding";
   last_attempt_number: number;
   snapshot?: SessionWorkspaceSnapshot;
 }
@@ -65,6 +66,7 @@ export interface CreateSessionResponse {
   status: string;
   executed: boolean;
   assistant_message?: string;
+  tool_profile?: "general" | "coding";
 }
 
 export interface ApprovalDecisionResponse {

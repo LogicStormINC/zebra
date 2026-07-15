@@ -1,4 +1,5 @@
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 
 
@@ -23,6 +24,7 @@ def rebuild_workspace(events: list[SessionEvent]) -> WorkspaceProjection:
         current_sequence=prepared_event.sequence,
         status=WorkspaceStatus.PREPARED,
         policy_profile=_optional_payload_string(prepared_event, "policy_profile"),
+        tool_profile=_tool_profile_from_event(prepared_event),
     )
     for event in events:
         if event.sequence < prepared_event.sequence:
@@ -54,6 +56,7 @@ def apply_event(
         updates["last_attempt_number"] = attempt_number
     if event.event_type is EventType.TASK_PREPARED:
         updates["policy_profile"] = _optional_payload_string(event, "policy_profile")
+        updates["tool_profile"] = _tool_profile_from_event(event)
     if event.event_type is EventType.SESSION_SUSPENDED:
         updates["runtime_name"] = _required_payload_string(event, "runtime_name")
         updates["snapshot_id"] = _required_payload_string(event, "snapshot_id")
@@ -99,6 +102,16 @@ def _optional_payload_string(event: SessionEvent, key: str) -> str | None:
     if isinstance(value, str) and value.strip():
         return value
     return None
+
+
+def _tool_profile_from_event(event: SessionEvent) -> ToolProfile:
+    value = _optional_payload_string(event, "tool_profile")
+    if value is None:
+        return ToolProfile.CODING
+    try:
+        return ToolProfile(value)
+    except ValueError as exc:
+        raise WorkspaceProjectionError("task_prepared contains unsupported tool_profile") from exc
 
 
 def _optional_attempt_number(event: SessionEvent) -> int | None:

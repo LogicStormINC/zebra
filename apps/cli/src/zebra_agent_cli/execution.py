@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.events import SessionEvent
+from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.harness.models import HarnessAttemptTrace, HarnessLoopResult
 from agent_core.harness.projection import HarnessTraceProjector
 from agent_integrations import build_model_gateway
@@ -12,6 +14,7 @@ from agent_security import PolicyProfile
 from agent_storage import (
     SQLiteEventStore,
     SQLiteProjectionStore,
+    SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
 )
 from zebra_agent_config import ZebraAgentSettings
@@ -22,6 +25,7 @@ class DurableRunResult:
     harness_result: HarnessLoopResult
     workspace_root: Path
     policy_profile: str
+    tool_profile: str
 
 
 @dataclass
@@ -42,6 +46,7 @@ def execute_durable_run(
     database_path: Path,
     settings: ZebraAgentSettings,
     policy_profile: PolicyProfile = PolicyProfile.WORKSPACE_WRITE,
+    tool_profile: ToolProfile = ToolProfile.GENERAL,
 ) -> DurableRunResult:
     confirmed_memories = list_confirmed_repo_memories(
         database_path,
@@ -53,16 +58,21 @@ def execute_durable_run(
         workspace_root=workspace_root,
         model_gateway=build_model_gateway(settings),
         policy_profile=policy_profile,
+        tool_profile=tool_profile,
         confirmed_memories=confirmed_memories,
     )
     event_store = SQLiteEventStore(database_path)
     for event in result.events:
         event_store.append(event)
     SQLiteProjectionStore(database_path).save_session(result.session)
+    SQLiteWorkspaceProjectionStore(database_path).save_workspace(
+        rebuild_workspace(list(result.events))
+    )
     return DurableRunResult(
         harness_result=result,
         workspace_root=workspace_root,
         policy_profile=policy_profile.value,
+        tool_profile=tool_profile.value,
     )
 
 
@@ -75,6 +85,7 @@ def serialize_run_execution(result: DurableRunResult) -> dict[str, object]:
         "stop_reason": harness_result.run_result.stop_reason.value,
         "assistant_message": harness_result.attempt_result.metadata.get("assistant_message"),
         "policy_profile": result.policy_profile,
+        "tool_profile": result.tool_profile,
         "workspace_root": str(result.workspace_root),
         "trace": _serialize_trace(HarnessTraceProjector().project(harness_result).attempts),
     }

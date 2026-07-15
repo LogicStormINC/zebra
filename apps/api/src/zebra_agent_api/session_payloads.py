@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from typing import TypedDict
 
 from agent_core.domain.memories import MemoryType
+from agent_core.domain.tool_profiles import ToolProfile
 from agent_security import PolicyProfile
 
 from zebra_agent_api.responses import ApiResponse, bad_request
@@ -15,6 +16,7 @@ class CreateSessionPayload(TypedDict):
     workspace: str
     execute: bool
     policy_profile: str
+    tool_profile: str
 
 
 class ResumeSessionPayload(TypedDict):
@@ -98,12 +100,21 @@ def parse_create_session_payload(
     except ValueError:
         return bad_request("policy_profile is not supported")
 
+    tool_profile = payload.get("tool_profile", ToolProfile.GENERAL.value)
+    if not isinstance(tool_profile, str):
+        return bad_request("tool_profile must be a string when provided")
+    try:
+        ToolProfile(tool_profile)
+    except ValueError:
+        return bad_request("tool_profile is not supported")
+
     return {
         "prompt": prompt.strip(),
         "title": title.strip(),
         "workspace": workspace.strip(),
         "execute": execute,
         "policy_profile": policy_profile,
+        "tool_profile": tool_profile,
     }
 
 

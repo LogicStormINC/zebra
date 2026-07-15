@@ -91,6 +91,7 @@ def test_route_adapter_handles_session_lookup_with_workspace_projection(tmp_path
     assert response.status_code == 200
     assert response.body["workspace"] == {
         "workspace_root": str(tmp_path.resolve()),
+        "tool_profile": "coding",
         "status": "suspended",
         "current_sequence": 4,
         "prepared_at": _created_at().isoformat(),

@@ -7,6 +7,7 @@ from pathlib import Path
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session
+from agent_core.domain.tool_profiles import ToolProfile
 
 
 @dataclass(frozen=True)
@@ -15,6 +16,7 @@ class SessionBootstrapCommand:
     user_input: str
     workspace_root: Path
     policy_profile: str | None = None
+    tool_profile: ToolProfile = ToolProfile.GENERAL
     max_attempts: int = 1
     max_model_calls: int | None = 4
     max_tool_calls: int | None = 3
@@ -57,6 +59,7 @@ class SessionBootstrapService:
                     "user_input": command.user_input,
                     "workspace_root": str(command.workspace_root),
                     "policy_profile": command.policy_profile,
+                    "tool_profile": command.tool_profile.value,
                     "max_attempts": command.max_attempts,
                     "max_model_calls": command.max_model_calls,
                     "max_tool_calls": command.max_tool_calls,

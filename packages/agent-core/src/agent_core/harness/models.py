@@ -6,6 +6,7 @@ from typing import Any
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session
+from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 
 
@@ -33,6 +34,8 @@ class HarnessTask:
     max_model_calls: int | None = None
     max_tool_calls: int | None = None
     workspace_root: Path | None = None
+    policy_profile: str | None = None
+    tool_profile: ToolProfile = ToolProfile.GENERAL
     context_token_budget: int = 200
     runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = ()

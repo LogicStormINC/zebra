@@ -1,9 +1,11 @@
+import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_session_id
+from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 from agent_storage import SQLiteWorkspaceProjectionStore
 
@@ -22,6 +24,7 @@ def test_sqlite_workspace_projection_store_round_trips_workspace_projection(
             "current_sequence": 3,
             "status": WorkspaceStatus.RUNNING,
             "policy_profile": "workspace_write",
+            "tool_profile": ToolProfile.GENERAL,
             "last_attempt_number": 1,
             "runtime_name": "local",
             "snapshot_id": "snap-001",
@@ -33,6 +36,46 @@ def test_sqlite_workspace_projection_store_round_trips_workspace_projection(
     loaded = store.get_workspace(projection.session_id)
 
     assert loaded == projection
+
+
+def test_sqlite_workspace_projection_store_migrates_legacy_profile(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "legacy-workspace.db"
+    session_id = new_session_id()
+    created_at = datetime(2026, 6, 29, 18, 35, tzinfo=UTC).isoformat()
+    with sqlite3.connect(database_path) as connection:
+        connection.execute(
+            """
+            CREATE TABLE workspace_projections (
+                session_id TEXT PRIMARY KEY,
+                workspace_root TEXT NOT NULL,
+                prepared_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                current_sequence INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                policy_profile TEXT,
+                last_attempt_number INTEGER,
+                runtime_name TEXT,
+                snapshot_id TEXT,
+                snapshot_path TEXT
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO workspace_projections (
+                session_id, workspace_root, prepared_at, updated_at,
+                current_sequence, status
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (str(session_id), "/tmp/legacy", created_at, created_at, 1, "prepared"),
+        )
+
+    loaded = SQLiteWorkspaceProjectionStore(database_path).get_workspace(session_id)
+
+    assert loaded is not None
+    assert loaded.tool_profile is ToolProfile.CODING
 
 
 def test_sqlite_workspace_projection_store_persists_rebuilt_workspace_state(

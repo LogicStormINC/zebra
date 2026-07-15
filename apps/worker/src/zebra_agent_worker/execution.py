@@ -14,6 +14,7 @@ from agent_core.application.workspace_projection import apply_event as apply_wor
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session
+from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.harness import (
     HarnessAttempt,
@@ -67,6 +68,7 @@ class _RecoveredTask:
     user_input: str
     workspace_root: Path
     policy_profile: str
+    tool_profile: ToolProfile
     max_attempts: int
     max_model_calls: int | None
     max_tool_calls: int | None
@@ -142,6 +144,7 @@ class SessionExecutionService:
         tool_gateway = LocalToolGateway(
             task.workspace_root,
             model_gateway=model_gateway,
+            tool_profile=task.tool_profile,
         )
         context_compiler = LocalContextCompiler()
         orchestrator = SingleAttemptOrchestrator(
@@ -166,6 +169,8 @@ class SessionExecutionService:
                 max_model_calls=task.max_model_calls,
                 max_tool_calls=task.max_tool_calls,
                 workspace_root=task.workspace_root,
+                policy_profile=task.policy_profile,
+                tool_profile=task.tool_profile,
                 confirmed_memories=list_confirmed_repo_memories(
                     self._database_path,
                     repo_id=str(task.workspace_root.resolve()),
@@ -294,6 +299,7 @@ def _recover_task(
         user_input=user_input,
         workspace_root=Path(workspace.workspace_root).expanduser().resolve(),
         policy_profile=policy_profile,
+        tool_profile=workspace.tool_profile,
         max_attempts=_optional_positive_int(task_payload.get("max_attempts")) or 1,
         max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
         max_tool_calls=_optional_positive_int(task_payload.get("max_tool_calls")),

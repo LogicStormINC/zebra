@@ -1,11 +1,13 @@
 from datetime import UTC, datetime
 
+import pytest
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.sessions import SessionStatus
+from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.tools import ToolCall
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_runtime import LocalToolGateway, run_local_harness
@@ -147,9 +149,7 @@ def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
         "agent.research",
         "command.run",
         "files.read",
-        "git.status",
         "patch.apply",
-        "tests.run",
     )
     file_read = next(tool for tool in tools if tool.name == "files.read")
     assert file_read.parameters["required"] == ["path"]
@@ -158,7 +158,25 @@ def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
 def test_local_tool_gateway_exposes_only_parallel_safe_builtins(tmp_path) -> None:
     gateway = LocalToolGateway(tmp_path.resolve())
 
+    assert gateway.parallel_safe_tools == frozenset({"files.read"})
+
+
+def test_local_tool_gateway_exposes_coding_profile_tools(tmp_path) -> None:
+    gateway = LocalToolGateway(tmp_path.resolve(), tool_profile=ToolProfile.CODING)
+
+    assert tuple(tool.name for tool in gateway.model_tools) == (
+        "command.run",
+        "files.read",
+        "git.status",
+        "patch.apply",
+        "tests.run",
+    )
     assert gateway.parallel_safe_tools == frozenset({"files.read", "git.status"})
+
+
+def test_local_tool_gateway_rejects_unknown_tool_profile(tmp_path) -> None:
+    with pytest.raises(ValueError, match="tool_profile"):
+        LocalToolGateway(tmp_path.resolve(), tool_profile="unknown")  # type: ignore[arg-type]
 
 
 def test_local_tool_gateway_bounds_parallel_research_children(tmp_path) -> None:

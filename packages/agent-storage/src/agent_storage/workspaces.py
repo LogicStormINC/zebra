@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 from agent_core.ports.workspace_projection_store import WorkspaceProjectionStorePort
 
@@ -24,11 +25,12 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     current_sequence,
                     status,
                     policy_profile,
+                    tool_profile,
                     last_attempt_number,
                     runtime_name,
                     snapshot_id,
                     snapshot_path
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_id) DO UPDATE SET
                     workspace_root = excluded.workspace_root,
                     prepared_at = excluded.prepared_at,
@@ -36,6 +38,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     current_sequence = excluded.current_sequence,
                     status = excluded.status,
                     policy_profile = excluded.policy_profile,
+                    tool_profile = excluded.tool_profile,
                     last_attempt_number = excluded.last_attempt_number,
                     runtime_name = excluded.runtime_name,
                     snapshot_id = excluded.snapshot_id,
@@ -49,6 +52,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     workspace.current_sequence,
                     workspace.status.value,
                     workspace.policy_profile,
+                    workspace.tool_profile.value,
                     workspace.last_attempt_number,
                     workspace.runtime_name,
                     workspace.snapshot_id,
@@ -69,6 +73,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     current_sequence,
                     status,
                     policy_profile,
+                    tool_profile,
                     last_attempt_number,
                     runtime_name,
                     snapshot_id,
@@ -89,6 +94,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                 "current_sequence": row["current_sequence"],
                 "status": WorkspaceStatus(row["status"]),
                 "policy_profile": row["policy_profile"],
+                "tool_profile": ToolProfile(row["tool_profile"]),
                 "last_attempt_number": row["last_attempt_number"],
                 "runtime_name": row["runtime_name"],
                 "snapshot_id": row["snapshot_id"],
@@ -108,6 +114,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     current_sequence INTEGER NOT NULL,
                     status TEXT NOT NULL,
                     policy_profile TEXT,
+                    tool_profile TEXT NOT NULL DEFAULT 'coding',
                     last_attempt_number INTEGER,
                     runtime_name TEXT,
                     snapshot_id TEXT,
@@ -127,6 +134,11 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     ALTER TABLE workspace_projections
                     ADD COLUMN runtime_name TEXT
                     """
+                )
+            if "tool_profile" not in columns:
+                connection.execute(
+                    "ALTER TABLE workspace_projections "
+                    "ADD COLUMN tool_profile TEXT NOT NULL DEFAULT 'coding'"
                 )
             if "snapshot_id" not in columns:
                 connection.execute(

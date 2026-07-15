@@ -38,6 +38,7 @@ def test_route_lists_recent_sessions_with_durable_workspace(tmp_path: Path) -> N
             "updated_at": newest.updated_at.isoformat(),
             "workspace": {
                 "workspace_root": str((tmp_path / "newest").resolve()),
+                "tool_profile": "coding",
                 "status": "prepared",
                 "current_sequence": 0,
                 "prepared_at": newest.created_at.isoformat(),
