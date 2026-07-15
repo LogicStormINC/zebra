@@ -11706,3 +11706,92 @@ the correct arguments and policy evidence for parallel same-name calls.
   parallel batch; proposal, policy, start, and completion IDs matched, the CLI
   trace retained `a.txt -> TRACE-A-130` and `b.txt -> TRACE-B-130`, and the final
   answer was `TRACE_FINAL_OK: TRACE-A-130|TRACE-B-130`.
+
+### P130-CLOSE-01 - Phase 130 Closeout And Phase 131 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / PRODUCT`
+- Depends on: `P130-OBS-01`
+- Branch: `codex/p130-closeout-phase131-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 130 acceptance state and define one bounded input slice
+that lets users attach local text material directly to a general Agent task
+without first copying it into the selected workspace.
+
+#### Acceptance
+
+- [x] `P130-OBS-01` is recorded as merged through PR `#97` and done.
+- [x] Phase 131 is limited to durable UTF-8 text attachments on task creation
+  and later user messages, with explicit count, per-file, and aggregate limits.
+- [x] Phase 131 has one non-overlapping task with explicit core, storage, API,
+  Harness, desktop, test, and documentation ownership.
+
+## Phase 131 Task Board
+
+### P131-INP-01 - Durable Bounded Text Attachments
+
+- Status: `Ready`
+- Owner: `Codex`
+- Suggested role: `CORE / STORAGE / API / HARNESS / UI / SECURITY`
+- Depends on: `P130-CLOSE-01`
+- Branch: `codex/p131-inp-01-durable-bounded-text-attachments`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `packages/agent-context/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `UI/desktop/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`, `UI/README.md`
+
+#### Goal
+
+Let users attach bounded local UTF-8 text material when creating a task or
+adding a user message, persist the material with the session, and supply it to
+the parent model as explicitly untrusted task input without widening workspace,
+tool, command, network, credential, approval, or Research-child authority.
+
+#### Deliverables
+
+- provider-neutral attachment input and durable metadata contracts with stable
+  attachment identity, filename, media type, byte size, digest, and message link
+- strict API parsing for bounded base64-encoded UTF-8 text attachments on task
+  creation and message append, with atomic rejection before execution
+- local SQLite-backed payload persistence that reuses the existing artifact
+  payload lifecycle rather than creating a second binary storage subsystem
+- deterministic parent-Harness context projection with explicit untrusted-input
+  labels, fixed per-file and aggregate text ceilings, and recovery compatibility
+- desktop Composer file selection, removable pending attachment chips, truthful
+  upload/error state, and durable session readback without idle HITL controls
+
+#### Acceptance
+
+- [ ] New tasks and later ordinary user messages accept zero or more bounded
+  UTF-8 text attachments and preserve message-to-attachment correlation.
+- [ ] The API rejects unknown attachment fields, malformed base64, blank or
+  unsafe names, unsupported media types, invalid UTF-8, excessive count,
+  excessive per-file bytes, and excessive aggregate bytes before model execution.
+- [ ] Accepted payload bytes, digest, size, media type, safe filename, session,
+  and originating message are durable and survive API or Worker restart.
+- [ ] Parent model context contains deterministic bounded attachment text under
+  an explicit untrusted-user-material boundary and never treats it as authority.
+- [ ] Recovery and later-message execution reconstruct the same attachment
+  context exactly once without duplicating text into the visible chat message.
+- [ ] Session readback exposes safe attachment metadata but not base64 payloads,
+  absolute storage paths, credentials, environment values, or hidden reasoning.
+- [ ] Desktop users can select, inspect, remove, submit, and recover attachment
+  metadata; selection errors are actionable and pending files clear only on
+  successful submission.
+- [ ] Existing text-only create and message payloads remain backward compatible,
+  and approvals, clarification, plans, compaction, tools, cancellation, history,
+  artifacts, API, CLI, Worker, and desktop behavior remain compatible.
+- [ ] Focused attachment matrices, all backend/static/eval gates, desktop checks
+  and build, Tauri validation, browser acceptance, and one real provider pass
+  over attached material succeed.
+
+#### Explicit Non-Goals
+
+- PDF, DOCX, spreadsheet, archive, audio, video, image, OCR, vision, MIME
+  sniffing, document conversion, embeddings, semantic indexing, or summarization
+- arbitrary binary uploads, remote URLs, cloud object storage, signed links,
+  cross-session reuse, attachment mutation, export, sharing, or collaboration
+- automatic workspace writes, hidden attachment directories, shell parsing,
+  prompt-wide filesystem ingestion, Research-child attachment access, or new
+  filesystem, command, network, credential, approval, or policy authority
