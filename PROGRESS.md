@@ -536,6 +536,8 @@
 
 ## Next Unlocks
 
+- Phase 123 merged through PR `#83`; `P123-CLOSE-01` records the closeout and unlocks one durable clarification HITL slice
+- `P124-HITL-01 - Durable Clarification Request And Resume` is ready on `codex/p124-hitl-01-durable-clarification`; it adds parent-session clarification pause/read/respond/resume semantics without blocking a worker thread or widening tool authority
 - `P123-TOOL-01 - Bounded Workspace Search Tool` is complete on `codex/p123-tool-01-bounded-workspace-search` and ready for review
 - general, coding, and fixed Research child profiles now expose one typed, read-only, parallel-safe `files.search` primitive with literal content and filename modes, workspace-relative roots, optional glob filtering, and deterministic offset pagination
 - workspace search rejects hidden or escaping roots and skips hidden, symlinked, binary, and oversized files while enforcing 20,000-file, 10,101-match, 500-character-line, 100-result, and 32 KiB output ceilings
