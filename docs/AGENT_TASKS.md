@@ -10662,7 +10662,7 @@ agent tasks do not inherit coding-specific capabilities by default.
 
 ### P120-CAP-01 - Durable General And Coding Tool Profiles
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / RUNTIME / APP`
 - Depends on: `P119-CLOSE-01`
@@ -10706,3 +10706,99 @@ surface, and retain the current coding-oriented surface as an explicit option.
 - removing coding tools from the product or changing their existing contracts
 - new network, browser, MCP, credential, or external SaaS capabilities
 - fixed Reviewer or Coder subagent roles, write-capable children, or worktree merge coordination
+
+### P120-CLOSE-01 - Phase 120 Closeout And Phase 121 Planning
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P120-CAP-01`
+- Branch: `codex/p120-closeout-phase121-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 120 acceptance state and define the next security-first
+vertical slice required before general-purpose tasks can safely gain external
+information tools.
+
+#### Acceptance
+
+- [x] `P120-CAP-01` is recorded as merged through PR `#77` and done.
+- [x] Phase 121 has one non-overlapping ready task with explicit owned paths.
+- [x] External Web, browser, MCP, and SaaS tools remain deferred until durable
+  network authority reaches Policy and worker recovery without fail-open gaps.
+
+## Phase 121 Task Board
+
+### P121-NET-01 - Durable Per-Task Network Authority
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / SECURITY / APP`
+- Depends on: `P120-CLOSE-01`
+- Branch: `codex/p121-net-01-durable-network-authority`
+- Owned paths: `packages/agent-core/`, `packages/agent-security/`, `packages/agent-runtime/`, `packages/agent-storage/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `UI/desktop/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Make network authority an explicit, durable, fail-closed property of every task
+and carry it into the production Policy engine before any new external
+information capability is advertised to the model.
+
+#### Deliverables
+
+- one provider-neutral task network configuration using the existing typed
+  `NetworkProfile` contract and normalized domain allowlist
+- a default `none` profile for every new and legacy task without durable network
+  evidence
+- durable persistence through task creation, `task_prepared` events, workspace
+  projections, SQLite migration, API and CLI readback, worker recovery, suspend
+  or resume, and approval continuation
+- production `LocalPolicyEngine` composition from recovered network authority in
+  direct runtime, API, CLI, and worker execution paths
+- explicit API, CLI, and desktop launch controls that present network authority
+  separately from tool capability and filesystem or command policy
+- deterministic validation for unsupported profiles, malformed allowlists,
+  profile or allowlist mismatches, and legacy rows
+- focused backend, desktop, and browser persistence acceptance evidence
+
+#### Acceptance
+
+- [ ] New tasks default durably to `network_profile=none`; legacy events and
+  projection rows without network evidence recover to the same fail-closed value.
+- [ ] The selected network profile and normalized domain allowlist survive
+  create, list, inspect, reload, worker claim, execution, suspend or resume, and
+  approval continuation.
+- [ ] Direct runtime, API, CLI, and worker composition pass the recovered network
+  profile into `LocalPolicyEngine`; no execution path silently uses a wider
+  process-global fallback.
+- [ ] `domain-allowlist` requires at least one normalized bare hostname and every
+  non-domain profile rejects allowlist entries.
+- [ ] Unknown, blank, malformed, and mismatched values fail at API, CLI, event,
+  projection, storage, and desktop trust boundaries without widening authority.
+- [ ] Network authority remains independent of `tool_profile` and
+  `policy_profile`; changing it neither registers tools nor expands file,
+  command, Git, credential, or approval authority.
+- [ ] Existing MCP routing remains fail closed: `none` blocks external MCP calls,
+  proxy-enabled profiles still require Policy approval, and no transport is
+  invoked before approval.
+- [ ] Fixed Research children retain `network_profile=none` regardless of a
+  broader parent profile.
+- [ ] The desktop visibly defaults to no external network, requires an explicit
+  launch choice for broader authority, and restores durable network state after
+  reload.
+- [ ] Full backend tests, static checks, eval release gate, desktop contract
+  checks, production build, and browser create or readback validation pass.
+
+#### Explicit Non-Goals
+
+- adding Web search, URL fetch, browser automation, MCP server discovery, or SaaS
+  tools to any model-visible profile
+- implementing a new egress proxy, MCP transport, credential broker backend, or
+  provider-specific networking path
+- treating network profile selection as implicit approval for external actions
+- prompt-based network inference, per-call mutation, arbitrary CIDR or wildcard
+  rules, redirect policy, DNS pinning, or production SSRF handling
+- controlling the model-provider connection itself through the task tool-egress
+  profile
