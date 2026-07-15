@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-15: merged `P124-HITL-01` through GitHub PR `#85` and closed Phase 124; durable parent-session clarification now pauses and resumes one correlated model conversation without blocking workers or widening authority. Phase 125 is limited to one durable session task-plan capability with at most 12 ordered steps, strict statuses, one active step, projection-backed readback, and truthful desktop rendering. Hermes `todo` informs only the bounded ordered-list interaction; Zebra will use session events and SQLite projections rather than process-local state or chat-history hydration. Project kanban, scheduling, user editing, plan approval, DAGs, and Research-child plan mutation remain outside this slice.
 - 2026-07-15: completed `P124-HITL-01` on `codex/p124-hitl-01-durable-clarification`; parent sessions now expose a typed `agent.clarify` tool that persists one bounded request, transitions to `waiting_input`, releases the worker, requires an exact correlated response, and resumes the original assistant/tool conversation exactly once. API, CLI, SQLite projections, worker recovery, and desktop controls share the same safe active-request projection; stale or mismatched responses and uncertain prior continuation fail closed, provider failures become durable terminal failures, and fixed Research children do not receive clarification authority. Browser acceptance verified that controls appear only for a concrete request and ordinary composition is hidden while waiting. A real `deepseek-v4-flash` run moved from `waiting_input` through an `Operators` response to `completed` with `AUDIENCE=Operators`. All `1040` backend tests, Ruff, Mypy across `231` source files, the 8-case eval release gate, all eight desktop checks, and the Node 22 production frontend build passed.
 - 2026-07-15: merged `P122-WEB-01` through GitHub PR `#81` and closed Phase 122; general and coding agents now have one approval-gated bounded Web fetch path while Research children remain offline. Phase 123 is limited to a typed, read-only `files.search` capability for local content and filename discovery under workspace containment, pagination, and output ceilings. It references the updated local Hermes `search_files` design for bounded interaction lessons but retains Zebra's registry, Policy, runtime, event, and subagent boundaries. Persistent indexing, semantic or vector search, LSP, Web Search, hidden credential discovery, directory mutation, and shell fallback remain outside this slice.
 - 2026-07-15: completed `P122-WEB-01` on `codex/p122-web-01-bounded-read-only-web-gateway`; general and coding tasks now advertise a typed `web.fetch` capability behind one dedicated Gateway contract. Core URL validation accepts only credential-free public-hostname HTTPS targets without ports, fragments, spaces, or IP literals. Policy blocks the default offline profile, requires an exact durable domain-allowlist match, and persists structured `web_gateway` approval context before any transport call. The local adapter performs one credential-free GET with environment proxies disabled, rejects non-public DNS answers and redirects, accepts only bounded textual responses, labels returned content untrusted, and records body-free route metadata. Worker acceptance proved zero transport calls before approval and exactly one after exact continuation. Real `deepseek-v4-flash` selected `web.fetch` from the general manifest, while browser validation showed durable launch authority and a Web-specific HITL card with zero executed tools. All `1017` backend tests, Ruff, Mypy across `224` source files, the 8-case eval release gate, all seven desktop checks, and the production frontend build passed; browser console errors were empty.
@@ -64,11 +65,11 @@
 
 ## Current Phase
 
-- Active phase: `Phase 124 - Durable Clarification Request And Resume`
-- Repository status: `phase 123 closed; P124-HITL-01 is complete and ready for review`
+- Active phase: `Phase 125 - Durable Session Task Plan`
+- Repository status: `phase 124 closed; P125-PLAN-01 is ready`
 - Current focus:
-  - `P124-HITL-01` is complete on `codex/p124-hitl-01-durable-clarification`, with durable parent-session clarification pause, safe readback, correlated response, and exactly-once continuation accepted across backend, desktop, browser, and real provider paths
-  - `P120-CAP-01` is in progress on `codex/p120-cap-01-durable-tool-profiles`, persisting one fixed general or coding tool profile from task launch through worker execution without changing the Policy authority ceiling
+  - `P125-PLAN-01` is ready on `codex/p125-plan-01-durable-session-task-plan`, defining one bounded projection-backed parent-session plan that remains separate from execution authority and inferred UI stages
+  - `P124-HITL-01` was merged through GitHub PR `#85` after deterministic, full-repository, desktop, browser, recovery, and real `deepseek-v4-flash` clarification acceptance
   - `P119-SUB-01` was merged through GitHub PR `#75` after deterministic, full-repository, and real `deepseek-v4-flash` acceptance of fixed bounded parallel read-only research fan-out
   - `P119-CLOSE-01` records the Phase 119 closeout and the explicit Phase 120 ownership boundary
   - `P118-SUB-01` was merged through GitHub PR `#72` after lifecycle, authority-ceiling, cancellation, full-repository, and real `deepseek-v4-flash` acceptance
@@ -538,9 +539,9 @@
 
 ## Next Unlocks
 
+- Phase 124 merged through PR `#85`; `P124-CLOSE-01` records the closeout and unlocks one durable session task-plan slice
+- `P125-PLAN-01 - Durable Session Task Plan` is ready and is the only Phase 125 implementation lane
 - Phase 123 merged through PR `#83`; `P123-CLOSE-01` records the closeout and unlocks one durable clarification HITL slice
-- `P124-HITL-01 - Durable Clarification Request And Resume` is complete on `codex/p124-hitl-01-durable-clarification` and ready for review; it adds parent-session clarification pause/read/respond/resume semantics without blocking a worker thread or widening tool authority
-- `P123-TOOL-01 - Bounded Workspace Search Tool` is complete on `codex/p123-tool-01-bounded-workspace-search` and ready for review
 - general, coding, and fixed Research child profiles now expose one typed, read-only, parallel-safe `files.search` primitive with literal content and filename modes, workspace-relative roots, optional glob filtering, and deterministic offset pagination
 - workspace search rejects hidden or escaping roots and skips hidden, symlinked, binary, and oversized files while enforcing 20,000-file, 10,101-match, 500-character-line, 100-result, and 32 KiB output ceilings
 - Phase 123 acceptance passed 52 focused tests, all 1,034 backend tests, Ruff, MyPy across 226 source files, the 8-case eval release gate, and one real `deepseek-v4-flash` `files.search -> files.read` run with a grounded final answer
