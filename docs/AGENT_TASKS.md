@@ -10989,7 +10989,7 @@ bounded output, and provider-neutral tool behavior.
 
 ### P123-CLOSE-01 - Phase 123 Closeout And Phase 124 Planning
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P123-TOOL-01`
@@ -11013,8 +11013,8 @@ input without treating chat text or an in-process callback as durable state.
 
 ### P124-HITL-01 - Durable Clarification Request And Resume
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE / TOOLS / RUNTIME / STORAGE / APP / UI`
 - Depends on: `P123-CLOSE-01`
 - Branch: `codex/p124-hitl-01-durable-clarification`
@@ -11044,29 +11044,29 @@ or relying on a live worker thread.
 
 #### Acceptance
 
-- [ ] A valid request contains a non-blank bounded question and zero to four
+- [x] A valid request contains a non-blank bounded question and zero to four
   unique, non-blank bounded choices; malformed calls fail structurally.
-- [ ] A clarification call persists one correlated request, transitions the
+- [x] A clarification call persists one correlated request, transitions the
   session from running to waiting input, and releases the worker without a
   blocked thread or fabricated tool result.
-- [ ] Session projections and API/CLI reads expose only the active request's
+- [x] Session projections and API/CLI reads expose only the active request's
   identifier, question, choices, context, and creation evidence.
-- [ ] One matching response persists user text plus response evidence, clears
+- [x] One matching response persists user text plus response evidence, clears
   the active request, and schedules exactly one continuation from waiting input.
-- [ ] Duplicate, stale, mismatched, blank, or terminal-session responses fail
+- [x] Duplicate, stale, mismatched, blank, or terminal-session responses fail
   closed without additional model calls or queue entries.
-- [ ] Continuation context contains the original assistant request and correlated
+- [x] Continuation context contains the original assistant request and correlated
   user answer, while previously completed tools are not executed again.
-- [ ] Policy and tool profiles cannot turn clarification into command, file,
+- [x] Policy and tool profiles cannot turn clarification into command, file,
   network, credential, approval, or write authority.
-- [ ] Research children cannot recursively suspend a parent through
+- [x] Research children cannot recursively suspend a parent through
   `agent.clarify`; the tool remains parent-session only.
-- [ ] Desktop HITL controls appear only for one concrete active clarification,
+- [x] Desktop HITL controls appear only for one concrete active clarification,
   support offered and free-form responses, and disappear after resolution.
-- [ ] Existing approval continuation, ordinary message append, suspend/resume,
+- [x] Existing approval continuation, ordinary message append, suspend/resume,
   cancellation, compaction, concurrent tools, Web Gateway, and recovery remain
   compatible.
-- [ ] Targeted tests, full backend/static/eval gates, desktop checks/build,
+- [x] Targeted tests, full backend/static/eval gates, desktop checks/build,
   browser validation, and one real `deepseek-v4-flash` clarification pass succeed.
 
 #### Explicit Non-Goals

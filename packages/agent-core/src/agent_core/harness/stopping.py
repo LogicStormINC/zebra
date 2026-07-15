@@ -61,7 +61,10 @@ class HarnessStoppingPolicy:
         tool_calls_used: int,
         attempt_result: HarnessAttemptResult,
     ) -> bool:
-        if attempt_result.outcome is HarnessAttemptOutcome.WAITING_APPROVAL:
+        if attempt_result.outcome in {
+            HarnessAttemptOutcome.WAITING_APPROVAL,
+            HarnessAttemptOutcome.WAITING_INPUT,
+        }:
             return False
         if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
             return False
@@ -85,6 +88,8 @@ class HarnessStoppingPolicy:
     ) -> HarnessStopReason:
         if attempt_result.outcome is HarnessAttemptOutcome.WAITING_APPROVAL:
             return HarnessStopReason.APPROVAL_REQUIRED
+        if attempt_result.outcome is HarnessAttemptOutcome.WAITING_INPUT:
+            return HarnessStopReason.CLARIFICATION_REQUIRED
         if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
             return HarnessStopReason.COMPLETED
         if max_model_calls is not None and model_calls_used >= max_model_calls:

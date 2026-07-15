@@ -6,6 +6,7 @@ export function sessionStatusLabel(status: string | undefined): string {
   if (status === "ready") return locale.statusReady;
   if (status === "running") return locale.statusRunning;
   if (status === "waiting_approval" || status === "waiting_user") return locale.statusWaiting;
+  if (status === "waiting_input") return locale.statusWaitingInput;
   if (status === "completed") return locale.statusDone;
   if (status === "failed") return locale.statusFailed;
   if (["stopped", "cancelled", "canceled"].includes(status ?? "")) return locale.statusStopped;

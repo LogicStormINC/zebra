@@ -6,6 +6,7 @@ import { CodexWorkspace } from "./components/CodexWorkspace";
 import locale from "./_utils/local";
 import type { ChatMessage } from "./lib/chat-surface";
 import { isAppendToTerminalError, streamEventsToMessages, toErrorMessage } from "./lib/chat-surface";
+import { buildClarificationResponsePayload } from "./lib/clarification-continuation";
 import { useOperatorConfig } from "./lib/operator-config";
 import { mergeSessionEvents, pollWhile } from "./lib/live-session";
 import { projectRuntimeConnection } from "./lib/runtime-connection";
@@ -119,6 +120,26 @@ export default function App() {
       ]));
     },
     [api, loadSessionSummary, syncConversationFromStream],
+  );
+
+  const respondToClarification = useCallback(
+    async (clarificationId: string, content: string) => {
+      if (!currentSessionId) return;
+      setControlsBusy(true);
+      try {
+        await api.appendMessage(
+          currentSessionId,
+          buildClarificationResponsePayload(clarificationId, content),
+        );
+        await executeSession(currentConversation, currentSessionId);
+      } catch (error: unknown) {
+        messageApi.error(toErrorMessage(error));
+        throw error;
+      } finally {
+        setControlsBusy(false);
+      }
+    },
+    [api, currentConversation, currentSessionId, executeSession, messageApi],
   );
 
   const runControlAction = useCallback(
@@ -358,6 +379,7 @@ export default function App() {
         activeApproval={activeApproval.approval}
         approvalBusy={activeApproval.busy}
         approvalErrorText={activeApproval.errorText}
+        clarificationBusy={controlsBusy}
         onApprove={activeApproval.approve}
         onCancel={cancelSession}
         onCopySessionId={() => {
@@ -388,6 +410,7 @@ export default function App() {
         onResumeSession={resumeSession}
         onSuspendSession={suspendSession}
         onReject={activeApproval.reject}
+        onRespondClarification={respondToClarification}
         onRefreshConversation={() => {
           void refreshConversation(currentConversation).catch((error: unknown) => {
             messageApi.error(toErrorMessage(error));

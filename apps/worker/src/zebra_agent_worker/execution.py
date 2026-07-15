@@ -44,6 +44,10 @@ from zebra_agent_worker.approved_continuation import (
     recover_approved_continuation,
 )
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
+from zebra_agent_worker.clarification_continuation import (
+    ClarificationContinuationError,
+    recover_clarification_continuation,
+)
 from zebra_agent_worker.control import SessionControlError, SessionControlService
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.recovery import SessionRecoveryService
@@ -187,7 +191,14 @@ class SessionExecutionService:
         )
         try:
             continuation = recover_approved_continuation(session_events)
-        except ApprovedContinuationError as exc:
+            clarification = recover_clarification_continuation(session_events)
+            if continuation is not None and clarification is not None:
+                raise WorkerExecutionError("session has multiple active continuations")
+        except (
+            ApprovedContinuationError,
+            ClarificationContinuationError,
+            WorkerExecutionError,
+        ) as exc:
             tool_gateway.close()
             self._claim_service.release_claim(claimed)
             raise WorkerExecutionError(str(exc)) from exc
@@ -198,14 +209,20 @@ class SessionExecutionService:
                 tool_call_id=str(continuation.tool_call.tool_call_id),
                 started_at=started_at,
             )
+        elif clarification is not None:
+            claimed = self._mark_clarification_continuation_started(
+                claimed,
+                clarification_id=str(clarification.tool_call.tool_call_id),
+                started_at=started_at,
+            )
         context = HarnessContext(
             task=context.task,
             session=claimed.recovery.session,
             attempt=context.attempt,
         )
         try:
-            attempt_result = (
-                orchestrator.continue_approved_tool_call(
+            if continuation is not None:
+                attempt_result = orchestrator.continue_approved_tool_call(
                     context,
                     initial_completion=continuation.completion,
                     tool_call=continuation.tool_call,
@@ -214,8 +231,40 @@ class SessionExecutionService:
                     model_calls_used=continuation.model_calls_used,
                     tool_calls_executed=continuation.tool_calls_executed,
                 )
-                if continuation is not None
-                else orchestrator.run(context)
+            elif clarification is not None:
+                attempt_result = orchestrator.continue_clarification(
+                    context,
+                    tool_call=clarification.tool_call,
+                    response=clarification.response,
+                    conversation=clarification.conversation,
+                    model_calls_used=clarification.model_calls_used,
+                    tool_calls_executed=clarification.tool_calls_executed,
+                    assistant_message=clarification.assistant_message,
+                )
+            else:
+                attempt_result = orchestrator.run(context)
+        except Exception as exc:
+            attempt_result = HarnessAttemptResult(
+                outcome=HarnessAttemptOutcome.FAILED,
+                summary="model execution failed",
+                metadata={
+                    "stop_reason": "model_execution_failed",
+                    "error_type": type(exc).__name__,
+                    "model_calls_used": (
+                        clarification.model_calls_used + 1
+                        if clarification is not None
+                        else continuation.model_calls_used + 1
+                        if continuation is not None
+                        else 1
+                    ),
+                    "tool_calls_executed": (
+                        clarification.tool_calls_executed
+                        if clarification is not None
+                        else continuation.tool_calls_executed
+                        if continuation is not None
+                        else 0
+                    ),
+                },
             )
         finally:
             tool_gateway.close()
@@ -230,7 +279,7 @@ class SessionExecutionService:
             model_call_indexer=self._model_call_indexer,
             tool_run_indexer=self._tool_run_indexer,
             started_at=started_at,
-            attempt_already_started=continuation is not None,
+            attempt_already_started=(continuation is not None or clarification is not None),
         )
         final_session = self._projection_store.get_session(session_id)
         if final_session is None:
@@ -274,6 +323,32 @@ class SessionExecutionService:
                 )
             )
             next_sequence += 1
+        return ClaimedSession(
+            recovery=self._recovery_service.recover_session(claimed.recovery.session.session_id),
+            lease=claimed.lease,
+        )
+
+    def _mark_clarification_continuation_started(
+        self,
+        claimed: ClaimedSession,
+        *,
+        clarification_id: str,
+        started_at: datetime,
+    ) -> ClaimedSession:
+        self._event_store.append(
+            SessionEvent.create(
+                session_id=claimed.recovery.session.session_id,
+                sequence=claimed.recovery.session.current_sequence + 1,
+                event_type=EventType.HARNESS_ATTEMPT_STARTED,
+                actor=EventActor.HARNESS,
+                payload={
+                    "attempt_number": 1,
+                    "clarification_continuation": True,
+                    "clarification_id": clarification_id,
+                },
+                created_at=started_at,
+            )
+        )
         return ClaimedSession(
             recovery=self._recovery_service.recover_session(claimed.recovery.session.session_id),
             lease=claimed.lease,
@@ -365,7 +440,10 @@ def _append_execution_events(
         )
     for draft in attempt_result.emitted_events:
         append(draft.event_type, draft.actor, draft.payload)
-    if attempt_result.outcome is not HarnessAttemptOutcome.WAITING_APPROVAL:
+    if attempt_result.outcome not in {
+        HarnessAttemptOutcome.WAITING_APPROVAL,
+        HarnessAttemptOutcome.WAITING_INPUT,
+    }:
         append(
             EventType.SESSION_COMPLETED
             if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED

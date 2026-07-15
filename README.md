@@ -34,6 +34,15 @@ prefix, original goal, latest working exchange, complete assistant/tool pairs, a
 pending approval evidence remain canonical; compaction events contain only estimates,
 counts, and provenance.
 
+When consequential information is missing, the parent agent may call the typed
+`agent.clarify` tool. Zebra persists the bounded question and optional choices,
+transitions the session to `waiting_input`, and releases the worker instead of
+blocking a process thread. A response must carry the active clarification ID;
+the worker then restores the original assistant/tool conversation and continues
+the same session once. Clarification does not approve another tool or grant file,
+command, network, credential, or write authority, and fixed Research children do
+not receive it.
+
 The parent agent can delegate up to three independent workspace investigations in
 one provider batch through `agent.research`. Local children run concurrently through
 the existing safe-batch executor, while results and lifecycle evidence return in
@@ -53,8 +62,8 @@ child worktrees, and distributed workflow scheduling remain later boundaries.
 The repository now includes an isolated frontend workspace at `UI/desktop`.
 
 The desktop defaults to task, context, execution, and result surfaces. Human
-controls appear only for a concrete backend approval; dormant Commit or Pull
-Request forms do not belong in the normal task timeline.
+controls appear only for a concrete backend approval or clarification request;
+dormant Commit or Pull Request forms do not belong in the normal task timeline.
 
 - stack: `Tauri + React + Tailwind CSS + TanStack Query + Ant Design + Ant Design X`
 - runtime: `Node 22.17.0` pinned via `volta`, `pnpm 10.28.2`

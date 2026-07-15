@@ -2,6 +2,7 @@ from agent_core.domain.sessions import Session
 from agent_core.domain.workspaces import WorkspaceProjection
 
 from zebra_agent_api.approval_context import serialize_approval_context
+from zebra_agent_api.clarification_context import serialize_clarification_context
 from zebra_agent_api.workspace_read import serialize_workspace_projection
 
 
@@ -26,4 +27,7 @@ def serialize_session_summary(
     approval_context = serialize_approval_context(session.approval_context)
     if approval_context is not None:
         body["approval_context"] = approval_context
+    clarification_context = serialize_clarification_context(session.clarification_context)
+    if clarification_context is not None:
+        body["clarification_context"] = clarification_context
     return body

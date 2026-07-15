@@ -4,6 +4,7 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCall
 from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
+from agent_core.harness.clarification_step import clarification_tool_result
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import (
@@ -104,6 +105,44 @@ class SequentialToolLoop:
             fingerprints=fingerprints,
             metadata=batch.metadata,
             fallback_message=completion.assistant_message.content,
+        )
+
+    def continue_clarification(
+        self,
+        context: HarnessContext,
+        *,
+        tool_call: ToolCall,
+        response: str,
+        conversation: tuple[SessionMessage, ...],
+        model_calls_used: int,
+        tool_calls_executed: int,
+        assistant_message: str,
+    ) -> HarnessAttemptResult:
+        messages = list(conversation)
+        clarification_id = str(tool_call.tool_call_id)
+        result = clarification_tool_result(
+            tool_call.tool_call_id,
+            clarification_id,
+            response,
+        )
+        self._model_step.append_tool_result(
+            messages,
+            tool_call=tool_call,
+            tool_result=result,
+            created_at=context.attempt.started_at,
+        )
+        return self._request_next_completion(
+            context,
+            messages=messages,
+            emitted_events=[],
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            fingerprints=_executed_action_fingerprints(messages),
+            metadata={
+                "clarification_continuation": True,
+                "clarification_id": clarification_id,
+            },
+            fallback_message=assistant_message,
         )
 
     def advance(

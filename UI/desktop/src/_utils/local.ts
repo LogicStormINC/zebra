@@ -86,6 +86,7 @@ export default {
   statusReady: "已就绪",
   statusRunning: "执行中",
   statusWaiting: "待确认",
+  statusWaitingInput: "待补充",
   statusReview: "待审查",
   statusDone: "已完成",
   statusFailed: "失败",

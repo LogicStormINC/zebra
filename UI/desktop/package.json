@@ -14,6 +14,7 @@
     "check:runtime": "node --experimental-strip-types checks/runtime-connection.check.ts",
     "check:live": "node --experimental-strip-types checks/live-session.check.ts",
     "check:approval": "node --experimental-strip-types checks/approval-continuation.check.ts",
+    "check:clarification": "node --experimental-strip-types checks/clarification-continuation.check.ts",
     "check:launch": "node --experimental-strip-types checks/task-launch-config.check.ts",
     "check:index": "node --experimental-strip-types checks/workspace-session-reconciliation.check.ts",
     "check:selection": "node --experimental-strip-types checks/workspace-selection.check.ts",

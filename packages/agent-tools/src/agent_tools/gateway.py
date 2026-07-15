@@ -1,10 +1,12 @@
 from agent_tools.builtin import (
+    ClarifyTool,
     CommandRunTool,
     FileReadTool,
     GitStatusTool,
     PatchApplyTool,
     TestsRunTool,
     WorkspaceSearchTool,
+    clarify_contract,
     command_run_contract,
     file_read_contract,
     files_search_contract,
@@ -17,12 +19,14 @@ from agent_tools.executor import ToolExecutor
 from agent_tools.registry import ToolRegistry
 
 __all__ = [
+    "ClarifyTool",
     "CommandRunTool",
     "FileReadTool",
     "GitStatusTool",
     "PatchApplyTool",
     "TestsRunTool",
     "WorkspaceSearchTool",
+    "clarify_contract",
     "RegisteredTool",
     "ToolContract",
     "ToolExecutor",

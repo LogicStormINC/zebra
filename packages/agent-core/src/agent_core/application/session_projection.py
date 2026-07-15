@@ -1,3 +1,4 @@
+from agent_core.domain.clarifications import ClarificationContext
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 
@@ -63,6 +64,16 @@ def apply_event(session: Session, event: SessionEvent) -> Session:
         EventType.SESSION_CANCELLED,
     }:
         updates["approval_context"] = None
+    clarification_context = _clarification_context_from_event(event)
+    if clarification_context is not None:
+        updates["clarification_context"] = clarification_context
+    elif event.event_type in {
+        EventType.CLARIFICATION_RESPONDED,
+        EventType.SESSION_COMPLETED,
+        EventType.SESSION_FAILED,
+        EventType.SESSION_CANCELLED,
+    }:
+        updates["clarification_context"] = None
     return projected.model_copy(update=updates)
 
 
@@ -85,6 +96,8 @@ def _next_status_for_event(event: SessionEvent) -> SessionStatus | None:
         EventType.APPROVAL_REQUESTED: SessionStatus.WAITING_APPROVAL,
         EventType.APPROVAL_GRANTED: SessionStatus.RUNNING,
         EventType.APPROVAL_REJECTED: SessionStatus.FAILED,
+        EventType.CLARIFICATION_REQUESTED: SessionStatus.WAITING_INPUT,
+        EventType.CLARIFICATION_RESPONDED: SessionStatus.READY,
         EventType.SESSION_SUSPENDED: SessionStatus.SUSPENDED,
         EventType.SESSION_RESUMED: SessionStatus.READY,
         EventType.SESSION_COMPLETED: SessionStatus.COMPLETED,
@@ -116,6 +129,26 @@ def _approval_context_from_event(event: SessionEvent) -> ApprovalContext | None:
         assistant_message=_optional_payload_string(event, "assistant_message"),
         call_fingerprint=_optional_payload_string(event, "call_fingerprint"),
     )
+
+
+def _clarification_context_from_event(event: SessionEvent) -> ClarificationContext | None:
+    if event.event_type is not EventType.CLARIFICATION_REQUESTED:
+        return None
+    try:
+        return ClarificationContext.model_validate(
+            {
+                "clarification_id": event.payload.get("clarification_id"),
+                "tool_call_id": event.payload.get("tool_call_id"),
+                "provider_call_id": event.payload.get("provider_call_id"),
+                "question": event.payload.get("question"),
+                "choices": event.payload.get("choices", ()),
+                "context": event.payload.get("context"),
+                "assistant_message": event.payload.get("assistant_message"),
+                "requested_at": event.created_at,
+            }
+        )
+    except ValueError:
+        return None
 
 
 def _optional_payload_string(event: SessionEvent, key: str) -> str | None:

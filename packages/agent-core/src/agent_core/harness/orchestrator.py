@@ -112,3 +112,24 @@ class SingleAttemptOrchestrator:
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
         )
+
+    def continue_clarification(
+        self,
+        context: HarnessContext,
+        *,
+        tool_call: ToolCall,
+        response: str,
+        conversation: tuple[SessionMessage, ...],
+        model_calls_used: int,
+        tool_calls_executed: int,
+        assistant_message: str,
+    ) -> HarnessAttemptResult:
+        return self._tool_loop.continue_clarification(
+            context,
+            tool_call=tool_call,
+            response=response,
+            conversation=conversation,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            assistant_message=assistant_message,
+        )

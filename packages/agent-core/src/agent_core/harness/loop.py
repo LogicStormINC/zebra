@@ -107,7 +107,10 @@ class HarnessLoop:
             if run_result.can_retry:
                 continue
 
-            if attempt_result.outcome is HarnessAttemptOutcome.WAITING_APPROVAL:
+            if attempt_result.outcome in {
+                HarnessAttemptOutcome.WAITING_APPROVAL,
+                HarnessAttemptOutcome.WAITING_INPUT,
+            }:
                 return HarnessLoopResult(
                     session=recorder.session,
                     events=tuple(recorder.events),
@@ -159,9 +162,7 @@ def _runtime_evidence_from_attempt_result(
                 metadata=_dict_metadata(attempt_result.metadata.get("plan_metadata")),
             )
         )
-    verification_summary = _optional_string(
-        attempt_result.metadata.get("verification_summary")
-    )
+    verification_summary = _optional_string(attempt_result.metadata.get("verification_summary"))
     if verification_summary is not None:
         evidence.append(
             RuntimeEvidenceInput(
@@ -169,9 +170,7 @@ def _runtime_evidence_from_attempt_result(
                 summary=verification_summary,
                 metadata={
                     "passed": bool(attempt_result.metadata.get("verification_passed")),
-                    **_dict_metadata(
-                        attempt_result.metadata.get("verification_metadata")
-                    ),
+                    **_dict_metadata(attempt_result.metadata.get("verification_metadata")),
                 },
             )
         )
@@ -186,9 +185,7 @@ def _runtime_evidence_from_attempt_result(
     tool_output = _optional_string(attempt_result.metadata.get("tool_output"))
     tool_name = _optional_string(attempt_result.metadata.get("tool_name"))
     if tool_output is not None and tool_name is not None:
-        artifact_uri = _artifact_uri_from_metadata(
-            attempt_result.metadata.get("tool_metadata")
-        )
+        artifact_uri = _artifact_uri_from_metadata(attempt_result.metadata.get("tool_metadata"))
         evidence.append(
             RuntimeEvidenceInput(
                 kind="tool_output_summary",

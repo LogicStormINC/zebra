@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from agent_core.domain.clarifications import ClarificationContext
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_core.ports.projection_store import ProjectionStorePort
@@ -24,15 +25,17 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     created_at,
                     updated_at,
                     current_sequence,
-                    approval_context_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    approval_context_json,
+                    clarification_context_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_id) DO UPDATE SET
                     title = excluded.title,
                     status = excluded.status,
                     created_at = excluded.created_at,
                     updated_at = excluded.updated_at,
                     current_sequence = excluded.current_sequence,
-                    approval_context_json = excluded.approval_context_json
+                    approval_context_json = excluded.approval_context_json,
+                    clarification_context_json = excluded.clarification_context_json
                 """,
                 (
                     str(session.session_id),
@@ -42,6 +45,7 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     session.updated_at.isoformat(),
                     session.current_sequence,
                     _approval_context_json(session.approval_context),
+                    _clarification_context_json(session.clarification_context),
                 ),
             )
         return session
@@ -57,7 +61,8 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     created_at,
                     updated_at,
                     current_sequence,
-                    approval_context_json
+                    approval_context_json,
+                    clarification_context_json
                 FROM session_projections
                 WHERE session_id = ?
                 """,
@@ -73,8 +78,9 @@ class SQLiteProjectionStore(ProjectionStorePort):
                 "created_at": row["created_at"],
                 "updated_at": row["updated_at"],
                 "current_sequence": row["current_sequence"],
-                "approval_context": _approval_context_from_json(
-                    row["approval_context_json"]
+                "approval_context": _approval_context_from_json(row["approval_context_json"]),
+                "clarification_context": _clarification_context_from_json(
+                    row["clarification_context_json"]
                 ),
             }
         )
@@ -92,7 +98,8 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     created_at,
                     updated_at,
                     current_sequence,
-                    approval_context_json
+                    approval_context_json,
+                    clarification_context_json
                 FROM session_projections
                 WHERE status = ?
                 ORDER BY updated_at ASC, created_at ASC, session_id ASC
@@ -109,8 +116,9 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     "created_at": row["created_at"],
                     "updated_at": row["updated_at"],
                     "current_sequence": row["current_sequence"],
-                    "approval_context": _approval_context_from_json(
-                        row["approval_context_json"]
+                    "approval_context": _approval_context_from_json(row["approval_context_json"]),
+                    "clarification_context": _clarification_context_from_json(
+                        row["clarification_context_json"]
                     ),
                 }
             )
@@ -130,7 +138,8 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     created_at,
                     updated_at,
                     current_sequence,
-                    approval_context_json
+                    approval_context_json,
+                    clarification_context_json
                 FROM session_projections
                 ORDER BY updated_at DESC, created_at DESC, session_id ASC
                 LIMIT ?
@@ -146,8 +155,9 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     "created_at": row["created_at"],
                     "updated_at": row["updated_at"],
                     "current_sequence": row["current_sequence"],
-                    "approval_context": _approval_context_from_json(
-                        row["approval_context_json"]
+                    "approval_context": _approval_context_from_json(row["approval_context_json"]),
+                    "clarification_context": _clarification_context_from_json(
+                        row["clarification_context_json"]
                     ),
                 }
             )
@@ -165,21 +175,27 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
                     current_sequence INTEGER NOT NULL,
-                    approval_context_json TEXT
+                    approval_context_json TEXT,
+                    clarification_context_json TEXT
                 )
                 """
             )
             columns = {
                 row[1]
-                for row in connection.execute(
-                    "PRAGMA table_info(session_projections)"
-                ).fetchall()
+                for row in connection.execute("PRAGMA table_info(session_projections)").fetchall()
             }
             if "approval_context_json" not in columns:
                 connection.execute(
                     """
                     ALTER TABLE session_projections
                     ADD COLUMN approval_context_json TEXT
+                    """
+                )
+            if "clarification_context_json" not in columns:
+                connection.execute(
+                    """
+                    ALTER TABLE session_projections
+                    ADD COLUMN clarification_context_json TEXT
                     """
                 )
 
@@ -194,3 +210,15 @@ def _approval_context_from_json(value: object) -> ApprovalContext | None:
     if not isinstance(value, str) or not value.strip():
         return None
     return ApprovalContext.model_validate(json.loads(value))
+
+
+def _clarification_context_json(context: ClarificationContext | None) -> str | None:
+    if context is None:
+        return None
+    return json.dumps(context.model_dump(mode="json"))
+
+
+def _clarification_context_from_json(value: object) -> ClarificationContext | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return ClarificationContext.model_validate(json.loads(value))

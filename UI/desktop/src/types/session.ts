@@ -20,6 +20,14 @@ export interface SessionWorkspace {
   snapshot?: SessionWorkspaceSnapshot;
 }
 
+export interface ClarificationContext {
+  clarification_id: string;
+  question: string;
+  choices: string[];
+  context?: string;
+  requested_at: string;
+}
+
 export interface SessionSummary {
   session_id: string;
   title: string;
@@ -27,6 +35,7 @@ export interface SessionSummary {
   current_sequence: number;
   workspace?: SessionWorkspace;
   approval_context?: ApprovalContext;
+  clarification_context?: ClarificationContext;
 }
 
 export interface RecentSessionSummary extends SessionSummary {
@@ -108,6 +117,8 @@ export interface SessionMessageAppendResponse {
   sequence: number;
   status: string;
   current_sequence: number;
+  clarification_resolved?: boolean;
+  clarification_id?: string;
 }
 
 export interface SessionCommitResponse {
