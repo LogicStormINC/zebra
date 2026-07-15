@@ -155,6 +155,7 @@ class SessionExecutionService:
             ),
             synthesize_tool_results=True,
             parallel_safe_tools=tool_gateway.parallel_safe_tools,
+            parallel_batch_limits=tool_gateway.parallel_batch_limits,
             max_parallel_tool_calls=3,
         )
         context = HarnessContext(

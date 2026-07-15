@@ -161,5 +161,30 @@ def test_local_tool_gateway_exposes_only_parallel_safe_builtins(tmp_path) -> Non
     assert gateway.parallel_safe_tools == frozenset({"files.read", "git.status"})
 
 
+def test_local_tool_gateway_bounds_parallel_research_children(tmp_path) -> None:
+    gateway = LocalToolGateway(
+        tmp_path.resolve(),
+        model_gateway=ScriptedModelGateway(
+            responses=(
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content="Unused response.",
+                            created_at=_created_at(),
+                        )
+                    )
+                ),
+            )
+        ),
+    )
+    try:
+        assert "agent.research" in gateway.parallel_safe_tools
+        assert gateway.parallel_batch_limits == {"agent.research": 3}
+    finally:
+        gateway.close()
+
+
 def _created_at() -> datetime:
     return datetime(2026, 6, 22, 13, 0, tzinfo=UTC)

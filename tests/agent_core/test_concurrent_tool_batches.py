@@ -178,6 +178,23 @@ def test_candidate_batch_budget_rejection_starts_nothing() -> None:
     assert _event_names(result, EventType.TOOL_EXECUTION_STARTED) == []
 
 
+def test_candidate_batch_capacity_rejection_starts_nothing() -> None:
+    calls = (_read("a.txt", "call_a"), _read("b.txt", "call_b"))
+    tools = RecordingGateway()
+    result, _ = _run(
+        calls,
+        tools,
+        max_parallel=2,
+        parallel_batch_limits={"files.read": 1},
+    )
+
+    assert result.attempt_result.metadata["stop_reason"] == (
+        "parallel_batch_limit_exceeded"
+    )
+    assert tools.calls == []
+    assert _event_names(result, EventType.TOOL_EXECUTION_STARTED) == []
+
+
 def test_candidate_batch_duplicate_rejection_starts_nothing() -> None:
     calls = (_read("same.txt", "call_a"), _read("same.txt", "call_b"))
     tools = RecordingGateway()
@@ -194,6 +211,7 @@ def _run(
     *,
     max_parallel: int,
     max_tool_calls: int | None = None,
+    parallel_batch_limits: dict[str, int] | None = None,
     policy: PolicyByProviderId | None = None,
 ):
     model = ScriptedModelGateway(
@@ -216,6 +234,7 @@ def _run(
             model_step=HarnessModelStep(available_tools=TOOLS),
             synthesize_tool_results=True,
             parallel_safe_tools=frozenset({"files.read"}),
+            parallel_batch_limits=parallel_batch_limits,
             max_parallel_tool_calls=max_parallel,
         ).run,
         created_at=NOW,

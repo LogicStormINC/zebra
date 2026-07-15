@@ -1,3 +1,5 @@
+from collections.abc import Mapping
+
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import ModelCompletion
@@ -34,6 +36,7 @@ class SingleAttemptOrchestrator:
         tool_selector: ToolCallSelectionStrategy | None = None,
         synthesize_tool_results: bool = False,
         parallel_safe_tools: frozenset[str] = frozenset(),
+        parallel_batch_limits: Mapping[str, int] | None = None,
         max_parallel_tool_calls: int = 1,
     ) -> None:
         self._model_gateway = model_gateway
@@ -48,6 +51,7 @@ class SingleAttemptOrchestrator:
             tool_selector=tool_selector or FirstToolCallSelectionStrategy(),
             synthesize_tool_results=synthesize_tool_results,
             parallel_safe_tools=parallel_safe_tools,
+            parallel_batch_limits=parallel_batch_limits,
             max_parallel_tool_calls=max_parallel_tool_calls,
         )
 
