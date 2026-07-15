@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+import pytest
 from agent_core.domain.identifiers import new_tool_call_id
 from agent_core.domain.policies import PolicyDecisionType
 from agent_core.domain.tools import ToolCall
@@ -288,6 +289,24 @@ def test_path_traversal_is_denied_for_file_read() -> None:
 
     decision = engine.evaluate_tool_call(
         _tool_call("files.read", {"path": "../secrets.env"})
+    )
+
+    assert decision.decision is PolicyDecisionType.DENY
+    assert "escapes workspace" in decision.reason
+
+
+@pytest.mark.parametrize("profile", list(PolicyProfile))
+def test_file_search_is_allowed_by_all_policy_profiles(profile: PolicyProfile) -> None:
+    decision = LocalPolicyEngine(profile=profile).evaluate_tool_call(
+        _tool_call("files.search", {"query": "proof", "path": "docs"})
+    )
+
+    assert decision.decision is PolicyDecisionType.ALLOW
+
+
+def test_file_search_path_traversal_is_denied() -> None:
+    decision = LocalPolicyEngine(profile=PolicyProfile.READ_ONLY).evaluate_tool_call(
+        _tool_call("files.search", {"query": "proof", "path": "../secrets"})
     )
 
     assert decision.decision is PolicyDecisionType.DENY

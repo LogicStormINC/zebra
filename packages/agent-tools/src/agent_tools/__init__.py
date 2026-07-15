@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from agent_tools.builtin.files import FileReadTool, file_read_contract
     from agent_tools.builtin.git import GitStatusTool, git_status_contract
     from agent_tools.builtin.patch import PatchApplyTool, patch_apply_contract
+    from agent_tools.builtin.search import WorkspaceSearchTool, files_search_contract
     from agent_tools.builtin.tests import TestsRunTool, tests_run_contract
     from agent_tools.contracts import RegisteredTool, ToolContract
     from agent_tools.executor import ToolExecutor
@@ -46,6 +47,7 @@ __all__ = [
     "ToolExecutor",
     "ToolRegistry",
     "WebFetchTool",
+    "WorkspaceSearchTool",
     "WebGatewayError",
     "WebGatewayRequest",
     "WebGatewayResponse",
@@ -53,6 +55,7 @@ __all__ = [
     "build_mcp_proxy_request",
     "command_run_contract",
     "file_read_contract",
+    "files_search_contract",
     "git_status_contract",
     "parse_mcp_tool_name",
     "patch_apply_contract",
@@ -63,6 +66,7 @@ __all__ = [
 _EXPORTS = {
     "CommandRunTool": ("agent_tools.builtin.command", "CommandRunTool"),
     "FileReadTool": ("agent_tools.builtin.files", "FileReadTool"),
+    "WorkspaceSearchTool": ("agent_tools.builtin.search", "WorkspaceSearchTool"),
     "GitStatusTool": ("agent_tools.builtin.git", "GitStatusTool"),
     "McpProxyRequest": ("agent_tools.mcp_proxy", "McpProxyRequest"),
     "McpProxyResponse": ("agent_tools.mcp_proxy", "McpProxyResponse"),
@@ -83,6 +87,7 @@ _EXPORTS = {
     "build_mcp_proxy_request": ("agent_tools.mcp_proxy", "build_mcp_proxy_request"),
     "command_run_contract": ("agent_tools.builtin.command", "command_run_contract"),
     "file_read_contract": ("agent_tools.builtin.files", "file_read_contract"),
+    "files_search_contract": ("agent_tools.builtin.search", "files_search_contract"),
     "git_status_contract": ("agent_tools.builtin.git", "git_status_contract"),
     "parse_mcp_tool_name": ("agent_tools.mcp_proxy", "parse_mcp_tool_name"),
     "patch_apply_contract": ("agent_tools.builtin.patch", "patch_apply_contract"),

@@ -22,6 +22,7 @@ from agent_tools import (
     ToolRegistry,
     WebFetchTool,
     WebGatewayTransport,
+    WorkspaceSearchTool,
 )
 from agent_tools.errors import ToolRegistryError
 
@@ -110,6 +111,7 @@ class LocalToolGateway(ToolGatewayPort):
         registry = ToolRegistry()
         tools = (
             FileReadTool(self._workspace),
+            WorkspaceSearchTool(self._workspace),
             GitStatusTool(runtime, self._workspace),
             PatchApplyTool(runtime, self._workspace),
             TestsRunTool(runtime, self._workspace, DEFAULT_TEST_PRESETS),

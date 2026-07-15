@@ -37,8 +37,9 @@ counts, and provenance.
 The parent agent can delegate up to three independent workspace investigations in
 one provider batch through `agent.research`. Local children run concurrently through
 the existing safe-batch executor, while results and lifecycle evidence return in
-provider order. Each child reuses the same Harness but receives only `files.read`
-and `git.status` under a read-only policy, cannot recursively delegate, and returns
+provider order. Each child reuses the same Harness but receives only `files.read`,
+`files.search`, and `git.status` under a read-only policy, cannot recursively
+delegate, and returns
 a structured summary with sources and confidence. Policy, duplicate, parent tool
 budget, and aggregate child capacity are checked before fan-out; child count, depth,
 concurrency, model, and tool ceilings remain fixed, and parent teardown cancels and
@@ -77,12 +78,18 @@ If your shell still resolves `pnpm` or `node` to Homebrew or another global inst
    before `pnpm tauri:dev` when validating the native shell.
 
 New tasks use the `general` tool profile by default. It advertises Research,
-command, file-read, patch, and bounded Web-fetch capabilities without
+command, bounded file-search, file-read, patch, and bounded Web-fetch capabilities
+without
 coding-specific Git status or test-run tools. Select `coding` explicitly in the
 desktop launch controls or pass `--tool-profile coding` in the CLI when those
 additional tools are required.
 Tool profile selection changes model-visible tools only; `policy_profile` remains
 the independent authority and approval boundary.
+
+`files.search` provides literal content and filename discovery under a
+workspace-relative root, with optional glob filtering and explicit pagination.
+It skips hidden, symlinked, binary, and oversized files and enforces fixed scan,
+result, line, and output-byte ceilings before content reaches the model.
 
 Task tool egress also defaults independently to `network_profile=none`. Use the
 CLI `--network-profile` option or the desktop launch control to select a broader

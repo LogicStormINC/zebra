@@ -47,6 +47,7 @@ def test_parent_uses_sourced_readonly_child_result_for_final_answer(tmp_path) ->
     assert "agent.research" in {tool.name for tool in gateway.tool_requests[0]}
     assert tuple(tool.name for tool in gateway.tool_requests[1]) == (
         "files.read",
+        "files.search",
         "git.status",
     )
     assert "agent.research" not in {tool.name for tool in gateway.tool_requests[1]}
@@ -65,6 +66,51 @@ def test_parent_uses_sourced_readonly_child_result_for_final_answer(tmp_path) ->
     assert completed.payload["confidence"] == 1.0
     assert "RESEARCH-EVIDENCE" not in str(started.payload)
     assert "RESEARCH-EVIDENCE" not in str(completed.payload)
+
+
+def test_research_child_searches_then_reads_within_fixed_budget(tmp_path) -> None:
+    (tmp_path / "located.txt").write_text("CHILD-SEARCH-PROOF\n", encoding="utf-8")
+    gateway = ScriptedModelGateway(
+        responses=tuple(
+            ScriptedModelResponse(completion=completion)
+            for completion in (
+                _completion(
+                    "Delegating.",
+                    _call("agent.research", {"objective": "Find the proof."}, "research"),
+                ),
+                _completion(
+                    "Searching.",
+                    _call(
+                        "files.search",
+                        {"query": "CHILD-SEARCH-PROOF"},
+                        "search",
+                    ),
+                ),
+                _completion(
+                    "Reading.",
+                    _call("files.read", {"path": "located.txt"}, "read"),
+                ),
+                _completion("Child found CHILD-SEARCH-PROOF."),
+                _completion("Parent confirmed CHILD-SEARCH-PROOF."),
+            )
+        )
+    )
+
+    result = run_local_harness(
+        prompt="Delegate discovery of the proof.",
+        title="Research child search and read",
+        workspace_root=tmp_path.resolve(),
+        model_gateway=gateway,
+    )
+
+    assert result.attempt_result.metadata["assistant_message"] == (
+        "Parent confirmed CHILD-SEARCH-PROOF."
+    )
+    completed = next(
+        event for event in result.events if event.event_type is EventType.SUBAGENT_COMPLETED
+    )
+    assert completed.payload["tool_calls_used"] == 2
+    assert completed.payload["source_count"] == 2
 
 
 def test_parent_fans_out_bounded_research_and_preserves_provider_order(tmp_path) -> None:
@@ -89,8 +135,8 @@ def test_parent_fans_out_bounded_research_and_preserves_provider_order(tmp_path)
     assert gateway.max_child_active == 2
     assert gateway.parent_result_ids == ["research_a", "research_b"]
     assert gateway.child_tool_manifests == [
-        ("files.read", "git.status"),
-        ("files.read", "git.status"),
+        ("files.read", "files.search", "git.status"),
+        ("files.read", "files.search", "git.status"),
     ]
     completed = [
         event

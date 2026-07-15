@@ -10900,7 +10900,7 @@ Gateway transport rather than direct tool-process networking.
 
 ### P122-CLOSE-01 - Phase 122 Closeout And Phase 123 Planning
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `DOC`
 - Depends on: `P122-WEB-01`
@@ -10925,8 +10925,8 @@ adding another external information provider.
 
 ### P123-TOOL-01 - Bounded Workspace Search Tool
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE / SECURITY / TOOLS / RUNTIME`
 - Depends on: `P122-CLOSE-01`
 - Branch: `codex/p123-tool-01-bounded-workspace-search`
@@ -10955,24 +10955,24 @@ bounded output, and provider-neutral tool behavior.
 
 #### Acceptance
 
-- [ ] Content mode returns ordered workspace-relative path, line, column, and
+- [x] Content mode returns ordered workspace-relative path, line, column, and
   bounded text evidence; filename mode returns ordered workspace-relative paths.
-- [ ] Search roots cannot be absolute, blank, or escape the workspace; symlink
+- [x] Search roots cannot be absolute, blank, or escape the workspace; symlink
   traversal cannot expose data outside the workspace.
-- [ ] Query, mode, glob, limit, and offset are validated at the typed tool
+- [x] Query, mode, glob, limit, and offset are validated at the typed tool
   boundary; malformed input fails structurally without executing a command.
-- [ ] Results enforce fixed count, line, and byte ceilings; truncation exposes a
+- [x] Results enforce fixed count, line, and byte ceilings; truncation exposes a
   deterministic `next_offset` and narrowing hint.
-- [ ] `files.search` is allowed by read-only, workspace-write, and full-access
+- [x] `files.search` is allowed by read-only, workspace-write, and full-access
   Policy profiles and remains independent of task network authority.
-- [ ] General and coding tasks advertise and execute `files.search`; unknown or
+- [x] General and coding tasks advertise and execute `files.search`; unknown or
   filtered profiles cannot invoke it through a hidden fallback.
-- [ ] Research children advertise and execute `files.search` but retain only
+- [x] Research children advertise and execute `files.search` but retain only
   read-only local tools, fixed budgets, no Web access, and no recursion.
-- [ ] Existing tool advertisement, safe concurrency, sequential loops,
+- [x] Existing tool advertisement, safe concurrency, sequential loops,
   approvals, compaction, Web Gateway, and durable worker recovery remain
   compatible.
-- [ ] Targeted tests, full backend and static gates, eval release gate, and one
+- [x] Targeted tests, full backend and static gates, eval release gate, and one
   real `deepseek-v4-flash` search-and-read acceptance pass succeed.
 
 #### Explicit Non-Goals

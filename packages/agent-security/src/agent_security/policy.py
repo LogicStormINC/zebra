@@ -54,7 +54,7 @@ class ApprovalRequest:
             raise ValueError("approval request network_profile must not be blank")
 
 
-READ_ONLY_TOOLS = frozenset({"agent.research", "files.read", "git.status"})
+READ_ONLY_TOOLS = frozenset({"agent.research", "files.read", "files.search", "git.status"})
 WORKSPACE_WRITE_TOOLS = READ_ONLY_TOOLS | frozenset({"patch.apply", "tests.run"})
 FULL_ACCESS_TOOLS = WORKSPACE_WRITE_TOOLS | frozenset({"command.run"})
 SHELL_EXECUTABLES = frozenset({"bash", "fish", "powershell", "pwsh", "sh", "zsh"})
@@ -64,6 +64,7 @@ EXFILTRATION_COMMANDS = frozenset({"curl", "nc", "netcat", "scp", "wget"})
 PATH_ARGUMENTS_BY_TOOL = {
     "command.run": ("cwd",),
     "files.read": ("path",),
+    "files.search": ("path",),
     "git.status": ("cwd",),
 }
 

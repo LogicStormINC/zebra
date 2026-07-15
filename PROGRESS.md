@@ -536,6 +536,10 @@
 
 ## Next Unlocks
 
+- `P123-TOOL-01 - Bounded Workspace Search Tool` is complete on `codex/p123-tool-01-bounded-workspace-search` and ready for review
+- general, coding, and fixed Research child profiles now expose one typed, read-only, parallel-safe `files.search` primitive with literal content and filename modes, workspace-relative roots, optional glob filtering, and deterministic offset pagination
+- workspace search rejects hidden or escaping roots and skips hidden, symlinked, binary, and oversized files while enforcing 20,000-file, 10,101-match, 500-character-line, 100-result, and 32 KiB output ceilings
+- Phase 123 acceptance passed 52 focused tests, all 1,034 backend tests, Ruff, MyPy across 226 source files, the 8-case eval release gate, and one real `deepseek-v4-flash` `files.search -> files.read` run with a grounded final answer
 - `P35-API-01 - Artifact Success Envelope Normalization` is complete on `codex/p35-api-01-artifact-success-envelope-normalization`
 - `P35-CLI-01 - Artifact Envelope Consistency Parity` is complete on `codex/p35-cli-01-artifact-envelope-consistency-parity`
 - `P44-TEST-01 - Artifact Audit Metadata Contract Coverage` is complete on `codex/p44-test-01-artifact-audit-contract-coverage`

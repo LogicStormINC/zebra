@@ -108,6 +108,7 @@ def test_child_gateway_exposes_only_readonly_non_recursive_tools(tmp_path) -> No
 
     assert tuple(tool.name for tool in gateway.model_tools) == (
         "files.read",
+        "files.search",
         "git.status",
     )
     assert "agent.research" not in {tool.name for tool in gateway.model_tools}
@@ -137,6 +138,7 @@ def test_child_write_request_is_denied_before_execution(tmp_path) -> None:
     assert result.tool_calls_used == 0
     assert tuple(tool.name for tool in gateway.tool_requests[0]) == (
         "files.read",
+        "files.search",
         "git.status",
     )
     assert not (tmp_path / "pwned.txt").exists()
