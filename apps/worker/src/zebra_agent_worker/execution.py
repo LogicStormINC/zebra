@@ -140,15 +140,20 @@ class SessionExecutionService:
             self._claim_service.release_claim(claimed)
             raise WorkerExecutionError(str(exc)) from exc
         model_gateway = build_model_gateway(self._settings)
-        tool_gateway = LocalToolGateway(
-            task.workspace_root,
-            model_gateway=model_gateway,
-            tool_profile=task.tool_profile,
-            web_search_endpoint=self._settings.web_search_endpoint,
-            skill_roots=self._settings.skill_roots,
-            session_history=SQLiteSessionHistory(self._database_path),
-            current_session_id=str(session_id),
-        )
+        try:
+            tool_gateway = LocalToolGateway(
+                task.workspace_root,
+                model_gateway=model_gateway,
+                tool_profile=task.tool_profile,
+                web_search_endpoint=self._settings.web_search_endpoint,
+                skill_roots=self._settings.skill_roots,
+                mcp_servers=self._settings.mcp_servers,
+                session_history=SQLiteSessionHistory(self._database_path),
+                current_session_id=str(session_id),
+            )
+        except ValueError as exc:
+            self._claim_service.release_claim(claimed)
+            raise WorkerExecutionError(str(exc)) from exc
         context_compiler = LocalContextCompiler()
         orchestrator = SingleAttemptOrchestrator(
             model_gateway,

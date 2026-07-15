@@ -119,6 +119,23 @@ it is never executed automatically and cannot grant tool, filesystem, command,
 network, credential, approval, or workspace-write authority. Fixed Research
 children do not receive Skill tools.
 
+Local MCP tools remain unavailable unless `ZEBRA_MCP_SERVERS` contains a JSON
+object with at most three explicitly named stdio servers. Each entry accepts only
+an absolute executable and an argument array, for example:
+
+```dotenv
+ZEBRA_MCP_SERVERS={"local":{"command":"/absolute/path/to/server","args":[]}}
+```
+
+Zebra starts no MCP process when the setting is empty. Configured general and
+coding parent sessions discover at most 32 tools and expose them as
+`mcp.<server>.<tool>`. A task must select `network_profile=mcp-proxy-only` (or
+`full-trusted-local`), and every call still requires a concrete HITL approval
+before `tools/call` reaches the server. Server descriptions, schemas, and output
+are untrusted. Shells, inline interpreter execution, package installers, secret
+environment injection, remote transports, dynamic reload, and Research-child
+inheritance are intentionally unsupported.
+
 Local API, CLI, and Worker composition also supplies general and coding parent
 sessions with the read-only `sessions.search` tool over the configured SQLite
 database. With no arguments it browses bounded recent sessions; `query` performs

@@ -16,10 +16,27 @@ class McpProxyToolGateway:
             tool_call,
             metadata={"route": "mcp_proxy"},
         )
-        response = self.transport.execute(request)
+        try:
+            response = self.transport.execute(request)
+        except ValueError as exc:
+            return ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.FAILED,
+                output="",
+                metadata={
+                    "route": "proxy",
+                    "proxy_target": (
+                        f"{request.target.server_name}.{request.target.tool_name}"
+                    ),
+                    "proxy_transport": "mcp_proxy",
+                    "reason": "mcp_proxy_error",
+                    "detail": str(exc),
+                },
+            )
+        failed = response.metadata.get("mcp_is_error") is True
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
-            status=ToolCallStatus.EXECUTED,
+            status=ToolCallStatus.FAILED if failed else ToolCallStatus.EXECUTED,
             output=response.output,
             metadata={
                 "route": "proxy",

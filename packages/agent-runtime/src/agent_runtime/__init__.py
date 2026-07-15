@@ -15,6 +15,8 @@ from agent_runtime.git_commit import (
 )
 from agent_runtime.git_diff import WorkspaceDiffError, WorkspaceDiffResult, WorkspaceDiffService
 from agent_runtime.harness import LocalToolGateway, run_local_harness
+from agent_runtime.mcp_protocol import McpProtocolError, McpServerSpec
+from agent_runtime.mcp_stdio import LocalStdioMcpTransport
 from agent_runtime.research import (
     LocalResearchSubagentRunner,
     ReadOnlyToolGateway,
@@ -38,6 +40,7 @@ __all__ = [
     "LocalResearchSubagentCoordinator",
     "LocalResearchSubagentRunner",
     "LocalToolGateway",
+    "LocalStdioMcpTransport",
     "LocalWorkspace",
     "LocalWorktree",
     "ReadOnlyToolGateway",
@@ -45,6 +48,8 @@ __all__ = [
     "RuntimeCapabilityError",
     "RuntimeHandle",
     "RuntimeSnapshot",
+    "McpProtocolError",
+    "McpServerSpec",
     "SubagentLimitError",
     "UnknownSubagentError",
     "WorkspaceCommitCommand",

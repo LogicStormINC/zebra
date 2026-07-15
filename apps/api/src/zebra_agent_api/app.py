@@ -975,31 +975,38 @@ class ZebraAgentApi:
                 status="model_gateway_unavailable",
                 reason=str(error),
             )
-        result = run_local_harness(
-            prompt=str(parsed["prompt"]),
-            title=str(parsed["title"]),
-            workspace_root=workspace_root,
-            model_gateway=model_gateway,
-            policy_profile=PolicyProfile(str(parsed["policy_profile"])),
-            tool_profile=ToolProfile(str(parsed["tool_profile"])),
-            network_profile=parse_network_profile(
-                str(parsed["network_profile"]),
-                domain_allowlist=parsed["network_allowlist"],
-            ),
-            web_search_endpoint=self.settings.web_search_endpoint,
-            skill_roots=self.settings.skill_roots,
-            session_history=SQLiteSessionHistory(self.database_path),
-            confirmed_memories=confirmed_memories,
-            attachments=tuple(
-                AttachmentContextInput(
-                    attachment_id=attachment.attachment_id,
-                    file_name=attachment.file_name,
-                    media_type=attachment.media_type,
-                    text=attachment.payload.decode("utf-8"),
-                )
-                for attachment in parsed["attachments"]
-            ),
-        )
+        try:
+            result = run_local_harness(
+                prompt=str(parsed["prompt"]),
+                title=str(parsed["title"]),
+                workspace_root=workspace_root,
+                model_gateway=model_gateway,
+                policy_profile=PolicyProfile(str(parsed["policy_profile"])),
+                tool_profile=ToolProfile(str(parsed["tool_profile"])),
+                network_profile=parse_network_profile(
+                    str(parsed["network_profile"]),
+                    domain_allowlist=parsed["network_allowlist"],
+                ),
+                web_search_endpoint=self.settings.web_search_endpoint,
+                skill_roots=self.settings.skill_roots,
+                mcp_servers=self.settings.mcp_servers,
+                session_history=SQLiteSessionHistory(self.database_path),
+                confirmed_memories=confirmed_memories,
+                attachments=tuple(
+                    AttachmentContextInput(
+                        attachment_id=attachment.attachment_id,
+                        file_name=attachment.file_name,
+                        media_type=attachment.media_type,
+                        text=attachment.payload.decode("utf-8"),
+                    )
+                    for attachment in parsed["attachments"]
+                ),
+            )
+        except ValueError as error:
+            return service_unavailable(
+                status="tool_gateway_unavailable",
+                reason=str(error),
+            )
         events, attachment_refs = persist_initial_attachments(
             self.database_path,
             tuple(result.events),

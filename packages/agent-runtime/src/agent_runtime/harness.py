@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 from agent_context import LocalContextCompiler
@@ -20,6 +21,7 @@ from agent_tools import (
     CommandRunTool,
     FileReadTool,
     GitStatusTool,
+    McpProxyToolGateway,
     PatchApplyTool,
     PlanTool,
     SessionSearchTool,
@@ -39,6 +41,8 @@ from agent_tools.errors import ToolRegistryError
 from agent_tools.skills_catalog import LocalSkillCatalog
 
 from agent_runtime.adapters.local import LocalRuntime
+from agent_runtime.mcp_protocol import McpServerSpec
+from agent_runtime.mcp_stdio import LocalStdioMcpTransport
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
 from agent_runtime.subagents import LocalResearchSubagentCoordinator
 from agent_runtime.web_gateway import LocalWebGatewayTransport
@@ -67,6 +71,7 @@ def run_local_harness(
     session_history: SessionHistoryPort | None = None,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
     attachments: tuple[AttachmentContextInput, ...] = (),
+    mcp_servers: Sequence[McpServerSpec] = (),
 ) -> HarnessLoopResult:
     tool_gateway = LocalToolGateway(
         workspace_root,
@@ -75,6 +80,7 @@ def run_local_harness(
         web_search_endpoint=web_search_endpoint,
         skill_roots=skill_roots,
         session_history=session_history,
+        mcp_servers=mcp_servers,
     )
     context_compiler = LocalContextCompiler()
     try:
@@ -130,6 +136,7 @@ class LocalToolGateway(ToolGatewayPort):
         skill_roots: tuple[str, ...] = (),
         session_history: SessionHistoryPort | None = None,
         current_session_id: str | None = None,
+        mcp_servers: Sequence[McpServerSpec] = (),
     ) -> None:
         if research_child_limit <= 0:
             raise ValueError("research_child_limit must be positive")
@@ -170,6 +177,7 @@ class LocalToolGateway(ToolGatewayPort):
         if session_history is not None and "sessions.search" in enabled_names:
             history_tool = SessionSearchTool(session_history, current_session_id)
             registry.register(history_tool.contract, history_tool.handle)
+        mcp_transport = LocalStdioMcpTransport(mcp_servers) if mcp_servers else None
         self._subagents: LocalResearchSubagentCoordinator | None = None
         if model_gateway is not None and "agent.research" in enabled_names:
             self._subagents = LocalResearchSubagentCoordinator(
@@ -179,12 +187,19 @@ class LocalToolGateway(ToolGatewayPort):
             )
             research = ResearchSubagentTool(self._subagents, workspace_root)
             registry.register(research.contract, research.handle)
-        self._model_tools = registry.model_tools()
+        self._model_tools = registry.model_tools() + (
+            mcp_transport.model_tools if mcp_transport is not None else ()
+        )
         self._parallel_safe_tools = registry.parallel_safe_names()
         self._parallel_batch_limits = (
             {"agent.research": research_child_limit} if model_gateway is not None else {}
         )
-        self._executor = ToolExecutor(registry)
+        self._executor = ToolExecutor(
+            registry,
+            mcp_proxy_gateway=(
+                McpProxyToolGateway(mcp_transport) if mcp_transport is not None else None
+            ),
+        )
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:

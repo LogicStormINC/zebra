@@ -1,5 +1,6 @@
 from zebra_agent_config.settings import (
     ApiSettings,
+    McpServerSettings,
     ModelSettings,
     ScmSettings,
     ZebraAgentSettings,
@@ -8,6 +9,7 @@ from zebra_agent_config.settings import (
 
 __all__ = [
     "ApiSettings",
+    "McpServerSettings",
     "ModelSettings",
     "ScmSettings",
     "ZebraAgentSettings",

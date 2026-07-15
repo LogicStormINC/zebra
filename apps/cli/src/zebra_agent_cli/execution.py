@@ -56,6 +56,7 @@ def execute_durable_run(
         network_profile=network_profile,
         web_search_endpoint=settings.web_search_endpoint,
         skill_roots=settings.skill_roots,
+        mcp_servers=settings.mcp_servers,
         session_history=SQLiteSessionHistory(database_path),
         confirmed_memories=confirmed_memories,
     )
