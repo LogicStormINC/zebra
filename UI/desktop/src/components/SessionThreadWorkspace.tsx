@@ -133,6 +133,7 @@ export function SessionThreadWorkspace({
         <div className={styles.inspectorRow}><span>{locale.workspace}</span><span title={workspaceRoot ?? locale.workspaceUnbound}>{workspaceRoot ? compactWorkspaceLabel(workspaceRoot) : locale.notBound}</span></div>
         <div className={styles.inspectorRow}><span>{locale.policy}</span><span>{sessionSummary?.workspace?.policy_profile ?? locale.notBound}</span></div>
         <div className={styles.inspectorRow}><span>工具配置</span><span>{sessionSummary?.workspace?.tool_profile ?? locale.notBound}</span></div>
+        <div className={styles.inspectorRow}><span>网络配置</span><span>{sessionSummary?.workspace?.network_profile ?? "none"}</span></div>
         <div className={styles.inspectorRow}><span>{locale.attempt}</span><span>{sessionSummary?.workspace?.last_attempt_number ?? 0}</span></div>
         <div className={styles.inspectorRow}><span>{locale.sequence}</span><span>{sessionSummary?.current_sequence ?? events.length}</span></div>
       </div>;

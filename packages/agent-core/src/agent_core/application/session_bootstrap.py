@@ -17,6 +17,8 @@ class SessionBootstrapCommand:
     workspace_root: Path
     policy_profile: str | None = None
     tool_profile: ToolProfile = ToolProfile.GENERAL
+    network_profile: str = "none"
+    network_allowlist: tuple[str, ...] = ()
     max_attempts: int = 1
     max_model_calls: int | None = 4
     max_tool_calls: int | None = 3
@@ -60,6 +62,8 @@ class SessionBootstrapService:
                     "workspace_root": str(command.workspace_root),
                     "policy_profile": command.policy_profile,
                     "tool_profile": command.tool_profile.value,
+                    "network_profile": command.network_profile,
+                    "network_allowlist": list(command.network_allowlist),
                     "max_attempts": command.max_attempts,
                     "max_model_calls": command.max_model_calls,
                     "max_tool_calls": command.max_tool_calls,

@@ -36,6 +36,8 @@ class HarnessTask:
     workspace_root: Path | None = None
     policy_profile: str | None = None
     tool_profile: ToolProfile = ToolProfile.GENERAL
+    network_profile: str = "none"
+    network_allowlist: tuple[str, ...] = ()
     context_token_budget: int = 200
     runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = ()

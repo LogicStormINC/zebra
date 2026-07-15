@@ -35,6 +35,8 @@ def test_rebuild_workspace_projects_workspace_lifecycle() -> None:
                 "workspace_root": "/tmp/workspace-projection",
                 "policy_profile": "workspace_write",
                 "tool_profile": "general",
+                "network_profile": "mcp-proxy-only",
+                "network_allowlist": [],
             },
             created_at=created_at,
         ),
@@ -75,6 +77,8 @@ def test_rebuild_workspace_projects_workspace_lifecycle() -> None:
     assert projection.workspace_root == "/tmp/workspace-projection"
     assert projection.policy_profile == "workspace_write"
     assert projection.tool_profile is ToolProfile.GENERAL
+    assert projection.network_profile.value == "mcp-proxy-only"
+    assert projection.network_allowlist == ()
     assert projection.status is WorkspaceStatus.RUNNING
     assert projection.current_sequence == 4
     assert projection.last_attempt_number == 1
@@ -116,7 +120,9 @@ def test_rebuild_workspace_recovers_legacy_session_as_coding() -> None:
         created_at=created_at,
     )
 
-    assert rebuild_workspace([prepared]).tool_profile is ToolProfile.CODING
+    projection = rebuild_workspace([prepared])
+    assert projection.tool_profile is ToolProfile.CODING
+    assert projection.network_profile.value == "none"
 
 
 def test_rebuild_workspace_rejects_unknown_tool_profile() -> None:

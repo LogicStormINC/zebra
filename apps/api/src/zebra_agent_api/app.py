@@ -26,7 +26,7 @@ from agent_integrations import (
     build_pull_request_gateway,
 )
 from agent_runtime import run_local_harness
-from agent_security import CredentialBroker, PolicyProfile
+from agent_security import CredentialBroker, PolicyProfile, parse_network_profile
 from agent_storage import (
     LeaseConflictError,
     SQLiteEventStore,
@@ -903,6 +903,8 @@ class ZebraAgentApi:
                 workspace_root=Path(str(parsed["workspace"])).expanduser().resolve(),
                 policy_profile=str(parsed["policy_profile"]),
                 tool_profile=ToolProfile(str(parsed["tool_profile"])),
+                network_profile=str(parsed["network_profile"]),
+                network_allowlist=tuple(parsed["network_allowlist"]),
             )
         )
         event_store = SQLiteEventStore(self.database_path)
@@ -922,6 +924,8 @@ class ZebraAgentApi:
                 "executed": False,
                 "status": bootstrap.session.status.value,
                 "tool_profile": str(parsed["tool_profile"]),
+                "network_profile": str(parsed["network_profile"]),
+                "network_allowlist": parsed["network_allowlist"],
             },
         )
 
@@ -945,6 +949,10 @@ class ZebraAgentApi:
             model_gateway=model_gateway,
             policy_profile=PolicyProfile(str(parsed["policy_profile"])),
             tool_profile=ToolProfile(str(parsed["tool_profile"])),
+            network_profile=parse_network_profile(
+                str(parsed["network_profile"]),
+                domain_allowlist=parsed["network_allowlist"],
+            ),
             confirmed_memories=confirmed_memories,
         )
         event_store = SQLiteEventStore(self.database_path)
@@ -968,6 +976,8 @@ class ZebraAgentApi:
                 "attempts_used": result.run_result.attempts_used,
                 "policy_profile": str(parsed["policy_profile"]),
                 "tool_profile": str(parsed["tool_profile"]),
+                "network_profile": str(parsed["network_profile"]),
+                "network_allowlist": parsed["network_allowlist"],
                 "trace": _trace_payload(result),
             },
         )

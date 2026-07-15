@@ -11,6 +11,8 @@ def serialize_workspace_projection(
     body: dict[str, object] = {
         "workspace_root": workspace.workspace_root,
         "tool_profile": workspace.tool_profile.value,
+        "network_profile": workspace.network_profile.value,
+        "network_allowlist": list(workspace.network_allowlist),
         "status": workspace.status.value,
         "current_sequence": workspace.current_sequence,
         "prepared_at": workspace.prepared_at.isoformat(),

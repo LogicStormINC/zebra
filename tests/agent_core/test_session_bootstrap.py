@@ -28,6 +28,8 @@ def test_session_bootstrap_service_builds_ready_session_events() -> None:
         "workspace_root": "/tmp/bootstrap",
         "policy_profile": "workspace_write",
         "tool_profile": ToolProfile.GENERAL,
+        "network_profile": "none",
+        "network_allowlist": [],
         "max_attempts": 1,
         "max_model_calls": 4,
         "max_tool_calls": 3,

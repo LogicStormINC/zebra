@@ -3,6 +3,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
 from agent_core.domain.events import EventType
+from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.tool_profiles import ToolProfile
 
 
@@ -42,6 +43,8 @@ class TaskPreparedPayload(BaseModel):
     workspace_root: str | None = None
     policy_profile: str | None = None
     tool_profile: ToolProfile | None = None
+    network_profile: NetworkProfileName | None = None
+    network_allowlist: list[str] | None = None
     max_attempts: int | None = None
     max_model_calls: int | None = None
     max_tool_calls: int | None = None

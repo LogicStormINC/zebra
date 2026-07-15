@@ -5,7 +5,7 @@ from typing import TypedDict
 
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.tool_profiles import ToolProfile
-from agent_security import PolicyProfile
+from agent_security import NetworkProfileError, PolicyProfile, parse_network_profile
 
 from zebra_agent_api.responses import ApiResponse, bad_request
 
@@ -17,6 +17,8 @@ class CreateSessionPayload(TypedDict):
     execute: bool
     policy_profile: str
     tool_profile: str
+    network_profile: str
+    network_allowlist: list[str]
 
 
 class ResumeSessionPayload(TypedDict):
@@ -108,6 +110,19 @@ def parse_create_session_payload(
     except ValueError:
         return bad_request("tool_profile is not supported")
 
+    network_profile = payload.get("network_profile", "none")
+    network_allowlist = payload.get("network_allowlist", [])
+    if not isinstance(network_profile, str):
+        return bad_request("network_profile must be a string when provided")
+    if not isinstance(network_allowlist, list) or not all(
+        isinstance(item, str) for item in network_allowlist
+    ):
+        return bad_request("network_allowlist must be a list of strings when provided")
+    try:
+        network = parse_network_profile(network_profile, domain_allowlist=network_allowlist)
+    except NetworkProfileError as exc:
+        return bad_request(str(exc))
+
     return {
         "prompt": prompt.strip(),
         "title": title.strip(),
@@ -115,6 +130,8 @@ def parse_create_session_payload(
         "execute": execute,
         "policy_profile": policy_profile,
         "tool_profile": tool_profile,
+        "network_profile": network.name.value,
+        "network_allowlist": list(network.domain_allowlist),
     }
 
 

@@ -12,7 +12,7 @@ from agent_core.domain.identifiers import SessionId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_integrations import build_model_gateway
-from agent_security import PolicyProfile
+from agent_security import PolicyProfile, parse_network_profile
 from agent_storage import (
     LeaseConflictError,
     SQLiteEventStore,
@@ -350,6 +350,10 @@ def _run_result(
 ) -> CliCommandResult:
     database_path = _database_path(namespace.database, settings)
     workspace = Path(namespace.workspace)
+    network_profile = parse_network_profile(
+        namespace.network_profile,
+        domain_allowlist=namespace.network_allowlist,
+    )
     if namespace.execute:
         execution_result = execute_durable_run(
             prompt=namespace.prompt,
@@ -359,6 +363,7 @@ def _run_result(
             settings=settings,
             policy_profile=PolicyProfile(namespace.policy_profile),
             tool_profile=ToolProfile(namespace.tool_profile),
+            network_profile=network_profile,
         )
         session = execution_result.harness_result.session
         payload = serialize_run_execution(execution_result)
@@ -370,6 +375,8 @@ def _run_result(
                 workspace_root=workspace.expanduser().resolve(),
                 policy_profile=namespace.policy_profile,
                 tool_profile=ToolProfile(namespace.tool_profile),
+                network_profile=network_profile.name.value,
+                network_allowlist=network_profile.domain_allowlist,
             )
         )
         session = bootstrap.session
@@ -384,6 +391,8 @@ def _run_result(
             "executed": False,
             "status": session.status.value,
             "tool_profile": namespace.tool_profile,
+            "network_profile": network_profile.name.value,
+            "network_allowlist": list(network_profile.domain_allowlist),
         }
     return CliCommandResult(
         command="run",

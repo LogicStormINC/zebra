@@ -1,4 +1,5 @@
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 
@@ -25,6 +26,10 @@ def rebuild_workspace(events: list[SessionEvent]) -> WorkspaceProjection:
         status=WorkspaceStatus.PREPARED,
         policy_profile=_optional_payload_string(prepared_event, "policy_profile"),
         tool_profile=_tool_profile_from_event(prepared_event),
+        network_profile=NetworkProfileName(
+            _optional_payload_string(prepared_event, "network_profile") or "none"
+        ),
+        network_allowlist=_network_allowlist_from_event(prepared_event),
     )
     for event in events:
         if event.sequence < prepared_event.sequence:
@@ -57,6 +62,10 @@ def apply_event(
     if event.event_type is EventType.TASK_PREPARED:
         updates["policy_profile"] = _optional_payload_string(event, "policy_profile")
         updates["tool_profile"] = _tool_profile_from_event(event)
+        updates["network_profile"] = NetworkProfileName(
+            _optional_payload_string(event, "network_profile") or "none"
+        )
+        updates["network_allowlist"] = _network_allowlist_from_event(event)
     if event.event_type is EventType.SESSION_SUSPENDED:
         updates["runtime_name"] = _required_payload_string(event, "runtime_name")
         updates["snapshot_id"] = _required_payload_string(event, "snapshot_id")
@@ -112,6 +121,17 @@ def _tool_profile_from_event(event: SessionEvent) -> ToolProfile:
         return ToolProfile(value)
     except ValueError as exc:
         raise WorkspaceProjectionError("task_prepared contains unsupported tool_profile") from exc
+
+
+def _network_allowlist_from_event(event: SessionEvent) -> tuple[str, ...]:
+    value = event.payload.get("network_allowlist")
+    if value is None:
+        return ()
+    if not isinstance(value, list) or not all(
+        isinstance(item, str) and item.strip() for item in value
+    ):
+        raise WorkspaceProjectionError("task_prepared contains invalid network_allowlist")
+    return tuple(item.strip() for item in value)
 
 
 def _optional_attempt_number(event: SessionEvent) -> int | None:

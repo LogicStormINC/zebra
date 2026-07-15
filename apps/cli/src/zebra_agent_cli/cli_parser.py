@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 
 from agent_core.domain.tool_profiles import ToolProfile
-from agent_security import PolicyProfile
+from agent_security import NetworkProfileName, PolicyProfile
 
 from zebra_agent_cli.read_commands import add_read_subparsers
 
@@ -28,6 +28,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=tuple(profile.value for profile in ToolProfile),
         default=ToolProfile.GENERAL.value,
     )
+    run.add_argument(
+        "--network-profile",
+        choices=tuple(profile.value for profile in NetworkProfileName),
+        default=NetworkProfileName.NONE.value,
+    )
+    run.add_argument("--network-allowlist", action="append", default=[])
 
     message = subcommands.add_parser(
         "message",

@@ -92,6 +92,8 @@ def test_route_adapter_handles_session_lookup_with_workspace_projection(tmp_path
     assert response.body["workspace"] == {
         "workspace_root": str(tmp_path.resolve()),
         "tool_profile": "coding",
+        "network_profile": "none",
+        "network_allowlist": [],
         "status": "suspended",
         "current_sequence": 4,
         "prepared_at": _created_at().isoformat(),

@@ -26,7 +26,7 @@ from agent_core.harness import (
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_integrations import build_model_gateway
 from agent_runtime import LocalToolGateway
-from agent_security import LocalPolicyEngine, PolicyProfile
+from agent_security import LocalPolicyEngine, NetworkProfile, PolicyProfile, parse_network_profile
 from agent_storage import (
     SQLiteArtifactPayloadStore,
     SQLiteEventStore,
@@ -69,6 +69,7 @@ class _RecoveredTask:
     workspace_root: Path
     policy_profile: str
     tool_profile: ToolProfile
+    network_profile: NetworkProfile
     max_attempts: int
     max_model_calls: int | None
     max_tool_calls: int | None
@@ -149,7 +150,10 @@ class SessionExecutionService:
         context_compiler = LocalContextCompiler()
         orchestrator = SingleAttemptOrchestrator(
             model_gateway,
-            LocalPolicyEngine(profile=PolicyProfile(task.policy_profile)),
+            LocalPolicyEngine(
+                profile=PolicyProfile(task.policy_profile),
+                network_profile=task.network_profile,
+            ),
             tool_gateway,
             model_step=HarnessModelStep(
                 context_compiler=context_compiler,
@@ -171,6 +175,8 @@ class SessionExecutionService:
                 workspace_root=task.workspace_root,
                 policy_profile=task.policy_profile,
                 tool_profile=task.tool_profile,
+                network_profile=task.network_profile.name.value,
+                network_allowlist=task.network_profile.domain_allowlist,
                 confirmed_memories=list_confirmed_repo_memories(
                     self._database_path,
                     repo_id=str(task.workspace_root.resolve()),
@@ -300,6 +306,10 @@ def _recover_task(
         workspace_root=Path(workspace.workspace_root).expanduser().resolve(),
         policy_profile=policy_profile,
         tool_profile=workspace.tool_profile,
+        network_profile=parse_network_profile(
+            workspace.network_profile,
+            domain_allowlist=workspace.network_allowlist,
+        ),
         max_attempts=_optional_positive_int(task_payload.get("max_attempts")) or 1,
         max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
         max_tool_calls=_optional_positive_int(task_payload.get("max_tool_calls")),
