@@ -15,6 +15,8 @@ GENERAL_TOOL_NAMES = frozenset(
         "files.read",
         "files.search",
         "patch.apply",
+        "skills.list",
+        "skills.read",
         "web.fetch",
         "web.search",
     }

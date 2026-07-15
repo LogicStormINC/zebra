@@ -127,6 +127,56 @@ def test_run_local_harness_searches_then_reads_workspace_evidence(tmp_path) -> N
     assert result.attempt_result.metadata["assistant_message"] == "Found SEARCH-THEN-READ."
 
 
+def test_run_local_harness_lists_then_reads_configured_skill(tmp_path) -> None:
+    skill_root = tmp_path / "skills"
+    skill = skill_root / "evidence"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text(
+        "---\nname: evidence\ndescription: Collect evidence.\n---\n\nSKILL-PROOF-127\n",
+        encoding="utf-8",
+    )
+    result = run_local_harness(
+        prompt="Discover and read the evidence workflow.",
+        title="Runtime Skill test",
+        workspace_root=tmp_path.resolve(),
+        skill_roots=(str(skill_root.resolve()),),
+        model_gateway=ScriptedModelGateway(
+            responses=tuple(
+                ScriptedModelResponse(completion=completion)
+                for completion in (
+                    _completion(
+                        "Listing Skills.",
+                        ToolCall(
+                            tool_call_id=new_tool_call_id(),
+                            name="skills.list",
+                            arguments={},
+                            created_at=_created_at(),
+                        ),
+                    ),
+                    _completion(
+                        "Reading evidence.",
+                        ToolCall(
+                            tool_call_id=new_tool_call_id(),
+                            name="skills.read",
+                            arguments={"name": "evidence"},
+                            created_at=_created_at(),
+                        ),
+                    ),
+                    _completion("Used SKILL-PROOF-127."),
+                )
+            )
+        ),
+    )
+
+    executed = [
+        event.payload["tool_name"]
+        for event in result.events
+        if event.event_type is EventType.TOOL_EXECUTION_COMPLETED
+    ]
+    assert executed == ["skills.list", "skills.read"]
+    assert result.attempt_result.metadata["assistant_message"] == "Used SKILL-PROOF-127."
+
+
 def test_run_local_harness_injects_confirmed_memory_into_system_prompt(tmp_path) -> None:
     gateway = ScriptedModelGateway(
         responses=(
@@ -217,6 +267,23 @@ def test_local_tool_gateway_registers_search_only_with_valid_configuration(tmp_p
     assert "web.search" not in {tool.name for tool in unavailable.model_tools}
     assert "web.search" not in {tool.name for tool in malformed.model_tools}
     assert "web.search" in {tool.name for tool in configured.model_tools}
+
+
+def test_local_tool_gateway_registers_skills_only_with_configured_roots(tmp_path) -> None:
+    skill_root = tmp_path / "skills"
+    skill_root.mkdir()
+    unavailable = LocalToolGateway(tmp_path.resolve())
+    configured = LocalToolGateway(
+        tmp_path.resolve(), skill_roots=(str(skill_root.resolve()),)
+    )
+
+    assert not {"skills.list", "skills.read"} & {
+        tool.name for tool in unavailable.model_tools
+    }
+    assert {"skills.list", "skills.read"} <= {
+        tool.name for tool in configured.model_tools
+    }
+    assert {"skills.list", "skills.read"} <= configured.parallel_safe_tools
 
 
 def test_local_tool_gateway_exposes_coding_profile_tools(tmp_path) -> None:

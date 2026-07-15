@@ -20,6 +20,8 @@ from agent_tools import (
     GitStatusTool,
     PatchApplyTool,
     PlanTool,
+    SkillsListTool,
+    SkillsReadTool,
     TestsRunTool,
     ToolExecutor,
     ToolRegistry,
@@ -30,6 +32,7 @@ from agent_tools import (
     WorkspaceSearchTool,
 )
 from agent_tools.errors import ToolRegistryError
+from agent_tools.skills_catalog import LocalSkillCatalog
 
 from agent_runtime.adapters.local import LocalRuntime
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
@@ -56,6 +59,7 @@ def run_local_harness(
     tool_profile: ToolProfile = ToolProfile.GENERAL,
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
     web_search_endpoint: str | None = None,
+    skill_roots: tuple[str, ...] = (),
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
 ) -> HarnessLoopResult:
     tool_gateway = LocalToolGateway(
@@ -63,6 +67,7 @@ def run_local_harness(
         model_gateway=model_gateway,
         tool_profile=tool_profile,
         web_search_endpoint=web_search_endpoint,
+        skill_roots=skill_roots,
     )
     context_compiler = LocalContextCompiler()
     try:
@@ -114,6 +119,7 @@ class LocalToolGateway(ToolGatewayPort):
         web_gateway_transport: WebGatewayTransport | None = None,
         web_search_endpoint: str | None = None,
         web_search_transport: WebSearchTransport | None = None,
+        skill_roots: tuple[str, ...] = (),
     ) -> None:
         if research_child_limit <= 0:
             raise ValueError("research_child_limit must be positive")
@@ -145,6 +151,11 @@ class LocalToolGateway(ToolGatewayPort):
                 transport=web_search_transport or LocalWebSearchTransport(),
             )
             registry.register(search.contract, search.handle)
+        if skill_roots:
+            catalog = LocalSkillCatalog(skill_roots)
+            for skill_tool in (SkillsListTool(catalog), SkillsReadTool(catalog)):
+                if skill_tool.contract.name in enabled_names:
+                    registry.register(skill_tool.contract, skill_tool.handle)
         self._subagents: LocalResearchSubagentCoordinator | None = None
         if model_gateway is not None and "agent.research" in enabled_names:
             self._subagents = LocalResearchSubagentCoordinator(
