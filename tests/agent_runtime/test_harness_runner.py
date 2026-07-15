@@ -187,6 +187,7 @@ def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
     tools = gateway.tool_requests[0]
     assert tuple(tool.name for tool in tools) == (
         "agent.clarify",
+        "agent.plan",
         "agent.research",
         "command.run",
         "files.read",
@@ -209,6 +210,7 @@ def test_local_tool_gateway_exposes_coding_profile_tools(tmp_path) -> None:
 
     assert tuple(tool.name for tool in gateway.model_tools) == (
         "agent.clarify",
+        "agent.plan",
         "command.run",
         "files.read",
         "files.search",

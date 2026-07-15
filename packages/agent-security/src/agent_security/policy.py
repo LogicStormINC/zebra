@@ -55,7 +55,14 @@ class ApprovalRequest:
 
 
 READ_ONLY_TOOLS = frozenset(
-    {"agent.clarify", "agent.research", "files.read", "files.search", "git.status"}
+    {
+        "agent.clarify",
+        "agent.plan",
+        "agent.research",
+        "files.read",
+        "files.search",
+        "git.status",
+    }
 )
 WORKSPACE_WRITE_TOOLS = READ_ONLY_TOOLS | frozenset({"patch.apply", "tests.run"})
 FULL_ACCESS_TOOLS = WORKSPACE_WRITE_TOOLS | frozenset({"command.run"})

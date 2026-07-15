@@ -11109,8 +11109,8 @@ instead of relying on UI stages inferred from unrelated execution events.
 
 ### P125-PLAN-01 - Durable Session Task Plan
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE / TOOLS / SECURITY / STORAGE / RUNTIME / APP / UI`
 - Depends on: `P124-CLOSE-01`
 - Branch: `codex/p125-plan-01-durable-session-task-plan`
@@ -11141,29 +11141,42 @@ as the plan source of truth.
 
 #### Acceptance
 
-- [ ] A plan contains at most 12 ordered steps; every step has one unique,
+- [x] A plan contains at most 12 ordered steps; every step has one unique,
   non-blank bounded identifier and description plus one supported status.
-- [ ] At most one step may be `in_progress`; malformed, duplicate, oversized,
+- [x] At most one step may be `in_progress`; malformed, duplicate, oversized,
   or invalid-status updates fail structurally without changing durable state.
-- [ ] A valid update persists one bounded event and deterministically replaces
+- [x] A valid update persists one bounded event and deterministically replaces
   or updates the session projection without scanning chat history.
-- [ ] Read and update results return the complete authoritative plan plus stable
+- [x] Read and update results return the complete authoritative plan plus stable
   total, pending, in-progress, completed, and cancelled counts.
-- [ ] Active pending and in-progress steps remain available after replay,
+- [x] Active pending and in-progress steps remain available after replay,
   worker recovery, clarification or approval continuation, and compaction;
   completed steps are not presented as unfinished work.
-- [ ] `agent.plan` is parent-session only and cannot grant command, file,
+- [x] `agent.plan` is parent-session only and cannot grant command, file,
   network, credential, approval, or workspace-write authority.
-- [ ] Fixed Research children cannot mutate the parent plan or expose a hidden
+- [x] Fixed Research children cannot mutate the parent plan or expose a hidden
   recursive planning channel.
-- [ ] API, CLI, and desktop reads agree on step identifiers, order, text,
+- [x] API, CLI, and desktop reads agree on step identifiers, order, text,
   status, counts, and latest update evidence.
-- [ ] Desktop plan UI appears only for a concrete non-empty durable plan and
+- [x] Desktop plan UI appears only for a concrete non-empty durable plan and
   remains absent for idle, legacy, and empty-plan sessions.
-- [ ] Existing clarification and approval continuation, ordinary messages,
+- [x] Existing clarification and approval continuation, ordinary messages,
   tool batches, compaction, Web Gateway, and recovery remain compatible.
-- [ ] Targeted tests, full backend/static/eval gates, desktop checks/build,
+- [x] Targeted tests, full backend/static/eval gates, desktop checks/build,
   browser validation, and one real `deepseek-v4-flash` plan pass succeed.
+
+#### Validation Evidence
+
+- `make check` passed Ruff, Mypy across 235 source files, and the 8-case eval gate.
+- `make test` passed all 1,049 backend and cross-surface tests.
+- All nine desktop checks, the Node 22 production build, and Tauri `cargo check`
+  passed; the native check used a temporary generated icon because the repository
+  does not track the configured application icon.
+- Browser acceptance rendered one authoritative two-step plan with `1/2` complete,
+  rendered no plan region for an empty durable plan, and remained viewport-bound.
+- Real `deepseek-v4-flash` called `agent.plan`, persisted exactly one
+  `plan_updated` event, returned `PLAN_FINAL_OK`, and read back the same ordered
+  plan and counts from the session API.
 
 #### Explicit Non-Goals
 

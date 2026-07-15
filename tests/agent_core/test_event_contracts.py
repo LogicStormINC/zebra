@@ -88,9 +88,22 @@ def test_validate_event_payload_rejects_unknown_fields() -> None:
         )
 
 
+def test_validate_plan_updated_payload_rejects_duplicate_step_ids() -> None:
+    with pytest.raises(EventPayloadValidationError, match="invalid payload for plan_updated"):
+        validate_event_payload(
+            EventType.PLAN_UPDATED,
+            {
+                "steps": [
+                    {"step_id": "same", "content": "First", "status": "pending"},
+                    {"step_id": "same", "content": "Second", "status": "completed"},
+                ]
+            },
+        )
+
+
 def test_event_payload_schema_for_unknown_event_type_fails() -> None:
     with pytest.raises(
         KeyError,
-        match="no payload schema registered for plan_proposed",
+        match="no payload schema registered for plan_approved",
     ):
-        event_payload_schema_for(EventType.PLAN_PROPOSED)
+        event_payload_schema_for(EventType.PLAN_APPROVED)

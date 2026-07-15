@@ -18,6 +18,7 @@ class EventType(StrEnum):
     TASK_PREPARED = "task_prepared"
     PLAN_PROPOSED = "plan_proposed"
     PLAN_APPROVED = "plan_approved"
+    PLAN_UPDATED = "plan_updated"
     MODEL_REQUEST_STARTED = "model_request_started"
     MODEL_RESPONSE_RECEIVED = "model_response_received"
     CONTEXT_COMPACTED = "context_compacted"

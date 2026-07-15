@@ -1,5 +1,6 @@
 from agent_core.domain.clarifications import ClarificationContext
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.plans import SessionPlan
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 
 
@@ -74,6 +75,9 @@ def apply_event(session: Session, event: SessionEvent) -> Session:
         EventType.SESSION_CANCELLED,
     }:
         updates["clarification_context"] = None
+    task_plan = _task_plan_from_event(event)
+    if task_plan is not None:
+        updates["task_plan"] = task_plan
     return projected.model_copy(update=updates)
 
 
@@ -149,6 +153,17 @@ def _clarification_context_from_event(event: SessionEvent) -> ClarificationConte
         )
     except ValueError:
         return None
+
+
+def _task_plan_from_event(event: SessionEvent) -> SessionPlan | None:
+    if event.event_type is not EventType.PLAN_UPDATED:
+        return None
+    try:
+        return SessionPlan.model_validate(
+            {"steps": event.payload.get("steps", ()), "updated_at": event.created_at}
+        )
+    except ValueError as exc:
+        raise SessionProjectionError("plan_updated event payload is invalid") from exc
 
 
 def _optional_payload_string(event: SessionEvent, key: str) -> str | None:

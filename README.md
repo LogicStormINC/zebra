@@ -95,6 +95,15 @@ additional tools are required.
 Tool profile selection changes model-visible tools only; `policy_profile` remains
 the independent authority and approval boundary.
 
+Parent sessions can also use `agent.plan` to read or replace one durable ordered
+task plan. The plan is limited to 12 steps, supports `pending`, `in_progress`,
+`completed`, and `cancelled` states, and permits at most one active step. It is
+session state, not execution authority: it cannot grant tools, filesystem,
+network, credential, or approval access, and fixed Research children do not
+receive it. API, CLI, and desktop surfaces read the same SQLite projection; the
+desktop hides the plan surface for legacy or empty plans and does not expose
+manual editing.
+
 `files.search` provides literal content and filename discovery under a
 workspace-relative root, with optional glob filtering and explicit pagination.
 It skips hidden, symlinked, binary, and oversized files and enforces fixed scan,

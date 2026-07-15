@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from dataclasses import replace
 
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.messages import SessionMessage
@@ -56,8 +57,9 @@ class SingleAttemptOrchestrator:
         )
 
     def run(self, context: HarnessContext) -> HarnessAttemptResult:
+        task = replace(context.task, task_plan=context.session.task_plan)
         messages = self._model_step.build_initial_messages(
-            context.task,
+            task,
             created_at=context.attempt.started_at,
         )
         completion = self._model_step.request_completion(
