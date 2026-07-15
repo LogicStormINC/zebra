@@ -6,6 +6,7 @@ from agent_context import LocalContextCompiler
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.domain.web import WebTarget, WebTargetError, parse_web_target
 from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
 from agent_core.harness.models import HarnessLoopResult
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
@@ -24,6 +25,8 @@ from agent_tools import (
     ToolRegistry,
     WebFetchTool,
     WebGatewayTransport,
+    WebSearchTool,
+    WebSearchTransport,
     WorkspaceSearchTool,
 )
 from agent_tools.errors import ToolRegistryError
@@ -32,6 +35,7 @@ from agent_runtime.adapters.local import LocalRuntime
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
 from agent_runtime.subagents import LocalResearchSubagentCoordinator
 from agent_runtime.web_gateway import LocalWebGatewayTransport
+from agent_runtime.web_search import LocalWebSearchTransport
 from agent_runtime.workspace import LocalWorkspace
 
 DEFAULT_TEST_PRESETS = {
@@ -51,12 +55,14 @@ def run_local_harness(
     policy_profile: PolicyProfile = PolicyProfile.WORKSPACE_WRITE,
     tool_profile: ToolProfile = ToolProfile.GENERAL,
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
+    web_search_endpoint: str | None = None,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
 ) -> HarnessLoopResult:
     tool_gateway = LocalToolGateway(
         workspace_root,
         model_gateway=model_gateway,
         tool_profile=tool_profile,
+        web_search_endpoint=web_search_endpoint,
     )
     context_compiler = LocalContextCompiler()
     try:
@@ -76,7 +82,11 @@ def run_local_harness(
             ),
             SingleAttemptOrchestrator(
                 model_gateway,
-                LocalPolicyEngine(profile=policy_profile, network_profile=network_profile),
+                LocalPolicyEngine(
+                    profile=policy_profile,
+                    network_profile=network_profile,
+                    web_search_endpoint=web_search_endpoint,
+                ),
                 tool_gateway,
                 model_step=HarnessModelStep(
                     context_compiler=context_compiler,
@@ -102,6 +112,8 @@ class LocalToolGateway(ToolGatewayPort):
         research_child_limit: int = DEFAULT_RESEARCH_CHILD_LIMIT,
         tool_profile: ToolProfile = ToolProfile.GENERAL,
         web_gateway_transport: WebGatewayTransport | None = None,
+        web_search_endpoint: str | None = None,
+        web_search_transport: WebSearchTransport | None = None,
     ) -> None:
         if research_child_limit <= 0:
             raise ValueError("research_child_limit must be positive")
@@ -126,6 +138,13 @@ class LocalToolGateway(ToolGatewayPort):
         for tool in tools:
             if tool.contract.name in enabled_names:
                 registry.register(tool.contract, tool.handle)
+        search_endpoint = _optional_web_search_endpoint(web_search_endpoint)
+        if search_endpoint is not None and "web.search" in enabled_names:
+            search = WebSearchTool(
+                endpoint=search_endpoint,
+                transport=web_search_transport or LocalWebSearchTransport(),
+            )
+            registry.register(search.contract, search.handle)
         self._subagents: LocalResearchSubagentCoordinator | None = None
         if model_gateway is not None and "agent.research" in enabled_names:
             self._subagents = LocalResearchSubagentCoordinator(
@@ -171,3 +190,12 @@ class LocalToolGateway(ToolGatewayPort):
     def close(self) -> None:
         if self._subagents is not None:
             self._subagents.close()
+
+
+def _optional_web_search_endpoint(value: str | None) -> WebTarget | None:
+    if value is None:
+        return None
+    try:
+        return parse_web_target(value)
+    except WebTargetError:
+        return None

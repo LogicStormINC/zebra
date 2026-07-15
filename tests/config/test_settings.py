@@ -20,6 +20,7 @@ def test_load_settings_reads_default_profile() -> None:
     assert settings.scm.github_token_env is None
     assert settings.scm.github_api_base_url == "https://api.github.com"
     assert settings.scm.pull_request_dry_run is True
+    assert settings.web_search_endpoint is None
 
 
 def test_load_settings_allows_env_override(tmp_path: Path) -> None:
@@ -41,6 +42,7 @@ def test_load_settings_allows_env_override(tmp_path: Path) -> None:
             "ZEBRA_GITHUB_TOKEN_ENV": "GITHUB_APP_TOKEN",
             "ZEBRA_GITHUB_API_BASE_URL": "https://github.example/api",
             "ZEBRA_SCM_PULL_REQUEST_DRY_RUN": "false",
+            "ZEBRA_WEB_SEARCH_ENDPOINT": "https://search.example.com/search",
         },
         defaults_path=defaults_path,
     )
@@ -58,6 +60,7 @@ def test_load_settings_allows_env_override(tmp_path: Path) -> None:
     assert settings.scm.github_token_env == "GITHUB_APP_TOKEN"
     assert settings.scm.github_api_base_url == "https://github.example/api"
     assert settings.scm.pull_request_dry_run is False
+    assert settings.web_search_endpoint == "https://search.example.com/search"
 
 
 def test_load_settings_rejects_github_provider_without_token_env() -> None:

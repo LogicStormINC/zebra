@@ -150,6 +150,7 @@ class SessionExecutionService:
             task.workspace_root,
             model_gateway=model_gateway,
             tool_profile=task.tool_profile,
+            web_search_endpoint=self._settings.web_search_endpoint,
         )
         context_compiler = LocalContextCompiler()
         orchestrator = SingleAttemptOrchestrator(
@@ -157,6 +158,7 @@ class SessionExecutionService:
             LocalPolicyEngine(
                 profile=PolicyProfile(task.policy_profile),
                 network_profile=task.network_profile,
+                web_search_endpoint=self._settings.web_search_endpoint,
             ),
             tool_gateway,
             model_step=HarnessModelStep(

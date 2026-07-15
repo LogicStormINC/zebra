@@ -63,6 +63,7 @@ def execute_durable_run(
         policy_profile=policy_profile,
         tool_profile=tool_profile,
         network_profile=network_profile,
+        web_search_endpoint=settings.web_search_endpoint,
         confirmed_memories=confirmed_memories,
     )
     event_store = SQLiteEventStore(database_path)

@@ -82,13 +82,18 @@ PATH_ARGUMENTS_BY_TOOL = {
 class LocalPolicyEngine:
     profile: PolicyProfile = PolicyProfile.READ_ONLY
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE
+    web_search_endpoint: str | None = None
 
     def evaluate_tool_call(self, tool_call: ToolCall) -> PolicyDecision:
         tool_name = tool_call.name
         path_risk_reason = _path_risk_reason(tool_call)
         if path_risk_reason is not None:
             return _deny(self.profile, path_risk_reason)
-        egress = classify_tool_egress(tool_call, network_profile=self.network_profile)
+        egress = classify_tool_egress(
+            tool_call,
+            network_profile=self.network_profile,
+            web_search_endpoint=self.web_search_endpoint,
+        )
         if egress.route is ToolEgressRoute.BLOCKED:
             return _deny(self.profile, blocked_route_reason(egress))
         if egress.route in (ToolEgressRoute.MCP_PROXY, ToolEgressRoute.WEB_GATEWAY):
@@ -113,10 +118,15 @@ def build_approval_request(
     decision: PolicyDecision,
     *,
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
+    web_search_endpoint: str | None = None,
 ) -> ApprovalRequest | None:
     if decision.decision is not PolicyDecisionType.REQUIRE_APPROVAL:
         return None
-    egress = classify_tool_egress(tool_call, network_profile=network_profile)
+    egress = classify_tool_egress(
+        tool_call,
+        network_profile=network_profile,
+        web_search_endpoint=web_search_endpoint,
+    )
     return ApprovalRequest(
         tool_name=tool_call.name,
         policy_profile=decision.policy_profile,

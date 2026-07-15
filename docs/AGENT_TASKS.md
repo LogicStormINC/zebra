@@ -11216,8 +11216,8 @@ without introducing browser automation or widening Research-child authority.
 
 ### P126-WEB-01 - Bounded Web Search Gateway
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CORE / SECURITY / TOOLS / INTEGRATIONS / RUNTIME / APP / UI`
 - Depends on: `P125-CLOSE-01`
 - Branch: `codex/p126-web-01-bounded-web-search-gateway`
@@ -11254,29 +11254,29 @@ approval-before-egress, bounded output, and untrusted-content handling.
 
 #### Acceptance
 
-- [ ] `web.search` is visible only in general and coding parent manifests; it is
+- [x] `web.search` is visible only in general and coding parent manifests; it is
   absent from fixed Research children and unregistered arbitrary tool paths.
-- [ ] Query and limit validation happens before Policy or transport; blank,
+- [x] Query and limit validation happens before Policy or transport; blank,
   oversized, malformed, or extra arguments fail structurally.
-- [ ] No configured endpoint, `network_profile=none`, a non-HTTPS/private
+- [x] No configured endpoint, `network_profile=none`, a non-HTTPS/private
   endpoint, or a missing exact endpoint-host allowlist match fails closed before
   DNS, credential, proxy, or transport access.
-- [ ] A valid call produces one approval whose operator-safe context includes
+- [x] A valid call produces one approval whose operator-safe context includes
   the normalized provider hostname, bounded query, limit, route, and expected
   read-only side effect; transport call count remains zero before approval.
-- [ ] Exact approval continuation performs one credential-free GET against only
+- [x] Exact approval continuation performs one credential-free GET against only
   the configured endpoint, with encoded query and limit parameters, redirects
   and environment proxies disabled, and fixed timeout and byte ceilings.
-- [ ] Response handling accepts only bounded JSON, preserves provider order,
+- [x] Response handling accepts only bounded JSON, preserves provider order,
   returns at most five unique HTTPS results, and bounds every title, URL, snippet,
   aggregate output, and metadata field before model exposure.
-- [ ] Search results are labeled untrusted and cannot grant authority, trigger
+- [x] Search results are labeled untrusted and cannot grant authority, trigger
   an automatic fetch, or place raw provider bodies in durable control metadata.
-- [ ] API, CLI, Worker recovery, Policy, Gateway, and desktop approval surfaces
+- [x] API, CLI, Worker recovery, Policy, Gateway, and desktop approval surfaces
   agree on durable task network authority and the configured endpoint identity.
-- [ ] Existing `web.fetch`, local tools, plans, clarification and approval
+- [x] Existing `web.fetch`, local tools, plans, clarification and approval
   continuation, compaction, tool batches, and session recovery remain compatible.
-- [ ] Targeted tests, full backend/static/eval gates, all desktop checks/build,
+- [x] Targeted tests, full backend/static/eval gates, all desktop checks/build,
   browser validation, and one real `deepseek-v4-flash` search selection and
   synthesis pass succeed.
 

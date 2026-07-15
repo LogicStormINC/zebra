@@ -32,6 +32,14 @@ if TYPE_CHECKING:
         WebGatewayTransport,
         web_fetch_contract,
     )
+    from agent_tools.web_search import (
+        WebSearchRequest,
+        WebSearchResponse,
+        WebSearchResult,
+        WebSearchTool,
+        WebSearchTransport,
+        web_search_contract,
+    )
 
 __all__ = [
     "CommandRunTool",
@@ -56,6 +64,11 @@ __all__ = [
     "WebGatewayRequest",
     "WebGatewayResponse",
     "WebGatewayTransport",
+    "WebSearchRequest",
+    "WebSearchResponse",
+    "WebSearchResult",
+    "WebSearchTool",
+    "WebSearchTransport",
     "build_mcp_proxy_request",
     "command_run_contract",
     "clarify_contract",
@@ -67,6 +80,7 @@ __all__ = [
     "plan_contract",
     "tests_run_contract",
     "web_fetch_contract",
+    "web_search_contract",
 ]
 
 _EXPORTS = {
@@ -92,6 +106,11 @@ _EXPORTS = {
     "WebGatewayRequest": ("agent_tools.web_gateway", "WebGatewayRequest"),
     "WebGatewayResponse": ("agent_tools.web_gateway", "WebGatewayResponse"),
     "WebGatewayTransport": ("agent_tools.web_gateway", "WebGatewayTransport"),
+    "WebSearchRequest": ("agent_tools.web_search", "WebSearchRequest"),
+    "WebSearchResponse": ("agent_tools.web_search", "WebSearchResponse"),
+    "WebSearchResult": ("agent_tools.web_search", "WebSearchResult"),
+    "WebSearchTool": ("agent_tools.web_search", "WebSearchTool"),
+    "WebSearchTransport": ("agent_tools.web_search", "WebSearchTransport"),
     "build_mcp_proxy_request": ("agent_tools.mcp_proxy", "build_mcp_proxy_request"),
     "command_run_contract": ("agent_tools.builtin.command", "command_run_contract"),
     "clarify_contract": ("agent_tools.builtin.clarify", "clarify_contract"),
@@ -103,6 +122,7 @@ _EXPORTS = {
     "plan_contract": ("agent_tools.builtin.plan", "plan_contract"),
     "tests_run_contract": ("agent_tools.builtin.tests", "tests_run_contract"),
     "web_fetch_contract": ("agent_tools.web_gateway", "web_fetch_contract"),
+    "web_search_contract": ("agent_tools.web_search", "web_search_contract"),
 }
 
 
