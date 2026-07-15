@@ -9,6 +9,7 @@ class ToolProfile(StrEnum):
 GENERAL_TOOL_NAMES = frozenset(
     {
         "agent.clarify",
+        "agent.plan",
         "agent.research",
         "command.run",
         "files.read",

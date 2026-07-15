@@ -3,6 +3,7 @@ from pathlib import Path
 
 from agent_core.domain.clarifications import ClarificationContext
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.plans import SessionPlan
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_core.ports.projection_store import ProjectionStorePort
 
@@ -26,8 +27,9 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     updated_at,
                     current_sequence,
                     approval_context_json,
-                    clarification_context_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    clarification_context_json,
+                    task_plan_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_id) DO UPDATE SET
                     title = excluded.title,
                     status = excluded.status,
@@ -35,7 +37,8 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     updated_at = excluded.updated_at,
                     current_sequence = excluded.current_sequence,
                     approval_context_json = excluded.approval_context_json,
-                    clarification_context_json = excluded.clarification_context_json
+                    clarification_context_json = excluded.clarification_context_json,
+                    task_plan_json = excluded.task_plan_json
                 """,
                 (
                     str(session.session_id),
@@ -46,6 +49,7 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     session.current_sequence,
                     _approval_context_json(session.approval_context),
                     _clarification_context_json(session.clarification_context),
+                    _task_plan_json(session.task_plan),
                 ),
             )
         return session
@@ -62,7 +66,8 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     updated_at,
                     current_sequence,
                     approval_context_json,
-                    clarification_context_json
+                    clarification_context_json,
+                    task_plan_json
                 FROM session_projections
                 WHERE session_id = ?
                 """,
@@ -82,6 +87,7 @@ class SQLiteProjectionStore(ProjectionStorePort):
                 "clarification_context": _clarification_context_from_json(
                     row["clarification_context_json"]
                 ),
+                "task_plan": _task_plan_from_json(row["task_plan_json"]),
             }
         )
 
@@ -99,7 +105,8 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     updated_at,
                     current_sequence,
                     approval_context_json,
-                    clarification_context_json
+                    clarification_context_json,
+                    task_plan_json
                 FROM session_projections
                 WHERE status = ?
                 ORDER BY updated_at ASC, created_at ASC, session_id ASC
@@ -120,6 +127,7 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     "clarification_context": _clarification_context_from_json(
                         row["clarification_context_json"]
                     ),
+                    "task_plan": _task_plan_from_json(row["task_plan_json"]),
                 }
             )
             for row in rows
@@ -139,7 +147,8 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     updated_at,
                     current_sequence,
                     approval_context_json,
-                    clarification_context_json
+                    clarification_context_json,
+                    task_plan_json
                 FROM session_projections
                 ORDER BY updated_at DESC, created_at DESC, session_id ASC
                 LIMIT ?
@@ -159,6 +168,7 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     "clarification_context": _clarification_context_from_json(
                         row["clarification_context_json"]
                     ),
+                    "task_plan": _task_plan_from_json(row["task_plan_json"]),
                 }
             )
             for row in rows
@@ -176,7 +186,8 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     updated_at TEXT NOT NULL,
                     current_sequence INTEGER NOT NULL,
                     approval_context_json TEXT,
-                    clarification_context_json TEXT
+                    clarification_context_json TEXT,
+                    task_plan_json TEXT
                 )
                 """
             )
@@ -196,6 +207,13 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     """
                     ALTER TABLE session_projections
                     ADD COLUMN clarification_context_json TEXT
+                    """
+                )
+            if "task_plan_json" not in columns:
+                connection.execute(
+                    """
+                    ALTER TABLE session_projections
+                    ADD COLUMN task_plan_json TEXT
                     """
                 )
 
@@ -222,3 +240,13 @@ def _clarification_context_from_json(value: object) -> ClarificationContext | No
     if not isinstance(value, str) or not value.strip():
         return None
     return ClarificationContext.model_validate(json.loads(value))
+
+
+def _task_plan_json(plan: SessionPlan) -> str:
+    return json.dumps(plan.model_dump(mode="json"))
+
+
+def _task_plan_from_json(value: object) -> SessionPlan:
+    if not isinstance(value, str) or not value.strip():
+        return SessionPlan()
+    return SessionPlan.model_validate(json.loads(value))

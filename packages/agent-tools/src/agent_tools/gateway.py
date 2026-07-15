@@ -4,6 +4,7 @@ from agent_tools.builtin import (
     FileReadTool,
     GitStatusTool,
     PatchApplyTool,
+    PlanTool,
     TestsRunTool,
     WorkspaceSearchTool,
     clarify_contract,
@@ -12,6 +13,7 @@ from agent_tools.builtin import (
     files_search_contract,
     git_status_contract,
     patch_apply_contract,
+    plan_contract,
     tests_run_contract,
 )
 from agent_tools.contracts import RegisteredTool, ToolContract
@@ -24,6 +26,7 @@ __all__ = [
     "FileReadTool",
     "GitStatusTool",
     "PatchApplyTool",
+    "PlanTool",
     "TestsRunTool",
     "WorkspaceSearchTool",
     "clarify_contract",
@@ -36,5 +39,6 @@ __all__ = [
     "files_search_contract",
     "git_status_contract",
     "patch_apply_contract",
+    "plan_contract",
     "tests_run_contract",
 ]

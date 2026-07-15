@@ -18,6 +18,7 @@ from agent_tools import (
     FileReadTool,
     GitStatusTool,
     PatchApplyTool,
+    PlanTool,
     TestsRunTool,
     ToolExecutor,
     ToolRegistry,
@@ -112,6 +113,7 @@ class LocalToolGateway(ToolGatewayPort):
         registry = ToolRegistry()
         tools = (
             ClarifyTool(),
+            PlanTool(),
             FileReadTool(self._workspace),
             WorkspaceSearchTool(self._workspace),
             GitStatusTool(runtime, self._workspace),

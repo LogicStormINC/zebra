@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from agent_core.domain.clarifications import ClarificationContext
 from agent_core.domain.identifiers import SessionId, new_session_id
+from agent_core.domain.plans import SessionPlan
 
 
 class SessionStatus(StrEnum):
@@ -106,6 +107,7 @@ class Session(BaseModel):
     current_sequence: int = Field(default=0, ge=0)
     approval_context: ApprovalContext | None = None
     clarification_context: ClarificationContext | None = None
+    task_plan: SessionPlan = Field(default_factory=SessionPlan)
 
     @classmethod
     def create(cls, *, title: str, created_at: datetime | None = None) -> "Session":

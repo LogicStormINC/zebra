@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_core.domain.clarifications import ClarificationContext
+from agent_core.domain.plans import PlanStep, SessionPlan
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_storage import SQLiteProjectionStore
 
@@ -222,3 +223,20 @@ def test_sqlite_projection_store_round_trips_clarification_context(tmp_path: Pat
     loaded = SQLiteProjectionStore(database_path).get_session(session.session_id)
 
     assert loaded == session
+
+
+def test_sqlite_projection_store_round_trips_task_plan(tmp_path: Path) -> None:
+    created_at = datetime(2026, 7, 15, 13, 0, tzinfo=UTC)
+    session = Session.create(title="Plan", created_at=created_at).model_copy(
+        update={
+            "task_plan": SessionPlan(
+                steps=(
+                    PlanStep(step_id="one", content="First step", status="in_progress"),
+                ),
+                updated_at=created_at,
+            )
+        }
+    )
+    store = SQLiteProjectionStore(tmp_path / "plan.db")
+    store.save_session(session)
+    assert store.get_session(session.session_id) == session

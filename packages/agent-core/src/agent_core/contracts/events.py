@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from agent_core.domain.clarifications import (
     MAX_CLARIFICATION_CHOICE_CHARS,
@@ -10,6 +10,7 @@ from agent_core.domain.clarifications import (
 )
 from agent_core.domain.events import EventType
 from agent_core.domain.networking import NetworkProfileName
+from agent_core.domain.plans import MAX_PLAN_STEPS, PlanStep, SessionPlan
 from agent_core.domain.tool_profiles import ToolProfile
 
 
@@ -81,6 +82,17 @@ class TaskPreparedPayload(BaseModel):
         if value <= 0:
             raise ValueError("field must be positive when provided")
         return value
+
+
+class PlanUpdatedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    steps: list[PlanStep] = Field(max_length=MAX_PLAN_STEPS)
+
+    @model_validator(mode="after")
+    def validate_complete_plan(self) -> "PlanUpdatedPayload":
+        SessionPlan(steps=tuple(self.steps))
+        return self
 
 
 class ToolExecutionCompletedPayload(BaseModel):
@@ -411,6 +423,7 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SESSION_CREATED: SessionCreatedPayload,
     EventType.USER_MESSAGE_RECEIVED: UserMessageReceivedPayload,
     EventType.TASK_PREPARED: TaskPreparedPayload,
+    EventType.PLAN_UPDATED: PlanUpdatedPayload,
     EventType.SESSION_SUSPENDED: SessionSuspendedPayload,
     EventType.SESSION_RESUMED: SessionResumedPayload,
     EventType.CLARIFICATION_REQUESTED: ClarificationRequestedPayload,

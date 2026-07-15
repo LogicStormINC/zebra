@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-15: completed `P125-PLAN-01` on `codex/p125-plan-01-durable-session-task-plan`; parent sessions now expose a typed `agent.plan` capability backed by one bounded `plan_updated` event and deterministic SQLite projection. Plans allow at most 12 ordered steps, one active step, full-list replacement/readback, and stable counts without granting execution authority. Worker recovery and context construction restore only unfinished work, API and CLI share one safe serializer, fixed Research children cannot mutate the parent plan, and the desktop renders only concrete non-empty plans without editing controls. Browser acceptance verified the real two-step plan, the empty-plan absence rule, and viewport containment. A real `deepseek-v4-flash` run called `agent.plan`, persisted exactly one update, returned `PLAN_FINAL_OK`, and read back `1/2` complete. All `1049` backend tests, Ruff, Mypy across `235` source files, the 8-case eval release gate, all nine desktop checks, the Node 22 production build, and Tauri `cargo check` passed.
 - 2026-07-15: merged `P124-HITL-01` through GitHub PR `#85` and closed Phase 124; durable parent-session clarification now pauses and resumes one correlated model conversation without blocking workers or widening authority. Phase 125 is limited to one durable session task-plan capability with at most 12 ordered steps, strict statuses, one active step, projection-backed readback, and truthful desktop rendering. Hermes `todo` informs only the bounded ordered-list interaction; Zebra will use session events and SQLite projections rather than process-local state or chat-history hydration. Project kanban, scheduling, user editing, plan approval, DAGs, and Research-child plan mutation remain outside this slice.
 - 2026-07-15: completed `P124-HITL-01` on `codex/p124-hitl-01-durable-clarification`; parent sessions now expose a typed `agent.clarify` tool that persists one bounded request, transitions to `waiting_input`, releases the worker, requires an exact correlated response, and resumes the original assistant/tool conversation exactly once. API, CLI, SQLite projections, worker recovery, and desktop controls share the same safe active-request projection; stale or mismatched responses and uncertain prior continuation fail closed, provider failures become durable terminal failures, and fixed Research children do not receive clarification authority. Browser acceptance verified that controls appear only for a concrete request and ordinary composition is hidden while waiting. A real `deepseek-v4-flash` run moved from `waiting_input` through an `Operators` response to `completed` with `AUDIENCE=Operators`. All `1040` backend tests, Ruff, Mypy across `231` source files, the 8-case eval release gate, all eight desktop checks, and the Node 22 production frontend build passed.
 - 2026-07-15: merged `P122-WEB-01` through GitHub PR `#81` and closed Phase 122; general and coding agents now have one approval-gated bounded Web fetch path while Research children remain offline. Phase 123 is limited to a typed, read-only `files.search` capability for local content and filename discovery under workspace containment, pagination, and output ceilings. It references the updated local Hermes `search_files` design for bounded interaction lessons but retains Zebra's registry, Policy, runtime, event, and subagent boundaries. Persistent indexing, semantic or vector search, LSP, Web Search, hidden credential discovery, directory mutation, and shell fallback remain outside this slice.
@@ -66,9 +67,9 @@
 ## Current Phase
 
 - Active phase: `Phase 125 - Durable Session Task Plan`
-- Repository status: `phase 124 closed; P125-PLAN-01 is ready`
+- Repository status: `phase 124 closed; P125-PLAN-01 implementation complete and in review`
 - Current focus:
-  - `P125-PLAN-01` is ready on `codex/p125-plan-01-durable-session-task-plan`, defining one bounded projection-backed parent-session plan that remains separate from execution authority and inferred UI stages
+  - `P125-PLAN-01` is in review on `codex/p125-plan-01-durable-session-task-plan` after deterministic, full-repository, desktop, browser, recovery, and real `deepseek-v4-flash` acceptance
   - `P124-HITL-01` was merged through GitHub PR `#85` after deterministic, full-repository, desktop, browser, recovery, and real `deepseek-v4-flash` clarification acceptance
   - `P119-SUB-01` was merged through GitHub PR `#75` after deterministic, full-repository, and real `deepseek-v4-flash` acceptance of fixed bounded parallel read-only research fan-out
   - `P119-CLOSE-01` records the Phase 119 closeout and the explicit Phase 120 ownership boundary
@@ -540,7 +541,7 @@
 ## Next Unlocks
 
 - Phase 124 merged through PR `#85`; `P124-CLOSE-01` records the closeout and unlocks one durable session task-plan slice
-- `P125-PLAN-01 - Durable Session Task Plan` is ready and is the only Phase 125 implementation lane
+- `P125-PLAN-01 - Durable Session Task Plan` is complete and in review; Phase 125 closes only after merge
 - Phase 123 merged through PR `#83`; `P123-CLOSE-01` records the closeout and unlocks one durable clarification HITL slice
 - general, coding, and fixed Research child profiles now expose one typed, read-only, parallel-safe `files.search` primitive with literal content and filename modes, workspace-relative roots, optional glob filtering, and deterministic offset pagination
 - workspace search rejects hidden or escaping roots and skips hidden, symlinked, binary, and oversized files while enforcing 20,000-file, 10,101-match, 500-character-line, 100-result, and 32 KiB output ceilings

@@ -3,9 +3,11 @@ import React from "react";
 import locale from "../_utils/local";
 import type { ChatMessage } from "../lib/chat-surface";
 import { compactWorkspaceLabel } from "../lib/task-launch-config";
+import { hasVisibleTaskPlan } from "../lib/task-plan";
 import type { ApprovalSummary, SessionEvent, SessionSummary } from "../types";
 import { AssistantMessageBlock } from "./AssistantMessageBlock";
 import { SessionExecutionTrace } from "./SessionExecutionTrace";
+import { SessionTaskPlan } from "./SessionTaskPlan";
 import { SessionApprovalPanel } from "./SessionApprovalPanel";
 import { SessionClarificationPanel } from "./SessionClarificationPanel";
 import { useSessionThreadWorkspaceStyle } from "./SessionThreadWorkspace.styles";
@@ -30,6 +32,7 @@ const PLANNING_EVENTS = new Set([
   "task_prepared",
   "plan_proposed",
   "plan_approved",
+  "plan_updated",
   "model_request_started",
   "harness_attempt_started",
 ]);
@@ -41,6 +44,7 @@ const EVENT_LABELS: Record<string, string> = {
   task_prepared: "任务已准备",
   plan_proposed: "计划已生成",
   plan_approved: "计划已确认",
+  plan_updated: "任务计划已更新",
   model_request_started: "模型开始处理",
   model_response_received: "模型已响应",
   harness_attempt_started: "执行尝试已启动",
@@ -162,6 +166,7 @@ export function SessionThreadWorkspace({
           <h2>{activeLabel}</h2>
           <p>{isDraft ? locale.notStarted : `${events.length} ${locale.eventsRecorded}`}</p>
         </article>
+        {hasVisibleTaskPlan(sessionSummary?.task_plan) ? <SessionTaskPlan plan={sessionSummary.task_plan} /> : null}
         <div className={styles.stageList}>
           {populatedStages.map((stage, index) => {
             const state = isDraft ? "pending" : stageState(index, stage.events.length);

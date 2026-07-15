@@ -16,6 +16,7 @@ from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessContext, HarnessEventDraft
 from agent_core.harness.orchestration_events import policy_decision_payload
+from agent_core.harness.plan_step import execute_plan_call
 from agent_core.harness.policy_step import policy_stop_result
 from agent_core.harness.selection import ToolCallSelection
 from agent_core.harness.tool_execution import execute_tool_call
@@ -204,14 +205,38 @@ class ToolBatchExecutor:
                         },
                     )
                 return ToolBatchResult(terminal, tool_calls_executed, metadata)
-            execution = execute_tool_call(
-                context,
-                tool_call,
-                tool_gateway=self._tool_gateway,
-                verifier=self._verifier,
-                emitted_events=emitted_events,
-                emit_execution_started=not (index == 0 and first_execution_started),
-            )
+            try:
+                execution = (
+                    execute_plan_call(
+                        context,
+                        tool_call,
+                        verifier=self._verifier,
+                        emitted_events=emitted_events,
+                    )
+                    if tool_call.name == "agent.plan"
+                    else execute_tool_call(
+                        context,
+                        tool_call,
+                        tool_gateway=self._tool_gateway,
+                        verifier=self._verifier,
+                        emitted_events=emitted_events,
+                        emit_execution_started=not (index == 0 and first_execution_started),
+                    )
+                )
+            except ValueError as exc:
+                return self._terminal(
+                    outcome=HarnessAttemptOutcome.FAILED,
+                    summary="invalid agent.plan request",
+                    completion=completion,
+                    emitted_events=emitted_events,
+                    model_calls_used=model_calls_used,
+                    tool_calls_executed=tool_calls_executed,
+                    metadata={
+                        **metadata,
+                        "stop_reason": "invalid_plan_request",
+                        "detail": str(exc),
+                    },
+                )
             tool_calls_executed += 1
             fingerprints.add(action_fingerprint(tool_call))
             metadata = {**metadata, **execution.metadata}

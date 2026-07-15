@@ -28,6 +28,20 @@ export interface ClarificationContext {
   requested_at: string;
 }
 
+export type PlanStepStatus = "pending" | "in_progress" | "completed" | "cancelled";
+
+export interface TaskPlanStep {
+  step_id: string;
+  content: string;
+  status: PlanStepStatus;
+}
+
+export interface TaskPlan {
+  steps: TaskPlanStep[];
+  summary: Record<PlanStepStatus | "total", number>;
+  updated_at?: string;
+}
+
 export interface SessionSummary {
   session_id: string;
   title: string;
@@ -36,6 +50,7 @@ export interface SessionSummary {
   workspace?: SessionWorkspace;
   approval_context?: ApprovalContext;
   clarification_context?: ClarificationContext;
+  task_plan?: TaskPlan;
 }
 
 export interface RecentSessionSummary extends SessionSummary {

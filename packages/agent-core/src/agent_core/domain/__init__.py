@@ -29,6 +29,7 @@ from agent_core.domain.memories import (
 )
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.model_calls import ModelCallRecord
+from agent_core.domain.plans import PlanStep, PlanStepStatus, SessionPlan
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.tool_profiles import ToolProfile
@@ -59,10 +60,13 @@ __all__ = [
     "ModelCallRecord",
     "PolicyDecision",
     "PolicyDecisionType",
+    "PlanStep",
+    "PlanStepStatus",
     "Session",
     "SessionEvent",
     "SessionMessage",
     "SessionStatus",
+    "SessionPlan",
     "StoredArtifactPayload",
     "ToolCall",
     "ToolCallStatus",
