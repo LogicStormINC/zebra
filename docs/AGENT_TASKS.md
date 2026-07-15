@@ -11812,3 +11812,87 @@ tool, command, network, credential, approval, or Research-child authority.
 - automatic workspace writes, hidden attachment directories, shell parsing,
   prompt-wide filesystem ingestion, Research-child attachment access, or new
   filesystem, command, network, credential, approval, or policy authority
+
+### P131-CLOSE-01 - Phase 131 Closeout And Phase 132 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / PRODUCT`
+- Depends on: `P131-INP-01`
+- Branch: `codex/p131-closeout-phase132-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 131 acceptance state and define one bounded external
+tool slice that turns the existing MCP proxy contracts into a locally usable,
+approval-gated capability without importing a broad plugin platform.
+
+#### Acceptance
+
+- [x] `P131-INP-01` is recorded as merged through PR `#99` and done.
+- [x] Phase 132 is limited to explicitly configured local stdio MCP servers,
+  bounded discovery and calls, and existing Policy/HITL authority.
+- [x] Phase 132 has one non-overlapping task with explicit config,
+  integration, runtime, security, app, test, and documentation ownership.
+
+## Phase 132 Task Board
+
+### P132-MCP-01 - Bounded Local Stdio MCP Bridge
+
+- Status: `Ready`
+- Owner: `Codex`
+- Suggested role: `CONFIG / INTEGRATION / RUNTIME / SECURITY / APP`
+- Depends on: `P131-CLOSE-01`
+- Branch: `codex/p132-mcp-01-bounded-local-stdio-bridge`
+- Owned paths: `apps/config/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `packages/agent-integrations/`, `packages/agent-runtime/`, `packages/agent-tools/`, `packages/agent-security/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Let explicitly configured general and coding parent sessions discover and call
+a small set of local stdio MCP tools through the existing typed registry,
+proxy gateway, deterministic Policy, durable approval, event, and recovery
+boundaries, while keeping server output and metadata untrusted.
+
+#### Deliverables
+
+- strict operator configuration for at most three local stdio servers using an
+  executable plus argument vector, without shell parsing or model-editable config
+- bounded MCP initialize, tool discovery, pagination, and tool-call transport
+  with fixed startup, response, tool-count, schema, and output limits
+- deterministic `mcp.<server>.<tool>` model-tool registration for configured
+  general and coding parent sessions only
+- API, CLI, direct runtime, Worker, and exact approval-continuation composition
+  over one shared bridge implementation
+- focused security, protocol, discovery, execution, recovery, and compatibility
+  tests plus operator documentation
+
+#### Acceptance
+
+- [ ] No configuration means no MCP process is started and no MCP tool is
+  visible to the model.
+- [ ] Invalid names, shell commands, missing executables, excessive server or
+  tool counts, malformed schemas, protocol errors, timeouts, oversized frames,
+  oversized outputs, and unknown targets fail closed with no leaked environment.
+- [ ] Configured tools are advertised deterministically as
+  `mcp.<server>.<tool>` while descriptions, schemas, annotations, and results
+  remain explicitly untrusted and grant no authority.
+- [ ] Every MCP call requires the existing concrete approval before the server
+  receives `tools/call`; denial, stale approval, cancellation, and recovery
+  behavior remain unchanged.
+- [ ] API, CLI, direct runtime, and Worker recovery reconstruct the same
+  configured bridge, and approval continuation executes the exact approved
+  server, tool, and arguments once.
+- [ ] Fixed Research children receive no MCP tools, and MCP cannot add command,
+  workspace, network, credential, child-agent, or policy authority.
+- [ ] Focused MCP matrices, all backend/static/eval gates, desktop compatibility
+  checks/build, Tauri validation, and one real-provider pass succeed.
+
+#### Explicit Non-Goals
+
+- Streamable HTTP, SSE, OAuth, remote credentials, headers, environment-secret
+  injection, sampling, elicitation, prompts, resources, roots, or server tasks
+- dynamic reload, list-change notifications, long-lived server pools,
+  marketplace, installation, editing, presets, plugins, or connector UI
+- arbitrary shell commands, `npx` or `uvx` package installation, automatic
+  trust, approval bypass, parallel MCP execution, or Research-child inheritance
