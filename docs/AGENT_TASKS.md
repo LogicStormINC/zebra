@@ -10925,7 +10925,7 @@ adding another external information provider.
 
 ### P123-TOOL-01 - Bounded Workspace Search Tool
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / SECURITY / TOOLS / RUNTIME`
 - Depends on: `P122-CLOSE-01`
@@ -10986,3 +10986,98 @@ bounded output, and provider-neutral tool behavior.
   browser automation, or network access
 - copying Hermes global task caches, repeated-search counters, configuration
   hot reload, or plugin registry architecture into Zebra Agent
+
+### P123-CLOSE-01 - Phase 123 Closeout And Phase 124 Planning
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P123-TOOL-01`
+- Branch: `codex/p123-closeout-phase124-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 123 acceptance state and define the first durable
+clarification HITL slice so a general-purpose agent can pause for missing user
+input without treating chat text or an in-process callback as durable state.
+
+#### Acceptance
+
+- [x] `P123-TOOL-01` is recorded as merged through PR `#83` and done.
+- [x] Phase 124 has one non-overlapping ready task with explicit owned paths.
+- [x] Hermes Clarify is used only as a schema and interaction reference; its
+  process-global blocking queue is rejected for Zebra's recoverable worker model.
+
+## Phase 124 Task Board
+
+### P124-HITL-01 - Durable Clarification Request And Resume
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / TOOLS / RUNTIME / STORAGE / APP / UI`
+- Depends on: `P123-CLOSE-01`
+- Branch: `codex/p124-hitl-01-durable-clarification`
+- Owned paths: `packages/agent-core/`, `packages/agent-tools/`, `packages/agent-runtime/`, `packages/agent-storage/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `UI/desktop/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Allow the model to issue one typed `agent.clarify` request, durably pause the
+session for user input, expose that concrete request to operators, and resume
+the same task after one correlated user response without replaying a side effect
+or relying on a live worker thread.
+
+#### Deliverables
+
+- provider-neutral clarification request and response contracts with one
+  question, up to four unique choices, optional context, and stable identifiers
+- `waiting_input` session state plus `clarification_requested` and
+  `clarification_responded` events with deterministic projection and recovery
+- one typed `agent.clarify` model tool that ends the current run slice without
+  executing a side effect, requesting approval, or blocking a process thread
+- API and CLI readback of the active clarification plus a correlated response
+  path that is idempotent and resumes worker execution exactly once
+- desktop rendering and response controls only while a concrete active
+  clarification exists; no dormant HITL card in idle or ordinary running states
+- deterministic, full-repository, desktop, browser, recovery, and real-provider
+  acceptance evidence
+
+#### Acceptance
+
+- [ ] A valid request contains a non-blank bounded question and zero to four
+  unique, non-blank bounded choices; malformed calls fail structurally.
+- [ ] A clarification call persists one correlated request, transitions the
+  session from running to waiting input, and releases the worker without a
+  blocked thread or fabricated tool result.
+- [ ] Session projections and API/CLI reads expose only the active request's
+  identifier, question, choices, context, and creation evidence.
+- [ ] One matching response persists user text plus response evidence, clears
+  the active request, and schedules exactly one continuation from waiting input.
+- [ ] Duplicate, stale, mismatched, blank, or terminal-session responses fail
+  closed without additional model calls or queue entries.
+- [ ] Continuation context contains the original assistant request and correlated
+  user answer, while previously completed tools are not executed again.
+- [ ] Policy and tool profiles cannot turn clarification into command, file,
+  network, credential, approval, or write authority.
+- [ ] Research children cannot recursively suspend a parent through
+  `agent.clarify`; the tool remains parent-session only.
+- [ ] Desktop HITL controls appear only for one concrete active clarification,
+  support offered and free-form responses, and disappear after resolution.
+- [ ] Existing approval continuation, ordinary message append, suspend/resume,
+  cancellation, compaction, concurrent tools, Web Gateway, and recovery remain
+  compatible.
+- [ ] Targeted tests, full backend/static/eval gates, desktop checks/build,
+  browser validation, and one real `deepseek-v4-flash` clarification pass succeed.
+
+#### Explicit Non-Goals
+
+- blocking worker threads, process-global callback queues, long polling from a
+  tool handler, or assuming the API and worker share one process
+- using clarification as approval for dangerous tools or merging it with the
+  existing approval decision contract
+- multi-question forms, branching surveys, file uploads, rich markdown forms,
+  arbitrary UI schemas, or more than four offered choices
+- automatic timeout decisions, default-answer selection, notification delivery,
+  or cross-session clarification routing
+- granting Clarify to fixed Research children, inferring answers from unrelated
+  messages, or resuming a terminal session
