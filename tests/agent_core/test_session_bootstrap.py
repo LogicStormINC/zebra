@@ -3,6 +3,7 @@ from pathlib import Path
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.domain.events import EventType
 from agent_core.domain.sessions import SessionStatus
+from agent_core.domain.tool_profiles import ToolProfile
 
 
 def test_session_bootstrap_service_builds_ready_session_events() -> None:
@@ -26,6 +27,7 @@ def test_session_bootstrap_service_builds_ready_session_events() -> None:
         "user_input": "Inspect the repository.",
         "workspace_root": "/tmp/bootstrap",
         "policy_profile": "workspace_write",
+        "tool_profile": ToolProfile.GENERAL,
         "max_attempts": 1,
         "max_model_calls": 4,
         "max_tool_calls": 3,

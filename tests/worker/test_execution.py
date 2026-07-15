@@ -19,6 +19,7 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
 from agent_core.domain.sessions import SessionStatus
+from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.tool_runs import ToolRunRecord
 from agent_core.domain.tools import ToolCall
 from agent_core.domain.workspaces import WorkspaceStatus
@@ -420,6 +421,7 @@ def _seed_ready_session_with_input(
             title="Queued worker task",
             user_input=user_input,
             workspace_root=workspace_root.resolve(),
+            tool_profile=ToolProfile.CODING,
         )
     )
     event_store = SQLiteEventStore(database_path)

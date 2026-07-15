@@ -240,7 +240,7 @@ export default function App() {
         let sessionId = conversationToSessionId[conversationKey];
         if (!sessionId) {
           const title = trimmed.slice(0, 36) || locale.newConversation;
-          const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile });
+          const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile });
           sessionId = created.session_id;
           patchConfig({ sessionId });
           if (!createdFromWorkspaceHome) {
@@ -266,7 +266,7 @@ export default function App() {
               throw error;
             }
             const title = trimmed.slice(0, 36) || locale.newConversation;
-            const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile });
+            const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile });
             sessionId = created.session_id;
             patchConfig({ sessionId });
             if (!createdFromWorkspaceHome) {

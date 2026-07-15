@@ -76,6 +76,13 @@ If your shell still resolves `pnpm` or `node` to Homebrew or another global inst
 3. Start the desktop web shell with `make ui-dev`, or use `make ui-tauri-check`
    before `pnpm tauri:dev` when validating the native shell.
 
+New tasks use the `general` tool profile by default. It advertises Research,
+command, file-read, and patch capabilities without coding-specific Git status or
+test-run tools. Select `coding` explicitly in the desktop launch controls or pass
+`--tool-profile coding` in the CLI when those additional tools are required.
+Tool profile selection changes model-visible tools only; `policy_profile` remains
+the independent authority and approval boundary.
+
 Provider credentials are read by the local API only. They must not be placed in
 frontend storage, request payloads, API responses, tracked environment files, or logs.
 

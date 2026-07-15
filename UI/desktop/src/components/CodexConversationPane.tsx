@@ -108,9 +108,10 @@ export function CodexConversationPane({
   const launchEditable = !currentSessionId;
   const durableWorkspace = sessionSummary?.workspace?.workspace_root ?? "";
   const durablePolicy = sessionSummary?.workspace?.policy_profile === "full_access" ? "full_access" : "workspace_write";
+  const durableToolProfile = sessionSummary?.workspace?.tool_profile === "general" ? "general" : "coding";
   const effectiveLaunchConfig: TaskLaunchConfig = launchEditable
     ? launchConfig
-    : { workspace: durableWorkspace, policyProfile: durablePolicy };
+    : { workspace: durableWorkspace, policyProfile: durablePolicy, toolProfile: durableToolProfile };
   const launchError = validateTaskLaunchConfig(effectiveLaunchConfig);
   const canSubmit = composerValue.trim().length > 0 && !launchError;
   const headerTitle = hasThread ? activeLabel : idleProjectLabel;
@@ -157,6 +158,7 @@ export function CodexConversationPane({
         <strong>{launchEditable ? "启动配置" : "会话配置"}</strong>
         <span title={effectiveLaunchConfig.workspace}>工作区 · {compactWorkspaceLabel(effectiveLaunchConfig.workspace)}</span>
         <span>权限 · {effectiveLaunchConfig.policyProfile === "full_access" ? "完整访问" : "工作区写入"}</span>
+        <span>能力 · {effectiveLaunchConfig.toolProfile === "coding" ? "编码工具" : "通用工具"}</span>
         <span>模型 · API 运行时配置</span>
         {launchError ? <em>{launchError}</em> : null}
       </div>
@@ -185,6 +187,16 @@ export function CodexConversationPane({
                     </button>
                   </Dropdown>
                 ) : <span className={launchStyles.staticBadge}>权限: {durablePolicy === "full_access" ? "完整访问" : "工作区写入"}</span>}
+                {launchEditable ? (
+                  <Dropdown menu={{ items: [
+                    { key: "general", label: "能力: 通用工具", onClick: () => onPatchLaunchConfig({ toolProfile: "general" }) },
+                    { key: "coding", label: "能力: 编码工具", onClick: () => onPatchLaunchConfig({ toolProfile: "coding" }) },
+                  ] }} trigger={["click"]}>
+                    <button className={styles.toolbarButton} type="button">
+                      {launchConfig.toolProfile === "coding" ? "能力: 编码工具" : "能力: 通用工具"}
+                    </button>
+                  </Dropdown>
+                ) : <span className={launchStyles.staticBadge}>能力: {durableToolProfile === "coding" ? "编码工具" : "通用工具"}</span>}
                 <span className={launchStyles.staticBadge}>模型: API 运行时配置</span>
               </Flex>
               <span className={`${styles.sendSlot} ${canSubmit ? "" : styles.sendSlotDisabled}`}>

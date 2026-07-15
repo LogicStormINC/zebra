@@ -59,6 +59,7 @@ def test_cli_run_command_creates_local_session(
     assert output["executed"] is False
     assert output["status"] == SessionStatus.READY.value
     assert output["title"] == "Fix failing tests"
+    assert output["tool_profile"] == "general"
     assert output["workspace"] == "."
     assert output["database"] == str(database_path)
     assert session is not None
@@ -71,6 +72,28 @@ def test_cli_run_command_creates_local_session(
     assert events[1].payload == {"content": "Fix tests"}
     assert events[2].event_type is EventType.TASK_PREPARED
     assert events[2].payload["workspace_root"] == str(Path(".").resolve())
+    assert events[2].payload["tool_profile"] == "general"
+
+
+def test_cli_run_command_persists_explicit_coding_profile(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    result = execute(
+        [
+            "run",
+            "Use coding tools",
+            "--tool-profile",
+            "coding",
+            "--database",
+            str(database_path),
+        ]
+    )
+    session_id = SessionId(UUID(str(result.payload["session_id"])))
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(session_id)
+
+    assert result.payload["tool_profile"] == "coding"
+    assert workspace is not None
+    assert workspace.tool_profile.value == "coding"
 
 
 def test_cli_run_command_uses_settings_database_by_default(tmp_path: Path) -> None:
@@ -367,6 +390,7 @@ def test_cli_resume_read_includes_workspace_projection(tmp_path: Path) -> None:
 
     assert result.payload["workspace"] == {
         "workspace_root": str(tmp_path.resolve()),
+        "tool_profile": "coding",
         "status": "suspended",
         "current_sequence": 4,
         "prepared_at": _created_at().isoformat(),
@@ -757,6 +781,7 @@ def test_cli_inspect_command_includes_workspace_projection(tmp_path: Path) -> No
 
     assert result.payload["workspace"] == {
         "workspace_root": str(tmp_path.resolve()),
+        "tool_profile": "coding",
         "status": "suspended",
         "current_sequence": 4,
         "prepared_at": _created_at().isoformat(),

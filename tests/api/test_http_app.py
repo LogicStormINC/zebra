@@ -158,6 +158,7 @@ def test_http_app_serves_workspace_projection_on_session_lookup(tmp_path: Path) 
     assert response.status_code == 200
     assert response.json()["workspace"] == {
         "workspace_root": str(tmp_path.resolve()),
+        "tool_profile": "coding",
         "status": "suspended",
         "current_sequence": 4,
         "prepared_at": _created_at().isoformat(),

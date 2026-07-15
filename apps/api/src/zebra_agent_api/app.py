@@ -16,7 +16,9 @@ from agent_core.application import (
     SessionMessageAppendService,
 )
 from agent_core.application.session_projection import apply_event
+from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.harness.models import HarnessLoopResult
 from agent_integrations import (
     GitHubPullRequestTransport,
@@ -30,6 +32,7 @@ from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
+    SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
 )
 from zebra_agent_config import ZebraAgentSettings, load_settings
@@ -899,12 +902,16 @@ class ZebraAgentApi:
                 user_input=str(parsed["prompt"]),
                 workspace_root=Path(str(parsed["workspace"])).expanduser().resolve(),
                 policy_profile=str(parsed["policy_profile"]),
+                tool_profile=ToolProfile(str(parsed["tool_profile"])),
             )
         )
         event_store = SQLiteEventStore(self.database_path)
         for event in bootstrap.events:
             event_store.append(event)
         SQLiteProjectionStore(self.database_path).save_session(bootstrap.session)
+        SQLiteWorkspaceProjectionStore(self.database_path).save_workspace(
+            rebuild_workspace(list(bootstrap.events))
+        )
         return ApiResponse(
             status_code=201,
             body={
@@ -914,6 +921,7 @@ class ZebraAgentApi:
                 "workspace": str(parsed["workspace"]),
                 "executed": False,
                 "status": bootstrap.session.status.value,
+                "tool_profile": str(parsed["tool_profile"]),
             },
         )
 
@@ -936,12 +944,16 @@ class ZebraAgentApi:
             workspace_root=workspace_root,
             model_gateway=model_gateway,
             policy_profile=PolicyProfile(str(parsed["policy_profile"])),
+            tool_profile=ToolProfile(str(parsed["tool_profile"])),
             confirmed_memories=confirmed_memories,
         )
         event_store = SQLiteEventStore(self.database_path)
         for event in result.events:
             event_store.append(event)
         SQLiteProjectionStore(self.database_path).save_session(result.session)
+        SQLiteWorkspaceProjectionStore(self.database_path).save_workspace(
+            rebuild_workspace(list(result.events))
+        )
         return ApiResponse(
             status_code=201,
             body={
@@ -955,6 +967,7 @@ class ZebraAgentApi:
                 "stop_reason": result.run_result.stop_reason.value,
                 "attempts_used": result.run_result.attempts_used,
                 "policy_profile": str(parsed["policy_profile"]),
+                "tool_profile": str(parsed["tool_profile"]),
                 "trace": _trace_payload(result),
             },
         )

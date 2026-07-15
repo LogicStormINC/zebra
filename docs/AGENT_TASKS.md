@@ -10662,8 +10662,8 @@ agent tasks do not inherit coding-specific capabilities by default.
 
 ### P120-CAP-01 - Durable General And Coding Tool Profiles
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE / RUNTIME / APP`
 - Depends on: `P119-CLOSE-01`
 - Branch: `codex/p120-cap-01-durable-tool-profiles`
@@ -10687,16 +10687,16 @@ surface, and retain the current coding-oriented surface as an explicit option.
 
 #### Acceptance
 
-- [ ] A newly created task defaults to `general`; an explicit `coding` task retains the current complete executable tool manifest.
-- [ ] Existing sessions without durable tool-profile evidence recover as `coding`, preserving the behavior under which they were created.
-- [ ] The selected profile survives create, list, inspect, reload, worker claim, execution, suspend or resume, and approval continuation paths.
-- [ ] General tasks neither advertise nor execute `git.status` or `tests.run`; coding tasks advertise and execute them through the existing typed gateway.
-- [ ] Unknown profile values fail at the API, CLI, configuration, and projection trust boundaries instead of silently widening capabilities.
-- [ ] Tool profiles never bypass policy: every registered call still passes the same policy and approval checks, and selecting `coding` cannot increase file, network, command, or credential authority.
-- [ ] Research children retain their fixed read-only, non-recursive tool ceiling regardless of the parent profile.
-- [ ] The desktop defaults visibly and durably to general-purpose execution and offers coding tools only through an explicit launch selection.
-- [ ] Legacy behavior, HITL continuation, concurrent batches, compaction, and bounded Research fan-out remain compatible.
-- [ ] Targeted checks, full backend and desktop gates, browser persistence validation, and one real-provider manifest-selection acceptance pass.
+- [x] A newly created task defaults to `general`; an explicit `coding` task retains the current complete executable tool manifest.
+- [x] Existing sessions without durable tool-profile evidence recover as `coding`, preserving the behavior under which they were created.
+- [x] The selected profile survives create, list, inspect, reload, worker claim, execution, suspend or resume, and approval continuation paths.
+- [x] General tasks neither advertise nor execute `git.status` or `tests.run`; coding tasks advertise and execute them through the existing typed gateway.
+- [x] Unknown profile values fail at the API, CLI, configuration, and projection trust boundaries instead of silently widening capabilities.
+- [x] Tool profiles never bypass policy: every registered call still passes the same policy and approval checks, and selecting `coding` cannot increase file, network, command, or credential authority.
+- [x] Research children retain their fixed read-only, non-recursive tool ceiling regardless of the parent profile.
+- [x] The desktop defaults visibly and durably to general-purpose execution and offers coding tools only through an explicit launch selection.
+- [x] Legacy behavior, HITL continuation, concurrent batches, compaction, and bounded Research fan-out remain compatible.
+- [x] Targeted checks, full backend and desktop gates, browser persistence validation, and one real-provider manifest-selection acceptance pass.
 
 #### Explicit Non-Goals
 

@@ -4,6 +4,7 @@ from pathlib import Path
 
 from agent_context import LocalContextCompiler
 from agent_core.domain.modeling import ModelToolDefinition
+from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
 from agent_core.harness.models import HarnessLoopResult
@@ -42,9 +43,14 @@ def run_local_harness(
     workspace_root: Path,
     model_gateway: ModelGatewayPort,
     policy_profile: PolicyProfile = PolicyProfile.WORKSPACE_WRITE,
+    tool_profile: ToolProfile = ToolProfile.GENERAL,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
 ) -> HarnessLoopResult:
-    tool_gateway = LocalToolGateway(workspace_root, model_gateway=model_gateway)
+    tool_gateway = LocalToolGateway(
+        workspace_root,
+        model_gateway=model_gateway,
+        tool_profile=tool_profile,
+    )
     context_compiler = LocalContextCompiler()
     try:
         return HarnessLoop().run(
@@ -55,6 +61,8 @@ def run_local_harness(
                 max_model_calls=4,
                 max_tool_calls=3,
                 workspace_root=workspace_root,
+                policy_profile=policy_profile.value,
+                tool_profile=tool_profile,
                 confirmed_memories=confirmed_memories,
             ),
             SingleAttemptOrchestrator(
@@ -83,9 +91,12 @@ class LocalToolGateway(ToolGatewayPort):
         *,
         model_gateway: ModelGatewayPort | None = None,
         research_child_limit: int = DEFAULT_RESEARCH_CHILD_LIMIT,
+        tool_profile: ToolProfile = ToolProfile.GENERAL,
     ) -> None:
         if research_child_limit <= 0:
             raise ValueError("research_child_limit must be positive")
+        if not isinstance(tool_profile, ToolProfile):
+            raise ValueError("tool_profile is not supported")
         self._workspace = LocalWorkspace(workspace_root)
         self._workspace.ensure()
         runtime = LocalRuntime()
@@ -97,10 +108,12 @@ class LocalToolGateway(ToolGatewayPort):
             TestsRunTool(runtime, self._workspace, DEFAULT_TEST_PRESETS),
             CommandRunTool(runtime, self._workspace),
         )
+        enabled_names = tool_names_for_profile(tool_profile)
         for tool in tools:
-            registry.register(tool.contract, tool.handle)
+            if tool.contract.name in enabled_names:
+                registry.register(tool.contract, tool.handle)
         self._subagents: LocalResearchSubagentCoordinator | None = None
-        if model_gateway is not None:
+        if model_gateway is not None and "agent.research" in enabled_names:
             self._subagents = LocalResearchSubagentCoordinator(
                 LocalResearchSubagentRunner(model_gateway),
                 max_children=research_child_limit,

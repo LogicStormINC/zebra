@@ -59,6 +59,11 @@ class HarnessLoop:
             payload={
                 "title": task.title,
                 "user_input": task.user_input,
+                "workspace_root": (
+                    str(task.workspace_root) if task.workspace_root is not None else None
+                ),
+                "policy_profile": task.policy_profile,
+                "tool_profile": task.tool_profile.value,
                 "max_attempts": task.max_attempts,
                 "max_model_calls": task.max_model_calls,
                 "max_tool_calls": task.max_tool_calls,

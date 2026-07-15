@@ -7,8 +7,10 @@ from pathlib import Path
 from uuid import UUID
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.identifiers import SessionId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.tool_profiles import ToolProfile
 from agent_integrations import build_model_gateway
 from agent_security import PolicyProfile
 from agent_storage import (
@@ -356,6 +358,7 @@ def _run_result(
             database_path=database_path,
             settings=settings,
             policy_profile=PolicyProfile(namespace.policy_profile),
+            tool_profile=ToolProfile(namespace.tool_profile),
         )
         session = execution_result.harness_result.session
         payload = serialize_run_execution(execution_result)
@@ -366,6 +369,7 @@ def _run_result(
                 user_input=namespace.prompt,
                 workspace_root=workspace.expanduser().resolve(),
                 policy_profile=namespace.policy_profile,
+                tool_profile=ToolProfile(namespace.tool_profile),
             )
         )
         session = bootstrap.session
@@ -373,9 +377,13 @@ def _run_result(
         for event in bootstrap.events:
             event_store.append(event)
         SQLiteProjectionStore(database_path).save_session(session)
+        SQLiteWorkspaceProjectionStore(database_path).save_workspace(
+            rebuild_workspace(list(bootstrap.events))
+        )
         payload = {
             "executed": False,
             "status": session.status.value,
+            "tool_profile": namespace.tool_profile,
         }
     return CliCommandResult(
         command="run",

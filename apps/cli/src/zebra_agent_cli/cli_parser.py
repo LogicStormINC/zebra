@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 
+from agent_core.domain.tool_profiles import ToolProfile
 from agent_security import PolicyProfile
 
 from zebra_agent_cli.read_commands import add_read_subparsers
@@ -21,6 +22,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--policy-profile",
         choices=tuple(profile.value for profile in PolicyProfile),
         default=PolicyProfile.WORKSPACE_WRITE.value,
+    )
+    run.add_argument(
+        "--tool-profile",
+        choices=tuple(profile.value for profile in ToolProfile),
+        default=ToolProfile.GENERAL.value,
     )
 
     message = subcommands.add_parser(

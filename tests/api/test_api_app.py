@@ -92,6 +92,7 @@ def test_api_get_session_includes_workspace_projection_when_available(tmp_path: 
     assert response.status_code == 200
     assert response.body["workspace"] == {
         "workspace_root": str(tmp_path.resolve()),
+        "tool_profile": "coding",
         "status": "suspended",
         "current_sequence": 4,
         "prepared_at": _created_at().isoformat(),
@@ -218,6 +219,7 @@ def test_api_get_session_stream_returns_persisted_events(tmp_path: Path) -> None
                 "user_input": "stream me",
                 "workspace_root": None,
                 "policy_profile": None,
+                "tool_profile": None,
                 "max_attempts": None,
                 "max_model_calls": None,
                 "max_tool_calls": None,
@@ -267,10 +269,13 @@ def test_api_create_session_persists_created_session(tmp_path: Path) -> None:
 
     assert response.status_code == 201
     assert response.body["executed"] is False
+    assert response.body["tool_profile"] == "general"
     assert response.body["status"] == SessionStatus.READY.value
     assert session is not None
     assert session.title == "API create session"
     assert session.status is SessionStatus.READY
+    detail = create_app(database_path).get_session(response.body["session_id"])
+    assert detail.body["workspace"]["tool_profile"] == "general"
 
 
 def test_api_create_session_execute_persists_harness_events(
@@ -482,6 +487,16 @@ def test_api_create_session_rejects_invalid_request(tmp_path: Path) -> None:
     assert response.body == {
         "status": "invalid_request",
         "reason": "prompt must be a non-blank string",
+    }
+
+    invalid_profile = create_app(
+        database_path, settings=_settings(database_path)
+    ).create_session({"prompt": "Continue", "tool_profile": "unknown"})
+
+    assert invalid_profile.status_code == 400
+    assert invalid_profile.body == {
+        "status": "invalid_request",
+        "reason": "tool_profile is not supported",
     }
 
 
