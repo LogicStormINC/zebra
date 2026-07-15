@@ -31,6 +31,7 @@ from agent_tools import (
     WebGatewayTransport,
     WebSearchTool,
     WebSearchTransport,
+    WorkspaceListTool,
     WorkspaceSearchTool,
 )
 from agent_tools.errors import ToolRegistryError
@@ -138,6 +139,7 @@ class LocalToolGateway(ToolGatewayPort):
         tools = (
             ClarifyTool(),
             PlanTool(),
+            WorkspaceListTool(self._workspace),
             FileReadTool(self._workspace),
             WorkspaceSearchTool(self._workspace),
             GitStatusTool(runtime, self._workspace),

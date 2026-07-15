@@ -364,6 +364,15 @@ def test_path_traversal_is_denied_for_file_read() -> None:
 
 
 @pytest.mark.parametrize("profile", list(PolicyProfile))
+def test_file_list_is_allowed_by_all_policy_profiles(profile: PolicyProfile) -> None:
+    decision = LocalPolicyEngine(profile=profile).evaluate_tool_call(
+        _tool_call("files.list", {"path": "docs", "depth": 2})
+    )
+
+    assert decision.decision is PolicyDecisionType.ALLOW
+
+
+@pytest.mark.parametrize("profile", list(PolicyProfile))
 def test_file_search_is_allowed_by_all_policy_profiles(profile: PolicyProfile) -> None:
     decision = LocalPolicyEngine(profile=profile).evaluate_tool_call(
         _tool_call("files.search", {"query": "proof", "path": "docs"})

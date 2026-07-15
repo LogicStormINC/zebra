@@ -12,6 +12,7 @@ GENERAL_TOOL_NAMES = frozenset(
         "agent.plan",
         "agent.research",
         "command.run",
+        "files.list",
         "files.read",
         "files.search",
         "patch.apply",
