@@ -246,6 +246,43 @@ def test_mcp_tool_requires_approval_when_proxy_route_is_enabled() -> None:
     )
 
 
+def test_web_fetch_requires_approval_and_projects_gateway_scope() -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.READ_ONLY,
+        network_profile=parse_network_profile(
+            "domain-allowlist", domain_allowlist=("docs.example.com",)
+        ),
+    )
+    tool_call = _tool_call("web.fetch", {"url": "https://docs.example.com/guide"})
+
+    decision = engine.evaluate_tool_call(tool_call)
+    request = build_approval_request(
+        tool_call, decision, network_profile=engine.network_profile
+    )
+
+    assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+    assert decision.route == "web_gateway"
+    assert decision.target == "docs.example.com"
+    assert decision.network_profile == "domain-allowlist"
+    assert request is not None
+    assert request.route is ToolEgressRoute.WEB_GATEWAY
+    assert request.target == "docs.example.com"
+    assert request.scope == (
+        "tool:web.fetch",
+        "route:web_gateway",
+        "network_profile:domain-allowlist",
+        "target:docs.example.com",
+    )
+
+
+def test_web_fetch_is_blocked_by_default_without_approval() -> None:
+    decision = LocalPolicyEngine(profile=PolicyProfile.FULL_ACCESS).evaluate_tool_call(
+        _tool_call("web.fetch", {"url": "https://docs.example.com"})
+    )
+
+    assert decision.decision is PolicyDecisionType.DENY
+
+
 def test_path_traversal_is_denied_for_file_read() -> None:
     engine = LocalPolicyEngine(profile=PolicyProfile.READ_ONLY)
 

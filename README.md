@@ -77,9 +77,10 @@ If your shell still resolves `pnpm` or `node` to Homebrew or another global inst
    before `pnpm tauri:dev` when validating the native shell.
 
 New tasks use the `general` tool profile by default. It advertises Research,
-command, file-read, and patch capabilities without coding-specific Git status or
-test-run tools. Select `coding` explicitly in the desktop launch controls or pass
-`--tool-profile coding` in the CLI when those additional tools are required.
+command, file-read, patch, and bounded Web-fetch capabilities without
+coding-specific Git status or test-run tools. Select `coding` explicitly in the
+desktop launch controls or pass `--tool-profile coding` in the CLI when those
+additional tools are required.
 Tool profile selection changes model-visible tools only; `policy_profile` remains
 the independent authority and approval boundary.
 
@@ -88,6 +89,11 @@ CLI `--network-profile` option or the desktop launch control to select a broader
 existing network profile explicitly; `domain-allowlist` additionally requires
 one or more `--network-allowlist` bare hostnames. This setting does not add tools
 or approve external actions by itself, and Research children remain offline.
+`web.fetch` accepts one credential-free HTTPS URL, requires an exact durable
+allowlist match plus HITL approval, and executes through the Web Gateway contract.
+The local adapter blocks redirects, explicit ports, IP targets, non-public DNS
+answers, non-text responses, and payloads above 256 KiB. It is a local-first
+bounded adapter, not a production distributed egress proxy or DNS-pinning claim.
 
 Provider credentials are read by the local API only. They must not be placed in
 frontend storage, request payloads, API responses, tracked environment files, or logs.
