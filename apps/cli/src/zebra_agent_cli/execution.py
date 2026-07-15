@@ -14,6 +14,7 @@ from agent_security import DEFAULT_NETWORK_PROFILE, NetworkProfile, PolicyProfil
 from agent_storage import (
     SQLiteEventStore,
     SQLiteProjectionStore,
+    SQLiteSessionHistory,
     SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
 )
@@ -65,6 +66,7 @@ def execute_durable_run(
         network_profile=network_profile,
         web_search_endpoint=settings.web_search_endpoint,
         skill_roots=settings.skill_roots,
+        session_history=SQLiteSessionHistory(database_path),
         confirmed_memories=confirmed_memories,
     )
     event_store = SQLiteEventStore(database_path)

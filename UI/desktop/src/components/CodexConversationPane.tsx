@@ -24,6 +24,11 @@ import { SessionThreadWorkspace } from "./SessionThreadWorkspace";
 import { useTaskLaunchStyle } from "./TaskLaunchConfig.styles";
 import { useConversationPaneStyle } from "./CodexConversationPane.styles";
 
+const NamedComposerInput = React.forwardRef<
+  GetRef<typeof Input.TextArea>,
+  React.ComponentProps<typeof Input.TextArea>
+>((props, ref) => <Input.TextArea {...props} name="task-prompt" ref={ref} />);
+
 
 interface CodexConversationPaneProps {
   activeLabel: string;
@@ -184,6 +189,7 @@ export function CodexConversationPane({
       <div className={styles.sender}>
         <Sender
           autoSize={variant === "idle" ? { minRows: 1, maxRows: 6 } : { minRows: 2, maxRows: 3 }}
+          components={{ input: NamedComposerInput }}
           footer={(actionNode) => (
             <Flex align="center" className={styles.composerFooter} justify="space-between">
               <Flex align="center" className={styles.composerTools} gap={8}>

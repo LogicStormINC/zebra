@@ -114,6 +114,16 @@ it is never executed automatically and cannot grant tool, filesystem, command,
 network, credential, approval, or workspace-write authority. Fixed Research
 children do not receive Skill tools.
 
+Local API, CLI, and Worker composition also supplies general and coding parent
+sessions with the read-only `sessions.search` tool over the configured SQLite
+database. With no arguments it browses bounded recent sessions; `query` performs
+case-insensitive literal matching; `session_id` reads one bounded page in event
+sequence order. The active session is excluded, and results contain only bounded
+session metadata plus user and assistant text marked as untrusted historical data.
+Raw events, tool payloads, approvals, plans, memories, credentials, automatic
+prompt injection, cross-profile discovery, and fixed Research-child access remain
+outside this capability. Historical text cannot grant tools or expand policy.
+
 Parent sessions can also use `agent.plan` to read or replace one durable ordered
 task plan. The plan is limited to 12 steps, supports `pending`, `in_progress`,
 `completed`, and `cancelled` states, and permits at most one active step. It is

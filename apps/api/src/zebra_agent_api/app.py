@@ -32,6 +32,7 @@ from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
+    SQLiteSessionHistory,
     SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
 )
@@ -965,6 +966,7 @@ class ZebraAgentApi:
             ),
             web_search_endpoint=self.settings.web_search_endpoint,
             skill_roots=self.settings.skill_roots,
+            session_history=SQLiteSessionHistory(self.database_path),
             confirmed_memories=confirmed_memories,
         )
         event_store = SQLiteEventStore(self.database_path)

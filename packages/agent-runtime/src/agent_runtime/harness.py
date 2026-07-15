@@ -11,6 +11,7 @@ from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, Singl
 from agent_core.harness.models import HarnessLoopResult
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_core.ports.model_gateway import ModelGatewayPort
+from agent_core.ports.session_history import SessionHistoryPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_security import DEFAULT_NETWORK_PROFILE, LocalPolicyEngine, NetworkProfile, PolicyProfile
 from agent_tools import (
@@ -20,6 +21,7 @@ from agent_tools import (
     GitStatusTool,
     PatchApplyTool,
     PlanTool,
+    SessionSearchTool,
     SkillsListTool,
     SkillsReadTool,
     TestsRunTool,
@@ -60,6 +62,7 @@ def run_local_harness(
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
     web_search_endpoint: str | None = None,
     skill_roots: tuple[str, ...] = (),
+    session_history: SessionHistoryPort | None = None,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
 ) -> HarnessLoopResult:
     tool_gateway = LocalToolGateway(
@@ -68,6 +71,7 @@ def run_local_harness(
         tool_profile=tool_profile,
         web_search_endpoint=web_search_endpoint,
         skill_roots=skill_roots,
+        session_history=session_history,
     )
     context_compiler = LocalContextCompiler()
     try:
@@ -120,6 +124,8 @@ class LocalToolGateway(ToolGatewayPort):
         web_search_endpoint: str | None = None,
         web_search_transport: WebSearchTransport | None = None,
         skill_roots: tuple[str, ...] = (),
+        session_history: SessionHistoryPort | None = None,
+        current_session_id: str | None = None,
     ) -> None:
         if research_child_limit <= 0:
             raise ValueError("research_child_limit must be positive")
@@ -156,6 +162,9 @@ class LocalToolGateway(ToolGatewayPort):
             for skill_tool in (SkillsListTool(catalog), SkillsReadTool(catalog)):
                 if skill_tool.contract.name in enabled_names:
                     registry.register(skill_tool.contract, skill_tool.handle)
+        if session_history is not None and "sessions.search" in enabled_names:
+            history_tool = SessionSearchTool(session_history, current_session_id)
+            registry.register(history_tool.contract, history_tool.handle)
         self._subagents: LocalResearchSubagentCoordinator | None = None
         if model_gateway is not None and "agent.research" in enabled_names:
             self._subagents = LocalResearchSubagentCoordinator(

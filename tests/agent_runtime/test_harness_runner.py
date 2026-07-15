@@ -7,11 +7,44 @@ from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.session_history import (
+    SessionHistoryMode,
+    SessionHistoryRequest,
+    SessionHistoryResult,
+    SessionHistorySummary,
+)
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.tools import ToolCall
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_runtime import LocalToolGateway, run_local_harness
+
+
+class EmptyHistory:
+    def query(self, request: SessionHistoryRequest) -> SessionHistoryResult:
+        return SessionHistoryResult(mode=request.mode)
+
+
+class ProofHistory:
+    def query(self, request: SessionHistoryRequest) -> SessionHistoryResult:
+        assert request.mode is SessionHistoryMode.SEARCH
+        assert request.query == "continuity proof"
+        return SessionHistoryResult(
+            mode=request.mode,
+            sessions=(
+                SessionHistorySummary(
+                    session_id="7d5fae1f-b466-4334-b969-1eafcb118202",
+                    title="Prior task",
+                    status="completed",
+                    created_at=_created_at(),
+                    updated_at=_created_at(),
+                    snippet="HISTORY-RECALL-PROOF",
+                    match_count=1,
+                ),
+            ),
+            scanned_sessions=1,
+            scanned_messages=2,
+        )
 
 
 def test_run_local_harness_completes_without_tool_calls(tmp_path) -> None:
@@ -177,6 +210,43 @@ def test_run_local_harness_lists_then_reads_configured_skill(tmp_path) -> None:
     assert result.attempt_result.metadata["assistant_message"] == "Used SKILL-PROOF-127."
 
 
+def test_run_local_harness_recalls_prior_session_then_synthesizes_answer(tmp_path) -> None:
+    gateway = ScriptedModelGateway(
+        responses=tuple(
+            ScriptedModelResponse(completion=completion)
+            for completion in (
+                _completion(
+                    "Searching prior sessions.",
+                    ToolCall(
+                        tool_call_id=new_tool_call_id(),
+                        name="sessions.search",
+                        arguments={"query": "continuity proof"},
+                        created_at=_created_at(),
+                    ),
+                ),
+                _completion("Recovered HISTORY-RECALL-PROOF."),
+            )
+        )
+    )
+
+    result = run_local_harness(
+        prompt="Recover the continuity proof from a prior session.",
+        title="Runtime session recall test",
+        workspace_root=tmp_path.resolve(),
+        model_gateway=gateway,
+        session_history=ProofHistory(),
+    )
+
+    assert result.attempt_result.metadata["tool_name"] == "sessions.search"
+    assert result.attempt_result.metadata["assistant_message"] == (
+        "Recovered HISTORY-RECALL-PROOF."
+    )
+    tool_message = gateway.requests[1][-1]
+    assert tool_message.role is MessageRole.TOOL
+    assert "[UNTRUSTED HISTORICAL SESSION DATA]" in tool_message.content
+    assert "HISTORY-RECALL-PROOF" in tool_message.content
+
+
 def test_run_local_harness_injects_confirmed_memory_into_system_prompt(tmp_path) -> None:
     gateway = ScriptedModelGateway(
         responses=(
@@ -284,6 +354,22 @@ def test_local_tool_gateway_registers_skills_only_with_configured_roots(tmp_path
         tool.name for tool in configured.model_tools
     }
     assert {"skills.list", "skills.read"} <= configured.parallel_safe_tools
+
+
+@pytest.mark.parametrize("tool_profile", list(ToolProfile))
+def test_local_tool_gateway_registers_session_history_only_with_port(
+    tmp_path, tool_profile: ToolProfile
+) -> None:
+    unavailable = LocalToolGateway(tmp_path.resolve())
+    configured = LocalToolGateway(
+        tmp_path.resolve(),
+        tool_profile=tool_profile,
+        session_history=EmptyHistory(),
+    )
+
+    assert "sessions.search" not in {tool.name for tool in unavailable.model_tools}
+    assert "sessions.search" in {tool.name for tool in configured.model_tools}
+    assert "sessions.search" in configured.parallel_safe_tools
 
 
 def test_local_tool_gateway_exposes_coding_profile_tools(tmp_path) -> None:

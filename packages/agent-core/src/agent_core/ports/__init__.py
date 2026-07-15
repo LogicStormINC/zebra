@@ -24,6 +24,7 @@ from agent_core.ports.runtime import (
     RuntimePort,
     RuntimeSnapshot,
 )
+from agent_core.ports.session_history import SessionHistoryPort
 from agent_core.ports.subagents import SubagentPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_core.ports.tool_run_store import ToolRunStorePort
@@ -51,6 +52,7 @@ __all__ = [
     "RuntimeHandle",
     "RuntimePort",
     "RuntimeSnapshot",
+    "SessionHistoryPort",
     "SubagentPort",
     "ToolGatewayPort",
     "ToolRunStorePort",
