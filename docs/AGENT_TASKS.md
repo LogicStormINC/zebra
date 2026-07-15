@@ -11109,7 +11109,7 @@ instead of relying on UI stages inferred from unrelated execution events.
 
 ### P125-PLAN-01 - Durable Session Task Plan
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / TOOLS / SECURITY / STORAGE / RUNTIME / APP / UI`
 - Depends on: `P124-CLOSE-01`
@@ -11188,3 +11188,109 @@ as the plan source of truth.
   planner-hook summaries without an explicit durable plan event
 - copying Hermes process-local stores, global todo files, history hydration,
   256-item limits, or post-compression prompt mutation into Zebra Agent
+
+### P125-CLOSE-01 - Phase 125 Closeout And Phase 126 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / SECURITY`
+- Depends on: `P125-PLAN-01`
+- Branch: `codex/p125-closeout-phase126-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 125 acceptance state and define one bounded external
+source-discovery slice so general-purpose tasks can discover candidate sources
+without introducing browser automation or widening Research-child authority.
+
+#### Acceptance
+
+- [x] `P125-PLAN-01` is recorded as merged through PR `#87` and done.
+- [x] Phase 126 has one non-overlapping ready task with explicit owned paths.
+- [x] Hermes Web tools are used only as a reference for provider separation,
+  bounded result normalization, and untrusted-content labeling; Zebra retains
+  its durable network authority, Policy, approval, Gateway, and event boundaries.
+
+## Phase 126 Task Board
+
+### P126-WEB-01 - Bounded Web Search Gateway
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / SECURITY / TOOLS / INTEGRATIONS / RUNTIME / APP / UI`
+- Depends on: `P125-CLOSE-01`
+- Branch: `codex/p126-web-01-bounded-web-search-gateway`
+- Owned paths: `packages/agent-core/`, `packages/agent-security/`, `packages/agent-tools/`, `packages/agent-integrations/`, `packages/agent-runtime/`, `apps/config/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `UI/desktop/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`, `.env.example`
+
+#### Goal
+
+Give general-purpose parent sessions one typed, read-only `web.search` capability
+that discovers a small ordered set of candidate sources through an explicitly
+configured SearXNG JSON Gateway while preserving task-local network authority,
+approval-before-egress, bounded output, and untrusted-content handling.
+
+#### Deliverables
+
+- one provider-neutral search request, result, response, and transport contract
+  with a non-blank query of at most 500 characters and a result limit from one
+  to five
+- one explicit optional SearXNG JSON adapter configured by an HTTPS endpoint;
+  missing or malformed configuration remains unavailable rather than falling
+  back to public instances or a different provider
+- Policy and Gateway checks that require `domain-allowlist`, an exact match for
+  the configured search endpoint hostname, and one concrete approval before
+  any DNS lookup or HTTP request
+- one bounded credential-free GET with proxies and redirects disabled, public
+  DNS enforcement, fixed timeout and response-byte ceilings, and strict JSON
+  content handling
+- deterministic provider-order normalization to bounded title, HTTPS URL, and
+  snippet fields plus safe route, target, count, truncation, and provider
+  metadata without raw response bodies in control events
+- general and coding profile registration plus worker recovery and desktop HITL
+  support, while fixed Research children remain offline and cannot search
+- deterministic, full-repository, desktop, browser, approval-continuation, and
+  real-model tool-selection acceptance evidence
+
+#### Acceptance
+
+- [ ] `web.search` is visible only in general and coding parent manifests; it is
+  absent from fixed Research children and unregistered arbitrary tool paths.
+- [ ] Query and limit validation happens before Policy or transport; blank,
+  oversized, malformed, or extra arguments fail structurally.
+- [ ] No configured endpoint, `network_profile=none`, a non-HTTPS/private
+  endpoint, or a missing exact endpoint-host allowlist match fails closed before
+  DNS, credential, proxy, or transport access.
+- [ ] A valid call produces one approval whose operator-safe context includes
+  the normalized provider hostname, bounded query, limit, route, and expected
+  read-only side effect; transport call count remains zero before approval.
+- [ ] Exact approval continuation performs one credential-free GET against only
+  the configured endpoint, with encoded query and limit parameters, redirects
+  and environment proxies disabled, and fixed timeout and byte ceilings.
+- [ ] Response handling accepts only bounded JSON, preserves provider order,
+  returns at most five unique HTTPS results, and bounds every title, URL, snippet,
+  aggregate output, and metadata field before model exposure.
+- [ ] Search results are labeled untrusted and cannot grant authority, trigger
+  an automatic fetch, or place raw provider bodies in durable control metadata.
+- [ ] API, CLI, Worker recovery, Policy, Gateway, and desktop approval surfaces
+  agree on durable task network authority and the configured endpoint identity.
+- [ ] Existing `web.fetch`, local tools, plans, clarification and approval
+  continuation, compaction, tool batches, and session recovery remain compatible.
+- [ ] Targeted tests, full backend/static/eval gates, all desktop checks/build,
+  browser validation, and one real `deepseek-v4-flash` search selection and
+  synthesis pass succeed.
+
+#### Explicit Non-Goals
+
+- browser automation, JavaScript rendering, cookies, login, form submission,
+  downloads, uploads, screenshots, or computer use
+- crawling, recursive fetch, automatic opening of result URLs, semantic ranking,
+  result reranking, LLM summaries, persistent indexing, caching, or Web memory
+- arbitrary public SearXNG fallback, multiple search vendors, vendor API keys,
+  caller-defined endpoints, headers, methods, filters, locale, or safe-search
+  controls in this slice
+- wildcard domains, private-network endpoints, IP literals, redirects, explicit
+  ports, caller credentials, process-global authority widening, or Research-child
+  networking
+- tool discovery bridges, Skill Registry, MCP discovery, SaaS connectors, or a
+  default desktop search page
