@@ -58,7 +58,7 @@ def context_compacted_event(
 def policy_decision_payload(
     *,
     attempt_number: int,
-    tool_name: str,
+    tool_call: ToolCall,
     decision: PolicyDecision,
 ) -> dict[str, object]:
     payload: dict[str, object] = {
@@ -66,7 +66,8 @@ def policy_decision_payload(
         "decision": decision.decision.value,
         "reason": decision.reason,
         "policy_profile": decision.policy_profile,
-        "tool_name": tool_name,
+        "tool_name": tool_call.name,
+        "tool_call_id": str(tool_call.tool_call_id),
     }
     _extend_proxy_policy_payload(payload, decision)
     return payload

@@ -70,6 +70,7 @@ def record_tool_result(
             payload={
                 "attempt_number": context.attempt.number,
                 "tool_name": tool_call.name,
+                "tool_call_id": str(tool_call.tool_call_id),
                 "status": tool_result.status.value,
                 "output": tool_result.output,
                 "metadata": tool_result.metadata,
