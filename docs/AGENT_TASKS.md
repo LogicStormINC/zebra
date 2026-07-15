@@ -11322,12 +11322,12 @@ runtime authority or prematurely building a Skill marketplace.
 
 ### P127-SKILL-01 - Bounded Local Skill Progressive Disclosure
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CORE / SECURITY / TOOLS / RUNTIME / APP`
 - Depends on: `P126-CLOSE-01`
 - Branch: `codex/p127-skill-01-local-progressive-disclosure`
-- Owned paths: `packages/agent-core/`, `packages/agent-security/`, `packages/agent-tools/`, `packages/agent-runtime/`, `apps/config/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `UI/desktop/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`, `.env.example`
+- Owned paths: `packages/agent-core/`, `packages/agent-security/`, `packages/agent-tools/`, `packages/agent-runtime/`, `apps/config/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `UI/desktop/`, `tests/`, `configs/default.env`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`, `.env.example`
 
 #### Goal
 
@@ -11355,30 +11355,46 @@ the model context.
 
 #### Acceptance
 
-- [ ] With no configured Skill roots, neither Skill tool is registered or
+- [x] With no configured Skill roots, neither Skill tool is registered or
   model-visible; invalid, missing, duplicate, or non-directory roots fail closed.
-- [ ] Discovery returns only bounded metadata for valid `SKILL.md` documents in
+- [x] Discovery returns only bounded metadata for valid `SKILL.md` documents in
   deterministic order and never injects full Skill bodies into the base prompt.
-- [ ] Exposed names and descriptions are bounded; duplicate names across roots
+- [x] Exposed names and descriptions are bounded; duplicate names across roots
   remain unavailable rather than selecting one by scan order.
-- [ ] `skills.read` accepts one known Skill plus an optional relative support-file
+- [x] `skills.read` accepts one known Skill plus an optional relative support-file
   path, rejects absolute paths and traversal, and cannot escape the canonical
   Skill directory through symlinks.
-- [ ] Only the primary `SKILL.md` and bounded UTF-8 files in approved support
+- [x] Only the primary `SKILL.md` and bounded UTF-8 files in approved support
   directories are readable; dependency trees, hidden secret files, binaries,
   oversized content, and nested Skill packages are excluded.
-- [ ] Returned content is labeled untrusted procedural guidance and causes no
+- [x] Returned content is labeled untrusted procedural guidance and causes no
   command, template expansion, environment capture, tool call, or network access.
-- [ ] Every tool subsequently suggested by a Skill still passes the ordinary
+- [x] Every tool subsequently suggested by a Skill still passes the ordinary
   registry, Policy, approval, Gateway, budget, event, and recovery paths.
-- [ ] General and coding parent sessions share the capability when configured;
+- [x] General and coding parent sessions share the capability when configured;
   fixed Research children remain unchanged and receive no Skill tools.
-- [ ] API, CLI, direct runtime, and Worker recovery construct the same catalog
+- [x] API, CLI, direct runtime, and Worker recovery construct the same catalog
   from the same explicit configuration without process-global mutation.
-- [ ] Existing local tools, Web tools, plans, clarification, approvals, tool
+- [x] Existing local tools, Web tools, plans, clarification, approvals, tool
   batches, compaction, cancellation, and session recovery remain compatible.
-- [ ] Targeted tests, full backend/static/eval gates, desktop checks/build,
+- [x] Targeted tests, full backend/static/eval gates, desktop checks/build,
   browser validation, and one real `deepseek-v4-flash` Skill pass succeed.
+
+#### Validation Evidence
+
+- The catalog discovered all 72 current Hermes `SKILL.md` documents from commit
+  `47d853fdf`; four bodies above 32 KiB remained metadata-visible but correctly
+  failed bounded full-body reads.
+- `make check` passed Ruff, Mypy across 240 source files, and the 8-case eval gate;
+  `make test` passed all 1,091 backend and cross-surface tests.
+- All ten desktop contract checks, the Node 22 production build, and Tauri
+  `cargo check` passed without adding a Skill management or HITL surface.
+- Browser acceptance remained exactly viewport-bound at `762px`, had no
+  horizontal overflow or console warnings/errors, and exposed no idle HITL
+  approve/reject controls for ordinary Skill availability.
+- Real `deepseek-v4-flash` executed `skills.list` then `skills.read` against the
+  refreshed Hermes catalog and returned exactly `SKILL_FINAL_OK` in three model
+  calls and two tool calls.
 
 #### Explicit Non-Goals
 

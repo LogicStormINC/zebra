@@ -62,6 +62,8 @@ READ_ONLY_TOOLS = frozenset(
         "files.read",
         "files.search",
         "git.status",
+        "skills.list",
+        "skills.read",
     }
 )
 WORKSPACE_WRITE_TOOLS = READ_ONLY_TOOLS | frozenset({"patch.apply", "tests.run"})

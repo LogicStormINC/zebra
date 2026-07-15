@@ -46,6 +46,7 @@ class ZebraAgentSettings:
         )
     )
     web_search_endpoint: str | None = None
+    skill_roots: tuple[str, ...] = ()
 
 
 def load_settings(
@@ -87,6 +88,7 @@ def load_settings(
         ),
         scm=_load_scm_settings(values),
         web_search_endpoint=_read_optional(values, "ZEBRA_WEB_SEARCH_ENDPOINT"),
+        skill_roots=_read_paths(values, "ZEBRA_SKILL_ROOTS"),
     )
 
 
@@ -145,6 +147,26 @@ def _read_optional(values: Mapping[str, str], key: str) -> str | None:
     if not value:
         return None
     return value
+
+
+def _read_paths(values: Mapping[str, str], key: str) -> tuple[str, ...]:
+    value = values.get(key, "").strip()
+    if not value:
+        return ()
+    roots: list[str] = []
+    for raw_path in value.split(os.pathsep):
+        path = Path(raw_path.strip()).expanduser()
+        try:
+            resolved = path.resolve(strict=True)
+        except OSError as exc:
+            raise ValueError(f"{key} contains a missing path: {path}") from exc
+        if not resolved.is_dir():
+            raise ValueError(f"{key} contains a non-directory path: {path}")
+        normalized = str(resolved)
+        if normalized in roots:
+            raise ValueError(f"{key} contains a duplicate path: {normalized}")
+        roots.append(normalized)
+    return tuple(roots)
 
 
 def _read_bool(values: Mapping[str, str], key: str, *, default: bool) -> bool:

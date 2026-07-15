@@ -964,6 +964,7 @@ class ZebraAgentApi:
                 domain_allowlist=parsed["network_allowlist"],
             ),
             web_search_endpoint=self.settings.web_search_endpoint,
+            skill_roots=self.settings.skill_roots,
             confirmed_memories=confirmed_memories,
         )
         event_store = SQLiteEventStore(self.database_path)

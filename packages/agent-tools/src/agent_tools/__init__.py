@@ -24,6 +24,12 @@ if TYPE_CHECKING:
         parse_mcp_tool_name,
     )
     from agent_tools.registry import ToolRegistry
+    from agent_tools.skills import (
+        SkillsListTool,
+        SkillsReadTool,
+        skills_list_contract,
+        skills_read_contract,
+    )
     from agent_tools.web_gateway import (
         WebFetchTool,
         WebGatewayError,
@@ -54,6 +60,8 @@ __all__ = [
     "PatchApplyTool",
     "PlanTool",
     "RegisteredTool",
+    "SkillsListTool",
+    "SkillsReadTool",
     "TestsRunTool",
     "ToolContract",
     "ToolExecutor",
@@ -78,6 +86,8 @@ __all__ = [
     "parse_mcp_tool_name",
     "patch_apply_contract",
     "plan_contract",
+    "skills_list_contract",
+    "skills_read_contract",
     "tests_run_contract",
     "web_fetch_contract",
     "web_search_contract",
@@ -96,6 +106,8 @@ _EXPORTS = {
     "McpToolTarget": ("agent_tools.mcp_proxy", "McpToolTarget"),
     "PatchApplyTool": ("agent_tools.builtin.patch", "PatchApplyTool"),
     "PlanTool": ("agent_tools.builtin.plan", "PlanTool"),
+    "SkillsListTool": ("agent_tools.skills", "SkillsListTool"),
+    "SkillsReadTool": ("agent_tools.skills", "SkillsReadTool"),
     "RegisteredTool": ("agent_tools.contracts", "RegisteredTool"),
     "TestsRunTool": ("agent_tools.builtin.tests", "TestsRunTool"),
     "ToolContract": ("agent_tools.contracts", "ToolContract"),
@@ -120,6 +132,8 @@ _EXPORTS = {
     "parse_mcp_tool_name": ("agent_tools.mcp_proxy", "parse_mcp_tool_name"),
     "patch_apply_contract": ("agent_tools.builtin.patch", "patch_apply_contract"),
     "plan_contract": ("agent_tools.builtin.plan", "plan_contract"),
+    "skills_list_contract": ("agent_tools.skills", "skills_list_contract"),
+    "skills_read_contract": ("agent_tools.skills", "skills_read_contract"),
     "tests_run_contract": ("agent_tools.builtin.tests", "tests_run_contract"),
     "web_fetch_contract": ("agent_tools.web_gateway", "web_fetch_contract"),
     "web_search_contract": ("agent_tools.web_search", "web_search_contract"),

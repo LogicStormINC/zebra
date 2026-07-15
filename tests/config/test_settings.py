@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -21,11 +22,13 @@ def test_load_settings_reads_default_profile() -> None:
     assert settings.scm.github_api_base_url == "https://api.github.com"
     assert settings.scm.pull_request_dry_run is True
     assert settings.web_search_endpoint is None
+    assert settings.skill_roots == ()
 
 
 def test_load_settings_allows_env_override(tmp_path: Path) -> None:
     defaults_path = tmp_path / "default.env"
     defaults_path.write_text("ZEBRA_PROFILE=local\n", encoding="utf-8")
+    (tmp_path / "skills").mkdir()
 
     settings = load_settings(
         {
@@ -43,6 +46,7 @@ def test_load_settings_allows_env_override(tmp_path: Path) -> None:
             "ZEBRA_GITHUB_API_BASE_URL": "https://github.example/api",
             "ZEBRA_SCM_PULL_REQUEST_DRY_RUN": "false",
             "ZEBRA_WEB_SEARCH_ENDPOINT": "https://search.example.com/search",
+            "ZEBRA_SKILL_ROOTS": f"{tmp_path}{os.pathsep}{tmp_path / 'skills'}",
         },
         defaults_path=defaults_path,
     )
@@ -61,6 +65,20 @@ def test_load_settings_allows_env_override(tmp_path: Path) -> None:
     assert settings.scm.github_api_base_url == "https://github.example/api"
     assert settings.scm.pull_request_dry_run is False
     assert settings.web_search_endpoint == "https://search.example.com/search"
+    assert settings.skill_roots == (
+        str(tmp_path.resolve()),
+        str((tmp_path / "skills").resolve()),
+    )
+
+
+def test_load_settings_rejects_missing_or_duplicate_skill_roots(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="missing path"):
+        load_settings({"ZEBRA_SKILL_ROOTS": str(tmp_path / "missing")})
+
+    with pytest.raises(ValueError, match="duplicate path"):
+        load_settings(
+            {"ZEBRA_SKILL_ROOTS": f"{tmp_path}{os.pathsep}{tmp_path.resolve()}"}
+        )
 
 
 def test_load_settings_rejects_github_provider_without_token_env() -> None:

@@ -64,6 +64,7 @@ def execute_durable_run(
         tool_profile=tool_profile,
         network_profile=network_profile,
         web_search_endpoint=settings.web_search_endpoint,
+        skill_roots=settings.skill_roots,
         confirmed_memories=confirmed_memories,
     )
     event_store = SQLiteEventStore(database_path)

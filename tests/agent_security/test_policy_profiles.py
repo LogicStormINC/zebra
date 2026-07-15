@@ -372,6 +372,18 @@ def test_file_search_is_allowed_by_all_policy_profiles(profile: PolicyProfile) -
     assert decision.decision is PolicyDecisionType.ALLOW
 
 
+@pytest.mark.parametrize("profile", list(PolicyProfile))
+@pytest.mark.parametrize("tool_name", ("skills.list", "skills.read"))
+def test_skill_disclosure_is_allowed_by_all_policy_profiles(
+    profile: PolicyProfile, tool_name: str
+) -> None:
+    decision = LocalPolicyEngine(profile=profile).evaluate_tool_call(
+        _tool_call(tool_name, {"name": "evidence"} if tool_name == "skills.read" else {})
+    )
+
+    assert decision.decision is PolicyDecisionType.ALLOW
+
+
 def test_file_search_path_traversal_is_denied() -> None:
     decision = LocalPolicyEngine(profile=PolicyProfile.READ_ONLY).evaluate_tool_call(
         _tool_call("files.search", {"query": "proof", "path": "../secrets"})

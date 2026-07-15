@@ -103,6 +103,17 @@ each query requires HITL approval before DNS or HTTP access. Search returns at m
 five bounded, untrusted HTTPS source candidates and never opens them automatically.
 Fixed Research children remain offline and do not receive this tool.
 
+Local Skills remain unavailable unless `ZEBRA_SKILL_ROOTS` contains one or more
+existing directories separated by the operating-system path separator (`:` on
+macOS/Linux). When configured, general and coding parent sessions receive
+`skills.list` for bounded metadata discovery and `skills.read` for one on-demand
+`SKILL.md` or approved support file. The catalog follows Hermes-compatible
+`SKILL.md` frontmatter and excludes VCS, dependency, cache, virtual-environment,
+and nested support-package paths. Skill text is untrusted procedural guidance:
+it is never executed automatically and cannot grant tool, filesystem, command,
+network, credential, approval, or workspace-write authority. Fixed Research
+children do not receive Skill tools.
+
 Parent sessions can also use `agent.plan` to read or replace one durable ordered
 task plan. The plan is limited to 12 steps, supports `pending`, `in_progress`,
 `completed`, and `cancelled` states, and permits at most one active step. It is

@@ -151,6 +151,7 @@ class SessionExecutionService:
             model_gateway=model_gateway,
             tool_profile=task.tool_profile,
             web_search_endpoint=self._settings.web_search_endpoint,
+            skill_roots=self._settings.skill_roots,
         )
         context_compiler = LocalContextCompiler()
         orchestrator = SingleAttemptOrchestrator(
