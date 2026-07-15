@@ -145,6 +145,12 @@ pagination, and fixed scan and output ceilings. Hidden entries, symlinks, VCS
 data, dependency trees, virtual environments, caches, and generated build trees
 are excluded; the tool is read-only and is not exposed to fixed Research children.
 
+Tool lifecycle events carry the internal `tool_call_id` from proposal through
+policy and terminal execution evidence. Core, API, and CLI trace projections use
+that identifier to keep parallel same-name calls correlated while retaining a
+deterministic provider-order fallback for older persisted events without IDs.
+The identifier remains internal and does not add fields to public trace responses.
+
 Task tool egress also defaults independently to `network_profile=none`. Use the
 CLI `--network-profile` option or the desktop launch control to select a broader
 existing network profile explicitly; `domain-allowlist` additionally requires

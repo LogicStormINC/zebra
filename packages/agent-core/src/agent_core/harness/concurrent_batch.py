@@ -135,6 +135,7 @@ class ConcurrentToolBatchExecutor:
                     payload={
                         "attempt_number": context.attempt.number,
                         "tool_name": tool_call.name,
+                        "tool_call_id": str(tool_call.tool_call_id),
                         "arguments": tool_call.arguments,
                         "selection_summary": summary,
                         "selection_metadata": selection_metadata,
@@ -163,7 +164,7 @@ class ConcurrentToolBatchExecutor:
                     actor=EventActor.POLICY,
                     payload=policy_decision_payload(
                         attempt_number=context.attempt.number,
-                        tool_name=tool_call.name,
+                        tool_call=tool_call,
                         decision=decision,
                     ),
                 )

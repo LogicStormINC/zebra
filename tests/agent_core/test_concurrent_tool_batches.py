@@ -100,6 +100,18 @@ def test_parallel_safe_calls_overlap_and_preserve_provider_order() -> None:
         "files.read",
         "files.read",
     ]
+    expected_ids = [str(call.tool_call_id) for call in calls]
+    for event_type in (
+        EventType.TOOL_CALL_PROPOSED,
+        EventType.POLICY_DECISION_MADE,
+        EventType.TOOL_EXECUTION_STARTED,
+        EventType.TOOL_EXECUTION_COMPLETED,
+    ):
+        assert [
+            event.payload["tool_call_id"]
+            for event in result.events
+            if event.event_type is event_type
+        ] == expected_ids
 
 
 def test_parallel_safe_batch_enforces_concurrency_limit() -> None:
@@ -166,6 +178,13 @@ def test_concurrent_failure_observes_every_started_sibling() -> None:
     finished = _event_names(result, EventType.TOOL_EXECUTION_COMPLETED)
     failed = _event_names(result, EventType.TOOL_EXECUTION_FAILED)
     assert len(finished) + len(failed) == 2
+    terminal_ids = [
+        event.payload["tool_call_id"]
+        for event in result.events
+        if event.event_type
+        in {EventType.TOOL_EXECUTION_COMPLETED, EventType.TOOL_EXECUTION_FAILED}
+    ]
+    assert terminal_ids == [str(call.tool_call_id) for call in calls]
 
 
 def test_candidate_batch_budget_rejection_starts_nothing() -> None:

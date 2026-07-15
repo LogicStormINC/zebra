@@ -30,6 +30,7 @@ def test_validate_event_payload_accepts_tool_execution_completed_shape() -> None
     assert payload == {
         "attempt_number": 1,
         "tool_name": "tests.run",
+        "tool_call_id": None,
         "status": "executed",
         "output": "ok",
         "metadata": {"exit_code": 0},

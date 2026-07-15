@@ -394,6 +394,7 @@ def test_single_attempt_orchestrator_projects_proxy_approval_metadata() -> None:
         "reason": "proxy-routed external tool execution in test",
         "policy_profile": "full_access",
         "tool_name": "mcp.github.create_pull_request",
+        "tool_call_id": str(tool_call.tool_call_id),
         "route": "mcp_proxy",
         "target": "github.create_pull_request",
         "network_profile": "mcp-proxy-only",

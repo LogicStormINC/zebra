@@ -11645,8 +11645,8 @@ the real provider acceptance run.
 
 ### P130-OBS-01 - Durable Tool Trace Correlation
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CORE / OBS / API / CLI`
 - Depends on: `P129-CLOSE-01`
 - Branch: `codex/p130-obs-01-durable-tool-trace-correlation`
@@ -11669,19 +11669,19 @@ the correct arguments and policy evidence for parallel same-name calls.
 
 #### Acceptance
 
-- [ ] Every newly emitted proposal, policy, start, completion, and failure event
+- [x] Every newly emitted proposal, policy, start, completion, and failure event
   for an executable tool carries the same non-blank `tool_call_id`.
-- [ ] Parallel calls with the same tool name retain their own arguments, policy
+- [x] Parallel calls with the same tool name retain their own arguments, policy
   context, output, and metadata in core, API, and CLI traces.
-- [ ] Parallel calls with different names and sequential calls preserve their
+- [x] Parallel calls with different names and sequential calls preserve their
   existing trace ordering and public response shape.
-- [ ] Legacy event streams without correlation IDs still project deterministically
+- [x] Legacy event streams without correlation IDs still project deterministically
   using provider-order compatibility rather than dropping all arguments.
-- [ ] Unknown, duplicate, denied, approval-required, clarification, plan,
+- [x] Unknown, duplicate, denied, approval-required, clarification, plan,
   failed-tool, and resumed-continuation behavior remains unchanged.
-- [ ] Correlation metadata does not expose credentials, environment values,
+- [x] Correlation metadata does not expose credentials, environment values,
   hidden reasoning, or additional tool authority.
-- [ ] Focused core/API/CLI regression matrices, all backend/static/eval gates,
+- [x] Focused core/API/CLI regression matrices, all backend/static/eval gates,
   desktop compatibility checks/build, and one real provider batch pass succeed.
 
 #### Explicit Non-Goals
@@ -11692,3 +11692,17 @@ the correct arguments and policy evidence for parallel same-name calls.
   historical databases, or migrating stored event payloads
 - distributed tracing, spans, OpenTelemetry export, remote observability,
   analytics, dashboards, new desktop trace controls, or raw event UI
+
+#### Validation Evidence
+
+- `75` focused core event, concurrent-batch, shared projection, API, and CLI
+  tests passed, including correlated and legacy same-name matrices.
+- All `1134` backend tests, Ruff, Mypy across `245` source files, and the
+  8-case eval release gate passed.
+- All ten desktop contract checks, the Node `22.17.0` production build, and
+  Tauri `cargo check` passed; Cargo used the existing local cache after one
+  transient crates.io low-speed timeout.
+- A real `deepseek-v4-flash` run emitted two same-name `files.read` calls in one
+  parallel batch; proposal, policy, start, and completion IDs matched, the CLI
+  trace retained `a.txt -> TRACE-A-130` and `b.txt -> TRACE-B-130`, and the final
+  answer was `TRACE_FINAL_OK: TRACE-A-130|TRACE-B-130`.

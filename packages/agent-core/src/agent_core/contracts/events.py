@@ -100,6 +100,7 @@ class ToolExecutionCompletedPayload(BaseModel):
 
     attempt_number: int
     tool_name: str
+    tool_call_id: str | None = None
     status: str
     output: str
     metadata: dict[str, object]
@@ -111,9 +112,11 @@ class ToolExecutionCompletedPayload(BaseModel):
             raise ValueError("attempt_number must be positive")
         return value
 
-    @field_validator("tool_name", "status")
+    @field_validator("tool_name", "tool_call_id", "status")
     @classmethod
-    def ensure_field_not_blank(cls, value: str) -> str:
+    def ensure_field_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         stripped = value.strip()
         if not stripped:
             raise ValueError("field must not be blank")
