@@ -27,6 +27,7 @@ export interface ApprovalContext {
   target?: string;
   network_profile?: string;
   scope?: string[];
+  arguments?: Record<string, unknown>;
 }
 
 export interface ApprovalSummary {

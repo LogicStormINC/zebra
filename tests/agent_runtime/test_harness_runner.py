@@ -205,6 +205,20 @@ def test_local_tool_gateway_exposes_only_parallel_safe_builtins(tmp_path) -> Non
     assert gateway.parallel_safe_tools == frozenset({"files.read", "files.search"})
 
 
+def test_local_tool_gateway_registers_search_only_with_valid_configuration(tmp_path) -> None:
+    unavailable = LocalToolGateway(tmp_path.resolve())
+    malformed = LocalToolGateway(
+        tmp_path.resolve(), web_search_endpoint="http://search.example.com"
+    )
+    configured = LocalToolGateway(
+        tmp_path.resolve(), web_search_endpoint="https://search.example.com/search"
+    )
+
+    assert "web.search" not in {tool.name for tool in unavailable.model_tools}
+    assert "web.search" not in {tool.name for tool in malformed.model_tools}
+    assert "web.search" in {tool.name for tool in configured.model_tools}
+
+
 def test_local_tool_gateway_exposes_coding_profile_tools(tmp_path) -> None:
     gateway = LocalToolGateway(tmp_path.resolve(), tool_profile=ToolProfile.CODING)
 

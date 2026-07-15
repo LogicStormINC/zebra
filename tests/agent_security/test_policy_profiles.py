@@ -284,6 +284,74 @@ def test_web_fetch_is_blocked_by_default_without_approval() -> None:
     assert decision.decision is PolicyDecisionType.DENY
 
 
+def test_web_search_requires_exact_endpoint_authority_and_bounded_approval_scope() -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.READ_ONLY,
+        network_profile=parse_network_profile(
+            "domain-allowlist", domain_allowlist=("search.example.com",)
+        ),
+        web_search_endpoint="https://search.example.com/search",
+    )
+    tool_call = _tool_call("web.search", {"query": "zebra agent", "limit": 2})
+
+    decision = engine.evaluate_tool_call(tool_call)
+
+    assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+    assert decision.route == "web_gateway"
+    assert decision.target == "search.example.com"
+    assert decision.scope == (
+        "tool:web.search",
+        "route:web_gateway",
+        "network_profile:domain-allowlist",
+        "target:search.example.com",
+        "query:zebra agent",
+        "limit:2",
+        "side_effect:read_only",
+    )
+
+
+@pytest.mark.parametrize(
+    ("endpoint", "arguments"),
+    (
+        (None, {"query": "zebra"}),
+        ("http://search.example.com", {"query": "zebra"}),
+        ("https://search.example.com", {"query": " "}),
+        ("https://search.example.com", {"query": "zebra", "extra": True}),
+    ),
+)
+def test_web_search_invalid_configuration_or_input_fails_closed(
+    endpoint: str | None,
+    arguments: dict[str, object],
+) -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.FULL_ACCESS,
+        network_profile=parse_network_profile(
+            "domain-allowlist", domain_allowlist=("search.example.com",)
+        ),
+        web_search_endpoint=endpoint,
+    )
+
+    decision = engine.evaluate_tool_call(_tool_call("web.search", arguments))
+
+    assert decision.decision is PolicyDecisionType.DENY
+
+
+def test_web_search_rejects_non_matching_endpoint_allowlist() -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.FULL_ACCESS,
+        network_profile=parse_network_profile(
+            "domain-allowlist", domain_allowlist=("other.example.com",)
+        ),
+        web_search_endpoint="https://search.example.com/search",
+    )
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("web.search", {"query": "zebra"})
+    )
+
+    assert decision.decision is PolicyDecisionType.DENY
+
+
 def test_path_traversal_is_denied_for_file_read() -> None:
     engine = LocalPolicyEngine(profile=PolicyProfile.READ_ONLY)
 

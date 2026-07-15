@@ -5,6 +5,7 @@ from enum import StrEnum
 
 from agent_core.domain.tools import ToolCall
 from agent_core.domain.web import WebTargetError, parse_web_target
+from agent_core.domain.web_search import WebSearchInputError, parse_web_search_input
 
 from agent_security.network_profile import (
     DEFAULT_NETWORK_PROFILE,
@@ -51,10 +52,15 @@ def classify_tool_egress(
     tool_call: ToolCall,
     *,
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
+    web_search_endpoint: str | None = None,
 ) -> ToolEgressMetadata:
     normalized_name = tool_call.name.strip()
     if normalized_name == "web.fetch":
         return _classify_web_egress(tool_call, network_profile)
+    if normalized_name == "web.search":
+        return _classify_web_search_egress(
+            tool_call, network_profile, web_search_endpoint
+        )
     target = _mcp_target(normalized_name)
     if target is None:
         return ToolEgressMetadata(
@@ -113,6 +119,44 @@ def _classify_web_egress(
         network_profile=network_profile.name.value,
         target=target.hostname,
         reason="web target is not allowed by the durable network profile",
+    )
+
+
+def _classify_web_search_egress(
+    tool_call: ToolCall,
+    network_profile: NetworkProfile,
+    endpoint: str | None,
+) -> ToolEgressMetadata:
+    try:
+        search = parse_web_search_input(tool_call.arguments)
+        target = parse_web_target(endpoint)
+    except (WebSearchInputError, WebTargetError) as exc:
+        return ToolEgressMetadata(
+            tool_name=tool_call.name,
+            route=ToolEgressRoute.BLOCKED,
+            network_profile=network_profile.name.value,
+            reason=str(exc),
+        )
+    if (
+        network_profile.name is NetworkProfileName.DOMAIN_ALLOWLIST
+        and target.hostname in network_profile.domain_allowlist
+    ):
+        return ToolEgressMetadata(
+            tool_name=tool_call.name,
+            route=ToolEgressRoute.WEB_GATEWAY,
+            network_profile=network_profile.name.value,
+            target=target.hostname,
+            reason=(
+                "configured search endpoint matches the durable domain allowlist; "
+                f"query={search.query!r}; limit={search.limit}; side_effect=read_only"
+            ),
+        )
+    return ToolEgressMetadata(
+        tool_name=tool_call.name,
+        route=ToolEgressRoute.BLOCKED,
+        network_profile=network_profile.name.value,
+        target=target.hostname,
+        reason="configured search endpoint is not allowed by the durable network profile",
     )
 
 

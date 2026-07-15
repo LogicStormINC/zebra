@@ -95,6 +95,14 @@ additional tools are required.
 Tool profile selection changes model-visible tools only; `policy_profile` remains
 the independent authority and approval boundary.
 
+Web search remains unavailable unless `ZEBRA_WEB_SEARCH_ENDPOINT` names an explicit
+credential-free HTTPS SearXNG JSON endpoint. When configured, `web.search` appears
+in general and coding parent manifests only. Each task must also use
+`network_profile=domain-allowlist` with the endpoint hostname listed exactly, and
+each query requires HITL approval before DNS or HTTP access. Search returns at most
+five bounded, untrusted HTTPS source candidates and never opens them automatically.
+Fixed Research children remain offline and do not receive this tool.
+
 Parent sessions can also use `agent.plan` to read or replace one durable ordered
 task plan. The plan is limited to 12 steps, supports `pending`, `in_progress`,
 `completed`, and `cancelled` states, and permits at most one active step. It is

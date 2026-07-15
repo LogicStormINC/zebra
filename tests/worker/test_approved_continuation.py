@@ -18,6 +18,11 @@ from agent_storage import (
     SQLiteWorkspaceProjectionStore,
 )
 from agent_tools.web_gateway import WebGatewayRequest, WebGatewayResponse
+from agent_tools.web_search import (
+    WebSearchRequest,
+    WebSearchResponse,
+    WebSearchResult,
+)
 from zebra_agent_api import create_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 from zebra_agent_worker import (
@@ -44,6 +49,25 @@ class RecordingWebTransport:
             status_code=200,
             content_type="text/plain",
             byte_count=19,
+        )
+
+
+class RecordingSearchTransport:
+    def __init__(self) -> None:
+        self.requests: list[WebSearchRequest] = []
+
+    def execute(self, request: WebSearchRequest) -> WebSearchResponse:
+        self.requests.append(request)
+        return WebSearchResponse(
+            results=(
+                WebSearchResult(
+                    title="Approved result",
+                    url="https://docs.example.com/result",
+                    snippet="approved-search-output",
+                ),
+            ),
+            provider="searxng",
+            byte_count=128,
         )
 
 
@@ -174,6 +198,76 @@ def test_web_gateway_waits_for_approval_then_executes_exactly_once(
         and event.payload.get("tool_name") == "web.fetch"
         for event in events
     ) == 1
+
+
+def test_web_search_waits_for_approval_then_executes_exactly_once(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "search-continuation.sqlite"
+    created_at = datetime(2026, 7, 15, 8, 30, tzinfo=UTC)
+    tool_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="web.search",
+        arguments={"query": "zebra agent", "limit": 2},
+        created_at=created_at,
+        provider_call_id="call_search_approved",
+    )
+    gateways = iter(
+        (
+            _gateway("Searching approved sources.", tool_call=tool_call),
+            _gateway("approved-search-output"),
+        )
+    )
+    transport = RecordingSearchTransport()
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: next(gateways),
+    )
+    monkeypatch.setattr(
+        "agent_runtime.harness.LocalWebSearchTransport",
+        lambda: transport,
+    )
+    session_id = _seed_session(
+        database_path,
+        tmp_path,
+        network_profile="domain-allowlist",
+        network_allowlist=("search.example.com",),
+    )
+    settings = _settings(
+        database_path,
+        web_search_endpoint="https://search.example.com/search",
+    )
+    service = _execution_service(database_path, settings=settings)
+
+    waiting = service.execute_session(
+        session_id, worker_id="worker-search", executed_at=created_at
+    )
+
+    assert waiting.session.status is SessionStatus.WAITING_APPROVAL
+    assert transport.requests == []
+    app = create_app(database_path, settings=settings)
+    approval = app.get_approval(str(session_id))
+    context = approval.body["approval_context"]
+    assert context["target"] == "search.example.com"
+    assert context["scope"][-3:] == [
+        "query:zebra agent",
+        "limit:2",
+        "side_effect:read_only",
+    ]
+    app.approve(
+        str(session_id),
+        {"operator": "tester", "reason": "approved bounded Web search"},
+    )
+
+    completed = service.execute_session(
+        session_id, worker_id="worker-search", executed_at=created_at
+    )
+
+    assert completed.session.status is SessionStatus.COMPLETED
+    assert len(transport.requests) == 1
+    assert transport.requests[0].query == "zebra agent"
+    assert transport.requests[0].endpoint.hostname == "search.example.com"
 
 
 def test_approved_continuation_does_not_replay_uncertain_execution() -> None:
@@ -365,7 +459,11 @@ def _seed_session(
     return bootstrap.session.session_id
 
 
-def _execution_service(database_path: Path) -> SessionExecutionService:
+def _execution_service(
+    database_path: Path,
+    *,
+    settings: ZebraAgentSettings | None = None,
+) -> SessionExecutionService:
     claim_service = SessionClaimService(
         SQLiteLeaseStore(database_path),
         SessionRecoveryService(
@@ -378,11 +476,15 @@ def _execution_service(database_path: Path) -> SessionExecutionService:
         database_path=database_path,
         claim_service=claim_service,
         resume_service=SessionResumeService(claim_service),
-        settings=_settings(database_path),
+        settings=settings or _settings(database_path),
     )
 
 
-def _settings(database_path: Path) -> ZebraAgentSettings:
+def _settings(
+    database_path: Path,
+    *,
+    web_search_endpoint: str | None = None,
+) -> ZebraAgentSettings:
     return ZebraAgentSettings(
         profile="test",
         database_url=str(database_path),
@@ -393,4 +495,5 @@ def _settings(database_path: Path) -> ZebraAgentSettings:
             base_url="https://example.test",
             model="test-model",
         ),
+        web_search_endpoint=web_search_endpoint,
     )

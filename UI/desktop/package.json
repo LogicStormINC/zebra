@@ -20,6 +20,7 @@
     "check:selection": "node --experimental-strip-types checks/workspace-selection.check.ts",
     "check:projects": "node --experimental-strip-types checks/workspace-projects.check.ts",
     "check:plan": "node --experimental-strip-types checks/task-plan.check.ts",
+    "check:search-approval": "node --experimental-strip-types checks/web-search-approval.check.ts",
     "preview": "vite preview",
     "tauri:dev": "CARGO_HOME=$PWD/.cargo-home tauri dev",
     "tauri:build": "CARGO_HOME=$PWD/.cargo-home tauri build",

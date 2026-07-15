@@ -963,6 +963,7 @@ class ZebraAgentApi:
                 str(parsed["network_profile"]),
                 domain_allowlist=parsed["network_allowlist"],
             ),
+            web_search_endpoint=self.settings.web_search_endpoint,
             confirmed_memories=confirmed_memories,
         )
         event_store = SQLiteEventStore(self.database_path)

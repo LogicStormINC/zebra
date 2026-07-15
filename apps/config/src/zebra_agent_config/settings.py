@@ -45,6 +45,7 @@ class ZebraAgentSettings:
             pull_request_dry_run=True,
         )
     )
+    web_search_endpoint: str | None = None
 
 
 def load_settings(
@@ -85,6 +86,7 @@ def load_settings(
             model=_read(values, "ZEBRA_MODEL_NAME", default="deepseek-v4-flash"),
         ),
         scm=_load_scm_settings(values),
+        web_search_endpoint=_read_optional(values, "ZEBRA_WEB_SEARCH_ENDPOINT"),
     )
 
 

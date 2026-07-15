@@ -16,6 +16,7 @@ GENERAL_TOOL_NAMES = frozenset(
         "files.search",
         "patch.apply",
         "web.fetch",
+        "web.search",
     }
 )
 CODING_TOOL_NAMES = GENERAL_TOOL_NAMES | {"git.status", "tests.run"}

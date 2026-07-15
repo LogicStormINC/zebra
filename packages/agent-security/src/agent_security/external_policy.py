@@ -54,4 +54,12 @@ def _external_scope(
     ]
     if egress.target is not None:
         entries.append(f"target:{egress.target}")
+    if tool_call.name == "web.search":
+        query = tool_call.arguments.get("query")
+        limit = tool_call.arguments.get("limit", 5)
+        if isinstance(query, str):
+            entries.append(f"query:{query.strip()}")
+        if isinstance(limit, int) and not isinstance(limit, bool):
+            entries.append(f"limit:{limit}")
+        entries.append("side_effect:read_only")
     return tuple(entries)
