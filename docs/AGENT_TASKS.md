@@ -10829,7 +10829,7 @@ gateway boundaries.
 
 ### P122-WEB-01 - Bounded Read-Only Web Gateway
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / SECURITY / TOOLS / INTEGRATIONS / APP`
 - Depends on: `P121-CLOSE-01`
@@ -10897,3 +10897,92 @@ Gateway transport rather than direct tool-process networking.
   or persistent Web memory
 - granting Research children network access or inferring network authority from
   prompt text
+
+### P122-CLOSE-01 - Phase 122 Closeout And Phase 123 Planning
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `DOC`
+- Depends on: `P122-WEB-01`
+- Branch: `codex/p122-closeout-phase123-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 122 acceptance state and define one local information
+discovery slice that reduces reliance on unrestricted command execution before
+adding another external information provider.
+
+#### Acceptance
+
+- [x] `P122-WEB-01` is recorded as merged through PR `#81` and done.
+- [x] Phase 123 has one non-overlapping ready task with explicit owned paths.
+- [x] The Hermes `search_files` implementation is used as a design reference
+  for bounded pagination, path safety, result limits, and truncation evidence,
+  without copying its global runtime assumptions into Zebra Agent.
+
+## Phase 123 Task Board
+
+### P123-TOOL-01 - Bounded Workspace Search Tool
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / SECURITY / TOOLS / RUNTIME`
+- Depends on: `P122-CLOSE-01`
+- Branch: `codex/p123-tool-01-bounded-workspace-search`
+- Owned paths: `packages/agent-core/`, `packages/agent-security/`, `packages/agent-tools/`, `packages/agent-runtime/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Give general-purpose and Research agents one typed, read-only `files.search`
+capability for discovering relevant workspace files or matching text without
+requiring `command.run`, while preserving deterministic workspace containment,
+bounded output, and provider-neutral tool behavior.
+
+#### Deliverables
+
+- one typed `files.search` contract with content and filename modes, an optional
+  workspace-relative root, optional file glob, bounded limit, and offset
+- one deterministic local implementation using the existing workspace and
+  runtime boundaries rather than a second shell or path abstraction
+- stable result metadata for mode, query, root, match count, offset,
+  truncation, and next offset without embedding result bodies in control fields
+- read-only Policy classification plus explicit parallel-safe registration
+- general and coding profile exposure, with fixed Research children receiving
+  the same tool under their existing read-only, no-network, non-recursive ceiling
+- deterministic, full-repository, real-provider, and Research-child acceptance
+  evidence
+
+#### Acceptance
+
+- [ ] Content mode returns ordered workspace-relative path, line, column, and
+  bounded text evidence; filename mode returns ordered workspace-relative paths.
+- [ ] Search roots cannot be absolute, blank, or escape the workspace; symlink
+  traversal cannot expose data outside the workspace.
+- [ ] Query, mode, glob, limit, and offset are validated at the typed tool
+  boundary; malformed input fails structurally without executing a command.
+- [ ] Results enforce fixed count, line, and byte ceilings; truncation exposes a
+  deterministic `next_offset` and narrowing hint.
+- [ ] `files.search` is allowed by read-only, workspace-write, and full-access
+  Policy profiles and remains independent of task network authority.
+- [ ] General and coding tasks advertise and execute `files.search`; unknown or
+  filtered profiles cannot invoke it through a hidden fallback.
+- [ ] Research children advertise and execute `files.search` but retain only
+  read-only local tools, fixed budgets, no Web access, and no recursion.
+- [ ] Existing tool advertisement, safe concurrency, sequential loops,
+  approvals, compaction, Web Gateway, and durable worker recovery remain
+  compatible.
+- [ ] Targeted tests, full backend and static gates, eval release gate, and one
+  real `deepseek-v4-flash` search-and-read acceptance pass succeed.
+
+#### Explicit Non-Goals
+
+- persistent repository indexing, ripgrep daemon state, Tree-sitter, LSP,
+  embeddings, vector search, semantic ranking, or cross-repository retrieval
+- arbitrary regular-expression execution without bounds, binary-file search,
+  archive or office-document extraction, fuzzy filename ranking, or hidden-file
+  credential discovery
+- directory mutation, file writes, patching, shell execution, Web Search,
+  browser automation, or network access
+- copying Hermes global task caches, repeated-search counters, configuration
+  hot reload, or plugin registry architecture into Zebra Agent
