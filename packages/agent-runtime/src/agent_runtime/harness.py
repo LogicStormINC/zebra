@@ -13,6 +13,7 @@ from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_security import DEFAULT_NETWORK_PROFILE, LocalPolicyEngine, NetworkProfile, PolicyProfile
 from agent_tools import (
+    ClarifyTool,
     CommandRunTool,
     FileReadTool,
     GitStatusTool,
@@ -110,6 +111,7 @@ class LocalToolGateway(ToolGatewayPort):
         runtime = LocalRuntime()
         registry = ToolRegistry()
         tools = (
+            ClarifyTool(),
             FileReadTool(self._workspace),
             WorkspaceSearchTool(self._workspace),
             GitStatusTool(runtime, self._workspace),

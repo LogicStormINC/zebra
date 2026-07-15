@@ -6,6 +6,7 @@ from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.policies import PolicyDecisionType
 from agent_core.domain.tools import ToolCall, ToolCallStatus
 from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
+from agent_core.harness.clarification_step import clarification_stop_result
 from agent_core.harness.concurrent_batch import (
     ConcurrentToolBatchExecutor,
     ToolBatchResult,
@@ -67,6 +68,17 @@ class ToolBatchExecutor:
     ) -> ToolBatchResult:
         if not tool_calls:
             raise ValueError("tool batch must not be empty")
+        clarification_calls = tuple(call for call in tool_calls if call.name == "agent.clarify")
+        if clarification_calls and len(tool_calls) != 1:
+            return self._terminal(
+                outcome=HarnessAttemptOutcome.FAILED,
+                summary="agent.clarify must be the only tool call in a model response",
+                completion=completion,
+                emitted_events=emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                metadata={**metadata, "stop_reason": "invalid_clarification_batch"},
+            )
         if self._concurrent.can_execute(
             tool_calls,
             execute_all=execute_all,
@@ -165,6 +177,33 @@ class ToolBatchExecutor:
                         remaining_tool_calls=tool_calls[index + 1 :],
                     )
                     return ToolBatchResult(terminal, tool_calls_executed, metadata)
+            if tool_call.name == "agent.clarify":
+                try:
+                    terminal = clarification_stop_result(
+                        context,
+                        messages=messages,
+                        completion=completion,
+                        tool_call=tool_call,
+                        emitted_events=emitted_events,
+                        model_calls_used=model_calls_used,
+                        tool_calls_executed=tool_calls_executed,
+                        metadata=metadata,
+                    )
+                except ValueError as exc:
+                    return self._terminal(
+                        outcome=HarnessAttemptOutcome.FAILED,
+                        summary="invalid agent.clarify request",
+                        completion=completion,
+                        emitted_events=emitted_events,
+                        model_calls_used=model_calls_used,
+                        tool_calls_executed=tool_calls_executed,
+                        metadata={
+                            **metadata,
+                            "stop_reason": "invalid_clarification_request",
+                            "detail": str(exc),
+                        },
+                    )
+                return ToolBatchResult(terminal, tool_calls_executed, metadata)
             execution = execute_tool_call(
                 context,
                 tool_call,

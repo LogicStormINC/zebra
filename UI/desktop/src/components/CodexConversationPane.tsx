@@ -30,6 +30,7 @@ interface CodexConversationPaneProps {
   activeApproval: ApprovalSummary | undefined;
   approvalBusy: boolean;
   approvalErrorText: string | null;
+  clarificationBusy: boolean;
   currentConversation: string;
   currentSessionId?: string;
   conversations: ConversationSeed[];
@@ -53,6 +54,7 @@ interface CodexConversationPaneProps {
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onRefreshConversation: () => void;
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
+  onRespondClarification: (clarificationId: string, content: string) => Promise<unknown>;
   onScrollToLatest: () => void;
   onSelectConversation: (key: string) => void;
   onSubmit: (value: string, launchConfig: TaskLaunchConfig) => void;
@@ -68,6 +70,7 @@ export function CodexConversationPane({
   activeApproval,
   approvalBusy,
   approvalErrorText,
+  clarificationBusy,
   currentConversation,
   currentSessionId,
   conversations,
@@ -91,6 +94,7 @@ export function CodexConversationPane({
   onApprove,
   onRefreshConversation,
   onReject,
+  onRespondClarification,
   onScrollToLatest,
   onSelectConversation,
   onSubmit,
@@ -415,18 +419,22 @@ export function CodexConversationPane({
                 activeApproval={activeApproval}
                 approvalBusy={approvalBusy}
                 approvalErrorText={approvalErrorText}
+                clarificationBusy={clarificationBusy}
                 events={events}
                 isDraft={!hasSessionThread}
                 messages={messages}
                 onApprove={onApprove}
                 onReject={onReject}
+                onRespondClarification={onRespondClarification}
                 sessionSummary={sessionSummary}
               />
             )}
           </div>
         </div>
 
-        {hasThread ? <div className={styles.composerDock}>{renderComposer("thread")}</div> : null}
+        {hasThread && sessionSummary?.status !== "waiting_input" ? (
+          <div className={styles.composerDock}>{renderComposer("thread")}</div>
+        ) : null}
       </div>
     </main>
   );

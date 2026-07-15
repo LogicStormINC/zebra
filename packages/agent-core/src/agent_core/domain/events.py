@@ -31,6 +31,8 @@ class EventType(StrEnum):
     APPROVAL_REQUESTED = "approval_requested"
     APPROVAL_GRANTED = "approval_granted"
     APPROVAL_REJECTED = "approval_rejected"
+    CLARIFICATION_REQUESTED = "clarification_requested"
+    CLARIFICATION_RESPONDED = "clarification_responded"
     TOOL_EXECUTION_STARTED = "tool_execution_started"
     TOOL_EXECUTION_COMPLETED = "tool_execution_completed"
     TOOL_EXECUTION_FAILED = "tool_execution_failed"

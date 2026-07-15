@@ -7,6 +7,7 @@ import type { ApprovalSummary, SessionEvent, SessionSummary } from "../types";
 import { AssistantMessageBlock } from "./AssistantMessageBlock";
 import { SessionExecutionTrace } from "./SessionExecutionTrace";
 import { SessionApprovalPanel } from "./SessionApprovalPanel";
+import { SessionClarificationPanel } from "./SessionClarificationPanel";
 import { useSessionThreadWorkspaceStyle } from "./SessionThreadWorkspace.styles";
 
 type InspectorTab = "context" | "logs";
@@ -51,6 +52,8 @@ const EVENT_LABELS: Record<string, string> = {
   approval_requested: "等待用户确认",
   approval_granted: "用户已确认",
   approval_rejected: "用户已拒绝",
+  clarification_requested: "等待补充信息",
+  clarification_responded: "已补充信息",
   session_completed: "任务已完成",
   session_failed: "任务执行失败",
   session_cancelled: "任务已停止",
@@ -62,7 +65,7 @@ function toolName(event: SessionEvent) {
 
 function eventStage(event: SessionEvent): StageKey | null {
   if (PLANNING_EVENTS.has(event.event_type)) return "planning";
-  if (["approval_requested", "approval_granted", "approval_rejected"].includes(event.event_type)) return "review";
+  if (["approval_requested", "approval_granted", "approval_rejected", "clarification_requested", "clarification_responded"].includes(event.event_type)) return "review";
   if (["session_completed", "session_failed", "session_cancelled"].includes(event.event_type)) return "completed";
   if (["model_response_received", "patch_applied"].includes(event.event_type)) return "result";
   if (event.event_type === "tests_completed") return "verification";
@@ -84,10 +87,12 @@ interface SessionThreadWorkspaceProps {
   activeApproval: ApprovalSummary | undefined;
   approvalBusy: boolean;
   approvalErrorText: string | null;
+  clarificationBusy: boolean;
   events: SessionEvent[];
   isDraft: boolean;
   messages: ChatMessage[];
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
+  onRespondClarification: (clarificationId: string, content: string) => Promise<unknown>;
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
   sessionSummary: SessionSummary | null;
 }
@@ -97,10 +102,12 @@ export function SessionThreadWorkspace({
   activeApproval,
   approvalBusy,
   approvalErrorText,
+  clarificationBusy,
   events,
   isDraft,
   messages,
   onApprove,
+  onRespondClarification,
   onReject,
   sessionSummary,
 }: SessionThreadWorkspaceProps) {
@@ -172,6 +179,11 @@ export function SessionThreadWorkspace({
           })}
         </div>
         {!isDraft ? <>
+          <SessionClarificationPanel
+            busy={clarificationBusy}
+            clarification={sessionSummary?.clarification_context}
+            onRespond={onRespondClarification}
+          />
           <SessionApprovalPanel
             approval={activeApproval}
             busy={approvalBusy}

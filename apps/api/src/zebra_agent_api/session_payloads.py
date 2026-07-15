@@ -36,6 +36,7 @@ class CancelSessionPayload(TypedDict):
 
 class AppendSessionMessagePayload(TypedDict):
     content: str
+    clarification_id: str | None
 
 
 class ApprovalDecisionPayload(TypedDict):
@@ -176,7 +177,15 @@ def parse_append_session_message_payload(
     content = payload.get("content")
     if not isinstance(content, str) or not content.strip():
         return bad_request("content must be a non-blank string")
-    return {"content": content.strip()}
+    clarification_id = payload.get("clarification_id")
+    if clarification_id is not None and (
+        not isinstance(clarification_id, str) or not clarification_id.strip()
+    ):
+        return bad_request("clarification_id must be a non-blank string when provided")
+    return {
+        "content": content.strip(),
+        "clarification_id": clarification_id.strip() if clarification_id else None,
+    }
 
 
 def parse_approval_decision_payload(

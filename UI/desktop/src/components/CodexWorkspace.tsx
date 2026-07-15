@@ -47,6 +47,7 @@ interface CodexWorkspaceProps {
   activeApproval: ApprovalSummary | undefined;
   approvalBusy: boolean;
   approvalErrorText: string | null;
+  clarificationBusy: boolean;
   conversations: ConversationSeed[];
   currentConversation: string;
   currentSessionId?: string;
@@ -72,6 +73,7 @@ interface CodexWorkspaceProps {
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onRefreshConversation: () => void;
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
+  onRespondClarification: (clarificationId: string, content: string) => Promise<unknown>;
   onScrollToLatest: () => void;
   onSelectConversation: (key: string) => void;
   onSubmit: (value: string, launchConfig: TaskLaunchConfig) => void;
@@ -141,6 +143,7 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             activeApproval={props.activeApproval}
             approvalBusy={props.approvalBusy}
             approvalErrorText={props.approvalErrorText}
+            clarificationBusy={props.clarificationBusy}
             conversations={visibleConversations}
             controlsBusy={props.controlsBusy}
             currentConversation={props.currentConversation}
@@ -163,6 +166,7 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             onApprove={props.onApprove}
             onRefreshConversation={props.onRefreshConversation}
             onReject={props.onReject}
+            onRespondClarification={props.onRespondClarification}
             onResumeSession={props.onResumeSession}
             onScrollToLatest={props.onScrollToLatest}
             onSelectConversation={props.onSelectConversation}

@@ -1,7 +1,13 @@
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
+from agent_core.domain.clarifications import (
+    MAX_CLARIFICATION_CHOICE_CHARS,
+    MAX_CLARIFICATION_CHOICES,
+    MAX_CLARIFICATION_CONTEXT_CHARS,
+    MAX_CLARIFICATION_QUESTION_CHARS,
+)
 from agent_core.domain.events import EventType
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.tool_profiles import ToolProfile
@@ -326,12 +332,89 @@ class SessionResumedPayload(BaseModel):
         return stripped
 
 
+class ClarificationRequestedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    attempt_number: int
+    clarification_id: str
+    tool_call_id: str
+    provider_call_id: str | None = None
+    question: str = Field(max_length=MAX_CLARIFICATION_QUESTION_CHARS)
+    choices: list[str] = Field(
+        default_factory=list,
+        max_length=MAX_CLARIFICATION_CHOICES,
+    )
+    context: str | None = Field(default=None, max_length=MAX_CLARIFICATION_CONTEXT_CHARS)
+    assistant_message: str
+    conversation: list[dict[str, Any]]
+    model_calls_used: int
+    tool_calls_executed: int
+
+    @field_validator("attempt_number")
+    @classmethod
+    def ensure_positive_attempt(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("attempt_number must be positive")
+        return value
+
+    @field_validator("model_calls_used", "tool_calls_executed")
+    @classmethod
+    def ensure_non_negative_usage(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("clarification usage must not be negative")
+        return value
+
+    @field_validator(
+        "clarification_id",
+        "tool_call_id",
+        "question",
+        "assistant_message",
+    )
+    @classmethod
+    def ensure_required_text(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("clarification fields must not be blank")
+        return normalized
+
+    @field_validator("choices")
+    @classmethod
+    def ensure_valid_choices(cls, values: list[str]) -> list[str]:
+        normalized = [value.strip() for value in values]
+        if any(
+            not value or len(value) > MAX_CLARIFICATION_CHOICE_CHARS
+            for value in normalized
+        ):
+            raise ValueError("clarification choices must be non-blank and bounded")
+        if len({value.casefold() for value in normalized}) != len(normalized):
+            raise ValueError("clarification choices must be unique")
+        return normalized
+
+
+class ClarificationRespondedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    clarification_id: str
+    content: str
+    selected_choice: bool
+
+    @field_validator("clarification_id", "content")
+    @classmethod
+    def ensure_text(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("clarification response fields must not be blank")
+        return normalized
+
+
 _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SESSION_CREATED: SessionCreatedPayload,
     EventType.USER_MESSAGE_RECEIVED: UserMessageReceivedPayload,
     EventType.TASK_PREPARED: TaskPreparedPayload,
     EventType.SESSION_SUSPENDED: SessionSuspendedPayload,
     EventType.SESSION_RESUMED: SessionResumedPayload,
+    EventType.CLARIFICATION_REQUESTED: ClarificationRequestedPayload,
+    EventType.CLARIFICATION_RESPONDED: ClarificationRespondedPayload,
     EventType.TOOL_EXECUTION_COMPLETED: ToolExecutionCompletedPayload,
     EventType.CONTEXT_COMPACTED: ContextCompactedPayload,
     EventType.SUBAGENT_STARTED: SubagentLifecyclePayload,

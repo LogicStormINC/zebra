@@ -110,6 +110,7 @@ class SessionControlService:
             SessionStatus.READY,
             SessionStatus.RUNNING,
             SessionStatus.WAITING_APPROVAL,
+            SessionStatus.WAITING_INPUT,
             SessionStatus.SUSPENDED,
         }:
             raise SessionControlError("session cannot be cancelled from its current state")
@@ -158,13 +159,9 @@ class SessionControlService:
         )
         inspection = runtime.inspect_snapshot(snapshot)
         if inspection.status is LocalSnapshotStatus.MISSING:
-            raise SessionControlError(
-                "suspended workspace snapshot payload is unavailable"
-            )
+            raise SessionControlError("suspended workspace snapshot payload is unavailable")
         if inspection.status is LocalSnapshotStatus.INCOMPATIBLE:
-            raise SessionControlError(
-                "suspended workspace snapshot is incompatible"
-            )
+            raise SessionControlError("suspended workspace snapshot is incompatible")
         try:
             restored = runtime.restore(snapshot)
         except RuntimeCapabilityError as exc:

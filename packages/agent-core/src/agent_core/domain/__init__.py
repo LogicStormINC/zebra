@@ -16,6 +16,7 @@ from agent_core.domain.artifact_retention import (
     ArtifactRetentionProfile,
 )
 from agent_core.domain.artifacts import ArtifactRef
+from agent_core.domain.clarifications import ClarificationContext
 from agent_core.domain.delivery_audit import DeliveryAuditRecord
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.leases import WorkerLease
@@ -46,6 +47,7 @@ __all__ = [
     "ArtifactPayloadWrite",
     "ArtifactRef",
     "DeliveryAuditRecord",
+    "ClarificationContext",
     "EventActor",
     "EventType",
     "MessageRole",

@@ -188,9 +188,7 @@ class ZebraAgentApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        return SessionReadApi(
-            self.database_path
-        ).get_memory_pressure_escalation_recommendations(
+        return SessionReadApi(self.database_path).get_memory_pressure_escalation_recommendations(
             session_id,
             payload,
         )
@@ -390,9 +388,7 @@ class ZebraAgentApi:
         session_id: str,
         payload: dict[str, object],
     ) -> ApiResponse:
-        return SessionReadApi(
-            self.database_path
-        ).get_memory_overdue_retention_breach_owner_targets(
+        return SessionReadApi(self.database_path).get_memory_overdue_retention_breach_owner_targets(
             session_id,
             payload,
         )
@@ -843,13 +839,20 @@ class ZebraAgentApi:
             event = SessionMessageAppendService().build_event(
                 session=session,
                 next_sequence=session.current_sequence + 1,
-                command=SessionMessageAppendCommand(content=parsed["content"]),
+                command=SessionMessageAppendCommand(
+                    content=parsed["content"],
+                    clarification_id=parsed["clarification_id"],
+                ),
             )
-        except ValueError:
+        except ValueError as exc:
             return conflict(
                 session_id=session_id,
                 status="not_appendable",
-                reason="cannot_append_to_terminal_session",
+                reason=(
+                    "cannot_append_to_terminal_session"
+                    if "terminal session" in str(exc)
+                    else str(exc)
+                ),
             )
         SQLiteEventStore(self.database_path).append(event)
         updated_session = projection_store.save_session(apply_event(session, event))
@@ -858,13 +861,20 @@ class ZebraAgentApi:
             body={
                 "session_id": session_id,
                 "appended": True,
+                **(
+                    {
+                        "clarification_resolved": True,
+                        "clarification_id": parsed["clarification_id"],
+                    }
+                    if event.event_type.value == "clarification_responded"
+                    else {}
+                ),
                 "content": parsed["content"],
                 "sequence": event.sequence,
                 "status": updated_session.status.value,
                 "current_sequence": updated_session.current_sequence,
             },
         )
-
 
     def _parse_session_id(self, session_id: str) -> SessionId | ApiResponse:
         try:

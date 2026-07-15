@@ -14,6 +14,7 @@ def append_session_message(
     database_path: Path,
     session_id: str,
     content: str,
+    clarification_id: str | None = None,
 ) -> dict[str, object]:
     if not content.strip():
         return {
@@ -33,14 +34,21 @@ def append_session_message(
         event = SessionMessageAppendService().build_event(
             session=session,
             next_sequence=session.current_sequence + 1,
-            command=SessionMessageAppendCommand(content=content.strip()),
+            command=SessionMessageAppendCommand(
+                content=content.strip(),
+                clarification_id=clarification_id,
+            ),
         )
-    except ValueError:
+    except ValueError as exc:
         return {
             "session_id": session_id,
             "database": str(database_path),
             "status": "not_appendable",
-            "reason": "cannot_append_to_terminal_session",
+            "reason": (
+                "cannot_append_to_terminal_session"
+                if "terminal session" in str(exc)
+                else str(exc)
+            ),
         }
     SQLiteEventStore(database_path).append(event)
     updated_session = projection_store.save_session(apply_event(session, event))
@@ -48,6 +56,11 @@ def append_session_message(
         "session_id": session_id,
         "database": str(database_path),
         "appended": True,
+        **(
+            {"clarification_resolved": True, "clarification_id": clarification_id}
+            if event.event_type.value == "clarification_responded"
+            else {}
+        ),
         "content": content.strip(),
         "sequence": event.sequence,
         "status": updated_session.status.value,

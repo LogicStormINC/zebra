@@ -14,6 +14,7 @@ class HarnessAttemptOutcome(StrEnum):
     COMPLETED = "completed"
     FAILED = "failed"
     WAITING_APPROVAL = "waiting_approval"
+    WAITING_INPUT = "waiting_input"
 
 
 class HarnessStopReason(StrEnum):
@@ -24,6 +25,7 @@ class HarnessStopReason(StrEnum):
     RETRY_ALLOWED = "retry_allowed"
     TOOL_CALL_BUDGET_EXHAUSTED = "tool_call_budget_exhausted"
     APPROVAL_REQUIRED = "approval_required"
+    CLARIFICATION_REQUIRED = "clarification_required"
 
 
 @dataclass(frozen=True)

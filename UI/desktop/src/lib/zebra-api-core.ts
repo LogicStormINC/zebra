@@ -67,7 +67,7 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
         authToken,
         body: payload,
       }),
-    appendMessage: (sessionId: string, payload: { content: string }) =>
+    appendMessage: (sessionId: string, payload: { content: string; clarification_id?: string }) =>
       requestJson<SessionMessageAppendResponse>(baseUrl, `/sessions/${sessionId}/messages`, {
         method: "POST",
         authToken,

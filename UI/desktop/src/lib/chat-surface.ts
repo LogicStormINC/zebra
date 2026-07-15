@@ -44,7 +44,10 @@ export function streamEventsToMessages(events: SessionEvent[]): ChatMessage[] {
   return [...events]
     .sort((left, right) => left.sequence - right.sequence)
     .flatMap((event): ChatMessage[] => {
-      if (event.event_type === "user_message_received") {
+      if (
+        event.event_type === "user_message_received" ||
+        event.event_type === "clarification_responded"
+      ) {
         const content = readText(event.payload.content);
         if (!content) {
           return [];

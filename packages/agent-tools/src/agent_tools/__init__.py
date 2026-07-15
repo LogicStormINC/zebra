@@ -4,6 +4,7 @@ from importlib import import_module
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from agent_tools.builtin.clarify import ClarifyTool, clarify_contract
     from agent_tools.builtin.command import CommandRunTool, command_run_contract
     from agent_tools.builtin.files import FileReadTool, file_read_contract
     from agent_tools.builtin.git import GitStatusTool, git_status_contract
@@ -33,6 +34,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "CommandRunTool",
+    "ClarifyTool",
     "FileReadTool",
     "GitStatusTool",
     "McpProxyRequest",
@@ -54,6 +56,7 @@ __all__ = [
     "WebGatewayTransport",
     "build_mcp_proxy_request",
     "command_run_contract",
+    "clarify_contract",
     "file_read_contract",
     "files_search_contract",
     "git_status_contract",
@@ -64,6 +67,7 @@ __all__ = [
 ]
 
 _EXPORTS = {
+    "ClarifyTool": ("agent_tools.builtin.clarify", "ClarifyTool"),
     "CommandRunTool": ("agent_tools.builtin.command", "CommandRunTool"),
     "FileReadTool": ("agent_tools.builtin.files", "FileReadTool"),
     "WorkspaceSearchTool": ("agent_tools.builtin.search", "WorkspaceSearchTool"),
@@ -86,6 +90,7 @@ _EXPORTS = {
     "WebGatewayTransport": ("agent_tools.web_gateway", "WebGatewayTransport"),
     "build_mcp_proxy_request": ("agent_tools.mcp_proxy", "build_mcp_proxy_request"),
     "command_run_contract": ("agent_tools.builtin.command", "command_run_contract"),
+    "clarify_contract": ("agent_tools.builtin.clarify", "clarify_contract"),
     "file_read_contract": ("agent_tools.builtin.files", "file_read_contract"),
     "files_search_contract": ("agent_tools.builtin.search", "files_search_contract"),
     "git_status_contract": ("agent_tools.builtin.git", "git_status_contract"),

@@ -21,6 +21,7 @@ from agent_storage import (
     SQLiteWorkspaceProjectionStore,
 )
 from zebra_agent_api.approval_context import serialize_approval_context
+from zebra_agent_api.clarification_context import serialize_clarification_context
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_payloads import parse_resume_session_payload
 from zebra_agent_config import ZebraAgentSettings, load_settings
@@ -88,6 +89,7 @@ def execute(
                 database_path=_database_path(namespace.database, active_settings),
                 session_id=namespace.session_id,
                 content=namespace.content,
+                clarification_id=namespace.clarification_id,
             ),
         )
     if command == "cancel":
@@ -344,6 +346,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(result.to_json())
     return 0
 
+
 def _run_result(
     namespace: argparse.Namespace,
     settings: ZebraAgentSettings,
@@ -444,6 +447,9 @@ def _session_result(
     approval_context = serialize_approval_context(session.approval_context)
     if approval_context is not None:
         payload["approval_context"] = approval_context
+    clarification_context = serialize_clarification_context(session.clarification_context)
+    if clarification_context is not None:
+        payload["clarification_context"] = clarification_context
     return CliCommandResult(command=command, payload=payload)
 
 

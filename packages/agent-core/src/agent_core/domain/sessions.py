@@ -3,6 +3,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from agent_core.domain.clarifications import ClarificationContext
 from agent_core.domain.identifiers import SessionId, new_session_id
 
 
@@ -11,6 +12,7 @@ class SessionStatus(StrEnum):
     READY = "ready"
     RUNNING = "running"
     WAITING_APPROVAL = "waiting_approval"
+    WAITING_INPUT = "waiting_input"
     SUSPENDED = "suspended"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -70,6 +72,7 @@ _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
     },
     SessionStatus.RUNNING: {
         SessionStatus.WAITING_APPROVAL,
+        SessionStatus.WAITING_INPUT,
         SessionStatus.SUSPENDED,
         SessionStatus.COMPLETED,
         SessionStatus.FAILED,
@@ -77,6 +80,11 @@ _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
     },
     SessionStatus.WAITING_APPROVAL: {
         SessionStatus.RUNNING,
+        SessionStatus.FAILED,
+        SessionStatus.CANCELLED,
+    },
+    SessionStatus.WAITING_INPUT: {
+        SessionStatus.READY,
         SessionStatus.FAILED,
         SessionStatus.CANCELLED,
     },
@@ -97,6 +105,7 @@ class Session(BaseModel):
     updated_at: datetime
     current_sequence: int = Field(default=0, ge=0)
     approval_context: ApprovalContext | None = None
+    clarification_context: ClarificationContext | None = None
 
     @classmethod
     def create(cls, *, title: str, created_at: datetime | None = None) -> "Session":

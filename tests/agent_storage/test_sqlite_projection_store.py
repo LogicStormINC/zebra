@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
+from agent_core.domain.clarifications import ClarificationContext
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_storage import SQLiteProjectionStore
 
@@ -196,3 +197,28 @@ def test_sqlite_projection_store_repeated_reads_keep_approval_context_stable(
     assert first.approval_context is not None
     assert second.approval_context is not None
     assert first.approval_context.to_mapping() == second.approval_context.to_mapping()
+
+
+def test_sqlite_projection_store_round_trips_clarification_context(tmp_path: Path) -> None:
+    database_path = tmp_path / "projections.db"
+    created_at = datetime(2026, 7, 15, 10, 0, tzinfo=UTC)
+    clarification_id = "00000000-0000-0000-0000-000000000124"
+    session = Session.create(title="Clarification", created_at=created_at).model_copy(
+        update={
+            "status": SessionStatus.WAITING_INPUT,
+            "clarification_context": ClarificationContext(
+                clarification_id=clarification_id,
+                tool_call_id=clarification_id,
+                question="Which audience should I prioritize?",
+                choices=("Operators", "Analysts"),
+                context="The output format depends on the audience.",
+                assistant_message="I need one decision.",
+                requested_at=created_at,
+            ),
+        }
+    )
+
+    SQLiteProjectionStore(database_path).save_session(session)
+    loaded = SQLiteProjectionStore(database_path).get_session(session.session_id)
+
+    assert loaded == session

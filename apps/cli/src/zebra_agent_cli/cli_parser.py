@@ -41,6 +41,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     message.add_argument("session_id")
     message.add_argument("--content", required=True)
+    message.add_argument("--clarification-id")
     message.add_argument("--database")
 
     cancel = subcommands.add_parser("cancel", help="Cancel a local session.")
