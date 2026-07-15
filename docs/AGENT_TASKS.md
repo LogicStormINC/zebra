@@ -11406,3 +11406,98 @@ the model context.
   arbitrary manifests, role-specific child Skills, or Research-child Skills
 - desktop Skill management pages, manual UI execution controls, Skill approvals,
   analytics, ranking, recommendations, caching, indexing, or semantic retrieval
+
+### P127-CLOSE-01 - Phase 127 Closeout And Phase 128 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / SECURITY`
+- Depends on: `P127-SKILL-01`
+- Branch: `codex/p127-closeout-phase128-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 127 acceptance state and define one bounded historical
+session-recall slice that turns Zebra's durable local history into an explicit
+read-only parent-agent capability without exposing raw control events.
+
+#### Acceptance
+
+- [x] `P127-SKILL-01` is recorded as merged through PR `#91` and done.
+- [x] Phase 128 has one non-overlapping ready task with explicit owned paths.
+- [x] Hermes `session_search_tool.py` informs browse, literal search, and bounded
+  read interaction only; Zebra retains typed Ports, SQLite projection/event
+  ownership, Policy, tool budgets, session isolation, and safe serialization.
+
+## Phase 128 Task Board
+
+### P128-HIST-01 - Bounded Durable Session Recall
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / STORAGE / TOOLS / RUNTIME / APP`
+- Depends on: `P127-CLOSE-01`
+- Branch: `codex/p128-hist-01-bounded-durable-session-recall`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `packages/agent-tools/`, `packages/agent-runtime/`, `packages/agent-security/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `UI/desktop/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Let general and coding parent sessions explicitly browse, search, and read
+bounded prior-session text from their configured local SQLite database so the
+agent can recover useful task context without treating all history as prompt
+context or conflating raw events with durable memory.
+
+#### Deliverables
+
+- provider-neutral session-history request, result, message, and Port contracts
+  for browse, literal query, and paginated single-session reads
+- one SQLite adapter that scans only bounded recent projections and event rows,
+  excludes the active session, and deterministically projects safe user and
+  assistant text without raw event payload exposure
+- one typed read-only `sessions.search` tool with mutually exclusive call shapes,
+  strict argument validation, stable ordering, pagination, and aggregate output
+  ceilings
+- shared API, CLI, direct-runtime, and Worker composition through an optional
+  history Port; no configured history adapter means the tool is unavailable
+- explicit untrusted-history labeling and compatibility evidence across Policy,
+  tool batches, compaction, recovery, desktop, browser, and a real model
+
+#### Acceptance
+
+- [ ] `sessions.search` is registered only when a history Port is supplied and
+  appears in general and coding parent manifests but not fixed Research children.
+- [ ] No arguments browses bounded newest-first prior sessions; `query` performs
+  bounded case-insensitive literal matching; `session_id` reads one bounded page.
+- [ ] Browse, query, and read shapes reject unknown fields, incompatible argument
+  combinations, malformed identifiers, invalid offsets, and out-of-range limits.
+- [ ] Search scans at most a fixed number of recent sessions and safe message
+  events, preserves deterministic relevance then recency order, and reports
+  truncation rather than silently implying exhaustive recall.
+- [ ] Results exclude the active session and expose only bounded session identity,
+  title, status, timestamps, snippets, and user/assistant messages.
+- [ ] Raw event payloads, tool arguments or outputs, approvals, clarifications,
+  plans, memory records, credentials, environment values, and hidden reasoning
+  are never returned by this tool.
+- [ ] Read pagination uses stable event sequence order, returns explicit offset,
+  count, next offset, and truncation, and cannot cross into another session.
+- [ ] Historical content is labeled untrusted and cannot grant tools, filesystem,
+  command, network, credential, approval, or workspace-write authority.
+- [ ] API, CLI, direct runtime, and Worker use the same Port contract and SQLite
+  adapter; worker recovery retains the active-session exclusion.
+- [ ] Existing Skills, Web tools, plans, clarification, approvals, local tools,
+  concurrent batches, compaction, cancellation, and recovery remain compatible.
+- [ ] Targeted tests, full backend/static/eval gates, desktop checks/build,
+  browser validation, and one real `deepseek-v4-flash` recall pass succeed.
+
+#### Explicit Non-Goals
+
+- FTS5, BM25, semantic or vector retrieval, embeddings, LLM summaries, reranking,
+  fuzzy search, stemming, cached indexes, or prompt-wide history injection
+- cross-profile database discovery, cross-tenant recall, remote history, shared
+  team history, session lineage, subagent history, automation-source demotion,
+  or current-session self-search
+- raw event inspection, tool-trace replay, approval reconstruction, hidden model
+  reasoning, memory mutation, session mutation, deletion, export, or import
+- desktop history management pages, search UI, manual transcript editing, HITL,
+  notifications, recommendations, or automatic recall without a tool call
