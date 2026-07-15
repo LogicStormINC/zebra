@@ -83,6 +83,12 @@ test-run tools. Select `coding` explicitly in the desktop launch controls or pas
 Tool profile selection changes model-visible tools only; `policy_profile` remains
 the independent authority and approval boundary.
 
+Task tool egress also defaults independently to `network_profile=none`. Use the
+CLI `--network-profile` option or the desktop launch control to select a broader
+existing network profile explicitly; `domain-allowlist` additionally requires
+one or more `--network-allowlist` bare hostnames. This setting does not add tools
+or approve external actions by itself, and Research children remain offline.
+
 Provider credentials are read by the local API only. They must not be placed in
 frontend storage, request payloads, API responses, tracked environment files, or logs.
 

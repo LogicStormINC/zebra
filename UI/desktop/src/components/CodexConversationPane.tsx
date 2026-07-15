@@ -109,9 +109,11 @@ export function CodexConversationPane({
   const durableWorkspace = sessionSummary?.workspace?.workspace_root ?? "";
   const durablePolicy = sessionSummary?.workspace?.policy_profile === "full_access" ? "full_access" : "workspace_write";
   const durableToolProfile = sessionSummary?.workspace?.tool_profile === "general" ? "general" : "coding";
+  const durableNetworkProfile = sessionSummary?.workspace?.network_profile === "domain-allowlist" || sessionSummary?.workspace?.network_profile === "mcp-proxy-only" ? sessionSummary.workspace.network_profile : "none";
+  const durableNetworkAllowlist = sessionSummary?.workspace?.network_allowlist ?? [];
   const effectiveLaunchConfig: TaskLaunchConfig = launchEditable
     ? launchConfig
-    : { workspace: durableWorkspace, policyProfile: durablePolicy, toolProfile: durableToolProfile };
+    : { workspace: durableWorkspace, policyProfile: durablePolicy, toolProfile: durableToolProfile, networkProfile: durableNetworkProfile, networkAllowlist: durableNetworkAllowlist };
   const launchError = validateTaskLaunchConfig(effectiveLaunchConfig);
   const canSubmit = composerValue.trim().length > 0 && !launchError;
   const headerTitle = hasThread ? activeLabel : idleProjectLabel;
@@ -152,6 +154,18 @@ export function CodexConversationPane({
       <span>路径由本地 API 解析；`.` 表示 API 服务当前目录。</span>
     </div>
   );
+  const networkEditor = (
+    <div className={launchStyles.editor}>
+      <strong>允许访问的域名</strong>
+      <Input
+        aria-label="允许访问的域名"
+        onChange={(event) => onPatchLaunchConfig({ networkAllowlist: event.target.value.split(",").map((item) => item.trim().toLowerCase()).filter(Boolean) })}
+        placeholder="docs.example.com, api.example.com"
+        value={launchConfig.networkAllowlist.join(", ")}
+      />
+      <span>仅填写裸域名，使用逗号分隔；不接受协议、路径或通配符。</span>
+    </div>
+  );
   const renderComposer = (variant: "idle" | "thread") => (
     <div className={variant === "idle" ? styles.idleComposerCard : styles.composerCard}>
       <div className={launchStyles.summary} role="status">
@@ -159,6 +173,7 @@ export function CodexConversationPane({
         <span title={effectiveLaunchConfig.workspace}>工作区 · {compactWorkspaceLabel(effectiveLaunchConfig.workspace)}</span>
         <span>权限 · {effectiveLaunchConfig.policyProfile === "full_access" ? "完整访问" : "工作区写入"}</span>
         <span>能力 · {effectiveLaunchConfig.toolProfile === "coding" ? "编码工具" : "通用工具"}</span>
+        <span>网络 · {effectiveLaunchConfig.networkProfile === "none" ? "无外部网络" : effectiveLaunchConfig.networkProfile}</span>
         <span>模型 · API 运行时配置</span>
         {launchError ? <em>{launchError}</em> : null}
       </div>
@@ -197,6 +212,20 @@ export function CodexConversationPane({
                     </button>
                   </Dropdown>
                 ) : <span className={launchStyles.staticBadge}>能力: {durableToolProfile === "coding" ? "编码工具" : "通用工具"}</span>}
+                {launchEditable ? (
+                  <Dropdown menu={{ items: [
+                    { key: "none", label: "网络: 无外部网络", onClick: () => onPatchLaunchConfig({ networkProfile: "none", networkAllowlist: [] }) },
+                    { key: "domain-allowlist", label: "网络: 域名白名单", onClick: () => onPatchLaunchConfig({ networkProfile: "domain-allowlist" }) },
+                    { key: "mcp-proxy-only", label: "网络: 仅 MCP 代理", onClick: () => onPatchLaunchConfig({ networkProfile: "mcp-proxy-only", networkAllowlist: [] }) },
+                  ] }} trigger={["click"]}>
+                    <button className={styles.toolbarButton} type="button">网络: {launchConfig.networkProfile === "none" ? "无外部网络" : launchConfig.networkProfile}</button>
+                  </Dropdown>
+                ) : <span className={launchStyles.staticBadge}>网络: {durableNetworkProfile}</span>}
+                {launchEditable && launchConfig.networkProfile === "domain-allowlist" ? (
+                  <Popover content={networkEditor} placement="topLeft" trigger="click">
+                    <button className={styles.toolbarButton} type="button">域名: {launchConfig.networkAllowlist.length || "未配置"}</button>
+                  </Popover>
+                ) : null}
                 <span className={launchStyles.staticBadge}>模型: API 运行时配置</span>
               </Flex>
               <span className={`${styles.sendSlot} ${canSubmit ? "" : styles.sendSlotDisabled}`}>

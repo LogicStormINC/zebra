@@ -10,7 +10,7 @@ from agent_core.harness.models import HarnessAttemptTrace, HarnessLoopResult
 from agent_core.harness.projection import HarnessTraceProjector
 from agent_integrations import build_model_gateway
 from agent_runtime import run_local_harness
-from agent_security import PolicyProfile
+from agent_security import DEFAULT_NETWORK_PROFILE, NetworkProfile, PolicyProfile
 from agent_storage import (
     SQLiteEventStore,
     SQLiteProjectionStore,
@@ -26,6 +26,8 @@ class DurableRunResult:
     workspace_root: Path
     policy_profile: str
     tool_profile: str
+    network_profile: str
+    network_allowlist: tuple[str, ...]
 
 
 @dataclass
@@ -47,6 +49,7 @@ def execute_durable_run(
     settings: ZebraAgentSettings,
     policy_profile: PolicyProfile = PolicyProfile.WORKSPACE_WRITE,
     tool_profile: ToolProfile = ToolProfile.GENERAL,
+    network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
 ) -> DurableRunResult:
     confirmed_memories = list_confirmed_repo_memories(
         database_path,
@@ -59,6 +62,7 @@ def execute_durable_run(
         model_gateway=build_model_gateway(settings),
         policy_profile=policy_profile,
         tool_profile=tool_profile,
+        network_profile=network_profile,
         confirmed_memories=confirmed_memories,
     )
     event_store = SQLiteEventStore(database_path)
@@ -73,6 +77,8 @@ def execute_durable_run(
         workspace_root=workspace_root,
         policy_profile=policy_profile.value,
         tool_profile=tool_profile.value,
+        network_profile=network_profile.name.value,
+        network_allowlist=network_profile.domain_allowlist,
     )
 
 
@@ -86,6 +92,8 @@ def serialize_run_execution(result: DurableRunResult) -> dict[str, object]:
         "assistant_message": harness_result.attempt_result.metadata.get("assistant_message"),
         "policy_profile": result.policy_profile,
         "tool_profile": result.tool_profile,
+        "network_profile": result.network_profile,
+        "network_allowlist": list(result.network_allowlist),
         "workspace_root": str(result.workspace_root),
         "trace": _serialize_trace(HarnessTraceProjector().project(harness_result).attempts),
     }

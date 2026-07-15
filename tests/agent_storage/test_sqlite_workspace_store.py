@@ -25,6 +25,8 @@ def test_sqlite_workspace_projection_store_round_trips_workspace_projection(
             "status": WorkspaceStatus.RUNNING,
             "policy_profile": "workspace_write",
             "tool_profile": ToolProfile.GENERAL,
+            "network_profile": "domain-allowlist",
+            "network_allowlist": ("docs.example.com", "api.example.com"),
             "last_attempt_number": 1,
             "runtime_name": "local",
             "snapshot_id": "snap-001",
@@ -76,6 +78,8 @@ def test_sqlite_workspace_projection_store_migrates_legacy_profile(
 
     assert loaded is not None
     assert loaded.tool_profile is ToolProfile.CODING
+    assert loaded.network_profile.value == "none"
+    assert loaded.network_allowlist == ()
 
 
 def test_sqlite_workspace_projection_store_persists_rebuilt_workspace_state(

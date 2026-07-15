@@ -1,15 +1,9 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
-from enum import StrEnum
 
+from agent_core.domain.networking import NetworkProfileName as CoreNetworkProfileName
 
-class NetworkProfileName(StrEnum):
-    NONE = "none"
-    SETUP_ONLY = "setup-only"
-    DOMAIN_ALLOWLIST = "domain-allowlist"
-    MCP_PROXY_ONLY = "mcp-proxy-only"
-    GIT_PROXY_ONLY = "git-proxy-only"
-    FULL_TRUSTED_LOCAL = "full-trusted-local"
+NetworkProfileName = CoreNetworkProfileName
 
 
 class NetworkProfileError(ValueError):

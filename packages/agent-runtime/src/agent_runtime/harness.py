@@ -11,7 +11,7 @@ from agent_core.harness.models import HarnessLoopResult
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
-from agent_security import LocalPolicyEngine, PolicyProfile
+from agent_security import DEFAULT_NETWORK_PROFILE, LocalPolicyEngine, NetworkProfile, PolicyProfile
 from agent_tools import (
     CommandRunTool,
     FileReadTool,
@@ -44,6 +44,7 @@ def run_local_harness(
     model_gateway: ModelGatewayPort,
     policy_profile: PolicyProfile = PolicyProfile.WORKSPACE_WRITE,
     tool_profile: ToolProfile = ToolProfile.GENERAL,
+    network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
 ) -> HarnessLoopResult:
     tool_gateway = LocalToolGateway(
@@ -63,11 +64,13 @@ def run_local_harness(
                 workspace_root=workspace_root,
                 policy_profile=policy_profile.value,
                 tool_profile=tool_profile,
+                network_profile=network_profile.name.value,
+                network_allowlist=network_profile.domain_allowlist,
                 confirmed_memories=confirmed_memories,
             ),
             SingleAttemptOrchestrator(
                 model_gateway,
-                LocalPolicyEngine(profile=policy_profile),
+                LocalPolicyEngine(profile=policy_profile, network_profile=network_profile),
                 tool_gateway,
                 model_step=HarnessModelStep(
                     context_compiler=context_compiler,

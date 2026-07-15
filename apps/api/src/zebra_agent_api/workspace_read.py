@@ -15,6 +15,8 @@ def serialize_workspace_projection(
         "prepared_at": workspace.prepared_at.isoformat(),
         "updated_at": workspace.updated_at.isoformat(),
         "tool_profile": workspace.tool_profile.value,
+        "network_profile": workspace.network_profile.value,
+        "network_allowlist": list(workspace.network_allowlist),
     }
     if workspace.policy_profile is not None:
         body["policy_profile"] = workspace.policy_profile

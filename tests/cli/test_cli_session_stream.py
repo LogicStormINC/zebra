@@ -59,6 +59,8 @@ def test_cli_stream_lists_persisted_events(tmp_path: Path) -> None:
                     "workspace_root": None,
                     "policy_profile": None,
                     "tool_profile": None,
+                    "network_profile": None,
+                    "network_allowlist": None,
                     "max_attempts": None,
                     "max_model_calls": None,
                     "max_tool_calls": None,

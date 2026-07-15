@@ -159,6 +159,8 @@ def test_http_app_serves_workspace_projection_on_session_lookup(tmp_path: Path) 
     assert response.json()["workspace"] == {
         "workspace_root": str(tmp_path.resolve()),
         "tool_profile": "coding",
+        "network_profile": "none",
+        "network_allowlist": [],
         "status": "suspended",
         "current_sequence": 4,
         "prepared_at": _created_at().isoformat(),

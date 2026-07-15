@@ -23,6 +23,7 @@ from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.tool_runs import ToolRunRecord
 from agent_core.domain.tools import ToolCall
 from agent_core.domain.workspaces import WorkspaceStatus
+from agent_security import LocalPolicyEngine, NetworkProfile
 from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
@@ -67,6 +68,37 @@ def test_worker_execution_service_completes_ready_session(
     model_calls = SQLiteModelCallStore(database_path).list_for_session(session_id)
     assert len(model_calls) == 1
     assert isinstance(model_calls[0], ModelCallRecord)
+
+
+def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session_with_input(
+        database_path,
+        tmp_path,
+        user_input="Continue with bounded network authority.",
+        network_profile="domain-allowlist",
+        network_allowlist=("docs.example.com",),
+    )
+    captured: list[NetworkProfile] = []
+
+    def build_policy(*, profile, network_profile):
+        captured.append(network_profile)
+        return LocalPolicyEngine(profile=profile, network_profile=network_profile)
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _assistant_only_gateway(settings=settings),
+    )
+    monkeypatch.setattr("zebra_agent_worker.execution.LocalPolicyEngine", build_policy)
+
+    _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-network",
+        executed_at=_created_at(),
+    )
+
+    assert captured[0].name.value == "domain-allowlist"
+    assert captured[0].domain_allowlist == ("docs.example.com",)
 
 
 def test_worker_execution_service_indexes_tool_run(tmp_path: Path, monkeypatch) -> None:
@@ -415,6 +447,8 @@ def _seed_ready_session_with_input(
     workspace_root: Path,
     *,
     user_input: str,
+    network_profile: str = "none",
+    network_allowlist: tuple[str, ...] = (),
 ) -> SessionId:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -422,6 +456,8 @@ def _seed_ready_session_with_input(
             user_input=user_input,
             workspace_root=workspace_root.resolve(),
             tool_profile=ToolProfile.CODING,
+            network_profile=network_profile,
+            network_allowlist=network_allowlist,
         )
     )
     event_store = SQLiteEventStore(database_path)

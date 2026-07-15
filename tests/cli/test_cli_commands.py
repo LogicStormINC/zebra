@@ -96,6 +96,31 @@ def test_cli_run_command_persists_explicit_coding_profile(tmp_path: Path) -> Non
     assert workspace.tool_profile.value == "coding"
 
 
+def test_cli_run_command_persists_network_allowlist(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    result = execute(
+        [
+            "run",
+            "Read allowed docs",
+            "--network-profile",
+            "domain-allowlist",
+            "--network-allowlist",
+            "Docs.Example.com",
+            "--database",
+            str(database_path),
+        ]
+    )
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(
+        SessionId(UUID(str(result.payload["session_id"])))
+    )
+
+    assert result.payload["network_profile"] == "domain-allowlist"
+    assert result.payload["network_allowlist"] == ["docs.example.com"]
+    assert workspace is not None
+    assert workspace.network_allowlist == ("docs.example.com",)
+
+
 def test_cli_run_command_uses_settings_database_by_default(tmp_path: Path) -> None:
     database_path = tmp_path / "configured.sqlite"
 
@@ -391,6 +416,8 @@ def test_cli_resume_read_includes_workspace_projection(tmp_path: Path) -> None:
     assert result.payload["workspace"] == {
         "workspace_root": str(tmp_path.resolve()),
         "tool_profile": "coding",
+        "network_profile": "none",
+        "network_allowlist": [],
         "status": "suspended",
         "current_sequence": 4,
         "prepared_at": _created_at().isoformat(),
@@ -782,6 +809,8 @@ def test_cli_inspect_command_includes_workspace_projection(tmp_path: Path) -> No
     assert result.payload["workspace"] == {
         "workspace_root": str(tmp_path.resolve()),
         "tool_profile": "coding",
+        "network_profile": "none",
+        "network_allowlist": [],
         "status": "suspended",
         "current_sequence": 4,
         "prepared_at": _created_at().isoformat(),

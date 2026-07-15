@@ -4,6 +4,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.tool_profiles import ToolProfile
 
 
@@ -28,6 +29,8 @@ class WorkspaceProjection(BaseModel):
     status: WorkspaceStatus
     policy_profile: str | None = None
     tool_profile: ToolProfile = ToolProfile.CODING
+    network_profile: NetworkProfileName = NetworkProfileName.NONE
+    network_allowlist: tuple[str, ...] = ()
     last_attempt_number: int | None = None
     runtime_name: str | None = None
     snapshot_id: str | None = None

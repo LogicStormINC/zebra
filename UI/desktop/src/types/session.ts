@@ -14,6 +14,8 @@ export interface SessionWorkspace {
   updated_at: string;
   policy_profile: string;
   tool_profile: "general" | "coding";
+  network_profile: string;
+  network_allowlist: string[];
   last_attempt_number: number;
   snapshot?: SessionWorkspaceSnapshot;
 }
@@ -67,6 +69,8 @@ export interface CreateSessionResponse {
   executed: boolean;
   assistant_message?: string;
   tool_profile?: "general" | "coding";
+  network_profile?: string;
+  network_allowlist?: string[];
 }
 
 export interface ApprovalDecisionResponse {

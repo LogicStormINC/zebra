@@ -10733,8 +10733,8 @@ information tools.
 
 ### P121-NET-01 - Durable Per-Task Network Authority
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `CORE / SECURITY / APP`
 - Depends on: `P120-CLOSE-01`
 - Branch: `codex/p121-net-01-durable-network-authority`
@@ -10765,30 +10765,30 @@ information capability is advertised to the model.
 
 #### Acceptance
 
-- [ ] New tasks default durably to `network_profile=none`; legacy events and
+- [x] New tasks default durably to `network_profile=none`; legacy events and
   projection rows without network evidence recover to the same fail-closed value.
-- [ ] The selected network profile and normalized domain allowlist survive
+- [x] The selected network profile and normalized domain allowlist survive
   create, list, inspect, reload, worker claim, execution, suspend or resume, and
   approval continuation.
-- [ ] Direct runtime, API, CLI, and worker composition pass the recovered network
+- [x] Direct runtime, API, CLI, and worker composition pass the recovered network
   profile into `LocalPolicyEngine`; no execution path silently uses a wider
   process-global fallback.
-- [ ] `domain-allowlist` requires at least one normalized bare hostname and every
+- [x] `domain-allowlist` requires at least one normalized bare hostname and every
   non-domain profile rejects allowlist entries.
-- [ ] Unknown, blank, malformed, and mismatched values fail at API, CLI, event,
+- [x] Unknown, blank, malformed, and mismatched values fail at API, CLI, event,
   projection, storage, and desktop trust boundaries without widening authority.
-- [ ] Network authority remains independent of `tool_profile` and
+- [x] Network authority remains independent of `tool_profile` and
   `policy_profile`; changing it neither registers tools nor expands file,
   command, Git, credential, or approval authority.
-- [ ] Existing MCP routing remains fail closed: `none` blocks external MCP calls,
+- [x] Existing MCP routing remains fail closed: `none` blocks external MCP calls,
   proxy-enabled profiles still require Policy approval, and no transport is
   invoked before approval.
-- [ ] Fixed Research children retain `network_profile=none` regardless of a
+- [x] Fixed Research children retain `network_profile=none` regardless of a
   broader parent profile.
-- [ ] The desktop visibly defaults to no external network, requires an explicit
+- [x] The desktop visibly defaults to no external network, requires an explicit
   launch choice for broader authority, and restores durable network state after
   reload.
-- [ ] Full backend tests, static checks, eval release gate, desktop contract
+- [x] Full backend tests, static checks, eval release gate, desktop contract
   checks, production build, and browser create or readback validation pass.
 
 #### Explicit Non-Goals
