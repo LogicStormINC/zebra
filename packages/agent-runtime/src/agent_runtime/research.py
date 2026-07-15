@@ -20,7 +20,13 @@ from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.subagents import SubagentPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_security import LocalPolicyEngine, PolicyProfile
-from agent_tools import FileReadTool, GitStatusTool, ToolExecutor, ToolRegistry
+from agent_tools import (
+    FileReadTool,
+    GitStatusTool,
+    ToolExecutor,
+    ToolRegistry,
+    WorkspaceSearchTool,
+)
 from agent_tools.contracts import ToolContract
 from agent_tools.errors import ToolArgumentError, ToolRegistryError
 
@@ -100,7 +106,11 @@ class ReadOnlyToolGateway(ToolGatewayPort):
         workspace = LocalWorkspace(workspace_root)
         workspace.ensure()
         registry = ToolRegistry()
-        for tool in (FileReadTool(workspace), GitStatusTool(LocalRuntime(), workspace)):
+        for tool in (
+            FileReadTool(workspace),
+            WorkspaceSearchTool(workspace),
+            GitStatusTool(LocalRuntime(), workspace),
+        ):
             registry.register(tool.contract, tool.handle)
         self._model_tools = registry.model_tools()
         self._parallel_safe_tools = registry.parallel_safe_names()
@@ -222,7 +232,7 @@ def _research_sources(events: tuple[SessionEvent, ...]) -> tuple[ResearchSource,
         metadata = event.payload.get("metadata")
         if not isinstance(tool_name, str) or not isinstance(metadata, dict):
             continue
-        key = "path" if tool_name == "files.read" else "cwd"
+        key = "path" if tool_name in {"files.read", "files.search"} else "cwd"
         reference = metadata.get(key)
         if not isinstance(reference, str) or not reference.strip():
             continue

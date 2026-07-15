@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 import pytest
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
+from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.messages import MessageRole, SessionMessage
@@ -87,6 +88,45 @@ def test_run_local_harness_executes_builtin_file_read(tmp_path) -> None:
     assert result.run_result.model_calls_used == 2
 
 
+def test_run_local_harness_searches_then_reads_workspace_evidence(tmp_path) -> None:
+    (tmp_path / "proof.txt").write_text("SEARCH-THEN-READ\n", encoding="utf-8")
+    search_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="files.search",
+        arguments={"query": "SEARCH-THEN-READ"},
+        created_at=_created_at(),
+    )
+    read_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="files.read",
+        arguments={"path": "proof.txt"},
+        created_at=_created_at(),
+    )
+    result = run_local_harness(
+        prompt="Find and read the proof.",
+        title="Runtime search and read test",
+        workspace_root=tmp_path.resolve(),
+        model_gateway=ScriptedModelGateway(
+            responses=tuple(
+                ScriptedModelResponse(completion=completion)
+                for completion in (
+                    _completion("Searching.", search_call),
+                    _completion("Reading.", read_call),
+                    _completion("Found SEARCH-THEN-READ."),
+                )
+            )
+        ),
+    )
+
+    executed = [
+        event.payload["tool_name"]
+        for event in result.events
+        if event.event_type is EventType.TOOL_EXECUTION_COMPLETED
+    ]
+    assert executed == ["files.search", "files.read"]
+    assert result.attempt_result.metadata["assistant_message"] == "Found SEARCH-THEN-READ."
+
+
 def test_run_local_harness_injects_confirmed_memory_into_system_prompt(tmp_path) -> None:
     gateway = ScriptedModelGateway(
         responses=(
@@ -149,6 +189,7 @@ def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
         "agent.research",
         "command.run",
         "files.read",
+        "files.search",
         "patch.apply",
         "web.fetch",
     )
@@ -159,7 +200,7 @@ def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
 def test_local_tool_gateway_exposes_only_parallel_safe_builtins(tmp_path) -> None:
     gateway = LocalToolGateway(tmp_path.resolve())
 
-    assert gateway.parallel_safe_tools == frozenset({"files.read"})
+    assert gateway.parallel_safe_tools == frozenset({"files.read", "files.search"})
 
 
 def test_local_tool_gateway_exposes_coding_profile_tools(tmp_path) -> None:
@@ -168,12 +209,15 @@ def test_local_tool_gateway_exposes_coding_profile_tools(tmp_path) -> None:
     assert tuple(tool.name for tool in gateway.model_tools) == (
         "command.run",
         "files.read",
+        "files.search",
         "git.status",
         "patch.apply",
         "tests.run",
         "web.fetch",
     )
-    assert gateway.parallel_safe_tools == frozenset({"files.read", "git.status"})
+    assert gateway.parallel_safe_tools == frozenset(
+        {"files.read", "files.search", "git.status"}
+    )
 
 
 def test_local_tool_gateway_rejects_unknown_tool_profile(tmp_path) -> None:
@@ -208,3 +252,15 @@ def test_local_tool_gateway_bounds_parallel_research_children(tmp_path) -> None:
 
 def _created_at() -> datetime:
     return datetime(2026, 6, 22, 13, 0, tzinfo=UTC)
+
+
+def _completion(content: str, *tool_calls: ToolCall) -> ModelCompletion:
+    return ModelCompletion(
+        assistant_message=SessionMessage(
+            message_id=new_message_id(),
+            role=MessageRole.ASSISTANT,
+            content=content,
+            created_at=_created_at(),
+        ),
+        tool_calls=tool_calls,
+    )
