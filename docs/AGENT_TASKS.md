@@ -12345,8 +12345,8 @@ restores maintainable ownership boundaries before adding more product capability
 
 ### P137-SRC-01 - Behavior-Preserving API And CLI Module Boundaries
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `In Progress`
+- Owner: `Codex-SRC`
 - Suggested role: `ARCH / API / CLI`
 - Depends on: `P136-CLOSE-01`
 - Branch: `codex/p137-src-01-app-module-boundaries`
@@ -12377,8 +12377,8 @@ event, response, persistence, and error contract.
 
 ### P137-UI-01 - Behavior-Preserving Conversation Pane Boundaries
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `In Progress`
+- Owner: `Codex-UI`
 - Suggested role: `UI / TEST`
 - Depends on: `P136-CLOSE-01`
 - Branch: `codex/p137-ui-01-conversation-pane-boundaries`
@@ -12404,8 +12404,8 @@ Composer presentation modules without changing the visible product workflow.
 
 ### P137-TEST-01 - Test Suite File Boundary Restoration
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `In Progress`
+- Owner: `Codex-TEST`
 - Suggested role: `TEST / API / CLI / WORKER / INTEGRATIONS`
 - Depends on: `P136-CLOSE-01`
 - Branch: `codex/p137-test-01-suite-file-boundaries`
