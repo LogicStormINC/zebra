@@ -12506,15 +12506,15 @@ metadata and returned messages as untrusted input.
 
 #### Acceptance
 
-- [ ] Servers without a declared `prompts` capability are not queried; tools-only
+- [x] Servers without a declared `prompts` capability are not queried; tools-only
   and resources-only compatibility remains unchanged.
-- [ ] Discovery accepts at most four pages and 64 Prompts per server with stable
+- [x] Discovery accepts at most four pages and 64 Prompts per server with stable
   ordering, opaque selection IDs, bounded names, descriptions, and argument
   metadata, and fails closed on malformed, duplicate, or colliding entries.
-- [ ] Exact resolution accepts only one advertised selection and bounded string
+- [x] Exact resolution accepts only one advertised selection and bounded string
   arguments, performs one `prompts/get`, and returns text-only user or assistant
   messages under fixed message, field, and aggregate byte ceilings.
-- [ ] Embedded Resources, images, audio, arbitrary roles, server instructions,
+- [x] Embedded Resources, images, audio, arbitrary roles, server instructions,
   and oversized or malformed output are rejected; no Prompt operation becomes a
   model-visible tool.
 
@@ -12535,18 +12535,18 @@ safe provenance so execution and recovery never re-read the server.
 
 #### Acceptance
 
-- [ ] Authenticated API and CLI inventory exposes only safe Prompt display data,
+- [x] Authenticated API and CLI inventory exposes only safe Prompt display data,
   required argument metadata, availability, and opaque IDs; no command,
   environment, credential, raw server path, or hidden message is returned.
-- [ ] New-task input accepts at most one Prompt ID plus exact bounded string
+- [x] New-task input accepts at most one Prompt ID plus exact bounded string
   arguments, rejects stale, unknown, duplicate, unavailable, or mismatched input,
   and requires a compatible MCP network profile without granting tool authority.
-- [ ] Rendered Prompt text is normalized into explicit untrusted user context,
+- [x] Rendered Prompt text is normalized into explicit untrusted user context,
   stored through the durable attachment payload lifecycle with server, Prompt ID,
   argument-name, size, and digest provenance, and never exposes raw payload.
-- [ ] Creation is atomic and idempotent; direct Harness and Worker recovery use
+- [x] Creation is atomic and idempotent; direct Harness and Worker recovery use
   only captured bytes and never repeat discovery or `prompts/get`.
-- [ ] Legacy sessions and tasks without Prompt input retain identical behavior.
+- [x] Legacy sessions and tasks without Prompt input retain identical behavior.
 
 ### P138-UI-01 - Desktop Prompt Template Launcher
 
@@ -12565,19 +12565,19 @@ approval or persistent server-control surface.
 
 #### Acceptance
 
-- [ ] Explicit refresh shows loading, empty, unavailable, validation, selected,
+- [x] Explicit refresh shows loading, empty, unavailable, validation, selected,
   and restored states without background polling or raw MCP configuration.
-- [ ] Selecting a Prompt renders only its safe description and argument fields;
+- [x] Selecting a Prompt renders only its safe description and argument fields;
   required values block submission, optional values may be omitted, and changing
   server inventory clears stale selection deterministically.
-- [ ] Submitted tasks send one Prompt ID and exact argument map; active sessions
+- [x] Submitted tasks send one Prompt ID and exact argument map; active sessions
   read back only captured safe provenance and cannot re-run or mutate the Prompt.
-- [ ] Ordinary task timelines remain free of dormant HITL, Prompt, Commit, or Pull
+- [x] Ordinary task timelines remain free of dormant HITL, Prompt, Commit, or Pull
   Request controls; all desktop checks, build, Tauri, and browser acceptance pass.
 
 ### P138-E2E-01 - Prompt Boundary And Provider Acceptance
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex-E2E`
 - Suggested role: `TEST / DOC`
 - Depends on: `P138-APP-01`, `P138-UI-01`
@@ -12591,13 +12591,13 @@ provider contract before Phase 138 is declared complete.
 
 #### Acceptance
 
-- [ ] Compatibility matrices cover absent capability, malformed inventory,
+- [x] Compatibility matrices cover absent capability, malformed inventory,
   argument validation, stale selection, unsafe content, atomic failure, immutable
   recovery, and absence of model-visible Prompt tools.
-- [ ] API, CLI, direct Harness, queued Worker, recovery, and desktop launch agree
+- [x] API, CLI, direct Harness, queued Worker, recovery, and desktop launch agree
   on one safe durable Prompt provenance contract.
-- [ ] Full backend, static, eval, desktop, build, Tauri, and browser gates pass.
-- [ ] One real `deepseek-v4-flash` task answers from a captured fixture Prompt
+- [x] Full backend, static, eval, desktop, build, Tauri, and browser gates pass.
+- [x] One real `deepseek-v4-flash` task answers from a captured fixture Prompt
   after the MCP process is unavailable, proving no execution-time reread.
 
 #### Explicit Non-Goals

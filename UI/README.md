@@ -14,6 +14,11 @@ Current live frontend integration:
 - task-scoped MCP selection in new-task launch configuration; only safe inventory
   names may enter the durable `mcp_allowlist`, the default is empty, and ordinary
   idle or thread surfaces do not expose approval controls
+- explicit MCP Prompt inventory against `GET /capabilities/mcp/prompts`, requested
+  only by operator refresh with no background polling
+- one optional new-task Prompt selection with declared string arguments; session
+  readback shows only captured safe provenance, and later messages cannot re-run
+  or mutate the Prompt
 - approval inbox against `/approvals`
 - approval detail against `GET /approvals/{id}`
 - session creation against `POST /sessions`
