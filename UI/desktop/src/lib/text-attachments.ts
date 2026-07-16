@@ -3,8 +3,10 @@ export const MAX_ATTACHMENT_BYTES = 65_536;
 export const MAX_ATTACHMENT_TOTAL_BYTES = 131_072;
 export const MAX_PDF_BYTES = 4_194_304;
 export const MAX_DOCX_BYTES = 4_194_304;
+export const MAX_XLSX_BYTES = 4_194_304;
 export const MAX_DOCUMENT_TOTAL_BYTES = 8_388_608;
 export const DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+export const XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 const MEDIA_TYPES: Record<string, string> = {
   ".css": "text/css",
@@ -24,6 +26,7 @@ const MEDIA_TYPES: Record<string, string> = {
   ".yaml": "application/yaml",
   ".yml": "application/yaml",
   ".docx": DOCX_MEDIA_TYPE,
+  ".xlsx": XLSX_MEDIA_TYPE,
 };
 
 export interface AttachmentPayload {
@@ -56,15 +59,17 @@ export async function readAttachmentFiles(
     const mediaType = mediaTypeForFile(file);
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (isDocumentMediaType(mediaType)) {
-      const maxBytes = mediaType === "application/pdf" ? MAX_PDF_BYTES : MAX_DOCX_BYTES;
+      const maxBytes = mediaType === "application/pdf"
+        ? MAX_PDF_BYTES
+        : mediaType === DOCX_MEDIA_TYPE ? MAX_DOCX_BYTES : MAX_XLSX_BYTES;
       if (file.size <= 0 || file.size > maxBytes) {
         throw new Error(`${file.name} 必须是 1 到 ${maxBytes / 1024 / 1024} MiB`);
       }
       if (mediaType === "application/pdf" && !startsWithPdfSignature(bytes)) {
         throw new Error(`${file.name} 不是有效的 PDF 文件`);
       }
-      if (mediaType === DOCX_MEDIA_TYPE && !startsWithZipSignature(bytes)) {
-        throw new Error(`${file.name} 不是有效的 DOCX 文件`);
+      if ([DOCX_MEDIA_TYPE, XLSX_MEDIA_TYPE].includes(mediaType) && !startsWithZipSignature(bytes)) {
+        throw new Error(`${file.name} 不是有效的 ${mediaType === DOCX_MEDIA_TYPE ? "DOCX" : "XLSX"} 文件`);
       }
       documentBytes += file.size;
       if (documentBytes > MAX_DOCUMENT_TOTAL_BYTES) {
@@ -146,5 +151,7 @@ function startsWithZipSignature(bytes: Uint8Array): boolean {
 }
 
 export function isDocumentMediaType(mediaType: string): boolean {
-  return mediaType === "application/pdf" || mediaType === DOCX_MEDIA_TYPE;
+  return mediaType === "application/pdf"
+    || mediaType === DOCX_MEDIA_TYPE
+    || mediaType === XLSX_MEDIA_TYPE;
 }

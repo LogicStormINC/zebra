@@ -2,6 +2,27 @@
 
 ## Addendum
 
+- 2026-07-17: completed `P142-DOC-01`; standard XLSX worksheets now share the
+  durable bounded material path with text, PDF, and DOCX input. Extraction emits
+  deterministic sheet names, coordinates, and cached values without executing
+  formulas; safe provenance retains original size, digest, worksheet count, and
+  populated-cell count. Shared OOXML safety rejects malformed, encrypted,
+  macro-enabled, externally linked or connected, query-backed, pivot, ActiveX,
+  embedded, text-empty, and over-limit packages before mutation. All `1293`
+  backend tests, Ruff, Mypy across `349` sources, 8 evals, 14 desktop checks,
+  Node 22 build, Tauri, 766-file size gate, responsive browser acceptance, and
+  real `deepseek-v4-flash` response
+  `XLSX_FINAL_OK: XLSX_PROVIDER_PROOF_142_4F6C` passed. The existing Vite bundle
+  warning remains unchanged.
+- 2026-07-17: started `P142-DOC-01` on
+  `codex/p142-doc-01-bounded-xlsx-input`. Phase 142 adds bounded deterministic
+  XLSX worksheet-value extraction to the existing durable attachment path.
+  Formula expressions are never executed and only cached values are eligible;
+  malformed, encrypted, macro-enabled, externally linked or connected,
+  query-backed, embedded-object, text-empty, and over-limit packages fail before
+  mutation. Recovery consumes only persisted normalized UTF-8 extraction with
+  safe workbook provenance. Spreadsheet editing, other formats, OCR, remote
+  URLs, and authority changes remain excluded.
 - 2026-07-16: completed `P141-DOC-01`; standard DOCX body and table text now
   shares the durable bounded attachment path with UTF-8 text and text-layer PDF
   material on new tasks and ordinary follow-up messages. Unsafe ZIP paths,

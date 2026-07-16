@@ -64,17 +64,19 @@ The repository now includes an isolated frontend workspace at `UI/desktop`.
 The desktop defaults to task, context, execution, and result surfaces. Human
 controls appear only for a concrete backend approval or clarification request;
 dormant Commit or Pull Request forms do not belong in the normal task timeline.
-Its Composer accepts bounded UTF-8 text attachments, text-layer PDFs, and
-standard DOCX documents on new tasks and later ordinary messages. Text bytes and
-normalized document extraction stay in the durable local payload store; raw PDF
-and DOCX bytes exist only at the API input boundary. The UI and session API read
-back safe metadata, including original document size, digest, page or paragraph
-count, and extraction status, while the parent model sees only bounded content
-under an explicit untrusted-material boundary. Encrypted, malformed, over-limit,
-macro-enabled, externally linked, embedded-object, and text-empty documents fail
-before session mutation. OCR, provider-native vision, legacy Office formats,
-spreadsheets, presentations, remote URLs, and Research-child attachment access
-are not supported.
+Its Composer accepts bounded UTF-8 text attachments, text-layer PDFs, standard
+DOCX documents, and standard XLSX workbooks on new tasks and later ordinary
+messages. Normalized document extraction stays in the durable local payload
+store; raw document bytes exist only at the API input boundary. Safe metadata
+includes original size, digest, page, paragraph, worksheet or populated-cell
+counts, and extraction status, while the parent model sees only bounded content
+under an explicit untrusted-material boundary. XLSX extraction records sheet
+names, coordinates, and cached cell values but never executes formulas.
+Encrypted, malformed, over-limit, macro-enabled, externally linked or connected,
+query-backed, embedded-object, and text-empty documents fail before session
+mutation. OCR, provider-native vision, legacy Office formats, spreadsheet
+editing, presentations, remote URLs, and Research-child attachment access are
+not supported.
 At task creation, users may also select up to four advertised local MCP text
 Resources. Zebra reads each selected Resource once, persists it through the same
 attachment lifecycle, and supplies the immutable snapshot to the parent model as

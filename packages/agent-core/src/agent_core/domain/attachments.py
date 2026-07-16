@@ -23,6 +23,8 @@ class TextAttachmentInput(BaseModel):
     original_sha256: str | None = None
     page_count: int | None = Field(default=None, ge=1)
     paragraph_count: int | None = Field(default=None, ge=1)
+    worksheet_count: int | None = Field(default=None, ge=1)
+    cell_count: int | None = Field(default=None, ge=1)
     extraction_status: Literal["text_extracted"] | None = None
 
     @field_validator("file_name", "media_type")
@@ -55,6 +57,8 @@ class TextAttachmentInput(BaseModel):
             self.original_sha256,
             self.page_count,
             self.paragraph_count,
+            self.worksheet_count,
+            self.cell_count,
             self.extraction_status,
         )
         return self
@@ -78,6 +82,8 @@ class SessionAttachmentRef(BaseModel):
     original_sha256: str | None = None
     page_count: int | None = Field(default=None, ge=1)
     paragraph_count: int | None = Field(default=None, ge=1)
+    worksheet_count: int | None = Field(default=None, ge=1)
+    cell_count: int | None = Field(default=None, ge=1)
     extraction_status: Literal["text_extracted"] | None = None
 
     @field_validator("file_name", "media_type")
@@ -115,6 +121,8 @@ class SessionAttachmentRef(BaseModel):
             self.original_sha256,
             self.page_count,
             self.paragraph_count,
+            self.worksheet_count,
+            self.cell_count,
             self.extraction_status,
         )
         return self
@@ -146,6 +154,8 @@ class SessionAttachmentRef(BaseModel):
                     "original_sha256": self.original_sha256,
                     "page_count": self.page_count,
                     "paragraph_count": self.paragraph_count,
+                    "worksheet_count": self.worksheet_count,
+                    "cell_count": self.cell_count,
                     "extraction_status": self.extraction_status,
                 }
             )
@@ -168,6 +178,8 @@ class AttachmentContextInput(BaseModel):
     original_sha256: str | None = None
     page_count: int | None = Field(default=None, ge=1)
     paragraph_count: int | None = Field(default=None, ge=1)
+    worksheet_count: int | None = Field(default=None, ge=1)
+    cell_count: int | None = Field(default=None, ge=1)
     extraction_status: Literal["text_extracted"] | None = None
 
     @field_validator("file_name", "media_type", "text")
@@ -200,6 +212,8 @@ class AttachmentContextInput(BaseModel):
             self.original_sha256,
             self.page_count,
             self.paragraph_count,
+            self.worksheet_count,
+            self.cell_count,
             self.extraction_status,
         )
         return self
@@ -234,6 +248,8 @@ def _validate_document_provenance(
     original_sha256: str | None,
     page_count: int | None,
     paragraph_count: int | None,
+    worksheet_count: int | None,
+    cell_count: int | None,
     extraction_status: str | None,
 ) -> None:
     fields = (
@@ -242,6 +258,8 @@ def _validate_document_provenance(
         original_sha256,
         page_count,
         paragraph_count,
+        worksheet_count,
+        cell_count,
         extraction_status,
     )
     if not any(value is not None for value in fields):
@@ -252,13 +270,24 @@ def _validate_document_provenance(
     if any(value is None for value in common):
         raise ValueError("document provenance must include all common fields")
     if original_media_type == "application/pdf":
-        if page_count is None or paragraph_count is not None:
+        if page_count is None or any(
+            value is not None for value in (paragraph_count, worksheet_count, cell_count)
+        ):
             raise ValueError("PDF provenance requires only page_count")
     elif original_media_type == (
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ):
-        if paragraph_count is None or page_count is not None:
+        if paragraph_count is None or any(
+            value is not None for value in (page_count, worksheet_count, cell_count)
+        ):
             raise ValueError("DOCX provenance requires only paragraph_count")
+    elif original_media_type == (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ):
+        if worksheet_count is None or cell_count is None or any(
+            value is not None for value in (page_count, paragraph_count)
+        ):
+            raise ValueError("XLSX provenance requires worksheet_count and cell_count")
     else:
         raise ValueError("document provenance media type is not supported")
     if extraction_status != "text_extracted":
