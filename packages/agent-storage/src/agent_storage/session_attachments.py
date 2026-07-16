@@ -52,6 +52,11 @@ def store_text_attachments(
                     source_server=attachment.source_server,
                     source_id=attachment.source_id,
                     source_argument_names=attachment.source_argument_names,
+                    original_media_type=attachment.original_media_type,
+                    original_size_bytes=attachment.original_size_bytes,
+                    original_sha256=attachment.original_sha256,
+                    page_count=attachment.page_count,
+                    extraction_status=attachment.extraction_status,
                 )
             )
     except Exception:
@@ -86,6 +91,11 @@ def load_attachment_contexts(
                 source_server=ref.source_server,
                 source_id=ref.source_id,
                 source_argument_names=ref.source_argument_names,
+                original_media_type=ref.original_media_type,
+                original_size_bytes=ref.original_size_bytes,
+                original_sha256=ref.original_sha256,
+                page_count=ref.page_count,
+                extraction_status=ref.extraction_status,
             )
         )
     return tuple(contexts)
@@ -111,8 +121,7 @@ def store_initial_text_attachments(
     attached_event = attach_refs_to_user_event(user_event, refs)
     return (
         tuple(
-            attached_event if event.event_id == user_event.event_id else event
-            for event in events
+            attached_event if event.event_id == user_event.event_id else event for event in events
         ),
         refs,
     )

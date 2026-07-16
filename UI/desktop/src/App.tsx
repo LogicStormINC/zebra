@@ -11,7 +11,7 @@ import { useOperatorConfig } from "./lib/operator-config";
 import { mergeSessionEvents, pollWhile } from "./lib/live-session";
 import { projectRuntimeConnection } from "./lib/runtime-connection";
 import type { TaskLaunchConfig } from "./lib/task-launch-config";
-import type { TextAttachmentPayload } from "./lib/text-attachments";
+import type { AttachmentPayload } from "./lib/text-attachments";
 import { useWorkspaceSessionIndex } from "./lib/use-workspace-session-index";
 import { useWorkspaceSelection } from "./lib/use-workspace-selection";
 import { useActiveApproval } from "./lib/use-active-approval";
@@ -249,7 +249,7 @@ export default function App() {
   );
 
   const submitMessage = useCallback(
-    async (input: string, launchConfig: TaskLaunchConfig, attachments: TextAttachmentPayload[]) => {
+    async (input: string, launchConfig: TaskLaunchConfig, attachments: AttachmentPayload[]) => {
       const trimmed = input.trim();
       if (!trimmed || !currentConversation) {
         return false;
