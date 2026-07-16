@@ -59,6 +59,7 @@ def store_text_attachments(
                     paragraph_count=attachment.paragraph_count,
                     worksheet_count=attachment.worksheet_count,
                     cell_count=attachment.cell_count,
+                    slide_count=attachment.slide_count,
                     extraction_status=attachment.extraction_status,
                 )
             )
@@ -101,6 +102,7 @@ def load_attachment_contexts(
                 paragraph_count=ref.paragraph_count,
                 worksheet_count=ref.worksheet_count,
                 cell_count=ref.cell_count,
+                slide_count=ref.slide_count,
                 extraction_status=ref.extraction_status,
             )
         )

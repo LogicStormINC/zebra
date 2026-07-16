@@ -1,9 +1,10 @@
-import { FileExcelOutlined, FilePdfOutlined, FileTextOutlined, FileWordOutlined, PaperClipOutlined } from "@ant-design/icons";
+import { FileExcelOutlined, FilePdfOutlined, FilePptOutlined, FileTextOutlined, FileWordOutlined, PaperClipOutlined } from "@ant-design/icons";
 import React from "react";
 import {
   readAttachmentFiles,
   DOCX_MEDIA_TYPE,
   XLSX_MEDIA_TYPE,
+  PPTX_MEDIA_TYPE,
   type PendingAttachment,
 } from "../lib/text-attachments";
 import { useComposerAttachmentsStyle } from "./ComposerAttachments.styles";
@@ -26,7 +27,7 @@ export function ComposerAttachments({
   return (
     <div className={styles.surface} aria-label="附件">
       <input
-        accept=".txt,.md,.csv,.json,.yaml,.yml,.xml,.html,.css,.js,.ts,.tsx,.py,.toml,.ini,.log,.pdf,.docx,.xlsx"
+        accept=".txt,.md,.csv,.json,.yaml,.yml,.xml,.html,.css,.js,.ts,.tsx,.py,.toml,.ini,.log,.pdf,.docx,.xlsx,.pptx"
         className={styles.fileInput}
         multiple
         onChange={(event) => {
@@ -58,6 +59,7 @@ export function ComposerAttachments({
           {attachment.media_type === "application/pdf" ? <FilePdfOutlined />
             : attachment.media_type === DOCX_MEDIA_TYPE ? <FileWordOutlined />
               : attachment.media_type === XLSX_MEDIA_TYPE ? <FileExcelOutlined />
+              : attachment.media_type === PPTX_MEDIA_TYPE ? <FilePptOutlined />
               : <FileTextOutlined />}
           <span>{attachment.file_name}</span>
           <small>{Math.ceil(attachment.size_bytes / 1024)} KiB</small>

@@ -4,9 +4,11 @@ export const MAX_ATTACHMENT_TOTAL_BYTES = 131_072;
 export const MAX_PDF_BYTES = 4_194_304;
 export const MAX_DOCX_BYTES = 4_194_304;
 export const MAX_XLSX_BYTES = 4_194_304;
+export const MAX_PPTX_BYTES = 4_194_304;
 export const MAX_DOCUMENT_TOTAL_BYTES = 8_388_608;
 export const DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 export const XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+export const PPTX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
 
 const MEDIA_TYPES: Record<string, string> = {
   ".css": "text/css",
@@ -27,6 +29,7 @@ const MEDIA_TYPES: Record<string, string> = {
   ".yml": "application/yaml",
   ".docx": DOCX_MEDIA_TYPE,
   ".xlsx": XLSX_MEDIA_TYPE,
+  ".pptx": PPTX_MEDIA_TYPE,
 };
 
 export interface AttachmentPayload {
@@ -61,15 +64,21 @@ export async function readAttachmentFiles(
     if (isDocumentMediaType(mediaType)) {
       const maxBytes = mediaType === "application/pdf"
         ? MAX_PDF_BYTES
-        : mediaType === DOCX_MEDIA_TYPE ? MAX_DOCX_BYTES : MAX_XLSX_BYTES;
+        : mediaType === DOCX_MEDIA_TYPE
+          ? MAX_DOCX_BYTES
+          : mediaType === XLSX_MEDIA_TYPE ? MAX_XLSX_BYTES : MAX_PPTX_BYTES;
       if (file.size <= 0 || file.size > maxBytes) {
         throw new Error(`${file.name} 必须是 1 到 ${maxBytes / 1024 / 1024} MiB`);
       }
       if (mediaType === "application/pdf" && !startsWithPdfSignature(bytes)) {
         throw new Error(`${file.name} 不是有效的 PDF 文件`);
       }
-      if ([DOCX_MEDIA_TYPE, XLSX_MEDIA_TYPE].includes(mediaType) && !startsWithZipSignature(bytes)) {
-        throw new Error(`${file.name} 不是有效的 ${mediaType === DOCX_MEDIA_TYPE ? "DOCX" : "XLSX"} 文件`);
+      if ([DOCX_MEDIA_TYPE, XLSX_MEDIA_TYPE, PPTX_MEDIA_TYPE].includes(mediaType)
+        && !startsWithZipSignature(bytes)) {
+        const label = mediaType === DOCX_MEDIA_TYPE
+          ? "DOCX"
+          : mediaType === XLSX_MEDIA_TYPE ? "XLSX" : "PPTX";
+        throw new Error(`${file.name} 不是有效的 ${label} 文件`);
       }
       documentBytes += file.size;
       if (documentBytes > MAX_DOCUMENT_TOTAL_BYTES) {
@@ -153,5 +162,6 @@ function startsWithZipSignature(bytes: Uint8Array): boolean {
 export function isDocumentMediaType(mediaType: string): boolean {
   return mediaType === "application/pdf"
     || mediaType === DOCX_MEDIA_TYPE
-    || mediaType === XLSX_MEDIA_TYPE;
+    || mediaType === XLSX_MEDIA_TYPE
+    || mediaType === PPTX_MEDIA_TYPE;
 }
