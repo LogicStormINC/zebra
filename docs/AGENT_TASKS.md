@@ -11937,7 +11937,7 @@ actually available before launching or approving a task.
 
 ### P133-MCP-01 - Safe MCP Capability Inventory And Preflight
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `RUNTIME / API / UI / SECURITY`
 - Depends on: `P132-CLOSE-01`
@@ -11960,20 +11960,20 @@ adding ordinary-state HITL controls.
 
 #### Acceptance
 
-- [ ] No configuration returns a successful explicit unconfigured inventory
+- [x] No configuration returns a successful explicit unconfigured inventory
   without starting a process.
-- [ ] Configured discovery returns deterministic server and tool names,
+- [x] Configured discovery returns deterministic server and tool names,
   descriptions, input-field names, and counts without commands, arguments,
   environment values, absolute paths, credentials, or raw schemas.
-- [ ] Discovery or protocol failure returns an actionable unavailable state and
+- [x] Discovery or protocol failure returns an actionable unavailable state and
   never presents stale or inferred tools as available.
-- [ ] The inventory endpoint follows existing API authentication and CORS rules;
+- [x] The inventory endpoint follows existing API authentication and CORS rules;
   `/health` remains public and unchanged.
-- [ ] Desktop users can inspect and refresh MCP availability only in runtime
+- [x] Desktop users can inspect and refresh MCP availability only in runtime
   settings; the idle and ordinary thread surfaces gain no approval controls.
-- [ ] Inventory is observational only and cannot execute `tools/call`, alter
+- [x] Inventory is observational only and cannot execute `tools/call`, alter
   configuration, grant authority, or expose MCP to fixed Research children.
-- [ ] Focused runtime/API/frontend tests, all backend/static/eval gates, desktop
+- [x] Focused runtime/API/frontend tests, all backend/static/eval gates, desktop
   checks/build, Tauri validation, and browser settings acceptance succeed.
 
 #### Explicit Non-Goals

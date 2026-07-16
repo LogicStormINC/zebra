@@ -19,6 +19,28 @@ export interface HealthResponse {
   service: string;
 }
 
+export interface McpToolCapability {
+  name: string;
+  description: string;
+  input_fields: string[];
+}
+
+export interface McpServerCapability {
+  name: string;
+  tool_count: number;
+  tools: McpToolCapability[];
+}
+
+export interface McpCapabilitiesResponse {
+  status: "unconfigured" | "available" | "unavailable";
+  configured: boolean;
+  available: boolean;
+  server_count: number;
+  tool_count: number;
+  servers: McpServerCapability[];
+  reason?: string;
+}
+
 export interface ApprovalContext {
   tool_name?: string;
   reason?: string;

@@ -14,7 +14,7 @@ import {
   workspaceProjectId,
   type WorkspaceProject,
 } from "../lib/workspace-projects";
-import type { ApprovalSummary, OperatorConfig, SessionEvent, SessionSummary } from "../types";
+import type { ApprovalSummary, McpCapabilitiesResponse, OperatorConfig, SessionEvent, SessionSummary } from "../types";
 import { CodexConversationPane } from "./CodexConversationPane";
 import { CodexSidebar } from "./CodexSidebar";
 import { OperatorConfigCard } from "./OperatorConfigCard";
@@ -58,6 +58,9 @@ interface CodexWorkspaceProps {
   isRequesting: boolean;
   listRef: React.RefObject<HTMLDivElement | null>;
   messages: ChatMessage[];
+  mcpCapabilities: McpCapabilitiesResponse | undefined;
+  mcpCapabilitiesBusy: boolean;
+  mcpCapabilitiesError: string | null;
   operatorConfig: OperatorConfig;
   onCancel: () => void;
   onCopySessionId: () => void;
@@ -66,6 +69,7 @@ interface CodexWorkspaceProps {
   onResetConfig: () => void;
   onRestoreHiddenSessions: () => void;
   onRetryRuntime: () => void;
+  onRetryMcpCapabilities: () => void;
   onCreateConversation: () => void;
   onDeleteConversation: (key: string) => void;
   onCancelSession: () => void;
@@ -182,8 +186,12 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
         <Drawer onClose={() => setSettingsOpen(false)} open={settingsOpen} title={locale.runtimeSettings} width={460}>
           <OperatorConfigCard
             config={props.operatorConfig}
+            mcpCapabilities={props.mcpCapabilities}
+            mcpCapabilitiesBusy={props.mcpCapabilitiesBusy}
+            mcpCapabilitiesError={props.mcpCapabilitiesError}
             onChange={props.onPatchConfig}
             onReset={props.onResetConfig}
+            onRetryMcpCapabilities={props.onRetryMcpCapabilities}
             onRetry={props.onRetryRuntime}
             runtimeStatus={props.runtimeStatus}
           />
