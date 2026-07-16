@@ -3,61 +3,21 @@ from __future__ import annotations
 import argparse
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from pathlib import Path
-from uuid import UUID
 
-from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
-from agent_core.application.workspace_projection import rebuild_workspace
-from agent_core.domain.identifiers import SessionId, new_message_id
-from agent_core.domain.mcp import normalize_mcp_allowlist
+from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.networking import NetworkProfileName
-from agent_core.domain.tool_profiles import ToolProfile
 from agent_integrations import build_model_gateway
-from agent_runtime import (
-    normalize_mcp_resource_ids,
-    read_mcp_resource_attachments,
-    validate_mcp_capability_selection,
-)
-from agent_security import PolicyProfile, parse_network_profile
-from agent_storage import (
-    LeaseConflictError,
-    SQLiteArtifactPayloadStore,
-    SQLiteEventStore,
-    SQLiteLeaseStore,
-    SQLiteProjectionStore,
-    SQLiteWorkspaceProjectionStore,
-    store_initial_text_attachments,
-)
-from zebra_agent_api.approval_context import serialize_approval_context
-from zebra_agent_api.clarification_context import serialize_clarification_context
-from zebra_agent_api.responses import ApiResponse
-from zebra_agent_api.session_payloads import parse_resume_session_payload
-from zebra_agent_api.task_plan import serialize_task_plan
 from zebra_agent_config import ZebraAgentSettings, load_settings
-from zebra_agent_worker import (
-    SessionClaimService,
-    SessionExecutionService,
-    SessionRecoveryError,
-    SessionRecoveryService,
-    SessionResumeError,
-    SessionResumeService,
-    WorkerExecutionError,
-)
 
-from zebra_agent_cli.approval_decision_write import record_approval_decision
-from zebra_agent_cli.artifact_read import (
-    list_artifacts,
-    prune_artifact,
-    read_artifact_content,
-    read_artifact_detail,
+from zebra_agent_cli.cli_database import (
+    _database_path,
 )
 from zebra_agent_cli.cli_parser import build_parser
-from zebra_agent_cli.cli_types import CliCommandResult, CommandName
-from zebra_agent_cli.execution import (
-    execute_durable_run,
-    serialize_run_execution,
-    serialize_trace_events,
+from zebra_agent_cli.cli_types import CliCommandResult
+from zebra_agent_cli.command_result_builders import (
+    _approval_result,
+    _artifact_result,
+    _suspend_result,
 )
 from zebra_agent_cli.memory_review_write import (
     preview_queue_memory_review,
@@ -74,12 +34,17 @@ from zebra_agent_cli.memory_review_write import (
     record_user_memory_review,
 )
 from zebra_agent_cli.read_commands import read_command_result
+from zebra_agent_cli.run_command_execution import (
+    _run_result,
+)
 from zebra_agent_cli.session_cancel_write import cancel_session
+from zebra_agent_cli.session_command_execution import (
+    _resume_result,
+    _session_result,
+)
 from zebra_agent_cli.session_commit_write import commit_session
 from zebra_agent_cli.session_message_append_write import append_session_message
 from zebra_agent_cli.session_pull_request_write import open_session_pull_request
-from zebra_agent_cli.session_suspend_write import suspend_session
-from zebra_agent_cli.workspace_read import serialize_workspace_projection
 
 
 def execute(
@@ -357,263 +322,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     return 0
 
 
-def _run_result(
-    namespace: argparse.Namespace,
-    settings: ZebraAgentSettings,
-) -> CliCommandResult:
-    database_path = _database_path(namespace.database, settings)
-    workspace = Path(namespace.workspace)
-    network_profile = parse_network_profile(
-        namespace.network_profile,
-        domain_allowlist=namespace.network_allowlist,
-    )
-    mcp_allowlist = normalize_mcp_allowlist(namespace.mcp_tool)
-    mcp_resource_ids = normalize_mcp_resource_ids(namespace.mcp_resource)
-    if (mcp_allowlist or mcp_resource_ids) and network_profile.name not in {
-        NetworkProfileName.MCP_PROXY_ONLY,
-        NetworkProfileName.FULL_TRUSTED_LOCAL,
-    }:
-        raise ValueError("MCP selections require an MCP-capable network profile")
-    validate_mcp_capability_selection(settings.mcp_servers, mcp_allowlist)
-    resource_attachments = read_mcp_resource_attachments(
-        settings.mcp_servers,
-        mcp_resource_ids,
-    )
-    if namespace.execute:
-        execution_result = execute_durable_run(
-            prompt=namespace.prompt,
-            title=namespace.title,
-            workspace_root=workspace.expanduser().resolve(),
-            database_path=database_path,
-            settings=settings,
-            policy_profile=PolicyProfile(namespace.policy_profile),
-            tool_profile=ToolProfile(namespace.tool_profile),
-            network_profile=network_profile,
-            mcp_allowlist=mcp_allowlist,
-            attachments=resource_attachments,
-        )
-        session = execution_result.harness_result.session
-        payload = serialize_run_execution(execution_result)
-    else:
-        bootstrap = SessionBootstrapService().build(
-            SessionBootstrapCommand(
-                title=namespace.title,
-                user_input=namespace.prompt,
-                workspace_root=workspace.expanduser().resolve(),
-                policy_profile=namespace.policy_profile,
-                tool_profile=ToolProfile(namespace.tool_profile),
-                network_profile=network_profile.name.value,
-                network_allowlist=network_profile.domain_allowlist,
-                mcp_allowlist=mcp_allowlist,
-            )
-        )
-        session = bootstrap.session
-        events, attachment_refs = store_initial_text_attachments(
-            SQLiteArtifactPayloadStore(database_path),
-            bootstrap.events,
-            resource_attachments,
-        )
-        event_store = SQLiteEventStore(database_path)
-        for event in events:
-            event_store.append(event)
-        SQLiteProjectionStore(database_path).save_session(session)
-        SQLiteWorkspaceProjectionStore(database_path).save_workspace(
-            rebuild_workspace(list(events))
-        )
-        payload = {
-            "executed": False,
-            "status": session.status.value,
-            "tool_profile": namespace.tool_profile,
-            "network_profile": network_profile.name.value,
-            "network_allowlist": list(network_profile.domain_allowlist),
-            "mcp_allowlist": list(mcp_allowlist),
-            "attachments": [attachment.to_mapping() for attachment in attachment_refs],
-        }
-    return CliCommandResult(
-        command="run",
-        payload={
-            "session_id": str(session.session_id),
-            "title": namespace.title,
-            "prompt": namespace.prompt,
-            "workspace": str(workspace),
-            "database": str(database_path),
-            "mcp_resource_ids": list(mcp_resource_ids),
-            **payload,
-        },
-    )
-
-
-def _database_path(
-    database: str | None,
-    settings: ZebraAgentSettings,
-) -> Path:
-    return Path(database or settings.database_url)
-
-
-def _session_result(
-    command: CommandName,
-    session_id: str,
-    database_path: Path,
-) -> CliCommandResult:
-    session_key = SessionId(UUID(session_id))
-    session = SQLiteProjectionStore(database_path).get_session(session_key)
-    if session is None:
-        return CliCommandResult(
-            command=command,
-            payload={
-                "session_id": session_id,
-                "database": str(database_path),
-                "status": "not_found",
-            },
-        )
-    payload: dict[str, object] = {
-        "session_id": session_id,
-        "database": str(database_path),
-        "title": session.title,
-        "status": session.status.value,
-        "current_sequence": session.current_sequence,
-    }
-    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(session_key)
-    serialized_workspace = serialize_workspace_projection(workspace)
-    if serialized_workspace is not None:
-        payload["workspace"] = serialized_workspace
-    approval_context = serialize_approval_context(session.approval_context)
-    if approval_context is not None:
-        payload["approval_context"] = approval_context
-    clarification_context = serialize_clarification_context(session.clarification_context)
-    if clarification_context is not None:
-        payload["clarification_context"] = clarification_context
-    task_plan = serialize_task_plan(session.task_plan)
-    if task_plan is not None:
-        payload["task_plan"] = task_plan
-    return CliCommandResult(command=command, payload=payload)
-
-
-def _resume_result(
-    namespace: argparse.Namespace,
-    settings: ZebraAgentSettings,
-) -> CliCommandResult:
-    database_path = _database_path(namespace.database, settings)
-    if not namespace.execute:
-        return _session_result("resume", namespace.session_id, database_path)
-
-    parsed = parse_resume_session_payload(
-        {
-            "worker_id": namespace.worker_id,
-            "lease_ttl_seconds": namespace.lease_ttl_seconds,
-        }
-    )
-    if isinstance(parsed, ApiResponse):
-        return CliCommandResult(
-            command="resume",
-            payload={
-                **parsed.body,
-                "database": str(database_path),
-            },
-        )
-
-    session_id = SessionId(UUID(namespace.session_id))
-    claim_service = SessionClaimService(
-        SQLiteLeaseStore(database_path),
-        SessionRecoveryService(
-            SQLiteEventStore(database_path),
-            SQLiteProjectionStore(database_path),
-        ),
-    )
-    try:
-        result = SessionExecutionService(
-            database_path=database_path,
-            claim_service=claim_service,
-            resume_service=SessionResumeService(claim_service),
-            settings=settings,
-        ).execute_session(
-            session_id,
-            worker_id=parsed["worker_id"],
-            lease_ttl_seconds=parsed["lease_ttl_seconds"],
-        )
-    except SessionRecoveryError:
-        return CliCommandResult(
-            command="resume",
-            payload={
-                "session_id": namespace.session_id,
-                "database": str(database_path),
-                "status": "not_found",
-            },
-        )
-    except SessionResumeError:
-        return CliCommandResult(
-            command="resume",
-            payload={
-                "session_id": namespace.session_id,
-                "database": str(database_path),
-                "status": "not_resumable",
-                "reason": "cannot_resume_terminal_session",
-            },
-        )
-    except LeaseConflictError:
-        return CliCommandResult(
-            command="resume",
-            payload={
-                "session_id": namespace.session_id,
-                "database": str(database_path),
-                "status": "lease_conflict",
-                "reason": "session_already_leased",
-            },
-        )
-    except WorkerExecutionError as error:
-        return CliCommandResult(
-            command="resume",
-            payload={
-                "session_id": namespace.session_id,
-                "database": str(database_path),
-                "status": "execution_error",
-                "reason": str(error),
-            },
-        )
-    return CliCommandResult(
-        command="resume",
-        payload={
-            "session_id": namespace.session_id,
-            "database": str(database_path),
-            "executed": True,
-            "worker_id": parsed["worker_id"],
-            "status": result.session.status.value,
-            "current_sequence": result.session.current_sequence,
-            "assistant_message": result.attempt_result.metadata.get("assistant_message"),
-            "trace": serialize_trace_events(result.events),
-        },
-    )
-
-
-def _suspend_result(
-    namespace: argparse.Namespace,
-    settings: ZebraAgentSettings,
-) -> CliCommandResult:
-    return CliCommandResult(
-        command="suspend",
-        payload=suspend_session(
-            database_path=_database_path(namespace.database, settings),
-            session_id=namespace.session_id,
-        ),
-    )
-
-
-def _approval_result(
-    namespace: argparse.Namespace,
-    database_path: Path,
-) -> CliCommandResult:
-    return CliCommandResult(
-        command="approve",
-        payload=record_approval_decision(
-            database_path=database_path,
-            approval_id=namespace.session_id,
-            decision=namespace.decision,
-            operator=namespace.operator,
-            reason=namespace.reason,
-        ),
-    )
-
-
 def _model_result(
     namespace: argparse.Namespace,
     settings: ZebraAgentSettings,
@@ -648,37 +356,3 @@ def _model_result(
             ],
         },
     )
-
-
-def _artifact_result(
-    namespace: argparse.Namespace,
-    database_path: Path,
-) -> CliCommandResult:
-    if namespace.artifact_command == "list":
-        payload = list_artifacts(
-            database_path=database_path,
-            session_id=namespace.session_id,
-        )
-        return CliCommandResult(command="artifact", payload=payload)
-    if namespace.artifact_command == "inspect":
-        payload = read_artifact_detail(
-            database_path=database_path,
-            session_id=namespace.session_id,
-            artifact_id=namespace.artifact_id,
-        )
-        return CliCommandResult(command="artifact", payload=payload)
-    if namespace.artifact_command == "read":
-        payload = read_artifact_content(
-            database_path=database_path,
-            session_id=namespace.session_id,
-            artifact_id=namespace.artifact_id,
-        )
-        return CliCommandResult(command="artifact", payload=payload)
-    if namespace.artifact_command == "prune":
-        payload = prune_artifact(
-            database_path=database_path,
-            session_id=namespace.session_id,
-            artifact_id=namespace.artifact_id,
-        )
-        return CliCommandResult(command="artifact", payload=payload)
-    raise ValueError(f"unsupported artifact command: {namespace.artifact_command}")
