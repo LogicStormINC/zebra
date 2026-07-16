@@ -12491,8 +12491,8 @@ workflow or crossing the local-first runtime boundary.
 
 ### P138-RUN-01 - Bounded MCP Prompt Discovery And Resolution
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `In Progress`
+- Owner: `Codex-RUN`
 - Suggested role: `RUNTIME / SECURITY / TEST`
 - Depends on: `P137-CLOSE-01`
 - Branch: `codex/p138-run-01-bounded-mcp-prompts`
