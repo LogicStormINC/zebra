@@ -11909,3 +11909,77 @@ boundaries, while keeping server output and metadata untrusted.
   marketplace, installation, editing, presets, plugins, or connector UI
 - arbitrary shell commands, `npx` or `uvx` package installation, automatic
   trust, approval bypass, parallel MCP execution, or Research-child inheritance
+
+### P132-CLOSE-01 - Phase 132 Closeout And Phase 133 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / PRODUCT`
+- Depends on: `P132-MCP-01`
+- Branch: `codex/p132-closeout-phase133-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 132 acceptance state and define one bounded product
+readback slice so operators can see which configured MCP capabilities are
+actually available before launching or approving a task.
+
+#### Acceptance
+
+- [x] `P132-MCP-01` is recorded as merged through PR `#101` and done.
+- [x] Phase 133 is limited to safe read-only MCP inventory and preflight
+  surfaces; it adds no execution, credential, network, or approval authority.
+- [x] Phase 133 has one non-overlapping task with explicit runtime, API,
+  desktop, test, and documentation ownership.
+
+## Phase 133 Task Board
+
+### P133-MCP-01 - Safe MCP Capability Inventory And Preflight
+
+- Status: `Ready`
+- Owner: `Codex`
+- Suggested role: `RUNTIME / API / UI / SECURITY`
+- Depends on: `P132-CLOSE-01`
+- Branch: `codex/p133-mcp-01-safe-capability-inventory`
+- Owned paths: `packages/agent-runtime/`, `apps/api/`, `UI/desktop/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`, `UI/README.md`
+
+#### Goal
+
+Give operators one truthful, authenticated, read-only view of configured MCP
+servers and discovered tools before task execution, and surface it only inside
+the desktop runtime settings area without exposing configuration secrets or
+adding ordinary-state HITL controls.
+
+#### Deliverables
+
+- one shared safe MCP inventory projection over the Phase 132 discovery result
+- authenticated API readback with configured, available, and unavailable states
+- desktop settings readback with explicit refresh, loading, empty, and error states
+- focused runtime, API, frontend projection, and compatibility tests
+
+#### Acceptance
+
+- [ ] No configuration returns a successful explicit unconfigured inventory
+  without starting a process.
+- [ ] Configured discovery returns deterministic server and tool names,
+  descriptions, input-field names, and counts without commands, arguments,
+  environment values, absolute paths, credentials, or raw schemas.
+- [ ] Discovery or protocol failure returns an actionable unavailable state and
+  never presents stale or inferred tools as available.
+- [ ] The inventory endpoint follows existing API authentication and CORS rules;
+  `/health` remains public and unchanged.
+- [ ] Desktop users can inspect and refresh MCP availability only in runtime
+  settings; the idle and ordinary thread surfaces gain no approval controls.
+- [ ] Inventory is observational only and cannot execute `tools/call`, alter
+  configuration, grant authority, or expose MCP to fixed Research children.
+- [ ] Focused runtime/API/frontend tests, all backend/static/eval gates, desktop
+  checks/build, Tauri validation, and browser settings acceptance succeed.
+
+#### Explicit Non-Goals
+
+- editing, installing, enabling, disabling, or deleting MCP server configuration
+- remote MCP, OAuth, credentials, dynamic reload, background polling, health
+  daemons, marketplace, plugin management, or connector onboarding
+- per-session tool selection, approval policy editing, ordinary-state HITL,
+  raw JSON schema display, command display, logs, metrics, or Research inheritance
