@@ -11983,3 +11983,87 @@ adding ordinary-state HITL controls.
   daemons, marketplace, plugin management, or connector onboarding
 - per-session tool selection, approval policy editing, ordinary-state HITL,
   raw JSON schema display, command display, logs, metrics, or Research inheritance
+
+### P133-CLOSE-01 - Phase 133 Closeout And Phase 134 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / PRODUCT / SECURITY`
+- Depends on: `P133-MCP-01`
+- Branch: `codex/p133-closeout-phase134-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 133 acceptance state and define one bounded authority
+slice that separates globally configured MCP capabilities from the exact MCP
+tools an individual task may see and request.
+
+#### Acceptance
+
+- [x] `P133-MCP-01` is recorded as merged through PR `#103` and done.
+- [x] Phase 134 is limited to a durable task-scoped MCP allowlist enforced from
+  launch through direct execution, Worker recovery, and approval continuation.
+- [x] Phase 134 has one non-overlapping task with explicit core, storage,
+  runtime, app, desktop, test, and documentation ownership.
+
+## Phase 134 Task Board
+
+### P134-MCP-01 - Durable Task-Scoped MCP Capability Allowlist
+
+- Status: `Ready`
+- Owner: `Codex`
+- Suggested role: `CORE / STORAGE / RUNTIME / API / WORKER / UI / SECURITY`
+- Depends on: `P133-CLOSE-01`
+- Branch: `codex/p134-mcp-01-task-scoped-capability-allowlist`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `packages/agent-runtime/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `UI/desktop/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`, `UI/README.md`
+
+#### Goal
+
+Require each new task to explicitly select the configured MCP tools it may see
+and request, persist that exact selection as durable task authority, and enforce
+the same narrowed catalog during direct execution, queued Worker recovery, and
+approval continuation without changing tool behavior or widening child authority.
+
+#### Deliverables
+
+- one strict canonical `mcp_allowlist` launch contract with deterministic limits
+- durable event and workspace projection storage with explicit legacy semantics
+- one shared runtime catalog filter that rejects unknown or unselected tools
+- API, direct Harness, CLI, Worker, recovery, and approval-continuation parity
+- desktop launch selection backed by the safe Phase 133 inventory, without idle HITL
+
+#### Acceptance
+
+- [ ] New tasks default to no MCP capability even when servers are configured;
+  an explicit allowlist is required before any MCP tool is model-visible.
+- [ ] Input accepts at most 32 unique canonical `mcp.<server>.<tool>` names and
+  rejects unknown fields, malformed names, duplicates, unknown capabilities,
+  or an allowlist paired with a network profile that cannot route MCP.
+- [ ] The exact normalized allowlist is durable in `TASK_PREPARED`, workspace
+  projection storage, session readback, and API create responses, and survives
+  process restart without consulting mutable frontend state.
+- [ ] Direct API execution, local CLI execution, queued Worker execution,
+  recovery, and approved continuation expose and execute only selected tools.
+- [ ] Legacy tasks that predate the field retain the Phase 132 configured-tool
+  behavior, while every newly created task records an explicit list, including
+  an empty list, so omission cannot silently widen new authority.
+- [ ] Removing or renaming a configured capability makes recovery fail closed;
+  stale, unknown, or unselected approved targets are never executed.
+- [ ] Desktop users can select only currently available safe inventory entries
+  inside task launch configuration; unavailable inventory is actionable, and
+  idle or ordinary thread surfaces gain no approval controls.
+- [ ] Fixed Research children receive no MCP tools, allowlists grant no command,
+  filesystem, network, credential, policy, child-agent, or approval authority,
+  and every selected MCP call still requires the existing concrete approval.
+- [ ] Focused compatibility and authority matrices, all backend/static/eval
+  gates, desktop checks/build, Tauri validation, browser acceptance, and one
+  real-provider selected-tool approval/recovery pass succeed.
+
+#### Explicit Non-Goals
+
+- server installation, editing, enabling, disabling, deletion, or dynamic reload
+- remote MCP, Streamable HTTP, SSE, OAuth, credentials, headers, prompts,
+  resources, sampling, elicitation, roots, server tasks, or long-lived pools
+- wildcard selection, automatic selection by the model, approval bypass,
+  Research inheritance, marketplace, connector onboarding, or plugin management
