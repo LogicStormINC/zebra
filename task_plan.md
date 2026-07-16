@@ -1,11 +1,13 @@
 # Task Plan
 
-## Phase 140 - Durable Bounded PDF Text Input
+## Phase 141 - Durable Bounded DOCX Text Input
 
-1. `completed` - Claim the phase and lock PDF input, extraction, provenance,
+1. `completed` - Claim the phase and lock DOCX input, extraction, provenance,
    recovery, UI, and non-goal boundaries.
-2. `completed` - Add bounded PDF text extraction and durable document provenance.
-3. `completed` - Wire mixed text/PDF input through API and desktop Composer paths.
+2. `completed` - Add bounded DOCX text extraction and format-aware durable
+   document provenance.
+3. `completed` - Wire mixed text/PDF/DOCX input through API and desktop Composer
+   paths.
 4. `completed` - Add focused regression and real-provider acceptance coverage.
 5. `completed` - Run full repository gates, close the task, and merge to `main`.
 

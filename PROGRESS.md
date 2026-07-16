@@ -2,6 +2,28 @@
 
 ## Addendum
 
+- 2026-07-16: completed `P141-DOC-01`; standard DOCX body and table text now
+  shares the durable bounded attachment path with UTF-8 text and text-layer PDF
+  material on new tasks and ordinary follow-up messages. Unsafe ZIP paths,
+  duplicate or encrypted entries, zip-bomb limits, malformed OOXML, macros,
+  external relationships, embedded objects, `altChunk`, text-empty documents,
+  and all raw or extracted size breaches fail before session mutation. Only
+  normalized UTF-8 extraction is stored, with safe original size, digest,
+  paragraph count, and extraction status. All `1279` backend tests, Ruff, Mypy
+  across `347` source files, 8 evals, 14 desktop checks, Node 22 build, Tauri,
+  764-file size gate, desktop plus 900px browser acceptance, and a real
+  `deepseek-v4-flash` response passed. The provider returned
+  `DOCX_FINAL_OK: DOCX_PROVIDER_PROOF_141_8E2A`; the existing Vite bundle warning
+  remains unchanged.
+- 2026-07-16: started `P141-DOC-01` on
+  `codex/p141-doc-01-bounded-docx-input`. Phase 141 adds bounded standard DOCX
+  body and table text extraction to the existing durable attachment path. Raw
+  archives are accepted only at the API boundary; malformed, encrypted,
+  macro-enabled, externally linked, embedded-object, text-empty, and over-limit
+  documents fail before session mutation. Recovery consumes only persisted
+  normalized UTF-8 extraction with safe original-document provenance. Legacy
+  Office formats, other OOXML applications, OCR, native multimodal input,
+  remote URLs, and authority changes remain excluded.
 - 2026-07-16: completed `P140-DOC-01`; new tasks and ordinary follow-up messages
   now accept mixed bounded UTF-8 text and text-layer PDF materials. PDFs are
   rejected before mutation when malformed, encrypted, image-only, over 4 MiB,

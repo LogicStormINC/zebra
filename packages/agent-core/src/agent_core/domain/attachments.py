@@ -22,6 +22,7 @@ class TextAttachmentInput(BaseModel):
     original_size_bytes: int | None = Field(default=None, ge=1)
     original_sha256: str | None = None
     page_count: int | None = Field(default=None, ge=1)
+    paragraph_count: int | None = Field(default=None, ge=1)
     extraction_status: Literal["text_extracted"] | None = None
 
     @field_validator("file_name", "media_type")
@@ -53,6 +54,7 @@ class TextAttachmentInput(BaseModel):
             self.original_size_bytes,
             self.original_sha256,
             self.page_count,
+            self.paragraph_count,
             self.extraction_status,
         )
         return self
@@ -75,6 +77,7 @@ class SessionAttachmentRef(BaseModel):
     original_size_bytes: int | None = Field(default=None, ge=1)
     original_sha256: str | None = None
     page_count: int | None = Field(default=None, ge=1)
+    paragraph_count: int | None = Field(default=None, ge=1)
     extraction_status: Literal["text_extracted"] | None = None
 
     @field_validator("file_name", "media_type")
@@ -111,6 +114,7 @@ class SessionAttachmentRef(BaseModel):
             self.original_size_bytes,
             self.original_sha256,
             self.page_count,
+            self.paragraph_count,
             self.extraction_status,
         )
         return self
@@ -141,6 +145,7 @@ class SessionAttachmentRef(BaseModel):
                     "original_size_bytes": self.original_size_bytes,
                     "original_sha256": self.original_sha256,
                     "page_count": self.page_count,
+                    "paragraph_count": self.paragraph_count,
                     "extraction_status": self.extraction_status,
                 }
             )
@@ -162,6 +167,7 @@ class AttachmentContextInput(BaseModel):
     original_size_bytes: int | None = Field(default=None, ge=1)
     original_sha256: str | None = None
     page_count: int | None = Field(default=None, ge=1)
+    paragraph_count: int | None = Field(default=None, ge=1)
     extraction_status: Literal["text_extracted"] | None = None
 
     @field_validator("file_name", "media_type", "text")
@@ -193,6 +199,7 @@ class AttachmentContextInput(BaseModel):
             self.original_size_bytes,
             self.original_sha256,
             self.page_count,
+            self.paragraph_count,
             self.extraction_status,
         )
         return self
@@ -226,6 +233,7 @@ def _validate_document_provenance(
     original_size_bytes: int | None,
     original_sha256: str | None,
     page_count: int | None,
+    paragraph_count: int | None,
     extraction_status: str | None,
 ) -> None:
     fields = (
@@ -233,16 +241,26 @@ def _validate_document_provenance(
         original_size_bytes,
         original_sha256,
         page_count,
+        paragraph_count,
         extraction_status,
     )
     if not any(value is not None for value in fields):
         return
     if source_type != "user_attachment":
         raise ValueError("only user attachments may include document provenance")
-    if any(value is None for value in fields):
-        raise ValueError("document provenance must be complete")
-    if original_media_type != "application/pdf":
-        raise ValueError("document provenance media type must be application/pdf")
+    common = (original_media_type, original_size_bytes, original_sha256, extraction_status)
+    if any(value is None for value in common):
+        raise ValueError("document provenance must include all common fields")
+    if original_media_type == "application/pdf":
+        if page_count is None or paragraph_count is not None:
+            raise ValueError("PDF provenance requires only page_count")
+    elif original_media_type == (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ):
+        if paragraph_count is None or page_count is not None:
+            raise ValueError("DOCX provenance requires only paragraph_count")
+    else:
+        raise ValueError("document provenance media type is not supported")
     if extraction_status != "text_extracted":
         raise ValueError("document extraction status is not supported")
 

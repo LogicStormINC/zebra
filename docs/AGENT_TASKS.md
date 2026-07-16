@@ -12709,3 +12709,70 @@ multimodal input, remote document fetching, or a second payload lifecycle.
 - PDF JavaScript, forms, annotations, attachments, images, metadata injection,
   password entry, document mutation, Research-child inheritance, or authority
   changes to tools, Policy, network, credentials, MCP, approval, or HITL
+
+## Phase 141 Task Board
+
+### P141-DOC-01 - Durable Bounded DOCX Text Input
+
+- Status: `Done`
+- Owner: `Codex-DOC`
+- Suggested role: `CONTEXT / API / STORAGE / UI / TEST / DOC`
+- Depends on: `P140-DOC-01`
+- Branch: `codex/p141-doc-01-bounded-docx-input`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `apps/api/`,
+  `tests/`, `UI/desktop/`, `README.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`,
+  `task_plan.md`
+
+#### Goal
+
+Extend the existing durable attachment path with bounded text extraction for
+user-selected standard DOCX documents, without introducing office automation,
+remote fetching, native multimodal input, or a second payload lifecycle.
+
+#### Acceptance
+
+- [x] New tasks and ordinary follow-up messages accept mixed supported text,
+  PDF, and DOCX files under the existing four-item boundary and explicit raw,
+  archive-entry, expanded-content, extracted-text, and aggregate limits.
+- [x] DOCX parsing rejects malformed, encrypted, macro-enabled, externally
+  linked, embedded-object, over-limit, and text-empty documents before session
+  mutation; attachments remain atomic.
+- [x] Only normalized UTF-8 body and table text is persisted, while safe
+  readback retains original media type, byte size, SHA-256, paragraph count,
+  and extraction status without exposing raw DOCX bytes or extracted text.
+- [x] Direct execution and queued Worker recovery use only captured extracted
+  bytes, verify durable size and digest metadata, and never reopen the DOCX.
+- [x] Desktop attachment selection accepts `.docx`, validates client-side raw
+  limits and ZIP signature, distinguishes document material, and preserves
+  create, append, removal, clear, and responsive Composer behavior.
+- [x] Focused parser, API, persistence, recovery, UI, and provider tests plus
+  full backend, static, eval, desktop, build, Tauri, file-size, and browser
+  gates pass before the task is marked done.
+
+#### Explicit Non-Goals
+
+- Legacy DOC, DOCM, spreadsheets, presentations, archives, OCR, images, audio,
+  video, provider-native multimodal messages, remote URLs, cloud object storage,
+  embeddings, semantic indexing, or automatic summarization
+- Macros, external relationships, embedded OLE or packages, `altChunk`, tracked
+  change semantics, comments, headers, footers, footnotes, password entry,
+  document mutation, Research-child inheritance, or authority changes to tools,
+  Policy, network, credentials, MCP, approval, or HITL
+
+#### Validation Evidence
+
+- Standard-library DOCX package validation covers ZIP signature, safe unique
+  paths, encryption flags, entry and expanded-content ceilings, compression
+  ratio, required OOXML parts, strict main-document media type, XML entities,
+  macros, embedded objects, external relationships, and `altChunk` rejection.
+- Focused text, PDF, and DOCX coverage passed `40` tests; the full backend suite
+  passed `1279` tests. Ruff, Mypy across `347` source files, the 8-case eval
+  release gate, and the 764-file size gate passed.
+- All 14 desktop contract checks, the Node 22 production build, and offline
+  Tauri `cargo check` passed. The pre-existing Vite main-bundle size warning is
+  unchanged.
+- Browser acceptance against the Phase API stayed viewport-bound at both
+  `1512x800` and `900x800`, exposed one attachment entry accepting `.docx`, and
+  emitted no console errors.
+- A real `deepseek-v4-flash` task consumed only extracted DOCX material and
+  returned `DOCX_FINAL_OK: DOCX_PROVIDER_PROOF_141_8E2A`.

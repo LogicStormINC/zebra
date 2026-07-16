@@ -397,6 +397,7 @@ class ZebraAgentApi(
                         original_size_bytes=attachment.original_size_bytes,
                         original_sha256=attachment.original_sha256,
                         page_count=attachment.page_count,
+                        paragraph_count=attachment.paragraph_count,
                         extraction_status=attachment.extraction_status,
                     )
                     for attachment in parsed["attachments"]
