@@ -12080,3 +12080,95 @@ approval continuation without changing tool behavior or widening child authority
 - A real `deepseek-v4-flash` task selected only `mcp.fixture.echo`, made no server
   call before approval, executed exactly after grant and Worker recovery, and
   returned `MCP_ALLOWLIST_FINAL_OK: echo:MCP_PROVIDER_PROOF_134`.
+
+### P134-CLOSE-01 - Phase 134 Closeout And Phase 135 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / RUNTIME / SECURITY`
+- Depends on: `P134-MCP-01`
+- Branch: `codex/p134-closeout-phase135-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 134 authority boundary and define one bounded
+progressive-disclosure slice that can reduce model-visible MCP schema cost
+without expanding the exact tools a task was already granted.
+
+#### Acceptance
+
+- [x] `P134-MCP-01` is recorded as merged through PR `#105` and done.
+- [x] Current Hermes `main` is refreshed to `f8ddf4fd8` and contributes only
+  session-scoped catalog rebuild, bounded deterministic retrieval, and
+  underlying-call guardrail lessons.
+- [x] Phase 135 is limited to progressive disclosure over the task's effective
+  authorized MCP catalog and has one task with explicit ownership and non-goals.
+
+## Phase 135 Task Board
+
+### P135-MCP-01 - Bounded Authorized MCP Progressive Disclosure
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / RUNTIME / HARNESS / SECURITY / TEST`
+- Depends on: `P134-CLOSE-01`
+- Branch: `codex/p135-mcp-01-authorized-progressive-disclosure`
+- Owned paths: `packages/agent-core/`, `packages/agent-runtime/`, `packages/agent-tools/`, `packages/agent-integrations/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Keep ordinary built-in tools directly visible while replacing only a
+deterministically oversized effective MCP schema catalog with bounded
+provider-neutral search, describe, and call bridges. Every catalog read and
+underlying call must remain scoped to the exact Phase 134 task authority.
+
+#### Deliverables
+
+- one stateless catalog rebuilt from the current task's effective MCP tools
+- deterministic bounded search and exact-name schema description contracts
+- one bridge-call parser that resolves to a real selected MCP call before Policy
+- direct Harness, API, CLI, Worker, recovery, and approval-continuation parity
+- focused authority, compatibility, budget, trace, and provider adapter tests
+
+#### Acceptance
+
+- [ ] Empty or small effective MCP catalogs preserve the current direct tool
+  list; progressive disclosure activates only above one documented deterministic
+  serialized-schema threshold and never defers non-MCP built-in tools.
+- [ ] The deferred catalog is rebuilt from the current task gateway on every
+  composition, contains only effective selected MCP tools, and has no
+  process-global, cross-session, user, tenant, or stale configuration fallback.
+- [ ] Search accepts one bounded non-blank query and bounded result limit,
+  indexes only canonical name, bounded description, and top-level input names,
+  and returns deterministic scores and canonical-name tie ordering without a
+  model call, vector store, external dependency, or tool execution.
+- [ ] Describe accepts one exact search result, returns one bounded provider
+  schema, rejects bridges and unknown or unselected names, and labels all MCP
+  descriptions and schemas as untrusted capability metadata.
+- [ ] Bridge calls accept one canonical selected name plus one argument object,
+  reject recursion, malformed payloads, unknown, removed, unselected, or
+  currently unavailable tools, and resolve to the underlying MCP call before
+  proposal, Policy, approval, execution, verification, event, and trace handling.
+- [ ] Catalog search and description consume normal bounded model/tool-loop
+  budgets; bridge unwrapping does not double-count one underlying call, bypass
+  duplicate detection, or create wrapper approval and execution records.
+- [ ] Approval context and exact continuation persist the immutable underlying
+  MCP name, arguments, provider call identity, and fingerprint; restart recovery
+  never re-searches or substitutes a different tool and still fails closed when
+  the selected capability was removed.
+- [ ] Direct execution, queued Worker execution, API, CLI, legacy effective
+  catalogs, provider aliasing, compaction, sequential batches, and safe concurrent
+  batches retain deterministic behavior; fixed Research children receive no MCP
+  catalog or bridge tools.
+- [ ] Focused authority and compatibility matrices, all backend/static/eval
+  gates, and one real-provider search-to-approved-call recovery pass succeed.
+
+#### Explicit Non-Goals
+
+- changing Phase 134 allowlists, wildcard or semantic authority, automatic tool
+  grants, model-selected installation, configuration mutation, or approval bypass
+- remote MCP, Streamable HTTP, SSE, OAuth, credentials, resources, prompts,
+  sampling, elicitation, roots, server tasks, long-lived pools, or health daemons
+- plugins, marketplace, connector onboarding, desktop catalog browsing, vector
+  retrieval, embeddings, JavaScript execution, code mode, or Research inheritance
