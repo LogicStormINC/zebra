@@ -101,9 +101,9 @@
 ## Current Phase
 
 - Active phase: `Phase 138 - Application-Controlled MCP Prompt Templates`
-- Repository status: `P138-RUN-01 ready; dependent application, desktop, and acceptance lanes locked`
+- Repository status: `P138-RUN-01, P138-APP-01, and P138-UI-01 merged; P138-E2E-01 in progress`
 - Current focus:
-  - `P138-RUN-01` is the only ready implementation lane and owns bounded local stdio Prompt discovery plus exact text-only resolution
+  - `P138-E2E-01` owns final compatibility, persistence, recovery, desktop, browser, and real-provider acceptance before Phase 138 closes
   - Phase 138 turns user-selected MCP Prompt templates into durable untrusted task input without exposing Prompt operations to the model
   - Phase 137 restores maintainable ownership boundaries and permanently enforces the source and test file hard limits; it intentionally adds no product capability
   - `P137-SRC-01`, `P137-UI-01`, and `P137-TEST-01` are merged to `main`; `P137-GATE-01` is the final integration slice
