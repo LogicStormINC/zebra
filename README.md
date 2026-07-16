@@ -73,6 +73,11 @@ At task creation, users may also select up to four advertised local MCP text
 Resources. Zebra reads each selected Resource once, persists it through the same
 attachment lifecycle, and supplies the immutable snapshot to the parent model as
 untrusted material. Resource list/read operations are never model-visible tools.
+New-task launch configuration can also explicitly refresh and select one local
+MCP Prompt plus its declared string arguments. Zebra resolves that Prompt once
+before session creation, persists the rendered text as untrusted attachment
+material, and recovers only the captured bytes. Prompt list/get operations are
+never model-visible tools, and active sessions cannot re-run or mutate a Prompt.
 
 - stack: `Tauri + React + Tailwind CSS + TanStack Query + Ant Design + Ant Design X`
 - runtime: `Node 22.17.0` pinned via `volta`, `pnpm 10.28.2`
