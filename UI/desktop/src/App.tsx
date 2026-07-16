@@ -31,6 +31,13 @@ export default function App() {
     refetchInterval: 5_000,
   });
   const runtimeStatus = projectRuntimeConnection(healthQuery.data?.status, healthQuery.data?.service, healthQuery.isFetching);
+  const mcpCapabilitiesQuery = useQuery({
+    queryKey: ["mcp-capabilities", config.apiBaseUrl, config.authToken],
+    queryFn: api.mcpCapabilities,
+    enabled: runtimeStatus === "connected",
+    retry: false,
+    staleTime: Infinity,
+  });
   const {
     conversations,
     createIndexedConversation,
@@ -378,6 +385,9 @@ export default function App() {
         isRequesting={isRequesting}
         listRef={listRef}
         messages={messages}
+        mcpCapabilities={mcpCapabilitiesQuery.data}
+        mcpCapabilitiesBusy={mcpCapabilitiesQuery.isFetching}
+        mcpCapabilitiesError={mcpCapabilitiesQuery.error ? toErrorMessage(mcpCapabilitiesQuery.error) : null}
         operatorConfig={config}
         activeApproval={activeApproval.approval}
         approvalBusy={activeApproval.busy}
@@ -402,6 +412,9 @@ export default function App() {
         onResetConfig={resetConfig}
         onRetryRuntime={() => {
           void healthQuery.refetch();
+        }}
+        onRetryMcpCapabilities={() => {
+          void mcpCapabilitiesQuery.refetch();
         }}
         onCreateConversation={createConversation}
         onDeleteConversation={deleteConversation}

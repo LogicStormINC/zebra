@@ -9,6 +9,8 @@ Current workspace:
 Current live frontend integration:
 
 - API health probe against `/health`
+- authenticated MCP capability inventory against `GET /capabilities/mcp`, shown
+  only in runtime settings with explicit refresh and no background polling
 - approval inbox against `/approvals`
 - approval detail against `GET /approvals/{id}`
 - session creation against `POST /sessions`

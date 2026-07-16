@@ -27,7 +27,7 @@ from agent_integrations import (
     build_model_gateway,
     build_pull_request_gateway,
 )
-from agent_runtime import run_local_harness
+from agent_runtime import build_mcp_capability_inventory, run_local_harness
 from agent_security import CredentialBroker, PolicyProfile, parse_network_profile
 from agent_storage import (
     LeaseConflictError,
@@ -101,6 +101,24 @@ class ZebraAgentApi:
                 "service": "zebra-agent-api",
             },
         )
+
+    def get_mcp_capabilities(self) -> ApiResponse:
+        try:
+            inventory = build_mcp_capability_inventory(self.settings.mcp_servers)
+        except ValueError as error:
+            return ApiResponse(
+                status_code=503,
+                body={
+                    "status": "unavailable",
+                    "configured": True,
+                    "available": False,
+                    "server_count": len(self.settings.mcp_servers),
+                    "tool_count": 0,
+                    "servers": [],
+                    "reason": str(error),
+                },
+            )
+        return ApiResponse(status_code=200, body=inventory.to_mapping())
 
     def get_session(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session(session_id)

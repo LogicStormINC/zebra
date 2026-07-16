@@ -136,6 +136,12 @@ are untrusted. Shells, inline interpreter execution, package installers, secret
 environment injection, remote transports, dynamic reload, and Research-child
 inheritance are intentionally unsupported.
 
+Authenticated operators can inspect the same bounded discovery result through
+`GET /capabilities/mcp`. The response contains only availability, server and
+tool names, bounded descriptions, input-field names, and counts. It never
+returns executable commands, arguments, environment values, paths, credentials,
+or raw schemas, and the read does not call a tool or change configuration.
+
 Local API, CLI, and Worker composition also supplies general and coding parent
 sessions with the read-only `sessions.search` tool over the configured SQLite
 database. With no arguments it browses bounded recent sessions; `query` performs

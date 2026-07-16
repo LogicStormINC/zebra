@@ -24,6 +24,8 @@ class RouteAdapter:
         method = request.method.upper()
         if method == "GET" and request.path == "/health":
             return self.app.health()
+        if method == "GET" and request.path == "/capabilities/mcp":
+            return self.app.get_mcp_capabilities()
         if method == "GET" and request.path == "/sessions":
             return self.app.list_sessions(request.query or {})
         if method == "POST" and request.path == "/sessions":

@@ -4,6 +4,7 @@ import type {
   ApprovalsResponse,
   CreateSessionResponse,
   HealthResponse,
+  McpCapabilitiesResponse,
   SessionArtifactContentResponse,
   SessionArtifactDetailResponse,
   SessionArtifactPruneResponse,
@@ -29,6 +30,8 @@ interface CoreApiContext {
 export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
   return {
     health: () => requestJson<HealthResponse>(baseUrl, "/health"),
+    mcpCapabilities: () =>
+      requestJson<McpCapabilitiesResponse>(baseUrl, "/capabilities/mcp", { authToken }),
     approvals: () => requestJson<ApprovalsResponse>(baseUrl, "/approvals", { authToken }),
     approval: (approvalId: string) =>
       requestJson<ApprovalSummary>(baseUrl, `/approvals/${approvalId}`, { authToken }),
