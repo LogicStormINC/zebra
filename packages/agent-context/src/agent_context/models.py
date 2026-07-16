@@ -11,6 +11,7 @@ class ContextItemKind(StrEnum):
     CONVERSATION_SUMMARY = "conversation_summary"
     TOOL_OUTPUT_SUMMARY = "tool_output_summary"
     USER_ATTACHMENT = "user_attachment"
+    MCP_RESOURCE = "mcp_resource"
 
 
 RUNTIME_EVIDENCE_KINDS = frozenset(
@@ -21,7 +22,7 @@ RUNTIME_EVIDENCE_KINDS = frozenset(
 )
 RUNTIME_EVIDENCE_SOURCE_TYPES = frozenset({"session_projection", "tool_trace"})
 MEMORY_SOURCE_TYPES = frozenset({"confirmed_memory"})
-ATTACHMENT_SOURCE_TYPES = frozenset({"user_attachment"})
+ATTACHMENT_SOURCE_TYPES = frozenset({"user_attachment", "mcp_resource"})
 
 
 class TrustLevel(StrEnum):
@@ -107,10 +108,10 @@ class ContextCompileRequest:
             if item.provenance.source_type not in MEMORY_SOURCE_TYPES:
                 raise ValueError("memory_items must come from confirmed_memory sources")
         for item in self.attachment_items:
-            if item.kind is not ContextItemKind.USER_ATTACHMENT:
-                raise ValueError("attachment_items must use user_attachment kind")
+            if item.kind not in {ContextItemKind.USER_ATTACHMENT, ContextItemKind.MCP_RESOURCE}:
+                raise ValueError("attachment_items must use an attachment context kind")
             if item.provenance.source_type not in ATTACHMENT_SOURCE_TYPES:
-                raise ValueError("attachment_items must come from user_attachment sources")
+                raise ValueError("attachment_items must come from supported attachment sources")
 
 
 @dataclass(frozen=True)

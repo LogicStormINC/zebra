@@ -18,7 +18,7 @@ import locale from "../_utils/local";
 import { sessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-status";
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
-import { availableMcpToolNames } from "../lib/mcp-capabilities";
+import { availableMcpResourceIds, availableMcpToolNames } from "../lib/mcp-capabilities";
 import {
   attachmentPayloads,
   type PendingTextAttachment,
@@ -139,11 +139,19 @@ export function CodexConversationPane({
   const durableNetworkProfile = sessionSummary?.workspace?.network_profile === "domain-allowlist" || sessionSummary?.workspace?.network_profile === "mcp-proxy-only" ? sessionSummary.workspace.network_profile : "none";
   const durableNetworkAllowlist = sessionSummary?.workspace?.network_allowlist ?? [];
   const durableMcpAllowlist = sessionSummary?.workspace?.mcp_allowlist ?? [];
+  const durableMcpResourceIds = sessionSummary?.attachments
+    ?.filter((attachment) => attachment.source_type === "mcp_resource")
+    .flatMap((attachment) => attachment.source_id ? [attachment.source_id] : []) ?? [];
   const availableMcpTools = availableMcpToolNames(mcpCapabilities);
+  const availableMcpResources = availableMcpResourceIds(mcpCapabilities);
   const effectiveLaunchConfig: TaskLaunchConfig = launchEditable
     ? launchConfig
-    : { workspace: durableWorkspace, policyProfile: durablePolicy, toolProfile: durableToolProfile, networkProfile: durableNetworkProfile, networkAllowlist: durableNetworkAllowlist, mcpAllowlist: durableMcpAllowlist };
-  const launchError = validateTaskLaunchConfig(effectiveLaunchConfig, launchEditable ? availableMcpTools : undefined);
+    : { workspace: durableWorkspace, policyProfile: durablePolicy, toolProfile: durableToolProfile, networkProfile: durableNetworkProfile, networkAllowlist: durableNetworkAllowlist, mcpAllowlist: durableMcpAllowlist, mcpResourceIds: durableMcpResourceIds };
+  const launchError = validateTaskLaunchConfig(
+    effectiveLaunchConfig,
+    launchEditable ? availableMcpTools : undefined,
+    launchEditable ? availableMcpResources : undefined,
+  );
   const canSubmit = composerValue.trim().length > 0 && !launchError;
   const headerTitle = hasThread ? activeLabel : idleProjectLabel;
   const runtimeLabel = runtimeStatus === "connected"
@@ -201,8 +209,10 @@ export function CodexConversationPane({
       busy={mcpCapabilitiesBusy}
       errorText={mcpCapabilitiesError}
       className={launchStyles.editor}
-      selected={launchConfig.mcpAllowlist}
-      onChange={(mcpAllowlist) => onPatchLaunchConfig({ mcpAllowlist })}
+      selectedTools={launchConfig.mcpAllowlist}
+      selectedResources={launchConfig.mcpResourceIds}
+      onToolsChange={(mcpAllowlist) => onPatchLaunchConfig({ mcpAllowlist })}
+      onResourcesChange={(mcpResourceIds) => onPatchLaunchConfig({ mcpResourceIds })}
     />
   );
   const renderComposer = (variant: "idle" | "thread") => (
@@ -257,8 +267,8 @@ export function CodexConversationPane({
                 ) : <span className={launchStyles.staticBadge}>能力: {durableToolProfile === "coding" ? "编码工具" : "通用工具"}</span>}
                 {launchEditable ? (
                   <Dropdown menu={{ items: [
-                    { key: "none", label: "网络: 无外部网络", onClick: () => onPatchLaunchConfig({ networkProfile: "none", networkAllowlist: [], mcpAllowlist: [] }) },
-                    { key: "domain-allowlist", label: "网络: 域名白名单", onClick: () => onPatchLaunchConfig({ networkProfile: "domain-allowlist", mcpAllowlist: [] }) },
+                    { key: "none", label: "网络: 无外部网络", onClick: () => onPatchLaunchConfig({ networkProfile: "none", networkAllowlist: [], mcpAllowlist: [], mcpResourceIds: [] }) },
+                    { key: "domain-allowlist", label: "网络: 域名白名单", onClick: () => onPatchLaunchConfig({ networkProfile: "domain-allowlist", mcpAllowlist: [], mcpResourceIds: [] }) },
                     { key: "mcp-proxy-only", label: "网络: 仅 MCP 代理", onClick: () => onPatchLaunchConfig({ networkProfile: "mcp-proxy-only", networkAllowlist: [] }) },
                   ] }} trigger={["click"]}>
                     <button className={styles.toolbarButton} type="button">网络: {launchConfig.networkProfile === "none" ? "无外部网络" : launchConfig.networkProfile}</button>
@@ -271,7 +281,7 @@ export function CodexConversationPane({
                 ) : null}
                 {launchEditable && launchConfig.networkProfile === "mcp-proxy-only" ? (
                   <Popover content={mcpEditor} placement="topLeft" trigger="click">
-                    <button className={styles.toolbarButton} type="button">MCP: {launchConfig.mcpAllowlist.length || "未选择"}</button>
+                    <button className={styles.toolbarButton} type="button">MCP: {launchConfig.mcpAllowlist.length} 工具 · {launchConfig.mcpResourceIds.length} 资源</button>
                   </Popover>
                 ) : null}
                 <span className={launchStyles.staticBadge}>模型: API 运行时配置</span>

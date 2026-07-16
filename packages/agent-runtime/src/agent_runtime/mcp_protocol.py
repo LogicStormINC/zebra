@@ -37,6 +37,7 @@ class StdioMcpSession:
     _selector: selectors.BaseSelector | None = field(default=None, init=False)
     _buffer: bytearray = field(default_factory=bytearray, init=False)
     _request_id: int = field(default=0, init=False)
+    _capabilities: dict[str, object] = field(default_factory=dict, init=False)
 
     def __enter__(self) -> StdioMcpSession:
         if self.timeout_seconds <= 0:
@@ -66,10 +67,9 @@ class StdioMcpSession:
                 },
             )
             capabilities = result.get("capabilities")
-            if not isinstance(capabilities, Mapping) or "tools" not in capabilities:
-                raise McpProtocolError(
-                    f"MCP server {self.server.name} does not declare tools capability"
-                )
+            if not isinstance(capabilities, Mapping):
+                raise McpProtocolError(f"MCP server {self.server.name} has invalid capabilities")
+            self._capabilities = dict(capabilities)
             self.notify("notifications/initialized")
         except Exception:
             self.close()
@@ -114,6 +114,9 @@ class StdioMcpSession:
 
     def notify(self, method: str) -> None:
         self._send({"jsonrpc": "2.0", "method": method})
+
+    def supports(self, capability: str) -> bool:
+        return capability in self._capabilities
 
     def close(self) -> None:
         if self._selector is not None:

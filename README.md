@@ -69,6 +69,10 @@ ordinary messages. Attachment bytes remain in the durable local payload store;
 the UI and session API read back only safe metadata, while the parent model sees
 bounded content under an explicit untrusted-material boundary. Binary documents,
 remote URLs, OCR, vision, and Research-child attachment access are not supported.
+At task creation, users may also select up to four advertised local MCP text
+Resources. Zebra reads each selected Resource once, persists it through the same
+attachment lifecycle, and supplies the immutable snapshot to the parent model as
+untrusted material. Resource list/read operations are never model-visible tools.
 
 - stack: `Tauri + React + Tailwind CSS + TanStack Query + Ant Design + Ant Design X`
 - runtime: `Node 22.17.0` pinned via `volta`, `pnpm 10.28.2`
@@ -153,9 +157,13 @@ retain the direct Phase 134 behavior.
 
 Authenticated operators can inspect the same bounded discovery result through
 `GET /capabilities/mcp`. The response contains only availability, server and
-tool names, bounded descriptions, input-field names, and counts. It never
-returns executable commands, arguments, environment values, paths, credentials,
-or raw schemas, and the read does not call a tool or change configuration.
+tool names, bounded descriptions, input-field names, opaque Resource IDs, safe
+Resource display metadata, and counts. It never returns executable commands,
+arguments, environment values, paths, credentials, raw schemas, Resource URIs,
+or Resource content, and inventory discovery does not call a tool or read a
+Resource. The CLI accepts repeated `--mcp-resource` options with
+`network_profile=mcp-proxy-only`; the desktop exposes the same selection only in
+new-task launch configuration.
 
 Local API, CLI, and Worker composition also supplies general and coding parent
 sessions with the read-only `sessions.search` tool over the configured SQLite

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from agent_core.domain.mcp import normalize_mcp_allowlist
 
 from agent_runtime.mcp_protocol import McpServerSpec
+from agent_runtime.mcp_resources import McpResource, discover_mcp_resources
 from agent_runtime.mcp_stdio import LocalStdioMcpTransport
 
 
@@ -27,12 +28,15 @@ class McpToolCapability:
 class McpServerCapability:
     name: str
     tools: tuple[McpToolCapability, ...]
+    resources: tuple[McpResource, ...] = ()
 
     def to_mapping(self) -> dict[str, object]:
         return {
             "name": self.name,
             "tool_count": len(self.tools),
             "tools": [tool.to_mapping() for tool in self.tools],
+            "resource_count": len(self.resources),
+            "resources": [resource.to_safe_mapping() for resource in self.resources],
         }
 
 
@@ -53,6 +57,7 @@ class McpCapabilityInventory:
             "available": self.available,
             "server_count": len(self.servers),
             "tool_count": sum(len(server.tools) for server in self.servers),
+            "resource_count": sum(len(server.resources) for server in self.servers),
             "servers": [server.to_mapping() for server in self.servers],
         }
 
@@ -63,6 +68,7 @@ def build_mcp_capability_inventory(
     if not servers:
         return McpCapabilityInventory(configured=False, available=False, servers=())
     discovered = LocalStdioMcpTransport(servers).model_tools
+    discovered_resources = discover_mcp_resources(servers)
     tools_by_server: dict[str, list[McpToolCapability]] = {
         server.name: [] for server in servers
     }
@@ -81,6 +87,11 @@ def build_mcp_capability_inventory(
         McpServerCapability(
             name=server_name,
             tools=tuple(sorted(tools, key=lambda tool: tool.name)),
+            resources=tuple(
+                resource
+                for resource in discovered_resources
+                if resource.server_name == server_name
+            ),
         )
         for server_name, tools in sorted(tools_by_server.items())
     )

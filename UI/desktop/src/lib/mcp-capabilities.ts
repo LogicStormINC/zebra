@@ -18,6 +18,15 @@ export function availableMcpToolNames(
   ).sort();
 }
 
+export function availableMcpResourceIds(
+  data: McpCapabilitiesResponse | undefined,
+): string[] {
+  if (data?.status !== "available") return [];
+  return data.servers.flatMap((server) =>
+    (server.resources ?? []).map((resource) => resource.resource_id),
+  ).sort();
+}
+
 export function projectMcpCapabilities(
   data: McpCapabilitiesResponse | undefined,
   isFetching: boolean,
@@ -34,7 +43,7 @@ export function projectMcpCapabilities(
       state: "available",
       label: "可用",
       color: "green",
-      summary: `${data.server_count} 个服务器，${data.tool_count} 个工具`,
+      summary: `${data.server_count} 个服务器，${data.tool_count} 个工具，${data.resource_count ?? 0} 个资源`,
     };
   }
   if (data?.status === "unconfigured") {

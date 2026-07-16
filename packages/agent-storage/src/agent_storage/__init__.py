@@ -28,6 +28,7 @@ from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.projections import SQLiteProjectionStore
 from agent_storage.session_attachments import (
     load_attachment_contexts,
+    store_initial_text_attachments,
     store_text_attachments,
 )
 from agent_storage.session_history import SQLiteSessionHistory
@@ -61,5 +62,6 @@ __all__ = [
     "SQLiteToolRunStore",
     "SQLiteWorkspaceProjectionStore",
     "store_text_attachments",
+    "store_initial_text_attachments",
     "new_idempotency_record",
 ]

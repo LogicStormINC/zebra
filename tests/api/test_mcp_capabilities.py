@@ -48,6 +48,7 @@ def test_api_returns_unavailable_without_stale_tools(tmp_path: Path) -> None:
     assert response.body["configured"] is True
     assert response.body["servers"] == []
     assert response.body["tool_count"] == 0
+    assert response.body["resource_count"] == 0
 
 
 def test_http_mcp_inventory_requires_configured_auth_token(tmp_path: Path) -> None:

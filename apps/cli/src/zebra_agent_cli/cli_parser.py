@@ -35,6 +35,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run.add_argument("--network-allowlist", action="append", default=[])
     run.add_argument("--mcp-tool", action="append", default=[])
+    run.add_argument("--mcp-resource", action="append", default=[])
 
     message = subcommands.add_parser(
         "message",

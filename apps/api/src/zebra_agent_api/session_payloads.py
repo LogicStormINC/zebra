@@ -8,6 +8,7 @@ from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.tool_profiles import ToolProfile
+from agent_runtime import normalize_mcp_resource_ids
 from agent_security import NetworkProfileError, PolicyProfile, parse_network_profile
 
 from zebra_agent_api.responses import ApiResponse, bad_request
@@ -24,6 +25,7 @@ class CreateSessionPayload(TypedDict):
     network_profile: str
     network_allowlist: list[str]
     mcp_allowlist: list[str]
+    mcp_resource_ids: list[str]
     attachments: tuple[TextAttachmentInput, ...]
 
 
@@ -149,11 +151,20 @@ def parse_create_session_payload(
         normalized_mcp = normalize_mcp_allowlist(mcp_allowlist)
     except ValueError as exc:
         return bad_request(str(exc))
-    if normalized_mcp and network.name not in {
+    mcp_resource_ids = payload.get("mcp_resource_ids", [])
+    if not isinstance(mcp_resource_ids, list) or not all(
+        isinstance(item, str) for item in mcp_resource_ids
+    ):
+        return bad_request("mcp_resource_ids must be a list of strings when provided")
+    try:
+        normalized_resources = normalize_mcp_resource_ids(mcp_resource_ids)
+    except ValueError as exc:
+        return bad_request(str(exc))
+    if (normalized_mcp or normalized_resources) and network.name not in {
         NetworkProfileName.MCP_PROXY_ONLY,
         NetworkProfileName.FULL_TRUSTED_LOCAL,
     }:
-        return bad_request("mcp_allowlist requires an MCP-capable network profile")
+        return bad_request("MCP selections require an MCP-capable network profile")
 
     return {
         "prompt": prompt.strip(),
@@ -165,6 +176,7 @@ def parse_create_session_payload(
         "network_profile": network.name.value,
         "network_allowlist": list(network.domain_allowlist),
         "mcp_allowlist": list(normalized_mcp),
+        "mcp_resource_ids": list(normalized_resources),
         "attachments": attachments,
     }
 

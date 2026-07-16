@@ -27,6 +27,7 @@ def test_unconfigured_inventory_does_not_start_transport(monkeypatch) -> None:
         "available": False,
         "server_count": 0,
         "tool_count": 0,
+        "resource_count": 0,
         "servers": [],
     }
 
@@ -40,10 +41,13 @@ def test_inventory_projects_only_safe_deterministic_capabilities() -> None:
         "available": True,
         "server_count": 1,
         "tool_count": 1,
+        "resource_count": 0,
         "servers": [
             {
                 "name": "fixture",
                 "tool_count": 1,
+                "resource_count": 0,
+                "resources": [],
                 "tools": [
                     {
                         "name": "echo",

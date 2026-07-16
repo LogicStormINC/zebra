@@ -12215,8 +12215,8 @@ without turning resource access into model-selected execution authority.
 
 ### P136-MCP-01 - Durable Bounded MCP Resource Context
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CORE / CTX / STORAGE / RUNTIME / API / CLI / WORKER / UI / SECURITY`
 - Depends on: `P135-CLOSE-01`
 - Branch: `codex/p136-mcp-01-durable-resource-context`
@@ -12241,47 +12241,68 @@ exposing Resource operations as model-controlled tools.
 
 #### Acceptance
 
-- [ ] Empty MCP configuration returns an explicit unconfigured Resource inventory
+- [x] Empty MCP configuration returns an explicit unconfigured Resource inventory
   without starting a process; tools-only servers remain fully compatible, and
   resources-only servers no longer fail merely because they omit `tools`.
-- [ ] Discovery uses only a declared `resources` capability, at most four pages
+- [x] Discovery uses only a declared `resources` capability, at most four pages
   and 64 Resources total, opaque cursors, deterministic server and Resource
   ordering, bounded names, descriptions, MIME types, sizes, and URI lengths, and
   fails closed on malformed, duplicate, oversized, or colliding entries.
-- [ ] Authenticated inventory readback exposes server name, safe display metadata,
+- [x] Authenticated inventory readback exposes server name, safe display metadata,
   counts, availability, and an opaque deterministic selection ID; it never returns
   raw Resource URIs, content, commands, arguments, environment, credentials, or
   absolute server paths and performs no `resources/read` call.
-- [ ] New task input accepts at most four unique opaque Resource IDs, rejects
+- [x] New task input accepts at most four unique opaque Resource IDs, rejects
   unknown fields, stale, removed, unavailable, duplicate, or unconfigured
   selections, and requires an MCP-capable network profile without granting any
   MCP tool, filesystem, command, credential, approval, or child-agent authority.
-- [ ] Task creation resolves each ID only against the current bounded inventory,
+- [x] Task creation resolves each ID only against the current bounded inventory,
   sends one exact `resources/read` request per selected advertised URI, accepts
   only bounded UTF-8 text-oriented content, and rejects blobs, unsupported MIME
   types, URI substitution, mixed invalid blocks, or more than 64 KiB per Resource
   and 128 KiB in aggregate.
-- [ ] Successfully read bytes reuse the existing local attachment payload store
+- [x] Successfully read bytes reuse the existing local attachment payload store
   and record safe server, opaque Resource ID, display metadata, size, and SHA-256
   provenance. Raw URI and payload never enter public events, API readback, logs,
   model-call metadata, frontend storage, or tracked configuration.
-- [ ] Parent context compilation includes at most 16 KiB of explicitly untrusted
+- [x] Parent context compilation includes at most 16 KiB of explicitly untrusted
   selected Resource material with stable provenance. Fixed Research children
   receive no Resource metadata or content, and Resource text cannot change Policy,
   tool registry, network profile, approval rules, or system instructions.
-- [ ] Creation is atomic and idempotent: any discovery, read, validation, or
+- [x] Creation is atomic and idempotent: any discovery, read, validation, or
   persistence failure leaves no runnable partial task; successful tasks recover
   only from immutable captured payloads and never re-list, re-read, or substitute
   a changed Resource after restart.
-- [ ] Desktop selection lives only in task launch configuration, uses authenticated
+- [x] Desktop selection lives only in task launch configuration, uses authenticated
   explicit refresh and actionable loading, empty, unavailable, validation, and
   restored states, and adds no ordinary timeline approval or generic MCP browser.
-- [ ] Direct API, CLI, Harness, queued Worker, recovery, legacy tasks, existing MCP
+- [x] Direct API, CLI, Harness, queued Worker, recovery, legacy tasks, existing MCP
   tool allowlists, progressive disclosure, compaction, and provider adapters retain
   deterministic behavior under focused compatibility and authority matrices.
-- [ ] All backend/static/eval and desktop gates, browser acceptance, and one real
+- [x] All backend/static/eval and desktop gates, browser acceptance, and one real
   `deepseek-v4-flash` task using one fixture Resource snapshot succeed; the model
   answers from captured content without receiving or calling Resource tools.
+
+#### Validation Evidence
+
+- `tests/agent_runtime/test_mcp_resources.py` covers safe discovery, resources-only
+  compatibility, exact selected reads, removed and duplicate IDs, malformed URI
+  and metadata, binary content, URI substitution, and payload ceilings.
+- `tests/test_mcp_resource_context.py` proves atomic API capture, opaque durable
+  provenance, payload-only Worker recovery without MCP rereads, no model-visible
+  Resource tools, and CLI parity.
+- All `1208` backend tests passed; Ruff, Mypy across `258` source files, and the
+  8-case eval release gate passed.
+- All twelve desktop contract checks, the Node 22 production build, and Tauri
+  `cargo check` passed.
+- Browser acceptance used authenticated capability discovery, selected
+  `fixture · brief.txt` only in new-task launch configuration, persisted one
+  Resource material, restored `MCP · 0 工具 · 1 资源`, and remained viewport-bound
+  at `1280x720`. The console retained only the pre-existing Ant Design 5 / React
+  19 compatibility warning.
+- A real `deepseek-v4-flash` task consumed the captured fixture snapshot and
+  returned exactly `RESOURCE_FINAL_OK: MCP_RESOURCE_CONTEXT_136` without receiving
+  Resource tools.
 
 #### Explicit Non-Goals
 
