@@ -38,6 +38,7 @@ class StdioMcpSession:
     _buffer: bytearray = field(default_factory=bytearray, init=False)
     _request_id: int = field(default=0, init=False)
     _capabilities: dict[str, object] = field(default_factory=dict, init=False)
+    _has_server_instructions: bool = field(default=False, init=False)
 
     def __enter__(self) -> StdioMcpSession:
         if self.timeout_seconds <= 0:
@@ -70,6 +71,7 @@ class StdioMcpSession:
             if not isinstance(capabilities, Mapping):
                 raise McpProtocolError(f"MCP server {self.server.name} has invalid capabilities")
             self._capabilities = dict(capabilities)
+            self._has_server_instructions = result.get("instructions") is not None
             self.notify("notifications/initialized")
         except Exception:
             self.close()
@@ -117,6 +119,10 @@ class StdioMcpSession:
 
     def supports(self, capability: str) -> bool:
         return capability in self._capabilities
+
+    @property
+    def has_server_instructions(self) -> bool:
+        return self._has_server_instructions
 
     def close(self) -> None:
         if self._selector is not None:
