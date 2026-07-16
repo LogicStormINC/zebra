@@ -9,9 +9,12 @@ from uuid import UUID
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.identifiers import SessionId, new_message_id
+from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_integrations import build_model_gateway
+from agent_runtime import validate_mcp_capability_selection
 from agent_security import PolicyProfile, parse_network_profile
 from agent_storage import (
     LeaseConflictError,
@@ -358,6 +361,13 @@ def _run_result(
         namespace.network_profile,
         domain_allowlist=namespace.network_allowlist,
     )
+    mcp_allowlist = normalize_mcp_allowlist(namespace.mcp_tool)
+    if mcp_allowlist and network_profile.name not in {
+        NetworkProfileName.MCP_PROXY_ONLY,
+        NetworkProfileName.FULL_TRUSTED_LOCAL,
+    }:
+        raise ValueError("mcp allowlist requires an MCP-capable network profile")
+    validate_mcp_capability_selection(settings.mcp_servers, mcp_allowlist)
     if namespace.execute:
         execution_result = execute_durable_run(
             prompt=namespace.prompt,
@@ -368,6 +378,7 @@ def _run_result(
             policy_profile=PolicyProfile(namespace.policy_profile),
             tool_profile=ToolProfile(namespace.tool_profile),
             network_profile=network_profile,
+            mcp_allowlist=mcp_allowlist,
         )
         session = execution_result.harness_result.session
         payload = serialize_run_execution(execution_result)
@@ -381,6 +392,7 @@ def _run_result(
                 tool_profile=ToolProfile(namespace.tool_profile),
                 network_profile=network_profile.name.value,
                 network_allowlist=network_profile.domain_allowlist,
+                mcp_allowlist=mcp_allowlist,
             )
         )
         session = bootstrap.session
@@ -397,6 +409,7 @@ def _run_result(
             "tool_profile": namespace.tool_profile,
             "network_profile": network_profile.name.value,
             "network_allowlist": list(network_profile.domain_allowlist),
+            "mcp_allowlist": list(mcp_allowlist),
         }
     return CliCommandResult(
         command="run",

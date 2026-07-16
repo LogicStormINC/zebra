@@ -129,12 +129,16 @@ ZEBRA_MCP_SERVERS={"local":{"command":"/absolute/path/to/server","args":[]}}
 
 Zebra starts no MCP process when the setting is empty. Configured general and
 coding parent sessions discover at most 32 tools and expose them as
-`mcp.<server>.<tool>`. A task must select `network_profile=mcp-proxy-only` (or
-`full-trusted-local`), and every call still requires a concrete HITL approval
-before `tools/call` reaches the server. Server descriptions, schemas, and output
-are untrusted. Shells, inline interpreter execution, package installers, secret
-environment injection, remote transports, dynamic reload, and Research-child
-inheritance are intentionally unsupported.
+`mcp.<server>.<tool>`. New tasks receive no MCP tools by default: each task must
+persist an exact `mcp_allowlist` and select `network_profile=mcp-proxy-only` (or
+`full-trusted-local`). The CLI accepts one repeated `--mcp-tool` option per
+selected canonical name. Unknown, removed, malformed, duplicate, or unselected
+tools fail closed during launch and recovery. Legacy tasks created before this
+field retain their configured Phase 132 catalog. Every selected call still
+requires a concrete HITL approval before `tools/call` reaches the server. Server
+descriptions, schemas, and output are untrusted. Shells, inline interpreter
+execution, package installers, secret environment injection, remote transports,
+dynamic reload, and Research-child inheritance are intentionally unsupported.
 
 Authenticated operators can inspect the same bounded discovery result through
 `GET /capabilities/mcp`. The response contains only availability, server and

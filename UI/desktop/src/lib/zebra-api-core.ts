@@ -65,7 +65,7 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
       ),
     deliveryAudit: (sessionId: string) =>
       requestJson<SessionDeliveryAuditResponse>(baseUrl, `/sessions/${sessionId}/delivery-audit`, { authToken }),
-    createSession: (payload: { title: string; prompt: string; workspace?: string; execute?: boolean; policy_profile?: string; tool_profile?: string; network_profile?: string; network_allowlist?: string[]; attachments?: TextAttachmentPayload[] }) =>
+    createSession: (payload: { title: string; prompt: string; workspace?: string; execute?: boolean; policy_profile?: string; tool_profile?: string; network_profile?: string; network_allowlist?: string[]; mcp_allowlist?: string[]; attachments?: TextAttachmentPayload[] }) =>
       requestJson<CreateSessionResponse>(baseUrl, "/sessions", {
         method: "POST",
         authToken,

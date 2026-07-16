@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from agent_core.domain.mcp import normalize_mcp_allowlist
+
 from agent_runtime.mcp_protocol import McpServerSpec
 from agent_runtime.mcp_stdio import LocalStdioMcpTransport
 
@@ -83,3 +85,22 @@ def build_mcp_capability_inventory(
         for server_name, tools in sorted(tools_by_server.items())
     )
     return McpCapabilityInventory(configured=True, available=True, servers=projected)
+
+
+def validate_mcp_capability_selection(
+    servers: Sequence[McpServerSpec],
+    selected_tools: Sequence[str],
+) -> tuple[str, ...]:
+    normalized = normalize_mcp_allowlist(selected_tools)
+    if not normalized:
+        return ()
+    inventory = build_mcp_capability_inventory(servers)
+    available = {
+        f"mcp.{server.name}.{tool.name}"
+        for server in inventory.servers
+        for tool in server.tools
+    }
+    missing = sorted(set(normalized) - available)
+    if missing:
+        raise ValueError(f"selected MCP tools are unavailable: {', '.join(missing)}")
+    return normalized

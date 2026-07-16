@@ -36,6 +36,7 @@ from zebra_agent_worker import (
     SessionRecoveryService,
     SessionResumeError,
     SessionResumeService,
+    WorkerExecutionError,
 )
 from zebra_agent_worker.approved_continuation import (
     ApprovedContinuationError,
@@ -244,6 +245,7 @@ def test_mcp_stdio_waits_for_approval_then_recovers_exact_call(
         database_path,
         tmp_path,
         network_profile="mcp-proxy-only",
+        mcp_allowlist=("mcp.fixture.echo",),
     )
     service = _execution_service(database_path, settings=settings)
 
@@ -271,6 +273,35 @@ def test_mcp_stdio_waits_for_approval_then_recovers_exact_call(
         and event.payload.get("tool_name") == "mcp.fixture.echo"
         for event in events
     ) == 1
+
+
+def test_mcp_recovery_fails_closed_when_selected_server_was_removed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "mcp-removed.sqlite"
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _gateway("unused"),
+    )
+    session_id = _seed_session(
+        database_path,
+        tmp_path,
+        network_profile="mcp-proxy-only",
+        mcp_allowlist=("mcp.fixture.echo",),
+    )
+
+    with pytest.raises(WorkerExecutionError, match="unavailable"):
+        _execution_service(
+            database_path,
+            settings=_settings(database_path),
+        ).execute_session(session_id, worker_id="worker-mcp-removed")
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
+    assert sum(
+        event.event_type is EventType.TOOL_EXECUTION_STARTED
+        and event.payload.get("tool_name") == "mcp.fixture.echo"
+        for event in events
+    ) == 0
 
 
 def test_web_search_waits_for_approval_then_executes_exactly_once(
@@ -509,6 +540,7 @@ def _seed_session(
     *,
     network_profile: str = "none",
     network_allowlist: tuple[str, ...] = (),
+    mcp_allowlist: tuple[str, ...] = (),
 ):
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -518,6 +550,7 @@ def _seed_session(
             policy_profile="workspace_write",
             network_profile=network_profile,
             network_allowlist=network_allowlist,
+            mcp_allowlist=mcp_allowlist,
         )
     )
     event_store = SQLiteEventStore(database_path)

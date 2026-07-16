@@ -6,6 +6,7 @@ from typing import Any
 
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.plans import SessionPlan
 from agent_core.domain.sessions import Session
 from agent_core.domain.tool_profiles import ToolProfile
@@ -42,6 +43,7 @@ class HarnessTask:
     tool_profile: ToolProfile = ToolProfile.GENERAL
     network_profile: str = "none"
     network_allowlist: tuple[str, ...] = ()
+    mcp_allowlist: tuple[str, ...] = ()
     context_token_budget: int = 200
     runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = ()
@@ -63,6 +65,7 @@ class HarnessTask:
             raise ValueError("harness task workspace_root must be absolute when set")
         if self.context_token_budget <= 0:
             raise ValueError("harness task context_token_budget must be positive")
+        object.__setattr__(self, "mcp_allowlist", normalize_mcp_allowlist(self.mcp_allowlist))
         for memory in self.confirmed_memories:
             if not isinstance(memory, ConfirmedMemoryInput):
                 raise ValueError(

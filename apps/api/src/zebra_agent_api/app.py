@@ -27,7 +27,11 @@ from agent_integrations import (
     build_model_gateway,
     build_pull_request_gateway,
 )
-from agent_runtime import build_mcp_capability_inventory, run_local_harness
+from agent_runtime import (
+    build_mcp_capability_inventory,
+    run_local_harness,
+    validate_mcp_capability_selection,
+)
 from agent_security import CredentialBroker, PolicyProfile, parse_network_profile
 from agent_storage import (
     LeaseConflictError,
@@ -54,7 +58,7 @@ from zebra_agent_worker import (
 from zebra_agent_api.approval_context import serialize_approval_context
 from zebra_agent_api.approval_read import ApprovalReadApi
 from zebra_agent_api.credential_broker import build_default_credential_broker
-from zebra_agent_api.responses import ApiResponse, conflict, service_unavailable
+from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_artifact_control import SessionArtifactControlApi
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
@@ -759,6 +763,13 @@ class ZebraAgentApi:
         parsed = parse_create_session_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
+        try:
+            validate_mcp_capability_selection(
+                self.settings.mcp_servers,
+                parsed["mcp_allowlist"],
+            )
+        except ValueError as error:
+            return bad_request(str(error))
 
         if not parsed["execute"]:
             return self._create_queued_session(parsed)
@@ -950,6 +961,7 @@ class ZebraAgentApi:
                 tool_profile=ToolProfile(str(parsed["tool_profile"])),
                 network_profile=str(parsed["network_profile"]),
                 network_allowlist=tuple(parsed["network_allowlist"]),
+                mcp_allowlist=tuple(parsed["mcp_allowlist"]),
             )
         )
         events, attachment_refs = persist_initial_attachments(
@@ -976,6 +988,7 @@ class ZebraAgentApi:
                 "tool_profile": str(parsed["tool_profile"]),
                 "network_profile": str(parsed["network_profile"]),
                 "network_allowlist": parsed["network_allowlist"],
+                "mcp_allowlist": parsed["mcp_allowlist"],
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
@@ -1008,6 +1021,7 @@ class ZebraAgentApi:
                 web_search_endpoint=self.settings.web_search_endpoint,
                 skill_roots=self.settings.skill_roots,
                 mcp_servers=self.settings.mcp_servers,
+                mcp_allowlist=parsed["mcp_allowlist"],
                 session_history=SQLiteSessionHistory(self.database_path),
                 confirmed_memories=confirmed_memories,
                 attachments=tuple(
@@ -1053,6 +1067,7 @@ class ZebraAgentApi:
                 "tool_profile": str(parsed["tool_profile"]),
                 "network_profile": str(parsed["network_profile"]),
                 "network_allowlist": parsed["network_allowlist"],
+                "mcp_allowlist": parsed["mcp_allowlist"],
                 "trace": _trace_payload(result),
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },

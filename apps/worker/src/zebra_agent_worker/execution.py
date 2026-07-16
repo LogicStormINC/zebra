@@ -148,6 +148,7 @@ class SessionExecutionService:
                 web_search_endpoint=self._settings.web_search_endpoint,
                 skill_roots=self._settings.skill_roots,
                 mcp_servers=self._settings.mcp_servers,
+                mcp_allowlist=task.mcp_allowlist,
                 session_history=SQLiteSessionHistory(self._database_path),
                 current_session_id=str(session_id),
             )
@@ -185,6 +186,11 @@ class SessionExecutionService:
                 tool_profile=task.tool_profile,
                 network_profile=task.network_profile.name.value,
                 network_allowlist=task.network_profile.domain_allowlist,
+                mcp_allowlist=tuple(
+                    tool.name
+                    for tool in tool_gateway.model_tools
+                    if tool.name.startswith("mcp.")
+                ),
                 confirmed_memories=list_confirmed_repo_memories(
                     self._database_path,
                     repo_id=str(task.workspace_root.resolve()),

@@ -4,7 +4,9 @@ from datetime import UTC, datetime
 from typing import TypedDict
 
 from agent_core.domain.attachments import TextAttachmentInput
+from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.memories import MemoryType
+from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_security import NetworkProfileError, PolicyProfile, parse_network_profile
 
@@ -21,7 +23,11 @@ class CreateSessionPayload(TypedDict):
     tool_profile: str
     network_profile: str
     network_allowlist: list[str]
+    mcp_allowlist: list[str]
     attachments: tuple[TextAttachmentInput, ...]
+
+
+CREATE_SESSION_FIELDS = frozenset(CreateSessionPayload.__annotations__)
 
 
 class ResumeSessionPayload(TypedDict):
@@ -83,6 +89,9 @@ class QueueSweepPreviewPayload(TypedDict):
 def parse_create_session_payload(
     payload: dict[str, object],
 ) -> CreateSessionPayload | ApiResponse:
+    unknown_fields = sorted(payload.keys() - CREATE_SESSION_FIELDS)
+    if unknown_fields:
+        return bad_request(f"unknown create-session fields: {', '.join(unknown_fields)}")
     prompt = payload.get("prompt")
     if not isinstance(prompt, str) or not prompt.strip():
         return bad_request("prompt must be a non-blank string")
@@ -131,6 +140,20 @@ def parse_create_session_payload(
         attachments = parse_text_attachment_inputs(payload.get("attachments"))
     except ValueError as exc:
         return bad_request(str(exc))
+    mcp_allowlist = payload.get("mcp_allowlist", [])
+    if not isinstance(mcp_allowlist, list) or not all(
+        isinstance(item, str) for item in mcp_allowlist
+    ):
+        return bad_request("mcp_allowlist must be a list of strings when provided")
+    try:
+        normalized_mcp = normalize_mcp_allowlist(mcp_allowlist)
+    except ValueError as exc:
+        return bad_request(str(exc))
+    if normalized_mcp and network.name not in {
+        NetworkProfileName.MCP_PROXY_ONLY,
+        NetworkProfileName.FULL_TRUSTED_LOCAL,
+    }:
+        return bad_request("mcp_allowlist requires an MCP-capable network profile")
 
     return {
         "prompt": prompt.strip(),
@@ -141,6 +164,7 @@ def parse_create_session_payload(
         "tool_profile": tool_profile,
         "network_profile": network.name.value,
         "network_allowlist": list(network.domain_allowlist),
+        "mcp_allowlist": list(normalized_mcp),
         "attachments": attachments,
     }
 

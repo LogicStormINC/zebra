@@ -4,6 +4,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.tool_profiles import ToolProfile
 
@@ -31,6 +32,7 @@ class WorkspaceProjection(BaseModel):
     tool_profile: ToolProfile = ToolProfile.CODING
     network_profile: NetworkProfileName = NetworkProfileName.NONE
     network_allowlist: tuple[str, ...] = ()
+    mcp_allowlist: tuple[str, ...] | None = None
     last_attempt_number: int | None = None
     runtime_name: str | None = None
     snapshot_id: str | None = None
@@ -53,3 +55,11 @@ class WorkspaceProjection(BaseModel):
         if not stripped:
             raise ValueError("optional text field must not be blank when provided")
         return stripped
+
+    @field_validator("mcp_allowlist")
+    @classmethod
+    def ensure_valid_mcp_allowlist(
+        cls,
+        value: tuple[str, ...] | None,
+    ) -> tuple[str, ...] | None:
+        return None if value is None else normalize_mcp_allowlist(value)

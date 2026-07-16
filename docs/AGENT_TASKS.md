@@ -12011,7 +12011,7 @@ tools an individual task may see and request.
 
 ### P134-MCP-01 - Durable Task-Scoped MCP Capability Allowlist
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / STORAGE / RUNTIME / API / WORKER / UI / SECURITY`
 - Depends on: `P133-CLOSE-01`
@@ -12035,28 +12035,28 @@ approval continuation without changing tool behavior or widening child authority
 
 #### Acceptance
 
-- [ ] New tasks default to no MCP capability even when servers are configured;
+- [x] New tasks default to no MCP capability even when servers are configured;
   an explicit allowlist is required before any MCP tool is model-visible.
-- [ ] Input accepts at most 32 unique canonical `mcp.<server>.<tool>` names and
+- [x] Input accepts at most 32 unique canonical `mcp.<server>.<tool>` names and
   rejects unknown fields, malformed names, duplicates, unknown capabilities,
   or an allowlist paired with a network profile that cannot route MCP.
-- [ ] The exact normalized allowlist is durable in `TASK_PREPARED`, workspace
+- [x] The exact normalized allowlist is durable in `TASK_PREPARED`, workspace
   projection storage, session readback, and API create responses, and survives
   process restart without consulting mutable frontend state.
-- [ ] Direct API execution, local CLI execution, queued Worker execution,
+- [x] Direct API execution, local CLI execution, queued Worker execution,
   recovery, and approved continuation expose and execute only selected tools.
-- [ ] Legacy tasks that predate the field retain the Phase 132 configured-tool
+- [x] Legacy tasks that predate the field retain the Phase 132 configured-tool
   behavior, while every newly created task records an explicit list, including
   an empty list, so omission cannot silently widen new authority.
-- [ ] Removing or renaming a configured capability makes recovery fail closed;
+- [x] Removing or renaming a configured capability makes recovery fail closed;
   stale, unknown, or unselected approved targets are never executed.
-- [ ] Desktop users can select only currently available safe inventory entries
+- [x] Desktop users can select only currently available safe inventory entries
   inside task launch configuration; unavailable inventory is actionable, and
   idle or ordinary thread surfaces gain no approval controls.
-- [ ] Fixed Research children receive no MCP tools, allowlists grant no command,
+- [x] Fixed Research children receive no MCP tools, allowlists grant no command,
   filesystem, network, credential, policy, child-agent, or approval authority,
   and every selected MCP call still requires the existing concrete approval.
-- [ ] Focused compatibility and authority matrices, all backend/static/eval
+- [x] Focused compatibility and authority matrices, all backend/static/eval
   gates, desktop checks/build, Tauri validation, browser acceptance, and one
   real-provider selected-tool approval/recovery pass succeed.
 
@@ -12067,3 +12067,16 @@ approval continuation without changing tool behavior or widening child authority
   resources, sampling, elicitation, roots, server tasks, or long-lived pools
 - wildcard selection, automatic selection by the model, approval bypass,
   Research inheritance, marketplace, connector onboarding, or plugin management
+
+#### Validation Evidence
+
+- `1181` backend tests passed; Ruff, Mypy across `255` source files, and the
+  8-case eval release gate passed.
+- All twelve desktop contract checks, the Node 22 production build, and online
+  plus offline Tauri validation passed.
+- Browser acceptance read two safe fixture capabilities, persisted only
+  `mcp.fixture.echo`, restored `MCP · 1`, and rendered no ordinary-state approval
+  controls; authenticated HTTP and CORS requests succeeded.
+- A real `deepseek-v4-flash` task selected only `mcp.fixture.echo`, made no server
+  call before approval, executed exactly after grant and Worker recovery, and
+  returned `MCP_ALLOWLIST_FINAL_OK: echo:MCP_PROVIDER_PROOF_134`.
