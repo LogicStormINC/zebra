@@ -226,8 +226,12 @@ or approve external actions by itself, and Research children remain offline.
 `web.fetch` accepts one credential-free HTTPS URL, requires an exact durable
 allowlist match plus HITL approval, and executes through the Web Gateway contract.
 The local adapter blocks redirects, explicit ports, IP targets, non-public DNS
-answers, non-text responses, and payloads above 256 KiB. It is a local-first
-bounded adapter, not a production distributed egress proxy or DNS-pinning claim.
+answers, non-text responses, and payloads above 256 KiB. Approved HTML is
+projected locally into readable text without script, style, template, SVG, or
+hidden content; all textual output is capped at 64 KiB with explicit
+head-and-tail truncation metadata. Content remains labeled untrusted. This is a
+local-first bounded adapter, not a production distributed egress proxy,
+DNS-pinning claim, browser renderer, or third-party extraction service.
 
 Provider credentials are read by the local API only. They must not be placed in
 frontend storage, request payloads, API responses, tracked environment files, or logs.

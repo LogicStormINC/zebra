@@ -1,8 +1,10 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+import pytest
 from agent_core.domain.identifiers import new_tool_call_id
 from agent_core.domain.tools import ToolCall, ToolCallStatus
+from agent_core.domain.web import parse_web_target
 from agent_tools.web_gateway import (
     WebFetchTool,
     WebGatewayRequest,
@@ -49,6 +51,15 @@ def test_web_fetch_rejects_invalid_target_before_transport() -> None:
     assert result.status is ToolCallStatus.FAILED
     assert result.metadata["reason"] == "invalid_web_target"
     assert transport.requests == []
+
+
+def test_web_gateway_request_rejects_invalid_output_budget() -> None:
+    with pytest.raises(ValueError, match="max_output_bytes"):
+        WebGatewayRequest(
+            tool_call_id="call-invalid",
+            target=parse_web_target("https://docs.example.com"),
+            max_output_bytes=0,
+        )
 
 
 def _tool_call(url: str) -> ToolCall:

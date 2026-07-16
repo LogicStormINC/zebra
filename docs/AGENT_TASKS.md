@@ -12897,3 +12897,58 @@ multimodal input, remote fetching, or a second payload lifecycle.
   exposed one `.pptx`-accepting attachment entry, and emitted no console errors.
 - A real `deepseek-v4-flash` task persisted 44 extracted bytes from a 1449-byte
   PPTX and returned `PPTX_FINAL_OK: PPTX_PROVIDER_PROOF_143_6D9A`.
+
+## Phase 144 Task Board
+
+### P144-WEB-01 - Bounded HTML Readable-Text Projection
+
+- Status: `Done`
+- Owner: `Codex-WEB`
+- Suggested role: `TOOLS / RUNTIME / SECURITY / TEST / DOC`
+- Depends on: `P143-DOC-01`
+- Branch: `codex/p144-web-01-bounded-html-text-projection`
+- Owned paths: `packages/agent-tools/`, `packages/agent-runtime/`, `tests/`,
+  `README.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`
+
+#### Goal
+
+Make the existing approved `web.fetch` path useful for ordinary HTML pages by
+projecting bounded readable text locally, without adding browser automation,
+third-party extraction services, new network authority, or a second Web tool.
+
+#### Acceptance
+
+- [x] Successful `text/html` and `application/xhtml+xml` responses become
+  deterministic readable text before reaching the model; script, style,
+  template, SVG, and other non-readable containers are excluded.
+- [x] Raw response bytes retain the existing 256 KiB transport ceiling and
+  projected model text has an explicit 64 KiB UTF-8 ceiling with deterministic
+  truncation and safe metadata.
+- [x] Plain text, JSON, and XML behavior remains compatible; malformed markup,
+  uncommon encodings, or empty readable HTML fail closed without changing
+  Policy, approval, retry, event, trace, or recovery contracts.
+- [x] Returned content remains explicitly untrusted and exposes only URL,
+  hostname, status, content type, raw byte count, projection mode, output size,
+  truncation state, and transport metadata.
+- [x] Focused tool/runtime and approval-continuation tests plus all backend,
+  static, eval, desktop, build, Tauri, file-size, browser, and real-provider
+  gates pass before the task is marked done.
+
+#### Explicit Non-Goals
+
+- Browser automation, JavaScript execution, DOM interaction, screenshots,
+  authenticated pages, cookies, redirects, forms, downloads, crawling,
+  pagination, robots interpretation, or rendering fidelity
+- New search providers, third-party extract APIs, LLM summarization, persistent
+  Web caches, full-page artifact storage, semantic indexing, remote MCP, image
+  or audio extraction, OCR, Research-child network access, or authority changes
+  to Policy, network profiles, credentials, approval, or HITL
+
+#### Validation Evidence
+
+- Focused Web and approval coverage passed `62` tests; all `1312` backend tests,
+  Ruff, Mypy across `351` sources, 8 evals, and the 771-file gate passed.
+- All 14 desktop checks, Node 22 build, offline Tauri, and browser acceptance at
+  `1200x762` and `900x800` passed with no overflow or console errors.
+- Real provider recovery made zero calls before approval, one after, and returned
+  `WEB_HTML_FINAL_OK: WEB_HTML_PROVIDER_PROOF_144_2A7C`.

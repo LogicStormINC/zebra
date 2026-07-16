@@ -1,14 +1,15 @@
 # Task Plan
 
-## Phase 143 - Durable Bounded PPTX Slide Text Input
+## Phase 144 - Bounded HTML Readable-Text Projection
 
-1. `completed` - Claim the phase and lock PPTX input, extraction, provenance,
-   recovery, UI, and non-goal boundaries.
-2. `completed` - Add bounded PPTX extraction and format-aware durable slide
-   provenance.
-3. `completed` - Wire mixed document input through API and desktop paths.
-4. `completed` - Add focused regression and real-provider acceptance coverage.
-5. `completed` - Run full repository gates, close the task, and merge to `main`.
+1. `completed` - Claim the phase and lock HTML projection, output budget, safe
+   metadata, compatibility, and non-goal boundaries.
+2. `completed` - Add deterministic standard-library HTML readable-text
+   projection and UTF-8 output truncation.
+3. `completed` - Preserve the existing Web Gateway Policy, HITL, transport, and
+   recovery contracts with focused regression coverage.
+4. `completed` - Run full repository and real-provider acceptance gates.
+5. `completed` - Close the task, commit the branch, and merge it to `main`.
 
 ## Goal
 

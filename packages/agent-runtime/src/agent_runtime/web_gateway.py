@@ -11,6 +11,8 @@ from agent_tools.web_gateway import (
     WebGatewayResponse,
 )
 
+from agent_runtime.web_content import project_web_text
+
 ALLOWED_CONTENT_TYPES = frozenset(
     {"application/json", "application/xml", "application/xhtml+xml"}
 )
@@ -54,12 +56,24 @@ class LocalWebGatewayTransport:
                     )
                 charset = response.headers.get_content_charset() or "utf-8"
                 text = body.decode(charset, errors="replace")
+                try:
+                    text, projection = project_web_text(
+                        text,
+                        content_type=content_type,
+                        max_output_bytes=request.max_output_bytes,
+                    )
+                except ValueError as exc:
+                    raise WebGatewayError(str(exc), reason="content_projection_failed") from exc
                 return WebGatewayResponse(
                     text=text,
                     status_code=response.status,
                     content_type=content_type,
                     byte_count=len(body),
-                    metadata={"transport": "local_https", "redirects_followed": 0},
+                    metadata={
+                        "transport": "local_https",
+                        "redirects_followed": 0,
+                        **projection,
+                    },
                 )
         except WebGatewayError:
             raise

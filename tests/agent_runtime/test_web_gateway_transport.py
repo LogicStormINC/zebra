@@ -61,7 +61,13 @@ def test_local_web_gateway_executes_one_bounded_get_without_caller_headers(
     assert "Authorization" not in outbound.headers
     assert timeout == 10.0
     assert response.text == "gateway-ok"
-    assert response.metadata == {"transport": "local_https", "redirects_followed": 0}
+    assert response.metadata == {
+        "transport": "local_https",
+        "redirects_followed": 0,
+        "content_projection": "decoded_text",
+        "output_byte_count": 10,
+        "output_truncated": False,
+    }
 
 
 def test_local_web_gateway_blocks_private_dns_before_http(
@@ -80,3 +86,64 @@ def test_local_web_gateway_blocks_private_dns_before_http(
         LocalWebGatewayTransport().execute(request)
 
     assert error.value.reason == "private_network_blocked"
+
+
+def test_local_web_gateway_projects_html_and_reports_bounded_output(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    opener = FakeOpener(
+        FakeResponse(
+            b"<html><body><h1>Readable</h1><script>hidden()</script><p>Evidence</p></body></html>",
+            "text/html; charset=utf-8",
+        )
+    )
+    monkeypatch.setattr(
+        "agent_runtime.web_gateway.socket.getaddrinfo",
+        lambda *args, **kwargs: [(2, 1, 6, "", ("93.184.216.34", 443))],
+    )
+    monkeypatch.setattr(
+        "agent_runtime.web_gateway.urllib.request.build_opener",
+        lambda *handlers: opener,
+    )
+
+    response = LocalWebGatewayTransport().execute(
+        WebGatewayRequest(
+            tool_call_id="call-html",
+            target=parse_web_target("https://example.com/article"),
+            max_output_bytes=64,
+        )
+    )
+
+    assert response.text == "Readable\n\nEvidence"
+    assert response.byte_count == 83
+    assert response.metadata == {
+        "transport": "local_https",
+        "redirects_followed": 0,
+        "content_projection": "html_to_text",
+        "output_byte_count": 18,
+        "output_truncated": False,
+    }
+
+
+def test_local_web_gateway_rejects_empty_html_projection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    opener = FakeOpener(FakeResponse(b"<script>hidden()</script>", "text/html"))
+    monkeypatch.setattr(
+        "agent_runtime.web_gateway.socket.getaddrinfo",
+        lambda *args, **kwargs: [(2, 1, 6, "", ("93.184.216.34", 443))],
+    )
+    monkeypatch.setattr(
+        "agent_runtime.web_gateway.urllib.request.build_opener",
+        lambda *handlers: opener,
+    )
+
+    with pytest.raises(WebGatewayError, match="no readable text") as error:
+        LocalWebGatewayTransport().execute(
+            WebGatewayRequest(
+                tool_call_id="call-empty",
+                target=parse_web_target("https://example.com/empty"),
+            )
+        )
+
+    assert error.value.reason == "content_projection_failed"

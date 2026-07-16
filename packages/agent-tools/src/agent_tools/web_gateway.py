@@ -11,6 +11,7 @@ from agent_tools.mcp_proxy import JsonValue
 
 DEFAULT_WEB_TIMEOUT_SECONDS = 10.0
 DEFAULT_WEB_MAX_BYTES = 262_144
+DEFAULT_WEB_MAX_OUTPUT_BYTES = 65_536
 
 web_fetch_contract = ToolContract(
     name="web.fetch",
@@ -36,6 +37,7 @@ class WebGatewayRequest:
     target: WebTarget
     timeout_seconds: float = DEFAULT_WEB_TIMEOUT_SECONDS
     max_bytes: int = DEFAULT_WEB_MAX_BYTES
+    max_output_bytes: int = DEFAULT_WEB_MAX_OUTPUT_BYTES
 
     def __post_init__(self) -> None:
         if not self.tool_call_id.strip():
@@ -44,6 +46,8 @@ class WebGatewayRequest:
             raise ValueError("timeout_seconds must be positive")
         if self.max_bytes <= 0:
             raise ValueError("max_bytes must be positive")
+        if self.max_output_bytes <= 0:
+            raise ValueError("max_output_bytes must be positive")
 
 
 @dataclass(frozen=True)
