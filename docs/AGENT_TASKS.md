@@ -12550,7 +12550,7 @@ safe provenance so execution and recovery never re-read the server.
 
 ### P138-UI-01 - Desktop Prompt Template Launcher
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex-UI`
 - Suggested role: `UI / TEST`
 - Depends on: `P138-APP-01`
@@ -12577,8 +12577,8 @@ approval or persistent server-control surface.
 
 ### P138-E2E-01 - Prompt Boundary And Provider Acceptance
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `In Progress`
+- Owner: `Codex-E2E`
 - Suggested role: `TEST / DOC`
 - Depends on: `P138-APP-01`, `P138-UI-01`
 - Branch: `codex/p138-e2e-01-prompt-acceptance`
