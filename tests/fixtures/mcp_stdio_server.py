@@ -18,13 +18,18 @@ for raw_line in sys.stdin:
     method = message.get("method")
     request_id = message.get("id")
     if method == "initialize":
+        capabilities: dict[str, object] = {}
+        if mode != "resources-only":
+            capabilities["tools"] = {}
+        if mode.startswith("resource") or mode == "resources-only":
+            capabilities["resources"] = {}
         send(
             {
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": {
                     "protocolVersion": "2025-06-18",
-                    "capabilities": {"tools": {}},
+                    "capabilities": capabilities,
                     "serverInfo": {"name": "fixture", "version": "1"},
                 },
             }
@@ -74,6 +79,51 @@ for raw_line in sys.stdin:
                         for index in range(tool_count)
                     ]
                 },
+            }
+        )
+    elif method == "resources/list":
+        resource: dict[str, object] = {
+            "uri": "resource://fixture/brief",
+            "name": "brief.txt",
+            "description": "A bounded fixture brief.",
+            "mimeType": "text/plain",
+            "size": 28,
+        }
+        if mode == "resource-malformed":
+            resource["uri"] = ""
+        elif mode == "resource-invalid-uri":
+            resource["uri"] = "not a uri"
+        elif mode == "resource-invalid-name":
+            resource["name"] = "unsafe\nname.txt"
+        elif mode == "resource-oversized-metadata":
+            resource["size"] = 65_537
+        send(
+            {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {"resources": [resource]},
+            }
+        )
+    elif method == "resources/read":
+        if marker is not None:
+            marker.write_text("resource-read", encoding="utf-8")
+        params = message.get("params", {})
+        requested_uri = params.get("uri") if isinstance(params, dict) else None
+        uri = "resource://fixture/other" if mode == "resource-substitute" else requested_uri
+        if mode == "resource-blob":
+            content = {"uri": uri, "mimeType": "application/octet-stream", "blob": "AA=="}
+        else:
+            text = (
+                "x" * (65 * 1024)
+                if mode == "resource-oversized"
+                else "MCP_RESOURCE_CONTEXT_136"
+            )
+            content = {"uri": uri, "mimeType": "text/plain", "text": text}
+        send(
+            {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {"contents": [content]},
             }
         )
     elif method == "tools/call":

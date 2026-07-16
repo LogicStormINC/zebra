@@ -7,8 +7,10 @@ interface McpTaskSelectorProps {
   busy: boolean;
   errorText: string | null;
   className: string;
-  selected: string[];
-  onChange: (selected: string[]) => void;
+  selectedTools: string[];
+  selectedResources: string[];
+  onToolsChange: (selected: string[]) => void;
+  onResourcesChange: (selected: string[]) => void;
 }
 
 export function McpTaskSelector({
@@ -16,10 +18,15 @@ export function McpTaskSelector({
   busy,
   errorText,
   className,
-  selected,
-  onChange,
+  selectedTools,
+  selectedResources,
+  onToolsChange,
+  onResourcesChange,
 }: McpTaskSelectorProps) {
   const available = availableMcpToolNames(capabilities);
+  const resources = capabilities?.status === "available"
+    ? capabilities.servers.flatMap((server) => (server.resources ?? []).map((resource) => ({ ...resource, server: server.name })))
+    : [];
   return (
     <div className={className}>
       <strong>此任务可使用的 MCP 工具</strong>
@@ -31,11 +38,23 @@ export function McpTaskSelector({
       {available.length > 0 ? (
         <Checkbox.Group
           options={available.map((name) => ({ label: name.slice(4), value: name }))}
-          value={selected}
-          onChange={(values) => onChange(values.map(String).sort())}
+          value={selectedTools}
+          onChange={(values) => onToolsChange(values.map(String).sort())}
         />
       ) : null}
       <span>只选择当前任务真正需要的工具；实际调用仍需逐次批准。</span>
+      <strong>创建任务时读取的 MCP 资源</strong>
+      {resources.length === 0 ? <span>当前没有可用的文本资源。</span> : (
+        <Checkbox.Group
+          options={resources.map((resource) => ({
+            label: `${resource.server} · ${resource.name}`,
+            value: resource.resource_id,
+          }))}
+          value={selectedResources}
+          onChange={(values) => onResourcesChange(values.map(String).sort())}
+        />
+      )}
+      <span>最多 4 项；创建任务时读取一次并作为不可信材料持久化，运行中不会自动刷新。</span>
     </div>
   );
 }

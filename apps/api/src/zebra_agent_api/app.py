@@ -29,6 +29,7 @@ from agent_integrations import (
 )
 from agent_runtime import (
     build_mcp_capability_inventory,
+    read_mcp_resource_attachments,
     run_local_harness,
     validate_mcp_capability_selection,
 )
@@ -118,6 +119,7 @@ class ZebraAgentApi:
                     "available": False,
                     "server_count": len(self.settings.mcp_servers),
                     "tool_count": 0,
+                    "resource_count": 0,
                     "servers": [],
                     "reason": str(error),
                 },
@@ -770,6 +772,14 @@ class ZebraAgentApi:
             )
         except ValueError as error:
             return bad_request(str(error))
+        try:
+            resource_attachments = read_mcp_resource_attachments(
+                self.settings.mcp_servers,
+                parsed["mcp_resource_ids"],
+            )
+        except ValueError as error:
+            return bad_request(str(error))
+        parsed["attachments"] = (*parsed["attachments"], *resource_attachments)
 
         if not parsed["execute"]:
             return self._create_queued_session(parsed)
@@ -989,6 +999,7 @@ class ZebraAgentApi:
                 "network_profile": str(parsed["network_profile"]),
                 "network_allowlist": parsed["network_allowlist"],
                 "mcp_allowlist": parsed["mcp_allowlist"],
+                "mcp_resource_ids": parsed["mcp_resource_ids"],
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
@@ -1030,6 +1041,9 @@ class ZebraAgentApi:
                         file_name=attachment.file_name,
                         media_type=attachment.media_type,
                         text=attachment.payload.decode("utf-8"),
+                        source_type=attachment.source_type,
+                        source_server=attachment.source_server,
+                        source_id=attachment.source_id,
                     )
                     for attachment in parsed["attachments"]
                 ),
@@ -1068,6 +1082,7 @@ class ZebraAgentApi:
                 "network_profile": str(parsed["network_profile"]),
                 "network_allowlist": parsed["network_allowlist"],
                 "mcp_allowlist": parsed["mcp_allowlist"],
+                "mcp_resource_ids": parsed["mcp_resource_ids"],
                 "trace": _trace_payload(result),
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },

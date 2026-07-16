@@ -9,6 +9,7 @@ export interface TaskLaunchConfig {
   networkProfile: TaskNetworkProfile;
   networkAllowlist: string[];
   mcpAllowlist: string[];
+  mcpResourceIds: string[];
 }
 
 export const DEFAULT_TASK_LAUNCH_CONFIG: TaskLaunchConfig = {
@@ -18,6 +19,7 @@ export const DEFAULT_TASK_LAUNCH_CONFIG: TaskLaunchConfig = {
   networkProfile: "none",
   networkAllowlist: [],
   mcpAllowlist: [],
+  mcpResourceIds: [],
 };
 
 export function normalizeTaskLaunchConfig(value: unknown): TaskLaunchConfig {
@@ -30,12 +32,14 @@ export function normalizeTaskLaunchConfig(value: unknown): TaskLaunchConfig {
     networkProfile: candidate.networkProfile === "domain-allowlist" || candidate.networkProfile === "mcp-proxy-only" ? candidate.networkProfile : "none",
     networkAllowlist: Array.isArray(candidate.networkAllowlist) ? candidate.networkAllowlist.filter((item): item is string => typeof item === "string") : [],
     mcpAllowlist: Array.isArray(candidate.mcpAllowlist) ? candidate.mcpAllowlist.filter((item): item is string => typeof item === "string").sort() : [],
+    mcpResourceIds: Array.isArray(candidate.mcpResourceIds) ? candidate.mcpResourceIds.filter((item): item is string => typeof item === "string").sort() : [],
   };
 }
 
 export function validateTaskLaunchConfig(
   config: TaskLaunchConfig,
   availableMcpTools?: string[],
+  availableMcpResources?: string[],
 ): string | null {
   if (!config.workspace.trim()) return "请先填写任务工作区路径";
   if (!["workspace_write", "full_access"].includes(config.policyProfile)) return "不支持当前权限策略";
@@ -49,6 +53,10 @@ export function validateTaskLaunchConfig(
   if (config.mcpAllowlist.length > 0 && config.networkProfile !== "mcp-proxy-only") return "选择 MCP 工具后需要启用仅 MCP 代理网络";
   if (config.mcpAllowlist.some((item) => !/^mcp\.[A-Za-z][A-Za-z0-9_-]{0,31}\.[A-Za-z][A-Za-z0-9_-]{0,31}$/u.test(item))) return "MCP 工具名称无效";
   if (availableMcpTools && config.mcpAllowlist.some((item) => !availableMcpTools.includes(item))) return "已选择的 MCP 工具当前不可用，请重新选择";
+  if (config.mcpResourceIds.length > 4) return "单个任务最多选择 4 个 MCP 资源";
+  if (new Set(config.mcpResourceIds).size !== config.mcpResourceIds.length) return "MCP 资源不能重复选择";
+  if (config.mcpResourceIds.length > 0 && config.networkProfile !== "mcp-proxy-only") return "选择 MCP 资源后需要启用仅 MCP 代理网络";
+  if (availableMcpResources && config.mcpResourceIds.some((item) => !availableMcpResources.includes(item))) return "已选择的 MCP 资源当前不可用，请重新选择";
   return null;
 }
 

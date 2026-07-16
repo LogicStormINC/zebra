@@ -99,6 +99,8 @@ def _discover_server(server: McpServerSpec) -> list[DiscoveredMcpTool]:
     cursor: str | None = None
     seen_cursors: set[str] = set()
     with StdioMcpSession(server, MCP_DISCOVERY_TIMEOUT_SECONDS) as session:
+        if not session.supports("tools"):
+            return []
         for _ in range(MAX_MCP_LIST_PAGES):
             params = {"cursor": cursor} if cursor is not None else None
             result = session.request("tools/list", params)

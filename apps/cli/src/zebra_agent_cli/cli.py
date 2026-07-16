@@ -14,14 +14,20 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_integrations import build_model_gateway
-from agent_runtime import validate_mcp_capability_selection
+from agent_runtime import (
+    normalize_mcp_resource_ids,
+    read_mcp_resource_attachments,
+    validate_mcp_capability_selection,
+)
 from agent_security import PolicyProfile, parse_network_profile
 from agent_storage import (
     LeaseConflictError,
+    SQLiteArtifactPayloadStore,
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
+    store_initial_text_attachments,
 )
 from zebra_agent_api.approval_context import serialize_approval_context
 from zebra_agent_api.clarification_context import serialize_clarification_context
@@ -362,12 +368,17 @@ def _run_result(
         domain_allowlist=namespace.network_allowlist,
     )
     mcp_allowlist = normalize_mcp_allowlist(namespace.mcp_tool)
-    if mcp_allowlist and network_profile.name not in {
+    mcp_resource_ids = normalize_mcp_resource_ids(namespace.mcp_resource)
+    if (mcp_allowlist or mcp_resource_ids) and network_profile.name not in {
         NetworkProfileName.MCP_PROXY_ONLY,
         NetworkProfileName.FULL_TRUSTED_LOCAL,
     }:
-        raise ValueError("mcp allowlist requires an MCP-capable network profile")
+        raise ValueError("MCP selections require an MCP-capable network profile")
     validate_mcp_capability_selection(settings.mcp_servers, mcp_allowlist)
+    resource_attachments = read_mcp_resource_attachments(
+        settings.mcp_servers,
+        mcp_resource_ids,
+    )
     if namespace.execute:
         execution_result = execute_durable_run(
             prompt=namespace.prompt,
@@ -379,6 +390,7 @@ def _run_result(
             tool_profile=ToolProfile(namespace.tool_profile),
             network_profile=network_profile,
             mcp_allowlist=mcp_allowlist,
+            attachments=resource_attachments,
         )
         session = execution_result.harness_result.session
         payload = serialize_run_execution(execution_result)
@@ -396,12 +408,17 @@ def _run_result(
             )
         )
         session = bootstrap.session
+        events, attachment_refs = store_initial_text_attachments(
+            SQLiteArtifactPayloadStore(database_path),
+            bootstrap.events,
+            resource_attachments,
+        )
         event_store = SQLiteEventStore(database_path)
-        for event in bootstrap.events:
+        for event in events:
             event_store.append(event)
         SQLiteProjectionStore(database_path).save_session(session)
         SQLiteWorkspaceProjectionStore(database_path).save_workspace(
-            rebuild_workspace(list(bootstrap.events))
+            rebuild_workspace(list(events))
         )
         payload = {
             "executed": False,
@@ -410,6 +427,7 @@ def _run_result(
             "network_profile": network_profile.name.value,
             "network_allowlist": list(network_profile.domain_allowlist),
             "mcp_allowlist": list(mcp_allowlist),
+            "attachments": [attachment.to_mapping() for attachment in attachment_refs],
         }
     return CliCommandResult(
         command="run",
@@ -419,6 +437,7 @@ def _run_result(
             "prompt": namespace.prompt,
             "workspace": str(workspace),
             "database": str(database_path),
+            "mcp_resource_ids": list(mcp_resource_ids),
             **payload,
         },
     )

@@ -17,7 +17,7 @@ export function TaskLaunchSummary({ className, config, editable, errorText, sess
       <span>权限 · {config.policyProfile === "full_access" ? "完整访问" : "工作区写入"}</span>
       <span>能力 · {config.toolProfile === "coding" ? "编码工具" : "通用工具"}</span>
       <span>网络 · {config.networkProfile === "none" ? "无外部网络" : config.networkProfile}</span>
-      {config.networkProfile === "mcp-proxy-only" ? <span>MCP · {config.mcpAllowlist.length}</span> : null}
+      {config.networkProfile === "mcp-proxy-only" ? <span>MCP · {config.mcpAllowlist.length} 工具 · {config.mcpResourceIds.length} 资源</span> : null}
       {sessionSummary?.attachments?.length ? (
         <span title={sessionSummary.attachments.map((item) => item.file_name).join(", ")}>
           材料 · {sessionSummary.attachments.length}

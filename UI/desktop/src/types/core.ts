@@ -25,10 +25,20 @@ export interface McpToolCapability {
   input_fields: string[];
 }
 
+export interface McpResourceCapability {
+  resource_id: string;
+  name: string;
+  description: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+}
+
 export interface McpServerCapability {
   name: string;
   tool_count: number;
   tools: McpToolCapability[];
+  resource_count?: number;
+  resources?: McpResourceCapability[];
 }
 
 export interface McpCapabilitiesResponse {
@@ -37,6 +47,7 @@ export interface McpCapabilitiesResponse {
   available: boolean;
   server_count: number;
   tool_count: number;
+  resource_count?: number;
   servers: McpServerCapability[];
   reason?: string;
 }
