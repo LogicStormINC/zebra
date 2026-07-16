@@ -12184,3 +12184,112 @@ underlying call must remain scoped to the exact Phase 134 task authority.
   provider bridge presentation, made no MCP server call before approval, resumed
   after grant, and returned
   `MCP_DISCLOSURE_FINAL_OK: echo:MCP_PROVIDER_PROOF_135`.
+
+### P135-CLOSE-01 - Phase 135 Closeout And Phase 136 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / PRODUCT / SECURITY`
+- Depends on: `P135-MCP-01`
+- Branch: `codex/p135-closeout-phase136-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 135 disclosure boundary and define one bounded
+application-controlled MCP Resource slice that adds durable external context
+without turning resource access into model-selected execution authority.
+
+#### Acceptance
+
+- [x] `P135-MCP-01` is recorded as merged through PR `#107` at merge commit
+  `89cced2` and done.
+- [x] Current Hermes `main` remains clean at `f8ddf4fd8` and contributes only
+  resource list/read interaction lessons; Zebra keeps its typed, durable,
+  task-scoped, fail-closed boundaries.
+- [x] Phase 136 follows the MCP application-controlled Resource model, remains
+  compatible with the project's pinned `2025-06-18` protocol shapes, and has one
+  non-overlapping task with explicit ownership, acceptance, and non-goals.
+
+## Phase 136 Task Board
+
+### P136-MCP-01 - Durable Bounded MCP Resource Context
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / CTX / STORAGE / RUNTIME / API / CLI / WORKER / UI / SECURITY`
+- Depends on: `P135-CLOSE-01`
+- Branch: `codex/p136-mcp-01-durable-resource-context`
+- Owned paths: `packages/agent-core/`, `packages/agent-context/`, `packages/agent-storage/`, `packages/agent-runtime/`, `packages/agent-security/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `UI/desktop/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`, `UI/README.md`
+
+#### Goal
+
+Let a user or application attach explicitly selected text Resources from an
+already configured local stdio MCP server when creating a parent task. Resolve
+and read each selection once, persist immutable bounded material through the
+existing attachment lifecycle, and compile it as untrusted context without
+exposing Resource operations as model-controlled tools.
+
+#### Deliverables
+
+- capability-aware local stdio discovery for tools-only, resources-only, and
+  combined servers without changing existing MCP tool behavior
+- one safe bounded Resource inventory with opaque task-selection identifiers
+- strict task-create selection plus one-time text read and durable payload capture
+- API, CLI, direct Harness, Worker recovery, context compiler, and desktop parity
+- focused protocol, authority, persistence, compatibility, and provider tests
+
+#### Acceptance
+
+- [ ] Empty MCP configuration returns an explicit unconfigured Resource inventory
+  without starting a process; tools-only servers remain fully compatible, and
+  resources-only servers no longer fail merely because they omit `tools`.
+- [ ] Discovery uses only a declared `resources` capability, at most four pages
+  and 64 Resources total, opaque cursors, deterministic server and Resource
+  ordering, bounded names, descriptions, MIME types, sizes, and URI lengths, and
+  fails closed on malformed, duplicate, oversized, or colliding entries.
+- [ ] Authenticated inventory readback exposes server name, safe display metadata,
+  counts, availability, and an opaque deterministic selection ID; it never returns
+  raw Resource URIs, content, commands, arguments, environment, credentials, or
+  absolute server paths and performs no `resources/read` call.
+- [ ] New task input accepts at most four unique opaque Resource IDs, rejects
+  unknown fields, stale, removed, unavailable, duplicate, or unconfigured
+  selections, and requires an MCP-capable network profile without granting any
+  MCP tool, filesystem, command, credential, approval, or child-agent authority.
+- [ ] Task creation resolves each ID only against the current bounded inventory,
+  sends one exact `resources/read` request per selected advertised URI, accepts
+  only bounded UTF-8 text-oriented content, and rejects blobs, unsupported MIME
+  types, URI substitution, mixed invalid blocks, or more than 64 KiB per Resource
+  and 128 KiB in aggregate.
+- [ ] Successfully read bytes reuse the existing local attachment payload store
+  and record safe server, opaque Resource ID, display metadata, size, and SHA-256
+  provenance. Raw URI and payload never enter public events, API readback, logs,
+  model-call metadata, frontend storage, or tracked configuration.
+- [ ] Parent context compilation includes at most 16 KiB of explicitly untrusted
+  selected Resource material with stable provenance. Fixed Research children
+  receive no Resource metadata or content, and Resource text cannot change Policy,
+  tool registry, network profile, approval rules, or system instructions.
+- [ ] Creation is atomic and idempotent: any discovery, read, validation, or
+  persistence failure leaves no runnable partial task; successful tasks recover
+  only from immutable captured payloads and never re-list, re-read, or substitute
+  a changed Resource after restart.
+- [ ] Desktop selection lives only in task launch configuration, uses authenticated
+  explicit refresh and actionable loading, empty, unavailable, validation, and
+  restored states, and adds no ordinary timeline approval or generic MCP browser.
+- [ ] Direct API, CLI, Harness, queued Worker, recovery, legacy tasks, existing MCP
+  tool allowlists, progressive disclosure, compaction, and provider adapters retain
+  deterministic behavior under focused compatibility and authority matrices.
+- [ ] All backend/static/eval and desktop gates, browser acceptance, and one real
+  `deepseek-v4-flash` task using one fixture Resource snapshot succeed; the model
+  answers from captured content without receiving or calling Resource tools.
+
+#### Explicit Non-Goals
+
+- model-visible `resources/list` or `resources/read` tools, automatic model
+  selection, wildcard IDs, implicit context injection, or ordinary-state HITL
+- Resource templates, URI-template expansion, subscriptions, list-change or
+  update notifications, prompts, completions, sampling, elicitation, or roots
+- binary, image, audio, PDF, office, base64 blob, remote URL, OCR, vision, or
+  later-message Resource attachments
+- remote MCP, Streamable HTTP, SSE, OAuth, credentials, headers, dynamic reload,
+  long-lived pools, marketplace, plugins, connector onboarding, or Research access
