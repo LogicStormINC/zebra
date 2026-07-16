@@ -19,6 +19,7 @@ from agent_core.harness.selection import (
     ToolCallSelectionStrategy,
 )
 from agent_core.harness.sequential_loop import SequentialToolLoop
+from agent_core.harness.tool_resolution import ToolCallResolver
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.tool_gateway import ToolGatewayPort
@@ -39,6 +40,7 @@ class SingleAttemptOrchestrator:
         parallel_safe_tools: frozenset[str] = frozenset(),
         parallel_batch_limits: Mapping[str, int] | None = None,
         max_parallel_tool_calls: int = 1,
+        tool_call_resolver: ToolCallResolver | None = None,
     ) -> None:
         self._model_gateway = model_gateway
         self._model_step = model_step or HarnessModelStep()
@@ -54,6 +56,7 @@ class SingleAttemptOrchestrator:
             parallel_safe_tools=parallel_safe_tools,
             parallel_batch_limits=parallel_batch_limits,
             max_parallel_tool_calls=max_parallel_tool_calls,
+            tool_call_resolver=tool_call_resolver,
         )
 
     def run(self, context: HarnessContext) -> HarnessAttemptResult:

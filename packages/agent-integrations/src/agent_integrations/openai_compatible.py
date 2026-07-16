@@ -145,8 +145,14 @@ def _serialize_message(message: SessionMessage) -> dict[str, object]:
                 "id": tool_call.provider_call_id or str(tool_call.tool_call_id),
                 "type": "function",
                 "function": {
-                    "name": _provider_tool_name(tool_call.name),
-                    "arguments": _serialize_tool_arguments(tool_call.arguments),
+                    "name": _provider_tool_name(
+                        tool_call.provider_tool_name or tool_call.name
+                    ),
+                    "arguments": _serialize_tool_arguments(
+                        tool_call.provider_arguments
+                        if tool_call.provider_arguments is not None
+                        else tool_call.arguments
+                    ),
                 },
             }
             for tool_call in message.tool_calls

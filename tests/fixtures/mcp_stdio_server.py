@@ -44,7 +44,15 @@ for raw_line in sys.stdin:
                 "additionalProperties": False,
             }
         )
-        tool_count = 17 if mode == "too-many-tools" else 2 if mode == "two-tools" else 1
+        tool_count = (
+            17
+            if mode == "too-many-tools"
+            else 16
+            if mode == "large-catalog"
+            else 2
+            if mode == "two-tools"
+            else 1
+        )
         send(
             {
                 "jsonrpc": "2.0",
@@ -53,7 +61,14 @@ for raw_line in sys.stdin:
                     "tools": [
                         {
                             "name": "echo" if index == 0 else f"echo{index}",
-                            "description": "Echo one value.",
+                            "description": (
+                                "Echo one value. "
+                                + (
+                                    f"large catalog capability {index} " * 45
+                                    if mode == "large-catalog"
+                                    else ""
+                                )
+                            ),
                             "inputSchema": schema,
                         }
                         for index in range(tool_count)

@@ -17,11 +17,14 @@ from agent_core.ports.session_history import SessionHistoryPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_security import DEFAULT_NETWORK_PROFILE, LocalPolicyEngine, NetworkProfile, PolicyProfile
 from agent_tools import (
+    AuthorizedMcpToolCatalog,
     ClarifyTool,
     CommandRunTool,
     FileReadTool,
     GitStatusTool,
     McpProxyToolGateway,
+    McpToolDescribeTool,
+    McpToolSearchTool,
     PatchApplyTool,
     PlanTool,
     SessionSearchTool,
@@ -85,7 +88,7 @@ def run_local_harness(
         mcp_allowlist=mcp_allowlist,
     )
     resolved_mcp_allowlist = (
-        tuple(tool.name for tool in tool_gateway.model_tools if tool.name.startswith("mcp."))
+        tuple(tool.name for tool in tool_gateway.effective_mcp_tools)
         if mcp_allowlist is None
         else tuple(mcp_allowlist)
     )
@@ -124,6 +127,7 @@ def run_local_harness(
                 parallel_safe_tools=tool_gateway.parallel_safe_tools,
                 parallel_batch_limits=tool_gateway.parallel_batch_limits,
                 max_parallel_tool_calls=3,
+                tool_call_resolver=tool_gateway.resolve_model_tool_calls,
             ).run,
         )
     finally:
@@ -195,6 +199,15 @@ class LocalToolGateway(ToolGatewayPort):
             if mcp_servers and (mcp_allowlist is None or mcp_allowlist)
             else None
         )
+        self._mcp_catalog = AuthorizedMcpToolCatalog(
+            mcp_transport.model_tools if mcp_transport is not None else ()
+        )
+        if self._mcp_catalog.activated:
+            for catalog_tool in (
+                McpToolSearchTool(self._mcp_catalog),
+                McpToolDescribeTool(self._mcp_catalog),
+            ):
+                registry.register(catalog_tool.contract, catalog_tool.handle)
         self._subagents: LocalResearchSubagentCoordinator | None = None
         if model_gateway is not None and "agent.research" in enabled_names:
             self._subagents = LocalResearchSubagentCoordinator(
@@ -204,9 +217,7 @@ class LocalToolGateway(ToolGatewayPort):
             )
             research = ResearchSubagentTool(self._subagents, workspace_root)
             registry.register(research.contract, research.handle)
-        self._model_tools = registry.model_tools() + (
-            mcp_transport.model_tools if mcp_transport is not None else ()
-        )
+        self._model_tools = registry.model_tools() + self._mcp_catalog.model_tools
         self._parallel_safe_tools = registry.parallel_safe_names()
         self._parallel_batch_limits = (
             {"agent.research": research_child_limit} if model_gateway is not None else {}
@@ -221,6 +232,10 @@ class LocalToolGateway(ToolGatewayPort):
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
         return self._model_tools
+
+    @property
+    def effective_mcp_tools(self) -> tuple[ModelToolDefinition, ...]:
+        return self._mcp_catalog.definitions
 
     @property
     def parallel_safe_tools(self) -> frozenset[str]:
@@ -243,6 +258,12 @@ class LocalToolGateway(ToolGatewayPort):
                     "detail": str(exc),
                 },
             )
+
+    def resolve_model_tool_calls(
+        self,
+        tool_calls: tuple[ToolCall, ...],
+    ) -> tuple[ToolCall, ...]:
+        return tuple(self._mcp_catalog.resolve(tool_call) for tool_call in tool_calls)
 
     def close(self) -> None:
         if self._subagents is not None:

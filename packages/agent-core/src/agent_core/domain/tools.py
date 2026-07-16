@@ -4,7 +4,7 @@ from enum import StrEnum
 from hashlib import sha256
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from agent_core.domain.identifiers import ToolCallId
 
@@ -23,6 +23,8 @@ class ToolCall(BaseModel):
     arguments: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
     provider_call_id: str | None = None
+    provider_tool_name: str | None = None
+    provider_arguments: dict[str, Any] | None = None
 
     @property
     def approval_fingerprint(self) -> str:
@@ -43,7 +45,7 @@ class ToolCall(BaseModel):
             raise ValueError("name must not be blank")
         return stripped
 
-    @field_validator("provider_call_id")
+    @field_validator("provider_call_id", "provider_tool_name")
     @classmethod
     def ensure_provider_call_id_not_blank(cls, value: str | None) -> str | None:
         if value is None:
@@ -52,6 +54,14 @@ class ToolCall(BaseModel):
         if not stripped:
             raise ValueError("provider_call_id must not be blank when set")
         return stripped
+
+    @model_validator(mode="after")
+    def ensure_provider_presentation_is_complete(self) -> "ToolCall":
+        if (self.provider_tool_name is None) != (self.provider_arguments is None):
+            raise ValueError(
+                "provider_tool_name and provider_arguments must be set together"
+            )
+        return self
 
     @field_validator("created_at")
     @classmethod

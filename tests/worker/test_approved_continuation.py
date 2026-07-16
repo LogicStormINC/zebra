@@ -17,6 +17,7 @@ from agent_storage import (
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
 )
+from agent_tools.mcp_disclosure import MCP_TOOL_CALL_NAME
 from agent_tools.web_gateway import WebGatewayRequest, WebGatewayResponse
 from agent_tools.web_search import (
     WebSearchRequest,
@@ -267,6 +268,93 @@ def test_mcp_stdio_waits_for_approval_then_recovers_exact_call(
     assert completed.session.status is SessionStatus.COMPLETED
     assert completed.attempt_result.metadata["assistant_message"] == "approved-mcp-complete"
     assert marker.read_text(encoding="utf-8") == "called"
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
+    assert sum(
+        event.event_type is EventType.TOOL_EXECUTION_STARTED
+        and event.payload.get("tool_name") == "mcp.fixture.echo"
+        for event in events
+    ) == 1
+
+
+def test_large_mcp_catalog_bridge_waits_for_approval_then_recovers_provider_view(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "mcp-bridge-continuation.sqlite"
+    marker = tmp_path / "mcp-bridge-called"
+    created_at = datetime(2026, 7, 16, 9, 0, tzinfo=UTC)
+    tool_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name=MCP_TOOL_CALL_NAME,
+        arguments={
+            "name": "mcp.fixture.echo",
+            "arguments": {"value": "approved-bridge"},
+        },
+        created_at=created_at,
+        provider_call_id="call_mcp_bridge",
+    )
+    final_gateway = _gateway("approved-mcp-bridge-complete")
+    gateways = iter(
+        (
+            _gateway("Calling selected MCP tool through bridge.", tool_call=tool_call),
+            final_gateway,
+        )
+    )
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: next(gateways),
+    )
+    server_script = Path(__file__).parents[1] / "fixtures" / "mcp_stdio_server.py"
+    settings = _settings(
+        database_path,
+        mcp_servers=(
+            McpServerSettings(
+                name="fixture",
+                command=sys.executable,
+                args=(str(server_script), "large-catalog", str(marker)),
+            ),
+        ),
+    )
+    session_id = _seed_session(
+        database_path,
+        tmp_path,
+        network_profile="mcp-proxy-only",
+        mcp_allowlist=tuple(
+            f"mcp.fixture.echo{index if index else ''}" for index in range(16)
+        ),
+    )
+    service = _execution_service(database_path, settings=settings)
+
+    waiting = service.execute_session(
+        session_id,
+        worker_id="worker-mcp-bridge",
+        executed_at=created_at,
+    )
+
+    assert waiting.session.status is SessionStatus.WAITING_APPROVAL
+    assert not marker.exists()
+    approval = create_app(database_path, settings=settings).get_approval(str(session_id))
+    context = approval.body["approval_context"]
+    assert context["tool_name"] == "mcp.fixture.echo"
+    assert context["provider_tool_name"] == MCP_TOOL_CALL_NAME
+    assert context["provider_arguments"] == tool_call.arguments
+    create_app(database_path, settings=settings).approve(
+        str(session_id),
+        {"operator": "tester", "reason": "approved bridged MCP call"},
+    )
+
+    completed = service.execute_session(
+        session_id,
+        worker_id="worker-mcp-bridge",
+        executed_at=created_at,
+    )
+
+    assert completed.session.status is SessionStatus.COMPLETED
+    assert marker.read_text(encoding="utf-8") == "called"
+    resumed_call = final_gateway.requests[0][-2].tool_calls[0]
+    assert resumed_call.name == "mcp.fixture.echo"
+    assert resumed_call.provider_tool_name == MCP_TOOL_CALL_NAME
+    assert resumed_call.provider_arguments == tool_call.arguments
     events = SQLiteEventStore(database_path).list_for_session(session_id)
     assert sum(
         event.event_type is EventType.TOOL_EXECUTION_STARTED

@@ -19,6 +19,10 @@ from agent_core.harness.orchestration_events import (
 )
 from agent_core.harness.selection import ToolCallSelectionStrategy
 from agent_core.harness.tool_batch import ToolBatchExecutor
+from agent_core.harness.tool_resolution import (
+    ToolCallResolver,
+    resolve_completion_tool_calls,
+)
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.tool_gateway import ToolGatewayPort
@@ -41,11 +45,13 @@ class SequentialToolLoop:
         parallel_safe_tools: frozenset[str],
         parallel_batch_limits: Mapping[str, int] | None,
         max_parallel_tool_calls: int,
+        tool_call_resolver: ToolCallResolver | None,
     ) -> None:
         self._model_gateway = model_gateway
         self._model_step = model_step
         self._tool_selector = tool_selector
         self._synthesize_tool_results = synthesize_tool_results
+        self._tool_call_resolver = tool_call_resolver
         self._batch_executor = ToolBatchExecutor(
             policy_engine=policy_engine,
             tool_gateway=tool_gateway,
@@ -157,6 +163,25 @@ class SequentialToolLoop:
         fingerprints: set[str],
         metadata: dict[str, object],
     ) -> HarnessAttemptResult:
+        try:
+            completion = resolve_completion_tool_calls(
+                completion,
+                self._tool_call_resolver,
+            )
+        except ValueError as exc:
+            return build_attempt_result(
+                outcome=HarnessAttemptOutcome.FAILED,
+                summary="invalid progressive tool disclosure call",
+                assistant_message=completion.assistant_message.content,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                emitted_events=emitted_events,
+                metadata={
+                    **metadata,
+                    "stop_reason": "invalid_tool_bridge",
+                    "detail": str(exc),
+                },
+            )
         if not completion.tool_calls:
             return build_attempt_result(
                 outcome=HarnessAttemptOutcome.COMPLETED,

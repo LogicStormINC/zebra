@@ -22,6 +22,11 @@ from agent_runtime import (
 )
 from agent_security import parse_network_profile
 from agent_tools import McpProxyRequest, parse_mcp_tool_name
+from agent_tools.mcp_disclosure import (
+    MCP_TOOL_CALL_NAME,
+    MCP_TOOL_DESCRIBE_NAME,
+    MCP_TOOL_SEARCH_NAME,
+)
 
 
 @dataclass(frozen=True)
@@ -80,6 +85,41 @@ def test_task_allowlist_filters_model_catalog_and_execution(tmp_path: Path) -> N
     denied = gateway.execute(_tool_call("mcp.fixture.echo", {"value": "blocked"}))
     assert denied.status is ToolCallStatus.FAILED
     assert denied.metadata["reason"] == "mcp_proxy_error"
+
+
+def test_large_mcp_catalog_uses_progressive_disclosure_bridge(tmp_path: Path) -> None:
+    marker = tmp_path / "large-called"
+    gateway = LocalToolGateway(
+        tmp_path / "large-catalog",
+        tool_profile=ToolProfile.GENERAL,
+        mcp_servers=(_server("large-catalog", marker),),
+    )
+
+    tool_names = {tool.name for tool in gateway.model_tools}
+    assert MCP_TOOL_SEARCH_NAME in tool_names
+    assert MCP_TOOL_DESCRIBE_NAME in tool_names
+    assert MCP_TOOL_CALL_NAME in tool_names
+    assert "mcp.fixture.echo" not in tool_names
+    assert len(gateway.effective_mcp_tools) == 16
+
+    search = gateway.execute(_tool_call(MCP_TOOL_SEARCH_NAME, {"query": "echo", "limit": 1}))
+    resolved = gateway.resolve_model_tool_calls(
+        (
+            _tool_call(
+                MCP_TOOL_CALL_NAME,
+                {"name": "mcp.fixture.echo", "arguments": {"value": "bridged"}},
+            ),
+        )
+    )[0]
+    result = gateway.execute(resolved)
+
+    assert search.status is ToolCallStatus.EXECUTED
+    assert search.output.startswith("[UNTRUSTED MCP CAPABILITY METADATA]\n")
+    assert resolved.name == "mcp.fixture.echo"
+    assert resolved.provider_tool_name == MCP_TOOL_CALL_NAME
+    assert result.status is ToolCallStatus.EXECUTED
+    assert result.output.endswith("echo:bridged")
+    assert marker.read_text(encoding="utf-8") == "called"
 
 
 def test_empty_task_allowlist_does_not_start_mcp_discovery(

@@ -173,6 +173,7 @@ class SessionExecutionService:
             parallel_safe_tools=tool_gateway.parallel_safe_tools,
             parallel_batch_limits=tool_gateway.parallel_batch_limits,
             max_parallel_tool_calls=3,
+            tool_call_resolver=tool_gateway.resolve_model_tool_calls,
         )
         context = HarnessContext(
             task=HarnessTask(
@@ -187,9 +188,7 @@ class SessionExecutionService:
                 network_profile=task.network_profile.name.value,
                 network_allowlist=task.network_profile.domain_allowlist,
                 mcp_allowlist=tuple(
-                    tool.name
-                    for tool in tool_gateway.model_tools
-                    if tool.name.startswith("mcp.")
+                    tool.name for tool in tool_gateway.effective_mcp_tools
                 ),
                 confirmed_memories=list_confirmed_repo_memories(
                     self._database_path,

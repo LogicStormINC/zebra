@@ -52,13 +52,22 @@ def recover_approved_continuation(
     arguments = requested.payload.get("arguments")
     if not isinstance(arguments, dict):
         raise ApprovedContinuationError("pending tool call arguments are unavailable")
-    tool_call = ToolCall(
-        tool_call_id=ToolCallId(UUID(tool_call_id)),
-        name=_required_string(requested.payload, "tool_name"),
-        arguments=arguments,
-        created_at=requested.created_at,
-        provider_call_id=_optional_string(requested.payload.get("provider_call_id")),
-    )
+    provider_tool_name = _optional_string(requested.payload.get("provider_tool_name"))
+    provider_arguments = _optional_mapping(requested.payload.get("provider_arguments"))
+    if (provider_tool_name is None) != (provider_arguments is None):
+        raise ApprovedContinuationError("pending provider presentation is incomplete")
+    try:
+        tool_call = ToolCall(
+            tool_call_id=ToolCallId(UUID(tool_call_id)),
+            name=_required_string(requested.payload, "tool_name"),
+            arguments=arguments,
+            created_at=requested.created_at,
+            provider_call_id=_optional_string(requested.payload.get("provider_call_id")),
+            provider_tool_name=provider_tool_name,
+            provider_arguments=provider_arguments,
+        )
+    except ValueError as exc:
+        raise ApprovedContinuationError("pending tool call is invalid") from exc
     if tool_call.approval_fingerprint != fingerprint:
         raise ApprovedContinuationError("pending tool call fingerprint is invalid")
     assistant_message = SessionMessage(
@@ -96,6 +105,14 @@ def _required_string(payload: dict[str, object], key: str) -> str:
 
 def _optional_string(value: object) -> str | None:
     return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def _optional_mapping(value: object) -> dict[str, object] | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ApprovedContinuationError("pending provider arguments are invalid")
+    return dict(value)
 
 
 def _conversation(value: object) -> tuple[SessionMessage, ...]:

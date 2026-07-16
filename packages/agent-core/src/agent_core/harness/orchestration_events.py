@@ -104,6 +104,9 @@ def approval_requested_payload(
         ]
     if tool_call.provider_call_id is not None:
         payload["provider_call_id"] = tool_call.provider_call_id
+    if tool_call.provider_tool_name is not None:
+        payload["provider_tool_name"] = tool_call.provider_tool_name
+        payload["provider_arguments"] = tool_call.provider_arguments or {}
     _extend_proxy_policy_payload(payload, decision)
     return payload
 
