@@ -12608,3 +12608,55 @@ provider contract before Phase 138 is declared complete.
   elicitation, roots, Resource templates, binary or multimodal Prompt content
 - remote MCP, SSE or Streamable HTTP, OAuth, token passthrough, dynamic reload,
   marketplace, plugins, Research-child inheritance, or distributed execution
+
+## Phase 139 Task Board
+
+### P139-PLAN-01 - Session Configuration Surface Boundary
+
+- Status: `Done`
+- Owner: `Codex-PLAN`
+- Suggested role: `PRODUCT / UI / DOC`
+- Depends on: `P138-E2E-01`
+- Branch: `codex/p139-plan-session-config-inspector`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Define one clear ownership boundary between the Composer and the session
+inspector: editable launch configuration belongs to new-task input, while durable
+configuration for an existing session belongs to the right-side context panel.
+
+#### Acceptance
+
+- [x] The change is limited to desktop information architecture and does not add
+  an API, event, storage, Policy, MCP, model, or HITL contract.
+- [x] Active-session configuration has one canonical read-only surface in the
+  inspector; the Composer remains responsible for task input and launch controls.
+- [x] One implementation task owns the complete UI change and acceptance gates.
+
+### P139-UI-01 - Inspector-Owned Session Configuration
+
+- Status: `In Progress`
+- Owner: `Codex-UI`
+- Suggested role: `UI / TEST`
+- Depends on: `P139-PLAN-01`
+- Branch: `codex/p139-ui-01-session-config-inspector`
+- Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Move durable active-session configuration out of the Composer header and into the
+existing right-side context inspector without weakening new-task launch editing.
+
+#### Acceptance
+
+- [ ] An active session shows no `会话配置` summary inside the Composer; the
+  right-side context inspector owns workspace, policy, tool, network, MCP,
+  captured Prompt, material, model, attempt, and event-sequence readback.
+- [ ] Prompt readback remains safe provenance only and never exposes rendered
+  Prompt text, raw server configuration, credentials, or a re-run control.
+- [ ] New-task and unbound draft surfaces retain editable launch configuration,
+  validation, and controls before the first session is created.
+- [ ] Existing approval and clarification HITL surfaces are unchanged; desktop
+  checks, production build, Tauri check, responsive browser acceptance, and the
+  repository file-size gate pass.
