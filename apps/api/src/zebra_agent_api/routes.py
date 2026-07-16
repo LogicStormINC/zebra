@@ -26,10 +26,14 @@ class RouteAdapter:
             return self.app.health()
         if method == "GET" and request.path == "/capabilities/mcp":
             return self.app.get_mcp_capabilities()
+        if method == "GET" and request.path == "/capabilities/mcp/prompts":
+            return self.app.get_mcp_prompts()
         if method == "GET" and request.path == "/sessions":
             return self.app.list_sessions(request.query or {})
         if method == "POST" and request.path == "/sessions":
-            return self.app.create_session(request.body or {})
+            return self.app.create_session(
+                request.body or {}, idempotency_key=_idempotency_key(request)
+            )
         if method == "POST" and request.path.startswith("/approvals/"):
             parts = _approval_path_parts(request.path)
             if len(parts) == 2 and parts[1] == "approve":

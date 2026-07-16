@@ -14,9 +14,10 @@ class TextAttachmentInput(BaseModel):
     file_name: str
     media_type: str
     payload: bytes
-    source_type: Literal["user_attachment", "mcp_resource"] = "user_attachment"
+    source_type: Literal["user_attachment", "mcp_resource", "mcp_prompt"] = "user_attachment"
     source_server: str | None = None
     source_id: str | None = None
+    source_argument_names: tuple[str, ...] = ()
 
     @field_validator("file_name", "media_type")
     @classmethod
@@ -28,7 +29,12 @@ class TextAttachmentInput(BaseModel):
 
     @model_validator(mode="after")
     def ensure_source_is_complete(self) -> TextAttachmentInput:
-        _validate_source(self.source_type, self.source_server, self.source_id)
+        _validate_source(
+            self.source_type,
+            self.source_server,
+            self.source_id,
+            self.source_argument_names,
+        )
         return self
 
 
@@ -41,9 +47,10 @@ class SessionAttachmentRef(BaseModel):
     media_type: str
     size_bytes: int = Field(ge=1)
     sha256: str
-    source_type: Literal["user_attachment", "mcp_resource"] = "user_attachment"
+    source_type: Literal["user_attachment", "mcp_resource", "mcp_prompt"] = "user_attachment"
     source_server: str | None = None
     source_id: str | None = None
+    source_argument_names: tuple[str, ...] = ()
 
     @field_validator("file_name", "media_type")
     @classmethod
@@ -63,7 +70,12 @@ class SessionAttachmentRef(BaseModel):
 
     @model_validator(mode="after")
     def ensure_source_is_complete(self) -> SessionAttachmentRef:
-        _validate_source(self.source_type, self.source_server, self.source_id)
+        _validate_source(
+            self.source_type,
+            self.source_server,
+            self.source_id,
+            self.source_argument_names,
+        )
         return self
 
     def to_mapping(self) -> dict[str, object]:
@@ -75,7 +87,7 @@ class SessionAttachmentRef(BaseModel):
             "size_bytes": self.size_bytes,
             "sha256": self.sha256,
         }
-        if self.source_type == "mcp_resource":
+        if self.source_type in {"mcp_resource", "mcp_prompt"}:
             result.update(
                 {
                     "source_type": self.source_type,
@@ -83,6 +95,8 @@ class SessionAttachmentRef(BaseModel):
                     "source_id": self.source_id,
                 }
             )
+        if self.source_type == "mcp_prompt":
+            result["source_argument_names"] = list(self.source_argument_names)
         return result
 
 
@@ -93,9 +107,10 @@ class AttachmentContextInput(BaseModel):
     file_name: str
     media_type: str
     text: str
-    source_type: Literal["user_attachment", "mcp_resource"] = "user_attachment"
+    source_type: Literal["user_attachment", "mcp_resource", "mcp_prompt"] = "user_attachment"
     source_server: str | None = None
     source_id: str | None = None
+    source_argument_names: tuple[str, ...] = ()
 
     @field_validator("file_name", "media_type", "text")
     @classmethod
@@ -107,7 +122,12 @@ class AttachmentContextInput(BaseModel):
 
     @model_validator(mode="after")
     def ensure_source_is_complete(self) -> AttachmentContextInput:
-        _validate_source(self.source_type, self.source_server, self.source_id)
+        _validate_source(
+            self.source_type,
+            self.source_server,
+            self.source_id,
+            self.source_argument_names,
+        )
         return self
 
 
@@ -115,10 +135,19 @@ def _validate_source(
     source_type: str,
     source_server: str | None,
     source_id: str | None,
+    source_argument_names: tuple[str, ...],
 ) -> None:
     if source_type == "user_attachment":
-        if source_server is not None or source_id is not None:
+        if source_server is not None or source_id is not None or source_argument_names:
             raise ValueError("user attachments must not include MCP source fields")
         return
     if not source_server or not source_server.strip() or not source_id or not source_id.strip():
-        raise ValueError("MCP resource attachments require source_server and source_id")
+        raise ValueError("MCP attachments require source_server and source_id")
+    if source_type == "mcp_resource" and source_argument_names:
+        raise ValueError("MCP resource attachments must not include argument names")
+    if source_type == "mcp_prompt":
+        normalized = tuple(name.strip() for name in source_argument_names)
+        if normalized != source_argument_names or any(not name for name in normalized):
+            raise ValueError("MCP prompt argument names must be non-blank and normalized")
+        if len(set(normalized)) != len(normalized) or tuple(sorted(normalized)) != normalized:
+            raise ValueError("MCP prompt argument names must be unique and sorted")

@@ -5,6 +5,7 @@ from agent_core.application.approvals import (
     ApprovalDecisionCommand,
     ApprovalDecisionService,
 )
+from agent_core.application.mcp_prompt_attachments import build_mcp_prompt_attachment
 from agent_core.application.memory_candidates import (
     MemoryCandidateExtractionCommand,
     MemoryCandidateExtractionResult,
@@ -41,6 +42,7 @@ __all__ = [
     "ApprovalDecisionService",
     "attach_refs_to_user_event",
     "attachment_refs_from_event",
+    "build_mcp_prompt_attachment",
     "BootstrappedSession",
     "MemoryCandidateExtractionCommand",
     "MemoryCandidateExtractionResult",

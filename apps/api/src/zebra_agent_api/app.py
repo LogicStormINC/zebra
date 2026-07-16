@@ -55,6 +55,7 @@ from zebra_agent_api.api_scm_mixin import ApiScmMixin
 from zebra_agent_api.api_session_read_mixin import ApiSessionReadMixin
 from zebra_agent_api.api_status_mixin import ApiStatusMixin
 from zebra_agent_api.credential_broker import build_default_credential_broker
+from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
@@ -65,6 +66,7 @@ from zebra_agent_api.session_payloads import (
     parse_create_session_payload,
     parse_resume_session_payload,
 )
+from zebra_agent_api.session_prompt_inputs import resolve_mcp_prompt_attachment
 
 
 @dataclass(frozen=True)
@@ -82,7 +84,20 @@ class ZebraAgentApi(
     credential_broker: CredentialBroker | None = None
     github_transport: GitHubPullRequestTransport | None = None
 
-    def create_session(self, payload: dict[str, object]) -> ApiResponse:
+    def create_session(
+        self,
+        payload: dict[str, object],
+        *,
+        idempotency_key: str | None = None,
+    ) -> ApiResponse:
+        replayed = replay_idempotent_response(
+            database_path=self.database_path,
+            action="session.create",
+            idempotency_key=idempotency_key,
+            payload=payload,
+        )
+        if replayed is not None:
+            return replayed
         parsed = parse_create_session_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
@@ -100,11 +115,34 @@ class ZebraAgentApi(
             )
         except ValueError as error:
             return bad_request(str(error))
-        parsed["attachments"] = (*parsed["attachments"], *resource_attachments)
+        try:
+            prompt_attachments = resolve_mcp_prompt_attachment(
+                self.settings.mcp_servers,
+                parsed["mcp_prompt_id"],
+                parsed["mcp_prompt_arguments"],
+            )
+        except ValueError as error:
+            return bad_request(str(error))
+        parsed["attachments"] = (
+            *parsed["attachments"],
+            *resource_attachments,
+            *prompt_attachments,
+        )
 
-        if not parsed["execute"]:
-            return self._create_queued_session(parsed)
-        return self._create_and_execute_session(parsed)
+        response = (
+            self._create_and_execute_session(parsed)
+            if parsed["execute"]
+            else self._create_queued_session(parsed)
+        )
+        if idempotency_key is None or response.status_code != 201:
+            return response
+        return save_idempotent_response(
+            database_path=self.database_path,
+            action="session.create",
+            idempotency_key=idempotency_key,
+            payload=payload,
+            response=response,
+        )
 
     def resume_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
         parsed = parse_resume_session_payload(payload)
@@ -305,6 +343,11 @@ class ZebraAgentApi(
                 "network_allowlist": parsed["network_allowlist"],
                 "mcp_allowlist": parsed["mcp_allowlist"],
                 "mcp_resource_ids": parsed["mcp_resource_ids"],
+                **(
+                    {"mcp_prompt_id": parsed["mcp_prompt_id"]}
+                    if parsed["mcp_prompt_id"] is not None
+                    else {}
+                ),
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
@@ -349,6 +392,7 @@ class ZebraAgentApi(
                         source_type=attachment.source_type,
                         source_server=attachment.source_server,
                         source_id=attachment.source_id,
+                        source_argument_names=attachment.source_argument_names,
                     )
                     for attachment in parsed["attachments"]
                 ),
@@ -388,6 +432,11 @@ class ZebraAgentApi(
                 "network_allowlist": parsed["network_allowlist"],
                 "mcp_allowlist": parsed["mcp_allowlist"],
                 "mcp_resource_ids": parsed["mcp_resource_ids"],
+                **(
+                    {"mcp_prompt_id": parsed["mcp_prompt_id"]}
+                    if parsed["mcp_prompt_id"] is not None
+                    else {}
+                ),
                 "trace": _trace_payload(result),
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },

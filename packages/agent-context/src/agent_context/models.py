@@ -12,6 +12,7 @@ class ContextItemKind(StrEnum):
     TOOL_OUTPUT_SUMMARY = "tool_output_summary"
     USER_ATTACHMENT = "user_attachment"
     MCP_RESOURCE = "mcp_resource"
+    MCP_PROMPT = "mcp_prompt"
 
 
 RUNTIME_EVIDENCE_KINDS = frozenset(
@@ -22,7 +23,7 @@ RUNTIME_EVIDENCE_KINDS = frozenset(
 )
 RUNTIME_EVIDENCE_SOURCE_TYPES = frozenset({"session_projection", "tool_trace"})
 MEMORY_SOURCE_TYPES = frozenset({"confirmed_memory"})
-ATTACHMENT_SOURCE_TYPES = frozenset({"user_attachment", "mcp_resource"})
+ATTACHMENT_SOURCE_TYPES = frozenset({"user_attachment", "mcp_resource", "mcp_prompt"})
 
 
 class TrustLevel(StrEnum):
@@ -108,7 +109,11 @@ class ContextCompileRequest:
             if item.provenance.source_type not in MEMORY_SOURCE_TYPES:
                 raise ValueError("memory_items must come from confirmed_memory sources")
         for item in self.attachment_items:
-            if item.kind not in {ContextItemKind.USER_ATTACHMENT, ContextItemKind.MCP_RESOURCE}:
+            if item.kind not in {
+                ContextItemKind.USER_ATTACHMENT,
+                ContextItemKind.MCP_RESOURCE,
+                ContextItemKind.MCP_PROMPT,
+            }:
                 raise ValueError("attachment_items must use an attachment context kind")
             if item.provenance.source_type not in ATTACHMENT_SOURCE_TYPES:
                 raise ValueError("attachment_items must come from supported attachment sources")
