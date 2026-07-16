@@ -12459,3 +12459,152 @@ so future work cannot silently recreate oversized shared hotspots.
   modules, metaprogrammed forwarding, new dependencies, or unrelated formatting
 - MCP prompts/templates/subscriptions, remote MCP/OAuth, plugin marketplace,
   distributed workers, cloud storage, or broader multi-agent orchestration
+
+### P137-CLOSE-01 - Phase 137 Closeout And Phase 138 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / MCP / UI`
+- Depends on: `P137-GATE-01`
+- Branch: `codex/p137-closeout-phase138-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 137 enforcement boundary and define the next smallest
+general-agent product capability without returning code delivery to the default
+workflow or crossing the local-first runtime boundary.
+
+#### Acceptance
+
+- [x] Phase 137 is recorded as merged through PRs `#111` through `#115`, with
+  final merge commit `b1a95c67e64dfff34d3161349c1c59bfdb48b839`.
+- [x] The next capability is selected from verified current gaps: document and
+  multimodal input is deferred because no parser or provider baseline exists;
+  remote MCP and OAuth remain later infrastructure boundaries.
+- [x] Phase 138 defines application-controlled MCP Prompt templates as explicit
+  new-task input, not model-controlled tools or hidden prompt injection.
+- [x] Phase 138 has dependency-ordered tasks with one owner, one branch, explicit
+  owned paths, acceptance criteria, and non-goals.
+
+## Phase 138 Task Board
+
+### P138-RUN-01 - Bounded MCP Prompt Discovery And Resolution
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `RUNTIME / SECURITY / TEST`
+- Depends on: `P137-CLOSE-01`
+- Branch: `codex/p138-run-01-bounded-mcp-prompts`
+- Owned paths: `packages/agent-runtime/`, `tests/agent_runtime/`
+
+#### Goal
+
+Extend the existing short-lived local stdio MCP client with capability-aware,
+bounded Prompt discovery and exact Prompt resolution while treating all server
+metadata and returned messages as untrusted input.
+
+#### Acceptance
+
+- [ ] Servers without a declared `prompts` capability are not queried; tools-only
+  and resources-only compatibility remains unchanged.
+- [ ] Discovery accepts at most four pages and 64 Prompts per server with stable
+  ordering, opaque selection IDs, bounded names, descriptions, and argument
+  metadata, and fails closed on malformed, duplicate, or colliding entries.
+- [ ] Exact resolution accepts only one advertised selection and bounded string
+  arguments, performs one `prompts/get`, and returns text-only user or assistant
+  messages under fixed message, field, and aggregate byte ceilings.
+- [ ] Embedded Resources, images, audio, arbitrary roles, server instructions,
+  and oversized or malformed output are rejected; no Prompt operation becomes a
+  model-visible tool.
+
+### P138-APP-01 - Durable Explicit Prompt Task Launch
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `CORE / STORAGE / API / CLI / WORKER / TEST`
+- Depends on: `P138-RUN-01`
+- Branch: `codex/p138-app-01-durable-prompt-launch`
+- Owned paths: `packages/agent-core/`, `packages/agent-context/`, `packages/agent-storage/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `tests/api/`, `tests/cli/`, `tests/worker/`, `tests/test_mcp_prompt_templates.py`
+
+#### Goal
+
+Allow a user to explicitly select one advertised MCP Prompt when creating a new
+parent task, resolve it once before creation, and persist the rendered text and
+safe provenance so execution and recovery never re-read the server.
+
+#### Acceptance
+
+- [ ] Authenticated API and CLI inventory exposes only safe Prompt display data,
+  required argument metadata, availability, and opaque IDs; no command,
+  environment, credential, raw server path, or hidden message is returned.
+- [ ] New-task input accepts at most one Prompt ID plus exact bounded string
+  arguments, rejects stale, unknown, duplicate, unavailable, or mismatched input,
+  and requires a compatible MCP network profile without granting tool authority.
+- [ ] Rendered Prompt text is normalized into explicit untrusted user context,
+  stored through the durable attachment payload lifecycle with server, Prompt ID,
+  argument-name, size, and digest provenance, and never exposes raw payload.
+- [ ] Creation is atomic and idempotent; direct Harness and Worker recovery use
+  only captured bytes and never repeat discovery or `prompts/get`.
+- [ ] Legacy sessions and tasks without Prompt input retain identical behavior.
+
+### P138-UI-01 - Desktop Prompt Template Launcher
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `UI / TEST`
+- Depends on: `P138-APP-01`
+- Branch: `codex/p138-ui-01-prompt-template-launcher`
+- Owned paths: `UI/desktop/`
+
+#### Goal
+
+Expose safe MCP Prompt inventory only inside new-task launch configuration, with
+explicit selection and argument entry that produces a normal task rather than an
+approval or persistent server-control surface.
+
+#### Acceptance
+
+- [ ] Explicit refresh shows loading, empty, unavailable, validation, selected,
+  and restored states without background polling or raw MCP configuration.
+- [ ] Selecting a Prompt renders only its safe description and argument fields;
+  required values block submission, optional values may be omitted, and changing
+  server inventory clears stale selection deterministically.
+- [ ] Submitted tasks send one Prompt ID and exact argument map; active sessions
+  read back only captured safe provenance and cannot re-run or mutate the Prompt.
+- [ ] Ordinary task timelines remain free of dormant HITL, Prompt, Commit, or Pull
+  Request controls; all desktop checks, build, Tauri, and browser acceptance pass.
+
+### P138-E2E-01 - Prompt Boundary And Provider Acceptance
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `TEST / DOC`
+- Depends on: `P138-APP-01`, `P138-UI-01`
+- Branch: `codex/p138-e2e-01-prompt-acceptance`
+- Owned paths: `tests/test_mcp_prompt_templates.py`, `README.md`, `UI/README.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Lock the complete Prompt-template authority, persistence, recovery, UI, and real
+provider contract before Phase 138 is declared complete.
+
+#### Acceptance
+
+- [ ] Compatibility matrices cover absent capability, malformed inventory,
+  argument validation, stale selection, unsafe content, atomic failure, immutable
+  recovery, and absence of model-visible Prompt tools.
+- [ ] API, CLI, direct Harness, queued Worker, recovery, and desktop launch agree
+  on one safe durable Prompt provenance contract.
+- [ ] Full backend, static, eval, desktop, build, Tauri, and browser gates pass.
+- [ ] One real `deepseek-v4-flash` task answers from a captured fixture Prompt
+  after the MCP process is unavailable, proving no execution-time reread.
+
+#### Explicit Non-Goals
+
+- model-visible `prompts/list` or `prompts/get`, automatic Prompt selection,
+  hidden system-role injection, later-message Prompt use, or ordinary-state HITL
+- Prompt list-change notifications, subscriptions, completion APIs, sampling,
+  elicitation, roots, Resource templates, binary or multimodal Prompt content
+- remote MCP, SSE or Streamable HTTP, OAuth, token passthrough, dynamic reload,
+  marketplace, plugins, Research-child inheritance, or distributed execution
