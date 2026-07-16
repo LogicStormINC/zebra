@@ -2,6 +2,27 @@
 
 ## Addendum
 
+- 2026-07-17: completed `P143-DOC-01`; standard PPTX visible slide text now
+  shares the durable bounded material path with text, PDF, DOCX, and XLSX input.
+  Extraction preserves slide order without rendering, OCR, speaker notes, or
+  native multimodal messages; safe provenance retains original size, digest,
+  slide count, and extraction status. Shared OOXML safety rejects malformed,
+  encrypted, macro-enabled, externally linked, ActiveX, embedded, text-empty,
+  image-only, and over-limit packages before mutation. All `1305` backend tests,
+  Ruff, Mypy across `350` sources, 8 evals, 14 desktop checks, Node 22 build,
+  offline Tauri, 769-file size gate, responsive browser acceptance, and real
+  `deepseek-v4-flash` response
+  `PPTX_FINAL_OK: PPTX_PROVIDER_PROOF_143_6D9A` passed. The existing Vite bundle
+  warning remains unchanged.
+- 2026-07-17: started `P143-DOC-01` on
+  `codex/p143-doc-01-bounded-pptx-input`. Phase 143 adds bounded deterministic
+  visible-slide text extraction for standard PPTX input to the existing durable
+  attachment path. Malformed, encrypted, macro-enabled, externally linked,
+  embedded-object, image-only, text-empty, and over-limit packages fail before
+  mutation. Recovery consumes only persisted normalized UTF-8 extraction with
+  safe slide-count provenance. Legacy or macro-enabled presentations, speaker
+  notes, OCR, native multimodal input, remote URLs, and authority changes remain
+  excluded.
 - 2026-07-17: completed `P142-DOC-01`; standard XLSX worksheets now share the
   durable bounded material path with text, PDF, and DOCX input. Extraction emits
   deterministic sheet names, coordinates, and cached values without executing

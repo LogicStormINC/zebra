@@ -1,12 +1,12 @@
 # Task Plan
 
-## Phase 142 - Durable Bounded XLSX Table Input
+## Phase 143 - Durable Bounded PPTX Slide Text Input
 
-1. `completed` - Claim the phase and lock XLSX input, extraction, provenance,
+1. `completed` - Claim the phase and lock PPTX input, extraction, provenance,
    recovery, UI, and non-goal boundaries.
-2. `completed` - Add bounded XLSX extraction and format-aware durable workbook
+2. `completed` - Add bounded PPTX extraction and format-aware durable slide
    provenance.
-3. `completed` - Wire mixed text/PDF/DOCX/XLSX input through API and desktop paths.
+3. `completed` - Wire mixed document input through API and desktop paths.
 4. `completed` - Add focused regression and real-provider acceptance coverage.
 5. `completed` - Run full repository gates, close the task, and merge to `main`.
 

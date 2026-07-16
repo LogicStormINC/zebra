@@ -3,6 +3,7 @@ import {
   attachmentPayloads,
   DOCX_MEDIA_TYPE,
   XLSX_MEDIA_TYPE,
+  PPTX_MEDIA_TYPE,
   MAX_ATTACHMENT_COUNT,
   readAttachmentFiles,
 } from "../src/lib/text-attachments.ts";
@@ -27,6 +28,12 @@ const xlsx = new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x02])], "brief.x
 });
 const xlsxAttachments = await readAttachmentFiles([xlsx]);
 assert.equal(xlsxAttachments[0].media_type, XLSX_MEDIA_TYPE);
+const pptx = new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x03])], "brief.pptx", {
+  type: PPTX_MEDIA_TYPE,
+  lastModified: 143,
+});
+const pptxAttachments = await readAttachmentFiles([pptx]);
+assert.equal(pptxAttachments[0].media_type, PPTX_MEDIA_TYPE);
 await assert.rejects(
   readAttachmentFiles([new File(["x"], "image.png")]),
   /不是支持的附件类型/,
@@ -51,4 +58,8 @@ assert.equal(attachmentPayloads(docxAttachments)[0].content_base64, "UEsDBAE=");
 await assert.rejects(
   readAttachmentFiles([new File(["not-docx"], "brief.docx")]),
   /不是有效的 DOCX/,
+);
+await assert.rejects(
+  readAttachmentFiles([new File(["not-pptx"], "brief.pptx")]),
+  /不是有效的 PPTX/,
 );

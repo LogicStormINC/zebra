@@ -12837,3 +12837,63 @@ automation, remote fetching, or a second payload lifecycle.
   exposed one `.xlsx`-accepting attachment entry, and emitted no console errors.
 - A real `deepseek-v4-flash` task returned
   `XLSX_FINAL_OK: XLSX_PROVIDER_PROOF_142_4F6C` from extracted workbook content.
+
+## Phase 143 Task Board
+
+### P143-DOC-01 - Durable Bounded PPTX Slide Text Input
+
+- Status: `Done`
+- Owner: `Codex-DOC`
+- Suggested role: `CONTEXT / API / STORAGE / UI / TEST / DOC`
+- Depends on: `P142-DOC-01`
+- Branch: `codex/p143-doc-01-bounded-pptx-input`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `apps/api/`,
+  `tests/`, `UI/desktop/`, `README.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`,
+  `task_plan.md`
+
+#### Goal
+
+Extend the durable attachment path with bounded deterministic extraction of
+visible standard PPTX slide text, without office automation, OCR, native
+multimodal input, remote fetching, or a second payload lifecycle.
+
+#### Acceptance
+
+- [x] New tasks and ordinary follow-up messages accept mixed text, PDF, DOCX,
+  XLSX, and PPTX input under the existing four-item and aggregate boundaries.
+- [x] PPTX parsing preserves slide order and visible text while enforcing raw,
+  archive-entry, expanded-content, slide-count, and extracted-text limits.
+- [x] Malformed, encrypted, macro-enabled, externally linked, embedded-object,
+  text-empty, image-only, and over-limit packages fail before session mutation.
+- [x] Only normalized UTF-8 slide text is persisted; safe readback retains the
+  original media type, byte size, SHA-256, slide count, and extraction status.
+  Direct execution and Worker recovery never reopen the PPTX.
+- [x] Desktop selection accepts `.pptx`, validates raw limits and ZIP signature,
+  distinguishes presentation material, and preserves responsive Composer flows.
+- [x] Focused parser, API, persistence, recovery, UI, and provider tests plus all
+  backend, static, eval, desktop, build, Tauri, file-size, and browser gates pass.
+
+#### Explicit Non-Goals
+
+- PPT, PPTM, PPSX, POTX, speaker notes, comments, masters, layout text, charts,
+  SmartArt interpretation, animations, transitions, embedded media, editing,
+  rendering fidelity, or document mutation
+- OCR, image understanding, audio or video transcription, provider-native
+  multimodal input, remote URLs, cloud object storage, Research-child
+  inheritance, or authority changes to tools, Policy, network, credentials, MCP,
+  approval, or HITL
+
+#### Validation Evidence
+
+- Shared OOXML safety plus the PPTX parser cover package paths, duplicates,
+  encryption, expansion and compression limits, XML entities, macros, external
+  relationships, ActiveX, embedded objects, ordered slide relationships, visible
+  text extraction, and empty or over-limit rejection before mutation.
+- Focused text/PDF/DOCX/XLSX/PPTX coverage passed `66` tests; all `1305` backend
+  tests, Ruff, Mypy across `350` source files, 8 evals, and the 769-file size
+  gate passed.
+- All 14 desktop checks, Node 22 production build, and offline Tauri check
+  passed. Browser acceptance at `1200x762` and `900x800` remained viewport-bound,
+  exposed one `.pptx`-accepting attachment entry, and emitted no console errors.
+- A real `deepseek-v4-flash` task persisted 44 extracted bytes from a 1449-byte
+  PPTX and returned `PPTX_FINAL_OK: PPTX_PROVIDER_PROOF_143_6D9A`.

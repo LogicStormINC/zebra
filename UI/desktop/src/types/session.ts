@@ -11,13 +11,14 @@ export interface SessionAttachment {
   source_server?: string;
   source_id?: string;
   source_argument_names?: string[];
-  original_media_type?: "application/pdf" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document" | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  original_media_type?: "application/pdf" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document" | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" | "application/vnd.openxmlformats-officedocument.presentationml.presentation";
   original_size_bytes?: number;
   original_sha256?: string;
   page_count?: number;
   paragraph_count?: number;
   worksheet_count?: number;
   cell_count?: number;
+  slide_count?: number;
   extraction_status?: "text_extracted";
 }
 
