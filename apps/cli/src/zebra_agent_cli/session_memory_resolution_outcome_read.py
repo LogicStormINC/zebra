@@ -1,0 +1,362 @@
+from __future__ import annotations
+
+from pathlib import Path
+from uuid import UUID
+
+from agent_core.domain.identifiers import SessionId
+from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from zebra_agent_api.memory_inventory_read import (
+    read_repo_memory_overdue_closure_decisions as read_repo_overdue_closure_decisions,
+)
+from zebra_agent_api.memory_inventory_read import (
+    read_repo_memory_overdue_resolution_checkpoints as read_repo_overdue_resolution_checkpoints,
+)
+from zebra_agent_api.memory_inventory_read import (
+    read_repo_memory_overdue_resolution_outcomes as read_repo_overdue_resolution_outcomes,
+)
+from zebra_agent_api.memory_inventory_read import (
+    read_tenant_memory_overdue_closure_decisions as read_tenant_overdue_closure_decisions,
+)
+from zebra_agent_api.memory_inventory_read import (
+    read_tenant_memory_overdue_resolution_checkpoints as read_tenant_overdue_resolution_checkpoints,
+)
+from zebra_agent_api.memory_inventory_read import (
+    read_tenant_memory_overdue_resolution_outcomes as read_tenant_overdue_resolution_outcomes,
+)
+from zebra_agent_api.memory_inventory_read import (
+    read_user_memory_overdue_closure_decisions as read_user_overdue_closure_decisions,
+)
+from zebra_agent_api.memory_inventory_read import (
+    read_user_memory_overdue_resolution_checkpoints as read_user_overdue_resolution_checkpoints,
+)
+from zebra_agent_api.memory_inventory_read import (
+    read_user_memory_overdue_resolution_outcomes as read_user_overdue_resolution_outcomes,
+)
+
+from zebra_agent_cli.session_memory_counting import (
+    _session_workspace_root,
+    _sum_overdue_closure_decision_counts,
+    _sum_overdue_resolution_checkpoint_counts,
+    _sum_overdue_resolution_outcome_counts,
+    _sum_overdue_scope_count,
+)
+from zebra_agent_cli.session_memory_ranking import (
+    _parse_as_of,
+)
+from zebra_agent_cli.session_memory_resolution_priority_read import (
+    _highest_priority_overdue_closure_decision_scope,
+    _highest_priority_overdue_resolution_checkpoint_scope,
+    _highest_priority_overdue_resolution_outcome_scope,
+)
+
+
+def read_session_memory_overdue_resolution_checkpoints(
+    *,
+    database_path: Path,
+    session_id: str,
+    user_id: str | None,
+    tenant_id: str | None,
+    as_of: str | None,
+) -> dict[str, object]:
+    session_key = SessionId(UUID(session_id))
+    session = SQLiteProjectionStore(database_path).get_session(session_key)
+    if session is None:
+        return {
+            "session_id": session_id,
+            "database": str(database_path),
+            "status": "not_found",
+        }
+    events = list(SQLiteEventStore(database_path).list_for_session(session_key))
+    workspace_root = _session_workspace_root(events)
+    if workspace_root is None:
+        return {
+            "session_id": session_id,
+            "database": str(database_path),
+            "status": "memory_unavailable",
+            "reason": "session workspace_root is unavailable",
+        }
+    parsed_as_of = _parse_as_of(as_of)
+    if isinstance(parsed_as_of, dict):
+        return {
+            "session_id": session_id,
+            "database": str(database_path),
+            **parsed_as_of,
+        }
+    effective_as_of = parsed_as_of or max(event.created_at for event in events)
+    scopes: list[dict[str, object]] = [
+        {
+            "scope_kind": "repo",
+            "scope_id": str(workspace_root),
+            **read_repo_overdue_resolution_checkpoints(
+                database_path=database_path,
+                repo_id=str(workspace_root),
+                as_of=effective_as_of,
+            ),
+        }
+    ]
+    if user_id is not None:
+        scopes.append(
+            {
+                "scope_kind": "user",
+                "scope_id": user_id,
+                **read_user_overdue_resolution_checkpoints(
+                    database_path=database_path,
+                    user_id=user_id,
+                    as_of=effective_as_of,
+                ),
+            }
+        )
+    if tenant_id is not None:
+        scopes.append(
+            {
+                "scope_kind": "tenant",
+                "scope_id": tenant_id,
+                **read_tenant_overdue_resolution_checkpoints(
+                    database_path=database_path,
+                    tenant_id=tenant_id,
+                    as_of=effective_as_of,
+                ),
+            }
+        )
+    highest_checkpoint = _highest_priority_overdue_resolution_checkpoint_scope(scopes)
+    return {
+        "session_id": session_id,
+        "database": str(database_path),
+        "status": "ok",
+        "repo_id": str(workspace_root),
+        "user_id": user_id,
+        "tenant_id": tenant_id,
+        "reference_at": effective_as_of.isoformat(),
+        "scope_count": len(scopes),
+        "overdue_scope_count": _sum_overdue_scope_count(scopes),
+        "overdue_resolution_checkpoint_counts": _sum_overdue_resolution_checkpoint_counts(scopes),
+        "highest_priority_overdue_resolution_checkpoint": (
+            None
+            if highest_checkpoint is None
+            else highest_checkpoint["overdue_resolution_checkpoint"]
+        ),
+        "highest_priority_overdue_resolution_priority": (
+            None
+            if highest_checkpoint is None
+            else highest_checkpoint["overdue_resolution_priority"]
+        ),
+        "highest_priority_overdue_resolution_scope_kind": (
+            None if highest_checkpoint is None else highest_checkpoint["scope_kind"]
+        ),
+        "highest_priority_overdue_resolution_scope_id": (
+            None if highest_checkpoint is None else highest_checkpoint["scope_id"]
+        ),
+        "highest_priority_overdue_resolution_target_memory_id": (
+            None if highest_checkpoint is None else highest_checkpoint["target_memory_id"]
+        ),
+        "highest_priority_overdue_resolution_reasons": (
+            [] if highest_checkpoint is None else highest_checkpoint["overdue_resolution_reasons"]
+        ),
+        "scopes": scopes,
+    }
+
+
+def read_session_memory_overdue_resolution_outcomes(
+    *,
+    database_path: Path,
+    session_id: str,
+    user_id: str | None,
+    tenant_id: str | None,
+    as_of: str | None,
+) -> dict[str, object]:
+    session_key = SessionId(UUID(session_id))
+    session = SQLiteProjectionStore(database_path).get_session(session_key)
+    if session is None:
+        return {
+            "session_id": session_id,
+            "database": str(database_path),
+            "status": "not_found",
+        }
+    events = list(SQLiteEventStore(database_path).list_for_session(session_key))
+    workspace_root = _session_workspace_root(events)
+    if workspace_root is None:
+        return {
+            "session_id": session_id,
+            "database": str(database_path),
+            "status": "memory_unavailable",
+            "reason": "session workspace_root is unavailable",
+        }
+    parsed_as_of = _parse_as_of(as_of)
+    if isinstance(parsed_as_of, dict):
+        return {
+            "session_id": session_id,
+            "database": str(database_path),
+            **parsed_as_of,
+        }
+    effective_as_of = parsed_as_of or max(event.created_at for event in events)
+    scopes: list[dict[str, object]] = [
+        {
+            "scope_kind": "repo",
+            "scope_id": str(workspace_root),
+            **read_repo_overdue_resolution_outcomes(
+                database_path=database_path,
+                repo_id=str(workspace_root),
+                as_of=effective_as_of,
+            ),
+        }
+    ]
+    if user_id is not None:
+        scopes.append(
+            {
+                "scope_kind": "user",
+                "scope_id": user_id,
+                **read_user_overdue_resolution_outcomes(
+                    database_path=database_path,
+                    user_id=user_id,
+                    as_of=effective_as_of,
+                ),
+            }
+        )
+    if tenant_id is not None:
+        scopes.append(
+            {
+                "scope_kind": "tenant",
+                "scope_id": tenant_id,
+                **read_tenant_overdue_resolution_outcomes(
+                    database_path=database_path,
+                    tenant_id=tenant_id,
+                    as_of=effective_as_of,
+                ),
+            }
+        )
+    highest_outcome = _highest_priority_overdue_resolution_outcome_scope(scopes)
+    return {
+        "session_id": session_id,
+        "database": str(database_path),
+        "status": "ok",
+        "repo_id": str(workspace_root),
+        "user_id": user_id,
+        "tenant_id": tenant_id,
+        "reference_at": effective_as_of.isoformat(),
+        "scope_count": len(scopes),
+        "overdue_scope_count": _sum_overdue_scope_count(scopes),
+        "overdue_resolution_outcome_counts": _sum_overdue_resolution_outcome_counts(scopes),
+        "highest_priority_overdue_resolution_outcome": (
+            None if highest_outcome is None else highest_outcome["overdue_resolution_outcome"]
+        ),
+        "highest_priority_overdue_resolution_outcome_priority": (
+            None
+            if highest_outcome is None
+            else highest_outcome["overdue_resolution_outcome_priority"]
+        ),
+        "highest_priority_overdue_resolution_outcome_scope_kind": (
+            None if highest_outcome is None else highest_outcome["scope_kind"]
+        ),
+        "highest_priority_overdue_resolution_outcome_scope_id": (
+            None if highest_outcome is None else highest_outcome["scope_id"]
+        ),
+        "highest_priority_overdue_resolution_outcome_target_memory_id": (
+            None if highest_outcome is None else highest_outcome["target_memory_id"]
+        ),
+        "highest_priority_overdue_resolution_outcome_reasons": (
+            [] if highest_outcome is None else highest_outcome["overdue_resolution_outcome_reasons"]
+        ),
+        "scopes": scopes,
+    }
+
+
+def read_session_memory_overdue_closure_decisions(
+    *,
+    database_path: Path,
+    session_id: str,
+    user_id: str | None,
+    tenant_id: str | None,
+    as_of: str | None,
+) -> dict[str, object]:
+    session_key = SessionId(UUID(session_id))
+    session = SQLiteProjectionStore(database_path).get_session(session_key)
+    if session is None:
+        return {
+            "session_id": session_id,
+            "database": str(database_path),
+            "status": "not_found",
+        }
+    events = list(SQLiteEventStore(database_path).list_for_session(session_key))
+    workspace_root = _session_workspace_root(events)
+    if workspace_root is None:
+        return {
+            "session_id": session_id,
+            "database": str(database_path),
+            "status": "memory_unavailable",
+            "reason": "session workspace_root is unavailable",
+        }
+    parsed_as_of = _parse_as_of(as_of)
+    if isinstance(parsed_as_of, dict):
+        return {
+            "session_id": session_id,
+            "database": str(database_path),
+            **parsed_as_of,
+        }
+    effective_as_of = parsed_as_of or max(event.created_at for event in events)
+    scopes: list[dict[str, object]] = [
+        {
+            "scope_kind": "repo",
+            "scope_id": str(workspace_root),
+            **read_repo_overdue_closure_decisions(
+                database_path=database_path,
+                repo_id=str(workspace_root),
+                as_of=effective_as_of,
+            ),
+        }
+    ]
+    if user_id is not None:
+        scopes.append(
+            {
+                "scope_kind": "user",
+                "scope_id": user_id,
+                **read_user_overdue_closure_decisions(
+                    database_path=database_path,
+                    user_id=user_id,
+                    as_of=effective_as_of,
+                ),
+            }
+        )
+    if tenant_id is not None:
+        scopes.append(
+            {
+                "scope_kind": "tenant",
+                "scope_id": tenant_id,
+                **read_tenant_overdue_closure_decisions(
+                    database_path=database_path,
+                    tenant_id=tenant_id,
+                    as_of=effective_as_of,
+                ),
+            }
+        )
+    highest_decision = _highest_priority_overdue_closure_decision_scope(scopes)
+    return {
+        "session_id": session_id,
+        "database": str(database_path),
+        "status": "ok",
+        "repo_id": str(workspace_root),
+        "user_id": user_id,
+        "tenant_id": tenant_id,
+        "reference_at": effective_as_of.isoformat(),
+        "scope_count": len(scopes),
+        "overdue_scope_count": _sum_overdue_scope_count(scopes),
+        "overdue_closure_decision_counts": _sum_overdue_closure_decision_counts(scopes),
+        "highest_priority_overdue_closure_decision": (
+            None if highest_decision is None else highest_decision["overdue_closure_decision"]
+        ),
+        "highest_priority_overdue_closure_priority": (
+            None if highest_decision is None else highest_decision["overdue_closure_priority"]
+        ),
+        "highest_priority_overdue_closure_scope_kind": (
+            None if highest_decision is None else highest_decision["scope_kind"]
+        ),
+        "highest_priority_overdue_closure_scope_id": (
+            None if highest_decision is None else highest_decision["scope_id"]
+        ),
+        "highest_priority_overdue_closure_target_memory_id": (
+            None if highest_decision is None else highest_decision["target_memory_id"]
+        ),
+        "highest_priority_overdue_closure_reasons": (
+            [] if highest_decision is None else highest_decision["overdue_closure_reasons"]
+        ),
+        "scopes": scopes,
+    }
