@@ -6,6 +6,7 @@ sync:
 	uv sync --all-packages --group dev
 
 check:
+	uv run python scripts/check_file_sizes.py
 	uv run ruff check .
 	uv run mypy packages apps
 	uv run python scripts/eval_release_check.py

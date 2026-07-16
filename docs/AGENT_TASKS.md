@@ -12360,20 +12360,20 @@ event, response, persistence, and error contract.
 
 #### Acceptance
 
-- [ ] `session_read.py`, `memory_inventory_read.py`, `app.py`,
+- [x] `session_read.py`, `memory_inventory_read.py`, `app.py`,
   `session_memory_control.py`, `session_memory_read.py`, `read_commands.py`,
   `memory_review_write.py`, and `cli.py` are each at most 500 lines, and every new
   production Python module created by the slice is also at most 500 lines.
-- [ ] API composition separates session, memory, artifact, approval, and execution
+- [x] API composition separates session, memory, artifact, approval, and execution
   responsibilities without changing `create_app`, `ZebraAgentApi`, HTTP routes,
   status codes, response bodies, event order, or storage semantics.
-- [ ] CLI parsing, dispatch, session execution, memory reads, and memory review
+- [x] CLI parsing, dispatch, session execution, memory reads, and memory review
   responsibilities have explicit modules without changing commands, flags,
   defaults, JSON output, exit codes, or import-supported entry points.
-- [ ] Shared logic is moved to responsibility-specific modules; no `utils.py`,
+- [x] Shared logic is moved to responsibility-specific modules; no `utils.py`,
   `helpers.py`, broad compatibility dumping ground, circular import, dynamic
   method forwarding, or new dependency is introduced to evade the limit.
-- [ ] Existing backend tests, Ruff, Mypy, and eval release checks pass unchanged.
+- [x] Existing backend tests, Ruff, Mypy, and eval release checks pass unchanged.
 
 ### P137-UI-01 - Behavior-Preserving Conversation Pane Boundaries
 
@@ -12391,15 +12391,15 @@ Composer presentation modules without changing the visible product workflow.
 
 #### Acceptance
 
-- [ ] `CodexConversationPane.tsx` and every new desktop source module are at most
+- [x] `CodexConversationPane.tsx` and every new desktop source module are at most
   500 lines.
-- [ ] Workspace-idle, active-thread, Composer, attachment, MCP Resource, plan,
+- [x] Workspace-idle, active-thread, Composer, attachment, MCP Resource, plan,
   approval, clarification, cancellation, and responsive viewport behavior remain
   contract-compatible.
-- [ ] State ownership and backend mutations remain in their current hooks or app
+- [x] State ownership and backend mutations remain in their current hooks or app
   composition boundaries; presentation extraction does not duplicate requests,
   introduce placeholder controls, or expose ordinary-state HITL.
-- [ ] All desktop contract checks, TypeScript production build, Tauri check, and
+- [x] All desktop contract checks, TypeScript production build, Tauri check, and
   focused browser acceptance pass.
 
 ### P137-TEST-01 - Test Suite File Boundary Restoration
@@ -12418,16 +12418,16 @@ local without reducing deterministic coverage.
 
 #### Acceptance
 
-- [ ] Every owned test file and every newly split test file is at most 700 lines.
-- [ ] Tests are grouped by observable behavior rather than arbitrary line chunks,
+- [x] Every owned test file and every newly split test file is at most 700 lines.
+- [x] Tests are grouped by observable behavior rather than arbitrary line chunks,
   with shared fixtures kept narrow and responsibility-named.
-- [ ] Test collection count does not decrease, duplicate test names are rejected,
+- [x] Test collection count does not decrease, duplicate test names are rejected,
   and API, CLI, Worker, SCM, and artifact contract coverage remains equivalent.
-- [ ] The full backend suite passes after moves without production-code changes.
+- [x] The full backend suite passes after moves without production-code changes.
 
 ### P137-GATE-01 - Enforce Repository File Size Limits
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex-GATE`
 - Suggested role: `HARNESS / TEST / DOC`
 - Depends on: `P137-SRC-01`, `P137-UI-01`, `P137-TEST-01`
@@ -12441,14 +12441,14 @@ so future work cannot silently recreate oversized shared hotspots.
 
 #### Acceptance
 
-- [ ] The gate evaluates tracked production Python, TypeScript, and TSX source at
+- [x] The gate evaluates tracked production Python, TypeScript, and TSX source at
   a 500-line maximum and tracked Python/TypeScript test files at a 700-line maximum.
-- [ ] Generated output, dependency directories, virtual environments, build
+- [x] Generated output, dependency directories, virtual environments, build
   caches, and primary architecture documents are excluded by explicit path rules,
   not broad filename exceptions.
-- [ ] Failures report every offending path, actual line count, and applicable
+- [x] Failures report every offending path, actual line count, and applicable
   limit in deterministic order; the checker itself has focused regression tests.
-- [ ] `make check` runs the size gate before static analysis, and the full backend,
+- [x] `make check` runs the size gate before static analysis, and the full backend,
   eval, desktop, build, Tauri, and browser gates remain green.
 
 #### Explicit Non-Goals
