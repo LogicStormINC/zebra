@@ -2,6 +2,7 @@
 
 ## Addendum
 
+- 2026-07-16: completed Phase 139 session-configuration surface correction. Active-session Composer cards now contain only mode, attachment, input, and send affordances; durable workspace, policy, tool, network, MCP tool/resource counts, captured Prompt safe provenance, material count, model configuration, attempt, and sequence readback live in the right-side context inspector. New-task and unbound draft launch summaries and editable controls remain unchanged. All 13 existing desktop checks plus the new session-surface regression check, Node 22 production build, Tauri cargo check, 762-file size gate, and desktop plus 900px responsive browser acceptance passed. The existing Vite main-bundle warning remains unchanged.
 - 2026-07-16: Phase 139 is limited to one desktop information-architecture correction: durable active-session configuration moves from the Composer header into the existing right-side context inspector. New-task launch configuration remains editable before session creation, while active-session workspace, policy, tool, network, MCP, captured Prompt provenance, material count, model, attempt, and sequence become one read-only inspector surface. No backend, event, storage, Policy, model, MCP authority, or HITL contract changes.
 - 2026-07-16: completed Phase 138 across bounded local stdio Prompt discovery, durable API/CLI task launch, immutable Worker recovery, and explicit desktop new-task selection. One user-selected opaque Prompt ID plus exact bounded string arguments is resolved once before creation, persisted as untrusted attachment bytes with safe provenance, and never exposed as model-visible Prompt tools or re-read during recovery. All `1252` backend tests, Ruff, Mypy across `346` source files, the 8-case eval gate, 13 desktop checks, the Node 22 production build, Tauri cargo check, browser fixture acceptance, and a real `deepseek-v4-flash` server-loss recovery pass succeeded; the provider returned the captured proof token `P138_CAPTURED_PROMPT_71F4` after the MCP server script was removed and the MCP call log remained unchanged. The existing Vite main-bundle size warning remains a follow-up, not a Phase 138 regression.
 - 2026-07-16: Phase 137 is merged through PRs `#111`-`#115` and final merge commit `b1a95c6`. Phase 138 is limited to application-controlled MCP Prompt templates as explicit new-task input: bounded local stdio discovery, one exact user-selected Prompt plus string arguments, one-time text-only resolution before task creation, durable untrusted capture, immutable recovery, and desktop launch configuration. Prompt operations are never model-visible tools. PDF, office, image, audio, remote MCP, OAuth, notifications, sampling, automatic selection, later-message Prompt use, ordinary-state HITL, and Research-child inheritance remain excluded. This phase turns configured MCP servers into reusable general-task entry points without making coding delivery the default workflow or widening runtime authority.
@@ -102,10 +103,10 @@
 
 ## Current Phase
 
-- Active phase: `Phase 139 - Inspector-Owned Session Configuration`
-- Repository status: `P139-PLAN-01 done; P139-UI-01 in progress`
+- Active phase: `Phase 139 complete; next phase not yet planned`
+- Repository status: `P139-PLAN-01 and P139-UI-01 done; ready for next-phase planning`
 - Current focus:
-  - `P139-UI-01` moves durable active-session configuration from the Composer header into the existing right-side context inspector while preserving editable new-task launch controls
+  - Phase 139 keeps durable active-session configuration in the context inspector and preserves editable launch configuration only for new tasks and drafts
   - Phase 138 final acceptance passed across compatibility, persistence, immutable recovery, desktop, browser, and real-provider gates
   - Phase 138 turns user-selected MCP Prompt templates into durable untrusted task input without exposing Prompt operations to the model
   - Phase 137 restores maintainable ownership boundaries and permanently enforces the source and test file hard limits; it intentionally adds no product capability

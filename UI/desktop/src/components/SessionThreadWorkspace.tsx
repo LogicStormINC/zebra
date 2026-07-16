@@ -119,6 +119,12 @@ export function SessionThreadWorkspace({
   const [inspectorTab, setInspectorTab] = React.useState<InspectorTab>("context");
   const workspaceRoot = sessionSummary?.workspace?.workspace_root;
   const projectLabel = workspaceRoot ? compactWorkspaceLabel(workspaceRoot) : locale.unboundProject;
+  const attachments = sessionSummary?.attachments ?? [];
+  const mcpResourceCount = attachments.filter((attachment) => attachment.source_type === "mcp_resource").length;
+  const capturedPrompt = attachments.find((attachment) => attachment.source_type === "mcp_prompt");
+  const promptLabel = capturedPrompt
+    ? `${capturedPrompt.source_server ?? "MCP"} · ${(capturedPrompt.source_argument_names ?? []).length} 参数`
+    : "未使用";
   const populatedStages = STAGES.map((stage) => ({
     ...stage,
     events: events.filter((event) => eventStage(event) === stage.key),
@@ -145,6 +151,10 @@ export function SessionThreadWorkspace({
         <div className={styles.inspectorRow}><span>{locale.policy}</span><span>{sessionSummary?.workspace?.policy_profile ?? locale.notBound}</span></div>
         <div className={styles.inspectorRow}><span>工具配置</span><span>{sessionSummary?.workspace?.tool_profile ?? locale.notBound}</span></div>
         <div className={styles.inspectorRow}><span>网络配置</span><span>{sessionSummary?.workspace?.network_profile ?? "none"}</span></div>
+        <div className={styles.inspectorRow}><span>MCP</span><span>{sessionSummary?.workspace?.mcp_allowlist?.length ?? 0} 工具 · {mcpResourceCount} 资源</span></div>
+        <div className={styles.inspectorRow}><span>Prompt</span><span>{promptLabel}</span></div>
+        <div className={styles.inspectorRow}><span>材料</span><span>{attachments.length}</span></div>
+        <div className={styles.inspectorRow}><span>模型</span><span>API 运行时配置</span></div>
         <div className={styles.inspectorRow}><span>{locale.attempt}</span><span>{sessionSummary?.workspace?.last_attempt_number ?? 0}</span></div>
         <div className={styles.inspectorRow}><span>{locale.sequence}</span><span>{sessionSummary?.current_sequence ?? events.length}</span></div>
       </div>;

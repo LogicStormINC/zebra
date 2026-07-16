@@ -74,13 +74,15 @@ export function ConversationComposer({
 
   return (
     <div className={variant === "idle" ? styles.idleComposerCard : styles.composerCard}>
-      <TaskLaunchSummary
-        className={launchStyles.summary}
-        config={effectiveLaunchConfig}
-        editable={launchEditable}
-        errorText={launchError}
-        sessionSummary={sessionSummary}
-      />
+      {launchEditable ? (
+        <TaskLaunchSummary
+          className={launchStyles.summary}
+          config={effectiveLaunchConfig}
+          editable
+          errorText={launchError}
+          sessionSummary={sessionSummary}
+        />
+      ) : null}
       <ComposerAttachments attachments={attachments} disabled={isRequesting} onChange={onAttachmentsChange} />
       <div className={styles.sender}>
         <Sender
@@ -97,7 +99,6 @@ export function ConversationComposer({
                 promptsError={mcpPromptsError}
                 config={launchConfig}
                 editable={launchEditable}
-                effectiveConfig={effectiveLaunchConfig}
                 onPatch={onPatchLaunchConfig}
                 onRetryPrompts={onRetryMcpPrompts}
               />
