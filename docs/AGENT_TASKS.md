@@ -12520,7 +12520,7 @@ metadata and returned messages as untrusted input.
 
 ### P138-APP-01 - Durable Explicit Prompt Task Launch
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex-APP`
 - Suggested role: `CORE / STORAGE / API / CLI / WORKER / TEST`
 - Depends on: `P138-RUN-01`
@@ -12550,8 +12550,8 @@ safe provenance so execution and recovery never re-read the server.
 
 ### P138-UI-01 - Desktop Prompt Template Launcher
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `In Progress`
+- Owner: `Codex-UI`
 - Suggested role: `UI / TEST`
 - Depends on: `P138-APP-01`
 - Branch: `codex/p138-ui-01-prompt-template-launcher`
