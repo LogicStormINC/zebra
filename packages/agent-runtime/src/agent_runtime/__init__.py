@@ -22,6 +22,14 @@ from agent_runtime.mcp_inventory import (
     build_mcp_capability_inventory,
     validate_mcp_capability_selection,
 )
+from agent_runtime.mcp_prompts import (
+    McpPrompt,
+    McpPromptArgument,
+    McpPromptMessage,
+    ResolvedMcpPrompt,
+    discover_mcp_prompts,
+    resolve_mcp_prompt,
+)
 from agent_runtime.mcp_protocol import McpProtocolError, McpServerSpec
 from agent_runtime.mcp_resources import (
     McpResource,
@@ -65,8 +73,12 @@ __all__ = [
     "RuntimeHandle",
     "RuntimeSnapshot",
     "McpProtocolError",
+    "McpPrompt",
+    "McpPromptArgument",
+    "McpPromptMessage",
     "McpResource",
     "McpServerSpec",
+    "ResolvedMcpPrompt",
     "SubagentLimitError",
     "UnknownSubagentError",
     "WorkspaceCommitCommand",
@@ -81,8 +93,10 @@ __all__ = [
     "WorkspacePathError",
     "build_mcp_capability_inventory",
     "discover_mcp_resources",
+    "discover_mcp_prompts",
     "normalize_mcp_resource_ids",
     "read_mcp_resource_attachments",
+    "resolve_mcp_prompt",
     "validate_mcp_capability_selection",
     "run_local_harness",
 ]
