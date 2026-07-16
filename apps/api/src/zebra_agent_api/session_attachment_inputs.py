@@ -1,22 +1,19 @@
 from __future__ import annotations
 
-import unicodedata
 from base64 import b64decode
 from binascii import Error as Base64Error
 from hashlib import sha256
-from io import BytesIO
 
 from agent_core.domain.attachments import TextAttachmentInput
-from pypdf import PdfReader
+
+from zebra_agent_api.session_document_inputs import extract_docx_text, extract_pdf_text
 
 MAX_ATTACHMENT_COUNT = 4
 MAX_ATTACHMENT_BYTES = 65_536
 MAX_ATTACHMENT_TOTAL_BYTES = 131_072
 MAX_PDF_BYTES = 4_194_304
-MAX_PDF_TOTAL_BYTES = 8_388_608
-MAX_PDF_PAGES = 64
-MAX_PDF_PAGE_CONTENT_BYTES = 8_388_608
-MAX_PDF_TOTAL_CONTENT_BYTES = 16_777_216
+MAX_DOCX_BYTES = 4_194_304
+MAX_DOCUMENT_TOTAL_BYTES = 8_388_608
 MAX_FILE_NAME_LENGTH = 255
 SUPPORTED_TEXT_MEDIA_TYPES = frozenset(
     {
@@ -33,6 +30,11 @@ SUPPORTED_TEXT_MEDIA_TYPES = frozenset(
     }
 )
 _FIELDS = frozenset({"file_name", "media_type", "content_base64"})
+DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+# Compatibility aliases retained for callers and focused limit tests.
+_extract_pdf_text = extract_pdf_text
+_extract_docx_text = extract_docx_text
 
 
 def parse_attachment_inputs(value: object) -> tuple[TextAttachmentInput, ...]:
@@ -44,7 +46,7 @@ def parse_attachment_inputs(value: object) -> tuple[TextAttachmentInput, ...]:
         raise ValueError(f"attachments accepts at most {MAX_ATTACHMENT_COUNT} files")
     attachments: list[TextAttachmentInput] = []
     total_stored_bytes = 0
-    total_pdf_bytes = 0
+    total_document_bytes = 0
     for item in value:
         if not isinstance(item, dict):
             raise ValueError("each attachment must be an object")
@@ -52,17 +54,30 @@ def parse_attachment_inputs(value: object) -> tuple[TextAttachmentInput, ...]:
             raise ValueError("attachment fields must be file_name, media_type, content_base64")
         file_name = _safe_file_name(item.get("file_name"))
         media_type = _media_type(item.get("media_type"))
-        max_bytes = MAX_PDF_BYTES if media_type == "application/pdf" else MAX_ATTACHMENT_BYTES
+        max_bytes = (
+            MAX_PDF_BYTES
+            if media_type == "application/pdf"
+            else MAX_DOCX_BYTES
+            if media_type == DOCX_MEDIA_TYPE
+            else MAX_ATTACHMENT_BYTES
+        )
         raw_payload = _decode_payload(item.get("content_base64"), max_bytes=max_bytes)
-        if media_type == "application/pdf":
-            if not file_name.lower().endswith(".pdf"):
-                raise ValueError("PDF attachment file_name must end with .pdf")
-            total_pdf_bytes += len(raw_payload)
-            if total_pdf_bytes > MAX_PDF_TOTAL_BYTES:
+        if media_type in {"application/pdf", DOCX_MEDIA_TYPE}:
+            expected_extension = ".pdf" if media_type == "application/pdf" else ".docx"
+            label = "PDF" if media_type == "application/pdf" else "DOCX"
+            if not file_name.lower().endswith(expected_extension):
+                raise ValueError(f"{label} attachment file_name must end with {expected_extension}")
+            total_document_bytes += len(raw_payload)
+            if total_document_bytes > MAX_DOCUMENT_TOTAL_BYTES:
                 raise ValueError(
-                    f"PDF attachments exceed the {MAX_PDF_TOTAL_BYTES}-byte aggregate limit"
+                    "document attachments exceed the "
+                    f"{MAX_DOCUMENT_TOTAL_BYTES}-byte aggregate limit"
                 )
-            payload, page_count = _extract_pdf_text(raw_payload)
+            payload, unit_count = (
+                _extract_pdf_text(raw_payload)
+                if media_type == "application/pdf"
+                else _extract_docx_text(raw_payload)
+            )
             attachment = TextAttachmentInput(
                 file_name=file_name,
                 media_type="text/plain",
@@ -70,7 +85,8 @@ def parse_attachment_inputs(value: object) -> tuple[TextAttachmentInput, ...]:
                 original_media_type=media_type,
                 original_size_bytes=len(raw_payload),
                 original_sha256=sha256(raw_payload).hexdigest(),
-                page_count=page_count,
+                page_count=unit_count if media_type == "application/pdf" else None,
+                paragraph_count=unit_count if media_type == DOCX_MEDIA_TYPE else None,
                 extraction_status="text_extracted",
             )
         else:
@@ -110,6 +126,8 @@ def _media_type(value: object) -> str:
     media_type = value.strip().lower()
     if media_type == "application/pdf":
         return media_type
+    if media_type == DOCX_MEDIA_TYPE:
+        return media_type
     if media_type not in SUPPORTED_TEXT_MEDIA_TYPES:
         raise ValueError("attachment media_type is not supported")
     return media_type
@@ -139,57 +157,3 @@ def _decode_text_payload(payload: bytes) -> bytes:
     if not text.strip():
         raise ValueError("attachments must not be empty or whitespace-only")
     return payload
-
-
-def _extract_pdf_text(payload: bytes) -> tuple[bytes, int]:
-    if not payload.startswith(b"%PDF-"):
-        raise ValueError("PDF attachment signature is invalid")
-    try:
-        reader = PdfReader(BytesIO(payload), strict=True, root_object_recovery_limit=1_000)
-        if reader.is_encrypted:
-            raise ValueError("encrypted PDF attachments are not supported")
-        page_count = len(reader.pages)
-    except ValueError:
-        raise
-    except Exception as exc:
-        raise ValueError("PDF attachment is malformed") from exc
-    if page_count < 1:
-        raise ValueError("PDF attachment must contain at least one page")
-    if page_count > MAX_PDF_PAGES:
-        raise ValueError(f"PDF attachment exceeds the {MAX_PDF_PAGES}-page limit")
-
-    page_blocks: list[str] = []
-    total_content_bytes = 0
-    total_extracted_bytes = 0
-    for page_number, page in enumerate(reader.pages, start=1):
-        try:
-            contents = page.get_contents()
-            content_bytes = len(contents.get_data()) if contents is not None else 0
-        except Exception as exc:
-            raise ValueError(f"PDF attachment page {page_number} content is malformed") from exc
-        if content_bytes > MAX_PDF_PAGE_CONTENT_BYTES:
-            raise ValueError(f"PDF attachment page {page_number} exceeds the decoded content limit")
-        total_content_bytes += content_bytes
-        if total_content_bytes > MAX_PDF_TOTAL_CONTENT_BYTES:
-            raise ValueError("PDF attachment exceeds the decoded content aggregate limit")
-        try:
-            text = page.extract_text() or ""
-        except Exception as exc:
-            raise ValueError(f"PDF attachment page {page_number} cannot be extracted") from exc
-        normalized = _normalize_extracted_text(text)
-        if not normalized:
-            continue
-        block = f"[PDF page {page_number}]\n{normalized}"
-        total_extracted_bytes += len(block.encode("utf-8"))
-        if total_extracted_bytes > MAX_ATTACHMENT_BYTES:
-            raise ValueError(f"PDF extracted text exceeds the {MAX_ATTACHMENT_BYTES}-byte limit")
-        page_blocks.append(block)
-    if not page_blocks:
-        raise ValueError("PDF has no extractable text; scanned PDFs require unsupported OCR")
-    return "\n\n".join(page_blocks).encode("utf-8"), page_count
-
-
-def _normalize_extracted_text(value: str) -> str:
-    normalized = unicodedata.normalize("NFC", value.replace("\r\n", "\n").replace("\r", "\n"))
-    normalized = normalized.replace("\x00", "")
-    return "\n".join(line.rstrip() for line in normalized.splitlines()).strip()

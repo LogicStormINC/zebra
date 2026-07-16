@@ -5,7 +5,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-import zebra_agent_api.session_attachment_inputs as attachment_inputs
+import zebra_agent_api.session_document_inputs as document_inputs
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
@@ -15,9 +15,9 @@ from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 from zebra_agent_api.app import create_app
 from zebra_agent_api.session_attachment_inputs import (
     MAX_PDF_BYTES,
-    MAX_PDF_PAGES,
     parse_attachment_inputs,
 )
+from zebra_agent_api.session_document_inputs import MAX_PDF_PAGES
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
 
@@ -67,17 +67,17 @@ def test_pdf_parser_enforces_decoded_stream_and_extracted_text_limits(
 ) -> None:
     pdf = _pdf_bytes("PDF_LIMIT_MARKER_140")
 
-    monkeypatch.setattr(attachment_inputs, "MAX_PDF_PAGE_CONTENT_BYTES", 1)
+    monkeypatch.setattr(document_inputs, "MAX_PDF_PAGE_CONTENT_BYTES", 1)
     with pytest.raises(ValueError, match="page 1 exceeds the decoded content limit"):
         parse_attachment_inputs([_pdf_attachment(pdf)])
 
-    monkeypatch.setattr(attachment_inputs, "MAX_PDF_PAGE_CONTENT_BYTES", 1_000_000)
-    monkeypatch.setattr(attachment_inputs, "MAX_PDF_TOTAL_CONTENT_BYTES", 1)
+    monkeypatch.setattr(document_inputs, "MAX_PDF_PAGE_CONTENT_BYTES", 1_000_000)
+    monkeypatch.setattr(document_inputs, "MAX_PDF_TOTAL_CONTENT_BYTES", 1)
     with pytest.raises(ValueError, match="decoded content aggregate limit"):
         parse_attachment_inputs([_pdf_attachment(pdf)])
 
-    monkeypatch.setattr(attachment_inputs, "MAX_PDF_TOTAL_CONTENT_BYTES", 1_000_000)
-    monkeypatch.setattr(attachment_inputs, "MAX_ATTACHMENT_BYTES", 8)
+    monkeypatch.setattr(document_inputs, "MAX_PDF_TOTAL_CONTENT_BYTES", 1_000_000)
+    monkeypatch.setattr(document_inputs, "MAX_EXTRACTED_TEXT_BYTES", 8)
     with pytest.raises(ValueError, match="PDF extracted text exceeds"):
         parse_attachment_inputs([_pdf_attachment(pdf)])
 

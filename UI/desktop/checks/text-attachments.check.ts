@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   attachmentPayloads,
+  DOCX_MEDIA_TYPE,
   MAX_ATTACHMENT_COUNT,
   readAttachmentFiles,
 } from "../src/lib/text-attachments.ts";
@@ -30,3 +31,16 @@ const pdf = new File(["%PDF-1.7\nfixture"], "brief.pdf", {
 const pdfAttachments = await readAttachmentFiles([pdf]);
 assert.equal(pdfAttachments[0].media_type, "application/pdf");
 assert.equal(attachmentPayloads(pdfAttachments)[0].content_base64, "JVBERi0xLjcKZml4dHVyZQ==");
+
+const docx = new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x01])], "brief.docx", {
+  type: DOCX_MEDIA_TYPE,
+  lastModified: 141,
+});
+const docxAttachments = await readAttachmentFiles([docx]);
+assert.equal(docxAttachments[0].media_type, DOCX_MEDIA_TYPE);
+assert.equal(attachmentPayloads(docxAttachments)[0].content_base64, "UEsDBAE=");
+
+await assert.rejects(
+  readAttachmentFiles([new File(["not-docx"], "brief.docx")]),
+  /不是有效的 DOCX/,
+);
