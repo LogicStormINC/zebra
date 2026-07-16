@@ -1,4 +1,6 @@
+import json
 import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -23,6 +25,7 @@ def test_load_settings_reads_default_profile() -> None:
     assert settings.scm.pull_request_dry_run is True
     assert settings.web_search_endpoint is None
     assert settings.skill_roots == ()
+    assert settings.mcp_servers == ()
 
 
 def test_load_settings_allows_env_override(tmp_path: Path) -> None:
@@ -79,6 +82,40 @@ def test_load_settings_rejects_missing_or_duplicate_skill_roots(tmp_path: Path) 
         load_settings(
             {"ZEBRA_SKILL_ROOTS": f"{tmp_path}{os.pathsep}{tmp_path.resolve()}"}
         )
+
+
+def test_load_settings_parses_bounded_stdio_mcp_servers(tmp_path: Path) -> None:
+    script = tmp_path / "server.py"
+    script.write_text("pass", encoding="utf-8")
+    settings = load_settings(
+        {
+            "ZEBRA_MCP_SERVERS": json.dumps(
+                {"local": {"command": sys.executable, "args": [str(script)]}}
+            )
+        }
+    )
+
+    assert settings.mcp_servers[0].name == "local"
+    assert settings.mcp_servers[0].command == str(Path(sys.executable).resolve())
+    assert settings.mcp_servers[0].args == (str(script),)
+
+
+@pytest.mark.parametrize(
+    "payload, message",
+    [
+        ("[]", "JSON object"),
+        (json.dumps({"Bad.Name": {"command": sys.executable}}), "server name"),
+        (json.dumps({"x": {"command": "python"}}), "must be absolute"),
+        (json.dumps({"x": {"command": "/missing/mcp"}}), "does not exist"),
+        (
+            json.dumps({"x": {"command": sys.executable, "args": ["-c", "pass"]}}),
+            "inline Python",
+        ),
+    ],
+)
+def test_load_settings_rejects_unsafe_mcp_config(payload: str, message: str) -> None:
+    with pytest.raises(ValueError, match=message):
+        load_settings({"ZEBRA_MCP_SERVERS": payload})
 
 
 def test_load_settings_rejects_github_provider_without_token_env() -> None:

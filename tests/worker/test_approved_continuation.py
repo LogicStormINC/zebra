@@ -24,7 +24,12 @@ from agent_tools.web_search import (
     WebSearchResult,
 )
 from zebra_agent_api import create_app
-from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
+from zebra_agent_config import (
+    ApiSettings,
+    McpServerSettings,
+    ModelSettings,
+    ZebraAgentSettings,
+)
 from zebra_agent_worker import (
     SessionClaimService,
     SessionExecutionService,
@@ -196,6 +201,74 @@ def test_web_gateway_waits_for_approval_then_executes_exactly_once(
     assert sum(
         event.event_type is EventType.TOOL_EXECUTION_STARTED
         and event.payload.get("tool_name") == "web.fetch"
+        for event in events
+    ) == 1
+
+
+def test_mcp_stdio_waits_for_approval_then_recovers_exact_call(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "mcp-continuation.sqlite"
+    marker = tmp_path / "mcp-called"
+    created_at = datetime(2026, 7, 15, 9, 0, tzinfo=UTC)
+    tool_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="mcp.fixture.echo",
+        arguments={"value": "approved-mcp"},
+        created_at=created_at,
+        provider_call_id="call_mcp_approved",
+    )
+    gateways = iter(
+        (
+            _gateway("Calling configured MCP tool.", tool_call=tool_call),
+            _gateway("approved-mcp-complete"),
+        )
+    )
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: next(gateways),
+    )
+    server_script = Path(__file__).parents[1] / "fixtures" / "mcp_stdio_server.py"
+    settings = _settings(
+        database_path,
+        mcp_servers=(
+            McpServerSettings(
+                name="fixture",
+                command=sys.executable,
+                args=(str(server_script), "normal", str(marker)),
+            ),
+        ),
+    )
+    session_id = _seed_session(
+        database_path,
+        tmp_path,
+        network_profile="mcp-proxy-only",
+    )
+    service = _execution_service(database_path, settings=settings)
+
+    waiting = service.execute_session(session_id, worker_id="worker-mcp", executed_at=created_at)
+
+    assert waiting.session.status is SessionStatus.WAITING_APPROVAL
+    assert not marker.exists()
+    approval = create_app(database_path, settings=settings).get_approval(str(session_id))
+    assert approval.body["approval_context"]["target"] == "fixture.echo"
+    create_app(database_path, settings=settings).approve(
+        str(session_id),
+        {"operator": "tester", "reason": "approved exact MCP call"},
+    )
+
+    completed = service.execute_session(
+        session_id, worker_id="worker-mcp", executed_at=created_at
+    )
+
+    assert completed.session.status is SessionStatus.COMPLETED
+    assert completed.attempt_result.metadata["assistant_message"] == "approved-mcp-complete"
+    assert marker.read_text(encoding="utf-8") == "called"
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
+    assert sum(
+        event.event_type is EventType.TOOL_EXECUTION_STARTED
+        and event.payload.get("tool_name") == "mcp.fixture.echo"
         for event in events
     ) == 1
 
@@ -484,6 +557,7 @@ def _settings(
     database_path: Path,
     *,
     web_search_endpoint: str | None = None,
+    mcp_servers: tuple[McpServerSettings, ...] = (),
 ) -> ZebraAgentSettings:
     return ZebraAgentSettings(
         profile="test",
@@ -496,4 +570,5 @@ def _settings(
             model="test-model",
         ),
         web_search_endpoint=web_search_endpoint,
+        mcp_servers=mcp_servers,
     )

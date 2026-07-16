@@ -11840,12 +11840,12 @@ approval-gated capability without importing a broad plugin platform.
 
 ### P132-MCP-01 - Bounded Local Stdio MCP Bridge
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CONFIG / INTEGRATION / RUNTIME / SECURITY / APP`
 - Depends on: `P131-CLOSE-01`
 - Branch: `codex/p132-mcp-01-bounded-local-stdio-bridge`
-- Owned paths: `apps/config/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `packages/agent-integrations/`, `packages/agent-runtime/`, `packages/agent-tools/`, `packages/agent-security/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+- Owned paths: `apps/config/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `packages/agent-integrations/`, `packages/agent-runtime/`, `packages/agent-tools/`, `packages/agent-security/`, `tests/`, `configs/`, `.env.example`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
 
 #### Goal
 
@@ -11869,24 +11869,37 @@ boundaries, while keeping server output and metadata untrusted.
 
 #### Acceptance
 
-- [ ] No configuration means no MCP process is started and no MCP tool is
+- [x] No configuration means no MCP process is started and no MCP tool is
   visible to the model.
-- [ ] Invalid names, shell commands, missing executables, excessive server or
+- [x] Invalid names, shell commands, missing executables, excessive server or
   tool counts, malformed schemas, protocol errors, timeouts, oversized frames,
   oversized outputs, and unknown targets fail closed with no leaked environment.
-- [ ] Configured tools are advertised deterministically as
+- [x] Configured tools are advertised deterministically as
   `mcp.<server>.<tool>` while descriptions, schemas, annotations, and results
   remain explicitly untrusted and grant no authority.
-- [ ] Every MCP call requires the existing concrete approval before the server
+- [x] Every MCP call requires the existing concrete approval before the server
   receives `tools/call`; denial, stale approval, cancellation, and recovery
   behavior remain unchanged.
-- [ ] API, CLI, direct runtime, and Worker recovery reconstruct the same
+- [x] API, CLI, direct runtime, and Worker recovery reconstruct the same
   configured bridge, and approval continuation executes the exact approved
   server, tool, and arguments once.
-- [ ] Fixed Research children receive no MCP tools, and MCP cannot add command,
+- [x] Fixed Research children receive no MCP tools, and MCP cannot add command,
   workspace, network, credential, child-agent, or policy authority.
-- [ ] Focused MCP matrices, all backend/static/eval gates, desktop compatibility
+- [x] Focused MCP matrices, all backend/static/eval gates, desktop compatibility
   checks/build, Tauri validation, and one real-provider pass succeed.
+
+#### Validation Evidence
+
+- Focused configuration, protocol, schema, discovery, credential isolation,
+  output limit, Policy/HITL, and Worker continuation matrices passed.
+- All `1163` backend tests, Ruff, Mypy across `253` source files, and the 8-case
+  eval release gate passed.
+- All eleven desktop contract checks, the Node 22 production build, and offline
+  Tauri `cargo check` passed; the existing bundle-size warning remains unchanged.
+- A real `deepseek-v4-flash` run discovered `mcp.fixture.echo`, proposed exact
+  arguments, paused before `tools/call`, resumed after approval, executed once,
+  and returned `MCP_FINAL_OK: echo:MCP_PROVIDER_PROOF_132` from explicitly
+  labeled untrusted MCP output.
 
 #### Explicit Non-Goals
 

@@ -1,9 +1,30 @@
 from __future__ import annotations
 
+import json
 import os
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
+
+MAX_MCP_SERVERS = 3
+_MCP_NAME_RE = re.compile(r"^[a-z][a-z0-9_-]{0,19}$")
+_BLOCKED_MCP_EXECUTABLES = frozenset(
+    {
+        "bash",
+        "cmd",
+        "cmd.exe",
+        "dash",
+        "fish",
+        "npx",
+        "powershell",
+        "powershell.exe",
+        "pwsh",
+        "sh",
+        "uvx",
+        "zsh",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -30,6 +51,13 @@ class ScmSettings:
 
 
 @dataclass(frozen=True)
+class McpServerSettings:
+    name: str
+    command: str
+    args: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class ZebraAgentSettings:
     profile: str
     database_url: str
@@ -47,6 +75,7 @@ class ZebraAgentSettings:
     )
     web_search_endpoint: str | None = None
     skill_roots: tuple[str, ...] = ()
+    mcp_servers: tuple[McpServerSettings, ...] = ()
 
 
 def load_settings(
@@ -89,7 +118,61 @@ def load_settings(
         scm=_load_scm_settings(values),
         web_search_endpoint=_read_optional(values, "ZEBRA_WEB_SEARCH_ENDPOINT"),
         skill_roots=_read_paths(values, "ZEBRA_SKILL_ROOTS"),
+        mcp_servers=_read_mcp_servers(values),
     )
+
+
+def _read_mcp_servers(values: Mapping[str, str]) -> tuple[McpServerSettings, ...]:
+    raw = values.get("ZEBRA_MCP_SERVERS", "").strip()
+    if not raw:
+        return ()
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError("ZEBRA_MCP_SERVERS must be valid JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("ZEBRA_MCP_SERVERS must be a JSON object")
+    if len(payload) > MAX_MCP_SERVERS:
+        raise ValueError(f"ZEBRA_MCP_SERVERS supports at most {MAX_MCP_SERVERS} servers")
+    servers: list[McpServerSettings] = []
+    for name in sorted(payload):
+        if not isinstance(name, str) or not _MCP_NAME_RE.fullmatch(name):
+            raise ValueError(f"invalid MCP server name: {name!r}")
+        entry = payload[name]
+        if not isinstance(entry, dict) or set(entry) - {"command", "args"}:
+            raise ValueError(f"MCP server {name} supports only command and args")
+        command = entry.get("command")
+        if not isinstance(command, str) or not command.strip():
+            raise ValueError(f"MCP server {name} requires command")
+        command_path = Path(command).expanduser()
+        if not command_path.is_absolute():
+            raise ValueError(f"MCP server {name} command must be absolute")
+        try:
+            resolved_command = command_path.resolve(strict=True)
+        except OSError as exc:
+            raise ValueError(f"MCP server {name} command does not exist") from exc
+        if not resolved_command.is_file() or not os.access(resolved_command, os.X_OK):
+            raise ValueError(f"MCP server {name} command must be executable")
+        if resolved_command.name.lower() in _BLOCKED_MCP_EXECUTABLES:
+            raise ValueError(f"MCP server {name} command is not allowed")
+        args = _read_mcp_args(name, entry.get("args", []), resolved_command.name.lower())
+        servers.append(McpServerSettings(name=name, command=str(resolved_command), args=args))
+    return tuple(servers)
+
+
+def _read_mcp_args(name: str, value: object, executable: str) -> tuple[str, ...]:
+    if not isinstance(value, list) or len(value) > 16:
+        raise ValueError(f"MCP server {name} args must be a list with at most 16 entries")
+    args: list[str] = []
+    for item in value:
+        if not isinstance(item, str) or not item or len(item) > 1024 or "\0" in item:
+            raise ValueError(f"MCP server {name} contains an invalid argument")
+        args.append(item)
+    if sum(len(item) for item in args) > 4096:
+        raise ValueError(f"MCP server {name} arguments are too large")
+    if executable.startswith("python") and any(item in {"-c", "-m"} for item in args):
+        raise ValueError(f"MCP server {name} cannot use inline Python execution")
+    return tuple(args)
 
 
 def _load_scm_settings(values: Mapping[str, str]) -> ScmSettings:
