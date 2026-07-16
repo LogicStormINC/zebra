@@ -2,6 +2,20 @@
 
 ## Addendum
 
+- 2026-07-17: completed `P144-WEB-01`; approved HTML now reaches the model as
+  bounded readable text. All `1312` tests, 351-source Mypy, 8 evals, 14 desktop
+  checks, Node 22 build, offline Tauri, browser and real-provider proof
+  `WEB_HTML_FINAL_OK: WEB_HTML_PROVIDER_PROOF_144_2A7C` passed.
+- 2026-07-17: started `P144-WEB-01` on
+  `codex/p144-web-01-bounded-html-text-projection`. Phase 144 keeps the existing
+  typed `web.fetch` contract, durable domain allowlist, Policy approval, public
+  DNS checks, redirect denial, and raw response limits while converting approved
+  HTML locally into bounded readable text. Script, style, template, SVG, and
+  other non-readable containers do not reach the model; output truncation and
+  safe projection metadata are deterministic. Browser automation, third-party
+  extraction APIs, caching, credentials, network widening, visual input, and
+  Research-child Web access remain excluded. Hermes main `659d1123c` informed
+  the clean-content and explicit-truncation boundary only.
 - 2026-07-17: completed `P143-DOC-01`; standard PPTX visible slide text now
   shares the durable bounded material path with text, PDF, DOCX, and XLSX input.
   Extraction preserves slide order without rendering, OCR, speaker notes, or
