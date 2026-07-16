@@ -12491,7 +12491,7 @@ workflow or crossing the local-first runtime boundary.
 
 ### P138-RUN-01 - Bounded MCP Prompt Discovery And Resolution
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex-RUN`
 - Suggested role: `RUNTIME / SECURITY / TEST`
 - Depends on: `P137-CLOSE-01`
@@ -12520,8 +12520,8 @@ metadata and returned messages as untrusted input.
 
 ### P138-APP-01 - Durable Explicit Prompt Task Launch
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `In Progress`
+- Owner: `Codex-APP`
 - Suggested role: `CORE / STORAGE / API / CLI / WORKER / TEST`
 - Depends on: `P138-RUN-01`
 - Branch: `codex/p138-app-01-durable-prompt-launch`
