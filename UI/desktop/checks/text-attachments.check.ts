@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   attachmentPayloads,
   DOCX_MEDIA_TYPE,
+  XLSX_MEDIA_TYPE,
   MAX_ATTACHMENT_COUNT,
   readAttachmentFiles,
 } from "../src/lib/text-attachments.ts";
@@ -19,6 +20,13 @@ await assert.rejects(
   readAttachmentFiles(Array.from({ length: MAX_ATTACHMENT_COUNT + 1 }, () => file)),
   /最多可附加/,
 );
+
+const xlsx = new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x02])], "brief.xlsx", {
+  type: XLSX_MEDIA_TYPE,
+  lastModified: 142,
+});
+const xlsxAttachments = await readAttachmentFiles([xlsx]);
+assert.equal(xlsxAttachments[0].media_type, XLSX_MEDIA_TYPE);
 await assert.rejects(
   readAttachmentFiles([new File(["x"], "image.png")]),
   /不是支持的附件类型/,

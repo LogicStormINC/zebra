@@ -7,12 +7,14 @@ from hashlib import sha256
 from agent_core.domain.attachments import TextAttachmentInput
 
 from zebra_agent_api.session_document_inputs import extract_docx_text, extract_pdf_text
+from zebra_agent_api.session_spreadsheet_inputs import extract_xlsx_text
 
 MAX_ATTACHMENT_COUNT = 4
 MAX_ATTACHMENT_BYTES = 65_536
 MAX_ATTACHMENT_TOTAL_BYTES = 131_072
 MAX_PDF_BYTES = 4_194_304
 MAX_DOCX_BYTES = 4_194_304
+MAX_XLSX_BYTES = 4_194_304
 MAX_DOCUMENT_TOTAL_BYTES = 8_388_608
 MAX_FILE_NAME_LENGTH = 255
 SUPPORTED_TEXT_MEDIA_TYPES = frozenset(
@@ -31,10 +33,12 @@ SUPPORTED_TEXT_MEDIA_TYPES = frozenset(
 )
 _FIELDS = frozenset({"file_name", "media_type", "content_base64"})
 DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 # Compatibility aliases retained for callers and focused limit tests.
 _extract_pdf_text = extract_pdf_text
 _extract_docx_text = extract_docx_text
+_extract_xlsx_text = extract_xlsx_text
 
 
 def parse_attachment_inputs(value: object) -> tuple[TextAttachmentInput, ...]:
@@ -59,12 +63,18 @@ def parse_attachment_inputs(value: object) -> tuple[TextAttachmentInput, ...]:
             if media_type == "application/pdf"
             else MAX_DOCX_BYTES
             if media_type == DOCX_MEDIA_TYPE
+            else MAX_XLSX_BYTES
+            if media_type == XLSX_MEDIA_TYPE
             else MAX_ATTACHMENT_BYTES
         )
         raw_payload = _decode_payload(item.get("content_base64"), max_bytes=max_bytes)
-        if media_type in {"application/pdf", DOCX_MEDIA_TYPE}:
-            expected_extension = ".pdf" if media_type == "application/pdf" else ".docx"
-            label = "PDF" if media_type == "application/pdf" else "DOCX"
+        if media_type in {"application/pdf", DOCX_MEDIA_TYPE, XLSX_MEDIA_TYPE}:
+            expected_extension = {
+                "application/pdf": ".pdf",
+                DOCX_MEDIA_TYPE: ".docx",
+                XLSX_MEDIA_TYPE: ".xlsx",
+            }[media_type]
+            label = expected_extension[1:].upper()
             if not file_name.lower().endswith(expected_extension):
                 raise ValueError(f"{label} attachment file_name must end with {expected_extension}")
             total_document_bytes += len(raw_payload)
@@ -73,11 +83,17 @@ def parse_attachment_inputs(value: object) -> tuple[TextAttachmentInput, ...]:
                     "document attachments exceed the "
                     f"{MAX_DOCUMENT_TOTAL_BYTES}-byte aggregate limit"
                 )
-            payload, unit_count = (
-                _extract_pdf_text(raw_payload)
-                if media_type == "application/pdf"
-                else _extract_docx_text(raw_payload)
-            )
+            unit_count: int | None = None
+            sheet_count: int | None = None
+            cell_count: int | None = None
+            if media_type == XLSX_MEDIA_TYPE:
+                payload, sheet_count, cell_count = _extract_xlsx_text(raw_payload)
+            else:
+                payload, unit_count = (
+                    _extract_pdf_text(raw_payload)
+                    if media_type == "application/pdf"
+                    else _extract_docx_text(raw_payload)
+                )
             attachment = TextAttachmentInput(
                 file_name=file_name,
                 media_type="text/plain",
@@ -87,6 +103,8 @@ def parse_attachment_inputs(value: object) -> tuple[TextAttachmentInput, ...]:
                 original_sha256=sha256(raw_payload).hexdigest(),
                 page_count=unit_count if media_type == "application/pdf" else None,
                 paragraph_count=unit_count if media_type == DOCX_MEDIA_TYPE else None,
+                worksheet_count=sheet_count,
+                cell_count=cell_count,
                 extraction_status="text_extracted",
             )
         else:
@@ -127,6 +145,8 @@ def _media_type(value: object) -> str:
     if media_type == "application/pdf":
         return media_type
     if media_type == DOCX_MEDIA_TYPE:
+        return media_type
+    if media_type == XLSX_MEDIA_TYPE:
         return media_type
     if media_type not in SUPPORTED_TEXT_MEDIA_TYPES:
         raise ValueError("attachment media_type is not supported")

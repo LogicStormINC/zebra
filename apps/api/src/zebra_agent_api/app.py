@@ -384,21 +384,11 @@ class ZebraAgentApi(
                 session_history=SQLiteSessionHistory(self.database_path),
                 confirmed_memories=confirmed_memories,
                 attachments=tuple(
-                    AttachmentContextInput(
-                        attachment_id=attachment.attachment_id,
-                        file_name=attachment.file_name,
-                        media_type=attachment.media_type,
-                        text=attachment.payload.decode("utf-8"),
-                        source_type=attachment.source_type,
-                        source_server=attachment.source_server,
-                        source_id=attachment.source_id,
-                        source_argument_names=attachment.source_argument_names,
-                        original_media_type=attachment.original_media_type,
-                        original_size_bytes=attachment.original_size_bytes,
-                        original_sha256=attachment.original_sha256,
-                        page_count=attachment.page_count,
-                        paragraph_count=attachment.paragraph_count,
-                        extraction_status=attachment.extraction_status,
+                    AttachmentContextInput.model_validate(
+                        {
+                            **attachment.model_dump(exclude={"payload"}),
+                            "text": attachment.payload.decode("utf-8"),
+                        }
                     )
                     for attachment in parsed["attachments"]
                 ),

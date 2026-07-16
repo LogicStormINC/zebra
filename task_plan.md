@@ -1,13 +1,12 @@
 # Task Plan
 
-## Phase 141 - Durable Bounded DOCX Text Input
+## Phase 142 - Durable Bounded XLSX Table Input
 
-1. `completed` - Claim the phase and lock DOCX input, extraction, provenance,
+1. `completed` - Claim the phase and lock XLSX input, extraction, provenance,
    recovery, UI, and non-goal boundaries.
-2. `completed` - Add bounded DOCX text extraction and format-aware durable
-   document provenance.
-3. `completed` - Wire mixed text/PDF/DOCX input through API and desktop Composer
-   paths.
+2. `completed` - Add bounded XLSX extraction and format-aware durable workbook
+   provenance.
+3. `completed` - Wire mixed text/PDF/DOCX/XLSX input through API and desktop paths.
 4. `completed` - Add focused regression and real-provider acceptance coverage.
 5. `completed` - Run full repository gates, close the task, and merge to `main`.
 

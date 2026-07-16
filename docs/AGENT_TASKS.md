@@ -12776,3 +12776,64 @@ remote fetching, native multimodal input, or a second payload lifecycle.
   emitted no console errors.
 - A real `deepseek-v4-flash` task consumed only extracted DOCX material and
   returned `DOCX_FINAL_OK: DOCX_PROVIDER_PROOF_141_8E2A`.
+
+## Phase 142 Task Board
+
+### P142-DOC-01 - Durable Bounded XLSX Table Input
+
+- Status: `Done`
+- Owner: `Codex-DOC`
+- Suggested role: `CONTEXT / API / STORAGE / UI / TEST / DOC`
+- Depends on: `P141-DOC-01`
+- Branch: `codex/p142-doc-01-bounded-xlsx-input`
+- Owned paths: `packages/agent-core/`, `packages/agent-storage/`, `apps/api/`,
+  `tests/`, `UI/desktop/`, `README.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`,
+  `task_plan.md`
+
+#### Goal
+
+Extend the durable attachment path with bounded deterministic extraction of
+standard XLSX worksheet values, without spreadsheet execution, office
+automation, remote fetching, or a second payload lifecycle.
+
+#### Acceptance
+
+- [x] New tasks and ordinary follow-up messages accept mixed text, PDF, DOCX,
+  and XLSX input under the existing four-item and aggregate boundaries.
+- [x] XLSX parsing accepts bounded worksheet names, cell coordinates, shared or
+  inline strings, numbers, booleans, errors, ISO values, and cached formula
+  results; it never evaluates formulas or loads a spreadsheet runtime.
+- [x] Malformed, encrypted, macro-enabled, externally linked, externally
+  connected, query-backed, embedded-object, text-empty, and over-limit packages
+  fail atomically before session mutation.
+- [x] Only deterministic UTF-8 worksheet/cell text is persisted; safe readback
+  retains original media type, byte size, SHA-256, worksheet and populated-cell
+  counts, and extraction status. Recovery never reopens the XLSX.
+- [x] Desktop selection accepts `.xlsx`, validates raw limits and ZIP signature,
+  distinguishes spreadsheet material, and preserves responsive Composer flows.
+- [x] Focused parser, API, persistence, recovery, UI, and provider tests plus all
+  backend, static, eval, desktop, build, Tauri, file-size, and browser gates pass.
+
+#### Explicit Non-Goals
+
+- XLS, XLSM, XLSB, ODS, CSV reinterpretation, editing, formula calculation,
+  recalculation engines, formatting fidelity, charts, images, pivots, comments,
+  threaded comments, macros, external links or data connections, query tables,
+  embedded objects, password entry, or document mutation
+- PPTX, OCR, provider-native multimodal input, remote URLs, cloud object storage,
+  Research-child inheritance, or authority changes to tools, Policy, network,
+  credentials, MCP, approval, or HITL
+
+#### Validation Evidence
+
+- Shared OOXML safety validation covers archive paths, duplicates, encryption,
+  expansion and compression limits, XML entities, macros, external relations,
+  connections, queries, pivots, ActiveX, and embedded objects before parsing.
+- Focused text/PDF/DOCX/XLSX coverage passed `54` tests; all `1293` backend
+  tests, Ruff, Mypy across `349` source files, 8 evals, and the 766-file size
+  gate passed.
+- All 14 desktop checks, Node 22 production build, and offline Tauri check
+  passed. Browser acceptance at `1200x762` and `900x800` remained viewport-bound,
+  exposed one `.xlsx`-accepting attachment entry, and emitted no console errors.
+- A real `deepseek-v4-flash` task returned
+  `XLSX_FINAL_OK: XLSX_PROVIDER_PROOF_142_4F6C` from extracted workbook content.

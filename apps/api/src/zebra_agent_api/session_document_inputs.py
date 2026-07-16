@@ -1,13 +1,20 @@
 from __future__ import annotations
 
-import stat
 import unicodedata
 from io import BytesIO
-from pathlib import PurePosixPath
-from xml.etree.ElementTree import Element, ParseError, fromstring
+from xml.etree.ElementTree import Element
 from zipfile import BadZipFile, ZipFile, ZipInfo
 
 from pypdf import PdfReader
+
+from zebra_agent_api.session_ooxml_safety import (
+    PACKAGE_REL_NS,
+    parse_xml,
+    read_xml_part,
+    reject_external_relationships,
+    validate_main_content_type,
+    validate_package_entries,
+)
 
 MAX_EXTRACTED_TEXT_BYTES = 65_536
 MAX_PDF_PAGES = 64
@@ -17,15 +24,13 @@ MAX_DOCX_ENTRIES = 256
 MAX_DOCX_ENTRY_BYTES = 8_388_608
 MAX_DOCX_TOTAL_EXPANDED_BYTES = 16_777_216
 MAX_DOCX_COMPRESSION_RATIO = 100
-
 _CONTENT_TYPES = "[Content_Types].xml"
 _DOCUMENT_XML = "word/document.xml"
 _DOCX_MAIN_CONTENT_TYPE = (
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"
 )
 _WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-_PACKAGE_REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
-_CONTENT_TYPE_NS = "http://schemas.openxmlformats.org/package/2006/content-types"
+_PACKAGE_REL_NS = PACKAGE_REL_NS
 
 
 def extract_pdf_text(payload: bytes) -> tuple[bytes, int]:
@@ -117,80 +122,37 @@ def extract_docx_text(payload: bytes) -> tuple[bytes, int]:
 
 
 def _validate_docx_entries(entries: list[ZipInfo]) -> None:
-    if not entries or len(entries) > MAX_DOCX_ENTRIES:
-        raise ValueError(f"DOCX attachment exceeds the {MAX_DOCX_ENTRIES}-entry limit")
-    names: set[str] = set()
-    total_expanded = 0
-    for entry in entries:
-        name = entry.filename
-        path = PurePosixPath(name)
-        if not name or "\\" in name or path.is_absolute() or ".." in path.parts:
-            raise ValueError("DOCX attachment contains an unsafe package path")
-        normalized_name = name.casefold()
-        if normalized_name in names:
-            raise ValueError("DOCX attachment contains duplicate package parts")
-        names.add(normalized_name)
-        if entry.flag_bits & 0x1:
-            raise ValueError("encrypted DOCX attachments are not supported")
-        mode = entry.external_attr >> 16
-        if mode and stat.S_ISLNK(mode):
-            raise ValueError("DOCX attachment contains an unsupported symbolic link")
-        if entry.file_size > MAX_DOCX_ENTRY_BYTES:
-            raise ValueError("DOCX attachment contains an oversized package part")
-        total_expanded += entry.file_size
-        if total_expanded > MAX_DOCX_TOTAL_EXPANDED_BYTES:
-            raise ValueError("DOCX attachment exceeds the expanded-content limit")
-        if entry.file_size and (
-            entry.compress_size == 0
-            or entry.file_size > entry.compress_size * MAX_DOCX_COMPRESSION_RATIO
-        ):
-            raise ValueError("DOCX attachment exceeds the compression-ratio limit")
-        lowered = name.lower()
-        if lowered.endswith("vbaproject.bin") or lowered.startswith("word/embeddings/"):
-            raise ValueError("DOCX macros and embedded objects are not supported")
+    validate_package_entries(
+        entries,
+        label="DOCX",
+        blocked_prefixes=("word/embeddings/", "word/vbaproject.bin"),
+        max_entries=MAX_DOCX_ENTRIES,
+        max_entry_bytes=MAX_DOCX_ENTRY_BYTES,
+        max_total_expanded_bytes=MAX_DOCX_TOTAL_EXPANDED_BYTES,
+        max_compression_ratio=MAX_DOCX_COMPRESSION_RATIO,
+        blocked_reason="unsupported macros or embedded objects",
+    )
 
 
 def _read_xml_part(archive: ZipFile, entry: ZipInfo) -> bytes:
-    try:
-        value = archive.read(entry)
-    except (BadZipFile, NotImplementedError, OSError, RuntimeError, ValueError) as exc:
-        raise ValueError("DOCX attachment contains an unreadable package part") from exc
-    if len(value) != entry.file_size:
-        raise ValueError("DOCX attachment package metadata is inconsistent")
-    if b"<!DOCTYPE" in value.upper() or b"<!ENTITY" in value.upper():
-        raise ValueError("DOCX XML declarations and entities are not supported")
-    return value
+    return read_xml_part(archive, entry, label="DOCX")
 
 
 def _validate_content_types(value: bytes) -> None:
-    root = _parse_xml(value, label="content types")
-    if any("macroenabled" in (element.get("ContentType") or "").lower() for element in root):
-        raise ValueError("macro-enabled DOCX attachments are not supported")
-    main_types = {
-        element.get("ContentType")
-        for element in root.findall(f"{{{_CONTENT_TYPE_NS}}}Override")
-        if element.get("PartName") == "/word/document.xml"
-    }
-    if main_types != {_DOCX_MAIN_CONTENT_TYPE}:
-        raise ValueError("DOCX attachment main document content type is invalid")
+    validate_main_content_type(
+        value,
+        label="DOCX",
+        part_name="/word/document.xml",
+        content_type=_DOCX_MAIN_CONTENT_TYPE,
+    )
 
 
 def _validate_relationships(value: bytes) -> None:
-    root = _parse_xml(value, label="relationships")
-    if root.tag != f"{{{_PACKAGE_REL_NS}}}Relationships":
-        raise ValueError("DOCX relationships structure is invalid")
-    if any(
-        relationship.get("TargetMode", "").strip().lower() == "external"
-        for relationship in root.findall(f"{{{_PACKAGE_REL_NS}}}Relationship")
-    ):
-        raise ValueError("DOCX external relationships are not supported")
+    reject_external_relationships(value, label="DOCX")
 
 
 def _parse_xml(value: bytes, *, label: str) -> Element:
-    try:
-        return fromstring(value)
-    except ParseError as exc:
-        raise ValueError(f"DOCX {label} XML is malformed") from exc
+    return parse_xml(value, label="DOCX", part=label)
 
 
 def _paragraph_text(paragraph: Element) -> str:

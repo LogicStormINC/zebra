@@ -57,6 +57,8 @@ def store_text_attachments(
                     original_sha256=attachment.original_sha256,
                     page_count=attachment.page_count,
                     paragraph_count=attachment.paragraph_count,
+                    worksheet_count=attachment.worksheet_count,
+                    cell_count=attachment.cell_count,
                     extraction_status=attachment.extraction_status,
                 )
             )
@@ -97,6 +99,8 @@ def load_attachment_contexts(
                 original_sha256=ref.original_sha256,
                 page_count=ref.page_count,
                 paragraph_count=ref.paragraph_count,
+                worksheet_count=ref.worksheet_count,
+                cell_count=ref.cell_count,
                 extraction_status=ref.extraction_status,
             )
         )
