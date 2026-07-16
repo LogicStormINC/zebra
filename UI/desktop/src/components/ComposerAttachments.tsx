@@ -1,15 +1,15 @@
-import { FileTextOutlined, PaperClipOutlined } from "@ant-design/icons";
+import { FilePdfOutlined, FileTextOutlined, PaperClipOutlined } from "@ant-design/icons";
 import React from "react";
 import {
-  readTextAttachmentFiles,
-  type PendingTextAttachment,
+  readAttachmentFiles,
+  type PendingAttachment,
 } from "../lib/text-attachments";
 import { useComposerAttachmentsStyle } from "./ComposerAttachments.styles";
 
 interface ComposerAttachmentsProps {
-  attachments: PendingTextAttachment[];
+  attachments: PendingAttachment[];
   disabled: boolean;
-  onChange: (attachments: PendingTextAttachment[]) => void;
+  onChange: (attachments: PendingAttachment[]) => void;
 }
 
 export function ComposerAttachments({
@@ -22,15 +22,15 @@ export function ComposerAttachments({
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   return (
-    <div className={styles.surface} aria-label="文本附件">
+    <div className={styles.surface} aria-label="附件">
       <input
-        accept=".txt,.md,.csv,.json,.yaml,.yml,.xml,.html,.css,.js,.ts,.tsx,.py,.toml,.ini,.log"
+        accept=".txt,.md,.csv,.json,.yaml,.yml,.xml,.html,.css,.js,.ts,.tsx,.py,.toml,.ini,.log,.pdf"
         className={styles.fileInput}
         multiple
         onChange={(event) => {
           const files = event.currentTarget.files;
           if (files?.length) {
-            void readTextAttachmentFiles(files, attachments)
+            void readAttachmentFiles(files, attachments)
               .then((next) => {
                 onChange(next);
                 setError("");
@@ -45,7 +45,7 @@ export function ComposerAttachments({
         type="file"
       />
       <button
-        aria-label="附加文本文件"
+        aria-label="附加文件"
         className={styles.attachButton}
         disabled={disabled}
         onClick={() => inputRef.current?.click()}
@@ -53,7 +53,7 @@ export function ComposerAttachments({
       ><PaperClipOutlined /></button>
       {attachments.map((attachment) => (
         <span className={styles.chip} key={attachment.key}>
-          <FileTextOutlined />
+          {attachment.media_type === "application/pdf" ? <FilePdfOutlined /> : <FileTextOutlined />}
           <span>{attachment.file_name}</span>
           <small>{Math.ceil(attachment.size_bytes / 1024)} KiB</small>
           <button

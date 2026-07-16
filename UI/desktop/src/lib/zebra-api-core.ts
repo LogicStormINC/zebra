@@ -21,7 +21,7 @@ import type {
   SessionSummary,
 } from "../types";
 import { requestEventStream, requestJson } from "./zebra-api-helpers";
-import type { TextAttachmentPayload } from "./text-attachments";
+import type { AttachmentPayload } from "./text-attachments";
 
 interface CoreApiContext {
   baseUrl: string;
@@ -68,13 +68,13 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
       ),
     deliveryAudit: (sessionId: string) =>
       requestJson<SessionDeliveryAuditResponse>(baseUrl, `/sessions/${sessionId}/delivery-audit`, { authToken }),
-    createSession: (payload: { title: string; prompt: string; workspace?: string; execute?: boolean; policy_profile?: string; tool_profile?: string; network_profile?: string; network_allowlist?: string[]; mcp_allowlist?: string[]; mcp_resource_ids?: string[]; mcp_prompt_id?: string; mcp_prompt_arguments?: Record<string, string>; attachments?: TextAttachmentPayload[] }) =>
+    createSession: (payload: { title: string; prompt: string; workspace?: string; execute?: boolean; policy_profile?: string; tool_profile?: string; network_profile?: string; network_allowlist?: string[]; mcp_allowlist?: string[]; mcp_resource_ids?: string[]; mcp_prompt_id?: string; mcp_prompt_arguments?: Record<string, string>; attachments?: AttachmentPayload[] }) =>
       requestJson<CreateSessionResponse>(baseUrl, "/sessions", {
         method: "POST",
         authToken,
         body: payload,
       }),
-    appendMessage: (sessionId: string, payload: { content: string; clarification_id?: string; attachments?: TextAttachmentPayload[] }) =>
+    appendMessage: (sessionId: string, payload: { content: string; clarification_id?: string; attachments?: AttachmentPayload[] }) =>
       requestJson<SessionMessageAppendResponse>(baseUrl, `/sessions/${sessionId}/messages`, {
         method: "POST",
         authToken,

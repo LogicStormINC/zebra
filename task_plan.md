@@ -1,5 +1,14 @@
 # Task Plan
 
+## Phase 140 - Durable Bounded PDF Text Input
+
+1. `completed` - Claim the phase and lock PDF input, extraction, provenance,
+   recovery, UI, and non-goal boundaries.
+2. `completed` - Add bounded PDF text extraction and durable document provenance.
+3. `completed` - Wire mixed text/PDF input through API and desktop Composer paths.
+4. `completed` - Add focused regression and real-provider acceptance coverage.
+5. `completed` - Run full repository gates, close the task, and merge to `main`.
+
 ## Goal
 
 为 Zebra Agent 建立一份可持续使用的实施任务拆解与阶段验收基线文档，并让仓库内的长期进度文件与该基线保持一致。

@@ -19,7 +19,7 @@ import { sessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-sta
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import { availableMcpPrompts, availableMcpResourceIds, availableMcpToolNames } from "../lib/mcp-capabilities";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
-import { attachmentPayloads, type PendingTextAttachment, type TextAttachmentPayload } from "../lib/text-attachments";
+import { attachmentPayloads, type AttachmentPayload, type PendingAttachment } from "../lib/text-attachments";
 import { validateTaskLaunchConfig, type TaskLaunchConfig } from "../lib/task-launch-config";
 import type { ApprovalSummary, McpCapabilitiesResponse, McpPromptsResponse, SessionEvent, SessionSummary } from "../types";
 import { useConversationPaneStyle } from "./CodexConversationPane.styles";
@@ -66,7 +66,7 @@ interface CodexConversationPaneProps {
   onRespondClarification: (clarificationId: string, content: string) => Promise<unknown>;
   onScrollToLatest: () => void;
   onSelectConversation: (key: string) => void;
-  onSubmit: (value: string, launchConfig: TaskLaunchConfig, attachments: TextAttachmentPayload[]) => Promise<boolean>;
+  onSubmit: (value: string, launchConfig: TaskLaunchConfig, attachments: AttachmentPayload[]) => Promise<boolean>;
   controlsBusy: boolean;
   runtimeStatus: RuntimeConnectionStatus;
   sessionSummaries: Record<string, SessionSummary | null>;
@@ -77,7 +77,7 @@ interface CodexConversationPaneProps {
 export function CodexConversationPane(props: CodexConversationPaneProps) {
   const { styles } = useConversationPaneStyle();
   const [composerValue, setComposerValue] = React.useState("");
-  const [pendingAttachments, setPendingAttachments] = React.useState<PendingTextAttachment[]>([]);
+  const [pendingAttachments, setPendingAttachments] = React.useState<PendingAttachment[]>([]);
   React.useEffect(() => {
     setPendingAttachments([]);
   }, [props.currentConversation]);

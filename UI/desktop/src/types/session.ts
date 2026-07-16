@@ -11,6 +11,11 @@ export interface SessionAttachment {
   source_server?: string;
   source_id?: string;
   source_argument_names?: string[];
+  original_media_type?: "application/pdf";
+  original_size_bytes?: number;
+  original_sha256?: string;
+  page_count?: number;
+  extraction_status?: "text_extracted";
 }
 
 export interface SessionWorkspaceSnapshot {

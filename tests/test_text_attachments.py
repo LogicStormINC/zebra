@@ -14,12 +14,12 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
 from agent_storage import SQLiteArtifactPayloadStore, SQLiteEventStore
 from zebra_agent_api.app import create_app
-from zebra_agent_api.session_attachment_inputs import parse_text_attachment_inputs
+from zebra_agent_api.session_attachment_inputs import parse_attachment_inputs
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
 
 def test_attachment_parser_accepts_bounded_utf8_text() -> None:
-    parsed = parse_text_attachment_inputs(
+    parsed = parse_attachment_inputs(
         [
             {
                 "file_name": "brief.md",
@@ -64,21 +64,21 @@ def test_attachment_parser_rejects_unsafe_inputs(
     reason: str,
 ) -> None:
     with pytest.raises(ValueError, match=reason):
-        parse_text_attachment_inputs([attachment])
+        parse_attachment_inputs([attachment])
 
 
 def test_attachment_parser_enforces_shape_count_and_byte_budgets() -> None:
     valid = _attachment("brief.txt", "material")
     with pytest.raises(ValueError, match="at most 4"):
-        parse_text_attachment_inputs([valid] * 5)
+        parse_attachment_inputs([valid] * 5)
     with pytest.raises(ValueError, match="fields must be"):
-        parse_text_attachment_inputs([{**valid, "unexpected": "field"}])
+        parse_attachment_inputs([{**valid, "unexpected": "field"}])
     with pytest.raises(ValueError, match="65536-byte limit"):
-        parse_text_attachment_inputs(
+        parse_attachment_inputs(
             [{**valid, "content_base64": base64.b64encode(b"x" * 65_537).decode("ascii")}]
         )
     with pytest.raises(ValueError, match="aggregate limit"):
-        parse_text_attachment_inputs(
+        parse_attachment_inputs(
             [
                 _attachment("a.txt", "a" * 50_000),
                 _attachment("b.txt", "b" * 50_000),

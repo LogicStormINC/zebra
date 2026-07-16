@@ -2,6 +2,27 @@
 
 ## Addendum
 
+- 2026-07-16: completed `P140-DOC-01`; new tasks and ordinary follow-up messages
+  now accept mixed bounded UTF-8 text and text-layer PDF materials. PDFs are
+  rejected before mutation when malformed, encrypted, image-only, over 4 MiB,
+  over 64 pages, or beyond decoded-stream or extracted-text budgets. Only
+  normalized UTF-8 extraction is stored, while safe readback retains original
+  media type, byte size, SHA-256, page count, and `text_extracted` status. Worker
+  recovery proved it never reparses the PDF. All `1262` backend tests, Ruff,
+  Mypy across `346` source files, the 8-case eval gate, 14 desktop checks, Node
+  22 production build, Tauri cargo check, 763-file size gate, desktop plus 900px
+  browser acceptance, and a real `deepseek-v4-flash` response passed. The model
+  returned `PDF_FINAL_OK: PDF_PROVIDER_PROOF_140_7C9D` from a 687-byte, one-page
+  PDF whose durable extraction was 40 bytes. The existing Vite main-bundle
+  warning remains unchanged.
+- 2026-07-16: started `P140-DOC-01` on `codex/p140-doc-01-bounded-pdf-input`.
+  Phase 140 adds bounded text-layer extraction for user-selected PDFs to the
+  existing durable attachment path. Raw PDF bytes are accepted only at the API
+  boundary; malformed, encrypted, over-limit, and image-only inputs fail before
+  session mutation, while recovery consumes only persisted normalized UTF-8
+  extraction with safe original-document provenance. OCR, native multimodal
+  provider messages, remote URLs, other office formats, and authority changes
+  remain excluded.
 - 2026-07-16: completed Phase 139 session-configuration surface correction. Active-session Composer cards now contain only mode, attachment, input, and send affordances; durable workspace, policy, tool, network, MCP tool/resource counts, captured Prompt safe provenance, material count, model configuration, attempt, and sequence readback live in the right-side context inspector. New-task and unbound draft launch summaries and editable controls remain unchanged. All 13 existing desktop checks plus the new session-surface regression check, Node 22 production build, Tauri cargo check, 762-file size gate, and desktop plus 900px responsive browser acceptance passed. The existing Vite main-bundle warning remains unchanged.
 - 2026-07-16: Phase 139 is limited to one desktop information-architecture correction: durable active-session configuration moves from the Composer header into the existing right-side context inspector. New-task launch configuration remains editable before session creation, while active-session workspace, policy, tool, network, MCP, captured Prompt provenance, material count, model, attempt, and sequence become one read-only inspector surface. No backend, event, storage, Policy, model, MCP authority, or HITL contract changes.
 - 2026-07-16: completed Phase 138 across bounded local stdio Prompt discovery, durable API/CLI task launch, immutable Worker recovery, and explicit desktop new-task selection. One user-selected opaque Prompt ID plus exact bounded string arguments is resolved once before creation, persisted as untrusted attachment bytes with safe provenance, and never exposed as model-visible Prompt tools or re-read during recovery. All `1252` backend tests, Ruff, Mypy across `346` source files, the 8-case eval gate, 13 desktop checks, the Node 22 production build, Tauri cargo check, browser fixture acceptance, and a real `deepseek-v4-flash` server-loss recovery pass succeeded; the provider returned the captured proof token `P138_CAPTURED_PROMPT_71F4` after the MCP server script was removed and the MCP call log remained unchanged. The existing Vite main-bundle size warning remains a follow-up, not a Phase 138 regression.

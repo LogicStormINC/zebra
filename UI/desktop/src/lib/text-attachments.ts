@@ -1,6 +1,8 @@
 export const MAX_ATTACHMENT_COUNT = 4;
 export const MAX_ATTACHMENT_BYTES = 65_536;
 export const MAX_ATTACHMENT_TOTAL_BYTES = 131_072;
+export const MAX_PDF_BYTES = 4_194_304;
+export const MAX_PDF_TOTAL_BYTES = 8_388_608;
 
 const MEDIA_TYPES: Record<string, string> = {
   ".css": "text/css",
@@ -21,44 +23,54 @@ const MEDIA_TYPES: Record<string, string> = {
   ".yml": "application/yaml",
 };
 
-export interface TextAttachmentPayload {
+export interface AttachmentPayload {
   file_name: string;
   media_type: string;
   content_base64: string;
 }
 
-export interface PendingTextAttachment extends TextAttachmentPayload {
+export interface PendingAttachment extends AttachmentPayload {
   key: string;
   size_bytes: number;
 }
 
-export async function readTextAttachmentFiles(
+export async function readAttachmentFiles(
   files: FileList | File[],
-  existing: PendingTextAttachment[] = [],
-): Promise<PendingTextAttachment[]> {
+  existing: PendingAttachment[] = [],
+): Promise<PendingAttachment[]> {
   const selected = Array.from(files);
   if (existing.length + selected.length > MAX_ATTACHMENT_COUNT) {
-    throw new Error(`最多可附加 ${MAX_ATTACHMENT_COUNT} 个文本文件`);
+    throw new Error(`最多可附加 ${MAX_ATTACHMENT_COUNT} 个文件`);
   }
-  const next: PendingTextAttachment[] = [];
-  let totalBytes = existing.reduce((total, item) => total + item.size_bytes, 0);
+  const next: PendingAttachment[] = [];
+  let textBytes = existing
+    .filter((item) => item.media_type !== "application/pdf")
+    .reduce((total, item) => total + item.size_bytes, 0);
+  let pdfBytes = existing
+    .filter((item) => item.media_type === "application/pdf")
+    .reduce((total, item) => total + item.size_bytes, 0);
   for (const file of selected) {
     const mediaType = mediaTypeForFile(file);
-    if (file.size <= 0 || file.size > MAX_ATTACHMENT_BYTES) {
-      throw new Error(`${file.name} 必须是 1 到 ${MAX_ATTACHMENT_BYTES / 1024} KiB`);
-    }
-    totalBytes += file.size;
-    if (totalBytes > MAX_ATTACHMENT_TOTAL_BYTES) {
-      throw new Error(`附件总大小不能超过 ${MAX_ATTACHMENT_TOTAL_BYTES / 1024} KiB`);
-    }
     const bytes = new Uint8Array(await file.arrayBuffer());
-    let text: string;
-    try {
-      text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    } catch {
-      throw new Error(`${file.name} 不是有效的 UTF-8 文本`);
+    if (mediaType === "application/pdf") {
+      if (file.size <= 0 || file.size > MAX_PDF_BYTES) {
+        throw new Error(`${file.name} 必须是 1 到 ${MAX_PDF_BYTES / 1024 / 1024} MiB`);
+      }
+      if (!startsWithPdfSignature(bytes)) throw new Error(`${file.name} 不是有效的 PDF 文件`);
+      pdfBytes += file.size;
+      if (pdfBytes > MAX_PDF_TOTAL_BYTES) {
+        throw new Error(`PDF 附件总大小不能超过 ${MAX_PDF_TOTAL_BYTES / 1024 / 1024} MiB`);
+      }
+    } else {
+      if (file.size <= 0 || file.size > MAX_ATTACHMENT_BYTES) {
+        throw new Error(`${file.name} 必须是 1 到 ${MAX_ATTACHMENT_BYTES / 1024} KiB`);
+      }
+      textBytes += file.size;
+      if (textBytes > MAX_ATTACHMENT_TOTAL_BYTES) {
+        throw new Error(`文本附件总大小不能超过 ${MAX_ATTACHMENT_TOTAL_BYTES / 1024} KiB`);
+      }
+      validateUtf8Text(file.name, bytes);
     }
-    if (!text.trim()) throw new Error(`${file.name} 不能为空`);
     next.push({
       key: `${file.name}:${file.size}:${file.lastModified}`,
       file_name: file.name,
@@ -71,8 +83,8 @@ export async function readTextAttachmentFiles(
 }
 
 export function attachmentPayloads(
-  attachments: PendingTextAttachment[],
-): TextAttachmentPayload[] {
+  attachments: PendingAttachment[],
+): AttachmentPayload[] {
   return attachments.map(({ file_name, media_type, content_base64 }) => ({
     file_name,
     media_type,
@@ -84,12 +96,34 @@ function mediaTypeForFile(file: File): string {
   const dot = file.name.lastIndexOf(".");
   const extension = dot >= 0 ? file.name.slice(dot).toLowerCase() : "";
   const expected = MEDIA_TYPES[extension];
-  if (!expected) throw new Error(`${file.name} 不是支持的文本文件类型`);
+  if (extension === ".pdf") return "application/pdf";
+  if (!expected) throw new Error(`${file.name} 不是支持的附件类型`);
   return expected;
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
+  for (let offset = 0; offset < bytes.length; offset += 32_768) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + 32_768));
+  }
   return globalThis.btoa(binary);
+}
+
+function validateUtf8Text(fileName: string, bytes: Uint8Array): void {
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    throw new Error(`${fileName} 不是有效的 UTF-8 文本`);
+  }
+  if (!text.trim()) throw new Error(`${fileName} 不能为空`);
+}
+
+function startsWithPdfSignature(bytes: Uint8Array): boolean {
+  return bytes.length >= 5
+    && bytes[0] === 0x25
+    && bytes[1] === 0x50
+    && bytes[2] === 0x44
+    && bytes[3] === 0x46
+    && bytes[4] === 0x2d;
 }

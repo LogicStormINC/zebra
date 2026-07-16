@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 import locale from "../_utils/local";
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
-import type { TextAttachmentPayload } from "../lib/text-attachments";
+import type { AttachmentPayload } from "../lib/text-attachments";
 import { compactWorkspaceLabel, reconcileMcpPromptSelection, type TaskLaunchConfig } from "../lib/task-launch-config";
 import { useTaskLaunchConfig } from "../lib/use-task-launch-config";
 import {
@@ -85,7 +85,7 @@ interface CodexWorkspaceProps {
   onRespondClarification: (clarificationId: string, content: string) => Promise<unknown>;
   onScrollToLatest: () => void;
   onSelectConversation: (key: string) => void;
-  onSubmit: (value: string, launchConfig: TaskLaunchConfig, attachments: TextAttachmentPayload[]) => Promise<boolean>;
+  onSubmit: (value: string, launchConfig: TaskLaunchConfig, attachments: AttachmentPayload[]) => Promise<boolean>;
   controlsBusy: boolean;
   runtimeStatus: RuntimeConnectionStatus;
   sessionSummaries: Record<string, SessionSummary | null>;

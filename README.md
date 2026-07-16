@@ -64,11 +64,15 @@ The repository now includes an isolated frontend workspace at `UI/desktop`.
 The desktop defaults to task, context, execution, and result surfaces. Human
 controls appear only for a concrete backend approval or clarification request;
 dormant Commit or Pull Request forms do not belong in the normal task timeline.
-Its Composer accepts bounded UTF-8 text attachments on new tasks and later
-ordinary messages. Attachment bytes remain in the durable local payload store;
-the UI and session API read back only safe metadata, while the parent model sees
-bounded content under an explicit untrusted-material boundary. Binary documents,
-remote URLs, OCR, vision, and Research-child attachment access are not supported.
+Its Composer accepts bounded UTF-8 text attachments and text-layer PDFs on new
+tasks and later ordinary messages. Text bytes and normalized PDF extraction stay
+in the durable local payload store; raw PDF bytes exist only at the API input
+boundary. The UI and session API read back safe metadata, including original PDF
+size, digest, page count, and extraction status, while the parent model sees only
+bounded content under an explicit untrusted-material boundary. Encrypted,
+malformed, over-limit, and image-only PDFs fail before session mutation. OCR,
+provider-native vision, other binary document formats, remote URLs, and
+Research-child attachment access are not supported.
 At task creation, users may also select up to four advertised local MCP text
 Resources. Zebra reads each selected Resource once, persists it through the same
 attachment lifecycle, and supplies the immutable snapshot to the parent model as

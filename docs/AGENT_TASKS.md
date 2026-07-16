@@ -12660,3 +12660,52 @@ existing right-side context inspector without weakening new-task launch editing.
 - [x] Existing approval and clarification HITL surfaces are unchanged; desktop
   checks, production build, Tauri check, responsive browser acceptance, and the
   repository file-size gate pass.
+
+## Phase 140 Task Board
+
+### P140-DOC-01 - Durable Bounded PDF Text Input
+
+- Status: `Done`
+- Owner: `Codex-DOC`
+- Suggested role: `CONTEXT / API / STORAGE / UI / TEST / DOC`
+- Depends on: `P139-UI-01`
+- Branch: `codex/p140-doc-01-bounded-pdf-input`
+- Owned paths: `packages/agent-core/`, `packages/agent-context/`,
+  `packages/agent-storage/`, `apps/api/`, `tests/`, `UI/desktop/`, `README.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`, workspace dependency
+  metadata
+
+#### Goal
+
+Extend the existing durable attachment path with bounded text-layer extraction
+for user-selected PDF documents, without introducing OCR, provider-specific
+multimodal input, remote document fetching, or a second payload lifecycle.
+
+#### Acceptance
+
+- [x] New tasks and later ordinary messages accept mixed supported UTF-8 text
+  files and PDFs under one four-item boundary, with explicit raw PDF, page,
+  decoded content-stream, extracted-text, and aggregate limits.
+- [x] PDF parsing rejects malformed, encrypted, over-limit, and image-only or
+  whitespace-only documents before session mutation; attachments remain atomic.
+- [x] Only normalized UTF-8 extracted text is persisted through the existing
+  attachment payload lifecycle, while safe readback retains original PDF media
+  type, byte size, SHA-256 provenance, page count, and extraction status without
+  exposing either raw PDF bytes or extracted text.
+- [x] Direct execution and queued Worker recovery use only the captured extracted
+  bytes, verify durable size and digest metadata, and never parse the PDF again.
+- [x] Desktop attachment selection accepts `.pdf`, validates client-side raw
+  limits, distinguishes PDF material from text files, and preserves existing
+  create, append, clear, removal, and responsive Composer behavior.
+- [x] Focused parser, API, persistence, recovery, UI, and provider tests plus the
+  full backend, static, eval, desktop, build, Tauri, file-size, and browser gates
+  pass before the task is marked done.
+
+#### Explicit Non-Goals
+
+- OCR, scanned-image recognition, image/audio/video input, model-native
+  multimodal messages, DOCX/spreadsheet/archive parsing, remote URLs, cloud
+  object storage, embeddings, semantic indexing, or automatic summarization
+- PDF JavaScript, forms, annotations, attachments, images, metadata injection,
+  password entry, document mutation, Research-child inheritance, or authority
+  changes to tools, Policy, network, credentials, MCP, approval, or HITL

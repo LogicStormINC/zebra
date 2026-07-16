@@ -2,7 +2,7 @@ import { Sender } from "@ant-design/x";
 import { Flex, GetRef, Input } from "antd";
 import React from "react";
 import locale from "../../_utils/local";
-import type { PendingTextAttachment } from "../../lib/text-attachments";
+import type { PendingAttachment } from "../../lib/text-attachments";
 import type { TaskLaunchConfig } from "../../lib/task-launch-config";
 import type { McpCapabilitiesResponse, McpPromptsResponse, SessionSummary } from "../../types";
 import { ComposerAttachments } from "../ComposerAttachments";
@@ -17,7 +17,7 @@ const NamedComposerInput = React.forwardRef<
 >((props, ref) => <Input.TextArea {...props} name="task-prompt" ref={ref} />);
 
 interface ConversationComposerProps {
-  attachments: PendingTextAttachment[];
+  attachments: PendingAttachment[];
   canSubmit: boolean;
   currentConversation: string;
   effectiveLaunchConfig: TaskLaunchConfig;
@@ -31,7 +31,7 @@ interface ConversationComposerProps {
   mcpPrompts: McpPromptsResponse | undefined;
   mcpPromptsBusy: boolean;
   mcpPromptsError: string | null;
-  onAttachmentsChange: (attachments: PendingTextAttachment[]) => void;
+  onAttachmentsChange: (attachments: PendingAttachment[]) => void;
   onCancel: () => void;
   onChange: (value: string) => void;
   onPatchLaunchConfig: (patch: Partial<TaskLaunchConfig>) => void;

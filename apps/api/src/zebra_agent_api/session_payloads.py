@@ -12,7 +12,7 @@ from agent_runtime import normalize_mcp_resource_ids
 from agent_security import NetworkProfileError, PolicyProfile, parse_network_profile
 
 from zebra_agent_api.responses import ApiResponse, bad_request
-from zebra_agent_api.session_attachment_inputs import parse_text_attachment_inputs
+from zebra_agent_api.session_attachment_inputs import parse_attachment_inputs
 
 
 class CreateSessionPayload(TypedDict):
@@ -141,7 +141,7 @@ def parse_create_session_payload(
     except NetworkProfileError as exc:
         return bad_request(str(exc))
     try:
-        attachments = parse_text_attachment_inputs(payload.get("attachments"))
+        attachments = parse_attachment_inputs(payload.get("attachments"))
     except ValueError as exc:
         return bad_request(str(exc))
     mcp_allowlist = payload.get("mcp_allowlist", [])
@@ -246,7 +246,7 @@ def parse_append_session_message_payload(
     ):
         return bad_request("clarification_id must be a non-blank string when provided")
     try:
-        attachments = parse_text_attachment_inputs(payload.get("attachments"))
+        attachments = parse_attachment_inputs(payload.get("attachments"))
     except ValueError as exc:
         return bad_request(str(exc))
     if clarification_id is not None and attachments:

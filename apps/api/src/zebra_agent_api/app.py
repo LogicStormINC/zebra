@@ -393,6 +393,11 @@ class ZebraAgentApi(
                         source_server=attachment.source_server,
                         source_id=attachment.source_id,
                         source_argument_names=attachment.source_argument_names,
+                        original_media_type=attachment.original_media_type,
+                        original_size_bytes=attachment.original_size_bytes,
+                        original_sha256=attachment.original_sha256,
+                        page_count=attachment.page_count,
+                        extraction_status=attachment.extraction_status,
                     )
                     for attachment in parsed["attachments"]
                 ),
