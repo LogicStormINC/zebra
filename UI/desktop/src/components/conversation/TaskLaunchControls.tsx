@@ -15,7 +15,6 @@ interface TaskLaunchControlsProps {
   promptsBusy: boolean;
   promptsError: string | null;
   config: TaskLaunchConfig;
-  effectiveConfig: TaskLaunchConfig;
   editable: boolean;
   onPatch: (patch: Partial<TaskLaunchConfig>) => void;
   onRetryPrompts: () => void;
@@ -29,7 +28,6 @@ export function TaskLaunchControls({
   promptsBusy,
   promptsError,
   config,
-  effectiveConfig,
   editable,
   onPatch,
   onRetryPrompts,
@@ -103,7 +101,7 @@ export function TaskLaunchControls({
         <Popover content={workspaceEditor} placement="topLeft" trigger="click">
           <button className={styles.toolbarButton} type="button">工作区: {compactWorkspaceLabel(config.workspace)}</button>
         </Popover>
-      ) : <span className={launchStyles.staticBadge}>工作区: {compactWorkspaceLabel(effectiveConfig.workspace)}</span>}
+      ) : null}
       {editable ? (
         <Dropdown menu={{ items: [
           { key: "workspace_write", label: "权限: 工作区写入", onClick: () => onPatch({ policyProfile: "workspace_write" }) },
@@ -113,7 +111,7 @@ export function TaskLaunchControls({
             {config.policyProfile === "full_access" ? "权限: 完整访问" : locale.accessWorkspaceWrite}
           </button>
         </Dropdown>
-      ) : <span className={launchStyles.staticBadge}>权限: {effectiveConfig.policyProfile === "full_access" ? "完整访问" : "工作区写入"}</span>}
+      ) : null}
       {editable ? (
         <Dropdown menu={{ items: [
           { key: "general", label: "能力: 通用工具", onClick: () => onPatch({ toolProfile: "general" }) },
@@ -123,7 +121,7 @@ export function TaskLaunchControls({
             {config.toolProfile === "coding" ? "能力: 编码工具" : "能力: 通用工具"}
           </button>
         </Dropdown>
-      ) : <span className={launchStyles.staticBadge}>能力: {effectiveConfig.toolProfile === "coding" ? "编码工具" : "通用工具"}</span>}
+      ) : null}
       {editable ? (
         <Dropdown menu={{ items: [
           { key: "none", label: "网络: 无外部网络", onClick: () => onPatch({ networkProfile: "none", networkAllowlist: [], mcpAllowlist: [], mcpResourceIds: [], mcpPromptId: null, mcpPromptArguments: {}, mcpPromptSchema: null }) },
@@ -132,7 +130,7 @@ export function TaskLaunchControls({
         ] }} trigger={["click"]}>
           <button className={styles.toolbarButton} type="button">网络: {config.networkProfile === "none" ? "无外部网络" : config.networkProfile}</button>
         </Dropdown>
-      ) : <span className={launchStyles.staticBadge}>网络: {effectiveConfig.networkProfile}</span>}
+      ) : null}
       {editable && config.networkProfile === "domain-allowlist" ? (
         <Popover content={networkEditor} placement="topLeft" trigger="click">
           <button className={styles.toolbarButton} type="button">域名: {config.networkAllowlist.length || "未配置"}</button>
@@ -143,7 +141,7 @@ export function TaskLaunchControls({
           <button className={styles.toolbarButton} type="button">MCP: {config.mcpAllowlist.length} 工具 · {config.mcpResourceIds.length} 资源 · {config.mcpPromptId ? 1 : 0} Prompt</button>
         </Popover>
       ) : null}
-      <span className={launchStyles.staticBadge}>模型: API 运行时配置</span>
+      {editable ? <span className={launchStyles.staticBadge}>模型: API 运行时配置</span> : null}
     </Flex>
   );
 }

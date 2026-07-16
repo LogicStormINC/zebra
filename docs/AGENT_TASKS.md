@@ -12636,7 +12636,7 @@ configuration for an existing session belongs to the right-side context panel.
 
 ### P139-UI-01 - Inspector-Owned Session Configuration
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex-UI`
 - Suggested role: `UI / TEST`
 - Depends on: `P139-PLAN-01`
@@ -12650,13 +12650,13 @@ existing right-side context inspector without weakening new-task launch editing.
 
 #### Acceptance
 
-- [ ] An active session shows no `会话配置` summary inside the Composer; the
+- [x] An active session shows no `会话配置` summary inside the Composer; the
   right-side context inspector owns workspace, policy, tool, network, MCP,
   captured Prompt, material, model, attempt, and event-sequence readback.
-- [ ] Prompt readback remains safe provenance only and never exposes rendered
+- [x] Prompt readback remains safe provenance only and never exposes rendered
   Prompt text, raw server configuration, credentials, or a re-run control.
-- [ ] New-task and unbound draft surfaces retain editable launch configuration,
+- [x] New-task and unbound draft surfaces retain editable launch configuration,
   validation, and controls before the first session is created.
-- [ ] Existing approval and clarification HITL surfaces are unchanged; desktop
+- [x] Existing approval and clarification HITL surfaces are unchanged; desktop
   checks, production build, Tauri check, responsive browser acceptance, and the
   repository file-size gate pass.
