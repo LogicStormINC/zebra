@@ -20,6 +20,8 @@ export const useTaskLaunchStyle = createStyles(({ css }) => ({
   `,
   editor: css`
     width: min(360px, calc(100vw - 40px));
+    max-height: min(620px, calc(100vh - 96px));
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: var(--zebra-space-sm);

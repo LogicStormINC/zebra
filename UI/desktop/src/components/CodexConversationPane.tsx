@@ -17,11 +17,11 @@ import React from "react";
 import locale from "../_utils/local";
 import { sessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-status";
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
-import { availableMcpResourceIds, availableMcpToolNames } from "../lib/mcp-capabilities";
+import { availableMcpPrompts, availableMcpResourceIds, availableMcpToolNames } from "../lib/mcp-capabilities";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
 import { attachmentPayloads, type PendingTextAttachment, type TextAttachmentPayload } from "../lib/text-attachments";
 import { validateTaskLaunchConfig, type TaskLaunchConfig } from "../lib/task-launch-config";
-import type { ApprovalSummary, McpCapabilitiesResponse, SessionEvent, SessionSummary } from "../types";
+import type { ApprovalSummary, McpCapabilitiesResponse, McpPromptsResponse, SessionEvent, SessionSummary } from "../types";
 import { useConversationPaneStyle } from "./CodexConversationPane.styles";
 import { ConversationComposer } from "./conversation/ConversationComposer";
 import { ConversationThread } from "./conversation/ConversationThread";
@@ -47,6 +47,9 @@ interface CodexConversationPaneProps {
   mcpCapabilities: McpCapabilitiesResponse | undefined;
   mcpCapabilitiesBusy: boolean;
   mcpCapabilitiesError: string | null;
+  mcpPrompts: McpPromptsResponse | undefined;
+  mcpPromptsBusy: boolean;
+  mcpPromptsError: string | null;
   onCancel: () => void;
   onCopySessionId: () => void;
   onCopyWorkspacePath: () => void;
@@ -56,6 +59,7 @@ interface CodexConversationPaneProps {
   onResumeSession: () => void;
   onSuspendSession: () => void;
   onPatchLaunchConfig: (patch: Partial<TaskLaunchConfig>) => void;
+  onRetryMcpPrompts: () => void;
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onRefreshConversation: () => void;
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
@@ -101,11 +105,17 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
         networkAllowlist: props.sessionSummary?.workspace?.network_allowlist ?? [],
         mcpAllowlist: props.sessionSummary?.workspace?.mcp_allowlist ?? [],
         mcpResourceIds: durableMcpResourceIds,
+        mcpPromptId: null,
+        mcpPromptArguments: {},
+        mcpPromptSchema: null,
       };
   const launchError = validateTaskLaunchConfig(
     effectiveLaunchConfig,
     launchEditable ? availableMcpToolNames(props.mcpCapabilities) : undefined,
     launchEditable ? availableMcpResourceIds(props.mcpCapabilities) : undefined,
+    launchEditable && (props.mcpPrompts || props.mcpPromptsError)
+      ? props.mcpPromptsError ? [] : availableMcpPrompts(props.mcpPrompts)
+      : undefined,
   );
   const headerTitle = hasThread ? props.activeLabel : props.idleProjectLabel;
   const runtimeLabel = props.runtimeStatus === "connected"
@@ -144,10 +154,14 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
       mcpCapabilities={props.mcpCapabilities}
       mcpCapabilitiesBusy={props.mcpCapabilitiesBusy}
       mcpCapabilitiesError={props.mcpCapabilitiesError}
+      mcpPrompts={props.mcpPrompts}
+      mcpPromptsBusy={props.mcpPromptsBusy}
+      mcpPromptsError={props.mcpPromptsError}
       onAttachmentsChange={setPendingAttachments}
       onCancel={props.onCancel}
       onChange={setComposerValue}
       onPatchLaunchConfig={props.onPatchLaunchConfig}
+      onRetryMcpPrompts={props.onRetryMcpPrompts}
       onSubmit={submitComposer}
       senderRef={props.senderRef}
       sessionSummary={props.sessionSummary}

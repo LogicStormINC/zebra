@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { availableMcpResourceIds, availableMcpToolNames, projectMcpCapabilities } from "../src/lib/mcp-capabilities.ts";
+import { availableMcpPrompts, availableMcpResourceIds, availableMcpToolNames, projectMcpCapabilities } from "../src/lib/mcp-capabilities.ts";
 
 assert.deepEqual(projectMcpCapabilities(undefined, true, null), {
   state: "checking",
@@ -37,6 +37,17 @@ assert.deepEqual(availableMcpResourceIds({
   resource_count: 1,
   servers: [{ name: "docs", tool_count: 0, tools: [], resource_count: 1, resources: [{ resource_id: "resource-1", name: "brief", description: "", mime_type: "text/plain", size_bytes: 12 }] }],
 }), ["resource-1"]);
+assert.deepEqual(availableMcpPrompts({
+  status: "available",
+  configured: true,
+  available: true,
+  prompt_count: 2,
+  prompts: [
+    { prompt_id: "prompt-b", name: "B", description: "", arguments: [], available: true },
+    { prompt_id: "prompt-a", name: "A", description: "", arguments: [], available: true },
+  ],
+}).map((prompt) => prompt.prompt_id), ["prompt-a", "prompt-b"]);
+assert.deepEqual(availableMcpPrompts({ status: "unavailable", configured: true, available: false, prompt_count: 0, prompts: [] }), []);
 
 assert.equal(projectMcpCapabilities(undefined, false, "认证失败").summary, "认证失败");
 assert.equal(projectMcpCapabilities(undefined, false, null).state, "unavailable");

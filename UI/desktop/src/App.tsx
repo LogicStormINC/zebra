@@ -38,6 +38,12 @@ export default function App() {
     retry: false,
     staleTime: Infinity,
   });
+  const mcpPromptsQuery = useQuery({
+    queryKey: ["mcp-prompts", config.apiBaseUrl, config.authToken],
+    queryFn: api.mcpPrompts,
+    enabled: false,
+    retry: false,
+  });
   const {
     conversations,
     createIndexedConversation,
@@ -269,7 +275,7 @@ export default function App() {
         let sessionId = conversationToSessionId[conversationKey];
         if (!sessionId) {
           const title = trimmed.slice(0, 36) || locale.newConversation;
-          const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile, network_profile: launchConfig.networkProfile, network_allowlist: launchConfig.networkAllowlist, mcp_allowlist: launchConfig.mcpAllowlist, mcp_resource_ids: launchConfig.mcpResourceIds, attachments });
+          const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile, network_profile: launchConfig.networkProfile, network_allowlist: launchConfig.networkAllowlist, mcp_allowlist: launchConfig.mcpAllowlist, mcp_resource_ids: launchConfig.mcpResourceIds, mcp_prompt_id: launchConfig.mcpPromptId ?? undefined, mcp_prompt_arguments: launchConfig.mcpPromptId ? launchConfig.mcpPromptArguments : undefined, attachments });
           sessionId = created.session_id;
           patchConfig({ sessionId });
           if (!createdFromWorkspaceHome) {
@@ -295,7 +301,7 @@ export default function App() {
               throw error;
             }
             const title = trimmed.slice(0, 36) || locale.newConversation;
-            const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile, network_profile: launchConfig.networkProfile, network_allowlist: launchConfig.networkAllowlist, mcp_allowlist: launchConfig.mcpAllowlist, mcp_resource_ids: launchConfig.mcpResourceIds, attachments });
+            const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile, network_profile: launchConfig.networkProfile, network_allowlist: launchConfig.networkAllowlist, mcp_allowlist: launchConfig.mcpAllowlist, mcp_resource_ids: launchConfig.mcpResourceIds, mcp_prompt_id: launchConfig.mcpPromptId ?? undefined, mcp_prompt_arguments: launchConfig.mcpPromptId ? launchConfig.mcpPromptArguments : undefined, attachments });
             sessionId = created.session_id;
             patchConfig({ sessionId });
             if (!createdFromWorkspaceHome) {
@@ -388,6 +394,9 @@ export default function App() {
         mcpCapabilities={mcpCapabilitiesQuery.data}
         mcpCapabilitiesBusy={mcpCapabilitiesQuery.isFetching}
         mcpCapabilitiesError={mcpCapabilitiesQuery.error ? toErrorMessage(mcpCapabilitiesQuery.error) : null}
+        mcpPrompts={mcpPromptsQuery.data}
+        mcpPromptsBusy={mcpPromptsQuery.isFetching}
+        mcpPromptsError={mcpPromptsQuery.error ? toErrorMessage(mcpPromptsQuery.error) : null}
         operatorConfig={config}
         activeApproval={activeApproval.approval}
         approvalBusy={activeApproval.busy}
@@ -415,6 +424,9 @@ export default function App() {
         }}
         onRetryMcpCapabilities={() => {
           void mcpCapabilitiesQuery.refetch();
+        }}
+        onRetryMcpPrompts={() => {
+          void mcpPromptsQuery.refetch();
         }}
         onCreateConversation={createConversation}
         onDeleteConversation={deleteConversation}

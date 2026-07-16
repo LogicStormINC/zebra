@@ -1,8 +1,9 @@
 import { Dropdown, Flex, Input, Popover } from "antd";
 import locale from "../../_utils/local";
-import type { McpCapabilitiesResponse } from "../../types";
+import type { McpCapabilitiesResponse, McpPromptsResponse } from "../../types";
 import { compactWorkspaceLabel, type TaskLaunchConfig } from "../../lib/task-launch-config";
 import { McpTaskSelector } from "../McpTaskSelector";
+import { McpPromptSelector } from "../McpPromptSelector";
 import { useConversationPaneStyle } from "../CodexConversationPane.styles";
 import { useTaskLaunchStyle } from "../TaskLaunchConfig.styles";
 
@@ -10,20 +11,28 @@ interface TaskLaunchControlsProps {
   capabilities: McpCapabilitiesResponse | undefined;
   capabilitiesBusy: boolean;
   capabilitiesError: string | null;
+  prompts: McpPromptsResponse | undefined;
+  promptsBusy: boolean;
+  promptsError: string | null;
   config: TaskLaunchConfig;
   effectiveConfig: TaskLaunchConfig;
   editable: boolean;
   onPatch: (patch: Partial<TaskLaunchConfig>) => void;
+  onRetryPrompts: () => void;
 }
 
 export function TaskLaunchControls({
   capabilities,
   capabilitiesBusy,
   capabilitiesError,
+  prompts,
+  promptsBusy,
+  promptsError,
   config,
   effectiveConfig,
   editable,
   onPatch,
+  onRetryPrompts,
 }: TaskLaunchControlsProps) {
   const { styles } = useConversationPaneStyle();
   const { styles: launchStyles } = useTaskLaunchStyle();
@@ -56,16 +65,32 @@ export function TaskLaunchControls({
     </div>
   );
   const mcpEditor = (
-    <McpTaskSelector
-      capabilities={capabilities}
-      busy={capabilitiesBusy}
-      className={launchStyles.editor}
-      errorText={capabilitiesError}
-      onResourcesChange={(mcpResourceIds) => onPatch({ mcpResourceIds })}
-      onToolsChange={(mcpAllowlist) => onPatch({ mcpAllowlist })}
-      selectedResources={config.mcpResourceIds}
-      selectedTools={config.mcpAllowlist}
-    />
+    <div className={launchStyles.editor}>
+      <McpTaskSelector
+        capabilities={capabilities}
+        busy={capabilitiesBusy}
+        className=""
+        errorText={capabilitiesError}
+        onResourcesChange={(mcpResourceIds) => onPatch({ mcpResourceIds })}
+        onToolsChange={(mcpAllowlist) => onPatch({ mcpAllowlist })}
+        selectedResources={config.mcpResourceIds}
+        selectedTools={config.mcpAllowlist}
+      />
+      <McpPromptSelector
+        arguments={config.mcpPromptArguments}
+        busy={promptsBusy}
+        data={prompts}
+        errorText={promptsError}
+        onArgumentsChange={(mcpPromptArguments) => onPatch({ mcpPromptArguments })}
+        onRefresh={onRetryPrompts}
+        onSelectionChange={(mcpPromptId, mcpPromptSchema) => onPatch({
+          mcpPromptId,
+          mcpPromptArguments: {},
+          mcpPromptSchema,
+        })}
+        selectedPromptId={config.mcpPromptId}
+      />
+    </div>
   );
 
   return (
@@ -101,8 +126,8 @@ export function TaskLaunchControls({
       ) : <span className={launchStyles.staticBadge}>能力: {effectiveConfig.toolProfile === "coding" ? "编码工具" : "通用工具"}</span>}
       {editable ? (
         <Dropdown menu={{ items: [
-          { key: "none", label: "网络: 无外部网络", onClick: () => onPatch({ networkProfile: "none", networkAllowlist: [], mcpAllowlist: [], mcpResourceIds: [] }) },
-          { key: "domain-allowlist", label: "网络: 域名白名单", onClick: () => onPatch({ networkProfile: "domain-allowlist", mcpAllowlist: [], mcpResourceIds: [] }) },
+          { key: "none", label: "网络: 无外部网络", onClick: () => onPatch({ networkProfile: "none", networkAllowlist: [], mcpAllowlist: [], mcpResourceIds: [], mcpPromptId: null, mcpPromptArguments: {}, mcpPromptSchema: null }) },
+          { key: "domain-allowlist", label: "网络: 域名白名单", onClick: () => onPatch({ networkProfile: "domain-allowlist", mcpAllowlist: [], mcpResourceIds: [], mcpPromptId: null, mcpPromptArguments: {}, mcpPromptSchema: null }) },
           { key: "mcp-proxy-only", label: "网络: 仅 MCP 代理", onClick: () => onPatch({ networkProfile: "mcp-proxy-only", networkAllowlist: [] }) },
         ] }} trigger={["click"]}>
           <button className={styles.toolbarButton} type="button">网络: {config.networkProfile === "none" ? "无外部网络" : config.networkProfile}</button>
@@ -115,7 +140,7 @@ export function TaskLaunchControls({
       ) : null}
       {editable && config.networkProfile === "mcp-proxy-only" ? (
         <Popover content={mcpEditor} placement="topLeft" trigger="click">
-          <button className={styles.toolbarButton} type="button">MCP: {config.mcpAllowlist.length} 工具 · {config.mcpResourceIds.length} 资源</button>
+          <button className={styles.toolbarButton} type="button">MCP: {config.mcpAllowlist.length} 工具 · {config.mcpResourceIds.length} 资源 · {config.mcpPromptId ? 1 : 0} Prompt</button>
         </Popover>
       ) : null}
       <span className={launchStyles.staticBadge}>模型: API 运行时配置</span>

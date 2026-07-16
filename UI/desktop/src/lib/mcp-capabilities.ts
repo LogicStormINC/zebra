@@ -1,4 +1,4 @@
-import type { McpCapabilitiesResponse } from "../types";
+import type { McpCapabilitiesResponse, McpPromptCapability, McpPromptsResponse } from "../types";
 
 export type McpCapabilityState = "checking" | "available" | "unconfigured" | "unavailable";
 
@@ -25,6 +25,12 @@ export function availableMcpResourceIds(
   return data.servers.flatMap((server) =>
     (server.resources ?? []).map((resource) => resource.resource_id),
   ).sort();
+}
+
+export function availableMcpPrompts(data: McpPromptsResponse | undefined): McpPromptCapability[] {
+  if (data?.status !== "available") return [];
+  return data.prompts.filter((prompt) => prompt.available).sort((left, right) =>
+    left.name.localeCompare(right.name) || left.prompt_id.localeCompare(right.prompt_id));
 }
 
 export function projectMcpCapabilities(
