@@ -12314,3 +12314,148 @@ exposing Resource operations as model-controlled tools.
   later-message Resource attachments
 - remote MCP, Streamable HTTP, SSE, OAuth, credentials, headers, dynamic reload,
   long-lived pools, marketplace, plugins, connector onboarding, or Research access
+
+### P136-CLOSE-01 - Phase 136 Closeout And Phase 137 Planning
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / API / CLI / UI / TEST`
+- Depends on: `P136-MCP-01`
+- Branch: `codex/p136-closeout-phase137-plan`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record the merged Phase 136 Resource boundary, audit the repository against its
+existing hard file-size rules, and define one behavior-preserving Phase 137 that
+restores maintainable ownership boundaries before adding more product capability.
+
+#### Acceptance
+
+- [x] `P136-MCP-01` is recorded as merged through PR `#109` at merge commit
+  `8516916f16a2d52ee15b2b31e1c2fc4635d19ce5` and done.
+- [x] The current tracked production-source audit identifies nine files above the
+  500-line hard limit: eight Python application modules and one desktop TSX module.
+- [x] The current test audit identifies six files above the 700-line test limit.
+- [x] Phase 137 contains parallel, non-overlapping production, desktop, and test
+  lanes followed by one locked enforcement lane, with explicit ownership,
+  dependencies, acceptance, and non-goals.
+
+## Phase 137 Task Board
+
+### P137-SRC-01 - Behavior-Preserving API And CLI Module Boundaries
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `ARCH / API / CLI`
+- Depends on: `P136-CLOSE-01`
+- Branch: `codex/p137-src-01-app-module-boundaries`
+- Owned paths: `apps/api/src/zebra_agent_api/`, `apps/cli/src/zebra_agent_cli/`
+
+#### Goal
+
+Split the eight oversized Python application modules into responsibility-named
+modules below the repository hard limit while preserving every public API, CLI,
+event, response, persistence, and error contract.
+
+#### Acceptance
+
+- [ ] `session_read.py`, `memory_inventory_read.py`, `app.py`,
+  `session_memory_control.py`, `session_memory_read.py`, `read_commands.py`,
+  `memory_review_write.py`, and `cli.py` are each at most 500 lines, and every new
+  production Python module created by the slice is also at most 500 lines.
+- [ ] API composition separates session, memory, artifact, approval, and execution
+  responsibilities without changing `create_app`, `ZebraAgentApi`, HTTP routes,
+  status codes, response bodies, event order, or storage semantics.
+- [ ] CLI parsing, dispatch, session execution, memory reads, and memory review
+  responsibilities have explicit modules without changing commands, flags,
+  defaults, JSON output, exit codes, or import-supported entry points.
+- [ ] Shared logic is moved to responsibility-specific modules; no `utils.py`,
+  `helpers.py`, broad compatibility dumping ground, circular import, dynamic
+  method forwarding, or new dependency is introduced to evade the limit.
+- [ ] Existing backend tests, Ruff, Mypy, and eval release checks pass unchanged.
+
+### P137-UI-01 - Behavior-Preserving Conversation Pane Boundaries
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `UI / TEST`
+- Depends on: `P136-CLOSE-01`
+- Branch: `codex/p137-ui-01-conversation-pane-boundaries`
+- Owned paths: `UI/desktop/src/components/CodexConversationPane.tsx`, `UI/desktop/src/components/CodexConversationPane.styles.ts`, `UI/desktop/src/components/conversation/`, `UI/desktop/checks/`
+
+#### Goal
+
+Split the oversized conversation pane into focused task-launch, thread, and
+Composer presentation modules without changing the visible product workflow.
+
+#### Acceptance
+
+- [ ] `CodexConversationPane.tsx` and every new desktop source module are at most
+  500 lines.
+- [ ] Workspace-idle, active-thread, Composer, attachment, MCP Resource, plan,
+  approval, clarification, cancellation, and responsive viewport behavior remain
+  contract-compatible.
+- [ ] State ownership and backend mutations remain in their current hooks or app
+  composition boundaries; presentation extraction does not duplicate requests,
+  introduce placeholder controls, or expose ordinary-state HITL.
+- [ ] All desktop contract checks, TypeScript production build, Tauri check, and
+  focused browser acceptance pass.
+
+### P137-TEST-01 - Test Suite File Boundary Restoration
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `TEST / API / CLI / WORKER / INTEGRATIONS`
+- Depends on: `P136-CLOSE-01`
+- Branch: `codex/p137-test-01-suite-file-boundaries`
+- Owned paths: `tests/cli/test_cli_commands.py`, `tests/cli/run/`, `tests/api/test_session_pull_request.py`, `tests/api/session_pull_request/`, `tests/agent_integrations/test_scm.py`, `tests/agent_integrations/scm/`, `tests/worker/test_execution.py`, `tests/worker/execution/`, `tests/api/test_http_app.py`, `tests/api/http_app/`, `tests/api/test_session_artifacts.py`, `tests/api/session_artifacts/`
+
+#### Goal
+
+Split the six oversized test modules by behavior so ownership and failures remain
+local without reducing deterministic coverage.
+
+#### Acceptance
+
+- [ ] Every owned test file and every newly split test file is at most 700 lines.
+- [ ] Tests are grouped by observable behavior rather than arbitrary line chunks,
+  with shared fixtures kept narrow and responsibility-named.
+- [ ] Test collection count does not decrease, duplicate test names are rejected,
+  and API, CLI, Worker, SCM, and artifact contract coverage remains equivalent.
+- [ ] The full backend suite passes after moves without production-code changes.
+
+### P137-GATE-01 - Enforce Repository File Size Limits
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `HARNESS / TEST / DOC`
+- Depends on: `P137-SRC-01`, `P137-UI-01`, `P137-TEST-01`
+- Branch: `codex/p137-gate-01-file-size-enforcement`
+- Owned paths: `scripts/check_file_sizes.py`, `tests/test_file_size_limits.py`, `Makefile`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Turn the existing repository file-size rules into one deterministic release gate
+so future work cannot silently recreate oversized shared hotspots.
+
+#### Acceptance
+
+- [ ] The gate evaluates tracked production Python, TypeScript, and TSX source at
+  a 500-line maximum and tracked Python/TypeScript test files at a 700-line maximum.
+- [ ] Generated output, dependency directories, virtual environments, build
+  caches, and primary architecture documents are excluded by explicit path rules,
+  not broad filename exceptions.
+- [ ] Failures report every offending path, actual line count, and applicable
+  limit in deterministic order; the checker itself has focused regression tests.
+- [ ] `make check` runs the size gate before static analysis, and the full backend,
+  eval, desktop, build, Tauri, and browser gates remain green.
+
+#### Explicit Non-Goals
+
+- product features, API or CLI behavior changes, response cleanup, schema changes,
+  memory-policy redesign, UI redesign, or deletion of existing supported surfaces
+- mass renaming of public imports, speculative abstractions, generic helper
+  modules, metaprogrammed forwarding, new dependencies, or unrelated formatting
+- MCP prompts/templates/subscriptions, remote MCP/OAuth, plugin marketplace,
+  distributed workers, cloud storage, or broader multi-agent orchestration
