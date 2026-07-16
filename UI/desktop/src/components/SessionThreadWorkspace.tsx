@@ -1,7 +1,8 @@
-import { CheckOutlined } from "@ant-design/icons";
 import React from "react";
 import locale from "../_utils/local";
+import { sessionStatusLabel } from "../_utils/session-status";
 import type { ChatMessage } from "../lib/chat-surface";
+import { optimisticTimelineMessages, projectSessionTimeline, timelinePlanPlacement, type TimelineMessageItem, type TimelineStatusItem } from "../lib/session-timeline";
 import { compactWorkspaceLabel } from "../lib/task-launch-config";
 import { hasVisibleTaskPlan } from "../lib/task-plan";
 import type { ApprovalSummary, SessionEvent, SessionSummary } from "../types";
@@ -13,30 +14,6 @@ import { SessionClarificationPanel } from "./SessionClarificationPanel";
 import { useSessionThreadWorkspaceStyle } from "./SessionThreadWorkspace.styles";
 
 type InspectorTab = "context" | "logs";
-type StageState = "pending" | "active" | "done";
-type StageKey = "planning" | "context" | "tools" | "result" | "verification" | "completed" | "review";
-
-const STAGES = [
-  { key: "planning", label: locale.stagePlanning },
-  { key: "context", label: locale.stageContext },
-  { key: "tools", label: locale.stageTools },
-  { key: "result", label: locale.stageResult },
-  { key: "verification", label: locale.stageVerification },
-  { key: "completed", label: locale.stageCompleted },
-  { key: "review", label: locale.stageReview },
-] as const;
-
-const PLANNING_EVENTS = new Set([
-  "session_created",
-  "user_message_received",
-  "task_prepared",
-  "plan_proposed",
-  "plan_approved",
-  "plan_updated",
-  "model_request_started",
-  "harness_attempt_started",
-]);
-const TOOL_EVENTS = new Set(["tool_execution_started", "tool_execution_completed", "tool_execution_failed"]);
 
 const EVENT_LABELS: Record<string, string> = {
   session_created: "会话已创建",
@@ -61,25 +38,9 @@ const EVENT_LABELS: Record<string, string> = {
   session_completed: "任务已完成",
   session_failed: "任务执行失败",
   session_cancelled: "任务已停止",
+  session_suspended: "任务已暂停",
+  session_resumed: "任务已恢复",
 };
-
-function toolName(event: SessionEvent) {
-  return typeof event.payload.tool_name === "string" ? event.payload.tool_name.toLowerCase() : "";
-}
-
-function eventStage(event: SessionEvent): StageKey | null {
-  if (PLANNING_EVENTS.has(event.event_type)) return "planning";
-  if (["approval_requested", "approval_granted", "approval_rejected", "clarification_requested", "clarification_responded"].includes(event.event_type)) return "review";
-  if (["session_completed", "session_failed", "session_cancelled"].includes(event.event_type)) return "completed";
-  if (["model_response_received", "patch_applied"].includes(event.event_type)) return "result";
-  if (event.event_type === "tests_completed") return "verification";
-  if (!TOOL_EVENTS.has(event.event_type)) return null;
-
-  const name = toolName(event);
-  if (["test", "check", "verify"].some((fragment) => name.includes(fragment))) return "verification";
-  if (["read", "search", "list", "glob", "retrieve"].some((fragment) => name.includes(fragment))) return "context";
-  return "tools";
-}
 
 function formatTime(value: string) {
   const date = new Date(value);
@@ -125,22 +86,34 @@ export function SessionThreadWorkspace({
   const promptLabel = capturedPrompt
     ? `${capturedPrompt.source_server ?? "MCP"} · ${(capturedPrompt.source_argument_names ?? []).length} 参数`
     : "未使用";
-  const populatedStages = STAGES.map((stage) => ({
-    ...stage,
-    events: events.filter((event) => eventStage(event) === stage.key),
-  }));
-  const lastPopulatedIndex = populatedStages.reduce((last, stage, index) => stage.events.length ? index : last, -1);
-  const terminal = ["completed", "failed", "cancelled", "canceled", "stopped"].includes(sessionSummary?.status ?? "");
+  const timelineItems = projectSessionTimeline(events);
+  const optimisticMessages = optimisticTimelineMessages(timelineItems, messages);
+  const visiblePlan = hasVisibleTaskPlan(sessionSummary?.task_plan) ? sessionSummary.task_plan : undefined;
+  const planPlacement = visiblePlan ? timelinePlanPlacement(timelineItems) : undefined;
+  const planNode = visiblePlan && planPlacement
+    ? <SessionTaskPlan key={`plan:${planPlacement.mode === "start" ? "start" : planPlacement.anchorKey}`} plan={visiblePlan} />
+    : null;
+  const toolCount = timelineItems.filter((item) => item.kind === "tool").length;
+  const statusLabel = isDraft
+    ? locale.statusDraft
+    : sessionSummary ? sessionStatusLabel(sessionSummary.status) : "状态同步中";
   const tabs: Array<{ key: InspectorTab; label: string }> = [
     { key: "context", label: locale.inspectorContext },
     { key: "logs", label: locale.inspectorLogs },
   ];
 
-  const stageState = (index: number, count: number): StageState => {
-    if (!count) return "pending";
-    if (!terminal && index === lastPopulatedIndex) return "active";
-    return "done";
-  };
+  const renderMessage = (item: TimelineMessageItem | ChatMessage, key: string) => item.role === "assistant" ? (
+    <AssistantMessageBlock key={key} message={item} />
+  ) : (
+    <div className={styles.userWrap} key={key}><div className={styles.userCard}>{item.content}</div></div>
+  );
+  const renderStatus = (item: TimelineStatusItem) => (
+    <div className={styles.statusRow} key={item.key}>
+      <span className={styles.statusMarker} />
+      <span>{EVENT_LABELS[item.eventType] ?? item.eventType}</span>
+      <span>{item.attemptNumber ? `attempt ${item.attemptNumber} · ` : ""}{formatTime(item.createdAt)}</span>
+    </div>
+  );
 
   const renderInspector = () => {
     if (isDraft) return <p className={styles.empty}>{locale.inspectorEmpty}</p>;
@@ -174,26 +147,31 @@ export function SessionThreadWorkspace({
         <article className={styles.taskCard}>
           <div className={styles.eyebrow}>{isDraft ? locale.threadDraft : locale.threadTimeline}</div>
           <h2>{activeLabel}</h2>
-          <p>{isDraft ? locale.notStarted : `${events.length} ${locale.eventsRecorded}`}</p>
+          <p>
+            <span aria-live="polite" className={styles.currentStatus}>{statusLabel}</span>
+            <span aria-hidden="true"> · </span>
+            {isDraft ? locale.notStarted : `${events.length} ${locale.eventsRecorded} · ${toolCount} tools`}
+          </p>
         </article>
-        {hasVisibleTaskPlan(sessionSummary?.task_plan) ? <SessionTaskPlan plan={sessionSummary.task_plan} /> : null}
-        <div className={styles.stageList}>
-          {populatedStages.map((stage, index) => {
-            const state = isDraft ? "pending" : stageState(index, stage.events.length);
-            const latest = stage.events[stage.events.length - 1];
-            return <div className={`${styles.stage} ${state === "active" ? styles.stageActive : state === "done" ? styles.stageDone : ""}`} key={stage.label}>
-              <span className={`${styles.stageDot} ${state === "active" ? styles.stageDotActive : state === "done" ? styles.stageDotDone : ""}`}>
-                {state === "done" ? <CheckOutlined /> : index + 1}
-              </span>
-              <span className={styles.stageText}>
-                <strong>{stage.label}</strong>
-                <span>{latest ? EVENT_LABELS[latest.event_type] ?? latest.event_type : locale.stagePending}</span>
-              </span>
-              <span className={styles.stageMeta}>{latest ? formatTime(latest.created_at) : ""}</span>
-            </div>;
-          })}
-        </div>
         {!isDraft ? <>
+          <div className={styles.eventStream}>
+            {planPlacement?.mode === "start" ? planNode : null}
+            {timelineItems.map((item) => {
+              const isPlanEvent = item.kind === "status" && (item.eventType === "plan_proposed" || item.eventType === "plan_updated");
+              if (isPlanEvent) {
+                return planPlacement?.mode === "replace" && planPlacement.anchorKey === item.key ? planNode : null;
+              }
+              const content = item.kind === "message"
+                ? renderMessage(item, item.key)
+                : item.kind === "tool" ? <SessionExecutionTrace key={item.key} tool={item} /> : renderStatus(item);
+              const insertPlanAfter = visiblePlan && planPlacement?.mode === "after" && planPlacement.anchorKey === item.key;
+              return <React.Fragment key={`stream:${item.key}`}>
+                {content}
+                {insertPlanAfter ? planNode : null}
+              </React.Fragment>;
+            })}
+            {optimisticMessages.map((message) => renderMessage(message, message.key))}
+          </div>
           <SessionClarificationPanel
             busy={clarificationBusy}
             clarification={sessionSummary?.clarification_context}
@@ -206,12 +184,6 @@ export function SessionThreadWorkspace({
             onApprove={onApprove}
             onReject={onReject}
           />
-          <SessionExecutionTrace events={events} />
-          <div className={styles.messageStack}>{messages.map((message) => message.role === "assistant" ? (
-            <AssistantMessageBlock key={message.key} message={message} />
-          ) : (
-            <div className={styles.userWrap} key={message.key}><div className={styles.userCard}>{message.content}</div></div>
-          ))}</div>
         </> : null}
       </section>
       <aside className={styles.inspector}>

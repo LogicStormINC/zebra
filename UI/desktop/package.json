@@ -25,6 +25,8 @@
     "check:mcp": "node --experimental-strip-types checks/mcp-capabilities.check.ts",
     "check:mcp-prompt": "node --experimental-strip-types checks/mcp-prompt-launch.check.ts",
     "check:session-config-surface": "node --experimental-strip-types checks/session-config-surface.check.ts",
+    "check:session-status": "node --experimental-strip-types checks/session-status.check.ts",
+    "check:timeline": "node --experimental-strip-types checks/session-timeline.check.ts",
     "preview": "vite preview",
     "tauri:dev": "CARGO_HOME=$PWD/.cargo-home tauri dev",
     "tauri:build": "CARGO_HOME=$PWD/.cargo-home tauri build",

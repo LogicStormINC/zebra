@@ -1,125 +1,143 @@
 import { ToolOutlined } from "@ant-design/icons";
-import { Tag } from "antd";
 import { createStyles } from "antd-style";
-import { projectAttemptTrace } from "../lib/session-trace";
-import type { SessionEvent } from "../types";
+import type { TimelineToolItem } from "../lib/session-timeline";
 
-const useStyle = createStyles(({ css }) => {
-  return {
-    shell: css`
-      margin: 0 0 var(--zebra-space-xl);
-      border-radius: var(--zebra-radius-large);
-      padding: var(--zebra-space-md) var(--zebra-space-lg);
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.025));
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      display: flex;
-      flex-direction: column;
-      gap: var(--zebra-space-md);
-    `,
-    header: css`
-      display: flex;
-      align-items: center;
-      gap: var(--zebra-space-sm);
-      color: rgba(255, 255, 255, 0.92);
-      font-size: var(--zebra-font-size-xs);
-      font-weight: var(--zebra-font-weight-semibold);
-    `,
-    icon: css`
-      color: rgba(255, 255, 255, 0.6);
-    `,
-    attempt: css`
-      display: flex;
-      flex-direction: column;
-      gap: var(--zebra-space-md);
-      padding: var(--zebra-space-sm) 0 0;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-    `,
-    attemptTitle: css`
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--zebra-space-sm);
-      color: rgba(255, 255, 255, 0.86);
-      font-size: var(--zebra-font-size-2xs);
-      font-weight: var(--zebra-font-weight-semibold);
-    `,
-    toolList: css`
-      display: flex;
-      flex-direction: column;
-      gap: var(--zebra-space-sm);
-    `,
-    toolCard: css`
-      border-radius: var(--zebra-radius-soft);
-      padding: var(--zebra-space-sm) var(--zebra-space-md);
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      display: flex;
-      flex-direction: column;
-      gap: var(--zebra-space-xs);
-    `,
-    toolHead: css`
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--zebra-space-sm);
-      color: rgba(255, 255, 255, 0.9);
-      font-size: var(--zebra-font-size-sm);
-      font-weight: var(--zebra-font-weight-medium);
-    `,
-    toolMeta: css`
-      color: rgba(255, 255, 255, 0.52);
-      font-size: var(--zebra-font-size-2xs);
+const STATUS_LABELS: Record<TimelineToolItem["status"], string> = {
+  proposed: "proposed",
+  awaiting_approval: "awaiting approval",
+  denied: "denied",
+  running: "running",
+  completed: "completed",
+  failed: "failed",
+};
+
+const useStyle = createStyles(({ css }) => ({
+  row: css`
+    border-top: 1px solid rgba(255, 255, 255, 0.055);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+    background: rgba(255, 255, 255, 0.012);
+    &[open] { background: rgba(255, 255, 255, 0.025); }
+  `,
+  summary: css`
+    min-width: 0;
+    min-height: 44px;
+    padding: 7px 8px;
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.68);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 18px;
+    list-style-position: outside;
+    &:focus-visible {
+      border-radius: 6px;
+      outline: 2px solid rgba(245, 158, 11, 0.7);
+      outline-offset: 2px;
+    }
+    &::marker { color: rgba(255, 255, 255, 0.35); }
+  `,
+  icon: css`
+    color: rgba(255, 255, 255, 0.34);
+  `,
+  name: css`
+    min-width: 0;
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.78);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  toolSummary: css`
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    overflow: hidden;
+  `,
+  outputPreview: css`
+    min-width: 0;
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.55);
+    font-family: inherit;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  attempt: css`
+    color: rgba(255, 255, 255, 0.48);
+    white-space: nowrap;
+  `,
+  status: css`
+    padding: 1px 7px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 11px;
+    line-height: 16px;
+    white-space: nowrap;
+    [data-status="running"] &, [data-status="awaiting_approval"] & { color: #f2a65a; }
+    [data-status="failed"] &, [data-status="denied"] & { color: #f28b82; }
+    [data-status="completed"] & { color: #8fbc8f; }
+  `,
+  body: css`
+    display: grid;
+    gap: 7px;
+    padding: 2px 12px 12px 32px;
+  `,
+  detail: css`
+    display: grid;
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 10px;
+    color: rgba(255, 255, 255, 0.66);
+    font-size: 12px;
+    line-height: 18px;
+    dt { color: rgba(255, 255, 255, 0.5); }
+    dd {
+      min-width: 0;
+      margin: 0;
+      overflow-wrap: anywhere;
       white-space: pre-wrap;
-      word-break: break-word;
-    `,
-    empty: css`
-      color: rgba(255, 255, 255, 0.5);
-      font-size: var(--zebra-font-size-xs);
-    `,
-  };
-});
+    }
+  `,
+}));
 
-export function SessionExecutionTrace({ events }: { events: SessionEvent[] }) {
+function visibleText(value: unknown) {
+  const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+  if (!text) return "";
+  return text.length > 900 ? `${text.slice(0, 900)}…` : text;
+}
+
+function outputPreview(value: string) {
+  const text = value.replace(/\s+/gu, " ").trim();
+  return text.length > 140 ? `${text.slice(0, 140)}…` : text;
+}
+
+export function SessionExecutionTrace({ tool }: { tool: TimelineToolItem }) {
   const { styles } = useStyle();
-  const attempts = projectAttemptTrace(events);
-
-  if (attempts.length === 0) {
-    return null;
-  }
+  const expanded = ["running", "failed", "denied", "awaiting_approval"].includes(tool.status);
+  const preview = tool.status === "completed" ? outputPreview(tool.output) : "";
+  const details = [
+    Object.keys(tool.arguments).length ? ["Arguments", visibleText(tool.arguments)] : null,
+    tool.output ? ["Output", visibleText(tool.output)] : null,
+    tool.policyDecision ? ["Policy", visibleText([tool.policyDecision, tool.policyReason].filter(Boolean).join(" · "))] : null,
+    tool.resultStatus ? ["Result", visibleText(tool.resultStatus)] : null,
+  ].filter((detail): detail is string[] => Boolean(detail));
 
   return (
-    <section className={styles.shell}>
-      <div className={styles.header}>
+    <details className={styles.row} data-status={tool.status} open={expanded || undefined}>
+      <summary className={styles.summary}>
         <ToolOutlined className={styles.icon} />
-        <span>Execution trace</span>
-      </div>
-      {attempts.map((attempt) => (
-        <div className={styles.attempt} key={attempt.attemptNumber}>
-          <div className={styles.attemptTitle}>
-            <span>Attempt {attempt.attemptNumber}</span>
-            <Tag color="blue">{attempt.tools.length} tools</Tag>
-          </div>
-          {attempt.tools.length === 0 ? (
-            <div className={styles.empty}>No tool calls recorded for this attempt.</div>
-          ) : (
-            <div className={styles.toolList}>
-              {attempt.tools.map((tool, index) => (
-                <div className={styles.toolCard} key={`${attempt.attemptNumber}-${tool.toolName}-${index}`}>
-                  <div className={styles.toolHead}>
-                    <span>{tool.toolName}</span>
-                    <Tag color={tool.status === "executed" ? "green" : "red"}>{tool.status}</Tag>
-                  </div>
-                  {Object.keys(tool.arguments).length > 0 ? (
-                    <div className={styles.toolMeta}>args: {JSON.stringify(tool.arguments)}</div>
-                  ) : null}
-                  {tool.output ? <div className={styles.toolMeta}>output: {tool.output.slice(0, 240)}</div> : null}
-                  {tool.policyDecision ? <div className={styles.toolMeta}>policy: {tool.policyDecision}</div> : null}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
-    </section>
+        <span className={styles.toolSummary}>
+          <span className={styles.name}>{tool.toolName}</span>
+          {preview ? <span className={styles.outputPreview}>— {preview}</span> : null}
+        </span>
+        <span className={styles.attempt}>attempt {tool.attemptNumber}</span>
+        <span className={styles.status}>{STATUS_LABELS[tool.status]}</span>
+      </summary>
+      {details.length ? <dl className={styles.body}>{details.map(([label, value]) => (
+        <div className={styles.detail} key={label}><dt>{label}</dt><dd>{value}</dd></div>
+      ))}</dl> : null}
+    </details>
   );
 }
