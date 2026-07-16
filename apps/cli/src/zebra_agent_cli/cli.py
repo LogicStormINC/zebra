@@ -19,6 +19,7 @@ from zebra_agent_cli.command_result_builders import (
     _artifact_result,
     _suspend_result,
 )
+from zebra_agent_cli.mcp_prompt_commands import mcp_prompt_inventory
 from zebra_agent_cli.memory_review_write import (
     preview_queue_memory_review,
     preview_queue_tenant_memory_review,
@@ -57,6 +58,8 @@ def execute(
     command = namespace.command
     if command == "run":
         return _run_result(namespace, active_settings)
+    if command == "mcp-prompts":
+        return mcp_prompt_inventory(active_settings)
     if command == "message":
         return CliCommandResult(
             command="message",

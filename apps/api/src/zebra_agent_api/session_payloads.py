@@ -26,6 +26,8 @@ class CreateSessionPayload(TypedDict):
     network_allowlist: list[str]
     mcp_allowlist: list[str]
     mcp_resource_ids: list[str]
+    mcp_prompt_id: str | None
+    mcp_prompt_arguments: dict[str, str]
     attachments: tuple[TextAttachmentInput, ...]
 
 
@@ -160,7 +162,21 @@ def parse_create_session_payload(
         normalized_resources = normalize_mcp_resource_ids(mcp_resource_ids)
     except ValueError as exc:
         return bad_request(str(exc))
-    if (normalized_mcp or normalized_resources) and network.name not in {
+    mcp_prompt_id = payload.get("mcp_prompt_id")
+    if mcp_prompt_id is not None and (
+        not isinstance(mcp_prompt_id, str) or not mcp_prompt_id.strip()
+    ):
+        return bad_request("mcp_prompt_id must be a non-blank string when provided")
+    normalized_prompt_id = mcp_prompt_id.strip() if isinstance(mcp_prompt_id, str) else None
+    raw_prompt_arguments = payload.get("mcp_prompt_arguments", {})
+    if not isinstance(raw_prompt_arguments, dict) or not all(
+        isinstance(key, str) and isinstance(value, str)
+        for key, value in raw_prompt_arguments.items()
+    ):
+        return bad_request("mcp_prompt_arguments must be an object of string values")
+    if raw_prompt_arguments and normalized_prompt_id is None:
+        return bad_request("mcp_prompt_arguments require mcp_prompt_id")
+    if (normalized_mcp or normalized_resources or normalized_prompt_id) and network.name not in {
         NetworkProfileName.MCP_PROXY_ONLY,
         NetworkProfileName.FULL_TRUSTED_LOCAL,
     }:
@@ -177,6 +193,8 @@ def parse_create_session_payload(
         "network_allowlist": list(network.domain_allowlist),
         "mcp_allowlist": list(normalized_mcp),
         "mcp_resource_ids": list(normalized_resources),
+        "mcp_prompt_id": normalized_prompt_id,
+        "mcp_prompt_arguments": dict(raw_prompt_arguments),
         "attachments": attachments,
     }
 

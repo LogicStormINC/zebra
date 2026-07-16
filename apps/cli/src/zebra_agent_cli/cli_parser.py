@@ -36,6 +36,13 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--network-allowlist", action="append", default=[])
     run.add_argument("--mcp-tool", action="append", default=[])
     run.add_argument("--mcp-resource", action="append", default=[])
+    run.add_argument("--mcp-prompt", action="append", default=[])
+    run.add_argument("--mcp-prompt-arg", action="append", default=[])
+
+    subcommands.add_parser(
+        "mcp-prompts",
+        help="List safe MCP Prompt templates available for new tasks.",
+    )
 
     message = subcommands.add_parser(
         "message",

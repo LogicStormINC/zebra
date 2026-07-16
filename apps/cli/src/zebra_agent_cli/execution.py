@@ -80,6 +80,7 @@ def execute_durable_run(
                 source_type=attachment.source_type,
                 source_server=attachment.source_server,
                 source_id=attachment.source_id,
+                source_argument_names=attachment.source_argument_names,
             )
             for attachment in attachments
         ),

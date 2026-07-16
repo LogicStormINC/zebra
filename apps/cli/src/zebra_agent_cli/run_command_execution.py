@@ -3,14 +3,20 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+from agent_core.application import (
+    SessionBootstrapCommand,
+    SessionBootstrapService,
+    build_mcp_prompt_attachment,
+)
 from agent_core.application.workspace_projection import rebuild_workspace
+from agent_core.domain.attachments import TextAttachmentInput
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_runtime import (
     normalize_mcp_resource_ids,
     read_mcp_resource_attachments,
+    resolve_mcp_prompt,
     validate_mcp_capability_selection,
 )
 from agent_security import PolicyProfile, parse_network_profile
@@ -28,6 +34,7 @@ from zebra_agent_cli.cli_database import (
 )
 from zebra_agent_cli.cli_types import CliCommandResult
 from zebra_agent_cli.execution import execute_durable_run, serialize_run_execution
+from zebra_agent_cli.mcp_prompt_commands import parse_mcp_prompt_selection
 
 
 def _run_result(
@@ -42,7 +49,11 @@ def _run_result(
     )
     mcp_allowlist = normalize_mcp_allowlist(namespace.mcp_tool)
     mcp_resource_ids = normalize_mcp_resource_ids(namespace.mcp_resource)
-    if (mcp_allowlist or mcp_resource_ids) and network_profile.name not in {
+    mcp_prompt_id, mcp_prompt_arguments = parse_mcp_prompt_selection(
+        namespace.mcp_prompt,
+        namespace.mcp_prompt_arg,
+    )
+    if (mcp_allowlist or mcp_resource_ids or mcp_prompt_id) and network_profile.name not in {
         NetworkProfileName.MCP_PROXY_ONLY,
         NetworkProfileName.FULL_TRUSTED_LOCAL,
     }:
@@ -52,6 +63,24 @@ def _run_result(
         settings.mcp_servers,
         mcp_resource_ids,
     )
+    prompt_attachments: tuple[TextAttachmentInput, ...] = ()
+    if mcp_prompt_id is not None:
+        resolved_prompt = resolve_mcp_prompt(
+            settings.mcp_servers,
+            mcp_prompt_id,
+            mcp_prompt_arguments,
+        )
+        prompt_attachments = (
+            build_mcp_prompt_attachment(
+                server_name=resolved_prompt.server_name,
+                prompt_id=resolved_prompt.prompt_id,
+                argument_names=tuple(name for name, _ in resolved_prompt.arguments),
+                messages=tuple(
+                    (message.role, message.text) for message in resolved_prompt.messages
+                ),
+            ),
+        )
+    attachments = (*resource_attachments, *prompt_attachments)
     if namespace.execute:
         execution_result = execute_durable_run(
             prompt=namespace.prompt,
@@ -63,7 +92,7 @@ def _run_result(
             tool_profile=ToolProfile(namespace.tool_profile),
             network_profile=network_profile,
             mcp_allowlist=mcp_allowlist,
-            attachments=resource_attachments,
+            attachments=attachments,
         )
         session = execution_result.harness_result.session
         payload = serialize_run_execution(execution_result)
@@ -84,7 +113,7 @@ def _run_result(
         events, attachment_refs = store_initial_text_attachments(
             SQLiteArtifactPayloadStore(database_path),
             bootstrap.events,
-            resource_attachments,
+            attachments,
         )
         event_store = SQLiteEventStore(database_path)
         for event in events:
@@ -111,6 +140,7 @@ def _run_result(
             "workspace": str(workspace),
             "database": str(database_path),
             "mcp_resource_ids": list(mcp_resource_ids),
+            **({"mcp_prompt_id": mcp_prompt_id} if mcp_prompt_id is not None else {}),
             **payload,
         },
     )

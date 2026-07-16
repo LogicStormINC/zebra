@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 CommandName = Literal[
+    "mcp-prompts",
     "run",
     "message",
     "cancel",

@@ -51,6 +51,7 @@ def store_text_attachments(
                     source_type=attachment.source_type,
                     source_server=attachment.source_server,
                     source_id=attachment.source_id,
+                    source_argument_names=attachment.source_argument_names,
                 )
             )
     except Exception:
@@ -84,6 +85,7 @@ def load_attachment_contexts(
                 source_type=ref.source_type,
                 source_server=ref.source_server,
                 source_id=ref.source_id,
+                source_argument_names=ref.source_argument_names,
             )
         )
     return tuple(contexts)
