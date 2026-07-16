@@ -11,6 +11,9 @@ Current live frontend integration:
 - API health probe against `/health`
 - authenticated MCP capability inventory against `GET /capabilities/mcp`, shown
   only in runtime settings with explicit refresh and no background polling
+- task-scoped MCP selection in new-task launch configuration; only safe inventory
+  names may enter the durable `mcp_allowlist`, the default is empty, and ordinary
+  idle or thread surfaces do not expose approval controls
 - approval inbox against `/approvals`
 - approval detail against `GET /approvals/{id}`
 - session creation against `POST /sessions`

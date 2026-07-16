@@ -9,6 +9,15 @@ export interface McpCapabilityView {
   summary: string;
 }
 
+export function availableMcpToolNames(
+  data: McpCapabilitiesResponse | undefined,
+): string[] {
+  if (data?.status !== "available") return [];
+  return data.servers.flatMap((server) =>
+    server.tools.map((tool) => `mcp.${server.name}.${tool.name}`),
+  ).sort();
+}
+
 export function projectMcpCapabilities(
   data: McpCapabilitiesResponse | undefined,
   isFetching: boolean,

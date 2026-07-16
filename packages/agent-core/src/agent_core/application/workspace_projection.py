@@ -1,4 +1,5 @@
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
@@ -30,6 +31,7 @@ def rebuild_workspace(events: list[SessionEvent]) -> WorkspaceProjection:
             _optional_payload_string(prepared_event, "network_profile") or "none"
         ),
         network_allowlist=_network_allowlist_from_event(prepared_event),
+        mcp_allowlist=_mcp_allowlist_from_event(prepared_event),
     )
     for event in events:
         if event.sequence < prepared_event.sequence:
@@ -66,6 +68,7 @@ def apply_event(
             _optional_payload_string(event, "network_profile") or "none"
         )
         updates["network_allowlist"] = _network_allowlist_from_event(event)
+        updates["mcp_allowlist"] = _mcp_allowlist_from_event(event)
     if event.event_type is EventType.SESSION_SUSPENDED:
         updates["runtime_name"] = _required_payload_string(event, "runtime_name")
         updates["snapshot_id"] = _required_payload_string(event, "snapshot_id")
@@ -132,6 +135,20 @@ def _network_allowlist_from_event(event: SessionEvent) -> tuple[str, ...]:
     ):
         raise WorkspaceProjectionError("task_prepared contains invalid network_allowlist")
     return tuple(item.strip() for item in value)
+
+
+def _mcp_allowlist_from_event(event: SessionEvent) -> tuple[str, ...] | None:
+    if "mcp_allowlist" not in event.payload:
+        return None
+    value = event.payload["mcp_allowlist"]
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise WorkspaceProjectionError("task_prepared contains invalid mcp_allowlist")
+    try:
+        return normalize_mcp_allowlist(value)
+    except ValueError as exc:
+        raise WorkspaceProjectionError("task_prepared contains invalid mcp_allowlist") from exc
 
 
 def _optional_attempt_number(event: SessionEvent) -> int | None:

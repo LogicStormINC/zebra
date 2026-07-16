@@ -44,7 +44,7 @@ for raw_line in sys.stdin:
                 "additionalProperties": False,
             }
         )
-        tool_count = 17 if mode == "too-many-tools" else 1
+        tool_count = 17 if mode == "too-many-tools" else 2 if mode == "two-tools" else 1
         send(
             {
                 "jsonrpc": "2.0",

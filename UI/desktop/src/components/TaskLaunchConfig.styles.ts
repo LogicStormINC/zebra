@@ -25,6 +25,7 @@ export const useTaskLaunchStyle = createStyles(({ css }) => ({
     gap: var(--zebra-space-sm);
     strong { font-size: 13px; }
     span { color: rgba(255, 255, 255, 0.5); font-size: 12px; line-height: 18px; }
+    .ant-checkbox-group { display: grid; gap: 8px; }
   `,
   staticBadge: css`
     height: 30px;

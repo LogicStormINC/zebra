@@ -72,6 +72,7 @@ def run_local_harness(
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
     attachments: tuple[AttachmentContextInput, ...] = (),
     mcp_servers: Sequence[McpServerSpec] = (),
+    mcp_allowlist: Sequence[str] | None = None,
 ) -> HarnessLoopResult:
     tool_gateway = LocalToolGateway(
         workspace_root,
@@ -81,6 +82,12 @@ def run_local_harness(
         skill_roots=skill_roots,
         session_history=session_history,
         mcp_servers=mcp_servers,
+        mcp_allowlist=mcp_allowlist,
+    )
+    resolved_mcp_allowlist = (
+        tuple(tool.name for tool in tool_gateway.model_tools if tool.name.startswith("mcp."))
+        if mcp_allowlist is None
+        else tuple(mcp_allowlist)
     )
     context_compiler = LocalContextCompiler()
     try:
@@ -96,6 +103,7 @@ def run_local_harness(
                 tool_profile=tool_profile,
                 network_profile=network_profile.name.value,
                 network_allowlist=network_profile.domain_allowlist,
+                mcp_allowlist=resolved_mcp_allowlist,
                 confirmed_memories=confirmed_memories,
                 attachments=attachments,
             ),
@@ -137,11 +145,16 @@ class LocalToolGateway(ToolGatewayPort):
         session_history: SessionHistoryPort | None = None,
         current_session_id: str | None = None,
         mcp_servers: Sequence[McpServerSpec] = (),
+        mcp_allowlist: Sequence[str] | None = None,
     ) -> None:
         if research_child_limit <= 0:
             raise ValueError("research_child_limit must be positive")
         if not isinstance(tool_profile, ToolProfile):
             raise ValueError("tool_profile is not supported")
+        if mcp_allowlist and not mcp_servers:
+            raise ValueError(
+                f"selected MCP tools are unavailable: {', '.join(sorted(mcp_allowlist))}"
+            )
         self._workspace = LocalWorkspace(workspace_root)
         self._workspace.ensure()
         runtime = LocalRuntime()
@@ -177,7 +190,11 @@ class LocalToolGateway(ToolGatewayPort):
         if session_history is not None and "sessions.search" in enabled_names:
             history_tool = SessionSearchTool(session_history, current_session_id)
             registry.register(history_tool.contract, history_tool.handle)
-        mcp_transport = LocalStdioMcpTransport(mcp_servers) if mcp_servers else None
+        mcp_transport = (
+            LocalStdioMcpTransport(mcp_servers, mcp_allowlist)
+            if mcp_servers and (mcp_allowlist is None or mcp_allowlist)
+            else None
+        )
         self._subagents: LocalResearchSubagentCoordinator | None = None
         if model_gateway is not None and "agent.research" in enabled_names:
             self._subagents = LocalResearchSubagentCoordinator(

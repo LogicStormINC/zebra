@@ -67,6 +67,53 @@ def test_local_gateway_advertises_mcp_only_when_configured(tmp_path: Path) -> No
     assert result.metadata["proxy_transport"] == "mcp_proxy"
 
 
+def test_task_allowlist_filters_model_catalog_and_execution(tmp_path: Path) -> None:
+    gateway = LocalToolGateway(
+        tmp_path / "selected",
+        tool_profile=ToolProfile.GENERAL,
+        mcp_servers=(_server("two-tools"),),
+        mcp_allowlist=("mcp.fixture.echo1",),
+    )
+
+    assert "mcp.fixture.echo1" in {tool.name for tool in gateway.model_tools}
+    assert "mcp.fixture.echo" not in {tool.name for tool in gateway.model_tools}
+    denied = gateway.execute(_tool_call("mcp.fixture.echo", {"value": "blocked"}))
+    assert denied.status is ToolCallStatus.FAILED
+    assert denied.metadata["reason"] == "mcp_proxy_error"
+
+
+def test_empty_task_allowlist_does_not_start_mcp_discovery(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "agent_runtime.harness.LocalStdioMcpTransport",
+        lambda *_args, **_kwargs: pytest.fail("MCP discovery must not start"),
+    )
+
+    gateway = LocalToolGateway(
+        tmp_path / "empty",
+        mcp_servers=(_server("invalid-json"),),
+        mcp_allowlist=(),
+    )
+
+    assert not any(tool.name.startswith("mcp.") for tool in gateway.model_tools)
+
+
+def test_task_allowlist_rejects_removed_capability(tmp_path: Path) -> None:
+    with pytest.raises(McpProtocolError, match="unavailable"):
+        LocalToolGateway(
+            tmp_path / "removed",
+            mcp_servers=(_server(),),
+            mcp_allowlist=("mcp.fixture.removed",),
+        )
+    with pytest.raises(ValueError, match="unavailable"):
+        LocalToolGateway(
+            tmp_path / "all-servers-removed",
+            mcp_allowlist=("mcp.fixture.echo",),
+        )
+
+
 def test_stdio_bridge_rejects_malformed_tool_schema() -> None:
     with pytest.raises(McpProtocolError, match="object schema"):
         LocalStdioMcpTransport((_server("malformed-schema"),))

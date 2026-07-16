@@ -1,4 +1,5 @@
 import json
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
@@ -26,7 +27,7 @@ from agent_storage import (
     SQLiteWorkspaceProjectionStore,
 )
 from zebra_agent_cli.cli import execute, main
-from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
+from zebra_agent_config import ApiSettings, McpServerSettings, ModelSettings, ZebraAgentSettings
 
 
 def test_cli_run_command_creates_local_session(
@@ -119,6 +120,53 @@ def test_cli_run_command_persists_network_allowlist(tmp_path: Path) -> None:
     assert result.payload["network_allowlist"] == ["docs.example.com"]
     assert workspace is not None
     assert workspace.network_allowlist == ("docs.example.com",)
+
+
+def test_cli_run_command_persists_explicit_empty_mcp_allowlist(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    result = execute(["run", "Stay local", "--database", str(database_path)])
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(
+        SessionId(UUID(str(result.payload["session_id"])))
+    )
+
+    assert result.payload["mcp_allowlist"] == []
+    assert workspace is not None
+    assert workspace.mcp_allowlist == ()
+
+
+def test_cli_run_command_persists_selected_mcp_allowlist(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    script = Path(__file__).parents[1] / "fixtures" / "mcp_stdio_server.py"
+    settings = _settings(
+        database_path,
+        mcp_servers=(
+            McpServerSettings(
+                name="fixture",
+                command=sys.executable,
+                args=(str(script), "normal"),
+            ),
+        ),
+    )
+
+    result = execute(
+        [
+            "run",
+            "Use selected MCP",
+            "--network-profile",
+            "mcp-proxy-only",
+            "--mcp-tool",
+            "mcp.fixture.echo",
+        ],
+        settings=settings,
+    )
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(
+        SessionId(UUID(str(result.payload["session_id"])))
+    )
+
+    assert result.payload["mcp_allowlist"] == ["mcp.fixture.echo"]
+    assert workspace is not None
+    assert workspace.mcp_allowlist == ("mcp.fixture.echo",)
 
 
 def test_cli_run_command_uses_settings_database_by_default(tmp_path: Path) -> None:
@@ -1029,7 +1077,11 @@ def test_cli_model_command_surfaces_missing_api_key(monkeypatch: pytest.MonkeyPa
         execute(["model", "Hello"], settings=_settings(Path(":memory:")))
 
 
-def _settings(database_path: Path) -> ZebraAgentSettings:
+def _settings(
+    database_path: Path,
+    *,
+    mcp_servers: tuple[McpServerSettings, ...] = (),
+) -> ZebraAgentSettings:
     return ZebraAgentSettings(
         profile="test",
         database_url=str(database_path),
@@ -1040,6 +1092,7 @@ def _settings(database_path: Path) -> ZebraAgentSettings:
             base_url="https://example.test",
             model="test-model",
         ),
+        mcp_servers=mcp_servers,
     )
 
 

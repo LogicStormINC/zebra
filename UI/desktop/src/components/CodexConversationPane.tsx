@@ -18,15 +18,18 @@ import locale from "../_utils/local";
 import { sessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-status";
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
+import { availableMcpToolNames } from "../lib/mcp-capabilities";
 import {
   attachmentPayloads,
   type PendingTextAttachment,
   type TextAttachmentPayload,
 } from "../lib/text-attachments";
 import { compactWorkspaceLabel, validateTaskLaunchConfig, type TaskLaunchConfig } from "../lib/task-launch-config";
-import type { ApprovalSummary, SessionEvent, SessionSummary } from "../types";
+import type { ApprovalSummary, McpCapabilitiesResponse, SessionEvent, SessionSummary } from "../types";
 import { SessionThreadWorkspace } from "./SessionThreadWorkspace";
 import { ComposerAttachments } from "./ComposerAttachments";
+import { McpTaskSelector } from "./McpTaskSelector";
+import { TaskLaunchSummary } from "./TaskLaunchSummary";
 import { useTaskLaunchStyle } from "./TaskLaunchConfig.styles";
 import { useConversationPaneStyle } from "./CodexConversationPane.styles";
 
@@ -34,7 +37,6 @@ const NamedComposerInput = React.forwardRef<
   GetRef<typeof Input.TextArea>,
   React.ComponentProps<typeof Input.TextArea>
 >((props, ref) => <Input.TextArea {...props} name="task-prompt" ref={ref} />);
-
 
 interface CodexConversationPaneProps {
   activeLabel: string;
@@ -53,6 +55,9 @@ interface CodexConversationPaneProps {
   listRef: React.RefObject<HTMLDivElement | null>;
   messages: ChatMessage[];
   launchConfig: TaskLaunchConfig;
+  mcpCapabilities: McpCapabilitiesResponse | undefined;
+  mcpCapabilitiesBusy: boolean;
+  mcpCapabilitiesError: string | null;
   onCancel: () => void;
   onCopySessionId: () => void;
   onCopyWorkspacePath: () => void;
@@ -93,6 +98,9 @@ export function CodexConversationPane({
   listRef,
   messages,
   launchConfig,
+  mcpCapabilities,
+  mcpCapabilitiesBusy,
+  mcpCapabilitiesError,
   onCancel,
   onCopySessionId,
   onCopyWorkspacePath,
@@ -130,10 +138,12 @@ export function CodexConversationPane({
   const durableToolProfile = sessionSummary?.workspace?.tool_profile === "general" ? "general" : "coding";
   const durableNetworkProfile = sessionSummary?.workspace?.network_profile === "domain-allowlist" || sessionSummary?.workspace?.network_profile === "mcp-proxy-only" ? sessionSummary.workspace.network_profile : "none";
   const durableNetworkAllowlist = sessionSummary?.workspace?.network_allowlist ?? [];
+  const durableMcpAllowlist = sessionSummary?.workspace?.mcp_allowlist ?? [];
+  const availableMcpTools = availableMcpToolNames(mcpCapabilities);
   const effectiveLaunchConfig: TaskLaunchConfig = launchEditable
     ? launchConfig
-    : { workspace: durableWorkspace, policyProfile: durablePolicy, toolProfile: durableToolProfile, networkProfile: durableNetworkProfile, networkAllowlist: durableNetworkAllowlist };
-  const launchError = validateTaskLaunchConfig(effectiveLaunchConfig);
+    : { workspace: durableWorkspace, policyProfile: durablePolicy, toolProfile: durableToolProfile, networkProfile: durableNetworkProfile, networkAllowlist: durableNetworkAllowlist, mcpAllowlist: durableMcpAllowlist };
+  const launchError = validateTaskLaunchConfig(effectiveLaunchConfig, launchEditable ? availableMcpTools : undefined);
   const canSubmit = composerValue.trim().length > 0 && !launchError;
   const headerTitle = hasThread ? activeLabel : idleProjectLabel;
   const runtimeLabel = runtimeStatus === "connected"
@@ -185,22 +195,25 @@ export function CodexConversationPane({
       <span>仅填写裸域名，使用逗号分隔；不接受协议、路径或通配符。</span>
     </div>
   );
+  const mcpEditor = (
+    <McpTaskSelector
+      capabilities={mcpCapabilities}
+      busy={mcpCapabilitiesBusy}
+      errorText={mcpCapabilitiesError}
+      className={launchStyles.editor}
+      selected={launchConfig.mcpAllowlist}
+      onChange={(mcpAllowlist) => onPatchLaunchConfig({ mcpAllowlist })}
+    />
+  );
   const renderComposer = (variant: "idle" | "thread") => (
     <div className={variant === "idle" ? styles.idleComposerCard : styles.composerCard}>
-      <div className={launchStyles.summary} role="status">
-        <strong>{launchEditable ? "启动配置" : "会话配置"}</strong>
-        <span title={effectiveLaunchConfig.workspace}>工作区 · {compactWorkspaceLabel(effectiveLaunchConfig.workspace)}</span>
-        <span>权限 · {effectiveLaunchConfig.policyProfile === "full_access" ? "完整访问" : "工作区写入"}</span>
-        <span>能力 · {effectiveLaunchConfig.toolProfile === "coding" ? "编码工具" : "通用工具"}</span>
-        <span>网络 · {effectiveLaunchConfig.networkProfile === "none" ? "无外部网络" : effectiveLaunchConfig.networkProfile}</span>
-        {sessionSummary?.attachments?.length ? (
-          <span title={sessionSummary.attachments.map((item) => item.file_name).join(", ")}>
-            材料 · {sessionSummary.attachments.length}
-          </span>
-        ) : null}
-        <span>模型 · API 运行时配置</span>
-        {launchError ? <em>{launchError}</em> : null}
-      </div>
+      <TaskLaunchSummary
+        className={launchStyles.summary}
+        config={effectiveLaunchConfig}
+        editable={launchEditable}
+        errorText={launchError}
+        sessionSummary={sessionSummary}
+      />
       <ComposerAttachments
         attachments={pendingAttachments}
         disabled={isRequesting}
@@ -244,8 +257,8 @@ export function CodexConversationPane({
                 ) : <span className={launchStyles.staticBadge}>能力: {durableToolProfile === "coding" ? "编码工具" : "通用工具"}</span>}
                 {launchEditable ? (
                   <Dropdown menu={{ items: [
-                    { key: "none", label: "网络: 无外部网络", onClick: () => onPatchLaunchConfig({ networkProfile: "none", networkAllowlist: [] }) },
-                    { key: "domain-allowlist", label: "网络: 域名白名单", onClick: () => onPatchLaunchConfig({ networkProfile: "domain-allowlist" }) },
+                    { key: "none", label: "网络: 无外部网络", onClick: () => onPatchLaunchConfig({ networkProfile: "none", networkAllowlist: [], mcpAllowlist: [] }) },
+                    { key: "domain-allowlist", label: "网络: 域名白名单", onClick: () => onPatchLaunchConfig({ networkProfile: "domain-allowlist", mcpAllowlist: [] }) },
                     { key: "mcp-proxy-only", label: "网络: 仅 MCP 代理", onClick: () => onPatchLaunchConfig({ networkProfile: "mcp-proxy-only", networkAllowlist: [] }) },
                   ] }} trigger={["click"]}>
                     <button className={styles.toolbarButton} type="button">网络: {launchConfig.networkProfile === "none" ? "无外部网络" : launchConfig.networkProfile}</button>
@@ -254,6 +267,11 @@ export function CodexConversationPane({
                 {launchEditable && launchConfig.networkProfile === "domain-allowlist" ? (
                   <Popover content={networkEditor} placement="topLeft" trigger="click">
                     <button className={styles.toolbarButton} type="button">域名: {launchConfig.networkAllowlist.length || "未配置"}</button>
+                  </Popover>
+                ) : null}
+                {launchEditable && launchConfig.networkProfile === "mcp-proxy-only" ? (
+                  <Popover content={mcpEditor} placement="topLeft" trigger="click">
+                    <button className={styles.toolbarButton} type="button">MCP: {launchConfig.mcpAllowlist.length || "未选择"}</button>
                   </Popover>
                 ) : null}
                 <span className={launchStyles.staticBadge}>模型: API 运行时配置</span>

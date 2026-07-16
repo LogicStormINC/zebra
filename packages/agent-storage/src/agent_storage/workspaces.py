@@ -30,11 +30,12 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     tool_profile,
                     network_profile,
                     network_allowlist,
+                    mcp_allowlist,
                     last_attempt_number,
                     runtime_name,
                     snapshot_id,
                     snapshot_path
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_id) DO UPDATE SET
                     workspace_root = excluded.workspace_root,
                     prepared_at = excluded.prepared_at,
@@ -45,6 +46,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     tool_profile = excluded.tool_profile,
                     network_profile = excluded.network_profile,
                     network_allowlist = excluded.network_allowlist,
+                    mcp_allowlist = excluded.mcp_allowlist,
                     last_attempt_number = excluded.last_attempt_number,
                     runtime_name = excluded.runtime_name,
                     snapshot_id = excluded.snapshot_id,
@@ -61,6 +63,11 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     workspace.tool_profile.value,
                     workspace.network_profile.value,
                     json.dumps(workspace.network_allowlist),
+                    (
+                        None
+                        if workspace.mcp_allowlist is None
+                        else json.dumps(workspace.mcp_allowlist)
+                    ),
                     workspace.last_attempt_number,
                     workspace.runtime_name,
                     workspace.snapshot_id,
@@ -84,6 +91,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     tool_profile,
                     network_profile,
                     network_allowlist,
+                    mcp_allowlist,
                     last_attempt_number,
                     runtime_name,
                     snapshot_id,
@@ -107,6 +115,11 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                 "tool_profile": ToolProfile(row["tool_profile"]),
                 "network_profile": NetworkProfileName(row["network_profile"]),
                 "network_allowlist": tuple(json.loads(row["network_allowlist"])),
+                "mcp_allowlist": (
+                    None
+                    if row["mcp_allowlist"] is None
+                    else tuple(json.loads(row["mcp_allowlist"]))
+                ),
                 "last_attempt_number": row["last_attempt_number"],
                 "runtime_name": row["runtime_name"],
                 "snapshot_id": row["snapshot_id"],
@@ -129,6 +142,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     tool_profile TEXT NOT NULL DEFAULT 'coding',
                     network_profile TEXT NOT NULL DEFAULT 'none',
                     network_allowlist TEXT NOT NULL DEFAULT '[]',
+                    mcp_allowlist TEXT,
                     last_attempt_number INTEGER,
                     runtime_name TEXT,
                     snapshot_id TEXT,
@@ -163,6 +177,10 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                 connection.execute(
                     "ALTER TABLE workspace_projections "
                     "ADD COLUMN network_allowlist TEXT NOT NULL DEFAULT '[]'"
+                )
+            if "mcp_allowlist" not in columns:
+                connection.execute(
+                    "ALTER TABLE workspace_projections ADD COLUMN mcp_allowlist TEXT"
                 )
             if "snapshot_id" not in columns:
                 connection.execute(

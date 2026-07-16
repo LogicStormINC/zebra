@@ -6,6 +6,7 @@ from pathlib import Path
 
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.sessions import Session
 from agent_core.domain.tool_profiles import ToolProfile
 
@@ -19,6 +20,7 @@ class SessionBootstrapCommand:
     tool_profile: ToolProfile = ToolProfile.GENERAL
     network_profile: str = "none"
     network_allowlist: tuple[str, ...] = ()
+    mcp_allowlist: tuple[str, ...] = ()
     max_attempts: int = 1
     max_model_calls: int | None = 4
     max_tool_calls: int | None = 3
@@ -33,6 +35,7 @@ class BootstrappedSession:
 
 class SessionBootstrapService:
     def build(self, command: SessionBootstrapCommand) -> BootstrappedSession:
+        mcp_allowlist = normalize_mcp_allowlist(command.mcp_allowlist)
         session = Session.create(title=command.title, created_at=command.created_at)
         events = (
             SessionEvent.create(
@@ -64,6 +67,7 @@ class SessionBootstrapService:
                     "tool_profile": command.tool_profile.value,
                     "network_profile": command.network_profile,
                     "network_allowlist": list(command.network_allowlist),
+                    "mcp_allowlist": list(mcp_allowlist),
                     "max_attempts": command.max_attempts,
                     "max_model_calls": command.max_model_calls,
                     "max_tool_calls": command.max_tool_calls,

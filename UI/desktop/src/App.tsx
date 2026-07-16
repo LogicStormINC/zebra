@@ -269,7 +269,7 @@ export default function App() {
         let sessionId = conversationToSessionId[conversationKey];
         if (!sessionId) {
           const title = trimmed.slice(0, 36) || locale.newConversation;
-          const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile, network_profile: launchConfig.networkProfile, network_allowlist: launchConfig.networkAllowlist, attachments });
+          const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile, network_profile: launchConfig.networkProfile, network_allowlist: launchConfig.networkAllowlist, mcp_allowlist: launchConfig.mcpAllowlist, attachments });
           sessionId = created.session_id;
           patchConfig({ sessionId });
           if (!createdFromWorkspaceHome) {
@@ -295,7 +295,7 @@ export default function App() {
               throw error;
             }
             const title = trimmed.slice(0, 36) || locale.newConversation;
-            const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile, network_profile: launchConfig.networkProfile, network_allowlist: launchConfig.networkAllowlist, attachments });
+            const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile, network_profile: launchConfig.networkProfile, network_allowlist: launchConfig.networkAllowlist, mcp_allowlist: launchConfig.mcpAllowlist, attachments });
             sessionId = created.session_id;
             patchConfig({ sessionId });
             if (!createdFromWorkspaceHome) {

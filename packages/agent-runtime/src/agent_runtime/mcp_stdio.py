@@ -5,6 +5,7 @@ import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_tools import McpProxyRequest, McpProxyResponse
 
@@ -28,7 +29,11 @@ class DiscoveredMcpTool:
 
 
 class LocalStdioMcpTransport:
-    def __init__(self, servers: Sequence[McpServerSpec]) -> None:
+    def __init__(
+        self,
+        servers: Sequence[McpServerSpec],
+        allowed_tools: Sequence[str] | None = None,
+    ) -> None:
         self._servers = {server.name: server for server in servers}
         if len(self._servers) != len(servers):
             raise McpProtocolError("MCP server names must be unique")
@@ -39,15 +44,29 @@ class LocalStdioMcpTransport:
             raise McpProtocolError(
                 f"configured MCP servers expose more than {MAX_MCP_TOOLS_TOTAL} tools"
             )
-        self._tools = {
+        all_tools = {
             (tool.server_name, tool.remote_name): tool
             for tool in discovered
         }
-        if len(self._tools) != len(discovered):
+        if len(all_tools) != len(discovered):
             raise McpProtocolError("configured MCP servers expose duplicate tool names")
         aliases = [tool.definition.name.replace(".", "__") for tool in discovered]
         if len(set(aliases)) != len(aliases):
             raise McpProtocolError("configured MCP tool names collide after provider normalization")
+        if allowed_tools is not None:
+            normalized = normalize_mcp_allowlist(allowed_tools)
+            available = {tool.definition.name for tool in discovered}
+            missing = sorted(set(normalized) - available)
+            if missing:
+                raise McpProtocolError(
+                    f"selected MCP tools are unavailable: {', '.join(missing)}"
+                )
+            selected = set(normalized)
+            discovered = [tool for tool in discovered if tool.definition.name in selected]
+        self._tools = {
+            (tool.server_name, tool.remote_name): tool
+            for tool in discovered
+        }
         self.model_tools = tuple(
             tool.definition
             for tool in sorted(discovered, key=lambda item: item.definition.name)

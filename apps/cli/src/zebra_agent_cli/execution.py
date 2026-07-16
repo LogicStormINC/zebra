@@ -29,6 +29,7 @@ class DurableRunResult:
     tool_profile: str
     network_profile: str
     network_allowlist: tuple[str, ...]
+    mcp_allowlist: tuple[str, ...]
 
 
 def execute_durable_run(
@@ -41,6 +42,7 @@ def execute_durable_run(
     policy_profile: PolicyProfile = PolicyProfile.WORKSPACE_WRITE,
     tool_profile: ToolProfile = ToolProfile.GENERAL,
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
+    mcp_allowlist: tuple[str, ...] = (),
 ) -> DurableRunResult:
     confirmed_memories = list_confirmed_repo_memories(
         database_path,
@@ -57,6 +59,7 @@ def execute_durable_run(
         web_search_endpoint=settings.web_search_endpoint,
         skill_roots=settings.skill_roots,
         mcp_servers=settings.mcp_servers,
+        mcp_allowlist=mcp_allowlist,
         session_history=SQLiteSessionHistory(database_path),
         confirmed_memories=confirmed_memories,
     )
@@ -74,6 +77,7 @@ def execute_durable_run(
         tool_profile=tool_profile.value,
         network_profile=network_profile.name.value,
         network_allowlist=network_profile.domain_allowlist,
+        mcp_allowlist=mcp_allowlist,
     )
 
 
@@ -89,6 +93,7 @@ def serialize_run_execution(result: DurableRunResult) -> dict[str, object]:
         "tool_profile": result.tool_profile,
         "network_profile": result.network_profile,
         "network_allowlist": list(result.network_allowlist),
+        "mcp_allowlist": list(result.mcp_allowlist),
         "workspace_root": str(result.workspace_root),
         "trace": _serialize_trace(HarnessTraceProjector().project(harness_result).attempts),
     }

@@ -20,6 +20,7 @@ from agent_runtime.mcp_inventory import (
     McpServerCapability,
     McpToolCapability,
     build_mcp_capability_inventory,
+    validate_mcp_capability_selection,
 )
 from agent_runtime.mcp_protocol import McpProtocolError, McpServerSpec
 from agent_runtime.mcp_stdio import LocalStdioMcpTransport
@@ -72,5 +73,6 @@ __all__ = [
     "WorkspaceLayout",
     "WorkspacePathError",
     "build_mcp_capability_inventory",
+    "validate_mcp_capability_selection",
     "run_local_harness",
 ]

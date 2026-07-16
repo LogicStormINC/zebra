@@ -160,6 +160,9 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             idleProjectPath={selectedProject?.workspaceRoot ?? null}
             listRef={props.listRef}
             launchConfig={launch.config}
+            mcpCapabilities={props.mcpCapabilities}
+            mcpCapabilitiesBusy={props.mcpCapabilitiesBusy}
+            mcpCapabilitiesError={props.mcpCapabilitiesError}
             messages={props.messages}
             onCancel={props.onCancel}
             onCancelSession={props.onCancelSession}

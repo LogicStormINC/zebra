@@ -25,6 +25,7 @@ export interface SessionWorkspace {
   tool_profile: "general" | "coding";
   network_profile: string;
   network_allowlist: string[];
+  mcp_allowlist?: string[];
   last_attempt_number: number;
   snapshot?: SessionWorkspaceSnapshot;
 }
@@ -105,6 +106,7 @@ export interface CreateSessionResponse {
   tool_profile?: "general" | "coding";
   network_profile?: string;
   network_allowlist?: string[];
+  mcp_allowlist?: string[];
   attachments?: SessionAttachment[];
 }
 
