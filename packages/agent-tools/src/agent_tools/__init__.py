@@ -15,6 +15,11 @@ if TYPE_CHECKING:
     from agent_tools.builtin.tests import TestsRunTool, tests_run_contract
     from agent_tools.contracts import RegisteredTool, ToolContract
     from agent_tools.executor import ToolExecutor
+    from agent_tools.mcp_disclosure import (
+        AuthorizedMcpToolCatalog,
+        McpToolDescribeTool,
+        McpToolSearchTool,
+    )
     from agent_tools.mcp_gateway import McpProxyToolGateway
     from agent_tools.mcp_proxy import (
         McpProxyRequest,
@@ -58,6 +63,9 @@ __all__ = [
     "McpProxyResponse",
     "McpProxyTransport",
     "McpProxyToolGateway",
+    "AuthorizedMcpToolCatalog",
+    "McpToolDescribeTool",
+    "McpToolSearchTool",
     "McpToolTarget",
     "PatchApplyTool",
     "PlanTool",
@@ -100,6 +108,10 @@ __all__ = [
 ]
 
 _EXPORTS = {
+    "AuthorizedMcpToolCatalog": (
+        "agent_tools.mcp_disclosure",
+        "AuthorizedMcpToolCatalog",
+    ),
     "ClarifyTool": ("agent_tools.builtin.clarify", "ClarifyTool"),
     "CommandRunTool": ("agent_tools.builtin.command", "CommandRunTool"),
     "FileReadTool": ("agent_tools.builtin.files", "FileReadTool"),
@@ -110,6 +122,8 @@ _EXPORTS = {
     "McpProxyResponse": ("agent_tools.mcp_proxy", "McpProxyResponse"),
     "McpProxyTransport": ("agent_tools.mcp_proxy", "McpProxyTransport"),
     "McpProxyToolGateway": ("agent_tools.mcp_gateway", "McpProxyToolGateway"),
+    "McpToolDescribeTool": ("agent_tools.mcp_disclosure", "McpToolDescribeTool"),
+    "McpToolSearchTool": ("agent_tools.mcp_disclosure", "McpToolSearchTool"),
     "McpToolTarget": ("agent_tools.mcp_proxy", "McpToolTarget"),
     "PatchApplyTool": ("agent_tools.builtin.patch", "PatchApplyTool"),
     "PlanTool": ("agent_tools.builtin.plan", "PlanTool"),

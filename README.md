@@ -140,6 +140,17 @@ descriptions, schemas, and output are untrusted. Shells, inline interpreter
 execution, package installers, secret environment injection, remote transports,
 dynamic reload, and Research-child inheritance are intentionally unsupported.
 
+When the deterministic serialized schemas for a task's effective selected MCP
+catalog exceed 8 KiB, Zebra keeps ordinary built-in tools directly visible but
+replaces direct MCP schemas with bounded `agent.tools.search`,
+`agent.tools.describe`, and `agent.tools.call` contracts. The catalog is rebuilt
+statelessly from that task's exact allowlist, and search or description results
+are explicitly untrusted metadata. A bridge call is resolved to the concrete
+selected `mcp.<server>.<tool>` call before duplicate, budget, Policy, HITL,
+event, trace, execution, and recovery handling, so disclosure never grants new
+authority or creates wrapper approval records. Catalogs at or below the threshold
+retain the direct Phase 134 behavior.
+
 Authenticated operators can inspect the same bounded discovery result through
 `GET /capabilities/mcp`. The response contains only availability, server and
 tool names, bounded descriptions, input-field names, and counts. It never

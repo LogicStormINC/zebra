@@ -26,6 +26,7 @@ def _approval_context_payload(event: SessionEvent) -> dict[str, object]:
         "network_profile",
         "tool_call_id",
         "provider_call_id",
+        "provider_tool_name",
         "assistant_message",
         "call_fingerprint",
     ):
@@ -40,6 +41,9 @@ def _approval_context_payload(event: SessionEvent) -> dict[str, object]:
     arguments = payload.get("arguments")
     if isinstance(arguments, dict):
         context["arguments"] = arguments
+    provider_arguments = payload.get("provider_arguments")
+    if isinstance(provider_arguments, dict):
+        context["provider_arguments"] = provider_arguments
     return context
 
 

@@ -59,6 +59,8 @@ READ_ONLY_TOOLS = frozenset(
         "agent.clarify",
         "agent.plan",
         "agent.research",
+        "agent.tools.describe",
+        "agent.tools.search",
         "files.list",
         "files.read",
         "files.search",

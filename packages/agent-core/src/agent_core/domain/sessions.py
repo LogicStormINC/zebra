@@ -32,6 +32,8 @@ class ApprovalContext(BaseModel):
     scope: tuple[str, ...] = ()
     tool_call_id: str | None = None
     provider_call_id: str | None = None
+    provider_tool_name: str | None = None
+    provider_arguments: dict[str, object] = Field(default_factory=dict)
     arguments: dict[str, object] = Field(default_factory=dict)
     assistant_message: str | None = None
     call_fingerprint: str | None = None
@@ -53,12 +55,15 @@ class ApprovalContext(BaseModel):
         for field in (
             "tool_call_id",
             "provider_call_id",
+            "provider_tool_name",
             "assistant_message",
             "call_fingerprint",
         ):
             value = getattr(self, field)
             if value is not None:
                 mapping[field] = value
+        if self.provider_arguments or self.provider_tool_name is not None:
+            mapping["provider_arguments"] = self.provider_arguments
         if self.arguments or self.tool_call_id is not None:
             mapping["arguments"] = self.arguments
         return mapping

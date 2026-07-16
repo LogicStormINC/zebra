@@ -129,6 +129,8 @@ def _approval_context_from_event(event: SessionEvent) -> ApprovalContext | None:
         scope=_payload_scope(event),
         tool_call_id=_optional_payload_string(event, "tool_call_id"),
         provider_call_id=_optional_payload_string(event, "provider_call_id"),
+        provider_tool_name=_optional_payload_string(event, "provider_tool_name"),
+        provider_arguments=_payload_provider_arguments(event),
         arguments=_payload_arguments(event),
         assistant_message=_optional_payload_string(event, "assistant_message"),
         call_fingerprint=_optional_payload_string(event, "call_fingerprint"),
@@ -182,4 +184,9 @@ def _payload_scope(event: SessionEvent) -> tuple[str, ...]:
 
 def _payload_arguments(event: SessionEvent) -> dict[str, object]:
     value = event.payload.get("arguments")
+    return dict(value) if isinstance(value, dict) else {}
+
+
+def _payload_provider_arguments(event: SessionEvent) -> dict[str, object]:
+    value = event.payload.get("provider_arguments")
     return dict(value) if isinstance(value, dict) else {}

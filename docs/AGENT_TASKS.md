@@ -12109,12 +12109,12 @@ without expanding the exact tools a task was already granted.
 
 ### P135-MCP-01 - Bounded Authorized MCP Progressive Disclosure
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `CORE / RUNTIME / HARNESS / SECURITY / TEST`
 - Depends on: `P134-CLOSE-01`
 - Branch: `codex/p135-mcp-01-authorized-progressive-disclosure`
-- Owned paths: `packages/agent-core/`, `packages/agent-runtime/`, `packages/agent-tools/`, `packages/agent-integrations/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+- Owned paths: `packages/agent-core/`, `packages/agent-runtime/`, `packages/agent-tools/`, `packages/agent-integrations/`, `packages/agent-security/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
 
 #### Goal
 
@@ -12133,35 +12133,35 @@ underlying call must remain scoped to the exact Phase 134 task authority.
 
 #### Acceptance
 
-- [ ] Empty or small effective MCP catalogs preserve the current direct tool
+- [x] Empty or small effective MCP catalogs preserve the current direct tool
   list; progressive disclosure activates only above one documented deterministic
   serialized-schema threshold and never defers non-MCP built-in tools.
-- [ ] The deferred catalog is rebuilt from the current task gateway on every
+- [x] The deferred catalog is rebuilt from the current task gateway on every
   composition, contains only effective selected MCP tools, and has no
   process-global, cross-session, user, tenant, or stale configuration fallback.
-- [ ] Search accepts one bounded non-blank query and bounded result limit,
+- [x] Search accepts one bounded non-blank query and bounded result limit,
   indexes only canonical name, bounded description, and top-level input names,
   and returns deterministic scores and canonical-name tie ordering without a
   model call, vector store, external dependency, or tool execution.
-- [ ] Describe accepts one exact search result, returns one bounded provider
+- [x] Describe accepts one exact search result, returns one bounded provider
   schema, rejects bridges and unknown or unselected names, and labels all MCP
   descriptions and schemas as untrusted capability metadata.
-- [ ] Bridge calls accept one canonical selected name plus one argument object,
+- [x] Bridge calls accept one canonical selected name plus one argument object,
   reject recursion, malformed payloads, unknown, removed, unselected, or
   currently unavailable tools, and resolve to the underlying MCP call before
   proposal, Policy, approval, execution, verification, event, and trace handling.
-- [ ] Catalog search and description consume normal bounded model/tool-loop
+- [x] Catalog search and description consume normal bounded model/tool-loop
   budgets; bridge unwrapping does not double-count one underlying call, bypass
   duplicate detection, or create wrapper approval and execution records.
-- [ ] Approval context and exact continuation persist the immutable underlying
+- [x] Approval context and exact continuation persist the immutable underlying
   MCP name, arguments, provider call identity, and fingerprint; restart recovery
   never re-searches or substitutes a different tool and still fails closed when
   the selected capability was removed.
-- [ ] Direct execution, queued Worker execution, API, CLI, legacy effective
+- [x] Direct execution, queued Worker execution, API, CLI, legacy effective
   catalogs, provider aliasing, compaction, sequential batches, and safe concurrent
   batches retain deterministic behavior; fixed Research children receive no MCP
   catalog or bridge tools.
-- [ ] Focused authority and compatibility matrices, all backend/static/eval
+- [x] Focused authority and compatibility matrices, all backend/static/eval
   gates, and one real-provider search-to-approved-call recovery pass succeed.
 
 #### Explicit Non-Goals
@@ -12172,3 +12172,15 @@ underlying call must remain scoped to the exact Phase 134 task authority.
   sampling, elicitation, roots, server tasks, long-lived pools, or health daemons
 - plugins, marketplace, connector onboarding, desktop catalog browsing, vector
   retrieval, embeddings, JavaScript execution, code mode, or Research inheritance
+
+#### Completion Evidence
+
+- Focused catalog, resolver, provider adapter, runtime MCP, and approval recovery
+  coverage passed with `42` tests.
+- All `1196` backend tests passed; Ruff, Mypy across `257` source files, and the
+  8-case eval release gate passed.
+- A real `deepseek-v4-flash` run used search and exact description, persisted the
+  immutable underlying `mcp.fixture.echo` approval target while retaining the
+  provider bridge presentation, made no MCP server call before approval, resumed
+  after grant, and returned
+  `MCP_DISCLOSURE_FINAL_OK: echo:MCP_PROVIDER_PROOF_135`.

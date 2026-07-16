@@ -3,9 +3,10 @@ from datetime import UTC, datetime
 
 import httpx
 import pytest
-from agent_core.domain.identifiers import MessageId, new_message_id
+from agent_core.domain.identifiers import MessageId, new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelToolDefinition
+from agent_core.domain.tools import ToolCall
 from agent_integrations import OpenAICompatibleModelGateway, build_model_gateway
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
@@ -215,6 +216,72 @@ def test_openai_compatible_gateway_serializes_tool_result_conversation() -> None
     ]
     assert "tools" not in requests[1]
     assert final.assistant_message.content == "The proof says zebra-ready."
+
+
+def test_openai_compatible_gateway_serializes_provider_tool_presentation() -> None:
+    requests: list[dict[str, object]] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        requests.append(json.loads(request.content.decode("utf-8")))
+        return _json_response(
+            {
+                "model": "deepseek-v4-flash",
+                "choices": [{"message": {"role": "assistant", "content": "done"}}],
+            }
+        )
+
+    tool_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="mcp.fixture.echo",
+        arguments={"value": "approved"},
+        created_at=_created_at(),
+        provider_call_id="call_bridge",
+        provider_tool_name="agent.tools.call",
+        provider_arguments={
+            "name": "mcp.fixture.echo",
+            "arguments": {"value": "approved"},
+        },
+    )
+    gateway = OpenAICompatibleModelGateway(
+        provider_name="deepseek",
+        base_url="https://api.deepseek.com",
+        api_key="secret",
+        model_name="deepseek-v4-flash",
+        client=httpx.Client(transport=httpx.MockTransport(handle)),
+    )
+
+    gateway.complete(
+        [
+            _user_message("Use the external tool"),
+            SessionMessage(
+                message_id=_message_id(),
+                role=MessageRole.ASSISTANT,
+                content="Calling selected MCP tool.",
+                created_at=_created_at(),
+                tool_calls=(tool_call,),
+            ),
+            SessionMessage(
+                message_id=_message_id(),
+                role=MessageRole.TOOL,
+                content="echo:approved",
+                created_at=_created_at(),
+                tool_call_id="call_bridge",
+            ),
+        ]
+    )
+
+    assert requests[0]["messages"][-2]["tool_calls"] == [
+        {
+            "id": "call_bridge",
+            "type": "function",
+            "function": {
+                "name": "agent__tools__call",
+                "arguments": (
+                    '{"arguments":{"value":"approved"},"name":"mcp.fixture.echo"}'
+                ),
+            },
+        }
+    ]
 
 
 def test_build_model_gateway_raises_when_api_key_is_missing() -> None:
