@@ -52,6 +52,29 @@ export interface McpCapabilitiesResponse {
   reason?: string;
 }
 
+export interface McpPromptArgumentCapability {
+  name: string;
+  description: string;
+  required: boolean;
+}
+
+export interface McpPromptCapability {
+  prompt_id: string;
+  name: string;
+  description: string;
+  arguments: McpPromptArgumentCapability[];
+  available: boolean;
+}
+
+export interface McpPromptsResponse {
+  status: "unconfigured" | "available" | "unavailable";
+  configured: boolean;
+  available: boolean;
+  prompt_count: number;
+  prompts: McpPromptCapability[];
+  reason?: string;
+}
+
 export interface ApprovalContext {
   tool_name?: string;
   reason?: string;

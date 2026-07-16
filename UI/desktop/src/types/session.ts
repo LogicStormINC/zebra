@@ -7,9 +7,10 @@ export interface SessionAttachment {
   media_type: string;
   size_bytes: number;
   sha256: string;
-  source_type?: "user_attachment" | "mcp_resource";
+  source_type?: "user_attachment" | "mcp_resource" | "mcp_prompt";
   source_server?: string;
   source_id?: string;
+  source_argument_names?: string[];
 }
 
 export interface SessionWorkspaceSnapshot {
@@ -111,6 +112,7 @@ export interface CreateSessionResponse {
   network_allowlist?: string[];
   mcp_allowlist?: string[];
   mcp_resource_ids?: string[];
+  mcp_prompt_id?: string;
   attachments?: SessionAttachment[];
 }
 

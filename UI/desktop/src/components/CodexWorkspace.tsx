@@ -1,12 +1,12 @@
 import { XProvider } from "@ant-design/x";
 import { Drawer } from "antd";
 import { createStyles } from "antd-style";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import locale from "../_utils/local";
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
 import type { TextAttachmentPayload } from "../lib/text-attachments";
-import { compactWorkspaceLabel, type TaskLaunchConfig } from "../lib/task-launch-config";
+import { compactWorkspaceLabel, reconcileMcpPromptSelection, type TaskLaunchConfig } from "../lib/task-launch-config";
 import { useTaskLaunchConfig } from "../lib/use-task-launch-config";
 import {
   projectWorkspaceNavigation,
@@ -14,7 +14,7 @@ import {
   workspaceProjectId,
   type WorkspaceProject,
 } from "../lib/workspace-projects";
-import type { ApprovalSummary, McpCapabilitiesResponse, OperatorConfig, SessionEvent, SessionSummary } from "../types";
+import type { ApprovalSummary, McpCapabilitiesResponse, McpPromptsResponse, OperatorConfig, SessionEvent, SessionSummary } from "../types";
 import { CodexConversationPane } from "./CodexConversationPane";
 import { CodexSidebar } from "./CodexSidebar";
 import { OperatorConfigCard } from "./OperatorConfigCard";
@@ -61,6 +61,9 @@ interface CodexWorkspaceProps {
   mcpCapabilities: McpCapabilitiesResponse | undefined;
   mcpCapabilitiesBusy: boolean;
   mcpCapabilitiesError: string | null;
+  mcpPrompts: McpPromptsResponse | undefined;
+  mcpPromptsBusy: boolean;
+  mcpPromptsError: string | null;
   operatorConfig: OperatorConfig;
   onCancel: () => void;
   onCopySessionId: () => void;
@@ -70,6 +73,7 @@ interface CodexWorkspaceProps {
   onRestoreHiddenSessions: () => void;
   onRetryRuntime: () => void;
   onRetryMcpCapabilities: () => void;
+  onRetryMcpPrompts: () => void;
   onCreateConversation: () => void;
   onDeleteConversation: (key: string) => void;
   onCancelSession: () => void;
@@ -94,6 +98,10 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
   const { styles } = useStyle();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const launch = useTaskLaunchConfig();
+  useEffect(() => {
+    const patch = reconcileMcpPromptSelection(launch.config, props.mcpPrompts);
+    if (patch) launch.patchConfig(patch);
+  }, [launch.config, launch.patchConfig, props.mcpPrompts]);
   const runtimeLabel = props.runtimeStatus === "connected"
     ? locale.runtimeConnected
     : props.runtimeStatus === "checking"
@@ -163,6 +171,9 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             mcpCapabilities={props.mcpCapabilities}
             mcpCapabilitiesBusy={props.mcpCapabilitiesBusy}
             mcpCapabilitiesError={props.mcpCapabilitiesError}
+            mcpPrompts={props.mcpPrompts}
+            mcpPromptsBusy={props.mcpPromptsBusy}
+            mcpPromptsError={props.mcpPromptsError}
             messages={props.messages}
             onCancel={props.onCancel}
             onCancelSession={props.onCancelSession}
@@ -171,6 +182,7 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             onCreateConversation={props.onCreateConversation}
             onOpenSettings={() => setSettingsOpen(true)}
             onPatchLaunchConfig={patchLaunchConfig}
+            onRetryMcpPrompts={props.onRetryMcpPrompts}
             onApprove={props.onApprove}
             onRefreshConversation={props.onRefreshConversation}
             onReject={props.onReject}

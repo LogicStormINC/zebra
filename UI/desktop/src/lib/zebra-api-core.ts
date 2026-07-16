@@ -5,6 +5,7 @@ import type {
   CreateSessionResponse,
   HealthResponse,
   McpCapabilitiesResponse,
+  McpPromptsResponse,
   SessionArtifactContentResponse,
   SessionArtifactDetailResponse,
   SessionArtifactPruneResponse,
@@ -32,6 +33,8 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
     health: () => requestJson<HealthResponse>(baseUrl, "/health"),
     mcpCapabilities: () =>
       requestJson<McpCapabilitiesResponse>(baseUrl, "/capabilities/mcp", { authToken }),
+    mcpPrompts: () =>
+      requestJson<McpPromptsResponse>(baseUrl, "/capabilities/mcp/prompts", { authToken }),
     approvals: () => requestJson<ApprovalsResponse>(baseUrl, "/approvals", { authToken }),
     approval: (approvalId: string) =>
       requestJson<ApprovalSummary>(baseUrl, `/approvals/${approvalId}`, { authToken }),
@@ -65,7 +68,7 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
       ),
     deliveryAudit: (sessionId: string) =>
       requestJson<SessionDeliveryAuditResponse>(baseUrl, `/sessions/${sessionId}/delivery-audit`, { authToken }),
-    createSession: (payload: { title: string; prompt: string; workspace?: string; execute?: boolean; policy_profile?: string; tool_profile?: string; network_profile?: string; network_allowlist?: string[]; mcp_allowlist?: string[]; mcp_resource_ids?: string[]; attachments?: TextAttachmentPayload[] }) =>
+    createSession: (payload: { title: string; prompt: string; workspace?: string; execute?: boolean; policy_profile?: string; tool_profile?: string; network_profile?: string; network_allowlist?: string[]; mcp_allowlist?: string[]; mcp_resource_ids?: string[]; mcp_prompt_id?: string; mcp_prompt_arguments?: Record<string, string>; attachments?: TextAttachmentPayload[] }) =>
       requestJson<CreateSessionResponse>(baseUrl, "/sessions", {
         method: "POST",
         authToken,

@@ -1,3 +1,5 @@
+import type { McpPromptCapability, McpPromptsResponse } from "../types";
+
 export type TaskPolicyProfile = "workspace_write" | "full_access";
 export type TaskToolProfile = "general" | "coding";
 export type TaskNetworkProfile = "none" | "domain-allowlist" | "mcp-proxy-only";
@@ -10,6 +12,9 @@ export interface TaskLaunchConfig {
   networkAllowlist: string[];
   mcpAllowlist: string[];
   mcpResourceIds: string[];
+  mcpPromptId: string | null;
+  mcpPromptArguments: Record<string, string>;
+  mcpPromptSchema: string | null;
 }
 
 export const DEFAULT_TASK_LAUNCH_CONFIG: TaskLaunchConfig = {
@@ -20,7 +25,26 @@ export const DEFAULT_TASK_LAUNCH_CONFIG: TaskLaunchConfig = {
   networkAllowlist: [],
   mcpAllowlist: [],
   mcpResourceIds: [],
+  mcpPromptId: null,
+  mcpPromptArguments: {},
+  mcpPromptSchema: null,
 };
+
+function normalizedPromptState(candidate: Partial<TaskLaunchConfig>) {
+  const promptId = typeof candidate.mcpPromptId === "string" && candidate.mcpPromptId.trim()
+    ? candidate.mcpPromptId.trim()
+    : null;
+  const rawArguments = candidate.mcpPromptArguments;
+  const entries = rawArguments && typeof rawArguments === "object" && !Array.isArray(rawArguments)
+    ? Object.entries(rawArguments)
+    : [];
+  const validArguments = entries.length <= 16 && entries.every(([name, value]) => name.trim() && typeof value === "string");
+  return {
+    mcpPromptId: promptId,
+    mcpPromptArguments: promptId && validArguments ? Object.fromEntries(entries.sort(([left], [right]) => left.localeCompare(right))) : {},
+    mcpPromptSchema: promptId && typeof candidate.mcpPromptSchema === "string" ? candidate.mcpPromptSchema : null,
+  };
+}
 
 export function normalizeTaskLaunchConfig(value: unknown): TaskLaunchConfig {
   if (!value || typeof value !== "object") return DEFAULT_TASK_LAUNCH_CONFIG;
@@ -33,13 +57,33 @@ export function normalizeTaskLaunchConfig(value: unknown): TaskLaunchConfig {
     networkAllowlist: Array.isArray(candidate.networkAllowlist) ? candidate.networkAllowlist.filter((item): item is string => typeof item === "string") : [],
     mcpAllowlist: Array.isArray(candidate.mcpAllowlist) ? candidate.mcpAllowlist.filter((item): item is string => typeof item === "string").sort() : [],
     mcpResourceIds: Array.isArray(candidate.mcpResourceIds) ? candidate.mcpResourceIds.filter((item): item is string => typeof item === "string").sort() : [],
+    ...normalizedPromptState(candidate),
   };
+}
+
+export function mcpPromptSchema(prompt: McpPromptCapability): string {
+  return JSON.stringify(prompt.arguments
+    .map(({ name, required }) => ({ name, required }))
+    .sort((left, right) => left.name.localeCompare(right.name)));
+}
+
+export function reconcileMcpPromptSelection(
+  config: TaskLaunchConfig,
+  inventory: McpPromptsResponse | undefined,
+): Partial<TaskLaunchConfig> | null {
+  if (!config.mcpPromptId || !inventory || inventory.status === "unavailable") return null;
+  const prompt = inventory.status === "available"
+    ? inventory.prompts.find((item) => item.available && item.prompt_id === config.mcpPromptId)
+    : undefined;
+  if (prompt && config.mcpPromptSchema === mcpPromptSchema(prompt)) return null;
+  return { mcpPromptId: null, mcpPromptArguments: {}, mcpPromptSchema: null };
 }
 
 export function validateTaskLaunchConfig(
   config: TaskLaunchConfig,
   availableMcpTools?: string[],
   availableMcpResources?: string[],
+  availableMcpPrompts?: McpPromptCapability[],
 ): string | null {
   if (!config.workspace.trim()) return "请先填写任务工作区路径";
   if (!["workspace_write", "full_access"].includes(config.policyProfile)) return "不支持当前权限策略";
@@ -57,6 +101,23 @@ export function validateTaskLaunchConfig(
   if (new Set(config.mcpResourceIds).size !== config.mcpResourceIds.length) return "MCP 资源不能重复选择";
   if (config.mcpResourceIds.length > 0 && config.networkProfile !== "mcp-proxy-only") return "选择 MCP 资源后需要启用仅 MCP 代理网络";
   if (availableMcpResources && config.mcpResourceIds.some((item) => !availableMcpResources.includes(item))) return "已选择的 MCP 资源当前不可用，请重新选择";
+  if (!config.mcpPromptId && Object.keys(config.mcpPromptArguments).length > 0) return "MCP Prompt 参数需要先选择 Prompt";
+  if (config.mcpPromptId && config.networkProfile !== "mcp-proxy-only") return "选择 MCP Prompt 后需要启用仅 MCP 代理网络";
+  if (config.mcpPromptId) {
+    const prompt = availableMcpPrompts?.find((item) => item.available && item.prompt_id === config.mcpPromptId);
+    if (availableMcpPrompts && !prompt) return "已选择的 MCP Prompt 当前不可用，请重新选择";
+    if (prompt) {
+      if (config.mcpPromptSchema !== mcpPromptSchema(prompt)) return "MCP Prompt 参数结构已变化，请重新选择";
+      const declared = new Set(prompt.arguments.map((argument) => argument.name));
+      const names = Object.keys(config.mcpPromptArguments);
+      if (names.length > 16 || names.some((name) => !declared.has(name))) return "MCP Prompt 参数包含未知字段";
+      const missing = prompt.arguments.some((argument) => argument.required && !config.mcpPromptArguments[argument.name]?.trim());
+      if (missing) return "请填写 MCP Prompt 的必填参数";
+    }
+    const sizes = Object.values(config.mcpPromptArguments).map((value) => new TextEncoder().encode(value).byteLength);
+    if (sizes.some((size) => size > 4 * 1024)) return "单个 MCP Prompt 参数不能超过 4 KiB";
+    if (sizes.reduce((total, size) => total + size, 0) > 16 * 1024) return "MCP Prompt 参数总计不能超过 16 KiB";
+  }
   return null;
 }
 

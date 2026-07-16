@@ -4,7 +4,7 @@ import React from "react";
 import locale from "../../_utils/local";
 import type { PendingTextAttachment } from "../../lib/text-attachments";
 import type { TaskLaunchConfig } from "../../lib/task-launch-config";
-import type { McpCapabilitiesResponse, SessionSummary } from "../../types";
+import type { McpCapabilitiesResponse, McpPromptsResponse, SessionSummary } from "../../types";
 import { ComposerAttachments } from "../ComposerAttachments";
 import { useConversationPaneStyle } from "../CodexConversationPane.styles";
 import { TaskLaunchSummary } from "../TaskLaunchSummary";
@@ -28,10 +28,14 @@ interface ConversationComposerProps {
   mcpCapabilities: McpCapabilitiesResponse | undefined;
   mcpCapabilitiesBusy: boolean;
   mcpCapabilitiesError: string | null;
+  mcpPrompts: McpPromptsResponse | undefined;
+  mcpPromptsBusy: boolean;
+  mcpPromptsError: string | null;
   onAttachmentsChange: (attachments: PendingTextAttachment[]) => void;
   onCancel: () => void;
   onChange: (value: string) => void;
   onPatchLaunchConfig: (patch: Partial<TaskLaunchConfig>) => void;
+  onRetryMcpPrompts: () => void;
   onSubmit: (value: string) => Promise<void>;
   senderRef: React.RefObject<GetRef<typeof Sender> | null>;
   sessionSummary: SessionSummary | null;
@@ -51,10 +55,14 @@ export function ConversationComposer({
   mcpCapabilities,
   mcpCapabilitiesBusy,
   mcpCapabilitiesError,
+  mcpPrompts,
+  mcpPromptsBusy,
+  mcpPromptsError,
   onAttachmentsChange,
   onCancel,
   onChange,
   onPatchLaunchConfig,
+  onRetryMcpPrompts,
   onSubmit,
   senderRef,
   sessionSummary,
@@ -84,10 +92,14 @@ export function ConversationComposer({
                 capabilities={mcpCapabilities}
                 capabilitiesBusy={mcpCapabilitiesBusy}
                 capabilitiesError={mcpCapabilitiesError}
+                prompts={mcpPrompts}
+                promptsBusy={mcpPromptsBusy}
+                promptsError={mcpPromptsError}
                 config={launchConfig}
                 editable={launchEditable}
                 effectiveConfig={effectiveLaunchConfig}
                 onPatch={onPatchLaunchConfig}
+                onRetryPrompts={onRetryMcpPrompts}
               />
               <span className={`${styles.sendSlot} ${canSubmit ? "" : styles.sendSlotDisabled}`}>
                 {actionNode}
