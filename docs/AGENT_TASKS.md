@@ -12345,7 +12345,7 @@ restores maintainable ownership boundaries before adding more product capability
 
 ### P137-SRC-01 - Behavior-Preserving API And CLI Module Boundaries
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex-SRC`
 - Suggested role: `ARCH / API / CLI`
 - Depends on: `P136-CLOSE-01`
@@ -12377,7 +12377,7 @@ event, response, persistence, and error contract.
 
 ### P137-UI-01 - Behavior-Preserving Conversation Pane Boundaries
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex-UI`
 - Suggested role: `UI / TEST`
 - Depends on: `P136-CLOSE-01`
@@ -12404,7 +12404,7 @@ Composer presentation modules without changing the visible product workflow.
 
 ### P137-TEST-01 - Test Suite File Boundary Restoration
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex-TEST`
 - Suggested role: `TEST / API / CLI / WORKER / INTEGRATIONS`
 - Depends on: `P136-CLOSE-01`
@@ -12427,8 +12427,8 @@ local without reducing deterministic coverage.
 
 ### P137-GATE-01 - Enforce Repository File Size Limits
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `In Progress`
+- Owner: `Codex-GATE`
 - Suggested role: `HARNESS / TEST / DOC`
 - Depends on: `P137-SRC-01`, `P137-UI-01`, `P137-TEST-01`
 - Branch: `codex/p137-gate-01-file-size-enforcement`
