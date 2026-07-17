@@ -16,6 +16,12 @@
   the existing Artifact boundary rather than provider-native compaction.
 - Provider-native compaction is an optional continuation optimization. Session
   events plus a transparent Zebra Capsule remain recovery and cross-model truth.
+- The implemented hard gate counts serialized messages and tool schemas against
+  a model context window after output/reasoning/compaction/protocol reserves.
+  A configured conversation target remains a soft progressive-compaction target;
+  only the model-profile hard input limit fails the request.
+- `command.run` covers arbitrary build commands, so no separate build tool or
+  duplicate output-persistence path was added.
 
 ## 2026-06-18
 

@@ -29,6 +29,7 @@ if TYPE_CHECKING:
         build_mcp_proxy_request,
         parse_mcp_tool_name,
     )
+    from agent_tools.output_projection import ProjectedToolOutput, ToolOutputProjector
     from agent_tools.registry import ToolRegistry
     from agent_tools.session_history import SessionSearchTool, sessions_search_contract
     from agent_tools.skills import (
@@ -69,6 +70,7 @@ __all__ = [
     "McpToolTarget",
     "PatchApplyTool",
     "PlanTool",
+    "ProjectedToolOutput",
     "RegisteredTool",
     "SessionSearchTool",
     "SkillsListTool",
@@ -76,6 +78,7 @@ __all__ = [
     "TestsRunTool",
     "ToolContract",
     "ToolExecutor",
+    "ToolOutputProjector",
     "ToolRegistry",
     "WebFetchTool",
     "WorkspaceListTool",
@@ -127,6 +130,7 @@ _EXPORTS = {
     "McpToolTarget": ("agent_tools.mcp_proxy", "McpToolTarget"),
     "PatchApplyTool": ("agent_tools.builtin.patch", "PatchApplyTool"),
     "PlanTool": ("agent_tools.builtin.plan", "PlanTool"),
+    "ProjectedToolOutput": ("agent_tools.output_projection", "ProjectedToolOutput"),
     "SkillsListTool": ("agent_tools.skills", "SkillsListTool"),
     "SkillsReadTool": ("agent_tools.skills", "SkillsReadTool"),
     "RegisteredTool": ("agent_tools.contracts", "RegisteredTool"),
@@ -134,6 +138,7 @@ _EXPORTS = {
     "TestsRunTool": ("agent_tools.builtin.tests", "TestsRunTool"),
     "ToolContract": ("agent_tools.contracts", "ToolContract"),
     "ToolExecutor": ("agent_tools.executor", "ToolExecutor"),
+    "ToolOutputProjector": ("agent_tools.output_projection", "ToolOutputProjector"),
     "ToolRegistry": ("agent_tools.registry", "ToolRegistry"),
     "WebFetchTool": ("agent_tools.web_gateway", "WebFetchTool"),
     "WebGatewayError": ("agent_tools.web_gateway", "WebGatewayError"),

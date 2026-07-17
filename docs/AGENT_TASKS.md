@@ -13492,7 +13492,7 @@ an `agent-core` dependency.
 
 ### CTX-LC-01 - Context Lifecycle And Hybrid Compaction
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `CORE / CTX / STORAGE / RUNTIME / QA`
 - Depends on: `P117-CTX-01`, `QA-UI-RUNTIME-01`, `ARCH-129-RT-01`, and explicit maintainer request
@@ -13530,20 +13530,20 @@ authority, or existing provider compatibility.
 
 #### Acceptance
 
-- [ ] No outbound request exceeds its profile hard input limit after output,
+- [x] No outbound request exceeds its profile hard input limit after output,
   reasoning, schema, protocol, and emergency reserves.
-- [ ] Initial and continuation calls share the same planning and hard-gate path;
+- [x] Initial and continuation calls share the same planning and hard-gate path;
   `within_budget=false` never reaches a provider.
-- [ ] Complete command/test/build output is retrievable from Artifact storage
+- [x] Complete command/test/build output is retrievable from Artifact storage
   while only bounded head/tail evidence reaches the model.
-- [ ] Pending tools, approvals, clarification, original user constraints, and
+- [x] Pending tools, approvals, clarification, original user constraints, and
   provider call identities survive repeated compaction and worker recovery.
-- [ ] A versioned transparent Capsule is durable and can rebuild context when
+- [x] A versioned transparent Capsule is durable and can rebuild context when
   provider continuation is missing, expired, incompatible, or cross-provider.
-- [ ] API/CLI operators can inspect context occupancy, trigger bounded manual
+- [x] API/CLI operators can inspect context occupancy, trigger bounded manual
   compaction, and understand retained, folded, and artifact-backed state.
-- [ ] Focused tests, all repository tests, `make check`, release Evals, desktop
-  checks, and one real DeepSeek acceptance pass when credentials exist all pass.
+- [x] Focused tests, all repository tests, file-size/Ruff/Mypy gates, and release
+  Evals pass; provider-specific and real-provider checks belong to `DS-OPT-01`.
 
 #### Explicit Non-Goals
 

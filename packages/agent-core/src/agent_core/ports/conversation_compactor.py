@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol
 
+from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.messages import SessionMessage
 
 
@@ -15,6 +16,7 @@ class ConversationCompactionResult:
     compacted: bool
     within_budget: bool
     provenance: str
+    capsule: ContextCapsule | None = None
 
     def __post_init__(self) -> None:
         if self.before_tokens < 0 or self.after_tokens < 0:

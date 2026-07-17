@@ -5,6 +5,7 @@ from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.ports.conversation_compactor import ConversationCompactionResult
 
+from agent_context.capsule import build_context_capsule
 from agent_context.compaction import (
     ConversationCompactionRequest,
     ToolOutputCompactionRequest,
@@ -35,6 +36,7 @@ def compact_message_history(
     if not middle:
         return _result(messages, before=before, max_tokens=max_tokens)
     protected = messages[:prefix_end] + messages[tail_start:]
+    capsule = build_context_capsule(messages, user_goal=user_goal, created_at=created_at)
     summary = _summary_message(
         middle,
         user_goal=user_goal,
@@ -51,6 +53,7 @@ def compact_message_history(
         compacted=True,
         within_budget=after <= max_tokens,
         provenance=PROVENANCE,
+        capsule=capsule,
     )
 
 

@@ -4,15 +4,15 @@
 
 1. `completed` - Split DeepSeek specialization into `DS-OPT-01`, retain the
    provider-neutral context task, and lock disjoint owned paths.
-2. `pending` - Implement provider-aware context-window planning, hard outbound
+2. `completed` - Implement provider-aware context-window planning, hard outbound
    request gates, and artifact-backed bounded command/test/build output.
-3. `pending` - Implement progressive active-context projection, durable
+3. `completed` - Implement progressive active-context projection, durable
    `ContextCapsule` events/artifacts, recovery, and deterministic fallback.
-4. `pending` - Implement provider continuation capabilities and transparent
+4. `completed` - Implement provider continuation capabilities and transparent
    fallback without making opaque state authoritative.
-5. `pending` - Add API/CLI context inspection and manual compaction controls,
+5. `completed` - Add API/CLI context inspection and manual compaction controls,
    focused contracts, long-loop/recovery/provider Evals, and operator docs.
-6. `pending` - Run focused, full repository, and release-eval validation;
+6. `completed` - Run focused, full repository, and release-eval validation;
    record exact evidence and close.
 
 ### Errors Encountered

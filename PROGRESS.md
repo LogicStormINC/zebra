@@ -8,6 +8,14 @@
   `codex/ctx-lc-01-hybrid-compaction`; `DS-OPT-01` owns DeepSeek profiles,
   protocol safety, telemetry, and provider evals on
   `codex/ds-opt-01-deepseek-specialization` in a separate Codex task.
+  `CTX-LC-01` is now implemented: all provider calls share a hard model-window
+  gate; command/test output uses complete Artifact storage plus bounded model
+  projection; compaction emits a versioned transparent Capsule that worker
+  recovery reinjects; provider-native continuation is capability-gated with a
+  deterministic Capsule fallback; API/CLI context inspect and manual compact
+  controls are live. Validation passed `1355` tests with one platform-gated
+  gVisor skip, file-size and Ruff gates, strict Mypy across `370` source files,
+  and all `8` release evals.
 
 - 2026-07-17: implemented `ARCH-129-RT-01` on
   `codex/arch-129-hard-runtime`. Runtime now has explicit trusted-local,

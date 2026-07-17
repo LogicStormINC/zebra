@@ -76,11 +76,6 @@ class HarnessModelStep:
                 created_at=created_at,
             )
             messages[:] = result.messages
-            if not result.within_budget:
-                raise ContextWindowExceededError(
-                    "conversation remains over input budget after compaction: "
-                    f"{result.after_tokens}>{budget}"
-                )
         plan = plan_context_window(tuple(messages), tools, window)
         if not plan.within_budget:
             raise ContextWindowExceededError(
@@ -114,6 +109,13 @@ class HarnessModelStep:
     ) -> ModelCompletion:
         now = created_at or datetime.now(UTC)
         messages = self.build_initial_messages(task, created_at=now)
+        self.prepare_conversation(
+            messages,
+            model_gateway,
+            allow_tools=True,
+            user_goal=task.user_input,
+            created_at=now,
+        )
         return self.request_completion(messages, model_gateway, allow_tools=True)
 
     def request_completion(
@@ -124,6 +126,17 @@ class HarnessModelStep:
         allow_tools: bool,
     ) -> ModelCompletion:
         tools = self._available_tools if allow_tools else ()
+        window = (
+            model_gateway.context_window
+            if isinstance(model_gateway, ModelContextWindowPort)
+            else ModelContextWindow()
+        )
+        plan = plan_context_window(tuple(messages), tools, window)
+        if not plan.within_budget:
+            raise ContextWindowExceededError(
+                "model request exceeds input budget: "
+                f"{plan.estimated_input_tokens}>{plan.input_token_limit}"
+            )
         if self._event_sink is None:
             return model_gateway.complete(messages, tools=tools)
         model_call_id = str(new_correlation_id())
@@ -242,6 +255,13 @@ class HarnessModelStep:
             created_at=now,
         )
         self.append_final_answer_instruction(messages, created_at=now)
+        self.prepare_conversation(
+            messages,
+            model_gateway,
+            allow_tools=False,
+            user_goal=task.user_input,
+            created_at=now,
+        )
         return self.request_completion(messages, model_gateway, allow_tools=False)
 
     @staticmethod

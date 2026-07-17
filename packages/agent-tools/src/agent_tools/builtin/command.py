@@ -6,6 +6,7 @@ from agent_core.ports.workspace import WorkspacePort
 
 from agent_tools.contracts import ToolContract
 from agent_tools.errors import ToolArgumentError
+from agent_tools.output_projection import ToolOutputProjector
 
 command_run_contract = ToolContract(
     name="command.run",
@@ -25,9 +26,15 @@ command_run_contract = ToolContract(
 
 
 class CommandRunTool:
-    def __init__(self, runtime: RuntimePort, workspace: WorkspacePort) -> None:
+    def __init__(
+        self,
+        runtime: RuntimePort,
+        workspace: WorkspacePort,
+        output_projector: ToolOutputProjector | None = None,
+    ) -> None:
         self._runtime = runtime
         self._workspace = workspace
+        self._output_projector = output_projector
 
     @property
     def contract(self) -> ToolContract:
@@ -49,18 +56,28 @@ class CommandRunTool:
             if runtime_result.succeeded
             else ToolCallStatus.FAILED
         )
+        projected = (
+            self._output_projector.project(
+                stdout=runtime_result.stdout,
+                stderr=runtime_result.stderr,
+                artifact_name="command-run.txt",
+            )
+            if self._output_projector is not None
+            else None
+        )
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
             status=status,
-            output=runtime_result.stdout,
+            output=projected.model_output if projected is not None else runtime_result.stdout,
             metadata={
                 "command": list(command),
                 "cwd": str(Path(cwd).relative_to(self._workspace.root_path))
                 if cwd != self._workspace.root_path
                 else ".",
                 "exit_code": runtime_result.exit_code,
-                "stderr": runtime_result.stderr,
+                "stderr": "" if projected is not None else runtime_result.stderr,
                 "timed_out": runtime_result.timed_out,
+                **(projected.metadata if projected is not None else {}),
             },
         )
 

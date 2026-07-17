@@ -5,9 +5,11 @@ from pathlib import Path
 
 from agent_core.application import attachment_refs_from_event
 from agent_core.domain.attachments import AttachmentContextInput
+from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection
+from agent_core.ports.context_compiler import RuntimeEvidenceInput
 from agent_security import NetworkProfile, PolicyProfile, parse_network_profile
 from agent_storage import SQLiteArtifactPayloadStore, load_attachment_contexts
 
@@ -25,6 +27,7 @@ class RecoveredTask:
     max_model_calls: int | None
     max_tool_calls: int | None
     attachments: tuple[AttachmentContextInput, ...]
+    runtime_evidence: tuple[RuntimeEvidenceInput, ...]
 
 
 def recover_task(
@@ -72,7 +75,43 @@ def recover_task(
         max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
         max_tool_calls=_optional_positive_int(task_payload.get("max_tool_calls")),
         attachments=attachments,
+        runtime_evidence=_context_capsule_evidence(events),
     )
+
+
+def _context_capsule_evidence(
+    events: list[SessionEvent],
+) -> tuple[RuntimeEvidenceInput, ...]:
+    for event in reversed(events):
+        if event.event_type is not EventType.CONTEXT_COMPACTED:
+            continue
+        raw = event.payload.get("capsule")
+        if not isinstance(raw, dict):
+            continue
+        capsule = ContextCapsule.model_validate(raw)
+        return (
+            RuntimeEvidenceInput(
+                kind="conversation_summary",
+                summary=capsule.objective,
+                details=(
+                    *capsule.constraints,
+                    *capsule.decisions,
+                    *capsule.plan,
+                    f"Immediate next: {capsule.immediate_next}",
+                ),
+                metadata={
+                    "capsule_id": capsule.capsule_id,
+                    "capsule_version": capsule.version,
+                    "source_hash": capsule.source_hash,
+                    "profile": capsule.profile,
+                    "pending_tools": [
+                        tool.model_dump(mode="json") for tool in capsule.pending_tools
+                    ],
+                    "artifact_refs": list(capsule.artifact_refs),
+                },
+            ),
+        )
+    return ()
 
 
 def _optional_positive_int(value: object) -> int | None:

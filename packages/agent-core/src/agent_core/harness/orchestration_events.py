@@ -42,18 +42,21 @@ def context_compacted_event(
     *,
     attempt_number: int,
 ) -> HarnessEventDraft:
+    payload: dict[str, object] = {
+        "attempt_number": attempt_number,
+        "before_tokens": result.before_tokens,
+        "after_tokens": result.after_tokens,
+        "removed_message_count": result.removed_message_count,
+        "retained_message_count": result.retained_message_count,
+        "within_budget": result.within_budget,
+        "provenance": result.provenance,
+    }
+    if result.capsule is not None:
+        payload["capsule"] = result.capsule.model_dump(mode="json")
     return HarnessEventDraft(
         event_type=EventType.CONTEXT_COMPACTED,
         actor=EventActor.HARNESS,
-        payload={
-            "attempt_number": attempt_number,
-            "before_tokens": result.before_tokens,
-            "after_tokens": result.after_tokens,
-            "removed_message_count": result.removed_message_count,
-            "retained_message_count": result.retained_message_count,
-            "within_budget": result.within_budget,
-            "provenance": result.provenance,
-        },
+        payload=payload,
     )
 
 

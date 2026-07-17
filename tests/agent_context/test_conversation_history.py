@@ -50,6 +50,10 @@ def test_completed_older_exchange_is_compacted_with_latest_pair_intact() -> None
     assert result.messages[-2].tool_calls == (latest_call,)
     assert result.messages[-1].tool_call_id == "call_latest"
     assert all(message.tool_call_id != "call_old" for message in result.messages)
+    assert result.capsule is not None
+    assert result.capsule.objective == "Inspect the inputs."
+    assert result.capsule.touched_files == ("latest.txt", "old.txt")
+    assert result.capsule.source_hash
 
 
 def test_compacted_history_is_idempotent() -> None:
@@ -101,6 +105,9 @@ def test_unresolved_latest_call_is_never_summarized_away() -> None:
     assert result.compacted is True
     assert result.messages[-1].tool_calls == (pending_call,)
     assert result.messages[-1].tool_calls[0].provider_call_id == "call_pending"
+    assert result.capsule is not None
+    assert result.capsule.pending_tools[0].call_id == "call_pending"
+    assert result.capsule.pending_tools[0].name == "files.read"
 
 
 def _message(role: MessageRole, content: str) -> SessionMessage:

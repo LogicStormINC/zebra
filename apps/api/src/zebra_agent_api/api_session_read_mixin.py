@@ -5,6 +5,7 @@ from pathlib import Path
 
 from zebra_agent_api.approval_read import ApprovalReadApi
 from zebra_agent_api.responses import ApiResponse
+from zebra_agent_api.session_context_control import SessionContextControlApi
 from zebra_agent_api.session_list import SessionListApi
 from zebra_agent_api.session_read import SessionReadApi
 
@@ -29,6 +30,12 @@ class ApiSessionReadMixin:
 
     def get_session_diff(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session_diff(session_id)
+
+    def get_session_context(self, session_id: str) -> ApiResponse:
+        return SessionContextControlApi(self.database_path).inspect(session_id)
+
+    def compact_session_context(self, session_id: str) -> ApiResponse:
+        return SessionContextControlApi(self.database_path).compact(session_id)
 
     def get_session_memory(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session_memory(session_id)

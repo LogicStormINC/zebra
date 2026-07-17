@@ -199,6 +199,7 @@ class SessionExecutionService:
                 current_session_id=str(session_id),
                 runtime=runtime,
                 runtime_handle=runtime_handle,
+                artifact_payload_store=self._artifact_payload_store,
             )
         except Exception as exc:
             cleanup_error = None
@@ -232,6 +233,7 @@ class SessionExecutionService:
                     repo_id=str(task.workspace_root.resolve()),
                 ),
                 attachments=task.attachments,
+                runtime_evidence=task.runtime_evidence,
             ),
             session=claimed.recovery.session,
             attempt=HarnessAttempt(number=1, started_at=started_at),

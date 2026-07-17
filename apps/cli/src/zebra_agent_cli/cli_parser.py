@@ -72,6 +72,15 @@ def build_parser() -> argparse.ArgumentParser:
     inspect.add_argument("session_id")
     inspect.add_argument("--database")
 
+    context = subcommands.add_parser("context", help="Inspect or compact session context.")
+    context_subcommands = context.add_subparsers(dest="context_command", required=True)
+    context_inspect = context_subcommands.add_parser("inspect")
+    context_inspect.add_argument("session_id")
+    context_inspect.add_argument("--database")
+    context_compact = context_subcommands.add_parser("compact")
+    context_compact.add_argument("session_id")
+    context_compact.add_argument("--database")
+
     add_read_subparsers(subcommands)
 
     commit = subcommands.add_parser("commit", help="Create one local commit for a session.")
