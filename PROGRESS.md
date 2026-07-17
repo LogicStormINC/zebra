@@ -58,6 +58,24 @@
   mutation. Recovery consumes only persisted normalized UTF-8 extraction with
   safe workbook provenance. Spreadsheet editing, other formats, OCR, remote
   URLs, and authority changes remain excluded.
+- 2026-07-17: completed implementation of `P145-UI-01` for review. The desktop
+  now projects one chronological conversation stream from durable events,
+  groups modern and legacy tool lifecycles deterministically across attempts,
+  defaults successful evidence closed and failed evidence open, preserves one
+  inline task plan plus existing approval, clarification, inspector, Logs, and
+  Composer behavior, and reports suspended sessions truthfully. Existing API
+  fields were sufficient, so no backend contract changed. All 16 desktop checks,
+  the Node 22 production build, 776-file size gate, Ruff, Mypy across 351 source
+  files, all 8 evals, all 1312 backend tests, desktop and 900px browser
+  acceptance, keyboard disclosure, zero-overflow and zero-console-error checks,
+  and screenshot design QA passed.
+- 2026-07-17: started `P145-UI-01` on
+  `codex/p145-ui-01-event-stream-conversation`. Phase 145 replaces the fixed
+  desktop stage timeline with one chronological conversation stream projected
+  from durable session events. It preserves existing task-plan, approval,
+  clarification, inspector, Composer, attachment, MCP, Policy, and HITL
+  behavior, and permits additive API work only if current safe event fields are
+  insufficient for deterministic tool lifecycle grouping.
 - 2026-07-16: completed `P141-DOC-01`; standard DOCX body and table text now
   shares the durable bounded attachment path with UTF-8 text and text-layer PDF
   material on new tasks and ordinary follow-up messages. Unsafe ZIP paths,
@@ -202,8 +220,8 @@
 
 ## Current Phase
 
-- Active phase: `Phase 139 complete; next phase not yet planned`
-- Repository status: `P139-PLAN-01 and P139-UI-01 done; ready for next-phase planning`
+- Active phase: `Phase 145 - Event-Driven Conversation Stream`
+- Repository status: `P145-UI-01 implementation complete; awaiting review`
 - Current focus:
   - Phase 139 keeps durable active-session configuration in the context inspector and preserves editable launch configuration only for new tasks and drafts
   - Phase 138 final acceptance passed across compatibility, persistence, immutable recovery, desktop, browser, and real-provider gates

@@ -1,5 +1,18 @@
 # Task Plan
 
+## Phase 145 - Event-Driven Conversation Stream
+
+1. `completed` - Persist the remediation design, claim `P145-UI-01`, and lock
+   the durable-event, UI, API, accessibility, and non-goal boundaries.
+2. `completed` - Add a deterministic event-stream projection with focused
+   checks for ordering, tool grouping, failure, retry, and message de-duplication.
+3. `completed` - Replace the fixed stage timeline with the chronological stream
+   while preserving task plan, approval, clarification, inspector, and Composer.
+4. `completed` - Complete responsive, keyboard, and visual-design QA at desktop
+   and 900px viewports.
+5. `completed` - Run repository gates, record acceptance evidence, and close the
+   branch for review.
+
 ## Phase 144 - Bounded HTML Readable-Text Projection
 
 1. `completed` - Claim the phase and lock HTML projection, output budget, safe

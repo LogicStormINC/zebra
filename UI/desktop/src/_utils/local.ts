@@ -85,6 +85,7 @@ export default {
   statusDraft: "草稿",
   statusReady: "已就绪",
   statusRunning: "执行中",
+  statusSuspended: "已暂停",
   statusWaiting: "待确认",
   statusWaitingInput: "待补充",
   statusReview: "待审查",

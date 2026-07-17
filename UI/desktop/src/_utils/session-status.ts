@@ -5,6 +5,7 @@ import { projectWorkspaceLabel } from "../lib/workspace-projection";
 export function sessionStatusLabel(status: string | undefined): string {
   if (status === "ready") return locale.statusReady;
   if (status === "running") return locale.statusRunning;
+  if (status === "suspended") return locale.statusSuspended;
   if (status === "waiting_approval" || status === "waiting_user") return locale.statusWaiting;
   if (status === "waiting_input") return locale.statusWaitingInput;
   if (status === "completed") return locale.statusDone;

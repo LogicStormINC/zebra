@@ -12952,3 +12952,67 @@ third-party extraction services, new network authority, or a second Web tool.
   `1200x762` and `900x800` passed with no overflow or console errors.
 - Real provider recovery made zero calls before approval, one after, and returned
   `WEB_HTML_FINAL_OK: WEB_HTML_PROVIDER_PROOF_144_2A7C`.
+
+## Phase 145 Task Board
+
+### P145-UI-01 - Event-Driven Conversation Stream
+
+- Status: `Review`
+- Owner: `Codex-APP`
+- Suggested role: `UI / API / TEST / DOC`
+- Depends on: `P144-WEB-01`
+- Branch: `codex/p145-ui-01-event-stream-conversation`
+- Owned paths: `UI/desktop/`, `apps/api/`, `tests/api/`, `tests/`, `docs/`,
+  `PROGRESS.md`, `task_plan.md`
+
+#### Goal
+
+Replace the fixed desktop stage timeline with one truthful chronological
+conversation stream derived from durable session events, while preserving the
+existing task plan, approval, clarification, inspector, Composer, and local API
+boundaries.
+
+#### Deliverables
+
+- durable event-to-timeline projection with deterministic ordering and tool
+  lifecycle grouping
+- compact expandable tool execution rows inside the conversation stream
+- result-first Assistant message hierarchy without duplicated event content
+- preserved inline approval, clarification, task plan, and inspector behavior
+- focused projection checks plus responsive browser and design QA evidence
+- additive API changes only if existing safe event fields prove insufficient
+
+#### Acceptance
+
+- [x] The main thread no longer renders a fixed stage placeholder list.
+- [x] Visible timeline items preserve durable event sequence and tool lifecycle,
+  including failure, retry, and multi-attempt behavior.
+- [x] User and Assistant messages render once, and final answers remain visually
+  primary over compact tool evidence.
+- [x] Successful tools are collapsed by default while failed or active evidence
+  remains discoverable and keyboard accessible.
+- [x] Existing task-plan, approval, clarification, context inspector, Logs, task
+  restoration, and Composer behavior remains compatible.
+- [x] Focused desktop checks, production build, repository checks, desktop and
+  900px browser acceptance, and screenshot-based design QA pass.
+
+#### Validation Evidence
+
+- all 16 desktop behavior checks passed, including the new session timeline and
+  truthful session-status checks
+- Node 22 production build passed; the existing Vite bundle-size warning remains
+- all 1312 backend tests passed after rebasing onto the completed Phase 144 mainline
+- `make check` passed: 776-file size gate, Ruff, Mypy across 351 source files,
+  and all 8 release-gate evals
+- browser acceptance passed at `1512x800` and `900x800`: deterministic tool
+  grouping, failed-attempt disclosure, retry evidence, native details toggling,
+  zero horizontal overflow, and zero console warnings or errors
+- screenshot comparison and findings are recorded in root `design-qa.md`
+- existing durable API event fields were sufficient, so no API contract or
+  backend implementation change was introduced
+
+#### Explicit Non-Goals
+
+- hidden chain-of-thought exposure, new event-storage semantics, Policy or HITL
+  changes, new UI dependencies, editor or diff-authoring features, or changes to
+  task launch attachment and MCP authority
