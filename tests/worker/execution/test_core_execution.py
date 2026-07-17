@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 from threading import Event, Thread
 
@@ -9,12 +10,15 @@ from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.modeling import ModelCompletion, ModelTextDelta, ModelToolDefinition
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tool_runs import ToolRunRecord
+from agent_core.ports.runtime import EffectiveRuntimeAuthority, RuntimeClass
+from agent_runtime import LocalRuntime
 from agent_security import LocalPolicyEngine, NetworkProfile
 from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteModelCallStore,
     SQLiteToolRunStore,
+    SQLiteWorkspaceProjectionStore,
 )
 from worker_execution_support import (
     _assistant_only_gateway,
@@ -51,6 +55,64 @@ def test_worker_execution_service_completes_ready_session(
     model_calls = SQLiteModelCallStore(database_path).list_for_session(session_id)
     assert len(model_calls) == 1
     assert isinstance(model_calls[0], ModelCallRecord)
+
+
+def test_worker_persists_effective_runtime_authority_before_attempt(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    class AuthorityRuntime(LocalRuntime):
+        def provision(self, *, workspace_root=None, spec=None):
+            handle = super().provision(workspace_root=workspace_root, spec=spec)
+            authorized = replace(
+                handle,
+                runtime_name="gvisor",
+                authority=EffectiveRuntimeAuthority(
+                    runtime_class=RuntimeClass.GVISOR,
+                    engine="docker",
+                    image="zebra/runtime@sha256:" + "a" * 64,
+                    spec_digest="b" * 64,
+                    network_enforcement="container-network-none",
+                    workspace_writable=True,
+                ),
+            )
+            self._handles[handle.handle_id] = authorized
+            return authorized
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _assistant_only_gateway(settings=settings),
+    )
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_runtime",
+        lambda *args, **kwargs: AuthorityRuntime(snapshot_root=tmp_path / "runtime"),
+    )
+
+    _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-hard-runtime",
+        executed_at=_created_at(),
+    )
+
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
+    authority_index = next(
+        index
+        for index, event in enumerate(events)
+        if event.event_type is EventType.RUNTIME_PROVISIONED
+    )
+    attempt_index = next(
+        index
+        for index, event in enumerate(events)
+        if event.event_type is EventType.HARNESS_ATTEMPT_STARTED
+    )
+    assert authority_index < attempt_index
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(session_id)
+    assert workspace is not None
+    assert workspace.runtime_name == "gvisor"
+    assert workspace.runtime_spec_digest == "b" * 64
 
 
 def test_worker_execution_persists_model_text_deltas_before_final_response(
@@ -113,9 +175,7 @@ def test_worker_execution_persists_model_text_deltas_before_final_response(
         event.payload for event in events if event.event_type is EventType.MODEL_RESPONSE_DELTA
     ]
     assert [delta["content_delta"] for delta in deltas] == ["Stream ", "complete."]
-    final = next(
-        event for event in events if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
-    )
+    final = next(event for event in events if event.event_type is EventType.MODEL_RESPONSE_RECEIVED)
     assert final.payload["model_call_id"] == deltas[0]["model_call_id"]
 
 
@@ -175,11 +235,11 @@ def test_worker_streaming_stops_cleanly_after_durable_cancellation(
     assert not thread.is_alive()
     assert results[0].session.status is SessionStatus.CANCELLED
     event_types = [
-        event.event_type
-        for event in SQLiteEventStore(database_path).list_for_session(session_id)
+        event.event_type for event in SQLiteEventStore(database_path).list_for_session(session_id)
     ]
     assert event_types[-1] is EventType.SESSION_CANCELLED
     assert EventType.SESSION_FAILED not in event_types
+
 
 def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch) -> None:
     database_path = tmp_path / "worker.db"
@@ -212,6 +272,7 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
     assert captured[0].name.value == "domain-allowlist"
     assert captured[0].domain_allowlist == ("docs.example.com",)
 
+
 def test_worker_execution_service_indexes_tool_run(tmp_path: Path, monkeypatch) -> None:
     database_path = tmp_path / "worker.db"
     (tmp_path / "README.md").write_text("worker readme\n", encoding="utf-8")
@@ -235,6 +296,7 @@ def test_worker_execution_service_indexes_tool_run(tmp_path: Path, monkeypatch) 
     assert tool_runs[0].tool_name == "files.read"
     assert tool_runs[0].status == "executed"
     assert tool_runs[0].artifact_uri is not None
-    assert Path(tool_runs[0].artifact_uri.removeprefix("file://")).read_text(
-        encoding="utf-8"
-    ) == "worker readme\n"
+    assert (
+        Path(tool_runs[0].artifact_uri.removeprefix("file://")).read_text(encoding="utf-8")
+        == "worker readme\n"
+    )

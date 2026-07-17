@@ -2,6 +2,32 @@
 
 ## Addendum
 
+- 2026-07-17: implemented `ARCH-129-RT-01` on
+  `codex/arch-129-hard-runtime`. Runtime now has explicit trusted-local,
+  rootless OCI, and gVisor classes; hard modes perform fail-closed preflight,
+  run a digest-pinned image with read-only root, non-root identity, no network,
+  no capabilities, no-new-privileges and bounded CPU/memory/PID/tmpfs/time/output,
+  persist effective authority before tools, reject recovery drift, snapshot
+  safely, and clean stale or cancelled containers by session label. API/CLI
+  readback, adversarial contract tests, operator guidance, and a real Linux
+  gVisor CI smoke are included. Workspace disk quota remains an explicit
+  storage-layer production prerequisite rather than an unenforceable bind-mount
+  claim.
+  Local validation passed all `1345` runnable tests with only the platform-gated
+  gVisor smoke skipped, plus the file-size gate, Ruff, strict Mypy across `361`
+  source files, and all `8` release evals. PR `#142` then passed Backend,
+  Desktop, and the real Linux `runsc` gVisor isolation smoke.
+
+- 2026-07-17: activated `ARCH-129-RT-01` on
+  `codex/arch-129-hard-runtime` by explicit maintainer request. The production
+  v1 boundary is Linux-first gVisor/OCI with a rootless OCI compatibility mode,
+  durable effective authority, fail-closed capability preflight, offline Agent
+  execution, bounded resources and output, deterministic lifecycle cleanup,
+  and explicit macOS/unsupported behavior. Kubernetes orchestration, warm
+  pools, multi-tenant scheduling, Kata/Firecracker, and a new credential or
+  arbitrary-egress platform remain outside this task. The executable plan is
+  recorded in `docs/生产级Runtime实施方案_v1.0.md`.
+
 - 2026-07-17: completed `QA-CI-01` for review on `codex/qa-ci-mainline`.
   The read-only, SHA-pinned workflow runs frozen Python workspace sync, all
   backend tests, file-size checks, Ruff, strict Mypy, release evals, every

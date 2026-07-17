@@ -79,9 +79,7 @@ def test_load_settings_rejects_missing_or_duplicate_skill_roots(tmp_path: Path) 
         load_settings({"ZEBRA_SKILL_ROOTS": str(tmp_path / "missing")})
 
     with pytest.raises(ValueError, match="duplicate path"):
-        load_settings(
-            {"ZEBRA_SKILL_ROOTS": f"{tmp_path}{os.pathsep}{tmp_path.resolve()}"}
-        )
+        load_settings({"ZEBRA_SKILL_ROOTS": f"{tmp_path}{os.pathsep}{tmp_path.resolve()}"})
 
 
 def test_load_settings_parses_bounded_stdio_mcp_servers(tmp_path: Path) -> None:
@@ -164,6 +162,38 @@ def test_load_settings_does_not_store_scm_token_value() -> None:
 
     assert settings.scm.github_token_env == "GITHUB_TOKEN"
     assert "secret-token" not in repr(settings.scm)
+
+
+def test_load_settings_requires_pinned_image_for_hard_runtime() -> None:
+    with pytest.raises(ValueError, match="pinned by sha256"):
+        load_settings({"ZEBRA_RUNTIME_CLASS": "gvisor", "ZEBRA_RUNTIME_IMAGE": "latest"})
+
+    settings = load_settings(
+        {
+            "ZEBRA_RUNTIME_CLASS": "gvisor",
+            "ZEBRA_RUNTIME_IMAGE": "zebra/runtime@sha256:" + "a" * 64,
+            "ZEBRA_RUNTIME_CPUS": "1.5",
+            "ZEBRA_RUNTIME_MEMORY_MB": "1024",
+        }
+    )
+
+    assert settings.runtime.runtime_class == "gvisor"
+    assert settings.runtime.cpu_count == 1.5
+    assert settings.runtime.memory_mb == 1024
+
+
+def test_production_profile_fails_closed_without_gvisor() -> None:
+    with pytest.raises(ValueError, match="requires ZEBRA_RUNTIME_CLASS=gvisor"):
+        load_settings({"ZEBRA_PROFILE": "production"})
+    with pytest.raises(ValueError, match="pinned by sha256"):
+        load_settings({"ZEBRA_PROFILE": "production", "ZEBRA_RUNTIME_CLASS": "gvisor"})
+    with pytest.raises(ValueError, match="requires ZEBRA_RUNTIME_CLASS=gvisor"):
+        load_settings(
+            {
+                "ZEBRA_PROFILE": "production",
+                "ZEBRA_RUNTIME_CLASS": "trusted-local",
+            }
+        )
 
 
 def test_load_settings_auto_loads_dotenv_local(monkeypatch, tmp_path) -> None:

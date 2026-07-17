@@ -69,6 +69,19 @@ def apply_event(
         )
         updates["network_allowlist"] = _network_allowlist_from_event(event)
         updates["mcp_allowlist"] = _mcp_allowlist_from_event(event)
+    if event.event_type is EventType.RUNTIME_PROVISIONED:
+        updates["runtime_name"] = _required_payload_string(event, "runtime_class")
+        updates["runtime_engine"] = _required_payload_string(event, "engine")
+        updates["runtime_image"] = _optional_payload_string(event, "image")
+        updates["runtime_spec_digest"] = _required_payload_string(
+            event, "spec_digest"
+        )
+        updates["runtime_network_enforcement"] = _required_payload_string(
+            event, "network_enforcement"
+        )
+        updates["runtime_workspace_writable"] = event.payload.get(
+            "workspace_writable"
+        )
     if event.event_type is EventType.SESSION_SUSPENDED:
         updates["runtime_name"] = _required_payload_string(event, "runtime_name")
         updates["snapshot_id"] = _required_payload_string(event, "snapshot_id")

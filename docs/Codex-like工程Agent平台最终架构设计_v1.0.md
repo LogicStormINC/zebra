@@ -746,6 +746,12 @@ class RuntimeAdapter(Protocol):
 | 云端多租户 | Kata VM / Firecracker microVM | 独立内核，适合执行不可信代码 |
 | Kubernetes 平台 | Agent Sandbox CRD + gVisor/Kata + NetworkPolicy | 稳定身份、持久卷、暖池、暂停恢复 |
 
+Production Runtime v1 已实现三个明确等级：`trusted-local` 仅用于可信开发，
+`oci-rootless` 要求 Engine 证明 Rootless，`gvisor` 要求 Engine 暴露固定的
+`runsc` handler。硬隔离模式固定 digest 镜像、只读根文件系统、非 Root 用户、
+唯一 Workspace 挂载、限额 tmpfs、Capability 全删除、no-new-privileges、默认
+断网和 CPU/内存/PID/时间/输出上限。能力证明失败时不允许工具执行。
+
 ## 12.3 SandboxSpec
 
 ```python
@@ -1015,6 +1021,13 @@ Agent Phase
 | Memory Poisoning | 旧经验覆盖新项目事实 | 来源/Commit/有效期、冲突检测、人工确认 |
 | 日志泄密 | stdout 包含 Token 或用户数据 | Secret Scan、Redaction、Artifact ACL、保留策略 |
 | DoS / 资源滥用 | fork bomb、无限构建、巨量输出 | PID/CPU/内存/磁盘/时间/输出限额 |
+
+Production Runtime v1 将实际生效的 class、engine、image digest、spec digest、
+网络强制方式和 Workspace 写权限写入 `runtime_provisioned` 事件及 Workspace
+投影。Worker 恢复时要求 authority digest 完全一致；取消和崩溃恢复按 session
+label 回收容器。Sandbox 不接收逐命令环境变量，也不挂载 Home、SSH、Runtime
+socket 或设备。Workspace bind mount 的磁盘配额由部署存储层强制，不能把 OCI
+参数或应用层扫描伪装成磁盘安全边界。
 
 ## 18.1 权限 Profiles
 

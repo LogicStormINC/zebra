@@ -38,7 +38,12 @@ def test_session_inspect_contract_matrix_populated_matches_across_api_and_cli(
                 "updated_at": _created_at(),
                 "current_sequence": 4,
                 "status": WorkspaceStatus.SUSPENDED,
-                "runtime_name": "local",
+                "runtime_name": "gvisor",
+                "runtime_engine": "docker",
+                "runtime_image": "zebra/runtime@sha256:" + "a" * 64,
+                "runtime_spec_digest": "b" * 64,
+                "runtime_network_enforcement": "container-network-none",
+                "runtime_workspace_writable": True,
                 "snapshot_id": "snap-inspect-1",
                 "snapshot_path": "/tmp/zebra-agent-runtime/snap-inspect-1",
             }
@@ -50,6 +55,7 @@ def test_session_inspect_contract_matrix_populated_matches_across_api_and_cli(
 
     assert api_response.status_code == 200
     assert _normalize_api_inspect(api_response.body) == _normalize_cli_inspect(cli_result.payload)
+    assert api_response.body["workspace"]["runtime"]["class"] == "gvisor"
 
 
 def test_session_inspect_contract_matrix_missing_session_matches_across_api_and_cli(

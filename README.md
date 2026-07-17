@@ -296,6 +296,7 @@ Phase 101 closeout is documented in
 - `docs/Phase24_Durable_Approval_Projection_And_Operator_Queue_验收记录.md` records the completed durable approval projection and operator queue phase
 - durable workspace projection storage now exists for `workspace_root`, `policy_profile`, lifecycle status, current sequence, and last attempt number
 - runtime contracts now expose explicit lifecycle methods for `provision`, `snapshot`, `restore`, `fork`, `suspend`, and `resume`, and the local adapter now supports filesystem-backed snapshot, restore, and fork flows for the supported subset
+- production Runtime v1 adds fail-closed `oci-rootless` and Linux `gvisor` adapters with immutable image/spec authority, hardened offline containers, bounded execution, session-labelled cleanup, authority-safe restore, and a real gVisor CI smoke; `trusted-local` remains explicitly non-sandboxed compatibility mode
 - worker recovery and execution now reuse durable workspace projection state instead of raw bootstrap payloads for workspace lifecycle control
 - `docs/Phase25_Durable_Workspace_And_Snapshot_Foundations_验收记录.md` records the completed durable workspace and snapshot foundations phase
 - `docs/local_snapshot_runtime.md` documents the supported local snapshot subset, storage layout, retention model, and explicit unsupported paths
@@ -380,7 +381,7 @@ uv run pytest
 
 ## Operator Entry
 
-For the current local operator workflow, start with `docs/operator_runbook.md`. For local snapshot runtime semantics, also read `docs/local_snapshot_runtime.md`. For denied versus unavailable artifact access paths, also read `docs/artifact_access_operator_guidance.md`. The operator runbook covers:
+For the current local and production Runtime workflow, start with `docs/operator_runbook.md` and `docs/生产级Runtime实施方案_v1.0.md`. For local snapshot runtime semantics, also read `docs/local_snapshot_runtime.md`. For denied versus unavailable artifact access paths, also read `docs/artifact_access_operator_guidance.md`. The operator runbook covers:
 
 - CLI session creation, durable execution, inspection, and approval
 - writable local API session creation, execution, resume triggering, and approval decisions

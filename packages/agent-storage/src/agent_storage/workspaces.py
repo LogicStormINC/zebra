@@ -33,9 +33,14 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     mcp_allowlist,
                     last_attempt_number,
                     runtime_name,
+                    runtime_engine,
+                    runtime_image,
+                    runtime_spec_digest,
+                    runtime_network_enforcement,
+                    runtime_workspace_writable,
                     snapshot_id,
                     snapshot_path
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_id) DO UPDATE SET
                     workspace_root = excluded.workspace_root,
                     prepared_at = excluded.prepared_at,
@@ -49,6 +54,11 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     mcp_allowlist = excluded.mcp_allowlist,
                     last_attempt_number = excluded.last_attempt_number,
                     runtime_name = excluded.runtime_name,
+                    runtime_engine = excluded.runtime_engine,
+                    runtime_image = excluded.runtime_image,
+                    runtime_spec_digest = excluded.runtime_spec_digest,
+                    runtime_network_enforcement = excluded.runtime_network_enforcement,
+                    runtime_workspace_writable = excluded.runtime_workspace_writable,
                     snapshot_id = excluded.snapshot_id,
                     snapshot_path = excluded.snapshot_path
                 """,
@@ -70,6 +80,11 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     ),
                     workspace.last_attempt_number,
                     workspace.runtime_name,
+                    workspace.runtime_engine,
+                    workspace.runtime_image,
+                    workspace.runtime_spec_digest,
+                    workspace.runtime_network_enforcement,
+                    workspace.runtime_workspace_writable,
                     workspace.snapshot_id,
                     workspace.snapshot_path,
                 ),
@@ -94,6 +109,11 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     mcp_allowlist,
                     last_attempt_number,
                     runtime_name,
+                    runtime_engine,
+                    runtime_image,
+                    runtime_spec_digest,
+                    runtime_network_enforcement,
+                    runtime_workspace_writable,
                     snapshot_id,
                     snapshot_path
                 FROM workspace_projections
@@ -122,6 +142,15 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                 ),
                 "last_attempt_number": row["last_attempt_number"],
                 "runtime_name": row["runtime_name"],
+                "runtime_engine": row["runtime_engine"],
+                "runtime_image": row["runtime_image"],
+                "runtime_spec_digest": row["runtime_spec_digest"],
+                "runtime_network_enforcement": row["runtime_network_enforcement"],
+                "runtime_workspace_writable": (
+                    None
+                    if row["runtime_workspace_writable"] is None
+                    else bool(row["runtime_workspace_writable"])
+                ),
                 "snapshot_id": row["snapshot_id"],
                 "snapshot_path": row["snapshot_path"],
             }
@@ -145,6 +174,11 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     mcp_allowlist TEXT,
                     last_attempt_number INTEGER,
                     runtime_name TEXT,
+                    runtime_engine TEXT,
+                    runtime_image TEXT,
+                    runtime_spec_digest TEXT,
+                    runtime_network_enforcement TEXT,
+                    runtime_workspace_writable INTEGER,
                     snapshot_id TEXT,
                     snapshot_path TEXT
                 )
@@ -163,6 +197,17 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     ADD COLUMN runtime_name TEXT
                     """
                 )
+            for name, definition in (
+                ("runtime_engine", "TEXT"),
+                ("runtime_image", "TEXT"),
+                ("runtime_spec_digest", "TEXT"),
+                ("runtime_network_enforcement", "TEXT"),
+                ("runtime_workspace_writable", "INTEGER"),
+            ):
+                if name not in columns:
+                    connection.execute(
+                        f"ALTER TABLE workspace_projections ADD COLUMN {name} {definition}"
+                    )
             if "tool_profile" not in columns:
                 connection.execute(
                     "ALTER TABLE workspace_projections "

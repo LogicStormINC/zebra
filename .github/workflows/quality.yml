@@ -59,3 +59,40 @@ jobs:
         run: pnpm run "/^check:/"
       - name: Build desktop web assets
         run: pnpm build
+
+  gvisor-runtime:
+    name: Real gVisor runtime smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          cache-dependency-glob: uv.lock
+          enable-cache: true
+          python-version: "3.12"
+          version: "0.11.12"
+      - name: Install locked workspace
+        run: uv sync --frozen --all-packages --group dev
+      - name: Install verified runsc release
+        run: |
+          arch="$(uname -m)"
+          release="https://storage.googleapis.com/gvisor/releases/release/latest/${arch}"
+          curl --fail --silent --show-error --location --remote-name "${release}/runsc"
+          curl --fail --silent --show-error --location --remote-name "${release}/runsc.sha512"
+          sha512sum --check runsc.sha512
+          chmod 0755 runsc
+          sudo mv runsc /usr/local/bin/runsc
+          sudo /usr/local/bin/runsc install
+          sudo systemctl restart docker
+      - name: Resolve smoke image digest
+        run: |
+          docker pull alpine:3.22
+          image="$(docker image inspect alpine:3.22 --format '{{index .RepoDigests 0}}')"
+          echo "ZEBRA_GVISOR_IMAGE=${image}" >> "${GITHUB_ENV}"
+      - name: Run real gVisor isolation smoke
+        env:
+          ZEBRA_GVISOR_SMOKE: "1"
+        run: uv run pytest -q tests/agent_runtime/test_gvisor_smoke.py

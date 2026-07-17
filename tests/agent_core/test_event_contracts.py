@@ -89,6 +89,27 @@ def test_validate_event_payload_rejects_unknown_fields() -> None:
         )
 
 
+def test_validate_runtime_provisioned_payload_requires_sha256_authority() -> None:
+    payload = validate_event_payload(
+        EventType.RUNTIME_PROVISIONED,
+        {
+            "runtime_class": "gvisor",
+            "engine": "docker",
+            "image": "zebra/runtime@sha256:" + "a" * 64,
+            "spec_digest": "b" * 64,
+            "network_enforcement": "container-network-none",
+            "workspace_writable": True,
+        },
+    )
+
+    assert payload["runtime_class"] == "gvisor"
+    with pytest.raises(EventPayloadValidationError, match="invalid payload"):
+        validate_event_payload(
+            EventType.RUNTIME_PROVISIONED,
+            {**payload, "spec_digest": "not-a-digest"},
+        )
+
+
 def test_validate_plan_updated_payload_rejects_duplicate_step_ids() -> None:
     with pytest.raises(EventPayloadValidationError, match="invalid payload for plan_updated"):
         validate_event_payload(

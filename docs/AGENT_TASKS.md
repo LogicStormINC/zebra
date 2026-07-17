@@ -13336,20 +13336,30 @@ starting hard runtime, ACP, or code-intelligence implementation.
 
 ### ARCH-129-RT-01 - Hard-Enforced Local Runtime
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex-APP`
 - Suggested role: `RUNTIME / SECURITY / QA`
 - Depends on: `ARCH-129-PLAN-01` and explicit maintainer activation
-- Branch: `TBD (suggested: codex/arch-129-hard-runtime)`
+- Branch: `codex/arch-129-hard-runtime`
 - Issue: `#129`
 - Owned paths: `packages/agent-core/src/agent_core/ports/runtime.py`,
-  `packages/agent-runtime/src/agent_runtime/adapters/`,
-  `packages/agent-runtime/src/agent_runtime/snapshots/`,
-  `packages/agent-security/src/agent_security/`, `apps/worker/`,
-  `tests/agent_runtime/`, `tests/agent_security/`, `tests/worker/`,
-  `docs/operator_runbook.md`,
+  `packages/agent-core/src/agent_core/domain/events.py`,
+  `packages/agent-core/src/agent_core/domain/workspaces.py`,
+  `packages/agent-core/src/agent_core/application/workspace_projection.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/contracts/runtime_events.py`,
+  `packages/agent-runtime/src/agent_runtime/`,
+  `packages/agent-storage/src/agent_storage/workspaces.py`,
+  `apps/config/src/zebra_agent_config/settings.py`, `apps/worker/`,
+  `apps/api/src/zebra_agent_api/workspace_read.py`,
+  `apps/cli/src/zebra_agent_cli/workspace_read.py`,
+  `configs/default.env`, `.env.example`, `.github/workflows/quality.yml`,
+  `tests/agent_core/`, `tests/agent_runtime/`, `tests/agent_storage/`,
+  `tests/api/`, `tests/cli/`, `tests/config/`, `tests/worker/`,
+  `tests/test_session_inspect_contract_matrix.py`,
+  `docs/生产级Runtime实施方案_v1.0.md`,
   `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
-  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`, `task_plan.md`
 
 #### Goal
 
@@ -13358,14 +13368,14 @@ closed when a requested sandbox profile cannot be established or resumed.
 
 #### Acceptance
 
-- [ ] Kernel/container enforcement denies out-of-scope reads, writes, network
+- [x] Kernel/container enforcement denies out-of-scope reads, writes, network
   access, and inheritance of unauthorized descriptors, environment, credentials,
   or privileges.
-- [ ] Requested enforcement failure prevents execution before a tool starts.
-- [ ] Effective sandbox authority is durable and cannot widen on resume.
-- [ ] Timeout, cancellation, snapshot, restore, and platform differences have
+- [x] Requested enforcement failure prevents execution before a tool starts.
+- [x] Effective sandbox authority is durable and cannot widen on resume.
+- [x] Timeout, cancellation, snapshot, restore, and platform differences have
   deterministic coverage.
-- [ ] Focused security/runtime checks, `make test`, `make check`, eval and
+- [x] Focused security/runtime checks, `make test`, `make check`, eval and
   file-size gates pass; architecture section 18 threat model and operator docs
   are current.
 

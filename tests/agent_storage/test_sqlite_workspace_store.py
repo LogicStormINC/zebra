@@ -29,6 +29,11 @@ def test_sqlite_workspace_projection_store_round_trips_workspace_projection(
             "network_allowlist": ("docs.example.com", "api.example.com"),
             "last_attempt_number": 1,
             "runtime_name": "local",
+            "runtime_engine": "docker",
+            "runtime_image": "zebra/runtime@sha256:" + "a" * 64,
+            "runtime_spec_digest": "b" * 64,
+            "runtime_network_enforcement": "container-network-none",
+            "runtime_workspace_writable": True,
             "snapshot_id": "snap-001",
             "snapshot_path": "/tmp/snapshots/snap-001",
         }

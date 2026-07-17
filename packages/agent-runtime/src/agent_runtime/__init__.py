@@ -1,12 +1,18 @@
 """Runtime package for Zebra Agent."""
 
 from agent_core.ports.runtime import (
+    EffectiveRuntimeAuthority,
+    RuntimeCapabilities,
     RuntimeCapabilityError,
+    RuntimeClass,
     RuntimeHandle,
+    RuntimeLimits,
     RuntimeSnapshot,
+    SandboxSpec,
 )
 
 from agent_runtime.adapters.local import LocalRuntime
+from agent_runtime.adapters.oci import OciRuntime
 from agent_runtime.git_commit import (
     WorkspaceCommitCommand,
     WorkspaceCommitError,
@@ -58,6 +64,7 @@ from agent_runtime.workspace import (
 
 __all__ = [
     "LocalRuntime",
+    "OciRuntime",
     "LocalResearchSubagentCoordinator",
     "LocalResearchSubagentRunner",
     "LocalToolGateway",
@@ -70,8 +77,13 @@ __all__ = [
     "ReadOnlyToolGateway",
     "ResearchSubagentTool",
     "RuntimeCapabilityError",
+    "RuntimeCapabilities",
+    "RuntimeClass",
+    "RuntimeLimits",
+    "EffectiveRuntimeAuthority",
     "RuntimeHandle",
     "RuntimeSnapshot",
+    "SandboxSpec",
     "McpProtocolError",
     "McpPrompt",
     "McpPromptArgument",

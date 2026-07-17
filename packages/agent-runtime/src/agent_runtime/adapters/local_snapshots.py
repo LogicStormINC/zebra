@@ -1,6 +1,8 @@
 import json
+import os
 from collections import defaultdict
 from datetime import datetime
+from hashlib import sha256
 from pathlib import Path
 from shutil import copytree, rmtree
 from tempfile import mkdtemp
@@ -39,15 +41,21 @@ class LocalSnapshotBackend:
 
     def create_snapshot(self, handle: RuntimeHandle) -> RuntimeSnapshot:
         workspace_root = self._require_workspace_root(handle)
+        if self._root.is_relative_to(workspace_root):
+            raise RuntimeCapabilityError("runtime snapshot root must not be inside the workspace")
         snapshot = RuntimeSnapshot.create(
             runtime_name=handle.runtime_name,
             source_handle_id=handle.handle_id,
             workspace_root=str(workspace_root),
+            authority_digest=(
+                handle.authority.spec_digest if handle.authority is not None else None
+            ),
+            image=handle.authority.image if handle.authority is not None else None,
         )
         snapshot_root = self._snapshots_root / snapshot.snapshot_id
         snapshot_root.mkdir(parents=True, exist_ok=False)
         snapshot_workspace = snapshot_root / "workspace"
-        copytree(workspace_root, snapshot_workspace)
+        copytree(workspace_root, snapshot_workspace, symlinks=True)
         self._write_manifest(snapshot_root, snapshot, workspace_root)
         stored_snapshot = RuntimeSnapshot(
             snapshot_id=snapshot.snapshot_id,
@@ -56,6 +64,8 @@ class LocalSnapshotBackend:
             created_at=snapshot.created_at,
             workspace_root=snapshot.workspace_root,
             snapshot_path=str(snapshot_root),
+            authority_digest=snapshot.authority_digest,
+            image=snapshot.image,
         )
         tracked = self._snapshots_by_handle[handle.handle_id]
         tracked.append(snapshot_root)
@@ -93,14 +103,6 @@ class LocalSnapshotBackend:
                 status=LocalSnapshotStatus.MISSING,
                 problems=("manifest.json is unavailable",),
             )
-        problems = self._manifest_problems(snapshot, manifest)
-        if problems:
-            return LocalSnapshotInspection(
-                snapshot_id=snapshot.snapshot_id,
-                snapshot_path=str(snapshot_root),
-                status=LocalSnapshotStatus.INCOMPATIBLE,
-                problems=problems,
-            )
         workspace_root = snapshot_root / "workspace"
         if not workspace_root.exists() or not workspace_root.is_dir():
             return LocalSnapshotInspection(
@@ -108,6 +110,14 @@ class LocalSnapshotBackend:
                 snapshot_path=str(snapshot_root),
                 status=LocalSnapshotStatus.MISSING,
                 problems=("workspace payload is unavailable",),
+            )
+        problems = self._manifest_problems(snapshot, manifest, workspace_root)
+        if problems:
+            return LocalSnapshotInspection(
+                snapshot_id=snapshot.snapshot_id,
+                snapshot_path=str(snapshot_root),
+                status=LocalSnapshotStatus.INCOMPATIBLE,
+                problems=problems,
             )
         return LocalSnapshotInspection(
             snapshot_id=snapshot.snapshot_id,
@@ -135,7 +145,7 @@ class LocalSnapshotBackend:
         snapshot_root = self._require_restorable_snapshot(snapshot)
         workspace_root = snapshot_root / "workspace"
         restore_root = self._allocate_restore_root(snapshot.snapshot_id, "restore")
-        copytree(workspace_root, restore_root)
+        copytree(workspace_root, restore_root, symlinks=True)
         return RuntimeHandle.create(
             runtime_name=snapshot.runtime_name,
             workspace_root=str(restore_root),
@@ -145,7 +155,7 @@ class LocalSnapshotBackend:
         snapshot_root = self._require_restorable_snapshot(snapshot)
         workspace_root = snapshot_root / "workspace"
         fork_root = self._allocate_restore_root(snapshot.snapshot_id, "fork")
-        copytree(workspace_root, fork_root)
+        copytree(workspace_root, fork_root, symlinks=True)
         return RuntimeHandle.create(
             runtime_name=snapshot.runtime_name,
             workspace_root=str(fork_root),
@@ -186,8 +196,7 @@ class LocalSnapshotBackend:
         inspection = self.inspect_snapshot(snapshot)
         if inspection.status is LocalSnapshotStatus.MISSING:
             raise RuntimeCapabilityError(
-                "local runtime snapshot payload is unavailable: "
-                + ", ".join(inspection.problems)
+                "local runtime snapshot payload is unavailable: " + ", ".join(inspection.problems)
             )
         if inspection.status is LocalSnapshotStatus.INCOMPATIBLE:
             raise RuntimeCapabilityError(
@@ -200,7 +209,9 @@ class LocalSnapshotBackend:
     def _snapshot_root_path(self, snapshot: RuntimeSnapshot) -> Path | None:
         if snapshot.snapshot_path is None or not snapshot.snapshot_path.strip():
             return None
-        return Path(snapshot.snapshot_path).expanduser().resolve(strict=False)
+        candidate = Path(snapshot.snapshot_path).expanduser().resolve(strict=False)
+        expected = (self._snapshots_root / snapshot.snapshot_id).resolve(strict=False)
+        return candidate if candidate == expected else None
 
     def _load_manifest(self, snapshot_root: Path) -> dict[str, object] | None:
         manifest_path = snapshot_root / "manifest.json"
@@ -218,6 +229,7 @@ class LocalSnapshotBackend:
         self,
         snapshot: RuntimeSnapshot,
         manifest: dict[str, object],
+        workspace_root: Path,
     ) -> tuple[str, ...]:
         if "__decode_error__" in manifest:
             return ("manifest.json is not valid JSON",)
@@ -240,11 +252,28 @@ class LocalSnapshotBackend:
                 datetime.fromisoformat(created_at)
             except ValueError:
                 problems.append("manifest created_at is invalid")
-        workspace_root = manifest.get("workspace_root")
-        if not isinstance(workspace_root, str) or not workspace_root.strip():
+        manifest_workspace_root = manifest.get("workspace_root")
+        if (
+            not isinstance(manifest_workspace_root, str)
+            or not manifest_workspace_root.strip()
+        ):
             problems.append("manifest workspace_root is missing")
-        elif snapshot.workspace_root and workspace_root != snapshot.workspace_root:
+        elif (
+            snapshot.workspace_root
+            and manifest_workspace_root != snapshot.workspace_root
+        ):
             problems.append("manifest workspace_root does not match snapshot metadata")
+        if manifest.get("authority_digest") != snapshot.authority_digest:
+            problems.append("manifest authority_digest does not match snapshot metadata")
+        if manifest.get("image") != snapshot.image:
+            problems.append("manifest image does not match snapshot metadata")
+        try:
+            workspace_digest = _workspace_digest(workspace_root)
+        except RuntimeCapabilityError as exc:
+            problems.append(str(exc))
+        else:
+            if manifest.get("workspace_digest") != workspace_digest:
+                problems.append("snapshot workspace payload digest does not match manifest")
         return tuple(problems)
 
     def _forget_snapshot_path(self, snapshot_root: Path) -> None:
@@ -264,8 +293,34 @@ class LocalSnapshotBackend:
             "source_handle_id": snapshot.source_handle_id,
             "created_at": snapshot.created_at.isoformat(),
             "workspace_root": str(workspace_root),
+            "authority_digest": snapshot.authority_digest,
+            "image": snapshot.image,
+            "workspace_digest": _workspace_digest(snapshot_root / "workspace"),
         }
         (snapshot_root / "manifest.json").write_text(
             json.dumps(manifest, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
+
+
+def _workspace_digest(workspace_root: Path) -> str:
+    digest = sha256()
+    for path in sorted(workspace_root.rglob("*"), key=lambda item: item.as_posix()):
+        relative = path.relative_to(workspace_root).as_posix().encode("utf-8")
+        digest.update(len(relative).to_bytes(8, "big"))
+        digest.update(relative)
+        if path.is_symlink():
+            digest.update(b"L")
+            digest.update(os.readlink(path).encode("utf-8", errors="surrogateescape"))
+        elif path.is_dir():
+            digest.update(b"D")
+        elif path.is_file():
+            digest.update(b"F")
+            with path.open("rb") as source:
+                for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                    digest.update(chunk)
+        else:
+            raise RuntimeCapabilityError(
+                f"runtime snapshot contains unsupported file type: {relative.decode()}"
+            )
+    return digest.hexdigest()

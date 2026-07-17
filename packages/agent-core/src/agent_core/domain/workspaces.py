@@ -35,6 +35,11 @@ class WorkspaceProjection(BaseModel):
     mcp_allowlist: tuple[str, ...] | None = None
     last_attempt_number: int | None = None
     runtime_name: str | None = None
+    runtime_engine: str | None = None
+    runtime_image: str | None = None
+    runtime_spec_digest: str | None = None
+    runtime_network_enforcement: str | None = None
+    runtime_workspace_writable: bool | None = None
     snapshot_id: str | None = None
     snapshot_path: str | None = None
 
@@ -46,7 +51,16 @@ class WorkspaceProjection(BaseModel):
             raise ValueError("workspace_root must not be blank")
         return stripped
 
-    @field_validator("policy_profile", "runtime_name", "snapshot_id", "snapshot_path")
+    @field_validator(
+        "policy_profile",
+        "runtime_name",
+        "runtime_engine",
+        "runtime_image",
+        "runtime_spec_digest",
+        "runtime_network_enforcement",
+        "snapshot_id",
+        "snapshot_path",
+    )
     @classmethod
     def ensure_optional_text_not_blank(cls, value: str | None) -> str | None:
         if value is None:
