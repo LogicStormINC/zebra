@@ -13163,3 +13163,176 @@ acyclic while preserving all builtin tool and local harness behavior.
 
 - moving harness composition between packages or changing tool contracts
 - changing workspace containment, runtime execution, MCP, Web, or subagent logic
+
+## Issue #129 Deferred Architecture Plan
+
+### ARCH-129-PLAN-01 - Architecture Remediation And Deferral Plan
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / SECURITY`
+- Depends on: `P145-UI-01`
+- Branch: `codex/issue-129-remediation-plan`
+- Issue: `#129`
+- Owned paths: `docs/Issue_129_架构整改与延期实施计划.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Turn Issue #129 into a durable, dependency-ordered remediation plan without
+starting hard runtime, ACP, or code-intelligence implementation.
+
+#### Acceptance
+
+- [x] One focused remediation document records current gaps, scope, non-goals,
+  acceptance, validation, activation gates, and truthful deferred status.
+- [x] Three separate implementation cards exist with explicit owner and branch
+  placeholders, initial owned paths, dependencies, validation expectations,
+  non-goals, and mandatory pre-Ready decisions.
+- [x] Every implementation card remains locked until an explicit maintainer
+  decision activates it.
+- [x] `PROGRESS.md` records planning completion without claiming implementation.
+
+### ARCH-129-RT-01 - Hard-Enforced Local Runtime
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `RUNTIME / SECURITY / QA`
+- Depends on: `ARCH-129-PLAN-01` and explicit maintainer activation
+- Branch: `TBD (suggested: codex/arch-129-hard-runtime)`
+- Issue: `#129`
+- Owned paths: `packages/agent-core/src/agent_core/ports/runtime.py`,
+  `packages/agent-runtime/src/agent_runtime/adapters/`,
+  `packages/agent-runtime/src/agent_runtime/snapshots/`,
+  `packages/agent-security/src/agent_security/`, `apps/worker/`,
+  `tests/agent_runtime/`, `tests/agent_security/`, `tests/worker/`,
+  `docs/operator_runbook.md`,
+  `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Add an OS- or rootless-container-enforced RuntimePort implementation that fails
+closed when a requested sandbox profile cannot be established or resumed.
+
+#### Acceptance
+
+- [ ] Kernel/container enforcement denies out-of-scope reads, writes, network
+  access, and inheritance of unauthorized descriptors, environment, credentials,
+  or privileges.
+- [ ] Requested enforcement failure prevents execution before a tool starts.
+- [ ] Effective sandbox authority is durable and cannot widen on resume.
+- [ ] Timeout, cancellation, snapshot, restore, and platform differences have
+  deterministic coverage.
+- [ ] Focused security/runtime checks, `make test`, `make check`, eval and
+  file-size gates pass; architecture section 18 threat model and operator docs
+  are current.
+
+#### Pre-Ready Decisions
+
+- choose and record the first supported Linux enforcement mechanism and minimum
+  platform/runtime versions
+- record the macOS enforcement or explicit unsupported/fail-closed matrix
+- define each sandbox profile, unavailable-profile behavior, fixture locations,
+  integration environment, and exact validation commands
+- replace owner, branch, and any still-broad owned paths through a reviewed
+  planning PR before implementation starts
+
+#### Explicit Non-Goals
+
+- Kubernetes orchestration, warm pools, multi-tenant scheduling, or a new
+  credential/egress platform
+- describing host subprocess policy checks as a hard sandbox
+
+### ARCH-129-ACP-01 - ACP Entry Adapter
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `APP / CORE / SECURITY / QA`
+- Depends on: `ARCH-129-RT-01` merged and explicit maintainer activation
+- Branch: `TBD (suggested: codex/arch-129-acp-adapter)`
+- Issue: `#129`
+- Owned paths: `packages/agent-integrations/src/agent_integrations/acp/`,
+  `apps/acp/`, `tests/agent_integrations/acp/`, `tests/acp/`,
+  `docs/operator_runbook.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Map ACP lifecycle and streaming onto existing durable Session/Event, Policy,
+Tool Gateway, approval, clarification, cancellation, and resume contracts.
+
+#### Acceptance
+
+- [ ] ACP reconnect resumes from a durable sequence checkpoint without
+  repeating completed tool effects.
+- [ ] All ACP actions use existing Policy, Tool Gateway, MCP allowlist, material
+  provenance, approval, and clarification paths.
+- [ ] The Session Event Store remains the only durable authority and ACP types
+  do not enter `agent-core`.
+- [ ] Adapter restart, cancel, suspend, approval, and clarification behavior
+  remains recoverable and consistent with existing API/CLI contracts.
+- [ ] Focused protocol/security checks, `make test`, `make check`, eval and
+  file-size gates, plus one real-client acceptance pass.
+
+#### Pre-Ready Decisions
+
+- pin the ACP protocol version, transport, capability-negotiation subset, SDK
+  or dependency approach, and first real acceptance client
+- define fixtures, reconnect checkpoints, executable validation commands, and
+  any necessary root-configuration hotspot as a separate owned task
+- replace owner, branch, and any still-broad owned paths through a reviewed
+  planning PR before implementation starts
+
+#### Explicit Non-Goals
+
+- a second session state machine, protocol-specific authorization, a new IDE,
+  remote-agent federation, or A2A
+
+### ARCH-129-CTX-01 - Optional Code Intelligence Adapter
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `CTX / TOOLS / QA`
+- Depends on: `ARCH-129-RT-01` merged and explicit maintainer activation
+- Branch: `TBD (suggested: codex/arch-129-code-intelligence)`
+- Issue: `#129`
+- Owned paths: `packages/agent-context/src/agent_context/code_intelligence/`,
+  `packages/agent-tools/src/agent_tools/builtin/code_intelligence.py`,
+  `packages/agent-integrations/src/agent_integrations/code_intelligence/`,
+  `evals/cases/code_intelligence/`, `tests/agent_context/code_intelligence/`,
+  `tests/agent_tools/test_code_intelligence.py`,
+  `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
+  `docs/operator_runbook.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Add bounded optional Tree-sitter/LSP definitions, references, symbols, and
+diagnostics for coding tasks without making the index authoritative or adding
+an `agent-core` dependency.
+
+#### Acceptance
+
+- [ ] A small documented language set supports bounded sourced semantic
+  navigation with deterministic timeout, cancellation, failure, and fallback.
+- [ ] Results preserve provenance, trust, file/range and truncation evidence,
+  with explicit file, byte, time, result, process, and concurrency ceilings.
+- [ ] General tasks and fixed Research children receive no implicit capability
+  or authority expansion.
+- [ ] Representative evals show measurable improvement over the lexical
+  baseline before scope expands.
+- [ ] Focused context/tool checks, `make test`, `make check`, eval and file-size
+  gates pass; Context Compiler and operator docs reflect actual support.
+
+#### Pre-Ready Decisions
+
+- select the initial languages and Tree-sitter/LSP responsibility split,
+  including language-server execution under `ARCH-129-RT-01`
+- define the lexical baseline corpus, quality and latency metrics, minimum
+  improvement threshold, fixtures, failure cases, and exact validation commands
+- replace owner, branch, and any still-broad owned paths through a reviewed
+  planning PR before implementation starts
+
+#### Explicit Non-Goals
+
+- default persistent full-repository indexing, vectors, embeddings, reranking,
+  multi-repository graphs, or index authority over project state
