@@ -88,6 +88,9 @@ class SingleAttemptOrchestrator:
             emitted_events.append(
                 context_compacted_event(compaction, attempt_number=context.attempt.number)
             )
+            self._model_step.prepare_provider_continuation(
+                self._model_gateway, compaction
+            )
         completion = self._model_step.request_completion(
             messages,
             self._model_gateway,

@@ -26,6 +26,13 @@ def test_tool_output_projector_persists_full_output_and_bounds_model_view() -> N
     assert projected.metadata["artifact_uri"] == "file:///artifacts/command.txt"
     assert projected.metadata["output_truncated"] is True
     assert projected.metadata["output_size_bytes"] > 500
+    envelope = projected.metadata["output_envelope"]
+    assert isinstance(envelope, dict)
+    assert envelope["artifact_uri"] == "file:///artifacts/command.txt"
+    assert envelope["preview_head"].startswith("[stdout]\nhead")
+    assert envelope["preview_tail"].endswith("failure detail")
+    assert envelope["original_bytes"] == projected.metadata["output_size_bytes"]
+    assert envelope["checksum"] == projected.metadata["output_sha256"]
 
 
 def test_tool_output_projector_keeps_small_stdout_and_stderr_exact() -> None:

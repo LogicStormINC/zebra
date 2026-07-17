@@ -91,11 +91,21 @@ def execute(
         )
     if command == "context":
         control = SessionContextControlApi(_database_path(namespace.database, active_settings))
-        response = (
-            control.inspect(namespace.session_id)
-            if namespace.context_command == "inspect"
-            else control.compact(namespace.session_id)
-        )
+        if namespace.context_command == "inspect":
+            response = control.inspect(namespace.session_id)
+        elif namespace.context_command == "recover":
+            response = control.recover(
+                namespace.session_id, {"capsule_id": namespace.capsule_id}
+            )
+        else:
+            response = control.compact(
+                namespace.session_id,
+                {
+                    "focus": namespace.focus,
+                    "preview": namespace.preview,
+                    "through_sequence": namespace.through_sequence,
+                },
+            )
         return CliCommandResult(
             command="context",
             payload={"action": namespace.context_command, **response.body},

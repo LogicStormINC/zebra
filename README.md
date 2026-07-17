@@ -34,8 +34,16 @@ tool-schema space and fails closed above the hard input limit. Completed older
 exchanges compact deterministically while the stable prefix, original goal, latest
 working exchange, complete assistant/tool pairs, and pending approval evidence remain
 canonical. Compaction events persist a transparent versioned `ContextCapsule` with
-source hash and recovery state. Command and test output is stored completely as an
-Artifact while only a bounded head/tail envelope reaches events and the model.
+source range, source hash, protected constraints, approval state, evidence refs,
+known omissions, and recovery state. Capsule persistence, creation event, and
+active-pointer advancement are atomic. Old completed exchanges fold into typed
+tombstones, the latest exact tail remains paired, and policy-checked evidence can
+be rehydrated on demand. Command, test, file, search, Web, and MCP output passes
+one Artifact-backed head/tail envelope boundary before it reaches the model.
+Provider-native continuation is capability-gated, provider/model/version/TTL
+scoped, and always falls back to the transparent Capsule. API and CLI expose
+occupancy, focus/preview compaction, exact-tail boundaries, and historical Capsule
+recovery without turning compaction into a new session.
 
 When consequential information is missing, the parent agent may call the typed
 `agent.clarify` tool. Zebra persists the bounded question and optional choices,

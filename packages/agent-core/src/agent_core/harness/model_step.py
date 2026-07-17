@@ -2,6 +2,7 @@ from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime
 
+from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import new_correlation_id, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
@@ -12,17 +13,31 @@ from agent_core.domain.modeling import (
     ModelToolDefinition,
 )
 from agent_core.domain.tools import ToolCall, ToolResult
-from agent_core.harness.context_window import ContextWindowExceededError, plan_context_window
+from agent_core.harness.context_window import ContextWindowExceededError
+from agent_core.harness.hooks import CompactionHook
+from agent_core.harness.model_request import (
+    build_context_plan,
+    complete_model,
+    context_window,
+    with_context_plan,
+)
 from agent_core.harness.models import HarnessEventDraft, HarnessTask
+from agent_core.harness.provider_continuation import (
+    PreparedProviderContinuation,
+    continuation_event,
+    prepare_provider_continuation,
+)
 from agent_core.ports.context_compiler import ContextCompilerPort
 from agent_core.ports.conversation_compactor import (
     ConversationCompactionResult,
     ConversationCompactorPort,
 )
 from agent_core.ports.model_gateway import (
-    ModelContextWindowPort,
     ModelGatewayPort,
     StreamingModelGatewayPort,
+)
+from agent_core.ports.provider_continuation import (
+    ProviderContinuationCompletionPort,
 )
 
 
@@ -35,6 +50,12 @@ class HarnessModelStep:
         conversation_compactor: ConversationCompactorPort | None = None,
         conversation_token_budget: int | None = None,
         event_sink: Callable[[HarnessEventDraft], None] | None = None,
+        continuation_sink: Callable[
+            [ProviderContinuationRef, bytes | None, int | None], str | None
+        ]
+        | None = None,
+        provider_continuation: ProviderContinuationRef | None = None,
+        compaction_hook: CompactionHook | None = None,
         attempt_number: int = 1,
     ) -> None:
         if conversation_token_budget is not None and conversation_token_budget <= 0:
@@ -46,7 +67,10 @@ class HarnessModelStep:
         self._conversation_compactor = conversation_compactor
         self._conversation_token_budget = conversation_token_budget
         self._event_sink = event_sink
+        self._continuation_sink = continuation_sink
         self._attempt_number = attempt_number
+        self._provider_continuation = provider_continuation
+        self._compaction_hook = compaction_hook
 
     def prepare_conversation(
         self,
@@ -58,17 +82,15 @@ class HarnessModelStep:
         created_at: datetime,
     ) -> ConversationCompactionResult | None:
         tools = self._available_tools if allow_tools else ()
-        window = (
-            model_gateway.context_window
-            if isinstance(model_gateway, ModelContextWindowPort)
-            else ModelContextWindow()
-        )
+        window = context_window(model_gateway)
         budget = min(
-            self._conversation_token_budget or window.input_token_limit,
-            window.input_token_limit,
+            self._conversation_token_budget or window.compact_at,
+            window.compact_at,
         )
         result = None
         if self._conversation_compactor is not None:
+            if self._compaction_hook is not None:
+                self._compaction_hook.pre_compact(tuple(messages), max_tokens=budget)
             result = self._conversation_compactor.compact_conversation(
                 tuple(messages),
                 user_goal=user_goal,
@@ -76,12 +98,14 @@ class HarnessModelStep:
                 created_at=created_at,
             )
             messages[:] = result.messages
-        plan = plan_context_window(tuple(messages), tools, window)
+            if self._compaction_hook is not None:
+                self._compaction_hook.post_compact(result)
+        attempted = (result.provenance,) if result is not None and result.compacted else ()
+        plan = build_context_plan(
+            tuple(messages), tools, window, model_gateway, attempted_strategies=attempted
+        )
         if not plan.within_budget:
-            raise ContextWindowExceededError(
-                "model request exceeds input budget: "
-                f"{plan.estimated_input_tokens}>{plan.input_token_limit}"
-            )
+            raise ContextWindowExceededError(plan)
         return result
 
     def compact_conversation(
@@ -126,19 +150,25 @@ class HarnessModelStep:
         allow_tools: bool,
     ) -> ModelCompletion:
         tools = self._available_tools if allow_tools else ()
-        window = (
-            model_gateway.context_window
-            if isinstance(model_gateway, ModelContextWindowPort)
-            else ModelContextWindow()
-        )
-        plan = plan_context_window(tuple(messages), tools, window)
+        window = context_window(model_gateway)
+        plan = build_context_plan(tuple(messages), tools, window, model_gateway)
         if not plan.within_budget:
-            raise ContextWindowExceededError(
-                "model request exceeds input budget: "
-                f"{plan.estimated_input_tokens}>{plan.input_token_limit}"
-            )
+            raise ContextWindowExceededError(plan)
         if self._event_sink is None:
-            return model_gateway.complete(messages, tools=tools)
+            if self._provider_continuation is not None and isinstance(
+                model_gateway, ProviderContinuationCompletionPort
+            ):
+                try:
+                    completion = model_gateway.complete_from_reference(
+                        self._provider_continuation, messages, tools=tools
+                    )
+                except (NotImplementedError, TimeoutError, ValueError):
+                    completion = model_gateway.complete(messages, tools=tools)
+                finally:
+                    self._provider_continuation = None
+            else:
+                completion = model_gateway.complete(messages, tools=tools)
+            return with_context_plan(completion, plan)
         model_call_id = str(new_correlation_id())
         self._event_sink(
             HarnessEventDraft(
@@ -147,10 +177,46 @@ class HarnessModelStep:
                 payload={
                     "attempt_number": self._attempt_number,
                     "model_call_id": model_call_id,
+                    "estimated_input_tokens": plan.estimated_input_tokens,
+                    "input_token_limit": plan.input_token_limit,
+                    "model_profile": plan.profile_name,
+                    "token_estimate_method": plan.estimate_method,
+                    "token_breakdown": plan.token_breakdown,
+                    "reserves": {
+                        "output": window.max_output_tokens,
+                        "reasoning": window.reasoning_reserve_tokens,
+                        "compaction": window.compaction_reserve_tokens,
+                        "protocol_and_emergency": window.protocol_reserve_tokens,
+                    },
                 },
             )
         )
-        if isinstance(model_gateway, StreamingModelGatewayPort):
+        if self._provider_continuation is not None and isinstance(
+            model_gateway, ProviderContinuationCompletionPort
+        ):
+            try:
+                completion = model_gateway.complete_from_reference(
+                    self._provider_continuation,
+                    messages,
+                    tools=tools,
+                )
+            except (NotImplementedError, TimeoutError, ValueError):
+                self._emit_continuation_selection(
+                    PreparedProviderContinuation(
+                        mode="capsule_fallback",
+                        reason="provider continuation request failed",
+                    )
+                )
+                completion = complete_model(
+                    model_gateway,
+                    messages,
+                    tools,
+                    model_call_id=model_call_id,
+                    on_delta=self._emit_text_delta,
+                )
+            finally:
+                self._provider_continuation = None
+        elif isinstance(model_gateway, StreamingModelGatewayPort):
             completion = model_gateway.complete_stream(
                 messages,
                 tools=tools,
@@ -161,12 +227,35 @@ class HarnessModelStep:
             )
         else:
             completion = model_gateway.complete(messages, tools=tools)
+        planned_completion = with_context_plan(completion, plan)
         return replace(
-            completion,
+            planned_completion,
             call_metadata=replace(
-                completion.call_metadata,
+                planned_completion.call_metadata,
                 model_call_id=model_call_id,
             ),
+        )
+
+    def prepare_provider_continuation(
+        self,
+        model_gateway: ModelGatewayPort,
+        result: ConversationCompactionResult,
+    ) -> None:
+        if not result.compacted or result.capsule is None:
+            return
+        selection = prepare_provider_continuation(
+            model_gateway, result.capsule, self._continuation_sink
+        )
+        self._provider_continuation = selection.reference
+        self._emit_continuation_selection(selection)
+
+    def _emit_continuation_selection(
+        self, selection: PreparedProviderContinuation
+    ) -> None:
+        if self._event_sink is None:
+            return
+        self._event_sink(
+            continuation_event(selection, attempt_number=self._attempt_number)
         )
 
     def _emit_text_delta(self, model_call_id: str, delta: ModelTextDelta) -> None:
@@ -232,6 +321,7 @@ class HarnessModelStep:
                 content=tool_result.output or f"Tool {tool_result.status.value}.",
                 created_at=created_at,
                 tool_call_id=tool_call.provider_call_id or str(tool_call.tool_call_id),
+                metadata=dict(tool_result.metadata),
             )
         )
 

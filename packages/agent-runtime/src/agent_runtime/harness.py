@@ -177,23 +177,35 @@ class LocalToolGateway(ToolGatewayPort):
             artifact_payload_store,
             current_session_id=current_session_id,
         )
+        self._output_projector = output_projector
         registry = ToolRegistry()
         tools = (
             ClarifyTool(),
             PlanTool(),
-            WorkspaceListTool(self._workspace),
-            FileReadTool(self._workspace),
-            WorkspaceSearchTool(self._workspace),
+            WorkspaceListTool(
+                self._workspace,
+                max_output_bytes=None if output_projector is not None else 32_768,
+            ),
+            FileReadTool(
+                self._workspace,
+                max_bytes=None if output_projector is not None else 16_384,
+            ),
+            WorkspaceSearchTool(
+                self._workspace,
+                max_output_bytes=None if output_projector is not None else 32_768,
+            ),
             GitStatusTool(self._runtime, self._workspace),
             PatchApplyTool(self._runtime, self._workspace),
             TestsRunTool(
                 self._runtime,
                 self._workspace,
                 DEFAULT_TEST_PRESETS,
-                output_projector,
             ),
-            CommandRunTool(self._runtime, self._workspace, output_projector),
-            WebFetchTool(web_gateway_transport or LocalWebGatewayTransport()),
+            CommandRunTool(self._runtime, self._workspace),
+            WebFetchTool(
+                web_gateway_transport or LocalWebGatewayTransport(),
+                max_output_bytes=262_144 if output_projector is not None else 65_536,
+            ),
         )
         enabled_names = tool_names_for_profile(tool_profile)
         for tool in tools:
@@ -215,7 +227,11 @@ class LocalToolGateway(ToolGatewayPort):
             history_tool = SessionSearchTool(session_history, current_session_id)
             registry.register(history_tool.contract, history_tool.handle)
         mcp_transport = (
-            LocalStdioMcpTransport(mcp_servers, mcp_allowlist)
+            LocalStdioMcpTransport(
+                mcp_servers,
+                mcp_allowlist,
+                max_output_bytes=None if output_projector is not None else 32_768,
+            )
             if mcp_servers and (mcp_allowlist is None or mcp_allowlist)
             else None
         )
@@ -267,7 +283,8 @@ class LocalToolGateway(ToolGatewayPort):
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
         try:
-            return self._executor.execute(tool_call)
+            result = self._executor.execute(tool_call)
+            return self._project_tool_output(tool_call, result)
         except ToolRegistryError as exc:
             return ToolResult(
                 tool_call_id=tool_call.tool_call_id,
@@ -278,6 +295,38 @@ class LocalToolGateway(ToolGatewayPort):
                     "detail": str(exc),
                 },
             )
+
+    def _project_tool_output(self, tool_call: ToolCall, result: ToolResult) -> ToolResult:
+        if self._output_projector is None:
+            return result
+        stderr = result.metadata.get("stderr")
+        if tool_call.name in {"command.run", "tests.run"} and isinstance(stderr, str):
+            projected = self._output_projector.project(
+                stdout=result.output,
+                stderr=stderr,
+                artifact_name=f"{tool_call.name.replace('.', '-')}.txt",
+                provenance={
+                    "tool_name": tool_call.name,
+                    "tool_call_id": str(tool_call.tool_call_id),
+                },
+            )
+            metadata = {**result.metadata, "stderr": "", **projected.metadata}
+        else:
+            projected = self._output_projector.project_text(
+                result.output,
+                artifact_name=f"{tool_call.name.replace('.', '-')}.txt",
+                provenance={
+                    "tool_name": tool_call.name,
+                    "tool_call_id": str(tool_call.tool_call_id),
+                },
+            )
+            metadata = {**result.metadata, **projected.metadata}
+        return ToolResult(
+            tool_call_id=result.tool_call_id,
+            status=result.status,
+            output=projected.model_output,
+            metadata=metadata,
+        )
 
     def resolve_model_tool_calls(
         self,

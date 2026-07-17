@@ -34,8 +34,15 @@ class ApiSessionReadMixin:
     def get_session_context(self, session_id: str) -> ApiResponse:
         return SessionContextControlApi(self.database_path).inspect(session_id)
 
-    def compact_session_context(self, session_id: str) -> ApiResponse:
-        return SessionContextControlApi(self.database_path).compact(session_id)
+    def compact_session_context(
+        self, session_id: str, body: Mapping[str, object] | None = None
+    ) -> ApiResponse:
+        return SessionContextControlApi(self.database_path).compact(session_id, body or {})
+
+    def recover_session_context(
+        self, session_id: str, body: Mapping[str, object]
+    ) -> ApiResponse:
+        return SessionContextControlApi(self.database_path).recover(session_id, body)
 
     def get_session_memory(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path).get_session_memory(session_id)

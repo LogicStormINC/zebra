@@ -289,6 +289,9 @@ class SequentialToolLoop:
                 "conversation_compaction_count": compaction_count + 1,
                 "conversation_tokens_after_compaction": compaction.after_tokens,
             }
+            self._model_step.prepare_provider_continuation(
+                self._model_gateway, compaction
+            )
         completion = self._model_step.request_completion(
             messages,
             self._model_gateway,

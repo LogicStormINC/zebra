@@ -24,6 +24,22 @@ from agent_context.models import (
     ContextProvenance,
     TrustLevel,
 )
+from agent_context.projection import (
+    build_active_context_projection,
+    build_protected_instruction_ledger,
+    rehydrate_projection,
+)
+from agent_context.projection_models import (
+    LEDGER_MARKER,
+    PROJECTED_CALL_MARKER,
+    TOMBSTONE_MARKER,
+    ActiveContextProjection,
+    FoldedToolExchange,
+    ProtectedInstruction,
+    ProtectedInstructionKind,
+    ProtectedInstructionLedger,
+    ToolResultTombstone,
+)
 from agent_context.prompt_layout import (
     PromptCacheKeyRequest,
     PromptLayout,
@@ -39,6 +55,7 @@ from agent_context.trust import prompt_injection_metadata, trust_level_for_item
 
 __all__ = [
     "CompiledContext",
+    "ActiveContextProjection",
     "build_prompt_cache_key",
     "build_prompt_layout",
     "LocalContextCompiler",
@@ -51,10 +68,16 @@ __all__ = [
     "ContextItem",
     "ContextItemKind",
     "ContextProvenance",
+    "FoldedToolExchange",
+    "LEDGER_MARKER",
     "PromptCacheKeyRequest",
     "PromptLayout",
     "PromptSection",
     "PromptSectionKind",
+    "PROJECTED_CALL_MARKER",
+    "ProtectedInstruction",
+    "ProtectedInstructionKind",
+    "ProtectedInstructionLedger",
     "PROVENANCE",
     "ScannedFile",
     "build_repo_map_item",
@@ -64,10 +87,15 @@ __all__ = [
     "scan_workspace_files",
     "score_file",
     "SUMMARY_MARKER",
+    "TOMBSTONE_MARKER",
     "ToolOutputCompactionRequest",
     "ToolOutputEvidence",
+    "ToolResultTombstone",
     "TrustLevel",
     "prompt_injection_metadata",
+    "build_active_context_projection",
+    "build_protected_instruction_ledger",
     "estimate_message_tokens",
+    "rehydrate_projection",
     "trust_level_for_item",
 ]

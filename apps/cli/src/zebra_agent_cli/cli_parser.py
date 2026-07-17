@@ -80,6 +80,13 @@ def build_parser() -> argparse.ArgumentParser:
     context_compact = context_subcommands.add_parser("compact")
     context_compact.add_argument("session_id")
     context_compact.add_argument("--database")
+    context_compact.add_argument("--focus")
+    context_compact.add_argument("--preview", action="store_true")
+    context_compact.add_argument("--through-sequence", type=int)
+    context_recover = context_subcommands.add_parser("recover")
+    context_recover.add_argument("session_id")
+    context_recover.add_argument("capsule_id")
+    context_recover.add_argument("--database")
 
     add_read_subparsers(subcommands)
 

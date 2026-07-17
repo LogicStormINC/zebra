@@ -89,7 +89,9 @@ class RouteAdapter:
         if method == "POST" and request.path.startswith("/sessions/"):
             parts = _session_path_parts(request.path)
             if len(parts) == 3 and parts[1:] == ("context", "compact"):
-                return self.app.compact_session_context(parts[0])
+                return self.app.compact_session_context(parts[0], request.body or {})
+            if len(parts) == 3 and parts[1:] == ("context", "recover"):
+                return self.app.recover_session_context(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "messages":
                 return self.app.append_session_message(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "cancel":

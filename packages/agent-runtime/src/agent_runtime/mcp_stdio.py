@@ -33,7 +33,11 @@ class LocalStdioMcpTransport:
         self,
         servers: Sequence[McpServerSpec],
         allowed_tools: Sequence[str] | None = None,
+        *,
+        max_output_bytes: int | None = MAX_MCP_OUTPUT_BYTES,
     ) -> None:
+        if max_output_bytes is not None and max_output_bytes <= 0:
+            raise ValueError("max_output_bytes must be positive")
         self._servers = {server.name: server for server in servers}
         if len(self._servers) != len(servers):
             raise McpProtocolError("MCP server names must be unique")
@@ -67,6 +71,7 @@ class LocalStdioMcpTransport:
             (tool.server_name, tool.remote_name): tool
             for tool in discovered
         }
+        self._max_output_bytes = max_output_bytes
         self.model_tools = tuple(
             tool.definition
             for tool in sorted(discovered, key=lambda item: item.definition.name)
@@ -83,7 +88,11 @@ class LocalStdioMcpTransport:
                 "tools/call",
                 {"name": request.target.tool_name, "arguments": request.arguments},
             )
-        output = _normalize_tool_result(request, result)
+        output = _normalize_tool_result(
+            request,
+            result,
+            max_output_bytes=self._max_output_bytes,
+        )
         return McpProxyResponse(
             output=output,
             metadata={
@@ -167,6 +176,8 @@ def _parse_tool(server_name: str, value: object) -> DiscoveredMcpTool:
 def _normalize_tool_result(
     request: McpProxyRequest,
     result: Mapping[str, object],
+    *,
+    max_output_bytes: int | None = MAX_MCP_OUTPUT_BYTES,
 ) -> str:
     parts: list[str] = []
     structured = result.get("structuredContent")
@@ -184,7 +195,7 @@ def _normalize_tool_result(
             raise McpProtocolError("MCP tool returned invalid text content")
         parts.append(text)
     body = "\n".join(parts)
-    if len(body.encode()) > MAX_MCP_OUTPUT_BYTES:
+    if max_output_bytes is not None and len(body.encode()) > max_output_bytes:
         raise McpProtocolError("MCP tool output exceeds the configured limit")
     label = f"UNTRUSTED MCP OUTPUT ({request.target.server_name}.{request.target.tool_name})"
     return f"{label}\n{body}" if body else label

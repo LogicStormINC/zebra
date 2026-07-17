@@ -1,6 +1,12 @@
 from datetime import UTC, datetime
 
-from agent_context import SUMMARY_MARKER, compact_message_history, estimate_message_tokens
+import pytest
+from agent_context import (
+    LEDGER_MARKER,
+    SUMMARY_MARKER,
+    compact_message_history,
+    estimate_message_tokens,
+)
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.tools import ToolCall
@@ -108,6 +114,63 @@ def test_unresolved_latest_call_is_never_summarized_away() -> None:
     assert result.capsule is not None
     assert result.capsule.pending_tools[0].call_id == "call_pending"
     assert result.capsule.pending_tools[0].name == "files.read"
+
+
+def test_later_user_constraint_is_promoted_to_protected_ledger() -> None:
+    old_call = _call("old.txt", "call_old")
+    latest_call = _call("latest.txt", "call_latest")
+    messages = (
+        _message(MessageRole.SYSTEM, "Stable context."),
+        _message(MessageRole.USER, "Inspect the inputs."),
+        _assistant("Reading old input.", old_call),
+        _tool("call_old", "OLD-" * 500),
+        _message(MessageRole.USER, "Do not modify storage."),
+        _assistant("Reading latest input.", latest_call),
+        _tool("call_latest", "LATEST"),
+    )
+
+    result = compact_message_history(
+        messages,
+        user_goal="Inspect the inputs.",
+        max_tokens=260,
+        created_at=NOW,
+    )
+
+    ledger = next(message for message in result.messages if LEDGER_MARKER in message.content)
+    assert ledger.role is MessageRole.SYSTEM
+    assert "Do not modify storage." in ledger.content
+
+
+@pytest.mark.parametrize("exchange_count", [50, 100, 200])
+def test_long_tool_loop_stays_bounded_and_preserves_latest_pairs(
+    exchange_count: int,
+) -> None:
+    messages: list[SessionMessage] = [
+        _message(MessageRole.USER, "Inspect every generated file."),
+    ]
+    for index in range(exchange_count):
+        call_id = f"call_{index}"
+        call = _call(f"generated-{index}.txt", call_id)
+        messages.extend(
+            (
+                _assistant(f"Read generated file {index}.", call),
+                _tool(call_id, f"evidence-{index}-" + "x" * 200),
+            )
+        )
+
+    result = compact_message_history(
+        tuple(messages),
+        user_goal="Inspect every generated file.",
+        max_tokens=2_000,
+        created_at=NOW,
+    )
+
+    assert result.compacted is True
+    assert result.within_budget is True
+    assert result.after_tokens <= 2_000
+    assert result.messages[-1].tool_call_id == f"call_{exchange_count - 1}"
+    assert result.capsule is not None
+    assert len(result.capsule.touched_files) == exchange_count
 
 
 def _message(role: MessageRole, content: str) -> SessionMessage:

@@ -16,6 +16,15 @@ class ModelContextWindowPort(Protocol):
     def context_window(self) -> ModelContextWindow: ...
 
 
+@runtime_checkable
+class ModelTokenCounterPort(Protocol):
+    def count_input_tokens(
+        self,
+        messages: tuple[SessionMessage, ...],
+        tools: tuple[ModelToolDefinition, ...],
+    ) -> int: ...
+
+
 class ModelGatewayPort(Protocol):
     def complete(
         self,

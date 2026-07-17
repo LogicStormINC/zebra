@@ -13,6 +13,9 @@ class ModelCallRecord(BaseModel):
     provider: str | None = None
     model_name: str | None = None
     input_tokens: int | None = Field(default=None, ge=0)
+    estimated_input_tokens: int | None = Field(default=None, ge=0)
+    input_token_limit: int | None = Field(default=None, ge=0)
+    input_token_estimate_error: int | None = None
     output_tokens: int | None = Field(default=None, ge=0)
     total_tokens: int | None = Field(default=None, ge=0)
     latency_ms: int | None = Field(default=None, ge=0)

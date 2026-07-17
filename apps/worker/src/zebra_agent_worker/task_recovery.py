@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -36,6 +37,7 @@ def recover_task(
     workspace: WorkspaceProjection,
     fallback_title: str,
     attachment_store: SQLiteArtifactPayloadStore,
+    active_capsule: ContextCapsule | None = None,
 ) -> RecoveredTask:
     user_input: str | None = None
     task_payload: dict[str, object] | None = None
@@ -75,13 +77,17 @@ def recover_task(
         max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
         max_tool_calls=_optional_positive_int(task_payload.get("max_tool_calls")),
         attachments=attachments,
-        runtime_evidence=_context_capsule_evidence(events),
+        runtime_evidence=_context_capsule_evidence(events, active_capsule=active_capsule),
     )
 
 
 def _context_capsule_evidence(
     events: list[SessionEvent],
+    *,
+    active_capsule: ContextCapsule | None = None,
 ) -> tuple[RuntimeEvidenceInput, ...]:
+    if active_capsule is not None:
+        return (_capsule_evidence(active_capsule, events=events),)
     for event in reversed(events):
         if event.event_type is not EventType.CONTEXT_COMPACTED:
             continue
@@ -89,29 +95,55 @@ def _context_capsule_evidence(
         if not isinstance(raw, dict):
             continue
         capsule = ContextCapsule.model_validate(raw)
-        return (
-            RuntimeEvidenceInput(
-                kind="conversation_summary",
-                summary=capsule.objective,
-                details=(
-                    *capsule.constraints,
-                    *capsule.decisions,
-                    *capsule.plan,
-                    f"Immediate next: {capsule.immediate_next}",
-                ),
-                metadata={
-                    "capsule_id": capsule.capsule_id,
-                    "capsule_version": capsule.version,
-                    "source_hash": capsule.source_hash,
-                    "profile": capsule.profile,
-                    "pending_tools": [
-                        tool.model_dump(mode="json") for tool in capsule.pending_tools
-                    ],
-                    "artifact_refs": list(capsule.artifact_refs),
-                },
-            ),
-        )
+        return (_capsule_evidence(capsule, events=events),)
     return ()
+
+
+def _capsule_evidence(
+    capsule: ContextCapsule,
+    *,
+    events: list[SessionEvent],
+) -> RuntimeEvidenceInput:
+    return RuntimeEvidenceInput(
+        kind="conversation_summary",
+        summary=capsule.objective,
+        details=(
+            *capsule.constraints,
+            *capsule.decisions,
+            *capsule.plan,
+            *_exact_tail_details(capsule, events),
+            f"Immediate next: {capsule.immediate_next}",
+        ),
+        metadata={
+            "capsule_id": capsule.capsule_id,
+            "capsule_version": capsule.version,
+            "source_hash": capsule.source_hash,
+            "profile": capsule.profile,
+            "pending_tools": [tool.model_dump(mode="json") for tool in capsule.pending_tools],
+            "artifact_refs": list(capsule.artifact_refs),
+        },
+    )
+
+
+def _exact_tail_details(
+    capsule: ContextCapsule,
+    events: list[SessionEvent],
+) -> tuple[str, ...]:
+    by_sequence = {event.sequence: event for event in events}
+    details: list[str] = []
+    for reference in capsule.recent_exact_tail_refs:
+        if not reference.startswith("event://"):
+            continue
+        _, _, sequence_text = reference.rpartition("/")
+        try:
+            event = by_sequence.get(int(sequence_text))
+        except ValueError:
+            continue
+        if event is None:
+            continue
+        payload = json.dumps(event.payload, sort_keys=True, ensure_ascii=False)[:2_000]
+        details.append(f"Exact tail event {event.sequence} {event.event_type.value}: {payload}")
+    return tuple(details)
 
 
 def _optional_positive_int(value: object) -> int | None:

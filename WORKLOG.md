@@ -5463,6 +5463,10 @@
 - Added provider continuation capability/reference contracts with deterministic
   Capsule fallback; opaque provider state is never event authority.
 - Added API/CLI context inspect and non-running-boundary manual compact controls.
+- Completed typed micro-compaction, protected-instruction projection, exact-tail
+  preservation, policy/provenance-checked Artifact rehydration, atomic Capsule
+  activation, provider-scoped continuation lifecycle, focus/preview/through-event
+  controls, historical recovery, and pre/post compaction hooks.
 - Validation: focused context/tool/API/CLI/recovery suites passed; `make test`
-  passed `1355` with one gVisor platform skip; `make check` passed file-size,
-  Ruff, strict Mypy (`370` files), and `8` release evals.
+  passed `1379` with one gVisor platform skip; `make check` passed file-size,
+  Ruff, strict Mypy (`379` files), and `8` release evals.

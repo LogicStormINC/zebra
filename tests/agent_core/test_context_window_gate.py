@@ -2,11 +2,24 @@ from datetime import UTC, datetime
 
 import pytest
 from agent_context import LocalContextCompiler
+from agent_core.domain.context_capsule import ContextCapsule
+from agent_core.domain.context_continuation import (
+    ProviderContinuationCapability,
+    ProviderContinuationMode,
+    ProviderContinuationRef,
+)
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCompletion, ModelContextWindow, ModelToolDefinition
+from agent_core.domain.modeling import (
+    ModelCallMetadata,
+    ModelCompletion,
+    ModelContextWindow,
+    ModelToolDefinition,
+    ModelUsage,
+)
 from agent_core.harness.context_window import ContextWindowExceededError, plan_context_window
 from agent_core.harness.model_step import HarnessModelStep
+from agent_core.ports.conversation_compactor import ConversationCompactionResult
 
 NOW = datetime(2026, 7, 17, 10, 0, tzinfo=UTC)
 
@@ -24,6 +37,86 @@ class _BoundedGateway:
     ) -> ModelCompletion:
         self.call_count += 1
         raise AssertionError("provider must not be called for an over-budget request")
+
+
+class _CountingGateway:
+    context_window = ModelContextWindow(
+        profile_name="counted-model",
+        context_tokens=1_000,
+        max_output_tokens=100,
+        compaction_reserve_tokens=50,
+        protocol_reserve_tokens=50,
+        compaction_trigger_reserve_tokens=50,
+    )
+
+    def count_input_tokens(
+        self,
+        messages: tuple[SessionMessage, ...],
+        tools: tuple[ModelToolDefinition, ...],
+    ) -> int:
+        return 123
+
+    def complete(
+        self,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...] = (),
+    ) -> ModelCompletion:
+        return ModelCompletion(
+            assistant_message=_message(MessageRole.ASSISTANT, "done"),
+            call_metadata=ModelCallMetadata(usage=ModelUsage(input_tokens=125)),
+        )
+
+
+class _NativeContinuationGateway(_CountingGateway):
+    continuation_capability = ProviderContinuationCapability(
+        mode=ProviderContinuationMode.OPAQUE_REFERENCE
+    )
+
+    def __init__(self) -> None:
+        self.native_calls = 0
+
+    def compact_to_reference(self, capsule: ContextCapsule) -> ProviderContinuationRef:
+        return ProviderContinuationRef(
+            reference_id="native-1",
+            provider="test",
+            model_name="counted-model",
+            source_hash=capsule.source_hash,
+        )
+
+    def complete_from_reference(
+        self,
+        reference: ProviderContinuationRef,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...] = (),
+    ) -> ModelCompletion:
+        self.native_calls += 1
+        assert reference.reference_id == "native-1"
+        return super().complete(messages, tools=tools)
+
+
+class _AlwaysCompact:
+    def compact_conversation(self, messages, *, user_goal, max_tokens, created_at):
+        capsule = ContextCapsule(
+            capsule_id="ctxcap-native",
+            objective=user_goal,
+            immediate_next="continue",
+            source_hash="a" * 64,
+            confidence=1.0,
+            created_at=created_at,
+        )
+        return ConversationCompactionResult(
+            messages=messages,
+            before_tokens=20,
+            after_tokens=10,
+            removed_message_count=1,
+            retained_message_count=len(messages),
+            compacted=True,
+            within_budget=True,
+            provenance="test-compaction",
+            capsule=capsule,
+        )
 
 
 def test_request_completion_hard_gate_prevents_provider_call() -> None:
@@ -88,6 +181,60 @@ def test_context_plan_counts_tool_schema_and_reserves() -> None:
     assert without_tool.within_budget is True
     assert with_tool.estimated_input_tokens > without_tool.estimated_input_tokens
     assert with_tool.within_budget is False
+
+
+def test_provider_token_counter_and_profile_are_attached_to_completion() -> None:
+    completion = HarnessModelStep().request_completion(
+        [_message(MessageRole.USER, "count this")],
+        _CountingGateway(),
+        allow_tools=False,
+    )
+
+    assert completion.call_metadata.estimated_input_tokens == 123
+    assert completion.call_metadata.input_token_limit == 800
+    assert completion.call_metadata.token_estimate_method == "provider"
+
+
+def test_context_error_exposes_typed_diagnostics() -> None:
+    gateway = _BoundedGateway(
+        ModelContextWindow(
+            profile_name="tiny",
+            context_tokens=400,
+            max_output_tokens=100,
+            compaction_reserve_tokens=50,
+            protocol_reserve_tokens=50,
+        )
+    )
+
+    with pytest.raises(ContextWindowExceededError) as captured:
+        HarnessModelStep().request_completion(
+            [_message(MessageRole.USER, "x" * 2_000)], gateway, allow_tools=False
+        )
+
+    assert captured.value.plan.profile_name == "tiny"
+    assert captured.value.plan.within_budget is False
+    assert captured.value.plan.token_breakdown["messages"] > 0
+
+
+def test_compaction_uses_provider_continuation_then_keeps_capsule_fallback() -> None:
+    gateway = _NativeContinuationGateway()
+    messages = [_message(MessageRole.USER, "continue")]
+    step = HarnessModelStep(conversation_compactor=_AlwaysCompact())
+
+    result = step.prepare_conversation(
+        messages,
+        gateway,
+        allow_tools=False,
+        user_goal="continue",
+        created_at=NOW,
+    )
+    assert result is not None
+    step.prepare_provider_continuation(gateway, result)
+    completion = step.request_completion(messages, gateway, allow_tools=False)
+
+    assert result.capsule is not None
+    assert gateway.native_calls == 1
+    assert completion.assistant_message.content == "done"
 
 
 def _message(role: MessageRole, content: str) -> SessionMessage:

@@ -29,7 +29,11 @@ if TYPE_CHECKING:
         build_mcp_proxy_request,
         parse_mcp_tool_name,
     )
-    from agent_tools.output_projection import ProjectedToolOutput, ToolOutputProjector
+    from agent_tools.output_projection import (
+        ProjectedToolOutput,
+        ToolOutputEnvelope,
+        ToolOutputProjector,
+    )
     from agent_tools.registry import ToolRegistry
     from agent_tools.session_history import SessionSearchTool, sessions_search_contract
     from agent_tools.skills import (
@@ -79,6 +83,7 @@ __all__ = [
     "ToolContract",
     "ToolExecutor",
     "ToolOutputProjector",
+    "ToolOutputEnvelope",
     "ToolRegistry",
     "WebFetchTool",
     "WorkspaceListTool",
@@ -139,6 +144,7 @@ _EXPORTS = {
     "ToolContract": ("agent_tools.contracts", "ToolContract"),
     "ToolExecutor": ("agent_tools.executor", "ToolExecutor"),
     "ToolOutputProjector": ("agent_tools.output_projection", "ToolOutputProjector"),
+    "ToolOutputEnvelope": ("agent_tools.output_projection", "ToolOutputEnvelope"),
     "ToolRegistry": ("agent_tools.registry", "ToolRegistry"),
     "WebFetchTool": ("agent_tools.web_gateway", "WebFetchTool"),
     "WebGatewayError": ("agent_tools.web_gateway", "WebGatewayError"),

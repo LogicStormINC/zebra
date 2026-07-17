@@ -4,16 +4,19 @@
 
 1. `completed` - Split DeepSeek specialization into `DS-OPT-01`, retain the
    provider-neutral context task, and lock disjoint owned paths.
-2. `completed` - Implement provider-aware context-window planning, hard outbound
-   request gates, and artifact-backed bounded command/test/build output.
-3. `completed` - Implement progressive active-context projection, durable
-   `ContextCapsule` events/artifacts, recovery, and deterministic fallback.
-4. `completed` - Implement provider continuation capabilities and transparent
-   fallback without making opaque state authoritative.
-5. `completed` - Add API/CLI context inspection and manual compaction controls,
-   focused contracts, long-loop/recovery/provider Evals, and operator docs.
-6. `completed` - Run focused, full repository, and release-eval validation;
-   record exact evidence and close.
+2. `completed` - Complete provider-aware context-window planning, hard outbound
+   request gates, actual/estimated usage calibration, and unified artifact-backed
+   bounded output for every large-output tool path.
+3. `completed` - Implement typed micro-compaction, protected instructions, active
+   projection folding, deterministic rehydration, and recent exact-tail policy.
+4. `completed` - Persist validated `ContextCapsule` artifacts and creation events,
+   atomically advance recovery state, and prove crash-safe deterministic fallback.
+5. `completed` - Wire provider continuation selection, durable provider-scoped
+   references, expiry/incompatibility handling, and Capsule fallback into runtime.
+6. `completed` - Complete API/CLI occupancy, focus, preview, historical recovery,
+   hooks, audit fields, long-loop/recovery/security Evals, and operator docs.
+7. `completed` - Run focused, full repository, and release-eval validation; record
+   exact evidence and close only after every acceptance statement is executable.
 
 ### Errors Encountered
 

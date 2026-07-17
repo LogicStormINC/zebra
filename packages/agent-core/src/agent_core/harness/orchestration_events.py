@@ -28,6 +28,15 @@ def model_response_event(
     }
     if completion.call_metadata.model_call_id is not None:
         payload["model_call_id"] = completion.call_metadata.model_call_id
+    if completion.call_metadata.estimated_input_tokens is not None:
+        estimated = completion.call_metadata.estimated_input_tokens
+        payload["estimated_input_tokens"] = estimated
+        payload["input_token_limit"] = completion.call_metadata.input_token_limit
+        payload["token_estimate_method"] = completion.call_metadata.token_estimate_method
+        if completion.call_metadata.usage.input_tokens is not None:
+            payload["input_token_estimate_error"] = (
+                completion.call_metadata.usage.input_tokens - estimated
+            )
     if response_stage is not None:
         payload["response_stage"] = response_stage
     return HarnessEventDraft(

@@ -17,6 +17,7 @@ MAX_SCANNED_FILES = 20_000
 MAX_FILE_BYTES = 1_048_576
 MAX_LINE_CHARS = 500
 MAX_OUTPUT_BYTES = 32_768
+_DEFAULT_OUTPUT_LIMIT = object()
 MAX_MATCHES = MAX_OFFSET + MAX_LIMIT + 1
 
 files_search_contract = ToolContract(
@@ -40,8 +41,19 @@ files_search_contract = ToolContract(
 
 
 class WorkspaceSearchTool:
-    def __init__(self, workspace: WorkspacePort) -> None:
+    def __init__(
+        self,
+        workspace: WorkspacePort,
+        *,
+        max_output_bytes: int | None | object = _DEFAULT_OUTPUT_LIMIT,
+    ) -> None:
+        if max_output_bytes is _DEFAULT_OUTPUT_LIMIT:
+            max_output_bytes = MAX_OUTPUT_BYTES
+        assert isinstance(max_output_bytes, int) or max_output_bytes is None
+        if max_output_bytes is not None and max_output_bytes <= 0:
+            raise ValueError("max_output_bytes must be positive")
         self._workspace = workspace
+        self._max_output_bytes = max_output_bytes
 
     @property
     def contract(self) -> ToolContract:
@@ -79,7 +91,12 @@ class WorkspaceSearchTool:
             mode=mode,
             glob=glob,
         )
-        page, output_truncated = _bounded_page(matches, offset=offset, limit=limit)
+        page, output_truncated = _bounded_page(
+            matches,
+            offset=offset,
+            limit=limit,
+            max_output_bytes=self._max_output_bytes,
+        )
         returned_count = len(page)
         has_more = offset + returned_count < len(matches) or scan_truncated
         return ToolResult(
@@ -174,13 +191,19 @@ def _content_matches(path: Path, relative: str, query: str, *, limit: int) -> li
     return results
 
 
-def _bounded_page(matches: list[str], *, offset: int, limit: int) -> tuple[list[str], bool]:
+def _bounded_page(
+    matches: list[str],
+    *,
+    offset: int,
+    limit: int,
+    max_output_bytes: int | None,
+) -> tuple[list[str], bool]:
     page: list[str] = []
     byte_count = 0
     output_truncated = False
     for match in matches[offset : offset + limit]:
         item_bytes = len(match.encode("utf-8")) + (1 if page else 0)
-        if byte_count + item_bytes > MAX_OUTPUT_BYTES:
+        if max_output_bytes is not None and byte_count + item_bytes > max_output_bytes:
             output_truncated = True
             break
         page.append(match)

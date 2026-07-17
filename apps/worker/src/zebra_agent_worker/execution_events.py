@@ -120,6 +120,21 @@ class DurableHarnessEventRecorder:
         self._events.append(event)
         return event
 
+    def accept_persisted_event(self, event: SessionEvent) -> SessionEvent:
+        """Advance projections for an event committed by another atomic store."""
+        if event.session_id != self._session.session_id:
+            raise ValueError("execution event session_id does not match recorder")
+        if event.sequence != self.next_sequence:
+            raise ValueError("execution event sequence does not match recorder")
+        self._model_call_indexer.index_event(event)
+        self._tool_run_indexer.index_event(event)
+        self._session = apply_event(self._session, event)
+        self._workspace = apply_workspace_event(self._workspace, event)
+        self._projection_store.save_session(self._session)
+        self._workspace_store.save_workspace(self._workspace)
+        self._events.append(event)
+        return event
+
     def _refresh_external_events(self) -> None:
         for event in self._event_store.read_since(
             self._session.session_id,

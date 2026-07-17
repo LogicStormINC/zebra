@@ -1,8 +1,10 @@
 from dataclasses import dataclass, field
 from typing import Protocol
 
+from agent_core.domain.messages import SessionMessage
 from agent_core.harness.models import HarnessContext
 from agent_core.harness.retry_plan import build_retry_plan_hint
+from agent_core.ports.conversation_compactor import ConversationCompactionResult
 
 
 @dataclass(frozen=True)
@@ -37,6 +39,17 @@ class VerifierHook(Protocol):
         tool_status: str,
         tool_output: str,
     ) -> VerifierResult: ...
+
+
+class CompactionHook(Protocol):
+    def pre_compact(
+        self,
+        messages: tuple[SessionMessage, ...],
+        *,
+        max_tokens: int,
+    ) -> None: ...
+
+    def post_compact(self, result: ConversationCompactionResult) -> None: ...
 
 
 @dataclass(frozen=True)

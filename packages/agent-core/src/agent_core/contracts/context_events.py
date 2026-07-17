@@ -13,6 +13,13 @@ class ContextCompactedPayload(BaseModel):
     retained_message_count: int
     within_budget: bool
     provenance: str
+    focus: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    recovered_from_capsule_id: str | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    through_sequence: int | None = Field(
+        default=None, ge=0, exclude_if=lambda value: value is None
+    )
     capsule: ContextCapsule | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
@@ -41,10 +48,45 @@ class ContextCompactedPayload(BaseModel):
             raise ValueError("compaction counts must not be negative")
         return value
 
-    @field_validator("provenance")
+    @field_validator("provenance", "focus", "recovered_from_capsule_id")
     @classmethod
-    def ensure_provenance_not_blank(cls, value: str) -> str:
+    def ensure_provenance_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         stripped = value.strip()
         if not stripped:
             raise ValueError("provenance must not be blank")
         return stripped
+
+
+class ContextContinuationSelectedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    attempt_number: int = Field(gt=0)
+    mode: str
+    reason: str
+    reference_id: str | None = None
+    provider: str | None = None
+    model_name: str | None = None
+    capability_version: str | None = None
+    source_hash: str | None = None
+    artifact_id: str | None = None
+
+    @field_validator(
+        "mode",
+        "reason",
+        "reference_id",
+        "provider",
+        "model_name",
+        "capability_version",
+        "source_hash",
+        "artifact_id",
+    )
+    @classmethod
+    def ensure_text_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("context continuation fields must not be blank")
+        return normalized

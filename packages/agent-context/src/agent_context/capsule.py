@@ -81,8 +81,9 @@ def build_context_capsule(
         sorted(
             {
                 uri
-                for output in tool_outputs
-                for uri in _ARTIFACT_URI.findall(output)
+                for message in messages
+                if message.role is MessageRole.TOOL
+                for uri in _message_artifact_refs(message)
             }
         )
     )
@@ -103,3 +104,11 @@ def build_context_capsule(
         confidence=0.9 if messages else 0.5,
         created_at=created_at,
     )
+
+
+def _message_artifact_refs(message: SessionMessage) -> tuple[str, ...]:
+    metadata_uri = message.metadata.get("artifact_uri")
+    embedded = tuple(_ARTIFACT_URI.findall(message.content))
+    if isinstance(metadata_uri, str) and metadata_uri.strip():
+        return (metadata_uri.strip(), *embedded)
+    return embedded

@@ -24,6 +24,8 @@ class EventType(StrEnum):
     MODEL_RESPONSE_DELTA = "model_response_delta"
     MODEL_RESPONSE_RECEIVED = "model_response_received"
     CONTEXT_COMPACTED = "context_compacted"
+    CONTEXT_CAPSULE_CREATED = "context_capsule_created"
+    CONTEXT_CONTINUATION_SELECTED = "context_continuation_selected"
     SUBAGENT_STARTED = "subagent_started"
     SUBAGENT_COMPLETED = "subagent_completed"
     SUBAGENT_FAILED = "subagent_failed"

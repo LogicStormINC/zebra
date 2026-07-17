@@ -11,6 +11,12 @@ from agent_storage.artifact_projection import (
     serialize_session_artifact_projection,
 )
 from agent_storage.artifacts import SessionArtifact, SQLiteArtifactStore
+from agent_storage.context_lifecycle import (
+    ActiveContextProjectionConflictError,
+    ImmutableContextCapsuleConflictError,
+    SQLiteContextLifecycleStore,
+    StoredContextCapsule,
+)
 from agent_storage.delivery_audit import SQLiteDeliveryAuditStore
 from agent_storage.idempotency import (
     IdempotencyConflictError,
@@ -26,6 +32,10 @@ from agent_storage.memory_lookup import (
 )
 from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.projections import SQLiteProjectionStore
+from agent_storage.provider_continuations import (
+    LoadedProviderContinuation,
+    SQLiteProviderContinuationStore,
+)
 from agent_storage.session_attachments import (
     load_attachment_contexts,
     store_initial_text_attachments,
@@ -38,10 +48,13 @@ from agent_storage.workspaces import SQLiteWorkspaceProjectionStore
 
 __all__ = [
     "ArtifactPayloadMissingError",
+    "ActiveContextProjectionConflictError",
     "IdempotencyConflictError",
     "IdempotencyRecord",
+    "ImmutableContextCapsuleConflictError",
     "LeaseConflictError",
     "SessionArtifact",
+    "LoadedProviderContinuation",
     "list_confirmed_repo_memories",
     "SQLiteMemoryStore",
     "list_confirmed_repo_memory_texts",
@@ -52,15 +65,18 @@ __all__ = [
     "serialize_session_artifact_projection",
     "SQLiteArtifactPayloadStore",
     "SQLiteArtifactStore",
+    "SQLiteContextLifecycleStore",
     "SQLiteDeliveryAuditStore",
     "SQLiteEventStore",
     "SQLiteIdempotencyStore",
     "SQLiteLeaseStore",
     "SQLiteModelCallStore",
     "SQLiteProjectionStore",
+    "SQLiteProviderContinuationStore",
     "SQLiteSessionHistory",
     "SQLiteToolRunStore",
     "SQLiteWorkspaceProjectionStore",
+    "StoredContextCapsule",
     "store_text_attachments",
     "store_initial_text_attachments",
     "new_idempotency_record",

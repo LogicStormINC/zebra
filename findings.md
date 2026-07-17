@@ -22,6 +22,23 @@
   only the model-profile hard input limit fails the request.
 - `command.run` covers arbitrary build commands, so no separate build tool or
   duplicate output-persistence path was added.
+- The final implementation uses one request planner and hard gate for initial,
+  follow-up, approval, clarification, recovery, and final-synthesis paths. Token
+  counting is provider-pluggable; the neutral fallback records its estimate method.
+- All large-output tool families cross one `ToolOutputEnvelope` boundary. Complete
+  payloads remain retrievable by Artifact URI while model-visible evidence is a
+  bounded head/tail projection with size, digest, checksum, and provenance.
+- Active projection preserves protected user constraints and recent exact
+  assistant/tool pairs, folds completed evidence into typed tombstones, and permits
+  only budgeted, policy-checked, provenance-checked Artifact rehydration.
+- Capsule Artifact persistence, `ContextCompacted`, `ContextCapsuleCreated`, and
+  active-pointer CAS execute in one SQLite transaction. Worker recovery prefers the
+  active Capsule and can restore a user-selected exact event tail.
+- Provider-native continuation remains an optional capability contract with
+  provider/model/version/TTL scoping. Missing, expired, incompatible, deleted, or
+  cross-provider state deterministically falls back to the Zebra Capsule.
+- Full acceptance evidence: `1379 passed, 1 skipped`; file-size and Ruff passed;
+  strict Mypy passed across `379` source files; all `8` release Evals passed.
 
 ## 2026-06-18
 

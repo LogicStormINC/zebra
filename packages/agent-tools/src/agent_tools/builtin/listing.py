@@ -15,6 +15,7 @@ MAX_LIMIT = 200
 MAX_OFFSET = 10_000
 MAX_SCANNED_ENTRIES = 10_000
 MAX_OUTPUT_BYTES = 32_768
+_DEFAULT_OUTPUT_LIMIT = object()
 EXCLUDED_DIRECTORY_NAMES = frozenset(
     {
         "__pycache__",
@@ -49,8 +50,19 @@ class _Entry:
 
 
 class WorkspaceListTool:
-    def __init__(self, workspace: WorkspacePort) -> None:
+    def __init__(
+        self,
+        workspace: WorkspacePort,
+        *,
+        max_output_bytes: int | None | object = _DEFAULT_OUTPUT_LIMIT,
+    ) -> None:
+        if max_output_bytes is _DEFAULT_OUTPUT_LIMIT:
+            max_output_bytes = MAX_OUTPUT_BYTES
+        assert isinstance(max_output_bytes, int) or max_output_bytes is None
+        if max_output_bytes is not None and max_output_bytes <= 0:
+            raise ValueError("max_output_bytes must be positive")
         self._workspace = workspace
+        self._max_output_bytes = max_output_bytes
 
     @property
     def contract(self) -> ToolContract:
@@ -89,6 +101,7 @@ class WorkspaceListTool:
             output_path=output_path,
             offset=offset,
             limit=limit,
+            max_output_bytes=self._max_output_bytes,
         )
         known_more = offset + len(page) < len(entries)
         truncated = scan_truncated or known_more or output_truncated
@@ -170,7 +183,12 @@ def _inventory(
 
 
 def _page(
-    entries: list[_Entry], *, output_path: str, offset: int, limit: int
+    entries: list[_Entry],
+    *,
+    output_path: str,
+    offset: int,
+    limit: int,
+    max_output_bytes: int | None,
 ) -> tuple[list[_Entry], bool]:
     page: list[_Entry] = []
     for entry in entries[offset : offset + limit]:
@@ -180,7 +198,7 @@ def _page(
             ensure_ascii=False,
             separators=(",", ":"),
         )
-        if len(payload.encode("utf-8")) > MAX_OUTPUT_BYTES:
+        if max_output_bytes is not None and len(payload.encode("utf-8")) > max_output_bytes:
             return page, True
         page.append(entry)
     return page, False
