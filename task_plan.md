@@ -1,17 +1,21 @@
 # Task Plan
 
-## ARCH-129-RT-01 - Production Hard Runtime
+## CTX-DS-01 - DeepSeek And Context Lifecycle Integrated Optimization
 
-1. `completed` - Persist the Linux-first gVisor/OCI design, activation decision,
-   platform matrix, exact task ownership, and fail-closed boundary.
-2. `completed` - Extend Runtime contracts and durable workspace authority
-   without weakening existing trusted-local compatibility.
-3. `completed` - Implement the hardened OCI engine adapter, lifecycle, bounded
-   execution, snapshot compatibility, and capability preflight.
-4. `completed` - Wire configured Runtime selection through Worker and Tool Gateway,
-   preserving immutable authority across recovery and continuation.
-5. `completed` - Add adversarial tests, Linux CI integration, operator guidance,
-   full repository validation, and real-engine acceptance where available.
+1. `in_progress` - Claim the integrated task, import the approved design
+   baselines, and preserve current mainline governance.
+2. `pending` - Implement provider-aware context-window planning, hard outbound
+   request gates, and artifact-backed bounded command/test/build output.
+3. `pending` - Implement progressive active-context projection, durable
+   `ContextCapsule` events/artifacts, recovery, and deterministic fallback.
+4. `pending` - Implement versioned model profiles, DeepSeek thinking/tool
+   safety, finish/usage/error normalization, stable prefix metadata, and routing.
+5. `pending` - Implement provider continuation capabilities and transparent
+   fallback without making opaque state authoritative.
+6. `pending` - Add API/CLI context inspection and manual compaction controls,
+   focused contracts, long-loop/recovery/provider Evals, and operator docs.
+7. `pending` - Run focused, full repository, release-eval, and real-provider
+   validation where credentials are available; record exact evidence and close.
 
 ### Errors Encountered
 

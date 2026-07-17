@@ -2,6 +2,17 @@
 
 ## Addendum
 
+- 2026-07-17: started `CTX-DS-01` on
+  `codex/ctx-ds-01-integrated-optimization` by explicit maintainer request. The
+  task implements the approved DeepSeek V4 specialization and long-context
+  lifecycle as one dependency-ordered integration slice: model-aware hard
+  request budgets, bounded artifact-backed tool output, progressive active
+  projection, durable Context Capsule, provider continuation capability and
+  fallback, DeepSeek tool/thinking safety, usage/finish/error observability,
+  operator context controls, recovery, and Eval coverage. Nested agents, Agent
+  Teams, hidden-reasoning persistence, strict-tools beta, FIM, cloud scheduling,
+  and authority expansion remain excluded.
+
 - 2026-07-17: implemented `ARCH-129-RT-01` on
   `codex/arch-129-hard-runtime`. Runtime now has explicit trusted-local,
   rootless OCI, and gVisor classes; hard modes perform fail-closed preflight,

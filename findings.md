@@ -1,5 +1,21 @@
 # Findings
 
+## CTX-DS-01 - 2026-07-17
+
+- Current same-session conversation compaction is correctly placed before
+  follow-up model calls, but the initial call bypasses it and
+  `within_budget=false` is not a hard outbound gate.
+- Context and conversation budgets are fixed and character-estimated; they do
+  not reserve provider output, reasoning, tool schema, or continuation overhead.
+- `command.run` and `tests.run` return complete stdout/stderr directly, so the
+  first implementation rung is one shared bounded output projector backed by
+  the existing Artifact boundary rather than provider-native compaction.
+- DeepSeek tool-bearing calls must explicitly disable thinking until Zebra has
+  an approved opaque continuation contract; private reasoning content remains
+  non-durable and non-public.
+- Provider-native compaction is an optional continuation optimization. Session
+  events plus a transparent Zebra Capsule remain recovery and cross-model truth.
+
 ## 2026-06-18
 
 - 当前最重要的设计基线仍然是 `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`

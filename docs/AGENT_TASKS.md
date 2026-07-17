@@ -13487,3 +13487,79 @@ an `agent-core` dependency.
 
 - default persistent full-repository indexing, vectors, embeddings, reranking,
   multi-repository graphs, or index authority over project state
+
+## DeepSeek And Context Lifecycle Integration
+
+### CTX-DS-01 - DeepSeek And Context Lifecycle Integrated Optimization
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `CORE / CTX / INTEGRATIONS / STORAGE / RUNTIME / QA`
+- Depends on: `P117-CTX-01`, `QA-UI-RUNTIME-01`, `ARCH-129-RT-01`, and explicit maintainer request
+- Branch: `codex/ctx-ds-01-integrated-optimization`
+- Owned paths: `packages/agent-core/src/agent_core/domain/modeling.py`,
+  `packages/agent-core/src/agent_core/domain/events.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/ports/`,
+  `packages/agent-core/src/agent_core/harness/`,
+  `packages/agent-context/`, `packages/agent-tools/`,
+  `packages/agent-runtime/src/agent_runtime/`, `packages/agent-storage/`,
+  `packages/agent-integrations/`, `packages/agent-observability/`,
+  `apps/config/`, `apps/worker/`, `apps/api/`, `apps/cli/`,
+  `configs/default.env`, `.env.example`, `evals/`, `tests/`, `README.md`,
+  `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`, `docs/`
+
+#### Goal
+
+Implement the approved DeepSeek V4 specialization and long-context lifecycle
+as one recoverable, model-aware, provider-neutral execution path without
+weakening Policy, Runtime, event authority, or existing provider compatibility.
+
+#### Deliverables
+
+- one model-aware Context Window Planner used by initial, follow-up, approval,
+  clarification, recovery, and final-synthesis requests
+- a hard outbound gate for every over-budget request, with typed diagnostics
+- one artifact-backed bounded tool-output envelope shared by command/test/build
+  and available to conversation projection
+- deterministic micro-compaction, protected instructions, recent exact tail,
+  and versioned durable `ContextCapsule` projection
+- provider continuation capability contracts with transparent Capsule fallback
+- versioned DeepSeek Flash/Pro profiles and role-aware invocation policy
+- explicit non-thinking tool calls, no private-reasoning persistence, usage,
+  cache, finish, timing, fingerprint, retry, and normalized-error metadata
+- context inspection and manual compaction controls through API and CLI
+- deterministic, recovery, long-loop, provider-contract, and Eval evidence
+
+#### Acceptance
+
+- [ ] No outbound request exceeds its profile hard input limit after output,
+  reasoning, schema, protocol, and emergency reserves.
+- [ ] Initial and continuation calls share the same planning and hard-gate path;
+  `within_budget=false` never reaches a provider.
+- [ ] Complete command/test/build output is retrievable from Artifact storage
+  while only bounded head/tail evidence reaches the model.
+- [ ] Pending tools, approvals, clarification, original user constraints, and
+  provider call identities survive repeated compaction and worker recovery.
+- [ ] A versioned transparent Capsule is durable and can rebuild context when
+  provider continuation is missing, expired, incompatible, or cross-provider.
+- [ ] DeepSeek tool-bearing requests explicitly disable thinking; no
+  `reasoning_content` reaches public deltas, events, artifacts, or logs.
+- [ ] DeepSeek usage/cache/reasoning tokens, finish reason, TTFT, resolved model,
+  fingerprint, retry count, and normalized error are observable without secrets.
+- [ ] Legacy model settings remain compatible and profile selection fails
+  locally for unsupported capability combinations.
+- [ ] API/CLI operators can inspect context occupancy, trigger bounded manual
+  compaction, and understand retained, folded, and artifact-backed state.
+- [ ] Focused tests, all repository tests, `make check`, release Evals, desktop
+  checks, and one real DeepSeek acceptance pass when credentials exist all pass.
+
+#### Explicit Non-Goals
+
+- nested subagents, Agent Teams, automatic child spawning on context pressure,
+  write-capable child agents, or implicit thread chains
+- persistence or display of hidden reasoning content
+- DeepSeek strict-tools beta, FIM, Chat Prefix Completion, or undocumented APIs
+- vector databases, default full-repository indexes, or model-specific types in
+  `agent-core`
+- cloud scheduling, tenant authority expansion, new credentials, or widened egress
