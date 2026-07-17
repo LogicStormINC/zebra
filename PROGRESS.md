@@ -2,6 +2,14 @@
 
 ## Addendum
 
+- 2026-07-17: completed `ARCH-129-PLAN-01` on
+  `codex/issue-129-remediation-plan`. GitHub Issue `#129` is now represented by
+  a durable remediation and deferral document plus three dependency-ordered
+  task cards for hard-enforced runtime, ACP entry, and optional code
+  intelligence. All three implementation cards remain `Locked`, unassigned,
+  and excluded from the current phase until an explicit maintainer activation;
+  no runtime, protocol, context, security, or product capability changed.
+
 - 2026-07-17: completed `QA-2-ARCH-01` for review. `agent-tools` no longer
   depends on or imports `agent-runtime`; builtin tools target the new minimal
   core `WorkspacePort`, while runtime `LocalWorkspace` remains the structural
