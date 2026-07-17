@@ -77,6 +77,11 @@ def test_route_adapter_handles_session_lookup_with_workspace_projection(tmp_path
                 "current_sequence": 4,
                 "status": WorkspaceStatus.SUSPENDED,
                 "runtime_name": "local",
+                "runtime_engine": "docker",
+                "runtime_image": "zebra/runtime@sha256:" + "a" * 64,
+                "runtime_spec_digest": "b" * 64,
+                "runtime_network_enforcement": "container-network-none",
+                "runtime_workspace_writable": True,
                 "snapshot_id": "snap-route-1",
                 "snapshot_path": "/tmp/zebra-agent-runtime/snap-route-1",
             }
@@ -98,6 +103,14 @@ def test_route_adapter_handles_session_lookup_with_workspace_projection(tmp_path
         "current_sequence": 4,
         "prepared_at": _created_at().isoformat(),
         "updated_at": _created_at().isoformat(),
+        "runtime": {
+            "class": "local",
+            "engine": "docker",
+            "image": "zebra/runtime@sha256:" + "a" * 64,
+            "spec_digest": "b" * 64,
+            "network_enforcement": "container-network-none",
+            "workspace_writable": True,
+        },
         "snapshot": {
             "runtime_name": "local",
             "snapshot_id": "snap-route-1",

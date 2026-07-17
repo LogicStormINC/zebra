@@ -17,12 +17,20 @@ from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_core.ports.runtime import (
+    EffectiveRuntimeAuthority,
+    RuntimeCapabilities,
     RuntimeCapabilityError,
+    RuntimeClass,
     RuntimeExecutionRequest,
     RuntimeExecutionResult,
     RuntimeHandle,
+    RuntimeLimits,
     RuntimePort,
     RuntimeSnapshot,
+    RuntimeSnapshotCleanupResult,
+    RuntimeSnapshotInspection,
+    RuntimeSnapshotStatus,
+    SandboxSpec,
 )
 from agent_core.ports.session_history import SessionHistoryPort
 from agent_core.ports.subagents import SubagentPort
@@ -40,6 +48,7 @@ __all__ = [
     "ConversationCompactorPort",
     "DeliveryAuditStorePort",
     "EventStorePort",
+    "EffectiveRuntimeAuthority",
     "LeaseStorePort",
     "MemoryStorePort",
     "ModelCallStorePort",
@@ -47,12 +56,19 @@ __all__ = [
     "PolicyEnginePort",
     "ProjectionStorePort",
     "RuntimeCapabilityError",
+    "RuntimeCapabilities",
+    "RuntimeClass",
     "RuntimeExecutionRequest",
     "RuntimeExecutionResult",
     "RuntimeEvidenceInput",
     "RuntimeHandle",
+    "RuntimeLimits",
     "RuntimePort",
     "RuntimeSnapshot",
+    "RuntimeSnapshotCleanupResult",
+    "RuntimeSnapshotInspection",
+    "RuntimeSnapshotStatus",
+    "SandboxSpec",
     "SessionHistoryPort",
     "SubagentPort",
     "ToolGatewayPort",

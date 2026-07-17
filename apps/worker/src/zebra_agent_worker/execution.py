@@ -54,6 +54,12 @@ from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
+from zebra_agent_worker.runtime_authority import (
+    close_tool_gateway,
+    persist_runtime_authority,
+    runtime_cleanup_failure_result,
+)
+from zebra_agent_worker.runtime_factory import build_runtime
 from zebra_agent_worker.task_recovery import recover_task
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 
@@ -90,7 +96,7 @@ class SessionExecutionService:
             self._projection_store,
             self._workspace_store,
         )
-        self._control_service = SessionControlService(database_path)
+        self._control_service = SessionControlService(database_path, settings=self._settings)
         self._model_call_indexer = ModelCallIndexer(SQLiteModelCallStore(database_path))
         self._artifact_payload_store = SQLiteArtifactPayloadStore(database_path)
         self._tool_run_indexer = ToolRunIndexer(
@@ -141,8 +147,46 @@ class SessionExecutionService:
         except (FileNotFoundError, ValueError) as exc:
             self._claim_service.release_claim(claimed)
             raise WorkerExecutionError(str(exc)) from exc
-        model_gateway = build_model_gateway(self._settings)
         try:
+            model_gateway = build_model_gateway(self._settings)
+        except ValueError:
+            self._claim_service.release_claim(claimed)
+            raise
+        runtime_handle = None
+        try:
+            runtime = build_runtime(
+                self._settings,
+                self._database_path,
+                workspace_root=task.workspace_root,
+                network_profile=task.network_profile.name.value,
+                session_id=str(session_id),
+                attempt_number=1,
+            )
+            runtime_handle = runtime.provision(workspace_root=str(task.workspace_root))
+            authority = runtime_handle.authority
+            persisted_digest = claimed.recovery.workspace.runtime_spec_digest
+            if (
+                authority is not None
+                and persisted_digest is not None
+                and persisted_digest != authority.spec_digest
+            ):
+                raise WorkerExecutionError(
+                    "configured runtime authority differs from session authority"
+                )
+            authority_recorder = DurableHarnessEventRecorder(
+                session=claimed.recovery.session,
+                workspace=claimed.recovery.workspace,
+                event_store=self._event_store,
+                projection_store=self._projection_store,
+                workspace_store=self._workspace_store,
+                model_call_indexer=self._model_call_indexer,
+                tool_run_indexer=self._tool_run_indexer,
+            )
+            if persist_runtime_authority(authority_recorder, authority, created_at=started_at):
+                claimed = ClaimedSession(
+                    recovery=self._recovery_service.recover_session(session_id),
+                    lease=claimed.lease,
+                )
             tool_gateway = LocalToolGateway(
                 task.workspace_root,
                 model_gateway=model_gateway,
@@ -153,9 +197,21 @@ class SessionExecutionService:
                 mcp_allowlist=task.mcp_allowlist,
                 session_history=SQLiteSessionHistory(self._database_path),
                 current_session_id=str(session_id),
+                runtime=runtime,
+                runtime_handle=runtime_handle,
             )
-        except ValueError as exc:
+        except Exception as exc:
+            cleanup_error = None
+            if runtime_handle is not None:
+                try:
+                    runtime.destroy(runtime_handle)
+                except Exception as error:
+                    cleanup_error = error
             self._claim_service.release_claim(claimed)
+            if cleanup_error is not None:
+                raise WorkerExecutionError(
+                    f"{exc}; runtime cleanup failed: {cleanup_error}"
+                ) from cleanup_error
             raise WorkerExecutionError(str(exc)) from exc
         context_compiler = LocalContextCompiler()
         context = HarnessContext(
@@ -170,9 +226,7 @@ class SessionExecutionService:
                 tool_profile=task.tool_profile,
                 network_profile=task.network_profile.name.value,
                 network_allowlist=task.network_profile.domain_allowlist,
-                mcp_allowlist=tuple(
-                    tool.name for tool in tool_gateway.effective_mcp_tools
-                ),
+                mcp_allowlist=tuple(tool.name for tool in tool_gateway.effective_mcp_tools),
                 confirmed_memories=list_confirmed_repo_memories(
                     self._database_path,
                     repo_id=str(task.workspace_root.resolve()),
@@ -192,8 +246,12 @@ class SessionExecutionService:
             ClarificationContinuationError,
             WorkerExecutionError,
         ) as exc:
-            tool_gateway.close()
+            cleanup_error = close_tool_gateway(tool_gateway)
             self._claim_service.release_claim(claimed)
+            if cleanup_error is not None:
+                raise WorkerExecutionError(
+                    f"{exc}; runtime cleanup failed: {cleanup_error}"
+                ) from cleanup_error
             raise WorkerExecutionError(str(exc)) from exc
         if continuation is not None:
             claimed = self._mark_approved_continuation_started(
@@ -308,7 +366,9 @@ class SessionExecutionService:
                 },
             )
         finally:
-            tool_gateway.close()
+            cleanup_error = close_tool_gateway(tool_gateway)
+        if cleanup_error is not None:
+            attempt_result = runtime_cleanup_failure_result(cleanup_error, attempt_result)
         emitted_events = _finalize_execution(
             recorder=recorder,
             attempt_result=attempt_result,
@@ -426,14 +486,10 @@ def _finalize_execution(
             events=event_store.list_for_session(recorder.session.session_id),
             next_sequence=recorder.next_sequence,
             command=MemoryCandidateExtractionCommand(
-                repo_id=_local_repo_id(recorder.workspace.workspace_root),
+                repo_id=str(Path(recorder.workspace.workspace_root).expanduser().resolve()),
                 extracted_at=started_at,
             ),
         )
         for event in extraction.events:
             recorder.append_event(event)
     return recorder.events
-
-
-def _local_repo_id(workspace_root: str) -> str:
-    return str(Path(workspace_root).expanduser().resolve())

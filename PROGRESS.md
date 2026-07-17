@@ -2,6 +2,18 @@
 
 ## Addendum
 
+- 2026-07-17: implemented `ARCH-129-RT-01` on
+  `codex/arch-129-hard-runtime`. Runtime now has explicit trusted-local,
+  rootless OCI, and gVisor classes; hard modes perform fail-closed preflight,
+  run a digest-pinned image with read-only root, non-root identity, no network,
+  no capabilities, no-new-privileges and bounded CPU/memory/PID/tmpfs/time/output,
+  persist effective authority before tools, reject recovery drift, snapshot
+  safely, and clean stale or cancelled containers by session label. API/CLI
+  readback, adversarial contract tests, operator guidance, and a real Linux
+  gVisor CI smoke are included. Workspace disk quota remains an explicit
+  storage-layer production prerequisite rather than an unenforceable bind-mount
+  claim.
+
 - 2026-07-17: activated `ARCH-129-RT-01` on
   `codex/arch-129-hard-runtime` by explicit maintainer request. The production
   v1 boundary is Linux-first gVisor/OCI with a rootless OCI compatibility mode,

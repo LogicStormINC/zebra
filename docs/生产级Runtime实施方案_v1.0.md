@@ -72,7 +72,7 @@ Session Event Store 仍是 durable authority。Runtime 负责执行隔离，不�
 - runtime class 和 OCI engine
 - 镜像 digest
 - workspace root 与读写模式
-- CPU、内存、PID、磁盘、超时和输出上限
+- CPU、内存、PID、tmpfs、超时和输出上限；Workspace 磁盘配额由部署存储层强制
 - 网络 profile
 - 容器用户、只读根文件系统和 tmpfs
 - session/attempt identity
@@ -157,7 +157,24 @@ capability preflight -> provisioned -> ready -> executing
 - Worker 重启和 continuation 不扩大权限
 - 日志、事件和 Artifact 不出现凭证
 
-## 10. 验证命令
+## 10. 实现结果
+
+本方案已经落到 Runtime 合同、OCI/gVisor adapter、配置、Worker/Tool Gateway、
+暂停恢复、SQLite 投影、API/CLI readback 和 CI。硬模式启动前验证 Engine 与
+handler，清理同 session 遗留容器，再创建固定安全参数的 Sandbox。容器写权限
+预检失败、镜像未固定、运行时不可用、快照越界/篡改或 authority 漂移都会拒绝
+执行。逐命令环境变量被硬模式拒绝，Web/MCP/SCM 仍只走 Sandbox 外 Gateway。
+
+真实隔离由 Linux CI 的 `gvisor-runtime` job 验收：校验官方 runsc SHA-512，向
+Docker 注册 handler，解析 Alpine 镜像 digest，并验证 Workspace 写入、默认
+断网和 Runtime socket 不可见。macOS 本地只运行确定性合同测试，不能被标记为
+原生 gVisor 验收。
+
+首版明确不伪造两个能力：进程内存 checkpoint 仍不支持；bind-mounted
+Workspace 的磁盘 quota 必须由生产存储层（专用卷、project quota 或等价机制）
+提供并纳入部署验收。
+
+## 11. 验证命令
 
 ```text
 uv sync --frozen --all-packages --group dev
@@ -169,7 +186,7 @@ make check
 CI 追加 Linux OCI 合同和真实 gVisor smoke。真实 gVisor 环境不可用时，该 job
 不得伪造成功；Production gVisor 能力保持未验收或 fail closed。
 
-## 11. 完成标准
+## 12. 完成标准
 
 - Runtime 合同、OCI 后端、Worker 接线和 durable authority 全部落地；
 - 所有安全矩阵测试通过；
@@ -178,4 +195,3 @@ CI 追加 Linux OCI 合同和真实 gVisor smoke。真实 gVisor 环境不可用
 - operator runbook、架构、安全状态和 README 与实际能力一致；
 - `trusted-local` 与生产模式在错误和状态读回中可明确区分；
 - Kubernetes、Kata、Firecracker、warm pool 和多租户调度仍明确为后续范围。
-

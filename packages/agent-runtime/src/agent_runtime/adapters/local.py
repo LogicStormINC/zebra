@@ -3,12 +3,15 @@ from pathlib import Path
 from subprocess import TimeoutExpired, run
 
 from agent_core.ports.runtime import (
+    RuntimeCapabilities,
     RuntimeCapabilityError,
+    RuntimeClass,
     RuntimeExecutionRequest,
     RuntimeExecutionResult,
     RuntimeHandle,
     RuntimePort,
     RuntimeSnapshot,
+    SandboxSpec,
 )
 
 from agent_runtime.adapters.local_snapshot_state import (
@@ -39,6 +42,14 @@ class LocalRuntime(RuntimePort):
             retention_limit=snapshot_retention_limit,
         )
 
+    def inspect_capabilities(self) -> RuntimeCapabilities:
+        return RuntimeCapabilities(
+            runtime_class=RuntimeClass.TRUSTED_LOCAL,
+            available=True,
+            engine="host-subprocess",
+            enforcement="trusted-host",
+        )
+
     def execute(self, request: RuntimeExecutionRequest) -> RuntimeExecutionResult:
         try:
             completed = run(
@@ -67,7 +78,14 @@ class LocalRuntime(RuntimePort):
             timed_out=False,
         )
 
-    def provision(self, *, workspace_root: str | None = None) -> RuntimeHandle:
+    def provision(
+        self,
+        *,
+        workspace_root: str | None = None,
+        spec: SandboxSpec | None = None,
+    ) -> RuntimeHandle:
+        if spec is not None and spec.runtime_class is not RuntimeClass.TRUSTED_LOCAL:
+            raise RuntimeCapabilityError("local runtime cannot satisfy hard sandbox spec")
         handle = RuntimeHandle.create(
             runtime_name="local",
             workspace_root=workspace_root,
@@ -114,6 +132,14 @@ class LocalRuntime(RuntimePort):
         resumed = replace(current, suspended=False)
         self._handles[current.handle_id] = resumed
         return resumed
+
+    def destroy(self, handle: RuntimeHandle) -> None:
+        self._require_known_handle(handle)
+        del self._handles[handle.handle_id]
+
+    def destroy_session(self, session_id: str) -> int:
+        del session_id
+        return 0
 
     def _require_known_handle(self, handle: RuntimeHandle) -> RuntimeHandle:
         current = self._handles.get(handle.handle_id)

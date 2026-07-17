@@ -555,12 +555,27 @@ Interpret retained snapshot outcomes this way:
 
 ## Known Boundaries
 
-- this is still a local filesystem snapshot model, not full sandbox checkpointing
-- suspend does not preserve running subprocess memory or network state
-- restore moves execution onto a fresh runtime-managed workspace path
-- snapshot retention is deterministic but local; operators should not treat it as archival backup
-- successful restore also cleans the consumed retained snapshot payload
-- health remains public even when the local bearer token is enabled
+Production Linux must set `ZEBRA_PROFILE=production` and
+`ZEBRA_RUNTIME_CLASS=gvisor`, use a Docker engine with
+the configured `runsc` handler, and an immutable
+`ZEBRA_RUNTIME_IMAGE=<registry>/<image>@sha256:<digest>`. Set
+`ZEBRA_RUNTIME_UID` and `ZEBRA_RUNTIME_GID` to an unprivileged identity that can
+write the provisioned workspace. The workspace storage layer must enforce its
+own disk quota; the Runtime enforces CPU, memory, PID, tmpfs, time and output
+budgets but does not pretend a bind mount has an OCI disk quota.
+
+Before a production rollout, run the `gvisor-runtime` CI smoke and confirm the
+session readback contains `workspace.runtime.class=gvisor`, the expected image
+digest, `container-network-none`, and the expected spec digest. Missing engine,
+handler, immutable image, writable workspace, or matching recovery authority
+fails before a tool command starts. Cancellation and crash recovery remove
+containers by the durable session label.
+
+`trusted-local` remains the compatibility default for trusted development; it
+is not a sandbox. Suspend is a workspace snapshot, not process-memory or
+network-state checkpointing. Restore creates a fresh sandbox and removes the
+consumed snapshot. Snapshot storage is local retention, not archival backup.
+Health remains public even when the local bearer token is enabled.
 
 ## Validation Commands
 

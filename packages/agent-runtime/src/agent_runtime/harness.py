@@ -13,6 +13,7 @@ from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, Singl
 from agent_core.harness.models import HarnessLoopResult
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_core.ports.model_gateway import ModelGatewayPort
+from agent_core.ports.runtime import RuntimeHandle, RuntimePort
 from agent_core.ports.session_history import SessionHistoryPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_security import DEFAULT_NETWORK_PROFILE, LocalPolicyEngine, NetworkProfile, PolicyProfile
@@ -150,6 +151,8 @@ class LocalToolGateway(ToolGatewayPort):
         current_session_id: str | None = None,
         mcp_servers: Sequence[McpServerSpec] = (),
         mcp_allowlist: Sequence[str] | None = None,
+        runtime: RuntimePort | None = None,
+        runtime_handle: RuntimeHandle | None = None,
     ) -> None:
         if research_child_limit <= 0:
             raise ValueError("research_child_limit must be positive")
@@ -161,7 +164,8 @@ class LocalToolGateway(ToolGatewayPort):
             )
         self._workspace = LocalWorkspace(workspace_root)
         self._workspace.ensure()
-        runtime = LocalRuntime()
+        self._runtime = runtime or LocalRuntime()
+        self._runtime_handle = runtime_handle
         registry = ToolRegistry()
         tools = (
             ClarifyTool(),
@@ -169,10 +173,10 @@ class LocalToolGateway(ToolGatewayPort):
             WorkspaceListTool(self._workspace),
             FileReadTool(self._workspace),
             WorkspaceSearchTool(self._workspace),
-            GitStatusTool(runtime, self._workspace),
-            PatchApplyTool(runtime, self._workspace),
-            TestsRunTool(runtime, self._workspace, DEFAULT_TEST_PRESETS),
-            CommandRunTool(runtime, self._workspace),
+            GitStatusTool(self._runtime, self._workspace),
+            PatchApplyTool(self._runtime, self._workspace),
+            TestsRunTool(self._runtime, self._workspace, DEFAULT_TEST_PRESETS),
+            CommandRunTool(self._runtime, self._workspace),
             WebFetchTool(web_gateway_transport or LocalWebGatewayTransport()),
         )
         enabled_names = tool_names_for_profile(tool_profile)
@@ -266,8 +270,13 @@ class LocalToolGateway(ToolGatewayPort):
         return tuple(self._mcp_catalog.resolve(tool_call) for tool_call in tool_calls)
 
     def close(self) -> None:
-        if self._subagents is not None:
-            self._subagents.close()
+        try:
+            if self._subagents is not None:
+                self._subagents.close()
+        finally:
+            if self._runtime_handle is not None:
+                self._runtime.destroy(self._runtime_handle)
+                self._runtime_handle = None
 
 
 def _optional_web_search_endpoint(value: str | None) -> WebTarget | None:

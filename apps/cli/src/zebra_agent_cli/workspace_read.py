@@ -22,6 +22,15 @@ def serialize_workspace_projection(
         body["policy_profile"] = workspace.policy_profile
     if workspace.last_attempt_number is not None:
         body["last_attempt_number"] = workspace.last_attempt_number
+    if workspace.runtime_spec_digest is not None:
+        body["runtime"] = {
+            "class": workspace.runtime_name,
+            "engine": workspace.runtime_engine,
+            "image": workspace.runtime_image,
+            "spec_digest": workspace.runtime_spec_digest,
+            "network_enforcement": workspace.runtime_network_enforcement,
+            "workspace_writable": workspace.runtime_workspace_writable,
+        }
     if workspace.snapshot_id is not None or workspace.snapshot_path is not None:
         snapshot: dict[str, object] = {}
         if workspace.runtime_name is not None:

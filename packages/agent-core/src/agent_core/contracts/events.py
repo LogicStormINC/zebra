@@ -6,6 +6,7 @@ from agent_core.contracts.model_events import (
     ModelRequestStartedPayload,
     ModelResponseDeltaPayload,
 )
+from agent_core.contracts.runtime_events import RuntimeProvisionedPayload
 from agent_core.domain.clarifications import (
     MAX_CLARIFICATION_CHOICE_CHARS,
     MAX_CLARIFICATION_CHOICES,
@@ -410,10 +411,7 @@ class ClarificationRequestedPayload(BaseModel):
     @classmethod
     def ensure_valid_choices(cls, values: list[str]) -> list[str]:
         normalized = [value.strip() for value in values]
-        if any(
-            not value or len(value) > MAX_CLARIFICATION_CHOICE_CHARS
-            for value in normalized
-        ):
+        if any(not value or len(value) > MAX_CLARIFICATION_CHOICE_CHARS for value in normalized):
             raise ValueError("clarification choices must be non-blank and bounded")
         if len({value.casefold() for value in normalized}) != len(normalized):
             raise ValueError("clarification choices must be unique")
@@ -440,6 +438,7 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SESSION_CREATED: SessionCreatedPayload,
     EventType.USER_MESSAGE_RECEIVED: UserMessageReceivedPayload,
     EventType.TASK_PREPARED: TaskPreparedPayload,
+    EventType.RUNTIME_PROVISIONED: RuntimeProvisionedPayload,
     EventType.MODEL_REQUEST_STARTED: ModelRequestStartedPayload,
     EventType.MODEL_RESPONSE_DELTA: ModelResponseDeltaPayload,
     EventType.PLAN_UPDATED: PlanUpdatedPayload,

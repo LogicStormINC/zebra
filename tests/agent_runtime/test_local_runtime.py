@@ -100,9 +100,12 @@ def test_local_runtime_snapshots_and_restores_workspace_state(tmp_path: Path) ->
     assert snapshot.workspace_root == str(workspace.resolve())
     assert snapshot.snapshot_path is not None
     assert Path(snapshot.snapshot_path).is_dir()
-    assert json.loads((Path(snapshot.snapshot_path) / "manifest.json").read_text(encoding="utf-8"))[
-        "source_handle_id"
-    ] == handle.handle_id
+    assert (
+        json.loads((Path(snapshot.snapshot_path) / "manifest.json").read_text(encoding="utf-8"))[
+            "source_handle_id"
+        ]
+        == handle.handle_id
+    )
     assert restored.runtime_name == "local"
     assert restored.suspended is False
     assert restored.workspace_root is not None
@@ -158,6 +161,24 @@ def test_local_runtime_detects_incompatible_snapshot_manifest(tmp_path: Path) ->
         runtime.restore(snapshot)
 
 
+def test_local_runtime_detects_tampered_snapshot_payload(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "note.txt").write_text("trusted", encoding="utf-8")
+    runtime = LocalRuntime(snapshot_root=tmp_path / "runtime-state")
+    snapshot = runtime.snapshot(runtime.provision(workspace_root=str(workspace)))
+    assert snapshot.snapshot_path is not None
+    (Path(snapshot.snapshot_path) / "workspace" / "note.txt").write_text(
+        "tampered", encoding="utf-8"
+    )
+
+    inspection = runtime.inspect_snapshot(snapshot)
+
+    assert inspection.status is LocalSnapshotStatus.INCOMPATIBLE
+    with pytest.raises(RuntimeCapabilityError, match="payload digest"):
+        runtime.restore(snapshot)
+
+
 def test_local_runtime_cleanup_snapshot_removes_payload(tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir()
@@ -192,3 +213,47 @@ def test_local_runtime_rejects_snapshot_operations_outside_supported_subset(
         runtime.restore(snapshot)
     with pytest.raises(RuntimeCapabilityError, match="does not belong to local runtime"):
         runtime.fork(snapshot)
+
+
+def test_local_runtime_rejects_snapshot_backend_inside_workspace(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    runtime = LocalRuntime(snapshot_root=workspace / ".runtime-state")
+    handle = runtime.provision(workspace_root=str(workspace))
+
+    with pytest.raises(RuntimeCapabilityError, match="must not be inside"):
+        runtime.snapshot(handle)
+
+
+def test_local_runtime_snapshot_preserves_external_symlink(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    secret = tmp_path / "secret.txt"
+    secret.write_text("host-secret", encoding="utf-8")
+    (workspace / "external-link").symlink_to(secret)
+    runtime = LocalRuntime(snapshot_root=tmp_path / "state")
+
+    snapshot = runtime.snapshot(runtime.provision(workspace_root=str(workspace)))
+
+    assert snapshot.snapshot_path is not None
+    copied = Path(snapshot.snapshot_path) / "workspace" / "external-link"
+    assert copied.is_symlink()
+    assert copied.readlink() == secret
+
+
+def test_local_runtime_rejects_snapshot_path_outside_backend(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    runtime = LocalRuntime(snapshot_root=tmp_path / "state")
+    snapshot = runtime.snapshot(runtime.provision(workspace_root=str(workspace)))
+    forged = RuntimeSnapshot(
+        snapshot_id=snapshot.snapshot_id,
+        runtime_name=snapshot.runtime_name,
+        source_handle_id=snapshot.source_handle_id,
+        created_at=snapshot.created_at,
+        workspace_root=snapshot.workspace_root,
+        snapshot_path=str(tmp_path),
+    )
+
+    with pytest.raises(RuntimeCapabilityError, match="incompatible"):
+        runtime.restore(forged)

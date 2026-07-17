@@ -169,6 +169,21 @@ def test_rebuild_workspace_tracks_suspend_snapshot_and_resume_restore() -> None:
         SessionEvent.create(
             session_id=session_id,
             sequence=2,
+            event_type=EventType.RUNTIME_PROVISIONED,
+            actor=EventActor.SYSTEM,
+            payload={
+                "runtime_class": "gvisor",
+                "engine": "docker",
+                "image": "zebra/runtime@sha256:" + "a" * 64,
+                "spec_digest": "b" * 64,
+                "network_enforcement": "container-network-none",
+                "workspace_writable": True,
+            },
+            created_at=created_at,
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=3,
             event_type=EventType.SESSION_SUSPENDED,
             actor=EventActor.SYSTEM,
             payload={
@@ -180,7 +195,7 @@ def test_rebuild_workspace_tracks_suspend_snapshot_and_resume_restore() -> None:
         ),
         SessionEvent.create(
             session_id=session_id,
-            sequence=3,
+            sequence=4,
             event_type=EventType.SESSION_RESUMED,
             actor=EventActor.SYSTEM,
             payload={
@@ -197,5 +212,7 @@ def test_rebuild_workspace_tracks_suspend_snapshot_and_resume_restore() -> None:
     assert projection.status is WorkspaceStatus.PREPARED
     assert projection.workspace_root == "/tmp/workspace-restored"
     assert projection.runtime_name == "local"
+    assert projection.runtime_engine == "docker"
+    assert projection.runtime_spec_digest == "b" * 64
     assert projection.snapshot_id is None
     assert projection.snapshot_path is None

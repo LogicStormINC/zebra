@@ -4,14 +4,37 @@
 
 1. `completed` - Persist the Linux-first gVisor/OCI design, activation decision,
    platform matrix, exact task ownership, and fail-closed boundary.
-2. `in_progress` - Extend Runtime contracts and durable workspace authority
+2. `completed` - Extend Runtime contracts and durable workspace authority
    without weakening existing trusted-local compatibility.
-3. `pending` - Implement the hardened OCI engine adapter, lifecycle, bounded
+3. `completed` - Implement the hardened OCI engine adapter, lifecycle, bounded
    execution, snapshot compatibility, and capability preflight.
-4. `pending` - Wire configured Runtime selection through Worker and Tool Gateway,
+4. `completed` - Wire configured Runtime selection through Worker and Tool Gateway,
    preserving immutable authority across recovery and continuation.
-5. `pending` - Add adversarial tests, Linux CI integration, operator guidance,
+5. `in_progress` - Add adversarial tests, Linux CI integration, operator guidance,
    full repository validation, and real-engine acceptance where available.
+
+### Errors Encountered
+
+- 2026-07-17: The first focused pytest command used obsolete test paths under
+  `tests/core` and `tests/storage`; corrected to the repository's actual
+  `tests/agent_core` and `tests/agent_storage` layout.
+- 2026-07-17: An earlier verification command contained backticks inside a
+  shell-quoted search pattern, so zsh attempted command substitution; the
+  documentation commit itself succeeded and subsequent searches use plain
+  patterns.
+- 2026-07-17: The isolated worktree's new virtual environment initially lacked
+  workspace packages, causing test collection import errors; run `make sync`
+  before repeating the focused suite.
+- 2026-07-17: An OCI snapshot test placed the snapshot backend inside the test
+  workspace and recursively copied itself; corrected the fixture to use sibling
+  workspace and state directories, matching the production factory layout.
+- 2026-07-17: Snapshot integrity validation initially shadowed its payload Path
+  with the manifest's string `workspace_root`; renamed the manifest value and
+  repeated the lifecycle suite.
+- 2026-07-17: The first full test run found API compatibility drift because a
+  missing model key was wrapped as a conflict, plus two files over the size
+  gate. Restored the existing ValueError path and split runtime event/cleanup
+  contracts into focused modules.
 
 ## QA-UI-RUNTIME-01 - End-To-End Durable Streaming
 

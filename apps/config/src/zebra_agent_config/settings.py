@@ -58,11 +58,28 @@ class McpServerSettings:
 
 
 @dataclass(frozen=True)
+class RuntimeSettings:
+    runtime_class: str = "trusted-local"
+    engine: str = "docker"
+    gvisor_runtime: str = "runsc"
+    image: str = ""
+    cpu_count: float = 2.0
+    memory_mb: int = 2048
+    pids: int = 256
+    tmpfs_mb: int = 512
+    max_output_bytes: int = 1_048_576
+    max_execution_seconds: float = 900.0
+    container_uid: int = 65532
+    container_gid: int = 65532
+
+
+@dataclass(frozen=True)
 class ZebraAgentSettings:
     profile: str
     database_url: str
     api: ApiSettings
     model: ModelSettings
+    runtime: RuntimeSettings = field(default_factory=RuntimeSettings)
     scm: ScmSettings = field(
         default_factory=lambda: ScmSettings(
             provider="local-only",
@@ -95,8 +112,9 @@ def load_settings(
         deepseek_model = _read_optional(values, "DEEPSEEK_MODEL")
         if deepseek_model:
             values["ZEBRA_MODEL_NAME"] = deepseek_model
+    profile = _read(values, "ZEBRA_PROFILE", default="local")
     return ZebraAgentSettings(
-        profile=_read(values, "ZEBRA_PROFILE", default="local"),
+        profile=profile,
         database_url=_read(
             values,
             "ZEBRA_DATABASE_URL",
@@ -115,10 +133,58 @@ def load_settings(
             base_url=_read(values, "ZEBRA_MODEL_BASE_URL", default="https://api.deepseek.com"),
             model=_read(values, "ZEBRA_MODEL_NAME", default="deepseek-v4-flash"),
         ),
+        runtime=_load_runtime_settings(values, profile=profile),
         scm=_load_scm_settings(values),
         web_search_endpoint=_read_optional(values, "ZEBRA_WEB_SEARCH_ENDPOINT"),
         skill_roots=_read_paths(values, "ZEBRA_SKILL_ROOTS"),
         mcp_servers=_read_mcp_servers(values),
+    )
+
+
+def _load_runtime_settings(
+    values: Mapping[str, str],
+    *,
+    profile: str,
+) -> RuntimeSettings:
+    runtime_class = _read(
+        values,
+        "ZEBRA_RUNTIME_CLASS",
+        default="gvisor" if profile == "production" else "trusted-local",
+    )
+    if runtime_class not in {"trusted-local", "oci-rootless", "gvisor"}:
+        raise ValueError("ZEBRA_RUNTIME_CLASS is unsupported")
+    if profile == "production" and runtime_class != "gvisor":
+        raise ValueError("ZEBRA_PROFILE=production requires ZEBRA_RUNTIME_CLASS=gvisor")
+    engine = _read(values, "ZEBRA_RUNTIME_ENGINE", default="docker")
+    if engine not in {"docker", "podman"}:
+        raise ValueError("ZEBRA_RUNTIME_ENGINE must be docker or podman")
+    gvisor_runtime = _read(values, "ZEBRA_GVISOR_RUNTIME", default="runsc")
+    if not re.fullmatch(r"[a-zA-Z0-9_.-]{1,64}", gvisor_runtime):
+        raise ValueError("ZEBRA_GVISOR_RUNTIME is invalid")
+    image = _read_optional(values, "ZEBRA_RUNTIME_IMAGE") or ""
+    if runtime_class != "trusted-local" and not re.fullmatch(r".+@sha256:[0-9a-fA-F]{64}", image):
+        raise ValueError("ZEBRA_RUNTIME_IMAGE must be pinned by sha256 digest")
+    return RuntimeSettings(
+        runtime_class=runtime_class,
+        engine=engine,
+        gvisor_runtime=gvisor_runtime,
+        image=image,
+        cpu_count=_read_float(values, "ZEBRA_RUNTIME_CPUS", default=2.0),
+        memory_mb=_read_int(values, "ZEBRA_RUNTIME_MEMORY_MB", default=2048),
+        pids=_read_int(values, "ZEBRA_RUNTIME_PIDS", default=256),
+        tmpfs_mb=_read_int(values, "ZEBRA_RUNTIME_TMPFS_MB", default=512),
+        max_output_bytes=_read_int(
+            values,
+            "ZEBRA_RUNTIME_MAX_OUTPUT_BYTES",
+            default=1_048_576,
+        ),
+        max_execution_seconds=_read_float(
+            values,
+            "ZEBRA_RUNTIME_MAX_EXECUTION_SECONDS",
+            default=900.0,
+        ),
+        container_uid=_read_int(values, "ZEBRA_RUNTIME_UID", default=65532),
+        container_gid=_read_int(values, "ZEBRA_RUNTIME_GID", default=65532),
     )
 
 
@@ -229,6 +295,28 @@ def _read_optional(values: Mapping[str, str], key: str) -> str | None:
     value = values.get(key, "").strip()
     if not value:
         return None
+    return value
+
+
+def _read_int(values: Mapping[str, str], key: str, *, default: int) -> int:
+    raw = values.get(key, str(default)).strip()
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise ValueError(f"{key} must be an integer") from exc
+    if value <= 0:
+        raise ValueError(f"{key} must be positive")
+    return value
+
+
+def _read_float(values: Mapping[str, str], key: str, *, default: float) -> float:
+    raw = values.get(key, str(default)).strip()
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise ValueError(f"{key} must be a number") from exc
+    if value <= 0:
+        raise ValueError(f"{key} must be positive")
     return value
 
 
