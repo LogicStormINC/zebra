@@ -5,15 +5,25 @@ from datetime import UTC, datetime
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import new_correlation_id, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCompletion, ModelTextDelta, ModelToolDefinition
+from agent_core.domain.modeling import (
+    ModelCompletion,
+    ModelContextWindow,
+    ModelTextDelta,
+    ModelToolDefinition,
+)
 from agent_core.domain.tools import ToolCall, ToolResult
+from agent_core.harness.context_window import ContextWindowExceededError, plan_context_window
 from agent_core.harness.models import HarnessEventDraft, HarnessTask
 from agent_core.ports.context_compiler import ContextCompilerPort
 from agent_core.ports.conversation_compactor import (
     ConversationCompactionResult,
     ConversationCompactorPort,
 )
-from agent_core.ports.model_gateway import ModelGatewayPort, StreamingModelGatewayPort
+from agent_core.ports.model_gateway import (
+    ModelContextWindowPort,
+    ModelGatewayPort,
+    StreamingModelGatewayPort,
+)
 
 
 class HarnessModelStep:
@@ -23,11 +33,11 @@ class HarnessModelStep:
         *,
         available_tools: tuple[ModelToolDefinition, ...] = (),
         conversation_compactor: ConversationCompactorPort | None = None,
-        conversation_token_budget: int = 800,
+        conversation_token_budget: int | None = None,
         event_sink: Callable[[HarnessEventDraft], None] | None = None,
         attempt_number: int = 1,
     ) -> None:
-        if conversation_token_budget <= 0:
+        if conversation_token_budget is not None and conversation_token_budget <= 0:
             raise ValueError("conversation_token_budget must be positive")
         if attempt_number <= 0:
             raise ValueError("attempt_number must be positive")
@@ -37,6 +47,47 @@ class HarnessModelStep:
         self._conversation_token_budget = conversation_token_budget
         self._event_sink = event_sink
         self._attempt_number = attempt_number
+
+    def prepare_conversation(
+        self,
+        messages: list[SessionMessage],
+        model_gateway: ModelGatewayPort,
+        *,
+        allow_tools: bool,
+        user_goal: str,
+        created_at: datetime,
+    ) -> ConversationCompactionResult | None:
+        tools = self._available_tools if allow_tools else ()
+        window = (
+            model_gateway.context_window
+            if isinstance(model_gateway, ModelContextWindowPort)
+            else ModelContextWindow()
+        )
+        budget = min(
+            self._conversation_token_budget or window.input_token_limit,
+            window.input_token_limit,
+        )
+        result = None
+        if self._conversation_compactor is not None:
+            result = self._conversation_compactor.compact_conversation(
+                tuple(messages),
+                user_goal=user_goal,
+                max_tokens=budget,
+                created_at=created_at,
+            )
+            messages[:] = result.messages
+            if not result.within_budget:
+                raise ContextWindowExceededError(
+                    "conversation remains over input budget after compaction: "
+                    f"{result.after_tokens}>{budget}"
+                )
+        plan = plan_context_window(tuple(messages), tools, window)
+        if not plan.within_budget:
+            raise ContextWindowExceededError(
+                "model request exceeds input budget: "
+                f"{plan.estimated_input_tokens}>{plan.input_token_limit}"
+            )
+        return result
 
     def compact_conversation(
         self,
@@ -50,7 +101,7 @@ class HarnessModelStep:
         return self._conversation_compactor.compact_conversation(
             tuple(messages),
             user_goal=user_goal,
-            max_tokens=self._conversation_token_budget,
+            max_tokens=self._conversation_token_budget or ModelContextWindow().input_token_limit,
             created_at=created_at,
         )
 

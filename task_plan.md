@@ -1,21 +1,19 @@
 # Task Plan
 
-## CTX-DS-01 - DeepSeek And Context Lifecycle Integrated Optimization
+## CTX-LC-01 - Context Lifecycle And Hybrid Compaction
 
-1. `in_progress` - Claim the integrated task, import the approved design
-   baselines, and preserve current mainline governance.
+1. `completed` - Split DeepSeek specialization into `DS-OPT-01`, retain the
+   provider-neutral context task, and lock disjoint owned paths.
 2. `pending` - Implement provider-aware context-window planning, hard outbound
    request gates, and artifact-backed bounded command/test/build output.
 3. `pending` - Implement progressive active-context projection, durable
    `ContextCapsule` events/artifacts, recovery, and deterministic fallback.
-4. `pending` - Implement versioned model profiles, DeepSeek thinking/tool
-   safety, finish/usage/error normalization, stable prefix metadata, and routing.
-5. `pending` - Implement provider continuation capabilities and transparent
+4. `pending` - Implement provider continuation capabilities and transparent
    fallback without making opaque state authoritative.
-6. `pending` - Add API/CLI context inspection and manual compaction controls,
+5. `pending` - Add API/CLI context inspection and manual compaction controls,
    focused contracts, long-loop/recovery/provider Evals, and operator docs.
-7. `pending` - Run focused, full repository, release-eval, and real-provider
-   validation where credentials are available; record exact evidence and close.
+6. `pending` - Run focused, full repository, and release-eval validation;
+   record exact evidence and close.
 
 ### Errors Encountered
 

@@ -18,7 +18,10 @@ from agent_core.harness.models import (
     HarnessEventBuffer,
     HarnessEventDraft,
 )
-from agent_core.harness.orchestration_events import model_response_event
+from agent_core.harness.orchestration_events import (
+    context_compacted_event,
+    model_response_event,
+)
 from agent_core.harness.selection import (
     FirstToolCallSelectionStrategy,
     ToolCallSelectionStrategy,
@@ -73,12 +76,23 @@ class SingleAttemptOrchestrator:
             task,
             created_at=context.attempt.started_at,
         )
+        compaction = self._model_step.prepare_conversation(
+            messages,
+            self._model_gateway,
+            allow_tools=True,
+            user_goal=task.user_input,
+            created_at=context.attempt.started_at,
+        )
         completion = self._model_step.request_completion(
             messages,
             self._model_gateway,
             allow_tools=True,
         )
         emitted_events = HarnessEventBuffer(self._event_sink)
+        if compaction is not None and compaction.compacted:
+            emitted_events.append(
+                context_compacted_event(compaction, attempt_number=context.attempt.number)
+            )
         emitted_events.append(
             model_response_event(completion, attempt_number=context.attempt.number)
         )

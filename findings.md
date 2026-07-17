@@ -1,6 +1,10 @@
 # Findings
 
-## CTX-DS-01 - 2026-07-17
+## CTX-LC-01 - 2026-07-17
+
+- The user split DeepSeek specialization into a separate Codex task. This task
+  now owns only provider-neutral context lifecycle work; DeepSeek request and
+  telemetry edits were removed before either implementation branch committed them.
 
 - Current same-session conversation compaction is correctly placed before
   follow-up model calls, but the initial call bypasses it and
@@ -10,9 +14,6 @@
 - `command.run` and `tests.run` return complete stdout/stderr directly, so the
   first implementation rung is one shared bounded output projector backed by
   the existing Artifact boundary rather than provider-native compaction.
-- DeepSeek tool-bearing calls must explicitly disable thinking until Zebra has
-  an approved opaque continuation contract; private reasoning content remains
-  non-durable and non-public.
 - Provider-native compaction is an optional continuation optimization. Session
   events plus a transparent Zebra Capsule remain recovery and cross-model truth.
 

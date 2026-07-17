@@ -2,7 +2,18 @@ from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 
 from agent_core.domain.messages import SessionMessage
-from agent_core.domain.modeling import ModelCompletion, ModelTextDelta, ModelToolDefinition
+from agent_core.domain.modeling import (
+    ModelCompletion,
+    ModelContextWindow,
+    ModelTextDelta,
+    ModelToolDefinition,
+)
+
+
+@runtime_checkable
+class ModelContextWindowPort(Protocol):
+    @property
+    def context_window(self) -> ModelContextWindow: ...
 
 
 class ModelGatewayPort(Protocol):

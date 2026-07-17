@@ -79,3 +79,34 @@ class ModelCompletion:
     def __post_init__(self) -> None:
         if self.assistant_message.role is not MessageRole.ASSISTANT:
             raise ValueError("model completion assistant_message must use assistant role")
+
+
+@dataclass(frozen=True)
+class ModelContextWindow:
+    context_tokens: int = 128_000
+    max_output_tokens: int = 8_000
+    reasoning_reserve_tokens: int = 0
+    compaction_reserve_tokens: int = 4_000
+    protocol_reserve_tokens: int = 2_000
+
+    def __post_init__(self) -> None:
+        for field_name in (
+            "context_tokens",
+            "max_output_tokens",
+            "reasoning_reserve_tokens",
+            "compaction_reserve_tokens",
+            "protocol_reserve_tokens",
+        ):
+            if getattr(self, field_name) < 0:
+                raise ValueError(f"{field_name} must not be negative")
+        if self.input_token_limit <= 0:
+            raise ValueError("model context reserves leave no room for input")
+
+    @property
+    def input_token_limit(self) -> int:
+        return self.context_tokens - (
+            self.max_output_tokens
+            + self.reasoning_reserve_tokens
+            + self.compaction_reserve_tokens
+            + self.protocol_reserve_tokens
+        )
