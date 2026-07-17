@@ -2,6 +2,23 @@
 
 ## Addendum
 
+- 2026-07-17: completed `QA-CI-01` for review on `codex/qa-ci-mainline`.
+  The read-only, SHA-pinned workflow runs frozen Python workspace sync, all
+  backend tests, file-size checks, Ruff, strict Mypy, release evals, every
+  desktop `check:*` script, and the production build on pull requests and
+  `main` pushes. Validation exposed that root `uv.lock` was ignored and absent;
+  the task now tracks the generated lock and removes that ignore rule instead
+  of weakening frozen CI. Workflow YAML parsed successfully, all 1320 backend
+  tests, the 779-file gate, 353-source Mypy, 8 evals, 16 desktop checks, and the
+  Node 22 build passed. The existing desktop chunk warning remains unchanged.
+
+- 2026-07-17: started `QA-CI-01` on `codex/qa-ci-mainline`, stacked on the
+  documentation-only `QA-GOV-01` branch to avoid conflicting task-registry
+  edits before that dependency merges. The first workflow will reuse frozen
+  backend and desktop commands on pull requests and `main` pushes with
+  read-only permissions, pinned Actions, superseded-run cancellation, no
+  provider credentials, no deployment, and no Tauri packaging.
+
 - 2026-07-17: completed `QA-GOV-01` for review on
   `codex/qa-mainline-closeout`. The evidence-backed mainline assessment is
   recorded in `docs/主线架构工程完成度审计与收口计划_v1.0.md`: remote `main`

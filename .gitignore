@@ -10,7 +10,6 @@ htmlcov/
 dist/
 build/
 *.pyc
-uv.lock
 evals/reports/
 node_modules/
 .pnpm-store/
