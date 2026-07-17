@@ -13555,6 +13555,54 @@ authority, or existing provider compatibility.
   `agent-core`
 - cloud scheduling, tenant authority expansion, new credentials, or widened egress
 
+### CTX-HO-PLAN-01 - Stage Session Handoff Architecture Plan
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `ARCHITECTURE / CORE / CONTEXT / STORAGE / QA`
+- Depends on: `CTX-LC-01` design baseline and explicit maintainer request
+- Branch: `codex/ctx-handoff-stage-plan`
+- Owned paths: `docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md`,
+  `docs/上下文生命周期与混合压缩架构方案_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Define an evidence-backed, explicit stage-boundary Session handoff design without
+changing the current default of same-Session compaction or activating runtime behavior.
+
+#### Deliverables
+
+- durable parent/root/child Session lineage and versioned Handoff Envelope design
+- safe-boundary, authority, idempotency, atomicity, no-replay, and recovery invariants
+- API/CLI/UI operator contract plus observability and Eval acceptance matrix
+- dependency-ordered implementation slices that must be split into owned-path tasks
+  before coding
+
+#### Acceptance
+
+- [x] Existing same-Session compaction and Research Subagent behavior is distinguished
+  from durable stage handoff.
+- [x] Context pressure never directly creates a child Session; agent suggestions require
+  explicit confirmation.
+- [x] Pending approvals, clarifications, tools, leases, and uncertain side effects block
+  handoff before mutation.
+- [x] Parent/child events, lineage, immutable Envelope, cross-stream transaction, and
+  idempotency rules are specified.
+- [x] Child context, authority narrowing, provider-state exclusion, recovery, API/CLI/UI,
+  observability, Eval, rollout, and rollback are specified.
+- [x] Fresh-reader review closed state, linear-successor, CAS/fencing, operation, outbox,
+  structured no-replay, workspace revision, authority, and actor-provenance gaps.
+- [x] Implementation remains inactive and requires separate path-bounded task activation.
+
+#### Explicit Non-Goals
+
+- implementation code, database migrations, API/CLI/UI behavior, or feature flags
+- automatic token-pressure thread creation, implicit short-thread chains, branches,
+  merges, nested subagents, or Agent Teams
+- hidden reasoning transfer, provider-private continuation transfer, authority widening,
+  workspace crossing, or tool-side-effect replay
+
 ### DS-OPT-01 - DeepSeek Specialized Optimization
 
 - Status: `In Progress`

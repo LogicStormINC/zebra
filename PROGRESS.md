@@ -2,6 +2,17 @@
 
 ## Addendum
 
+- 2026-07-17: completed the plan-only `CTX-HO-PLAN-01` on
+  `codex/ctx-handoff-stage-plan`. The new stage Session handoff architecture keeps
+  same-Session Compaction as the default and permits a new durable Session only at an
+  explicit safe stage boundary. It specifies immutable parent/root/child lineage, a
+  versioned transparent `SessionHandoffEnvelope`, authority inheritance or narrowing,
+  cross-event-stream atomicity, idempotent creation, workspace/Git binding, child context
+  reconstruction, no replay of completed tools, rejection of pending or uncertain side
+  effects, API/CLI/UI readback, recovery, observability, Eval, rollout, and rollback.
+  Runtime implementation remains inactive; coding requires dependency-ordered,
+  path-bounded follow-up tasks after `CTX-LC-01` merges.
+
 - 2026-07-17: split the former integrated `CTX-DS-01` into parallel,
   path-bounded tasks. `CTX-LC-01` owns provider-neutral context planning,
   compaction, artifacts, capsule recovery, and operator controls on
