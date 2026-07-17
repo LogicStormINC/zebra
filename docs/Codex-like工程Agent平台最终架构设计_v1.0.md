@@ -529,6 +529,13 @@ Cross-encoder / Reranker
 
 触发条件：Token 占用达到阈值、会话跨度过长、工具输出重复、模型缓存命中率下降。
 
+自动压缩的生命周期、三态上下文、`ContextCapsule`、大型工具输出
+Artifact 化、provider-native compaction 和跨模型恢复约束，统一以
+[`上下文生命周期与混合压缩架构方案_v1.0.md`](./上下文生命周期与混合压缩架构方案_v1.0.md)
+为专项实施基线；模型专项调用与 DeepSeek 协议约束以
+[`DeepSeek_V4_模型适配与专项优化方案_v1.0.md`](./DeepSeek_V4_模型适配与专项优化方案_v1.0.md)
+为基线。
+
 压缩结果作为 `ContextCompacted` 事件写入，至少保留：
 
 - 用户目标和验收标准；

@@ -7,6 +7,7 @@ from agent_core.ports.workspace import WorkspacePort
 
 from agent_tools.contracts import ToolContract
 from agent_tools.errors import ToolArgumentError
+from agent_tools.output_projection import ToolOutputProjector
 
 tests_run_contract = ToolContract(
     name="tests.run",
@@ -28,12 +29,14 @@ class TestsRunTool:
         runtime: RuntimePort,
         workspace: WorkspacePort,
         presets: Mapping[str, tuple[str, ...]],
+        output_projector: ToolOutputProjector | None = None,
     ) -> None:
         if not presets:
             raise ValueError("tests.run requires at least one preset")
         self._runtime = runtime
         self._workspace = workspace
         self._presets = dict(presets)
+        self._output_projector = output_projector
 
     @property
     def contract(self) -> ToolContract:
@@ -57,10 +60,19 @@ class TestsRunTool:
             )
         )
         status = ToolCallStatus.EXECUTED if runtime_result.succeeded else ToolCallStatus.FAILED
+        projected = (
+            self._output_projector.project(
+                stdout=runtime_result.stdout,
+                stderr=runtime_result.stderr,
+                artifact_name=f"tests-{preset_name}.txt",
+            )
+            if self._output_projector is not None
+            else None
+        )
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
             status=status,
-            output=runtime_result.stdout,
+            output=projected.model_output if projected is not None else runtime_result.stdout,
             metadata={
                 "preset": preset_name,
                 "command": list(command),
@@ -68,8 +80,9 @@ class TestsRunTool:
                 if cwd != self._workspace.root_path
                 else ".",
                 "exit_code": runtime_result.exit_code,
-                "stderr": runtime_result.stderr,
+                "stderr": "" if projected is not None else runtime_result.stderr,
                 "timed_out": runtime_result.timed_out,
+                **(projected.metadata if projected is not None else {}),
             },
         )
 

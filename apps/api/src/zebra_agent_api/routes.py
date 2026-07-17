@@ -88,6 +88,10 @@ class RouteAdapter:
                 return self.app.expire_tenant_memory(parts[0], parts[2], request.body or {})
         if method == "POST" and request.path.startswith("/sessions/"):
             parts = _session_path_parts(request.path)
+            if len(parts) == 3 and parts[1:] == ("context", "compact"):
+                return self.app.compact_session_context(parts[0], request.body or {})
+            if len(parts) == 3 and parts[1:] == ("context", "recover"):
+                return self.app.recover_session_context(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "messages":
                 return self.app.append_session_message(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "cancel":
@@ -264,6 +268,8 @@ class RouteAdapter:
                 return self.app.get_session_stream(parts[0])
             if len(parts) == 2 and parts[1] == "diff":
                 return self.app.get_session_diff(parts[0])
+            if len(parts) == 2 and parts[1] == "context":
+                return self.app.get_session_context(parts[0])
             if len(parts) == 2 and parts[1] == "memory":
                 return self.app.get_session_memory(parts[0])
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue":

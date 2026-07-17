@@ -254,23 +254,19 @@ def test_cli_resume_command_execute_reports_tool_trace(
         settings=_settings(database_path),
     )
 
-    assert result.payload["trace"] == [
-        {
-            "attempt_number": 1,
-            "assistant_message": "Tool result: resume readme",
-            "tools": [
-                {
-                    "tool_name": "files.read",
-                    "status": "executed",
-                    "arguments": {"path": "README.md"},
-                    "output": "resume readme\n",
-                    "metadata": {
-                        "path": "README.md",
-                        "byte_count": 14,
-                        "truncated": False,
-                    },
-                    "policy_decision": "allow",
-                }
-            ],
-        }
-    ]
+    trace = result.payload["trace"]
+    assert len(trace) == 1
+    assert trace[0]["attempt_number"] == 1
+    assert trace[0]["assistant_message"] == "Tool result: resume readme"
+    tool = trace[0]["tools"][0]
+    assert tool["tool_name"] == "files.read"
+    assert tool["status"] == "executed"
+    assert tool["arguments"] == {"path": "README.md"}
+    assert tool["output"] == "resume readme\n"
+    assert tool["policy_decision"] == "allow"
+    metadata = tool["metadata"]
+    assert metadata["path"] == "README.md"
+    assert metadata["byte_count"] == 14
+    assert metadata["truncated"] is False
+    assert metadata["artifact_uri"].startswith("file://")
+    assert metadata["output_envelope"]["checksum"] == metadata["output_sha256"]

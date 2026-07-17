@@ -187,27 +187,27 @@ class OciRuntime(RuntimePort):
             completed = self._invoke(command, timeout=timeout)
         except TimeoutExpired as exc:
             self.destroy(handle)
-            stdout, stdout_truncated = self._bounded_output(exc.stdout)
-            stderr, stderr_truncated = self._bounded_output(exc.stderr)
+            stdout = self._complete_output(exc.stdout)
+            stderr = self._complete_output(exc.stderr)
             return RuntimeExecutionResult(
                 command=request.command,
                 exit_code=None,
                 stdout=stdout,
                 stderr=stderr,
                 timed_out=True,
-                stdout_truncated=stdout_truncated,
-                stderr_truncated=stderr_truncated,
+                stdout_truncated=False,
+                stderr_truncated=False,
             )
-        stdout, stdout_truncated = self._bounded_output(completed.stdout)
-        stderr, stderr_truncated = self._bounded_output(completed.stderr)
+        stdout = self._complete_output(completed.stdout)
+        stderr = self._complete_output(completed.stderr)
         return RuntimeExecutionResult(
             command=request.command,
             exit_code=completed.returncode,
             stdout=stdout,
             stderr=stderr,
             timed_out=False,
-            stdout_truncated=stdout_truncated,
-            stderr_truncated=stderr_truncated,
+            stdout_truncated=False,
+            stderr_truncated=False,
         )
 
     def snapshot(self, handle: RuntimeHandle) -> RuntimeSnapshot:
@@ -372,13 +372,14 @@ class OciRuntime(RuntimePort):
             raise RuntimeCapabilityError("hard runtime workspace_root must be a directory")
         return root
 
-    def _bounded_output(self, value: bytes | str | None) -> tuple[str, bool]:
+    @staticmethod
+    def _complete_output(value: bytes | str | None) -> str:
         if value is None:
-            return "", False
+            return ""
         encoded = value if isinstance(value, bytes) else value.encode("utf-8", errors="replace")
-        limit = self._spec.limits.max_output_bytes
-        truncated = len(encoded) > limit
-        return encoded[:limit].decode("utf-8", errors="replace"), truncated
+        # ponytail: subprocess capture is memory-backed; move capture directly to the
+        # artifact store if streaming runtimes need outputs larger than host memory.
+        return encoded.decode("utf-8", errors="replace")
 
     def _invoke(
         self,

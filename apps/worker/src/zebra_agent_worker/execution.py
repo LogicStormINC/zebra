@@ -9,6 +9,7 @@ from agent_core.application import (
     MemoryCandidateExtractionCommand,
     MemoryCandidateExtractionService,
 )
+from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session, SessionStatus
@@ -29,10 +30,12 @@ from agent_runtime import LocalToolGateway
 from agent_security import LocalPolicyEngine, PolicyProfile
 from agent_storage import (
     SQLiteArtifactPayloadStore,
+    SQLiteContextLifecycleStore,
     SQLiteEventStore,
     SQLiteMemoryStore,
     SQLiteModelCallStore,
     SQLiteProjectionStore,
+    SQLiteProviderContinuationStore,
     SQLiteSessionHistory,
     SQLiteToolRunStore,
     SQLiteWorkspaceProjectionStore,
@@ -48,6 +51,14 @@ from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 from zebra_agent_worker.clarification_continuation import (
     ClarificationContinuationError,
     recover_clarification_continuation,
+)
+from zebra_agent_worker.context_lifecycle import (
+    persist_context_compaction,
+    recover_provider_continuation,
+)
+from zebra_agent_worker.continuation_lifecycle import (
+    mark_approved_continuation_started,
+    mark_clarification_continuation_started,
 )
 from zebra_agent_worker.control import SessionControlError, SessionControlService
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
@@ -99,6 +110,8 @@ class SessionExecutionService:
         self._control_service = SessionControlService(database_path, settings=self._settings)
         self._model_call_indexer = ModelCallIndexer(SQLiteModelCallStore(database_path))
         self._artifact_payload_store = SQLiteArtifactPayloadStore(database_path)
+        self._context_lifecycle_store = SQLiteContextLifecycleStore(database_path)
+        self._provider_continuation_store = SQLiteProviderContinuationStore(database_path)
         self._tool_run_indexer = ToolRunIndexer(
             SQLiteToolRunStore(database_path),
             self._artifact_payload_store,
@@ -137,12 +150,17 @@ class SessionExecutionService:
                 lease=claimed.lease,
             )
         session_events = self._event_store.list_for_session(session_id)
+        active_context = self._context_lifecycle_store.get_active_capsule(session_id)
+        provider_continuation = recover_provider_continuation(
+            session_events, self._provider_continuation_store
+        )
         try:
             task = recover_task(
                 session_events,
                 workspace=claimed.recovery.workspace,
                 fallback_title=claimed.recovery.session.title,
                 attachment_store=self._artifact_payload_store,
+                active_capsule=active_context.capsule if active_context else None,
             )
         except (FileNotFoundError, ValueError) as exc:
             self._claim_service.release_claim(claimed)
@@ -199,6 +217,7 @@ class SessionExecutionService:
                 current_session_id=str(session_id),
                 runtime=runtime,
                 runtime_handle=runtime_handle,
+                artifact_payload_store=self._artifact_payload_store,
             )
         except Exception as exc:
             cleanup_error = None
@@ -232,6 +251,7 @@ class SessionExecutionService:
                     repo_id=str(task.workspace_root.resolve()),
                 ),
                 attachments=task.attachments,
+                runtime_evidence=task.runtime_evidence,
             ),
             session=claimed.recovery.session,
             attempt=HarnessAttempt(number=1, started_at=started_at),
@@ -254,15 +274,19 @@ class SessionExecutionService:
                 ) from cleanup_error
             raise WorkerExecutionError(str(exc)) from exc
         if continuation is not None:
-            claimed = self._mark_approved_continuation_started(
+            claimed = mark_approved_continuation_started(
                 claimed,
+                event_store=self._event_store,
+                recovery_service=self._recovery_service,
                 tool_name=continuation.tool_call.name,
                 tool_call_id=str(continuation.tool_call.tool_call_id),
                 started_at=started_at,
             )
         elif clarification is not None:
-            claimed = self._mark_clarification_continuation_started(
+            claimed = mark_clarification_continuation_started(
                 claimed,
+                event_store=self._event_store,
+                recovery_service=self._recovery_service,
                 clarification_id=str(clarification.tool_call.tool_call_id),
                 started_at=started_at,
             )
@@ -294,13 +318,39 @@ class SessionExecutionService:
         )
 
         def persist_event(draft: HarnessEventDraft) -> None:
-            recorder.append_draft(draft)
+            if draft.event_type is EventType.CONTEXT_COMPACTED:
+                persist_context_compaction(
+                    draft,
+                    recorder=recorder,
+                    event_store=self._event_store,
+                    lifecycle_store=self._context_lifecycle_store,
+                )
+            else:
+                recorder.append_draft(draft)
+
+        def persist_continuation(
+            reference: ProviderContinuationRef,
+            payload: bytes | None,
+            maximum_ttl_seconds: int | None,
+        ) -> str | None:
+            if payload is None:
+                return None
+            artifact = self._provider_continuation_store.store(
+                tenant_id="local",
+                session_id=str(session_id),
+                reference=reference,
+                opaque_payload=payload,
+                maximum_ttl_seconds=maximum_ttl_seconds,
+            )
+            return artifact.artifact_id
 
         model_step = HarnessModelStep(
             context_compiler=context_compiler,
             available_tools=tool_gateway.model_tools,
             conversation_compactor=context_compiler,
             event_sink=persist_event,
+            continuation_sink=persist_continuation,
+            provider_continuation=provider_continuation,
             attempt_number=1,
         )
         orchestrator = SingleAttemptOrchestrator(
@@ -385,70 +435,6 @@ class SessionExecutionService:
             events=emitted_events,
             attempt_result=attempt_result,
         )
-
-    def _mark_approved_continuation_started(
-        self,
-        claimed: ClaimedSession,
-        *,
-        tool_name: str,
-        tool_call_id: str,
-        started_at: datetime,
-    ) -> ClaimedSession:
-        next_sequence = claimed.recovery.session.current_sequence + 1
-        for event_type, payload in (
-            (EventType.HARNESS_ATTEMPT_STARTED, {"attempt_number": 1}),
-            (
-                EventType.TOOL_EXECUTION_STARTED,
-                {
-                    "attempt_number": 1,
-                    "tool_name": tool_name,
-                    "tool_call_id": tool_call_id,
-                    "approval_continuation": True,
-                },
-            ),
-        ):
-            self._event_store.append(
-                SessionEvent.create(
-                    session_id=claimed.recovery.session.session_id,
-                    sequence=next_sequence,
-                    event_type=event_type,
-                    actor=EventActor.HARNESS,
-                    payload=payload,
-                    created_at=started_at,
-                )
-            )
-            next_sequence += 1
-        return ClaimedSession(
-            recovery=self._recovery_service.recover_session(claimed.recovery.session.session_id),
-            lease=claimed.lease,
-        )
-
-    def _mark_clarification_continuation_started(
-        self,
-        claimed: ClaimedSession,
-        *,
-        clarification_id: str,
-        started_at: datetime,
-    ) -> ClaimedSession:
-        self._event_store.append(
-            SessionEvent.create(
-                session_id=claimed.recovery.session.session_id,
-                sequence=claimed.recovery.session.current_sequence + 1,
-                event_type=EventType.HARNESS_ATTEMPT_STARTED,
-                actor=EventActor.HARNESS,
-                payload={
-                    "attempt_number": 1,
-                    "clarification_continuation": True,
-                    "clarification_id": clarification_id,
-                },
-                created_at=started_at,
-            )
-        )
-        return ClaimedSession(
-            recovery=self._recovery_service.recover_session(claimed.recovery.session.session_id),
-            lease=claimed.lease,
-        )
-
 
 def _finalize_execution(
     *,

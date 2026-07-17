@@ -28,11 +28,22 @@ and unconsumed batch tail; a grant resumes without replaying prior tools. Comple
 batches run concurrently only when every tool contract is explicitly parallel-safe,
 with policy, duplicate, and budget preflight before the bounded pool starts. Results
 and events retain provider order. Mixed, unknown, write-capable, and approval batches
-stay sequential. Before follow-up provider calls, completed older exchanges may be
-deterministically compacted to a configured conversation budget. The stable system
-prefix, original goal, latest working exchange, complete assistant/tool pairs, and
-pending approval evidence remain canonical; compaction events contain only estimates,
-counts, and provenance.
+stay sequential. Every initial and follow-up provider request now passes one context
+window planner that reserves output, reasoning, compaction, protocol, message, and
+tool-schema space and fails closed above the hard input limit. Completed older
+exchanges compact deterministically while the stable prefix, original goal, latest
+working exchange, complete assistant/tool pairs, and pending approval evidence remain
+canonical. Compaction events persist a transparent versioned `ContextCapsule` with
+source range, source hash, protected constraints, approval state, evidence refs,
+known omissions, and recovery state. Capsule persistence, creation event, and
+active-pointer advancement are atomic. Old completed exchanges fold into typed
+tombstones, the latest exact tail remains paired, and policy-checked evidence can
+be rehydrated on demand. Command, test, file, search, Web, and MCP output passes
+one Artifact-backed head/tail envelope boundary before it reaches the model.
+Provider-native continuation is capability-gated, provider/model/version/TTL
+scoped, and always falls back to the transparent Capsule. API and CLI expose
+occupancy, focus/preview compaction, exact-tail boundaries, and historical Capsule
+recovery without turning compaction into a new session.
 
 When consequential information is missing, the parent agent may call the typed
 `agent.clarify` tool. Zebra persists the bounded question and optional choices,
@@ -96,8 +107,11 @@ never model-visible tools, and active sessions cannot re-run or mutate a Prompt.
 - web build check: `cd UI/desktop && ~/.volta/bin/pnpm build`
 - rust shell check: `cd UI/desktop && ~/.volta/bin/pnpm tauri:check`
 - desktop shell dev: `cd UI/desktop && ~/.volta/bin/pnpm tauri:dev`
-- current live reads: `/health`, `/approvals`, `/approvals/{id}`, `/sessions/{id}`, `/sessions/{id}/stream`, `/sessions/{id}/diff`, `/sessions/{id}/memory`, `/sessions/{id}/memory/queue-summary`, `/users/{id}/memory`, `/users/{id}/memory/queue-summary`, `/tenants/{id}/memory`, `/tenants/{id}/memory/queue-summary`, `/sessions/{id}/memory-overview`, `/sessions/{id}/memory-governance`, `/sessions/{id}/memory-action-hints`, `/sessions/{id}/memory-pressure`, `/sessions/{id}/memory-escalations`, `/sessions/{id}/memory-follow-up-windows`, `/sessions/{id}/memory-overdue-flags`, `/sessions/{id}/memory-overdue-age-buckets`, `/sessions/{id}/memory-overdue-types`, `/sessions/{id}/memory-overdue-visibility`, `/sessions/{id}/memory-overdue-trends`, `/sessions/{id}/memory-overdue-interventions`, `/sessions/{id}/memory-overdue-escalation-lanes`, `/sessions/{id}/memory-overdue-recovery-paths`, `/sessions/{id}/memory-overdue-resolution-checkpoints`, `/sessions/{id}/memory-overdue-resolution-outcomes`, `/sessions/{id}/memory-overdue-closure-decisions`, `/sessions/{id}/memory-overdue-archive-recommendations`, `/sessions/{id}/memory-overdue-retention-guidance`, `/sessions/{id}/memory-overdue-retention-windows`, `/sessions/{id}/artifacts*`, `/sessions/{id}/delivery-audit`
-- current live writes: `POST /sessions`, `POST /sessions/{id}/messages`, `POST /approvals/{id}/approve`, `POST /approvals/{id}/reject`, `POST /sessions/{id}/suspend`, `POST /sessions/{id}/resume`, `POST /sessions/{id}/cancel`, `POST /sessions/{id}/commit`, `POST /sessions/{id}/pull-request`, `POST /sessions/{id}/memory/{memory_id}/confirm`, `POST /sessions/{id}/memory/{memory_id}/expire`, `POST /sessions/{id}/memory/review-queue-preview`, `POST /sessions/{id}/memory/review-queue`, `POST /sessions/{id}/memory/bulk-review`, `POST /users/{id}/memory/review-queue-preview`, `POST /users/{id}/memory/review-queue`, `POST /users/{id}/memory/bulk-review`, `POST /tenants/{id}/memory/review-queue-preview`, `POST /tenants/{id}/memory/review-queue`, `POST /tenants/{id}/memory/bulk-review`, `POST /sessions/{id}/artifacts/{artifact_id}/prune`
+- current live reads include `/sessions/{id}/context` for Capsule, occupancy,
+  provenance, and continuation-fallback inspection, plus the existing session,
+  stream, diff, memory, artifact, approval, and delivery-audit surfaces
+- current live writes additionally include `POST /sessions/{id}/context/compact`
+  at a non-running session boundary; it creates a durable Capsule for recovery
 
 This workspace is intentionally kept outside `apps/` and `packages/` so frontend tooling stays isolated from the Python runtime path. Tauri scripts pin `CARGO_HOME` to `UI/desktop/.cargo-home` so Rust artifacts for the desktop shell stay local to the UI workspace.
 If your shell still resolves `pnpm` or `node` to Homebrew or another global install, either prepend `~/.volta/bin` to `PATH` or use the explicit `~/.volta/bin/pnpm ...` form above.
@@ -388,5 +402,6 @@ For the current local and production Runtime workflow, start with `docs/operator
 - worker loop execution for queued ready sessions
 - local FastAPI serving
 - replay-plus-tail SSE session streaming with `after_sequence` cursor recovery
+- context inspection and manual Capsule compaction through API and CLI
 
 For the latest completed phase closeout summary, see `docs/Phase69_Memory_Backlog_Pressure_Signals_验收记录.md`.

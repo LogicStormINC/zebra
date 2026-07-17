@@ -16,6 +16,7 @@ from agent_core.ports.model_call_store import ModelCallStorePort
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.projection_store import ProjectionStorePort
+from agent_core.ports.provider_continuation import ProviderContinuationPort
 from agent_core.ports.runtime import (
     EffectiveRuntimeAuthority,
     RuntimeCapabilities,
@@ -53,6 +54,7 @@ __all__ = [
     "MemoryStorePort",
     "ModelCallStorePort",
     "ModelGatewayPort",
+    "ProviderContinuationPort",
     "PolicyEnginePort",
     "ProjectionStorePort",
     "RuntimeCapabilityError",

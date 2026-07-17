@@ -18,8 +18,8 @@ file_read_contract = ToolContract(
 
 
 class FileReadTool:
-    def __init__(self, workspace: WorkspacePort, *, max_bytes: int = 16_384) -> None:
-        if max_bytes <= 0:
+    def __init__(self, workspace: WorkspacePort, *, max_bytes: int | None = 16_384) -> None:
+        if max_bytes is not None and max_bytes <= 0:
             raise ValueError("max_bytes must be positive")
         self._workspace = workspace
         self._max_bytes = max_bytes
@@ -42,8 +42,10 @@ class FileReadTool:
             return self._failure(tool_call, reason="not_a_file", detail=str(target_path))
 
         content = target_path.read_bytes()
-        truncated = len(content) > self._max_bytes
+        truncated = self._max_bytes is not None and len(content) > self._max_bytes
         visible = content[: self._max_bytes].decode("utf-8", errors="replace")
+        if self._max_bytes is None:
+            visible = content.decode("utf-8", errors="replace")
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
             status=ToolCallStatus.EXECUTED,

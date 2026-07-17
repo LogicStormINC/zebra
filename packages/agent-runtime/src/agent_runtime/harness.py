@@ -1,16 +1,21 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
+from uuid import UUID
 
 from agent_context import LocalContextCompiler
+from agent_core.domain.artifact_payloads import ArtifactPayloadWrite
 from agent_core.domain.attachments import AttachmentContextInput
+from agent_core.domain.identifiers import SessionId
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.domain.web import WebTarget, WebTargetError, parse_web_target
 from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
 from agent_core.harness.models import HarnessLoopResult
+from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
@@ -33,6 +38,7 @@ from agent_tools import (
     SkillsReadTool,
     TestsRunTool,
     ToolExecutor,
+    ToolOutputProjector,
     ToolRegistry,
     WebFetchTool,
     WebGatewayTransport,
@@ -153,6 +159,7 @@ class LocalToolGateway(ToolGatewayPort):
         mcp_allowlist: Sequence[str] | None = None,
         runtime: RuntimePort | None = None,
         runtime_handle: RuntimeHandle | None = None,
+        artifact_payload_store: ArtifactPayloadStorePort | None = None,
     ) -> None:
         if research_child_limit <= 0:
             raise ValueError("research_child_limit must be positive")
@@ -166,18 +173,39 @@ class LocalToolGateway(ToolGatewayPort):
         self._workspace.ensure()
         self._runtime = runtime or LocalRuntime()
         self._runtime_handle = runtime_handle
+        output_projector = _output_projector(
+            artifact_payload_store,
+            current_session_id=current_session_id,
+        )
+        self._output_projector = output_projector
         registry = ToolRegistry()
         tools = (
             ClarifyTool(),
             PlanTool(),
-            WorkspaceListTool(self._workspace),
-            FileReadTool(self._workspace),
-            WorkspaceSearchTool(self._workspace),
+            WorkspaceListTool(
+                self._workspace,
+                max_output_bytes=None if output_projector is not None else 32_768,
+            ),
+            FileReadTool(
+                self._workspace,
+                max_bytes=None if output_projector is not None else 16_384,
+            ),
+            WorkspaceSearchTool(
+                self._workspace,
+                max_output_bytes=None if output_projector is not None else 32_768,
+            ),
             GitStatusTool(self._runtime, self._workspace),
             PatchApplyTool(self._runtime, self._workspace),
-            TestsRunTool(self._runtime, self._workspace, DEFAULT_TEST_PRESETS),
+            TestsRunTool(
+                self._runtime,
+                self._workspace,
+                DEFAULT_TEST_PRESETS,
+            ),
             CommandRunTool(self._runtime, self._workspace),
-            WebFetchTool(web_gateway_transport or LocalWebGatewayTransport()),
+            WebFetchTool(
+                web_gateway_transport or LocalWebGatewayTransport(),
+                max_output_bytes=262_144 if output_projector is not None else 65_536,
+            ),
         )
         enabled_names = tool_names_for_profile(tool_profile)
         for tool in tools:
@@ -199,7 +227,11 @@ class LocalToolGateway(ToolGatewayPort):
             history_tool = SessionSearchTool(session_history, current_session_id)
             registry.register(history_tool.contract, history_tool.handle)
         mcp_transport = (
-            LocalStdioMcpTransport(mcp_servers, mcp_allowlist)
+            LocalStdioMcpTransport(
+                mcp_servers,
+                mcp_allowlist,
+                max_output_bytes=None if output_projector is not None else 32_768,
+            )
             if mcp_servers and (mcp_allowlist is None or mcp_allowlist)
             else None
         )
@@ -251,7 +283,8 @@ class LocalToolGateway(ToolGatewayPort):
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
         try:
-            return self._executor.execute(tool_call)
+            result = self._executor.execute(tool_call)
+            return self._project_tool_output(tool_call, result)
         except ToolRegistryError as exc:
             return ToolResult(
                 tool_call_id=tool_call.tool_call_id,
@@ -262,6 +295,38 @@ class LocalToolGateway(ToolGatewayPort):
                     "detail": str(exc),
                 },
             )
+
+    def _project_tool_output(self, tool_call: ToolCall, result: ToolResult) -> ToolResult:
+        if self._output_projector is None:
+            return result
+        stderr = result.metadata.get("stderr")
+        if tool_call.name in {"command.run", "tests.run"} and isinstance(stderr, str):
+            projected = self._output_projector.project(
+                stdout=result.output,
+                stderr=stderr,
+                artifact_name=f"{tool_call.name.replace('.', '-')}.txt",
+                provenance={
+                    "tool_name": tool_call.name,
+                    "tool_call_id": str(tool_call.tool_call_id),
+                },
+            )
+            metadata = {**result.metadata, "stderr": "", **projected.metadata}
+        else:
+            projected = self._output_projector.project_text(
+                result.output,
+                artifact_name=f"{tool_call.name.replace('.', '-')}.txt",
+                provenance={
+                    "tool_name": tool_call.name,
+                    "tool_call_id": str(tool_call.tool_call_id),
+                },
+            )
+            metadata = {**result.metadata, **projected.metadata}
+        return ToolResult(
+            tool_call_id=result.tool_call_id,
+            status=result.status,
+            output=projected.model_output,
+            metadata=metadata,
+        )
 
     def resolve_model_tool_calls(
         self,
@@ -286,3 +351,33 @@ def _optional_web_search_endpoint(value: str | None) -> WebTarget | None:
         return parse_web_target(value)
     except WebTargetError:
         return None
+
+
+def _output_projector(
+    store: ArtifactPayloadStorePort | None,
+    *,
+    current_session_id: str | None,
+) -> ToolOutputProjector | None:
+    if store is None:
+        return None
+    if current_session_id is None:
+        raise ValueError("artifact output projection requires current_session_id")
+    try:
+        session_id = SessionId(UUID(current_session_id))
+    except ValueError as exc:
+        raise ValueError("current_session_id must be a UUID") from exc
+
+    def persist(content: str, file_name: str) -> str:
+        stored = store.store_payload(
+            ArtifactPayloadWrite(
+                session_id=session_id,
+                kind="tool_output",
+                mime_type="text/plain",
+                payload=content.encode("utf-8"),
+                file_name=file_name,
+                created_at=datetime.now(UTC),
+            )
+        )
+        return stored.uri
+
+    return ToolOutputProjector(persist)

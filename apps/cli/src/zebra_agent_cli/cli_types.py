@@ -12,6 +12,7 @@ CommandName = Literal[
     "resume",
     "suspend",
     "inspect",
+    "context",
     "approval",
     "approve",
     "memory-review",

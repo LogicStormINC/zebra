@@ -264,13 +264,14 @@ class SequentialToolLoop:
                 messages,
                 created_at=context.attempt.started_at,
             )
-        compaction = self._model_step.compact_conversation(
+        compaction = self._model_step.prepare_conversation(
             messages,
+            self._model_gateway,
+            allow_tools=allow_tools,
             user_goal=context.task.user_input,
             created_at=context.attempt.started_at,
         )
         if compaction is not None and compaction.compacted:
-            messages[:] = compaction.messages
             emitted_events.append(
                 context_compacted_event(
                     compaction,
@@ -288,6 +289,9 @@ class SequentialToolLoop:
                 "conversation_compaction_count": compaction_count + 1,
                 "conversation_tokens_after_compaction": compaction.after_tokens,
             }
+            self._model_step.prepare_provider_continuation(
+                self._model_gateway, compaction
+            )
         completion = self._model_step.request_completion(
             messages,
             self._model_gateway,

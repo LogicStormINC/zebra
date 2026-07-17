@@ -75,6 +75,7 @@ class WebGatewayTransport(Protocol):
 @dataclass(frozen=True)
 class WebFetchTool:
     transport: WebGatewayTransport
+    max_output_bytes: int = DEFAULT_WEB_MAX_OUTPUT_BYTES
 
     @property
     def contract(self) -> ToolContract:
@@ -84,7 +85,11 @@ class WebFetchTool:
         try:
             target = parse_web_target(tool_call.arguments.get("url"))
             response = self.transport.execute(
-                WebGatewayRequest(tool_call_id=str(tool_call.tool_call_id), target=target)
+                WebGatewayRequest(
+                    tool_call_id=str(tool_call.tool_call_id),
+                    target=target,
+                    max_output_bytes=self.max_output_bytes,
+                )
             )
         except WebTargetError as exc:
             return _failure(tool_call, reason="invalid_web_target", detail=str(exc))

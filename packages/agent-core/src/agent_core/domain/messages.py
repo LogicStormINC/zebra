@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from agent_core.domain.identifiers import MessageId
 from agent_core.domain.tools import ToolCall
@@ -23,6 +23,7 @@ class SessionMessage(BaseModel):
     created_at: datetime
     tool_calls: tuple[ToolCall, ...] = ()
     tool_call_id: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
 
     @field_validator("content")
     @classmethod

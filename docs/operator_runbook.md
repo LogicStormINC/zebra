@@ -114,6 +114,18 @@ Inspect the same session:
 uv run zebra-agent inspect <session_id>
 ```
 
+Inspect or manually compact the recoverable context projection:
+
+```bash
+uv run zebra-agent context inspect <session_id> --database .zebra-agent/operator-runbook.sqlite
+uv run zebra-agent context compact <session_id> --database .zebra-agent/operator-runbook.sqlite
+```
+
+The matching API controls are `GET /sessions/{id}/context` and
+`POST /sessions/{id}/context/compact`. Manual compaction is rejected while a
+session is running; use a ready, suspended, approval, clarification, or terminal
+boundary so an in-flight provider request cannot diverge from durable state.
+
 Expected result:
 
 - JSON output with `session_id`, `title`, `status`, and `current_sequence`

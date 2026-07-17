@@ -13487,3 +13487,120 @@ an `agent-core` dependency.
 
 - default persistent full-repository indexing, vectors, embeddings, reranking,
   multi-repository graphs, or index authority over project state
+
+## Context Lifecycle And Model Specialization
+
+### CTX-LC-01 - Context Lifecycle And Hybrid Compaction
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `CORE / CTX / STORAGE / RUNTIME / QA`
+- Depends on: `P117-CTX-01`, `QA-UI-RUNTIME-01`, `ARCH-129-RT-01`, and explicit maintainer request
+- Branch: `codex/ctx-lc-01-hybrid-compaction`
+- Owned paths: `packages/agent-core/src/agent_core/domain/modeling.py`,
+  `packages/agent-core/src/agent_core/domain/events.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/ports/`,
+  `packages/agent-core/src/agent_core/harness/`,
+  `packages/agent-context/`, `packages/agent-tools/`,
+  `packages/agent-runtime/src/agent_runtime/`, `packages/agent-storage/`,
+  `packages/agent-observability/`, `apps/worker/`, `apps/api/`, `apps/cli/`,
+  `evals/context/`, `tests/agent_core/`, `tests/agent_context/`,
+  `tests/agent_tools/`, `tests/worker/`, `tests/api/`, `tests/cli/`, `README.md`,
+  `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`, `docs/`
+
+#### Goal
+
+Implement the approved long-context lifecycle as a recoverable, model-aware,
+provider-neutral execution path without weakening Policy, Runtime, event
+authority, or existing provider compatibility.
+
+#### Deliverables
+
+- one model-aware Context Window Planner used by initial, follow-up, approval,
+  clarification, recovery, and final-synthesis requests
+- a hard outbound gate for every over-budget request, with typed diagnostics
+- one artifact-backed bounded tool-output envelope shared by command/test/build
+  and available to conversation projection
+- deterministic micro-compaction, protected instructions, recent exact tail,
+  and versioned durable `ContextCapsule` projection
+- provider continuation capability contracts with transparent Capsule fallback
+- context inspection and manual compaction controls through API and CLI
+- deterministic, recovery, long-loop, provider-contract, and Eval evidence
+
+#### Acceptance
+
+- [x] No outbound request exceeds its profile hard input limit after output,
+  reasoning, schema, protocol, and emergency reserves.
+- [x] Initial and continuation calls share the same planning and hard-gate path;
+  `within_budget=false` never reaches a provider.
+- [x] Complete command/test/build output is retrievable from Artifact storage
+  while only bounded head/tail evidence reaches the model.
+- [x] Pending tools, approvals, clarification, original user constraints, and
+  provider call identities survive repeated compaction and worker recovery.
+- [x] A versioned transparent Capsule is durable and can rebuild context when
+  provider continuation is missing, expired, incompatible, or cross-provider.
+- [x] API/CLI operators can inspect context occupancy, trigger bounded manual
+  compaction, and understand retained, folded, and artifact-backed state.
+- [x] Focused tests, all repository tests, file-size/Ruff/Mypy gates, and release
+  Evals pass; provider-specific and real-provider checks belong to `DS-OPT-01`.
+
+#### Explicit Non-Goals
+
+- nested subagents, Agent Teams, automatic child spawning on context pressure,
+  write-capable child agents, or implicit thread chains
+- persistence or display of hidden reasoning content
+- provider-specific request tuning or undocumented APIs
+- vector databases, default full-repository indexes, or model-specific types in
+  `agent-core`
+- cloud scheduling, tenant authority expansion, new credentials, or widened egress
+
+### DS-OPT-01 - DeepSeek Specialized Optimization
+
+- Status: `In Progress`
+- Owner: `DeepSeek optimization task`
+- Suggested role: `INTEGRATIONS / OBSERVABILITY / QA`
+- Depends on: `CTX-LC-01` model-window contract baseline and explicit maintainer request
+- Branch: `codex/ds-opt-01-deepseek-specialization`
+- Owned paths: `apps/config/`, `packages/agent-integrations/`,
+  `packages/agent-core/src/agent_core/domain/modeling.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/harness/orchestration_events.py`,
+  `packages/agent-observability/`,
+  `apps/worker/src/zebra_agent_worker/model_call_index.py`,
+  `configs/default.env`, `.env.example`, `evals/providers/`,
+  `tests/agent_integrations/`, `tests/config/`, `tests/agent_observability/`,
+  `tests/worker/test_model_call_index.py`,
+  `docs/DeepSeek_V4_模型适配与专项优化方案_v1.0.md`
+
+#### Goal
+
+Implement the approved DeepSeek specialization on top of the neutral context
+window contract while preserving legacy OpenAI-compatible behavior.
+
+#### Deliverables
+
+- versioned Flash/Pro model profiles and role-aware invocation policy
+- explicit non-thinking tool calls and local rejection of illegal combinations
+- streaming usage, cache, reasoning-token, finish, TTFT, fingerprint, retry,
+  resolved-model, and normalized-error telemetry
+- stable-prefix metadata and provider-contract/eval coverage
+
+#### Acceptance
+
+- [ ] Tool-bearing DeepSeek requests explicitly disable thinking, while
+  configured no-tool reasoning stays profile-bound.
+- [ ] Private `reasoning_content` never reaches public deltas, events,
+  artifacts, logs, or durable capsules.
+- [ ] Usage/cache/reasoning tokens, finish reason, TTFT, resolved model,
+  fingerprint, retry count, and normalized errors are observable without secrets.
+- [ ] No retry replays a request after a public delta or tool side effect.
+- [ ] Legacy settings and non-DeepSeek gateways remain compatible; unsupported
+  capability combinations fail locally.
+- [ ] Focused tests, provider evals, `make test`, and `make check` pass; a real
+  provider smoke is recorded when credentials exist.
+
+#### Explicit Non-Goals
+
+- context capsule, tool-output artifact, API/CLI context controls, or recovery
+- DeepSeek strict-tools beta, FIM, Chat Prefix Completion, or undocumented APIs

@@ -1,4 +1,5 @@
 from agent_core.harness.hooks import (
+    CompactionHook,
     NoopPlanner,
     NoopVerifier,
     PlannerHook,
@@ -35,6 +36,7 @@ from agent_core.harness.stopping import HarnessStoppingPolicy
 from agent_core.harness.timing import StepClock, SystemClock
 
 __all__ = [
+    "CompactionHook",
     "FirstToolCallSelectionStrategy",
     "HarnessAttempt",
     "HarnessAttemptOutcome",

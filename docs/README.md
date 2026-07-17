@@ -17,6 +17,11 @@ Use these files for implementation, task claiming, collaboration, and phase prog
 - `实施任务拆解与阶段验收.md`: current phase baseline and acceptance criteria
 - `02_Codex-like工程Agent平台_多人协作任务分配与RACI_v1.0.md`: collaboration model, ownership, and review rules
 - `AGENT_TASKS.md`: current executable task registry
+- `DeepSeek_V4_模型适配与专项优化方案_v1.0.md`: active `DS-OPT-01`
+  provider-profile, protocol-safety, routing, caching, observability, and Eval baseline
+- `上下文生命周期与混合压缩架构方案_v1.0.md`: active `CTX-LC-01`
+  context-window planning, progressive compaction, durable Capsule, provider
+  continuation, recovery, and operator-control baseline
 - `operator_runbook.md`: current local operator workflow for CLI, API, and stream replay
 - `TASK_CARD_TEMPLATE.md`: template for adding or splitting tasks
 - `CODEOWNERS.template`: ownership template for GitHub

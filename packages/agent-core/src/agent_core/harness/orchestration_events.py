@@ -28,6 +28,15 @@ def model_response_event(
     }
     if completion.call_metadata.model_call_id is not None:
         payload["model_call_id"] = completion.call_metadata.model_call_id
+    if completion.call_metadata.estimated_input_tokens is not None:
+        estimated = completion.call_metadata.estimated_input_tokens
+        payload["estimated_input_tokens"] = estimated
+        payload["input_token_limit"] = completion.call_metadata.input_token_limit
+        payload["token_estimate_method"] = completion.call_metadata.token_estimate_method
+        if completion.call_metadata.usage.input_tokens is not None:
+            payload["input_token_estimate_error"] = (
+                completion.call_metadata.usage.input_tokens - estimated
+            )
     if response_stage is not None:
         payload["response_stage"] = response_stage
     return HarnessEventDraft(
@@ -42,18 +51,21 @@ def context_compacted_event(
     *,
     attempt_number: int,
 ) -> HarnessEventDraft:
+    payload: dict[str, object] = {
+        "attempt_number": attempt_number,
+        "before_tokens": result.before_tokens,
+        "after_tokens": result.after_tokens,
+        "removed_message_count": result.removed_message_count,
+        "retained_message_count": result.retained_message_count,
+        "within_budget": result.within_budget,
+        "provenance": result.provenance,
+    }
+    if result.capsule is not None:
+        payload["capsule"] = result.capsule.model_dump(mode="json")
     return HarnessEventDraft(
         event_type=EventType.CONTEXT_COMPACTED,
         actor=EventActor.HARNESS,
-        payload={
-            "attempt_number": attempt_number,
-            "before_tokens": result.before_tokens,
-            "after_tokens": result.after_tokens,
-            "removed_message_count": result.removed_message_count,
-            "retained_message_count": result.retained_message_count,
-            "within_budget": result.within_budget,
-            "provenance": result.provenance,
-        },
+        payload=payload,
     )
 
 

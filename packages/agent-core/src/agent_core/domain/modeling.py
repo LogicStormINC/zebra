@@ -55,10 +55,13 @@ class ModelCallMetadata:
     latency_ms: int | None = None
     cache_hit: bool | None = None
     cost_usd: float | None = None
+    estimated_input_tokens: int | None = None
+    input_token_limit: int | None = None
+    token_estimate_method: str | None = None
     usage: ModelUsage = field(default_factory=ModelUsage)
 
     def __post_init__(self) -> None:
-        for field_name in ("model_call_id", "provider", "model_name"):
+        for field_name in ("model_call_id", "provider", "model_name", "token_estimate_method"):
             value = getattr(self, field_name)
             if value is None:
                 continue
@@ -68,6 +71,10 @@ class ModelCallMetadata:
             raise ValueError("latency_ms must not be negative")
         if self.cost_usd is not None and self.cost_usd < 0:
             raise ValueError("cost_usd must not be negative")
+        for field_name in ("estimated_input_tokens", "input_token_limit"):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"{field_name} must not be negative")
 
 
 @dataclass(frozen=True)
@@ -79,3 +86,53 @@ class ModelCompletion:
     def __post_init__(self) -> None:
         if self.assistant_message.role is not MessageRole.ASSISTANT:
             raise ValueError("model completion assistant_message must use assistant role")
+
+
+@dataclass(frozen=True)
+class ModelContextWindow:
+    profile_name: str = "generic-128k"
+    context_tokens: int = 128_000
+    max_output_tokens: int = 8_000
+    reasoning_reserve_tokens: int = 0
+    compaction_reserve_tokens: int = 4_000
+    protocol_reserve_tokens: int = 2_000
+    auto_compact_token_limit: int | None = None
+    compaction_trigger_reserve_tokens: int = 2_000
+
+    def __post_init__(self) -> None:
+        for field_name in (
+            "context_tokens",
+            "max_output_tokens",
+            "reasoning_reserve_tokens",
+            "compaction_reserve_tokens",
+            "protocol_reserve_tokens",
+            "compaction_trigger_reserve_tokens",
+        ):
+            if getattr(self, field_name) < 0:
+                raise ValueError(f"{field_name} must not be negative")
+        if self.input_token_limit <= 0:
+            raise ValueError("model context reserves leave no room for input")
+        if not self.profile_name.strip():
+            raise ValueError("model context profile_name must not be blank")
+        if self.auto_compact_token_limit is not None:
+            if self.auto_compact_token_limit <= 0:
+                raise ValueError("auto_compact_token_limit must be positive")
+            if self.auto_compact_token_limit > self.input_token_limit:
+                raise ValueError("auto_compact_token_limit exceeds the hard input limit")
+
+    @property
+    def input_token_limit(self) -> int:
+        return self.context_tokens - (
+            self.max_output_tokens
+            + self.reasoning_reserve_tokens
+            + self.compaction_reserve_tokens
+            + self.protocol_reserve_tokens
+        )
+
+    @property
+    def compact_at(self) -> int:
+        configured = self.auto_compact_token_limit or self.input_token_limit
+        return max(
+            1,
+            min(configured, self.input_token_limit - self.compaction_trigger_reserve_tokens),
+        )

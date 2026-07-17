@@ -18,6 +18,7 @@ from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.tools import ToolCall
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_runtime import LocalToolGateway, run_local_harness
+from agent_storage import SQLiteArtifactPayloadStore
 
 
 class EmptyHistory:
@@ -368,6 +369,35 @@ def test_local_tool_gateway_exposes_only_parallel_safe_builtins(tmp_path) -> Non
     assert gateway.parallel_safe_tools == frozenset(
         {"files.list", "files.read", "files.search"}
     )
+
+
+def test_local_tool_gateway_persists_complete_file_before_bounded_projection(tmp_path) -> None:
+    content = "HEAD\n" + "x" * 20_000 + "\nTAIL"
+    (tmp_path / "large.txt").write_text(content, encoding="utf-8")
+    store = SQLiteArtifactPayloadStore(tmp_path / "sessions.sqlite")
+    gateway = LocalToolGateway(
+        tmp_path.resolve(),
+        current_session_id="b678bd4d-c5e3-44d6-b49d-68fe33a041dc",
+        artifact_payload_store=store,
+    )
+
+    result = gateway.execute(
+        ToolCall(
+            tool_call_id=new_tool_call_id(),
+            name="files.read",
+            arguments={"path": "large.txt"},
+            created_at=_created_at(),
+        )
+    )
+
+    assert "HEAD" in result.output
+    assert "TAIL" in result.output
+    assert "middle omitted" in result.output
+    envelope = result.metadata["output_envelope"]
+    assert isinstance(envelope, dict)
+    assert envelope["artifact_uri"] == result.metadata["artifact_uri"]
+    stored = next((tmp_path / "sessions-artifacts").rglob("*.txt"))
+    assert stored.read_text(encoding="utf-8") == content
 
 
 def test_local_tool_gateway_registers_search_only_with_valid_configuration(tmp_path) -> None:

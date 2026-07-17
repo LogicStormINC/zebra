@@ -16,6 +16,13 @@ class ModelCallIndexer:
             provider=_optional_str(event.payload, "provider"),
             model_name=_optional_str(event.payload, "model_name"),
             input_tokens=_optional_int(event.payload, "input_tokens"),
+            estimated_input_tokens=_optional_int(
+                event.payload, "estimated_input_tokens"
+            ),
+            input_token_limit=_optional_int(event.payload, "input_token_limit"),
+            input_token_estimate_error=_optional_int(
+                event.payload, "input_token_estimate_error"
+            ),
             output_tokens=_optional_int(event.payload, "output_tokens"),
             total_tokens=_optional_int(event.payload, "total_tokens"),
             latency_ms=_optional_int(event.payload, "latency_ms"),

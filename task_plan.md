@@ -1,17 +1,22 @@
 # Task Plan
 
-## ARCH-129-RT-01 - Production Hard Runtime
+## CTX-LC-01 - Context Lifecycle And Hybrid Compaction
 
-1. `completed` - Persist the Linux-first gVisor/OCI design, activation decision,
-   platform matrix, exact task ownership, and fail-closed boundary.
-2. `completed` - Extend Runtime contracts and durable workspace authority
-   without weakening existing trusted-local compatibility.
-3. `completed` - Implement the hardened OCI engine adapter, lifecycle, bounded
-   execution, snapshot compatibility, and capability preflight.
-4. `completed` - Wire configured Runtime selection through Worker and Tool Gateway,
-   preserving immutable authority across recovery and continuation.
-5. `completed` - Add adversarial tests, Linux CI integration, operator guidance,
-   full repository validation, and real-engine acceptance where available.
+1. `completed` - Split DeepSeek specialization into `DS-OPT-01`, retain the
+   provider-neutral context task, and lock disjoint owned paths.
+2. `completed` - Complete provider-aware context-window planning, hard outbound
+   request gates, actual/estimated usage calibration, and unified artifact-backed
+   bounded output for every large-output tool path.
+3. `completed` - Implement typed micro-compaction, protected instructions, active
+   projection folding, deterministic rehydration, and recent exact-tail policy.
+4. `completed` - Persist validated `ContextCapsule` artifacts and creation events,
+   atomically advance recovery state, and prove crash-safe deterministic fallback.
+5. `completed` - Wire provider continuation selection, durable provider-scoped
+   references, expiry/incompatibility handling, and Capsule fallback into runtime.
+6. `completed` - Complete API/CLI occupancy, focus, preview, historical recovery,
+   hooks, audit fields, long-loop/recovery/security Evals, and operator docs.
+7. `completed` - Run focused, full repository, and release-eval validation; record
+   exact evidence and close only after every acceptance statement is executable.
 
 ### Errors Encountered
 

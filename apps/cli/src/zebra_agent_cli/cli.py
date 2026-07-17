@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_integrations import build_model_gateway
+from zebra_agent_api.session_context_control import SessionContextControlApi
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
 from zebra_agent_cli.cli_database import (
@@ -87,6 +88,27 @@ def execute(
             "inspect",
             namespace.session_id,
             _database_path(namespace.database, active_settings),
+        )
+    if command == "context":
+        control = SessionContextControlApi(_database_path(namespace.database, active_settings))
+        if namespace.context_command == "inspect":
+            response = control.inspect(namespace.session_id)
+        elif namespace.context_command == "recover":
+            response = control.recover(
+                namespace.session_id, {"capsule_id": namespace.capsule_id}
+            )
+        else:
+            response = control.compact(
+                namespace.session_id,
+                {
+                    "focus": namespace.focus,
+                    "preview": namespace.preview,
+                    "through_sequence": namespace.through_sequence,
+                },
+            )
+        return CliCommandResult(
+            command="context",
+            payload={"action": namespace.context_command, **response.body},
         )
     if command == "approve":
         return _approval_result(namespace, _database_path(namespace.database, active_settings))

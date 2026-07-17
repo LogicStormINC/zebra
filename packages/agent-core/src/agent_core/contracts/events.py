@@ -1,7 +1,18 @@
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
+from agent_core.contracts.context_events import (
+    ContextCompactedPayload,
+    ContextContinuationSelectedPayload,
+)
 from agent_core.contracts.model_events import (
     ModelRequestStartedPayload,
     ModelResponseDeltaPayload,
@@ -13,6 +24,7 @@ from agent_core.domain.clarifications import (
     MAX_CLARIFICATION_CONTEXT_CHARS,
     MAX_CLARIFICATION_QUESTION_CHARS,
 )
+from agent_core.domain.context_capsule import ContextSourceEventRange
 from agent_core.domain.events import EventType
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
@@ -135,45 +147,6 @@ class ToolExecutionCompletedPayload(BaseModel):
         stripped = value.strip()
         if not stripped:
             raise ValueError("field must not be blank")
-        return stripped
-
-
-class ContextCompactedPayload(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    attempt_number: int
-    before_tokens: int
-    after_tokens: int
-    removed_message_count: int
-    retained_message_count: int
-    within_budget: bool
-    provenance: str
-
-    @field_validator("attempt_number")
-    @classmethod
-    def ensure_positive_attempt_number(cls, value: int) -> int:
-        if value <= 0:
-            raise ValueError("attempt_number must be positive")
-        return value
-
-    @field_validator(
-        "before_tokens",
-        "after_tokens",
-        "removed_message_count",
-        "retained_message_count",
-    )
-    @classmethod
-    def ensure_non_negative_count(cls, value: int) -> int:
-        if value < 0:
-            raise ValueError("compaction counts must not be negative")
-        return value
-
-    @field_validator("provenance")
-    @classmethod
-    def ensure_provenance_not_blank(cls, value: str) -> str:
-        stripped = value.strip()
-        if not stripped:
-            raise ValueError("provenance must not be blank")
         return stripped
 
 
@@ -434,6 +407,33 @@ class ClarificationRespondedPayload(BaseModel):
         return normalized
 
 
+class ContextCapsuleCreatedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    capsule_id: str
+    artifact_id: str
+    schema_version: str
+    source_hash: str
+    source_event_range: ContextSourceEventRange
+    previous_capsule_id: str | None = None
+
+    @field_validator(
+        "capsule_id",
+        "artifact_id",
+        "schema_version",
+        "source_hash",
+        "previous_capsule_id",
+    )
+    @classmethod
+    def ensure_capsule_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("context capsule event fields must not be blank")
+        return stripped
+
+
 _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SESSION_CREATED: SessionCreatedPayload,
     EventType.USER_MESSAGE_RECEIVED: UserMessageReceivedPayload,
@@ -448,6 +448,8 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.CLARIFICATION_RESPONDED: ClarificationRespondedPayload,
     EventType.TOOL_EXECUTION_COMPLETED: ToolExecutionCompletedPayload,
     EventType.CONTEXT_COMPACTED: ContextCompactedPayload,
+    EventType.CONTEXT_CAPSULE_CREATED: ContextCapsuleCreatedPayload,
+    EventType.CONTEXT_CONTINUATION_SELECTED: ContextContinuationSelectedPayload,
     EventType.SUBAGENT_STARTED: SubagentLifecyclePayload,
     EventType.SUBAGENT_COMPLETED: SubagentLifecyclePayload,
     EventType.SUBAGENT_FAILED: SubagentLifecyclePayload,

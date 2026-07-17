@@ -24,6 +24,9 @@ class SQLiteModelCallStore(ModelCallStorePort):
                     provider,
                     model_name,
                     input_tokens,
+                    estimated_input_tokens,
+                    input_token_limit,
+                    input_token_estimate_error,
                     output_tokens,
                     total_tokens,
                     latency_ms,
@@ -32,11 +35,14 @@ class SQLiteModelCallStore(ModelCallStorePort):
                     assistant_message,
                     tool_call_count,
                     created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_id, sequence) DO UPDATE SET
                     provider = excluded.provider,
                     model_name = excluded.model_name,
                     input_tokens = excluded.input_tokens,
+                    estimated_input_tokens = excluded.estimated_input_tokens,
+                    input_token_limit = excluded.input_token_limit,
+                    input_token_estimate_error = excluded.input_token_estimate_error,
                     output_tokens = excluded.output_tokens,
                     total_tokens = excluded.total_tokens,
                     latency_ms = excluded.latency_ms,
@@ -52,6 +58,9 @@ class SQLiteModelCallStore(ModelCallStorePort):
                     record.provider,
                     record.model_name,
                     record.input_tokens,
+                    record.estimated_input_tokens,
+                    record.input_token_limit,
+                    record.input_token_estimate_error,
                     record.output_tokens,
                     record.total_tokens,
                     record.latency_ms,
@@ -74,6 +83,9 @@ class SQLiteModelCallStore(ModelCallStorePort):
                     provider,
                     model_name,
                     input_tokens,
+                    estimated_input_tokens,
+                    input_token_limit,
+                    input_token_estimate_error,
                     output_tokens,
                     total_tokens,
                     latency_ms,
@@ -95,6 +107,9 @@ class SQLiteModelCallStore(ModelCallStorePort):
                 provider=row["provider"],
                 model_name=row["model_name"],
                 input_tokens=row["input_tokens"],
+                estimated_input_tokens=row["estimated_input_tokens"],
+                input_token_limit=row["input_token_limit"],
+                input_token_estimate_error=row["input_token_estimate_error"],
                 output_tokens=row["output_tokens"],
                 total_tokens=row["total_tokens"],
                 latency_ms=row["latency_ms"],
@@ -117,6 +132,9 @@ class SQLiteModelCallStore(ModelCallStorePort):
                     provider TEXT,
                     model_name TEXT,
                     input_tokens INTEGER,
+                    estimated_input_tokens INTEGER,
+                    input_token_limit INTEGER,
+                    input_token_estimate_error INTEGER,
                     output_tokens INTEGER,
                     total_tokens INTEGER,
                     latency_ms INTEGER,
@@ -129,3 +147,14 @@ class SQLiteModelCallStore(ModelCallStorePort):
                 )
                 """
             )
+            existing = {
+                row["name"]
+                for row in connection.execute("PRAGMA table_info(model_calls)").fetchall()
+            }
+            for name in (
+                "estimated_input_tokens",
+                "input_token_limit",
+                "input_token_estimate_error",
+            ):
+                if name not in existing:
+                    connection.execute(f"ALTER TABLE model_calls ADD COLUMN {name} INTEGER")
