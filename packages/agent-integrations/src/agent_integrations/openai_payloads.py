@@ -73,14 +73,18 @@ def serialize_tool(
     tool: ModelToolDefinition,
     *,
     provider_name: str,
+    strict: bool = False,
 ) -> dict[str, object]:
+    function: dict[str, object] = {
+        "name": provider_name,
+        "description": tool.description,
+        "parameters": dict(tool.parameters),
+    }
+    if strict:
+        function["strict"] = True
     return {
         "type": "function",
-        "function": {
-            "name": provider_name,
-            "description": tool.description,
-            "parameters": dict(tool.parameters),
-        },
+        "function": function,
     }
 
 
@@ -121,7 +125,7 @@ def parse_completion(
         internal_tool_names=internal_names or {},
     )
     content = _assistant_content(message.get("content"), has_tool_calls=bool(tool_calls))
-    usage = _parse_usage(payload.get("usage"))
+    usage = parse_usage(payload.get("usage"))
     resolved_model = optional_str(payload.get("model")) or (
         resolved.profile.model if resolved else default_model_name
     )
@@ -232,7 +236,7 @@ def _parse_tool_arguments(value: object) -> dict[str, Any]:
     raise ValueError("tool_call arguments must be an object or JSON string")
 
 
-def _parse_usage(value: object) -> ModelUsage:
+def parse_usage(value: object) -> ModelUsage:
     if not isinstance(value, dict):
         return ModelUsage()
     completion_details = value.get("completion_tokens_details")

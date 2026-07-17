@@ -1,5 +1,15 @@
 """Provider integrations for Zebra Agent."""
 
+from agent_integrations.deepseek_beta import (
+    DeepSeekBetaGateway,
+    DeepSeekStrictToolResult,
+    build_deepseek_beta_gateway,
+)
+from agent_integrations.deepseek_beta_profiles import (
+    DEEPSEEK_BETA_PROFILES,
+    DeepSeekBetaProfile,
+)
+from agent_integrations.deepseek_beta_results import DeepSeekBetaTextResult
 from agent_integrations.deepseek_profiles import (
     DEEPSEEK_PROFILES,
     DeepSeekModelProfile,
@@ -42,8 +52,13 @@ from agent_integrations.scm_proxy_http import ScmHttpProxyTransport
 
 __all__ = [
     "DEEPSEEK_PROFILES",
+    "DEEPSEEK_BETA_PROFILES",
     "DeepSeekModelProfile",
+    "DeepSeekBetaGateway",
+    "DeepSeekBetaProfile",
+    "DeepSeekBetaTextResult",
     "DeepSeekProfileRouter",
+    "DeepSeekStrictToolResult",
     "LocalOnlyPullRequestGateway",
     "PullRequestGateway",
     "GitHubPullRequestConfig",
@@ -68,6 +83,7 @@ __all__ = [
     "ScmUnavailableError",
     "ResolvedDeepSeekInvocation",
     "build_model_gateway",
+    "build_deepseek_beta_gateway",
     "build_pull_request_gateway",
     "build_github_pull_request_proxy_request",
     "deepseek_profile",

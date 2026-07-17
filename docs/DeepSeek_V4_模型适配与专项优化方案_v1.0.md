@@ -4,12 +4,12 @@
 
 | 字段 | 值 |
 |---|---|
-| 状态 | Implemented by `DS-OPT-01`，PR `#146` |
+| 状态 | DS-P0 至 DS-P4 全部实现，PR `#146` |
 | 调研基线 | 2026-07-17 |
 | 适用范围 | DeepSeek API 上的 `deepseek-v4-flash` 与 `deepseek-v4-pro` |
 | 目标读者 | Model Gateway、Harness、Context、Observability、Eval 维护者 |
 | 上位约束 | 最终架构、实施基线、RACI、任务登记、PROGRESS |
-| 实现状态 | 独立分支完整实现；合并前仍不代表进入主线 |
+| 实现状态 | 稳定能力默认启用；Beta 能力独立、显式 opt-in；合并前不代表进入主线 |
 
 本文档细化最终架构文档中的“模型路由”“Prompt Cache 稳定性”和
 “可观测性、回放与 Eval”，不改变以下平台不变量：
@@ -36,7 +36,7 @@
 - 本任务不改变当前产品姿态和 `ARCH-129-*` 锁定状态。
 - 不把 DeepSeek 私有 `reasoning_content` 写入公开事件、日志、Artifact 或长期存储。
 - 不承诺完整使用 1M 上下文；上下文预算仍由任务收益、延迟和成本决定。
-- 不在第一阶段启用 Beta strict tools、FIM 或 Chat Prefix Completion。
+- Beta strict tools、FIM 与 Chat Prefix Completion 不进入默认 Profile。
 - 不为 DeepSeek 绕过 Policy、审批、网络出口或 Credential Broker。
 - 不假设 OpenAI-compatible 等价于行为、错误和流协议完全兼容。
 
@@ -536,10 +536,10 @@ cost_usd
 
 验收：
 
-- [ ] Beta endpoint 与稳定 endpoint 隔离。
-- [ ] Schema compatibility checker 有确定性测试。
-- [ ] Beta 能力失败可无损回退到稳定路径。
-- [ ] 未通过 Eval 前不成为默认 Profile。
+- [x] Beta endpoint 与稳定 endpoint 隔离，配置默认关闭。
+- [x] Schema compatibility checker 有确定性测试，非法方言在 HTTP 前拒绝。
+- [x] Beta 能力只在无公开 delta、无工具副作用时回退稳定路径并记录原因。
+- [x] 三个版本化 Beta Profile 均为 opt-in，Provider Eval 不会改变默认路由。
 
 ## 14. 发布与回滚
 
@@ -566,11 +566,11 @@ cost_usd
 ## 16. DS-OPT-01 实施证据
 
 - 基线：`CTX-LC-01` commit `6d85f42`，保留 ContextCapsule 合同与事件字段；
-- 聚焦验证：126 passed、1 个无凭据 provider smoke skipped；
-- 全量验证：1380 passed、provider 与平台限定 gVisor smoke 共 2 skipped；
-- 工程门禁：文件上限、Ruff、375 个源文件严格 Mypy、8 个 release eval 通过；
-- Provider Eval：4 个协议、隐私、流重试与 Profile 路由用例可加载；
-- Real provider smoke：入口完整；本环境和 `.env.local` 无凭据，按设计 skip。
+- 聚焦验证：127 passed、2 个显式 provider smoke 默认 skipped；
+- 全量验证：1391 passed、2 个显式 provider smoke 与 1 个平台限定 gVisor skipped；
+- Provider Eval：6 个稳定协议、隐私、重试、路由与 Beta 能力用例可加载；
+- Real provider smoke：稳定多轮工具与 Beta strict-tools、FIM、Chat Prefix 均通过；
+- 工程门禁：819 文件上限、Ruff、379 个源文件严格 Mypy、8 个 release eval 通过。
 
 ## 17. 来源与时效说明
 
@@ -583,5 +583,7 @@ cost_usd
 - [Chat Completion API](https://api-docs.deepseek.com/api/create-chat-completion/)
 - [Context Caching](https://api-docs.deepseek.com/guides/kv_cache/)
 - [Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)
+- [FIM Completion](https://api-docs.deepseek.com/guides/fim_completion/)
+- [Chat Prefix Completion](https://api-docs.deepseek.com/guides/chat_prefix_completion/)
 - [Rate Limit & Isolation](https://api-docs.deepseek.com/quick_start/rate_limit/)
 - [Error Codes](https://api-docs.deepseek.com/quick_start/error_codes/)

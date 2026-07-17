@@ -22,6 +22,8 @@ def test_load_settings_reads_default_profile() -> None:
     assert settings.model.planner_profile == "deepseek-v4-pro-planner-v1"
     assert settings.model.reviewer_profile == "deepseek-v4-pro-reviewer-v1"
     assert settings.model.max_retries == 1
+    assert settings.model.deepseek_beta_enabled is False
+    assert settings.model.deepseek_beta_base_url == "https://api.deepseek.com/beta"
     assert settings.scm.provider == "local-only"
     assert settings.scm.github_owner is None
     assert settings.scm.github_repo is None

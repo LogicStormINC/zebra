@@ -40,6 +40,8 @@ class ModelSettings:
     analyst_profile: str | None = None
     classifier_profile: str | None = None
     max_retries: int = 1
+    deepseek_beta_enabled: bool = False
+    deepseek_beta_base_url: str | None = None
 
 
 @dataclass(frozen=True)
@@ -156,6 +158,12 @@ def load_settings(
                 "ZEBRA_MODEL_MAX_RETRIES",
                 default=1,
             ),
+            deepseek_beta_enabled=_read_bool(
+                values,
+                "ZEBRA_DEEPSEEK_BETA_ENABLED",
+                default=False,
+            ),
+            deepseek_beta_base_url=_read_optional(values, "ZEBRA_DEEPSEEK_BETA_BASE_URL"),
         ),
         session_handoff=SessionHandoffSettings(
             enabled=_read_bool(values, "ZEBRA_SESSION_HANDOFF_ENABLED", default=False),

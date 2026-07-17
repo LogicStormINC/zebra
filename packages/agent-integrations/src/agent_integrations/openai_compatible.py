@@ -21,6 +21,7 @@ from agent_integrations.deepseek_profiles import (
     DeepSeekProfileRouter,
     ResolvedDeepSeekInvocation,
 )
+from agent_integrations.deepseek_schema import validate_strict_tools
 from agent_integrations.model_errors import ModelProviderError, normalize_provider_error
 from agent_integrations.openai_payloads import (
     internal_tool_names,
@@ -79,7 +80,9 @@ class OpenAICompatibleModelGateway:
         *,
         tools: tuple[ModelToolDefinition, ...] = (),
         invocation_policy: ModelInvocationPolicy | None = None,
+        strict_tools: bool = False,
     ) -> ModelCompletion:
+        self._validate_strict_mode(tools, strict_tools=strict_tools)
         tool_names = provider_tool_names(tools)
         resolved = self._resolve_deepseek(invocation_policy, has_tools=bool(tools))
         request_body, request_metadata = self._request_body(
@@ -88,6 +91,7 @@ class OpenAICompatibleModelGateway:
             tool_names=tool_names,
             stream=False,
             resolved=resolved,
+            strict_tools=strict_tools,
         )
         started = perf_counter()
         retry_count = 0
@@ -130,7 +134,9 @@ class OpenAICompatibleModelGateway:
         tools: tuple[ModelToolDefinition, ...] = (),
         on_text_delta: Callable[[ModelTextDelta], None],
         invocation_policy: ModelInvocationPolicy | None = None,
+        strict_tools: bool = False,
     ) -> ModelCompletion:
+        self._validate_strict_mode(tools, strict_tools=strict_tools)
         tool_names = provider_tool_names(tools)
         resolved = self._resolve_deepseek(invocation_policy, has_tools=bool(tools))
         request_body, request_metadata = self._request_body(
@@ -139,6 +145,7 @@ class OpenAICompatibleModelGateway:
             tool_names=tool_names,
             stream=True,
             resolved=resolved,
+            strict_tools=strict_tools,
         )
         client = self._client or httpx.Client(timeout=self._client_timeout())
         should_close = self._client is None
@@ -214,6 +221,7 @@ class OpenAICompatibleModelGateway:
         tool_names: tuple[str, ...],
         stream: bool,
         resolved: ResolvedDeepSeekInvocation | None,
+        strict_tools: bool,
     ) -> tuple[dict[str, Any], ModelRequestMetadata | None]:
         body: dict[str, Any] = {
             "model": resolved.profile.model if resolved else self._model_name,
@@ -222,7 +230,7 @@ class OpenAICompatibleModelGateway:
         }
         if tools:
             serialized_tools = [
-                serialize_tool(tool, provider_name=provider_name)
+                serialize_tool(tool, provider_name=provider_name, strict=strict_tools)
                 for tool, provider_name in zip(tools, tool_names, strict=True)
             ]
             if resolved is not None:
@@ -242,6 +250,20 @@ class OpenAICompatibleModelGateway:
                 body["stream_options"] = {"include_usage": True}
         metadata = build_request_metadata(body, resolved) if resolved else None
         return body, metadata
+
+    def _validate_strict_mode(
+        self,
+        tools: tuple[ModelToolDefinition, ...],
+        *,
+        strict_tools: bool,
+    ) -> None:
+        if not strict_tools:
+            return
+        if self._deepseek_router is None or not self._base_url.endswith("/beta"):
+            raise ValueError("DeepSeek strict tools require the isolated beta endpoint")
+        if not tools:
+            raise ValueError("DeepSeek strict tools require advertised tools")
+        validate_strict_tools(tools)
 
     def _should_retry(
         self,

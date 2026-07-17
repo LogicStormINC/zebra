@@ -1,0 +1,9 @@
+{
+  "case_id": "deepseek-beta-completions",
+  "category": "provider",
+  "title": "DeepSeek FIM and chat prefix remain opt-in beta capabilities",
+  "prompt": "Evaluate bounded FIM and chat-prefix completions through the isolated beta endpoint without exposing private reasoning or becoming a default profile.",
+  "min_events": 2,
+  "min_tool_results": 0,
+  "max_cost_usd": 1.0
+}
