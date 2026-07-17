@@ -58,7 +58,7 @@
   mutation. Recovery consumes only persisted normalized UTF-8 extraction with
   safe workbook provenance. Spreadsheet editing, other formats, OCR, remote
   URLs, and authority changes remain excluded.
-- 2026-07-17: completed implementation of `P145-UI-01` for review. The desktop
+- 2026-07-17: merged `P145-UI-01` through PR `#133`. The desktop
   now projects one chronological conversation stream from durable events,
   groups modern and legacy tool lifecycles deterministically across attempts,
   defaults successful evidence closed and failed evidence open, preserves one
@@ -220,8 +220,8 @@
 
 ## Current Phase
 
-- Active phase: `Phase 145 - Event-Driven Conversation Stream`
-- Repository status: `P145-UI-01 implementation complete; awaiting review`
+- Active phase: `Phase 145 - Event-Driven Conversation Stream complete`
+- Repository status: `P145-UI-01 merged; ready for next-phase planning`
 - Current focus:
   - Phase 139 keeps durable active-session configuration in the context inspector and preserves editable launch configuration only for new tasks and drafts
   - Phase 138 final acceptance passed across compatibility, persistence, immutable recovery, desktop, browser, and real-provider gates
