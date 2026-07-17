@@ -8,7 +8,7 @@ import type { ChatMessage } from "./lib/chat-surface";
 import { isAppendToTerminalError, streamEventsToMessages, toErrorMessage } from "./lib/chat-surface";
 import { buildClarificationResponsePayload } from "./lib/clarification-continuation";
 import { useOperatorConfig } from "./lib/operator-config";
-import { mergeSessionEvents, pollWhile } from "./lib/live-session";
+import { mergeSessionEvents } from "./lib/live-session";
 import { projectRuntimeConnection } from "./lib/runtime-connection";
 import type { TaskLaunchConfig } from "./lib/task-launch-config";
 import type { AttachmentPayload } from "./lib/text-attachments";
@@ -22,6 +22,7 @@ const WORKSPACE_HOME_KEY = "__workspace-home__";
 export default function App() {
   const senderRef = useRef<GetRef<typeof Sender>>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const streamControllersRef = useRef(new Map<string, AbortController>());
   const { config, patchConfig, resetConfig } = useOperatorConfig();
   const api = useMemo(() => zebraApi(config), [config]);
   const healthQuery = useQuery({
@@ -58,6 +59,7 @@ export default function App() {
   } = useWorkspaceSessionIndex(api, config.sessionId.trim());
   const [currentConversation, setCurrentConversation] = useWorkspaceSelection(conversations, WORKSPACE_HOME_KEY);
   const [conversationEvents, setConversationEvents] = useState<Record<string, SessionEvent[]>>({});
+  const conversationEventsRef = useRef<Record<string, SessionEvent[]>>({});
   const [conversationMessages, setConversationMessages] = useState<Record<string, ChatMessage[]>>({});
   const [isRequesting, setIsRequesting] = useState(false);
   const [controlsBusy, setControlsBusy] = useState(false);
@@ -74,22 +76,55 @@ export default function App() {
     senderRef.current?.focus({ cursor: "end" });
   }, []);
 
+  useEffect(() => {
+    conversationEventsRef.current = conversationEvents;
+  }, [conversationEvents]);
+
   const syncConversationFromStream = useCallback(
     async (conversationKey: string, sessionId: string) => {
-      const applyEvents = (incoming: SessionEvent[]) => setConversationEvents((current) => {
-        return { ...current, [conversationKey]: mergeSessionEvents(current[conversationKey] ?? [], incoming) };
-      });
-      const applyMessages = (incoming: SessionEvent[]) => setConversationMessages((current) => {
-        const messages = new Map((current[conversationKey] ?? []).map((message) => [message.key, message]));
-        streamEventsToMessages(incoming).forEach((message) => messages.set(message.key, message));
-        return { ...current, [conversationKey]: [...messages.values()] };
-      });
-      const apply = (incoming: SessionEvent[]) => { applyEvents(incoming); applyMessages(incoming); };
-      const response = await api.stream(sessionId, (event) => apply([event]));
-      applyEvents(response.events);
-      setConversationMessages((current) => ({ ...current, [conversationKey]: streamEventsToMessages(response.events) }));
+      streamControllersRef.current.get(conversationKey)?.abort();
+      const controller = new AbortController();
+      streamControllersRef.current.set(conversationKey, controller);
+      const apply = (incoming: SessionEvent[]) => {
+        const merged = mergeSessionEvents(
+          conversationEventsRef.current[conversationKey] ?? [],
+          incoming,
+        );
+        conversationEventsRef.current = {
+          ...conversationEventsRef.current,
+          [conversationKey]: merged,
+        };
+        setConversationEvents(conversationEventsRef.current);
+        setConversationMessages((current) => ({
+          ...current,
+          [conversationKey]: streamEventsToMessages(merged),
+        }));
+      };
+      try {
+        while (!controller.signal.aborted) {
+          const existing = conversationEventsRef.current[conversationKey] ?? [];
+          const afterSequence = existing[existing.length - 1]?.sequence ?? -1;
+          const response = await api.stream(
+            sessionId,
+            (event) => apply([event]),
+            { signal: controller.signal, afterSequence },
+          );
+          apply(response.events);
+          const summary = await api.session(sessionId);
+          setSessionSummaries((current) => ({ ...current, [conversationKey]: summary }));
+          if (!new Set(["ready", "running"]).has(summary.status)) return;
+          await new Promise((resolve) => window.setTimeout(resolve, 250));
+        }
+      } catch (error: unknown) {
+        if (controller.signal.aborted || (error instanceof DOMException && error.name === "AbortError")) return;
+        throw error;
+      } finally {
+        if (streamControllersRef.current.get(conversationKey) === controller) {
+          streamControllersRef.current.delete(conversationKey);
+        }
+      }
     },
-    [api],
+    [api, setSessionSummaries],
   );
 
   const loadSessionSummary = useCallback(
@@ -112,12 +147,12 @@ export default function App() {
       if (!sessionId) {
         return;
       }
-      await Promise.all([
-        syncConversationFromStream(conversationKey, sessionId),
-        loadSessionSummary(conversationKey, sessionId),
-      ]);
+      void syncConversationFromStream(conversationKey, sessionId).catch((error: unknown) => {
+        messageApi.error(toErrorMessage(error));
+      });
+      await loadSessionSummary(conversationKey, sessionId);
     },
-    [conversationToSessionId, loadSessionSummary, syncConversationFromStream],
+    [conversationToSessionId, loadSessionSummary, messageApi, syncConversationFromStream],
   );
 
   const refreshCurrentConversation = useCallback(
@@ -128,10 +163,16 @@ export default function App() {
 
   const executeSession = useCallback(
     async (conversationKey: string, sessionId: string) => {
-      await pollWhile(api.resume(sessionId), () => Promise.all([
-        syncConversationFromStream(conversationKey, sessionId),
-        loadSessionSummary(conversationKey, sessionId),
-      ]));
+      const stream = syncConversationFromStream(conversationKey, sessionId);
+      try {
+        await api.resume(sessionId);
+        await stream;
+      } catch (error) {
+        streamControllersRef.current.get(conversationKey)?.abort();
+        await stream.catch(() => undefined);
+        throw error;
+      }
+      await loadSessionSummary(conversationKey, sessionId);
     },
     [api, loadSessionSummary, syncConversationFromStream],
   );
@@ -197,6 +238,9 @@ export default function App() {
     void syncConversationFromStream(currentConversation, sessionId).catch((error: unknown) => {
       messageApi.error(toErrorMessage(error));
     });
+    return () => {
+      streamControllersRef.current.get(currentConversation)?.abort();
+    };
   }, [currentConversation, conversationToSessionId, messageApi, syncConversationFromStream]);
 
   useEffect(() => {
@@ -212,7 +256,7 @@ export default function App() {
         behavior: "smooth",
       });
     });
-  }, [messages.length, currentConversation]);
+  }, [messages.length, messages[messages.length - 1]?.content, currentConversation]);
 
   const appendMessageToConversation = useCallback((conversationKey: string, nextMessage: ChatMessage) => {
     setConversationMessages((current) => ({
@@ -237,8 +281,11 @@ export default function App() {
       setConversationEvents((current) => {
         const next = { ...current };
         delete next[conversationKey];
+        conversationEventsRef.current = next;
         return next;
       });
+      streamControllersRef.current.get(conversationKey)?.abort();
+      streamControllersRef.current.delete(conversationKey);
       if (sessionId && sessionId === config.sessionId) patchConfig({ sessionId: "" });
       if (conversationKey !== currentConversation) {
         return;

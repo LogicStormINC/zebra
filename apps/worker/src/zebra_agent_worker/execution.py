@@ -9,12 +9,9 @@ from agent_core.application import (
     MemoryCandidateExtractionCommand,
     MemoryCandidateExtractionService,
 )
-from agent_core.application.session_projection import apply_event
-from agent_core.application.workspace_projection import apply_event as apply_workspace_event
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.sessions import Session
-from agent_core.domain.workspaces import WorkspaceProjection
+from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.harness import (
     HarnessAttempt,
     HarnessContext,
@@ -22,7 +19,11 @@ from agent_core.harness import (
     HarnessTask,
     SingleAttemptOrchestrator,
 )
-from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
+from agent_core.harness.models import (
+    HarnessAttemptOutcome,
+    HarnessAttemptResult,
+    HarnessEventDraft,
+)
 from agent_integrations import build_model_gateway
 from agent_runtime import LocalToolGateway
 from agent_security import LocalPolicyEngine, PolicyProfile
@@ -49,6 +50,7 @@ from zebra_agent_worker.clarification_continuation import (
     recover_clarification_continuation,
 )
 from zebra_agent_worker.control import SessionControlError, SessionControlService
+from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
@@ -156,25 +158,6 @@ class SessionExecutionService:
             self._claim_service.release_claim(claimed)
             raise WorkerExecutionError(str(exc)) from exc
         context_compiler = LocalContextCompiler()
-        orchestrator = SingleAttemptOrchestrator(
-            model_gateway,
-            LocalPolicyEngine(
-                profile=PolicyProfile(task.policy_profile),
-                network_profile=task.network_profile,
-                web_search_endpoint=self._settings.web_search_endpoint,
-            ),
-            tool_gateway,
-            model_step=HarnessModelStep(
-                context_compiler=context_compiler,
-                available_tools=tool_gateway.model_tools,
-                conversation_compactor=context_compiler,
-            ),
-            synthesize_tool_results=True,
-            parallel_safe_tools=tool_gateway.parallel_safe_tools,
-            parallel_batch_limits=tool_gateway.parallel_batch_limits,
-            max_parallel_tool_calls=3,
-            tool_call_resolver=tool_gateway.resolve_model_tool_calls,
-        )
         context = HarnessContext(
             task=HarnessTask(
                 title=task.title,
@@ -230,6 +213,54 @@ class SessionExecutionService:
             session=claimed.recovery.session,
             attempt=context.attempt,
         )
+        recorder = DurableHarnessEventRecorder(
+            session=claimed.recovery.session,
+            workspace=claimed.recovery.workspace,
+            event_store=self._event_store,
+            projection_store=self._projection_store,
+            workspace_store=self._workspace_store,
+            model_call_indexer=self._model_call_indexer,
+            tool_run_indexer=self._tool_run_indexer,
+        )
+        if continuation is None and clarification is None:
+            recorder.append(
+                EventType.HARNESS_ATTEMPT_STARTED,
+                EventActor.HARNESS,
+                {"attempt_number": 1},
+                created_at=started_at,
+            )
+        context = HarnessContext(
+            task=context.task,
+            session=recorder.session,
+            attempt=context.attempt,
+        )
+
+        def persist_event(draft: HarnessEventDraft) -> None:
+            recorder.append_draft(draft)
+
+        model_step = HarnessModelStep(
+            context_compiler=context_compiler,
+            available_tools=tool_gateway.model_tools,
+            conversation_compactor=context_compiler,
+            event_sink=persist_event,
+            attempt_number=1,
+        )
+        orchestrator = SingleAttemptOrchestrator(
+            model_gateway,
+            LocalPolicyEngine(
+                profile=PolicyProfile(task.policy_profile),
+                network_profile=task.network_profile,
+                web_search_endpoint=self._settings.web_search_endpoint,
+            ),
+            tool_gateway,
+            model_step=model_step,
+            synthesize_tool_results=True,
+            parallel_safe_tools=tool_gateway.parallel_safe_tools,
+            parallel_batch_limits=tool_gateway.parallel_batch_limits,
+            max_parallel_tool_calls=3,
+            tool_call_resolver=tool_gateway.resolve_model_tool_calls,
+            event_sink=persist_event,
+        )
         try:
             if continuation is not None:
                 attempt_result = orchestrator.continue_approved_tool_call(
@@ -278,18 +309,12 @@ class SessionExecutionService:
             )
         finally:
             tool_gateway.close()
-        emitted_events = _append_execution_events(
-            session=claimed.recovery.session,
+        emitted_events = _finalize_execution(
+            recorder=recorder,
             attempt_result=attempt_result,
             memory_extraction_service=self._memory_extraction_service,
             event_store=self._event_store,
-            projection_store=self._projection_store,
-            workspace_projection=claimed.recovery.workspace,
-            workspace_store=self._workspace_store,
-            model_call_indexer=self._model_call_indexer,
-            tool_run_indexer=self._tool_run_indexer,
             started_at=started_at,
-            attempt_already_started=(continuation is not None or clarification is not None),
         )
         final_session = self._projection_store.get_session(session_id)
         if final_session is None:
@@ -365,60 +390,26 @@ class SessionExecutionService:
         )
 
 
-def _append_execution_events(
+def _finalize_execution(
     *,
-    session: Session,
+    recorder: DurableHarnessEventRecorder,
     attempt_result: HarnessAttemptResult,
     memory_extraction_service: MemoryCandidateExtractionService,
     event_store: SQLiteEventStore,
-    projection_store: SQLiteProjectionStore,
-    workspace_projection: WorkspaceProjection,
-    workspace_store: SQLiteWorkspaceProjectionStore,
-    model_call_indexer: ModelCallIndexer,
-    tool_run_indexer: ToolRunIndexer,
     started_at: datetime,
-    attempt_already_started: bool = False,
 ) -> tuple[SessionEvent, ...]:
-    current_session = session
-    current_workspace = workspace_projection
-    next_sequence = current_session.current_sequence + 1
-    events: list[SessionEvent] = []
-
-    def append(event_type: EventType, actor: EventActor, payload: dict[str, object]) -> None:
-        nonlocal current_session
-        nonlocal current_workspace
-        nonlocal next_sequence
-        event = SessionEvent.create(
-            session_id=current_session.session_id,
-            sequence=next_sequence,
-            event_type=event_type,
-            actor=actor,
-            payload=payload,
-            created_at=started_at,
-        )
-        next_sequence += 1
-        event_store.append(event)
-        model_call_indexer.index_event(event)
-        tool_run_indexer.index_event(event)
-        current_session = apply_event(current_session, event)
-        current_workspace = apply_workspace_event(current_workspace, event)
-        projection_store.save_session(current_session)
-        workspace_store.save_workspace(current_workspace)
-        events.append(event)
-
-    if not attempt_already_started:
-        append(
-            EventType.HARNESS_ATTEMPT_STARTED,
-            EventActor.HARNESS,
-            {"attempt_number": 1},
-        )
-    for draft in attempt_result.emitted_events:
-        append(draft.event_type, draft.actor, draft.payload)
+    if recorder.session.status in {
+        SessionStatus.CANCELLED,
+        SessionStatus.SUSPENDED,
+        SessionStatus.COMPLETED,
+        SessionStatus.FAILED,
+    }:
+        return recorder.events
     if attempt_result.outcome not in {
         HarnessAttemptOutcome.WAITING_APPROVAL,
         HarnessAttemptOutcome.WAITING_INPUT,
     }:
-        append(
+        recorder.append(
             EventType.SESSION_COMPLETED
             if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
             else EventType.SESSION_FAILED,
@@ -431,25 +422,17 @@ def _append_execution_events(
         )
     if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
         extraction = memory_extraction_service.extract(
-            session=current_session,
-            events=event_store.list_for_session(current_session.session_id),
-            next_sequence=next_sequence,
+            session=recorder.session,
+            events=event_store.list_for_session(recorder.session.session_id),
+            next_sequence=recorder.next_sequence,
             command=MemoryCandidateExtractionCommand(
-                repo_id=_local_repo_id(current_workspace.workspace_root),
+                repo_id=_local_repo_id(recorder.workspace.workspace_root),
                 extracted_at=started_at,
             ),
         )
         for event in extraction.events:
-            event_store.append(event)
-            model_call_indexer.index_event(event)
-            tool_run_indexer.index_event(event)
-            current_session = apply_event(current_session, event)
-            current_workspace = apply_workspace_event(current_workspace, event)
-            projection_store.save_session(current_session)
-            workspace_store.save_workspace(current_workspace)
-            events.append(event)
-            next_sequence = event.sequence + 1
-    return tuple(events)
+            recorder.append_event(event)
+    return recorder.events
 
 
 def _local_repo_id(workspace_root: str) -> str:

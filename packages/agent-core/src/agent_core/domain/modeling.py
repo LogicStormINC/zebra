@@ -19,6 +19,18 @@ class ModelUsage:
 
 
 @dataclass(frozen=True)
+class ModelTextDelta:
+    index: int
+    content: str
+
+    def __post_init__(self) -> None:
+        if self.index < 0:
+            raise ValueError("model text delta index must not be negative")
+        if not self.content:
+            raise ValueError("model text delta content must not be empty")
+
+
+@dataclass(frozen=True)
 class ModelToolDefinition:
     name: str
     description: str
@@ -37,6 +49,7 @@ class ModelToolDefinition:
 
 @dataclass(frozen=True)
 class ModelCallMetadata:
+    model_call_id: str | None = None
     provider: str | None = None
     model_name: str | None = None
     latency_ms: int | None = None
@@ -45,7 +58,7 @@ class ModelCallMetadata:
     usage: ModelUsage = field(default_factory=ModelUsage)
 
     def __post_init__(self) -> None:
-        for field_name in ("provider", "model_name"):
+        for field_name in ("model_call_id", "provider", "model_name"):
             value = getattr(self, field_name)
             if value is None:
                 continue

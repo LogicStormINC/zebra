@@ -105,20 +105,24 @@
   mutation. Recovery consumes only persisted normalized UTF-8 extraction with
   safe workbook provenance. Spreadsheet editing, other formats, OCR, remote
   URLs, and authority changes remain excluded.
-- 2026-07-17: completed implementation for `QA-UI-RUNTIME-01` on
-  `codex/qa-ui-runtime-feedback`. The desktop will replace the fake “暂无返回”
-  Assistant placeholder with a distinct event-driven runtime activity surface.
-  The first slice uses only current durable events and session projections;
-  model delta streaming, invented progress, thought exposure, follow-up queues,
-  API changes, and Inspector redesign remain excluded. The durable UX contract
-  is recorded in `docs/桌面Agent运行态反馈UX整改方案_v1.0.md`. Node 22 runtime
-  activity, timeline, launch, and production-build checks passed. Browser
-  regression covered new tasks, continuation from terminal projections, the
-  activity-to-log action, tool-policy failure, final response replacement, and
-  confirmed that no fake “暂无返回” Assistant content remains. The final
-  presentation reuses the installed Ant Design X `ThoughtChain.Item` as a
-  lightweight in-stream runtime node and keeps cancellation in the native
-  `Sender`; no Lobe dependency or custom status-card shell was introduced.
+- 2026-07-17: completed `QA-UI-RUNTIME-01` implementation on
+  `codex/qa-ui-runtime-feedback`. OpenAI-compatible providers now consume real
+  upstream SSE, coalesce only public Assistant content, reconstruct fragmented
+  tool calls, and preserve final response and usage semantics. Harness and
+  Worker persist correlated `model_response_delta` events as generation occurs;
+  durable cancellation or suspension interrupts continued provider consumption,
+  while `model_response_received` remains authoritative. HTTP session streaming
+  now replays from `after_sequence` and tails SQLite with keepalive, disconnect,
+  and terminal-close behavior without blocking the FastAPI event loop. The
+  desktop replaced finite replay polling with one cancellable, reconnectable
+  stream per active session and atomically converges partial text onto the final
+  Assistant row. Hidden reasoning fields remain excluded. All `1327` backend
+  tests, the 782-file size gate, Ruff, Mypy across 357 sources, 8 evals, all 18
+  Node 22 desktop checks, the production build, and Tauri check passed. Real
+  browser/provider acceptance with `deepseek-v4-flash` persisted two deltas
+  (`ST` + `REAM_BROWSER_OK_20260717`) before the authoritative final response,
+  rendered one final message, restored it after reload, and produced no console
+  errors. The existing 1.37 MB Vite chunk warning remains unchanged.
 - 2026-07-17: completed `QA-UI-UNBOUND-01` on
   `codex/qa-ui-unbound-session-continuation`. Historical sessions without
   durable workspace metadata no longer disable the Composer: continuation uses

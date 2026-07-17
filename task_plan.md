@@ -1,5 +1,18 @@
 # Task Plan
 
+## QA-UI-RUNTIME-01 - End-To-End Durable Streaming
+
+1. `completed` - Extend the claimed task boundary and define typed model delta
+   plus durable event contracts without exposing hidden reasoning.
+2. `completed` - Stream OpenAI-compatible responses through Harness and persist
+   correlated deltas while preserving final completion and tool semantics.
+3. `completed` - Replace finite SSE replay with replay-plus-tail delivery and
+   cursor recovery while keeping the event store authoritative.
+4. `completed` - Replace desktop polling with one cancellable, reconnectable
+   incremental Assistant projection and stable final convergence.
+5. `completed` - Run focused and repository-wide validation, real browser/provider
+   acceptance where available, then update durable docs and close for review.
+
 ## Phase 145 - Event-Driven Conversation Stream
 
 1. `completed` - Persist the remediation design, claim `P145-UI-01`, and lock

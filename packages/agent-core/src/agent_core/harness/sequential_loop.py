@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
@@ -11,6 +11,7 @@ from agent_core.harness.models import (
     HarnessAttemptOutcome,
     HarnessAttemptResult,
     HarnessContext,
+    HarnessEventBuffer,
     HarnessEventDraft,
 )
 from agent_core.harness.orchestration_events import (
@@ -46,12 +47,14 @@ class SequentialToolLoop:
         parallel_batch_limits: Mapping[str, int] | None,
         max_parallel_tool_calls: int,
         tool_call_resolver: ToolCallResolver | None,
+        event_sink: Callable[[HarnessEventDraft], None] | None = None,
     ) -> None:
         self._model_gateway = model_gateway
         self._model_step = model_step
         self._tool_selector = tool_selector
         self._synthesize_tool_results = synthesize_tool_results
         self._tool_call_resolver = tool_call_resolver
+        self._event_sink = event_sink
         self._batch_executor = ToolBatchExecutor(
             policy_engine=policy_engine,
             tool_gateway=tool_gateway,
@@ -85,7 +88,7 @@ class SequentialToolLoop:
                 tool_calls=calls,
             )
         fingerprints = _executed_action_fingerprints(messages)
-        emitted_events: list[HarnessEventDraft] = []
+        emitted_events: list[HarnessEventDraft] = HarnessEventBuffer(self._event_sink)
         batch = self._batch_executor.execute(
             context,
             messages=messages,
@@ -140,7 +143,7 @@ class SequentialToolLoop:
         return self._request_next_completion(
             context,
             messages=messages,
-            emitted_events=[],
+            emitted_events=HarnessEventBuffer(self._event_sink),
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
             fingerprints=_executed_action_fingerprints(messages),

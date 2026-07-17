@@ -15,20 +15,3 @@ export function readSseEvents(buffer: string): { events: SessionEvent[]; remaind
   });
   return { events, remainder };
 }
-
-export async function pollWhile<T>(operation: Promise<T>, refresh: () => Promise<unknown>, intervalMs = 500): Promise<T> {
-  let stopped = false;
-  const polling = (async () => {
-    while (!stopped) {
-      await new Promise((resolve) => setTimeout(resolve, intervalMs));
-      if (!stopped) await refresh().catch(() => undefined);
-    }
-  })();
-  try {
-    return await operation;
-  } finally {
-    stopped = true;
-    await polling;
-    await refresh();
-  }
-}

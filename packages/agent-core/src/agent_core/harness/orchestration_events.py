@@ -26,6 +26,8 @@ def model_response_event(
         "cache_hit": completion.call_metadata.cache_hit,
         "cost_usd": completion.call_metadata.cost_usd,
     }
+    if completion.call_metadata.model_call_id is not None:
+        payload["model_call_id"] = completion.call_metadata.model_call_id
     if response_stage is not None:
         payload["response_stage"] = response_stage
     return HarnessEventDraft(

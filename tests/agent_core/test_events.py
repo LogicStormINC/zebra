@@ -74,3 +74,33 @@ def test_session_event_create_allows_unregistered_event_payload() -> None:
         "summary": "draft plan",
         "metadata": {"step_count": 2},
     }
+
+
+def test_model_response_delta_preserves_whitespace_and_rejects_empty_content() -> None:
+    payload = {
+        "attempt_number": 1,
+        "model_call_id": "00000000-0000-0000-0000-000000000146",
+        "delta_index": 0,
+        "content_delta": " hello ",
+    }
+
+    event = SessionEvent.create(
+        session_id=new_session_id(),
+        sequence=1,
+        event_type=EventType.MODEL_RESPONSE_DELTA,
+        actor=EventActor.HARNESS,
+        payload=payload,
+    )
+
+    assert event.payload == payload
+    with pytest.raises(
+        EventPayloadValidationError,
+        match="invalid payload for model_response_delta",
+    ):
+        SessionEvent.create(
+            session_id=new_session_id(),
+            sequence=1,
+            event_type=EventType.MODEL_RESPONSE_DELTA,
+            actor=EventActor.HARNESS,
+            payload={**payload, "content_delta": ""},
+        )

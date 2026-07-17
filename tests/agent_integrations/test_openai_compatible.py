@@ -88,6 +88,103 @@ def test_openai_compatible_gateway_parses_tool_calls() -> None:
     assert completion.tool_calls[0].arguments == {"path": "README.md"}
 
 
+def test_openai_compatible_gateway_streams_text_and_rebuilds_final_completion() -> None:
+    captured: dict[str, object] = {}
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        captured["json"] = json.loads(request.content.decode("utf-8"))
+        return httpx.Response(
+            200,
+            headers={"Content-Type": "text/event-stream"},
+            text="\n".join(
+                [
+                    (
+                        'data: {"model":"deepseek-v4-flash","choices":'
+                        '[{"delta":{"content":"Hello "}}]}'
+                    ),
+                    "",
+                    'data: {"choices":[{"delta":{"content":"Zebra"}}]}',
+                    "",
+                    (
+                        'data: {"choices":[],"usage":{"prompt_tokens":2,'
+                        '"completion_tokens":2,"total_tokens":4}}'
+                    ),
+                    "",
+                    "data: [DONE]",
+                    "",
+                ]
+            ),
+        )
+
+    gateway = OpenAICompatibleModelGateway(
+        provider_name="deepseek",
+        base_url="https://api.deepseek.com",
+        api_key="secret",
+        model_name="deepseek-v4-flash",
+        client=httpx.Client(transport=httpx.MockTransport(handle)),
+    )
+    deltas = []
+
+    completion = gateway.complete_stream(
+        [_user_message("Hello")],
+        on_text_delta=deltas.append,
+    )
+
+    assert captured["json"] == {
+        "model": "deepseek-v4-flash",
+        "messages": [{"role": "user", "content": "Hello"}],
+        "stream": True,
+    }
+    assert [delta.content for delta in deltas] == ["Hello ", "Zebra"]
+    assert completion.assistant_message.content == "Hello Zebra"
+    assert completion.call_metadata.usage.total_tokens == 4
+
+
+def test_openai_compatible_gateway_rebuilds_fragmented_stream_tool_calls() -> None:
+    response = "\n".join(
+        [
+            (
+                'data: {"choices":[{"delta":{"tool_calls":[{"index":0,'
+                '"id":"call_1","function":{"name":"files__",'
+                '"arguments":"{\\"path\\":"}}]}}]}'
+            ),
+            "",
+            (
+                'data: {"choices":[{"delta":{"tool_calls":[{"index":0,'
+                '"function":{"name":"read",'
+                '"arguments":"\\"README.md\\"}"}}]}}]}'
+            ),
+            "",
+            "data: [DONE]",
+            "",
+        ]
+    )
+    gateway = OpenAICompatibleModelGateway(
+        provider_name="deepseek",
+        base_url="https://api.deepseek.com",
+        api_key="secret",
+        model_name="deepseek-v4-flash",
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(200, text=response))
+        ),
+    )
+    tool = ModelToolDefinition(
+        name="files.read",
+        description="Read one file.",
+        parameters={"type": "object", "properties": {}},
+    )
+
+    completion = gateway.complete_stream(
+        [_user_message("Read")],
+        tools=(tool,),
+        on_text_delta=lambda delta: pytest.fail(f"unexpected text delta: {delta}"),
+    )
+
+    assert completion.assistant_message.content == "Tool calls proposed."
+    assert completion.tool_calls[0].name == "files.read"
+    assert completion.tool_calls[0].arguments == {"path": "README.md"}
+
+
 def test_openai_compatible_gateway_serializes_tools_and_restores_internal_name() -> None:
     captured: dict[str, object] = {}
     client = httpx.Client(

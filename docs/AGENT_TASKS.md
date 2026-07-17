@@ -13024,18 +13024,20 @@ boundaries.
 
 - Status: `Review`
 - Owner: `Codex-APP`
-- Suggested role: `UI / QA / DOC`
+- Suggested role: `CORE / MODEL / WORKER / API / UI / QA / DOC`
 - Depends on: `QA-UI-UNBOUND-01`
 - Branch: `codex/qa-ui-runtime-feedback`
-- Owned paths: `UI/desktop/`,
+- Owned paths: `packages/agent-core/`, `packages/agent-integrations/`,
+  `packages/agent-storage/`, `apps/worker/`, `apps/api/`, `UI/desktop/`,
+  `tests/`, `Makefile`, `README.md`,
   `docs/桌面Agent运行态反馈UX整改方案_v1.0.md`, `docs/AGENT_TASKS.md`,
-  `PROGRESS.md`
+  `PROGRESS.md`, `task_plan.md`
 
 #### Goal
 
 Replace the fake “暂无返回” Assistant placeholder with one truthful,
-event-driven runtime activity surface that remains distinct from actual model
-content.
+event-driven runtime activity surface, then complete real provider-to-desktop
+Assistant text streaming without turning transport state into durable authority.
 
 #### Acceptance
 
@@ -13045,11 +13047,22 @@ content.
 - [x] Waiting, suspended, failed, cancelled, and completed states retain their
   distinct semantics.
 - [x] Focused checks, Node 22 build, and browser regression pass.
+- [x] OpenAI-compatible model calls consume provider streaming responses while
+  preserving complete final responses, tool calls, usage, and error handling.
+- [x] Safe Assistant text deltas become correlated durable events during model
+  execution; final model-response events remain authoritative.
+- [x] The session SSE endpoint replays then tails new events with cursor resume,
+  keepalive, disconnect, and terminal-close behavior.
+- [x] Desktop execution no longer polls finite replay responses and instead
+  projects one cancellable, reconnectable stream into a partial Assistant row.
+- [x] Focused core, provider, worker, API, and desktop checks prove first-delta
+  delivery before completion, exact final convergence, reconnect de-duplication,
+  tool-call compatibility, failure behavior, and no hidden-thought exposure.
 
 #### Explicit Non-Goals
 
-- Model token streaming, hidden chain of thought, invented percentages,
-  follow-up queues, new API events, dependencies, or Inspector redesign
+- Hidden chain of thought, invented percentages, follow-up queues, WebSocket,
+  remote brokers, new dependencies, or Inspector redesign
 
 ### QA-UI-UNBOUND-01 - Unbound Session Continuation
 

@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 
 from agent_core.domain.events import EventActor, EventType
@@ -12,7 +12,12 @@ from agent_core.harness.hooks import (
     VerifierHook,
 )
 from agent_core.harness.model_step import HarnessModelStep
-from agent_core.harness.models import HarnessAttemptResult, HarnessContext, HarnessEventDraft
+from agent_core.harness.models import (
+    HarnessAttemptResult,
+    HarnessContext,
+    HarnessEventBuffer,
+    HarnessEventDraft,
+)
 from agent_core.harness.orchestration_events import model_response_event
 from agent_core.harness.selection import (
     FirstToolCallSelectionStrategy,
@@ -41,6 +46,7 @@ class SingleAttemptOrchestrator:
         parallel_batch_limits: Mapping[str, int] | None = None,
         max_parallel_tool_calls: int = 1,
         tool_call_resolver: ToolCallResolver | None = None,
+        event_sink: Callable[[HarnessEventDraft], None] | None = None,
     ) -> None:
         self._model_gateway = model_gateway
         self._model_step = model_step or HarnessModelStep()
@@ -57,7 +63,9 @@ class SingleAttemptOrchestrator:
             parallel_batch_limits=parallel_batch_limits,
             max_parallel_tool_calls=max_parallel_tool_calls,
             tool_call_resolver=tool_call_resolver,
+            event_sink=event_sink,
         )
+        self._event_sink = event_sink
 
     def run(self, context: HarnessContext) -> HarnessAttemptResult:
         task = replace(context.task, task_plan=context.session.task_plan)
@@ -70,7 +78,10 @@ class SingleAttemptOrchestrator:
             self._model_gateway,
             allow_tools=True,
         )
-        emitted_events = [model_response_event(completion, attempt_number=context.attempt.number)]
+        emitted_events = HarnessEventBuffer(self._event_sink)
+        emitted_events.append(
+            model_response_event(completion, attempt_number=context.attempt.number)
+        )
         planner_result = self._planner.plan(context)
         emitted_events.append(
             HarnessEventDraft(

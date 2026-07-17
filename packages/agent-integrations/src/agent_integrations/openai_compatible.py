@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
@@ -12,11 +12,14 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
     ModelCallMetadata,
     ModelCompletion,
+    ModelTextDelta,
     ModelToolDefinition,
     ModelUsage,
 )
 from agent_core.domain.tools import ToolCall
 from zebra_agent_config import ZebraAgentSettings
+
+from agent_integrations.openai_streaming import read_openai_stream
 
 CHAT_COMPLETIONS_PATH = "/chat/completions"
 
@@ -58,6 +61,53 @@ class OpenAICompatibleModelGateway:
             ]
         started = perf_counter()
         response_data = self._post_chat_completion(request_body)
+        latency_ms = int((perf_counter() - started) * 1000)
+        return _parse_completion(
+            response_data,
+            provider_name=self._provider_name,
+            default_model_name=self._model_name,
+            latency_ms=latency_ms,
+            internal_tool_names={
+                provider_name: tool.name
+                for tool, provider_name in zip(tools, tool_names, strict=True)
+            },
+        )
+
+    def complete_stream(
+        self,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...] = (),
+        on_text_delta: Callable[[ModelTextDelta], None],
+    ) -> ModelCompletion:
+        tool_names = _provider_tool_names(tools)
+        request_body = {
+            "model": self._model_name,
+            "messages": [_serialize_message(message) for message in messages],
+            "stream": True,
+        }
+        if tools:
+            request_body["tools"] = [
+                _serialize_tool(tool, provider_name=provider_name)
+                for tool, provider_name in zip(tools, tool_names, strict=True)
+            ]
+        client = self._client or httpx.Client(timeout=self._timeout_s)
+        should_close = self._client is None
+        started = perf_counter()
+        try:
+            response_data = read_openai_stream(
+                client,
+                url=f"{self._base_url}{CHAT_COMPLETIONS_PATH}",
+                headers={
+                    "Authorization": f"Bearer {self._api_key}",
+                    "Content-Type": "application/json",
+                },
+                body=request_body,
+                on_text_delta=on_text_delta,
+            )
+        finally:
+            if should_close:
+                client.close()
         latency_ms = int((perf_counter() - started) * 1000)
         return _parse_completion(
             response_data,
