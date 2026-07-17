@@ -13020,6 +13020,39 @@ boundaries.
 
 ## Issue Remediation Task Board
 
+### QA-UI-UNBOUND-01 - Unbound Session Continuation
+
+- Status: `Done`
+- Owner: `Codex-APP`
+- Suggested role: `UI / QA`
+- Depends on: `P145-UI-01`
+- Branch: `codex/qa-ui-unbound-session-continuation`
+- Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Allow historical sessions without durable workspace metadata to continue from
+the Composer by falling back to the current valid task-launch configuration.
+
+#### Acceptance
+
+- [x] A non-empty prompt enables the send action on an unbound historical session.
+- [x] Bound sessions continue to use their durable workspace configuration.
+- [x] Focused launch checks, production build, and browser regression pass.
+
+#### Validation Evidence
+
+- Node 22 focused launch check and production build passed; the existing Vite
+  bundle-size warning remains unchanged.
+- Browser regression reopened historical unbound session `a5b155fa`, observed
+  the send action become enabled after input, submitted the continuation, and
+  received `UNBOUND_CONTINUATION_OK` from the provider-backed execution path.
+
+#### Explicit Non-Goals
+
+- Backfilling historical session metadata or changing API session contracts
+- Making durable bound-session configuration editable
+
 ### QA-2-STO-01 - Atomic SQLite Worker Lease Acquisition
 
 - Status: `Review`

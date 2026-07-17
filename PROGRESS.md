@@ -105,6 +105,13 @@
   mutation. Recovery consumes only persisted normalized UTF-8 extraction with
   safe workbook provenance. Spreadsheet editing, other formats, OCR, remote
   URLs, and authority changes remain excluded.
+- 2026-07-17: completed `QA-UI-UNBOUND-01` on
+  `codex/qa-ui-unbound-session-continuation`. Historical sessions without
+  durable workspace metadata no longer disable the Composer: continuation uses
+  the current valid launch configuration while bound sessions retain their
+  durable configuration. Node 22 focused launch checks and production build
+  passed, and browser regression on session `a5b155fa` enabled the send action
+  and returned `UNBOUND_CONTINUATION_OK` through the real execution path.
 - 2026-07-17: merged `P145-UI-01` through PR `#133`. The desktop
   now projects one chronological conversation stream from durable events,
   groups modern and legacy tool lifecycles deterministically across attempts,

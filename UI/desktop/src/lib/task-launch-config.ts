@@ -121,6 +121,13 @@ export function validateTaskLaunchConfig(
   return null;
 }
 
+export function resolveSessionLaunchConfig(
+  configured: TaskLaunchConfig,
+  durable: TaskLaunchConfig,
+): TaskLaunchConfig {
+  return durable.workspace.trim() ? durable : configured;
+}
+
 export function compactWorkspaceLabel(workspace: string): string {
   const trimmed = workspace.trim();
   if (!trimmed || trimmed === ".") return trimmed || "未配置";
