@@ -13097,6 +13097,70 @@ the Composer by falling back to the current valid task-launch configuration.
 - Backfilling historical session metadata or changing API session contracts
 - Making durable bound-session configuration editable
 
+### QA-GOV-01 - Mainline Architecture And Engineering Closeout Plan
+
+- Status: `Review`
+- Owner: `Codex-APP`
+- Suggested role: `DOC / QA / ARCH`
+- Depends on: `P145-UI-01`
+- Branch: `codex/qa-mainline-closeout`
+- Owned paths: `docs/主线架构工程完成度审计与收口计划_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record one evidence-backed mainline completion assessment, separate local-beta
+readiness from final-platform readiness, and define dependency-ordered closeout
+work without silently activating deferred architecture.
+
+#### Acceptance
+
+- [x] The assessed Git ref, validation evidence, scoring basis, and known
+  documentation drift are explicit.
+- [x] Mainline gaps are prioritized with owners, dependencies, owned paths, and
+  measurable exit criteria suitable for follow-up task cards.
+- [x] Deferred runtime, ACP, code-intelligence, cloud, and ecosystem work remains
+  locked until an explicit maintainer decision.
+- [x] The document distinguishes merged mainline capability from unmerged local
+  branches and avoids treating incremental phase numbers as percent complete.
+
+#### Explicit Non-Goals
+
+- Feature implementation, branch merging, CI creation, runtime activation,
+  protocol expansion, or product redesign
+
+### QA-CI-01 - Minimal Mainline Quality Workflow
+
+- Status: `Review`
+- Owner: `Codex-APP`
+- Suggested role: `QA / DX`
+- Depends on: `QA-GOV-01`
+- Branch: `codex/qa-ci-mainline`
+- Owned paths: `.github/workflows/quality.yml`, `.gitignore`, `uv.lock`,
+  `docs/主线CI质量门禁说明_v1.0.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Run the repository's existing backend and desktop quality commands
+automatically for pull requests and mainline pushes without creating a second
+build system or weakening local gates.
+
+#### Acceptance
+
+- [x] Workflow permissions are read-only and third-party Actions are pinned to
+  reviewed commit SHAs.
+- [x] Backend runs frozen sync, all tests, file-size checks, Ruff, strict Mypy,
+  and release evals.
+- [x] Desktop uses the repository-pinned Node and pnpm versions, frozen install,
+  every current `check:*` script, and the production build.
+- [x] Concurrency cancels superseded runs; workflow syntax and the exact local
+  commands are validated before review.
+
+#### Explicit Non-Goals
+
+- Deployment, releases, secrets, provider calls, browser automation, Tauri
+  packaging, branch-protection mutation, or replacing local `make` commands
+
 ### QA-2-STO-01 - Atomic SQLite Worker Lease Acquisition
 
 - Status: `Review`

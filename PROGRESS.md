@@ -2,6 +2,41 @@
 
 ## Addendum
 
+- 2026-07-17: completed `QA-CI-01` for review on `codex/qa-ci-mainline`.
+  The read-only, SHA-pinned workflow runs frozen Python workspace sync, all
+  backend tests, file-size checks, Ruff, strict Mypy, release evals, every
+  desktop `check:*` script, and the production build on pull requests and
+  `main` pushes. Validation exposed that root `uv.lock` was ignored and absent;
+  the task now tracks the generated lock and removes that ignore rule instead
+  of weakening frozen CI. Workflow YAML parsed successfully, all 1320 backend
+  tests, the 779-file gate, 353-source Mypy, 8 evals, 16 desktop checks, and the
+  Node 22 build passed. The existing desktop chunk warning remains unchanged.
+
+- 2026-07-17: started `QA-CI-01` on `codex/qa-ci-mainline`, stacked on the
+  documentation-only `QA-GOV-01` branch to avoid conflicting task-registry
+  edits before that dependency merges. The first workflow will reuse frozen
+  backend and desktop commands on pull requests and `main` pushes with
+  read-only permissions, pinned Actions, superseded-run cancellation, no
+  provider credentials, no deployment, and no Tauri packaging.
+
+- 2026-07-17: completed `QA-GOV-01` for review on
+  `codex/qa-mainline-closeout`. The evidence-backed mainline assessment is
+  recorded in `docs/主线架构工程完成度审计与收口计划_v1.0.md`: remote `main`
+  and local `origin/main` both resolved to `f56afc0`; a detached mainline
+  worktree passed all 1320 backend tests, the 779-file size gate, Ruff, strict
+  Mypy across 353 source files, all 8 release evals, all 16 desktop checks, and
+  the Node 22 production build. The plan separates 80%-85% local-beta readiness
+  from 55%-65% final-platform readiness and prioritizes verified UI integration,
+  minimal CI, documentation reconciliation, an explicit Hard Runtime decision,
+  and measured desktop bundle work without unlocking deferred architecture.
+
+- 2026-07-17: started `QA-GOV-01` on `codex/qa-mainline-closeout` to persist an
+  evidence-backed mainline architecture and engineering completion assessment.
+  The document will separate local-beta readiness from the final platform
+  roadmap, record current validation and governance drift, and define the next
+  closeout tasks without activating the locked hard-runtime, ACP, optional code
+  intelligence, private-cloud, multi-tenant, or ecosystem scopes.
+
 - 2026-07-17: completed `ARCH-129-PLAN-01` on
   `codex/issue-129-remediation-plan`. GitHub Issue `#129` is now represented by
   a durable remediation and deferral document plus three dependency-ordered
