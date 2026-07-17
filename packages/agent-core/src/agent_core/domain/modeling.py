@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.tools import ToolCall
@@ -10,9 +11,19 @@ class ModelUsage:
     input_tokens: int | None = None
     output_tokens: int | None = None
     total_tokens: int | None = None
+    reasoning_tokens: int | None = None
+    prompt_cache_hit_tokens: int | None = None
+    prompt_cache_miss_tokens: int | None = None
 
     def __post_init__(self) -> None:
-        for field_name in ("input_tokens", "output_tokens", "total_tokens"):
+        for field_name in (
+            "input_tokens",
+            "output_tokens",
+            "total_tokens",
+            "reasoning_tokens",
+            "prompt_cache_hit_tokens",
+            "prompt_cache_miss_tokens",
+        ):
             value = getattr(self, field_name)
             if value is not None and value < 0:
                 raise ValueError(f"{field_name} must not be negative")
@@ -47,6 +58,47 @@ class ModelToolDefinition:
             raise ValueError("model tool parameters must define object properties")
 
 
+class ModelRole(StrEnum):
+    CLASSIFIER = "classifier"
+    SUMMARIZER = "summarizer"
+    ANALYST = "analyst"
+    PLANNER = "planner"
+    REVIEWER = "reviewer"
+    EXECUTOR = "executor"
+
+
+class ModelThinkingMode(StrEnum):
+    AUTO = "auto"
+    ENABLED = "enabled"
+    DISABLED = "disabled"
+
+
+class ModelReasoningEffort(StrEnum):
+    HIGH = "high"
+    MAX = "max"
+
+
+class ModelToolChoice(StrEnum):
+    AUTO = "auto"
+    NONE = "none"
+    REQUIRED = "required"
+
+
+@dataclass(frozen=True)
+class ModelInvocationPolicy:
+    role: ModelRole = ModelRole.EXECUTOR
+    thinking_mode: ModelThinkingMode = ModelThinkingMode.AUTO
+    reasoning_effort: ModelReasoningEffort | None = None
+    tool_choice: ModelToolChoice = ModelToolChoice.AUTO
+    max_output_tokens: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.max_output_tokens is not None and self.max_output_tokens <= 0:
+            raise ValueError("max_output_tokens must be positive when set")
+        if self.thinking_mode is ModelThinkingMode.DISABLED and self.reasoning_effort is not None:
+            raise ValueError("reasoning_effort requires thinking to be enabled or auto")
+
+
 @dataclass(frozen=True)
 class ModelCallMetadata:
     model_call_id: str | None = None
@@ -58,10 +110,40 @@ class ModelCallMetadata:
     estimated_input_tokens: int | None = None
     input_token_limit: int | None = None
     token_estimate_method: str | None = None
+    profile_id: str | None = None
+    profile_version_observed_at: str | None = None
+    requested_model: str | None = None
+    resolved_model: str | None = None
+    role: str | None = None
+    thinking_mode: str | None = None
+    reasoning_effort: str | None = None
+    tool_choice: str | None = None
+    finish_reason: str | None = None
+    time_to_first_event_ms: int | None = None
+    time_to_first_public_text_ms: int | None = None
+    system_fingerprint: str | None = None
+    retry_count: int = 0
+    normalized_error: str | None = None
     usage: ModelUsage = field(default_factory=ModelUsage)
 
     def __post_init__(self) -> None:
-        for field_name in ("model_call_id", "provider", "model_name", "token_estimate_method"):
+        for field_name in (
+            "model_call_id",
+            "provider",
+            "model_name",
+            "token_estimate_method",
+            "profile_id",
+            "profile_version_observed_at",
+            "requested_model",
+            "resolved_model",
+            "role",
+            "thinking_mode",
+            "reasoning_effort",
+            "tool_choice",
+            "finish_reason",
+            "system_fingerprint",
+            "normalized_error",
+        ):
             value = getattr(self, field_name)
             if value is None:
                 continue
@@ -69,6 +151,12 @@ class ModelCallMetadata:
                 raise ValueError(f"{field_name} must not be blank when set")
         if self.latency_ms is not None and self.latency_ms < 0:
             raise ValueError("latency_ms must not be negative")
+        for field_name in ("time_to_first_event_ms", "time_to_first_public_text_ms"):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"{field_name} must not be negative")
+        if self.retry_count < 0:
+            raise ValueError("retry_count must not be negative")
         if self.cost_usd is not None and self.cost_usd < 0:
             raise ValueError("cost_usd must not be negative")
         for field_name in ("estimated_input_tokens", "input_token_limit"):

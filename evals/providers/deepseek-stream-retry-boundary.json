@@ -1,0 +1,9 @@
+{
+  "case_id": "deepseek-stream-retry-boundary",
+  "category": "provider",
+  "title": "DeepSeek stream interruption does not duplicate public output",
+  "prompt": "Stream a short answer under a controlled provider interruption and preserve exactly-once public output.",
+  "min_events": 2,
+  "min_tool_results": 0,
+  "max_cost_usd": 1.0
+}

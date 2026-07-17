@@ -7,7 +7,14 @@ from typing import Literal, cast
 
 from agent_observability.replay import ReplayResult
 
-EvalCategory = Literal["bugfix", "refactor", "security", "recovery", "analysis"]
+EvalCategory = Literal[
+    "bugfix",
+    "refactor",
+    "security",
+    "recovery",
+    "analysis",
+    "provider",
+]
 
 
 @dataclass(frozen=True)
@@ -197,7 +204,14 @@ def _read_str(value: dict[object, object], key: str) -> str:
 
 def _read_category(value: dict[object, object], key: str) -> EvalCategory:
     raw = _read_str(value, key)
-    if raw not in {"bugfix", "refactor", "security", "recovery", "analysis"}:
+    if raw not in {
+        "bugfix",
+        "refactor",
+        "security",
+        "recovery",
+        "analysis",
+        "provider",
+    }:
         raise ValueError("eval case category is not supported")
     return cast(EvalCategory, raw)
 

@@ -56,3 +56,40 @@ class ModelResponseDeltaPayload(BaseModel):
         if not value:
             raise ValueError("content_delta must not be empty")
         return value
+
+
+class ModelResponseReceivedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # Optional fields keep historical events replayable. extra=forbid prevents
+    # private provider payloads from entering durable state.
+    attempt_number: int | None = Field(default=None, gt=0)
+    assistant_message: str | None = None
+    tool_call_count: int | None = Field(default=None, ge=0)
+    response_stage: str | None = None
+    model_call_id: str | None = None
+    provider: str | None = None
+    model_name: str | None = None
+    profile_id: str | None = None
+    profile_version_observed_at: str | None = None
+    requested_model: str | None = None
+    resolved_model: str | None = None
+    role: str | None = None
+    thinking_mode: str | None = None
+    reasoning_effort: str | None = None
+    tool_choice: str | None = None
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+    reasoning_tokens: int | None = Field(default=None, ge=0)
+    prompt_cache_hit_tokens: int | None = Field(default=None, ge=0)
+    prompt_cache_miss_tokens: int | None = Field(default=None, ge=0)
+    latency_ms: int | None = Field(default=None, ge=0)
+    time_to_first_event_ms: int | None = Field(default=None, ge=0)
+    time_to_first_public_text_ms: int | None = Field(default=None, ge=0)
+    finish_reason: str | None = None
+    system_fingerprint: str | None = None
+    retry_count: int | None = Field(default=None, ge=0)
+    normalized_error: str | None = None
+    cache_hit: bool | None = None
+    cost_usd: float | None = Field(default=None, ge=0)
