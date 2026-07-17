@@ -12957,7 +12957,7 @@ third-party extraction services, new network authority, or a second Web tool.
 
 ### P145-UI-01 - Event-Driven Conversation Stream
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex-APP`
 - Suggested role: `UI / API / TEST / DOC`
 - Depends on: `P144-WEB-01`
@@ -13010,6 +13010,7 @@ boundaries.
 - screenshot comparison and findings are recorded in root `design-qa.md`
 - existing durable API event fields were sufficient, so no API contract or
   backend implementation change was introduced
+- merged to `main` through PR `#133`
 
 #### Explicit Non-Goals
 
