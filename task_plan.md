@@ -10,7 +10,7 @@
    execution, snapshot compatibility, and capability preflight.
 4. `completed` - Wire configured Runtime selection through Worker and Tool Gateway,
    preserving immutable authority across recovery and continuation.
-5. `in_progress` - Add adversarial tests, Linux CI integration, operator guidance,
+5. `completed` - Add adversarial tests, Linux CI integration, operator guidance,
    full repository validation, and real-engine acceptance where available.
 
 ### Errors Encountered

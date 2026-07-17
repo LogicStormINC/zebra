@@ -13336,7 +13336,7 @@ starting hard runtime, ACP, or code-intelligence implementation.
 
 ### ARCH-129-RT-01 - Hard-Enforced Local Runtime
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex-APP`
 - Suggested role: `RUNTIME / SECURITY / QA`
 - Depends on: `ARCH-129-PLAN-01` and explicit maintainer activation
@@ -13368,14 +13368,14 @@ closed when a requested sandbox profile cannot be established or resumed.
 
 #### Acceptance
 
-- [ ] Kernel/container enforcement denies out-of-scope reads, writes, network
+- [x] Kernel/container enforcement denies out-of-scope reads, writes, network
   access, and inheritance of unauthorized descriptors, environment, credentials,
   or privileges.
-- [ ] Requested enforcement failure prevents execution before a tool starts.
-- [ ] Effective sandbox authority is durable and cannot widen on resume.
-- [ ] Timeout, cancellation, snapshot, restore, and platform differences have
+- [x] Requested enforcement failure prevents execution before a tool starts.
+- [x] Effective sandbox authority is durable and cannot widen on resume.
+- [x] Timeout, cancellation, snapshot, restore, and platform differences have
   deterministic coverage.
-- [ ] Focused security/runtime checks, `make test`, `make check`, eval and
+- [x] Focused security/runtime checks, `make test`, `make check`, eval and
   file-size gates pass; architecture section 18 threat model and operator docs
   are current.
 

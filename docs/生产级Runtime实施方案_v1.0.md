@@ -4,7 +4,7 @@
 
 - 任务：`ARCH-129-RT-01 - Hard-Enforced Local Runtime`
 - 分支：`codex/arch-129-hard-runtime`
-- 状态：已由维护者显式激活，进入实现
+- 状态：实现与本地/真实 Linux gVisor 验收完成，PR `#142` 待合并
 - 目标：交付 Linux-first、硬隔离、可恢复、默认断网、可持续验证的
   Production Runtime v1
 - 当前基线：`LocalRuntime` 仅为可信宿主进程执行，不属于硬沙箱
@@ -185,6 +185,10 @@ make check
 
 CI 追加 Linux OCI 合同和真实 gVisor smoke。真实 gVisor 环境不可用时，该 job
 不得伪造成功；Production gVisor 能力保持未验收或 fail closed。
+
+本次验收结果：本地 `1345 passed, 1 skipped`，跳过项仅为平台限定的真实
+gVisor smoke；文件大小、Ruff、Mypy `361` 源文件和 `8` 个 release eval 通过。
+PR `#142` 的 Backend、Desktop 和真实 Linux `runsc` gVisor job 全部通过。
 
 ## 12. 完成标准
 

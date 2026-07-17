@@ -13,6 +13,10 @@
   gVisor CI smoke are included. Workspace disk quota remains an explicit
   storage-layer production prerequisite rather than an unenforceable bind-mount
   claim.
+  Local validation passed all `1345` runnable tests with only the platform-gated
+  gVisor smoke skipped, plus the file-size gate, Ruff, strict Mypy across `361`
+  source files, and all `8` release evals. PR `#142` then passed Backend,
+  Desktop, and the real Linux `runsc` gVisor isolation smoke.
 
 - 2026-07-17: activated `ARCH-129-RT-01` on
   `codex/arch-129-hard-runtime` by explicit maintainer request. The production
