@@ -40,6 +40,10 @@ class LocalWorkspace:
     def layout(self) -> WorkspaceLayout:
         return self._layout
 
+    @property
+    def root_path(self) -> Path:
+        return self._layout.root_path
+
     def ensure(self) -> WorkspaceLayout:
         self._layout.root_path.mkdir(parents=True, exist_ok=True)
         self._layout.worktree_root.mkdir(parents=True, exist_ok=True)

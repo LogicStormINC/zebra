@@ -13116,3 +13116,50 @@ filtering, and return stable invalid-request results for malformed session ids.
 - redesigning memory ranking, raising the 500-record query limit, or adding new
   queue workflow features
 - further source-file splitting already completed on the current mainline
+
+### QA-2-ARCH-01 - Break Runtime And Tools Package Cycle
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `CORE / RUNTIME / QA`
+- Depends on: `P145-UI-01`
+- Branch: `codex/issue-2-break-runtime-tools-cycle`
+- Issue: `#2`
+- Owned paths: `packages/agent-core/src/agent_core/ports/`,
+  `packages/agent-runtime/src/agent_runtime/workspace/`,
+  `packages/agent-tools/src/agent_tools/builtin/`,
+  `packages/agent-tools/pyproject.toml`, `tests/`, `PROGRESS.md`,
+  `docs/AGENT_TASKS.md`
+
+#### Goal
+
+Remove the `agent-tools -> agent-runtime` dependency so the package graph is
+acyclic while preserving all builtin tool and local harness behavior.
+
+#### Deliverables
+
+- a minimal core `WorkspacePort` for root, preparation, and bounded resolution
+- structural implementation by the existing runtime `LocalWorkspace`
+- builtin tools typed against core Runtime and Workspace Ports only
+- removal of `agent-runtime` from `agent-tools` package metadata
+- a package dependency regression test that rejects cycles
+
+#### Acceptance
+
+- [x] `agent-tools` imports only core and its own modules in production code.
+- [x] `agent-runtime` may compose tools without a reverse package dependency.
+- [x] LocalWorkspace remains the runtime implementation used by existing apps.
+- [x] Builtin tool behavior and public imports remain compatible.
+- [x] Focused tests, `make test`, and `make check` pass.
+
+#### Validation Evidence
+
+- 122 focused dependency, builtin tool, runtime harness, and integration tests passed
+- all 1320 repository tests passed
+- `make check` passed: 779-file size gate, Ruff, Mypy across 353 source files,
+  and all 8 release-gate evals
+
+#### Explicit Non-Goals
+
+- moving harness composition between packages or changing tool contracts
+- changing workspace containment, runtime execution, MCP, Web, or subagent logic

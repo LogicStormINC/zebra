@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
-from agent_runtime.workspace import LocalWorkspace, WorkspacePathError
+from agent_core.ports.workspace import WorkspacePort
 
 from agent_tools.contracts import ToolContract
 from agent_tools.errors import ToolArgumentError
@@ -18,7 +18,7 @@ file_read_contract = ToolContract(
 
 
 class FileReadTool:
-    def __init__(self, workspace: LocalWorkspace, *, max_bytes: int = 16_384) -> None:
+    def __init__(self, workspace: WorkspacePort, *, max_bytes: int = 16_384) -> None:
         if max_bytes <= 0:
             raise ValueError("max_bytes must be positive")
         self._workspace = workspace
@@ -33,7 +33,7 @@ class FileReadTool:
 
         try:
             target_path = self._workspace.resolve_path(relative_path)
-        except WorkspacePathError as exc:
+        except ValueError as exc:
             return self._failure(tool_call, reason="path_outside_workspace", detail=str(exc))
 
         if not target_path.exists():

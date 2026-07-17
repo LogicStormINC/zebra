@@ -2,7 +2,7 @@ from pathlib import Path
 
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.ports.runtime import RuntimeExecutionRequest, RuntimePort
-from agent_runtime.workspace import LocalWorkspace, WorkspacePathError
+from agent_core.ports.workspace import WorkspacePort
 
 from agent_tools.contracts import ToolContract
 from agent_tools.errors import ToolArgumentError
@@ -18,7 +18,7 @@ git_status_contract = ToolContract(
 
 
 class GitStatusTool:
-    def __init__(self, runtime: RuntimePort, workspace: LocalWorkspace) -> None:
+    def __init__(self, runtime: RuntimePort, workspace: WorkspacePort) -> None:
         self._runtime = runtime
         self._workspace = workspace
 
@@ -40,8 +40,8 @@ class GitStatusTool:
             status=status,
             output=runtime_result.stdout,
             metadata={
-                "cwd": str(Path(cwd).relative_to(self._workspace.layout.root_path))
-                if cwd != self._workspace.layout.root_path
+                "cwd": str(Path(cwd).relative_to(self._workspace.root_path))
+                if cwd != self._workspace.root_path
                 else ".",
                 "exit_code": runtime_result.exit_code,
                 "stderr": runtime_result.stderr,
@@ -51,7 +51,7 @@ class GitStatusTool:
 
     def _read_cwd_argument(self, raw_cwd: object) -> Path:
         if raw_cwd is None:
-            return self._workspace.layout.root_path
+            return self._workspace.root_path
         if not isinstance(raw_cwd, str):
             raise ToolArgumentError("git.status requires 'cwd' to be a string when provided")
         normalized_cwd = raw_cwd.strip()
@@ -59,5 +59,5 @@ class GitStatusTool:
             raise ToolArgumentError("git.status requires 'cwd' to be a non-blank string")
         try:
             return self._workspace.resolve_path(normalized_cwd)
-        except WorkspacePathError as exc:
+        except ValueError as exc:
             raise ToolArgumentError("git.status 'cwd' must stay within the workspace") from exc
