@@ -13017,3 +13017,50 @@ boundaries.
 - hidden chain-of-thought exposure, new event-storage semantics, Policy or HITL
   changes, new UI dependencies, editor or diff-authoring features, or changes to
   task launch attachment and MCP authority
+
+## Issue Remediation Task Board
+
+### QA-2-STO-01 - Atomic SQLite Worker Lease Acquisition
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `CORE / QA`
+- Depends on: `P4-SCH-01`
+- Branch: `codex/issue-2-atomic-sqlite-leases`
+- Issue: `#2`
+- Owned paths: `packages/agent-storage/src/agent_storage/leases.py`,
+  `tests/agent_storage/test_sqlite_leases.py`, `PROGRESS.md`,
+  `docs/AGENT_TASKS.md`
+
+#### Goal
+
+Make SQLite worker lease acquisition an atomic claim so concurrent workers
+cannot both report ownership of the same active session lease.
+
+#### Deliverables
+
+- one conditional SQLite UPSERT that checks ownership or expiry while writing
+- stable conflict behavior when another worker owns an unexpired lease
+- a real concurrent acquisition regression test using separate connections
+- preserved same-worker renewal and expired-worker takeover behavior
+
+#### Acceptance
+
+- [x] Two workers racing for one unleased session produce exactly one lease and
+  one `LeaseConflictError`.
+- [x] An active lease cannot be overwritten by another worker.
+- [x] The same worker can renew while preserving the original acquisition time.
+- [x] An expired lease can still be taken over deterministically.
+- [x] Focused tests, `make test`, and `make check` pass.
+
+#### Validation Evidence
+
+- 18 focused storage and worker claim/loop tests passed
+- all 1314 repository tests passed
+- `make check` passed: 776-file size gate, Ruff, Mypy across 351 source files,
+  and all 8 release-gate evals
+
+#### Explicit Non-Goals
+
+- changing heartbeat, release, worker orchestration, or lease schema
+- fixing the separate `agent-runtime` / `agent-tools` dependency cycle

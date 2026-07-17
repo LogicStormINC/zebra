@@ -2,6 +2,20 @@
 
 ## Addendum
 
+- 2026-07-17: completed `QA-2-STO-01` for review. SQLite worker lease
+  acquisition now uses one conditional UPSERT with `RETURNING`, so competing
+  workers cannot both report ownership; active same-worker renewal preserves
+  the original acquisition time and expired takeover remains supported. The
+  deterministic regression forces the former read-then-upsert race. All 1314
+  tests and `make check` passed, including the 776-file size gate, Ruff, Mypy
+  across 351 source files, and all 8 release-gate evals.
+
+- 2026-07-17: started `QA-2-STO-01` on
+  `codex/issue-2-atomic-sqlite-leases` to replace the SQLite lease
+  read-then-upsert race with one atomic conditional claim and add a real
+  concurrent worker regression test. The separate runtime/tools package cycle
+  remains outside this task.
+
 - 2026-07-17: completed `P144-WEB-01`; approved HTML now reaches the model as
   bounded readable text. All `1312` tests, 351-source Mypy, 8 evals, 14 desktop
   checks, Node 22 build, offline Tauri, browser and real-provider proof

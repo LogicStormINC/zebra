@@ -1,3 +1,4 @@
+import sqlite3
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
@@ -27,29 +28,16 @@ class SQLiteLeaseStore(LeaseStorePort):
         expires_at: datetime,
         checkpoint: int = 0,
     ) -> WorkerLease:
+        requested = self._build_lease(
+            session_id=session_id,
+            worker_id=worker_id,
+            checkpoint=checkpoint,
+            acquired_at=acquired_at,
+            heartbeat_at=acquired_at,
+            expires_at=expires_at,
+        )
         with self._database.connect() as connection:
-            existing = self.get(session_id)
-            if existing is not None and existing.expires_at > acquired_at:
-                if existing.worker_id != worker_id:
-                    raise LeaseConflictError("session already leased by another worker")
-                lease = self._build_lease(
-                    session_id=session_id,
-                    worker_id=worker_id,
-                    checkpoint=checkpoint,
-                    acquired_at=existing.acquired_at,
-                    heartbeat_at=acquired_at,
-                    expires_at=expires_at,
-                )
-            else:
-                lease = self._build_lease(
-                    session_id=session_id,
-                    worker_id=worker_id,
-                    checkpoint=checkpoint,
-                    acquired_at=acquired_at,
-                    heartbeat_at=acquired_at,
-                    expires_at=expires_at,
-                )
-            connection.execute(
+            row = connection.execute(
                 """
                 INSERT INTO worker_leases (
                     session_id,
@@ -62,20 +50,38 @@ class SQLiteLeaseStore(LeaseStorePort):
                 ON CONFLICT(session_id) DO UPDATE SET
                     worker_id = excluded.worker_id,
                     checkpoint = excluded.checkpoint,
-                    acquired_at = excluded.acquired_at,
+                    acquired_at = CASE
+                        WHEN worker_leases.worker_id = excluded.worker_id
+                             AND julianday(worker_leases.expires_at) >
+                                 julianday(excluded.acquired_at)
+                        THEN worker_leases.acquired_at
+                        ELSE excluded.acquired_at
+                    END,
                     heartbeat_at = excluded.heartbeat_at,
                     expires_at = excluded.expires_at
+                WHERE worker_leases.worker_id = excluded.worker_id
+                   OR julianday(worker_leases.expires_at) <=
+                      julianday(excluded.acquired_at)
+                RETURNING
+                    session_id,
+                    worker_id,
+                    checkpoint,
+                    acquired_at,
+                    heartbeat_at,
+                    expires_at
                 """,
                 (
-                    str(lease.session_id),
-                    lease.worker_id,
-                    lease.checkpoint,
-                    lease.acquired_at.isoformat(),
-                    lease.heartbeat_at.isoformat(),
-                    lease.expires_at.isoformat(),
+                    str(requested.session_id),
+                    requested.worker_id,
+                    requested.checkpoint,
+                    requested.acquired_at.isoformat(),
+                    requested.heartbeat_at.isoformat(),
+                    requested.expires_at.isoformat(),
                 ),
-            )
-        return lease
+            ).fetchone()
+        if row is None:
+            raise LeaseConflictError("session already leased by another worker")
+        return self._lease_from_row(row)
 
     def heartbeat(
         self,
@@ -145,7 +151,11 @@ class SQLiteLeaseStore(LeaseStorePort):
             ).fetchone()
         if row is None:
             return None
-        return self._build_lease(
+        return self._lease_from_row(row)
+
+    @classmethod
+    def _lease_from_row(cls, row: sqlite3.Row) -> WorkerLease:
+        return cls._build_lease(
             session_id=SessionId(UUID(row["session_id"])),
             worker_id=row["worker_id"],
             checkpoint=row["checkpoint"],
