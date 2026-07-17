@@ -4,7 +4,7 @@
 
 - 任务：`ARCH-129-RT-01 - Hard-Enforced Local Runtime`
 - 分支：`codex/arch-129-hard-runtime`
-- 状态：实现与本地/真实 Linux gVisor 验收完成，PR `#142` 待合并
+- 状态：实现与本地/真实 Linux gVisor 验收完成，PR `#142` 已合并
 - 目标：交付 Linux-first、硬隔离、可恢复、默认断网、可持续验证的
   Production Runtime v1
 - 当前基线：`LocalRuntime` 仅为可信宿主进程执行，不属于硬沙箱
