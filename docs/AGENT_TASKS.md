@@ -13064,3 +13064,55 @@ cannot both report ownership of the same active session lease.
 
 - changing heartbeat, release, worker orchestration, or lease schema
 - fixing the separate `agent-runtime` / `agent-tools` dependency cycle
+
+### QA-39-MEM-01 - Memory Queue Sweep Reliability
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `QA/STORAGE`
+- Depends on: `P145-UI-01`
+- Branch: `codex/issue-39-memory-queue-reliability`
+- Issue: `#39`
+- Owned paths: `packages/agent-core/src/agent_core/domain/memories.py`,
+  `packages/agent-storage/src/agent_storage/memories.py`,
+  `apps/api/src/zebra_agent_api/memory_review_execution.py`,
+  `apps/api/src/zebra_agent_api/memory_review_entrypoints.py`,
+  `apps/cli/src/zebra_agent_cli/memory_review_execution.py`,
+  `apps/cli/src/zebra_agent_cli/memory_review_commands.py`,
+  `apps/cli/src/zebra_agent_cli/session_identity.py`, `tests/`, `README.md`,
+  `PROGRESS.md`, `docs/AGENT_TASKS.md`
+
+#### Goal
+
+Prevent repo-session queue sweeps from dropping valid candidates before scope
+filtering, and return stable invalid-request results for malformed session ids.
+
+#### Deliverables
+
+- storage-side `source_session_id` query filtering and a matching SQLite index
+- API and CLI queue-sweep adoption without post-limit session filtering
+- malformed-session-id regression coverage for API and CLI
+- focused storage coverage proving session filtering happens before the limit
+- removal of the stale Phase 56 current-status statement from `README.md`
+
+#### Acceptance
+
+- [x] A target session remains discoverable when more than 500 newer candidates
+  exist for other sessions in the same repository.
+- [x] Malformed repo-session ids return stable `invalid_request` results instead
+  of escaping as `ValueError` or HTTP 500.
+- [x] Existing user- and tenant-scoped queue sweeps retain their behavior.
+- [x] Focused tests and `make check` pass.
+
+#### Validation Evidence
+
+- 22 focused storage, API, and CLI queue-sweep tests passed
+- all 1317 repository tests passed
+- `make check` passed: 777-file size gate, Ruff, Mypy across 352 source files,
+  and all 8 release-gate evals
+
+#### Explicit Non-Goals
+
+- redesigning memory ranking, raising the 500-record query limit, or adding new
+  queue workflow features
+- further source-file splitting already completed on the current mainline

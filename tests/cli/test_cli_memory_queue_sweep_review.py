@@ -10,6 +10,28 @@ from agent_storage import SQLiteEventStore, SQLiteMemoryStore, SQLiteProjectionS
 from zebra_agent_cli.cli import execute
 
 
+def test_cli_memory_review_queue_rejects_invalid_session_id(tmp_path: Path) -> None:
+    database_path = tmp_path / "memory.sqlite"
+
+    result = execute(
+        [
+            "memory-review-queue",
+            "not-a-uuid",
+            "--decision",
+            "confirm",
+            "--database",
+            str(database_path),
+        ]
+    )
+
+    assert result.payload == {
+        "session_id": "not-a-uuid",
+        "database": str(database_path),
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
+
+
 def test_cli_memory_review_queue_filters_to_current_session(tmp_path: Path) -> None:
     database_path = tmp_path / "memory.sqlite"
     workspace = tmp_path / "workspace"

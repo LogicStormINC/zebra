@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from agent_core.domain.identifiers import new_memory_id, new_session_id
+from agent_core.domain.identifiers import SessionId, new_memory_id, new_session_id
 from agent_core.domain.memories import (
     MemoryQuery,
     MemoryRecord,
@@ -123,6 +123,43 @@ def test_sqlite_memory_store_filters_by_user_scope_and_status(tmp_path: Path) ->
 
     assert [record.memory_id for record in confirmed_records] == [confirmed.memory_id]
     assert [record.memory_id for record in candidate_records] == [candidate.memory_id]
+
+
+def test_sqlite_memory_store_filters_session_before_applying_limit(tmp_path: Path) -> None:
+    store = SQLiteMemoryStore(tmp_path / "session-scope.sqlite")
+    target_session_id = new_session_id()
+    target = _record(
+        memory_type=MemoryType.PROCEDURE,
+        text="Target session candidate.",
+        visibility=MemoryVisibility.REPO,
+        repo_id="zebra-agent",
+        status=MemoryStatus.CANDIDATE,
+        source_session_id=target_session_id,
+        updated_at=_now(),
+    )
+    store.upsert(target)
+    for index in range(500):
+        store.upsert(
+            _record(
+                memory_type=MemoryType.PROCEDURE,
+                text=f"Newer candidate {index} for another session.",
+                visibility=MemoryVisibility.REPO,
+                repo_id="zebra-agent",
+                status=MemoryStatus.CANDIDATE,
+                updated_at=_now() + timedelta(seconds=index + 1),
+            )
+        )
+
+    records = store.list(
+        MemoryQuery(
+            repo_id="zebra-agent",
+            source_session_id=target_session_id,
+            statuses=(MemoryStatus.CANDIDATE,),
+            limit=500,
+        )
+    )
+
+    assert [record.memory_id for record in records] == [target.memory_id]
 
 
 def test_list_confirmed_repo_memory_texts_returns_confirmed_records_only(tmp_path: Path) -> None:
@@ -260,6 +297,7 @@ def _record(
     status: MemoryStatus = MemoryStatus.CONFIRMED,
     confidence: float = 0.9,
     expires_at: datetime | None = None,
+    source_session_id: SessionId | None = None,
 ) -> MemoryRecord:
     return MemoryRecord(
         memory_id=new_memory_id(),
@@ -270,7 +308,7 @@ def _record(
         visibility=visibility,
         repo_id=repo_id,
         user_id=user_id,
-        source_session_id=new_session_id(),
+        source_session_id=source_session_id or new_session_id(),
         source_event_start=1,
         source_event_end=3,
         expires_at=expires_at,
