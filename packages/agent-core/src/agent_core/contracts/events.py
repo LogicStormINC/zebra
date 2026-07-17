@@ -13,6 +13,12 @@ from agent_core.contracts.context_events import (
     ContextCompactedPayload,
     ContextContinuationSelectedPayload,
 )
+from agent_core.contracts.handoff_events import (
+    SessionHandoffCommittedPayload,
+    SessionHandoffReceivedPayload,
+    SessionHandoffWorkspaceDriftDetectedPayload,
+    UserMessageReceivedPayload,
+)
 from agent_core.contracts.model_events import (
     ModelRequestStartedPayload,
     ModelResponseDeltaPayload,
@@ -43,20 +49,6 @@ class SessionCreatedPayload(BaseModel):
         stripped = value.strip()
         if not stripped:
             raise ValueError("title must not be blank")
-        return stripped
-
-
-class UserMessageReceivedPayload(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    content: str
-
-    @field_validator("content")
-    @classmethod
-    def ensure_content_not_blank(cls, value: str) -> str:
-        stripped = value.strip()
-        if not stripped:
-            raise ValueError("content must not be blank")
         return stripped
 
 
@@ -450,6 +442,11 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.CONTEXT_COMPACTED: ContextCompactedPayload,
     EventType.CONTEXT_CAPSULE_CREATED: ContextCapsuleCreatedPayload,
     EventType.CONTEXT_CONTINUATION_SELECTED: ContextContinuationSelectedPayload,
+    EventType.SESSION_HANDOFF_COMMITTED: SessionHandoffCommittedPayload,
+    EventType.SESSION_HANDOFF_RECEIVED: SessionHandoffReceivedPayload,
+    EventType.SESSION_HANDOFF_WORKSPACE_DRIFT_DETECTED: (
+        SessionHandoffWorkspaceDriftDetectedPayload
+    ),
     EventType.SUBAGENT_STARTED: SubagentLifecyclePayload,
     EventType.SUBAGENT_COMPLETED: SubagentLifecyclePayload,
     EventType.SUBAGENT_FAILED: SubagentLifecyclePayload,

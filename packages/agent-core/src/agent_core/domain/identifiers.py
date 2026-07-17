@@ -9,6 +9,7 @@ ArtifactId = NewType("ArtifactId", UUID)
 CorrelationId = NewType("CorrelationId", UUID)
 MemoryId = NewType("MemoryId", UUID)
 SubagentId = NewType("SubagentId", UUID)
+HandoffId = NewType("HandoffId", UUID)
 
 
 def new_session_id() -> SessionId:
@@ -41,3 +42,7 @@ def new_memory_id() -> MemoryId:
 
 def new_subagent_id() -> SubagentId:
     return SubagentId(uuid4())
+
+
+def new_handoff_id() -> HandoffId:
+    return HandoffId(uuid4())

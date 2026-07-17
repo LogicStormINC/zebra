@@ -2,6 +2,13 @@
 
 ## Addendum
 
+- 2026-07-17: completed `CTX-HO-01A` on `codex/ctx-ho-01a-core-contracts`.
+  Agent Core now defines immutable linear Session lineage, a versioned transparent handoff
+  Envelope, workspace revision and canonical effect identity evidence, typed operation and
+  storage Ports, safe-boundary validation with stable rejection codes, strict parent/child/drift
+  events, and backward-compatible attributed stage-prompt provenance. The implementation does
+  not activate handoff creation; `CTX-HO-01B` remains the next dependency.
+
 - 2026-07-17: completed the plan-only `CTX-HO-PLAN-01` on
   `codex/ctx-handoff-stage-plan`. The new stage Session handoff architecture keeps
   same-Session Compaction as the default and permits a new durable Session only at an

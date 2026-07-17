@@ -13603,6 +13603,113 @@ changing the current default of same-Session compaction or activating runtime be
 - hidden reasoning transfer, provider-private continuation transfer, authority widening,
   workspace crossing, or tool-side-effect replay
 
+### CTX-HO-01A - Stage Handoff Core Contracts
+
+- Status: `Review`
+- Owner: `Codex`
+- Depends on: merged `CTX-LC-01`, merged `CTX-HO-PLAN-01`
+- Branch: `codex/ctx-ho-01a-core-contracts`
+- Owned paths: `packages/agent-core/src/agent_core/domain/session_handoff.py`,
+  `packages/agent-core/src/agent_core/domain/identifiers.py`,
+  `packages/agent-core/src/agent_core/domain/events.py`,
+  `packages/agent-core/src/agent_core/domain/__init__.py`,
+  `packages/agent-core/src/agent_core/contracts/handoff_events.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/contracts/__init__.py`,
+  `packages/agent-core/src/agent_core/ports/session_handoff.py`,
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `tests/agent_core/test_session_handoff.py`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Acceptance
+
+- [x] Versioned immutable lineage, Envelope, workspace revision, effect identity, operation,
+  request/result and validation contracts are typed in `agent-core`.
+- [x] Root/child, depth, safe status, authority narrowing, artifact, effect evidence and
+  checksum invariants fail closed with stable validation codes.
+- [x] Parent/child/drift event payloads and attributed handoff user-message provenance are
+  registered without breaking legacy events.
+- [x] Focused tests, file-size gate, Ruff and Mypy pass.
+
+### CTX-HO-01B - Stage Handoff Atomic Storage
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Depends on: merged `CTX-HO-01A`
+- Suggested branch: `codex/ctx-ho-01b-atomic-storage`
+- Owned paths: `packages/agent-storage/src/agent_storage/session_handoffs.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `tests/agent_storage/test_session_handoffs.py`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Acceptance
+
+- [ ] SQLite stores preparing/committed/aborted operations, immutable envelopes, lineage and
+  dispatch outbox with rebuildable read models.
+- [ ] One transaction CAS-checks source version and reservation facts, appends parent and child
+  events, creates exactly one successor and commits the operation.
+- [ ] Same-key replay, different-payload conflict, different-key race, crash and orphan cleanup
+  tests pass.
+
+### CTX-HO-01C - Stage Handoff Context, Worker And Effect Recovery
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Depends on: merged `CTX-HO-01B`
+- Suggested branch: `codex/ctx-ho-01c-worker-recovery`
+- Owned paths: `packages/agent-context/src/agent_context/session_handoff.py`,
+  `packages/agent-context/src/agent_context/__init__.py`,
+  `packages/agent-storage/src/agent_storage/effect_ledger.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `packages/agent-tools/src/agent_tools/`, `apps/worker/src/zebra_agent_worker/`,
+  `tests/agent_context/`, `tests/agent_storage/test_effect_ledger.py`,
+  `tests/agent_tools/`, `tests/worker/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Acceptance
+
+- [ ] Deterministic Envelope construction preserves public facts and excludes provider-private
+  continuation, reasoning, credentials and raw large outputs.
+- [ ] Child first context uses the handoff Envelope and attributed stage prompt without copying
+  parent history; normal Context Window Planner still applies.
+- [ ] Outbox claim remains ready until workspace lease/fence validation atomically chooses
+  running or suspended; recovery never creates a second child.
+- [ ] Root-lineage effect reservation and terminal ledger prevent concurrent or crash-time
+  silent replay and require reconciliation for uncertain effects.
+
+### CTX-HO-01D - Stage Handoff API, CLI And Desktop
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Depends on: merged `CTX-HO-01C`
+- Suggested branch: `codex/ctx-ho-01d-operator-surfaces`
+- Owned paths: `apps/api/src/zebra_agent_api/`, `apps/cli/src/zebra_agent_cli/`,
+  `UI/desktop/src/`, `tests/api/`, `tests/cli/`, `UI/desktop/tests/`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Acceptance
+
+- [ ] Create, inspect and lineage API/CLI contracts expose stable errors and idempotent replay.
+- [ ] Authenticated actor kind/trust is derived server-side; clients cannot submit lineage,
+  checksum, authority expansion or completion facts.
+- [ ] Desktop shows Start next stage only at a safe boundary, previews omissions and navigates
+  to the child with an auditable breadcrumb.
+
+### CTX-HO-01E - Stage Handoff Eval, Rollout And Closeout
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Depends on: merged `CTX-HO-01D`
+- Suggested branch: `codex/ctx-ho-01e-release-closeout`
+- Owned paths: `apps/config/`, `configs/`, `.env.example`, `evals/`,
+  `docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`, `README.md`, `tests/config/`, `tests/evals/`
+
+#### Acceptance
+
+- [ ] Feature remains disabled by default and existing lineage remains readable after rollback.
+- [ ] Deterministic and provider-backed parent-to-child evals cover continuity, no replay,
+  authority narrowing, drift, depth, concurrency and recovery.
+- [ ] Focused tests, `make test`, `make check`, desktop checks and documented real-provider smoke
+  pass before the roadmap is marked Done.
+
 ### DS-OPT-01 - DeepSeek Specialized Optimization
 
 - Status: `In Progress`
