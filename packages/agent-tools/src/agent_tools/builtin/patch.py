@@ -3,7 +3,7 @@ from tempfile import NamedTemporaryFile
 
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.ports.runtime import RuntimeExecutionRequest, RuntimePort
-from agent_runtime.workspace import LocalWorkspace, WorkspacePathError
+from agent_core.ports.workspace import WorkspacePort
 
 from agent_tools.contracts import ToolContract
 from agent_tools.errors import ToolArgumentError
@@ -19,7 +19,7 @@ patch_apply_contract = ToolContract(
 
 
 class PatchApplyTool:
-    def __init__(self, runtime: RuntimePort, workspace: LocalWorkspace) -> None:
+    def __init__(self, runtime: RuntimePort, workspace: WorkspacePort) -> None:
         self._runtime = runtime
         self._workspace = workspace
 
@@ -35,7 +35,7 @@ class PatchApplyTool:
         with NamedTemporaryFile(
             mode="w",
             encoding="utf-8",
-            dir=self._workspace.layout.root_path,
+            dir=self._workspace.root_path,
             prefix=".agent-patch-",
             suffix=".diff",
             delete=False,
@@ -47,7 +47,7 @@ class PatchApplyTool:
             runtime_result = self._runtime.execute(
                 RuntimeExecutionRequest(
                     command=("patch", "--batch", "-p0", "-i", str(patch_path)),
-                    cwd=str(self._workspace.layout.root_path),
+                    cwd=str(self._workspace.root_path),
                 )
             )
         finally:
@@ -74,7 +74,7 @@ class PatchApplyTool:
                 normalized = self._normalize_patch_path(raw_path)
                 try:
                     self._workspace.resolve_path(normalized)
-                except WorkspacePathError as exc:
+                except ValueError as exc:
                     raise ToolArgumentError(
                         "patch.apply contains a path outside the workspace"
                     ) from exc

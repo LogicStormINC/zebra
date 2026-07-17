@@ -3,7 +3,7 @@ from pathlib import Path
 
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.ports.runtime import RuntimeExecutionRequest, RuntimePort
-from agent_runtime.workspace import LocalWorkspace, WorkspacePathError
+from agent_core.ports.workspace import WorkspacePort
 
 from agent_tools.contracts import ToolContract
 from agent_tools.errors import ToolArgumentError
@@ -26,7 +26,7 @@ class TestsRunTool:
     def __init__(
         self,
         runtime: RuntimePort,
-        workspace: LocalWorkspace,
+        workspace: WorkspacePort,
         presets: Mapping[str, tuple[str, ...]],
     ) -> None:
         if not presets:
@@ -64,8 +64,8 @@ class TestsRunTool:
             metadata={
                 "preset": preset_name,
                 "command": list(command),
-                "cwd": str(Path(cwd).relative_to(self._workspace.layout.root_path))
-                if cwd != self._workspace.layout.root_path
+                "cwd": str(Path(cwd).relative_to(self._workspace.root_path))
+                if cwd != self._workspace.root_path
                 else ".",
                 "exit_code": runtime_result.exit_code,
                 "stderr": runtime_result.stderr,
@@ -84,7 +84,7 @@ class TestsRunTool:
 
     def _read_cwd_argument(self, raw_cwd: object) -> Path:
         if raw_cwd is None:
-            return self._workspace.layout.root_path
+            return self._workspace.root_path
         if not isinstance(raw_cwd, str):
             raise ToolArgumentError("tests.run requires 'cwd' to be a string when provided")
         normalized_cwd = raw_cwd.strip()
@@ -92,7 +92,7 @@ class TestsRunTool:
             raise ToolArgumentError("tests.run requires 'cwd' to be a non-blank string")
         try:
             return self._workspace.resolve_path(normalized_cwd)
-        except WorkspacePathError as exc:
+        except ValueError as exc:
             raise ToolArgumentError("tests.run 'cwd' must stay within the workspace") from exc
 
     @staticmethod

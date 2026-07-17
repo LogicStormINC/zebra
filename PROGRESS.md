@@ -2,6 +2,20 @@
 
 ## Addendum
 
+- 2026-07-17: completed `QA-2-ARCH-01` for review. `agent-tools` no longer
+  depends on or imports `agent-runtime`; builtin tools target the new minimal
+  core `WorkspacePort`, while runtime `LocalWorkspace` remains the structural
+  implementation and runtime continues composing the local tool gateway. A new
+  workspace package graph test rejects future dependency cycles. All 1320 tests
+  and `make check` passed, including the 779-file size gate, Ruff, Mypy across
+  353 source files, and all 8 release-gate evals.
+
+- 2026-07-17: started `QA-2-ARCH-01` on
+  `codex/issue-2-break-runtime-tools-cycle` to remove the package-level
+  `agent-tools -> agent-runtime` edge. Builtin tools will depend on a minimal
+  core Workspace Port while the existing runtime LocalWorkspace remains the
+  concrete implementation; behavior and public tool contracts stay unchanged.
+
 - 2026-07-17: completed `QA-2-STO-01` for review. SQLite worker lease
   acquisition now uses one conditional UPSERT with `RETURNING`, so competing
   workers cannot both report ownership; active same-worker renewal preserves

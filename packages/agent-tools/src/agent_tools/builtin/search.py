@@ -4,7 +4,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
-from agent_runtime.workspace import LocalWorkspace, WorkspacePathError
+from agent_core.ports.workspace import WorkspacePort
 
 from agent_tools.contracts import ToolContract
 from agent_tools.errors import ToolArgumentError
@@ -40,7 +40,7 @@ files_search_contract = ToolContract(
 
 
 class WorkspaceSearchTool:
-    def __init__(self, workspace: LocalWorkspace) -> None:
+    def __init__(self, workspace: WorkspacePort) -> None:
         self._workspace = workspace
 
     @property
@@ -66,7 +66,7 @@ class WorkspaceSearchTool:
 
         try:
             root = self._workspace.resolve_path(path)
-        except WorkspacePathError as exc:
+        except ValueError as exc:
             return _failure(tool_call, "path_outside_workspace", str(exc))
         if not root.exists():
             return _failure(tool_call, "path_not_found", path)
@@ -89,7 +89,7 @@ class WorkspaceSearchTool:
             metadata={
                 "mode": mode,
                 "query": query,
-                "path": _relative_path(root, self._workspace.layout.root_path),
+                "path": _relative_path(root, self._workspace.root_path),
                 "glob": glob,
                 "match_count": len(matches),
                 "returned_count": returned_count,
@@ -122,7 +122,7 @@ class WorkspaceSearchTool:
                 scan_truncated = True
                 break
             scanned_files += 1
-            relative = candidate.relative_to(self._workspace.layout.root_path).as_posix()
+            relative = candidate.relative_to(self._workspace.root_path).as_posix()
             root_relative = candidate.relative_to(root).as_posix()
             if glob is not None and not fnmatch(root_relative, glob):
                 continue

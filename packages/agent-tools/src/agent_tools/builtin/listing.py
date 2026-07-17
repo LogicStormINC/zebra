@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
-from agent_runtime.workspace import LocalWorkspace, WorkspacePathError
+from agent_core.ports.workspace import WorkspacePort
 
 from agent_tools.contracts import ToolContract
 from agent_tools.errors import ToolArgumentError
@@ -49,7 +49,7 @@ class _Entry:
 
 
 class WorkspaceListTool:
-    def __init__(self, workspace: LocalWorkspace) -> None:
+    def __init__(self, workspace: WorkspacePort) -> None:
         self._workspace = workspace
 
     @property
@@ -71,7 +71,7 @@ class WorkspaceListTool:
             return _failure(tool_call, *path_error)
         try:
             root = self._workspace.resolve_path(path)
-        except WorkspacePathError as exc:
+        except ValueError as exc:
             return _failure(tool_call, "path_outside_workspace", str(exc))
         if not root.exists():
             return _failure(tool_call, "path_not_found", path)
@@ -80,10 +80,10 @@ class WorkspaceListTool:
 
         entries, scanned_entries, scan_truncated = _inventory(
             root,
-            workspace_root=self._workspace.layout.root_path,
+            workspace_root=self._workspace.root_path,
             depth=depth,
         )
-        output_path = _relative(root, self._workspace.layout.root_path)
+        output_path = _relative(root, self._workspace.root_path)
         page, output_truncated = _page(
             entries,
             output_path=output_path,
@@ -123,7 +123,7 @@ class WorkspaceListTool:
         visible_parts = tuple(part for part in candidate.parts if part != ".")
         if any(part.startswith(".") for part in visible_parts):
             return "hidden_path", "directory roots must not be hidden"
-        current = self._workspace.layout.root_path
+        current = self._workspace.root_path
         for part in visible_parts:
             current /= part
             if current.is_symlink():

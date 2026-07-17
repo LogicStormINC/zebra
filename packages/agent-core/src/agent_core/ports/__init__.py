@@ -28,6 +28,7 @@ from agent_core.ports.session_history import SessionHistoryPort
 from agent_core.ports.subagents import SubagentPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_core.ports.tool_run_store import ToolRunStorePort
+from agent_core.ports.workspace import WorkspacePort
 from agent_core.ports.workspace_projection_store import WorkspaceProjectionStorePort
 
 __all__ = [
@@ -57,4 +58,5 @@ __all__ = [
     "ToolGatewayPort",
     "ToolRunStorePort",
     "WorkspaceProjectionStorePort",
+    "WorkspacePort",
 ]
