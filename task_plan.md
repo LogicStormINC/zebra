@@ -35,6 +35,12 @@
   missing model key was wrapped as a conflict, plus two files over the size
   gate. Restored the existing ValueError path and split runtime event/cleanup
   contracts into focused modules.
+- 2026-07-17: `gh pr merge --delete-branch` could not perform its local checkout
+  because another worktree owned `main`; the GitHub merge API completed PR
+  `#142` as `8919e6a`, and the remote feature branch was already removed.
+- 2026-07-17: A closeout search again placed Markdown backticks in a shell
+  pattern and triggered zsh substitution; the actual contextual task patch was
+  verified with plain `sed` output before commit.
 
 ## QA-UI-RUNTIME-01 - End-To-End Durable Streaming
 

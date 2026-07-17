@@ -13336,7 +13336,7 @@ starting hard runtime, ACP, or code-intelligence implementation.
 
 ### ARCH-129-RT-01 - Hard-Enforced Local Runtime
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex-APP`
 - Suggested role: `RUNTIME / SECURITY / QA`
 - Depends on: `ARCH-129-PLAN-01` and explicit maintainer activation
