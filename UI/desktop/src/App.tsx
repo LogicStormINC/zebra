@@ -285,14 +285,6 @@ export default function App() {
             ...current,
             [conversationKey]: sessionId!,
           }));
-          if (!created.assistant_message) {
-            appendMessageToConversation(conversationKey, {
-              key: `local-assistant-${Date.now()}`,
-              role: "assistant",
-              status: "loading",
-              content: locale.noData,
-            });
-          }
         } else {
           try {
             await api.appendMessage(sessionId, { content: trimmed, attachments });
@@ -311,14 +303,6 @@ export default function App() {
               ...current,
               [conversationKey]: sessionId!,
             }));
-            if (!created.assistant_message) {
-              appendMessageToConversation(conversationKey, {
-                key: `local-assistant-${Date.now()}`,
-                role: "assistant",
-                status: "loading",
-                content: locale.noData,
-              });
-            }
           }
         }
         await executeSession(conversationKey, sessionId);

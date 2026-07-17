@@ -4,7 +4,7 @@ import { ZebraApiError } from "./zebra-api";
 export interface ChatMessage {
   key: string;
   role: "assistant" | "user";
-  status?: "success" | "error" | "loading";
+  status?: "success" | "error";
   content: string;
 }
 

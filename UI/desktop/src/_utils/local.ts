@@ -5,7 +5,6 @@ export default {
   deleteDraft: "删除本地草稿",
   hideTask: "隐藏任务",
   restoreHiddenTasks: "恢复已隐藏任务",
-  noData: "暂无返回",
   agentName: "Zebra Agent",
   placeholder: "描述目标，或粘贴需要处理的内容。",
   pinned: "置顶",
@@ -96,5 +95,4 @@ export default {
   resumeSession: "恢复会话",
   cancelSession: "取消会话",
   modelLabel: "Zebra Agent · DeepSeek",
-  generating: "执行中",
 };

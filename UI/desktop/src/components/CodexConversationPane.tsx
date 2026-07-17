@@ -124,7 +124,7 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
     : props.runtimeStatus === "checking" ? locale.runtimeChecking : locale.runtimeDisconnected;
   const headerMeta = hasThread
     ? props.currentSessionId
-      ? `${sessionStatusLabel(props.sessionSummary?.status)} · ${sessionWorkspaceLabel(props.sessionSummary)} · ${props.currentSessionId.slice(0, 8)}`
+      ? `${props.isRequesting ? "运行中" : sessionStatusLabel(props.sessionSummary?.status)} · ${sessionWorkspaceLabel(props.sessionSummary)} · ${props.currentSessionId.slice(0, 8)}`
       : `${locale.statusDraft} · ${locale.notBound} · ${locale.notStarted}`
     : runtimeLabel;
 
@@ -232,6 +232,7 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
             composer={renderComposer("thread")}
             events={props.events}
             isDraft={!hasSessionThread}
+            isRequesting={props.isRequesting}
             listRef={props.listRef}
             messages={props.messages}
             onApprove={props.onApprove}

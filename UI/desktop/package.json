@@ -27,6 +27,7 @@
     "check:session-config-surface": "node --experimental-strip-types checks/session-config-surface.check.ts",
     "check:session-status": "node --experimental-strip-types checks/session-status.check.ts",
     "check:timeline": "node --experimental-strip-types checks/session-timeline.check.ts",
+    "check:runtime-activity": "node --experimental-strip-types checks/runtime-activity.check.ts",
     "preview": "vite preview",
     "tauri:dev": "CARGO_HOME=$PWD/.cargo-home tauri dev",
     "tauri:build": "CARGO_HOME=$PWD/.cargo-home tauri build",

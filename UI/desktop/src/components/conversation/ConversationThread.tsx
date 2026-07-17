@@ -12,6 +12,7 @@ interface ConversationThreadProps {
   composer: React.ReactNode;
   events: SessionEvent[];
   isDraft: boolean;
+  isRequesting: boolean;
   listRef: React.RefObject<HTMLDivElement | null>;
   messages: ChatMessage[];
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
@@ -29,6 +30,7 @@ export function ConversationThread({
   composer,
   events,
   isDraft,
+  isRequesting,
   listRef,
   messages,
   onApprove,
@@ -50,6 +52,7 @@ export function ConversationThread({
             clarificationBusy={clarificationBusy}
             events={events}
             isDraft={isDraft}
+            isRequesting={isRequesting}
             messages={messages}
             onApprove={onApprove}
             onReject={onReject}

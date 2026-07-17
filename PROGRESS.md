@@ -105,6 +105,20 @@
   mutation. Recovery consumes only persisted normalized UTF-8 extraction with
   safe workbook provenance. Spreadsheet editing, other formats, OCR, remote
   URLs, and authority changes remain excluded.
+- 2026-07-17: completed implementation for `QA-UI-RUNTIME-01` on
+  `codex/qa-ui-runtime-feedback`. The desktop will replace the fake “暂无返回”
+  Assistant placeholder with a distinct event-driven runtime activity surface.
+  The first slice uses only current durable events and session projections;
+  model delta streaming, invented progress, thought exposure, follow-up queues,
+  API changes, and Inspector redesign remain excluded. The durable UX contract
+  is recorded in `docs/桌面Agent运行态反馈UX整改方案_v1.0.md`. Node 22 runtime
+  activity, timeline, launch, and production-build checks passed. Browser
+  regression covered new tasks, continuation from terminal projections, the
+  activity-to-log action, tool-policy failure, final response replacement, and
+  confirmed that no fake “暂无返回” Assistant content remains. The final
+  presentation reuses the installed Ant Design X `ThoughtChain.Item` as a
+  lightweight in-stream runtime node and keeps cancellation in the native
+  `Sender`; no Lobe dependency or custom status-card shell was introduced.
 - 2026-07-17: completed `QA-UI-UNBOUND-01` on
   `codex/qa-ui-unbound-session-continuation`. Historical sessions without
   durable workspace metadata no longer disable the Composer: continuation uses

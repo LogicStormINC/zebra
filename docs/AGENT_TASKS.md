@@ -13020,6 +13020,37 @@ boundaries.
 
 ## Issue Remediation Task Board
 
+### QA-UI-RUNTIME-01 - Truthful Runtime Feedback
+
+- Status: `Review`
+- Owner: `Codex-APP`
+- Suggested role: `UI / QA / DOC`
+- Depends on: `QA-UI-UNBOUND-01`
+- Branch: `codex/qa-ui-runtime-feedback`
+- Owned paths: `UI/desktop/`,
+  `docs/桌面Agent运行态反馈UX整改方案_v1.0.md`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`
+
+#### Goal
+
+Replace the fake “暂无返回” Assistant placeholder with one truthful,
+event-driven runtime activity surface that remains distinct from actual model
+content.
+
+#### Acceptance
+
+- [x] No placeholder Assistant message is created before model content exists.
+- [x] Active sessions expose truthful phase, elapsed time, latest evidence, and
+  an accessible stop action without invented progress.
+- [x] Waiting, suspended, failed, cancelled, and completed states retain their
+  distinct semantics.
+- [x] Focused checks, Node 22 build, and browser regression pass.
+
+#### Explicit Non-Goals
+
+- Model token streaming, hidden chain of thought, invented percentages,
+  follow-up queues, new API events, dependencies, or Inspector redesign
+
 ### QA-UI-UNBOUND-01 - Unbound Session Continuation
 
 - Status: `Done`
