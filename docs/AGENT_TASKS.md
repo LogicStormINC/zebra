@@ -13336,20 +13336,26 @@ starting hard runtime, ACP, or code-intelligence implementation.
 
 ### ARCH-129-RT-01 - Hard-Enforced Local Runtime
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `In Progress`
+- Owner: `Codex-APP`
 - Suggested role: `RUNTIME / SECURITY / QA`
 - Depends on: `ARCH-129-PLAN-01` and explicit maintainer activation
-- Branch: `TBD (suggested: codex/arch-129-hard-runtime)`
+- Branch: `codex/arch-129-hard-runtime`
 - Issue: `#129`
 - Owned paths: `packages/agent-core/src/agent_core/ports/runtime.py`,
-  `packages/agent-runtime/src/agent_runtime/adapters/`,
-  `packages/agent-runtime/src/agent_runtime/snapshots/`,
-  `packages/agent-security/src/agent_security/`, `apps/worker/`,
-  `tests/agent_runtime/`, `tests/agent_security/`, `tests/worker/`,
-  `docs/operator_runbook.md`,
+  `packages/agent-core/src/agent_core/domain/events.py`,
+  `packages/agent-core/src/agent_core/domain/workspaces.py`,
+  `packages/agent-core/src/agent_core/application/workspace_projection.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-runtime/src/agent_runtime/`,
+  `packages/agent-storage/src/agent_storage/workspaces.py`,
+  `apps/config/src/zebra_agent_config/settings.py`, `apps/worker/`,
+  `configs/default.env`, `.env.example`, `.github/workflows/quality.yml`,
+  `tests/agent_core/`, `tests/agent_runtime/`, `tests/agent_storage/`,
+  `tests/config/`, `tests/worker/`, `docs/operator_runbook.md`,
+  `docs/生产级Runtime实施方案_v1.0.md`,
   `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
-  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`, `task_plan.md`
 
 #### Goal
 

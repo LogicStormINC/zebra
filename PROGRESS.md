@@ -2,6 +2,16 @@
 
 ## Addendum
 
+- 2026-07-17: activated `ARCH-129-RT-01` on
+  `codex/arch-129-hard-runtime` by explicit maintainer request. The production
+  v1 boundary is Linux-first gVisor/OCI with a rootless OCI compatibility mode,
+  durable effective authority, fail-closed capability preflight, offline Agent
+  execution, bounded resources and output, deterministic lifecycle cleanup,
+  and explicit macOS/unsupported behavior. Kubernetes orchestration, warm
+  pools, multi-tenant scheduling, Kata/Firecracker, and a new credential or
+  arbitrary-egress platform remain outside this task. The executable plan is
+  recorded in `docs/生产级Runtime实施方案_v1.0.md`.
+
 - 2026-07-17: completed `QA-CI-01` for review on `codex/qa-ci-mainline`.
   The read-only, SHA-pinned workflow runs frozen Python workspace sync, all
   backend tests, file-size checks, Ruff, strict Mypy, release evals, every

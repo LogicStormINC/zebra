@@ -1,5 +1,18 @@
 # Task Plan
 
+## ARCH-129-RT-01 - Production Hard Runtime
+
+1. `completed` - Persist the Linux-first gVisor/OCI design, activation decision,
+   platform matrix, exact task ownership, and fail-closed boundary.
+2. `in_progress` - Extend Runtime contracts and durable workspace authority
+   without weakening existing trusted-local compatibility.
+3. `pending` - Implement the hardened OCI engine adapter, lifecycle, bounded
+   execution, snapshot compatibility, and capability preflight.
+4. `pending` - Wire configured Runtime selection through Worker and Tool Gateway,
+   preserving immutable authority across recovery and continuation.
+5. `pending` - Add adversarial tests, Linux CI integration, operator guidance,
+   full repository validation, and real-engine acceptance where available.
+
 ## QA-UI-RUNTIME-01 - End-To-End Durable Streaming
 
 1. `completed` - Extend the claimed task boundary and define typed model delta
