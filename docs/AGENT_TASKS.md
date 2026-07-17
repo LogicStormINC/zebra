@@ -13020,6 +13020,38 @@ boundaries.
 
 ## Issue Remediation Task Board
 
+### QA-GOV-01 - Mainline Architecture And Engineering Closeout Plan
+
+- Status: `Review`
+- Owner: `Codex-APP`
+- Suggested role: `DOC / QA / ARCH`
+- Depends on: `P145-UI-01`
+- Branch: `codex/qa-mainline-closeout`
+- Owned paths: `docs/主线架构工程完成度审计与收口计划_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record one evidence-backed mainline completion assessment, separate local-beta
+readiness from final-platform readiness, and define dependency-ordered closeout
+work without silently activating deferred architecture.
+
+#### Acceptance
+
+- [x] The assessed Git ref, validation evidence, scoring basis, and known
+  documentation drift are explicit.
+- [x] Mainline gaps are prioritized with owners, dependencies, owned paths, and
+  measurable exit criteria suitable for follow-up task cards.
+- [x] Deferred runtime, ACP, code-intelligence, cloud, and ecosystem work remains
+  locked until an explicit maintainer decision.
+- [x] The document distinguishes merged mainline capability from unmerged local
+  branches and avoids treating incremental phase numbers as percent complete.
+
+#### Explicit Non-Goals
+
+- Feature implementation, branch merging, CI creation, runtime activation,
+  protocol expansion, or product redesign
+
 ### QA-2-STO-01 - Atomic SQLite Worker Lease Acquisition
 
 - Status: `Review`
