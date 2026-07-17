@@ -20,6 +20,7 @@ class EventType(StrEnum):
     PLAN_APPROVED = "plan_approved"
     PLAN_UPDATED = "plan_updated"
     MODEL_REQUEST_STARTED = "model_request_started"
+    MODEL_RESPONSE_DELTA = "model_response_delta"
     MODEL_RESPONSE_RECEIVED = "model_response_received"
     CONTEXT_COMPACTED = "context_compacted"
     SUBAGENT_STARTED = "subagent_started"

@@ -1,10 +1,17 @@
+from collections.abc import Callable
 from pathlib import Path
+from threading import Event, Thread
 
+from agent_core.domain.events import EventType
+from agent_core.domain.identifiers import new_message_id
+from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.model_calls import ModelCallRecord
+from agent_core.domain.modeling import ModelCompletion, ModelTextDelta, ModelToolDefinition
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tool_runs import ToolRunRecord
 from agent_security import LocalPolicyEngine, NetworkProfile
 from agent_storage import (
+    SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteModelCallStore,
     SQLiteToolRunStore,
@@ -17,6 +24,7 @@ from worker_execution_support import (
     _seed_ready_session_with_input,
     _tool_gateway,
 )
+from zebra_agent_worker.control import SessionControlService
 
 
 def test_worker_execution_service_completes_ready_session(
@@ -43,6 +51,135 @@ def test_worker_execution_service_completes_ready_session(
     model_calls = SQLiteModelCallStore(database_path).list_for_session(session_id)
     assert len(model_calls) == 1
     assert isinstance(model_calls[0], ModelCallRecord)
+
+
+def test_worker_execution_persists_model_text_deltas_before_final_response(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    class StreamingGateway:
+        def complete(
+            self,
+            messages: list[SessionMessage],
+            *,
+            tools: tuple[ModelToolDefinition, ...] = (),
+        ) -> ModelCompletion:
+            raise AssertionError("worker must use the streaming gateway path")
+
+        def complete_stream(
+            self,
+            messages: list[SessionMessage],
+            *,
+            tools: tuple[ModelToolDefinition, ...] = (),
+            on_text_delta: Callable[[ModelTextDelta], None],
+        ) -> ModelCompletion:
+            assert messages
+            assert tools
+            on_text_delta(ModelTextDelta(index=0, content="Stream "))
+            on_text_delta(ModelTextDelta(index=1, content="complete."))
+            return ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content="Stream complete.",
+                    created_at=_created_at(),
+                )
+            )
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: StreamingGateway(),
+    )
+
+    _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-stream",
+        executed_at=_created_at(),
+    )
+
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
+    execution_types = [event.event_type for event in events[3:]]
+    assert execution_types[:5] == [
+        EventType.HARNESS_ATTEMPT_STARTED,
+        EventType.MODEL_REQUEST_STARTED,
+        EventType.MODEL_RESPONSE_DELTA,
+        EventType.MODEL_RESPONSE_DELTA,
+        EventType.MODEL_RESPONSE_RECEIVED,
+    ]
+    deltas = [
+        event.payload for event in events if event.event_type is EventType.MODEL_RESPONSE_DELTA
+    ]
+    assert [delta["content_delta"] for delta in deltas] == ["Stream ", "complete."]
+    final = next(
+        event for event in events if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+    )
+    assert final.payload["model_call_id"] == deltas[0]["model_call_id"]
+
+
+def test_worker_streaming_stops_cleanly_after_durable_cancellation(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session(database_path, tmp_path)
+    first_delta = Event()
+    release = Event()
+
+    class BlockingStreamingGateway:
+        def complete(
+            self,
+            messages: list[SessionMessage],
+            *,
+            tools: tuple[ModelToolDefinition, ...] = (),
+        ) -> ModelCompletion:
+            raise AssertionError("worker must use the streaming gateway path")
+
+        def complete_stream(
+            self,
+            messages: list[SessionMessage],
+            *,
+            tools: tuple[ModelToolDefinition, ...] = (),
+            on_text_delta: Callable[[ModelTextDelta], None],
+        ) -> ModelCompletion:
+            on_text_delta(ModelTextDelta(index=0, content="Started"))
+            first_delta.set()
+            assert release.wait(timeout=2)
+            on_text_delta(ModelTextDelta(index=1, content=" too late"))
+            raise AssertionError("cancelled stream must stop before final completion")
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: BlockingStreamingGateway(),
+    )
+    results = []
+
+    def execute() -> None:
+        results.append(
+            _build_execution_service(database_path).execute_session(
+                session_id,
+                worker_id="worker-cancel",
+                executed_at=_created_at(),
+            )
+        )
+
+    thread = Thread(target=execute)
+    thread.start()
+    assert first_delta.wait(timeout=2)
+    SessionControlService(database_path).cancel_session(session_id)
+    release.set()
+    thread.join(timeout=2)
+
+    assert not thread.is_alive()
+    assert results[0].session.status is SessionStatus.CANCELLED
+    event_types = [
+        event.event_type
+        for event in SQLiteEventStore(database_path).list_for_session(session_id)
+    ]
+    assert event_types[-1] is EventType.SESSION_CANCELLED
+    assert EventType.SESSION_FAILED not in event_types
 
 def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch) -> None:
     database_path = tmp_path / "worker.db"

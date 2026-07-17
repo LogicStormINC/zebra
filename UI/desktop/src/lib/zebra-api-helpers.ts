@@ -19,6 +19,11 @@ interface RequestOptions {
   authToken?: string;
 }
 
+interface EventStreamOptions {
+  signal?: AbortSignal;
+  afterSequence?: number;
+}
+
 function normalizeBaseUrl(baseUrl: string) {
   return baseUrl.trim().replace(/\/+$/, "");
 }
@@ -59,6 +64,7 @@ export async function requestEventStream(
   path: string,
   authToken?: string,
   onEvent?: (event: SessionEvent) => void,
+  options: EventStreamOptions = {},
 ): Promise<SessionStreamResponse> {
   const headers: Record<string, string> = {
     Accept: "text/event-stream",
@@ -66,7 +72,12 @@ export async function requestEventStream(
   if (authToken) {
     headers.Authorization = `Bearer ${authToken}`;
   }
-  const response = await fetch(`${normalizeBaseUrl(baseUrl)}${path}`, { headers });
+  const cursor = options.afterSequence ?? -1;
+  const separator = path.includes("?") ? "&" : "?";
+  const response = await fetch(
+    `${normalizeBaseUrl(baseUrl)}${path}${separator}after_sequence=${cursor}`,
+    { headers, signal: options.signal },
+  );
   if (!response.ok) {
     const raw = await response.text();
     let payload: unknown = raw;

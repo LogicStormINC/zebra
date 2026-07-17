@@ -194,7 +194,7 @@ def test_http_app_streams_session_events_as_sse(tmp_path: Path) -> None:
         Session.create(title="HTTP stream")
     )
     event_store = SQLiteEventStore(database_path)
-    created = event_store.append(
+    event_store.append(
         SessionEvent.create(
             session_id=session.session_id,
             sequence=0,
@@ -203,7 +203,7 @@ def test_http_app_streams_session_events_as_sse(tmp_path: Path) -> None:
             payload={"title": session.title},
         )
     )
-    prepared = event_store.append(
+    event_store.append(
         SessionEvent.create(
             session_id=session.session_id,
             sequence=1,
@@ -223,13 +223,32 @@ def test_http_app_streams_session_events_as_sse(tmp_path: Path) -> None:
     assert response.headers["content-type"].startswith("text/event-stream")
     chunks = [chunk for chunk in response.text.strip().split("\n\n") if chunk]
     assert len(chunks) == 2
-    assert f"id: {created.event_id}" in chunks[0]
-    assert f"id: {prepared.event_id}" in chunks[1]
+    assert "id: 0" in chunks[0]
+    assert "id: 1" in chunks[1]
     assert "event: session_event" in chunks[0]
+    assert response.headers["cache-control"] == "no-cache"
+    assert response.headers["x-accel-buffering"] == "no"
     data_lines = [line for line in chunks[0].splitlines() if line.startswith("data: ")]
     first_event = json.loads(data_lines[0].removeprefix("data: "))
     assert first_event["sequence"] == 0
     assert first_event["event_type"] == EventType.SESSION_CREATED.value
+
+def test_http_app_stream_rejects_invalid_after_sequence(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = SQLiteProjectionStore(database_path).save_session(
+        Session.create(title="HTTP stream cursor")
+    )
+    client = TestClient(create_http_app(database_path))
+
+    response = client.get(
+        f"/sessions/{session.session_id}/stream?after_sequence=invalid"
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "status": "invalid_request",
+        "reason": "after_sequence must be an integer greater than or equal to -1",
+    }
 
 def test_http_app_stream_missing_session_returns_not_found(tmp_path: Path) -> None:
     client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))

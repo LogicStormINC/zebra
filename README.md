@@ -386,6 +386,6 @@ For the current local operator workflow, start with `docs/operator_runbook.md`. 
 - writable local API session creation, execution, resume triggering, and approval decisions
 - worker loop execution for queued ready sessions
 - local FastAPI serving
-- SSE session stream replay
+- replay-plus-tail SSE session streaming with `after_sequence` cursor recovery
 
 For the latest completed phase closeout summary, see `docs/Phase69_Memory_Backlog_Pressure_Signals_验收记录.md`.

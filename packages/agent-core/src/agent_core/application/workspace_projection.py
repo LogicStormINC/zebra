@@ -86,6 +86,7 @@ def _next_status_for_event(event: SessionEvent) -> WorkspaceStatus | None:
         EventType.TASK_PREPARED: WorkspaceStatus.PREPARED,
         EventType.HARNESS_ATTEMPT_STARTED: WorkspaceStatus.RUNNING,
         EventType.MODEL_REQUEST_STARTED: WorkspaceStatus.RUNNING,
+        EventType.MODEL_RESPONSE_DELTA: WorkspaceStatus.RUNNING,
         EventType.PLAN_PROPOSED: WorkspaceStatus.RUNNING,
         EventType.PLAN_APPROVED: WorkspaceStatus.RUNNING,
         EventType.TOOL_CALL_PROPOSED: WorkspaceStatus.RUNNING,

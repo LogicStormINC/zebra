@@ -2,10 +2,12 @@ import React from "react";
 import locale from "../_utils/local";
 import { sessionStatusLabel } from "../_utils/session-status";
 import type { ChatMessage } from "../lib/chat-surface";
+import { projectRuntimeActivity } from "../lib/runtime-activity";
 import { optimisticTimelineMessages, projectSessionTimeline, timelinePlanPlacement, type TimelineMessageItem, type TimelineStatusItem } from "../lib/session-timeline";
 import { compactWorkspaceLabel } from "../lib/task-launch-config";
 import { hasVisibleTaskPlan } from "../lib/task-plan";
 import type { ApprovalSummary, SessionEvent, SessionSummary } from "../types";
+import { AgentActivityCard } from "./AgentActivityCard";
 import { AssistantMessageBlock } from "./AssistantMessageBlock";
 import { SessionExecutionTrace } from "./SessionExecutionTrace";
 import { SessionTaskPlan } from "./SessionTaskPlan";
@@ -55,6 +57,7 @@ interface SessionThreadWorkspaceProps {
   clarificationBusy: boolean;
   events: SessionEvent[];
   isDraft: boolean;
+  isRequesting: boolean;
   messages: ChatMessage[];
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onRespondClarification: (clarificationId: string, content: string) => Promise<unknown>;
@@ -70,6 +73,7 @@ export function SessionThreadWorkspace({
   clarificationBusy,
   events,
   isDraft,
+  isRequesting,
   messages,
   onApprove,
   onRespondClarification,
@@ -94,7 +98,10 @@ export function SessionThreadWorkspace({
     ? <SessionTaskPlan key={`plan:${planPlacement.mode === "start" ? "start" : planPlacement.anchorKey}`} plan={visiblePlan} />
     : null;
   const toolCount = timelineItems.filter((item) => item.kind === "tool").length;
-  const statusLabel = isDraft
+  const activity = projectRuntimeActivity(sessionSummary?.status, events, isRequesting);
+  const statusLabel = isRequesting
+    ? "运行中"
+    : isDraft
     ? locale.statusDraft
     : sessionSummary ? sessionStatusLabel(sessionSummary.status) : "状态同步中";
   const tabs: Array<{ key: InspectorTab; label: string }> = [
@@ -171,6 +178,13 @@ export function SessionThreadWorkspace({
               </React.Fragment>;
             })}
             {optimisticMessages.map((message) => renderMessage(message, message.key))}
+            {activity ? (
+              <AgentActivityCard
+                activity={activity}
+                key={sessionSummary?.session_id ?? "local-activity"}
+                onShowDetails={() => setInspectorTab("logs")}
+              />
+            ) : null}
           </div>
           <SessionClarificationPanel
             busy={clarificationBusy}

@@ -1,5 +1,5 @@
 import { Sender } from "@ant-design/x";
-import { Flex, GetRef, Input } from "antd";
+import { Flex, GetRef, Input, Tooltip } from "antd";
 import React from "react";
 import locale from "../../_utils/local";
 import type { PendingAttachment } from "../../lib/text-attachments";
@@ -102,9 +102,15 @@ export function ConversationComposer({
                 onPatch={onPatchLaunchConfig}
                 onRetryPrompts={onRetryMcpPrompts}
               />
-              <span className={`${styles.sendSlot} ${canSubmit ? "" : styles.sendSlotDisabled}`}>
-                {actionNode}
-              </span>
+              <Tooltip title={isRequesting ? "停止任务" : "发送任务"}>
+                <span className={`${styles.sendSlot} ${canSubmit ? "" : styles.sendSlotDisabled}`}>
+                  {React.isValidElement(actionNode)
+                    ? React.cloneElement(actionNode as React.ReactElement<{ "aria-label"?: string }>, {
+                        "aria-label": isRequesting ? "停止任务" : "发送任务",
+                      })
+                    : actionNode}
+                </span>
+              </Tooltip>
             </Flex>
           )}
           key={`${variant}-${currentConversation}`}

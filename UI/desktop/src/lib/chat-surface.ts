@@ -1,10 +1,11 @@
-import type { SessionEvent } from "../types";
 import { ZebraApiError } from "./zebra-api";
+
+export { streamEventsToMessages } from "./streaming-messages";
 
 export interface ChatMessage {
   key: string;
   role: "assistant" | "user";
-  status?: "success" | "error" | "loading";
+  status?: "success" | "error";
   content: string;
 }
 
@@ -12,10 +13,6 @@ export interface ConversationSeed {
   key: string;
   label: string;
   group: string;
-}
-
-function readText(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
 }
 
 export function toErrorMessage(error: unknown): string {
@@ -38,43 +35,4 @@ export function isAppendToTerminalError(error: unknown): boolean {
     payload.status === "not_appendable" &&
     payload.reason === "cannot_append_to_terminal_session"
   );
-}
-
-export function streamEventsToMessages(events: SessionEvent[]): ChatMessage[] {
-  return [...events]
-    .sort((left, right) => left.sequence - right.sequence)
-    .flatMap((event): ChatMessage[] => {
-      if (
-        event.event_type === "user_message_received" ||
-        event.event_type === "clarification_responded"
-      ) {
-        const content = readText(event.payload.content);
-        if (!content) {
-          return [];
-        }
-        return [
-          {
-            key: event.event_id,
-            role: "user",
-            status: "success",
-            content,
-          },
-        ];
-      }
-      if (event.event_type === "model_response_received") {
-        const content = readText(event.payload.assistant_message);
-        if (!content) {
-          return [];
-        }
-        return [
-          {
-            key: event.event_id,
-            role: "assistant",
-            status: "success",
-            content,
-          },
-        ];
-      }
-      return [];
-    });
 }

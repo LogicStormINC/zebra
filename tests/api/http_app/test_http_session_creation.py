@@ -135,7 +135,7 @@ def test_http_app_executes_session_resume(tmp_path: Path, monkeypatch) -> None:
         "executed": True,
         "worker_id": "api-worker",
         "status": "completed",
-        "current_sequence": 6,
+        "current_sequence": 7,
         "assistant_message": "HTTP resume complete.",
         "trace": [
             {

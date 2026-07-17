@@ -2,6 +2,10 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
+from agent_core.contracts.model_events import (
+    ModelRequestStartedPayload,
+    ModelResponseDeltaPayload,
+)
 from agent_core.domain.clarifications import (
     MAX_CLARIFICATION_CHOICE_CHARS,
     MAX_CLARIFICATION_CHOICES,
@@ -436,6 +440,8 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SESSION_CREATED: SessionCreatedPayload,
     EventType.USER_MESSAGE_RECEIVED: UserMessageReceivedPayload,
     EventType.TASK_PREPARED: TaskPreparedPayload,
+    EventType.MODEL_REQUEST_STARTED: ModelRequestStartedPayload,
+    EventType.MODEL_RESPONSE_DELTA: ModelResponseDeltaPayload,
     EventType.PLAN_UPDATED: PlanUpdatedPayload,
     EventType.SESSION_SUSPENDED: SessionSuspendedPayload,
     EventType.SESSION_RESUMED: SessionResumedPayload,

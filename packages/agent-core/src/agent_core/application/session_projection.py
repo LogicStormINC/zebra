@@ -93,6 +93,7 @@ def _next_status_for_event(event: SessionEvent) -> SessionStatus | None:
         EventType.TASK_PREPARED: SessionStatus.READY,
         EventType.HARNESS_ATTEMPT_STARTED: SessionStatus.RUNNING,
         EventType.MODEL_REQUEST_STARTED: SessionStatus.RUNNING,
+        EventType.MODEL_RESPONSE_DELTA: SessionStatus.RUNNING,
         EventType.PLAN_PROPOSED: SessionStatus.RUNNING,
         EventType.PLAN_APPROVED: SessionStatus.RUNNING,
         EventType.TOOL_CALL_PROPOSED: SessionStatus.RUNNING,

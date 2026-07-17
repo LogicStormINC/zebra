@@ -40,8 +40,17 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
       requestJson<ApprovalSummary>(baseUrl, `/approvals/${approvalId}`, { authToken }),
     session: (sessionId: string) => requestJson<SessionSummary>(baseUrl, `/sessions/${sessionId}`, { authToken }),
     sessions: (limit = 100) => requestJson<SessionListResponse>(baseUrl, `/sessions?limit=${limit}`, { authToken }),
-    stream: (sessionId: string, onEvent?: (event: SessionEvent) => void) =>
-      requestEventStream(baseUrl, `/sessions/${sessionId}/stream`, authToken, onEvent),
+    stream: (
+      sessionId: string,
+      onEvent?: (event: SessionEvent) => void,
+      options?: { signal?: AbortSignal; afterSequence?: number },
+    ) => requestEventStream(
+      baseUrl,
+      `/sessions/${sessionId}/stream`,
+      authToken,
+      onEvent,
+      options,
+    ),
     diff: (sessionId: string) =>
       requestJson<SessionDiffResponse>(baseUrl, `/sessions/${sessionId}/diff`, { authToken }),
     artifacts: (sessionId: string) =>

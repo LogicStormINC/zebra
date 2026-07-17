@@ -4,6 +4,7 @@ import {
   mcpPromptSchema,
   normalizeTaskLaunchConfig,
   reconcileMcpPromptSelection,
+  resolveSessionLaunchConfig,
   type TaskLaunchConfig,
   validateTaskLaunchConfig,
 } from "../src/lib/task-launch-config.ts";
@@ -57,3 +58,5 @@ assert.equal(compactWorkspaceLabel("/Users/operator/zebra-agent/"), "zebra-agent
 assert.equal(compactWorkspaceLabel("relative-workspace/"), "relative-workspace");
 assert.equal(compactWorkspaceLabel("/"), "/");
 assert.equal(compactWorkspaceLabel(""), "未配置");
+assert.equal(resolveSessionLaunchConfig(base, { ...base, workspace: "" }).workspace, "/repo");
+assert.equal(resolveSessionLaunchConfig(base, { ...base, workspace: "/durable" }).workspace, "/durable");

@@ -1,6 +1,5 @@
 import { Actions } from "@ant-design/x";
 import XMarkdown from "@ant-design/x-markdown";
-import { Tag } from "antd";
 import { createStyles } from "antd-style";
 import { clsx } from "clsx";
 import "@ant-design/x-markdown/themes/dark.css";
@@ -31,10 +30,6 @@ const useStyle = createStyles(({ css }) => {
       height: var(--zebra-icon-dot);
       border-radius: 50%;
       background: #8f8f8f;
-    `,
-    statusDotLoading: css`
-      background: #f28c38;
-      box-shadow: var(--zebra-shadow-chip);
     `,
     assistantBody: css`
       display: flex;
@@ -95,9 +90,8 @@ export function AssistantMessageBlock({ message }: { message: ChatMessage }) {
   return (
     <section className={styles.assistantBlock}>
       <div className={styles.assistantMeta}>
-        <span className={clsx(styles.statusDot, message.status === "loading" && styles.statusDotLoading)} />
+        <span className={styles.statusDot} />
         <span>Zebra Agent</span>
-        {message.status === "loading" ? <Tag color="orange">{locale.generating}</Tag> : null}
       </div>
       <div className={styles.assistantBody}>
         <AssistantInsightCards content={message.content} />

@@ -20,7 +20,7 @@ import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import { availableMcpPrompts, availableMcpResourceIds, availableMcpToolNames } from "../lib/mcp-capabilities";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
 import { attachmentPayloads, type AttachmentPayload, type PendingAttachment } from "../lib/text-attachments";
-import { validateTaskLaunchConfig, type TaskLaunchConfig } from "../lib/task-launch-config";
+import { resolveSessionLaunchConfig, validateTaskLaunchConfig, type TaskLaunchConfig } from "../lib/task-launch-config";
 import type { ApprovalSummary, McpCapabilitiesResponse, McpPromptsResponse, SessionEvent, SessionSummary } from "../types";
 import { useConversationPaneStyle } from "./CodexConversationPane.styles";
 import { ConversationComposer } from "./conversation/ConversationComposer";
@@ -95,20 +95,21 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
   const durableMcpResourceIds = props.sessionSummary?.attachments
     ?.filter((attachment) => attachment.source_type === "mcp_resource")
     .flatMap((attachment) => attachment.source_id ? [attachment.source_id] : []) ?? [];
-  const effectiveLaunchConfig: TaskLaunchConfig = launchEditable
+  const durableLaunchConfig: TaskLaunchConfig = {
+    workspace: durableWorkspace,
+    policyProfile: durablePolicy,
+    toolProfile: durableToolProfile,
+    networkProfile: durableNetworkProfile,
+    networkAllowlist: props.sessionSummary?.workspace?.network_allowlist ?? [],
+    mcpAllowlist: props.sessionSummary?.workspace?.mcp_allowlist ?? [],
+    mcpResourceIds: durableMcpResourceIds,
+    mcpPromptId: null,
+    mcpPromptArguments: {},
+    mcpPromptSchema: null,
+  };
+  const effectiveLaunchConfig = launchEditable
     ? props.launchConfig
-    : {
-        workspace: durableWorkspace,
-        policyProfile: durablePolicy,
-        toolProfile: durableToolProfile,
-        networkProfile: durableNetworkProfile,
-        networkAllowlist: props.sessionSummary?.workspace?.network_allowlist ?? [],
-        mcpAllowlist: props.sessionSummary?.workspace?.mcp_allowlist ?? [],
-        mcpResourceIds: durableMcpResourceIds,
-        mcpPromptId: null,
-        mcpPromptArguments: {},
-        mcpPromptSchema: null,
-      };
+    : resolveSessionLaunchConfig(props.launchConfig, durableLaunchConfig);
   const launchError = validateTaskLaunchConfig(
     effectiveLaunchConfig,
     launchEditable ? availableMcpToolNames(props.mcpCapabilities) : undefined,
@@ -123,7 +124,7 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
     : props.runtimeStatus === "checking" ? locale.runtimeChecking : locale.runtimeDisconnected;
   const headerMeta = hasThread
     ? props.currentSessionId
-      ? `${sessionStatusLabel(props.sessionSummary?.status)} · ${sessionWorkspaceLabel(props.sessionSummary)} · ${props.currentSessionId.slice(0, 8)}`
+      ? `${props.isRequesting ? "运行中" : sessionStatusLabel(props.sessionSummary?.status)} · ${sessionWorkspaceLabel(props.sessionSummary)} · ${props.currentSessionId.slice(0, 8)}`
       : `${locale.statusDraft} · ${locale.notBound} · ${locale.notStarted}`
     : runtimeLabel;
 
@@ -231,6 +232,7 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
             composer={renderComposer("thread")}
             events={props.events}
             isDraft={!hasSessionThread}
+            isRequesting={props.isRequesting}
             listRef={props.listRef}
             messages={props.messages}
             onApprove={props.onApprove}

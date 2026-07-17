@@ -1,3 +1,4 @@
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
@@ -104,6 +105,24 @@ class HarnessEventDraft:
     event_type: EventType
     actor: EventActor
     payload: dict[str, Any] = field(default_factory=dict)
+
+
+class HarnessEventBuffer(list[HarnessEventDraft]):
+    def __init__(
+        self,
+        event_sink: Callable[[HarnessEventDraft], None] | None = None,
+    ) -> None:
+        super().__init__()
+        self._event_sink = event_sink
+
+    def append(self, draft: HarnessEventDraft) -> None:
+        super().append(draft)
+        if self._event_sink is not None:
+            self._event_sink(draft)
+
+    def extend(self, drafts: Iterable[HarnessEventDraft]) -> None:
+        for draft in drafts:
+            self.append(draft)
 
 
 @dataclass(frozen=True)

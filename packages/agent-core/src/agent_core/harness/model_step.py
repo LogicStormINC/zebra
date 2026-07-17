@@ -1,16 +1,19 @@
+from collections.abc import Callable
+from dataclasses import replace
 from datetime import UTC, datetime
 
-from agent_core.domain.identifiers import new_message_id
+from agent_core.domain.events import EventActor, EventType
+from agent_core.domain.identifiers import new_correlation_id, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
+from agent_core.domain.modeling import ModelCompletion, ModelTextDelta, ModelToolDefinition
 from agent_core.domain.tools import ToolCall, ToolResult
-from agent_core.harness.models import HarnessTask
+from agent_core.harness.models import HarnessEventDraft, HarnessTask
 from agent_core.ports.context_compiler import ContextCompilerPort
 from agent_core.ports.conversation_compactor import (
     ConversationCompactionResult,
     ConversationCompactorPort,
 )
-from agent_core.ports.model_gateway import ModelGatewayPort
+from agent_core.ports.model_gateway import ModelGatewayPort, StreamingModelGatewayPort
 
 
 class HarnessModelStep:
@@ -21,13 +24,19 @@ class HarnessModelStep:
         available_tools: tuple[ModelToolDefinition, ...] = (),
         conversation_compactor: ConversationCompactorPort | None = None,
         conversation_token_budget: int = 800,
+        event_sink: Callable[[HarnessEventDraft], None] | None = None,
+        attempt_number: int = 1,
     ) -> None:
         if conversation_token_budget <= 0:
             raise ValueError("conversation_token_budget must be positive")
+        if attempt_number <= 0:
+            raise ValueError("attempt_number must be positive")
         self._context_compiler = context_compiler
         self._available_tools = available_tools
         self._conversation_compactor = conversation_compactor
         self._conversation_token_budget = conversation_token_budget
+        self._event_sink = event_sink
+        self._attempt_number = attempt_number
 
     def compact_conversation(
         self,
@@ -63,9 +72,53 @@ class HarnessModelStep:
         *,
         allow_tools: bool,
     ) -> ModelCompletion:
-        return model_gateway.complete(
-            messages,
-            tools=self._available_tools if allow_tools else (),
+        tools = self._available_tools if allow_tools else ()
+        if self._event_sink is None:
+            return model_gateway.complete(messages, tools=tools)
+        model_call_id = str(new_correlation_id())
+        self._event_sink(
+            HarnessEventDraft(
+                event_type=EventType.MODEL_REQUEST_STARTED,
+                actor=EventActor.HARNESS,
+                payload={
+                    "attempt_number": self._attempt_number,
+                    "model_call_id": model_call_id,
+                },
+            )
+        )
+        if isinstance(model_gateway, StreamingModelGatewayPort):
+            completion = model_gateway.complete_stream(
+                messages,
+                tools=tools,
+                on_text_delta=lambda delta: self._emit_text_delta(
+                    model_call_id,
+                    delta,
+                ),
+            )
+        else:
+            completion = model_gateway.complete(messages, tools=tools)
+        return replace(
+            completion,
+            call_metadata=replace(
+                completion.call_metadata,
+                model_call_id=model_call_id,
+            ),
+        )
+
+    def _emit_text_delta(self, model_call_id: str, delta: ModelTextDelta) -> None:
+        if self._event_sink is None:
+            return
+        self._event_sink(
+            HarnessEventDraft(
+                event_type=EventType.MODEL_RESPONSE_DELTA,
+                actor=EventActor.HARNESS,
+                payload={
+                    "attempt_number": self._attempt_number,
+                    "model_call_id": model_call_id,
+                    "delta_index": delta.index,
+                    "content_delta": delta.content,
+                },
+            )
         )
 
     def append_tool_exchange(

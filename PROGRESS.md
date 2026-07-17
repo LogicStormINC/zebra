@@ -140,6 +140,31 @@
   mutation. Recovery consumes only persisted normalized UTF-8 extraction with
   safe workbook provenance. Spreadsheet editing, other formats, OCR, remote
   URLs, and authority changes remain excluded.
+- 2026-07-17: completed `QA-UI-RUNTIME-01` implementation on
+  `codex/qa-ui-runtime-feedback`. OpenAI-compatible providers now consume real
+  upstream SSE, coalesce only public Assistant content, reconstruct fragmented
+  tool calls, and preserve final response and usage semantics. Harness and
+  Worker persist correlated `model_response_delta` events as generation occurs;
+  durable cancellation or suspension interrupts continued provider consumption,
+  while `model_response_received` remains authoritative. HTTP session streaming
+  now replays from `after_sequence` and tails SQLite with keepalive, disconnect,
+  and terminal-close behavior without blocking the FastAPI event loop. The
+  desktop replaced finite replay polling with one cancellable, reconnectable
+  stream per active session and atomically converges partial text onto the final
+  Assistant row. Hidden reasoning fields remain excluded. All `1327` backend
+  tests, the 782-file size gate, Ruff, Mypy across 357 sources, 8 evals, all 18
+  Node 22 desktop checks, the production build, and Tauri check passed. Real
+  browser/provider acceptance with `deepseek-v4-flash` persisted two deltas
+  (`ST` + `REAM_BROWSER_OK_20260717`) before the authoritative final response,
+  rendered one final message, restored it after reload, and produced no console
+  errors. The existing 1.37 MB Vite chunk warning remains unchanged.
+- 2026-07-17: completed `QA-UI-UNBOUND-01` on
+  `codex/qa-ui-unbound-session-continuation`. Historical sessions without
+  durable workspace metadata no longer disable the Composer: continuation uses
+  the current valid launch configuration while bound sessions retain their
+  durable configuration. Node 22 focused launch checks and production build
+  passed, and browser regression on session `a5b155fa` enabled the send action
+  and returned `UNBOUND_CONTINUATION_OK` through the real execution path.
 - 2026-07-17: merged `P145-UI-01` through PR `#133`. The desktop
   now projects one chronological conversation stream from durable events,
   groups modern and legacy tool lifecycles deterministically across attempts,

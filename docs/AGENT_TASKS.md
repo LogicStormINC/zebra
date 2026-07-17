@@ -13020,6 +13020,83 @@ boundaries.
 
 ## Issue Remediation Task Board
 
+### QA-UI-RUNTIME-01 - Truthful Runtime Feedback
+
+- Status: `Review`
+- Owner: `Codex-APP`
+- Suggested role: `CORE / MODEL / WORKER / API / UI / QA / DOC`
+- Depends on: `QA-UI-UNBOUND-01`
+- Branch: `codex/qa-ui-runtime-feedback`
+- Owned paths: `packages/agent-core/`, `packages/agent-integrations/`,
+  `packages/agent-storage/`, `apps/worker/`, `apps/api/`, `UI/desktop/`,
+  `tests/`, `Makefile`, `README.md`,
+  `docs/桌面Agent运行态反馈UX整改方案_v1.0.md`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`, `task_plan.md`
+
+#### Goal
+
+Replace the fake “暂无返回” Assistant placeholder with one truthful,
+event-driven runtime activity surface, then complete real provider-to-desktop
+Assistant text streaming without turning transport state into durable authority.
+
+#### Acceptance
+
+- [x] No placeholder Assistant message is created before model content exists.
+- [x] Active sessions expose truthful phase, elapsed time, latest evidence, and
+  an accessible stop action without invented progress.
+- [x] Waiting, suspended, failed, cancelled, and completed states retain their
+  distinct semantics.
+- [x] Focused checks, Node 22 build, and browser regression pass.
+- [x] OpenAI-compatible model calls consume provider streaming responses while
+  preserving complete final responses, tool calls, usage, and error handling.
+- [x] Safe Assistant text deltas become correlated durable events during model
+  execution; final model-response events remain authoritative.
+- [x] The session SSE endpoint replays then tails new events with cursor resume,
+  keepalive, disconnect, and terminal-close behavior.
+- [x] Desktop execution no longer polls finite replay responses and instead
+  projects one cancellable, reconnectable stream into a partial Assistant row.
+- [x] Focused core, provider, worker, API, and desktop checks prove first-delta
+  delivery before completion, exact final convergence, reconnect de-duplication,
+  tool-call compatibility, failure behavior, and no hidden-thought exposure.
+
+#### Explicit Non-Goals
+
+- Hidden chain of thought, invented percentages, follow-up queues, WebSocket,
+  remote brokers, new dependencies, or Inspector redesign
+
+### QA-UI-UNBOUND-01 - Unbound Session Continuation
+
+- Status: `Done`
+- Owner: `Codex-APP`
+- Suggested role: `UI / QA`
+- Depends on: `P145-UI-01`
+- Branch: `codex/qa-ui-unbound-session-continuation`
+- Owned paths: `UI/desktop/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Allow historical sessions without durable workspace metadata to continue from
+the Composer by falling back to the current valid task-launch configuration.
+
+#### Acceptance
+
+- [x] A non-empty prompt enables the send action on an unbound historical session.
+- [x] Bound sessions continue to use their durable workspace configuration.
+- [x] Focused launch checks, production build, and browser regression pass.
+
+#### Validation Evidence
+
+- Node 22 focused launch check and production build passed; the existing Vite
+  bundle-size warning remains unchanged.
+- Browser regression reopened historical unbound session `a5b155fa`, observed
+  the send action become enabled after input, submitted the continuation, and
+  received `UNBOUND_CONTINUATION_OK` from the provider-backed execution path.
+
+#### Explicit Non-Goals
+
+- Backfilling historical session metadata or changing API session contracts
+- Making durable bound-session configuration editable
+
 ### QA-GOV-01 - Mainline Architecture And Engineering Closeout Plan
 
 - Status: `Review`
