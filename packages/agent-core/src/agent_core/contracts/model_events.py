@@ -78,6 +78,10 @@ class ModelResponseReceivedPayload(BaseModel):
     thinking_mode: str | None = None
     reasoning_effort: str | None = None
     tool_choice: str | None = None
+    prompt_version: str | None = None
+    tool_schema_bytes: int | None = Field(default=None, ge=0)
+    tool_schema_hash: str | None = None
+    stable_prefix_hash: str | None = None
     input_tokens: int | None = Field(default=None, ge=0)
     output_tokens: int | None = Field(default=None, ge=0)
     total_tokens: int | None = Field(default=None, ge=0)

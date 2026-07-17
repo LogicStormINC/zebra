@@ -30,6 +30,10 @@ from agent_integrations.openai_payloads import (
     serialize_tool,
 )
 from agent_integrations.openai_streaming import read_openai_stream
+from agent_integrations.request_metadata import (
+    ModelRequestMetadata,
+    build_request_metadata,
+)
 
 CHAT_COMPLETIONS_PATH = "/chat/completions"
 
@@ -78,7 +82,7 @@ class OpenAICompatibleModelGateway:
     ) -> ModelCompletion:
         tool_names = provider_tool_names(tools)
         resolved = self._resolve_deepseek(invocation_policy, has_tools=bool(tools))
-        request_body = self._request_body(
+        request_body, request_metadata = self._request_body(
             messages,
             tools=tools,
             tool_names=tool_names,
@@ -97,6 +101,7 @@ class OpenAICompatibleModelGateway:
                     latency_ms=int((perf_counter() - started) * 1000),
                     retry_count=retry_count,
                     resolved=resolved,
+                    request_metadata=request_metadata,
                     internal_names=internal_tool_names(tools, tool_names),
                 )
             except Exception as exc:
@@ -128,14 +133,14 @@ class OpenAICompatibleModelGateway:
     ) -> ModelCompletion:
         tool_names = provider_tool_names(tools)
         resolved = self._resolve_deepseek(invocation_policy, has_tools=bool(tools))
-        request_body = self._request_body(
+        request_body, request_metadata = self._request_body(
             messages,
             tools=tools,
             tool_names=tool_names,
             stream=True,
             resolved=resolved,
         )
-        client = self._client or httpx.Client(timeout=self._timeout_s)
+        client = self._client or httpx.Client(timeout=self._client_timeout())
         should_close = self._client is None
         started = perf_counter()
         retry_count = 0
@@ -163,6 +168,7 @@ class OpenAICompatibleModelGateway:
                         latency_ms=int((perf_counter() - started) * 1000),
                         retry_count=retry_count,
                         resolved=resolved,
+                        request_metadata=request_metadata,
                         internal_names=internal_tool_names(tools, tool_names),
                     )
                 except Exception as exc:
@@ -208,17 +214,20 @@ class OpenAICompatibleModelGateway:
         tool_names: tuple[str, ...],
         stream: bool,
         resolved: ResolvedDeepSeekInvocation | None,
-    ) -> dict[str, Any]:
+    ) -> tuple[dict[str, Any], ModelRequestMetadata | None]:
         body: dict[str, Any] = {
             "model": resolved.profile.model if resolved else self._model_name,
             "messages": [serialize_message(message) for message in messages],
             "stream": stream,
         }
         if tools:
-            body["tools"] = [
+            serialized_tools = [
                 serialize_tool(tool, provider_name=provider_name)
                 for tool, provider_name in zip(tools, tool_names, strict=True)
             ]
+            if resolved is not None:
+                serialized_tools.sort(key=_serialized_tool_name)
+            body["tools"] = serialized_tools
         if resolved is not None:
             body.update(
                 {
@@ -231,7 +240,8 @@ class OpenAICompatibleModelGateway:
                 body["reasoning_effort"] = resolved.reasoning_effort.value
             if stream:
                 body["stream_options"] = {"include_usage": True}
-        return body
+        metadata = build_request_metadata(body, resolved) if resolved else None
+        return body, metadata
 
     def _should_retry(
         self,
@@ -255,8 +265,13 @@ class OpenAICompatibleModelGateway:
             "Content-Type": "application/json",
         }
 
+    def _client_timeout(self) -> float | httpx.Timeout:
+        if self._deepseek_router is None:
+            return self._timeout_s
+        return httpx.Timeout(120.0, connect=10.0)
+
     def _post_chat_completion(self, body: dict[str, Any]) -> dict[str, Any]:
-        client = self._client or httpx.Client(timeout=self._timeout_s)
+        client = self._client or httpx.Client(timeout=self._client_timeout())
         should_close = self._client is None
         try:
             response = client.post(
@@ -332,3 +347,11 @@ def _read_defaults(path: Path) -> dict[str, str]:
         key, value = stripped.split("=", maxsplit=1)
         defaults[key.strip()] = value.strip()
     return defaults
+
+
+def _serialized_tool_name(tool: dict[str, object]) -> str:
+    function = tool.get("function")
+    if not isinstance(function, dict):
+        return ""
+    name = function.get("name")
+    return name if isinstance(name, str) else ""

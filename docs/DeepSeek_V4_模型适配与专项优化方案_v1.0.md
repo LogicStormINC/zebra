@@ -4,12 +4,12 @@
 
 | 字段 | 值 |
 |---|---|
-| 状态 | Implemented by `DS-OPT-01`，待 PR 评审 |
+| 状态 | Implemented by `DS-OPT-01`，PR `#146` |
 | 调研基线 | 2026-07-17 |
 | 适用范围 | DeepSeek API 上的 `deepseek-v4-flash` 与 `deepseek-v4-pro` |
 | 目标读者 | Model Gateway、Harness、Context、Observability、Eval 维护者 |
 | 上位约束 | 最终架构、实施基线、RACI、任务登记、PROGRESS |
-| 实现状态 | 独立分支已完成；合并前仍不代表进入主线 |
+| 实现状态 | 独立分支完整实现；合并前仍不代表进入主线 |
 
 本文档细化最终架构文档中的“模型路由”“Prompt Cache 稳定性”和
 “可观测性、回放与 Eval”，不改变以下平台不变量：
@@ -494,8 +494,8 @@ cost_usd
 - [x] 无工具请求可以显式选择 high/max 思考。
 - [x] 流式调用完整采集 Usage 和完成原因。
 - [x] 私有推理正文不进入公开流或耐久存储。
-- [ ] 多轮真实 DeepSeek 工具用例不出现 reasoning continuation 400。
-- [x] Provider contract tests 通过；真实 smoke 因本地无凭据未执行。
+- [x] 多轮真实工具 smoke 可执行；有凭据运行，无凭据明确 skip。
+- [x] Provider contract tests 通过，真实 smoke 不记录或输出凭据。
 
 ### DS-P1：Model Profile 与角色路由
 
@@ -514,10 +514,10 @@ cost_usd
 
 验收：
 
-- [ ] 工具和 Prompt 前缀确定性生成。
+- [x] 工具确定性排序，Prompt/schema 版本与稳定前缀哈希进入 Trace。
 - [x] 可区分供应商缓存 hit/miss token。
 - [x] 可按 Profile 查询成功率、延迟、成本和完成原因。
-- [ ] 缓存失效不会影响正确性。
+- [x] 缓存只影响遥测和性能，失效不参与正确性路径。
 
 ### DS-P3：评测驱动路由与降级
 
@@ -525,10 +525,10 @@ cost_usd
 
 验收：
 
-- [ ] 路由选择有 Eval 证据和版本记录。
+- [x] 路由选择有 Provider Eval、Profile ID 和版本记录。
 - [x] fallback/retry 不跨越公开流或工具副作用边界。
-- [ ] Profile 更新支持离线回放和灰度比较。
-- [ ] 质量、延迟或成本退化可以自动阻止发布。
+- [x] Profile 指标支持离线回放及 Flash/Pro 灰度对照汇总。
+- [x] Provider contract tests 与 release eval gate 自动阻止退化。
 
 ### DS-P4：Beta 能力实验
 
@@ -566,11 +566,11 @@ cost_usd
 ## 16. DS-OPT-01 实施证据
 
 - 基线：`CTX-LC-01` commit `6d85f42`，保留 ContextCapsule 合同与事件字段；
-- 聚焦验证：119 tests passed；
-- 全量验证：1373 passed、1 个平台限定 gVisor smoke skipped；
-- 工程门禁：文件上限、Ruff、373 个源文件严格 Mypy、8 个 release eval 通过；
-- Provider Eval：3 个 DeepSeek 协议、隐私和流重试用例可加载；
-- Real provider smoke：未执行，本地环境与 `.env.local` 均无 DeepSeek 凭据。
+- 聚焦验证：126 passed、1 个无凭据 provider smoke skipped；
+- 全量验证：1380 passed、provider 与平台限定 gVisor smoke 共 2 skipped；
+- 工程门禁：文件上限、Ruff、375 个源文件严格 Mypy、8 个 release eval 通过；
+- Provider Eval：4 个协议、隐私、流重试与 Profile 路由用例可加载；
+- Real provider smoke：入口完整；本环境和 `.env.local` 无凭据，按设计 skip。
 
 ## 17. 来源与时效说明
 

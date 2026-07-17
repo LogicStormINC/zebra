@@ -46,6 +46,16 @@ class ProviderModelCallTrace:
     thinking_mode: str | None = None
     reasoning_effort: str | None = None
     tool_choice: str | None = None
+    prompt_version: str | None = None
+    tool_schema_bytes: int | None = None
+    tool_schema_hash: str | None = None
+    stable_prefix_hash: str | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    reasoning_tokens: int | None = None
+    prompt_cache_hit_tokens: int | None = None
+    prompt_cache_miss_tokens: int | None = None
+    cost_usd: float | None = None
     finish_reason: str | None = None
     time_to_first_event_ms: int | None = None
     time_to_first_public_text_ms: int | None = None
@@ -61,10 +71,18 @@ class ProviderModelCallTrace:
             "time_to_first_event_ms",
             "time_to_first_public_text_ms",
             "latency_ms",
+            "tool_schema_bytes",
+            "input_tokens",
+            "output_tokens",
+            "reasoning_tokens",
+            "prompt_cache_hit_tokens",
+            "prompt_cache_miss_tokens",
         ):
             value = getattr(self, field_name)
             if value is not None and value < 0:
                 raise ValueError(f"{field_name} must not be negative")
+        if self.cost_usd is not None and self.cost_usd < 0:
+            raise ValueError("cost_usd must not be negative")
 
 
 @dataclass(frozen=True)
@@ -163,6 +181,16 @@ def _model_call_trace(event: SessionEvent) -> ProviderModelCallTrace:
         thinking_mode=_str_payload(event, "thinking_mode"),
         reasoning_effort=_str_payload(event, "reasoning_effort"),
         tool_choice=_str_payload(event, "tool_choice"),
+        prompt_version=_str_payload(event, "prompt_version"),
+        tool_schema_bytes=_optional_int_payload(event, "tool_schema_bytes"),
+        tool_schema_hash=_str_payload(event, "tool_schema_hash"),
+        stable_prefix_hash=_str_payload(event, "stable_prefix_hash"),
+        input_tokens=_optional_int_payload(event, "input_tokens"),
+        output_tokens=_optional_int_payload(event, "output_tokens"),
+        reasoning_tokens=_optional_int_payload(event, "reasoning_tokens"),
+        prompt_cache_hit_tokens=_optional_int_payload(event, "prompt_cache_hit_tokens"),
+        prompt_cache_miss_tokens=_optional_int_payload(event, "prompt_cache_miss_tokens"),
+        cost_usd=_optional_float_payload(event, "cost_usd"),
         finish_reason=_str_payload(event, "finish_reason"),
         time_to_first_event_ms=_optional_int_payload(event, "time_to_first_event_ms"),
         time_to_first_public_text_ms=_optional_int_payload(event, "time_to_first_public_text_ms"),
@@ -208,3 +236,10 @@ def _str_payload(event: SessionEvent, key: str) -> str | None:
     if not isinstance(value, str):
         return None
     return value.strip() or None
+
+
+def _optional_float_payload(event: SessionEvent, key: str) -> float | None:
+    value = event.payload.get(key)
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    return float(value)

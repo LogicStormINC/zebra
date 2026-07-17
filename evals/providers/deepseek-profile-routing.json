@@ -1,0 +1,9 @@
+{
+  "case_id": "deepseek-profile-routing",
+  "category": "provider",
+  "title": "DeepSeek Flash and Pro roles retain versioned routing evidence",
+  "prompt": "Compare executor, planner, reviewer, and summarizer calls by profile id, resolved model, quality, latency, and token usage.",
+  "min_events": 4,
+  "min_tool_results": 1,
+  "max_cost_usd": 2.0
+}

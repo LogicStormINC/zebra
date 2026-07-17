@@ -105,6 +105,16 @@ def _model_call_from_json(value: object) -> ProviderModelCallTrace:
         thinking_mode=_read_optional_str(value, "thinking_mode"),
         reasoning_effort=_read_optional_str(value, "reasoning_effort"),
         tool_choice=_read_optional_str(value, "tool_choice"),
+        prompt_version=_read_optional_str(value, "prompt_version"),
+        tool_schema_bytes=_read_optional_int(value, "tool_schema_bytes"),
+        tool_schema_hash=_read_optional_str(value, "tool_schema_hash"),
+        stable_prefix_hash=_read_optional_str(value, "stable_prefix_hash"),
+        input_tokens=_read_optional_int(value, "input_tokens"),
+        output_tokens=_read_optional_int(value, "output_tokens"),
+        reasoning_tokens=_read_optional_int(value, "reasoning_tokens"),
+        prompt_cache_hit_tokens=_read_optional_int(value, "prompt_cache_hit_tokens"),
+        prompt_cache_miss_tokens=_read_optional_int(value, "prompt_cache_miss_tokens"),
+        cost_usd=_read_optional_float(value, "cost_usd"),
         finish_reason=_read_optional_str(value, "finish_reason"),
         time_to_first_event_ms=_read_optional_int(value, "time_to_first_event_ms"),
         time_to_first_public_text_ms=_read_optional_int(value, "time_to_first_public_text_ms"),
@@ -163,3 +173,12 @@ def _read_optional_str(value: dict[object, object], key: str) -> str | None:
     if not isinstance(raw, str):
         raise ValueError(f"trace field {key} must be a string")
     return raw
+
+
+def _read_optional_float(value: dict[object, object], key: str) -> float | None:
+    raw = value.get(key)
+    if raw is None:
+        return None
+    if isinstance(raw, bool) or not isinstance(raw, int | float):
+        raise ValueError(f"trace field {key} must be a number")
+    return float(raw)

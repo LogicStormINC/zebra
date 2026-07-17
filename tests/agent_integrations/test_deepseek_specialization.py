@@ -115,6 +115,34 @@ def test_deepseek_stream_discards_reasoning_and_records_usage_and_finish() -> No
     assert metadata.usage.reasoning_tokens == 3
     assert metadata.usage.prompt_cache_hit_tokens == 8
     assert metadata.usage.prompt_cache_miss_tokens == 4
+    assert metadata.prompt_version == "zebra-deepseek-chat-v1"
+    assert metadata.stable_prefix_hash is not None
+
+
+def test_deepseek_stable_prefix_metadata_is_deterministic_for_tool_order() -> None:
+    requests: list[dict[str, object]] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        requests.append(json.loads(request.content))
+        return _completion("done")
+
+    gateway = _gateway(handle)
+    first = gateway.complete(
+        [_message("use tools")],
+        tools=(_tool("zebra.last"), _tool("alpha.first")),
+    )
+    second = gateway.complete(
+        [_message("use tools")],
+        tools=(_tool("alpha.first"), _tool("zebra.last")),
+    )
+
+    assert [tool["function"]["name"] for tool in requests[0]["tools"]] == [
+        "alpha__first",
+        "zebra__last",
+    ]
+    assert first.call_metadata.tool_schema_bytes > 0
+    assert first.call_metadata.tool_schema_hash == second.call_metadata.tool_schema_hash
+    assert first.call_metadata.stable_prefix_hash == second.call_metadata.stable_prefix_hash
 
 
 def test_deepseek_retries_retryable_error_only_before_public_delta() -> None:
@@ -130,6 +158,69 @@ def test_deepseek_retries_retryable_error_only_before_public_delta() -> None:
     completion = _gateway(handle).complete([_message("retry")])
 
     assert calls == 2
+    assert completion.call_metadata.retry_count == 1
+
+
+@pytest.mark.parametrize(
+    ("finish_reason", "normalized_error"),
+    [
+        ("length", "output_truncated"),
+        ("content_filter", "content_filtered"),
+    ],
+)
+def test_deepseek_rejects_incomplete_finish_reasons(
+    finish_reason: str,
+    normalized_error: str,
+) -> None:
+    with pytest.raises(ModelProviderError) as caught:
+        _gateway(lambda request: _completion("partial", finish_reason=finish_reason)).complete(
+            [_message("finish")]
+        )
+
+    assert caught.value.normalized_error == normalized_error
+
+
+def test_deepseek_retries_insufficient_resources_before_public_output() -> None:
+    calls = 0
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return _completion(
+                "not public yet",
+                finish_reason="insufficient_system_resource",
+            )
+        return _completion("recovered")
+
+    completion = _gateway(handle).complete([_message("retry resource")])
+
+    assert calls == 2
+    assert completion.call_metadata.retry_count == 1
+
+
+def test_deepseek_stream_retries_before_first_public_delta() -> None:
+    calls = 0
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return httpx.Response(503)
+        return httpx.Response(
+            200,
+            text='data: {"choices":[{"delta":{"content":"recovered"},'
+            '"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+        )
+
+    deltas = []
+    completion = _gateway(handle).complete_stream(
+        [_message("stream retry")],
+        on_text_delta=deltas.append,
+    )
+
+    assert calls == 2
+    assert [delta.content for delta in deltas] == ["recovered"]
     assert completion.call_metadata.retry_count == 1
 
 
@@ -185,6 +276,30 @@ def test_deepseek_does_not_retry_after_public_stream_delta() -> None:
     assert caught.value.retry_count == 0
 
 
+def test_deepseek_stream_error_never_exposes_private_reasoning() -> None:
+    gateway = OpenAICompatibleModelGateway(
+        provider_name="deepseek",
+        base_url="https://api.deepseek.com",
+        api_key="secret",
+        model_name="deepseek-v4-flash",
+        max_retries=0,
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(
+                    200,
+                    text='data: {"error":{"reasoning_content":"private chain"}}\n\n',
+                )
+            )
+        ),
+    )
+
+    with pytest.raises(ModelProviderError) as caught:
+        gateway.complete_stream([_message("error")], on_text_delta=lambda delta: None)
+
+    assert caught.value.normalized_error == "provider_stream_error"
+    assert "private chain" not in str(caught.value)
+
+
 def test_non_deepseek_openai_compatible_request_remains_legacy_shaped() -> None:
     captured: dict[str, object] = {}
 
@@ -232,9 +347,7 @@ def test_deepseek_normalizes_http_errors(
         model_name="deepseek-v4-flash",
         max_retries=0,
         client=httpx.Client(
-            transport=httpx.MockTransport(
-                lambda request: httpx.Response(status, request=request)
-            )
+            transport=httpx.MockTransport(lambda request: httpx.Response(status, request=request))
         ),
     )
 
@@ -264,21 +377,29 @@ def _message(content: str) -> SessionMessage:
     )
 
 
-def _tool() -> ModelToolDefinition:
+def _tool(name: str = "files.read") -> ModelToolDefinition:
     return ModelToolDefinition(
-        name="files.read",
+        name=name,
         description="Read a file.",
         parameters={"type": "object", "properties": {}},
     )
 
 
-def _completion(content: str, *, model: str = "deepseek-v4-flash") -> httpx.Response:
+def _completion(
+    content: str,
+    *,
+    model: str = "deepseek-v4-flash",
+    finish_reason: str = "stop",
+) -> httpx.Response:
     return httpx.Response(
         200,
         json={
             "model": model,
             "choices": [
-                {"message": {"role": "assistant", "content": content}, "finish_reason": "stop"}
+                {
+                    "message": {"role": "assistant", "content": content},
+                    "finish_reason": finish_reason,
+                }
             ],
         },
     )

@@ -17,6 +17,10 @@ from agent_observability.models import (
     TraceRecord,
     build_trace_record,
 )
+from agent_observability.profile_metrics import (
+    ModelProfileSummary,
+    summarize_model_profiles,
+)
 from agent_observability.replay import LocalReplayRunner, ReplayResult
 
 __all__ = [
@@ -30,6 +34,7 @@ __all__ = [
     "LocalEvalRunner",
     "LocalReleaseGate",
     "LocalReplayRunner",
+    "ModelProfileSummary",
     "ProviderModelCallTrace",
     "ReplayResult",
     "ReleaseGatePolicy",
@@ -37,4 +42,5 @@ __all__ = [
     "TraceRecord",
     "build_trace_record",
     "load_eval_cases",
+    "summarize_model_profiles",
 ]

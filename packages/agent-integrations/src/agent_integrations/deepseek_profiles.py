@@ -23,6 +23,8 @@ class DeepSeekModelProfile:
     reasoning_effort: ModelReasoningEffort | None
     supports_tools: bool
     context_window: ModelContextWindow
+    prompt_version: str = "zebra-deepseek-chat-v1"
+    timeout_profile: str = "deepseek-interactive-v1"
     version_observed_at: str = PROFILE_VERSION_OBSERVED_AT
 
 

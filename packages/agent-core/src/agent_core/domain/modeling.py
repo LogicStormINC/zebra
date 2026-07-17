@@ -118,6 +118,10 @@ class ModelCallMetadata:
     thinking_mode: str | None = None
     reasoning_effort: str | None = None
     tool_choice: str | None = None
+    prompt_version: str | None = None
+    tool_schema_bytes: int | None = None
+    tool_schema_hash: str | None = None
+    stable_prefix_hash: str | None = None
     finish_reason: str | None = None
     time_to_first_event_ms: int | None = None
     time_to_first_public_text_ms: int | None = None
@@ -140,6 +144,9 @@ class ModelCallMetadata:
             "thinking_mode",
             "reasoning_effort",
             "tool_choice",
+            "prompt_version",
+            "tool_schema_hash",
+            "stable_prefix_hash",
             "finish_reason",
             "system_fingerprint",
             "normalized_error",
@@ -155,6 +162,8 @@ class ModelCallMetadata:
             value = getattr(self, field_name)
             if value is not None and value < 0:
                 raise ValueError(f"{field_name} must not be negative")
+        if self.tool_schema_bytes is not None and self.tool_schema_bytes < 0:
+            raise ValueError("tool_schema_bytes must not be negative")
         if self.retry_count < 0:
             raise ValueError("retry_count must not be negative")
         if self.cost_usd is not None and self.cost_usd < 0:

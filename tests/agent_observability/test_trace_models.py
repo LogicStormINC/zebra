@@ -53,6 +53,10 @@ def test_build_trace_record_summarizes_events_tools_and_cost() -> None:
                 "thinking_mode": "enabled",
                 "reasoning_effort": "high",
                 "tool_choice": "none",
+                "prompt_version": "zebra-deepseek-chat-v1",
+                "tool_schema_bytes": 128,
+                "tool_schema_hash": "schema-hash",
+                "stable_prefix_hash": "prefix-hash",
                 "finish_reason": "stop",
                 "time_to_first_event_ms": 20,
                 "time_to_first_public_text_ms": 50,
@@ -93,6 +97,9 @@ def test_build_trace_record_summarizes_events_tools_and_cost() -> None:
     assert trace.model_calls[0].resolved_model == "deepseek-v4-pro"
     assert trace.model_calls[0].time_to_first_public_text_ms == 50
     assert trace.model_calls[0].retry_count == 1
+    assert trace.model_calls[0].prompt_version == "zebra-deepseek-chat-v1"
+    assert trace.model_calls[0].tool_schema_bytes == 128
+    assert trace.model_calls[0].stable_prefix_hash == "prefix-hash"
     assert [record.sequence for record in trace.audit] == [0, 1, 2]
 
 

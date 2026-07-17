@@ -17,6 +17,7 @@ from agent_core.domain.tools import ToolCall
 
 from agent_integrations.deepseek_profiles import ResolvedDeepSeekInvocation
 from agent_integrations.model_errors import finish_reason_error
+from agent_integrations.request_metadata import ModelRequestMetadata
 
 
 def serialize_message(message: SessionMessage) -> dict[str, object]:
@@ -98,6 +99,7 @@ def parse_completion(
     latency_ms: int,
     retry_count: int = 0,
     resolved: ResolvedDeepSeekInvocation | None = None,
+    request_metadata: ModelRequestMetadata | None = None,
     internal_names: Mapping[str, str] | None = None,
 ) -> ModelCompletion:
     choices = payload.get("choices")
@@ -154,6 +156,10 @@ def parse_completion(
                 resolved.reasoning_effort.value if resolved and resolved.reasoning_effort else None
             ),
             tool_choice=resolved.tool_choice.value if resolved else None,
+            prompt_version=(request_metadata.prompt_version if request_metadata else None),
+            tool_schema_bytes=(request_metadata.tool_schema_bytes if request_metadata else None),
+            tool_schema_hash=(request_metadata.tool_schema_hash if request_metadata else None),
+            stable_prefix_hash=(request_metadata.stable_prefix_hash if request_metadata else None),
             finish_reason=finish_reason,
             time_to_first_event_ms=optional_int(payload.get("_zebra_time_to_first_event_ms")),
             time_to_first_public_text_ms=optional_int(
