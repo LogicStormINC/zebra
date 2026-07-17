@@ -293,23 +293,15 @@ def _queued_memory_records(
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
             return []
-        # ponytail: queue sweep reuses the current repo-scoped query and filters
-        # to one source_session_id afterward. Add a storage-side session filter if
-        # one workspace can exceed 500 queued repo memories.
-        records = memory_store.list(
+        return memory_store.list(
             MemoryQuery(
                 repo_id=str(workspace_root),
+                source_session_id=session_key,
                 visibility=MemoryVisibility.REPO,
                 statuses=(MemoryStatus.CANDIDATE,),
                 limit=500,
             )
         )
-        return [
-            record
-            for record in records
-            if record.source_session_id is not None
-            and str(record.source_session_id) == expected_scope_id
-        ]
     if expected_visibility is MemoryVisibility.USER:
         return memory_store.list(
             MemoryQuery(

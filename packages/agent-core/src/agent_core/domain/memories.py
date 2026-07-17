@@ -95,6 +95,7 @@ class MemoryQuery(BaseModel):
     tenant_id: str | None = None
     user_id: str | None = None
     repo_id: str | None = None
+    source_session_id: SessionId | None = None
     memory_types: tuple[MemoryType, ...] = ()
     statuses: tuple[MemoryStatus, ...] = (MemoryStatus.CONFIRMED,)
     visibility: MemoryVisibility | None = None

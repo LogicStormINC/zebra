@@ -127,6 +127,9 @@ class SQLiteMemoryStore(MemoryStorePort):
         if query.repo_id is not None:
             clauses.append("repo_id = ?")
             parameters.append(query.repo_id)
+        if query.source_session_id is not None:
+            clauses.append("source_session_id = ?")
+            parameters.append(str(query.source_session_id))
         if query.visibility is not None:
             clauses.append("visibility = ?")
             parameters.append(query.visibility.value)
@@ -196,6 +199,12 @@ class SQLiteMemoryStore(MemoryStorePort):
                 """
                 CREATE INDEX IF NOT EXISTS idx_memory_records_repo_scope
                 ON memory_records(repo_id, status, updated_at DESC)
+                """
+            )
+            connection.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_memory_records_repo_session_scope
+                ON memory_records(repo_id, source_session_id, status, updated_at DESC)
                 """
             )
             connection.execute(

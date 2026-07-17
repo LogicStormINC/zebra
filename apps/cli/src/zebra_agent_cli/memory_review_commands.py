@@ -12,6 +12,7 @@ from zebra_agent_cli.memory_review_execution import (
 from zebra_agent_cli.memory_review_preview import (
     _preview_queue_memory_review,
 )
+from zebra_agent_cli.session_identity import parse_session_id
 
 
 def record_memory_review(
@@ -142,13 +143,16 @@ def record_queue_memory_review(
     operator: str,
     reason: str,
 ) -> dict[str, object]:
+    session_key = parse_session_id(session_id, database_path=database_path)
+    if isinstance(session_key, dict):
+        return session_key
     return _record_queue_memory_review(
         database_path=database_path,
         decision=decision,
         operator=operator,
         reason=reason,
         expected_visibility=MemoryVisibility.REPO,
-        expected_scope_id=session_id,
+        expected_scope_id=str(session_key),
     )
 
 
@@ -195,12 +199,15 @@ def preview_queue_memory_review(
     decision: str,
     memory_type: str | None,
 ) -> dict[str, object]:
+    session_key = parse_session_id(session_id, database_path=database_path)
+    if isinstance(session_key, dict):
+        return session_key
     return _preview_queue_memory_review(
         database_path=database_path,
         decision=decision,
         memory_type=memory_type,
         expected_visibility=MemoryVisibility.REPO,
-        expected_scope_id=session_id,
+        expected_scope_id=str(session_key),
     )
 
 

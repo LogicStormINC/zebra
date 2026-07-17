@@ -14,6 +14,7 @@ from zebra_agent_api.memory_review_preview import (
     _preview_memory_queue,
 )
 from zebra_agent_api.responses import ApiResponse
+from zebra_agent_api.session_identity_read import _parse_session_id
 
 
 def review_session_memory(
@@ -124,11 +125,14 @@ def review_session_memory_queue(
     session_id: str,
     payload: dict[str, object],
 ) -> ApiResponse:
+    session_key = _parse_session_id(session_id)
+    if isinstance(session_key, ApiResponse):
+        return session_key
     return _review_memory_queue(
         database_path=database_path,
         payload=payload,
         expected_visibility=MemoryVisibility.REPO,
-        expected_scope_id=session_id,
+        expected_scope_id=str(session_key),
     )
 
 
@@ -166,11 +170,14 @@ def preview_session_memory_queue(
     session_id: str,
     payload: dict[str, object],
 ) -> ApiResponse:
+    session_key = _parse_session_id(session_id)
+    if isinstance(session_key, ApiResponse):
+        return session_key
     return _preview_memory_queue(
         database_path=database_path,
         payload=payload,
         expected_visibility=MemoryVisibility.REPO,
-        expected_scope_id=session_id,
+        expected_scope_id=str(session_key),
     )
 
 

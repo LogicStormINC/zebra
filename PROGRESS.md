@@ -2,6 +2,18 @@
 
 ## Addendum
 
+- 2026-07-17: completed `QA-39-MEM-01` for review. Repo-session memory queue
+  sweeps now filter by `source_session_id` inside SQLite before the 500-row
+  limit, malformed session ids return stable API/CLI `invalid_request` results,
+  and the stale Phase 56 README status was removed. All 1317 tests and
+  `make check` passed, including the 777-file size gate, Ruff, Mypy across 352
+  source files, and all 8 release-gate evals.
+
+- 2026-07-17: started `QA-39-MEM-01` on
+  `codex/issue-39-memory-queue-reliability` to fix GitHub Issue `#39` by pushing
+  repo-session filtering into the memory-store query, stabilizing malformed
+  session-id handling, and removing the stale Phase 56 README status line.
+
 - 2026-07-17: completed `P144-WEB-01`; approved HTML now reaches the model as
   bounded readable text. All `1312` tests, 351-source Mypy, 8 evals, 14 desktop
   checks, Node 22 build, offline Tauri, browser and real-provider proof
