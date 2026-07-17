@@ -11,6 +11,22 @@ from zebra_agent_api.app import create_app
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
 
 
+def test_api_review_session_memory_queue_rejects_invalid_session_id(
+    tmp_path: Path,
+) -> None:
+    response = create_app(tmp_path / "memory.sqlite").review_session_memory_queue(
+        "not-a-uuid",
+        {"decision": "confirm", "operator": "alice"},
+    )
+
+    assert response.status_code == 400
+    assert response.body == {
+        "session_id": "not-a-uuid",
+        "status": "invalid_request",
+        "reason": "session_id must be a valid UUID",
+    }
+
+
 def test_api_review_session_memory_queue_filters_to_current_session(
     tmp_path: Path,
 ) -> None:
