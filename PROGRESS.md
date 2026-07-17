@@ -2,6 +2,19 @@
 
 ## Addendum
 
+- 2026-07-17: completed `QA-2-STO-01` for review. SQLite worker lease
+  acquisition now uses one conditional UPSERT with `RETURNING`, so competing
+  workers cannot both report ownership; active same-worker renewal preserves
+  the original acquisition time and expired takeover remains supported. The
+  deterministic regression forces the former read-then-upsert race. All 1314
+  tests and `make check` passed, including the 776-file size gate, Ruff, Mypy
+  across 351 source files, and all 8 release-gate evals.
+
+- 2026-07-17: started `QA-2-STO-01` on
+  `codex/issue-2-atomic-sqlite-leases` to replace the SQLite lease
+  read-then-upsert race with one atomic conditional claim and add a real
+  concurrent worker regression test. The separate runtime/tools package cycle
+  remains outside this task.
 - 2026-07-17: completed `QA-39-MEM-01` for review. Repo-session memory queue
   sweeps now filter by `source_session_id` inside SQLite before the 500-row
   limit, malformed session ids return stable API/CLI `invalid_request` results,
