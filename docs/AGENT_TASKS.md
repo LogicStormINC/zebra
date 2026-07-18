@@ -14174,7 +14174,7 @@ external model network with a deterministic local streaming provider.
 
 ### ARCH-SVC-BOUNDARY-01 - Agent Runtime Microservice Business Boundary
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Suggested role: `ARCHITECTURE / DOCS`
 - Depends on: current Agent Runtime and cloud target architecture
@@ -14194,9 +14194,18 @@ namespace isolation, concurrency, durability, and audit contracts.
 
 #### Acceptance
 
-- [ ] A focused ADR assigns every identity, business, and Agent responsibility to exactly one boundary.
-- [ ] Authelia is documented as the selected authentication provider without making Zebra own registration or credentials.
-- [ ] Cloud architecture and Phase 3 tasks no longer require Zebra-owned user, tenant-membership, subscription, or billing domains.
-- [ ] Zebra still enforces signed external authority, opaque namespace isolation, technical execution limits, and Agent audit evidence.
-- [ ] README identifies Zebra precisely and shows how an external business system integrates with it.
-- [ ] Reader testing, Markdown/file-size checks, and `make check` pass.
+- [x] A focused ADR assigns every identity, business, and Agent responsibility to exactly one boundary.
+- [x] Authelia is documented as the selected authentication provider without making Zebra own registration or credentials.
+- [x] Cloud architecture and Phase 3 tasks no longer require Zebra-owned user, tenant-membership, subscription, or billing domains.
+- [x] Zebra still enforces signed external authority, opaque namespace isolation, technical execution limits, and Agent audit evidence.
+- [x] README identifies Zebra precisely and shows how an external business system integrates with it.
+- [x] Reader testing, Markdown/file-size checks, and `make check` pass.
+
+#### Validation
+
+- Independent reader testing correctly identified Zebra, the three responsibility
+  boundaries, and the authority/namespace/limits contracts; ambiguous issuer,
+  namespace-key, limits, and Kubernetes terms were corrected from that review.
+- `git diff --check`
+- `make test` (`1483 passed, 7 skipped`)
+- `make check` (file-size, Ruff, mypy, and eval release gates passed)

@@ -7,10 +7,10 @@
 
 - Snapshot date: `2026-07-18`
 - Verified implementation baseline: `d586a8f` (PR `#165`)
-- Product posture: `feature-complete local Beta / single-host Phase A complete`
+- Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
 - Active implementation task: none
-- Active architecture task: `ARCH-SVC-BOUNDARY-01` defines the embeddable
-  Agent Runtime microservice boundary
+- Active architecture task: `ARCH-SVC-BOUNDARY-01` is in review and defines the
+  embeddable Agent Runtime microservice boundary
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
@@ -53,6 +53,12 @@
 
 ### Product surfaces
 
+- Zebra owns Agent execution state and can run as an independent microservice;
+  Desktop and CLI are optional operator surfaces over the same Runtime.
+- Authelia/external identity owns authentication. Calling business systems own
+  users, organizations, membership, business authorization, subscriptions, and billing.
+- Zebra accepts signed Agent authority, opaque namespace, and technical limits;
+  internal Policy may only preserve or narrow that authority.
 - API, CLI, Worker, and Desktop read and mutate the same durable state.
 - Desktop consumes replay-plus-tail SSE, renders truthful partial output, and
   supports approval, clarification, task plans, context, artifacts, and handoff.
@@ -107,7 +113,8 @@ including a real thinking tool round trip.
 3. Add migration/backup evidence before any Phase B activation.
 4. Split or lazy-load the Desktop main bundle based on a repeatable bundle report.
 5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
-   Credential/Egress Broker, tenant isolation, and Kubernetes in dependency order.
+   Credential/Egress Broker, external-namespace isolation, and Kubernetes in
+   dependency order.
 
 ## Runtime Blueprint
 
@@ -150,9 +157,19 @@ real tool execution, failure visibility, API restart, and durable recovery.
 - optional code-intelligence adapter
 - Kubernetes/Kata/Firecracker and distributed Sandbox scheduling
 - PostgreSQL/object-storage production control plane
-- multi-tenant RBAC, quota, billing, and organization policy
+- external authority adapter and namespace-isolated cloud control plane
 - centralized Vault/KMS-backed credentials and production Egress
 - ecosystem marketplace, cross-organization A2A, and autonomous production release
+
+## Permanently External Business Responsibilities
+
+- user registration, login credentials, MFA and identity lifecycle
+- organization, membership, invitation, join/leave and account-disable workflows
+- business RBAC, subscriptions, plans, billing, invoices and commercial quota
+
+Authelia is the selected authentication provider. Zebra verifies external Agent
+authority and enforces technical execution limits, but does not duplicate these
+business domains. The durable decision is `ADR-012`.
 
 ## Document Responsibilities
 
