@@ -108,6 +108,7 @@ def _next_status_for_event(event: SessionEvent) -> WorkspaceStatus | None:
         EventType.APPROVAL_GRANTED: WorkspaceStatus.RUNNING,
         EventType.APPROVAL_REJECTED: WorkspaceStatus.FAILED,
         EventType.SESSION_SUSPENDED: WorkspaceStatus.SUSPENDED,
+        EventType.SESSION_HANDOFF_WORKSPACE_DRIFT_DETECTED: WorkspaceStatus.SUSPENDED,
         EventType.SESSION_RESUMED: WorkspaceStatus.PREPARED,
         EventType.SESSION_COMPLETED: WorkspaceStatus.COMPLETED,
         EventType.SESSION_FAILED: WorkspaceStatus.FAILED,

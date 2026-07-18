@@ -38,6 +38,7 @@ def recover_task(
     fallback_title: str,
     attachment_store: SQLiteArtifactPayloadStore,
     active_capsule: ContextCapsule | None = None,
+    handoff_evidence: RuntimeEvidenceInput | None = None,
 ) -> RecoveredTask:
     user_input: str | None = None
     task_payload: dict[str, object] | None = None
@@ -77,7 +78,10 @@ def recover_task(
         max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
         max_tool_calls=_optional_positive_int(task_payload.get("max_tool_calls")),
         attachments=attachments,
-        runtime_evidence=_context_capsule_evidence(events, active_capsule=active_capsule),
+        runtime_evidence=(
+            *_context_capsule_evidence(events, active_capsule=active_capsule),
+            *((handoff_evidence,) if handoff_evidence is not None else ()),
+        ),
     )
 
 

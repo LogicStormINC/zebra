@@ -1,11 +1,15 @@
 from datetime import datetime
+from typing import Protocol
 
 from agent_core.domain.events import EventActor, EventType
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports.runtime import EffectiveRuntimeAuthority
-from agent_runtime import LocalToolGateway
 
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
+
+
+class ClosableToolGateway(Protocol):
+    def close(self) -> None: ...
 
 
 def persist_runtime_authority(
@@ -32,7 +36,7 @@ def persist_runtime_authority(
     return True
 
 
-def close_tool_gateway(tool_gateway: LocalToolGateway) -> Exception | None:
+def close_tool_gateway(tool_gateway: ClosableToolGateway) -> Exception | None:
     try:
         tool_gateway.close()
     except Exception as exc:

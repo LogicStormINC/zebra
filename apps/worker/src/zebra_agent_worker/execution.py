@@ -43,6 +43,7 @@ from agent_storage import (
 )
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
+import zebra_agent_worker.session_handoff as handoff
 from zebra_agent_worker.approved_continuation import (
     ApprovedContinuationError,
     recover_approved_continuation,
@@ -75,8 +76,7 @@ from zebra_agent_worker.task_recovery import recover_task
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 
 
-class WorkerExecutionError(ValueError):
-    """Raised when a worker cannot reconstruct or execute a queued session."""
+class WorkerExecutionError(ValueError): ...
 
 
 @dataclass(frozen=True)
@@ -119,6 +119,7 @@ class SessionExecutionService:
         self._memory_extraction_service = MemoryCandidateExtractionService(
             SQLiteMemoryStore(database_path)
         )
+        self._handoff_gate = handoff.SessionHandoffRecoveryGate(str(database_path))
 
     def execute_session(
         self,
@@ -149,6 +150,13 @@ class SessionExecutionService:
                 recovery=self._recovery_service.recover_session(session_id),
                 lease=claimed.lease,
             )
+        recovered_handoff = handoff.recover_worker_handoff(
+            self._handoff_gate,
+            session_id,
+            worker_id=worker_id,
+            recovered_at=started_at,
+            release=lambda: self._claim_service.release_claim(claimed),
+        )
         session_events = self._event_store.list_for_session(session_id)
         active_context = self._context_lifecycle_store.get_active_capsule(session_id)
         provider_continuation = recover_provider_continuation(
@@ -161,6 +169,9 @@ class SessionExecutionService:
                 fallback_title=claimed.recovery.session.title,
                 attachment_store=self._artifact_payload_store,
                 active_capsule=active_context.capsule if active_context else None,
+                handoff_evidence=(
+                    None if recovered_handoff is None else recovered_handoff.runtime_evidence
+                ),
             )
         except (FileNotFoundError, ValueError) as exc:
             self._claim_service.release_claim(claimed)
@@ -205,7 +216,7 @@ class SessionExecutionService:
                     recovery=self._recovery_service.recover_session(session_id),
                     lease=claimed.lease,
                 )
-            tool_gateway = LocalToolGateway(
+            local_tool_gateway = LocalToolGateway(
                 task.workspace_root,
                 model_gateway=model_gateway,
                 tool_profile=task.tool_profile,
@@ -218,6 +229,13 @@ class SessionExecutionService:
                 runtime=runtime,
                 runtime_handle=runtime_handle,
                 artifact_payload_store=self._artifact_payload_store,
+            )
+            tool_gateway = handoff.guard_effectful_tools(
+                local_tool_gateway,
+                database_path=self._database_path,
+                session_id=session_id,
+                recovered_handoff=recovered_handoff,
+                authority_scope=f"{task.workspace_root.resolve()}|{task.policy_profile}|{task.network_profile.name.value}",
             )
         except Exception as exc:
             cleanup_error = None
@@ -435,6 +453,7 @@ class SessionExecutionService:
             events=emitted_events,
             attempt_result=attempt_result,
         )
+
 
 def _finalize_execution(
     *,

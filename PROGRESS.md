@@ -2,6 +2,15 @@
 
 ## Addendum
 
+- 2026-07-18: completed `CTX-HO-01C` on `codex/ctx-ho-01c-worker-recovery`.
+  Agent Context now deterministically builds a checksummed handoff Envelope and exposes only
+  bounded, untrusted public runtime evidence to the child. The worker consumes committed
+  handoff dispatches through the existing scheduler, transactionally checks the inherited
+  workspace revision before acknowledgement, suspends on drift, and revalidates after recovery.
+  A root-lineage effect ledger and guarded tool gateway reuse durable successful results while
+  rejecting reserved, executing or uncertain effects, so stage recovery cannot silently replay
+  external side effects. `CTX-HO-01D` is the next dependency and will add operator surfaces.
+
 - 2026-07-18: completed `CTX-HO-01B` on `codex/ctx-ho-01b-atomic-storage`.
   SQLite now reserves durable preparing operations and atomically commits the immutable Envelope,
   root/parent/child lineage, parent and child event streams, ready child/workspace projections,

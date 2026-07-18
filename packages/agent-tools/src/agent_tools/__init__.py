@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from agent_tools.builtin.search import WorkspaceSearchTool, files_search_contract
     from agent_tools.builtin.tests import TestsRunTool, tests_run_contract
     from agent_tools.contracts import RegisteredTool, ToolContract
+    from agent_tools.effect_guard import EffectGuardedToolGateway, effect_identity
     from agent_tools.executor import ToolExecutor
     from agent_tools.mcp_disclosure import (
         AuthorizedMcpToolCatalog,
@@ -61,6 +62,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "CommandRunTool",
+    "EffectGuardedToolGateway",
     "ClarifyTool",
     "FileReadTool",
     "GitStatusTool",
@@ -99,6 +101,7 @@ __all__ = [
     "WebSearchTransport",
     "build_mcp_proxy_request",
     "command_run_contract",
+    "effect_identity",
     "clarify_contract",
     "file_read_contract",
     "files_list_contract",
@@ -116,6 +119,10 @@ __all__ = [
 ]
 
 _EXPORTS = {
+    "EffectGuardedToolGateway": (
+        "agent_tools.effect_guard",
+        "EffectGuardedToolGateway",
+    ),
     "AuthorizedMcpToolCatalog": (
         "agent_tools.mcp_disclosure",
         "AuthorizedMcpToolCatalog",
@@ -158,6 +165,7 @@ _EXPORTS = {
     "WebSearchTransport": ("agent_tools.web_search", "WebSearchTransport"),
     "build_mcp_proxy_request": ("agent_tools.mcp_proxy", "build_mcp_proxy_request"),
     "command_run_contract": ("agent_tools.builtin.command", "command_run_contract"),
+    "effect_identity": ("agent_tools.effect_guard", "effect_identity"),
     "clarify_contract": ("agent_tools.builtin.clarify", "clarify_contract"),
     "file_read_contract": ("agent_tools.builtin.files", "file_read_contract"),
     "files_list_contract": ("agent_tools.builtin.listing", "files_list_contract"),
