@@ -88,7 +88,15 @@ class PackagedApp:
         return response.get("value")
 
     def body(self) -> str:
-        return str(self.execute("return document.body.innerText"))
+        element_id = self._element("css selector", "body")
+        response = request_json(
+            "GET",
+            f"{DRIVER_URL}/session/{self.session_id}/element/{element_id}/text",
+        )
+        value = response.get("value")
+        if not isinstance(value, str):
+            raise AssertionError("WebDriver body text is unavailable")
+        return value
 
     def wait_body(self, expected: str, *, timeout: float = 30) -> str:
         deadline = time.monotonic() + timeout
@@ -176,6 +184,11 @@ class PackagedApp:
             "GET", f"{DRIVER_URL}/session/{self.session_id}/screenshot"
         )
         path.write_bytes(base64.b64decode(response["value"]))
+
+    def refresh(self) -> None:
+        request_json(
+            "POST", f"{DRIVER_URL}/session/{self.session_id}/refresh", {}
+        )
 
     def close(self) -> None:
         try:
@@ -287,7 +300,7 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         app.wait_body("本地运行时未连接", timeout=15)
         api = start_api(repository, database)
         wait_for_api()
-        app.execute("location.reload()")
+        app.refresh()
         app.wait_body("本地运行时已连接", timeout=20)
         app.wait_body("E2E_FAILURE packaged failure", timeout=20)
         app.wait_body("任务执行失败")
