@@ -39,9 +39,10 @@ def test_real_os_sandbox_blocks_host_escape_network_and_inherits_to_children(
     write_inside = runtime.execute(
         RuntimeExecutionRequest(command=("/bin/sh", "-c", "echo ok > created.txt"))
     )
-    write_outside = runtime.execute(
+    runtime.execute(
         RuntimeExecutionRequest(command=("/bin/sh", "-c", f"echo bad > {outside}"))
     )
+    outside_after = runtime.execute(RuntimeExecutionRequest(command=("/bin/cat", str(outside))))
     network = runtime.execute(
         RuntimeExecutionRequest(
             command=("/usr/bin/curl", "--connect-timeout", "1", "http://1.1.1.1")
@@ -51,6 +52,6 @@ def test_real_os_sandbox_blocks_host_escape_network_and_inherits_to_children(
     assert readable.stdout == "inside"
     assert child_escape.succeeded is False
     assert write_inside.succeeded and (workspace / "created.txt").read_text().strip() == "ok"
-    assert write_outside.succeeded is False
     assert outside.read_text(encoding="utf-8") == "outside"
+    assert outside_after.succeeded is False
     assert network.succeeded is False
