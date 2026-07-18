@@ -2,6 +2,14 @@
 
 ## Addendum
 
+- 2026-07-18: completed `CTX-HO-01D` on `codex/ctx-ho-01d-operator-surfaces`.
+  API and CLI now preview, create, inspect and read stage lineage with stable validation errors
+  and idempotent replay. Actor identity and trust are derived from the authenticated transport;
+  clients cannot submit lineage, checksum, authority or completion evidence. The CLI requires an
+  explicit confirmation after preview. Desktop exposes Start next stage only for completed or
+  suspended sessions, lists known omissions, confirms creation, navigates to the child and keeps
+  the parent-to-child breadcrumb visible. `CTX-HO-01E` remains the release-gate dependency.
+
 - 2026-07-18: completed `CTX-HO-01C` on `codex/ctx-ho-01c-worker-recovery`.
   Agent Context now deterministically builds a checksummed handoff Envelope and exposes only
   bounded, untrusted public runtime evidence to the child. The worker consumes committed

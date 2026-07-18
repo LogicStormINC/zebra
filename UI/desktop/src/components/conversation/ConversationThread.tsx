@@ -1,5 +1,5 @@
 import type { ChatMessage } from "../../lib/chat-surface";
-import type { ApprovalSummary, SessionEvent, SessionSummary } from "../../types";
+import type { ApprovalSummary, SessionEvent, SessionHandoffPayload, SessionHandoffResponse, SessionSummary } from "../../types";
 import { useConversationPaneStyle } from "../CodexConversationPane.styles";
 import { SessionThreadWorkspace } from "../SessionThreadWorkspace";
 
@@ -17,6 +17,8 @@ interface ConversationThreadProps {
   messages: ChatMessage[];
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
+  onPreviewHandoff: (payload: SessionHandoffPayload) => Promise<SessionHandoffResponse>;
+  onCreateHandoff: (payload: SessionHandoffPayload) => Promise<SessionHandoffResponse>;
   onRespondClarification: (clarificationId: string, content: string) => Promise<unknown>;
   sessionSummary: SessionSummary | null;
 }
@@ -35,6 +37,8 @@ export function ConversationThread({
   messages,
   onApprove,
   onReject,
+  onPreviewHandoff,
+  onCreateHandoff,
   onRespondClarification,
   sessionSummary,
 }: ConversationThreadProps) {
@@ -56,6 +60,8 @@ export function ConversationThread({
             messages={messages}
             onApprove={onApprove}
             onReject={onReject}
+            onPreviewHandoff={onPreviewHandoff}
+            onCreateHandoff={onCreateHandoff}
             onRespondClarification={onRespondClarification}
             sessionSummary={sessionSummary}
           />

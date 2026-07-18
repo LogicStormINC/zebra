@@ -21,7 +21,7 @@ import { availableMcpPrompts, availableMcpResourceIds, availableMcpToolNames } f
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
 import { attachmentPayloads, type AttachmentPayload, type PendingAttachment } from "../lib/text-attachments";
 import { resolveSessionLaunchConfig, validateTaskLaunchConfig, type TaskLaunchConfig } from "../lib/task-launch-config";
-import type { ApprovalSummary, McpCapabilitiesResponse, McpPromptsResponse, SessionEvent, SessionSummary } from "../types";
+import type { ApprovalSummary, McpCapabilitiesResponse, McpPromptsResponse, SessionEvent, SessionHandoffPayload, SessionHandoffResponse, SessionSummary } from "../types";
 import { useConversationPaneStyle } from "./CodexConversationPane.styles";
 import { ConversationComposer } from "./conversation/ConversationComposer";
 import { ConversationThread } from "./conversation/ConversationThread";
@@ -63,6 +63,8 @@ interface CodexConversationPaneProps {
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onRefreshConversation: () => void;
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
+  onPreviewHandoff: (payload: SessionHandoffPayload) => Promise<SessionHandoffResponse>;
+  onCreateHandoff: (payload: SessionHandoffPayload) => Promise<SessionHandoffResponse>;
   onRespondClarification: (clarificationId: string, content: string) => Promise<unknown>;
   onScrollToLatest: () => void;
   onSelectConversation: (key: string) => void;
@@ -237,6 +239,8 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
             messages={props.messages}
             onApprove={props.onApprove}
             onReject={props.onReject}
+            onPreviewHandoff={props.onPreviewHandoff}
+            onCreateHandoff={props.onCreateHandoff}
             onRespondClarification={props.onRespondClarification}
             sessionSummary={props.sessionSummary}
           />
