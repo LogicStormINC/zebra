@@ -302,6 +302,7 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
             "GET", f"{API_URL}/sessions/{session_id}", headers=AUTH_HEADERS
         )
         assert session["workspace"]["runtime_name"] == "os-sandbox"
+        app.refresh()
         app.wait_body("Runtime")
         app.wait_body("os-sandbox")
         steps.append("approval-real-runtime")
