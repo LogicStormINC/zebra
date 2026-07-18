@@ -14170,3 +14170,32 @@ external model network with a deterministic local streaming provider.
 - packaged Tauri/WebView E2E, multi-browser coverage, or visual snapshot baselines
 - external provider credentials, production deployment, or unrestricted browser tools
 - changing public Session, SSE, Worker, or Desktop product contracts
+
+### ARCH-SVC-BOUNDARY-01 - Agent Runtime Microservice Business Boundary
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested role: `ARCHITECTURE / DOCS`
+- Depends on: current Agent Runtime and cloud target architecture
+- Branch: `codex/arch-svc-boundary-01`
+- Owned paths: `docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md`,
+  `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
+  `docs/单机与云平台Runtime目标架构方案_v1.0.md`,
+  `docs/01_Codex-like工程Agent平台_任务拆解与阶段验收标准_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Define Zebra as an embeddable Agent Runtime microservice rather than a user,
+tenant, subscription, or billing platform. Keep authentication and business
+authorization external while preserving enforceable Agent execution authority,
+namespace isolation, concurrency, durability, and audit contracts.
+
+#### Acceptance
+
+- [ ] A focused ADR assigns every identity, business, and Agent responsibility to exactly one boundary.
+- [ ] Authelia is documented as the selected authentication provider without making Zebra own registration or credentials.
+- [ ] Cloud architecture and Phase 3 tasks no longer require Zebra-owned user, tenant-membership, subscription, or billing domains.
+- [ ] Zebra still enforces signed external authority, opaque namespace isolation, technical execution limits, and Agent audit evidence.
+- [ ] README identifies Zebra precisely and shows how an external business system integrates with it.
+- [ ] Reader testing, Markdown/file-size checks, and `make check` pass.
