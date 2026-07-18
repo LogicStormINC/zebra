@@ -51,6 +51,12 @@ from agent_runtime.research import (
     ReadOnlyToolGateway,
     ResearchSubagentTool,
 )
+from agent_runtime.setup_phase import (
+    SetupPhaseError,
+    SetupPhasePlan,
+    SetupPhaseResult,
+    SetupPhaseRunner,
+)
 from agent_runtime.subagents import (
     LocalResearchSubagentCoordinator,
     SubagentLimitError,
@@ -95,6 +101,10 @@ __all__ = [
     "McpServerSpec",
     "ResolvedMcpPrompt",
     "SubagentLimitError",
+    "SetupPhaseError",
+    "SetupPhasePlan",
+    "SetupPhaseResult",
+    "SetupPhaseRunner",
     "UnknownSubagentError",
     "WorkspaceCommitCommand",
     "WorkspaceCommitError",

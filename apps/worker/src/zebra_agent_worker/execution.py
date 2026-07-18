@@ -71,7 +71,10 @@ from zebra_agent_worker.runtime_authority import (
     persist_runtime_authority,
     runtime_cleanup_failure_result,
 )
-from zebra_agent_worker.runtime_factory import build_runtime
+from zebra_agent_worker.runtime_setup import (
+    build_prepared_runtime,
+    require_matching_runtime_authority,
+)
 from zebra_agent_worker.task_recovery import recover_task
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 
@@ -183,25 +186,21 @@ class SessionExecutionService:
             raise
         runtime_handle = None
         try:
-            runtime = build_runtime(
+            runtime, prepared_runtime = build_prepared_runtime(
                 self._settings,
                 self._database_path,
                 workspace_root=task.workspace_root,
                 network_profile=task.network_profile.name.value,
-                session_id=str(session_id),
+                session_id=session_id,
                 attempt_number=1,
+                artifact_store=self._artifact_payload_store,
+                created_at=started_at,
             )
-            runtime_handle = runtime.provision(workspace_root=str(task.workspace_root))
+            runtime_handle = prepared_runtime.handle
             authority = runtime_handle.authority
-            persisted_digest = claimed.recovery.workspace.runtime_spec_digest
-            if (
-                authority is not None
-                and persisted_digest is not None
-                and persisted_digest != authority.spec_digest
-            ):
-                raise WorkerExecutionError(
-                    "configured runtime authority differs from session authority"
-                )
+            require_matching_runtime_authority(
+                runtime_handle, claimed.recovery.workspace.runtime_spec_digest
+            )
             authority_recorder = DurableHarnessEventRecorder(
                 session=claimed.recovery.session,
                 workspace=claimed.recovery.workspace,

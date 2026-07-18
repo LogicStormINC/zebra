@@ -75,6 +75,14 @@ from agent_security.secret_store import (
     SecretUnavailableError,
     get_secret_value,
 )
+from agent_security.setup_egress import (
+    SetupDownload,
+    SetupDownloadEvidence,
+    SetupDownloadTransport,
+    SetupEgressError,
+    SetupEgressGateway,
+    TemporarySetupCredential,
+)
 
 __all__ = [
     "EXTENDED_ARTIFACT_RETENTION",
@@ -105,6 +113,12 @@ __all__ = [
     "SUPPORTED_NETWORK_PROFILES",
     "ScmCredentialBoundary",
     "ScmCredentialCapability",
+    "SetupDownload",
+    "SetupDownloadEvidence",
+    "SetupDownloadTransport",
+    "SetupEgressError",
+    "SetupEgressGateway",
+    "TemporarySetupCredential",
     "SecretMaterial",
     "SecretMissingError",
     "SecretStore",

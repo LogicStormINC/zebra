@@ -125,10 +125,40 @@ Production v1 中，Sandbox 内普通 Agent 命令保持断网。现有 Web、MC
 - `none`：支持并由 Runtime 强制
 - `mcp-proxy-only`、`git-proxy-only`：Sandbox 仍断网，代理在外部执行
 - `domain-allowlist`：外部 Web Gateway 执行，Sandbox 不直连
-- `setup-only`：本任务只保留 fail-closed 合同，不新建任意 Egress 平台
+- `setup-only`：只允许外部 Setup Egress Gateway 对精确 HTTPS URL 执行 GET；
+  Sandbox 自身仍为 `network=none`
 - `full-trusted-local`：只允许 `trusted-local`
 
 任何不能由当前 Runtime 证明的网络 profile 必须拒绝，不得降级为 host network。
+
+### 6.1 Setup/Agent 两阶段
+
+`setup-only` 不把任意外网直接交给 Sandbox。Worker 按以下顺序执行：
+
+1. 校验 operator 配置的域名、最终 HTTPS URL、文件名和 SHA-256；拒绝 IP、
+   userinfo、query、非 443 端口和跨域 redirect；
+2. 外部 Gateway 使用可选临时 Bearer Credential 下载内容寻址依赖到
+   `.zebra/setup-cache`，命中相同 digest 时复用；
+3. Gateway 关闭并清除 Credential 后，才启动无网 Setup Sandbox；
+4. Setup command 必须保持声明的 lockfile 不变，随后生成并校验 Snapshot；
+5. 销毁 Setup Sandbox，使用相同 immutable authority 启动新的无网 Agent Sandbox；
+6. 将来源、hash、lockfile、SPDX 2.3 SBOM、Snapshot 和 authority 摘要写入现有
+   Artifact payload store；Artifact 只记录 command hash，不记录命令或 Secret。
+
+启用时必须同时配置：
+
+```text
+ZEBRA_SETUP_ENABLED=true
+ZEBRA_SETUP_COMMAND_JSON=["/bin/sh","-c","install-from .zebra/setup-cache"]
+ZEBRA_SETUP_ALLOWED_DOMAINS=files.example.test
+ZEBRA_SETUP_DEPENDENCIES_JSON=[{"url":"https://files.example.test/pkg.whl","sha256":"<64 hex>","file_name":"pkg.whl"}]
+ZEBRA_SETUP_LOCKFILES=uv.lock
+ZEBRA_SETUP_CREDENTIAL_ENV=TEMP_SETUP_TOKEN
+```
+
+配置只保存 Credential 环境变量名；缺值、hash 漂移、lockfile 变化、非硬 Runtime、
+Snapshot 不可恢复或 Artifact 持久化失败都会 fail closed。下载是只读 GET 且以
+digest 缓存，因此 Worker 重启可复用已验证结果，不重放远程写副作用。
 
 ## 7. 生命周期与恢复
 
@@ -177,11 +207,15 @@ capability preflight -> provisioned -> ready -> executing
 
 ## 10. 实现结果
 
-本方案已经落到 Runtime 合同、OS/OCI/gVisor adapter、配置、Worker/Tool Gateway、
+本方案已经落到 Runtime 合同、OS/OCI/gVisor adapter、Setup Egress、配置、
+Worker/Tool Gateway、
 暂停恢复、SQLite 投影、API/CLI readback 和 CI。硬模式启动前验证 Engine 与
 handler，清理同 session 遗留容器，再创建固定安全参数的 Sandbox。容器写权限
 预检失败、镜像未固定、运行时不可用、快照越界/篡改或 authority 漂移都会拒绝
 执行。逐命令环境变量被硬模式拒绝，Web/MCP/SCM 仍只走 Sandbox 外 Gateway。
+`setup-only` 现在通过外部内容寻址下载、Credential 撤销、无网 Setup、Snapshot
+验证、新 Agent handle 和 Setup Artifact 完成两阶段交接，不向 Sandbox 注入代理
+Token，也不新增 durable state 模型。
 
 原生隔离由 macOS Seatbelt 与 Linux bubblewrap 的 `os-sandbox-runtime` matrix
 验收 Workspace 读写、宿主逃逸、子进程继承和断网。容器隔离继续由 Linux CI

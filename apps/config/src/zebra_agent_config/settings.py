@@ -7,6 +7,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from zebra_agent_config.setup_settings import SetupSettings, load_setup_settings
+
 MAX_MCP_SERVERS = 3
 _MCP_NAME_RE = re.compile(r"^[a-z][a-z0-9_-]{0,19}$")
 _BLOCKED_MCP_EXECUTABLES = frozenset(
@@ -95,6 +97,7 @@ class ZebraAgentSettings:
     model: ModelSettings
     session_handoff: SessionHandoffSettings = field(default_factory=SessionHandoffSettings)
     runtime: RuntimeSettings = field(default_factory=RuntimeSettings)
+    setup: SetupSettings = field(default_factory=SetupSettings)
     scm: ScmSettings = field(
         default_factory=lambda: ScmSettings(
             provider="local-only",
@@ -169,6 +172,7 @@ def load_settings(
             enabled=_read_bool(values, "ZEBRA_SESSION_HANDOFF_ENABLED", default=False),
         ),
         runtime=_load_runtime_settings(values, profile=profile),
+        setup=load_setup_settings(values),
         scm=_load_scm_settings(values),
         web_search_endpoint=_read_optional(values, "ZEBRA_WEB_SEARCH_ENDPOINT"),
         skill_roots=_read_paths(values, "ZEBRA_SKILL_ROOTS"),
