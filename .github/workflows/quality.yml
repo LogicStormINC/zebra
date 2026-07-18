@@ -73,7 +73,7 @@ jobs:
       - name: Run real browser streaming regressions
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: playwright-results.json
-        run: pnpm e2e -- --reporter=line,json
+        run: pnpm e2e --reporter=line,json
       - name: Retain machine-readable streaming evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
