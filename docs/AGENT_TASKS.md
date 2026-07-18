@@ -21,10 +21,12 @@
 ## Current Board
 
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
+- `ARCH-RT-BP-01` is `Done` on
+  `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
+- `QA-148-MDL-01` is `Done` via PR `#156`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
-- No other card is `Ready`, `In Progress`, `Review`, or `Blocked` after PR
-  `#144` merges.
+- No other card is `Ready`, `In Progress`, `Review`, or `Blocked`.
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.
@@ -13889,3 +13891,48 @@ content, deltas, events, artifacts, logs, or durable Context Capsules.
 - Ruff: passed
 - strict Mypy: `403` source files, zero errors
 - release Eval: `8/8`, `pass_rate=1.00`
+
+### ARCH-RT-BP-01 - Single-Host And Cloud Runtime Blueprint
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `ARCHITECTURE / RUNTIME / SECURITY / DOC`
+- Depends on: merged Production Runtime v1 and explicit maintainer request
+- Branch: `codex/arch-runtime-deployment-blueprint`
+- Owned paths: `docs/单机与云平台Runtime目标架构方案_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record one implementation-oriented Runtime blueprint that preserves Zebra's
+durable domain contracts while defining distinct single-host and cloud
+deployment profiles.
+
+#### Acceptance
+
+- [x] Current implemented Runtime facts are separated from target-state design.
+- [x] Single-host execution, setup egress, OS sandbox, gVisor, persistence,
+  recovery, approval, and operator boundaries are explicit.
+- [x] Cloud control, agent, security, and execution planes are specified with
+  tenant isolation, credentials, egress, storage, scheduling, and recovery.
+- [x] Shared domain contracts and adapter-only differences prevent a local/cloud
+  product fork.
+- [x] Dependency-ordered phases, entry gates, exit criteria, risks, non-goals,
+  and release evidence are durable and implementation-ready.
+- [x] Documentation checks pass and no implementation task is implicitly
+  activated.
+
+#### Explicit Non-Goals
+
+- implementation code, dependency changes, migrations, deployment manifests,
+  cloud provisioning, or activation of any locked task
+- a Rust rewrite, a second session model, or direct network and raw credentials
+  inside a Sandbox
+
+#### Validation Evidence
+
+- architecture document remains below the 600-line primary-doc limit
+- `git diff --cached --check` passed
+- `make sync` passed
+- `make check` passed: 868-file size gate, Ruff, strict Mypy across 403 source
+  files, and all 8 release-gate evals
