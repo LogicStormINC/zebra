@@ -94,15 +94,22 @@ class PackagedApp:
         return response.get("value")
 
     def body(self) -> str:
-        element_id = self._element("css selector", "body")
-        response = request_json(
-            "GET",
-            f"{DRIVER_URL}/session/{self.session_id}/element/{element_id}/text",
-        )
-        value = response.get("value")
-        if not isinstance(value, str):
-            raise AssertionError("WebDriver body text is unavailable")
-        return value
+        for attempt in range(3):
+            element_id = self._element("css selector", "body")
+            try:
+                response = request_json(
+                    "GET",
+                    f"{DRIVER_URL}/session/{self.session_id}/element/{element_id}/text",
+                )
+            except AssertionError as exc:
+                if "stale element reference" in str(exc) and attempt < 2:
+                    continue
+                raise
+            value = response.get("value")
+            if not isinstance(value, str):
+                raise AssertionError("WebDriver body text is unavailable")
+            return value
+        raise AssertionError("WebDriver body remained stale")
 
     def wait_body(self, expected: str, *, timeout: float = 30) -> str:
         deadline = time.monotonic() + timeout

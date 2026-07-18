@@ -14093,8 +14093,8 @@ tamper, fault-injection, and soak release evidence.
 - Suggested role: `DESKTOP / API / QA / RELEASE`
 - Depends on: merged `ARCH-RT-A3-REL-01`
 - Branch: `codex/arch-rt-a4-desktop-e2e`
-- Owned paths: `UI/desktop/`, `apps/api/`, `apps/worker/`, `tests/api/`,
-  `tests/worker/`, `scripts/`,
+- Owned paths: `UI/desktop/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `tests/api/`,
+  `tests/cli/`, `tests/worker/`, `scripts/`,
   `.github/workflows/quality.yml`, `docs/生产级Runtime实施方案_v1.0.md`,
   `docs/AGENT_TASKS.md`, `PROGRESS.md`
 

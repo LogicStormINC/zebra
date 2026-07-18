@@ -82,6 +82,7 @@ def test_cli_resume_read_includes_workspace_projection(tmp_path: Path) -> None:
         "updated_at": _created_at().isoformat(),
         "policy_profile": "workspace_write",
         "last_attempt_number": 1,
+        "runtime_name": "local",
         "snapshot": {
             "runtime_name": "local",
             "snapshot_id": "snap-cli-1",
