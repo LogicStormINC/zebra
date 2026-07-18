@@ -64,6 +64,7 @@ def read_openai_stream(
 ) -> dict[str, Any]:
     started = perf_counter()
     content_parts: list[str] = []
+    reasoning_parts: list[str] = []
     tool_parts: dict[int, _ToolCallParts] = {}
     model_name: str | None = None
     usage: dict[str, Any] | None = None
@@ -104,6 +105,7 @@ def read_openai_stream(
             choice_finish_reason, emitted_public_text = _consume_choices(
                 payload.get("choices"),
                 content_parts=content_parts,
+                reasoning_parts=reasoning_parts,
                 tool_parts=tool_parts,
                 coalescer=coalescer,
             )
@@ -116,6 +118,8 @@ def read_openai_stream(
         "role": "assistant",
         "content": "".join(content_parts) or None,
     }
+    if reasoning_parts:
+        message["reasoning_content"] = "".join(reasoning_parts)
     if tool_parts:
         message["tool_calls"] = [
             {
@@ -146,6 +150,7 @@ def _consume_choices(
     value: object,
     *,
     content_parts: list[str],
+    reasoning_parts: list[str],
     tool_parts: dict[int, _ToolCallParts],
     coalescer: _TextDeltaCoalescer,
 ) -> tuple[str | None, bool]:
@@ -173,6 +178,11 @@ def _consume_choices(
             content_parts.append(content)
             coalescer.push(content)
             emitted_public_text = True
+        reasoning_content = delta.get("reasoning_content")
+        if reasoning_content is not None and not isinstance(reasoning_content, str):
+            raise ValueError("model stream reasoning_content delta must be a string")
+        if reasoning_content:
+            reasoning_parts.append(reasoning_content)
         _consume_tool_calls(delta.get("tool_calls"), tool_parts)
     return finish_reason, emitted_public_text
 

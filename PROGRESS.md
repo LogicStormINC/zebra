@@ -8,10 +8,10 @@
 - Snapshot date: `2026-07-18`
 - Verified implementation baseline: `667627a` (parent of governance-only PR `#144`)
 - Product posture: `feature-complete local Beta / single-host production candidate`
-- Active implementation task: `QA-148-MDL-01` is In Progress on
+- Active implementation task: `QA-148-MDL-01` is in Review on
   `codex/issue-148-deepseek-reasoning-replay`
 - Locked architecture tasks: ACP entry and optional code intelligence
-- Open product issue: `#148` is planned by `QA-148-MDL-01`
+- Open product issue: `#148` is addressed by `QA-148-MDL-01` and awaits merge
 
 ## Current Capability
 
@@ -44,6 +44,9 @@
   deterministic provider-continuation fallback.
 - DeepSeek stable Flash/Pro profiles, streaming/cache/TTFT/error telemetry, and
   default-off Beta capabilities are implemented without exposing private reasoning.
+- Explicit in-process DeepSeek thinking tool loops preserve and replay private
+  `reasoning_content`; default executor profiles remain non-thinking, and missing
+  continuation state fails before HTTP.
 
 ### Product surfaces
 
@@ -69,6 +72,10 @@ Validated from a detached `origin/main@667627a` worktree on 2026-07-18:
 
 The three skips are two opt-in real-provider smokes and the macOS-gated gVisor
 test. Linux CI runs the real gVisor smoke instead of treating that skip as proof.
+
+`QA-148-MDL-01` branch validation on 2026-07-18: focused contracts `39 passed`
+including a real DeepSeek thinking tool round trip; full suite `1452 passed, 4
+skipped`; file-size, Ruff, strict Mypy (`403` files), and release Eval (`8/8`) passed.
 
 ## Governance State
 

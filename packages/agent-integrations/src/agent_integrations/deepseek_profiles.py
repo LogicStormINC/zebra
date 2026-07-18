@@ -209,10 +209,14 @@ def _validate_invocation(
 ) -> None:
     if has_tools and not profile.supports_tools:
         raise ValueError(f"DeepSeek profile {profile.profile_id} does not support tools")
-    if has_tools and thinking_mode is ModelThinkingMode.ENABLED:
-        raise ValueError("DeepSeek thinking with tools is not supported")
     if thinking_mode is ModelThinkingMode.DISABLED and reasoning_effort is not None:
         raise ValueError("DeepSeek reasoning_effort requires thinking enabled")
+    if (
+        has_tools
+        and thinking_mode is ModelThinkingMode.ENABLED
+        and tool_choice is ModelToolChoice.REQUIRED
+    ):
+        raise ValueError("DeepSeek thinking mode does not support tool_choice=required")
     if has_tools and tool_choice is ModelToolChoice.NONE:
         raise ValueError("DeepSeek tool-bearing invocation cannot use tool_choice=none")
     if not has_tools and tool_choice is ModelToolChoice.REQUIRED:

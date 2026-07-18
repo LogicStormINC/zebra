@@ -3,15 +3,17 @@ from datetime import UTC, datetime
 
 import httpx
 import pytest
-from agent_core.domain.identifiers import new_message_id
+from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
     ModelInvocationPolicy,
     ModelReasoningEffort,
     ModelRole,
     ModelThinkingMode,
+    ModelToolChoice,
     ModelToolDefinition,
 )
+from agent_core.domain.tools import ToolCall
 from agent_integrations import ModelProviderError, OpenAICompatibleModelGateway
 
 
@@ -30,7 +32,7 @@ def test_deepseek_routes_no_tool_planner_to_pro_reasoning_profile() -> None:
     assert captured["model"] == "deepseek-v4-pro"
     assert captured["thinking"] == {"type": "enabled"}
     assert captured["reasoning_effort"] == "max"
-    assert captured["tool_choice"] == "none"
+    assert "tool_choice" not in captured
     assert completion.call_metadata.profile_id == "deepseek-v4-pro-planner-v1"
     assert completion.call_metadata.profile_version_observed_at == "2026-07-17"
 
@@ -49,7 +51,93 @@ def test_deepseek_tool_request_explicitly_disables_thinking() -> None:
     assert "reasoning_effort" not in captured
 
 
-def test_deepseek_rejects_thinking_with_tools_before_http() -> None:
+def test_deepseek_thinking_rejects_required_tool_choice_locally() -> None:
+    with pytest.raises(ValueError, match="does not support tool_choice=required"):
+        _gateway(lambda _: _completion("unexpected")).complete(
+            [_message("read")],
+            tools=(_tool(),),
+            invocation_policy=ModelInvocationPolicy(
+                thinking_mode=ModelThinkingMode.ENABLED,
+                reasoning_effort=ModelReasoningEffort.HIGH,
+                tool_choice=ModelToolChoice.REQUIRED,
+            ),
+        )
+
+
+def test_deepseek_thinking_tool_loop_replays_private_reasoning() -> None:
+    requests: list[dict[str, object]] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        requests.append(json.loads(request.content))
+        if len(requests) == 1:
+            return httpx.Response(
+                200,
+                json={
+                    "model": "deepseek-v4-flash",
+                    "choices": [
+                        {
+                            "message": {
+                                "role": "assistant",
+                                "content": None,
+                                "reasoning_content": "  private reasoning must stay exact  ",
+                                "tool_calls": [
+                                    {
+                                        "id": "call-1",
+                                        "type": "function",
+                                        "function": {
+                                            "name": "files__read",
+                                            "arguments": '{"path":"proof.txt"}',
+                                        },
+                                    }
+                                ],
+                            },
+                            "finish_reason": "tool_calls",
+                        }
+                    ],
+                },
+            )
+        return _completion("proof received")
+
+    gateway = _gateway(handle)
+    tool = _tool()
+    policy = ModelInvocationPolicy(
+        thinking_mode=ModelThinkingMode.ENABLED,
+        reasoning_effort=ModelReasoningEffort.HIGH,
+        tool_choice=ModelToolChoice.AUTO,
+        max_output_tokens=256,
+    )
+    user = _message("read proof.txt")
+
+    first = gateway.complete([user], tools=(tool,), invocation_policy=policy)
+    call = first.tool_calls[0]
+    final = gateway.complete(
+        [
+            user,
+            first.assistant_message,
+            SessionMessage(
+                message_id=new_message_id(),
+                role=MessageRole.TOOL,
+                content="zebra-ready",
+                created_at=datetime(2026, 7, 17, tzinfo=UTC),
+                tool_call_id=call.provider_call_id,
+            ),
+        ],
+        tools=(tool,),
+        invocation_policy=policy,
+    )
+
+    assistant_request = requests[1]["messages"][-2]
+    assert "tool_choice" not in requests[0]
+    assert "tool_choice" not in requests[1]
+    assert assistant_request["reasoning_content"] == "  private reasoning must stay exact  "
+    assert assistant_request["tool_calls"][0]["id"] == "call-1"
+    assert first.assistant_message.provider_reasoning_content is not None
+    assert "provider_reasoning_content" not in first.assistant_message.model_dump(mode="json")
+    assert "private reasoning" not in repr(first.assistant_message)
+    assert final.assistant_message.content == "proof received"
+
+
+def test_deepseek_thinking_tool_loop_fails_closed_without_private_continuation() -> None:
     called = False
 
     def handle(request: httpx.Request) -> httpx.Response:
@@ -57,14 +145,29 @@ def test_deepseek_rejects_thinking_with_tools_before_http() -> None:
         called = True
         return _completion("unexpected")
 
-    with pytest.raises(ValueError, match="thinking with tools"):
-        _gateway(handle).complete(
-            [_message("read")],
-            tools=(_tool(),),
-            invocation_policy=ModelInvocationPolicy(
-                thinking_mode=ModelThinkingMode.ENABLED,
+    created_at = datetime(2026, 7, 17, tzinfo=UTC)
+    tool_call_message = SessionMessage.model_validate(
+        SessionMessage(
+            message_id=new_message_id(),
+            role=MessageRole.ASSISTANT,
+            content="Tool calls proposed.",
+            created_at=created_at,
+            tool_calls=(
+                ToolCall(
+                    tool_call_id=new_tool_call_id(),
+                    name="files.read",
+                    arguments={"path": "proof.txt"},
+                    created_at=created_at,
+                    provider_call_id="call-1",
+                ),
             ),
-        )
+            metadata={"provider_reasoning_required": True},
+            provider_reasoning_content="private",
+        ).model_dump(mode="json")
+    )
+
+    with pytest.raises(ValueError, match="reasoning continuation is unavailable"):
+        _gateway(handle).complete([tool_call_message])
 
     assert called is False
 
@@ -117,6 +220,93 @@ def test_deepseek_stream_discards_reasoning_and_records_usage_and_finish() -> No
     assert metadata.usage.prompt_cache_miss_tokens == 4
     assert metadata.prompt_version == "zebra-deepseek-chat-v1"
     assert metadata.stable_prefix_hash is not None
+
+
+def test_deepseek_stream_assembles_reasoning_for_tool_replay_without_public_delta() -> None:
+    def handle(request: httpx.Request) -> httpx.Response:
+        del request
+        return httpx.Response(
+            200,
+            text="\n".join(
+                [
+                    'data: {"choices":[{"delta":{"reasoning_content":"private "}}]}',
+                    'data: {"choices":[{"delta":{"reasoning_content":"chain"}}]}',
+                    (
+                        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,'
+                        '"id":"call-1","function":{"name":"files__read",'
+                        '"arguments":"{\\"path\\":\\"proof.txt\\"}"}}]},'
+                        '"finish_reason":"tool_calls"}]}'
+                    ),
+                    "data: [DONE]",
+                ]
+            ),
+        )
+
+    deltas = []
+    completion = _gateway(handle).complete_stream(
+        [_message("read proof")],
+        tools=(_tool(),),
+        invocation_policy=ModelInvocationPolicy(
+            thinking_mode=ModelThinkingMode.ENABLED,
+            reasoning_effort=ModelReasoningEffort.HIGH,
+        ),
+        on_text_delta=deltas.append,
+    )
+
+    assert deltas == []
+    assert completion.assistant_message.provider_reasoning_content == "private chain"
+    assert completion.assistant_message.content == "Tool calls proposed."
+    assert "provider_reasoning_content" not in completion.assistant_message.model_dump(
+        mode="json"
+    )
+
+
+def test_deepseek_thinking_tool_response_requires_valid_reasoning_content() -> None:
+    response = httpx.Response(
+        200,
+        json={
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "tool_calls": [
+                            {
+                                "id": "call-1",
+                                "type": "function",
+                                "function": {
+                                    "name": "files__read",
+                                    "arguments": '{"path":"proof.txt"}',
+                                },
+                            }
+                        ],
+                    },
+                    "finish_reason": "tool_calls",
+                }
+            ]
+        },
+    )
+
+    with pytest.raises(ValueError, match="requires reasoning_content"):
+        _gateway(lambda request: response).complete(
+            [_message("read proof")],
+            tools=(_tool(),),
+            invocation_policy=ModelInvocationPolicy(
+                thinking_mode=ModelThinkingMode.ENABLED,
+                reasoning_effort=ModelReasoningEffort.HIGH,
+            ),
+        )
+
+
+def test_provider_reasoning_is_rejected_outside_assistant_tool_call_message() -> None:
+    with pytest.raises(ValueError, match="only valid for assistant tool-call messages"):
+        SessionMessage(
+            message_id=new_message_id(),
+            role=MessageRole.USER,
+            content="hello",
+            created_at=datetime(2026, 7, 17, tzinfo=UTC),
+            provider_reasoning_content="private",
+        )
 
 
 def test_deepseek_stable_prefix_metadata_is_deterministic_for_tool_order() -> None:
