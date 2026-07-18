@@ -9,6 +9,7 @@
 - Verified implementation baseline: `f950402` (PR `#156`)
 - Product posture: `feature-complete local Beta / single-host production candidate`
 - Active implementation task: none; `QA-148-MDL-01` is Done via PR `#156`
+- Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
 
@@ -81,21 +82,29 @@ including a real thinking tool round trip.
 - `docs/AGENT_TASKS.md` is the only executable task registry.
 - All eight stale `Review` cards verified as merged are closed as `Done` by
   `QA-GOV-02` / PR `#144`.
-- No task is currently `Ready`, `In Progress`, `Review`, or `Blocked` after
-  PR `#144` merges.
+- `QA-148-MDL-01` is `Done`; no task is currently `Ready`, `In Progress`,
+  `Review`, or `Blocked` on this branch.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 
 ## Known Follow-Ups
 
-1. Decide whether the next milestone remains single-host product hardening or
-   activates the private-cloud foundation.
-2. Resolve or explicitly close Issue `#148` before enabling DeepSeek thinking
-   mode in tool-bearing rounds.
+1. Use `docs/单机与云平台Runtime目标架构方案_v1.0.md` to decide whether the next
+   milestone remains single-host product hardening or activates the private-cloud
+   foundation.
+2. Keep DeepSeek thinking mode opt-in and preserve its private continuation
+   fail-closed boundary.
 3. Add real browser end-to-end, long-stream, packaged Tauri, migration/backup,
    capacity, and fault-injection release evidence.
 4. Split or lazy-load the Desktop main bundle based on a repeatable bundle report.
 5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
    Credential/Egress Broker, tenant isolation, and Kubernetes in dependency order.
+
+## Runtime Blueprint
+
+`ARCH-RT-BP-01` is complete on `codex/arch-runtime-deployment-blueprint` and
+records the shared Runtime contract and the separate single-host and cloud
+deployment profiles. It does not activate implementation or change the status
+of locked architecture cards.
 
 ## Explicitly Deferred
 
