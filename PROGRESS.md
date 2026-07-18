@@ -6,7 +6,7 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-07-18`
-- Verified mainline ref: `667627a`
+- Verified implementation baseline: `667627a` (parent of governance-only PR `#144`)
 - Product posture: `feature-complete local Beta / single-host production candidate`
 - Active implementation task: none
 - Locked architecture tasks: ACP entry and optional code intelligence
