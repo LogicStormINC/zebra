@@ -304,6 +304,8 @@ def test_api_create_session_persists_explicit_history_scope(tmp_path: Path) -> N
         {
             "prompt": "Continue only this prior task",
             "history_session_ids": [history_session_id],
+            "max_model_calls": 8,
+            "max_tool_calls": 8,
         }
     )
     events = SQLiteEventStore(database_path).list_for_session(
@@ -312,7 +314,29 @@ def test_api_create_session_persists_explicit_history_scope(tmp_path: Path) -> N
 
     assert response.status_code == 201
     assert response.body["history_session_ids"] == [history_session_id]
+    assert response.body["max_model_calls"] == 8
+    assert response.body["max_tool_calls"] == 8
     assert events[2].payload["history_session_ids"] == [history_session_id]
+    assert events[2].payload["max_model_calls"] == 8
+    assert events[2].payload["max_tool_calls"] == 8
+
+
+def test_api_create_session_accepts_larger_tool_budget_for_material_harness(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    response = create_app(database_path, settings=_settings(database_path)).create_session(
+        {
+            "prompt": "Inspect a chunked material bundle",
+            "max_model_calls": 16,
+            "max_tool_calls": 28,
+        }
+    )
+
+    assert response.status_code == 201
+    assert response.body["max_model_calls"] == 16
+    assert response.body["max_tool_calls"] == 28
 
 
 def test_api_create_session_persists_domain_allowlist(tmp_path: Path) -> None:

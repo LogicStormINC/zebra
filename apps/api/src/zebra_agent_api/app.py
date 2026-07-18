@@ -318,6 +318,8 @@ class ZebraAgentApi(
                 network_allowlist=tuple(parsed["network_allowlist"]),
                 mcp_allowlist=tuple(parsed["mcp_allowlist"]),
                 history_session_ids=parsed["history_session_ids"],
+                max_model_calls=parsed["max_model_calls"],
+                max_tool_calls=parsed["max_tool_calls"],
             )
         )
         events, attachment_refs = persist_initial_attachments(
@@ -342,15 +344,14 @@ class ZebraAgentApi(
                 "executed": False,
                 "status": bootstrap.session.status.value,
                 "tool_profile": str(parsed["tool_profile"]),
+                "max_model_calls": parsed["max_model_calls"],
+                "max_tool_calls": parsed["max_tool_calls"],
                 "network_profile": str(parsed["network_profile"]),
                 "network_allowlist": parsed["network_allowlist"],
                 "mcp_allowlist": parsed["mcp_allowlist"],
                 "mcp_resource_ids": parsed["mcp_resource_ids"],
-                **(
-                    {"history_session_ids": list(parsed["history_session_ids"])}
-                    if parsed["history_session_ids"] is not None
-                    else {}
-                ),
+                **({"history_session_ids": list(parsed["history_session_ids"])}
+                   if parsed["history_session_ids"] is not None else {}),
                 **(
                     {"mcp_prompt_id": parsed["mcp_prompt_id"]}
                     if parsed["mcp_prompt_id"] is not None
@@ -389,10 +390,8 @@ class ZebraAgentApi(
                 skill_roots=self.settings.skill_roots,
                 mcp_servers=self.settings.mcp_servers,
                 mcp_allowlist=parsed["mcp_allowlist"],
-                session_history=SQLiteSessionHistory(
-                    self.database_path,
-                    allowed_session_ids=parsed["history_session_ids"],
-                ),
+                session_history=SQLiteSessionHistory(self.database_path,
+                    allowed_session_ids=parsed["history_session_ids"]),
                 confirmed_memories=confirmed_memories,
                 attachments=tuple(
                     AttachmentContextInput.model_validate(

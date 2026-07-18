@@ -10589,6 +10589,132 @@ it, expand the parent's authority, recursively delegate, or outlive its parent.
 - A2A, remote agents, multi-tenant quotas, or automatic model routing
 - Tree-sitter, LSP, vector retrieval, or repository indexing changes
 
+## FinOS Integration Task Board
+
+### FINOS-HAR-03 - Recoverable Bounded Material Reads
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `CORE / INTEGRATION`
+- Depends on: `FINOS-MCP-02`
+- Branch: `codex/finos-material-recovery`
+- Owned paths: `packages/agent-core/src/agent_core/harness/`, `apps/api/src/zebra_agent_api/`, `tests/agent_core/`, `tests/api/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Keep large FinOS material runs bounded and non-repeating while allowing the
+model to recover once when conversation compaction causes it to request an
+already completed read-only file operation.
+
+#### Acceptance
+
+- [ ] API session creation validates and persists the explicitly requested
+  model and tool budgets within the configured hard maximums.
+- [ ] A failed read-only material call returns evidence to the next model step;
+  write-capable and other tool failures keep their existing terminal behavior.
+- [ ] A previously completed read-only call is never executed twice; one
+  recovery response may return the model to synthesis, and another repeat still
+  terminates deterministically.
+- [ ] Sequential and concurrent Harness tests cover recovery, no re-execution,
+  event evidence, and the retained hard stop.
+- [ ] Targeted tests, repository checks, and the deployed FinOS journal handoff
+  pass without confirming or mutating Core account data.
+
+#### Explicit Non-Goals
+
+- allowing repeated write, command, patch, test, MCP, or unknown tool calls
+- removing deterministic model/tool budgets or repeated-action hard stops
+- changing FinOS Core, Journal, or account-confirmation authority
+
+### FINOS-MCP-02 - MiniMax Web Search For Zebra
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `RUNTIME / SECURITY / INTEGRATION`
+- Depends on: `FINOS-MCP-01`
+- Branch: `codex/finos-search-mcp`
+- Owned paths: `packages/agent-integrations/`, `packages/agent-runtime/`, `packages/agent-security/`, `packages/agent-tools/`, `apps/api/`, `apps/config/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `docs/FinOS_MiniMax_Search_MCP.md`, `PROGRESS.md`, `README.md`, `.env.example`, `configs/default.env`
+
+#### Goal
+
+Extend the existing opt-in MiniMax Coding Plan MCP route with one read-only
+`web_search` tool so Zebra can answer current or external-information questions
+with source links while keeping arbitrary network access and other MCP tools
+blocked.
+
+#### Acceptance
+
+- [x] Search disabled means Zebra does not advertise `mcp.minimax.web_search`.
+- [x] Search enabled means the model can call the tool and receive structured results with source links.
+- [x] Only explicitly enabled MiniMax tools receive read-only preapproval.
+- [x] Provider, HTTP, and semantic API failures remain fail-closed and auditable.
+- [x] Targeted tests, `make test`, `make check`, and one deployed FinOS Web conversation pass.
+
+#### Acceptance Evidence
+
+- Commit `d452368` passed `1004` tests, Ruff, Mypy across `219` source files,
+  and the eight-case eval release gate.
+- FinOS Web submitted a current A-share closing-index question on 2026-07-15.
+  The deployed Agent completed six exact `mcp.minimax.web_search` calls, each
+  returned nine structured results, and the visible answer retained five
+  public source links. The trace recorded `69,752` input, `2,143` output, and
+  `71,895` total Tokens.
+- The deployed Zebra image is
+  `sha256:46be819ccfc49a64bc1116ead0c7fdb1b7512d5c3cc7eaa8b906aeb13833a637`.
+  Search and image understanding were both enabled through their independent
+  flags; Zebra and the FinOS app were healthy after recreation.
+
+#### Explicit Non-Goals
+
+- arbitrary MCP server configuration or unrestricted network access
+- automatic writes to FinOS Core, Journal, Research, or Notes
+- replacing professional market-data integrations with generic search
+
+### FINOS-MCP-01 - Workspace-Bounded MiniMax Image Understanding
+
+- Status: `Completed`
+- Owner: `Codex`
+- Suggested role: `RUNTIME / SECURITY / INTEGRATION`
+- Depends on: `Phase 22 MCP proxy execution foundation`
+- Branch: `codex/finos-vision-mcp`
+- Owned paths: `packages/agent-integrations/`, `packages/agent-runtime/`, `packages/agent-security/`, `packages/agent-tools/`, `apps/api/`, `apps/config/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `docs/FinOS_Image_Understanding_MCP.md`, `PROGRESS.md`, `README.md`, `.env.example`, `configs/default.env`, `pyproject.toml`, `uv.lock`
+
+#### Goal
+
+Keep Zebra as the FinOS Agent runtime while adding one explicitly enabled,
+workspace-bounded MiniMax `understand_image` MCP tool for user-supplied journal
+screenshots. Zebra remains text-first; image understanding returns untrusted
+tool evidence to the existing Agent loop instead of replacing it.
+
+#### Deliverables
+
+- opt-in MiniMax MCP configuration with secrets supplied only through an environment variable
+- one advertised `mcp.minimax.understand_image` tool using the existing MCP proxy contract
+- workspace-bound local-image validation for JPEG, PNG, and WebP files up to 20 MB
+- exact read-only policy allowance for that configured tool without broad MCP auto-approval
+- tool-call evidence and failure metadata that preserve the existing Zebra trace
+- focused tests plus a real FinOS screenshot acceptance run
+
+#### Acceptance
+
+- [x] With MiniMax disabled, Zebra exposes no image tool and retains current behavior.
+- [x] With MiniMax enabled, the model can call `mcp.minimax.understand_image` and receive text evidence from a task-local image.
+- [x] URLs, data URLs, unsupported formats, oversized files, and paths outside the task workspace fail before provider egress.
+- [x] No other MCP target receives automatic read-only approval.
+- [x] Image-tool output is treated as untrusted evidence and reaches the next Zebra model step.
+- [x] Targeted tests, `make test`, `make check`, and one deployed FinOS journal flow pass.
+
+Deployed acceptance on 2026-07-14 used five real broker screenshots through
+the FinOS Web UI. All five MiniMax calls completed, the final DeepSeek response
+classified two accounts and produced the expected journal preview, and FinOS
+kept the result outside Core pending explicit user save and confirmation.
+
+#### Explicit Non-Goals
+
+- native multimodal `SessionMessage` content
+- replacing Zebra with a direct model API
+- a general MCP marketplace or arbitrary server configuration UI
+- autonomous Core or Journal writes from image recognition
 ### P118-CLOSE-01 - Phase 118 Closeout And Phase 119 Planning
 
 - Status: `Done`

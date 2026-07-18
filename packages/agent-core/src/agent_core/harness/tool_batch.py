@@ -4,7 +4,7 @@ from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.policies import PolicyDecisionType
-from agent_core.domain.tools import ToolCall, ToolCallStatus
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
 from agent_core.harness.clarification_step import clarification_stop_result
 from agent_core.harness.concurrent_batch import (
@@ -19,7 +19,7 @@ from agent_core.harness.orchestration_events import policy_decision_payload
 from agent_core.harness.plan_step import execute_plan_call
 from agent_core.harness.policy_step import policy_stop_result
 from agent_core.harness.selection import ToolCallSelection
-from agent_core.harness.tool_execution import execute_tool_call
+from agent_core.harness.tool_execution import execute_tool_call, record_tool_result
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 
@@ -79,6 +79,20 @@ class ToolBatchExecutor:
                 model_calls_used=model_calls_used,
                 tool_calls_executed=tool_calls_executed,
                 metadata={**metadata, "stop_reason": "invalid_clarification_batch"},
+            )
+        if execute_all and _can_recover_repeated_reads(
+            tool_calls,
+            fingerprints=fingerprints,
+            metadata=metadata,
+        ):
+            return self._recover_repeated_reads(
+                context,
+                messages=messages,
+                tool_calls=tool_calls,
+                emitted_events=emitted_events,
+                tool_calls_executed=tool_calls_executed,
+                metadata=metadata,
+                first_selection=first_selection,
             )
         if self._concurrent.can_execute(
             tool_calls,
@@ -248,6 +262,8 @@ class ToolBatchExecutor:
                 created_at=context.attempt.started_at,
             )
             if execution.result.status is not ToolCallStatus.EXECUTED:
+                if execute_all and tool_call.name in {"files.read", "sessions.search"}:
+                    return ToolBatchResult(None, tool_calls_executed, metadata)
                 return self._terminal(
                     outcome=HarnessAttemptOutcome.FAILED,
                     summary=f"tool call failed: {tool_call.name}",
@@ -271,6 +287,72 @@ class ToolBatchExecutor:
                     metadata=metadata,
                 )
         return ToolBatchResult(None, tool_calls_executed, metadata)
+
+    def _recover_repeated_reads(
+        self,
+        context: HarnessContext,
+        *,
+        messages: list[SessionMessage],
+        tool_calls: tuple[ToolCall, ...],
+        emitted_events: list[HarnessEventDraft],
+        tool_calls_executed: int,
+        metadata: dict[str, object],
+        first_selection: ToolCallSelection | None,
+    ) -> ToolBatchResult:
+        recovered_metadata = dict(metadata)
+        for index, tool_call in enumerate(tool_calls):
+            summary, selection_metadata = selection_evidence(
+                index=index,
+                count=len(tool_calls),
+                first_selection=first_selection,
+            )
+            emitted_events.append(
+                HarnessEventDraft(
+                    event_type=EventType.TOOL_CALL_PROPOSED,
+                    actor=EventActor.HARNESS,
+                    payload={
+                        "attempt_number": context.attempt.number,
+                        "tool_name": tool_call.name,
+                        "tool_call_id": str(tool_call.tool_call_id),
+                        "arguments": tool_call.arguments,
+                        "selection_summary": summary,
+                        "selection_metadata": selection_metadata,
+                    },
+                )
+            )
+            result = ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.FAILED,
+                output=(
+                    "This exact read-only tool call already completed earlier in "
+                    "this session. It was not executed again. Reuse the prior "
+                    "evidence and continue without requesting this call again."
+                ),
+                metadata={
+                    "reason": "repeated_tool_call",
+                    "recoverable": True,
+                    "executed": False,
+                },
+            )
+            execution = record_tool_result(
+                context,
+                tool_call,
+                result,
+                verifier=self._verifier,
+                emitted_events=emitted_events,
+            )
+            self._model_step.append_tool_result(
+                messages,
+                tool_call=tool_call,
+                tool_result=result,
+                created_at=context.attempt.started_at,
+            )
+            recovered_metadata = {**recovered_metadata, **execution.metadata}
+        return ToolBatchResult(
+            None,
+            tool_calls_executed,
+            {**recovered_metadata, "repeated_read_recovery_count": 1},
+        )
 
     @staticmethod
     def _terminal(
@@ -296,3 +378,19 @@ class ToolBatchExecutor:
             tool_calls_executed,
             metadata,
         )
+
+
+def _can_recover_repeated_reads(
+    tool_calls: tuple[ToolCall, ...],
+    *,
+    fingerprints: set[str],
+    metadata: Mapping[str, object],
+) -> bool:
+    recovery_count = metadata.get("repeated_read_recovery_count", 0)
+    if recovery_count != 0:
+        return False
+    return all(
+        tool_call.name in {"files.read", "sessions.search"}
+        and action_fingerprint(tool_call) in fingerprints
+        for tool_call in tool_calls
+    )
