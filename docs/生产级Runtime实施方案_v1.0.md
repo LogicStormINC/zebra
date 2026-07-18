@@ -8,6 +8,8 @@
 - 目标：交付 Linux-first、硬隔离、可恢复、默认断网、可持续验证的
   Production Runtime v1
 - 当前基线：`LocalRuntime` 仅为可信宿主进程执行，不属于硬沙箱
+- Phase A A1：`os-sandbox` 已实现，macOS Seatbelt 与 Linux bubblewrap 由真实
+  平台 smoke 验收；Windows 与缺失能力保持 fail closed
 
 本任务不会通过重命名、字符串过滤或 Python 路径检查把宿主进程包装成安全
 边界。显式请求生产 Runtime 而环境不满足时，必须在任何工具命令开始前失败。
@@ -19,6 +21,7 @@
 | Runtime class | 后端 | 安全定位 |
 |---|---|---|
 | `trusted-local` | 现有 `LocalRuntime` | 明确信任的本地开发 |
+| `os-sandbox` | Seatbelt / bubblewrap | Desktop/CLI 日常硬隔离 |
 | `oci-rootless` | Rootless Podman 或等价 OCI CLI | 开发、兼容、单租户容器隔离 |
 | `gvisor` | OCI engine + `runsc` | Linux 生产环境、不可信代码 |
 
@@ -32,7 +35,8 @@
 | Linux AMD64 + gVisor | Production v1 支持 |
 | Linux ARM64 + gVisor | Production v1 支持，独立验收 |
 | Linux rootless OCI | 兼容支持，较低安全等级 |
-| macOS Apple Silicon | Linux VM 内 OCI 开发支持 |
+| Linux bubblewrap | 原生 `os-sandbox`，真实 CI smoke |
+| macOS Seatbelt | 原生 `os-sandbox`，真实 CI smoke |
 | macOS 原生 gVisor | 不支持，请求时 fail closed |
 | Windows | 不支持，请求时 fail closed |
 
@@ -42,6 +46,9 @@
 Worker / Harness
   -> RuntimePort
        -> LocalRuntime (trusted-local)
+       -> OsSandboxRuntime
+            -> macOS Seatbelt
+            -> Linux bubblewrap namespaces
        -> OciRuntime
             -> rootless OCI
             -> gVisor runsc
@@ -69,8 +76,8 @@ Session Event Store 仍是 durable authority。Runtime 负责执行隔离，不�
 
 `SandboxSpec` 至少固定：
 
-- runtime class 和 OCI engine
-- 镜像 digest
+- runtime class 和实际 enforcement engine
+- OCI/gVisor 镜像 digest；`os-sandbox` 不声明容器镜像
 - workspace root 与读写模式
 - CPU、内存、PID、tmpfs、超时和输出上限；Workspace 磁盘配额由部署存储层强制
 - 网络 profile
@@ -79,6 +86,16 @@ Session Event Store 仍是 durable authority。Runtime 负责执行隔离，不�
 
 Runtime provision 后产生不可变 `EffectiveRuntimeAuthority`。恢复时 spec digest
 必须相同，或者经过显式的“只收紧不扩大”比较；首版采用完全相同作为安全默认。
+
+### 4.1 原生 OS Sandbox
+
+- macOS 通过系统 `sandbox-exec` 加载 Seatbelt `system.sb` 基线，只开放
+  Workspace 读写并显式拒绝网络；
+- Linux 通过 bubblewrap 创建 user/mount/PID/network 等私有 namespace，空根
+  文件系统只读挂载系统目录，Workspace 是唯一持久读写 bind；
+- 执行环境由 Runtime 清空后重建，不继承宿主 API key、代理或用户环境；
+- capability probe、engine 缺失、平台不支持或 authority drift 均在命令前失败；
+- 整个命令从 sandbox wrapper 启动，后代进程继承同一 Seatbelt 或 namespace 边界。
 
 ## 5. OCI 硬化参数
 
@@ -159,16 +176,17 @@ capability preflight -> provisioned -> ready -> executing
 
 ## 10. 实现结果
 
-本方案已经落到 Runtime 合同、OCI/gVisor adapter、配置、Worker/Tool Gateway、
+本方案已经落到 Runtime 合同、OS/OCI/gVisor adapter、配置、Worker/Tool Gateway、
 暂停恢复、SQLite 投影、API/CLI readback 和 CI。硬模式启动前验证 Engine 与
 handler，清理同 session 遗留容器，再创建固定安全参数的 Sandbox。容器写权限
 预检失败、镜像未固定、运行时不可用、快照越界/篡改或 authority 漂移都会拒绝
 执行。逐命令环境变量被硬模式拒绝，Web/MCP/SCM 仍只走 Sandbox 外 Gateway。
 
-真实隔离由 Linux CI 的 `gvisor-runtime` job 验收：校验官方 runsc SHA-512，向
+原生隔离由 macOS Seatbelt 与 Linux bubblewrap 的 `os-sandbox-runtime` matrix
+验收 Workspace 读写、宿主逃逸、子进程继承和断网。容器隔离继续由 Linux CI
+的 `gvisor-runtime` job 验收：校验官方 runsc SHA-512，向
 Docker 注册 handler，解析 Alpine 镜像 digest，并验证 Workspace 写入、默认
-断网和 Runtime socket 不可见。macOS 本地只运行确定性合同测试，不能被标记为
-原生 gVisor 验收。
+断网和 Runtime socket 不可见。Seatbelt smoke 不等于原生 gVisor 验收。
 
 首版明确不伪造两个能力：进程内存 checkpoint 仍不支持；bind-mounted
 Workspace 的磁盘 quota 必须由生产存储层（专用卷、project quota 或等价机制）

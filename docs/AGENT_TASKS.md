@@ -23,7 +23,7 @@
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
-- `ARCH-RT-A1-OS-01` is `Ready` and is the only activated Runtime task.
+- `ARCH-RT-A1-OS-01` is `Review` and owned by `Codex`.
 - `ARCH-RT-A2-SETUP-01`, `ARCH-RT-A3-REL-01`, and `ARCH-RT-A4-E2E-01`
   remain `Locked` behind their preceding Phase A dependency.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
@@ -13965,16 +13965,18 @@ locked behind their documented entry gates.
 
 ### ARCH-RT-A1-OS-01 - Native OS Sandbox Runtime
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `RUNTIME / SECURITY`
 - Depends on: `ARCH-RT-A-PLAN-01`
 - Branch: `codex/arch-rt-a1-os-sandbox`
 - Owned paths: `packages/agent-core/src/agent_core/ports/runtime.py`,
+  `packages/agent-core/src/agent_core/contracts/runtime_events.py`,
   `packages/agent-runtime/`, `apps/config/`,
   `apps/worker/src/zebra_agent_worker/runtime_factory.py`,
   `apps/worker/src/zebra_agent_worker/runtime_authority.py`,
-  `tests/agent_runtime/`, `tests/config/`, `tests/worker/test_runtime_factory.py`,
+  `tests/agent_core/test_event_contracts.py`, `tests/agent_runtime/`,
+  `tests/config/`, `tests/worker/test_runtime_factory.py`,
   `.env.example`, `configs/default.env`, `.github/workflows/quality.yml`,
   `docs/生产级Runtime实施方案_v1.0.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
@@ -13986,11 +13988,21 @@ failing locally and no fallback to trusted execution.
 
 #### Acceptance
 
-- [ ] The selected OS mechanism wraps the entire process tree and defaults to no network.
-- [ ] Workspace write and host escape probes are enforced by the real platform mechanism.
-- [ ] Unsupported platforms or missing binaries fail before execution without fallback.
-- [ ] Runtime authority, configuration, and operator-visible profile remain truthful.
-- [ ] Deterministic tests and supported-host smoke tests pass; unavailable mechanisms skip only explicit smoke evidence.
+- [x] The selected OS mechanism wraps the entire process tree and defaults to no network.
+- [x] Workspace write and host escape probes are enforced by the real platform mechanism.
+- [x] Unsupported platforms or missing binaries fail before execution without fallback.
+- [x] Runtime authority, configuration, and operator-visible profile remain truthful.
+- [x] Deterministic tests and the local macOS Seatbelt smoke pass; Linux bubblewrap smoke is mandatory in PR CI.
+
+#### Validation Evidence
+
+- focused Runtime/config/core/worker contracts: `147 passed, 2 skipped`
+- real local macOS Seatbelt smoke: `1 passed`
+- full deterministic suite: `1461 passed, 5 skipped`
+- file-size gate: `868` files, zero violations
+- Ruff: passed
+- strict Mypy: `405` source files, zero errors
+- release Eval: `8/8`, `pass_rate=1.00`
 
 ### ARCH-RT-A2-SETUP-01 - Setup And Agent Isolation
 

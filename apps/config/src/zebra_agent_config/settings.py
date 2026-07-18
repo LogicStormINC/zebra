@@ -186,7 +186,7 @@ def _load_runtime_settings(
         "ZEBRA_RUNTIME_CLASS",
         default="gvisor" if profile == "production" else "trusted-local",
     )
-    if runtime_class not in {"trusted-local", "oci-rootless", "gvisor"}:
+    if runtime_class not in {"trusted-local", "os-sandbox", "oci-rootless", "gvisor"}:
         raise ValueError("ZEBRA_RUNTIME_CLASS is unsupported")
     if profile == "production" and runtime_class != "gvisor":
         raise ValueError("ZEBRA_PROFILE=production requires ZEBRA_RUNTIME_CLASS=gvisor")
@@ -197,7 +197,9 @@ def _load_runtime_settings(
     if not re.fullmatch(r"[a-zA-Z0-9_.-]{1,64}", gvisor_runtime):
         raise ValueError("ZEBRA_GVISOR_RUNTIME is invalid")
     image = _read_optional(values, "ZEBRA_RUNTIME_IMAGE") or ""
-    if runtime_class != "trusted-local" and not re.fullmatch(r".+@sha256:[0-9a-fA-F]{64}", image):
+    if runtime_class in {"oci-rootless", "gvisor"} and not re.fullmatch(
+        r".+@sha256:[0-9a-fA-F]{64}", image
+    ):
         raise ValueError("ZEBRA_RUNTIME_IMAGE must be pinned by sha256 digest")
     return RuntimeSettings(
         runtime_class=runtime_class,

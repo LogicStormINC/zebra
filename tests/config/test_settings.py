@@ -198,6 +198,13 @@ def test_load_settings_requires_pinned_image_for_hard_runtime() -> None:
     assert settings.runtime.memory_mb == 1024
 
 
+def test_load_settings_allows_os_sandbox_without_container_image() -> None:
+    settings = load_settings({"ZEBRA_RUNTIME_CLASS": "os-sandbox"})
+
+    assert settings.runtime.runtime_class == "os-sandbox"
+    assert settings.runtime.image == ""
+
+
 def test_production_profile_fails_closed_without_gvisor() -> None:
     with pytest.raises(ValueError, match="requires ZEBRA_RUNTIME_CLASS=gvisor"):
         load_settings({"ZEBRA_PROFILE": "production"})

@@ -11,6 +11,7 @@ from uuid import uuid4
 
 class RuntimeClass(StrEnum):
     TRUSTED_LOCAL = "trusted-local"
+    OS_SANDBOX = "os-sandbox"
     OCI_ROOTLESS = "oci-rootless"
     GVISOR = "gvisor"
 
@@ -50,11 +51,10 @@ class SandboxSpec:
     limits: RuntimeLimits = RuntimeLimits()
 
     def __post_init__(self) -> None:
-        if not self.image.strip():
-            raise ValueError("image must not be blank")
-        if self.runtime_class is not RuntimeClass.TRUSTED_LOCAL and not re.fullmatch(
-            r".+@sha256:[0-9a-fA-F]{64}", self.image
-        ):
+        if self.runtime_class in {
+            RuntimeClass.OCI_ROOTLESS,
+            RuntimeClass.GVISOR,
+        } and not re.fullmatch(r".+@sha256:[0-9a-fA-F]{64}", self.image):
             raise ValueError("hard runtime image must be pinned by sha256 digest")
         if not self.workspace_root.strip():
             raise ValueError("workspace_root must not be blank")
@@ -115,7 +115,7 @@ class RuntimeCapabilities:
 class EffectiveRuntimeAuthority:
     runtime_class: RuntimeClass
     engine: str
-    image: str
+    image: str | None
     spec_digest: str
     network_enforcement: str
     workspace_writable: bool
