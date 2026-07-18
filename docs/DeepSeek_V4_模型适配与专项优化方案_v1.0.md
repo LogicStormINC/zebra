@@ -565,12 +565,12 @@ cost_usd
 
 ## 16. DS-OPT-01 实施证据
 
-- 基线：`CTX-LC-01` commit `6d85f42`，保留 ContextCapsule 合同与事件字段；
-- 聚焦验证：127 passed、2 个显式 provider smoke 默认 skipped；
-- 全量验证：1391 passed、2 个显式 provider smoke 与 1 个平台限定 gVisor skipped；
+- 基线：`main@b19c018`，保留 ContextCapsule、Session Handoff 与中立 ModelContextWindow 合同；
+- 聚焦验证：84 个 DS/合同测试与 77 个共享执行回归通过；
+- 全量验证：1447 passed、2 个显式 provider smoke 与 1 个平台限定 gVisor skipped；
 - Provider Eval：6 个稳定协议、隐私、重试、路由与 Beta 能力用例可加载；
 - Real provider smoke：稳定多轮工具与 Beta strict-tools、FIM、Chat Prefix 均通过；
-- 工程门禁：819 文件上限、Ruff、379 个源文件严格 Mypy、8 个 release eval 通过。
+- 工程门禁：868 文件上限、Ruff、403 个源文件严格 Mypy、8 个 release eval 通过。
 
 ## 17. 来源与时效说明
 
