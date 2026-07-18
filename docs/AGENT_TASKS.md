@@ -13992,7 +13992,8 @@ failing locally and no fallback to trusted execution.
 - [x] Workspace write and host escape probes are enforced by the real platform mechanism.
 - [x] Unsupported platforms or missing binaries fail before execution without fallback.
 - [x] Runtime authority, configuration, and operator-visible profile remain truthful.
-- [x] Deterministic tests and the local macOS Seatbelt smoke pass; Linux bubblewrap smoke is mandatory in PR CI.
+- [x] Deterministic tests and the local macOS Seatbelt smoke pass; Ubuntu 22.04
+  bubblewrap smoke is mandatory in PR CI, while restricted Ubuntu 24.04 fails closed.
 
 #### Validation Evidence
 

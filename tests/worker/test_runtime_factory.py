@@ -52,10 +52,7 @@ def test_runtime_factory_builds_native_os_sandbox(monkeypatch, tmp_path: Path) -
         "zebra_agent_worker.runtime_factory.os_sandbox_engine",
         lambda: "sandbox-exec",
     )
-    monkeypatch.setattr(
-        "agent_runtime.adapters.os_sandbox.which",
-        lambda _: "/usr/bin/sandbox-exec",
-    )
+    monkeypatch.setattr("agent_runtime.adapters.os_sandbox.platform.system", lambda: "Darwin")
 
     runtime = build_runtime(
         _settings(RuntimeSettings(runtime_class="os-sandbox")),

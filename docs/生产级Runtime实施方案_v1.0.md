@@ -35,7 +35,8 @@
 | Linux AMD64 + gVisor | Production v1 支持 |
 | Linux ARM64 + gVisor | Production v1 支持，独立验收 |
 | Linux rootless OCI | 兼容支持，较低安全等级 |
-| Linux bubblewrap | 原生 `os-sandbox`，真实 CI smoke |
+| Ubuntu 22.04 + bubblewrap | 原生 `os-sandbox`，真实 CI smoke |
+| Ubuntu 24.04 + 受限 userns | capability probe 失败时 fail closed |
 | macOS Seatbelt | 原生 `os-sandbox`，真实 CI smoke |
 | macOS 原生 gVisor | 不支持，请求时 fail closed |
 | Windows | 不支持，请求时 fail closed |
