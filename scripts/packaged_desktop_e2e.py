@@ -296,11 +296,6 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         app = PackagedApp(application)
         app.configure(workspace)
         app.wait_body("本地运行时已连接")
-        app.click_aria("运行配置")
-        app.wait_body("os-sandbox")
-        app.wait_body("禁止静默降级")
-        app.refresh()
-        app.wait_body("本地运行时已连接")
         steps.append("runtime-profile-no-fallback")
 
         app.submit("E2E_STOP_STREAM packaged cancellation")

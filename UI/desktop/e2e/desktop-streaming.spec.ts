@@ -27,6 +27,13 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByText("本地运行时已连接").first()).toBeVisible();
 });
 
+test("shows the resolved Runtime class and no-silent-fallback policy", async ({ page }) => {
+  await page.getByLabel("运行配置").click();
+  await expect(page.getByText("Runtime 级别", { exact: true })).toBeVisible();
+  await expect(page.getByText("trusted-local", { exact: true })).toBeVisible();
+  await expect(page.getByText("禁止静默降级", { exact: true })).toBeVisible();
+});
+
 test("renders a long provider response progressively and converges durably", async ({ page }) => {
   await submit(page, "E2E_LONG_STREAM render every ordered fragment");
 
