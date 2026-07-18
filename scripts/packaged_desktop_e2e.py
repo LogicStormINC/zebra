@@ -99,51 +99,47 @@ class PackagedApp:
             time.sleep(0.25)
         raise AssertionError(f"packaged UI did not show {expected!r}; body={self.body()!r}")
 
-    def click_text(self, text: str) -> None:
-        clicked = self.execute(
-            """
-            const target = [...document.querySelectorAll('button')]
-              .find((item) => item.textContent?.trim() === arguments[0]);
-            if (!target) return false;
-            target.click();
-            return true;
-            """,
-            text,
+    def _element(self, using: str, value: str) -> str:
+        response = request_json(
+            "POST",
+            f"{DRIVER_URL}/session/{self.session_id}/element",
+            {"using": using, "value": value},
         )
-        if not clicked:
-            raise AssertionError(f"packaged UI button {text!r} is unavailable")
+        element = response.get("value")
+        if not isinstance(element, dict):
+            raise AssertionError(f"WebDriver element {value!r} is unavailable")
+        element_id = element.get("element-6066-11e4-a52e-4f735466cecf")
+        if not isinstance(element_id, str):
+            raise AssertionError(f"WebDriver element {value!r} has no id")
+        return element_id
+
+    def click(self, using: str, value: str) -> None:
+        element_id = self._element(using, value)
+        request_json(
+            "POST",
+            f"{DRIVER_URL}/session/{self.session_id}/element/{element_id}/click",
+            {},
+        )
+
+    def click_text(self, text: str) -> None:
+        self.click("xpath", f"//button[normalize-space(.)='{text}']")
 
     def click_aria(self, label: str) -> None:
-        clicked = self.execute(
-            """
-            const target = document.querySelector(`[aria-label="${arguments[0]}"]`);
-            if (!target) return false;
-            target.click();
-            return true;
-            """,
-            label,
-        )
-        if not clicked:
-            raise AssertionError(f"packaged UI control {label!r} is unavailable")
+        self.click("css selector", f'[aria-label="{label}"]')
 
     def submit(self, prompt: str) -> None:
-        submitted = self.execute(
-            """
-            const textarea = document.querySelector('textarea[name="task-prompt"]');
-            const send = document.querySelector('[aria-label="发送任务"]');
-            if (!textarea || !send) return false;
-            const setter = Object.getOwnPropertyDescriptor(
-              HTMLTextAreaElement.prototype, 'value'
-            ).set;
-            setter.call(textarea, arguments[0]);
-            textarea.dispatchEvent(new Event('input', { bubbles: true }));
-            send.click();
-            return true;
-            """,
-            prompt,
+        element_id = self._element("css selector", 'textarea[name="task-prompt"]')
+        request_json(
+            "POST",
+            f"{DRIVER_URL}/session/{self.session_id}/element/{element_id}/clear",
+            {},
         )
-        if not submitted:
-            raise AssertionError("packaged UI composer is unavailable")
+        request_json(
+            "POST",
+            f"{DRIVER_URL}/session/{self.session_id}/element/{element_id}/value",
+            {"text": prompt, "value": list(prompt)},
+        )
+        self.click_aria("发送任务")
 
     def configure(self, workspace: Path) -> None:
         self.execute(
@@ -260,10 +256,7 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         app.click_aria("运行配置")
         app.wait_body("os-sandbox")
         app.wait_body("禁止静默降级")
-        assert app.execute(
-            "const target=document.querySelector('.ant-drawer-close'); "
-            "if(target) target.click(); return Boolean(target);"
-        )
+        app.click("css selector", ".ant-drawer-close")
         steps.append("runtime-profile-no-fallback")
 
         app.submit("E2E_STOP_STREAM packaged cancellation")
