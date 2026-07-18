@@ -79,9 +79,9 @@ export default function App() {
   useEffect(() => {
     conversationEventsRef.current = conversationEvents;
   }, [conversationEvents]);
-
   const syncConversationFromStream = useCallback(
     async (conversationKey: string, sessionId: string) => {
+      if (conversationToSessionId[conversationKey] !== sessionId) conversationEventsRef.current = { ...conversationEventsRef.current, [conversationKey]: [] };
       streamControllersRef.current.get(conversationKey)?.abort();
       const controller = new AbortController();
       streamControllersRef.current.set(conversationKey, controller);
@@ -124,7 +124,7 @@ export default function App() {
         }
       }
     },
-    [api, setSessionSummaries],
+    [api, conversationToSessionId, setSessionSummaries],
   );
 
   const loadSessionSummary = useCallback(

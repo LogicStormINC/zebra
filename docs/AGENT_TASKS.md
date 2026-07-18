@@ -24,7 +24,7 @@
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
 - `ARCH-RT-A1-OS-01` is `Review` and owned by `Codex`.
-- `QA-DESKTOP-E2E-01` is `In Progress` in the independent Desktop browser lane.
+- `QA-DESKTOP-E2E-01` is in `Review` in the independent Desktop browser lane.
 - `ARCH-RT-A2-SETUP-01`, `ARCH-RT-A3-REL-01`, and `ARCH-RT-A4-E2E-01`
   remain `Locked` behind their preceding Phase A dependency.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
@@ -14085,13 +14085,15 @@ state to the operator.
 
 ### QA-DESKTOP-E2E-01 - Real Browser Streaming And Recovery Regression
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Suggested role: `QA / APP / INTEGRATIONS`
 - Depends on: merged durable Assistant streaming and Desktop event-stream conversation
 - Branch: `codex/qa-desktop-e2e-01`
 - Owned paths: `UI/desktop/e2e/`, `UI/desktop/playwright.config.ts`,
   `UI/desktop/package.json`, `UI/desktop/pnpm-lock.yaml`, `UI/desktop/.gitignore`,
+  `UI/desktop/src/App.tsx`,
+  `UI/desktop/src/components/conversation/ConversationComposer.tsx`,
   `.github/workflows/quality.yml`, `docs/QA-DESKTOP-E2E-01_真实浏览器流式恢复验收.md`,
   `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
 
@@ -14103,19 +14105,20 @@ external model network with a deterministic local streaming provider.
 
 #### Acceptance
 
-- [ ] Playwright launches real Chromium against live Desktop and API processes;
+- [x] Playwright launches real Chromium against live Desktop and API processes;
   tests do not intercept or mock Zebra HTTP/SSE routes.
-- [ ] A long response renders progressively before completion, preserves ordered
+- [x] A long response renders progressively before completion, preserves ordered
   deltas, and converges to the durable final Assistant message.
-- [ ] Reloading during a running response reconnects from durable history without
+- [x] Reloading during a running response reconnects from durable history without
   duplicated text or events and reaches the same final state.
-- [ ] The visible stop action cancels a running session, terminates its stream,
+- [x] The visible stop action cancels a running session, terminates its stream,
   and no late completion overwrites the durable cancelled state.
-- [ ] A follow-up submitted after a terminal response creates the supported next
+- [x] A follow-up submitted after a terminal response creates the supported next
   durable execution and renders its user and Assistant messages truthfully.
-- [ ] Failures retain Playwright trace, screenshot, and video evidence; local and
+- [x] Failures retain Playwright trace, screenshot, and video evidence; local and
   GitHub commands use bounded timeouts and isolated disposable SQLite state.
-- [ ] Desktop checks/build, real browser E2E, `make test`, `make check`, and CI pass.
+- [ ] Desktop checks/build, real browser E2E, `make test`, and `make check` pass;
+  CI evidence is required before merge.
 
 #### Explicit Non-Goals
 

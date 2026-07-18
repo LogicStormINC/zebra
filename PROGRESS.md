@@ -9,7 +9,7 @@
 - Verified implementation baseline: `f950402` (PR `#156`)
 - Product posture: `feature-complete local Beta / single-host production candidate`
 - Active implementation task: `ARCH-RT-A1-OS-01` is in Review
-- Desktop browser task: `QA-DESKTOP-E2E-01` is In Progress on
+- Desktop browser task: `QA-DESKTOP-E2E-01` is in Review on
   `codex/qa-desktop-e2e-01`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
@@ -55,6 +55,8 @@
 - API, CLI, Worker, and Desktop read and mutate the same durable state.
 - Desktop consumes replay-plus-tail SSE, renders truthful partial output, and
   supports approval, clarification, task plans, context, artifacts, and handoff.
+- Real Chromium exercises the live Desktop/API/Worker/SQLite/SSE chain for long
+  streams, reload recovery, cancellation, and terminal-session follow-up.
 - Typed local tools cover bounded file, command, patch, tests, Git, Web, Skill,
   MCP, and read-only Research paths according to the task profile.
 
@@ -75,6 +77,11 @@ Validated on the `QA-148-MDL-01` branch merged as `origin/main@f950402` on 2026-
 The four skips are three opt-in real-provider smokes and the macOS-gated gVisor
 test. Linux CI runs the real gVisor smoke instead of treating that skip as proof.
 
+On `codex/qa-desktop-e2e-01`, Desktop passed all `19` deterministic checks, the
+production build, and `4/4` real Chromium streaming regressions. Repository
+validation passed `1452` tests with `4` opt-in/platform skips, the `870`-file
+size gate, Ruff, strict Mypy over `403` source files, and release Eval `8/8`.
+
 The DeepSeek credentials-enabled focused run also passed all `39` contracts,
 including a real thinking tool round trip.
 
@@ -84,8 +91,8 @@ including a real thinking tool round trip.
 - `docs/AGENT_TASKS.md` is the only executable task registry.
 - All eight stale `Review` cards verified as merged are closed as `Done` by
   `QA-GOV-02` / PR `#144`.
-- `QA-148-MDL-01` is `Done`; no task is currently `Ready`, `In Progress`,
-  `Review`, or `Blocked` on this branch.
+- `QA-148-MDL-01` is `Done`; `ARCH-RT-A1-OS-01` is Ready and
+  `QA-DESKTOP-E2E-01` is in Review.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 
 ## Known Follow-Ups
@@ -95,8 +102,7 @@ including a real thinking tool round trip.
    foundation.
 2. Keep DeepSeek thinking mode opt-in and preserve its private continuation
    fail-closed boundary.
-3. Add real browser end-to-end, long-stream, packaged Tauri, migration/backup,
-   capacity, and fault-injection release evidence.
+3. Add packaged Tauri, migration/backup, capacity, and fault-injection release evidence.
 4. Split or lazy-load the Desktop main bundle based on a repeatable bundle report.
 5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
    Credential/Egress Broker, tenant isolation, and Kubernetes in dependency order.
