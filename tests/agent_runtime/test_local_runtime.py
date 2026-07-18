@@ -1,4 +1,6 @@
 import json
+import os
+import time
 from pathlib import Path
 
 import pytest
@@ -47,6 +49,7 @@ def test_local_runtime_captures_non_zero_exit() -> None:
     assert result.timed_out is False
     assert result.exit_code == 7
     assert "boom" in result.stdout
+    assert result.failure_reason == "command_failed"
 
 
 def test_local_runtime_reports_timeout() -> None:
@@ -66,6 +69,38 @@ def test_local_runtime_reports_timeout() -> None:
     assert result.succeeded is False
     assert result.timed_out is True
     assert result.exit_code is None
+    assert result.failure_reason == "timeout"
+
+
+@pytest.mark.skipif(os.name != "posix", reason="process groups require POSIX")
+def test_local_runtime_timeout_terminates_descendants(tmp_path: Path) -> None:
+    pid_file = tmp_path / "child.pid"
+    runtime = LocalRuntime()
+    result = runtime.execute(
+        RuntimeExecutionRequest(
+            command=(
+                "python3",
+                "-c",
+                (
+                    "import pathlib,subprocess,time; "
+                    f"p=subprocess.Popen(['sleep','30']); path=pathlib.Path({str(pid_file)!r}); "
+                    "path.write_text(str(p.pid)); "
+                    "time.sleep(30)"
+                ),
+            ),
+            timeout_seconds=0.2,
+        )
+    )
+    assert result.failure_reason == "timeout"
+    child_pid = int(pid_file.read_text(encoding="utf-8"))
+    for _ in range(20):
+        try:
+            os.kill(child_pid, 0)
+        except ProcessLookupError:
+            break
+        time.sleep(0.05)
+    else:
+        pytest.fail("timed-out runtime left a descendant process alive")
 
 
 def test_local_runtime_provision_suspend_and_resume_handle() -> None:

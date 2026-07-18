@@ -223,9 +223,18 @@ Token，也不新增 durable state 模型。
 Docker 注册 handler，解析 Alpine 镜像 digest，并验证 Workspace 写入、默认
 断网和 Runtime socket 不可见。Seatbelt smoke 不等于原生 gVisor 验收。
 
-首版明确不伪造两个能力：进程内存 checkpoint 仍不支持；bind-mounted
-Workspace 的磁盘 quota 必须由生产存储层（专用卷、project quota 或等价机制）
-提供并纳入部署验收。
+首版明确不伪造进程内存 checkpoint。Production Worker 现在要求 Workspace 根
+目录本身是独立、容量不超过 `ZEBRA_RUNTIME_WORKSPACE_QUOTA_MB` 的文件系统挂载
+点；共享宿主文件系统、超大卷、无法读取 mount 信息或不受支持的平台都会在
+Runtime 创建前 fail closed。Linux CI 使用真实 8 MiB tmpfs 写满到 `ENOSPC`，
+而不是用应用层字节计数模拟 quota。`No space left on device` 被归一化为
+`workspace_quota_exceeded` 并进入 Tool metadata。
+
+本机子进程以独立进程会话启动；超时会向整个进程组发送终止信号并等待回收，
+防止直接子进程退出后留下未跟踪后代。可靠性门禁固定 20 次原生 Sandbox
+provision/execute/snapshot/inspect/destroy/cleanup 循环，长流门禁固定 64 个增量、
+80 个重载恢复增量和取消后 5 秒无迟到完成。quota、soak、gVisor 和长流均在 CI
+输出 JUnit 或 JSON 机器可读证据并保留 14 天。
 
 ## 11. 验证命令
 
@@ -236,7 +245,8 @@ make test
 make check
 ```
 
-CI 追加 Linux OCI 合同和真实 gVisor smoke。真实 gVisor 环境不可用时，该 job
+CI 包含 Linux OCI 合同、真实 Workspace exhaustion、macOS/Linux 原生 Sandbox
+soak、长流与真实 gVisor smoke。真实 gVisor 环境不可用时，该 job
 不得伪造成功；Production gVisor 能力保持未验收或 fail closed。
 
 本次验收结果：本地 `1345 passed, 1 skipped`，跳过项仅为平台限定的真实

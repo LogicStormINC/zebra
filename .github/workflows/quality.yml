@@ -71,7 +71,17 @@ jobs:
       - name: Build desktop web assets
         run: pnpm build
       - name: Run real browser streaming regressions
-        run: pnpm e2e
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: playwright-results.json
+        run: pnpm e2e --reporter=line,json
+      - name: Retain machine-readable streaming evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: desktop-streaming-evidence
+          path: UI/desktop/playwright-results.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Retain browser failure evidence
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -118,7 +128,55 @@ jobs:
       - name: Run real gVisor isolation smoke
         env:
           ZEBRA_GVISOR_SMOKE: "1"
-        run: uv run pytest -q tests/agent_runtime/test_gvisor_smoke.py
+        run: uv run pytest -q --junitxml=gvisor-runtime.xml tests/agent_runtime/test_gvisor_smoke.py
+      - name: Retain gVisor evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: gvisor-runtime-evidence
+          path: gvisor-runtime.xml
+          retention-days: 14
+
+  workspace-quota:
+    name: Real workspace quota exhaustion
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          cache-dependency-glob: uv.lock
+          enable-cache: true
+          python-version: "3.12"
+          version: "0.11.12"
+      - name: Install locked workspace
+        run: uv sync --frozen --all-packages --group dev
+      - name: Mount dedicated 8 MiB workspace
+        run: |
+          sudo mkdir -p /mnt/zebra-quota-smoke
+          sudo mount -t tmpfs -o size=8m,nosuid,nodev,noexec tmpfs /mnt/zebra-quota-smoke
+          sudo chown "$(id -u):$(id -g)" /mnt/zebra-quota-smoke
+      - name: Prove storage-enforced ENOSPC
+        env:
+          ZEBRA_QUOTA_SMOKE_ROOT: /mnt/zebra-quota-smoke
+          ZEBRA_RUNTIME_EVIDENCE_PATH: workspace-quota.json
+        run: >-
+          uv run pytest -q --junitxml=workspace-quota.xml
+          tests/agent_runtime/test_workspace_quota_smoke.py
+      - name: Unmount quota workspace
+        if: always()
+        run: sudo umount /mnt/zebra-quota-smoke || true
+      - name: Retain quota evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: workspace-quota-evidence
+          path: |
+            workspace-quota.json
+            workspace-quota.xml
+          if-no-files-found: error
+          retention-days: 14
 
   os-sandbox-runtime:
     name: Real OS sandbox smoke (${{ matrix.os }})
@@ -146,4 +204,19 @@ jobs:
       - name: Run real native isolation smoke
         env:
           ZEBRA_OS_SANDBOX_SMOKE: "1"
-        run: uv run pytest -q tests/agent_runtime/test_os_sandbox_smoke.py
+          ZEBRA_RUNTIME_SOAK: "1"
+          ZEBRA_RUNTIME_EVIDENCE_PATH: runtime-soak.json
+        run: >-
+          uv run pytest -q --junitxml=os-sandbox-runtime.xml
+          tests/agent_runtime/test_os_sandbox_smoke.py
+          tests/agent_runtime/test_runtime_soak.py
+      - name: Retain native runtime evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: os-sandbox-${{ runner.os }}-evidence
+          path: |
+            os-sandbox-runtime.xml
+            runtime-soak.json
+          if-no-files-found: error
+          retention-days: 14

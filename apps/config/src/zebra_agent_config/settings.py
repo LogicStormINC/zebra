@@ -87,6 +87,8 @@ class RuntimeSettings:
     max_execution_seconds: float = 900.0
     container_uid: int = 65532
     container_gid: int = 65532
+    require_workspace_quota: bool = False
+    workspace_quota_mb: int = 10_240
 
 
 @dataclass(frozen=True)
@@ -205,6 +207,13 @@ def _load_runtime_settings(
         r".+@sha256:[0-9a-fA-F]{64}", image
     ):
         raise ValueError("ZEBRA_RUNTIME_IMAGE must be pinned by sha256 digest")
+    require_workspace_quota = _read_bool(
+        values,
+        "ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA",
+        default=profile == "production",
+    )
+    if profile == "production" and not require_workspace_quota:
+        raise ValueError("ZEBRA_PROFILE=production requires a storage-enforced workspace quota")
     return RuntimeSettings(
         runtime_class=runtime_class,
         engine=engine,
@@ -226,6 +235,12 @@ def _load_runtime_settings(
         ),
         container_uid=_read_int(values, "ZEBRA_RUNTIME_UID", default=65532),
         container_gid=_read_int(values, "ZEBRA_RUNTIME_GID", default=65532),
+        require_workspace_quota=require_workspace_quota,
+        workspace_quota_mb=_read_int(
+            values,
+            "ZEBRA_RUNTIME_WORKSPACE_QUOTA_MB",
+            default=10_240,
+        ),
     )
 
 

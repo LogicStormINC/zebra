@@ -1,6 +1,6 @@
 from dataclasses import replace
 from pathlib import Path
-from subprocess import TimeoutExpired, run
+from subprocess import TimeoutExpired
 
 from agent_core.ports.runtime import (
     RuntimeCapabilities,
@@ -19,6 +19,8 @@ from agent_runtime.adapters.local_snapshot_state import (
     LocalSnapshotInspection,
 )
 from agent_runtime.adapters.local_snapshots import LocalSnapshotBackend
+from agent_runtime.process_execution import run_process_tree
+from agent_runtime.runtime_failures import normalize_runtime_failure
 
 
 def _normalize_output(output: bytes | str | None) -> str:
@@ -52,7 +54,7 @@ class LocalRuntime(RuntimePort):
 
     def execute(self, request: RuntimeExecutionRequest) -> RuntimeExecutionResult:
         try:
-            completed = run(
+            completed = run_process_tree(
                 request.command,
                 capture_output=True,
                 text=True,
@@ -68,6 +70,7 @@ class LocalRuntime(RuntimePort):
                 stdout=_normalize_output(exc.stdout),
                 stderr=_normalize_output(exc.stderr),
                 timed_out=True,
+                failure_reason="timeout",
             )
 
         return RuntimeExecutionResult(
@@ -76,6 +79,11 @@ class LocalRuntime(RuntimePort):
             stdout=completed.stdout,
             stderr=completed.stderr,
             timed_out=False,
+            failure_reason=normalize_runtime_failure(
+                timed_out=False,
+                exit_code=completed.returncode,
+                stderr=completed.stderr,
+            ),
         )
 
     def provision(

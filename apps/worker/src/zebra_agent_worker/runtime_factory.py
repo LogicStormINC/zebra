@@ -3,7 +3,13 @@ from pathlib import Path
 from tempfile import gettempdir
 
 from agent_core.ports.runtime import RuntimeClass, RuntimeLimits, RuntimePort, SandboxSpec
-from agent_runtime import LocalRuntime, OciRuntime, OsSandboxRuntime, os_sandbox_engine
+from agent_runtime import (
+    LocalRuntime,
+    OciRuntime,
+    OsSandboxRuntime,
+    os_sandbox_engine,
+    require_workspace_quota,
+)
 from zebra_agent_config import ZebraAgentSettings
 
 
@@ -17,6 +23,11 @@ def build_runtime(
     attempt_number: int = 1,
 ) -> RuntimePort:
     runtime_root = _runtime_root(database_path)
+    if settings.runtime.require_workspace_quota:
+        require_workspace_quota(
+            workspace_root,
+            maximum_bytes=settings.runtime.workspace_quota_mb * 1024 * 1024,
+        )
     runtime_class = RuntimeClass(settings.runtime.runtime_class)
     if runtime_class is RuntimeClass.TRUSTED_LOCAL:
         return LocalRuntime(snapshot_root=runtime_root)
@@ -43,6 +54,11 @@ def build_runtime(
             tmpfs_mb=settings.runtime.tmpfs_mb,
             max_output_bytes=settings.runtime.max_output_bytes,
             max_execution_seconds=settings.runtime.max_execution_seconds,
+            workspace_quota_mb=(
+                settings.runtime.workspace_quota_mb
+                if settings.runtime.require_workspace_quota
+                else None
+            ),
         ),
     )
     if runtime_class is RuntimeClass.OS_SANDBOX:
