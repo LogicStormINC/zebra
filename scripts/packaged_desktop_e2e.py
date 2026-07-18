@@ -347,7 +347,12 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         steps.append("approval-real-runtime")
 
         app.submit("E2E_FAILURE packaged failure")
-        app.wait_body("任务执行失败", timeout=40)
+        app.wait_body("失败 ·", timeout=40)
+        failure_session_id = app.active_session_id()
+        failure_session = request_json(
+            "GET", f"{API_URL}/sessions/{failure_session_id}", headers=AUTH_HEADERS
+        )
+        assert failure_session["status"] == "failed"
         steps.append("failure-visible")
 
         stop_process(api)
@@ -357,7 +362,11 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         app.refresh()
         app.wait_body("本地运行时已连接", timeout=20)
         app.wait_body("E2E_FAILURE packaged failure", timeout=20)
-        app.wait_body("任务执行失败")
+        app.wait_body("失败 ·")
+        recovered_session = request_json(
+            "GET", f"{API_URL}/sessions/{failure_session_id}", headers=AUTH_HEADERS
+        )
+        assert recovered_session["status"] == "failed"
         steps.append("restart-durable-recovery")
 
         app.screenshot(screenshot_path)
