@@ -24,6 +24,7 @@ from agent_runtime.adapters.local_snapshot_state import (
     LocalSnapshotInspection,
 )
 from agent_runtime.adapters.local_snapshots import LocalSnapshotBackend
+from agent_runtime.runtime_failures import normalize_runtime_failure
 
 EngineRunner = Callable[..., CompletedProcess[str]]
 _KEEPALIVE_SCRIPT = "trap 'exit 0' TERM INT; while :; do sleep 3600; done"
@@ -197,6 +198,7 @@ class OciRuntime(RuntimePort):
                 timed_out=True,
                 stdout_truncated=False,
                 stderr_truncated=False,
+                failure_reason="timeout",
             )
         stdout = self._complete_output(completed.stdout)
         stderr = self._complete_output(completed.stderr)
@@ -208,6 +210,11 @@ class OciRuntime(RuntimePort):
             timed_out=False,
             stdout_truncated=False,
             stderr_truncated=False,
+            failure_reason=normalize_runtime_failure(
+                timed_out=False,
+                exit_code=completed.returncode,
+                stderr=stderr,
+            ),
         )
 
     def snapshot(self, handle: RuntimeHandle) -> RuntimeSnapshot:

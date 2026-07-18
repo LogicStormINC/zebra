@@ -24,6 +24,7 @@ class RuntimeLimits:
     tmpfs_mb: int = 512
     max_output_bytes: int = 1_048_576
     max_execution_seconds: float = 900.0
+    workspace_quota_mb: int | None = None
 
     def __post_init__(self) -> None:
         if self.cpu_count <= 0:
@@ -33,6 +34,8 @@ class RuntimeLimits:
                 raise ValueError(f"{name} must be positive")
         if self.max_execution_seconds <= 0:
             raise ValueError("max_execution_seconds must be positive")
+        if self.workspace_quota_mb is not None and self.workspace_quota_mb <= 0:
+            raise ValueError("workspace_quota_mb must be positive when provided")
 
 
 @dataclass(frozen=True)
@@ -90,6 +93,7 @@ class SandboxSpec:
                 "memory_mb": self.limits.memory_mb,
                 "pids": self.limits.pids,
                 "tmpfs_mb": self.limits.tmpfs_mb,
+                "workspace_quota_mb": self.limits.workspace_quota_mb,
             },
             "network_profile": self.network_profile,
             "runtime_class": self.runtime_class.value,
@@ -146,6 +150,7 @@ class RuntimeExecutionResult:
     timed_out: bool
     stdout_truncated: bool = False
     stderr_truncated: bool = False
+    failure_reason: str | None = None
 
     @property
     def succeeded(self) -> bool:

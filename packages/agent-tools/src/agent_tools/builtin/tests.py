@@ -82,6 +82,7 @@ class TestsRunTool:
                 "exit_code": runtime_result.exit_code,
                 "stderr": "" if projected is not None else runtime_result.stderr,
                 "timed_out": runtime_result.timed_out,
+                "failure_reason": runtime_result.failure_reason,
                 **(projected.metadata if projected is not None else {}),
             },
         )

@@ -48,6 +48,7 @@ def test_command_run_tool_executes_typed_command_in_workspace(tmp_path: Path) ->
         "exit_code": 0,
         "stderr": "",
         "timed_out": False,
+        "failure_reason": None,
     }
 
 

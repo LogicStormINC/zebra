@@ -24,9 +24,9 @@
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
 - `ARCH-RT-A1-OS-01` is `Done` via PR `#160`.
-- `ARCH-RT-A2-SETUP-01` is `Review` and owned by `Codex`.
-- `ARCH-RT-A3-REL-01` and `ARCH-RT-A4-E2E-01` remain `Locked` behind their
-  preceding Phase A dependency.
+- `ARCH-RT-A2-SETUP-01` is `Done` via PR `#163`.
+- `ARCH-RT-A3-REL-01` is `Review` and owned by `Codex`.
+- `ARCH-RT-A4-E2E-01` remains `Locked` behind A3.
 - `QA-DESKTOP-E2E-01` is `Done` via PR `#161`.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
@@ -14010,11 +14010,12 @@ failing locally and no fallback to trusted execution.
 
 ### ARCH-RT-A2-SETUP-01 - Setup And Agent Isolation
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `RUNTIME / SECURITY / TOOLS`
 - Depends on: merged `ARCH-RT-A1-OS-01`
 - Branch: `codex/arch-rt-a2-setup-egress`
+- Merged: PR `#163`, merge commit `e536120`
 - Owned paths: `packages/agent-core/src/agent_core/ports/runtime.py`,
   `packages/agent-runtime/`, `packages/agent-security/`, `packages/agent-tools/`,
   `apps/config/`, `apps/worker/`, `tests/agent_runtime/`, `tests/agent_security/`,
@@ -14046,14 +14047,17 @@ Agent Sandbox with no network and no inherited proxy credential.
 
 ### ARCH-RT-A3-REL-01 - Runtime Quota And Reliability Gates
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `RUNTIME / QA / OBSERVABILITY`
 - Depends on: merged `ARCH-RT-A2-SETUP-01`
 - Branch: `codex/arch-rt-a3-reliability`
-- Owned paths: `packages/agent-runtime/`, `packages/agent-observability/`,
-  `apps/worker/`, `tests/agent_runtime/`, `tests/agent_observability/`,
-  `tests/worker/`, `evals/`, `.github/workflows/quality.yml`, `scripts/`,
+- Owned paths: `packages/agent-core/src/agent_core/ports/runtime.py`,
+  `packages/agent-runtime/`, `packages/agent-observability/`, `apps/config/`,
+  `packages/agent-tools/`, `apps/worker/`, `tests/agent_runtime/`,
+  `tests/agent_observability/`, `tests/agent_tools/`, `tests/config/`,
+  `tests/worker/`, `evals/`, `.env.example`,
+  `configs/default.env`, `.github/workflows/quality.yml`, `scripts/`,
   `docs/生产级Runtime实施方案_v1.0.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
 #### Goal
@@ -14064,11 +14068,22 @@ tamper, fault-injection, and soak release evidence.
 
 #### Acceptance
 
-- [ ] Production workspace quota is actually enforced and disk exhaustion is normalized and recoverable.
-- [ ] Cancellation terminates descendants and cannot leave an untracked process or effect.
-- [ ] Crash/restart, authority drift, and snapshot tamper preserve existing fail-closed semantics.
-- [ ] Long-stream and soak thresholds are explicit and produce machine-readable evidence.
-- [ ] Real Linux gVisor smoke remains mandatory.
+- [x] Production workspace quota is actually enforced and disk exhaustion is normalized and recoverable.
+- [x] Cancellation terminates descendants and cannot leave an untracked process or effect.
+- [x] Crash/restart, authority drift, and snapshot tamper preserve existing fail-closed semantics.
+- [x] Long-stream and soak thresholds are explicit and produce machine-readable evidence.
+- [x] Real Linux gVisor smoke remains mandatory.
+
+#### Validation
+
+- focused Runtime/config/Worker/Tool contracts: `71 passed, 2 skipped`
+- full deterministic suite: `1483 passed, 7 skipped`
+- file-size gate: `881` files, zero violations
+- Ruff: passed
+- strict Mypy: `412` source files, zero errors
+- release Eval: `8/8`, `pass_rate=1.00`
+- CI adds real 8 MiB `ENOSPC`, 20-cycle macOS/Linux soak, JUnit/JSON evidence,
+  and retains mandatory real Linux gVisor validation
 
 ### ARCH-RT-A4-E2E-01 - Packaged Desktop Runtime E2E
 

@@ -69,6 +69,11 @@ from agent_runtime.workspace import (
     WorkspaceLayout,
     WorkspacePathError,
 )
+from agent_runtime.workspace_quota import (
+    WorkspaceQuotaError,
+    WorkspaceQuotaEvidence,
+    require_workspace_quota,
+)
 
 __all__ = [
     "LocalRuntime",
@@ -116,6 +121,8 @@ __all__ = [
     "WorkspaceError",
     "WorkspaceLayout",
     "WorkspacePathError",
+    "WorkspaceQuotaError",
+    "WorkspaceQuotaEvidence",
     "build_mcp_capability_inventory",
     "discover_mcp_resources",
     "discover_mcp_prompts",
@@ -125,4 +132,5 @@ __all__ = [
     "validate_mcp_capability_selection",
     "run_local_harness",
     "os_sandbox_engine",
+    "require_workspace_quota",
 ]

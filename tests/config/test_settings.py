@@ -253,6 +253,16 @@ def test_production_profile_fails_closed_without_gvisor() -> None:
                 "ZEBRA_RUNTIME_CLASS": "trusted-local",
             }
         )
+    image = "zebra/runtime@sha256:" + "a" * 64
+    with pytest.raises(ValueError, match="storage-enforced workspace quota"):
+        load_settings(
+            {
+                "ZEBRA_PROFILE": "production",
+                "ZEBRA_RUNTIME_CLASS": "gvisor",
+                "ZEBRA_RUNTIME_IMAGE": image,
+                "ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA": "false",
+            }
+        )
 
 
 def test_load_settings_auto_loads_dotenv_local(monkeypatch, tmp_path) -> None:

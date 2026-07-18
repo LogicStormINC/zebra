@@ -5,7 +5,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import replace
 from pathlib import Path
 from shutil import which
-from subprocess import CompletedProcess, TimeoutExpired, run
+from subprocess import CompletedProcess, TimeoutExpired
 
 from agent_core.ports.runtime import (
     EffectiveRuntimeAuthority,
@@ -30,6 +30,8 @@ from agent_runtime.adapters.os_sandbox_platform import (
     build_probe_command,
     os_sandbox_engine,
 )
+from agent_runtime.process_execution import run_process_tree
+from agent_runtime.runtime_failures import normalize_runtime_failure
 
 Runner = Callable[..., CompletedProcess[str]]
 ExecutableFinder = Callable[[str], str | None]
@@ -46,7 +48,7 @@ class OsSandboxRuntime(RuntimePort):
         snapshot_root: str | Path | None = None,
         system: str | None = None,
         finder: ExecutableFinder = which,
-        runner: Runner = run,
+        runner: Runner = run_process_tree,
     ) -> None:
         if spec.runtime_class is not RuntimeClass.OS_SANDBOX:
             raise ValueError("OsSandboxRuntime requires an os-sandbox SandboxSpec")
@@ -142,6 +144,7 @@ class OsSandboxRuntime(RuntimePort):
                 stdout=self._output(exc.stdout),
                 stderr=self._output(exc.stderr),
                 timed_out=True,
+                failure_reason="timeout",
             )
         return RuntimeExecutionResult(
             command=request.command,
@@ -149,6 +152,11 @@ class OsSandboxRuntime(RuntimePort):
             stdout=self._output(completed.stdout),
             stderr=self._output(completed.stderr),
             timed_out=False,
+            failure_reason=normalize_runtime_failure(
+                timed_out=False,
+                exit_code=completed.returncode,
+                stderr=self._output(completed.stderr),
+            ),
         )
 
     def snapshot(self, handle: RuntimeHandle) -> RuntimeSnapshot:
