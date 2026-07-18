@@ -1,5 +1,21 @@
 # Findings
 
+## UI-LOBE-01 - 2026-07-18
+
+- Lobe UI 5 is ESM-only and its current peer line requires React 19, Ant Design
+  6, antd-style 4, Motion 12, Lobe Icons 5, and Fluent Emoji 4.
+- Zebra's existing Ant Design X 2.8 already required Ant Design 6, so upgrading
+  the stale Ant Design 5 pin closes an existing peer mismatch instead of creating
+  a separate migration solely for Lobe UI.
+- `ThemeProvider` is mounted at the existing root theme boundary and receives
+  Zebra's current token configuration; durable chat/event state remains custom.
+- The package still exposes an upstream Emoji Mart React 19 peer warning. It is
+  not suppressed, does not appear in the mounted provider path, and production
+  TypeScript/Vite/browser validation passes.
+- Direct ThemeProvider subpath import plus TypeScript Bundler resolution keeps
+  the dependency boundary explicit. The resulting `1.43 MB` / `454 KB` gzip
+  chunk does not regress the mainline `1.47 MB` / `458 KB` record.
+
 ## QA-GOV-02 - 2026-07-18
 
 - PR `#144` was based on `882c955`, while current main is `667627a`.

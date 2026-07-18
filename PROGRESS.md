@@ -8,9 +8,9 @@
 - Snapshot date: `2026-07-18`
 - Verified implementation baseline: `d586a8f` (PR `#165`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
-- Active implementation task: none
-- Active architecture task: `ARCH-SVC-BOUNDARY-01` is in review and defines the
-  embeddable Agent Runtime microservice boundary
+- Active implementation task: `UI-LOBE-01` is in review on
+  `codex/ui-lobe-01-component-library`
+- Architecture boundary: `ARCH-SVC-BOUNDARY-01` is Done via PR `#166`
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
@@ -64,6 +64,8 @@
   supports approval, clarification, task plans, context, artifacts, and handoff.
 - Real Chromium exercises the live Desktop/API/Worker/SQLite/SSE chain for long
   streams, reload recovery, cancellation, and terminal-session follow-up.
+- Desktop composes Lobe UI `ThemeProvider` with Ant Design X and Zebra's durable
+  event projection; Lobe UI does not replace session or chat state.
 - Typed local tools cover bounded file, command, patch, tests, Git, Web, Skill,
   MCP, and read-only Research paths according to the task profile.
 
@@ -91,6 +93,9 @@ on 2026-07-18:
 The seven skips are opt-in real-provider/platform smokes. Linux CI runs the real
 gVisor and native sandbox jobs instead of treating local skips as proof.
 
+`UI-LOBE-01` validation additionally passes all Desktop checks, TypeScript,
+Vite production build, and a real browser smoke without console warnings.
+
 The DeepSeek credentials-enabled focused run also passed all `39` contracts,
 including a real thinking tool round trip.
 
@@ -102,6 +107,8 @@ including a real thinking tool round trip.
   `QA-GOV-02` / PR `#144`.
 - `QA-148-MDL-01`, `QA-DESKTOP-E2E-01`, and all Phase A Runtime tasks
   `ARCH-RT-A1-OS-01` through `ARCH-RT-A4-E2E-01` are `Done`.
+- `ARCH-SVC-BOUNDARY-01` is `Done` via PR `#166`; `UI-LOBE-01` is the only
+  current `Review` task.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 
 ## Known Follow-Ups

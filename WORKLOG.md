@@ -5470,3 +5470,23 @@
 - Validation: focused context/tool/API/CLI/recovery suites passed; `make test`
   passed `1379` with one gVisor platform skip; `make check` passed file-size,
   Ruff, strict Mypy (`379` files), and `8` release evals.
+
+## 2026-07-18 UI-LOBE-01 Lobe UI Component Library Integration
+
+- Created and claimed the path-bounded `UI-LOBE-01` task on
+  `codex/ui-lobe-01-component-library` without touching the dirty governance
+  worktree.
+- Added current Lobe UI and aligned its top-level React/Ant Design ecosystem:
+  `@lobehub/ui 5.22.3`, `antd 6.5.1`, `antd-style 4.1.0`, Motion 12,
+  Lobe Icons 5, and Fluent Emoji 4.
+- Replaced the root Ant Design-only provider with Lobe `ThemeProvider` while
+  preserving Zebra's dark tokens, Ant App, React Query, Ant Design X, and all
+  durable session/event behavior.
+- Switched TypeScript module resolution to Bundler for the package's official ESM
+  subpath export and migrated the one Drawer `width` deprecation to `size`.
+- Added `check:lobe-ui`; all 20 Desktop checks, TypeScript, Vite build, and real
+  browser rendering passed with no console warnings. The existing aggregate
+  chunk warning remains, but size did not regress from the mainline baseline.
+- Repository validation passed `1452` tests with four documented environment /
+  credential skips, file-size `868`, Ruff, strict Mypy across `403` source files,
+  and all `8` release Evals.

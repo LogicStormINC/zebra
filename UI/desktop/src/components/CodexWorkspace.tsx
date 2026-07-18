@@ -203,7 +203,7 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             sessionSummary={props.sessionSummary}
           />
         </div>
-        <Drawer onClose={() => setSettingsOpen(false)} open={settingsOpen} title={locale.runtimeSettings} width={460}>
+        <Drawer onClose={() => setSettingsOpen(false)} open={settingsOpen} size={460} title={locale.runtimeSettings}>
           <OperatorConfigCard
             config={props.operatorConfig}
             mcpCapabilities={props.mcpCapabilities}
