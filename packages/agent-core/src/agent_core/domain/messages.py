@@ -24,6 +24,7 @@ class SessionMessage(BaseModel):
     tool_calls: tuple[ToolCall, ...] = ()
     tool_call_id: str | None = None
     metadata: dict[str, object] = Field(default_factory=dict)
+    provider_reasoning_content: str | None = Field(default=None, exclude=True, repr=False)
 
     @field_validator("content")
     @classmethod
@@ -50,6 +51,13 @@ class SessionMessage(BaseModel):
             raise ValueError("tool_call_id must not be blank when set")
         return stripped
 
+    @field_validator("provider_reasoning_content")
+    @classmethod
+    def ensure_provider_reasoning_not_blank(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("provider_reasoning_content must not be blank when set")
+        return value
+
     @model_validator(mode="after")
     def validate_tool_message_shape(self) -> "SessionMessage":
         if self.role is MessageRole.TOOL and self.tool_call_id is None:
@@ -58,4 +66,10 @@ class SessionMessage(BaseModel):
             raise ValueError("tool_call_id is only valid for tool messages")
         if self.tool_calls and self.role is not MessageRole.ASSISTANT:
             raise ValueError("tool_calls are only valid for assistant messages")
+        if self.provider_reasoning_content is not None and (
+            self.role is not MessageRole.ASSISTANT or not self.tool_calls
+        ):
+            raise ValueError(
+                "provider_reasoning_content is only valid for assistant tool-call messages"
+            )
         return self

@@ -57,7 +57,7 @@
 | 区域 | 当前状态 | 风险 |
 |---|---|---|
 | 思考模式 | 请求未显式设置 `thinking` | V4 默认开启，行为受供应商默认值变化影响 |
-| 工具续传 | 流解析忽略 `reasoning_content` | 思考模式工具轮后续请求可能返回 400 |
+| 工具续传 | QA-148 已补进程内私有续传；跨进程不持久化正文 | 恢复时缺少续传状态会在 HTTP 前 fail closed |
 | 调用策略 | 只有 provider/base URL/model | 无法按 planner/executor/reviewer 分级 |
 | 流 Usage | 未显式请求 `include_usage` | 流式 token、缓存和推理成本不完整 |
 | 完成状态 | 未规范化 `finish_reason` | 截断、内容过滤和资源不足可能被误判成功 |
@@ -87,25 +87,34 @@ DeepSeek V4 的 OpenAI 格式通过以下参数控制思考：
 - 思考模式下 temperature、top_p 和 penalty 参数不会生效；
 - 无工具的历史推理内容不必进入下一轮；
 - 如果一次思考响应包含工具调用，完整 `reasoning_content` 必须在后续请求中回传；
+- thinking 模式请求不发送 `tool_choice`；DeepSeek V4 会拒绝该参数；
 - 未正确回传时，API 会返回 HTTP 400。
 
 来源：[DeepSeek Thinking Mode](https://api-docs.deepseek.com/guides/thinking_mode/)
 
 ### 4.2 Zebra 决策
 
-第一阶段不实现“思考模式中的多轮工具调用”。调用策略固定为：
+`DS-OPT-01` 默认策略仍不启用思考模式工具轮；`QA-148-MDL-01` 增加显式、
+进程内的协议兼容路径：
 
 ```text
-本次调用包含可用工具 -> thinking=disabled
-本次调用不包含工具   -> 可按 Model Profile 开启 thinking
+工具请求 + 默认 executor Profile       -> thinking=disabled
+工具请求 + 显式 thinking=enabled       -> 保存并原样回传 reasoning_content
+无工具请求                             -> 可按 Model Profile 开启 thinking
 ```
 
-原因：
+边界：
 
-1. Zebra 当前消息模型和流适配器不会保存 `reasoning_content`。
-2. 为支持审批恢复而持久化原始私有推理，会扩大隐私、审计和数据治理范围。
-3. 仅在内存中保留推理无法覆盖进程重启、审批暂停和会话恢复。
-4. 显式关闭工具轮思考是最小、确定且可测试的兼容策略。
+1. `reasoning_content` 是 assistant tool-call message 的 provider-private 字段，
+   不与公开 `content` 或 `ModelTextDelta` 混合。
+2. 普通 model dump、事件、日志、Artifact 和 Context Capsule 不包含私有正文。
+3. 同一进程中的后续工具子请求原样回传该字段，满足 DeepSeek 协议。
+4. 审批暂停、进程重启或其他序列化边界只保留“续传必需”标记；私有正文缺失时
+   在 HTTP 前 fail closed，不发送已知非法请求。
+5. 默认 executor Profile 保持 non-thinking；新路径只能由显式 invocation policy
+   开启，不改变现有任务行为。
+6. thinking 请求省略 `tool_choice`；调用方要求 `required` 时在 HTTP 前失败，避免
+   静默弱化“必须调用工具”的策略约束。
 
 ### 4.3 复杂 Agent 任务的替代流程
 
@@ -120,9 +129,9 @@ flowchart LR
 
 显式计划是可以展示、审核和持久化的产品内容；私有推理内容不是项目状态。
 
-### 4.4 后续重新评估条件
+### 4.4 跨进程续传重新评估条件
 
-只有满足以下任一条件，才重新评估思考模式工具轮：
+只有满足以下任一条件，才重新评估跨进程持久化私有续传正文：
 
 - DeepSeek 提供不暴露私有推理的 opaque continuation token；
 - 项目通过单独 ADR 批准受控的 Provider Continuation State；
@@ -145,6 +154,7 @@ flowchart LR
 - 简单 Agent 工具任务优先 Flash；
 - 复杂推理优先 Pro，但保持无工具；
 - 工具执行前后用显式计划或复核内容连接，不传递私有思维链；
+- 仅显式 QA-148 invocation policy 可在同一进程工具子请求之间回传私有推理；
 - 只有 Eval 证明收益时才从 Flash 升级到 Pro；
 - 图片输入路由到已声明 vision 能力的模型；其描述作为带来源的不可信数据
   再交给 DeepSeek，不伪装成 DeepSeek 原生视觉能力；
@@ -233,7 +243,7 @@ privacy_scope
 调用级策略优先于 Profile 默认值，但必须通过 Profile 能力校验。非法组合在请求
 离开 Zebra 之前失败，例如：
 
-- executor + tools + thinking enabled 在第一阶段被拒绝；
+- thinking + tools + `tool_choice=required` 被拒绝；thinking 工具轮只支持 `auto`；
 - JSON Output 未同时提供 JSON 输出提示时被拒绝；
 - strict tools 使用不兼容 Schema 时被拒绝；
 - FIM 与 thinking enabled 组合被拒绝。
@@ -331,7 +341,8 @@ DeepSeek Context Caching 默认开启，并依赖完全一致的重叠前缀。
 
 - 普通执行轮：`auto`；
 - 无工具规划与复核：`none`；
-- 只有流程已经确定必须调用某工具时使用 `required` 或指定工具；
+- thinking 请求：字段必须省略；带工具时仅接受调用级 `auto` 策略；
+- non-thinking 且流程已确定必须调用某工具时使用 `required` 或指定工具；
 - 禁止为了“提高工具使用率”在开放式任务中全局设为 `required`。
 
 ### 9.2 Strict Mode Beta
@@ -496,6 +507,10 @@ cost_usd
 - [x] 私有推理正文不进入公开流或耐久存储。
 - [x] 多轮真实工具 smoke 可执行；有凭据运行，无凭据明确 skip。
 - [x] Provider contract tests 通过，真实 smoke 不记录或输出凭据。
+- [x] QA-148 非流式和流式 thinking tool loop 可在同一进程内保存并原样回传
+  `reasoning_content`，公开 delta、事件、Artifact、日志和 Capsule 仍不含正文。
+- [x] QA-148 序列化后缺失私有续传正文时在 HTTP 前 fail closed；默认 executor
+  Profile 继续显式发送 `thinking=disabled`。
 
 ### DS-P1：Model Profile 与角色路由
 

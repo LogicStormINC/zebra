@@ -13830,14 +13830,15 @@ window contract while preserving legacy OpenAI-compatible behavior.
 
 ### QA-148-MDL-01 - DeepSeek Thinking Tool-Loop Reasoning Replay
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `lukeding`
 - Suggested role: `CORE / INTEGRATIONS / QA`
 - Depends on: merged `DS-OPT-01` and explicit maintainer request
 - Branch: `codex/issue-148-deepseek-reasoning-replay`
 - Issue: `#148`
 - Owned paths: `packages/agent-core/src/agent_core/domain/messages.py`,
   `packages/agent-integrations/src/agent_integrations/deepseek_profiles.py`,
+  `packages/agent-integrations/src/agent_integrations/openai_compatible.py`,
   `packages/agent-integrations/src/agent_integrations/openai_payloads.py`,
   `packages/agent-integrations/src/agent_integrations/openai_streaming.py`,
   `tests/agent_integrations/test_openai_compatible.py`,
@@ -13854,19 +13855,19 @@ content, deltas, events, artifacts, logs, or durable Context Capsules.
 
 #### Acceptance
 
-- [ ] Non-streaming DeepSeek responses parse reasoning separately from public
+- [x] Non-streaming DeepSeek responses parse reasoning separately from public
   content and replay it on the next provider request with the matching tool call.
-- [ ] Streaming DeepSeek responses assemble fragmented reasoning separately and
+- [x] Streaming DeepSeek responses assemble fragmented reasoning separately and
   emit only public content through `ModelTextDelta`.
-- [ ] An explicitly requested thinking-mode tool loop succeeds for a supported
+- [x] An explicitly requested thinking-mode tool loop succeeds for a supported
   DeepSeek profile; default executor profiles remain non-thinking.
-- [ ] Missing or malformed required private continuation fails locally before
+- [x] Missing or malformed required private continuation fails locally before
   an invalid provider request is sent.
-- [ ] Private reasoning is assistant-only, is absent from ordinary model dumps,
+- [x] Private reasoning is assistant-only, is absent from ordinary model dumps,
   events, artifacts, logs, capsules, public API/CLI/SSE output, and reprs.
-- [ ] Existing non-thinking DeepSeek and non-DeepSeek providers retain their
+- [x] Existing non-thinking DeepSeek and non-DeepSeek providers retain their
   current payload shape and behavior.
-- [ ] Focused provider/core tests, `make test`, `make check`, the release eval
+- [x] Focused provider/core tests, `make test`, `make check`, the release eval
   gate, file-size gate, and an opt-in real DeepSeek smoke pass or record a
   credentials-only skip.
 
@@ -13877,3 +13878,13 @@ content, deltas, events, artifacts, logs, or durable Context Capsules.
 - persisting raw private reasoning across process restarts; resumed paths must
   fail closed rather than silently violate the provider protocol
 - changing Context Capsule, public event, artifact, approval, or UI contracts
+
+#### Validation Evidence
+
+- focused DeepSeek/OpenAI-compatible contracts: `39 passed`, including a real
+  DeepSeek thinking tool-call round trip
+- full deterministic suite: `1452 passed, 4 skipped`
+- file-size gate: `868` files, zero violations
+- Ruff: passed
+- strict Mypy: `403` source files, zero errors
+- release Eval: `8/8`, `pass_rate=1.00`

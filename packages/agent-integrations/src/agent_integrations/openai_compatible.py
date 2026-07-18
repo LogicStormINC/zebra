@@ -13,6 +13,7 @@ from agent_core.domain.modeling import (
     ModelInvocationPolicy,
     ModelRole,
     ModelTextDelta,
+    ModelThinkingMode,
     ModelToolDefinition,
 )
 from zebra_agent_config import ZebraAgentSettings
@@ -240,10 +241,11 @@ class OpenAICompatibleModelGateway:
             body.update(
                 {
                     "thinking": {"type": resolved.thinking_mode.value},
-                    "tool_choice": resolved.tool_choice.value,
                     "max_tokens": resolved.max_output_tokens,
                 }
             )
+            if resolved.thinking_mode is not ModelThinkingMode.ENABLED:
+                body["tool_choice"] = resolved.tool_choice.value
             if resolved.reasoning_effort is not None:
                 body["reasoning_effort"] = resolved.reasoning_effort.value
             if stream:

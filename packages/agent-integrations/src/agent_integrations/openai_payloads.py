@@ -10,6 +10,7 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
     ModelCallMetadata,
     ModelCompletion,
+    ModelThinkingMode,
     ModelToolDefinition,
     ModelUsage,
 )
@@ -43,6 +44,11 @@ def serialize_message(message: SessionMessage) -> dict[str, object]:
             }
             for tool_call in message.tool_calls
         ]
+        reasoning = message.provider_reasoning_content
+        if message.metadata.get("provider_reasoning_required") is True and reasoning is None:
+            raise ValueError("DeepSeek reasoning continuation is unavailable")
+        if reasoning is not None:
+            payload["reasoning_content"] = reasoning
     if message.tool_call_id is not None:
         payload["tool_call_id"] = message.tool_call_id
     return payload
@@ -124,6 +130,20 @@ def parse_completion(
         message.get("tool_calls"),
         internal_tool_names=internal_names or {},
     )
+    requires_reasoning = bool(
+        tool_calls
+        and resolved is not None
+        and resolved.thinking_mode is ModelThinkingMode.ENABLED
+    )
+    reasoning_content = (
+        _provider_reasoning_content(
+            message.get("reasoning_content"),
+            provider_name=provider_name,
+            required=requires_reasoning,
+        )
+        if tool_calls
+        else None
+    )
     content = _assistant_content(message.get("content"), has_tool_calls=bool(tool_calls))
     usage = parse_usage(payload.get("usage"))
     resolved_model = optional_str(payload.get("model")) or (
@@ -136,6 +156,10 @@ def parse_completion(
             content=content,
             created_at=datetime.now(UTC),
             tool_calls=tuple(tool_calls),
+            metadata=(
+                {"provider_reasoning_required": True} if requires_reasoning else {}
+            ),
+            provider_reasoning_content=reasoning_content,
         ),
         tool_calls=tuple(tool_calls),
         call_metadata=ModelCallMetadata(
@@ -174,6 +198,27 @@ def parse_completion(
             usage=usage,
         ),
     )
+
+
+def _provider_reasoning_content(
+    value: object,
+    *,
+    provider_name: str,
+    required: bool,
+) -> str | None:
+    if provider_name.lower() != "deepseek":
+        return None
+    if value is None:
+        if required:
+            raise ValueError("DeepSeek thinking tool call requires reasoning_content")
+        return None
+    if not isinstance(value, str):
+        raise ValueError("DeepSeek reasoning_content must be a string")
+    if not value.strip():
+        if required:
+            raise ValueError("DeepSeek thinking tool call requires reasoning_content")
+        return None
+    return value
 
 
 def _assistant_content(value: object, *, has_tool_calls: bool) -> str:
