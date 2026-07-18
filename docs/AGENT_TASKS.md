@@ -24,7 +24,7 @@
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
 - `ARCH-RT-A1-OS-01` is `Review` and owned by `Codex`.
-- `QA-DESKTOP-E2E-01` is in `Review` in the independent Desktop browser lane.
+- `QA-DESKTOP-E2E-01` is `Done` via PR `#161`.
 - `ARCH-RT-A2-SETUP-01`, `ARCH-RT-A3-REL-01`, and `ARCH-RT-A4-E2E-01`
   remain `Locked` behind their preceding Phase A dependency.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
@@ -14085,11 +14085,12 @@ state to the operator.
 
 ### QA-DESKTOP-E2E-01 - Real Browser Streaming And Recovery Regression
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `QA / APP / INTEGRATIONS`
 - Depends on: merged durable Assistant streaming and Desktop event-stream conversation
 - Branch: `codex/qa-desktop-e2e-01`
+- Merged: PR `#161` (`ace7443`)
 - Owned paths: `UI/desktop/e2e/`, `UI/desktop/playwright.config.ts`,
   `UI/desktop/package.json`, `UI/desktop/pnpm-lock.yaml`, `UI/desktop/.gitignore`,
   `UI/desktop/src/App.tsx`,
