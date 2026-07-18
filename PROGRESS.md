@@ -9,6 +9,8 @@
 - Verified implementation baseline: `d586a8f` (PR `#165`)
 - Product posture: `feature-complete local Beta / single-host Phase A complete`
 - Active implementation task: none
+- Active architecture task: `ARCH-SVC-BOUNDARY-01` defines the embeddable
+  Agent Runtime microservice boundary
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence

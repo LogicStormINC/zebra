@@ -27,6 +27,7 @@
 - `ARCH-RT-A2-SETUP-01` is `Done` via PR `#163`.
 - `ARCH-RT-A3-REL-01` is `Done` via PR `#164`.
 - `ARCH-RT-A4-E2E-01` is `Done` via PR `#165`.
+- `ARCH-SVC-BOUNDARY-01` is `In Progress` and owned by `lukeding`.
 - `QA-DESKTOP-E2E-01` is `Done` via PR `#161`.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
@@ -14173,8 +14174,8 @@ external model network with a deterministic local streaming provider.
 
 ### ARCH-SVC-BOUNDARY-01 - Agent Runtime Microservice Business Boundary
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `lukeding`
 - Suggested role: `ARCHITECTURE / DOCS`
 - Depends on: current Agent Runtime and cloud target architecture
 - Branch: `codex/arch-svc-boundary-01`
