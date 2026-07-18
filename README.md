@@ -59,6 +59,8 @@ task ownership and status.
 
 - CLI, FastAPI, worker, and Tauri/React desktop composition roots
 - replay-plus-tail SSE with cursor recovery
+- real-Chromium regression coverage for long streaming, reload recovery,
+  cancellation, and terminal-session follow-up
 - durable approval and clarification continuation
 - artifact, diff, audit, memory, commit, and guarded pull-request operations
 - context inspection, manual compaction, and stage-handoff controls
@@ -103,6 +105,18 @@ make sync
 make test
 make check
 ```
+
+Run the real browser streaming gate after `make sync`:
+
+```bash
+cd UI/desktop
+pnpm exec playwright install chromium
+pnpm e2e
+```
+
+The gate starts the live Vite Desktop, FastAPI, Worker path, and an isolated
+SQLite event store. Only the external model endpoint is replaced by a local,
+deterministic OpenAI-compatible streaming provider.
 
 Useful entry points:
 

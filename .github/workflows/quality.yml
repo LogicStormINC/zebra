@@ -38,7 +38,7 @@ jobs:
   desktop:
     name: Desktop quality
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: UI/desktop
@@ -49,16 +49,39 @@ jobs:
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: "22.17.0"
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          cache-dependency-glob: uv.lock
+          enable-cache: true
+          python-version: "3.12"
+          version: "0.11.12"
       - name: Activate pinned pnpm
         run: |
           corepack enable
           corepack prepare pnpm@10.28.2 --activate
       - name: Install locked desktop dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Install locked Python workspace
+        run: uv sync --project ../.. --frozen --all-packages --group dev
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
       - name: Run desktop contract checks
         run: pnpm run "/^check:/"
       - name: Build desktop web assets
         run: pnpm build
+      - name: Run real browser streaming regressions
+        run: pnpm e2e
+      - name: Retain browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: desktop-playwright-evidence
+          path: |
+            UI/desktop/playwright-report
+            UI/desktop/test-results
+          if-no-files-found: ignore
+          retention-days: 7
 
   gvisor-runtime:
     name: Real gVisor runtime smoke

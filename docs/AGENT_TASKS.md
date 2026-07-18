@@ -24,6 +24,7 @@
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
 - `ARCH-RT-A1-OS-01` is `Review` and owned by `Codex`.
+- `QA-DESKTOP-E2E-01` is in `Review` in the independent Desktop browser lane.
 - `ARCH-RT-A2-SETUP-01`, `ARCH-RT-A3-REL-01`, and `ARCH-RT-A4-E2E-01`
   remain `Locked` behind their preceding Phase A dependency.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
@@ -14081,3 +14082,46 @@ state to the operator.
 - [ ] E2E drives the real backend and demonstrates Runtime profile and no-fallback behavior.
 - [ ] Approval, failure, cancellation, restart, and recovery states are visible and actionable.
 - [ ] Phase A completion evidence is recorded only after all single-host criteria pass.
+
+### QA-DESKTOP-E2E-01 - Real Browser Streaming And Recovery Regression
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `QA / APP / INTEGRATIONS`
+- Depends on: merged durable Assistant streaming and Desktop event-stream conversation
+- Branch: `codex/qa-desktop-e2e-01`
+- Owned paths: `UI/desktop/e2e/`, `UI/desktop/playwright.config.ts`,
+  `UI/desktop/package.json`, `UI/desktop/pnpm-lock.yaml`, `UI/desktop/.gitignore`,
+  `UI/desktop/src/App.tsx`,
+  `UI/desktop/src/components/conversation/ConversationComposer.tsx`,
+  `.github/workflows/quality.yml`, `docs/QA-DESKTOP-E2E-01_真实浏览器流式恢复验收.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+
+#### Goal
+
+Add a repeatable real-Chromium release gate over the live Vite Desktop, FastAPI,
+SQLite event store, Worker execution path, and SSE transport. Replace only the
+external model network with a deterministic local streaming provider.
+
+#### Acceptance
+
+- [x] Playwright launches real Chromium against live Desktop and API processes;
+  tests do not intercept or mock Zebra HTTP/SSE routes.
+- [x] A long response renders progressively before completion, preserves ordered
+  deltas, and converges to the durable final Assistant message.
+- [x] Reloading during a running response reconnects from durable history without
+  duplicated text or events and reaches the same final state.
+- [x] The visible stop action cancels a running session, terminates its stream,
+  and no late completion overwrites the durable cancelled state.
+- [x] A follow-up submitted after a terminal response creates the supported next
+  durable execution and renders its user and Assistant messages truthfully.
+- [x] Failures retain Playwright trace, screenshot, and video evidence; local and
+  GitHub commands use bounded timeouts and isolated disposable SQLite state.
+- [x] Desktop checks/build, real browser E2E, `make test`, `make check`, and
+  Quality CI pass (run `29638141137`).
+
+#### Explicit Non-Goals
+
+- packaged Tauri/WebView E2E, multi-browser coverage, or visual snapshot baselines
+- external provider credentials, production deployment, or unrestricted browser tools
+- changing public Session, SSE, Worker, or Desktop product contracts

@@ -103,7 +103,7 @@ export function ConversationComposer({
                 onRetryPrompts={onRetryMcpPrompts}
               />
               <Tooltip title={isRequesting ? "停止任务" : "发送任务"}>
-                <span className={`${styles.sendSlot} ${canSubmit ? "" : styles.sendSlotDisabled}`}>
+                <span className={`${styles.sendSlot} ${canSubmit || isRequesting ? "" : styles.sendSlotDisabled}`}>
                   {React.isValidElement(actionNode)
                     ? React.cloneElement(actionNode as React.ReactElement<{ "aria-label"?: string }>, {
                         "aria-label": isRequesting ? "停止任务" : "发送任务",

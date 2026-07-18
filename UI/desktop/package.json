@@ -30,6 +30,7 @@
     "check:runtime-activity": "node --experimental-strip-types checks/runtime-activity.check.ts",
     "check:streaming": "node --experimental-strip-types checks/streaming-messages.check.ts",
     "check:handoff": "node --experimental-strip-types checks/session-handoff.check.ts",
+    "e2e": "playwright test",
     "preview": "vite preview",
     "tauri:dev": "CARGO_HOME=$PWD/.cargo-home tauri dev",
     "tauri:build": "CARGO_HOME=$PWD/.cargo-home tauri build",
@@ -50,6 +51,7 @@
     "dayjs": "^1.11.13"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/vite": "^4.1.11",
     "@tauri-apps/cli": "^2.8.0",
     "@types/react": "^19.1.8",
