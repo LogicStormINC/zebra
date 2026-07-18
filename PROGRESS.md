@@ -6,9 +6,9 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-07-18`
-- Verified implementation baseline: `ace7443` (PR `#161`)
-- Product posture: `feature-complete local Beta / single-host production candidate`
-- Active implementation task: `ARCH-RT-A4-E2E-01` is in review
+- Verified implementation baseline: `d586a8f` (PR `#165`)
+- Product posture: `feature-complete local Beta / single-host Phase A complete`
+- Active implementation task: none
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
@@ -61,22 +61,27 @@
 
 ## Latest Validation Baseline
 
-Validated on `QA-DESKTOP-E2E-01`, merged as `origin/main@ace7443` / PR `#161`
+Validated on `ARCH-RT-A4-E2E-01`, merged as `origin/main@d586a8f` / PR `#165`
 on 2026-07-18:
 
-- `make test`: `1452 passed, 4 skipped`
-- file-size gate: `874` files, zero violations
+- `make test`: `1484 passed, 7 skipped`
+- file-size gate: `889` files, zero violations
 - Ruff: passed
-- strict Mypy: `405` source files, zero errors
+- strict Mypy: `412` source files, zero errors
 - release Eval: `8/8`, `pass_rate=1.00`
-- Desktop: all `19` deterministic checks, production build, and `4/4` real
-  Chromium streaming regressions passed
-- Quality run `29638435247`: Backend, Desktop, real Linux gVisor, and real OS
-  sandbox smoke on Ubuntu and macOS passed
+- Desktop: deterministic checks, production build, and `7/7` real Chromium
+  Runtime/streaming regressions passed
+- Quality run `29645045918`: all seven jobs passed, including the packaged Ubuntu
+  `.deb` WebDriver chain, real Linux gVisor, Workspace exhaustion, and real OS
+  sandbox smoke on Ubuntu and macOS
+- packaged evidence records `passed=true`, `runtime_class=os-sandbox`,
+  `fallback_allowed=false`, cancellation, approval with real tool execution,
+  failure visibility, and restart-durable-recovery; final screenshot shows the
+  recovered failed session and Runtime Inspector value
 - current main JavaScript chunk: about `1.47 MB` (`458 KB` gzip), Vite warning remains
 
-The four skips are three opt-in real-provider smokes and the macOS-gated gVisor
-test. Linux CI runs the real gVisor smoke instead of treating that skip as proof.
+The seven skips are opt-in real-provider/platform smokes. Linux CI runs the real
+gVisor and native sandbox jobs instead of treating local skips as proof.
 
 The DeepSeek credentials-enabled focused run also passed all `39` contracts,
 including a real thinking tool round trip.
@@ -87,18 +92,17 @@ including a real thinking tool round trip.
 - `docs/AGENT_TASKS.md` is the only executable task registry.
 - All eight stale `Review` cards verified as merged are closed as `Done` by
   `QA-GOV-02` / PR `#144`.
-- `QA-148-MDL-01`, `QA-DESKTOP-E2E-01`, `ARCH-RT-A1-OS-01`, and
-  `ARCH-RT-A3-REL-01` are `Done`; `ARCH-RT-A4-E2E-01` is in review.
+- `QA-148-MDL-01`, `QA-DESKTOP-E2E-01`, and all Phase A Runtime tasks
+  `ARCH-RT-A1-OS-01` through `ARCH-RT-A4-E2E-01` are `Done`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 
 ## Known Follow-Ups
 
-1. Use `docs/单机与云平台Runtime目标架构方案_v1.0.md` to decide whether the next
-   milestone remains single-host product hardening or activates the private-cloud
-   foundation.
+1. Decide explicitly whether to activate Phase B private-cloud single-tenant work;
+   its database migration and recovery-model reviews remain required entry gates.
 2. Keep DeepSeek thinking mode opt-in and preserve its private continuation
    fail-closed boundary.
-3. Add packaged Tauri, migration/backup, capacity, and fault-injection release evidence.
+3. Add migration/backup evidence before any Phase B activation.
 4. Split or lazy-load the Desktop main bundle based on a repeatable bundle report.
 5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
    Credential/Egress Broker, tenant isolation, and Kubernetes in dependency order.
@@ -111,9 +115,10 @@ deployment profiles. It does not activate implementation or change the status
 of locked architecture cards.
 
 The maintainer activated single-host Phase A on 2026-07-18. Work is split into
-`ARCH-RT-A1-OS-01` through `ARCH-RT-A4-E2E-01`; A1 through A3 are merged and A4
-is in review. Phase B and Phase C remain deferred until every
-Phase A exit criterion is evidenced.
+`ARCH-RT-A1-OS-01` through `ARCH-RT-A4-E2E-01`; all four tasks are merged and
+every Phase A exit criterion is evidenced. Phase B and Phase C remain deferred
+pending explicit activation; Phase B additionally requires database migration
+and recovery-model review.
 
 A1 now implements macOS Seatbelt and Linux bubblewrap `os-sandbox` with
 capability probes, sanitized process environments, network denial, whole-process
@@ -130,11 +135,12 @@ passed. A3 now enforces a dedicated capacity-limited Workspace mount in
 production, kills timed-out process groups, normalizes runtime failures, and adds
 real `ENOSPC`, 20-cycle native soak, long-stream, and gVisor machine-readable CI
 evidence. Local validation passed `1483` tests plus all static/release gates; PR
-`#164` merged after all six Quality jobs passed. A4 now owns the final packaged
-Tauri/Desktop Runtime E2E exit gate. A4 has local evidence for `1484` tests,
-Desktop checks/build, six browser E2E cases, Cargo check, and a macOS release
-application bundle. Its mandatory Ubuntu `.deb` WebDriver job remains the only
-unverified Phase A exit criterion until PR CI completes.
+`#164` merged after all six Quality jobs passed. A4 then delivered the final
+packaged Tauri/Desktop Runtime E2E exit gate through PR `#165` / merge commit
+`d586a8f`. Quality run `29645045918` passed all seven jobs. The Ubuntu `.deb`
+artifact was driven through the real API, Worker, and `os-sandbox`; its retained
+JSON and screenshot evidence cover no-fallback identity, cancellation, approval,
+real tool execution, failure visibility, API restart, and durable recovery.
 
 ## Explicitly Deferred
 

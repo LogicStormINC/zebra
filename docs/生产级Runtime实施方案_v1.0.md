@@ -267,10 +267,16 @@ soak、长流与真实 gVisor smoke。真实 gVisor 环境不可用时，该 job
 gVisor smoke；文件大小、Ruff、Mypy `361` 源文件和 `8` 个 release eval 通过。
 PR `#142` 的 Backend、Desktop 和真实 Linux `runsc` gVisor job 全部通过。
 
-Phase A A4 本地验收结果：`1484 passed, 7 skipped`；文件大小 `888` 文件、
+Phase A A4 验收结果：`1484 passed, 7 skipped`；文件大小 `889` 文件、
 Ruff、Mypy `412` 源文件和 release eval `8/8` 通过；Desktop 检查、Vite build、
-Playwright `6` 个真实后端 E2E、Cargo check 以及 macOS release `.app` 构建通过。
-Linux `.deb` 和 packaged WebDriver 证据必须由 PR CI 通过后才可计入最终完成状态。
+Playwright `7` 个真实后端 E2E、Cargo check 以及 macOS release `.app` 构建通过。
+PR `#165` / merge commit `d586a8f` 的 Quality run `29645045918` 七个 job 全部
+通过。Ubuntu 22.04 构建的 `.deb` 由真实 WebDriver 驱动完成五个步骤：
+`runtime-profile-no-fallback`、`cancellation`、`approval-real-runtime`、
+`failure-visible` 和 `restart-durable-recovery`。保留的 JSON 为
+`passed=true`、`runtime_class=os-sandbox`、`fallback_allowed=false`，最终截图
+显示 API 重启后恢复的失败会话与 Runtime Inspector。至此 Phase A 全部完成；
+Phase B/C 未自动激活，仍遵循目标架构文档的入口评审与显式决策。
 
 ## 12. 完成标准
 

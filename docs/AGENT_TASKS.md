@@ -3,7 +3,7 @@
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
 > Current execution range: local Beta and single-host production foundations are
-> complete through `main@667627a`. `QA-GOV-02` closes stale governance state;
+> complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
 > ACP and optional code intelligence remain locked.
 
 ## Global Rules
@@ -26,7 +26,7 @@
 - `ARCH-RT-A1-OS-01` is `Done` via PR `#160`.
 - `ARCH-RT-A2-SETUP-01` is `Done` via PR `#163`.
 - `ARCH-RT-A3-REL-01` is `Done` via PR `#164`.
-- `ARCH-RT-A4-E2E-01` is `Review` and owned by `Codex`.
+- `ARCH-RT-A4-E2E-01` is `Done` via PR `#165`.
 - `QA-DESKTOP-E2E-01` is `Done` via PR `#161`.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
@@ -14088,11 +14088,12 @@ tamper, fault-injection, and soak release evidence.
 
 ### ARCH-RT-A4-E2E-01 - Packaged Desktop Runtime E2E
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `DESKTOP / API / QA / RELEASE`
 - Depends on: merged `ARCH-RT-A3-REL-01`
 - Branch: `codex/arch-rt-a4-desktop-e2e`
+- Merged PR: `#165` (`d586a8f`)
 - Owned paths: `UI/desktop/`, `apps/api/`, `apps/cli/`, `apps/worker/`, `tests/api/`,
   `tests/cli/`, `tests/worker/`, `scripts/`,
   `.github/workflows/quality.yml`, `docs/生产级Runtime实施方案_v1.0.md`,
@@ -14106,23 +14107,25 @@ state to the operator.
 
 #### Acceptance
 
-- [ ] A packaged Tauri binary launches in CI on a declared supported platform.
+- [x] A packaged Tauri binary launches in CI on a declared supported platform.
 - [x] E2E drives the real backend and demonstrates Runtime profile and no-fallback behavior.
 - [x] Approval, failure, cancellation, restart, and recovery states are visible and actionable.
-- [ ] Phase A completion evidence is recorded only after all single-host criteria pass.
+- [x] Phase A completion evidence is recorded only after all single-host criteria pass.
 
 #### Validation
 
 - focused API contracts: `47 passed`
 - focused Worker cancellation contracts: `8 passed`
 - full deterministic suite: `1484 passed, 7 skipped`
-- Desktop checks, Vite build, Playwright: passed (`6` browser E2E cases)
+- Desktop checks, Vite build, Playwright: passed (`7` browser E2E cases)
 - Tauri Cargo check and local macOS release application bundle: passed
-- file-size gate: `888` files, zero violations
+- file-size gate: `889` files, zero violations
 - Ruff: passed
 - strict Mypy: `412` source files, zero errors
 - release Eval: `8/8`, `pass_rate=1.00`
-- Linux packaged `.deb` plus real WebDriver evidence: pending mandatory PR CI
+- Quality run `29645045918`: all seven jobs passed
+- Linux packaged `.deb` plus real WebDriver evidence: passed; retained JSON reports
+  `runtime_class=os-sandbox`, `fallback_allowed=false`, and all five scenario steps
 
 ### QA-DESKTOP-E2E-01 - Real Browser Streaming And Recovery Regression
 
