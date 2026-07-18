@@ -104,6 +104,7 @@ export function SessionThreadWorkspace({
     : null;
   const toolCount = timelineItems.filter((item) => item.kind === "tool").length;
   const activity = projectRuntimeActivity(sessionSummary?.status, events, isRequesting);
+  const runtimeName = sessionSummary?.workspace?.runtime_name ?? locale.notBound;
   const statusLabel = isRequesting
     ? "运行中"
     : isDraft
@@ -140,6 +141,7 @@ export function SessionThreadWorkspace({
         <div className={styles.inspectorRow}><span>Prompt</span><span>{promptLabel}</span></div>
         <div className={styles.inspectorRow}><span>材料</span><span>{attachments.length}</span></div>
         <div className={styles.inspectorRow}><span>模型</span><span>API 运行时配置</span></div>
+        <div className={styles.inspectorRow}><span>Runtime</span><span data-runtime-name={runtimeName} data-testid="runtime-name">{runtimeName}</span></div>
         <div className={styles.inspectorRow}><span>{locale.attempt}</span><span>{sessionSummary?.workspace?.last_attempt_number ?? 0}</span></div>
         <div className={styles.inspectorRow}><span>{locale.sequence}</span><span>{sessionSummary?.current_sequence ?? events.length}</span></div>
       </div>;

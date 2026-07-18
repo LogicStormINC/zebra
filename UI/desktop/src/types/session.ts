@@ -30,6 +30,7 @@ export interface SessionWorkspaceSnapshot {
 
 export interface SessionWorkspace {
   workspace_root: string;
+  runtime_name?: string;
   status: string;
   current_sequence: number;
   prepared_at: string;

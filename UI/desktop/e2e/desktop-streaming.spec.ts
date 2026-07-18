@@ -13,10 +13,25 @@ test.beforeEach(async ({ page }) => {
       "zebra-agent-desktop.operator-config",
       JSON.stringify({ apiBaseUrl: apiUrl, authToken: "e2e-token", sessionId: "", userId: "", tenantId: "" }),
     );
+    localStorage.setItem(
+      "zebra-agent-desktop.task-launch-config",
+      JSON.stringify({
+        workspace: ".", policyProfile: "workspace_write", toolProfile: "coding", networkProfile: "none",
+        networkAllowlist: [], mcpAllowlist: [], mcpResourceIds: [], mcpPromptId: null,
+        mcpPromptArguments: {}, mcpPromptSchema: null,
+      }),
+    );
     sessionStorage.setItem("zebra-e2e-configured", "1");
   }, { apiUrl: API_URL });
   await page.goto("/");
   await expect(page.getByText("本地运行时已连接").first()).toBeVisible();
+});
+
+test("shows the resolved Runtime class and no-silent-fallback policy", async ({ page }) => {
+  await page.getByLabel("运行配置").click();
+  await expect(page.getByText("Runtime 级别", { exact: true })).toBeVisible();
+  await expect(page.getByText("trusted-local", { exact: true })).toBeVisible();
+  await expect(page.getByText("禁止静默降级", { exact: true })).toBeVisible();
 });
 
 test("renders a long provider response progressively and converges durably", async ({ page }) => {
@@ -72,6 +87,21 @@ test("submits a follow-up after completion as a new durable execution", async ({
   expect(secondSessionId).not.toBe(firstSessionId);
   expect((await session(request, firstSessionId)).status).toBe("completed");
   expect((await session(request, secondSessionId)).status).toBe("completed");
+});
+
+test("shows and completes a real approval continuation", async ({ page }) => {
+  await submit(page, "E2E_APPROVAL browser approval");
+  await expect(page.getByText("Agent 需要人工确认")).toBeVisible();
+  await expect(page.getByLabel("需要人工确认").getByText("command.run", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "批准" }).click();
+  await expect(page.getByText("APPROVAL_COMPLETE", { exact: true })).toBeVisible();
+  await expect(page.getByText("已完成", { exact: true })).toBeVisible();
+});
+
+test("renders a provider failure as a terminal operator state", async ({ page }) => {
+  await submit(page, "E2E_FAILURE browser failure");
+  await expect(page.getByText("任务执行失败", { exact: true })).toBeVisible();
+  await expect(page.getByText("失败", { exact: true })).toBeVisible();
 });
 
 async function submit(page: Page, prompt: string) {

@@ -21,6 +21,11 @@ def test_http_app_serves_health(tmp_path: Path) -> None:
     assert response.json() == {
         "service": "zebra-agent-api",
         "status": "ok",
+        "runtime": {
+            "profile": "local",
+            "runtime_class": "trusted-local",
+            "fallback_allowed": False,
+        },
     }
 
 def test_http_app_serves_session_lookup(tmp_path: Path) -> None:
@@ -157,6 +162,7 @@ def test_http_app_serves_workspace_projection_on_session_lookup(tmp_path: Path) 
         "updated_at": _created_at().isoformat(),
         "policy_profile": "workspace_write",
         "last_attempt_number": 1,
+        "runtime_name": "local",
         "snapshot": {
             "runtime_name": "local",
             "snapshot_id": "snap-http-1",

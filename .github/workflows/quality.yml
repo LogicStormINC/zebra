@@ -93,6 +93,71 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  packaged-desktop:
+    name: Packaged Tauri Runtime E2E
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install Tauri, WebDriver, and OS sandbox dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            bubblewrap \
+            build-essential \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.1-dev \
+            patchelf \
+            webkit2gtk-driver \
+            xvfb
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22.17.0"
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          cache-dependency-glob: uv.lock
+          enable-cache: true
+          python-version: "3.12"
+          version: "0.11.12"
+      - name: Set up pinned Rust
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
+        with:
+          toolchain: "1.89.0"
+      - name: Activate pinned pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.28.2 --activate
+      - name: Install locked workspaces
+        run: |
+          pnpm --dir UI/desktop install --frozen-lockfile --ignore-scripts
+          uv sync --frozen --all-packages --group dev
+      - name: Install pinned Tauri WebDriver
+        run: cargo install tauri-driver --version 2.0.6 --locked
+      - name: Build packaged Debian application
+        working-directory: UI/desktop
+        run: pnpm exec tauri build --ci --bundles deb -- --locked
+      - name: Drive packaged app through real API, Worker, and OS sandbox
+        run: |
+          mkdir -p packaged-desktop-evidence
+          xvfb-run -a uv run python scripts/packaged_desktop_e2e.py \
+            --application UI/desktop/src-tauri/target/release/zebra-agent-desktop-ui \
+            --evidence packaged-desktop-evidence/result.json \
+            --screenshot packaged-desktop-evidence/final.png
+      - name: Retain package and E2E evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: packaged-tauri-runtime-evidence
+          path: |
+            UI/desktop/src-tauri/target/release/bundle/deb/*.deb
+            packaged-desktop-evidence
+          if-no-files-found: warn
+          retention-days: 14
+
   gvisor-runtime:
     name: Real gVisor runtime smoke
     runs-on: ubuntu-latest

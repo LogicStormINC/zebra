@@ -8,7 +8,7 @@
 - Snapshot date: `2026-07-18`
 - Verified implementation baseline: `ace7443` (PR `#161`)
 - Product posture: `feature-complete local Beta / single-host production candidate`
-- Active implementation task: `ARCH-RT-A3-REL-01` is in review
+- Active implementation task: `ARCH-RT-A4-E2E-01` is in review
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
@@ -88,7 +88,7 @@ including a real thinking tool round trip.
 - All eight stale `Review` cards verified as merged are closed as `Done` by
   `QA-GOV-02` / PR `#144`.
 - `QA-148-MDL-01`, `QA-DESKTOP-E2E-01`, `ARCH-RT-A1-OS-01`, and
-  `ARCH-RT-A2-SETUP-01` are `Done`; `ARCH-RT-A3-REL-01` is in review.
+  `ARCH-RT-A3-REL-01` are `Done`; `ARCH-RT-A4-E2E-01` is in review.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 
 ## Known Follow-Ups
@@ -111,8 +111,8 @@ deployment profiles. It does not activate implementation or change the status
 of locked architecture cards.
 
 The maintainer activated single-host Phase A on 2026-07-18. Work is split into
-`ARCH-RT-A1-OS-01` through `ARCH-RT-A4-E2E-01`; A1 and A2 are merged, A3 is in
-review, and A4 remains locked. Phase B and Phase C remain deferred until every
+`ARCH-RT-A1-OS-01` through `ARCH-RT-A4-E2E-01`; A1 through A3 are merged and A4
+is in review. Phase B and Phase C remain deferred until every
 Phase A exit criterion is evidenced.
 
 A1 now implements macOS Seatbelt and Linux bubblewrap `os-sandbox` with
@@ -129,8 +129,12 @@ durable state model. A2 merged through PR `#163` after all five Quality jobs
 passed. A3 now enforces a dedicated capacity-limited Workspace mount in
 production, kills timed-out process groups, normalizes runtime failures, and adds
 real `ENOSPC`, 20-cycle native soak, long-stream, and gVisor machine-readable CI
-evidence. Local validation passed `1483` tests plus all static/release gates; A4
-remains locked until the A3 PR merges.
+evidence. Local validation passed `1483` tests plus all static/release gates; PR
+`#164` merged after all six Quality jobs passed. A4 now owns the final packaged
+Tauri/Desktop Runtime E2E exit gate. A4 has local evidence for `1484` tests,
+Desktop checks/build, six browser E2E cases, Cargo check, and a macOS release
+application bundle. Its mandatory Ubuntu `.deb` WebDriver job remains the only
+unverified Phase A exit criterion until PR CI completes.
 
 ## Explicitly Deferred
 

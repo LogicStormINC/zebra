@@ -64,6 +64,7 @@ def test_cli_inspect_command_includes_workspace_projection(tmp_path: Path) -> No
         "current_sequence": 4,
         "prepared_at": _created_at().isoformat(),
         "updated_at": _created_at().isoformat(),
+        "runtime_name": "local",
         "snapshot": {
             "runtime_name": "local",
             "snapshot_id": "snap-cli-2",

@@ -103,6 +103,7 @@ def test_route_adapter_handles_session_lookup_with_workspace_projection(tmp_path
         "current_sequence": 4,
         "prepared_at": _created_at().isoformat(),
         "updated_at": _created_at().isoformat(),
+        "runtime_name": "local",
         "runtime": {
             "class": "local",
             "engine": "docker",

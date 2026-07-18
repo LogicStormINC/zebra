@@ -17,6 +17,11 @@ export interface ApiErrorPayload {
 export interface HealthResponse {
   status: string;
   service: string;
+  runtime: {
+    profile: string;
+    runtime_class: string;
+    fallback_allowed: boolean;
+  };
 }
 
 export interface McpToolCapability {
