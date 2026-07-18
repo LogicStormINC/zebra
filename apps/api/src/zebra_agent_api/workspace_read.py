@@ -24,6 +24,8 @@ def serialize_workspace_projection(
         body["policy_profile"] = workspace.policy_profile
     if workspace.last_attempt_number is not None:
         body["last_attempt_number"] = workspace.last_attempt_number
+    if workspace.runtime_name is not None:
+        body["runtime_name"] = workspace.runtime_name
     runtime = _runtime_body(workspace)
     if runtime is not None:
         body["runtime"] = runtime

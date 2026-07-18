@@ -162,6 +162,7 @@ def test_http_app_serves_workspace_projection_on_session_lookup(tmp_path: Path) 
         "updated_at": _created_at().isoformat(),
         "policy_profile": "workspace_write",
         "last_attempt_number": 1,
+        "runtime_name": "local",
         "snapshot": {
             "runtime_name": "local",
             "snapshot_id": "snap-http-1",
