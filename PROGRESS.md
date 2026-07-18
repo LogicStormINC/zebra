@@ -79,8 +79,10 @@ test. Linux CI runs the real gVisor smoke instead of treating that skip as proof
 
 On `codex/qa-desktop-e2e-01`, Desktop passed all `19` deterministic checks, the
 production build, and `4/4` real Chromium streaming regressions. Repository
-validation passed `1452` tests with `4` opt-in/platform skips, the `870`-file
-size gate, Ruff, strict Mypy over `403` source files, and release Eval `8/8`.
+validation passed `1452` tests with `4` opt-in/platform skips, the `874`-file
+size gate, Ruff, strict Mypy over `405` source files, and release Eval `8/8`.
+Quality run `29638141137` passed Backend, Desktop (including Chromium), and
+real Linux gVisor jobs.
 
 The DeepSeek credentials-enabled focused run also passed all `39` contracts,
 including a real thinking tool round trip.

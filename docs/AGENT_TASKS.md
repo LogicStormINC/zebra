@@ -14117,8 +14117,8 @@ external model network with a deterministic local streaming provider.
   durable execution and renders its user and Assistant messages truthfully.
 - [x] Failures retain Playwright trace, screenshot, and video evidence; local and
   GitHub commands use bounded timeouts and isolated disposable SQLite state.
-- [ ] Desktop checks/build, real browser E2E, `make test`, and `make check` pass;
-  CI evidence is required before merge.
+- [x] Desktop checks/build, real browser E2E, `make test`, `make check`, and
+  Quality CI pass (run `29638141137`).
 
 #### Explicit Non-Goals
 
