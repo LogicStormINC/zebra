@@ -41,6 +41,13 @@ from agent_storage.session_attachments import (
     store_initial_text_attachments,
     store_text_attachments,
 )
+from agent_storage.session_handoff_facts import HandoffSourceFacts
+from agent_storage.session_handoffs import (
+    HandoffDispatch,
+    HandoffIdempotencyConflictError,
+    HandoffStorageConflictError,
+    SQLiteSessionHandoffStore,
+)
 from agent_storage.session_history import SQLiteSessionHistory
 from agent_storage.sqlite import SQLiteEventStore
 from agent_storage.tool_runs import SQLiteToolRunStore
@@ -51,6 +58,10 @@ __all__ = [
     "ActiveContextProjectionConflictError",
     "IdempotencyConflictError",
     "IdempotencyRecord",
+    "HandoffDispatch",
+    "HandoffIdempotencyConflictError",
+    "HandoffStorageConflictError",
+    "HandoffSourceFacts",
     "ImmutableContextCapsuleConflictError",
     "LeaseConflictError",
     "SessionArtifact",
@@ -74,6 +85,7 @@ __all__ = [
     "SQLiteProjectionStore",
     "SQLiteProviderContinuationStore",
     "SQLiteSessionHistory",
+    "SQLiteSessionHandoffStore",
     "SQLiteToolRunStore",
     "SQLiteWorkspaceProjectionStore",
     "StoredContextCapsule",

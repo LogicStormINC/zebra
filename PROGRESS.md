@@ -2,6 +2,14 @@
 
 ## Addendum
 
+- 2026-07-18: completed `CTX-HO-01B` on `codex/ctx-ho-01b-atomic-storage`.
+  SQLite now reserves durable preparing operations and atomically commits the immutable Envelope,
+  root/parent/child lineage, parent and child event streams, ready child/workspace projections,
+  and dispatch outbox. The transaction rechecks source status, stream version, lease, authority,
+  workspace and task-profile reservation facts; unique constraints enforce one successor and
+  idempotent replay. Lineage rebuild, expired dispatch reclaim and stale-operation cleanup are
+  covered by focused tests. Worker consumption remains inactive until `CTX-HO-01C`.
+
 - 2026-07-17: completed `CTX-HO-01A` on `codex/ctx-ho-01a-core-contracts`.
   Agent Core now defines immutable linear Session lineage, a versioned transparent handoff
   Envelope, workspace revision and canonical effect identity evidence, typed operation and
