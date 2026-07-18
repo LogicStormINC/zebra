@@ -23,6 +23,9 @@
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
+- `ARCH-RT-A1-OS-01` is `Ready` and is the only activated Runtime task.
+- `ARCH-RT-A2-SETUP-01`, `ARCH-RT-A3-REL-01`, and `ARCH-RT-A4-E2E-01`
+  remain `Locked` behind their preceding Phase A dependency.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
@@ -13936,3 +13939,132 @@ deployment profiles.
 - `make sync` passed
 - `make check` passed: 868-file size gate, Ruff, strict Mypy across 403 source
   files, and all 8 release-gate evals
+
+### ARCH-RT-A-PLAN-01 - Activate Runtime Phase A
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `ARCHITECTURE / RUNTIME / SECURITY / QA`
+- Depends on: `ARCH-RT-BP-01` merged and explicit maintainer activation
+- Branch: `codex/arch-rt-a-plan`
+- Owned paths: `docs/单机与云平台Runtime目标架构方案_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Activate only the blueprint's single-host Phase A and split it into merge-ordered
+tasks with explicit ownership and release evidence. Phase B and Phase C remain
+locked behind their documented entry gates.
+
+#### Acceptance
+
+- [x] Supported OS mechanisms and fail-closed behavior are fixed by the blueprint.
+- [x] Setup/Egress depends on the merged OS Sandbox contract.
+- [x] Quota and reliability evidence depends on merged Setup/Agent isolation.
+- [x] Packaged Desktop E2E is the final Phase A release gate.
+
+### ARCH-RT-A1-OS-01 - Native OS Sandbox Runtime
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested role: `RUNTIME / SECURITY`
+- Depends on: `ARCH-RT-A-PLAN-01`
+- Branch: `codex/arch-rt-a1-os-sandbox`
+- Owned paths: `packages/agent-core/src/agent_core/ports/runtime.py`,
+  `packages/agent-runtime/`, `apps/config/`,
+  `apps/worker/src/zebra_agent_worker/runtime_factory.py`,
+  `apps/worker/src/zebra_agent_worker/runtime_authority.py`,
+  `tests/agent_runtime/`, `tests/config/`, `tests/worker/test_runtime_factory.py`,
+  `.env.example`, `configs/default.env`, `.github/workflows/quality.yml`,
+  `docs/生产级Runtime实施方案_v1.0.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Add `os-sandbox` as a real Runtime profile: macOS Seatbelt and Linux bubblewrap
+when the required platform capability exists, with Windows and missing capability
+failing locally and no fallback to trusted execution.
+
+#### Acceptance
+
+- [ ] The selected OS mechanism wraps the entire process tree and defaults to no network.
+- [ ] Workspace write and host escape probes are enforced by the real platform mechanism.
+- [ ] Unsupported platforms or missing binaries fail before execution without fallback.
+- [ ] Runtime authority, configuration, and operator-visible profile remain truthful.
+- [ ] Deterministic tests and supported-host smoke tests pass; unavailable mechanisms skip only explicit smoke evidence.
+
+### ARCH-RT-A2-SETUP-01 - Setup And Agent Isolation
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `RUNTIME / SECURITY / TOOLS`
+- Depends on: merged `ARCH-RT-A1-OS-01`
+- Branch: `codex/arch-rt-a2-setup-egress`
+- Owned paths: `packages/agent-core/src/agent_core/ports/runtime.py`,
+  `packages/agent-runtime/`, `packages/agent-security/`, `packages/agent-tools/`,
+  `apps/config/`, `apps/worker/`, `tests/agent_runtime/`, `tests/agent_security/`,
+  `tests/agent_tools/`, `tests/worker/`, `.env.example`, `configs/default.env`,
+  `docs/生产级Runtime实施方案_v1.0.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Run dependency installation in a bounded Setup Sandbox with an exact egress
+allowlist and temporary credentials, hand off a verified snapshot, then run the
+Agent Sandbox with no network and no inherited proxy credential.
+
+#### Acceptance
+
+- [ ] Setup and Agent phases are explicit typed contracts without a new durable state model.
+- [ ] Egress is method/domain constrained, audited, and unavailable outside Setup.
+- [ ] Temporary credentials are revoked before snapshot handoff and never enter model, event, artifact, snapshot, or log payloads.
+- [ ] Lockfiles, source hashes, provenance, SBOM, and Setup Artifact are verified before Agent execution.
+- [ ] Recovery and retry never replay an external dependency side effect without its ledger result.
+
+### ARCH-RT-A3-REL-01 - Runtime Quota And Reliability Gates
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `RUNTIME / QA / OBSERVABILITY`
+- Depends on: merged `ARCH-RT-A2-SETUP-01`
+- Branch: `codex/arch-rt-a3-reliability`
+- Owned paths: `packages/agent-runtime/`, `packages/agent-observability/`,
+  `apps/worker/`, `tests/agent_runtime/`, `tests/agent_observability/`,
+  `tests/worker/`, `evals/`, `.github/workflows/quality.yml`, `scripts/`,
+  `docs/生产级Runtime实施方案_v1.0.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Enforce workspace bytes at the storage/runtime layer and add repeatable long
+stream, disk exhaustion, process-tree cancellation, crash, drift, snapshot
+tamper, fault-injection, and soak release evidence.
+
+#### Acceptance
+
+- [ ] Production workspace quota is actually enforced and disk exhaustion is normalized and recoverable.
+- [ ] Cancellation terminates descendants and cannot leave an untracked process or effect.
+- [ ] Crash/restart, authority drift, and snapshot tamper preserve existing fail-closed semantics.
+- [ ] Long-stream and soak thresholds are explicit and produce machine-readable evidence.
+- [ ] Real Linux gVisor smoke remains mandatory.
+
+### ARCH-RT-A4-E2E-01 - Packaged Desktop Runtime E2E
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `DESKTOP / API / QA / RELEASE`
+- Depends on: merged `ARCH-RT-A3-REL-01`
+- Branch: `codex/arch-rt-a4-desktop-e2e`
+- Owned paths: `UI/desktop/`, `apps/api/`, `tests/api/`, `scripts/`,
+  `.github/workflows/quality.yml`, `docs/生产级Runtime实施方案_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Prove the packaged Tauri application against the real API/Worker/Runtime chain
+and expose truthful Runtime level, approval, failure, cancellation, and recovery
+state to the operator.
+
+#### Acceptance
+
+- [ ] A packaged Tauri binary launches in CI on a declared supported platform.
+- [ ] E2E drives the real backend and demonstrates Runtime profile and no-fallback behavior.
+- [ ] Approval, failure, cancellation, restart, and recovery states are visible and actionable.
+- [ ] Phase A completion evidence is recorded only after all single-host criteria pass.
