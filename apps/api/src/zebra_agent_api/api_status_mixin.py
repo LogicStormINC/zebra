@@ -15,6 +15,11 @@ class ApiStatusMixin:
             body={
                 "status": "ok",
                 "service": "zebra-agent-api",
+                "runtime": {
+                    "profile": self.settings.profile,
+                    "runtime_class": self.settings.runtime.runtime_class,
+                    "fallback_allowed": False,
+                },
             },
         )
 

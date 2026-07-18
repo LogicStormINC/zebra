@@ -25,8 +25,8 @@
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
 - `ARCH-RT-A1-OS-01` is `Done` via PR `#160`.
 - `ARCH-RT-A2-SETUP-01` is `Done` via PR `#163`.
-- `ARCH-RT-A3-REL-01` is `Review` and owned by `Codex`.
-- `ARCH-RT-A4-E2E-01` remains `Locked` behind A3.
+- `ARCH-RT-A3-REL-01` is `Done` via PR `#164`.
+- `ARCH-RT-A4-E2E-01` is `Review` and owned by `Codex`.
 - `QA-DESKTOP-E2E-01` is `Done` via PR `#161`.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
@@ -14047,11 +14047,12 @@ Agent Sandbox with no network and no inherited proxy credential.
 
 ### ARCH-RT-A3-REL-01 - Runtime Quota And Reliability Gates
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `RUNTIME / QA / OBSERVABILITY`
 - Depends on: merged `ARCH-RT-A2-SETUP-01`
 - Branch: `codex/arch-rt-a3-reliability`
+- Merged: PR `#164` (`1501b5c`)
 - Owned paths: `packages/agent-core/src/agent_core/ports/runtime.py`,
   `packages/agent-runtime/`, `packages/agent-observability/`, `apps/config/`,
   `packages/agent-tools/`, `apps/worker/`, `tests/agent_runtime/`,
@@ -14087,12 +14088,13 @@ tamper, fault-injection, and soak release evidence.
 
 ### ARCH-RT-A4-E2E-01 - Packaged Desktop Runtime E2E
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `DESKTOP / API / QA / RELEASE`
 - Depends on: merged `ARCH-RT-A3-REL-01`
 - Branch: `codex/arch-rt-a4-desktop-e2e`
-- Owned paths: `UI/desktop/`, `apps/api/`, `tests/api/`, `scripts/`,
+- Owned paths: `UI/desktop/`, `apps/api/`, `apps/worker/`, `tests/api/`,
+  `tests/worker/`, `scripts/`,
   `.github/workflows/quality.yml`, `docs/生产级Runtime实施方案_v1.0.md`,
   `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
@@ -14105,9 +14107,22 @@ state to the operator.
 #### Acceptance
 
 - [ ] A packaged Tauri binary launches in CI on a declared supported platform.
-- [ ] E2E drives the real backend and demonstrates Runtime profile and no-fallback behavior.
-- [ ] Approval, failure, cancellation, restart, and recovery states are visible and actionable.
+- [x] E2E drives the real backend and demonstrates Runtime profile and no-fallback behavior.
+- [x] Approval, failure, cancellation, restart, and recovery states are visible and actionable.
 - [ ] Phase A completion evidence is recorded only after all single-host criteria pass.
+
+#### Validation
+
+- focused API contracts: `47 passed`
+- focused Worker cancellation contracts: `8 passed`
+- full deterministic suite: `1484 passed, 7 skipped`
+- Desktop checks, Vite build, Playwright: passed (`6` browser E2E cases)
+- Tauri Cargo check and local macOS release application bundle: passed
+- file-size gate: `888` files, zero violations
+- Ruff: passed
+- strict Mypy: `412` source files, zero errors
+- release Eval: `8/8`, `pass_rate=1.00`
+- Linux packaged `.deb` plus real WebDriver evidence: pending mandatory PR CI
 
 ### QA-DESKTOP-E2E-01 - Real Browser Streaming And Recovery Regression
 

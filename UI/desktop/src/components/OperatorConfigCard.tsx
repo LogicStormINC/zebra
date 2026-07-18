@@ -4,7 +4,7 @@ import { createStyles } from "antd-style";
 import locale from "../_utils/local";
 import { projectMcpCapabilities } from "../lib/mcp-capabilities";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
-import type { McpCapabilitiesResponse, OperatorConfig } from "../types";
+import type { HealthResponse, McpCapabilitiesResponse, OperatorConfig } from "../types";
 
 const useStyle = createStyles(({ css }) => ({
   secondaryText: css`
@@ -34,6 +34,7 @@ interface OperatorConfigCardProps {
   mcpCapabilities: McpCapabilitiesResponse | undefined;
   mcpCapabilitiesBusy: boolean;
   mcpCapabilitiesError: string | null;
+  runtime: HealthResponse["runtime"] | undefined;
   onChange: (patch: Partial<OperatorConfig>) => void;
   onRetry: () => void;
   onRetryMcpCapabilities: () => void;
@@ -51,6 +52,7 @@ export function OperatorConfigCard({
   onRetryMcpCapabilities,
   onReset,
   runtimeStatus,
+  runtime,
 }: OperatorConfigCardProps) {
   const { styles } = useStyle();
   const mcpView = projectMcpCapabilities(mcpCapabilities, mcpCapabilitiesBusy, mcpCapabilitiesError);
@@ -72,6 +74,15 @@ export function OperatorConfigCard({
         桌面端直接连接本地 Zebra Agent HTTP API。健康检查无需鉴权，其余接口在服务端启用
         `ZEBRA_API_AUTH_TOKEN` 后需要 Bearer Token。
       </Typography.Paragraph>
+      <div className={styles.statusRow}>
+        <Typography.Text>Runtime 级别</Typography.Text>
+        <Space>
+          <Tag color="geekblue">{runtime?.runtime_class ?? "unavailable"}</Tag>
+          <Tag color={runtime?.fallback_allowed ? "gold" : "green"}>
+            {runtime?.fallback_allowed ? "允许降级" : "禁止静默降级"}
+          </Tag>
+        </Space>
+      </div>
       <Form layout="vertical">
         <Form.Item label="API Base URL">
           <Input

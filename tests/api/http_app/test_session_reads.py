@@ -21,6 +21,11 @@ def test_http_app_serves_health(tmp_path: Path) -> None:
     assert response.json() == {
         "service": "zebra-agent-api",
         "status": "ok",
+        "runtime": {
+            "profile": "local",
+            "runtime_class": "trusted-local",
+            "fallback_allowed": False,
+        },
     }
 
 def test_http_app_serves_session_lookup(tmp_path: Path) -> None:

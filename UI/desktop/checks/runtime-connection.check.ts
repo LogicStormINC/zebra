@@ -7,6 +7,7 @@ assert.equal(projectRuntimeConnection("ok", "zebra-agent-api", false), "connecte
 assert.equal(projectRuntimeConnection("ok", "another-service", false), "disconnected");
 assert.equal(projectRuntimeConnection(undefined, undefined, false), "disconnected");
 assert.equal(projectRuntimeConnection("degraded", "zebra-agent-api", false), "disconnected");
+assert.equal(projectRuntimeConnection("ok", "zebra-agent-api", false, true), "disconnected");
 assert.equal(projectWorkspaceLabel(undefined, "未绑定"), "未绑定");
 assert.equal(projectWorkspaceLabel("/repo/zebra-agent", "未绑定"), "zebra-agent");
 assert.equal(projectWorkspaceLabel("C:\\repo\\zebra-agent", "未绑定"), "zebra-agent");

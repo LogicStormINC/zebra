@@ -185,14 +185,33 @@ class SessionControlService:
         except (RuntimeCapabilityError, ValueError) as exc:
             raise SessionControlError(str(exc)) from exc
 
-        event = SessionEvent.create(
-            session_id=session_id,
-            sequence=recovery.session.current_sequence + 1,
-            event_type=EventType.SESSION_CANCELLED,
-            actor=EventActor.SYSTEM,
-            created_at=cancelled_at or datetime.now(UTC),
-        )
-        self._event_store.append(event)
+        for _ in range(64):
+            recovery = self._recover(session_id)
+            if recovery.session.status not in {
+                SessionStatus.READY,
+                SessionStatus.RUNNING,
+                SessionStatus.WAITING_APPROVAL,
+                SessionStatus.WAITING_INPUT,
+                SessionStatus.SUSPENDED,
+            }:
+                raise SessionControlError("session cannot be cancelled from its current state")
+            event = SessionEvent.create(
+                session_id=session_id,
+                sequence=recovery.session.current_sequence + 1,
+                event_type=EventType.SESSION_CANCELLED,
+                actor=EventActor.SYSTEM,
+                created_at=cancelled_at or datetime.now(UTC),
+            )
+            try:
+                self._event_store.append(event)
+                break
+            except ValueError:
+                # ponytail: bounded optimistic retry fits single-host SQLite; Phase B uses fencing.
+                continue
+        else:
+            raise SessionControlError(
+                "session cancellation could not win event sequence contention"
+            )
         updated_session = apply_session_event(recovery.session, event)
         updated_workspace = apply_workspace_event(recovery.workspace, event)
         self._projection_store.save_session(updated_session)

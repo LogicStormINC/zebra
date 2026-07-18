@@ -236,6 +236,20 @@ provision/execute/snapshot/inspect/destroy/cleanup 循环，长流门禁固定 6
 80 个重载恢复增量和取消后 5 秒无迟到完成。quota、soak、gVisor 和长流均在 CI
 输出 JUnit 或 JSON 机器可读证据并保留 14 天。
 
+Packaged Desktop 门禁不再以 Vite 浏览器预览替代桌面发行物。Tauri 依赖由
+`Cargo.lock` 固定，macOS/Windows/Linux 图标进入源码，CI 在 Ubuntu 22.04
+构建 `.deb`，并使用 `tauri-driver`、系统 WebKit WebDriver 与 Xvfb 驱动实际
+release 二进制。测试启动真实 API、Worker 和 `os-sandbox`，验证界面公开
+Runtime profile 与 `fallback_allowed=false`，并覆盖取消、审批后工具执行、
+provider 失败、API 断联以及 API 重启后 durable session 恢复。证据包含 JSON
+与失败现场截图并保留 14 天。
+
+API `/health` 现在返回已解析的 Runtime profile、runtime class 和禁止静默降级
+标志；Session Inspector 同时显示实际 Workspace Runtime。连接投影以当前请求
+错误优先，不能因旧的成功响应把已停止的 API 继续显示为已连接。取消操作采用
+有界 optimistic retry：若 live Worker 抢先写入相同 sequence，则重新读取 durable
+状态后重试；不会重放模型或工具副作用。
+
 ## 11. 验证命令
 
 ```text
@@ -252,6 +266,11 @@ soak、长流与真实 gVisor smoke。真实 gVisor 环境不可用时，该 job
 本次验收结果：本地 `1345 passed, 1 skipped`，跳过项仅为平台限定的真实
 gVisor smoke；文件大小、Ruff、Mypy `361` 源文件和 `8` 个 release eval 通过。
 PR `#142` 的 Backend、Desktop 和真实 Linux `runsc` gVisor job 全部通过。
+
+Phase A A4 本地验收结果：`1484 passed, 7 skipped`；文件大小 `888` 文件、
+Ruff、Mypy `412` 源文件和 release eval `8/8` 通过；Desktop 检查、Vite build、
+Playwright `6` 个真实后端 E2E、Cargo check 以及 macOS release `.app` 构建通过。
+Linux `.deb` 和 packaged WebDriver 证据必须由 PR CI 通过后才可计入最终完成状态。
 
 ## 12. 完成标准
 

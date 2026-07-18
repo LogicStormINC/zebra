@@ -14,7 +14,7 @@ import {
   workspaceProjectId,
   type WorkspaceProject,
 } from "../lib/workspace-projects";
-import type { ApprovalSummary, McpCapabilitiesResponse, McpPromptsResponse, OperatorConfig, SessionEvent, SessionHandoffPayload, SessionHandoffResponse, SessionSummary } from "../types";
+import type { ApprovalSummary, HealthResponse, McpCapabilitiesResponse, McpPromptsResponse, OperatorConfig, SessionEvent, SessionHandoffPayload, SessionHandoffResponse, SessionSummary } from "../types";
 import { CodexConversationPane } from "./CodexConversationPane";
 import { CodexSidebar } from "./CodexSidebar";
 import { OperatorConfigCard } from "./OperatorConfigCard";
@@ -90,6 +90,7 @@ interface CodexWorkspaceProps {
   onSubmit: (value: string, launchConfig: TaskLaunchConfig, attachments: AttachmentPayload[]) => Promise<boolean>;
   controlsBusy: boolean;
   runtimeStatus: RuntimeConnectionStatus;
+  runtime: HealthResponse["runtime"] | undefined;
   sessionSummaries: Record<string, SessionSummary | null>;
   sessionIds: Record<string, string>;
   sessionSummary: SessionSummary | null;
@@ -213,6 +214,7 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             onRetryMcpCapabilities={props.onRetryMcpCapabilities}
             onRetry={props.onRetryRuntime}
             runtimeStatus={props.runtimeStatus}
+            runtime={props.runtime}
           />
         </Drawer>
       </>

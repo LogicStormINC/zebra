@@ -24,6 +24,11 @@ def test_api_health_returns_service_status(tmp_path: Path) -> None:
     assert response.body == {
         "service": "zebra-agent-api",
         "status": "ok",
+        "runtime": {
+            "profile": "local",
+            "runtime_class": "trusted-local",
+            "fallback_allowed": False,
+        },
     }
 
 

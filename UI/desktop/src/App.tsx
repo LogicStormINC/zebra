@@ -31,7 +31,7 @@ export default function App() {
     retry: false,
     refetchInterval: 5_000,
   });
-  const runtimeStatus = projectRuntimeConnection(healthQuery.data?.status, healthQuery.data?.service, healthQuery.isFetching);
+  const runtimeStatus = projectRuntimeConnection(healthQuery.data?.status, healthQuery.data?.service, healthQuery.isFetching, healthQuery.isError);
   const mcpCapabilitiesQuery = useQuery({
     queryKey: ["mcp-capabilities", config.apiBaseUrl, config.authToken],
     queryFn: api.mcpCapabilities,
@@ -75,7 +75,6 @@ export default function App() {
   useEffect(() => {
     senderRef.current?.focus({ cursor: "end" });
   }, []);
-
   useEffect(() => {
     conversationEventsRef.current = conversationEvents;
   }, [conversationEvents]);
@@ -491,6 +490,7 @@ export default function App() {
         onSubmit={submitMessage}
         controlsBusy={controlsBusy}
         runtimeStatus={runtimeStatus}
+        runtime={healthQuery.data?.runtime}
         sessionSummaries={sessionSummaries}
         sessionSummary={sessionSummary}
         senderRef={senderRef}
