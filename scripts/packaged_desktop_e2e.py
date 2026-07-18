@@ -22,7 +22,7 @@ AUTH_HEADERS = {"Authorization": "Bearer e2e-token"}
 def request_json(
     method: str,
     url: str,
-    payload: dict[str, object] | None = None,
+    payload: object | None = None,
     headers: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     body = json.dumps(payload).encode() if payload is not None else None
@@ -33,7 +33,10 @@ def request_json(
         headers={"Content-Type": "application/json", **(headers or {})},
     )
     with urllib.request.urlopen(request, timeout=10) as response:
-        return json.loads(response.read().decode())
+        decoded = json.loads(response.read().decode())
+    if not isinstance(decoded, dict):
+        raise TypeError("WebDriver response must be a JSON object")
+    return decoded
 
 
 def wait_for_api() -> dict[str, Any]:
@@ -56,6 +59,7 @@ class PackagedApp:
         payload = {
             "capabilities": {
                 "alwaysMatch": {
+                    "browserName": "wry",
                     "tauri:options": {"application": str(application.resolve())},
                 }
             }
