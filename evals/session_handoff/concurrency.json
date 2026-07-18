@@ -1,0 +1,9 @@
+{
+  "case_id": "handoff-concurrency",
+  "category": "recovery",
+  "title": "Concurrent requests create one successor",
+  "prompt": "Race same-key and different-key handoff requests against one parent and verify idempotent same-key replay, conflicts for different payloads and exactly one committed child.",
+  "min_events": 9,
+  "min_tool_results": 0,
+  "max_cost_usd": 0.5
+}

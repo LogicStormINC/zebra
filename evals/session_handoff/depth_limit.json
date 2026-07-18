@@ -1,0 +1,9 @@
+{
+  "case_id": "handoff-depth-limit",
+  "category": "security",
+  "title": "Linear lineage depth is bounded",
+  "prompt": "Create a linear stage chain to the configured limit and verify the next handoff is locally rejected with handoff_depth_exceeded and creates no child.",
+  "min_events": 5,
+  "min_tool_results": 0,
+  "max_cost_usd": 0.5
+}

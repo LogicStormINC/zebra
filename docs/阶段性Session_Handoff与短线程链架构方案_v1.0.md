@@ -579,6 +579,13 @@ contributor 同时修改 Session 事件和 storage transaction 热点。
 
 后续问题不改变 v1 的安全和一致性合同；必须在相应 UI/summary 子任务激活前写入任务卡。
 
+## 16.1 实施状态（2026-07-18）
+
+CTX-HO-01A 至 01E 已按依赖顺序实现。创建面由 `ZEBRA_SESSION_HANDOFF_ENABLED`
+控制且默认关闭；关闭后 inspect/lineage 和既有 child recovery 继续可用。发布前必须运行
+handoff Eval、全量测试、Desktop 检查和 `evals/providers/session_handoff_smoke.py`。
+回滚只把开关恢复为 `false`，不得删除事件、Envelope、lineage 或 effect ledger。
+
 ## 17. Definition of Done
 
 只有同时满足以下条件，阶段性新线程能力才可标记 Done：

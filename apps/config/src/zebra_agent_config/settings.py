@@ -41,6 +41,11 @@ class ApiSettings:
 
 
 @dataclass(frozen=True)
+class SessionHandoffSettings:
+    enabled: bool = False
+
+
+@dataclass(frozen=True)
 class ScmSettings:
     provider: str
     github_owner: str | None
@@ -79,6 +84,7 @@ class ZebraAgentSettings:
     database_url: str
     api: ApiSettings
     model: ModelSettings
+    session_handoff: SessionHandoffSettings = field(default_factory=SessionHandoffSettings)
     runtime: RuntimeSettings = field(default_factory=RuntimeSettings)
     scm: ScmSettings = field(
         default_factory=lambda: ScmSettings(
@@ -132,6 +138,9 @@ def load_settings(
             ),
             base_url=_read(values, "ZEBRA_MODEL_BASE_URL", default="https://api.deepseek.com"),
             model=_read(values, "ZEBRA_MODEL_NAME", default="deepseek-v4-flash"),
+        ),
+        session_handoff=SessionHandoffSettings(
+            enabled=_read_bool(values, "ZEBRA_SESSION_HANDOFF_ENABLED", default=False),
         ),
         runtime=_load_runtime_settings(values, profile=profile),
         scm=_load_scm_settings(values),

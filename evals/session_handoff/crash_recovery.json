@@ -1,0 +1,9 @@
+{
+  "case_id": "handoff-crash-recovery",
+  "category": "recovery",
+  "title": "Crash recovery preserves one child and effect state",
+  "prompt": "Crash after reservation, commit, dispatch claim and effect execution boundaries; verify stale reservations abort, committed lineage rebuilds, dispatch reclaims and uncertain effects require reconciliation.",
+  "min_events": 9,
+  "min_tool_results": 1,
+  "max_cost_usd": 0.5
+}

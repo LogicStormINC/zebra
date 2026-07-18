@@ -16,6 +16,7 @@ from agent_storage import (
     SQLiteWorkspaceProjectionStore,
 )
 from zebra_agent_api import RouteAdapter, RouteRequest, create_app
+from zebra_agent_config import load_settings
 
 NOW = datetime(2026, 7, 18, tzinfo=UTC)
 
@@ -23,7 +24,7 @@ NOW = datetime(2026, 7, 18, tzinfo=UTC)
 def test_handoff_routes_create_inspect_lineage_and_idempotent_replay(tmp_path: Path) -> None:
     database = tmp_path / "handoff.db"
     source = _seed_completed(database, tmp_path)
-    adapter = RouteAdapter(create_app(database))
+    adapter = RouteAdapter(create_app(database, settings=_handoff_settings()))
     request = RouteRequest(
         method="POST",
         path=f"/sessions/{source}/handoff",
@@ -74,7 +75,7 @@ def test_preview_rejects_unsafe_boundary_and_clients_cannot_forge_contracts(
 ) -> None:
     database = tmp_path / "handoff.db"
     source = _seed_completed(database, tmp_path)
-    adapter = RouteAdapter(create_app(database))
+    adapter = RouteAdapter(create_app(database, settings=_handoff_settings()))
     body = {
         "title": "Stage two",
         "objective": "Continue",
@@ -100,6 +101,48 @@ def test_preview_rejects_unsafe_boundary_and_clients_cannot_forge_contracts(
     assert preview.status_code == 200
     assert preview.body["status"] == "preview"
     assert "provider-private continuation" in preview.body["envelope"]["known_omissions"][0]
+
+
+def test_disabled_flag_blocks_creation_but_keeps_existing_lineage_readable(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "handoff.db"
+    source = _seed_completed(database, tmp_path)
+    enabled = RouteAdapter(create_app(database, settings=_handoff_settings()))
+    created = enabled.handle(
+        RouteRequest(
+            method="POST",
+            path=f"/sessions/{source}/handoff",
+            headers={"Idempotency-Key": "rollback"},
+            body={
+                "title": "Stage two",
+                "objective": "Continue",
+                "stage_prompt": "Continue safely",
+            },
+        )
+    )
+    disabled = RouteAdapter(create_app(database, settings=load_settings(env={})))
+    blocked = disabled.handle(
+        RouteRequest(
+            method="POST",
+            path=f"/sessions/{source}/handoff/preview",
+            body={"title": "x", "objective": "x", "stage_prompt": "x"},
+        )
+    )
+    inspected = disabled.handle(
+        RouteRequest(method="GET", path=f"/handoffs/{created.body['handoff_id']}")
+    )
+    lineage = disabled.handle(
+        RouteRequest(method="GET", path=f"/sessions/{created.body['child_session_id']}/lineage")
+    )
+
+    assert blocked.body["status"] == "handoff_disabled"
+    assert inspected.status_code == 200
+    assert len(lineage.body["stages"]) == 2
+
+
+def _handoff_settings():
+    return load_settings({"ZEBRA_SESSION_HANDOFF_ENABLED": "true"})
 
 
 def _seed_completed(database: Path, workspace: Path) -> SessionId:

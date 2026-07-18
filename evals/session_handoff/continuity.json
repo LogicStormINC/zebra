@@ -1,0 +1,10 @@
+{
+  "case_id": "handoff-continuity",
+  "category": "recovery",
+  "title": "Parent facts continue in child",
+  "prompt": "Create a child only at a completed boundary and verify its first context preserves objective, constraints, decisions, completed work, pending work and immediate next without copying parent history.",
+  "min_events": 9,
+  "min_tool_results": 0,
+  "max_cost_usd": 1.5,
+  "provider_smoke": true
+}

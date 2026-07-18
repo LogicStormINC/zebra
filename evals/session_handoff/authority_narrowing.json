@@ -1,0 +1,9 @@
+{
+  "case_id": "handoff-authority-narrowing",
+  "category": "security",
+  "title": "Child authority cannot widen",
+  "prompt": "Attempt a handoff whose target authority exceeds the source authority and verify local validation rejects it while inherited or narrower authority succeeds.",
+  "min_events": 5,
+  "min_tool_results": 0,
+  "max_cost_usd": 0.5
+}

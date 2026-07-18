@@ -403,5 +403,34 @@ For the current local and production Runtime workflow, start with `docs/operator
 - local FastAPI serving
 - replay-plus-tail SSE session streaming with `after_sequence` cursor recovery
 - context inspection and manual Capsule compaction through API and CLI
+- explicit stage Session handoff preview, creation, lineage inspection, recovery and rollback
+
+### Stage Session handoff rollout
+
+Stage handoff is disabled by default. Same-Session Compaction remains the normal context-window
+mechanism. Enable handoff only for an explicit operator canary:
+
+```bash
+ZEBRA_SESSION_HANDOFF_ENABLED=true zebra-agent handoff preview <session-id> \
+  --title "Next stage" --objective "Continue verified work" \
+  --stage-prompt "Continue from the handoff Envelope"
+ZEBRA_SESSION_HANDOFF_ENABLED=true zebra-agent handoff create <session-id> \
+  --title "Next stage" --objective "Continue verified work" \
+  --stage-prompt "Continue from the handoff Envelope" \
+  --idempotency-key <stable-key> --confirm
+```
+
+Only completed or suspended sources are eligible. Creation inherits authority, checks workspace
+revision and effect state, and creates one linear child. To roll back, set the flag to `false`;
+existing `handoff inspect`, `handoff lineage`, child recovery and durable history remain readable.
+
+Provider smoke (requires the configured model credential and does not print it):
+
+```bash
+ZEBRA_SESSION_HANDOFF_ENABLED=true uv run python evals/providers/session_handoff_smoke.py
+```
+
+The 2026-07-18 release smoke passed on `deepseek-v4-flash`, preserving parent-to-child continuity
+with zero child tool side effects.
 
 For the latest completed phase closeout summary, see `docs/Phase69_Memory_Backlog_Pressure_Signals_验收记录.md`.
