@@ -94,8 +94,11 @@ class PackagedApp:
         return response.get("value")
 
     def body(self) -> str:
+        return self.element_text("css selector", "body")
+
+    def element_text(self, using: str, selector: str) -> str:
         for attempt in range(3):
-            element_id = self._element("css selector", "body")
+            element_id = self._element(using, selector)
             try:
                 response = request_json(
                     "GET",
@@ -107,9 +110,9 @@ class PackagedApp:
                 raise
             value = response.get("value")
             if not isinstance(value, str):
-                raise AssertionError("WebDriver body text is unavailable")
+                raise AssertionError(f"WebDriver element {selector!r} text is unavailable")
             return value
-        raise AssertionError("WebDriver body remained stale")
+        raise AssertionError(f"WebDriver element {selector!r} remained stale")
 
     def wait_body(self, expected: str, *, timeout: float = 30) -> str:
         deadline = time.monotonic() + timeout
@@ -119,6 +122,20 @@ class PackagedApp:
                 return body
             time.sleep(0.25)
         raise AssertionError(f"packaged UI did not show {expected!r}; body={self.body()!r}")
+
+    def wait_element_text(
+        self, using: str, selector: str, expected: str, *, timeout: float = 30
+    ) -> str:
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            value = self.element_text(using, selector)
+            if expected in value:
+                return value
+            time.sleep(0.25)
+        value = self.element_text(using, selector)
+        raise AssertionError(
+            f"packaged UI element {selector!r} did not show {expected!r}; text={value!r}"
+        )
 
     def _element(self, using: str, value: str) -> str:
         response = request_json(
@@ -304,7 +321,9 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         assert session["workspace"]["runtime_name"] == "os-sandbox"
         app.refresh()
         app.wait_body("Runtime")
-        app.wait_body("os-sandbox")
+        app.wait_element_text(
+            "css selector", '[data-testid="runtime-name"]', "os-sandbox"
+        )
         steps.append("approval-real-runtime")
 
         app.submit("E2E_FAILURE packaged failure")
