@@ -22,3 +22,6 @@
 - The first detached audit `make test` ran before `make sync`, causing package
   import errors. Running the documented sync first produced the authoritative
   passing baseline.
+- The first `gh pr edit --body-file` call referenced the PR body before the
+  temporary file existed. The branch push succeeded; the body file was then
+  created explicitly and the metadata update retried.
