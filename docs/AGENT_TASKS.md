@@ -2,7 +2,9 @@
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
-> Current execution range: Phase 101 closeout is complete; scoped queue-sweep filtered preview evidence is recorded, and the next memory workflow priority is not yet defined.
+> Current execution range: local Beta and single-host production foundations are
+> complete through `main@667627a`. `QA-GOV-02` closes stale governance state;
+> ACP and optional code intelligence remain locked.
 
 ## Global Rules
 
@@ -15,6 +17,17 @@
 ## Status Legend
 
 `Locked` / `Ready` / `In Progress` / `Review` / `Blocked` / `Done`
+
+## Current Board
+
+- `QA-GOV-02` closes the governance reconciliation through PR `#144`.
+- `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
+  maintainer activation.
+- No other card is `Ready`, `In Progress`, `Review`, or `Blocked` after PR
+  `#144` merges.
+
+Completed phase boards below are retained as task-level audit history. They do
+not define current execution order.
 
 ## Phase 2 Task Board
 
@@ -13022,7 +13035,7 @@ boundaries.
 
 ### QA-UI-RUNTIME-01 - Truthful Runtime Feedback
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex-APP`
 - Suggested role: `CORE / MODEL / WORKER / API / UI / QA / DOC`
 - Depends on: `QA-UI-UNBOUND-01`
@@ -13099,7 +13112,7 @@ the Composer by falling back to the current valid task-launch configuration.
 
 ### QA-GOV-01 - Mainline Architecture And Engineering Closeout Plan
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex-APP`
 - Suggested role: `DOC / QA / ARCH`
 - Depends on: `P145-UI-01`
@@ -13129,9 +13142,50 @@ work without silently activating deferred architecture.
 - Feature implementation, branch merging, CI creation, runtime activation,
   protocol expansion, or product redesign
 
+### QA-GOV-02 - Mainline Documentation Reconciliation
+
+- Status: `Done`
+- Owner: `Codex-APP`
+- Suggested role: `DOC / QA`
+- Depends on: `QA-GOV-01`
+- Branch: `codex/qa-gov-02-doc-reconciliation`
+- PR: `#144`
+- Owned paths: `README.md`, `PROGRESS.md`, `task_plan.md`, `findings.md`, `docs/README.md`,
+  `docs/AGENT_TASKS.md`, `docs/实施任务拆解与阶段验收.md`,
+  `docs/主线架构工程完成度审计与收口计划_v1.0.md`
+
+#### Goal
+
+Reconcile mainline status, the historical implementation baseline, task states,
+and reader entry points without replaying obsolete proposal commits over newer
+Runtime, Context, Handoff, or DeepSeek implementation.
+
+#### Acceptance
+
+- [x] Every stale `Review` card is checked against a merged PR before becoming
+  `Done`.
+- [x] README is a stable product entry instead of an append-only feature log.
+- [x] PROGRESS is a concise current snapshot with validation evidence, known
+  boundaries, and next decisions.
+- [x] The Phase 0-8 implementation document is explicitly historical and routes
+  current work through this registry.
+- [x] The old proposal commits in PR `#144` are not allowed to overwrite newer
+  implemented Context, Handoff, DeepSeek, Runtime, or CI state.
+
+#### Merge Evidence
+
+- PR `#135` / `87246cf`: memory queue reliability
+- PR `#136` / `cc71d7c`: atomic SQLite leases
+- PR `#137` / `1004971`: runtime/tools dependency correction
+- PR `#139` / `07c9b27`: architecture closeout audit
+- PR `#140` / `291c88b`: truthful runtime feedback and streaming
+- PR `#141` / `bc5692a`: mainline CI
+- PR `#145` / `2acfdd3`: context lifecycle
+- PR `#147` / `dcbfe87`: Session handoff plan
+
 ### QA-CI-01 - Minimal Mainline Quality Workflow
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex-APP`
 - Suggested role: `QA / DX`
 - Depends on: `QA-GOV-01`
@@ -13163,7 +13217,7 @@ build system or weakening local gates.
 
 ### QA-2-STO-01 - Atomic SQLite Worker Lease Acquisition
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / QA`
 - Depends on: `P4-SCH-01`
@@ -13208,7 +13262,7 @@ cannot both report ownership of the same active session lease.
 
 ### QA-39-MEM-01 - Memory Queue Sweep Reliability
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `QA/STORAGE`
 - Depends on: `P145-UI-01`
@@ -13260,7 +13314,7 @@ filtering, and return stable invalid-request results for malformed session ids.
 
 ### QA-2-ARCH-01 - Break Runtime And Tools Package Cycle
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / RUNTIME / QA`
 - Depends on: `P145-UI-01`
@@ -13492,7 +13546,7 @@ an `agent-core` dependency.
 
 ### CTX-LC-01 - Context Lifecycle And Hybrid Compaction
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / CTX / STORAGE / RUNTIME / QA`
 - Depends on: `P117-CTX-01`, `QA-UI-RUNTIME-01`, `ARCH-129-RT-01`, and explicit maintainer request
@@ -13557,7 +13611,7 @@ authority, or existing provider compatibility.
 
 ### CTX-HO-PLAN-01 - Stage Session Handoff Architecture Plan
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `ARCHITECTURE / CORE / CONTEXT / STORAGE / QA`
 - Depends on: `CTX-LC-01` design baseline and explicit maintainer request
