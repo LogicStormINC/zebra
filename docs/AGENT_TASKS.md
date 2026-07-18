@@ -13723,21 +13723,23 @@ changing the current default of same-Session compaction or activating runtime be
 
 ### DS-OPT-01 - DeepSeek Specialized Optimization
 
-- Status: `In Progress`
-- Owner: `DeepSeek optimization task`
+- Status: `Done`
+- Owner: `Codex`
 - Suggested role: `INTEGRATIONS / OBSERVABILITY / QA`
 - Depends on: `CTX-LC-01` model-window contract baseline and explicit maintainer request
 - Branch: `codex/ds-opt-01-deepseek-specialization`
 - Owned paths: `apps/config/`, `packages/agent-integrations/`,
   `packages/agent-core/src/agent_core/domain/modeling.py`,
   `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/contracts/model_events.py`,
   `packages/agent-core/src/agent_core/harness/orchestration_events.py`,
   `packages/agent-observability/`,
   `apps/worker/src/zebra_agent_worker/model_call_index.py`,
   `configs/default.env`, `.env.example`, `evals/providers/`,
   `tests/agent_integrations/`, `tests/config/`, `tests/agent_observability/`,
   `tests/worker/test_model_call_index.py`,
-  `docs/DeepSeek_V4_模型适配与专项优化方案_v1.0.md`
+  `docs/DeepSeek_V4_模型适配与专项优化方案_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
 #### Goal
 
@@ -13751,22 +13753,23 @@ window contract while preserving legacy OpenAI-compatible behavior.
 - streaming usage, cache, reasoning-token, finish, TTFT, fingerprint, retry,
   resolved-model, and normalized-error telemetry
 - stable-prefix metadata and provider-contract/eval coverage
+- default-off Beta profiles for strict tools, FIM, and Chat Prefix Completion
 
 #### Acceptance
 
-- [ ] Tool-bearing DeepSeek requests explicitly disable thinking, while
+- [x] Tool-bearing DeepSeek requests explicitly disable thinking, while
   configured no-tool reasoning stays profile-bound.
-- [ ] Private `reasoning_content` never reaches public deltas, events,
+- [x] Private `reasoning_content` never reaches public deltas, events,
   artifacts, logs, or durable capsules.
-- [ ] Usage/cache/reasoning tokens, finish reason, TTFT, resolved model,
+- [x] Usage/cache/reasoning tokens, finish reason, TTFT, resolved model,
   fingerprint, retry count, and normalized errors are observable without secrets.
-- [ ] No retry replays a request after a public delta or tool side effect.
-- [ ] Legacy settings and non-DeepSeek gateways remain compatible; unsupported
+- [x] No retry replays a request after a public delta or tool side effect.
+- [x] Legacy settings and non-DeepSeek gateways remain compatible; unsupported
   capability combinations fail locally.
-- [ ] Focused tests, provider evals, `make test`, and `make check` pass; a real
+- [x] Focused tests, provider evals, `make test`, and `make check` pass; a real
   provider smoke is recorded when credentials exist.
 
 #### Explicit Non-Goals
 
 - context capsule, tool-output artifact, API/CLI context controls, or recovery
-- DeepSeek strict-tools beta, FIM, Chat Prefix Completion, or undocumented APIs
+- enabling Beta profiles by default, routing Beta through the normal Harness, or undocumented APIs

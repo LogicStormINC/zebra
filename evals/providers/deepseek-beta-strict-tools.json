@@ -1,0 +1,9 @@
+{
+  "case_id": "deepseek-beta-strict-tools",
+  "category": "provider",
+  "title": "DeepSeek strict tools stay isolated and schema compatible",
+  "prompt": "Use the isolated beta strict-tools profile with a compatible schema, then prove stable fallback preserves the request without public replay.",
+  "min_events": 3,
+  "min_tool_results": 1,
+  "max_cost_usd": 1.0
+}

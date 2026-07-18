@@ -1,0 +1,9 @@
+{
+  "case_id": "deepseek-tool-protocol",
+  "category": "provider",
+  "title": "DeepSeek tool calls remain non-thinking and side-effect safe",
+  "prompt": "Use one advertised read-only tool, then summarize its result without replaying the tool call.",
+  "min_events": 3,
+  "min_tool_results": 1,
+  "max_cost_usd": 1.0
+}

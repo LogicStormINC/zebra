@@ -1,0 +1,9 @@
+{
+  "case_id": "deepseek-reasoning-privacy",
+  "category": "provider",
+  "title": "DeepSeek reasoning metadata is observable without private content",
+  "prompt": "Review a small diff without tools and return only the public review findings.",
+  "min_events": 2,
+  "min_tool_results": 0,
+  "max_cost_usd": 1.0
+}

@@ -2,6 +2,17 @@
 
 ## Addendum
 
+- 2026-07-18: completed `DS-OPT-01` on `codex/ds-opt-01-deepseek-specialization`
+  after rebasing PR `#146` onto `main@b19c018`. Versioned Flash/Pro profiles now enforce
+  non-thinking tool rounds, profile-bound no-tool reasoning, local capability validation,
+  private-reasoning exclusion, complete streaming/cache/TTFT/fingerprint/error telemetry and
+  retry boundaries before the first public delta. Stable OpenAI-compatible behavior remains
+  compatible. Strict tools, FIM and Chat Prefix Completion are isolated behind default-off Beta
+  profiles. The rebase preserved ContextCapsule and Session Handoff contracts and added DeepSeek
+  fields to the split neutral model-event contract. Validation passed 84 focused DS/contract tests,
+  77 shared execution regressions, all 1,447 runnable backend tests with two opt-in provider and
+  one platform-gated gVisor skip, both real stable/Beta DeepSeek smokes, and `make check`.
+
 - 2026-07-18: completed the full `CTX-HO-01A` through `CTX-HO-01E` staged Session
   handoff roadmap. Handoff remains disabled by default; existing lineage and child recovery stay
   readable after rollback. Release coverage includes continuity, no replay, authority narrowing,

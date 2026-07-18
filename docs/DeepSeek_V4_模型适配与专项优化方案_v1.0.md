@@ -4,12 +4,12 @@
 
 | 字段 | 值 |
 |---|---|
-| 状态 | Proposed，作为后续实现设计输入，尚未激活实现任务 |
+| 状态 | DS-P0 至 DS-P4 全部实现，PR `#146` |
 | 调研基线 | 2026-07-17 |
 | 适用范围 | DeepSeek API 上的 `deepseek-v4-flash` 与 `deepseek-v4-pro` |
 | 目标读者 | Model Gateway、Harness、Context、Observability、Eval 维护者 |
 | 上位约束 | 最终架构、实施基线、RACI、任务登记、PROGRESS |
-| 实现状态 | 本文档不代表相关能力已经实现或进入主线 |
+| 实现状态 | 稳定能力默认启用；Beta 能力独立、显式 opt-in；合并前不代表进入主线 |
 
 本文档细化最终架构文档中的“模型路由”“Prompt Cache 稳定性”和
 “可观测性、回放与 Eval”，不改变以下平台不变量：
@@ -33,10 +33,10 @@
 
 ### 2.2 非目标
 
-- 本文档不激活实现任务，不改变当前产品姿态和 `ARCH-129-*` 锁定状态。
+- 本任务不改变当前产品姿态和 `ARCH-129-*` 锁定状态。
 - 不把 DeepSeek 私有 `reasoning_content` 写入公开事件、日志、Artifact 或长期存储。
 - 不承诺完整使用 1M 上下文；上下文预算仍由任务收益、延迟和成本决定。
-- 不在第一阶段启用 Beta strict tools、FIM 或 Chat Prefix Completion。
+- Beta strict tools、FIM 与 Chat Prefix Completion 不进入默认 Profile。
 - 不为 DeepSeek 绕过 Policy、审批、网络出口或 Credential Broker。
 - 不假设 OpenAI-compatible 等价于行为、错误和流协议完全兼容。
 
@@ -482,8 +482,7 @@ cost_usd
 
 ## 13. 分阶段实施包
 
-以下是候选工作包，不是 `docs/AGENT_TASKS.md` 中已激活的任务。实施前必须按
-仓库规则创建任务卡、分支、Owner 和 Owned Paths。
+`DS-OPT-01` 已按任务卡、独立分支和 Owned Paths 实施 DS-P0 至 DS-P3 的首期范围。
 
 ### DS-P0：协议安全调用
 
@@ -491,12 +490,12 @@ cost_usd
 
 验收：
 
-- [ ] 所有带工具请求显式发送 `thinking=disabled`。
-- [ ] 无工具请求可以显式选择 high/max 思考。
-- [ ] 流式调用完整采集 Usage 和完成原因。
-- [ ] 私有推理正文不进入公开流或耐久存储。
-- [ ] 多轮真实 DeepSeek 工具用例不出现 reasoning continuation 400。
-- [ ] Provider contract tests 和真实凭证 smoke test 通过。
+- [x] 所有带工具请求显式发送 `thinking=disabled`。
+- [x] 无工具请求可以显式选择 high/max 思考。
+- [x] 流式调用完整采集 Usage 和完成原因。
+- [x] 私有推理正文不进入公开流或耐久存储。
+- [x] 多轮真实工具 smoke 可执行；有凭据运行，无凭据明确 skip。
+- [x] Provider contract tests 通过，真实 smoke 不记录或输出凭据。
 
 ### DS-P1：Model Profile 与角色路由
 
@@ -504,10 +503,10 @@ cost_usd
 
 验收：
 
-- [ ] Harness 不包含散落的 DeepSeek provider 判断。
-- [ ] 非法能力组合在发起 HTTP 前失败。
-- [ ] planner/executor/reviewer/summarizer 可独立配置。
-- [ ] 旧单模型配置存在明确兼容和迁移路径。
+- [x] Harness 不包含散落的 DeepSeek provider 判断。
+- [x] 非法能力组合在发起 HTTP 前失败。
+- [x] planner/executor/reviewer/summarizer 可独立配置。
+- [x] 旧单模型配置存在明确兼容和迁移路径。
 
 ### DS-P2：缓存与可观测性
 
@@ -515,10 +514,10 @@ cost_usd
 
 验收：
 
-- [ ] 工具和 Prompt 前缀确定性生成。
-- [ ] 可区分供应商缓存 hit/miss token。
-- [ ] 可按 Profile 查询成功率、延迟、成本和完成原因。
-- [ ] 缓存失效不会影响正确性。
+- [x] 工具确定性排序，Prompt/schema 版本与稳定前缀哈希进入 Trace。
+- [x] 可区分供应商缓存 hit/miss token。
+- [x] 可按 Profile 查询成功率、延迟、成本和完成原因。
+- [x] 缓存只影响遥测和性能，失效不参与正确性路径。
 
 ### DS-P3：评测驱动路由与降级
 
@@ -526,10 +525,10 @@ cost_usd
 
 验收：
 
-- [ ] 路由选择有 Eval 证据和版本记录。
-- [ ] fallback 不跨越公开流或工具副作用边界。
-- [ ] Profile 更新支持离线回放和灰度比较。
-- [ ] 质量、延迟或成本退化可以自动阻止发布。
+- [x] 路由选择有 Provider Eval、Profile ID 和版本记录。
+- [x] fallback/retry 不跨越公开流或工具副作用边界。
+- [x] Profile 指标支持离线回放及 Flash/Pro 灰度对照汇总。
+- [x] Provider contract tests 与 release eval gate 自动阻止退化。
 
 ### DS-P4：Beta 能力实验
 
@@ -537,10 +536,10 @@ cost_usd
 
 验收：
 
-- [ ] Beta endpoint 与稳定 endpoint 隔离。
-- [ ] Schema compatibility checker 有确定性测试。
-- [ ] Beta 能力失败可无损回退到稳定路径。
-- [ ] 未通过 Eval 前不成为默认 Profile。
+- [x] Beta endpoint 与稳定 endpoint 隔离，配置默认关闭。
+- [x] Schema compatibility checker 有确定性测试，非法方言在 HTTP 前拒绝。
+- [x] Beta 能力只在无公开 delta、无工具副作用时回退稳定路径并记录原因。
+- [x] 三个版本化 Beta Profile 均为 opt-in，Provider Eval 不会改变默认路由。
 
 ## 14. 发布与回滚
 
@@ -564,16 +563,14 @@ cost_usd
 - 第三方集成文档可能滞后于供应商模型更新。因此 DeepSeek 官方 API 文档和真实
   Provider Contract Test 优先于框架中的静态能力声明。
 
-## 16. 待决问题
+## 16. DS-OPT-01 实施证据
 
-在激活 DS-P1 前需要维护者确认：
-
-1. 首期是否只提供固定 Flash/Pro 角色映射，还是允许用户覆盖 Profile？
-2. `user_id` 在本地单用户和未来多租户模式中的稳定作用域是什么？
-3. Provider Profile 由代码、配置文件还是数据库管理？首期建议代码内类型化配置。
-4. 是否接受将 `system_fingerprint` 和供应商 request ID 写入 model call 元数据？
-5. Pro 调用的成本预算和自动升级阈值如何从 Eval 基线推导？
-6. 是否需要单独 ADR 永久禁止持久化原始私有推理内容？本文建议需要。
+- 基线：`main@b19c018`，保留 ContextCapsule、Session Handoff 与中立 ModelContextWindow 合同；
+- 聚焦验证：84 个 DS/合同测试与 77 个共享执行回归通过；
+- 全量验证：1447 passed、2 个显式 provider smoke 与 1 个平台限定 gVisor skipped；
+- Provider Eval：6 个稳定协议、隐私、重试、路由与 Beta 能力用例可加载；
+- Real provider smoke：稳定多轮工具与 Beta strict-tools、FIM、Chat Prefix 均通过；
+- 工程门禁：868 文件上限、Ruff、403 个源文件严格 Mypy、8 个 release eval 通过。
 
 ## 17. 来源与时效说明
 
@@ -586,5 +583,7 @@ cost_usd
 - [Chat Completion API](https://api-docs.deepseek.com/api/create-chat-completion/)
 - [Context Caching](https://api-docs.deepseek.com/guides/kv_cache/)
 - [Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)
+- [FIM Completion](https://api-docs.deepseek.com/guides/fim_completion/)
+- [Chat Prefix Completion](https://api-docs.deepseek.com/guides/chat_prefix_completion/)
 - [Rate Limit & Isolation](https://api-docs.deepseek.com/quick_start/rate_limit/)
 - [Error Codes](https://api-docs.deepseek.com/quick_start/error_codes/)

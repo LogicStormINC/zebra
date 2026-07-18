@@ -6,6 +6,7 @@ from agent_observability import (
     AuditRecord,
     CostSummary,
     JsonlTraceStore,
+    ProviderModelCallTrace,
     TraceRecord,
 )
 
@@ -36,6 +37,22 @@ def _trace(session_id: str = "session-1") -> TraceRecord:
                 summary="tool:tool_execution_completed",
             ),
         ),
+        model_calls=(
+            ProviderModelCallTrace(
+                sequence=1,
+                profile_id="deepseek-v4-flash-executor-v1",
+                prompt_version="zebra-deepseek-chat-v1",
+                tool_schema_bytes=64,
+                tool_schema_hash="schema-hash",
+                stable_prefix_hash="prefix-hash",
+                input_tokens=10,
+                output_tokens=5,
+                reasoning_tokens=2,
+                prompt_cache_hit_tokens=8,
+                prompt_cache_miss_tokens=2,
+                cost_usd=0.02,
+            ),
+        ),
     )
 
 
@@ -50,6 +67,9 @@ def test_jsonl_trace_store_appends_and_lists_traces(tmp_path: Path) -> None:
     assert [trace.session_id for trace in traces] == ["session-1", "session-2"]
     assert traces[0].cost.total_tokens == 15
     assert traces[1].audit[1].event_type is EventType.TOOL_EXECUTION_COMPLETED
+    assert traces[0].model_calls[0].stable_prefix_hash == "prefix-hash"
+    assert traces[0].model_calls[0].reasoning_tokens == 2
+    assert traces[0].model_calls[0].cost_usd == 0.02
 
 
 def test_jsonl_trace_store_lists_empty_when_file_is_missing(tmp_path: Path) -> None:

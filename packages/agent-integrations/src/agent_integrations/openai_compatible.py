@@ -1,25 +1,40 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
 from typing import Any
 
 import httpx
-from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
-    ModelCallMetadata,
     ModelCompletion,
+    ModelContextWindow,
+    ModelInvocationPolicy,
+    ModelRole,
     ModelTextDelta,
     ModelToolDefinition,
-    ModelUsage,
 )
-from agent_core.domain.tools import ToolCall
 from zebra_agent_config import ZebraAgentSettings
 
+from agent_integrations.deepseek_profiles import (
+    DeepSeekProfileRouter,
+    ResolvedDeepSeekInvocation,
+)
+from agent_integrations.deepseek_schema import validate_strict_tools
+from agent_integrations.model_errors import ModelProviderError, normalize_provider_error
+from agent_integrations.openai_payloads import (
+    internal_tool_names,
+    parse_completion,
+    provider_tool_names,
+    serialize_message,
+    serialize_tool,
+)
 from agent_integrations.openai_streaming import read_openai_stream
+from agent_integrations.request_metadata import (
+    ModelRequestMetadata,
+    build_request_metadata,
+)
 
 CHAT_COMPLETIONS_PATH = "/chat/completions"
 
@@ -33,6 +48,8 @@ class OpenAICompatibleModelGateway:
         api_key: str,
         model_name: str,
         timeout_s: float = 30.0,
+        max_retries: int = 1,
+        deepseek_router: DeepSeekProfileRouter | None = None,
         client: httpx.Client | None = None,
     ) -> None:
         self._provider_name = provider_name
@@ -40,38 +57,75 @@ class OpenAICompatibleModelGateway:
         self._api_key = api_key
         self._model_name = model_name
         self._timeout_s = timeout_s
+        self._max_retries = max_retries
+        self._deepseek_router = deepseek_router
+        if provider_name.lower() == "deepseek" and deepseek_router is None:
+            self._deepseek_router = DeepSeekProfileRouter(
+                legacy_executor_model=model_name,
+            )
         self._client = client
+
+    @property
+    def context_window(self) -> ModelContextWindow:
+        if self._deepseek_router is None:
+            return ModelContextWindow()
+        return self._deepseek_router.resolve(
+            ModelInvocationPolicy(),
+            has_tools=False,
+        ).profile.context_window
 
     def complete(
         self,
         messages: list[SessionMessage],
         *,
         tools: tuple[ModelToolDefinition, ...] = (),
+        invocation_policy: ModelInvocationPolicy | None = None,
+        strict_tools: bool = False,
     ) -> ModelCompletion:
-        tool_names = _provider_tool_names(tools)
-        request_body = {
-            "model": self._model_name,
-            "messages": [_serialize_message(message) for message in messages],
-            "stream": False,
-        }
-        if tools:
-            request_body["tools"] = [
-                _serialize_tool(tool, provider_name=provider_name)
-                for tool, provider_name in zip(tools, tool_names, strict=True)
-            ]
-        started = perf_counter()
-        response_data = self._post_chat_completion(request_body)
-        latency_ms = int((perf_counter() - started) * 1000)
-        return _parse_completion(
-            response_data,
-            provider_name=self._provider_name,
-            default_model_name=self._model_name,
-            latency_ms=latency_ms,
-            internal_tool_names={
-                provider_name: tool.name
-                for tool, provider_name in zip(tools, tool_names, strict=True)
-            },
+        self._validate_strict_mode(tools, strict_tools=strict_tools)
+        tool_names = provider_tool_names(tools)
+        resolved = self._resolve_deepseek(invocation_policy, has_tools=bool(tools))
+        request_body, request_metadata = self._request_body(
+            messages,
+            tools=tools,
+            tool_names=tool_names,
+            stream=False,
+            resolved=resolved,
+            strict_tools=strict_tools,
         )
+        started = perf_counter()
+        retry_count = 0
+        while True:
+            try:
+                response_data = self._post_chat_completion(request_body)
+                return parse_completion(
+                    response_data,
+                    provider_name=self._provider_name,
+                    default_model_name=self._model_name,
+                    latency_ms=int((perf_counter() - started) * 1000),
+                    retry_count=retry_count,
+                    resolved=resolved,
+                    request_metadata=request_metadata,
+                    internal_names=internal_tool_names(tools, tool_names),
+                )
+            except Exception as exc:
+                if self._deepseek_router is None:
+                    raise
+                if isinstance(exc, ValueError) and not isinstance(exc, ModelProviderError):
+                    raise
+                error = normalize_provider_error(exc)
+                if not self._should_retry(
+                    error,
+                    retry_count=retry_count,
+                    messages=messages,
+                    public_delta_emitted=False,
+                ):
+                    raise ModelProviderError(
+                        error.normalized_error,
+                        retryable=error.retryable,
+                        retry_count=retry_count,
+                    ) from exc
+                retry_count += 1
 
     def complete_stream(
         self,
@@ -79,57 +133,172 @@ class OpenAICompatibleModelGateway:
         *,
         tools: tuple[ModelToolDefinition, ...] = (),
         on_text_delta: Callable[[ModelTextDelta], None],
+        invocation_policy: ModelInvocationPolicy | None = None,
+        strict_tools: bool = False,
     ) -> ModelCompletion:
-        tool_names = _provider_tool_names(tools)
-        request_body = {
-            "model": self._model_name,
-            "messages": [_serialize_message(message) for message in messages],
-            "stream": True,
-        }
-        if tools:
-            request_body["tools"] = [
-                _serialize_tool(tool, provider_name=provider_name)
-                for tool, provider_name in zip(tools, tool_names, strict=True)
-            ]
-        client = self._client or httpx.Client(timeout=self._timeout_s)
+        self._validate_strict_mode(tools, strict_tools=strict_tools)
+        tool_names = provider_tool_names(tools)
+        resolved = self._resolve_deepseek(invocation_policy, has_tools=bool(tools))
+        request_body, request_metadata = self._request_body(
+            messages,
+            tools=tools,
+            tool_names=tool_names,
+            stream=True,
+            resolved=resolved,
+            strict_tools=strict_tools,
+        )
+        client = self._client or httpx.Client(timeout=self._client_timeout())
         should_close = self._client is None
         started = perf_counter()
+        retry_count = 0
+        public_delta_emitted = False
+
+        def emit(delta: ModelTextDelta) -> None:
+            nonlocal public_delta_emitted
+            public_delta_emitted = True
+            on_text_delta(delta)
+
         try:
-            response_data = read_openai_stream(
-                client,
-                url=f"{self._base_url}{CHAT_COMPLETIONS_PATH}",
-                headers={
-                    "Authorization": f"Bearer {self._api_key}",
-                    "Content-Type": "application/json",
-                },
-                body=request_body,
-                on_text_delta=on_text_delta,
-            )
+            while True:
+                try:
+                    response_data = read_openai_stream(
+                        client,
+                        url=f"{self._base_url}{CHAT_COMPLETIONS_PATH}",
+                        headers=self._headers(),
+                        body=request_body,
+                        on_text_delta=emit,
+                    )
+                    return parse_completion(
+                        response_data,
+                        provider_name=self._provider_name,
+                        default_model_name=self._model_name,
+                        latency_ms=int((perf_counter() - started) * 1000),
+                        retry_count=retry_count,
+                        resolved=resolved,
+                        request_metadata=request_metadata,
+                        internal_names=internal_tool_names(tools, tool_names),
+                    )
+                except Exception as exc:
+                    if self._deepseek_router is None:
+                        raise
+                    if isinstance(exc, ValueError) and not isinstance(exc, ModelProviderError):
+                        raise
+                    error = normalize_provider_error(exc)
+                    if not self._should_retry(
+                        error,
+                        retry_count=retry_count,
+                        messages=messages,
+                        public_delta_emitted=public_delta_emitted,
+                    ):
+                        raise ModelProviderError(
+                            error.normalized_error,
+                            retryable=error.retryable,
+                            retry_count=retry_count,
+                        ) from exc
+                    retry_count += 1
         finally:
             if should_close:
                 client.close()
-        latency_ms = int((perf_counter() - started) * 1000)
-        return _parse_completion(
-            response_data,
-            provider_name=self._provider_name,
-            default_model_name=self._model_name,
-            latency_ms=latency_ms,
-            internal_tool_names={
-                provider_name: tool.name
-                for tool, provider_name in zip(tools, tool_names, strict=True)
-            },
+
+    def _resolve_deepseek(
+        self,
+        policy: ModelInvocationPolicy | None,
+        *,
+        has_tools: bool,
+    ) -> ResolvedDeepSeekInvocation | None:
+        if self._deepseek_router is None:
+            return None
+        return self._deepseek_router.resolve(
+            policy or ModelInvocationPolicy(),
+            has_tools=has_tools,
         )
 
+    def _request_body(
+        self,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...],
+        tool_names: tuple[str, ...],
+        stream: bool,
+        resolved: ResolvedDeepSeekInvocation | None,
+        strict_tools: bool,
+    ) -> tuple[dict[str, Any], ModelRequestMetadata | None]:
+        body: dict[str, Any] = {
+            "model": resolved.profile.model if resolved else self._model_name,
+            "messages": [serialize_message(message) for message in messages],
+            "stream": stream,
+        }
+        if tools:
+            serialized_tools = [
+                serialize_tool(tool, provider_name=provider_name, strict=strict_tools)
+                for tool, provider_name in zip(tools, tool_names, strict=True)
+            ]
+            if resolved is not None:
+                serialized_tools.sort(key=_serialized_tool_name)
+            body["tools"] = serialized_tools
+        if resolved is not None:
+            body.update(
+                {
+                    "thinking": {"type": resolved.thinking_mode.value},
+                    "tool_choice": resolved.tool_choice.value,
+                    "max_tokens": resolved.max_output_tokens,
+                }
+            )
+            if resolved.reasoning_effort is not None:
+                body["reasoning_effort"] = resolved.reasoning_effort.value
+            if stream:
+                body["stream_options"] = {"include_usage": True}
+        metadata = build_request_metadata(body, resolved) if resolved else None
+        return body, metadata
+
+    def _validate_strict_mode(
+        self,
+        tools: tuple[ModelToolDefinition, ...],
+        *,
+        strict_tools: bool,
+    ) -> None:
+        if not strict_tools:
+            return
+        if self._deepseek_router is None or not self._base_url.endswith("/beta"):
+            raise ValueError("DeepSeek strict tools require the isolated beta endpoint")
+        if not tools:
+            raise ValueError("DeepSeek strict tools require advertised tools")
+        validate_strict_tools(tools)
+
+    def _should_retry(
+        self,
+        error: ModelProviderError,
+        *,
+        retry_count: int,
+        messages: list[SessionMessage],
+        public_delta_emitted: bool,
+    ) -> bool:
+        return (
+            self._deepseek_router is not None
+            and error.retryable
+            and retry_count < self._max_retries
+            and not public_delta_emitted
+            and not any(message.role is MessageRole.TOOL for message in messages)
+        )
+
+    def _headers(self) -> dict[str, str]:
+        return {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+        }
+
+    def _client_timeout(self) -> float | httpx.Timeout:
+        if self._deepseek_router is None:
+            return self._timeout_s
+        return httpx.Timeout(120.0, connect=10.0)
+
     def _post_chat_completion(self, body: dict[str, Any]) -> dict[str, Any]:
-        client = self._client or httpx.Client(timeout=self._timeout_s)
+        client = self._client or httpx.Client(timeout=self._client_timeout())
         should_close = self._client is None
         try:
             response = client.post(
                 f"{self._base_url}{CHAT_COMPLETIONS_PATH}",
-                headers={
-                    "Authorization": f"Bearer {self._api_key}",
-                    "Content-Type": "application/json",
-                },
+                headers=self._headers(),
                 json=body,
             )
             response.raise_for_status()
@@ -159,14 +328,32 @@ def build_model_gateway(
         api_key = os.environ.get(settings.model.api_key_env)
     normalized_key = (api_key or "").strip()
     if not normalized_key:
-        raise ValueError(
-            f"missing API key in environment variable {settings.model.api_key_env}"
+        raise ValueError(f"missing API key in environment variable {settings.model.api_key_env}")
+    router = None
+    if settings.model.provider.lower() == "deepseek":
+        configured_profiles = {
+            role: profile_id
+            for role, profile_id in (
+                (ModelRole.EXECUTOR, settings.model.executor_profile),
+                (ModelRole.PLANNER, settings.model.planner_profile),
+                (ModelRole.REVIEWER, settings.model.reviewer_profile),
+                (ModelRole.SUMMARIZER, settings.model.summarizer_profile),
+                (ModelRole.ANALYST, settings.model.analyst_profile),
+                (ModelRole.CLASSIFIER, settings.model.classifier_profile),
+            )
+            if profile_id is not None
+        }
+        router = DeepSeekProfileRouter(
+            role_profiles=configured_profiles,
+            legacy_executor_model=settings.model.model,
         )
     return OpenAICompatibleModelGateway(
         provider_name=settings.model.provider,
         base_url=settings.model.base_url,
         api_key=normalized_key,
         model_name=settings.model.model,
+        max_retries=settings.model.max_retries,
+        deepseek_router=router,
         client=client,
     )
 
@@ -184,201 +371,9 @@ def _read_defaults(path: Path) -> dict[str, str]:
     return defaults
 
 
-def _serialize_message(message: SessionMessage) -> dict[str, object]:
-    payload: dict[str, object] = {
-        "role": message.role.value,
-        "content": message.content,
-    }
-    if message.tool_calls:
-        payload["tool_calls"] = [
-            {
-                "id": tool_call.provider_call_id or str(tool_call.tool_call_id),
-                "type": "function",
-                "function": {
-                    "name": _provider_tool_name(
-                        tool_call.provider_tool_name or tool_call.name
-                    ),
-                    "arguments": _serialize_tool_arguments(
-                        tool_call.provider_arguments
-                        if tool_call.provider_arguments is not None
-                        else tool_call.arguments
-                    ),
-                },
-            }
-            for tool_call in message.tool_calls
-        ]
-    if message.tool_call_id is not None:
-        payload["tool_call_id"] = message.tool_call_id
-    return payload
-
-
-def _serialize_tool_arguments(arguments: Mapping[str, object]) -> str:
-    import json
-
-    return json.dumps(arguments, separators=(",", ":"), sort_keys=True)
-
-
-def _provider_tool_name(name: str) -> str:
-    return name.replace(".", "__")
-
-
-def _provider_tool_names(tools: tuple[ModelToolDefinition, ...]) -> tuple[str, ...]:
-    names = tuple(_provider_tool_name(tool.name) for tool in tools)
-    if len(set(names)) != len(names):
-        raise ValueError("model tool names collide after provider normalization")
-    for name in names:
-        if not name or len(name) > 64 or any(
-            not (character.isascii() and (character.isalnum() or character in "_-"))
-            for character in name
-        ):
-            raise ValueError(f"model tool name is not provider compatible: {name}")
-    return names
-
-
-def _serialize_tool(
-    tool: ModelToolDefinition,
-    *,
-    provider_name: str,
-) -> dict[str, object]:
-    return {
-        "type": "function",
-        "function": {
-            "name": provider_name,
-            "description": tool.description,
-            "parameters": dict(tool.parameters),
-        },
-    }
-
-
-def _parse_completion(
-    payload: dict[str, Any],
-    *,
-    provider_name: str,
-    default_model_name: str,
-    latency_ms: int,
-    internal_tool_names: Mapping[str, str] | None = None,
-) -> ModelCompletion:
-    choices = payload.get("choices")
-    if not isinstance(choices, list) or not choices:
-        raise ValueError("model gateway response must include at least one choice")
-    first_choice = choices[0]
-    if not isinstance(first_choice, dict):
-        raise ValueError("model gateway choice must be an object")
-    message = first_choice.get("message")
-    if not isinstance(message, dict):
-        raise ValueError("model gateway choice must include a message object")
-    tool_calls = _parse_tool_calls(
-        message.get("tool_calls"),
-        internal_tool_names=internal_tool_names or {},
-    )
-    content = _assistant_content(message.get("content"), has_tool_calls=bool(tool_calls))
-    created_at = datetime.now(UTC)
-    return ModelCompletion(
-        assistant_message=SessionMessage(
-            message_id=new_message_id(),
-            role=MessageRole.ASSISTANT,
-            content=content,
-            created_at=created_at,
-            tool_calls=tuple(tool_calls),
-        ),
-        tool_calls=tuple(tool_calls),
-        call_metadata=ModelCallMetadata(
-            provider=provider_name,
-            model_name=_optional_str(payload.get("model")) or default_model_name,
-            latency_ms=latency_ms,
-            usage=_parse_usage(payload.get("usage")),
-        ),
-    )
-
-
-def _assistant_content(value: object, *, has_tool_calls: bool) -> str:
-    if isinstance(value, str) and value.strip():
-        return value
-    if has_tool_calls:
-        return "Tool calls proposed."
-    raise ValueError("model gateway assistant message content must not be blank")
-
-
-def _parse_tool_calls(
-    value: object,
-    *,
-    internal_tool_names: Mapping[str, str],
-) -> list[ToolCall]:
-    if value is None:
-        return []
-    if not isinstance(value, list):
-        raise ValueError("tool_calls must be a list when present")
-    created_at = datetime.now(UTC)
-    parsed: list[ToolCall] = []
-    for item in value:
-        if not isinstance(item, dict):
-            raise ValueError("tool_call entry must be an object")
-        function = item.get("function")
-        if not isinstance(function, dict):
-            raise ValueError("tool_call must include a function object")
-        name = function.get("name")
-        if not isinstance(name, str) or not name.strip():
-            raise ValueError("tool_call function name must not be blank")
-        provider_call_id = item.get("id")
-        if not isinstance(provider_call_id, str) or not provider_call_id.strip():
-            raise ValueError("tool_call id must not be blank")
-        if internal_tool_names:
-            try:
-                name = internal_tool_names[name]
-            except KeyError as exc:
-                raise ValueError(f"model returned an unadvertised tool call: {name}") from exc
-        arguments = _parse_tool_arguments(function.get("arguments"))
-        parsed.append(
-            ToolCall(
-                tool_call_id=new_tool_call_id(),
-                name=name,
-                arguments=arguments,
-                created_at=created_at,
-                provider_call_id=provider_call_id,
-            )
-        )
-    return parsed
-
-
-def _parse_tool_arguments(value: object) -> dict[str, Any]:
-    if value is None:
-        return {}
-    if isinstance(value, dict):
-        return dict(value)
-    if isinstance(value, str):
-        import json
-
-        parsed = json.loads(value)
-        if not isinstance(parsed, dict):
-            raise ValueError("tool_call arguments JSON must decode to an object")
-        return parsed
-    raise ValueError("tool_call arguments must be an object or JSON string")
-
-
-def _parse_usage(value: object) -> ModelUsage:
-    if not isinstance(value, dict):
-        return ModelUsage()
-    return ModelUsage(
-        input_tokens=_optional_int(value.get("prompt_tokens")),
-        output_tokens=_optional_int(value.get("completion_tokens")),
-        total_tokens=_optional_int(value.get("total_tokens")),
-    )
-
-
-def _optional_int(value: object) -> int | None:
-    if value is None:
-        return None
-    if not isinstance(value, int):
-        raise ValueError("usage token fields must be integers")
-    return value
-
-
-def _optional_str(value: object) -> str | None:
-    if value is None:
-        return None
-    if not isinstance(value, str):
-        raise ValueError("string fields must be strings when present")
-    stripped = value.strip()
-    if not stripped:
-        return None
-    return stripped
+def _serialized_tool_name(tool: dict[str, object]) -> str:
+    function = tool.get("function")
+    if not isinstance(function, dict):
+        return ""
+    name = function.get("name")
+    return name if isinstance(name, str) else ""

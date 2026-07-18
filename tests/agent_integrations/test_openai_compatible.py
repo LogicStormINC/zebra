@@ -14,9 +14,7 @@ from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 def test_openai_compatible_gateway_serializes_messages_and_parses_completion() -> None:
     captured: dict[str, object] = {}
     client = httpx.Client(
-        transport=httpx.MockTransport(
-            lambda request: _handle_basic_completion(request, captured)
-        )
+        transport=httpx.MockTransport(lambda request: _handle_basic_completion(request, captured))
     )
     gateway = OpenAICompatibleModelGateway(
         provider_name="deepseek",
@@ -52,6 +50,9 @@ def test_openai_compatible_gateway_serializes_messages_and_parses_completion() -
             {"role": "user", "content": "Hello"},
         ],
         "stream": False,
+        "thinking": {"type": "disabled"},
+        "tool_choice": "none",
+        "max_tokens": 393216,
     }
     assert completion.assistant_message.content == "Hi there"
     assert completion.call_metadata.provider == "deepseek"
@@ -60,9 +61,7 @@ def test_openai_compatible_gateway_serializes_messages_and_parses_completion() -
 
 
 def test_openai_compatible_gateway_parses_tool_calls() -> None:
-    client = httpx.Client(
-        transport=httpx.MockTransport(_handle_tool_call_completion)
-    )
+    client = httpx.Client(transport=httpx.MockTransport(_handle_tool_call_completion))
     gateway = OpenAICompatibleModelGateway(
         provider_name="deepseek",
         base_url="https://api.deepseek.com",
@@ -134,6 +133,10 @@ def test_openai_compatible_gateway_streams_text_and_rebuilds_final_completion() 
         "model": "deepseek-v4-flash",
         "messages": [{"role": "user", "content": "Hello"}],
         "stream": True,
+        "thinking": {"type": "disabled"},
+        "tool_choice": "none",
+        "max_tokens": 393216,
+        "stream_options": {"include_usage": True},
     }
     assert [delta.content for delta in deltas] == ["Hello ", "Zebra"]
     assert completion.assistant_message.content == "Hello Zebra"
@@ -373,9 +376,7 @@ def test_openai_compatible_gateway_serializes_provider_tool_presentation() -> No
             "type": "function",
             "function": {
                 "name": "agent__tools__call",
-                "arguments": (
-                    '{"arguments":{"value":"approved"},"name":"mcp.fixture.echo"}'
-                ),
+                "arguments": ('{"arguments":{"value":"approved"},"name":"mcp.fixture.echo"}'),
             },
         }
     ]
@@ -393,16 +394,19 @@ def test_build_model_gateway_uses_configured_env_name() -> None:
         client=httpx.Client(transport=httpx.MockTransport(_handle_basic_completion_no_capture)),
     )
 
-    assert gateway.complete(
-        [
-            SessionMessage(
-                message_id=_message_id(),
-                role=MessageRole.USER,
-                content="Hello",
-                created_at=_created_at(),
-            )
-        ]
-    ).call_metadata.provider == "deepseek"
+    assert (
+        gateway.complete(
+            [
+                SessionMessage(
+                    message_id=_message_id(),
+                    role=MessageRole.USER,
+                    content="Hello",
+                    created_at=_created_at(),
+                )
+            ]
+        ).call_metadata.provider
+        == "deepseek"
+    )
 
 
 def test_build_model_gateway_loads_api_key_from_dotenv_local(monkeypatch, tmp_path) -> None:
@@ -506,7 +510,7 @@ def _handle_tool_call_completion(request: httpx.Request) -> httpx.Response:
                                 "type": "function",
                                 "function": {
                                     "name": "files.read",
-                                    "arguments": "{\"path\":\"README.md\"}",
+                                    "arguments": '{"path":"README.md"}',
                                 },
                             }
                         ],

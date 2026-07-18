@@ -10,6 +10,9 @@ class CostSummary:
     output_tokens: int = 0
     total_tokens: int = 0
     cost_usd: float = 0.0
+    reasoning_tokens: int = 0
+    prompt_cache_hit_tokens: int = 0
+    prompt_cache_miss_tokens: int = 0
 
     def __post_init__(self) -> None:
         if self.model_calls < 0:
@@ -20,7 +23,65 @@ class CostSummary:
             raise ValueError("output_tokens must not be negative")
         if self.total_tokens < 0:
             raise ValueError("total_tokens must not be negative")
+        for field_name in (
+            "reasoning_tokens",
+            "prompt_cache_hit_tokens",
+            "prompt_cache_miss_tokens",
+        ):
+            if getattr(self, field_name) < 0:
+                raise ValueError(f"{field_name} must not be negative")
         if self.cost_usd < 0:
+            raise ValueError("cost_usd must not be negative")
+
+
+@dataclass(frozen=True)
+class ProviderModelCallTrace:
+    sequence: int
+    profile_id: str | None = None
+    profile_version_observed_at: str | None = None
+    provider: str | None = None
+    requested_model: str | None = None
+    resolved_model: str | None = None
+    role: str | None = None
+    thinking_mode: str | None = None
+    reasoning_effort: str | None = None
+    tool_choice: str | None = None
+    prompt_version: str | None = None
+    tool_schema_bytes: int | None = None
+    tool_schema_hash: str | None = None
+    stable_prefix_hash: str | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    reasoning_tokens: int | None = None
+    prompt_cache_hit_tokens: int | None = None
+    prompt_cache_miss_tokens: int | None = None
+    cost_usd: float | None = None
+    finish_reason: str | None = None
+    time_to_first_event_ms: int | None = None
+    time_to_first_public_text_ms: int | None = None
+    latency_ms: int | None = None
+    retry_count: int = 0
+    normalized_error: str | None = None
+    system_fingerprint: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.sequence < 0 or self.retry_count < 0:
+            raise ValueError("model trace counts must not be negative")
+        for field_name in (
+            "time_to_first_event_ms",
+            "time_to_first_public_text_ms",
+            "latency_ms",
+            "tool_schema_bytes",
+            "input_tokens",
+            "output_tokens",
+            "reasoning_tokens",
+            "prompt_cache_hit_tokens",
+            "prompt_cache_miss_tokens",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"{field_name} must not be negative")
+        if self.cost_usd is not None and self.cost_usd < 0:
             raise ValueError("cost_usd must not be negative")
 
 
@@ -47,6 +108,7 @@ class TraceRecord:
     tool_result_count: int
     cost: CostSummary
     audit: tuple[AuditRecord, ...]
+    model_calls: tuple[ProviderModelCallTrace, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.session_id.strip():
@@ -71,6 +133,11 @@ def build_trace_record(events: tuple[SessionEvent, ...]) -> TraceRecord:
         tool_result_count=_tool_result_count(events),
         cost=_cost_summary(events),
         audit=tuple(_audit_record(event) for event in events),
+        model_calls=tuple(
+            _model_call_trace(event)
+            for event in events
+            if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+        ),
     )
 
 
@@ -92,6 +159,45 @@ def _cost_summary(events: tuple[SessionEvent, ...]) -> CostSummary:
         output_tokens=sum(_int_payload(event, "output_tokens") for event in model_events),
         total_tokens=sum(_int_payload(event, "total_tokens") for event in model_events),
         cost_usd=sum(_float_payload(event, "cost_usd") for event in model_events),
+        reasoning_tokens=sum(_int_payload(event, "reasoning_tokens") for event in model_events),
+        prompt_cache_hit_tokens=sum(
+            _int_payload(event, "prompt_cache_hit_tokens") for event in model_events
+        ),
+        prompt_cache_miss_tokens=sum(
+            _int_payload(event, "prompt_cache_miss_tokens") for event in model_events
+        ),
+    )
+
+
+def _model_call_trace(event: SessionEvent) -> ProviderModelCallTrace:
+    return ProviderModelCallTrace(
+        sequence=event.sequence,
+        profile_id=_str_payload(event, "profile_id"),
+        profile_version_observed_at=_str_payload(event, "profile_version_observed_at"),
+        provider=_str_payload(event, "provider"),
+        requested_model=_str_payload(event, "requested_model"),
+        resolved_model=(_str_payload(event, "resolved_model") or _str_payload(event, "model_name")),
+        role=_str_payload(event, "role"),
+        thinking_mode=_str_payload(event, "thinking_mode"),
+        reasoning_effort=_str_payload(event, "reasoning_effort"),
+        tool_choice=_str_payload(event, "tool_choice"),
+        prompt_version=_str_payload(event, "prompt_version"),
+        tool_schema_bytes=_optional_int_payload(event, "tool_schema_bytes"),
+        tool_schema_hash=_str_payload(event, "tool_schema_hash"),
+        stable_prefix_hash=_str_payload(event, "stable_prefix_hash"),
+        input_tokens=_optional_int_payload(event, "input_tokens"),
+        output_tokens=_optional_int_payload(event, "output_tokens"),
+        reasoning_tokens=_optional_int_payload(event, "reasoning_tokens"),
+        prompt_cache_hit_tokens=_optional_int_payload(event, "prompt_cache_hit_tokens"),
+        prompt_cache_miss_tokens=_optional_int_payload(event, "prompt_cache_miss_tokens"),
+        cost_usd=_optional_float_payload(event, "cost_usd"),
+        finish_reason=_str_payload(event, "finish_reason"),
+        time_to_first_event_ms=_optional_int_payload(event, "time_to_first_event_ms"),
+        time_to_first_public_text_ms=_optional_int_payload(event, "time_to_first_public_text_ms"),
+        latency_ms=_optional_int_payload(event, "latency_ms"),
+        retry_count=_int_payload(event, "retry_count"),
+        normalized_error=_str_payload(event, "normalized_error"),
+        system_fingerprint=_str_payload(event, "system_fingerprint"),
     )
 
 
@@ -115,4 +221,25 @@ def _float_payload(event: SessionEvent, key: str) -> float:
     value = event.payload.get(key, 0.0)
     if isinstance(value, bool) or not isinstance(value, int | float):
         return 0.0
+    return float(value)
+
+
+def _optional_int_payload(event: SessionEvent, key: str) -> int | None:
+    value = event.payload.get(key)
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value
+
+
+def _str_payload(event: SessionEvent, key: str) -> str | None:
+    value = event.payload.get(key)
+    if not isinstance(value, str):
+        return None
+    return value.strip() or None
+
+
+def _optional_float_payload(event: SessionEvent, key: str) -> float | None:
+    value = event.payload.get(key)
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
     return float(value)

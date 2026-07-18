@@ -33,6 +33,15 @@ class ModelSettings:
     api_key_env: str
     base_url: str
     model: str
+    executor_profile: str | None = None
+    planner_profile: str | None = None
+    reviewer_profile: str | None = None
+    summarizer_profile: str | None = None
+    analyst_profile: str | None = None
+    classifier_profile: str | None = None
+    max_retries: int = 1
+    deepseek_beta_enabled: bool = False
+    deepseek_beta_base_url: str | None = None
 
 
 @dataclass(frozen=True)
@@ -138,6 +147,23 @@ def load_settings(
             ),
             base_url=_read(values, "ZEBRA_MODEL_BASE_URL", default="https://api.deepseek.com"),
             model=_read(values, "ZEBRA_MODEL_NAME", default="deepseek-v4-flash"),
+            executor_profile=_read_optional(values, "ZEBRA_DEEPSEEK_EXECUTOR_PROFILE"),
+            planner_profile=_read_optional(values, "ZEBRA_DEEPSEEK_PLANNER_PROFILE"),
+            reviewer_profile=_read_optional(values, "ZEBRA_DEEPSEEK_REVIEWER_PROFILE"),
+            summarizer_profile=_read_optional(values, "ZEBRA_DEEPSEEK_SUMMARIZER_PROFILE"),
+            analyst_profile=_read_optional(values, "ZEBRA_DEEPSEEK_ANALYST_PROFILE"),
+            classifier_profile=_read_optional(values, "ZEBRA_DEEPSEEK_CLASSIFIER_PROFILE"),
+            max_retries=_read_non_negative_int(
+                values,
+                "ZEBRA_MODEL_MAX_RETRIES",
+                default=1,
+            ),
+            deepseek_beta_enabled=_read_bool(
+                values,
+                "ZEBRA_DEEPSEEK_BETA_ENABLED",
+                default=False,
+            ),
+            deepseek_beta_base_url=_read_optional(values, "ZEBRA_DEEPSEEK_BETA_BASE_URL"),
         ),
         session_handoff=SessionHandoffSettings(
             enabled=_read_bool(values, "ZEBRA_SESSION_HANDOFF_ENABLED", default=False),
@@ -315,6 +341,17 @@ def _read_int(values: Mapping[str, str], key: str, *, default: int) -> int:
         raise ValueError(f"{key} must be an integer") from exc
     if value <= 0:
         raise ValueError(f"{key} must be positive")
+    return value
+
+
+def _read_non_negative_int(values: Mapping[str, str], key: str, *, default: int) -> int:
+    raw = values.get(key, str(default)).strip()
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise ValueError(f"{key} must be an integer") from exc
+    if value < 0:
+        raise ValueError(f"{key} must not be negative")
     return value
 
 

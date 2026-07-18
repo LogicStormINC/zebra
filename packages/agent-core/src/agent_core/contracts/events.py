@@ -22,6 +22,7 @@ from agent_core.contracts.handoff_events import (
 from agent_core.contracts.model_events import (
     ModelRequestStartedPayload,
     ModelResponseDeltaPayload,
+    ModelResponseReceivedPayload,
 )
 from agent_core.contracts.runtime_events import RuntimeProvisionedPayload
 from agent_core.domain.clarifications import (
@@ -433,6 +434,7 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.RUNTIME_PROVISIONED: RuntimeProvisionedPayload,
     EventType.MODEL_REQUEST_STARTED: ModelRequestStartedPayload,
     EventType.MODEL_RESPONSE_DELTA: ModelResponseDeltaPayload,
+    EventType.MODEL_RESPONSE_RECEIVED: ModelResponseReceivedPayload,
     EventType.PLAN_UPDATED: PlanUpdatedPayload,
     EventType.SESSION_SUSPENDED: SessionSuspendedPayload,
     EventType.SESSION_RESUMED: SessionResumedPayload,

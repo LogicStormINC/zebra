@@ -14,7 +14,10 @@ class ModelCallIndexer:
             session_id=event.session_id,
             sequence=event.sequence,
             provider=_optional_str(event.payload, "provider"),
-            model_name=_optional_str(event.payload, "model_name"),
+            model_name=(
+                _optional_str(event.payload, "resolved_model")
+                or _optional_str(event.payload, "model_name")
+            ),
             input_tokens=_optional_int(event.payload, "input_tokens"),
             estimated_input_tokens=_optional_int(
                 event.payload, "estimated_input_tokens"
@@ -26,7 +29,7 @@ class ModelCallIndexer:
             output_tokens=_optional_int(event.payload, "output_tokens"),
             total_tokens=_optional_int(event.payload, "total_tokens"),
             latency_ms=_optional_int(event.payload, "latency_ms"),
-            cache_hit=_optional_bool(event.payload, "cache_hit"),
+            cache_hit=_cache_hit(event.payload),
             cost_usd=_optional_float(event.payload, "cost_usd"),
             assistant_message=str(event.payload["assistant_message"]),
             tool_call_count=int(event.payload["tool_call_count"]),
@@ -56,6 +59,14 @@ def _optional_bool(payload: dict[str, object], key: str) -> bool | None:
     if not isinstance(value, bool):
         return None
     return value
+
+
+def _cache_hit(payload: dict[str, object]) -> bool | None:
+    explicit = _optional_bool(payload, "cache_hit")
+    if explicit is not None:
+        return explicit
+    hit_tokens = _optional_int(payload, "prompt_cache_hit_tokens")
+    return None if hit_tokens is None else hit_tokens > 0
 
 
 def _optional_float(payload: dict[str, object], key: str) -> float | None:
