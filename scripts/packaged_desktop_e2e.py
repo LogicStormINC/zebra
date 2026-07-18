@@ -134,11 +134,18 @@ class PackagedApp:
         raise AssertionError(f"packaged UI element {selector!r} did not appear")
 
     def _element(self, using: str, value: str) -> str:
-        response = request_json(
-            "POST",
-            f"{DRIVER_URL}/session/{self.session_id}/element",
-            {"using": using, "value": value},
-        )
+        for attempt in range(5):
+            try:
+                response = request_json(
+                    "POST",
+                    f"{DRIVER_URL}/session/{self.session_id}/element",
+                    {"using": using, "value": value},
+                )
+                break
+            except OSError:
+                if attempt == 4:
+                    raise
+                time.sleep(0.25)
         element = response.get("value")
         if not isinstance(element, dict):
             raise AssertionError(f"WebDriver element {value!r} is unavailable")
