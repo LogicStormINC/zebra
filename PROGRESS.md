@@ -6,11 +6,10 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-07-18`
-- Verified implementation baseline: `f950402` (PR `#156`)
+- Verified implementation baseline: `ace7443` (PR `#161`)
 - Product posture: `feature-complete local Beta / single-host production candidate`
 - Active implementation task: `ARCH-RT-A1-OS-01` is in Review
-- Desktop browser task: `QA-DESKTOP-E2E-01` is in Review on
-  `codex/qa-desktop-e2e-01`
+- Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
@@ -62,27 +61,22 @@
 
 ## Latest Validation Baseline
 
-Validated on the `QA-148-MDL-01` branch merged as `origin/main@f950402` on 2026-07-18:
+Validated on `QA-DESKTOP-E2E-01`, merged as `origin/main@ace7443` / PR `#161`
+on 2026-07-18:
 
-- `make sync`: passed
 - `make test`: `1452 passed, 4 skipped`
-- file-size gate: `868` files, zero violations
+- file-size gate: `874` files, zero violations
 - Ruff: passed
-- strict Mypy: `403` source files, zero errors
+- strict Mypy: `405` source files, zero errors
 - release Eval: `8/8`, `pass_rate=1.00`
-- latest `main` Quality workflow: Backend, Desktop, and real Linux gVisor passed
-- Desktop: all `19` deterministic checks and production build passed
+- Desktop: all `19` deterministic checks, production build, and `4/4` real
+  Chromium streaming regressions passed
+- Quality run `29638435247`: Backend, Desktop, real Linux gVisor, and real OS
+  sandbox smoke on Ubuntu and macOS passed
 - current main JavaScript chunk: about `1.47 MB` (`458 KB` gzip), Vite warning remains
 
 The four skips are three opt-in real-provider smokes and the macOS-gated gVisor
 test. Linux CI runs the real gVisor smoke instead of treating that skip as proof.
-
-On `codex/qa-desktop-e2e-01`, Desktop passed all `19` deterministic checks, the
-production build, and `4/4` real Chromium streaming regressions. Repository
-validation passed `1452` tests with `4` opt-in/platform skips, the `874`-file
-size gate, Ruff, strict Mypy over `405` source files, and release Eval `8/8`.
-Quality run `29638141137` passed Backend, Desktop (including Chromium), and
-real Linux gVisor jobs.
 
 The DeepSeek credentials-enabled focused run also passed all `39` contracts,
 including a real thinking tool round trip.
@@ -93,8 +87,8 @@ including a real thinking tool round trip.
 - `docs/AGENT_TASKS.md` is the only executable task registry.
 - All eight stale `Review` cards verified as merged are closed as `Done` by
   `QA-GOV-02` / PR `#144`.
-- `QA-148-MDL-01` is `Done`; `ARCH-RT-A1-OS-01` is Ready and
-  `QA-DESKTOP-E2E-01` is in Review.
+- `QA-148-MDL-01` and `QA-DESKTOP-E2E-01` are `Done`;
+  `ARCH-RT-A1-OS-01` remains in Review.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 
 ## Known Follow-Ups
