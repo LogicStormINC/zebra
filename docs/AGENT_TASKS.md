@@ -13605,7 +13605,7 @@ changing the current default of same-Session compaction or activating runtime be
 
 ### CTX-HO-01A - Stage Handoff Core Contracts
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Depends on: merged `CTX-LC-01`, merged `CTX-HO-PLAN-01`
 - Branch: `codex/ctx-ho-01a-core-contracts`
@@ -13632,21 +13632,24 @@ changing the current default of same-Session compaction or activating runtime be
 
 ### CTX-HO-01B - Stage Handoff Atomic Storage
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Depends on: merged `CTX-HO-01A`
-- Suggested branch: `codex/ctx-ho-01b-atomic-storage`
+- Branch: `codex/ctx-ho-01b-atomic-storage`
 - Owned paths: `packages/agent-storage/src/agent_storage/session_handoffs.py`,
+  `packages/agent-storage/src/agent_storage/session_handoff_rows.py`,
+  `packages/agent-storage/src/agent_storage/session_handoff_events.py`,
+  `packages/agent-storage/src/agent_storage/session_handoff_facts.py`,
   `packages/agent-storage/src/agent_storage/__init__.py`,
   `tests/agent_storage/test_session_handoffs.py`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
 #### Acceptance
 
-- [ ] SQLite stores preparing/committed/aborted operations, immutable envelopes, lineage and
+- [x] SQLite stores preparing/committed/aborted operations, immutable envelopes, lineage and
   dispatch outbox with rebuildable read models.
-- [ ] One transaction CAS-checks source version and reservation facts, appends parent and child
+- [x] One transaction CAS-checks source version and reservation facts, appends parent and child
   events, creates exactly one successor and commits the operation.
-- [ ] Same-key replay, different-payload conflict, different-key race, crash and orphan cleanup
+- [x] Same-key replay, different-payload conflict, different-key race, crash and orphan cleanup
   tests pass.
 
 ### CTX-HO-01C - Stage Handoff Context, Worker And Effect Recovery
