@@ -13827,3 +13827,53 @@ window contract while preserving legacy OpenAI-compatible behavior.
 
 - context capsule, tool-output artifact, API/CLI context controls, or recovery
 - enabling Beta profiles by default, routing Beta through the normal Harness, or undocumented APIs
+
+### QA-148-MDL-01 - DeepSeek Thinking Tool-Loop Reasoning Replay
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested role: `CORE / INTEGRATIONS / QA`
+- Depends on: merged `DS-OPT-01` and explicit maintainer request
+- Branch: `codex/issue-148-deepseek-reasoning-replay`
+- Issue: `#148`
+- Owned paths: `packages/agent-core/src/agent_core/domain/messages.py`,
+  `packages/agent-integrations/src/agent_integrations/deepseek_profiles.py`,
+  `packages/agent-integrations/src/agent_integrations/openai_payloads.py`,
+  `packages/agent-integrations/src/agent_integrations/openai_streaming.py`,
+  `tests/agent_integrations/test_openai_compatible.py`,
+  `tests/agent_integrations/test_deepseek_specialization.py`,
+  `tests/agent_integrations/test_deepseek_provider_smoke.py`,
+  `docs/DeepSeek_V4_模型适配与专项优化方案_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Preserve DeepSeek `reasoning_content` as private provider continuation state
+across thinking-mode tool sub-requests without mixing it into public assistant
+content, deltas, events, artifacts, logs, or durable Context Capsules.
+
+#### Acceptance
+
+- [ ] Non-streaming DeepSeek responses parse reasoning separately from public
+  content and replay it on the next provider request with the matching tool call.
+- [ ] Streaming DeepSeek responses assemble fragmented reasoning separately and
+  emit only public content through `ModelTextDelta`.
+- [ ] An explicitly requested thinking-mode tool loop succeeds for a supported
+  DeepSeek profile; default executor profiles remain non-thinking.
+- [ ] Missing or malformed required private continuation fails locally before
+  an invalid provider request is sent.
+- [ ] Private reasoning is assistant-only, is absent from ordinary model dumps,
+  events, artifacts, logs, capsules, public API/CLI/SSE output, and reprs.
+- [ ] Existing non-thinking DeepSeek and non-DeepSeek providers retain their
+  current payload shape and behavior.
+- [ ] Focused provider/core tests, `make test`, `make check`, the release eval
+  gate, file-size gate, and an opt-in real DeepSeek smoke pass or record a
+  credentials-only skip.
+
+#### Explicit Non-Goals
+
+- exposing chain-of-thought in any user or operator surface
+- enabling thinking tool loops by default or changing current executor profiles
+- persisting raw private reasoning across process restarts; resumed paths must
+  fail closed rather than silently violate the provider protocol
+- changing Context Capsule, public event, artifact, approval, or UI contracts
