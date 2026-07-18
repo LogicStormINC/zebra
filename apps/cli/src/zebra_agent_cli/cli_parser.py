@@ -88,6 +88,37 @@ def build_parser() -> argparse.ArgumentParser:
     context_recover.add_argument("capsule_id")
     context_recover.add_argument("--database")
 
+    handoff = subcommands.add_parser("handoff", help="Preview, create or inspect a stage handoff.")
+    handoff_subcommands = handoff.add_subparsers(dest="handoff_command", required=True)
+    for action in ("preview", "create"):
+        stage = handoff_subcommands.add_parser(action)
+        stage.add_argument("session_id")
+        stage.add_argument("--title", required=True)
+        stage.add_argument("--objective", required=True)
+        stage.add_argument("--stage-prompt", required=True)
+        stage.add_argument(
+            "--reason",
+            choices=(
+                "user_phase_boundary",
+                "operator_handoff",
+                "long_term_maintenance",
+                "context_quality_recommendation_confirmed",
+            ),
+            default="operator_handoff",
+        )
+        stage.add_argument("--focus")
+        stage.add_argument("--completed-work", action="append", default=[])
+        stage.add_argument("--pending-work", action="append", default=[])
+        stage.add_argument("--idempotency-key")
+        stage.add_argument("--confirm", action="store_true")
+        stage.add_argument("--database")
+    handoff_inspect = handoff_subcommands.add_parser("inspect")
+    handoff_inspect.add_argument("handoff_id")
+    handoff_inspect.add_argument("--database")
+    handoff_lineage = handoff_subcommands.add_parser("lineage")
+    handoff_lineage.add_argument("session_id")
+    handoff_lineage.add_argument("--database")
+
     add_read_subparsers(subcommands)
 
     commit = subcommands.add_parser("commit", help="Create one local commit for a session.")

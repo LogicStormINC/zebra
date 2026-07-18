@@ -6,11 +6,12 @@ import { projectRuntimeActivity } from "../lib/runtime-activity";
 import { optimisticTimelineMessages, projectSessionTimeline, timelinePlanPlacement, type TimelineMessageItem, type TimelineStatusItem } from "../lib/session-timeline";
 import { compactWorkspaceLabel } from "../lib/task-launch-config";
 import { hasVisibleTaskPlan } from "../lib/task-plan";
-import type { ApprovalSummary, SessionEvent, SessionSummary } from "../types";
+import type { ApprovalSummary, SessionEvent, SessionHandoffPayload, SessionHandoffResponse, SessionSummary } from "../types";
 import { AgentActivityCard } from "./AgentActivityCard";
 import { AssistantMessageBlock } from "./AssistantMessageBlock";
 import { SessionExecutionTrace } from "./SessionExecutionTrace";
 import { SessionTaskPlan } from "./SessionTaskPlan";
+import { SessionStageHandoffCard } from "./SessionStageHandoffCard";
 import { SessionApprovalPanel } from "./SessionApprovalPanel";
 import { SessionClarificationPanel } from "./SessionClarificationPanel";
 import { useSessionThreadWorkspaceStyle } from "./SessionThreadWorkspace.styles";
@@ -62,6 +63,8 @@ interface SessionThreadWorkspaceProps {
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onRespondClarification: (clarificationId: string, content: string) => Promise<unknown>;
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
+  onPreviewHandoff: (payload: SessionHandoffPayload) => Promise<SessionHandoffResponse>;
+  onCreateHandoff: (payload: SessionHandoffPayload) => Promise<SessionHandoffResponse>;
   sessionSummary: SessionSummary | null;
 }
 
@@ -78,6 +81,8 @@ export function SessionThreadWorkspace({
   onApprove,
   onRespondClarification,
   onReject,
+  onPreviewHandoff,
+  onCreateHandoff,
   sessionSummary,
 }: SessionThreadWorkspaceProps) {
   const { styles } = useSessionThreadWorkspaceStyle();
@@ -197,6 +202,12 @@ export function SessionThreadWorkspace({
             errorText={approvalErrorText}
             onApprove={onApprove}
             onReject={onReject}
+          />
+          <SessionStageHandoffCard
+            busy={isRequesting}
+            onCreate={onCreateHandoff}
+            onPreview={onPreviewHandoff}
+            session={sessionSummary}
           />
         </> : null}
       </section>

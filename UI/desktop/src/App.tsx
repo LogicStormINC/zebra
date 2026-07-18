@@ -4,8 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CodexWorkspace } from "./components/CodexWorkspace";
 import locale from "./_utils/local";
-import type { ChatMessage } from "./lib/chat-surface";
-import { isAppendToTerminalError, streamEventsToMessages, toErrorMessage } from "./lib/chat-surface";
+import { isAppendToTerminalError, streamEventsToMessages, toErrorMessage, type ChatMessage } from "./lib/chat-surface";
 import { buildClarificationResponsePayload } from "./lib/clarification-continuation";
 import { useOperatorConfig } from "./lib/operator-config";
 import { mergeSessionEvents } from "./lib/live-session";
@@ -14,11 +13,12 @@ import type { TaskLaunchConfig } from "./lib/task-launch-config";
 import type { AttachmentPayload } from "./lib/text-attachments";
 import { useWorkspaceSessionIndex } from "./lib/use-workspace-session-index";
 import { useWorkspaceSelection } from "./lib/use-workspace-selection";
+import { useSessionHandoffActions } from "./lib/use-session-handoff";
+import { useCopyText } from "./lib/use-copy-text";
 import { useActiveApproval } from "./lib/use-active-approval";
 import { zebraApi } from "./lib/zebra-api";
 import type { SessionEvent, SessionSummary } from "./types";
 const WORKSPACE_HOME_KEY = "__workspace-home__";
-
 export default function App() {
   const senderRef = useRef<GetRef<typeof Sender>>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -398,17 +398,21 @@ export default function App() {
     void runControlAction(() => api.cancel(sessionId));
   }, [api.cancel, currentSessionId, runControlAction]);
 
-  const copyText = useCallback(
-    async (value: string, successText: string) => {
-      try {
-        await navigator.clipboard.writeText(value);
-        messageApi.success(successText);
-      } catch (error: unknown) {
-        messageApi.error(toErrorMessage(error));
-      }
-    },
-    [messageApi],
-  );
+  const { createHandoff, previewHandoff } = useSessionHandoffActions({
+    api,
+    currentSessionId,
+    createConversation: createIndexedConversation,
+    loadSummary: loadSessionSummary,
+    patchSessionId: (sessionId) => patchConfig({ sessionId }),
+    selectConversation: setCurrentConversation,
+    setBusy: setControlsBusy,
+    setSessionIds: setConversationToSessionId,
+    streamSession: syncConversationFromStream,
+    onError: (error) => messageApi.error(toErrorMessage(error)),
+    onSuccess: messageApi.success,
+  });
+
+  const copyText = useCopyText(messageApi);
 
   return (
     <>
@@ -469,6 +473,8 @@ export default function App() {
         onResumeSession={resumeSession}
         onSuspendSession={suspendSession}
         onReject={activeApproval.reject}
+        onPreviewHandoff={previewHandoff}
+        onCreateHandoff={createHandoff}
         onRespondClarification={respondToClarification}
         onRefreshConversation={() => {
           void refreshConversation(currentConversation).catch((error: unknown) => {

@@ -45,6 +45,7 @@ from zebra_agent_cli.session_command_execution import (
     _session_result,
 )
 from zebra_agent_cli.session_commit_write import commit_session
+from zebra_agent_cli.session_handoff_commands import session_handoff_result
 from zebra_agent_cli.session_message_append_write import append_session_message
 from zebra_agent_cli.session_pull_request_write import open_session_pull_request
 
@@ -94,9 +95,7 @@ def execute(
         if namespace.context_command == "inspect":
             response = control.inspect(namespace.session_id)
         elif namespace.context_command == "recover":
-            response = control.recover(
-                namespace.session_id, {"capsule_id": namespace.capsule_id}
-            )
+            response = control.recover(namespace.session_id, {"capsule_id": namespace.capsule_id})
         else:
             response = control.compact(
                 namespace.session_id,
@@ -109,6 +108,10 @@ def execute(
         return CliCommandResult(
             command="context",
             payload={"action": namespace.context_command, **response.body},
+        )
+    if command == "handoff":
+        return session_handoff_result(
+            namespace, _database_path(namespace.database, active_settings)
         )
     if command == "approve":
         return _approval_result(namespace, _database_path(namespace.database, active_settings))

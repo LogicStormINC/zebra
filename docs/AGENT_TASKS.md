@@ -13654,7 +13654,7 @@ changing the current default of same-Session compaction or activating runtime be
 
 ### CTX-HO-01C - Stage Handoff Context, Worker And Effect Recovery
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Depends on: merged `CTX-HO-01B`
 - Branch: `codex/ctx-ho-01c-worker-recovery`
@@ -13682,20 +13682,20 @@ changing the current default of same-Session compaction or activating runtime be
 
 ### CTX-HO-01D - Stage Handoff API, CLI And Desktop
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Depends on: merged `CTX-HO-01C`
-- Suggested branch: `codex/ctx-ho-01d-operator-surfaces`
+- Branch: `codex/ctx-ho-01d-operator-surfaces`
 - Owned paths: `apps/api/src/zebra_agent_api/`, `apps/cli/src/zebra_agent_cli/`,
   `UI/desktop/src/`, `tests/api/`, `tests/cli/`, `UI/desktop/tests/`,
   `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
 #### Acceptance
 
-- [ ] Create, inspect and lineage API/CLI contracts expose stable errors and idempotent replay.
-- [ ] Authenticated actor kind/trust is derived server-side; clients cannot submit lineage,
+- [x] Create, inspect and lineage API/CLI contracts expose stable errors and idempotent replay.
+- [x] Authenticated actor kind/trust is derived server-side; clients cannot submit lineage,
   checksum, authority expansion or completion facts.
-- [ ] Desktop shows Start next stage only at a safe boundary, previews omissions and navigates
+- [x] Desktop shows Start next stage only at a safe boundary, previews omissions and navigates
   to the child with an auditable breadcrumb.
 
 ### CTX-HO-01E - Stage Handoff Eval, Rollout And Closeout

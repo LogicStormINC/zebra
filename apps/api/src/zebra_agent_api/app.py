@@ -52,6 +52,7 @@ from zebra_agent_api.api_artifact_read_mixin import ApiArtifactReadMixin
 from zebra_agent_api.api_memory_control_mixin import ApiMemoryControlMixin
 from zebra_agent_api.api_memory_read_mixin import ApiMemoryReadMixin
 from zebra_agent_api.api_scm_mixin import ApiScmMixin
+from zebra_agent_api.api_session_handoff_mixin import ApiSessionHandoffMixin
 from zebra_agent_api.api_session_read_mixin import ApiSessionReadMixin
 from zebra_agent_api.api_status_mixin import ApiStatusMixin
 from zebra_agent_api.credential_broker import build_default_credential_broker
@@ -73,6 +74,7 @@ from zebra_agent_api.session_prompt_inputs import resolve_mcp_prompt_attachment
 class ZebraAgentApi(
     ApiStatusMixin,
     ApiSessionReadMixin,
+    ApiSessionHandoffMixin,
     ApiMemoryReadMixin,
     ApiArtifactReadMixin,
     ApiMemoryControlMixin,

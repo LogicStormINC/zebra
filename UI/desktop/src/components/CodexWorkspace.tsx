@@ -14,7 +14,7 @@ import {
   workspaceProjectId,
   type WorkspaceProject,
 } from "../lib/workspace-projects";
-import type { ApprovalSummary, McpCapabilitiesResponse, McpPromptsResponse, OperatorConfig, SessionEvent, SessionSummary } from "../types";
+import type { ApprovalSummary, McpCapabilitiesResponse, McpPromptsResponse, OperatorConfig, SessionEvent, SessionHandoffPayload, SessionHandoffResponse, SessionSummary } from "../types";
 import { CodexConversationPane } from "./CodexConversationPane";
 import { CodexSidebar } from "./CodexSidebar";
 import { OperatorConfigCard } from "./OperatorConfigCard";
@@ -82,6 +82,8 @@ interface CodexWorkspaceProps {
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onRefreshConversation: () => void;
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
+  onPreviewHandoff: (payload: SessionHandoffPayload) => Promise<SessionHandoffResponse>;
+  onCreateHandoff: (payload: SessionHandoffPayload) => Promise<SessionHandoffResponse>;
   onRespondClarification: (clarificationId: string, content: string) => Promise<unknown>;
   onScrollToLatest: () => void;
   onSelectConversation: (key: string) => void;
@@ -186,6 +188,8 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             onApprove={props.onApprove}
             onRefreshConversation={props.onRefreshConversation}
             onReject={props.onReject}
+            onPreviewHandoff={props.onPreviewHandoff}
+            onCreateHandoff={props.onCreateHandoff}
             onRespondClarification={props.onRespondClarification}
             onResumeSession={props.onResumeSession}
             onScrollToLatest={props.onScrollToLatest}

@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import Any
+
+from agent_core.domain.session_handoff import HandoffActorKind
 
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse
@@ -88,6 +91,23 @@ class RouteAdapter:
                 return self.app.expire_tenant_memory(parts[0], parts[2], request.body or {})
         if method == "POST" and request.path.startswith("/sessions/"):
             parts = _session_path_parts(request.path)
+            if len(parts) == 2 and parts[1] == "handoff":
+                return self.app.create_session_handoff(
+                    parts[0],
+                    request.body or {},
+                    idempotency_key=_idempotency_key(request),
+                    principal_identity_hash=_principal_identity_hash(request),
+                    actor_kind=_actor_kind(request),
+                )
+            if len(parts) == 3 and parts[1:] == ("handoff", "preview"):
+                return self.app.create_session_handoff(
+                    parts[0],
+                    request.body or {},
+                    idempotency_key=None,
+                    principal_identity_hash=_principal_identity_hash(request),
+                    actor_kind=_actor_kind(request),
+                    preview=True,
+                )
             if len(parts) == 3 and parts[1:] == ("context", "compact"):
                 return self.app.compact_session_context(parts[0], request.body or {})
             if len(parts) == 3 and parts[1:] == ("context", "recover"):
@@ -270,6 +290,8 @@ class RouteAdapter:
                 return self.app.get_session_diff(parts[0])
             if len(parts) == 2 and parts[1] == "context":
                 return self.app.get_session_context(parts[0])
+            if len(parts) == 2 and parts[1] == "lineage":
+                return self.app.get_session_lineage(parts[0])
             if len(parts) == 2 and parts[1] == "memory":
                 return self.app.get_session_memory(parts[0])
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue":
@@ -285,6 +307,9 @@ class RouteAdapter:
             if len(parts) == 2 and parts[1] == "delivery-audit":
                 return self.app.get_session_delivery_audit(parts[0])
             return _not_found(request)
+        if method == "GET" and request.path.startswith("/handoffs/"):
+            handoff_id = request.path.removeprefix("/handoffs/").strip("/")
+            return self.app.get_session_handoff(handoff_id)
         return _not_found(request)
 
 
@@ -323,6 +348,26 @@ def _idempotency_key(request: RouteRequest) -> str | None:
         if name.lower() == "idempotency-key" and value.strip():
             return value.strip()
     return None
+
+
+def _principal_identity_hash(request: RouteRequest) -> str:
+    authorization = next(
+        (
+            value
+            for name, value in (request.headers or {}).items()
+            if name.lower() == "authorization"
+        ),
+        "local-direct-user",
+    )
+    return sha256(authorization.encode()).hexdigest()
+
+
+def _actor_kind(request: RouteRequest) -> HandoffActorKind:
+    authenticated = any(
+        name.lower() == "authorization" and value.strip()
+        for name, value in (request.headers or {}).items()
+    )
+    return HandoffActorKind.OPERATOR if authenticated else HandoffActorKind.DIRECT_USER
 
 
 def _not_found(request: RouteRequest) -> ApiResponse:

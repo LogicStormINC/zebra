@@ -17,6 +17,7 @@ interface RequestOptions {
   method?: "GET" | "POST";
   body?: unknown;
   authToken?: string;
+  idempotencyKey?: string;
 }
 
 interface EventStreamOptions {
@@ -41,6 +42,9 @@ export async function requestJson<T>(
   }
   if (options.authToken) {
     headers.Authorization = `Bearer ${options.authToken}`;
+  }
+  if (options.idempotencyKey) {
+    headers["Idempotency-Key"] = options.idempotencyKey;
   }
 
   const response = await fetch(`${normalizeBaseUrl(baseUrl)}${path}`, {
