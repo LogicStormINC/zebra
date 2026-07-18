@@ -26,6 +26,7 @@ def test_worker_recovers_only_captured_prompt_bytes(
             user_input="Use captured context",
             workspace_root=tmp_path,
             network_profile="mcp-proxy-only",
+            history_session_ids=("00000000-0000-0000-0000-000000000001",),
         )
     )
     attachment = build_mcp_prompt_attachment(
@@ -56,6 +57,9 @@ def test_worker_recovers_only_captured_prompt_bytes(
     assert recovered.attachments[0].source_type == "mcp_prompt"
     assert recovered.attachments[0].source_argument_names == ("topic",)
     assert "CAPTURED_PROMPT_BYTES" in recovered.attachments[0].text
+    assert recovered.history_session_ids == (
+        "00000000-0000-0000-0000-000000000001",
+    )
 
 
 def test_worker_reinjects_latest_durable_context_capsule(tmp_path: Path) -> None:

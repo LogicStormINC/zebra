@@ -7,6 +7,7 @@ from pathlib import Path
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.mcp import normalize_mcp_allowlist
+from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.sessions import Session
 from agent_core.domain.tool_profiles import ToolProfile
 
@@ -21,6 +22,7 @@ class SessionBootstrapCommand:
     network_profile: str = "none"
     network_allowlist: tuple[str, ...] = ()
     mcp_allowlist: tuple[str, ...] = ()
+    history_session_ids: tuple[str, ...] | None = None
     max_attempts: int = 1
     max_model_calls: int | None = 4
     max_tool_calls: int | None = 3
@@ -36,6 +38,11 @@ class BootstrappedSession:
 class SessionBootstrapService:
     def build(self, command: SessionBootstrapCommand) -> BootstrappedSession:
         mcp_allowlist = normalize_mcp_allowlist(command.mcp_allowlist)
+        history_session_ids = (
+            None
+            if command.history_session_ids is None
+            else normalize_history_session_ids(command.history_session_ids)
+        )
         session = Session.create(title=command.title, created_at=command.created_at)
         events = (
             SessionEvent.create(
@@ -68,6 +75,11 @@ class SessionBootstrapService:
                     "network_profile": command.network_profile,
                     "network_allowlist": list(command.network_allowlist),
                     "mcp_allowlist": list(mcp_allowlist),
+                    **(
+                        {"history_session_ids": list(history_session_ids)}
+                        if history_session_ids is not None
+                        else {}
+                    ),
                     "max_attempts": command.max_attempts,
                     "max_model_calls": command.max_model_calls,
                     "max_tool_calls": command.max_tool_calls,

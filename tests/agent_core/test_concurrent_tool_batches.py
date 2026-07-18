@@ -214,6 +214,95 @@ def test_candidate_batch_capacity_rejection_starts_nothing() -> None:
     assert _event_names(result, EventType.TOOL_EXECUTION_STARTED) == []
 
 
+def test_completed_read_batch_returns_one_repeat_to_model_without_reexecution() -> None:
+    first = (_read("a.txt", "call_a"), _read("b.txt", "call_b"))
+    repeated = (_read("a.txt", "repeat_a"), _read("b.txt", "repeat_b"))
+    model = ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(completion=_completion("Read inputs.", *first)),
+            ScriptedModelResponse(completion=_completion("Read again.", *repeated)),
+            ScriptedModelResponse(completion=_completion("Finished from prior evidence.")),
+        )
+    )
+    tools = RecordingGateway()
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Recover repeated reads",
+            user_input="Inspect the inputs.",
+            max_model_calls=4,
+            max_tool_calls=4,
+        ),
+        SingleAttemptOrchestrator(
+            model,
+            PolicyByProviderId(),
+            tools,
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+            parallel_safe_tools=frozenset({"files.read"}),
+            max_parallel_tool_calls=2,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert tools.calls == list(first)
+    assert result.run_result.tool_calls_used == 2
+    assert result.run_result.model_calls_used == 3
+    assert result.attempt_result.metadata["repeated_read_recovery_count"] == 1
+    assert _event_names(result, EventType.TOOL_EXECUTION_FAILED) == [
+        "files.read",
+        "files.read",
+    ]
+    assert all(
+        "already completed earlier" in message.content
+        for message in model.requests[2]
+        if message.role is MessageRole.TOOL
+        and message.tool_call_id in {"repeat_a", "repeat_b"}
+    )
+
+
+def test_second_repeated_read_batch_keeps_the_deterministic_hard_stop() -> None:
+    first = (_read("a.txt", "call_a"), _read("b.txt", "call_b"))
+    repeated = (_read("a.txt", "repeat_a"), _read("b.txt", "repeat_b"))
+    repeated_again = (_read("a.txt", "again_a"), _read("b.txt", "again_b"))
+    model = ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(completion=_completion("Read inputs.", *first)),
+            ScriptedModelResponse(completion=_completion("Read again.", *repeated)),
+            ScriptedModelResponse(
+                completion=_completion("Still read again.", *repeated_again)
+            ),
+        )
+    )
+    tools = RecordingGateway()
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Bound repeated reads",
+            user_input="Inspect the inputs.",
+            max_model_calls=4,
+            max_tool_calls=4,
+        ),
+        SingleAttemptOrchestrator(
+            model,
+            PolicyByProviderId(),
+            tools,
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+            parallel_safe_tools=frozenset({"files.read"}),
+            max_parallel_tool_calls=2,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
+    assert result.attempt_result.metadata["stop_reason"] == "repeated_tool_call"
+    assert result.attempt_result.metadata["repeated_read_recovery_count"] == 1
+    assert tools.calls == list(first)
+    assert result.run_result.tool_calls_used == 2
+
+
 def test_candidate_batch_duplicate_rejection_starts_nothing() -> None:
     calls = (_read("same.txt", "call_a"), _read("same.txt", "call_b"))
     tools = RecordingGateway()
