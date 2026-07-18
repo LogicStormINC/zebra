@@ -97,7 +97,7 @@ class PackagedApp:
         return self.element_text("css selector", "body")
 
     def element_text(self, using: str, selector: str) -> str:
-        for attempt in range(3):
+        for attempt in range(5):
             element_id = self._element(using, selector)
             try:
                 response = request_json(
@@ -105,7 +105,11 @@ class PackagedApp:
                     f"{DRIVER_URL}/session/{self.session_id}/element/{element_id}/text",
                 )
             except AssertionError as exc:
-                if "stale element reference" in str(exc) and attempt < 2:
+                if "stale element reference" in str(exc) and attempt < 4:
+                    continue
+                raise
+            except OSError:
+                if attempt < 4:
                     continue
                 raise
             value = response.get("value")
@@ -169,17 +173,34 @@ class PackagedApp:
         self.click("css selector", f'[aria-label="{label}"]')
 
     def submit(self, prompt: str) -> None:
-        element_id = self._element("css selector", 'textarea[name="task-prompt"]')
-        request_json(
-            "POST",
-            f"{DRIVER_URL}/session/{self.session_id}/element/{element_id}/clear",
-            {},
-        )
-        request_json(
-            "POST",
-            f"{DRIVER_URL}/session/{self.session_id}/element/{element_id}/value",
-            {"text": prompt, "value": list(prompt)},
-        )
+        selector = 'textarea[name="task-prompt"]'
+        for attempt in range(5):
+            element_id = self._element("css selector", selector)
+            try:
+                request_json(
+                    "POST",
+                    f"{DRIVER_URL}/session/{self.session_id}/element/{element_id}/clear",
+                    {},
+                )
+                request_json(
+                    "POST",
+                    f"{DRIVER_URL}/session/{self.session_id}/element/{element_id}/value",
+                    {"text": prompt, "value": list(prompt)},
+                )
+            except OSError:
+                pass
+            try:
+                response = request_json(
+                    "GET",
+                    f"{DRIVER_URL}/session/{self.session_id}/element/{element_id}/property/value",
+                )
+                if response.get("value") == prompt:
+                    break
+            except OSError:
+                pass
+            if attempt == 4:
+                raise AssertionError(f"WebDriver did not set prompt {prompt!r}")
+            time.sleep(0.25)
         self.click_aria("发送任务")
 
     def configure(self, workspace: Path) -> None:
