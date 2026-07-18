@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 class RuntimeProvisionedPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    runtime_class: Literal["trusted-local", "oci-rootless", "gvisor"]
+    runtime_class: Literal["trusted-local", "os-sandbox", "oci-rootless", "gvisor"]
     engine: str
     image: str | None = None
     spec_digest: str
@@ -45,7 +45,9 @@ class RuntimeProvisionedPayload(BaseModel):
 
     @model_validator(mode="after")
     def ensure_hard_runtime_image_is_pinned(self) -> "RuntimeProvisionedPayload":
-        if self.runtime_class == "trusted-local":
+        if self.runtime_class in {"trusted-local", "os-sandbox"}:
+            if self.runtime_class == "os-sandbox" and self.image is not None:
+                raise ValueError("os-sandbox runtime must not declare a container image")
             return self
         if self.image is None or "@sha256:" not in self.image:
             raise ValueError("hard runtime image must be pinned by sha256 digest")

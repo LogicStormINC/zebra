@@ -8,7 +8,7 @@
 - Snapshot date: `2026-07-18`
 - Verified implementation baseline: `f950402` (PR `#156`)
 - Product posture: `feature-complete local Beta / single-host production candidate`
-- Active implementation task: `ARCH-RT-A1-OS-01` is Ready and unclaimed
+- Active implementation task: `ARCH-RT-A1-OS-01` is in Review
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
@@ -107,8 +107,14 @@ deployment profiles. It does not activate implementation or change the status
 of locked architecture cards.
 
 The maintainer activated single-host Phase A on 2026-07-18. Work is split into
-`ARCH-RT-A1-OS-01` through `ARCH-RT-A4-E2E-01`; only A1 is Ready. Phase B and
-Phase C remain deferred until every Phase A exit criterion is evidenced.
+`ARCH-RT-A1-OS-01` through `ARCH-RT-A4-E2E-01`; A1 is in Review and later tasks
+remain locked. Phase B and Phase C remain deferred until every Phase A exit
+criterion is evidenced.
+
+A1 now implements macOS Seatbelt and Linux bubblewrap `os-sandbox` with
+capability probes, sanitized process environments, network denial, whole-process
+boundaries, immutable authority, snapshots, and fail-closed platform selection.
+A2 remains locked until A1 merges and both real-platform CI smokes pass.
 
 ## Explicitly Deferred
 

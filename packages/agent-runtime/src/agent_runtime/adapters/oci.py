@@ -41,7 +41,7 @@ class OciRuntime(RuntimePort):
         snapshot_root: str | Path | None = None,
         runner: EngineRunner = run,
     ) -> None:
-        if spec.runtime_class is RuntimeClass.TRUSTED_LOCAL:
+        if spec.runtime_class not in {RuntimeClass.OCI_ROOTLESS, RuntimeClass.GVISOR}:
             raise ValueError("OciRuntime requires an OCI or gVisor SandboxSpec")
         normalized_engine = tuple(part.strip() for part in engine_command if part.strip())
         if not normalized_engine:

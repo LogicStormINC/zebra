@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import gettempdir
 
 from agent_core.ports.runtime import RuntimeClass, RuntimeLimits, RuntimePort, SandboxSpec
-from agent_runtime import LocalRuntime, OciRuntime
+from agent_runtime import LocalRuntime, OciRuntime, OsSandboxRuntime, os_sandbox_engine
 from zebra_agent_config import ZebraAgentSettings
 
 
@@ -20,13 +20,18 @@ def build_runtime(
     runtime_class = RuntimeClass(settings.runtime.runtime_class)
     if runtime_class is RuntimeClass.TRUSTED_LOCAL:
         return LocalRuntime(snapshot_root=runtime_root)
+    engine = (
+        os_sandbox_engine()
+        if runtime_class is RuntimeClass.OS_SANDBOX
+        else settings.runtime.engine
+    )
     spec = SandboxSpec(
         runtime_class=runtime_class,
         image=settings.runtime.image,
         workspace_root=str(workspace_root.resolve()),
         session_id=session_id,
         attempt_number=attempt_number,
-        engine=settings.runtime.engine,
+        engine=engine,
         runtime_handler=settings.runtime.gvisor_runtime,
         network_profile=network_profile,
         container_uid=settings.runtime.container_uid,
@@ -40,6 +45,8 @@ def build_runtime(
             max_execution_seconds=settings.runtime.max_execution_seconds,
         ),
     )
+    if runtime_class is RuntimeClass.OS_SANDBOX:
+        return OsSandboxRuntime(spec, snapshot_root=runtime_root)
     return OciRuntime(
         spec,
         engine_command=(settings.runtime.engine,),

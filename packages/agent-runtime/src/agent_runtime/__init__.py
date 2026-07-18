@@ -13,6 +13,8 @@ from agent_core.ports.runtime import (
 
 from agent_runtime.adapters.local import LocalRuntime
 from agent_runtime.adapters.oci import OciRuntime
+from agent_runtime.adapters.os_sandbox import OsSandboxRuntime
+from agent_runtime.adapters.os_sandbox_platform import os_sandbox_engine
 from agent_runtime.git_commit import (
     WorkspaceCommitCommand,
     WorkspaceCommitError,
@@ -65,6 +67,7 @@ from agent_runtime.workspace import (
 __all__ = [
     "LocalRuntime",
     "OciRuntime",
+    "OsSandboxRuntime",
     "LocalResearchSubagentCoordinator",
     "LocalResearchSubagentRunner",
     "LocalToolGateway",
@@ -111,4 +114,5 @@ __all__ = [
     "resolve_mcp_prompt",
     "validate_mcp_capability_selection",
     "run_local_harness",
+    "os_sandbox_engine",
 ]

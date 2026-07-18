@@ -110,6 +110,28 @@ def test_validate_runtime_provisioned_payload_requires_sha256_authority() -> Non
         )
 
 
+def test_validate_os_sandbox_authority_has_no_container_image() -> None:
+    payload = validate_event_payload(
+        EventType.RUNTIME_PROVISIONED,
+        {
+            "runtime_class": "os-sandbox",
+            "engine": "/usr/bin/sandbox-exec",
+            "image": None,
+            "spec_digest": "b" * 64,
+            "network_enforcement": "os-sandbox-network-deny",
+            "workspace_writable": True,
+        },
+    )
+
+    assert payload["runtime_class"] == "os-sandbox"
+    assert payload["image"] is None
+    with pytest.raises(EventPayloadValidationError, match="invalid payload"):
+        validate_event_payload(
+            EventType.RUNTIME_PROVISIONED,
+            {**payload, "image": "zebra/runtime@sha256:" + "a" * 64},
+        )
+
+
 def test_validate_plan_updated_payload_rejects_duplicate_step_ids() -> None:
     with pytest.raises(EventPayloadValidationError, match="invalid payload for plan_updated"):
         validate_event_payload(
