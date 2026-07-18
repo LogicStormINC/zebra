@@ -10,7 +10,12 @@ from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_core.domain.tools import ToolCall
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
-from agent_storage import SQLiteMemoryStore, SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
+from agent_storage import (
+    SQLiteEventStore,
+    SQLiteMemoryStore,
+    SQLiteProjectionStore,
+    SQLiteWorkspaceProjectionStore,
+)
 from zebra_agent_api.app import create_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
@@ -291,6 +296,25 @@ def test_api_create_session_persists_created_session(tmp_path: Path) -> None:
     assert detail.body["workspace"]["network_profile"] == "none"
 
 
+def test_api_create_session_persists_explicit_history_scope(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    history_session_id = "00000000-0000-0000-0000-000000000001"
+
+    response = create_app(database_path, settings=_settings(database_path)).create_session(
+        {
+            "prompt": "Continue only this prior task",
+            "history_session_ids": [history_session_id],
+        }
+    )
+    events = SQLiteEventStore(database_path).list_for_session(
+        SessionId(response.body["session_id"])
+    )
+
+    assert response.status_code == 201
+    assert response.body["history_session_ids"] == [history_session_id]
+    assert events[2].payload["history_session_ids"] == [history_session_id]
+
+
 def test_api_create_session_persists_domain_allowlist(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
 
@@ -536,6 +560,15 @@ def test_api_create_session_rejects_invalid_request(tmp_path: Path) -> None:
 
     assert invalid_network.status_code == 400
     assert "requires at least one allowed domain" in str(invalid_network.body["reason"])
+
+    invalid_history = create_app(
+        database_path, settings=_settings(database_path)
+    ).create_session({"prompt": "Continue", "history_session_ids": ["not-a-uuid"]})
+
+    assert invalid_history.status_code == 400
+    assert invalid_history.body["reason"] == (
+        "history_session_ids must contain UUID strings"
+    )
 
 
 def test_api_create_session_execute_reports_missing_api_key(

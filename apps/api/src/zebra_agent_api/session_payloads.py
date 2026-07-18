@@ -7,6 +7,7 @@ from agent_core.domain.attachments import TextAttachmentInput
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.networking import NetworkProfileName
+from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_runtime import normalize_mcp_resource_ids
 from agent_security import NetworkProfileError, PolicyProfile, parse_network_profile
@@ -28,6 +29,7 @@ class CreateSessionPayload(TypedDict):
     mcp_resource_ids: list[str]
     mcp_prompt_id: str | None
     mcp_prompt_arguments: dict[str, str]
+    history_session_ids: tuple[str, ...] | None
     attachments: tuple[TextAttachmentInput, ...]
 
 
@@ -144,6 +146,20 @@ def parse_create_session_payload(
         attachments = parse_attachment_inputs(payload.get("attachments"))
     except ValueError as exc:
         return bad_request(str(exc))
+    raw_history_session_ids = payload.get("history_session_ids")
+    if raw_history_session_ids is not None and (
+        not isinstance(raw_history_session_ids, list)
+        or not all(isinstance(item, str) for item in raw_history_session_ids)
+    ):
+        return bad_request("history_session_ids must be a list of UUID strings when provided")
+    try:
+        history_session_ids = (
+            None
+            if raw_history_session_ids is None
+            else normalize_history_session_ids(raw_history_session_ids)
+        )
+    except ValueError as exc:
+        return bad_request(str(exc))
     mcp_allowlist = payload.get("mcp_allowlist", [])
     if not isinstance(mcp_allowlist, list) or not all(
         isinstance(item, str) for item in mcp_allowlist
@@ -195,6 +211,7 @@ def parse_create_session_payload(
         "mcp_resource_ids": list(normalized_resources),
         "mcp_prompt_id": normalized_prompt_id,
         "mcp_prompt_arguments": dict(raw_prompt_arguments),
+        "history_session_ids": history_session_ids,
         "attachments": attachments,
     }
 

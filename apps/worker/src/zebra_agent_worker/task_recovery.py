@@ -8,6 +8,7 @@ from agent_core.application import attachment_refs_from_event
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
@@ -24,6 +25,7 @@ class RecoveredTask:
     tool_profile: ToolProfile
     network_profile: NetworkProfile
     mcp_allowlist: tuple[str, ...] | None
+    history_session_ids: tuple[str, ...] | None
     max_attempts: int
     max_model_calls: int | None
     max_tool_calls: int | None
@@ -74,6 +76,7 @@ def recover_task(
             domain_allowlist=workspace.network_allowlist,
         ),
         mcp_allowlist=workspace.mcp_allowlist,
+        history_session_ids=_history_session_ids(task_payload.get("history_session_ids")),
         max_attempts=_optional_positive_int(task_payload.get("max_attempts")) or 1,
         max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
         max_tool_calls=_optional_positive_int(task_payload.get("max_tool_calls")),
@@ -83,6 +86,14 @@ def recover_task(
             *((handoff_evidence,) if handoff_evidence is not None else ()),
         ),
     )
+
+
+def _history_session_ids(value: object) -> tuple[str, ...] | None:
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise ValueError("queued session history_session_ids must be a list")
+    return normalize_history_session_ids(value)
 
 
 def _context_capsule_evidence(
