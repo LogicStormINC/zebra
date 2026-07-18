@@ -4,6 +4,7 @@ from zebra_agent_config.settings import (
     ModelSettings,
     RuntimeSettings,
     ScmSettings,
+    SessionHandoffSettings,
     ZebraAgentSettings,
     load_settings,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "ModelSettings",
     "RuntimeSettings",
     "ScmSettings",
+    "SessionHandoffSettings",
     "ZebraAgentSettings",
     "load_settings",
 ]

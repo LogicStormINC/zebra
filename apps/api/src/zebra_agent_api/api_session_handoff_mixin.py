@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from agent_core.domain.session_handoff import HandoffActorKind
+from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_handoff import SessionHandoffApi
@@ -8,6 +9,7 @@ from zebra_agent_api.session_handoff import SessionHandoffApi
 
 class ApiSessionHandoffMixin:
     database_path: Path
+    settings: ZebraAgentSettings
 
     def create_session_handoff(
         self,
@@ -19,6 +21,15 @@ class ApiSessionHandoffMixin:
         actor_kind: HandoffActorKind,
         preview: bool = False,
     ) -> ApiResponse:
+        if not self.settings.session_handoff.enabled:
+            return ApiResponse(
+                409,
+                {
+                    "session_id": session_id,
+                    "status": "handoff_disabled",
+                    "reason": "session handoff is disabled by operator configuration",
+                },
+            )
         return SessionHandoffApi(self.database_path).create(
             session_id,
             payload,

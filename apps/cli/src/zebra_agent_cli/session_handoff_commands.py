@@ -10,7 +10,9 @@ from zebra_agent_api.session_handoff import SessionHandoffApi
 from zebra_agent_cli.cli_types import CliCommandResult
 
 
-def session_handoff_result(namespace: argparse.Namespace, database_path: Path) -> CliCommandResult:
+def session_handoff_result(
+    namespace: argparse.Namespace, database_path: Path, *, enabled: bool
+) -> CliCommandResult:
     api = SessionHandoffApi(database_path)
     action = namespace.handoff_command
     if action == "inspect":
@@ -18,6 +20,15 @@ def session_handoff_result(namespace: argparse.Namespace, database_path: Path) -
     elif action == "lineage":
         response = api.lineage(namespace.session_id)
     else:
+        if not enabled:
+            return CliCommandResult(
+                command="handoff",
+                payload={
+                    "action": action,
+                    "status": "handoff_disabled",
+                    "reason": "set ZEBRA_SESSION_HANDOFF_ENABLED=true to opt in",
+                },
+            )
         if action == "create" and not namespace.confirm:
             return CliCommandResult(
                 command="handoff",

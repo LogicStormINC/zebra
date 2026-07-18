@@ -12,6 +12,7 @@ from agent_storage import (
     SQLiteWorkspaceProjectionStore,
 )
 from zebra_agent_cli.cli import execute
+from zebra_agent_config import load_settings
 
 NOW = datetime(2026, 7, 18, tzinfo=UTC)
 
@@ -31,8 +32,12 @@ def test_cli_requires_confirmation_then_creates_and_reads_lineage(tmp_path: Path
         str(database),
     ]
 
-    preview = execute(["handoff", "preview", *common])
-    blocked = execute(["handoff", "create", *common, "--idempotency-key", "stage-two"])
+    settings = load_settings({"ZEBRA_SESSION_HANDOFF_ENABLED": "true"})
+    preview = execute(["handoff", "preview", *common], settings=settings)
+    blocked = execute(
+        ["handoff", "create", *common, "--idempotency-key", "stage-two"],
+        settings=settings,
+    )
     created = execute(
         [
             "handoff",
@@ -41,7 +46,8 @@ def test_cli_requires_confirmation_then_creates_and_reads_lineage(tmp_path: Path
             "--idempotency-key",
             "stage-two",
             "--confirm",
-        ]
+        ],
+        settings=settings,
     )
     lineage = execute(
         [
@@ -50,7 +56,8 @@ def test_cli_requires_confirmation_then_creates_and_reads_lineage(tmp_path: Path
             str(created.payload["child_session_id"]),
             "--database",
             str(database),
-        ]
+        ],
+        settings=settings,
     )
 
     assert preview.payload["status"] == "preview"

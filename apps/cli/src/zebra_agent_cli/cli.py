@@ -111,7 +111,9 @@ def execute(
         )
     if command == "handoff":
         return session_handoff_result(
-            namespace, _database_path(namespace.database, active_settings)
+            namespace,
+            _database_path(namespace.database, active_settings),
+            enabled=active_settings.session_handoff.enabled,
         )
     if command == "approve":
         return _approval_result(namespace, _database_path(namespace.database, active_settings))

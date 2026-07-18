@@ -1,0 +1,9 @@
+{
+  "case_id": "handoff-no-replay",
+  "category": "recovery",
+  "title": "Completed effects are not silently replayed",
+  "prompt": "Complete one effect in the parent, hand off, then request the identical effect in the child; verify the root-lineage ledger returns the durable result without executing the underlying tool again and rejects uncertain effects.",
+  "min_events": 10,
+  "min_tool_results": 1,
+  "max_cost_usd": 1.5
+}

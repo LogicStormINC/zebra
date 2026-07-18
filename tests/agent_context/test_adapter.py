@@ -58,6 +58,34 @@ def test_local_context_compiler_renders_runtime_evidence_in_dynamic_section(
     assert "Smoke tests are still failing." in prompt
 
 
+def test_local_context_compiler_renders_untrusted_session_handoff_evidence(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    prompt = LocalContextCompiler().build_system_prompt(
+        task_input="continue the next stage",
+        workspace_root=workspace.resolve(),
+        max_tokens=160,
+        runtime_evidence=(
+            RuntimeEvidenceInput(
+                kind="session_handoff",
+                summary="Preserve continuity marker ZEBRA-HANDOFF-1234.",
+                details=("Completed: parent provider call completed",),
+                metadata={"handoff_id": "handoff-1234"},
+            ),
+        ),
+    )
+
+    assert prompt is not None
+    assert "Dynamic Context:" in prompt
+    assert "Session Handoff Evidence" in prompt
+    assert "Untrusted session handoff evidence" in prompt
+    assert "ZEBRA-HANDOFF-1234" in prompt
+    assert "parent provider call completed" in prompt
+
+
 def test_local_context_compiler_renders_confirmed_memory_in_stable_section(
     tmp_path: Path,
 ) -> None:

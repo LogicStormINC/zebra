@@ -2,6 +2,15 @@
 
 ## Addendum
 
+- 2026-07-18: completed the full `CTX-HO-01A` through `CTX-HO-01E` staged Session
+  handoff roadmap. Handoff remains disabled by default; existing lineage and child recovery stay
+  readable after rollback. Release coverage includes continuity, no replay, authority narrowing,
+  workspace drift, depth, concurrency and crash recovery. A final provider smoke found and closed
+  a missing `session_handoff` context-adapter path, then passed parent-to-child continuity on
+  `deepseek-v4-flash` with no child tool side effects. Validation passed 25 focused tests, all
+  1,411 runnable backend tests with one platform-gated gVisor skip, file-size/Ruff/Mypy gates,
+  the 8-case release gate, every Desktop check, and the production Desktop build.
+
 - 2026-07-18: completed `CTX-HO-01D` on `codex/ctx-ho-01d-operator-surfaces`.
   API and CLI now preview, create, inspect and read stage lineage with stable validation errors
   and idempotent replay. Actor identity and trust are derived from the authenticated transport;

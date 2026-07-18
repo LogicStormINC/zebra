@@ -13682,7 +13682,7 @@ changing the current default of same-Session compaction or activating runtime be
 
 ### CTX-HO-01D - Stage Handoff API, CLI And Desktop
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Depends on: merged `CTX-HO-01C`
 - Branch: `codex/ctx-ho-01d-operator-surfaces`
@@ -13700,20 +13700,25 @@ changing the current default of same-Session compaction or activating runtime be
 
 ### CTX-HO-01E - Stage Handoff Eval, Rollout And Closeout
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `Codex`
 - Depends on: merged `CTX-HO-01D`
-- Suggested branch: `codex/ctx-ho-01e-release-closeout`
+- Branch: `codex/ctx-ho-01e-release-closeout`
 - Owned paths: `apps/config/`, `configs/`, `.env.example`, `evals/`,
+  `packages/agent-context/src/agent_context/adapter.py`, `tests/agent_context/test_adapter.py`,
+  `apps/api/src/zebra_agent_api/api_session_handoff_mixin.py`,
+  `apps/cli/src/zebra_agent_cli/cli.py`,
+  `apps/cli/src/zebra_agent_cli/session_handoff_commands.py`,
+  `tests/api/test_session_handoff_routes.py`, `tests/cli/test_cli_handoff.py`,
   `docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md`, `docs/AGENT_TASKS.md`,
   `PROGRESS.md`, `README.md`, `tests/config/`, `tests/evals/`
 
 #### Acceptance
 
-- [ ] Feature remains disabled by default and existing lineage remains readable after rollback.
-- [ ] Deterministic and provider-backed parent-to-child evals cover continuity, no replay,
+- [x] Feature remains disabled by default and existing lineage remains readable after rollback.
+- [x] Deterministic and provider-backed parent-to-child evals cover continuity, no replay,
   authority narrowing, drift, depth, concurrency and recovery.
-- [ ] Focused tests, `make test`, `make check`, desktop checks and documented real-provider smoke
+- [x] Focused tests, `make test`, `make check`, desktop checks and documented real-provider smoke
   pass before the roadmap is marked Done.
 
 ### DS-OPT-01 - DeepSeek Specialized Optimization

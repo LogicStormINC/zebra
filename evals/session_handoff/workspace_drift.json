@@ -1,0 +1,9 @@
+{
+  "case_id": "handoff-workspace-drift",
+  "category": "recovery",
+  "title": "Workspace drift suspends child",
+  "prompt": "Change the child workspace binding after handoff commit and verify the recovery gate emits drift, suspends the child and never starts the model or tools.",
+  "min_events": 5,
+  "min_tool_results": 0,
+  "max_cost_usd": 0.5
+}
