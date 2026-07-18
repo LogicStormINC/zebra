@@ -9,7 +9,8 @@
 - Verified implementation baseline: `f950402` (PR `#156`)
 - Product posture: `feature-complete local Beta / single-host production candidate`
 - Active implementation task: `ARCH-RT-A1-OS-01` is in Review
-- Desktop browser task: `QA-DESKTOP-E2E-01` is Ready and unclaimed
+- Desktop browser task: `QA-DESKTOP-E2E-01` is In Progress on
+  `codex/qa-desktop-e2e-01`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
