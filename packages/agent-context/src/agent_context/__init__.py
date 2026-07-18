@@ -51,6 +51,11 @@ from agent_context.prompt_layout import (
 from agent_context.ranking import rank_files, score_file
 from agent_context.related import recall_related_files
 from agent_context.scanner import ScannedFile, build_repo_map_item, scan_workspace_files
+from agent_context.session_handoff import (
+    HandoffEnvelopeBuildInput,
+    build_handoff_envelope,
+    handoff_runtime_evidence,
+)
 from agent_context.trust import prompt_injection_metadata, trust_level_for_item
 
 __all__ = [
@@ -69,6 +74,7 @@ __all__ = [
     "ContextItemKind",
     "ContextProvenance",
     "FoldedToolExchange",
+    "HandoffEnvelopeBuildInput",
     "LEDGER_MARKER",
     "PromptCacheKeyRequest",
     "PromptLayout",
@@ -81,6 +87,7 @@ __all__ = [
     "PROVENANCE",
     "ScannedFile",
     "build_repo_map_item",
+    "build_handoff_envelope",
     "compile_context",
     "rank_files",
     "recall_related_files",
@@ -96,6 +103,7 @@ __all__ = [
     "build_active_context_projection",
     "build_protected_instruction_ledger",
     "estimate_message_tokens",
+    "handoff_runtime_evidence",
     "rehydrate_projection",
     "trust_level_for_item",
 ]

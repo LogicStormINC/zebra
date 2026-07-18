@@ -104,6 +104,7 @@ def _next_status_for_event(event: SessionEvent) -> SessionStatus | None:
         EventType.CLARIFICATION_REQUESTED: SessionStatus.WAITING_INPUT,
         EventType.CLARIFICATION_RESPONDED: SessionStatus.READY,
         EventType.SESSION_SUSPENDED: SessionStatus.SUSPENDED,
+        EventType.SESSION_HANDOFF_WORKSPACE_DRIFT_DETECTED: SessionStatus.SUSPENDED,
         EventType.SESSION_RESUMED: SessionStatus.READY,
         EventType.SESSION_COMPLETED: SessionStatus.COMPLETED,
         EventType.SESSION_FAILED: SessionStatus.FAILED,

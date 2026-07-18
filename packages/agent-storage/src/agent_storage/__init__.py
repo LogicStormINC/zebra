@@ -18,6 +18,12 @@ from agent_storage.context_lifecycle import (
     StoredContextCapsule,
 )
 from agent_storage.delivery_audit import SQLiteDeliveryAuditStore
+from agent_storage.effect_ledger import (
+    EffectLedgerStatus,
+    EffectReplayRejectedError,
+    EffectReservation,
+    SQLiteEffectLedger,
+)
 from agent_storage.idempotency import (
     IdempotencyConflictError,
     IdempotencyRecord,
@@ -41,6 +47,7 @@ from agent_storage.session_attachments import (
     store_initial_text_attachments,
     store_text_attachments,
 )
+from agent_storage.session_handoff_dispatch import SQLiteHandoffDispatchStore
 from agent_storage.session_handoff_facts import HandoffSourceFacts
 from agent_storage.session_handoffs import (
     HandoffDispatch,
@@ -55,6 +62,9 @@ from agent_storage.workspaces import SQLiteWorkspaceProjectionStore
 
 __all__ = [
     "ArtifactPayloadMissingError",
+    "EffectLedgerStatus",
+    "EffectReplayRejectedError",
+    "EffectReservation",
     "ActiveContextProjectionConflictError",
     "IdempotencyConflictError",
     "IdempotencyRecord",
@@ -78,6 +88,7 @@ __all__ = [
     "SQLiteArtifactStore",
     "SQLiteContextLifecycleStore",
     "SQLiteDeliveryAuditStore",
+    "SQLiteEffectLedger",
     "SQLiteEventStore",
     "SQLiteIdempotencyStore",
     "SQLiteLeaseStore",
@@ -85,6 +96,7 @@ __all__ = [
     "SQLiteProjectionStore",
     "SQLiteProviderContinuationStore",
     "SQLiteSessionHistory",
+    "SQLiteHandoffDispatchStore",
     "SQLiteSessionHandoffStore",
     "SQLiteToolRunStore",
     "SQLiteWorkspaceProjectionStore",

@@ -31,6 +31,10 @@ from agent_storage import (
     SQLiteSessionHandoffStore,
     SQLiteWorkspaceProjectionStore,
 )
+from zebra_agent_worker.session_handoff import (
+    HandoffWorkspaceDriftError,
+    SessionHandoffRecoveryGate,
+)
 
 NOW = datetime(2026, 7, 18, 0, 0, tzinfo=UTC)
 
@@ -77,6 +81,40 @@ def test_commit_atomically_creates_child_events_lineage_envelope_and_outbox(
     assert dispatch.child_session_id == operation.target_session_id
     store.acknowledge_dispatch(dispatch.delivery_id, worker_id="worker-1")
     assert store.claim_dispatch(worker_id="worker-2", claimed_at=NOW) is None
+
+
+def test_child_recovery_revalidates_workspace_even_after_dispatch_ack(tmp_path: Path) -> None:
+    database_path = tmp_path / "handoff.db"
+    source = _seed_completed_source(database_path, tmp_path)
+    handoffs = SQLiteSessionHandoffStore(database_path)
+    operation, request = _prepared_commit(handoffs, source)
+    handoffs.commit(request)
+    gate = SessionHandoffRecoveryGate(str(database_path))
+
+    recovered = gate.recover(
+        operation.target_session_id, worker_id="worker-1", recovered_at=NOW
+    )
+    assert recovered is not None
+    assert recovered.runtime_evidence.metadata["trust"] == "untrusted_handoff_evidence"
+
+    workspaces = SQLiteWorkspaceProjectionStore(database_path)
+    workspace = workspaces.get_workspace(operation.target_session_id)
+    assert workspace is not None
+    workspaces.save_workspace(
+        workspace.model_copy(update={"workspace_root": str(tmp_path / "drifted")})
+    )
+
+    with pytest.raises(HandoffWorkspaceDriftError):
+        gate.recover(
+            operation.target_session_id,
+            worker_id="worker-2",
+            recovered_at=NOW + timedelta(seconds=1),
+        )
+
+    session = SQLiteProjectionStore(database_path).get_session(operation.target_session_id)
+    workspace = workspaces.get_workspace(operation.target_session_id)
+    assert session is not None and session.status.value == "suspended"
+    assert workspace is not None and workspace.status.value == "suspended"
 
 
 def test_reservation_and_commit_retries_return_one_operation_and_child(tmp_path: Path) -> None:

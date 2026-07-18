@@ -13632,7 +13632,7 @@ changing the current default of same-Session compaction or activating runtime be
 
 ### CTX-HO-01B - Stage Handoff Atomic Storage
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Depends on: merged `CTX-HO-01A`
 - Branch: `codex/ctx-ho-01b-atomic-storage`
@@ -13654,27 +13654,30 @@ changing the current default of same-Session compaction or activating runtime be
 
 ### CTX-HO-01C - Stage Handoff Context, Worker And Effect Recovery
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Review`
+- Owner: `Codex`
 - Depends on: merged `CTX-HO-01B`
-- Suggested branch: `codex/ctx-ho-01c-worker-recovery`
+- Branch: `codex/ctx-ho-01c-worker-recovery`
 - Owned paths: `packages/agent-context/src/agent_context/session_handoff.py`,
   `packages/agent-context/src/agent_context/__init__.py`,
   `packages/agent-storage/src/agent_storage/effect_ledger.py`,
+  `packages/agent-storage/src/agent_storage/session_handoff_dispatch.py`,
   `packages/agent-storage/src/agent_storage/__init__.py`,
+  `packages/agent-core/src/agent_core/application/session_projection.py`,
+  `packages/agent-core/src/agent_core/application/workspace_projection.py`,
   `packages/agent-tools/src/agent_tools/`, `apps/worker/src/zebra_agent_worker/`,
   `tests/agent_context/`, `tests/agent_storage/test_effect_ledger.py`,
   `tests/agent_tools/`, `tests/worker/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
 #### Acceptance
 
-- [ ] Deterministic Envelope construction preserves public facts and excludes provider-private
+- [x] Deterministic Envelope construction preserves public facts and excludes provider-private
   continuation, reasoning, credentials and raw large outputs.
-- [ ] Child first context uses the handoff Envelope and attributed stage prompt without copying
+- [x] Child first context uses the handoff Envelope and attributed stage prompt without copying
   parent history; normal Context Window Planner still applies.
-- [ ] Outbox claim remains ready until workspace lease/fence validation atomically chooses
+- [x] Outbox claim remains ready until workspace lease/fence validation atomically chooses
   running or suspended; recovery never creates a second child.
-- [ ] Root-lineage effect reservation and terminal ledger prevent concurrent or crash-time
+- [x] Root-lineage effect reservation and terminal ledger prevent concurrent or crash-time
   silent replay and require reconciliation for uncertain effects.
 
 ### CTX-HO-01D - Stage Handoff API, CLI And Desktop
