@@ -34,8 +34,14 @@ def request_json(
         method=method,
         headers={"Content-Type": "application/json", **(headers or {})},
     )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        decoded = json.loads(response.read().decode())
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            decoded = json.loads(response.read().decode())
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode(errors="replace")
+        raise AssertionError(
+            f"{method} {url} returned HTTP {exc.code}: {detail}"
+        ) from exc
     if not isinstance(decoded, dict):
         raise TypeError("WebDriver response must be a JSON object")
     return decoded
@@ -269,7 +275,8 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         app.click_aria("运行配置")
         app.wait_body("os-sandbox")
         app.wait_body("禁止静默降级")
-        app.click("css selector", ".ant-drawer-close")
+        app.refresh()
+        app.wait_body("本地运行时已连接")
         steps.append("runtime-profile-no-fallback")
 
         app.submit("E2E_STOP_STREAM packaged cancellation")
