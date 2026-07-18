@@ -123,19 +123,15 @@ class PackagedApp:
             time.sleep(0.25)
         raise AssertionError(f"packaged UI did not show {expected!r}; body={self.body()!r}")
 
-    def wait_element_text(
-        self, using: str, selector: str, expected: str, *, timeout: float = 30
-    ) -> str:
+    def wait_element(self, using: str, selector: str, *, timeout: float = 30) -> str:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            value = self.element_text(using, selector)
-            if expected in value:
-                return value
+            try:
+                return self._element(using, selector)
+            except AssertionError:
+                pass
             time.sleep(0.25)
-        value = self.element_text(using, selector)
-        raise AssertionError(
-            f"packaged UI element {selector!r} did not show {expected!r}; text={value!r}"
-        )
+        raise AssertionError(f"packaged UI element {selector!r} did not appear")
 
     def _element(self, using: str, value: str) -> str:
         response = request_json(
@@ -316,8 +312,9 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         assert session["workspace"]["runtime_name"] == "os-sandbox"
         app.refresh()
         app.wait_body("Runtime")
-        app.wait_element_text(
-            "css selector", '[data-testid="runtime-name"]', "os-sandbox"
+        app.wait_element(
+            "css selector",
+            '[data-testid="runtime-name"][data-runtime-name="os-sandbox"]',
         )
         steps.append("approval-real-runtime")
 
