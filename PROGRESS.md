@@ -8,7 +8,7 @@
 - Snapshot date: `2026-07-18`
 - Verified implementation baseline: `f950402` (PR `#156`)
 - Product posture: `feature-complete local Beta / single-host production candidate`
-- Active implementation task: none; `QA-148-MDL-01` is Done via PR `#156`
+- Active implementation task: `ARCH-RT-A1-OS-01` is Ready and unclaimed
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
@@ -105,6 +105,10 @@ including a real thinking tool round trip.
 records the shared Runtime contract and the separate single-host and cloud
 deployment profiles. It does not activate implementation or change the status
 of locked architecture cards.
+
+The maintainer activated single-host Phase A on 2026-07-18. Work is split into
+`ARCH-RT-A1-OS-01` through `ARCH-RT-A4-E2E-01`; only A1 is Ready. Phase B and
+Phase C remain deferred until every Phase A exit criterion is evidenced.
 
 ## Explicitly Deferred
 

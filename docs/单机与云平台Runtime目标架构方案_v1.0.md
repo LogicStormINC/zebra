@@ -487,16 +487,17 @@ Adapter 后并行；不能让两个任务同时修改 `agent-core` 或同一数�
 
 ## 12. 后续激活顺序
 
-本方案落地后，不自动开始实现。维护者下一步应按以下顺序决策：
+Phase A 已由维护者于 2026-07-18 激活，按以下顺序实施：
 
-1. 是否先激活 Phase A 的 `os-sandbox + Setup Egress`；
-2. 明确首批支持平台、最低版本和真实 CI 环境；
-3. 将 Phase A 拆为 Owned-path 明确的 Ready 任务；
-4. Phase A 验收后，再决定是否启动 Phase B 私有云单租户；
+1. `ARCH-RT-A1-OS-01` 实现平台探测与 `os-sandbox`，并固定受支持 runner；
+2. `ARCH-RT-A2-SETUP-01` 在 A1 合并后实现 Setup Egress 与 Snapshot 交接；
+3. `ARCH-RT-A3-REL-01` 与 `ARCH-RT-A4-E2E-01` 依次完成 quota、可靠性和
+   packaged Desktop 退出证据；
+4. Phase A 全部验收后，再决定是否启动 Phase B；
 5. Phase B 稳定运行并完成 threat model 后，才允许 Phase C 多租户。
 
-在以上决策完成前，当前状态仍是：单机/单主机生产候选已具备，云端与多租户
-是目标架构而非已交付能力。
+当前状态仍是单机/单主机生产候选；Phase A 正在收口，云端与多租户仍为
+目标架构而非已交付能力。
 
 ## 13. 参考资料
 
