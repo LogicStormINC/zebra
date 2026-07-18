@@ -11,8 +11,9 @@
    obsolete content conflicts mechanically.
 4. `completed` - Reconcile README, PROGRESS, task statuses, the historical
    Phase 0-8 baseline, the docs guide, and the completion audit.
-5. `in_progress` - Run documentation, repository, and CI validation; update the
-   existing PR branch with force-with-lease and merge only after all checks pass.
+5. `completed` - Run documentation and repository validation, update the
+   existing PR branch with force-with-lease, and hand final CI/merge enforcement
+   to the required GitHub checks.
 
 ### Errors Encountered
 
