@@ -24,6 +24,8 @@ def request_json(
     url: str,
     payload: object | None = None,
     headers: dict[str, str] | None = None,
+    *,
+    timeout: float = 10,
 ) -> dict[str, Any]:
     body = json.dumps(payload).encode() if payload is not None else None
     request = urllib.request.Request(
@@ -32,7 +34,7 @@ def request_json(
         method=method,
         headers={"Content-Type": "application/json", **(headers or {})},
     )
-    with urllib.request.urlopen(request, timeout=10) as response:
+    with urllib.request.urlopen(request, timeout=timeout) as response:
         decoded = json.loads(response.read().decode())
     if not isinstance(decoded, dict):
         raise TypeError("WebDriver response must be a JSON object")
@@ -66,7 +68,9 @@ class PackagedApp:
         }
         while time.monotonic() < deadline:
             try:
-                response = request_json("POST", f"{DRIVER_URL}/session", payload)
+                response = request_json(
+                    "POST", f"{DRIVER_URL}/session", payload, timeout=120
+                )
                 value = response.get("value", response)
                 session_id = value.get("sessionId") or response.get("sessionId")
                 if isinstance(session_id, str):
