@@ -8,7 +8,8 @@
 - Snapshot date: `2026-07-18`
 - Verified implementation baseline: `667627a` (parent of governance-only PR `#144`)
 - Product posture: `feature-complete local Beta / single-host production candidate`
-- Active implementation task: `QA-148-MDL-01` is Ready and unclaimed
+- Active implementation task: `QA-148-MDL-01` is In Progress on
+  `codex/issue-148-deepseek-reasoning-replay`
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: `#148` is planned by `QA-148-MDL-01`
 

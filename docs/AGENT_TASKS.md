@@ -13830,8 +13830,8 @@ window contract while preserving legacy OpenAI-compatible behavior.
 
 ### QA-148-MDL-01 - DeepSeek Thinking Tool-Loop Reasoning Replay
 
-- Status: `Ready`
-- Owner: `Unassigned`
+- Status: `In Progress`
+- Owner: `lukeding`
 - Suggested role: `CORE / INTEGRATIONS / QA`
 - Depends on: merged `DS-OPT-01` and explicit maintainer request
 - Branch: `codex/issue-148-deepseek-reasoning-replay`
