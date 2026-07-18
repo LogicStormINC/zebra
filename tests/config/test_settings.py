@@ -205,6 +205,42 @@ def test_load_settings_allows_os_sandbox_without_container_image() -> None:
     assert settings.runtime.image == ""
 
 
+def test_load_settings_parses_explicit_setup_phase() -> None:
+    digest = "a" * 64
+    settings = load_settings(
+        {
+            "ZEBRA_SETUP_ENABLED": "true",
+            "ZEBRA_SETUP_COMMAND_JSON": '["/bin/sh","-c","test -f package.whl"]',
+            "ZEBRA_SETUP_ALLOWED_DOMAINS": "files.example.test",
+            "ZEBRA_SETUP_DEPENDENCIES_JSON": json.dumps(
+                [
+                    {
+                        "url": "https://files.example.test/package.whl",
+                        "sha256": digest,
+                        "file_name": "package.whl",
+                    }
+                ]
+            ),
+            "ZEBRA_SETUP_LOCKFILES": "uv.lock",
+            "ZEBRA_SETUP_CREDENTIAL_ENV": "TEMP_SETUP_TOKEN",
+        }
+    )
+
+    assert settings.setup.enabled is True
+    assert settings.setup.command[0] == "/bin/sh"
+    assert settings.setup.allowed_domains == ("files.example.test",)
+    assert settings.setup.dependencies[0].sha256 == digest
+    assert settings.setup.lockfiles == ("uv.lock",)
+    assert settings.setup.credential_env == "TEMP_SETUP_TOKEN"
+
+
+def test_load_settings_rejects_partial_or_implicit_setup_configuration() -> None:
+    with pytest.raises(ValueError, match="requires ZEBRA_SETUP_ENABLED"):
+        load_settings({"ZEBRA_SETUP_COMMAND_JSON": '["/bin/true"]'})
+    with pytest.raises(ValueError, match="requires command"):
+        load_settings({"ZEBRA_SETUP_ENABLED": "true"})
+
+
 def test_production_profile_fails_closed_without_gvisor() -> None:
     with pytest.raises(ValueError, match="requires ZEBRA_RUNTIME_CLASS=gvisor"):
         load_settings({"ZEBRA_PROFILE": "production"})

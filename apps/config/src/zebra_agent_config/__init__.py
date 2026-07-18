@@ -8,6 +8,7 @@ from zebra_agent_config.settings import (
     ZebraAgentSettings,
     load_settings,
 )
+from zebra_agent_config.setup_settings import SetupDependencySettings, SetupSettings
 
 __all__ = [
     "ApiSettings",
@@ -16,6 +17,8 @@ __all__ = [
     "RuntimeSettings",
     "ScmSettings",
     "SessionHandoffSettings",
+    "SetupDependencySettings",
+    "SetupSettings",
     "ZebraAgentSettings",
     "load_settings",
 ]

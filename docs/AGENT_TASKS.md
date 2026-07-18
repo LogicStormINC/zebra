@@ -23,10 +23,11 @@
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
-- `ARCH-RT-A1-OS-01` is `Review` and owned by `Codex`.
+- `ARCH-RT-A1-OS-01` is `Done` via PR `#160`.
+- `ARCH-RT-A2-SETUP-01` is `Review` and owned by `Codex`.
+- `ARCH-RT-A3-REL-01` and `ARCH-RT-A4-E2E-01` remain `Locked` behind their
+  preceding Phase A dependency.
 - `QA-DESKTOP-E2E-01` is `Done` via PR `#161`.
-- `ARCH-RT-A2-SETUP-01`, `ARCH-RT-A3-REL-01`, and `ARCH-RT-A4-E2E-01`
-  remain `Locked` behind their preceding Phase A dependency.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
@@ -13966,11 +13967,12 @@ locked behind their documented entry gates.
 
 ### ARCH-RT-A1-OS-01 - Native OS Sandbox Runtime
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `RUNTIME / SECURITY`
 - Depends on: `ARCH-RT-A-PLAN-01`
 - Branch: `codex/arch-rt-a1-os-sandbox`
+- Merged: PR `#160`, merge commit `e4978ee`
 - Owned paths: `packages/agent-core/src/agent_core/ports/runtime.py`,
   `packages/agent-core/src/agent_core/contracts/runtime_events.py`,
   `packages/agent-runtime/`, `apps/config/`,
@@ -14008,8 +14010,8 @@ failing locally and no fallback to trusted execution.
 
 ### ARCH-RT-A2-SETUP-01 - Setup And Agent Isolation
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `RUNTIME / SECURITY / TOOLS`
 - Depends on: merged `ARCH-RT-A1-OS-01`
 - Branch: `codex/arch-rt-a2-setup-egress`
@@ -14027,11 +14029,20 @@ Agent Sandbox with no network and no inherited proxy credential.
 
 #### Acceptance
 
-- [ ] Setup and Agent phases are explicit typed contracts without a new durable state model.
-- [ ] Egress is method/domain constrained, audited, and unavailable outside Setup.
-- [ ] Temporary credentials are revoked before snapshot handoff and never enter model, event, artifact, snapshot, or log payloads.
-- [ ] Lockfiles, source hashes, provenance, SBOM, and Setup Artifact are verified before Agent execution.
-- [ ] Recovery and retry never replay an external dependency side effect without its ledger result.
+- [x] Setup and Agent phases are explicit typed contracts without a new durable state model.
+- [x] Egress is exact HTTPS GET/domain constrained, content addressed, and unavailable inside either Sandbox.
+- [x] Temporary credentials are revoked before Setup execution and snapshot handoff and never enter model, event, artifact, snapshot, or log payloads.
+- [x] Lockfiles, source hashes, provenance, SPDX SBOM, and Setup Artifact are verified before Agent execution.
+- [x] Read-only downloads reuse digest-verified cache results; no external write side effect is silently replayed.
+
+#### Validation Evidence
+
+- focused Setup/Security/Runtime/config/Worker contracts: `38 passed`
+- full deterministic suite: `1476 passed, 5 skipped`
+- file-size gate: `872` files, zero violations
+- Ruff: passed
+- strict Mypy: `409` source files, zero errors
+- release Eval: `8/8`, `pass_rate=1.00`
 
 ### ARCH-RT-A3-REL-01 - Runtime Quota And Reliability Gates
 

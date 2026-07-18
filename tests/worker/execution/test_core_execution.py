@@ -87,7 +87,7 @@ def test_worker_persists_effective_runtime_authority_before_attempt(
         lambda settings: _assistant_only_gateway(settings=settings),
     )
     monkeypatch.setattr(
-        "zebra_agent_worker.execution.build_runtime",
+        "zebra_agent_worker.runtime_setup.build_runtime",
         lambda *args, **kwargs: AuthorityRuntime(snapshot_root=tmp_path / "runtime"),
     )
 

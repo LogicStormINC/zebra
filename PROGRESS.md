@@ -8,7 +8,7 @@
 - Snapshot date: `2026-07-18`
 - Verified implementation baseline: `ace7443` (PR `#161`)
 - Product posture: `feature-complete local Beta / single-host production candidate`
-- Active implementation task: `ARCH-RT-A1-OS-01` is in Review
+- Active implementation task: `ARCH-RT-A2-SETUP-01` is in Review
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
@@ -87,8 +87,8 @@ including a real thinking tool round trip.
 - `docs/AGENT_TASKS.md` is the only executable task registry.
 - All eight stale `Review` cards verified as merged are closed as `Done` by
   `QA-GOV-02` / PR `#144`.
-- `QA-148-MDL-01` and `QA-DESKTOP-E2E-01` are `Done`;
-  `ARCH-RT-A1-OS-01` remains in Review.
+- `QA-148-MDL-01`, `QA-DESKTOP-E2E-01`, and `ARCH-RT-A1-OS-01` are `Done`;
+  `ARCH-RT-A2-SETUP-01` is in Review.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 
 ## Known Follow-Ups
@@ -111,14 +111,21 @@ deployment profiles. It does not activate implementation or change the status
 of locked architecture cards.
 
 The maintainer activated single-host Phase A on 2026-07-18. Work is split into
-`ARCH-RT-A1-OS-01` through `ARCH-RT-A4-E2E-01`; A1 is in Review and later tasks
-remain locked. Phase B and Phase C remain deferred until every Phase A exit
-criterion is evidenced.
+`ARCH-RT-A1-OS-01` through `ARCH-RT-A4-E2E-01`; A1 is merged, A2 is in progress,
+and later tasks remain locked. Phase B and Phase C remain deferred until every
+Phase A exit criterion is evidenced.
 
 A1 now implements macOS Seatbelt and Linux bubblewrap `os-sandbox` with
 capability probes, sanitized process environments, network denial, whole-process
 boundaries, immutable authority, snapshots, and fail-closed platform selection.
-A2 remains locked until A1 merges and both real-platform CI smokes pass.
+A1 merged through PR `#160` after Ubuntu bubblewrap, macOS Seatbelt, gVisor,
+Backend, and Desktop CI passed. A2 now owns Setup/Agent isolation.
+
+A2 now implements exact external HTTPS GET egress, SHA-256 cache reuse, temporary
+Credential revocation before Sandbox startup, no-network Setup execution,
+lockfile verification, SPDX Setup Artifact, verified Snapshot handoff, and a new
+no-network Agent handle. It reuses existing Artifact/Snapshot storage and adds no
+durable state model. A3 remains locked until A2 merges.
 
 ## Explicitly Deferred
 
