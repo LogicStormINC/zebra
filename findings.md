@@ -1,5 +1,19 @@
 # Findings
 
+## QA-GOV-02 - 2026-07-18
+
+- PR `#144` was based on `882c955`, while current main is `667627a`.
+- The PR's Context and DeepSeek proposal commits were superseded by merged
+  implementation PRs `#145`, `#147`, `#146`, and the staged handoff series.
+- Mechanical conflict resolution would risk replacing current implementation
+  truth with old proposal-era README, PROGRESS, task, and architecture claims.
+- The safe reconciliation is a force-with-lease rebuild from current main that
+  preserves only governance intent.
+- Eight `Review` cards have verified merge evidence and can be closed: PRs
+  `#135`, `#136`, `#137`, `#139`, `#140`, `#141`, `#145`, and `#147`.
+- The remaining executable registry state is two locked tasks: ACP entry and
+  optional code intelligence. No task is currently Ready or In Progress.
+
 ## CTX-LC-01 - 2026-07-17
 
 - The user split DeepSeek specialization into a separate Codex task. This task
