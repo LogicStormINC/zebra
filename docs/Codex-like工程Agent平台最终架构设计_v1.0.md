@@ -15,7 +15,7 @@ lang: zh-CN
 | 文档版本 | v1.0 Final |
 | 目标读者 | 架构师、Agent/Harness 开发者、平台工程师、安全工程师、产品负责人 |
 | 适用范围 | 通用执行型 Agent、工程自动化 Agent、私有化 Agent Runtime |
-| 核心定位 | 本地优先，可扩展到团队协作、私有云及多租户云端 |
+| 核心定位 | 可嵌入的本地优先 Agent Runtime 微服务；可扩展到私有云和外部 namespace 隔离 |
 | 架构基线 | 公开前沿实践 + 可落地工程约束 |
 | 关键原则 | Event Store 是事实源；Harness 无状态；Sandbox 无凭证、可销毁、可恢复 |
 
@@ -33,11 +33,27 @@ Diff、Commit 或 Pull Request 描述为默认产品闭环的旧表述。
 - 只有后端产生明确的 approval 时才进入 HITL；界面仅展示该审批的操作、目标、范围、风险和批准或拒绝动作。
 - 无 approval 的普通任务应保持自主执行，不显示休眠的人工操作表单。
 
+## 产品与外部业务边界覆盖说明（2026-07-18）
+
+本节覆盖本文其他章节中把 Zebra 描述为用户、组织、租户业务、订阅或计费平台的
+旧表述。完整决策见 `ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md`。
+
+- Zebra 是可被其他产品调用的 Agent Runtime 微服务，不是业务 SaaS 后台。
+- Zebra 负责 Task、Conversation、Session、Agent 执行、流式、Worker、Sandbox、
+  并发、高可用、恢复、Agent Memory、Artifact 和审计证据。
+- Authelia/外部身份系统负责注册、登录、密码、MFA 和 OIDC；Zebra 不存储用户凭证。
+- 外部业务系统负责用户、组织、成员、邀请、业务 RBAC、订阅、计费和业务配额。
+- Zebra 只接收签名的 Agent authority、opaque `namespace_id` 和技术执行限制；
+  Agent Policy 只能保持或收紧这些权限。
+- `namespace_id` 是数据隔离键，不形成 Zebra Tenant、Membership 或 Subscription 模型。
+- Zebra 生成技术 usage evidence，外部系统决定权益、价格和账单。
+
 # 1. 执行摘要
 
 ## 1.1 项目定位
 
-建设一个能够在真实工作空间中长期运行的通用执行型 Agent 平台，完成以下闭环：
+建设一个能够在真实工作空间中长期运行、可独立嵌入其他业务系统的通用执行型
+Agent Runtime，完成以下闭环：
 
 ```text
 用户任务
@@ -50,7 +66,9 @@ Diff、Commit 或 Pull Request 描述为默认产品闭环的旧表述。
   → 记录可重放事件、审计证据和可失效经验
 ```
 
-平台首先服务于本地用户和 Agent 构建者，随后扩展到团队协作、专业工具集成和私有云；其核心竞争力不是聊天界面或代码生成，而是**可靠执行、精准上下文、安全控制、崩溃恢复和可持续评测**。
+Runtime 首先服务于本地用户和 Agent 构建者，随后作为微服务扩展到团队协作、
+专业工具集成和私有云；其核心竞争力不是用户中心、商业化后台、聊天界面或代码生成，
+而是**可靠执行、精准上下文、安全控制、崩溃恢复和可持续评测**。
 
 ## 1.2 最终架构公式
 
@@ -474,7 +492,7 @@ class ContextItem(BaseModel):
 
 ## 9.2 上下文来源
 
-1. **可信指令**：系统策略、组织策略、`AGENTS.md`、用户直接明确要求。
+1. **可信指令**：系统策略、外部签名 authority、Agent Policy、`AGENTS.md`、用户直接明确要求。
 2. **项目指导**：README、构建配置、测试命令、架构文档、代码规范。
 3. **代码智能**：文件树、符号、定义、引用、调用关系、依赖图、LSP 诊断。
 4. **任务证据**：Issue、Stack Trace、失败测试、用户指定文件。
@@ -664,8 +682,8 @@ SANDBOX_ONLY    仅允许在更强隔离等级执行
 
 1. Schema 和参数校验。
 2. 路径规范化与 Workspace 边界检查。
-3. 硬拒绝规则：宿主凭证、跨租户、提权、持久化后门等。
-4. 权限 Profile 和组织策略。
+3. 硬拒绝规则：宿主凭证、跨 namespace、提权、持久化后门等。
+4. 权限 Profile、外部签名 authority 上界和 Agent Policy。
 5. 风险分级及是否需要人工审批。
 6. Capability Token 签发。
 7. Sandbox、Broker、Egress PEP 二次验证。
@@ -707,7 +725,7 @@ MCP OAuth Token
 - 原始凭证不写入 Worktree、环境变量快照、日志和模型上下文。
 - Sandbox 不能读取 Broker 内存或 Secret Store。
 - Git Push、PR、MCP 和外部 HTTP 优先由 Broker 代理执行。
-- 必须支持撤销、轮换、审计、租户隔离和最小 Scope。
+- 必须支持撤销、轮换、审计、external namespace 隔离和最小 Scope。
 
 ## 11.6 Egress Control
 
@@ -774,7 +792,7 @@ class SandboxSpec(BaseModel):
     max_lifetime_seconds: int
     env_refs: list[str]
     mounts: list[MountSpec]
-    tenant_id: str
+    namespace_id: str
 ```
 
 ## 12.4 硬化基线
@@ -867,8 +885,8 @@ architecture_fact 架构事实和模块关系
 ```json
 {
   "memory_id": "mem_xxx",
-  "tenant_id": "tenant_x",
-  "user_id": "user_x",
+  "namespace_id": "scope_x",
+  "subject_ref": "principal_x",
   "repo_id": "repo_x",
   "memory_type": "project_rule",
   "text": "该仓库使用 pnpm，禁止生成 package-lock.json。",
@@ -1022,7 +1040,7 @@ Agent Phase
 | Shell 绕过 | `python -c`、重定向、子 Shell | Typed Tools、Shell AST、硬沙箱、Capability Drop |
 | 供应链风险 | 安装恶意依赖 | Setup Phase、域名白名单、锁文件、SBOM、Snapshot |
 | MCP Confused Deputy | 用一个 Token 访问非目标资源 | OAuth Audience/Resource 校验、禁止 Token Passthrough |
-| 跨租户访问 | Worker 复用错误卷或缓存 | tenant_id 贯穿、独立 Namespace/VM、加密和 ACL |
+| 跨 namespace 访问 | Worker 复用错误卷或缓存 | namespace_id 贯穿、独立 Namespace/VM、加密和 ACL |
 | 持久化后门 | 写 SSH key、cron、CI Secret | 不挂 Home、禁止提权、敏感路径硬拒绝、镜像只读 |
 | 破坏性 Git | force push、删除分支、覆盖历史 | 资源级 Capability、人工审批、保护分支、Broker 执行 |
 | Memory Poisoning | 旧经验覆盖新项目事实 | 来源/Commit/有效期、冲突检测、人工确认 |
@@ -1070,7 +1088,7 @@ full_trusted_local
 
 | 表 | 作用 |
 |---|---|
-| `sessions` | Session 元数据、租户、仓库、Base Commit、终态 |
+| `sessions` | Session 元数据、外部 namespace、仓库、Base Commit、终态 |
 | `session_events` | 按序不可变事件 |
 | `session_projections` | 当前状态、进度、成本、最近序号 |
 | `worker_leases` | Worker 租约、心跳、过期时间 |
@@ -1079,7 +1097,7 @@ full_trusted_local
 | `model_calls` | Provider、模型、Usage、延迟、缓存和成本 |
 | `workspaces` | Worktree、Sandbox、Snapshot、Branch |
 | `artifacts` | URI、哈希、MIME、大小、ACL、保留策略 |
-| `policies` | 版本化策略、Profile、组织覆盖 |
+| `policies` | 版本化 Agent 策略、Profile、外部 authority 上界 |
 | `memories` | 派生记忆、来源、版本、有效期 |
 | `eval_cases` / `eval_runs` | 评测任务、基线、结果和版本对比 |
 
@@ -1191,7 +1209,7 @@ flowchart LR
 | Cache | 本地目录 | Redis，仅用于 Cache/实时协同，不作事实源 |
 | Memory | SQLite/可选 Redis Agent Memory | 可替换 Memory Service + 向量/关键词混合检索 |
 | 代码智能 | Git、rg、tree-sitter | LSP、依赖图、增量索引服务 |
-| Policy | Python 确定性规则 + YAML | 组织策略可接 OPA/Rego，仍由 PEP 强制 |
+| Policy | Python 确定性规则 + YAML | 外部 authority 与 Agent Policy 可接 OPA/Rego，仍由 PEP 强制 |
 | Secret | OS Keychain / 本地安全存储 | Vault / KMS / 云 Secret Manager |
 | Runtime | Rootless Docker + Worktree | K8s Agent Sandbox + gVisor/Kata；高隔离用 Firecracker |
 | Observability | JSONL + OpenTelemetry | Prometheus、Grafana、Loki/ClickHouse |
@@ -1398,10 +1416,13 @@ engineering-agent/
 ## Phase 3：私有云与多租户（8-12 周）
 
 - Kubernetes Agent Sandbox、gVisor/Kata/Firecracker 分级。
-- Tenant Isolation、RBAC、组织 Policy、审计保留策略。
+- 外部 OIDC/authority 验证和 opaque namespace 全链路隔离。
 - Vault/KMS、短时 Capability、网络代理。
-- Warm Pool、自动缩容、配额和成本治理。
+- Warm Pool、自动缩容、技术执行限制和 usage evidence。
 - Temporal Adapter、跨节点恢复和灾难恢复。
+
+用户、组织、成员、业务 RBAC、订阅、计费和业务配额不属于 Phase 3，也不作为
+后续 Zebra 能力；它们由调用 Zebra 的业务系统承担。
 
 ## Phase 4：平台生态
 
@@ -1577,6 +1598,7 @@ runtime:
 | ADR-009 | 单 Agent 默认，多 Agent 先实现通用原语 |
 | ADR-010 | Eval、Replay 和 Release Gate 从 MVP 建立 |
 | ADR-011 | Redis Memory、Temporal、OPA 等均通过 Adapter 接入，不绑定核心领域模型 |
+| ADR-012 | Zebra 是 Agent Runtime 微服务；认证和业务用户/租户/订阅/计费均外置 |
 
 # 28. 最终结论
 

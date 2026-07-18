@@ -7,6 +7,9 @@
 > 任务：`ARCH-RT-BP-01`
 > 适用范围：Zebra Agent 单机版、私有云单租户、云端多租户
 
+本文中的“单租户/多租户”只描述部署威胁模型和外部 namespace 隔离等级，不表示
+Zebra 拥有用户、组织、成员、订阅或计费领域。业务边界以 `ADR-012` 为准。
+
 ## 1. 执行摘要
 
 Zebra 不应照搬 Codex 或 Claude Code 的 Runtime。适合本项目的组合是：
@@ -86,7 +89,7 @@ Codex 与 Claude Code 的共同启示不是“选择审批还是 Sandbox”，�
 - Agent Phase 默认无网络；DNS 也属于网络权限。
 - Runtime profile 不可用时拒绝执行，不静默降级到 `trusted-local`。
 - Authority 只允许保持或收紧，不允许在 resume/retry/failover 时扩大。
-- 跨租户 Event、Artifact、Snapshot、Volume、Cache、Log 和 Metric 均需隔离。
+- 跨外部 namespace 的 Event、Artifact、Snapshot、Volume、Cache、Log 和 Metric 均需隔离。
 - 不确定副作用必须进入 reconciliation，不能自动重放。
 
 ## 4. 统一领域合同
@@ -100,7 +103,7 @@ Codex 与 Claude Code 的共同启示不是“选择审批还是 Sandbox”，�
 | `ToolCall / ToolResult` | 结构化输入、输出、错误和副作用分类 |
 | `PolicyDecision / Approval` | 决定 allow、deny、ask、约束和审批范围 |
 | `RuntimePort` | provision、exec、stream、snapshot、restore、destroy |
-| `SandboxSpec` | 镜像、Workspace、资源、网络、挂载、租户和寿命 |
+| `SandboxSpec` | 镜像、Workspace、资源、网络、挂载、外部 namespace 和寿命 |
 | `EffectiveRuntimeAuthority` | 实际生效权限及其不可变摘要 |
 | `ArtifactRef / SnapshotRef` | 大输出、交付物和恢复状态的内容寻址引用 |
 | `EffectLedger` | 副作用 reserve、commit、uncertain、reconcile |
@@ -236,7 +239,7 @@ Agent Phase 要求：
 
 ```mermaid
 flowchart TB
-    C["Control Plane\nAPI/Auth · Event Store · Scheduler · Approval"]
+    C["Control Plane\nAgent API · Authority Verifier · Event Store · Scheduler"]
     A["Agent Plane\nStateless Harness · Context · Model Gateway"]
     S["Security Plane\nPolicy · Credential Broker · Egress · Audit"]
     E["Execution Plane\nSandbox Manager · K8s · gVisor/Kata"]
@@ -252,10 +255,15 @@ flowchart TB
 
 #### Control Plane
 
-- API/Auth、Tenant/Project/Session 身份；
+- 版本化 Agent API、Authelia OIDC/外部 authority 验证；
+- opaque namespace、Task/Conversation/Session/Attempt 身份；
 - PostgreSQL append-only Event Store 与 Projection；
 - DB lease scheduler、transactional outbox、审批和 clarification；
-- 配额、并发、预算、取消、租户状态和发布策略。
+- 技术并发、Token/Runtime 上限、取消、Agent Policy 和发布策略。
+
+用户、组织、成员、邀请、业务 RBAC、订阅、计费和业务配额属于调用 Zebra 的
+业务系统。Control Plane 不复制这些模型，不共享业务数据库，也不根据业务角色自行
+推导权限。
 
 #### Agent Plane
 
@@ -280,7 +288,7 @@ flowchart TB
 
 PostgreSQL 是云端唯一 durable authority：
 
-- Event 按 tenant/session 分区并保持单 Session 顺序；
+- Event 按 external namespace/session 分区并保持单 Session 顺序；
 - Projection 可重建，不能反向成为事实源；
 - Worker 通过 lease + fencing token 领取 Attempt；
 - 状态变更与 outbox 在同一事务提交；
@@ -297,30 +305,37 @@ Pod Security 和 node pool；不要先自建 Firecracker 管理器。
 | 场景 | Runtime | 调度建议 |
 |---|---|---|
 | 私有云单租户、内部可信仓库 | gVisor | 共享 gVisor 节点池，Session/Sandbox 独立 |
-| 多租户、执行客户代码 | Kata Containers | tenant-aware 节点池，独立内核，默认选择 |
+| 外部 namespace 隔离、执行客户代码 | Kata Containers | namespace-aware 节点池，独立内核，默认选择 |
 | 极高风险/强合规 | Kata-VM 或 Firecracker 专用池 | 专属节点/集群，较低密度，严格准入 |
 | 兼容性例外 | 普通 OCI | 只用于明确信任工作负载，不作为多租户默认 |
 
 Kubernetes Agent Sandbox CRD 可在标准 Pod 模型稳定后评估，用于稳定 Sandbox
 身份、生命周期与持久卷编排；它不能替代 Zebra Session/Event/Policy 合同。
 
-命名空间不是不互信租户的充分安全边界。多租户至少需要：
+Kubernetes Namespace 不是不互信业务 Scope 的充分安全边界。Zebra 不建立 Tenant
+Domain，但必须根据外部系统传入的 opaque `namespace_id` 实施以下隔离。external
+`namespace_id` 是 Zebra 的逻辑数据键，Kubernetes Namespace 是部署资源；两者不
+保证一一映射，映射策略由 Sandbox Manager 维护：
 
-- Tenant/Project/Session 全链路身份与数据库 row-level/应用层双重隔离；
+- namespace/Task/Conversation/Session 全链路身份与数据库 row-level/应用层双重隔离；
 - Namespace、ServiceAccount、RBAC、ResourceQuota、LimitRange；
 - default-deny NetworkPolicy 和支持其强制执行的 CNI；
 - RuntimeClass、Pod Security、seccomp、只读 rootfs、无特权与 node isolation；
-- tenant-scoped bucket prefix/key、PVC、KMS key、log/metric labels 与访问策略；
+- namespace-scoped bucket prefix/key、PVC、KMS key、log/metric labels 与访问策略；
 - admission policy 阻止 hostPath、hostNetwork、privileged、runtime socket 和
   未批准 RuntimeClass；
-- 高风险租户可升级到专属节点、专属集群或专属加密域。
+- 高风险业务 Scope 可升级到专属节点、专属集群或专属加密域。
+
+这里的 namespace 只承担 Agent 数据和执行隔离，不表达外部用户、成员、组织、套餐
+或账单关系。
 
 ### 6.4 Credential Broker
 
 Sandbox 只接收短时、窄 Scope、一次操作绑定的 capability reference：
 
 1. Tool Gateway 请求 PolicyDecision；
-2. Policy/HITL 确认 tenant、actor、tool、resource、operation 和期限；
+2. Authority Verifier 与 Policy/HITL 确认 namespace、subject、tool、resource、
+   operation 和期限；
 3. Broker 从 Vault/KMS/Cloud Secret Manager 获取或签发临时凭证；
 4. Broker 代理执行，或在必须直连时注入短时凭证到专用 sidecar/FD；
 5. 结果写入 Effect Ledger 和 Audit；
@@ -343,7 +358,7 @@ flowchart LR
     EG --> AU["Audit + Effect Ledger"]
 ```
 
-Egress 不只做域名白名单，还应绑定：tenant、Session、tool、HTTP method、目标、
+Egress 不只做域名白名单，还应绑定：external `namespace_id`、Session、tool、HTTP method、目标、
 数据分类、速率、字节数、超时、审批和 operation key。生产代理需要防 DNS
 rebinding、私网/metadata 访问、重定向越界和域名前置；高敏感场景可增加 TLS
 终止与内容策略，但必须明确隐私和证书边界。
@@ -363,11 +378,11 @@ rebinding、私网/metadata 访问、重定向越界和域名前置；高敏感�
 
 - 任意 Worker/Pod/Node 故障不会丢失 Session durable state；
 - 同一 Attempt 不会被两个有效 fencing token 同时提交；
-- 跨租户 Event、Artifact、Snapshot、Network、Credential 泄漏测试为零；
+- 跨 namespace Event、Artifact、Snapshot、Network、Credential 泄漏测试为零；
 - 生产 Egress 100% 经过受控 Gateway/Broker，Sandbox 无直接外网；
 - 原始 Secret 不出现在模型上下文、事件、日志、Artifact 或 Snapshot；
 - gVisor/Kata 在真实集群完成逃逸、资源、网络、恢复和性能基线测试；
-- 备份恢复、密钥轮换、租户删除、审计导出和灾难演练有可重复 Runbook；
+- 备份恢复、密钥轮换、namespace 数据清理、审计导出和灾难演练有可重复 Runbook；
 - 容量、排队时延、Sandbox 启动、任务成功率、成本和错误预算可观测。
 
 ## 7. 分阶段实施路线
@@ -404,10 +419,13 @@ rebinding、私网/metadata 访问、重定向越界和域名前置；高敏感�
 
 范围：
 
-- Tenant/RBAC/组织 Policy、quota、成本和审计；
+- Authelia OIDC/外部 authority 验证与 opaque namespace 隔离；
+- Agent 技术限制、usage evidence 和审计导出；
 - Kata 默认 Runtime、节点池和 admission policy；
-- Vault/KMS、多租户 Egress、数据/日志/对象存储隔离；
-- 容量、SLO、DR、密钥轮换、租户删除与合规证据。
+- Vault/KMS、namespace-scoped Egress、数据/日志/对象存储隔离；
+- 容量、SLO、DR、密钥轮换、namespace 数据清理与合规证据。
+
+用户、组织、成员、业务 RBAC、订阅和计费始终由外部业务系统负责，不进入 Phase C。
 
 入口：Phase B 运行稳定，并完成正式 threat model 与 tenant isolation review。
 
@@ -446,7 +464,7 @@ Adapter 后并行；不能让两个任务同时修改 `agent-core` 或同一数�
 - 不为 Runtime 重写 Rust 内核；当前 Python 领域合同和测试资产继续复用。
 - 不复制 Claude Code 的完整 CLI Harness 或权限配置格式。
 - 不让 Sandbox 直接自由访问互联网。
-- 不把 Namespace 单独当作不互信租户隔离方案。
+- 不把 Kubernetes Namespace 单独当作不互信 external namespace 的隔离方案。
 - 不先自研 Firecracker 管理器、Kubernetes Operator 或复杂微服务体系。
 - 不把 Temporal、Redis、Kafka 或 Workflow History 当作 Event Store。
 - 不把原始凭证放入环境变量、模型上下文、Snapshot 或 Artifact。
@@ -461,7 +479,7 @@ Adapter 后并行；不能让两个任务同时修改 `agent-core` 或同一数�
 | gVisor/Kata 兼容或性能成本 | 构建失败、冷启动增加 | profile 路由、镜像基线、warm pool、性能门禁 |
 | Setup Egress 被滥用 | 供应链攻击、数据外泄 | 独立阶段、allowlist、hash/SBOM、临时凭证、审计 |
 | 多 Worker 重复执行 | 重复 Patch/外部副作用 | lease、fencing、idempotency、Effect Ledger |
-| 多租户横向越权 | 严重数据泄漏 | 分层身份、DB/对象/网络/节点/KMS 隔离与红队测试 |
+| 跨 namespace 横向越权 | 严重数据泄漏 | 分层身份、DB/对象/网络/节点/KMS 隔离与红队测试 |
 | Broker 成为高价值目标 | 凭证集中暴露 | 最小 Scope、短时签发、HSM/KMS、审计、网络隔离 |
 | 云组件过早膨胀 | 交付变慢、双内核 | 先单租户、标准 K8s 原语、Adapter 边界、阶段门禁 |
 | 文档超前于实现 | 错误产品承诺 | “当前事实/目标态”分栏、任务状态与真实验收同步 |
@@ -477,13 +495,14 @@ Adapter 后并行；不能让两个任务同时修改 `agent-core` 或同一数�
 | 云端调度首版 | DB lease + transactional outbox |
 | 云端执行编排 | 标准 Kubernetes Pod + RuntimeClass 优先 |
 | 私有云隔离 | gVisor |
-| 多租户默认隔离 | Kata Containers |
+| 外部 namespace 默认隔离 | Kata Containers |
 | 极高风险隔离 | 后续 Kata-VM/Firecracker 专用池 |
 | 网络 | Agent Sandbox 默认断网，外置 Egress |
 | 凭证 | 外置 Broker，短时 capability，不下发长期 Secret |
 | Redis | 仅 Cache/Rate limit/协同，不作事实源 |
 | Temporal | 达到复杂度阈值后作为 Scheduler Adapter |
 | 本地/云端关系 | 共享合同，只替换 Adapter |
+| 业务边界 | Zebra 只负责 Agent Runtime；身份认证和业务用户/租户/计费外置 |
 
 ## 12. 后续激活顺序
 
@@ -504,6 +523,7 @@ Phase A 已由维护者于 2026-07-18 激活，按以下顺序实施：
 ### 项目内部
 
 - `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`
+- `docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md`
 - `docs/生产级Runtime实施方案_v1.0.md`
 - `docs/Issue_129_架构整改与延期实施计划.md`
 - `docs/operator_runbook.md`

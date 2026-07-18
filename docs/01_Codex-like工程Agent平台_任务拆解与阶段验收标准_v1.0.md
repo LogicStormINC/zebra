@@ -47,7 +47,7 @@ date: "2026-06-18"
 | Phase 0 | 架构验证 | 1-2 周 | 纵切链路、可恢复、Worktree + Rootless Docker | 证明架构关键假设成立 |
 | Phase 1 | 本地 Durable Agent Kernel | 6-8 周 | CLI、Event Store、Harness、Context、Tools、Policy、Docker、Eval | 发布 v0.1.0 本地 MVP |
 | Phase 2 | 团队协作与 IDE | 6-8 周 | PostgreSQL、多 Worker、Web/ACP、Broker、Repo Map、Snapshot | 发布可供团队使用的 v0.5 |
-| Phase 3 | 私有云与多租户 | 8-12 周 | K8s、强隔离、RBAC、Vault、Temporal、SLO/DR | 私有云 GA |
+| Phase 3 | 私有云与多租户部署 | 8-12 周 | K8s、强隔离、Kubernetes RBAC、外部 authority、Vault、Temporal、SLO/DR | 私有云 GA |
 | Phase 4 | 平台生态 | 持续演进 | Skills/MCP/Memory/多 Agent/模型路由/在线 Eval | 形成平台与生态 |
 
 Phase 0 和 Phase 1 是当前唯一应进入详细排期的范围。Phase 2 以后保留架构接口和 Backlog，但不得提前微服务化或引入 Kubernetes、Temporal、复杂多 Agent 等平台能力。
@@ -136,7 +136,7 @@ Owned paths: <允许修改路径>
 
 | 等级 | 定义 | 发布处理 |
 |---|---|---|
-| P0 | 数据/凭证泄漏、Sandbox 逃逸、跨租户访问、不可恢复的数据破坏 | 立即停止，禁止发布 |
+| P0 | 数据/凭证泄漏、Sandbox 逃逸、跨 namespace 访问、不可恢复的数据破坏 | 立即停止，禁止发布 |
 | P1 | 关键流程不可用、重复副作用、恢复失败、权限绕过 | 禁止阶段退出 |
 | P2 | 有规避方案的功能缺陷、明显性能退化、重要可观测性缺口 | 必须有 Owner、期限和风险接受 |
 | P3 | 体验、文档、低风险优化 | 可进入后续迭代 |
@@ -248,9 +248,9 @@ Phase 2 将单机 Kernel 升级为多人共享的控制平面，并把原始凭�
 | `P2-STO-01` | **PostgreSQL Event/Projection Store**<br>迁移事件、projection、幂等和 lease，支持双写/回滚。<br>交付：Postgres adapter、migration、backfill、兼容测试。 | P1-GATE-01 | 6-8 人日 | SQLite 数据可迁移；并发追加和租约测试通过；可回滚。 |
 | `P2-SCH-01` | **多 Worker 调度与重试**<br>支持多节点 claim、心跳、退避、死信和公平性。<br>交付：queue/lease scheduler、worker autosafe shutdown、dashboard metrics。 | P2-STO-01 | 6-8 人日 | 3 worker 下 20 个并发 session 无重复所有权；kill 后自动接管。 |
 | `P2-ART-01` | **对象存储 Artifact Adapter**<br>接入 S3/MinIO、签名访问、生命周期和完整性校验。<br>交付：S3 adapter、presigned access、retention、迁移工具。 | P2-STO-01 | 4-5 人日 | 大 Artifact 不进 DB；权限隔离；校验失败可检测。 |
-| `P2-API-01` | **团队 Control Plane API**<br>增加身份、repo、session、审批、审计、配额接口。<br>交付：API v1、auth middleware、OpenAPI SDK。 | P2-STO-01, P2-SCH-01 | 6-8 人日 | 权限测试覆盖；API 版本化；错误格式统一。 |
+| `P2-API-01` | **团队 Control Plane API**<br>增加外部身份验证、Agent authority、repo、session、审批、审计和技术 limits 接口。<br>交付：API v1、auth middleware、OpenAPI SDK。 | P2-STO-01, P2-SCH-01 | 6-8 人日 | 权限测试覆盖；API 版本化；错误格式统一。 |
 | `P2-API-02` | **SSE/WebSocket 可靠流式**<br>支持断线重连、last-event-id、背压和事件补发。<br>交付：stream gateway、cursor、客户端测试。 | P2-API-01 | 4-5 人日 | 断线 60 秒后恢复无事件丢失/重复展示；慢客户端不拖垮 worker。 |
-| `P2-WEB-01` | **Web 会话、Trace、Diff 与 Artifact**<br>提供任务提交、时间线、diff、日志和费用页面。<br>交付：React app、API client、核心页面、e2e tests。 | P2-API-02 | 8-10 人日 | 用户可完成查看/恢复/下载证据；主要流程可自动化测试。 |
+| `P2-WEB-01` | **Web 会话、Trace、Diff 与 Artifact**<br>提供任务提交、时间线、diff、日志和技术 usage/cost evidence 页面。<br>交付：React app、API client、核心页面、e2e tests。 | P2-API-02 | 8-10 人日 | 操作者可完成查看/恢复/下载证据；主要流程可自动化测试。 |
 | `P2-WEB-02` | **审批中心与风险展示**<br>展示命令、路径、网络、理由、哈希和审批有效期。<br>交付：approval UI、bulk policy guard、audit link。 | P2-WEB-01, P2-SEC-01 | 4-5 人日 | 审批对象与执行对象哈希一致；过期审批不可用。 |
 | `P2-ACP-01` | **ACP Adapter**<br>让 IDE 通过标准会话、消息、工具进度接口连接。<br>交付：ACP adapter、capability negotiation、integration tests。 | P2-API-02 | 6-8 人日 | 至少一个支持客户端完成 run/resume/approve；断线可恢复。 |
 | `P2-SEC-01` | **Credential Broker**<br>原始 Git/LLM/MCP 凭证保存在 Sandbox 外，签发短时能力。<br>交付：broker service、scope model、audit、revocation。 | P2-API-01 | 8-10 人日 | Sandbox 环境和文件系统扫描不到原始凭证；能力超期失效。 |
@@ -263,7 +263,7 @@ Phase 2 将单机 Kernel 升级为多人共享的控制平面，并把原始凭�
 | `P2-SUB-02` | **Reviewer Subagent**<br>对 diff 做安全、正确性、可维护性和测试覆盖审查。<br>交付：review agent config、findings schema、dedupe。 | P2-SUB-01 | 5-6 人日 | findings 可定位文件/行；不直接修改代码；误报基线可追踪。 |
 | `P2-OBS-01` | **OpenTelemetry 与运营面板**<br>统一 API/worker/sandbox/broker trace、指标和告警。<br>交付：OTel、Prometheus/Grafana、SLO dashboards。 | P2-SCH-01, P2-SEC-02 | 5-6 人日 | 跨服务 trace 连续；关键错误/延迟/成本有告警。 |
 | `P2-EVAL-01` | **协作、重连与凭证安全评测**<br>覆盖并发、worker crash、stream reconnect、credential/egress。<br>交付：new eval suites、chaos scripts、report。 | 全部 P2 核心任务 | 6-8 人日 | 20 并发与故障场景达 Gate；0 个凭证泄漏。 |
-| `P2-E2E-01` | **团队版端到端发布流**<br>从 Web/IDE 提交到 PR、审批、恢复、审计。<br>交付：demo repo、runbook、golden trace、video/script。 | P2-EVAL-01 | 5-6 人日 | 两个用户角色完成完整流程；权限、PR、审计证据一致。 |
+| `P2-E2E-01` | **团队版端到端发布流**<br>从 Web/IDE 提交到 PR、审批、恢复、审计。<br>交付：demo repo、runbook、golden trace、video/script。 | P2-EVAL-01 | 5-6 人日 | 两个外部 subject/Agent permission profile 完成完整流程；权限、PR、审计证据一致。 |
 | `P2-GATE-01` | **Phase 2 发布 Gate**<br>完成团队功能、安全、容量和升级验收。<br>交付：acceptance report、migration report、release tag。 | P2-E2E-01 | 4-5 人日 | 所有 Phase 2 硬 Gate 通过；升级/回滚演练完成。 |
 
 ## 6.1 Phase 2 退出 Gate
@@ -281,23 +281,25 @@ Phase 2 将单机 Kernel 升级为多人共享的控制平面，并把原始凭�
 
 # 7. Phase 3：私有云与多租户（8-12 周）
 
-Phase 3 的核心不是“部署到 Kubernetes”，而是证明租户隔离、凭证治理、跨节点恢复、容量、成本和运维准备度。
+Phase 3 的核心不是“部署到 Kubernetes”，而是证明外部 namespace 隔离、外部
+authority 验证、凭证治理、跨节点恢复、容量和运维准备度。Zebra 不开发用户、组织、
+成员、业务 RBAC、订阅、计费或业务配额；这些由调用 Zebra 的业务系统负责。
 
 | ID | 任务与交付物 | 依赖 | 估算 | 任务级验收 |
 |---|---|---|---:|---|
 | `P3-RT-01` | **Kubernetes Sandbox Manager**<br>创建、观察、回收 Agent Sandbox/Pod 和工作卷。<br>交付：K8s adapter、CRD/manifest、controller integration。 | P2-GATE-01 | 10-12 人日 | 100 个 sandbox 生命周期测试无孤儿资源；失败可回收。 |
 | `P3-RT-02` | **gVisor/Kata/Firecracker 分级隔离**<br>按信任等级选择运行时并验证兼容性。<br>交付：runtime classes、capability matrix、benchmark。 | P3-RT-01 | 10-15 人日 | 不可信 profile 使用独立内核级隔离；兼容/性能数据可审计。 |
-| `P3-TEN-01` | **Tenant Domain 与数据隔离**<br>在所有实体、查询、对象路径和 cache key 中落实 tenant。<br>交付：tenant model、row/object policy、migration。 | P3-RT-01 | 8-10 人日 | 跨租户读取/写入测试 100% 阻断；无默认 tenant 回退。 |
-| `P3-IAM-01` | **RBAC 与组织角色**<br>实现组织、团队、repo、Policy、审批、审计权限。<br>交付：RBAC model、authz middleware、admin API。 | P3-TEN-01 | 8-10 人日 | 权限矩阵测试完整；最小权限默认；权限变更即时生效。 |
-| `P3-SEC-01` | **组织 Policy 与策略版本**<br>支持继承、覆盖、模拟、签名和审计。<br>交付：policy registry、versioning、dry-run、rollout。 | P3-IAM-01 | 8-10 人日 | 策略变更可预演；历史任务可解析当时策略版本。 |
+| `P3-TEN-01` | **外部 Namespace 数据隔离**<br>在 Agent 实体、查询、对象路径和 cache key 中落实 opaque namespace，不建立 Tenant Domain。<br>交付：namespace contract、row/object policy、migration。 | P3-RT-01 | 8-10 人日 | 跨 namespace 读取/写入测试 100% 阻断；无默认 namespace 回退。 |
+| `P3-IAM-01` | **外部身份与 Authority 接入**<br>使用 Authelia OIDC 认证并验证业务系统签发的短时 Agent authority；不实现用户、成员或业务 RBAC。<br>交付：OIDC adapter、authority verifier、scope matrix。 | P3-TEN-01 | 6-8 人日 | issuer/audience/expiry/scope 验证 fail closed；Zebra Policy 不得扩权。 |
+| `P3-SEC-01` | **Agent Policy 与 Authority 快照**<br>支持 Agent Policy 收紧、模拟、签名和审计，并持久化 Attempt 生效权限摘要。<br>交付：policy registry、authority snapshot、dry-run、rollout。 | P3-IAM-01 | 8-10 人日 | 策略变更可预演；历史任务可解析当时 authority 与 Policy 版本。 |
 | `P3-SEC-02` | **Vault/KMS 与短时 Capability**<br>集中密钥、轮换、短时令牌、撤销和最小 scope。<br>交付：Vault/KMS adapters、issuer、rotation runbook。 | P3-SEC-01 | 8-10 人日 | 轮换不中断现有安全会话；撤销在 SLO 内生效。 |
-| `P3-NET-01` | **集群级网络隔离与私网连接**<br>实现 namespace/network policy、egress、企业私网 connector。<br>交付：NetworkPolicy、proxy scale-out、private connector。 | P3-RT-01, P3-SEC-02 | 10-12 人日 | 默认 deny；跨租户和未授权外联被阻断；审计完整。 |
-| `P3-SCALE-01` | **Warm Pool 与自动伸缩**<br>降低启动延迟并按队列、资源和预算扩缩。<br>交付：pool controller、autoscaling、capacity model。 | P3-RT-01 | 8-10 人日 | 目标负载下 p95 调度时延达 SLO；无租户资源串用。 |
-| `P3-COST-01` | **配额、预算与成本治理**<br>按租户/用户/项目控制并归集模型、计算、存储和网络成本。<br>交付：quota service、budget rules、cost dashboards。 | P3-TEN-01, P3-SCALE-01 | 6-8 人日 | 超预算任务按策略停止/降级；成本可追溯到 session。 |
+| `P3-NET-01` | **集群级网络隔离与私网连接**<br>实现 namespace/network policy、egress、企业私网 connector。<br>交付：NetworkPolicy、proxy scale-out、private connector。 | P3-RT-01, P3-SEC-02 | 10-12 人日 | 默认 deny；跨 namespace 和未授权外联被阻断；审计完整。 |
+| `P3-SCALE-01` | **Warm Pool 与自动伸缩**<br>降低启动延迟并按队列、资源和技术限制扩缩。<br>交付：pool controller、autoscaling、capacity model。 | P3-RT-01 | 8-10 人日 | 目标负载下 p95 调度时延达 SLO；无 namespace 资源串用。 |
+| `P3-COST-01` | **技术限制与 Usage Evidence**<br>执行外部提供的并发、Token、Runtime、存储和网络上限，并输出业务无关的技术用量事件；不实现套餐或账单。<br>交付：limit enforcement、usage schema、capacity dashboard。 | P3-TEN-01, P3-SCALE-01 | 6-8 人日 | 超出技术上限的任务按策略停止；usage 可关联外部 request、namespace 和 session。 |
 | `P3-WF-01` | **Temporal Adapter 与长任务编排**<br>将 lease/workflow 抽象映射到可持久工作流。<br>交付：Temporal adapter、activity idempotency、migration path。 | P3-SCALE-01 | 10-12 人日 | 跨节点重启/升级不丢任务；活动重复不产生副作用。 |
 | `P3-DR-01` | **备份、跨节点恢复与灾难演练**<br>定义 DB/Object/Event/Secrets 的 RPO/RTO 和恢复步骤。<br>交付：backup jobs、restore scripts、DR runbook、演练报告。 | P3-WF-01, P3-SEC-02 | 8-10 人日 | 在隔离环境完成恢复；达到 RPO<=5 分钟、RTO<=30 分钟基线。 |
 | `P3-OBS-01` | **生产 SLO、告警与审计保留**<br>建立可用性、调度、恢复、隔离、成本和留存 SLO。<br>交付：SLO docs、alerts、retention jobs、audit export。 | P3-COST-01, P3-DR-01 | 6-8 人日 | 关键 SLO 有可执行告警；审计保留和删除策略可验证。 |
-| `P3-SEC-03` | **多租户攻击与渗透测试**<br>系统化测试逃逸、SSRF、凭证、越权、供应链和 prompt injection。<br>交付：threat model 更新、attack suite、修复报告。 | 全部 P3 安全任务 | 10-15 人日 | 0 个未接受的 Critical/High；所有发现有复测证据。 |
+| `P3-SEC-03` | **跨 Namespace 攻击与渗透测试**<br>系统化测试逃逸、SSRF、凭证、越权、供应链和 prompt injection。<br>交付：threat model 更新、attack suite、修复报告。 | 全部 P3 安全任务 | 10-15 人日 | 0 个未接受的 Critical/High；所有发现有复测证据。 |
 | `P3-EVAL-01` | **100 并发与混沌评测**<br>模拟 worker/sandbox/DB/proxy 故障和扩缩。<br>交付：load/chaos suite、capacity report、baseline。 | P3-WF-01, P3-OBS-01 | 8-10 人日 | 100 活跃 session 下无数据错配；恢复和延迟满足 Gate。 |
 | `P3-GATE-01` | **私有云 GA Gate**<br>完成隔离、容量、DR、运维、安全和合规证据。<br>交付：GA checklist、runbooks、SBOM、release notes。 | P3-SEC-03, P3-EVAL-01 | 5-6 人日 | 所有硬 Gate 通过；值班和回滚演练完成；风险正式接受。 |
 
@@ -305,12 +307,12 @@ Phase 3 的核心不是“部署到 Kubernetes”，而是证明租户隔离、�
 
 | Gate ID | 硬性标准 | 目标/阈值 | 证据 |
 |---|---|---:|---|
-| G3-TEN-01 | 跨租户数据、Artifact、Cache、Sandbox、凭证隔离 | 攻击/越权测试 100% 阻断 | isolation report |
+| G3-TEN-01 | 跨 namespace 数据、Artifact、Cache、Sandbox、凭证隔离 | 攻击/越权测试 100% 阻断 | isolation report |
 | G3-SCL-01 | 私有云容量基线达标 | 100 活跃 Session；无错配；p95 调度等待 <= 30 秒（Warm Pool 基线） | load report |
 | G3-DUR-01 | 跨节点恢复和工作流幂等 | Worker/Node/DB 短故障后任务恢复，无重复副作用 | chaos report |
 | G3-DR-01 | 灾难恢复达到基线 | RPO <= 5 分钟，RTO <= 30 分钟 | DR exercise report |
-| G3-SEC-01 | 多租户渗透测试无未接受 Critical/High | 0 个未接受 Critical/High | penetration report |
-| G3-IAM-01 | RBAC、组织 Policy、Capability、撤销与轮换可验证 | 权限矩阵 100% 通过 | IAM report |
+| G3-SEC-01 | 跨 namespace 渗透测试无未接受 Critical/High | 0 个未接受 Critical/High | penetration report |
+| G3-IAM-01 | Authelia OIDC、外部 authority、Agent Policy、Capability、撤销与轮换可验证 | Agent scope 矩阵 100% 通过 | identity/authority report |
 | G3-OPS-01 | SLO、告警、runbook、值班、审计保留和删除齐备 | 演练全部通过 | operations readiness review |
 | G3-GA-01 | 升级、回滚、SBOM、发布说明和风险接受完成 | 技术与业务双签 | GA bundle |
 
@@ -334,8 +336,8 @@ Phase 4 以 Epic 管理。每个 Epic 进入开发前都必须有独立需求、
 | 维度 | Phase 1 | Phase 2 | Phase 3 |
 |---|---|---|---|
 | Durability | 单机/多进程恢复，副作用幂等 | 多 Worker、流重连、Snapshot | 跨节点、Temporal、DR |
-| Security | Worktree、Rootless Docker、默认禁网、敏感路径 | Credential Broker、Egress Proxy、团队身份 | 强隔离、Tenant、Vault/KMS、组织 Policy |
-| Evaluation | 30-50 本地 cases、版本对比 | 并发、协作、凭证与 UI E2E | 负载、混沌、多租户攻击、SLO |
+| Security | Worktree、Rootless Docker、默认禁网、敏感路径 | Credential Broker、Egress Proxy、外部身份 | 强隔离、Namespace、Vault/KMS、外部 Authority |
+| Evaluation | 30-50 本地 cases、版本对比 | 并发、协作、凭证与 UI E2E | 负载、混沌、跨 namespace 攻击、SLO |
 | Observability | JSONL/Trace/Cost/Audit | OTel 跨服务、运营面板 | SLO、告警、审计保留、合规导出 |
 | Compatibility | V1 Contract + upcaster | API/DB/Artifact 升级与回滚 | 工作流、K8s、Policy 和数据迁移 |
 | Performance | 工具层开销可测，不阻塞本地使用 | 20 并发基线 | 100 并发、Warm Pool 与容量模型 |
