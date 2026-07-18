@@ -33,6 +33,13 @@ from agent_core.ports.runtime import (
     RuntimeSnapshotStatus,
     SandboxSpec,
 )
+from agent_core.ports.session_handoff import (
+    HandoffOperation,
+    SessionHandoffCommitRequest,
+    SessionHandoffCreateRequest,
+    SessionHandoffPort,
+    SessionHandoffResult,
+)
 from agent_core.ports.session_history import SessionHistoryPort
 from agent_core.ports.subagents import SubagentPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
@@ -72,6 +79,11 @@ __all__ = [
     "RuntimeSnapshotStatus",
     "SandboxSpec",
     "SessionHistoryPort",
+    "HandoffOperation",
+    "SessionHandoffCommitRequest",
+    "SessionHandoffCreateRequest",
+    "SessionHandoffPort",
+    "SessionHandoffResult",
     "SubagentPort",
     "ToolGatewayPort",
     "ToolRunStorePort",

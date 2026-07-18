@@ -36,6 +36,20 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.plans import PlanStep, PlanStepStatus, SessionPlan
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
+from agent_core.domain.session_handoff import (
+    CompletedToolEvidence,
+    EffectIdentity,
+    HandoffActorKind,
+    HandoffOperationStatus,
+    HandoffReason,
+    HandoffSideEffectClass,
+    SessionHandoffEnvelope,
+    SessionHandoffValidationContext,
+    SessionHandoffValidationError,
+    SessionLineage,
+    WorkspaceBindingRevision,
+    validate_session_handoff,
+)
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.tool_runs import ToolRunRecord
@@ -57,6 +71,12 @@ __all__ = [
     "ClarificationContext",
     "EventActor",
     "EventType",
+    "EffectIdentity",
+    "CompletedToolEvidence",
+    "HandoffActorKind",
+    "HandoffOperationStatus",
+    "HandoffReason",
+    "HandoffSideEffectClass",
     "MessageRole",
     "MemoryQuery",
     "MemoryRecord",
@@ -69,6 +89,10 @@ __all__ = [
     "PlanStep",
     "PlanStepStatus",
     "Session",
+    "SessionHandoffEnvelope",
+    "SessionHandoffValidationContext",
+    "SessionHandoffValidationError",
+    "SessionLineage",
     "SessionEvent",
     "SessionMessage",
     "SessionStatus",
@@ -83,5 +107,7 @@ __all__ = [
     "ToolResult",
     "WorkerLease",
     "WorkspaceProjection",
+    "WorkspaceBindingRevision",
     "WorkspaceStatus",
+    "validate_session_handoff",
 ]
