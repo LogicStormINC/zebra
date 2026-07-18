@@ -6,12 +6,11 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-07-18`
-- Verified implementation baseline: `667627a` (parent of governance-only PR `#144`)
+- Verified implementation baseline: `f950402` (PR `#156`)
 - Product posture: `feature-complete local Beta / single-host production candidate`
-- Active implementation task: `QA-148-MDL-01` is in Review on
-  `codex/issue-148-deepseek-reasoning-replay`
+- Active implementation task: none; `QA-148-MDL-01` is Done via PR `#156`
 - Locked architecture tasks: ACP entry and optional code intelligence
-- Open product issue: `#148` is addressed by `QA-148-MDL-01` and awaits merge
+- Open product issue: none; `#148` closed with PR `#156`
 
 ## Current Capability
 
@@ -58,10 +57,10 @@
 
 ## Latest Validation Baseline
 
-Validated from a detached `origin/main@667627a` worktree on 2026-07-18:
+Validated on the `QA-148-MDL-01` branch merged as `origin/main@f950402` on 2026-07-18:
 
 - `make sync`: passed
-- `make test`: `1447 passed, 3 skipped`
+- `make test`: `1452 passed, 4 skipped`
 - file-size gate: `868` files, zero violations
 - Ruff: passed
 - strict Mypy: `403` source files, zero errors
@@ -70,12 +69,11 @@ Validated from a detached `origin/main@667627a` worktree on 2026-07-18:
 - Desktop: all `19` deterministic checks and production build passed
 - current main JavaScript chunk: about `1.47 MB` (`458 KB` gzip), Vite warning remains
 
-The three skips are two opt-in real-provider smokes and the macOS-gated gVisor
+The four skips are three opt-in real-provider smokes and the macOS-gated gVisor
 test. Linux CI runs the real gVisor smoke instead of treating that skip as proof.
 
-`QA-148-MDL-01` branch validation on 2026-07-18: focused contracts `39 passed`
-including a real DeepSeek thinking tool round trip; full suite `1452 passed, 4
-skipped`; file-size, Ruff, strict Mypy (`403` files), and release Eval (`8/8`) passed.
+The DeepSeek credentials-enabled focused run also passed all `39` contracts,
+including a real thinking tool round trip.
 
 ## Governance State
 

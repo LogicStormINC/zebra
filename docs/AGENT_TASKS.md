@@ -13830,12 +13830,13 @@ window contract while preserving legacy OpenAI-compatible behavior.
 
 ### QA-148-MDL-01 - DeepSeek Thinking Tool-Loop Reasoning Replay
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `CORE / INTEGRATIONS / QA`
 - Depends on: merged `DS-OPT-01` and explicit maintainer request
 - Branch: `codex/issue-148-deepseek-reasoning-replay`
 - Issue: `#148`
+- Merged: PR `#156`, merge commit `f950402`
 - Owned paths: `packages/agent-core/src/agent_core/domain/messages.py`,
   `packages/agent-integrations/src/agent_integrations/deepseek_profiles.py`,
   `packages/agent-integrations/src/agent_integrations/openai_compatible.py`,
