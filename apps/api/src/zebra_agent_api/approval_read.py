@@ -6,7 +6,7 @@ from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session, SessionStatus
-from agent_storage import SQLiteProjectionStore
+from agent_storage import SQLiteAgentTaskStore, SQLiteProjectionStore
 from agent_storage.database import SQLiteDatabase
 
 from zebra_agent_api.approval_context import serialize_approval_context
@@ -18,11 +18,15 @@ class ApprovalReadApi:
     database_path: Path
 
     def list_approvals(self) -> ApiResponse:
+        task_store = SQLiteAgentTaskStore(self.database_path)
         return ApiResponse(
             status_code=200,
             body={
                 "approvals": [
-                    _approval_summary(session)
+                    _approval_summary(
+                        session,
+                        task_id=str(task_store.ensure_for_session(session.session_id).task_id),
+                    )
                     for session in _list_waiting_sessions(self.database_path)
                 ]
             },
@@ -37,7 +41,10 @@ class ApprovalReadApi:
                 status_code=404,
                 body={"approval_id": approval_id, "status": "not_found"},
             )
-        return ApiResponse(status_code=200, body=_approval_summary(session))
+        task_id = str(
+            SQLiteAgentTaskStore(self.database_path).ensure_for_session(session.session_id).task_id
+        )
+        return ApiResponse(status_code=200, body=_approval_summary(session, task_id=task_id))
 
 
 def _list_waiting_sessions(database_path: Path) -> list[Session]:
@@ -61,10 +68,10 @@ def _list_waiting_sessions(database_path: Path) -> list[Session]:
     return sessions
 
 
-def _approval_summary(session: Session) -> dict[str, object]:
+def _approval_summary(session: Session, *, task_id: str) -> dict[str, object]:
     body: dict[str, object] = {
         "approval_id": str(session.session_id),
-        "session_id": str(session.session_id),
+        "session_id": task_id,
         "title": session.title,
         "status": session.status.value,
         "current_sequence": session.current_sequence,

@@ -15,13 +15,13 @@ import { Sender } from "@ant-design/x";
 import { Button, Dropdown, GetRef } from "antd";
 import React from "react";
 import locale from "../_utils/local";
-import { sessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-status";
+import { activeSessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-status";
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import { availableMcpPrompts, availableMcpResourceIds, availableMcpToolNames } from "../lib/mcp-capabilities";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
 import { attachmentPayloads, type AttachmentPayload, type PendingAttachment } from "../lib/text-attachments";
 import { resolveSessionLaunchConfig, validateTaskLaunchConfig, type TaskLaunchConfig } from "../lib/task-launch-config";
-import type { ApprovalSummary, McpCapabilitiesResponse, McpPromptsResponse, SessionEvent, SessionHandoffPayload, SessionHandoffResponse, SessionSummary } from "../types";
+import type { ApprovalSummary, McpCapabilitiesResponse, McpPromptsResponse, SessionEvent, SessionSummary } from "../types";
 import { useConversationPaneStyle } from "./CodexConversationPane.styles";
 import { ConversationComposer } from "./conversation/ConversationComposer";
 import { ConversationThread } from "./conversation/ConversationThread";
@@ -63,8 +63,6 @@ interface CodexConversationPaneProps {
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onRefreshConversation: () => void;
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
-  onPreviewHandoff: (payload: SessionHandoffPayload) => Promise<SessionHandoffResponse>;
-  onCreateHandoff: (payload: SessionHandoffPayload) => Promise<SessionHandoffResponse>;
   onRespondClarification: (clarificationId: string, content: string) => Promise<unknown>;
   onScrollToLatest: () => void;
   onSelectConversation: (key: string) => void;
@@ -126,7 +124,7 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
     : props.runtimeStatus === "checking" ? locale.runtimeChecking : locale.runtimeDisconnected;
   const headerMeta = hasThread
     ? props.currentSessionId
-      ? `${props.isRequesting ? "运行中" : sessionStatusLabel(props.sessionSummary?.status)} · ${sessionWorkspaceLabel(props.sessionSummary)} · ${props.currentSessionId.slice(0, 8)}`
+      ? `${activeSessionStatusLabel(props.sessionSummary?.status, props.isRequesting)} · ${sessionWorkspaceLabel(props.sessionSummary)} · ${props.currentSessionId.slice(0, 8)}`
       : `${locale.statusDraft} · ${locale.notBound} · ${locale.notStarted}`
     : runtimeLabel;
 
@@ -239,8 +237,6 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
             messages={props.messages}
             onApprove={props.onApprove}
             onReject={props.onReject}
-            onPreviewHandoff={props.onPreviewHandoff}
-            onCreateHandoff={props.onCreateHandoff}
             onRespondClarification={props.onRespondClarification}
             sessionSummary={props.sessionSummary}
           />

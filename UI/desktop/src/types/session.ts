@@ -67,6 +67,7 @@ export interface TaskPlan {
 }
 
 export interface SessionSummary {
+  task_id?: string;
   session_id: string;
   title: string;
   status: string;
@@ -76,45 +77,6 @@ export interface SessionSummary {
   clarification_context?: ClarificationContext;
   task_plan?: TaskPlan;
   attachments?: SessionAttachment[];
-}
-
-export interface SessionHandoffPayload {
-  title: string;
-  objective: string;
-  stage_prompt: string;
-  reason?: "user_phase_boundary" | "operator_handoff" | "long_term_maintenance" | "context_quality_recommendation_confirmed";
-  focus?: string;
-  completed_work?: string[];
-  pending_work?: string[];
-}
-
-export interface SessionHandoffResponse {
-  handoff_id: string;
-  source_session_id: string;
-  child_session_id: string;
-  root_session_id: string;
-  stage_index: number;
-  status: string;
-  checksum: string;
-  idempotent_replay?: boolean;
-  envelope: {
-    objective: string;
-    immediate_next: string;
-    known_omissions: string[];
-    protected_user_constraints: string[];
-  };
-}
-
-export interface SessionLineageResponse {
-  session_id: string;
-  root_session_id: string;
-  stages: Array<{
-    session_id: string;
-    root_session_id: string;
-    parent_session_id?: string;
-    inbound_handoff_id?: string;
-    stage_index: number;
-  }>;
 }
 
 export interface RecentSessionSummary extends SessionSummary {
@@ -151,6 +113,7 @@ export interface SessionDiffResponse {
 }
 
 export interface CreateSessionResponse {
+  task_id?: string;
   session_id: string;
   title: string;
   status: string;

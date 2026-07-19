@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CodexWorkspace } from "./components/CodexWorkspace";
 import locale from "./_utils/local";
-import { isAppendToTerminalError, streamEventsToMessages, toErrorMessage, type ChatMessage } from "./lib/chat-surface";
+import { streamEventsToMessages, toErrorMessage, type ChatMessage } from "./lib/chat-surface";
 import { buildClarificationResponsePayload } from "./lib/clarification-continuation";
 import { useOperatorConfig } from "./lib/operator-config";
 import { mergeSessionEvents } from "./lib/live-session";
@@ -13,7 +13,6 @@ import type { TaskLaunchConfig } from "./lib/task-launch-config";
 import type { AttachmentPayload } from "./lib/text-attachments";
 import { useWorkspaceSessionIndex } from "./lib/use-workspace-session-index";
 import { useWorkspaceSelection } from "./lib/use-workspace-selection";
-import { useSessionHandoffActions } from "./lib/use-session-handoff";
 import { useCopyText } from "./lib/use-copy-text";
 import { useActiveApproval } from "./lib/use-active-approval";
 import { zebraApi } from "./lib/zebra-api";
@@ -332,24 +331,7 @@ export default function App() {
             [conversationKey]: sessionId!,
           }));
         } else {
-          try {
-            await api.appendMessage(sessionId, { content: trimmed, attachments });
-          } catch (error: unknown) {
-            if (!isAppendToTerminalError(error)) {
-              throw error;
-            }
-            const title = trimmed.slice(0, 36) || locale.newConversation;
-            const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile, network_profile: launchConfig.networkProfile, network_allowlist: launchConfig.networkAllowlist, mcp_allowlist: launchConfig.mcpAllowlist, mcp_resource_ids: launchConfig.mcpResourceIds, mcp_prompt_id: launchConfig.mcpPromptId ?? undefined, mcp_prompt_arguments: launchConfig.mcpPromptId ? launchConfig.mcpPromptArguments : undefined, attachments });
-            sessionId = created.session_id;
-            patchConfig({ sessionId });
-            if (!createdFromWorkspaceHome) {
-              renameConversation(conversationKey, title);
-            }
-            setConversationToSessionId((current) => ({
-              ...current,
-              [conversationKey]: sessionId!,
-            }));
-          }
+          await api.appendMessage(sessionId, { content: trimmed, attachments });
         }
         await executeSession(conversationKey, sessionId);
         return true;
@@ -396,20 +378,6 @@ export default function App() {
     }
     void runControlAction(() => api.cancel(sessionId));
   }, [api.cancel, currentSessionId, runControlAction]);
-
-  const { createHandoff, previewHandoff } = useSessionHandoffActions({
-    api,
-    currentSessionId,
-    createConversation: createIndexedConversation,
-    loadSummary: loadSessionSummary,
-    patchSessionId: (sessionId) => patchConfig({ sessionId }),
-    selectConversation: setCurrentConversation,
-    setBusy: setControlsBusy,
-    setSessionIds: setConversationToSessionId,
-    streamSession: syncConversationFromStream,
-    onError: (error) => messageApi.error(toErrorMessage(error)),
-    onSuccess: messageApi.success,
-  });
 
   const copyText = useCopyText(messageApi);
 
@@ -472,8 +440,6 @@ export default function App() {
         onResumeSession={resumeSession}
         onSuspendSession={suspendSession}
         onReject={activeApproval.reject}
-        onPreviewHandoff={previewHandoff}
-        onCreateHandoff={createHandoff}
         onRespondClarification={respondToClarification}
         onRefreshConversation={() => {
           void refreshConversation(currentConversation).catch((error: unknown) => {

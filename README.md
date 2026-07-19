@@ -50,7 +50,8 @@ The current mainline is a feature-complete local Beta and a single-host producti
 candidate. It includes:
 
 - durable provider-to-desktop Assistant streaming
-- recoverable context compaction and explicit stage Session handoff
+- stable Task identity with recoverable context compaction and automatic,
+  backend-internal execution segmentation
 - DeepSeek Flash/Pro profiles with fail-closed capability validation
 - trusted-local, rootless OCI, and production gVisor runtime classes
 - pull-request and `main` quality gates for backend, desktop, and real gVisor
@@ -69,7 +70,8 @@ deployment does not change the product boundary above. Read
 - bounded Harness loops with model and tool budgets
 - worker leases, cancellation, recovery, suspension, and snapshot restore
 - correlated model, tool, approval, clarification, artifact, memory, and trace evidence
-- explicit stage Session handoff with authority narrowing and side-effect replay guards
+- backend-internal handoff safety contracts with authority narrowing and side-effect replay guards
+- stable Task projection, cross-Segment event cursor, and active-Segment command routing
 
 ### Runtime, policy, and tools
 
@@ -94,10 +96,10 @@ deployment does not change the product boundary above. Read
 - CLI, FastAPI, worker, and Tauri/React desktop composition roots
 - replay-plus-tail SSE with cursor recovery
 - real-Chromium regression coverage for long streaming, reload recovery,
-  cancellation, and terminal-session follow-up
+  cancellation, and completed-Task follow-up across an invisible Segment
 - durable approval and clarification continuation
 - artifact, diff, audit, memory, commit, and guarded pull-request operations
-- context inspection, manual compaction, and stage-handoff controls
+- context inspection and manual compaction; internal execution boundaries are not user controls
 
 ## Explicit Boundaries
 
@@ -176,7 +178,9 @@ Focused references:
 - service boundary: [docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md](./docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md)
 - production Runtime: [docs/生产级Runtime实施方案_v1.0.md](./docs/生产级Runtime实施方案_v1.0.md)
 - context lifecycle: [docs/上下文生命周期与混合压缩架构方案_v1.0.md](./docs/上下文生命周期与混合压缩架构方案_v1.0.md)
-- stage handoff: [docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md](./docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md)
+- Task continuity and internal Segments: [docs/ADR-013_用户任务连续性与内部执行分段.md](./docs/ADR-013_用户任务连续性与内部执行分段.md)
+- automatic rollover roadmap: [docs/透明Context_Segment与自动Rollover实施方案_v1.0.md](./docs/透明Context_Segment与自动Rollover实施方案_v1.0.md)
+- historical handoff safety contract: [docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md](./docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md)
 - DeepSeek profiles: [docs/DeepSeek_V4_模型适配与专项优化方案_v1.0.md](./docs/DeepSeek_V4_模型适配与专项优化方案_v1.0.md)
 - CI gates: [docs/主线CI质量门禁说明_v1.0.md](./docs/主线CI质量门禁说明_v1.0.md)
 - architecture: [docs/Codex-like工程Agent平台最终架构设计_v1.0.md](./docs/Codex-like工程Agent平台最终架构设计_v1.0.md)

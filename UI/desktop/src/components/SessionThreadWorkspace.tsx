@@ -1,17 +1,16 @@
 import React from "react";
 import locale from "../_utils/local";
-import { sessionStatusLabel } from "../_utils/session-status";
+import { activeSessionStatusLabel } from "../_utils/session-status";
 import type { ChatMessage } from "../lib/chat-surface";
 import { projectRuntimeActivity } from "../lib/runtime-activity";
 import { optimisticTimelineMessages, projectSessionTimeline, timelinePlanPlacement, type TimelineMessageItem, type TimelineStatusItem } from "../lib/session-timeline";
 import { compactWorkspaceLabel } from "../lib/task-launch-config";
 import { hasVisibleTaskPlan } from "../lib/task-plan";
-import type { ApprovalSummary, SessionEvent, SessionHandoffPayload, SessionHandoffResponse, SessionSummary } from "../types";
+import type { ApprovalSummary, SessionEvent, SessionSummary } from "../types";
 import { AgentActivityCard } from "./AgentActivityCard";
 import { AssistantMessageBlock } from "./AssistantMessageBlock";
 import { SessionExecutionTrace } from "./SessionExecutionTrace";
 import { SessionTaskPlan } from "./SessionTaskPlan";
-import { SessionStageHandoffCard } from "./SessionStageHandoffCard";
 import { SessionApprovalPanel } from "./SessionApprovalPanel";
 import { SessionClarificationPanel } from "./SessionClarificationPanel";
 import { useSessionThreadWorkspaceStyle } from "./SessionThreadWorkspace.styles";
@@ -63,8 +62,6 @@ interface SessionThreadWorkspaceProps {
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
   onRespondClarification: (clarificationId: string, content: string) => Promise<unknown>;
   onReject: (approval: ApprovalSummary) => Promise<unknown>;
-  onPreviewHandoff: (payload: SessionHandoffPayload) => Promise<SessionHandoffResponse>;
-  onCreateHandoff: (payload: SessionHandoffPayload) => Promise<SessionHandoffResponse>;
   sessionSummary: SessionSummary | null;
 }
 
@@ -81,8 +78,6 @@ export function SessionThreadWorkspace({
   onApprove,
   onRespondClarification,
   onReject,
-  onPreviewHandoff,
-  onCreateHandoff,
   sessionSummary,
 }: SessionThreadWorkspaceProps) {
   const { styles } = useSessionThreadWorkspaceStyle();
@@ -105,11 +100,9 @@ export function SessionThreadWorkspace({
   const toolCount = timelineItems.filter((item) => item.kind === "tool").length;
   const activity = projectRuntimeActivity(sessionSummary?.status, events, isRequesting);
   const runtimeName = sessionSummary?.workspace?.runtime_name ?? locale.notBound;
-  const statusLabel = isRequesting
-    ? "运行中"
-    : isDraft
+  const statusLabel = isDraft
     ? locale.statusDraft
-    : sessionSummary ? sessionStatusLabel(sessionSummary.status) : "状态同步中";
+    : sessionSummary ? activeSessionStatusLabel(sessionSummary.status, isRequesting) : "状态同步中";
   const tabs: Array<{ key: InspectorTab; label: string }> = [
     { key: "context", label: locale.inspectorContext },
     { key: "logs", label: locale.inspectorLogs },
@@ -204,12 +197,6 @@ export function SessionThreadWorkspace({
             errorText={approvalErrorText}
             onApprove={onApprove}
             onReject={onReject}
-          />
-          <SessionStageHandoffCard
-            busy={isRequesting}
-            onCreate={onCreateHandoff}
-            onPreview={onPreviewHandoff}
-            session={sessionSummary}
           />
         </> : null}
       </section>

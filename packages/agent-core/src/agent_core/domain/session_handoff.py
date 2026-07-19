@@ -11,7 +11,9 @@ from agent_core.domain.context_capsule import ContextSourceEventRange
 from agent_core.domain.identifiers import HandoffId, SessionId
 from agent_core.domain.sessions import SessionStatus
 
-DEFAULT_MAX_HANDOFF_STAGE = 8
+# ponytail: one bounded integer protects pathological lineage; move to retention policy
+# when distributed Task storage lands.
+DEFAULT_MAX_HANDOFF_STAGE = 128
 HANDOFF_ENVELOPE_VERSION = "1.0"
 
 
@@ -20,6 +22,10 @@ class HandoffReason(StrEnum):
     OPERATOR_HANDOFF = "operator_handoff"
     LONG_TERM_MAINTENANCE = "long_term_maintenance"
     CONTEXT_QUALITY_RECOMMENDATION_CONFIRMED = "context_quality_recommendation_confirmed"
+    INTERNAL_CONTEXT_PRESSURE = "internal_context_pressure"
+    INTERNAL_RECOVERY = "internal_recovery"
+    INTERNAL_TERMINAL_FOLLOW_UP = "internal_terminal_follow_up"
+    INTERNAL_AGENT_HINT = "internal_agent_hint"
 
 
 class HandoffActorKind(StrEnum):
@@ -268,7 +274,12 @@ def validate_session_handoff(
     context: SessionHandoffValidationContext,
 ) -> None:
     failures: list[str] = []
-    if context.source_status not in {SessionStatus.COMPLETED, SessionStatus.SUSPENDED}:
+    if context.source_status not in {
+        SessionStatus.COMPLETED,
+        SessionStatus.CANCELLED,
+        SessionStatus.SUSPENDED,
+        SessionStatus.FAILED,
+    }:
         failures.append("handoff_source_status_rejected")
     if (
         envelope.source_session_id != context.expected_source_session_id

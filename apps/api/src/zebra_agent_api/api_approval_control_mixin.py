@@ -10,7 +10,7 @@ from agent_core.application import (
 )
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.identifiers import SessionId
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_storage import SQLiteAgentTaskStore, SQLiteEventStore, SQLiteProjectionStore
 
 from zebra_agent_api.approval_context import serialize_approval_context
 from zebra_agent_api.responses import ApiResponse, conflict
@@ -83,9 +83,10 @@ class ApiApprovalControlMixin:
         approval_context = serialize_approval_context(session.approval_context)
         event_store.append(event)
         updated_session = projection_store.save_session(apply_event(session, event))
+        task_id = SQLiteAgentTaskStore(self.database_path).ensure_for_session(session_key).task_id
         body: dict[str, object] = {
             "approval_id": approval_id,
-            "session_id": approval_id,
+            "session_id": str(task_id),
             "decision": decision,
             "event_type": event.event_type.value,
             "sequence": event.sequence,

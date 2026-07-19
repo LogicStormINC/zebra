@@ -1599,6 +1599,7 @@ runtime:
 | ADR-010 | Eval、Replay 和 Release Gate 从 MVP 建立 |
 | ADR-011 | Redis Memory、Temporal、OPA 等均通过 Adapter 接入，不绑定核心领域模型 |
 | ADR-012 | Zebra 是 Agent Runtime 微服务；认证和业务用户/租户/订阅/计费均外置 |
+| ADR-013 | 用户只感知稳定 Task；Session/Context Segment rollover 由后端自动处理且普通 UI 不可见 |
 
 # 28. 最终结论
 

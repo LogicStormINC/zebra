@@ -3,8 +3,6 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
 const API_URL = "http://127.0.0.1:18080";
 const AUTH_HEADERS = { Authorization: "Bearer e2e-token" };
 
-test.describe.configure({ mode: "serial" });
-
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(({ apiUrl }) => {
     if (sessionStorage.getItem("zebra-e2e-configured")) return;
@@ -62,18 +60,23 @@ test("stops a running stream without a late completion", async ({ page, request 
   const sessionId = await activeSessionId(page);
 
   await page.locator('[aria-label="停止任务"] button').click();
-  await expect(page.getByText("已停止", { exact: true })).toBeVisible();
   await expect.poll(async () => (await session(request, sessionId)).status).toBe("cancelled");
+  await expect(page.getByText("已停止", { exact: true })).toBeVisible();
 
   await page.waitForTimeout(5_000);
-  const stream = await request.get(`${API_URL}/sessions/${sessionId}/stream`, { headers: AUTH_HEADERS });
+  const stream = await request.get(`${API_URL}/tasks/${sessionId}/stream`, { headers: AUTH_HEADERS });
   const events = await stream.text();
   expect(events).toContain('"event_type": "session_cancelled"');
   expect(events).not.toContain('"event_type": "session_completed"');
   expect((await session(request, sessionId)).status).toBe("cancelled");
+
+  await submit(page, "E2E_APPROVAL continue the cancelled Task internally");
+  await expect(page.getByText("Agent 需要人工确认")).toBeVisible();
+  await page.getByRole("button", { name: "批准" }).click();
+  await expect(page.getByText("APPROVAL_COMPLETE", { exact: true })).toBeVisible();
 });
 
-test("submits a follow-up after completion as a new durable execution", async ({ page, request }) => {
+test("continues a completed task through an invisible internal Segment", async ({ page, request }) => {
   await submit(page, "E2E_FOLLOW_UP_ONE complete the first turn");
   await expect(page.getByText("FIRST_COMPLETE", { exact: true })).toBeVisible();
   await expect(page.getByText("已完成", { exact: true })).toBeVisible();
@@ -84,9 +87,11 @@ test("submits a follow-up after completion as a new durable execution", async ({
   await expect(page.getByText("E2E_FOLLOW_UP_TWO continue after the terminal turn", { exact: true })).toBeVisible();
   const secondSessionId = await activeSessionId(page);
 
-  expect(secondSessionId).not.toBe(firstSessionId);
+  expect(secondSessionId).toBe(firstSessionId);
   expect((await session(request, firstSessionId)).status).toBe("completed");
-  expect((await session(request, secondSessionId)).status).toBe("completed");
+  const internal = await request.get(`${API_URL}/internal/tasks/${firstSessionId}/segments`, { headers: AUTH_HEADERS });
+  expect(internal.ok()).toBeTruthy();
+  expect((await internal.json()).segments).toHaveLength(2);
 });
 
 test("shows and completes a real approval continuation", async ({ page }) => {
@@ -128,7 +133,7 @@ function markers(prefix: string, count: number): string[] {
 }
 
 async function session(request: APIRequestContext, sessionId: string): Promise<{ status: string }> {
-  const response = await request.get(`${API_URL}/sessions/${sessionId}`, { headers: AUTH_HEADERS });
+  const response = await request.get(`${API_URL}/tasks/${sessionId}`, { headers: AUTH_HEADERS });
   expect(response.ok()).toBeTruthy();
   return response.json() as Promise<{ status: string }>;
 }

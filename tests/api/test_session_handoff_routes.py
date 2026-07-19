@@ -51,9 +51,7 @@ def test_handoff_routes_create_inspect_lineage_and_idempotent_replay(tmp_path: P
     inspected = adapter.handle(
         RouteRequest(method="GET", path=f"/handoffs/{created.body['handoff_id']}")
     )
-    lineage = adapter.handle(
-        RouteRequest(method="GET", path=f"/sessions/{created.body['child_session_id']}/lineage")
-    )
+    lineage = adapter.handle(RouteRequest(method="GET", path=f"/internal/tasks/{source}/segments"))
 
     assert created.status_code == 201
     assert replay.status_code == 200
@@ -62,7 +60,10 @@ def test_handoff_routes_create_inspect_lineage_and_idempotent_replay(tmp_path: P
     assert conflicting.status_code == 409
     assert conflicting.body["status"] == "handoff_idempotency_conflict"
     assert inspected.body["checksum"] == created.body["checksum"]
-    assert [stage["stage_index"] for stage in lineage.body["stages"]] == [0, 1]
+    assert [stage["segment_index"] for stage in lineage.body["segments"]] == [0, 1]
+    assert adapter.handle(
+        RouteRequest(method="GET", path=f"/sessions/{created.body['child_session_id']}")
+    ).status_code == 404
     child_events = SQLiteEventStore(database).list_for_session(
         SessionId(UUID(str(created.body["child_session_id"])))
     )
@@ -133,12 +134,12 @@ def test_disabled_flag_blocks_creation_but_keeps_existing_lineage_readable(
         RouteRequest(method="GET", path=f"/handoffs/{created.body['handoff_id']}")
     )
     lineage = disabled.handle(
-        RouteRequest(method="GET", path=f"/sessions/{created.body['child_session_id']}/lineage")
+        RouteRequest(method="GET", path=f"/internal/tasks/{source}/segments")
     )
 
     assert blocked.body["status"] == "handoff_disabled"
     assert inspected.status_code == 200
-    assert len(lineage.body["stages"]) == 2
+    assert len(lineage.body["segments"]) == 2
 
 
 def _handoff_settings():

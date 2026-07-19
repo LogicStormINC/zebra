@@ -7,8 +7,8 @@ const controlsSource = readFileSync(new URL("../src/components/conversation/Task
 
 assert.match(apiSource, /"\/capabilities\/mcp\/prompts"/u);
 assert.match(appSource, /queryKey: \["mcp-prompts"[\s\S]*?enabled: false/u);
-assert.equal(appSource.match(/mcp_prompt_id: launchConfig\.mcpPromptId/g)?.length, 2);
-assert.equal(appSource.match(/mcp_prompt_arguments: launchConfig\.mcpPromptId/g)?.length, 2);
+assert.equal(appSource.match(/mcp_prompt_id: launchConfig\.mcpPromptId/g)?.length, 1);
+assert.equal(appSource.match(/mcp_prompt_arguments: launchConfig\.mcpPromptId/g)?.length, 1);
 assert.doesNotMatch(apiSource.match(/appendMessage:[\s\S]*?commit:/u)?.[0] ?? "", /mcp_prompt/u);
 assert.match(controlsSource, /editable && config\.networkProfile === "mcp-proxy-only"/u);
 

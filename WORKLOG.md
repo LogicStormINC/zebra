@@ -16,6 +16,25 @@
 - merged PR `#174` after all seven required Quality jobs passed, including
   Desktop browser regressions and Packaged Tauri Runtime E2E
 
+## 2026-07-19 CTX-SEG-01 Stable Task And Internal Segments
+
+- implemented stable Task/Execution Segment domain and SQLite projections with
+  lazy migration of existing Session lineage
+- made Task active-Segment CAS atomic with the existing handoff transaction and
+  retained idempotency, authority narrowing, drift, outbox, and no-replay checks
+- added public Task API, monotonic cross-Segment read/tail stream, active-Segment
+  routing, internal lifecycle/lineage routes, and hidden child Session reads
+- moved Desktop core traffic to `/tasks`, removed terminal fallback session
+  creation, and retained one conversation identity across automatic rollover
+- validated completed follow-up with text attachment, failed recovery, unsafe
+  boundary pause, migration, concurrent successor exclusion, and stream filtering
+- fixed CI-discovered cancellation rendering and projected internal-Segment
+  approvals back to the stable Task ID while retaining the internal approval ID
+- limited inherited workspace drift validation to the first child attempt so
+  legitimate runtime setup does not reject later approval continuations
+- validation: `make test` (`1501 passed, 7 skipped`), `make check`, all Desktop
+  `check:*` scripts, production build, and Playwright Chromium (`7 passed`)
+
 ## 2026-07-05 UI Desktop Workspace Bootstrap
 
 - created `UI/desktop` as a dedicated frontend workspace for future Zebra Agent operator UI development
@@ -5506,3 +5525,25 @@
 - Repository validation passed `1452` tests with four documented environment /
   credential skips, file-size `868`, Ruff, strict Mypy across `403` source files,
   and all `8` release Evals.
+
+## 2026-07-19 CTX-SEG-P0-01 Invisible Internal Execution Segments
+
+- Claimed `CTX-SEG-P0-01` on `codex/ctx-seg-p0-invisible-ui` in an isolated
+  worktree and recorded ADR-013 plus the dependency-ordered P0-P4 roadmap.
+- Superseded explicit user-operated handoff as the normal product interaction;
+  one stable Task is now the user-visible boundary and execution Segments are
+  defined as backend-internal state.
+- Removed Desktop's stage handoff card, client hook/helpers, API methods, types,
+  and prop plumbing. Existing backend safety contracts remain unchanged and
+  disabled by default.
+- Replaced the old handoff helper check with a source-level regression that
+  prevents ordinary user surfaces from regaining child-Session creation controls.
+- Validation completed so far:
+  - `volta run --node 22.17.0 pnpm run check:handoff`
+  - `volta run --node 22.17.0 pnpm run build`
+  - all `20` Desktop `check:*` scripts
+  - initial `make test`: `1491 passed, 7 skipped`; the file-size test required
+    staging deleted tracked files before its Git-index-based scan could complete
+  - final `make test`: `1492 passed, 7 skipped`
+  - `make check`: file-size `887`, Ruff, strict Mypy over `412` source files,
+    and all `8` release evals passed

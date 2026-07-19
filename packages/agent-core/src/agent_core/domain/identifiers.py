@@ -2,6 +2,7 @@ from typing import NewType
 from uuid import UUID, uuid4
 
 SessionId = NewType("SessionId", UUID)
+TaskId = NewType("TaskId", UUID)
 EventId = NewType("EventId", UUID)
 MessageId = NewType("MessageId", UUID)
 ToolCallId = NewType("ToolCallId", UUID)
@@ -14,6 +15,10 @@ HandoffId = NewType("HandoffId", UUID)
 
 def new_session_id() -> SessionId:
     return SessionId(uuid4())
+
+
+def new_task_id() -> TaskId:
+    return TaskId(uuid4())
 
 
 def new_event_id() -> EventId:

@@ -8,8 +8,10 @@
 - Snapshot date: `2026-07-19`
 - Verified implementation baseline: `f1e4965` (PR `#174`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
-- Active implementation task: none; `UI-COMPOSER-01` merged via PR `#174`.
-- Active architecture task: none; `ARCH-SVC-BOUNDARY-01` merged via PR `#166`.
+- Review task: `CTX-SEG-01` has delivered the stable Task, internal Segment,
+  unified stream/routing, automatic safe rollover, and SQLite migration slice.
+- Active architecture task: ADR-013 replaces user-visible child Sessions with a
+  stable Task boundary and backend-internal execution Segments.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
@@ -23,8 +25,12 @@
 - Harness and Worker execution is bounded, stoppable, resumable, and recoverable.
 - SQLite leases, idempotency, tool/effect ledgers, snapshots, artifacts, and
   delivery audit cover the local execution lifecycle.
-- Stage Session handoff is disabled by default and can be enabled explicitly at
-  a safe boundary with lineage, authority, workspace, and no-replay checks.
+- Existing Session handoff safety contracts now back internal Segment rollover
+  while the legacy ordinary-user mutation remains disabled by default.
+- Stable Task persistence aggregates root and child Segments behind one identity,
+  one monotonic event cursor, and active-Segment message/control routing.
+- Completed-Task follow-up and cancelled/failed-Task recovery create internal Segments
+  automatically; unsafe lifecycle boundaries pause or fail closed.
 
 ### Runtime and security
 
@@ -60,9 +66,10 @@
   internal Policy may only preserve or narrow that authority.
 - API, CLI, Worker, and Desktop read and mutate the same durable state.
 - Desktop consumes replay-plus-tail SSE, renders truthful partial output, and
-  supports approval, clarification, task plans, context, artifacts, and handoff.
+  supports approval, clarification, task plans, context, and artifacts without
+  exposing internal child-Session or handoff controls.
 - Real Chromium exercises the live Desktop/API/Worker/SQLite/SSE chain for long
-  streams, reload recovery, cancellation, and terminal-session follow-up.
+  streams, reload recovery, cancellation, and invisible cross-Segment follow-up.
 - Desktop composes Lobe UI `ThemeProvider` with Ant Design X and Zebra's durable
   event projection; Lobe UI does not replace session or chat state.
 - The compact Ant Design X composer is merged; it does not change conversation
@@ -71,6 +78,22 @@
   MCP, and read-only Research paths according to the task profile.
 
 ## Latest Validation Baseline
+
+Validated on `codex/ctx-seg-01-task-runtime` on 2026-07-19:
+
+- `make test`: `1501 passed, 7 skipped`
+- `make check`: file-size, Ruff, strict Mypy over `417` source files, and `8/8`
+  release Eval cases passed
+- Desktop: every deterministic `check:*` script and production build passed
+- real Chromium: `7/7` long-stream, reload, stop, invisible Segment follow-up,
+  approval, and failure regressions passed
+- terminal control state and approval identity now project through the stable Task
+  boundary even while an internal Segment execution request is settling
+- inherited workspace revision is fail-closed before the first Segment attempt;
+  later approval continuations use current runtime authority instead of replaying
+  the immutable creation-time revision check
+
+Previous packaged mainline baseline:
 
 Validated on `ARCH-RT-A4-E2E-01`, merged as `origin/main@d586a8f` / PR `#165`
 on 2026-07-18:
