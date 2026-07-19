@@ -14338,7 +14338,7 @@ namespace isolation, concurrency, durability, and audit contracts.
 
 ### QA-HANDOFF-CLK-01 - Deterministic Stale Handoff Clock Boundary
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `QA / STORAGE`
 - Depends on: merged Session handoff persistence
@@ -14361,5 +14361,36 @@ the test fixture's fixed date.
 #### Validation
 
 - focused regression: `1 passed`
+- `make test`: `1492 passed, 7 skipped`
+- `make check`: file-size, Ruff, strict Mypy, and release Eval passed
+
+### QA-PKG-E2E-02 - Bounded Packaged WebDriver Connection Recovery
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `QA / RELEASE`
+- Depends on: merged `ARCH-RT-A4-E2E-01`
+- Branch: `codex/qa-pkg-e2e-02-driver-retry`
+- Owned paths: `.github/workflows/quality.yml`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`
+
+#### Goal
+
+Keep the packaged Tauri release gate deterministic when upstream WebDriver
+transport closes with `Connection reset by peer`, while preserving immediate
+failure for product assertions and every other error class.
+
+#### Acceptance
+
+- [x] A packaged drive is retried at most once and only when its captured log
+  contains the known WebDriver connection-reset signature.
+- [x] Product assertions, API failures, build failures, and a second transport
+  reset still fail the Quality job.
+- [x] Both attempt logs and the final machine-readable evidence are retained.
+- [ ] Workflow syntax, repository checks, and the real packaged Quality job pass.
+
+#### Local Validation
+
+- workflow YAML parse and retry-signature inspection: passed
 - `make test`: `1492 passed, 7 skipped`
 - `make check`: file-size, Ruff, strict Mypy, and release Eval passed

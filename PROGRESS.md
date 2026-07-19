@@ -8,10 +8,9 @@
 - Snapshot date: `2026-07-19`
 - Verified implementation baseline: `9a48312` (PR `#169`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
-- Active implementation task: `QA-HANDOFF-CLK-01` removes a wall-clock date
-  dependency from the stale handoff regression.
-- Active architecture task: `ARCH-SVC-BOUNDARY-01` is in review and defines the
-  embeddable Agent Runtime microservice boundary
+- Active implementation task: `QA-PKG-E2E-02` stabilizes the packaged Tauri
+  gate after two connection-reset failures without retrying product assertions.
+- Active architecture task: none; `ARCH-SVC-BOUNDARY-01` merged via PR `#166`.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
