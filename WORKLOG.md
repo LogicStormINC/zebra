@@ -13,6 +13,8 @@
   release Eval gates
 - verified real Chromium desktop, idle, and `390px` mobile rendering with no
   horizontal overflow or console warnings
+- merged PR `#174` after all seven required Quality jobs passed, including
+  Desktop browser regressions and Packaged Tauri Runtime E2E
 
 ## 2026-07-05 UI Desktop Workspace Bootstrap
 

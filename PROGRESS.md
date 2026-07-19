@@ -6,10 +6,9 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-07-19`
-- Verified implementation baseline: `69545db` (PR `#168`)
+- Verified implementation baseline: `f1e4965` (PR `#174`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
-- Active implementation task: `UI-COMPOSER-01` is in Review on
-  `codex/ui-composer-compact-01`.
+- Active implementation task: none; `UI-COMPOSER-01` merged via PR `#174`.
 - Active architecture task: none; `ARCH-SVC-BOUNDARY-01` merged via PR `#166`.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
@@ -66,8 +65,8 @@
   streams, reload recovery, cancellation, and terminal-session follow-up.
 - Desktop composes Lobe UI `ThemeProvider` with Ant Design X and Zebra's durable
   event projection; Lobe UI does not replace session or chat state.
-- `UI-COMPOSER-01` is refining the existing Ant Design X composer presentation;
-  it does not change conversation or task-launch contracts.
+- The compact Ant Design X composer is merged; it does not change conversation
+  or task-launch contracts.
 - Typed local tools cover bounded file, command, patch, tests, Git, Web, Skill,
   MCP, and read-only Research paths according to the task profile.
 
@@ -116,6 +115,7 @@ including a real thinking tool round trip.
   `ARCH-RT-A1-OS-01` through `ARCH-RT-A4-E2E-01` are `Done`.
 - `QA-HANDOFF-CLK-01`, `QA-PKG-E2E-02`, `QA-PKG-E2E-03`, and `UI-LOBE-01`
   are `Done` via PRs `#170`, `#171`, `#172`, and `#168`.
+- `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 
 ## Known Follow-Ups

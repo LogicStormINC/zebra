@@ -28,8 +28,7 @@
 - `ARCH-RT-A3-REL-01` is `Done` via PR `#164`.
 - `ARCH-RT-A4-E2E-01` is `Done` via PR `#165`.
 - `UI-LOBE-01` is `Done` via PR `#168`.
-- `UI-COMPOSER-01` is `Review` on
-  `codex/ui-composer-compact-01` for the maintainer-requested compact composer.
+- `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-SVC-BOUNDARY-01` is `Done` via PR `#166`.
 - `QA-HANDOFF-CLK-01`, `QA-PKG-E2E-02`, and `QA-PKG-E2E-03` are `Done` via
   PRs `#170`, `#171`, and `#172`.
@@ -14485,11 +14484,12 @@ projection.
 
 ### UI-COMPOSER-01 - Compact Codex-Style Conversation Composer
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `APP / UI / QA`
 - Depends on: merged `UI-LOBE-01` and explicit maintainer request
 - Branch: `codex/ui-composer-compact-01`
+- Merged PR: `#174` (`f1e4965`)
 - Owned paths: `UI/desktop/src/components/conversation/ConversationComposer.tsx`,
   `UI/desktop/src/components/CodexConversationPane.styles.ts`,
   `UI/desktop/src/components/ComposerAttachments.styles.ts`,
