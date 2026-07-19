@@ -167,29 +167,39 @@ def test_web_gateway_uses_durable_network_authority_and_executes_exactly_once(
     )
     monkeypatch.setattr(
         "agent_runtime.harness.LocalWebGatewayTransport",
-        lambda: transport,
+        lambda **kwargs: transport,
     )
     session_id = _seed_session(
         database_path,
         tmp_path,
-        network_profile="full-trusted-local",
+        network_profile="none",
     )
-    service = _execution_service(database_path)
+    workspace_store = SQLiteWorkspaceProjectionStore(database_path)
+    workspace = workspace_store.get_workspace(session_id)
+    assert workspace is not None
+    workspace_store.save_workspace(
+        workspace.model_copy(update={"runtime_spec_digest": "legacy-none-runtime-authority"})
+    )
+    service = _execution_service(
+        database_path,
+        settings=_settings(database_path, profile="local"),
+    )
 
-    completed = service.execute_session(
-        session_id, worker_id="worker-web", executed_at=created_at
-    )
+    completed = service.execute_session(session_id, worker_id="worker-web", executed_at=created_at)
 
     assert completed.session.status is SessionStatus.COMPLETED
     assert completed.attempt_result.metadata["assistant_message"] == "authorized-web-output"
     assert len(transport.requests) == 1
     assert transport.requests[0].target.hostname == "docs.example.com"
     events = SQLiteEventStore(database_path).list_for_session(session_id)
-    assert sum(
-        event.event_type is EventType.TOOL_EXECUTION_STARTED
-        and event.payload.get("tool_name") == "web.fetch"
-        for event in events
-    ) == 1
+    assert (
+        sum(
+            event.event_type is EventType.TOOL_EXECUTION_STARTED
+            and event.payload.get("tool_name") == "web.fetch"
+            for event in events
+        )
+        == 1
+    )
 
 
 def test_mcp_stdio_waits_for_approval_then_recovers_exact_call(
@@ -246,19 +256,20 @@ def test_mcp_stdio_waits_for_approval_then_recovers_exact_call(
         {"operator": "tester", "reason": "approved exact MCP call"},
     )
 
-    completed = service.execute_session(
-        session_id, worker_id="worker-mcp", executed_at=created_at
-    )
+    completed = service.execute_session(session_id, worker_id="worker-mcp", executed_at=created_at)
 
     assert completed.session.status is SessionStatus.COMPLETED
     assert completed.attempt_result.metadata["assistant_message"] == "approved-mcp-complete"
     assert marker.read_text(encoding="utf-8") == "called"
     events = SQLiteEventStore(database_path).list_for_session(session_id)
-    assert sum(
-        event.event_type is EventType.TOOL_EXECUTION_STARTED
-        and event.payload.get("tool_name") == "mcp.fixture.echo"
-        for event in events
-    ) == 1
+    assert (
+        sum(
+            event.event_type is EventType.TOOL_EXECUTION_STARTED
+            and event.payload.get("tool_name") == "mcp.fixture.echo"
+            for event in events
+        )
+        == 1
+    )
 
 
 def test_large_mcp_catalog_bridge_waits_for_approval_then_recovers_provider_view(
@@ -304,9 +315,7 @@ def test_large_mcp_catalog_bridge_waits_for_approval_then_recovers_provider_view
         database_path,
         tmp_path,
         network_profile="mcp-proxy-only",
-        mcp_allowlist=tuple(
-            f"mcp.fixture.echo{index if index else ''}" for index in range(16)
-        ),
+        mcp_allowlist=tuple(f"mcp.fixture.echo{index if index else ''}" for index in range(16)),
     )
     service = _execution_service(database_path, settings=settings)
 
@@ -341,11 +350,14 @@ def test_large_mcp_catalog_bridge_waits_for_approval_then_recovers_provider_view
     assert resumed_call.provider_tool_name == MCP_TOOL_CALL_NAME
     assert resumed_call.provider_arguments == tool_call.arguments
     events = SQLiteEventStore(database_path).list_for_session(session_id)
-    assert sum(
-        event.event_type is EventType.TOOL_EXECUTION_STARTED
-        and event.payload.get("tool_name") == "mcp.fixture.echo"
-        for event in events
-    ) == 1
+    assert (
+        sum(
+            event.event_type is EventType.TOOL_EXECUTION_STARTED
+            and event.payload.get("tool_name") == "mcp.fixture.echo"
+            for event in events
+        )
+        == 1
+    )
 
 
 def test_mcp_recovery_fails_closed_when_selected_server_was_removed(
@@ -370,11 +382,14 @@ def test_mcp_recovery_fails_closed_when_selected_server_was_removed(
             settings=_settings(database_path),
         ).execute_session(session_id, worker_id="worker-mcp-removed")
     events = SQLiteEventStore(database_path).list_for_session(session_id)
-    assert sum(
-        event.event_type is EventType.TOOL_EXECUTION_STARTED
-        and event.payload.get("tool_name") == "mcp.fixture.echo"
-        for event in events
-    ) == 0
+    assert (
+        sum(
+            event.event_type is EventType.TOOL_EXECUTION_STARTED
+            and event.payload.get("tool_name") == "mcp.fixture.echo"
+            for event in events
+        )
+        == 0
+    )
 
 
 def test_web_search_uses_durable_network_authority_and_executes_exactly_once(
@@ -402,7 +417,7 @@ def test_web_search_uses_durable_network_authority_and_executes_exactly_once(
     )
     monkeypatch.setattr(
         "agent_runtime.harness.LocalWebSearchTransport",
-        lambda: transport,
+        lambda **kwargs: transport,
     )
     session_id = _seed_session(
         database_path,
@@ -574,9 +589,7 @@ def _gateway(
     tool_call: ToolCall | None = None,
     follow_up: str | None = None,
 ) -> ScriptedModelGateway:
-    contents = ((content, tool_call),) + (
-        ((follow_up, None),) if follow_up is not None else ()
-    )
+    contents = ((content, tool_call),) + (((follow_up, None),) if follow_up is not None else ())
     return ScriptedModelGateway(
         responses=tuple(
             ScriptedModelResponse(
@@ -650,11 +663,12 @@ def _execution_service(
 def _settings(
     database_path: Path,
     *,
+    profile: str = "test",
     web_search_endpoint: str | None = None,
     mcp_servers: tuple[McpServerSettings, ...] = (),
 ) -> ZebraAgentSettings:
     return ZebraAgentSettings(
-        profile="test",
+        profile=profile,
         database_url=str(database_path),
         api=ApiSettings(auth_token=None),
         model=ModelSettings(

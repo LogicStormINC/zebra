@@ -20,6 +20,19 @@
 - an initial aggregate Desktop check inherited Node 20 and failed before running
   TypeScript; rerunning through the repository's Volta-pinned Node 22.17.0
   completed every check successfully
+- follow-up local-runtime repair derives effective `full-trusted-local` authority
+  for API/CLI/Worker execution, including old Tasks and automatic Segments, and
+  removes approval pauses for local command and MCP calls while retaining hard
+  validation, workspace, Gateway, Runtime, and audit boundaries
+- local Web transports now honor the macOS system HTTPS proxy in trusted mode;
+  direct and all non-local paths retain public-address DNS preflight
+- real regression on the original Task `ff198e19-9f46-42d0-b2bd-4d64e6166e67`
+  completed `web.fetch` against OpenAI `robots.txt` without approval; separate
+  `/news/` 403 and RSS size-limit results were correctly reported as transport
+  failures rather than Policy denials
+- follow-up validation passed: `107` focused tests, `1509 passed, 5 skipped`
+  full suite, zero file-size violations, Ruff, strict Mypy over `418` files,
+  `8/8` release Evals, all Desktop checks/build, and real Chromium `8/8`
 
 ## 2026-07-19 UI-COMPOSER-01 Compact Conversation Composer
 

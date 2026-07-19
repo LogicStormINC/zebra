@@ -15,7 +15,12 @@ from agent_core.harness.models import HarnessAttemptTrace, HarnessLoopResult
 from agent_core.harness.projection import HarnessTraceProjector
 from agent_integrations import build_model_gateway
 from agent_runtime import run_local_harness
-from agent_security import DEFAULT_NETWORK_PROFILE, NetworkProfile, PolicyProfile
+from agent_security import (
+    DEFAULT_NETWORK_PROFILE,
+    NetworkProfile,
+    PolicyProfile,
+    parse_network_profile,
+)
 from agent_storage import (
     SQLiteArtifactPayloadStore,
     SQLiteEventStore,
@@ -25,7 +30,7 @@ from agent_storage import (
     list_confirmed_repo_memories,
     store_initial_text_attachments,
 )
-from zebra_agent_config import ZebraAgentSettings
+from zebra_agent_config import ZebraAgentSettings, trusted_local_mode_enabled
 
 
 @dataclass(frozen=True)
@@ -53,6 +58,10 @@ def execute_durable_run(
     mcp_allowlist: tuple[str, ...] = (),
     attachments: tuple[TextAttachmentInput, ...] = (),
 ) -> DurableRunResult:
+    trusted_local = trusted_local_mode_enabled(settings)
+    effective_network_profile = (
+        parse_network_profile("full-trusted-local") if trusted_local else network_profile
+    )
     confirmed_memories = list_confirmed_repo_memories(
         database_path,
         repo_id=str(workspace_root.resolve()),
@@ -64,11 +73,12 @@ def execute_durable_run(
         model_gateway=build_model_gateway(settings),
         policy_profile=policy_profile,
         tool_profile=tool_profile,
-        network_profile=network_profile,
+        network_profile=effective_network_profile,
         web_search_endpoint=settings.web_search_endpoint,
         skill_roots=settings.skill_roots,
         mcp_servers=settings.mcp_servers,
         mcp_allowlist=mcp_allowlist,
+        trusted_local=trusted_local,
         session_history=SQLiteSessionHistory(database_path),
         confirmed_memories=confirmed_memories,
         attachments=tuple(
@@ -103,8 +113,8 @@ def execute_durable_run(
         workspace_root=workspace_root,
         policy_profile=policy_profile.value,
         tool_profile=tool_profile.value,
-        network_profile=network_profile.name.value,
-        network_allowlist=network_profile.domain_allowlist,
+        network_profile=effective_network_profile.name.value,
+        network_allowlist=effective_network_profile.domain_allowlist,
         mcp_allowlist=mcp_allowlist,
         attachments=attachment_refs,
     )

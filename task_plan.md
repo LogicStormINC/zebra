@@ -3,12 +3,15 @@
 ## WEB-UX-01 - Trusted Local Read-Only Web Auto Execution
 
 1. `completed` - Register and claim a path-bounded task on an independent branch.
-2. `completed` - Treat durable allowlist/trusted-local Web authority as an
-   automatic allow while retaining MCP approval and fail-closed denial.
+2. `completed` - Treat durable allowlist Web authority as automatic allow and
+   explicit local trusted mode as a one-time operator trust boundary.
 3. `completed` - Default new Desktop tasks to trusted local Web authority and
    preserve durable profile rendering.
 4. `completed` - Run focused, full repository, Desktop, and browser regressions;
    then close the task with durable evidence.
+5. `completed` - Upgrade existing local Tasks at execution time, honor the
+   system HTTPS proxy, remove local command/MCP approval interruptions, and rerun
+   the real old-Task plus full regression chain.
 
 ## SUBAGENT-UX-01 - Model-Native Subagent Delegation
 

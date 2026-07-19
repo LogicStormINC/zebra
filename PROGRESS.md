@@ -18,8 +18,9 @@
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
-- Review task: `WEB-UX-01` makes durable local/allowlist Web authority
-  non-interactive while retaining fail-closed API defaults and side-effect approvals.
+- Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
+  non-interactive across Desktop/API/CLI/Worker, including existing Tasks, while
+  retaining fail-closed non-local defaults and hard Gateway/Runtime boundaries.
 
 ## Current Capability
 
@@ -46,11 +47,11 @@
   session-labelled cleanup.
 - Policy, HITL, network profiles, MCP/Web gates, credential boundaries, and
   audit remain independent of model output.
-- New local Desktop tasks use durable `full-trusted-local` authority so bounded
-  read-only `web.fetch` and configured `web.search` calls execute without
-  per-call approval. API/core defaults remain `network_profile=none`; exact
-  domain allowlists are also treated as prior task authority, while MCP and
-  side-effecting operations retain their approval boundaries.
+- Explicit `local + trusted-local` mode uses effective `full-trusted-local`
+  authority across Desktop/API/CLI/Worker, so new and existing Tasks execute model
+  tools without per-call approval. System HTTPS proxies are honored for local Web
+  execution; direct connections retain public-address DNS preflight. Core and
+  non-local deployments remain default-deny and approval-gated.
 
 ### Context and model integration
 
@@ -92,13 +93,15 @@
 
 Validated on `codex/web-ux-01-trusted-local-auto-web` on 2026-07-19:
 
-- focused security and Worker Web execution: `57 passed`
-- `make test`: `1505 passed, 5 skipped`
-- `make check`: file-size, Ruff, strict Mypy over `417` source files, and `8/8`
+- focused local authority, proxy, security, API, Worker and runtime: `107 passed`
+- `make test`: `1509 passed, 5 skipped`
+- `make check`: file-size, Ruff, strict Mypy over `418` source files, and `8/8`
   release Eval cases passed
 - every deterministic Desktop `check:*` script and production build passed
-- real Chromium: `8/8`, covering the trusted-local launch default and all prior
-  streaming, reload, cancellation, Segment, approval, and terminal-failure paths
+- real Chromium: `8/8`, covering the trusted-local launch default, automatic
+  command execution, streaming, reload, cancellation, Segment and failure paths
+- the original old Task completed a real OpenAI `web.fetch` via the configured
+  macOS HTTPS proxy without approval or `private_network_blocked`
 
 Validated on `codex/subagent-delegation-model-native` on 2026-07-19:
 

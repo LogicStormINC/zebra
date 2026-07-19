@@ -88,6 +88,40 @@ def test_local_web_gateway_blocks_private_dns_before_http(
     assert error.value.reason == "private_network_blocked"
 
 
+def test_trusted_local_web_gateway_uses_system_https_proxy_without_local_dns(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    opener = FakeOpener(FakeResponse(b"proxy-ok"))
+    handlers: list[object] = []
+    monkeypatch.setattr(
+        "agent_runtime.web_gateway.urllib.request.getproxies",
+        lambda: {"https": "http://127.0.0.1:7890"},
+    )
+    monkeypatch.setattr(
+        "agent_runtime.web_gateway.socket.getaddrinfo",
+        lambda *args, **kwargs: pytest.fail("proxy mode must not resolve fake IP locally"),
+    )
+
+    def capture_opener(*items: object) -> FakeOpener:
+        handlers.extend(items)
+        return opener
+
+    monkeypatch.setattr(
+        "agent_runtime.web_gateway.urllib.request.build_opener",
+        capture_opener,
+    )
+
+    response = LocalWebGatewayTransport(use_system_proxy=True).execute(
+        WebGatewayRequest(
+            tool_call_id="call-proxy",
+            target=parse_web_target("https://openai.com/news/"),
+        )
+    )
+
+    assert response.text == "proxy-ok"
+    assert handlers[0].proxies["https"] == "http://127.0.0.1:7890"  # type: ignore[attr-defined]
+
+
 def test_local_web_gateway_projects_html_and_reports_bounded_output(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

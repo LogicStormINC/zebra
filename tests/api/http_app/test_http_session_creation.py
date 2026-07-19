@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 
 import zebra_agent_api.app as api_app_module
@@ -32,8 +33,25 @@ def test_http_app_creates_session(tmp_path: Path) -> None:
     assert response.json()["executed"] is False
     assert response.json()["title"] == "HTTP create session"
 
-def test_http_app_executes_session_create(tmp_path: Path, monkeypatch) -> None:
 
+def test_local_http_app_persists_trusted_network_for_new_tasks(tmp_path: Path) -> None:
+    settings = replace(_settings(None), profile="local")
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite", settings=settings))
+
+    response = client.post(
+        "/tasks",
+        json={
+            "prompt": "Inspect the workspace",
+            "title": "Trusted local task",
+            "network_profile": "none",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["network_profile"] == "full-trusted-local"
+
+
+def test_http_app_executes_session_create(tmp_path: Path, monkeypatch) -> None:
     def fake_build_model_gateway(settings: ZebraAgentSettings):
         del settings
         return ScriptedModelGateway(
@@ -69,6 +87,7 @@ def test_http_app_executes_session_create(tmp_path: Path, monkeypatch) -> None:
     assert response.json()["executed"] is True
     assert response.json()["assistant_message"] == "HTTP execution complete."
 
+
 def test_http_app_executes_session_create_reports_missing_api_key(
     tmp_path: Path,
     monkeypatch,
@@ -96,6 +115,7 @@ def test_http_app_executes_session_create_reports_missing_api_key(
         "reason": "missing API key in environment variable TEST_API_KEY",
     }
 
+
 def test_http_app_executes_session_resume_reports_missing_api_key(
     tmp_path: Path,
     monkeypatch,
@@ -116,6 +136,7 @@ def test_http_app_executes_session_resume_reports_missing_api_key(
         "status": "model_gateway_unavailable",
         "reason": "missing API key in environment variable DEEPSEEK_API_KEY",
     }
+
 
 def test_http_app_executes_session_resume(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(worker_execution_module, "build_model_gateway", _fake_resume_gateway)
@@ -145,6 +166,7 @@ def test_http_app_executes_session_resume(tmp_path: Path, monkeypatch) -> None:
             }
         ],
     }
+
 
 def test_http_app_suspends_and_then_resumes_session(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(worker_execution_module, "build_model_gateway", _fake_resume_gateway)

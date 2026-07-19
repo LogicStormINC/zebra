@@ -745,19 +745,22 @@ Agent 阶段默认 `none`。依赖安装在独立 Setup Phase 中完成，并在
 `network_profile` 是任务级持久授权，不是每次工具调用都重复询问的提示。
 当前只读 Web Gateway 采用以下决策矩阵：
 
-- API、Worker 和核心契约继续默认 `none`，没有网络授权时直接拒绝外部访问。
-- Desktop 本地可信任务默认 `full-trusted-local`；经过 HTTPS、URL、DNS、私网地址、
-  重定向、超时、Content-Type 和响应大小检查的 `web.fetch` 与已配置
-  `web.search` 可自动执行。
+- 核心契约继续默认 `none`；非本地 API、Worker 和云端运行没有网络授权时直接拒绝
+  外部访问。
+- `local + trusted-local` 是显式运维信任边界：Desktop、API、CLI 和 Worker 对新旧
+  Task 都使用有效 `full-trusted-local` authority，模型工具不进入人工 approval。
+- 本地 `web.fetch` 与已配置 `web.search` 仍经过 HTTPS、URL、重定向、超时、
+  Content-Type 和响应大小检查。直接连接继续执行公共 DNS 地址预检；当操作系统已
+  配置 HTTPS 代理时，由可信代理负责 DNS 与路由，从而兼容 Clash Fake-IP 等模式。
 - `domain-allowlist` 仅允许精确匹配的裸主机名；匹配即视为任务启动时已经授权，
   无需逐次 approval。
-- `full-trusted-local` 不取消 Tool Gateway、Web Gateway 或 SSRF 边界，也不允许
-  模型自行扩大任务权限。
-- MCP Proxy、Shell 逃逸、敏感数据传输和其他有副作用操作继续由独立 Policy
-  决定 `require_approval`；网络可达不等于允许执行有副作用操作。
+- `full-trusted-local` 不取消 Tool Gateway 参数校验、Workspace 路径边界、Web URL
+  边界、未知工具拒绝、Runtime 隔离或审计，也不允许模型自行扩大到非本地部署。
+- 非本地环境的 MCP Proxy、Shell、敏感数据传输和有副作用操作继续由独立 Policy
+  决定 `require_approval`；本地 trusted 模式由操作者一次性信任，不重复弹窗。
 
-因此本地只读检索保持连续执行体验，云端与未授权任务继续 fail-closed，审批只用于
-真正需要人工确认的副作用或权限升级。
+因此本地开发执行保持连续体验，云端与未授权任务继续 fail-closed；上游 HTTP 403、
+响应体超限等传输失败必须与 Policy `deny` 分开呈现。
 
 # 12. Sandbox Manager 与 Runtime Adapter
 

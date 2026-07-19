@@ -75,9 +75,8 @@ test("stops a running stream without a late completion", async ({ page, request 
   expect((await session(request, sessionId)).status).toBe("cancelled");
 
   await submit(page, "E2E_APPROVAL continue the cancelled Task internally");
-  await expect(page.getByText("Agent 需要人工确认")).toBeVisible();
-  await page.getByRole("button", { name: "批准" }).click();
   await expect(page.getByText("APPROVAL_COMPLETE", { exact: true })).toBeVisible();
+  await expect(page.getByText("Agent 需要人工确认")).not.toBeVisible();
 });
 
 test("continues a completed task through an invisible internal Segment", async ({ page, request }) => {
@@ -98,13 +97,11 @@ test("continues a completed task through an invisible internal Segment", async (
   expect((await internal.json()).segments).toHaveLength(2);
 });
 
-test("shows and completes a real approval continuation", async ({ page }) => {
+test("executes a local command without an approval interruption", async ({ page }) => {
   await submit(page, "E2E_APPROVAL browser approval");
-  await expect(page.getByText("Agent 需要人工确认")).toBeVisible();
-  await expect(page.getByLabel("需要人工确认").getByText("command.run", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "批准" }).click();
   await expect(page.getByText("APPROVAL_COMPLETE", { exact: true })).toBeVisible();
   await expect(page.getByText("已完成", { exact: true })).toBeVisible();
+  await expect(page.getByText("Agent 需要人工确认")).not.toBeVisible();
 });
 
 test("renders a provider failure as a terminal operator state", async ({ page }) => {

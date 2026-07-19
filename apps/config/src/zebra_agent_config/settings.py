@@ -115,6 +115,10 @@ class ZebraAgentSettings:
     mcp_servers: tuple[McpServerSettings, ...] = ()
 
 
+def trusted_local_mode_enabled(settings: ZebraAgentSettings) -> bool:
+    return settings.profile == "local" and settings.runtime.runtime_class == "trusted-local"
+
+
 def load_settings(
     env: Mapping[str, str] | None = None,
     *,

@@ -252,9 +252,10 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
     )
     captured: list[NetworkProfile] = []
 
-    def build_policy(*, profile, network_profile, web_search_endpoint):
+    def build_policy(*, profile, network_profile, web_search_endpoint, trusted_local):
         captured.append(network_profile)
         assert web_search_endpoint is None
+        assert trusted_local is False
         return LocalPolicyEngine(profile=profile, network_profile=network_profile)
 
     monkeypatch.setattr(

@@ -17,7 +17,6 @@ from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.tool_profiles import ToolProfile
-from agent_core.harness.models import HarnessLoopResult
 from agent_integrations import GitHubPullRequestTransport, build_model_gateway
 from agent_runtime import (
     read_mcp_resource_attachments,
@@ -36,7 +35,11 @@ from agent_storage import (
     list_confirmed_repo_memories,
     store_text_attachments,
 )
-from zebra_agent_config import ZebraAgentSettings, load_settings
+from zebra_agent_config import (
+    ZebraAgentSettings,
+    load_settings,
+    trusted_local_mode_enabled,
+)
 from zebra_agent_worker import (
     SessionClaimService,
     SessionExecutionService,
@@ -103,6 +106,9 @@ class ZebraAgentApi(
         parsed = parse_create_session_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
+        if trusted_local_mode_enabled(self.settings):
+            parsed["network_profile"] = "full-trusted-local"
+            parsed["network_allowlist"] = []
         try:
             validate_mcp_capability_selection(
                 self.settings.mcp_servers,
@@ -350,8 +356,11 @@ class ZebraAgentApi(
                 "network_allowlist": parsed["network_allowlist"],
                 "mcp_allowlist": parsed["mcp_allowlist"],
                 "mcp_resource_ids": parsed["mcp_resource_ids"],
-                **({"history_session_ids": list(parsed["history_session_ids"])}
-                   if parsed["history_session_ids"] is not None else {}),
+                **(
+                    {"history_session_ids": list(parsed["history_session_ids"])}
+                    if parsed["history_session_ids"] is not None
+                    else {}
+                ),
                 **(
                     {"mcp_prompt_id": parsed["mcp_prompt_id"]}
                     if parsed["mcp_prompt_id"] is not None
@@ -390,8 +399,10 @@ class ZebraAgentApi(
                 skill_roots=self.settings.skill_roots,
                 mcp_servers=self.settings.mcp_servers,
                 mcp_allowlist=parsed["mcp_allowlist"],
-                session_history=SQLiteSessionHistory(self.database_path,
-                    allowed_session_ids=parsed["history_session_ids"]),
+                trusted_local=trusted_local_mode_enabled(self.settings),
+                session_history=SQLiteSessionHistory(
+                    self.database_path, allowed_session_ids=parsed["history_session_ids"]
+                ),
                 confirmed_memories=confirmed_memories,
                 attachments=tuple(
                     AttachmentContextInput.model_validate(
@@ -443,7 +454,7 @@ class ZebraAgentApi(
                     if parsed["mcp_prompt_id"] is not None
                     else {}
                 ),
-                "trace": _trace_payload(result),
+                "trace": serialize_trace_events(tuple(result.events)),
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
@@ -470,31 +481,3 @@ def create_app(
         credential_broker=active_broker,
         github_transport=github_transport,
     )
-
-
-def _trace_payload(result: HarnessLoopResult) -> list[dict[str, object]]:
-    from agent_core.harness.projection import HarnessTraceProjector
-
-    trace = HarnessTraceProjector().project(result)
-    return [
-        {
-            "attempt_number": attempt.attempt_number,
-            "assistant_message": attempt.assistant_message,
-            "tools": [
-                {
-                    "tool_name": tool.tool_name,
-                    "status": tool.status,
-                    "arguments": tool.arguments,
-                    "output": tool.output,
-                    "metadata": tool.metadata,
-                    "policy_decision": tool.policy_decision,
-                    "policy_route": tool.policy_route,
-                    "policy_target": tool.policy_target,
-                    "policy_network_profile": tool.policy_network_profile,
-                    "policy_scope": list(tool.policy_scope),
-                }
-                for tool in attempt.tools
-            ],
-        }
-        for attempt in trace.attempts
-    ]

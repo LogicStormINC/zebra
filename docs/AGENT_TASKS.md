@@ -14618,7 +14618,9 @@ cancel, and accessibility contracts.
 - Suggested role: `SECURITY / APP / UI / QA`
 - Depends on: merged `P122-WEB-01`, `P126-WEB-01`, and explicit maintainer approval
 - Branch: `codex/web-ux-01-trusted-local-auto-web`
-- Owned paths: `packages/agent-security/`, `UI/desktop/src/lib/task-launch-config.ts`,
+- Owned paths: `apps/config/`, `apps/api/`, `apps/cli/`, `apps/worker/`,
+  `packages/agent-security/`, `packages/agent-runtime/`,
+  `UI/desktop/src/lib/task-launch-config.ts`,
   `UI/desktop/src/components/conversation/TaskLaunchControls.tsx`,
   `UI/desktop/src/components/CodexConversationPane.tsx`,
   `UI/desktop/src/components/TaskLaunchSummary.tsx`,
@@ -14645,8 +14647,14 @@ side-effecting tools remain fail-closed or approval-gated.
   routes receive `allow`, not `require_approval`.
 - [x] `network_profile=none`, malformed/private targets, and non-matching domains
   remain denied before transport.
-- [x] MCP proxy and side-effecting tool approval behavior is unchanged.
+- [x] MCP proxy and side-effecting tool approval behavior is unchanged outside
+  explicit `local + trusted-local` operator mode.
 - [x] Focused backend, Desktop, full deterministic, and browser regressions pass.
+- [x] In `local + trusted-local` deployment mode, old Tasks and internal Segments
+  with durable `none` execute using effective trusted-local network authority;
+  production and non-local profiles continue using their durable authority.
+- [x] Trusted-local command and MCP calls do not enter approval state; workspace
+  escape, unknown-tool, input validation, Gateway, and runtime boundaries remain.
 
 #### Validation Evidence
 
@@ -14656,6 +14664,14 @@ side-effecting tools remain fail-closed or approval-gated.
 - all Desktop `check:*` scripts and the TypeScript/Vite production build passed
 - real Chromium: `8/8`, including the trusted-local default plus existing
   streaming, reload, stop, Segment, approval, and terminal-failure regressions
+- follow-up focused regression: `107 passed`
+- follow-up full deterministic suite: `1509 passed, 5 skipped`
+- follow-up file-size, Ruff, strict Mypy over `418` source files, and `8/8`
+  release Evals passed
+- all Desktop checks and production build passed; real Chromium `8/8` now proves
+  local command execution without approval interruption
+- original old Task `ff198e19-9f46-42d0-b2bd-4d64e6166e67` completed a real
+  OpenAI `web.fetch` through the macOS HTTPS proxy without Policy denial
 
 ### SUBAGENT-UX-01 - Model-Native Subagent Delegation
 

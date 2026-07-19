@@ -17,6 +17,17 @@
 - Direct Web execution needs a multi-response model regression because the same
   Worker attempt now executes the tool and performs final synthesis instead of
   splitting those model calls across approval continuation attempts.
+- Desktop defaults only affect new Tasks. Existing Tasks and automatic internal
+  Segments persist the prior `network_profile=none`, so the Worker must derive an
+  effective local authority at execution time instead of rewriting history.
+- This macOS host uses a system HTTPS proxy at `127.0.0.1:7890`; Clash Fake-IP DNS
+  maps public names to reserved `198.18.0.0/15`. Disabling proxies and resolving
+  locally therefore produced a false `private_network_blocked`. Trusted local Web
+  transport now delegates DNS/routing to the configured HTTPS proxy; direct mode
+  keeps the public-address preflight.
+- Real old-Task validation separates failures correctly: OpenAI `/news/` returns
+  upstream HTTP 403 and its RSS exceeds the bounded response limit, while
+  `https://openai.com/robots.txt` executes and the Task completes without approval.
 
 ## UI-COMPOSER-01 - 2026-07-19
 

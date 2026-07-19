@@ -7,6 +7,7 @@ from zebra_agent_config.settings import (
     SessionHandoffSettings,
     ZebraAgentSettings,
     load_settings,
+    trusted_local_mode_enabled,
 )
 from zebra_agent_config.setup_settings import SetupDependencySettings, SetupSettings
 
@@ -21,4 +22,5 @@ __all__ = [
     "SetupSettings",
     "ZebraAgentSettings",
     "load_settings",
+    "trusted_local_mode_enabled",
 ]

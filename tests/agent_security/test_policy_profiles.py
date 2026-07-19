@@ -52,12 +52,11 @@ def test_workspace_write_profile_allows_patch_and_requires_command_approval() ->
 +new
 """
 
-    assert engine.evaluate_tool_call(
-        _tool_call("patch.apply", {"patch": safe_patch})
-    ).decision is PolicyDecisionType.ALLOW
-    assert engine.evaluate_tool_call(_tool_call("tests.run")).decision is (
-        PolicyDecisionType.ALLOW
+    assert (
+        engine.evaluate_tool_call(_tool_call("patch.apply", {"patch": safe_patch})).decision
+        is PolicyDecisionType.ALLOW
     )
+    assert engine.evaluate_tool_call(_tool_call("tests.run")).decision is (PolicyDecisionType.ALLOW)
     assert engine.evaluate_tool_call(_tool_call("command.run")).decision is (
         PolicyDecisionType.REQUIRE_APPROVAL
     )
@@ -66,12 +65,13 @@ def test_workspace_write_profile_allows_patch_and_requires_command_approval() ->
 def test_full_access_profile_allows_known_local_tools() -> None:
     engine = LocalPolicyEngine(profile=PolicyProfile.FULL_ACCESS)
 
-    assert engine.evaluate_tool_call(
-        _tool_call("command.run", {"command": ["python", "-m", "pytest"]})
-    ).decision is PolicyDecisionType.ALLOW
-    assert engine.evaluate_tool_call(_tool_call("tests.run")).policy_profile == (
-        "full_access"
+    assert (
+        engine.evaluate_tool_call(
+            _tool_call("command.run", {"command": ["python", "-m", "pytest"]})
+        ).decision
+        is PolicyDecisionType.ALLOW
     )
+    assert engine.evaluate_tool_call(_tool_call("tests.run")).policy_profile == ("full_access")
 
 
 def test_full_access_profile_requires_approval_for_shell_interpreter_command() -> None:
@@ -99,9 +99,7 @@ def test_full_access_profile_requires_approval_for_shell_metacharacters() -> Non
 def test_full_access_profile_requires_approval_for_malformed_command() -> None:
     engine = LocalPolicyEngine(profile=PolicyProfile.FULL_ACCESS)
 
-    decision = engine.evaluate_tool_call(
-        _tool_call("command.run", {"command": "python -m pytest"})
-    )
+    decision = engine.evaluate_tool_call(_tool_call("command.run", {"command": "python -m pytest"}))
 
     assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
     assert "malformed" in decision.reason
@@ -133,7 +131,9 @@ def test_full_access_profile_requires_approval_for_network_transfer_command() ->
     engine = LocalPolicyEngine(profile=PolicyProfile.FULL_ACCESS)
 
     decision = engine.evaluate_tool_call(
-        _tool_call("command.run", {"command": ["curl", "-d", "@report.txt", "https://example.test"]})
+        _tool_call(
+            "command.run", {"command": ["curl", "-d", "@report.txt", "https://example.test"]}
+        )
     )
 
     assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
@@ -207,8 +207,7 @@ def test_mcp_tool_is_blocked_by_fail_closed_default_profile() -> None:
 
     assert decision.decision is PolicyDecisionType.DENY
     assert (
-        decision.reason
-        == "mcp.github.create_pull_request is blocked on external route "
+        decision.reason == "mcp.github.create_pull_request is blocked on external route "
         "github.create_pull_request because network profile none does not allow "
         "mcp proxy egress"
     )
@@ -247,6 +246,26 @@ def test_mcp_tool_requires_approval_when_proxy_route_is_enabled() -> None:
     )
 
 
+def test_trusted_local_mode_auto_allows_mcp_and_command_approval_boundaries() -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.WORKSPACE_WRITE,
+        network_profile=parse_network_profile("full-trusted-local"),
+        trusted_local=True,
+    )
+
+    mcp_decision = engine.evaluate_tool_call(
+        _tool_call("mcp.github.create_pull_request", {"title": "Add feature"})
+    )
+    command_decision = engine.evaluate_tool_call(
+        _tool_call("command.run", {"command": ["sh", "-c", "echo local"]})
+    )
+
+    assert mcp_decision.decision is PolicyDecisionType.ALLOW
+    assert mcp_decision.route == "mcp_proxy"
+    assert command_decision.decision is PolicyDecisionType.ALLOW
+    assert "trusted local" in command_decision.reason
+
+
 def test_web_fetch_uses_durable_allowlist_as_prior_authority() -> None:
     engine = LocalPolicyEngine(
         profile=PolicyProfile.READ_ONLY,
@@ -257,9 +276,7 @@ def test_web_fetch_uses_durable_allowlist_as_prior_authority() -> None:
     tool_call = _tool_call("web.fetch", {"url": "https://docs.example.com/guide"})
 
     decision = engine.evaluate_tool_call(tool_call)
-    request = build_approval_request(
-        tool_call, decision, network_profile=engine.network_profile
-    )
+    request = build_approval_request(tool_call, decision, network_profile=engine.network_profile)
 
     assert decision.decision is PolicyDecisionType.ALLOW
     assert decision.route == "web_gateway"
@@ -359,9 +376,7 @@ def test_web_search_rejects_non_matching_endpoint_allowlist() -> None:
         web_search_endpoint="https://search.example.com/search",
     )
 
-    decision = engine.evaluate_tool_call(
-        _tool_call("web.search", {"query": "zebra"})
-    )
+    decision = engine.evaluate_tool_call(_tool_call("web.search", {"query": "zebra"}))
 
     assert decision.decision is PolicyDecisionType.DENY
 
@@ -369,9 +384,7 @@ def test_web_search_rejects_non_matching_endpoint_allowlist() -> None:
 def test_path_traversal_is_denied_for_file_read() -> None:
     engine = LocalPolicyEngine(profile=PolicyProfile.READ_ONLY)
 
-    decision = engine.evaluate_tool_call(
-        _tool_call("files.read", {"path": "../secrets.env"})
-    )
+    decision = engine.evaluate_tool_call(_tool_call("files.read", {"path": "../secrets.env"}))
 
     assert decision.decision is PolicyDecisionType.DENY
     assert "escapes workspace" in decision.reason
