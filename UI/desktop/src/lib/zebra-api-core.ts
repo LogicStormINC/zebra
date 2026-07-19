@@ -16,9 +16,6 @@ import type {
   SessionDiffResponse,
   SessionEvent,
   SessionMessageAppendResponse,
-  SessionHandoffPayload,
-  SessionHandoffResponse,
-  SessionLineageResponse,
   SessionPullRequestResponse,
   SessionListResponse,
   SessionSummary,
@@ -42,24 +39,6 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
     approval: (approvalId: string) =>
       requestJson<ApprovalSummary>(baseUrl, `/approvals/${approvalId}`, { authToken }),
     session: (sessionId: string) => requestJson<SessionSummary>(baseUrl, `/sessions/${sessionId}`, { authToken }),
-    sessionLineage: (sessionId: string) =>
-      requestJson<SessionLineageResponse>(baseUrl, `/sessions/${sessionId}/lineage`, { authToken }),
-    previewHandoff: (sessionId: string, payload: SessionHandoffPayload) =>
-      requestJson<SessionHandoffResponse>(baseUrl, `/sessions/${sessionId}/handoff/preview`, {
-        method: "POST",
-        authToken,
-        body: payload,
-      }),
-    createHandoff: (
-      sessionId: string,
-      payload: SessionHandoffPayload,
-      idempotencyKey: string,
-    ) => requestJson<SessionHandoffResponse>(baseUrl, `/sessions/${sessionId}/handoff`, {
-      method: "POST",
-      authToken,
-      idempotencyKey,
-      body: payload,
-    }),
     sessions: (limit = 100) => requestJson<SessionListResponse>(baseUrl, `/sessions?limit=${limit}`, { authToken }),
     stream: (
       sessionId: string,

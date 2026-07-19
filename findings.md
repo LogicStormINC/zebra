@@ -91,3 +91,17 @@
 - 对这个项目来说，阶段划分应围绕核心依赖链组织：
   `core -> runtime/tools -> harness -> control plane -> context -> security -> eval -> productization`
 - Phase 1 到 Phase 3 是最关键的连续闭环，如果这里没有打通，后面的 API、云端和安全服务都没有稳定依托
+
+## 2026-07-19 CTX-SEG-P0-01 Invisible Internal Execution Segments
+
+- The visible “阶段性新线程” form was intentional legacy product behavior, not a
+  transient rendering bug: the old architecture required users to preview an
+  Envelope and explicitly create a child Session at a safe boundary.
+- Backend feature disablement did not hide the card because Desktop rendered it
+  from terminal Session status and never consumed the backend feature flag.
+- The minimum safe correction is to remove the ordinary Desktop creation surface
+  and its client call chain while retaining disabled backend lineage, authority,
+  recovery, and no-replay contracts for later internal Segment rollover.
+- ADR-013 makes stable Task identity the user boundary. Automatic rollover needs
+  Task/Segment persistence and a backend lifecycle controller before it can be
+  truthfully claimed; P0 intentionally does not emulate that behavior in React.

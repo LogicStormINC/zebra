@@ -5506,3 +5506,25 @@
 - Repository validation passed `1452` tests with four documented environment /
   credential skips, file-size `868`, Ruff, strict Mypy across `403` source files,
   and all `8` release Evals.
+
+## 2026-07-19 CTX-SEG-P0-01 Invisible Internal Execution Segments
+
+- Claimed `CTX-SEG-P0-01` on `codex/ctx-seg-p0-invisible-ui` in an isolated
+  worktree and recorded ADR-013 plus the dependency-ordered P0-P4 roadmap.
+- Superseded explicit user-operated handoff as the normal product interaction;
+  one stable Task is now the user-visible boundary and execution Segments are
+  defined as backend-internal state.
+- Removed Desktop's stage handoff card, client hook/helpers, API methods, types,
+  and prop plumbing. Existing backend safety contracts remain unchanged and
+  disabled by default.
+- Replaced the old handoff helper check with a source-level regression that
+  prevents ordinary user surfaces from regaining child-Session creation controls.
+- Validation completed so far:
+  - `volta run --node 22.17.0 pnpm run check:handoff`
+  - `volta run --node 22.17.0 pnpm run build`
+  - all `20` Desktop `check:*` scripts
+  - initial `make test`: `1491 passed, 7 skipped`; the file-size test required
+    staging deleted tracked files before its Git-index-based scan could complete
+  - final `make test`: `1492 passed, 7 skipped`
+  - `make check`: file-size `887`, Ruff, strict Mypy over `412` source files,
+    and all `8` release evals passed

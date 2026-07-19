@@ -8,8 +8,8 @@
 - Snapshot date: `2026-07-19`
 - Verified implementation baseline: `f1e4965` (PR `#174`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
-- Active implementation task: `CTX-SEG-P0-01` removes explicit stage handoff
-  controls from the ordinary Desktop surface on `codex/ctx-seg-p0-invisible-ui`.
+- Active implementation task: `CTX-SEG-P0-01` is in Review after removing explicit
+  stage handoff controls from the ordinary Desktop surface.
 - Active architecture task: ADR-013 replaces user-visible child Sessions with a
   stable Task boundary and backend-internal execution Segments.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
@@ -25,8 +25,10 @@
 - Harness and Worker execution is bounded, stoppable, resumable, and recoverable.
 - SQLite leases, idempotency, tool/effect ledgers, snapshots, artifacts, and
   delivery audit cover the local execution lifecycle.
-- Stage Session handoff is disabled by default and can be enabled explicitly at
-  a safe boundary with lineage, authority, workspace, and no-replay checks.
+- Existing Session handoff safety contracts remain disabled by default and retain
+  lineage, authority, workspace, and no-replay checks for later backend-internal use.
+- Ordinary Desktop users see one continuous task; Task persistence and automatic
+  Segment rollover remain dependency-ordered follow-up work under ADR-013.
 
 ### Runtime and security
 
@@ -62,7 +64,8 @@
   internal Policy may only preserve or narrow that authority.
 - API, CLI, Worker, and Desktop read and mutate the same durable state.
 - Desktop consumes replay-plus-tail SSE, renders truthful partial output, and
-  supports approval, clarification, task plans, context, artifacts, and handoff.
+  supports approval, clarification, task plans, context, and artifacts without
+  exposing internal child-Session or handoff controls.
 - Real Chromium exercises the live Desktop/API/Worker/SQLite/SSE chain for long
   streams, reload recovery, cancellation, and terminal-session follow-up.
 - Desktop composes Lobe UI `ThemeProvider` with Ant Design X and Zebra's durable

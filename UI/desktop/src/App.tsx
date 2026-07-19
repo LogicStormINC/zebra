@@ -13,7 +13,6 @@ import type { TaskLaunchConfig } from "./lib/task-launch-config";
 import type { AttachmentPayload } from "./lib/text-attachments";
 import { useWorkspaceSessionIndex } from "./lib/use-workspace-session-index";
 import { useWorkspaceSelection } from "./lib/use-workspace-selection";
-import { useSessionHandoffActions } from "./lib/use-session-handoff";
 import { useCopyText } from "./lib/use-copy-text";
 import { useActiveApproval } from "./lib/use-active-approval";
 import { zebraApi } from "./lib/zebra-api";
@@ -397,20 +396,6 @@ export default function App() {
     void runControlAction(() => api.cancel(sessionId));
   }, [api.cancel, currentSessionId, runControlAction]);
 
-  const { createHandoff, previewHandoff } = useSessionHandoffActions({
-    api,
-    currentSessionId,
-    createConversation: createIndexedConversation,
-    loadSummary: loadSessionSummary,
-    patchSessionId: (sessionId) => patchConfig({ sessionId }),
-    selectConversation: setCurrentConversation,
-    setBusy: setControlsBusy,
-    setSessionIds: setConversationToSessionId,
-    streamSession: syncConversationFromStream,
-    onError: (error) => messageApi.error(toErrorMessage(error)),
-    onSuccess: messageApi.success,
-  });
-
   const copyText = useCopyText(messageApi);
 
   return (
@@ -472,8 +457,6 @@ export default function App() {
         onResumeSession={resumeSession}
         onSuspendSession={suspendSession}
         onReject={activeApproval.reject}
-        onPreviewHandoff={previewHandoff}
-        onCreateHandoff={createHandoff}
         onRespondClarification={respondToClarification}
         onRefreshConversation={() => {
           void refreshConversation(currentConversation).catch((error: unknown) => {

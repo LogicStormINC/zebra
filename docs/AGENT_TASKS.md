@@ -13915,7 +13915,7 @@ changing the current default of same-Session compaction or activating runtime be
 
 ### CTX-SEG-P0-01 - Invisible Internal Execution Segments
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `ARCHITECTURE / CONTEXT / DESKTOP / QA`
 - Depends on: merged `CTX-HO-01E`, merged `CTX-LC-01`, explicit maintainer decision
@@ -13944,17 +13944,17 @@ identifiers from the ordinary Desktop user experience.
 
 #### Acceptance
 
-- [ ] ADR-013 supersedes the old explicit user handoff product decision and
+- [x] ADR-013 supersedes the old explicit user handoff product decision and
   defines stable Task identity plus hidden internal execution Segments.
-- [ ] The implementation plan separates the immediate UI correction from the
+- [x] The implementation plan separates the immediate UI correction from the
   later Task projection, automatic lifecycle controller, migration, and API work.
-- [ ] Completed and suspended Sessions never render stage-title, objective,
+- [x] Completed and suspended Sessions never render stage-title, objective,
   stage-prompt, Envelope preview, or Start-next-stage controls in Desktop.
-- [ ] Desktop no longer imports or invokes public handoff creation actions;
+- [x] Desktop no longer imports or invokes public handoff creation actions;
   approval, clarification, stop, resume, follow-up, and streaming stay intact.
-- [ ] Existing backend handoff persistence, recovery, no-replay, and authority
+- [x] Existing backend handoff persistence, recovery, no-replay, and authority
   contracts remain unchanged and disabled by default in this slice.
-- [ ] A deterministic check prevents the ordinary user surface from regaining
+- [x] A deterministic check prevents the ordinary user surface from regaining
   handoff creation controls, and all Desktop/repository gates pass.
 
 #### Explicit Non-Goals
