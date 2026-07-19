@@ -10596,7 +10596,7 @@ it, expand the parent's authority, recursively delegate, or outlive its parent.
 
 ### FINOS-HAR-03 - Recoverable Bounded Material Reads
 
-- Status: `Done`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `CORE / INTEGRATION`
 - Depends on: `FINOS-MCP-02`
@@ -14436,7 +14436,7 @@ failure for product assertions and every other error class.
 
 ### UI-LOBE-01 - Lobe UI Component Library Integration
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `APP / UI / QA`
 - Depends on: merged desktop UI baseline and explicit maintainer request
