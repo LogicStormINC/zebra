@@ -94,6 +94,66 @@ def test_bounded_loop_executes_two_tools_before_final_answer() -> None:
     ]
 
 
+def test_failed_research_returns_to_model_and_uses_web_fallback() -> None:
+    research = _tool_call(
+        "agent.research",
+        {
+            "objective": "Find market data.",
+            "delegation_reason": "Independent multi-source collection is useful.",
+        },
+        "call_research",
+    )
+    web = _tool_call("web.fetch", {"url": "https://example.com/market"}, "call_web")
+    gateway = _gateway(
+        _completion("Delegate the research.", research),
+        _completion("The workspace search failed; use the Web.", web),
+        _completion("Recovered with external evidence."),
+    )
+
+    class FailingResearchGateway(SequenceToolGateway):
+        def execute(self, tool_call: ToolCall) -> ToolResult:
+            self.calls.append(tool_call)
+            if tool_call.name == "agent.research":
+                return ToolResult(
+                    tool_call_id=tool_call.tool_call_id,
+                    status=ToolCallStatus.FAILED,
+                    output='{"status":"failed","summary":"no workspace evidence"}',
+                )
+            return ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.EXECUTED,
+                output="market evidence",
+            )
+
+    tools = FailingResearchGateway()
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Recover external research",
+            user_input="Find current market data.",
+            max_model_calls=3,
+            max_tool_calls=2,
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            tools,
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert [call.name for call in tools.calls] == ["agent.research", "web.fetch"]
+    assert result.run_result.model_calls_used == 3
+    assert result.run_result.tool_calls_used == 2
+    assert result.attempt_result.metadata["recoverable_tool_failure_count"] == 1
+    assert result.attempt_result.metadata["last_failed_tool_name"] == "agent.research"
+    assert any(
+        message.role is MessageRole.TOOL and "no workspace evidence" in message.content
+        for message in gateway.requests[1]
+    )
+
 def test_bounded_loop_returns_one_repeated_read_to_model_without_reexecution() -> None:
     first = _tool_call("files.read", {"path": "same.txt"}, "call_one")
     repeated = _tool_call("files.read", {"path": "same.txt"}, "call_two")

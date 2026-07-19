@@ -276,7 +276,7 @@ def test_worker_execution_service_persists_preference_candidate_from_explicit_us
         for event in result.events
     )
 
-def test_worker_execution_service_does_not_persist_memory_candidate_on_failure(
+def test_worker_execution_service_does_not_persist_candidate_from_failed_tool(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -298,7 +298,7 @@ def test_worker_execution_service_does_not_persist_memory_candidate_on_failure(
         MemoryQuery(repo_id=str(tmp_path.resolve()), statuses=(MemoryStatus.CANDIDATE,))
     )
 
-    assert result.session.status is SessionStatus.FAILED
+    assert result.session.status is SessionStatus.COMPLETED
     assert records == []
     assert all(
         event.event_type is not EventType.MEMORY_CANDIDATE_EXTRACTED

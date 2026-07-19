@@ -5,7 +5,7 @@ from agent_core.application.mock_model import ScriptedModelGateway, ScriptedMode
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
 from agent_core.harness import HarnessModelStep, HarnessTask
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 
@@ -27,6 +27,30 @@ class StaticContextCompiler:
             f" evidence={len(runtime_evidence)}"
             f" memories={len(confirmed_memories)}"
         )
+
+
+RESEARCH_TOOL = ModelToolDefinition(
+    name="agent.research",
+    description="Delegate bounded research.",
+    parameters={"type": "object", "properties": {}},
+)
+
+
+def test_delegation_guidance_follows_effective_tool_manifest() -> None:
+    created_at = datetime(2026, 7, 19, 20, 0, tzinfo=UTC)
+    task = HarnessTask(title="Simple", user_input="What is 1 + 1?")
+
+    parent_messages = HarnessModelStep(
+        available_tools=(RESEARCH_TOOL,)
+    ).build_initial_messages(task, created_at=created_at)
+    direct_messages = HarnessModelStep().build_initial_messages(
+        task, created_at=created_at
+    )
+
+    assert parent_messages[0].role is MessageRole.SYSTEM
+    assert "Answer directly" in parent_messages[0].content
+    assert "delegation_reason" in parent_messages[0].content
+    assert [message.role for message in direct_messages] == [MessageRole.USER]
 
 
 def test_harness_model_step_injects_compiled_context_as_system_message(

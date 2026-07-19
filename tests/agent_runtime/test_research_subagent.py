@@ -17,10 +17,11 @@ from agent_core.domain.subagents import (
     ResearchSubagentTask,
     SubagentStatus,
 )
-from agent_core.domain.tools import ToolCall
+from agent_core.domain.tools import ToolCall, ToolCallStatus
 from agent_runtime import (
     LocalResearchSubagentCoordinator,
     LocalResearchSubagentRunner,
+    LocalToolGateway,
     ReadOnlyToolGateway,
     SubagentLimitError,
 )
@@ -114,6 +115,50 @@ def test_child_gateway_exposes_only_readonly_non_recursive_tools(tmp_path) -> No
     assert "agent.research" not in {tool.name for tool in gateway.model_tools}
 
 
+def test_invalid_delegation_reason_is_actionable_and_creates_no_child(tmp_path) -> None:
+    model_gateway = ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(completion=_completion("Evidence collected.")),
+        )
+    )
+    gateway = LocalToolGateway(
+        tmp_path.resolve(),
+        model_gateway=model_gateway,
+        research_child_limit=1,
+    )
+    try:
+        invalid = gateway.execute(
+            ToolCall(
+                tool_call_id=new_tool_call_id(),
+                name="agent.research",
+                arguments={"objective": "Inspect evidence."},
+                created_at=NOW,
+                provider_call_id="invalid_research",
+            )
+        )
+        valid = gateway.execute(
+            ToolCall(
+                tool_call_id=new_tool_call_id(),
+                name="agent.research",
+                arguments={
+                    "objective": "Inspect evidence.",
+                    "delegation_reason": "Separate evidence collection is useful.",
+                },
+                created_at=NOW,
+                provider_call_id="valid_research",
+            )
+        )
+    finally:
+        gateway.close()
+
+    assert invalid.status is ToolCallStatus.FAILED
+    assert "delegation_reason" in invalid.output
+    assert "tool_validation_error" in invalid.output
+    assert valid.status is ToolCallStatus.EXECUTED
+    assert '"delegation_reason":"Separate evidence collection is useful."' in valid.output
+    assert '"usage":{"model_calls":1,"tool_calls":0}' in valid.output
+
+
 def test_child_write_request_is_denied_before_execution(tmp_path) -> None:
     write_call = ToolCall(
         tool_call_id=new_tool_call_id(),
@@ -169,7 +214,7 @@ def _completed_result(subagent_id: SubagentId) -> ResearchSubagentResult:
     )
 
 
-def _completion(content: str, tool_call: ToolCall) -> ModelCompletion:
+def _completion(content: str, tool_call: ToolCall | None = None) -> ModelCompletion:
     return ModelCompletion(
         assistant_message=SessionMessage(
             message_id=new_message_id(),
@@ -177,5 +222,5 @@ def _completion(content: str, tool_call: ToolCall) -> ModelCompletion:
             content=content,
             created_at=NOW,
         ),
-        tool_calls=(tool_call,),
+        tool_calls=(tool_call,) if tool_call is not None else (),
     )

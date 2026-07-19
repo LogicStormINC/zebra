@@ -14610,3 +14610,53 @@ cancel, and accessibility contracts.
   `117px` / `145px` / `113px`; the `390px` viewport had no horizontal overflow
 - browser console had no warnings or errors
 - file-size, Ruff, strict Mypy, and release Eval gates passed
+
+### SUBAGENT-UX-01 - Model-Native Subagent Delegation
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `CORE / RUNTIME / QA`
+- Depends on: explicit maintainer approval
+- Branch: `codex/subagent-delegation-model-native`
+- Owned paths: `packages/agent-core/src/agent_core/harness/model_step.py`,
+  `packages/agent-core/src/agent_core/harness/tool_batch.py`,
+  `packages/agent-core/src/agent_core/harness/concurrent_batch.py`,
+  `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `packages/agent-runtime/src/agent_runtime/research.py`, `tests/agent_core/`,
+  `tests/agent_runtime/`, `tests/integration/`, `tests/worker/`,
+  `docs/superpowers/specs/`,
+  `docs/AGENT_TASKS.md`, `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
+  `PROGRESS.md`, `README.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Keep Subagent selection inside the parent model's ordinary tool decision. Prefer
+direct answers and parent tools for simple work, and create a bounded research
+child only after an explicit valid `agent.research` call with a diagnostic reason.
+
+#### Acceptance
+
+- [x] Stable guidance is advertised on every parent call only when
+  `agent.research` is present in the effective tool manifest.
+- [x] Trivial answers and single direct-tool tasks create no Subagent lifecycle
+  event; complex scripted research may explicitly delegate.
+- [x] Every valid delegation carries a non-empty `delegation_reason`; missing or
+  blank reasons return bounded actionable validation output without creating a
+  child, so the parent can correct and retry.
+- [x] Research output returns summary, sources, confidence, usage, and delegation
+  evidence to the parent while preserving depth, budget, cancellation, and
+  non-recursion boundaries.
+- [x] Focused, full deterministic, static, Eval, and real-model simple-task checks
+  pass.
+
+#### Validation Evidence
+
+- independent design review approved after the branch was rebuilt directly from
+  `origin/main` and the prompt/context compatibility contract was finalized
+- focused delegation, recovery, runtime, and integration regression: `39 passed`
+- full deterministic suite: `1509 passed, 5 skipped`
+- file-size gate checked `898` files; Ruff passed; strict Mypy passed over `417`
+  source files; all `8/8` release Evals passed
+- isolated real-model API Task `79c59c46-4869-4fd0-8383-db2528e955fc`
+  answered `1+1` with `2`; trace contained zero tools and the durable event stream
+  contained no `agent.research`, tool-execution, or Subagent lifecycle event

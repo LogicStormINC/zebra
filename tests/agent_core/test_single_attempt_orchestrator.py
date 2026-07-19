@@ -215,7 +215,7 @@ def test_single_attempt_orchestrator_synthesizes_tool_result_when_enabled() -> N
     assert model_events[-1].payload["response_stage"] == "final"
 
 
-def test_single_attempt_orchestrator_marks_failed_tool_execution() -> None:
+def test_single_attempt_orchestrator_returns_failed_tool_to_model() -> None:
     created_at = datetime(2026, 6, 19, 22, 5, tzinfo=UTC)
     tool_call = ToolCall(
         tool_call_id=new_tool_call_id(),
@@ -234,6 +234,16 @@ def test_single_attempt_orchestrator_marks_failed_tool_execution() -> None:
                         created_at=created_at,
                     ),
                     tool_calls=(tool_call,),
+                )
+            ),
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="The smoke checks failed; reporting the result.",
+                        created_at=created_at,
+                    )
                 )
             ),
         )
@@ -257,12 +267,12 @@ def test_single_attempt_orchestrator_marks_failed_tool_execution() -> None:
         created_at=created_at,
     )
 
-    assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
-    assert result.session.status.value == "failed"
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert result.session.status.value == "completed"
     assert result.attempt_result.metadata["tool_status"] == "failed"
-    assert result.events[-3].event_type is EventType.TOOL_EXECUTION_FAILED
-    assert result.events[-2].event_type is EventType.TESTS_COMPLETED
-    assert result.events[-1].event_type is EventType.SESSION_FAILED
+    assert result.attempt_result.metadata["recoverable_tool_failure_count"] == 1
+    assert EventType.TOOL_EXECUTION_FAILED in {event.event_type for event in result.events}
+    assert result.events[-1].event_type is EventType.SESSION_COMPLETED
 
 
 def test_single_attempt_orchestrator_emits_approval_requested_event() -> None:

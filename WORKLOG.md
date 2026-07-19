@@ -5547,3 +5547,20 @@
   - final `make test`: `1492 passed, 7 skipped`
   - `make check`: file-size `887`, Ruff, strict Mypy over `412` source files,
     and all `8` release evals passed
+
+## 2026-07-19 SUBAGENT-UX-01 Model-Native Subagent Delegation
+
+- Created and independently reviewed the focused model-native delegation design.
+- Rebuilt `codex/subagent-delegation-model-native` directly from `origin/main`
+  instead of shipping a stacked dependency on the unmerged Web UX branch.
+- Added manifest-aware parent guidance, mandatory non-empty delegation reasons,
+  bounded actionable validation results, result usage/reason evidence, and
+  non-recursive child prompt behavior.
+- Returned sequential and concurrent failed tools to the model for correction or
+  fallback while preserving hard deterministic stop conditions.
+- Added direct-answer, direct-parent-tool, explicit complex delegation, invalid
+  reason correction, failed-child fallback, and child non-recursion regressions.
+- Validation: focused `39 passed`; full `1509 passed, 5 skipped`; file-size `898`,
+  Ruff, strict Mypy `417`, and release Eval `8/8` passed.
+- Real-model isolated API Task `79c59c46-4869-4fd0-8383-db2528e955fc` answered
+  `1+1` as `2` with no tools or Subagent lifecycle events.

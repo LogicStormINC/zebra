@@ -138,12 +138,23 @@ class ReadOnlyToolGateway(ToolGatewayPort):
 research_contract = ToolContract(
     name="agent.research",
     parallel_safe=True,
-    required_arguments=("objective",),
-    description="Delegate one bounded read-only workspace research task.",
+    required_arguments=("objective", "delegation_reason"),
+    description=(
+        "Delegate one bounded, independent, multi-step read-only research task when "
+        "separate context is materially useful. Prefer direct answers and parent tools "
+        "for simple work."
+    ),
     argument_properties={
         "objective": {
             "type": "string",
             "description": "Specific evidence-gathering objective for the child agent.",
+        },
+        "delegation_reason": {
+            "type": "string",
+            "description": (
+                "Concise reason this objective is better isolated than answered directly "
+                "or completed with parent tools."
+            ),
         },
     },
 )
@@ -173,6 +184,11 @@ class ResearchSubagentTool:
         objective = tool_call.arguments["objective"]
         if not isinstance(objective, str) or not objective.strip():
             raise ToolArgumentError("agent.research requires a non-blank objective")
+        delegation_reason = tool_call.arguments["delegation_reason"]
+        if not isinstance(delegation_reason, str) or not delegation_reason.strip():
+            raise ToolArgumentError(
+                "agent.research requires a non-blank delegation_reason"
+            )
         task = ResearchSubagentTask(
             objective=objective.strip(),
             workspace_root=self._workspace_root,
@@ -184,12 +200,19 @@ class ResearchSubagentTool:
             subagent_id = self._coordinator.spawn(task)
             result = self._coordinator.join(subagent_id)
         except SubagentLimitError as exc:
+            detail = str(exc)[:1000]
             return ToolResult(
                 tool_call_id=tool_call.tool_call_id,
                 status=ToolCallStatus.FAILED,
-                metadata={"reason": "subagent_limit", "detail": str(exc)},
+                output=json.dumps(
+                    {"detail": detail, "reason": "subagent_limit", "status": "failed"},
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ),
+                metadata={"reason": "subagent_limit", "detail": detail},
             )
         payload = {
+            "delegation_reason": delegation_reason.strip(),
             "subagent_id": str(result.subagent_id),
             "status": result.status.value,
             "summary": result.summary,
@@ -198,6 +221,10 @@ class ResearchSubagentTool:
                 for source in result.sources
             ],
             "confidence": result.confidence,
+            "usage": {
+                "model_calls": result.model_calls_used,
+                "tool_calls": result.tool_calls_used,
+            },
         }
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
@@ -218,6 +245,7 @@ class ResearchSubagentTool:
                 "source_count": len(result.sources),
                 "confidence": result.confidence,
                 "provenance": result.provenance,
+                "delegation_reason": delegation_reason.strip(),
             },
         )
 

@@ -68,6 +68,10 @@ deployment does not change the product boundary above. Read
 
 - durable event store and deterministic projections
 - bounded Harness loops with model and tool budgets
+- model-native Subagent selection: direct answers and parent tools stay local;
+  only an explicit valid bounded research call creates a non-recursive child
+- recoverable tool failures return structured evidence to the model so it can
+  correct the call, choose an alternative, or answer within remaining budgets
 - worker leases, cancellation, recovery, suspension, and snapshot restore
 - correlated model, tool, approval, clarification, artifact, memory, and trace evidence
 - backend-internal handoff safety contracts with authority narrowing and side-effect replay guards
