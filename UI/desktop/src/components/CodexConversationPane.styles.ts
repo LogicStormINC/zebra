@@ -294,30 +294,14 @@ export const useConversationPaneStyle = createStyles(({ css }) => {
       }
     `,
     composerCard: css`
-      min-height: 126px;
-      max-height: 240px;
-      background: #1b1b1c;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: var(--zebra-radius-composer);
-      box-shadow: var(--zebra-shadow-lg);
-      padding: var(--zebra-space-sm);
-      overflow: hidden;
-      @media (max-width: 768px) {
-        border-radius: var(--zebra-radius-large);
-        padding: var(--zebra-space-xs);
-      }
-    `,
-    idleComposerCard: css`
-      min-height: 180px;
-      max-height: 290px;
-      background: #1b1b1c;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 22px;
-      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
-      padding: var(--zebra-space-sm);
+      max-height: min(240px, 42dvh);
+      background: #202021;
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      border-radius: 20px;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3);
+      padding: 8px;
       overflow: hidden;
       .ant-sender {
-        min-height: 126px;
         display: flex;
         flex-direction: column;
       }
@@ -327,15 +311,25 @@ export const useConversationPaneStyle = createStyles(({ css }) => {
       .ant-sender-footer {
         flex: 0 0 auto;
       }
+      @media (max-width: 768px) {
+        border-radius: 16px;
+        padding: 6px;
+      }
     `,
     composerFooter: css`
-      padding: 0 var(--zebra-space-xs) var(--zebra-space-xs);
-      gap: 12px;
+      width: 100%;
+      min-height: 38px;
+      padding: 2px 4px 0;
+      gap: 8px;
       @media (max-width: 767px) {
         .ant-flex:first-child {
           min-width: 0;
         }
       }
+    `,
+    composerActions: css`
+      min-width: 0;
+      overflow: hidden;
     `,
     composerTools: css`
       min-width: 0;
@@ -426,6 +420,9 @@ export const useConversationPaneStyle = createStyles(({ css }) => {
         background: transparent;
         border: none;
         box-shadow: none;
+      }
+      .ant-sender-content {
+        padding: 4px 8px 2px;
       }
       .ant-sender-input,
       .ant-sender-textarea {

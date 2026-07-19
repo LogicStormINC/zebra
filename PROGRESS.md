@@ -8,7 +8,8 @@
 - Snapshot date: `2026-07-19`
 - Verified implementation baseline: `69545db` (PR `#168`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
-- Active implementation task: none; `UI-LOBE-01` merged via PR `#168`.
+- Active implementation task: `UI-COMPOSER-01` is in Review on
+  `codex/ui-composer-compact-01`.
 - Active architecture task: none; `ARCH-SVC-BOUNDARY-01` merged via PR `#166`.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
@@ -65,6 +66,8 @@
   streams, reload recovery, cancellation, and terminal-session follow-up.
 - Desktop composes Lobe UI `ThemeProvider` with Ant Design X and Zebra's durable
   event projection; Lobe UI does not replace session or chat state.
+- `UI-COMPOSER-01` is refining the existing Ant Design X composer presentation;
+  it does not change conversation or task-launch contracts.
 - Typed local tools cover bounded file, command, patch, tests, Git, Web, Skill,
   MCP, and read-only Research paths according to the task profile.
 
@@ -94,6 +97,11 @@ gVisor and native sandbox jobs instead of treating local skips as proof.
 
 `UI-LOBE-01` validation additionally passes all Desktop checks, TypeScript,
 Vite production build, and a real browser smoke without console warnings.
+
+`UI-COMPOSER-01` additionally passes all `21` Desktop checks, TypeScript/Vite
+build, and real Chromium desktop/mobile visual checks. The thread composer is
+`117px` high instead of `183px`; the new-task and `390px` mobile variants are
+`145px` and `113px`, with no horizontal overflow or browser console warnings.
 
 The DeepSeek credentials-enabled focused run also passed all `39` contracts,
 including a real thinking tool round trip.

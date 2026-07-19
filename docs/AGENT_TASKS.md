@@ -28,6 +28,8 @@
 - `ARCH-RT-A3-REL-01` is `Done` via PR `#164`.
 - `ARCH-RT-A4-E2E-01` is `Done` via PR `#165`.
 - `UI-LOBE-01` is `Done` via PR `#168`.
+- `UI-COMPOSER-01` is `Review` on
+  `codex/ui-composer-compact-01` for the maintainer-requested compact composer.
 - `ARCH-SVC-BOUNDARY-01` is `Done` via PR `#166`.
 - `QA-HANDOFF-CLK-01`, `QA-PKG-E2E-02`, and `QA-PKG-E2E-03` are `Done` via
   PRs `#170`, `#171`, and `#172`.
@@ -14480,3 +14482,48 @@ projection.
 - browser smoke rendered the existing dark workbench with no console warnings
 - main chunk stayed below the prior mainline bundle record
 - production dependency audit found no known vulnerabilities
+
+### UI-COMPOSER-01 - Compact Codex-Style Conversation Composer
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `APP / UI / QA`
+- Depends on: merged `UI-LOBE-01` and explicit maintainer request
+- Branch: `codex/ui-composer-compact-01`
+- Owned paths: `UI/desktop/src/components/conversation/ConversationComposer.tsx`,
+  `UI/desktop/src/components/CodexConversationPane.styles.ts`,
+  `UI/desktop/src/components/ComposerAttachments.styles.ts`,
+  `UI/desktop/checks/composer-layout.check.ts`, `UI/desktop/package.json`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Reduce the oversized idle and thread composers to a compact Codex-style input
+surface while preserving Zebra's task-launch controls, attachments, submit,
+cancel, and accessibility contracts.
+
+#### Acceptance
+
+- [x] Idle and thread composers share a compact two-level layout with bounded
+  input growth and a bottom-aligned action row.
+- [x] Existing task-launch, attachment, submit, cancel, and prompt semantics are
+  unchanged.
+- [x] Mobile layout remains usable without clipping the send or stop action.
+- [x] A deterministic Desktop check and production build pass.
+
+#### Explicit Non-Goals
+
+- replacing Ant Design X `Sender` or Zebra's durable conversation state
+- adding voice input or controls that do not exist in the current product
+- redesigning the surrounding workspace, thread, or task-launch configuration
+
+#### Validation Evidence
+
+- all `21` deterministic Desktop checks passed, including the new compact
+  composer layout contract
+- TypeScript and Vite production build passed; main chunk is `1,427.08 kB`
+  (`453.85 kB` gzip)
+- real Chromium measured thread / idle / mobile composer heights of
+  `117px` / `145px` / `113px`; the `390px` viewport had no horizontal overflow
+- browser console had no warnings or errors
+- file-size, Ruff, strict Mypy, and release Eval gates passed

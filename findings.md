@@ -1,5 +1,18 @@
 # Findings
 
+## UI-COMPOSER-01 - 2026-07-19
+
+- The oversized composer had two independent causes: fixed `126px` / `180px`
+  minimum heights and an attachment surface that always consumed its own row.
+- Reusing the existing Ant Design X `Sender` remains sufficient. Moving the
+  existing attachment surface into the footer and sharing one size contract
+  removes the extra row without changing task-launch or submission behavior.
+- Real Chromium measured the thread composer at `117px`, down from `183px`.
+  The idle variant is `145px`; at `390px` viewport width the composer is `113px`,
+  the send action remains visible, and no horizontal overflow occurs.
+- The compact layout adds no dependency and leaves the production bundle within
+  the established Lobe UI baseline.
+
 ## UI-LOBE-01 - 2026-07-18
 
 - Lobe UI 5 is ESM-only and its current peer line requires React 19, Ant Design

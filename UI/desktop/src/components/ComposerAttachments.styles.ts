@@ -6,7 +6,8 @@ export const useComposerAttachmentsStyle = createStyles(({ css }) => ({
     align-items: center;
     gap: 6px;
     overflow-x: auto;
-    padding: 6px 8px 2px;
+    padding: 0;
+    flex: 0 1 auto;
   `,
   fileInput: css`
     display: none;

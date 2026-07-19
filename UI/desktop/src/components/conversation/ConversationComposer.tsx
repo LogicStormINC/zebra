@@ -73,7 +73,7 @@ export function ConversationComposer({
   const { styles: launchStyles } = useTaskLaunchStyle();
 
   return (
-    <div className={variant === "idle" ? styles.idleComposerCard : styles.composerCard}>
+    <div className={styles.composerCard}>
       {launchEditable ? (
         <TaskLaunchSummary
           className={launchStyles.summary}
@@ -83,25 +83,27 @@ export function ConversationComposer({
           sessionSummary={sessionSummary}
         />
       ) : null}
-      <ComposerAttachments attachments={attachments} disabled={isRequesting} onChange={onAttachmentsChange} />
       <div className={styles.sender}>
         <Sender
-          autoSize={variant === "idle" ? { minRows: 1, maxRows: 6 } : { minRows: 2, maxRows: 3 }}
+          autoSize={{ minRows: 1, maxRows: 6 }}
           components={{ input: NamedComposerInput }}
           footer={(actionNode) => (
             <Flex align="center" className={styles.composerFooter} justify="space-between">
-              <TaskLaunchControls
-                capabilities={mcpCapabilities}
-                capabilitiesBusy={mcpCapabilitiesBusy}
-                capabilitiesError={mcpCapabilitiesError}
-                prompts={mcpPrompts}
-                promptsBusy={mcpPromptsBusy}
-                promptsError={mcpPromptsError}
-                config={launchConfig}
-                editable={launchEditable}
-                onPatch={onPatchLaunchConfig}
-                onRetryPrompts={onRetryMcpPrompts}
-              />
+              <Flex align="center" className={styles.composerActions} gap={8}>
+                <ComposerAttachments attachments={attachments} disabled={isRequesting} onChange={onAttachmentsChange} />
+                <TaskLaunchControls
+                  capabilities={mcpCapabilities}
+                  capabilitiesBusy={mcpCapabilitiesBusy}
+                  capabilitiesError={mcpCapabilitiesError}
+                  prompts={mcpPrompts}
+                  promptsBusy={mcpPromptsBusy}
+                  promptsError={mcpPromptsError}
+                  config={launchConfig}
+                  editable={launchEditable}
+                  onPatch={onPatchLaunchConfig}
+                  onRetryPrompts={onRetryMcpPrompts}
+                />
+              </Flex>
               <Tooltip title={isRequesting ? "停止任务" : "发送任务"}>
                 <span className={`${styles.sendSlot} ${canSubmit || isRequesting ? "" : styles.sendSlotDisabled}`}>
                   {React.isValidElement(actionNode)
