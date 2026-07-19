@@ -14335,3 +14335,25 @@ namespace isolation, concurrency, durability, and audit contracts.
 - `git diff --check`
 - `make test` (`1483 passed, 7 skipped`)
 - `make check` (file-size, Ruff, mypy, and eval release gates passed)
+
+### QA-HANDOFF-CLK-01 - Deterministic Stale Handoff Clock Boundary
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `QA / STORAGE`
+- Depends on: merged Session handoff persistence
+- Branch: `codex/qa-handoff-clock-regression`
+- Owned paths: `tests/agent_storage/test_session_handoffs.py`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Keep stale-preparing cleanup deterministic after the calendar advances beyond
+the test fixture's fixed date.
+
+#### Acceptance
+
+- [ ] The test cutoff is derived from the reserved operation timestamp instead
+  of the host clock or a fixed calendar day.
+- [ ] The focused regression and full deterministic suite pass on 2026-07-19
+  and remain independent of future wall-clock dates.

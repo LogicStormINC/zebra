@@ -5,10 +5,11 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-07-18`
-- Verified implementation baseline: `d586a8f` (PR `#165`)
+- Snapshot date: `2026-07-19`
+- Verified implementation baseline: `9a48312` (PR `#169`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
-- Active implementation task: none
+- Active implementation task: `QA-HANDOFF-CLK-01` removes a wall-clock date
+  dependency from the stale handoff regression.
 - Active architecture task: `ARCH-SVC-BOUNDARY-01` is in review and defines the
   embeddable Agent Runtime microservice boundary
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
