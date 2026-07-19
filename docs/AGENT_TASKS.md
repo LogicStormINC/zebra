@@ -13925,10 +13925,13 @@ changing the current default of same-Session compaction or activating runtime be
   `docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md`,
   `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
   `UI/desktop/src/App.tsx`, `UI/desktop/src/components/CodexWorkspace.tsx`,
+  `UI/desktop/src/components/CodexConversationPane.tsx`,
+  `UI/desktop/src/components/conversation/ConversationThread.tsx`,
   `UI/desktop/src/components/SessionThreadWorkspace.tsx`,
   `UI/desktop/src/components/SessionStageHandoffCard.tsx`,
   `UI/desktop/src/lib/use-session-handoff.ts`,
-  `UI/desktop/src/lib/session-handoff.ts`, `UI/desktop/checks/session-handoff.check.ts`,
+  `UI/desktop/src/lib/session-handoff.ts`, `UI/desktop/src/lib/zebra-api-core.ts`,
+  `UI/desktop/src/types/session.ts`, `UI/desktop/checks/session-handoff.check.ts`,
   `docs/AGENT_TASKS.md`, `README.md`, `PROGRESS.md`, `task_plan.md`,
   `findings.md`, `WORKLOG.md`
 
