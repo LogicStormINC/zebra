@@ -14619,13 +14619,15 @@ cancel, and accessibility contracts.
 - Depends on: merged `P122-WEB-01`, `P126-WEB-01`, and explicit maintainer approval
 - Branch: `codex/web-ux-01-trusted-local-auto-web`
 - Owned paths: `apps/config/`, `apps/api/`, `apps/cli/`, `apps/worker/`,
+  `packages/agent-core/src/agent_core/harness/model_step.py`,
   `packages/agent-security/`, `packages/agent-runtime/`,
   `UI/desktop/src/lib/task-launch-config.ts`,
   `UI/desktop/src/components/conversation/TaskLaunchControls.tsx`,
   `UI/desktop/src/components/CodexConversationPane.tsx`,
   `UI/desktop/src/components/TaskLaunchSummary.tsx`,
   `UI/desktop/src/lib/use-task-launch-config.ts`, `UI/desktop/checks/`,
-  `UI/desktop/e2e/`, `tests/agent_security/`,
+  `UI/desktop/e2e/`, `tests/agent_core/test_tool_call_batches.py`,
+  `tests/agent_security/`,
   `tests/worker/`, `tests/api/`,
   `docs/AGENT_TASKS.md`, `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
   `PROGRESS.md`, `README.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
@@ -14640,9 +14642,9 @@ side-effecting tools remain fail-closed or approval-gated.
 
 #### Acceptance
 
-- [x] New Desktop tasks default to `full-trusted-local`; API and core defaults
-  remain `network_profile=none`. Existing Desktop `none` defaults migrate once,
-  after which an explicit user selection of `none` remains durable.
+- [x] New Desktop tasks default to `full-trusted-local`; core and non-local API
+  defaults remain `network_profile=none`. Local trusted API creation normalizes
+  all requested profiles to the operator's effective trusted authority.
 - [x] `domain-allowlist` exact matches and `full-trusted-local` public HTTPS Web
   routes receive `allow`, not `require_approval`.
 - [x] `network_profile=none`, malformed/private targets, and non-matching domains
@@ -14653,8 +14655,12 @@ side-effecting tools remain fail-closed or approval-gated.
 - [x] In `local + trusted-local` deployment mode, old Tasks and internal Segments
   with durable `none` execute using effective trusted-local network authority;
   production and non-local profiles continue using their durable authority.
+- [x] API, CLI, and Worker execution use one shared effective-network resolver,
+  so no entry point can accidentally reintroduce a durable `none` denial locally.
 - [x] Trusted-local command and MCP calls do not enter approval state; workspace
   escape, unknown-tool, input validation, Gateway, and runtime boundaries remain.
+- [x] Failed tools with empty output expose bounded `status`, `reason`, and
+  `detail` observations to the next model call instead of an uninformative label.
 
 #### Validation Evidence
 
@@ -14672,6 +14678,11 @@ side-effecting tools remain fail-closed or approval-gated.
   local command execution without approval interruption
 - original old Task `ff198e19-9f46-42d0-b2bd-4d64e6166e67` completed a real
   OpenAI `web.fetch` through the macOS HTTPS proxy without Policy denial
+- final focused regression: `101 passed`; full suite: `1515 passed, 7 skipped`;
+  file-size `899`, Ruff, strict Mypy over `418` files, and `8/8` Evals passed
+- real Zhipu Task `91fbddb3-d608-4e7c-a15b-694d6e55c9ae` recorded Policy
+  `allow`; the model received and accurately reported the upstream expired-TLS
+  failure while the Task completed through the recoverable-tool path
 
 ### SUBAGENT-UX-01 - Model-Native Subagent Delegation
 

@@ -23,7 +23,12 @@ from agent_runtime import (
     run_local_harness,
     validate_mcp_capability_selection,
 )
-from agent_security import CredentialBroker, PolicyProfile, parse_network_profile
+from agent_security import (
+    CredentialBroker,
+    PolicyProfile,
+    parse_network_profile,
+    resolve_effective_network_profile,
+)
 from agent_storage import (
     LeaseConflictError,
     SQLiteArtifactPayloadStore,
@@ -384,6 +389,14 @@ class ZebraAgentApi(
                 reason=str(error),
             )
         try:
+            trusted_local = trusted_local_mode_enabled(self.settings)
+            network_profile = resolve_effective_network_profile(
+                parse_network_profile(
+                    str(parsed["network_profile"]),
+                    domain_allowlist=parsed["network_allowlist"],
+                ),
+                trusted_local=trusted_local,
+            )
             result = run_local_harness(
                 prompt=str(parsed["prompt"]),
                 title=str(parsed["title"]),
@@ -391,15 +404,12 @@ class ZebraAgentApi(
                 model_gateway=model_gateway,
                 policy_profile=PolicyProfile(str(parsed["policy_profile"])),
                 tool_profile=ToolProfile(str(parsed["tool_profile"])),
-                network_profile=parse_network_profile(
-                    str(parsed["network_profile"]),
-                    domain_allowlist=parsed["network_allowlist"],
-                ),
+                network_profile=network_profile,
                 web_search_endpoint=self.settings.web_search_endpoint,
                 skill_roots=self.settings.skill_roots,
                 mcp_servers=self.settings.mcp_servers,
                 mcp_allowlist=parsed["mcp_allowlist"],
-                trusted_local=trusted_local_mode_enabled(self.settings),
+                trusted_local=trusted_local,
                 session_history=SQLiteSessionHistory(
                     self.database_path, allowed_session_ids=parsed["history_session_ids"]
                 ),

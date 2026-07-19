@@ -1,3 +1,4 @@
+import json
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -12,7 +13,7 @@ from agent_core.domain.modeling import (
     ModelTextDelta,
     ModelToolDefinition,
 )
-from agent_core.domain.tools import ToolCall, ToolResult
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.hooks import CompactionHook
 from agent_core.harness.model_request import (
@@ -51,6 +52,19 @@ MODEL_NATIVE_DELEGATION_GUIDANCE = (
     "- Every agent.research call must include objective and a concise "
     "delegation_reason explaining why direct work is less suitable."
 )
+
+
+def _tool_result_content(tool_result: ToolResult) -> str:
+    if tool_result.output:
+        return tool_result.output
+    if tool_result.status is ToolCallStatus.EXECUTED:
+        return "Tool executed."
+    observation: dict[str, object] = {"status": tool_result.status.value}
+    for key in ("reason", "detail"):
+        value = tool_result.metadata.get(key)
+        if isinstance(value, str | int | float | bool):
+            observation[key] = value
+    return json.dumps(observation, ensure_ascii=False, sort_keys=True)
 
 
 class HarnessModelStep:
@@ -330,13 +344,12 @@ class HarnessModelStep:
             SessionMessage(
                 message_id=new_message_id(),
                 role=MessageRole.TOOL,
-                content=tool_result.output or f"Tool {tool_result.status.value}.",
+                content=_tool_result_content(tool_result),
                 created_at=created_at,
                 tool_call_id=tool_call.provider_call_id or str(tool_call.tool_call_id),
                 metadata=dict(tool_result.metadata),
             )
         )
-
     def request_tool_result_completion(
         self,
         task: HarnessTask,

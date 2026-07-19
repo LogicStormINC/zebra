@@ -748,7 +748,9 @@ Agent 阶段默认 `none`。依赖安装在独立 Setup Phase 中完成，并在
 - 核心契约继续默认 `none`；非本地 API、Worker 和云端运行没有网络授权时直接拒绝
   外部访问。
 - `local + trusted-local` 是显式运维信任边界：Desktop、API、CLI 和 Worker 对新旧
-  Task 都使用有效 `full-trusted-local` authority，模型工具不进入人工 approval。
+  Task 都通过 Agent Security 的同一 resolver 得到有效 `full-trusted-local`
+  authority，模型工具不进入人工 approval；客户端与历史事件中的 `none` 不再是本地
+  执行入口各自解释的开关。
 - 本地 `web.fetch` 与已配置 `web.search` 仍经过 HTTPS、URL、重定向、超时、
   Content-Type 和响应大小检查。直接连接继续执行公共 DNS 地址预检；当操作系统已
   配置 HTTPS 代理时，由可信代理负责 DNS 与路由，从而兼容 Clash Fake-IP 等模式。

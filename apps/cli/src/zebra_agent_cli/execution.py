@@ -19,7 +19,7 @@ from agent_security import (
     DEFAULT_NETWORK_PROFILE,
     NetworkProfile,
     PolicyProfile,
-    parse_network_profile,
+    resolve_effective_network_profile,
 )
 from agent_storage import (
     SQLiteArtifactPayloadStore,
@@ -59,8 +59,9 @@ def execute_durable_run(
     attachments: tuple[TextAttachmentInput, ...] = (),
 ) -> DurableRunResult:
     trusted_local = trusted_local_mode_enabled(settings)
-    effective_network_profile = (
-        parse_network_profile("full-trusted-local") if trusted_local else network_profile
+    effective_network_profile = resolve_effective_network_profile(
+        network_profile,
+        trusted_local=trusted_local,
     )
     confirmed_memories = list_confirmed_repo_memories(
         database_path,

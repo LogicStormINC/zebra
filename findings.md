@@ -13,13 +13,18 @@
   and Desktop launch controls did not consume it. Reusing it avoids a new mode.
 - Existing Desktop localStorage retained the old `none` default, so changing the
   constant alone would not repair current installations. A one-time marker
-  migrates that legacy value while preserving later explicit offline choices.
+  migrates that legacy value; the local API independently normalizes every new
+  Task to trusted authority, so stale or explicit client values cannot weaken
+  the operator-selected local execution mode.
 - Direct Web execution needs a multi-response model regression because the same
   Worker attempt now executes the tool and performs final synthesis instead of
   splitting those model calls across approval continuation attempts.
 - Desktop defaults only affect new Tasks. Existing Tasks and automatic internal
   Segments persist the prior `network_profile=none`, so the Worker must derive an
   effective local authority at execution time instead of rewriting history.
+- API, CLI, and Worker now call the same effective-network resolver. This is the
+  execution source of truth; UI defaults and durable Task values are evidence,
+  not independent Policy switches inside `local + trusted-local` mode.
 - This macOS host uses a system HTTPS proxy at `127.0.0.1:7890`; Clash Fake-IP DNS
   maps public names to reserved `198.18.0.0/15`. Disabling proxies and resolving
   locally therefore produced a false `private_network_blocked`. Trusted local Web
@@ -28,6 +33,11 @@
 - Real old-Task validation separates failures correctly: OpenAI `/news/` returns
   upstream HTTP 403 and its RSS exceeds the bounded response limit, while
   `https://openai.com/robots.txt` executes and the Task completes without approval.
+- A real Zhipu request exposed a separate recovery defect: the trace retained a
+  TLS certificate error in metadata, but an empty tool output became only
+  `Tool failed.` in the provider conversation. The shared model-step formatter
+  now projects bounded `status`, `reason`, and `detail`, preventing the model
+  from guessing that a transport error was a Policy or allowlist denial.
 
 ## UI-COMPOSER-01 - 2026-07-19
 

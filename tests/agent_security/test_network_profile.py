@@ -6,6 +6,7 @@ from agent_security import (
     NetworkProfileError,
     NetworkProfileName,
     parse_network_profile,
+    resolve_effective_network_profile,
 )
 
 
@@ -22,6 +23,22 @@ def test_supported_network_profiles_match_architecture_contract() -> None:
 
 def test_default_network_profile_is_fail_closed() -> None:
     assert DEFAULT_NETWORK_PROFILE == NetworkProfile(name=NetworkProfileName.NONE)
+
+
+def test_trusted_local_execution_overrides_durable_network_profile() -> None:
+    durable = parse_network_profile("none")
+
+    effective = resolve_effective_network_profile(durable, trusted_local=True)
+
+    assert effective.name is NetworkProfileName.FULL_TRUSTED_LOCAL
+
+
+def test_non_local_execution_preserves_durable_network_profile() -> None:
+    durable = parse_network_profile("domain-allowlist", domain_allowlist=("github.com",))
+
+    effective = resolve_effective_network_profile(durable, trusted_local=False)
+
+    assert effective is durable
     assert DEFAULT_NETWORK_PROFILE.is_fail_closed is True
     assert DEFAULT_NETWORK_PROFILE.domain_allowlist == ()
 

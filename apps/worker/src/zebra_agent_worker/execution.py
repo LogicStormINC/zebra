@@ -24,7 +24,11 @@ from agent_core.harness.models import (
 )
 from agent_integrations import build_model_gateway
 from agent_runtime import LocalToolGateway
-from agent_security import LocalPolicyEngine, PolicyProfile, parse_network_profile
+from agent_security import (
+    LocalPolicyEngine,
+    PolicyProfile,
+    resolve_effective_network_profile,
+)
 from agent_storage import (
     SQLiteArtifactPayloadStore,
     SQLiteContextLifecycleStore,
@@ -182,8 +186,9 @@ class SessionExecutionService:
             self._claim_service.release_claim(claimed)
             raise WorkerExecutionError(str(exc)) from exc
         trusted_local = trusted_local_mode_enabled(self._settings)
-        effective_network_profile = (
-            parse_network_profile("full-trusted-local") if trusted_local else task.network_profile
+        effective_network_profile = resolve_effective_network_profile(
+            task.network_profile,
+            trusted_local=trusted_local,
         )
         try:
             model_gateway = build_model_gateway(self._settings)

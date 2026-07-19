@@ -9,7 +9,8 @@
 - enabled the existing `full-trusted-local` network profile for public Web
   Gateway routing and made it the new local Desktop launch default
 - added a one-time Desktop migration from the previously persisted `none`
-  default; users can still explicitly select and retain offline mode afterward
+  default; the local API also normalizes stale or explicit client profiles to
+  the operator-selected trusted authority
 - retained API/core `none` defaults, exact allowlist checks, Web Gateway safety,
   MCP approval, and side-effecting tool policy
 - focused validation passed: 57 backend tests, Desktop launch check, TypeScript,
@@ -24,15 +25,23 @@
   for API/CLI/Worker execution, including old Tasks and automatic Segments, and
   removes approval pauses for local command and MCP calls while retaining hard
   validation, workspace, Gateway, Runtime, and audit boundaries
+- centralized that derivation in the Agent Security network-profile resolver so
+  API, CLI, Worker, recovery, and automatic Segment paths cannot drift apart
 - local Web transports now honor the macOS system HTTPS proxy in trusted mode;
   direct and all non-local paths retain public-address DNS preflight
 - real regression on the original Task `ff198e19-9f46-42d0-b2bd-4d64e6166e67`
   completed `web.fetch` against OpenAI `robots.txt` without approval; separate
   `/news/` 403 and RSS size-limit results were correctly reported as transport
   failures rather than Policy denials
-- follow-up validation passed: `107` focused tests, `1509 passed, 5 skipped`
-  full suite, zero file-size violations, Ruff, strict Mypy over `418` files,
-  `8/8` release Evals, all Desktop checks/build, and real Chromium `8/8`
+- real Zhipu regression proved Policy `allow` and recoverable completion, then
+  exposed and fixed empty failed-tool observations so the next model call sees
+  the actual TLS `reason/detail` instead of inventing an allowlist explanation
+- final validation passed: `101` focused tests, `1515 passed, 7 skipped` full
+  suite, file-size `899`, Ruff, strict Mypy over `418` files, `8/8` release
+  Evals, all Desktop checks/build, and real Chromium `8/8`
+- real Zhipu Task `91fbddb3-d608-4e7c-a15b-694d6e55c9ae` recorded Policy
+  `allow`, completed after an upstream expired-TLS failure, and the next model
+  call accurately consumed the structured failure observation
 
 ## 2026-07-19 UI-COMPOSER-01 Compact Conversation Composer
 

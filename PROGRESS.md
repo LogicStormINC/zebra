@@ -49,9 +49,10 @@
   audit remain independent of model output.
 - Explicit `local + trusted-local` mode uses effective `full-trusted-local`
   authority across Desktop/API/CLI/Worker, so new and existing Tasks execute model
-  tools without per-call approval. System HTTPS proxies are honored for local Web
-  execution; direct connections retain public-address DNS preflight. Core and
-  non-local deployments remain default-deny and approval-gated.
+  tools without per-call approval. One Agent Security resolver is the authority
+  source for every execution entry point. System HTTPS proxies are honored for
+  local Web execution; direct connections retain public-address DNS preflight.
+  Core and non-local deployments remain default-deny and approval-gated.
 
 ### Context and model integration
 
@@ -87,21 +88,26 @@
 - Typed local tools cover bounded file, command, patch, tests, Git, Web, Skill,
   MCP, and read-only Research paths according to the task profile.
 - Failed tools return structured observations for model-selected correction or
-  fallback while Policy, approval, protocol, effect, and budget stops remain hard.
+  fallback, including bounded failure reason and detail when output is empty,
+  while Policy, approval, protocol, effect, and budget stops remain hard.
 
 ## Latest Validation Baseline
 
 Validated on `codex/web-ux-01-trusted-local-auto-web` on 2026-07-19:
 
-- focused local authority, proxy, security, API, Worker and runtime: `107 passed`
-- `make test`: `1509 passed, 5 skipped`
-- `make check`: file-size, Ruff, strict Mypy over `418` source files, and `8/8`
-  release Eval cases passed
+- final focused authority, failure-observation, proxy, API, Worker and runtime:
+  `101 passed`
+- `make test`: `1515 passed, 7 skipped`
+- `make check`: file-size `899`, Ruff, strict Mypy over `418` source files, and
+  `8/8` release Eval cases passed
 - every deterministic Desktop `check:*` script and production build passed
 - real Chromium: `8/8`, covering the trusted-local launch default, automatic
   command execution, streaming, reload, cancellation, Segment and failure paths
 - the original old Task completed a real OpenAI `web.fetch` via the configured
   macOS HTTPS proxy without approval or `private_network_blocked`
+- real Zhipu Task `91fbddb3-d608-4e7c-a15b-694d6e55c9ae` recorded Policy
+  `allow`, recovered from the site's expired TLS certificate, and gave the model
+  the exact failure detail instead of a false allowlist explanation
 
 Validated on `codex/subagent-delegation-model-native` on 2026-07-19:
 

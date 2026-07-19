@@ -63,7 +63,7 @@ class FailingToolGateway(RecordingToolGateway):
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
             status=ToolCallStatus.FAILED,
-            metadata={"reason": "not_a_file"},
+            metadata={"reason": "not_a_file", "detail": "missing.txt does not exist"},
         )
 
 
@@ -109,7 +109,10 @@ def test_provider_batch_lets_model_recover_from_failed_tool() -> None:
     assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
     assert result.run_result.model_calls_used == 2
     assert tools.calls == [failed]
-    assert gateway.requests[1][-2].content == "Tool failed."
+    assert gateway.requests[1][-2].content == (
+        '{"detail": "missing.txt does not exist", "reason": "not_a_file", '
+        '"status": "failed"}'
+    )
     assert any(event.event_type is EventType.TOOL_EXECUTION_FAILED for event in result.events)
 
 
