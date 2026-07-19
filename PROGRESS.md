@@ -81,7 +81,7 @@
 
 Validated on `codex/ctx-seg-01-task-runtime` on 2026-07-19:
 
-- `make test`: `1500 passed, 7 skipped`
+- `make test`: `1501 passed, 7 skipped`
 - `make check`: file-size, Ruff, strict Mypy over `417` source files, and `8/8`
   release Eval cases passed
 - Desktop: every deterministic `check:*` script and production build passed
@@ -89,6 +89,9 @@ Validated on `codex/ctx-seg-01-task-runtime` on 2026-07-19:
   approval, and failure regressions passed
 - terminal control state and approval identity now project through the stable Task
   boundary even while an internal Segment execution request is settling
+- inherited workspace revision is fail-closed before the first Segment attempt;
+  later approval continuations use current runtime authority instead of replaying
+  the immutable creation-time revision check
 
 Previous packaged mainline baseline:
 

@@ -7,7 +7,7 @@ from agent_core.application.session_bootstrap import (
     SessionBootstrapCommand,
     SessionBootstrapService,
 )
-from agent_core.application.session_projection import rebuild_session
+from agent_core.application.session_projection import apply_event, rebuild_session
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.context_capsule import ContextSourceEventRange
 from agent_core.domain.events import EventActor, EventType, SessionEvent
@@ -115,6 +115,46 @@ def test_child_recovery_revalidates_workspace_even_after_dispatch_ack(tmp_path: 
     workspace = workspaces.get_workspace(operation.target_session_id)
     assert session is not None and session.status.value == "suspended"
     assert workspace is not None and workspace.status.value == "suspended"
+
+
+def test_child_continuation_does_not_reapply_the_initial_workspace_revision(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "handoff.db"
+    source = _seed_completed_source(database_path, tmp_path)
+    handoffs = SQLiteSessionHandoffStore(database_path)
+    operation, request = _prepared_commit(handoffs, source)
+    handoffs.commit(request)
+    gate = SessionHandoffRecoveryGate(str(database_path))
+
+    first = gate.recover(operation.target_session_id, worker_id="worker-1", recovered_at=NOW)
+    assert first is not None
+    session_store = SQLiteProjectionStore(database_path)
+    session = session_store.get_session(operation.target_session_id)
+    assert session is not None
+    started = SessionEvent.create(
+        session_id=operation.target_session_id,
+        sequence=session.current_sequence + 1,
+        event_type=EventType.HARNESS_ATTEMPT_STARTED,
+        actor=EventActor.HARNESS,
+        payload={"attempt_number": 1},
+        created_at=NOW,
+    )
+    SQLiteEventStore(database_path).append(started)
+    session_store.save_session(apply_event(session, started))
+
+    workspaces = SQLiteWorkspaceProjectionStore(database_path)
+    workspace = workspaces.get_workspace(operation.target_session_id)
+    assert workspace is not None
+    workspaces.save_workspace(workspace.model_copy(update={"runtime_name": "os-sandbox"}))
+
+    resumed = gate.recover(
+        operation.target_session_id,
+        worker_id="worker-2",
+        recovered_at=NOW + timedelta(seconds=1),
+    )
+
+    assert resumed == first
 
 
 def test_reservation_and_commit_retries_return_one_operation_and_child(tmp_path: Path) -> None:

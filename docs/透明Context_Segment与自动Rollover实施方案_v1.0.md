@@ -197,6 +197,7 @@ Desktop 永远绑定 Task：
 - 新增 task-level monotonic sequence 和 replay-plus-tail SSE；
 - message/cancel/resume/approval/clarification 路由到 active Segment；
 - Desktop 使用稳定 task_id；
+- approval_id 保留内部执行定位，面向 Desktop 的 session_id 投影为稳定 Task ID；
 - rollover 不改变 URL、侧边栏项和 stream cursor。
 
 退出标准：真实浏览器跨 Segment 完成长流、停止、恢复和续问。

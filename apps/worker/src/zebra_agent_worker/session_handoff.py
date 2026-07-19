@@ -74,6 +74,11 @@ class SessionHandoffRecoveryGate:
         envelope = self._handoffs.get_envelope(result.handoff_id)
         if envelope is None:
             raise ValueError("handoff child references a missing committed envelope")
+        recovered = RecoveredHandoff(envelope, handoff_runtime_evidence(envelope))
+        if any(event.event_type is EventType.HARNESS_ATTEMPT_STARTED for event in events):
+            # ponytail: the inherited revision is checked before the first attempt;
+            # later continuations validate current runtime authority through normal setup.
+            return recovered
         dispatch = self._dispatch.claim_for_child(
             session_id, worker_id=worker_id, claimed_at=recovered_at
         )
@@ -96,7 +101,7 @@ class SessionHandoffRecoveryGate:
                 recovered_at,
             )
             raise HandoffWorkspaceDriftError("handoff workspace revision drift detected")
-        return RecoveredHandoff(envelope, handoff_runtime_evidence(envelope))
+        return recovered
 
     def _suspend_for_drift(
         self,
