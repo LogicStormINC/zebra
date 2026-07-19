@@ -27,8 +27,9 @@
 - `ARCH-RT-A2-SETUP-01` is `Done` via PR `#163`.
 - `ARCH-RT-A3-REL-01` is `Done` via PR `#164`.
 - `ARCH-RT-A4-E2E-01` is `Done` via PR `#165`.
+- `UI-LOBE-01` is `Review` on PR `#168`.
 - `ARCH-SVC-BOUNDARY-01` is `Done` via PR `#166`.
-- `UI-LOBE-01` is `Review` on `codex/ui-lobe-01-component-library`.
+- `QA-HANDOFF-CLK-01` and `QA-PKG-E2E-02` are `Done` via PRs `#170` and `#171`.
 - `QA-DESKTOP-E2E-01` is `Done` via PR `#161`.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
@@ -10590,6 +10591,132 @@ it, expand the parent's authority, recursively delegate, or outlive its parent.
 - A2A, remote agents, multi-tenant quotas, or automatic model routing
 - Tree-sitter, LSP, vector retrieval, or repository indexing changes
 
+## FinOS Integration Task Board
+
+### FINOS-HAR-03 - Recoverable Bounded Material Reads
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `CORE / INTEGRATION`
+- Depends on: `FINOS-MCP-02`
+- Branch: `codex/finos-material-recovery`
+- Owned paths: `packages/agent-core/src/agent_core/harness/`, `apps/api/src/zebra_agent_api/`, `tests/agent_core/`, `tests/api/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Keep large FinOS material runs bounded and non-repeating while allowing the
+model to recover once when conversation compaction causes it to request an
+already completed read-only file operation.
+
+#### Acceptance
+
+- [ ] API session creation validates and persists the explicitly requested
+  model and tool budgets within the configured hard maximums.
+- [ ] A failed read-only material call returns evidence to the next model step;
+  write-capable and other tool failures keep their existing terminal behavior.
+- [ ] A previously completed read-only call is never executed twice; one
+  recovery response may return the model to synthesis, and another repeat still
+  terminates deterministically.
+- [ ] Sequential and concurrent Harness tests cover recovery, no re-execution,
+  event evidence, and the retained hard stop.
+- [ ] Targeted tests, repository checks, and the deployed FinOS journal handoff
+  pass without confirming or mutating Core account data.
+
+#### Explicit Non-Goals
+
+- allowing repeated write, command, patch, test, MCP, or unknown tool calls
+- removing deterministic model/tool budgets or repeated-action hard stops
+- changing FinOS Core, Journal, or account-confirmation authority
+
+### FINOS-MCP-02 - MiniMax Web Search For Zebra
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `RUNTIME / SECURITY / INTEGRATION`
+- Depends on: `FINOS-MCP-01`
+- Branch: `codex/finos-search-mcp`
+- Owned paths: `packages/agent-integrations/`, `packages/agent-runtime/`, `packages/agent-security/`, `packages/agent-tools/`, `apps/api/`, `apps/config/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `docs/FinOS_MiniMax_Search_MCP.md`, `PROGRESS.md`, `README.md`, `.env.example`, `configs/default.env`
+
+#### Goal
+
+Extend the existing opt-in MiniMax Coding Plan MCP route with one read-only
+`web_search` tool so Zebra can answer current or external-information questions
+with source links while keeping arbitrary network access and other MCP tools
+blocked.
+
+#### Acceptance
+
+- [x] Search disabled means Zebra does not advertise `mcp.minimax.web_search`.
+- [x] Search enabled means the model can call the tool and receive structured results with source links.
+- [x] Only explicitly enabled MiniMax tools receive read-only preapproval.
+- [x] Provider, HTTP, and semantic API failures remain fail-closed and auditable.
+- [x] Targeted tests, `make test`, `make check`, and one deployed FinOS Web conversation pass.
+
+#### Acceptance Evidence
+
+- Commit `d452368` passed `1004` tests, Ruff, Mypy across `219` source files,
+  and the eight-case eval release gate.
+- FinOS Web submitted a current A-share closing-index question on 2026-07-15.
+  The deployed Agent completed six exact `mcp.minimax.web_search` calls, each
+  returned nine structured results, and the visible answer retained five
+  public source links. The trace recorded `69,752` input, `2,143` output, and
+  `71,895` total Tokens.
+- The deployed Zebra image is
+  `sha256:46be819ccfc49a64bc1116ead0c7fdb1b7512d5c3cc7eaa8b906aeb13833a637`.
+  Search and image understanding were both enabled through their independent
+  flags; Zebra and the FinOS app were healthy after recreation.
+
+#### Explicit Non-Goals
+
+- arbitrary MCP server configuration or unrestricted network access
+- automatic writes to FinOS Core, Journal, Research, or Notes
+- replacing professional market-data integrations with generic search
+
+### FINOS-MCP-01 - Workspace-Bounded MiniMax Image Understanding
+
+- Status: `Completed`
+- Owner: `Codex`
+- Suggested role: `RUNTIME / SECURITY / INTEGRATION`
+- Depends on: `Phase 22 MCP proxy execution foundation`
+- Branch: `codex/finos-vision-mcp`
+- Owned paths: `packages/agent-integrations/`, `packages/agent-runtime/`, `packages/agent-security/`, `packages/agent-tools/`, `apps/api/`, `apps/config/`, `apps/worker/`, `tests/`, `docs/AGENT_TASKS.md`, `docs/FinOS_Image_Understanding_MCP.md`, `PROGRESS.md`, `README.md`, `.env.example`, `configs/default.env`, `pyproject.toml`, `uv.lock`
+
+#### Goal
+
+Keep Zebra as the FinOS Agent runtime while adding one explicitly enabled,
+workspace-bounded MiniMax `understand_image` MCP tool for user-supplied journal
+screenshots. Zebra remains text-first; image understanding returns untrusted
+tool evidence to the existing Agent loop instead of replacing it.
+
+#### Deliverables
+
+- opt-in MiniMax MCP configuration with secrets supplied only through an environment variable
+- one advertised `mcp.minimax.understand_image` tool using the existing MCP proxy contract
+- workspace-bound local-image validation for JPEG, PNG, and WebP files up to 20 MB
+- exact read-only policy allowance for that configured tool without broad MCP auto-approval
+- tool-call evidence and failure metadata that preserve the existing Zebra trace
+- focused tests plus a real FinOS screenshot acceptance run
+
+#### Acceptance
+
+- [x] With MiniMax disabled, Zebra exposes no image tool and retains current behavior.
+- [x] With MiniMax enabled, the model can call `mcp.minimax.understand_image` and receive text evidence from a task-local image.
+- [x] URLs, data URLs, unsupported formats, oversized files, and paths outside the task workspace fail before provider egress.
+- [x] No other MCP target receives automatic read-only approval.
+- [x] Image-tool output is treated as untrusted evidence and reaches the next Zebra model step.
+- [x] Targeted tests, `make test`, `make check`, and one deployed FinOS journal flow pass.
+
+Deployed acceptance on 2026-07-14 used five real broker screenshots through
+the FinOS Web UI. All five MiniMax calls completed, the final DeepSeek response
+classified two accounts and produced the expected journal preview, and FinOS
+kept the result outside Core pending explicit user save and confirmation.
+
+#### Explicit Non-Goals
+
+- native multimodal `SessionMessage` content
+- replacing Zebra with a direct model API
+- a general MCP marketplace or arbitrary server configuration UI
+- autonomous Core or Journal writes from image recognition
 ### P118-CLOSE-01 - Phase 118 Closeout And Phase 119 Planning
 
 - Status: `Done`
@@ -14175,11 +14302,12 @@ external model network with a deterministic local streaming provider.
 
 ### ARCH-SVC-BOUNDARY-01 - Agent Runtime Microservice Business Boundary
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `ARCHITECTURE / DOCS`
 - Depends on: current Agent Runtime and cloud target architecture
 - Branch: `codex/arch-svc-boundary-01`
+- Merged PR: `#166` (`fa10fa0`)
 - Owned paths: `docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md`,
   `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
   `docs/单机与云平台Runtime目标架构方案_v1.0.md`,
@@ -14211,6 +14339,68 @@ namespace isolation, concurrency, durability, and audit contracts.
 - `make test` (`1483 passed, 7 skipped`)
 - `make check` (file-size, Ruff, mypy, and eval release gates passed)
 
+### QA-HANDOFF-CLK-01 - Deterministic Stale Handoff Clock Boundary
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `QA / STORAGE`
+- Depends on: merged Session handoff persistence
+- Branch: `codex/qa-handoff-clock-regression`
+- Merged PR: `#170` (`09aee8e`)
+- Owned paths: `tests/agent_storage/test_session_handoffs.py`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Keep stale-preparing cleanup deterministic after the calendar advances beyond
+the test fixture's fixed date.
+
+#### Acceptance
+
+- [x] The test cutoff is derived from the reserved operation timestamp instead
+  of the host clock or a fixed calendar day.
+- [x] The focused regression and full deterministic suite pass on 2026-07-19
+  and remain independent of future wall-clock dates.
+
+#### Validation
+
+- focused regression: `1 passed`
+- `make test`: `1492 passed, 7 skipped`
+- `make check`: file-size, Ruff, strict Mypy, and release Eval passed
+
+### QA-PKG-E2E-02 - Bounded Packaged WebDriver Connection Recovery
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `QA / RELEASE`
+- Depends on: merged `ARCH-RT-A4-E2E-01`
+- Branch: `codex/qa-pkg-e2e-02-driver-retry`
+- Merged PR: `#171` (`7f7c465`), delivered to `main` through PR `#170`
+- Owned paths: `.github/workflows/quality.yml`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`
+
+#### Goal
+
+Keep the packaged Tauri release gate deterministic when upstream WebDriver
+transport closes with `Connection reset by peer`, while preserving immediate
+failure for product assertions and every other error class.
+
+#### Acceptance
+
+- [x] A packaged drive is retried at most once and only when its captured log
+  contains the known WebDriver connection-reset signature.
+- [x] Product assertions, API failures, build failures, and a second transport
+  reset still fail the Quality job.
+- [x] Both attempt logs and the final machine-readable evidence are retained.
+- [x] Workflow syntax, repository checks, and the real packaged Quality job pass.
+
+#### Local Validation
+
+- workflow YAML parse and retry-signature inspection: passed
+- `make test`: `1492 passed, 7 skipped`
+- `make check`: file-size, Ruff, strict Mypy, and release Eval passed
+- Quality run `29677013935`: all seven jobs passed, including packaged Tauri
+
 ### UI-LOBE-01 - Lobe UI Component Library Integration
 
 - Status: `Review`
@@ -14218,6 +14408,7 @@ namespace isolation, concurrency, durability, and audit contracts.
 - Suggested role: `APP / UI / QA`
 - Depends on: merged desktop UI baseline and explicit maintainer request
 - Branch: `codex/ui-lobe-01-component-library`
+- PR: `#168`
 - Owned paths: `UI/desktop/package.json`, `UI/desktop/pnpm-lock.yaml`,
   `UI/desktop/tsconfig.json`, `UI/desktop/src/main.tsx`,
   `UI/desktop/src/components/CodexWorkspace.tsx`, `UI/desktop/src/components/lobe/`,

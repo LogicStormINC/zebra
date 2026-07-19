@@ -37,3 +37,18 @@ def test_session_bootstrap_service_builds_ready_session_events() -> None:
     }
     assert result.session.status is SessionStatus.READY
     assert result.session.current_sequence == 2
+
+
+def test_session_bootstrap_persists_explicit_history_scope() -> None:
+    session_id = "00000000-0000-0000-0000-000000000001"
+
+    result = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Scoped history",
+            user_input="Continue the prior task.",
+            workspace_root=Path("/tmp/bootstrap"),
+            history_session_ids=(session_id,),
+        )
+    )
+
+    assert result.events[2].payload["history_session_ids"] == [session_id]

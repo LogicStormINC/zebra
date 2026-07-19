@@ -104,6 +104,29 @@ def test_history_read_pages_only_user_and_assistant_text(tmp_path: Path) -> None
     assert active_session.messages == ()
 
 
+def test_history_scope_filters_browse_search_and_direct_reads(tmp_path: Path) -> None:
+    database = tmp_path / "history.db"
+    allowed = _stored_session(database, "Allowed", "shared needle", minute=1)
+    denied = _stored_session(database, "Denied", "shared needle", minute=2)
+    history = SQLiteSessionHistory(
+        database,
+        allowed_session_ids=(str(allowed),),
+    )
+
+    browsed = history.query(SessionHistoryRequest(mode=SessionHistoryMode.BROWSE, limit=10))
+    searched = history.query(
+        SessionHistoryRequest(mode=SessionHistoryMode.SEARCH, query="needle", limit=10)
+    )
+    denied_read = history.query(
+        SessionHistoryRequest(mode=SessionHistoryMode.READ, session_id=str(denied))
+    )
+
+    assert [item.session_id for item in browsed.sessions] == [str(allowed)]
+    assert [item.session_id for item in searched.sessions] == [str(allowed)]
+    assert denied_read.sessions == ()
+    assert denied_read.messages == ()
+
+
 def _stored_session(database: Path, title: str, prompt: str, *, minute: int):
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(

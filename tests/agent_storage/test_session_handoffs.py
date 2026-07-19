@@ -269,7 +269,7 @@ def test_stale_preparing_operations_abort_without_session_mutation(tmp_path: Pat
     store = SQLiteSessionHandoffStore(database_path)
     operation, _ = _prepared_commit(store, source_id)
 
-    assert store.abort_stale_preparing(before=NOW + timedelta(days=1)) == 1
+    assert store.abort_stale_preparing(before=operation.created_at + timedelta(seconds=1)) == 1
     aborted = store.abort(operation.operation_id, code="already-stale")
     assert aborted.status.value == "aborted"
     assert len(SQLiteEventStore(database_path).list_for_session(source_id)) == 5

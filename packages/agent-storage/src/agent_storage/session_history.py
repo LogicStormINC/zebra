@@ -30,9 +30,17 @@ SAFE_EVENT_TYPES = (
 
 
 class SQLiteSessionHistory(SessionHistoryPort):
-    def __init__(self, database_path: str | Path) -> None:
+    def __init__(
+        self,
+        database_path: str | Path,
+        *,
+        allowed_session_ids: tuple[str, ...] | None = None,
+    ) -> None:
         self._database = SQLiteDatabase(database_path)
         self._projections = SQLiteProjectionStore(database_path)
+        self._allowed_session_ids = (
+            frozenset(allowed_session_ids) if allowed_session_ids is not None else None
+        )
 
     def query(self, request: SessionHistoryRequest) -> SessionHistoryResult:
         if request.mode is SessionHistoryMode.READ:
@@ -48,6 +56,10 @@ class SQLiteSessionHistory(SessionHistoryPort):
             session
             for session in sessions
             if str(session.session_id) != current_session_id
+            and (
+                self._allowed_session_ids is None
+                or str(session.session_id) in self._allowed_session_ids
+            )
         ][:MAX_SCANNED_SESSIONS]
 
     def _browse(
@@ -149,6 +161,11 @@ class SQLiteSessionHistory(SessionHistoryPort):
         )
 
     def _session(self, raw_session_id: str) -> Session | None:
+        if (
+            self._allowed_session_ids is not None
+            and raw_session_id not in self._allowed_session_ids
+        ):
+            return None
         from uuid import UUID
 
         from agent_core.domain.identifiers import SessionId

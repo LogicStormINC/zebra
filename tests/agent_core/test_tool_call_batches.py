@@ -57,6 +57,16 @@ class RecordingToolGateway:
         )
 
 
+class FailingToolGateway(RecordingToolGateway):
+    def execute(self, tool_call: ToolCall) -> ToolResult:
+        self.calls.append(tool_call)
+        return ToolResult(
+            tool_call_id=tool_call.tool_call_id,
+            status=ToolCallStatus.FAILED,
+            metadata={"reason": "not_a_file"},
+        )
+
+
 def test_provider_batch_executes_all_calls_in_order_before_next_model_request() -> None:
     first = _call("files.read", {"path": "a.txt"}, "call_a")
     second = _call("tests.run", {"preset": "test"}, "call_b")
@@ -84,6 +94,23 @@ def test_provider_batch_executes_all_calls_in_order_before_next_model_request() 
         "call_a",
         "call_b",
     ]
+
+
+def test_provider_batch_lets_model_recover_from_failed_tool() -> None:
+    failed = _call("files.read", {"path": "missing.txt"}, "call_missing")
+    gateway = _gateway(
+        _completion("Read the file.", failed),
+        _completion("Recovered from the available context."),
+    )
+    tools = FailingToolGateway()
+
+    result = _run(gateway, tools, max_model_calls=2, max_tool_calls=1)
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert result.run_result.model_calls_used == 2
+    assert tools.calls == [failed]
+    assert gateway.requests[1][-2].content == "Tool failed."
+    assert any(event.event_type is EventType.TOOL_EXECUTION_FAILED for event in result.events)
 
 
 def test_provider_batch_stops_before_repeated_member_and_leaves_tail_unexecuted() -> None:

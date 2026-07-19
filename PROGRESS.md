@@ -5,12 +5,12 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-07-18`
-- Verified implementation baseline: `d586a8f` (PR `#165`)
+- Snapshot date: `2026-07-19`
+- Verified implementation baseline: `09aee8e` (PR `#170`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
 - Active implementation task: `UI-LOBE-01` is in review on
-  `codex/ui-lobe-01-component-library`
-- Architecture boundary: `ARCH-SVC-BOUNDARY-01` is Done via PR `#166`
+  `codex/ui-lobe-01-component-library`.
+- Active architecture task: none; `ARCH-SVC-BOUNDARY-01` merged via PR `#166`.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
@@ -107,8 +107,8 @@ including a real thinking tool round trip.
   `QA-GOV-02` / PR `#144`.
 - `QA-148-MDL-01`, `QA-DESKTOP-E2E-01`, and all Phase A Runtime tasks
   `ARCH-RT-A1-OS-01` through `ARCH-RT-A4-E2E-01` are `Done`.
-- `ARCH-SVC-BOUNDARY-01` is `Done` via PR `#166`; `UI-LOBE-01` is the only
-  current `Review` task.
+- `QA-HANDOFF-CLK-01` and `QA-PKG-E2E-02` are `Done` via PRs `#170` and `#171`;
+  `UI-LOBE-01` is the only current `Review` task.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 
 ## Known Follow-Ups

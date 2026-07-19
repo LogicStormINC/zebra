@@ -94,12 +94,48 @@ def test_bounded_loop_executes_two_tools_before_final_answer() -> None:
     ]
 
 
-def test_bounded_loop_blocks_repeated_action_with_new_call_identity() -> None:
+def test_bounded_loop_returns_one_repeated_read_to_model_without_reexecution() -> None:
     first = _tool_call("files.read", {"path": "same.txt"}, "call_one")
     repeated = _tool_call("files.read", {"path": "same.txt"}, "call_two")
     gateway = _gateway(
         _completion("Read it.", first),
         _completion("Read it again.", repeated),
+        _completion("Finished from prior evidence."),
+    )
+    tools = SequenceToolGateway()
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Repeated task",
+            user_input="Inspect the file.",
+            max_model_calls=4,
+            max_tool_calls=3,
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            tools,
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert result.attempt_result.metadata["repeated_read_recovery_count"] == 1
+    assert result.run_result.model_calls_used == 3
+    assert result.run_result.tool_calls_used == 1
+    assert len(tools.calls) == 1
+
+
+def test_bounded_loop_blocks_a_second_repeated_read() -> None:
+    first = _tool_call("files.read", {"path": "same.txt"}, "call_one")
+    repeated = _tool_call("files.read", {"path": "same.txt"}, "call_two")
+    repeated_again = _tool_call("files.read", {"path": "same.txt"}, "call_three")
+    gateway = _gateway(
+        _completion("Read it.", first),
+        _completion("Read it again.", repeated),
+        _completion("Still read it again.", repeated_again),
     )
     tools = SequenceToolGateway()
 
@@ -122,7 +158,8 @@ def test_bounded_loop_blocks_repeated_action_with_new_call_identity() -> None:
 
     assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
     assert result.attempt_result.metadata["stop_reason"] == "repeated_tool_call"
-    assert result.run_result.model_calls_used == 2
+    assert result.attempt_result.metadata["repeated_read_recovery_count"] == 1
+    assert result.run_result.model_calls_used == 3
     assert result.run_result.tool_calls_used == 1
     assert len(tools.calls) == 1
 
