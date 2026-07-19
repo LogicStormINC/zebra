@@ -127,6 +127,18 @@ def test_trace_projector_exposes_failed_tool_trace() -> None:
                     tool_calls=(tool_call,),
                 )
             ),
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content=(
+                            "The smoke checks failed; no validation evidence is available."
+                        ),
+                        created_at=created_at,
+                    )
+                )
+            ),
         )
     )
     tool_result = ToolResult(
@@ -149,7 +161,9 @@ def test_trace_projector_exposes_failed_tool_trace() -> None:
     )
     trace = HarnessTraceProjector().project(result)
 
-    assert trace.attempts[0].assistant_message == "I will run smoke checks."
+    assert trace.attempts[0].assistant_message == (
+        "The smoke checks failed; no validation evidence is available."
+    )
     assert trace.attempts[0].tools[0].tool_name == "tests.run"
     assert trace.attempts[0].tools[0].status == "failed"
     assert trace.attempts[0].tools[0].metadata == {"stderr": "failed"}

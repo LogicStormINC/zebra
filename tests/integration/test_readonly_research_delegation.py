@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from threading import Barrier, Lock
 
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
-from agent_core.domain.events import EventType
+from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
@@ -12,11 +12,56 @@ from agent_runtime import run_local_harness
 NOW = datetime(2026, 7, 14, 15, 0, tzinfo=UTC)
 
 
+def test_simple_answer_does_not_create_subagent(tmp_path) -> None:
+    gateway = ScriptedModelGateway(
+        responses=(ScriptedModelResponse(completion=_completion("2")),)
+    )
+
+    result = run_local_harness(
+        prompt="What is 1 + 1? Reply with the result.",
+        title="Direct answer",
+        workspace_root=tmp_path.resolve(),
+        model_gateway=gateway,
+    )
+
+    assert result.attempt_result.metadata["assistant_message"] == "2"
+    assert not _subagent_events(result.events)
+
+
+def test_single_parent_tool_does_not_create_subagent(tmp_path) -> None:
+    (tmp_path / "answer.txt").write_text("DIRECT-EVIDENCE\n", encoding="utf-8")
+    gateway = ScriptedModelGateway(
+        responses=tuple(
+            ScriptedModelResponse(completion=completion)
+            for completion in (
+                _completion(
+                    "Reading the single file.",
+                    _call("files.read", {"path": "answer.txt"}, "parent_read"),
+                ),
+                _completion("DIRECT-EVIDENCE"),
+            )
+        )
+    )
+
+    result = run_local_harness(
+        prompt="Read answer.txt and return its content.",
+        title="Direct parent tool",
+        workspace_root=tmp_path.resolve(),
+        model_gateway=gateway,
+    )
+
+    assert result.attempt_result.metadata["assistant_message"] == "DIRECT-EVIDENCE"
+    assert not _subagent_events(result.events)
+
+
 def test_parent_uses_sourced_readonly_child_result_for_final_answer(tmp_path) -> None:
     (tmp_path / "evidence.txt").write_text("RESEARCH-EVIDENCE\n", encoding="utf-8")
     research_call = _call(
         "agent.research",
-        {"objective": "Read evidence.txt and report its evidence."},
+        {
+            "objective": "Read evidence.txt and report its evidence.",
+            "delegation_reason": "Isolate evidence collection from synthesis.",
+        },
         "research_call",
     )
     read_call = _call("files.read", {"path": "evidence.txt"}, "read_call")
@@ -51,6 +96,17 @@ def test_parent_uses_sourced_readonly_child_result_for_final_answer(tmp_path) ->
         "git.status",
     )
     assert "agent.research" not in {tool.name for tool in gateway.tool_requests[1]}
+    assert any(
+        "Subagent delegation:" in message.content for message in gateway.requests[0]
+    )
+    assert any(
+        "Subagent delegation:" in message.content for message in gateway.requests[3]
+    )
+    assert all(
+        "Subagent delegation:" not in message.content
+        for request in gateway.requests[1:3]
+        for message in request
+    )
     assert "evidence.txt" in gateway.requests[3][-1].content
     assert "RESEARCH-EVIDENCE" in gateway.requests[3][-1].content
 
@@ -76,7 +132,14 @@ def test_research_child_searches_then_reads_within_fixed_budget(tmp_path) -> Non
             for completion in (
                 _completion(
                     "Delegating.",
-                    _call("agent.research", {"objective": "Find the proof."}, "research"),
+                    _call(
+                        "agent.research",
+                        {
+                            "objective": "Find the proof.",
+                            "delegation_reason": "Search and read require a bounded context.",
+                        },
+                        "research",
+                    ),
                 ),
                 _completion(
                     "Searching.",
@@ -111,6 +174,60 @@ def test_research_child_searches_then_reads_within_fixed_budget(tmp_path) -> Non
     )
     assert completed.payload["tool_calls_used"] == 2
     assert completed.payload["source_count"] == 2
+
+
+def test_parent_corrects_missing_delegation_reason_before_child_creation(tmp_path) -> None:
+    invalid_call = _call(
+        "agent.research",
+        {"objective": "Inspect the workspace evidence."},
+        "invalid_research",
+    )
+    corrected_call = _call(
+        "agent.research",
+        {
+            "objective": "Inspect the workspace evidence.",
+            "delegation_reason": "The evidence collection is independently bounded.",
+        },
+        "corrected_research",
+    )
+    gateway = ScriptedModelGateway(
+        responses=tuple(
+            ScriptedModelResponse(completion=completion)
+            for completion in (
+                _completion("Delegating.", invalid_call),
+                _completion("Correcting the delegation contract.", corrected_call),
+                _completion("No workspace evidence was needed."),
+                _completion("Parent completed after the corrected delegation."),
+            )
+        )
+    )
+
+    result = run_local_harness(
+        prompt="Perform a bounded independent workspace investigation.",
+        title="Correct invalid delegation",
+        workspace_root=tmp_path.resolve(),
+        model_gateway=gateway,
+    )
+
+    started = [
+        event for event in result.events if event.event_type is EventType.SUBAGENT_STARTED
+    ]
+    failed_tools = [
+        event
+        for event in result.events
+        if event.event_type is EventType.TOOL_EXECUTION_FAILED
+    ]
+    assert result.attempt_result.metadata["assistant_message"] == (
+        "Parent completed after the corrected delegation."
+    )
+    assert len(started) == 1
+    assert len(failed_tools) == 1
+    assert failed_tools[0].payload["tool_call_id"] == str(invalid_call.tool_call_id)
+    assert any(
+        message.role is MessageRole.TOOL
+        and "delegation_reason" in message.content
+        for message in gateway.requests[1]
+    )
 
 
 def test_parent_fans_out_bounded_research_and_preserves_provider_order(tmp_path) -> None:
@@ -175,12 +292,18 @@ class ParallelResearchGateway:
                 "Delegating both research tasks.",
                 _call(
                     "agent.research",
-                    {"objective": "Read a.txt and report its evidence."},
+                    {
+                        "objective": "Read a.txt and report its evidence.",
+                        "delegation_reason": "This is one independent evidence stream.",
+                    },
                     "research_a",
                 ),
                 _call(
                     "agent.research",
-                    {"objective": "Read b.txt and report its evidence."},
+                    {
+                        "objective": "Read b.txt and report its evidence.",
+                        "delegation_reason": "This is one independent evidence stream.",
+                    },
                     "research_b",
                 ),
             )
@@ -232,3 +355,13 @@ def _call(name: str, arguments: dict[str, object], provider_id: str) -> ToolCall
         created_at=NOW,
         provider_call_id=provider_id,
     )
+
+
+def _subagent_events(events: tuple[SessionEvent, ...]) -> list[SessionEvent]:
+    lifecycle = {
+        EventType.SUBAGENT_STARTED,
+        EventType.SUBAGENT_COMPLETED,
+        EventType.SUBAGENT_FAILED,
+        EventType.SUBAGENT_CANCELLED,
+    }
+    return [event for event in events if event.event_type in lifecycle]

@@ -1,5 +1,16 @@
 # Task Plan
 
+## SUBAGENT-UX-01 - Model-Native Subagent Delegation
+
+1. `completed` - Approve and independently review the model-native delegation
+   design, then register a separate owned task and branch.
+2. `completed` - Inject manifest-aware parent guidance and require a model-authored
+   delegation reason with actionable validation recovery.
+3. `completed` - Prove direct, parent-tool, complex delegation, invalid-call retry,
+   child non-recursion, and failed-child fallback behavior.
+4. `completed` - Update durable architecture/status records and run focused, full,
+   static, Eval, and real-model simple-task validation.
+
 ## CTX-SEG-01 - Stable Task And Automatic Internal Segments
 
 1. `completed` - Record ADR-013, supersede the explicit user handoff decision,

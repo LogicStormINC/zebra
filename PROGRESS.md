@@ -10,6 +10,8 @@
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
 - Review task: `CTX-SEG-01` has delivered the stable Task, internal Segment,
   unified stream/routing, automatic safe rollover, and SQLite migration slice.
+- Review task: `SUBAGENT-UX-01` makes Subagent use a model-native tool decision;
+  simple work remains in the parent and every valid delegation records its reason.
 - Active architecture task: ADR-013 replaces user-visible child Sessions with a
   stable Task boundary and backend-internal execution Segments.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
@@ -76,8 +78,19 @@
   or task-launch contracts.
 - Typed local tools cover bounded file, command, patch, tests, Git, Web, Skill,
   MCP, and read-only Research paths according to the task profile.
+- Failed tools return structured observations for model-selected correction or
+  fallback while Policy, approval, protocol, effect, and budget stops remain hard.
 
 ## Latest Validation Baseline
+
+Validated on `codex/subagent-delegation-model-native` on 2026-07-19:
+
+- focused delegation and recovery regression: `39 passed`
+- `make test`: `1509 passed, 5 skipped`
+- `make check`: file-size `898`, Ruff, strict Mypy over `417` source files, and
+  `8/8` release Eval cases passed
+- isolated real-model API check answered `1+1` directly with `2`; trace and
+  durable events contained no tool or Subagent activity
 
 Validated on `codex/ctx-seg-01-task-runtime` on 2026-07-19:
 

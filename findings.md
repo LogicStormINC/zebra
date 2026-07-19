@@ -123,3 +123,22 @@
 - ADR-013 makes stable Task identity the user boundary. Automatic rollover needs
   Task/Segment persistence and a backend lifecycle controller before it can be
   truthfully claimed; P0 intentionally does not emulate that behavior in React.
+
+## 2026-07-19 SUBAGENT-UX-01 Model-Native Delegation
+
+- `agent.research` was already model-invoked; the missing product contract was
+  stable selection guidance and diagnostic evidence, not a new task router.
+- A keyword, length, score, frontend switch, or router-model classifier would add
+  hidden policy and latency. The parent model now chooses direct answer, parent
+  tool, or bounded child through its ordinary advertised-tool decision.
+- `HarnessModelStep` is the smallest correct prompt owner because it sees the
+  effective manifest. Guidance is appended to the existing compiled System Prompt
+  when present, preserving Context, attachment, memory, CLI, and Worker contracts.
+- Invalid `delegation_reason` calls return bounded structured validation output
+  and create no child. Successful results return reason and child usage in their
+  JSON output as well as audit metadata.
+- A failed tool is evidence, not an automatic task terminal: the model may correct
+  or choose another tool while budgets remain. Policy, approval, clarification,
+  protocol, repeated-effect, and budget stops remain deterministic.
+- The task branch was rebuilt from `origin/main`; the unmerged Web branch no longer
+  acts as a hidden branch dependency.

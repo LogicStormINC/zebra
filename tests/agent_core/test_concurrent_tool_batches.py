@@ -170,8 +170,9 @@ def test_concurrent_failure_observes_every_started_sibling() -> None:
     tools = ProbeGateway(failed_id="call_a")
     result, _ = _run(calls, tools, max_parallel=2)
 
-    assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
-    assert result.attempt_result.metadata["stop_reason"] == "concurrent_tool_failure"
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert result.attempt_result.metadata["recoverable_tool_failure_count"] == 1
+    assert result.attempt_result.metadata["failed_tool_names"] == ["files.read"]
     assert result.run_result.tool_calls_used == 2
     assert sorted(tools.calls) == ["call_a", "call_b"]
     assert len(_event_names(result, EventType.TOOL_EXECUTION_STARTED)) == 2

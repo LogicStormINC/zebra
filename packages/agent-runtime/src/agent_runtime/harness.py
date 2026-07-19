@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -286,13 +287,22 @@ class LocalToolGateway(ToolGatewayPort):
             result = self._executor.execute(tool_call)
             return self._project_tool_output(tool_call, result)
         except ToolRegistryError as exc:
+            detail = str(exc)[:1000]
             return ToolResult(
                 tool_call_id=tool_call.tool_call_id,
                 status=ToolCallStatus.FAILED,
-                output="",
+                output=json.dumps(
+                    {
+                        "detail": detail,
+                        "reason": "tool_validation_error",
+                        "status": "failed",
+                    },
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ),
                 metadata={
                     "reason": "tool_validation_error",
-                    "detail": str(exc),
+                    "detail": detail,
                 },
             )
 

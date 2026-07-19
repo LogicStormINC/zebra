@@ -216,15 +216,18 @@ class ConcurrentToolBatchExecutor:
                 tool_result,
             )
         if failed_names:
-            return self._terminal(
-                summary="concurrent tool batch failed: " + ", ".join(failed_names),
-                completion=completion,
-                emitted_events=emitted_events,
-                model_calls_used=model_calls_used,
-                tool_calls_executed=tool_calls_executed,
-                metadata={
+            prior_failures = batch_metadata.get("recoverable_tool_failure_count", 0)
+            failure_count = (
+                prior_failures + len(failed_names)
+                if isinstance(prior_failures, int) and not isinstance(prior_failures, bool)
+                else len(failed_names)
+            )
+            return ToolBatchResult(
+                None,
+                tool_calls_executed,
+                {
                     **batch_metadata,
-                    "stop_reason": "concurrent_tool_failure",
+                    "recoverable_tool_failure_count": failure_count,
                     "failed_tool_names": failed_names,
                 },
             )

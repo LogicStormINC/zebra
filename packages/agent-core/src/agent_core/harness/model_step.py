@@ -40,6 +40,18 @@ from agent_core.ports.provider_continuation import (
     ProviderContinuationCompletionPort,
 )
 
+MODEL_NATIVE_DELEGATION_GUIDANCE = (
+    "Subagent delegation:\n"
+    "- Answer directly when context is sufficient or evidence collection is not needed.\n"
+    "- Use a normal parent tool for one direct operation or a short linear sequence.\n"
+    "- Call agent.research only for bounded, independent, multi-step evidence "
+    "collection whose separate context is materially useful.\n"
+    "- Words such as research, search, analysis, or comparison do not require "
+    "delegation by themselves.\n"
+    "- Every agent.research call must include objective and a concise "
+    "delegation_reason explaining why direct work is less suitable."
+)
+
 
 class HarnessModelStep:
     def __init__(
@@ -403,6 +415,25 @@ class HarnessModelStep:
                         message_id=new_message_id(),
                         role=MessageRole.SYSTEM,
                         content=system_prompt,
+                        created_at=created_at,
+                    )
+                )
+        if any(tool.name == "agent.research" for tool in self._available_tools):
+            if messages:
+                messages[-1] = messages[-1].model_copy(
+                    update={
+                        "content": (
+                            f"{messages[-1].content}\n\n"
+                            f"{MODEL_NATIVE_DELEGATION_GUIDANCE}"
+                        )
+                    }
+                )
+            else:
+                messages.append(
+                    SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.SYSTEM,
+                        content=MODEL_NATIVE_DELEGATION_GUIDANCE,
                         created_at=created_at,
                     )
                 )

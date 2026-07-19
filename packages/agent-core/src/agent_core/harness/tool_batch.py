@@ -262,17 +262,20 @@ class ToolBatchExecutor:
                 created_at=context.attempt.started_at,
             )
             if execution.result.status is not ToolCallStatus.EXECUTED:
-                if execute_all and tool_call.name in {"files.read", "sessions.search"}:
-                    return ToolBatchResult(None, tool_calls_executed, metadata)
-                return self._terminal(
-                    outcome=HarnessAttemptOutcome.FAILED,
-                    summary=f"tool call failed: {tool_call.name}",
-                    completion=completion,
-                    emitted_events=emitted_events,
-                    model_calls_used=model_calls_used,
-                    tool_calls_executed=tool_calls_executed,
-                    metadata={
+                prior_failures = metadata.get("recoverable_tool_failure_count", 0)
+                failure_count = (
+                    prior_failures + 1
+                    if isinstance(prior_failures, int)
+                    and not isinstance(prior_failures, bool)
+                    else 1
+                )
+                return ToolBatchResult(
+                    None,
+                    tool_calls_executed,
+                    {
                         **metadata,
+                        "recoverable_tool_failure_count": failure_count,
+                        "last_failed_tool_name": tool_call.name,
                         "remaining_tool_call_count": len(tool_calls) - index - 1,
                     },
                 )
