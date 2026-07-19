@@ -1,5 +1,19 @@
 # Progress Log
 
+## 2026-07-19 UI-COMPOSER-01 Compact Conversation Composer
+
+- claimed `UI-COMPOSER-01` in an isolated worktree on
+  `codex/ui-composer-compact-01`
+- removed the separate idle/thread minimum-height contracts and reused one
+  compact Ant Design X `Sender` surface
+- moved the existing attachment action into the bottom toolbar, kept one-row
+  default input growth bounded to six rows, and preserved all launch controls
+- added `check:composer-layout` and passed all `21` deterministic Desktop checks
+- passed TypeScript, Vite production build, file-size, Ruff, strict Mypy, and
+  release Eval gates
+- verified real Chromium desktop, idle, and `390px` mobile rendering with no
+  horizontal overflow or console warnings
+
 ## 2026-07-05 UI Desktop Workspace Bootstrap
 
 - created `UI/desktop` as a dedicated frontend workspace for future Zebra Agent operator UI development

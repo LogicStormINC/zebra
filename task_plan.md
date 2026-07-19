@@ -1,5 +1,15 @@
 # Task Plan
 
+## UI-COMPOSER-01 - Compact Codex-Style Conversation Composer
+
+1. `completed` - Inspect the reference image, current Sender composition,
+   repository task boundary, and existing responsive styles.
+2. `completed` - Tighten the idle and thread size contracts while preserving
+   launch controls, attachments, submit, cancel, and accessibility behavior.
+3. `completed` - Add the smallest deterministic layout regression check.
+4. `completed` - Run Desktop checks, TypeScript/Vite build, and browser visual
+   verification; then synchronize durable task state.
+
 ## UI-LOBE-01 - Lobe UI Component Library Integration
 
 1. `completed` - Verify the official package, compatibility line, existing
