@@ -742,6 +742,23 @@ full-trusted-local
 
 Agent 阶段默认 `none`。依赖安装在独立 Setup Phase 中完成，并在进入 Agent Phase 前撤销网络和 Setup Secret。
 
+`network_profile` 是任务级持久授权，不是每次工具调用都重复询问的提示。
+当前只读 Web Gateway 采用以下决策矩阵：
+
+- API、Worker 和核心契约继续默认 `none`，没有网络授权时直接拒绝外部访问。
+- Desktop 本地可信任务默认 `full-trusted-local`；经过 HTTPS、URL、DNS、私网地址、
+  重定向、超时、Content-Type 和响应大小检查的 `web.fetch` 与已配置
+  `web.search` 可自动执行。
+- `domain-allowlist` 仅允许精确匹配的裸主机名；匹配即视为任务启动时已经授权，
+  无需逐次 approval。
+- `full-trusted-local` 不取消 Tool Gateway、Web Gateway 或 SSRF 边界，也不允许
+  模型自行扩大任务权限。
+- MCP Proxy、Shell 逃逸、敏感数据传输和其他有副作用操作继续由独立 Policy
+  决定 `require_approval`；网络可达不等于允许执行有副作用操作。
+
+因此本地只读检索保持连续执行体验，云端与未授权任务继续 fail-closed，审批只用于
+真正需要人工确认的副作用或权限升级。
+
 # 12. Sandbox Manager 与 Runtime Adapter
 
 ## 12.1 Runtime 接口

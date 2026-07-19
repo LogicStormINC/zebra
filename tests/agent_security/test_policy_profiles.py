@@ -247,7 +247,7 @@ def test_mcp_tool_requires_approval_when_proxy_route_is_enabled() -> None:
     )
 
 
-def test_web_fetch_requires_approval_and_projects_gateway_scope() -> None:
+def test_web_fetch_uses_durable_allowlist_as_prior_authority() -> None:
     engine = LocalPolicyEngine(
         profile=PolicyProfile.READ_ONLY,
         network_profile=parse_network_profile(
@@ -261,19 +261,33 @@ def test_web_fetch_requires_approval_and_projects_gateway_scope() -> None:
         tool_call, decision, network_profile=engine.network_profile
     )
 
-    assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+    assert decision.decision is PolicyDecisionType.ALLOW
     assert decision.route == "web_gateway"
     assert decision.target == "docs.example.com"
     assert decision.network_profile == "domain-allowlist"
-    assert request is not None
-    assert request.route is ToolEgressRoute.WEB_GATEWAY
-    assert request.target == "docs.example.com"
-    assert request.scope == (
+    assert decision.scope == (
         "tool:web.fetch",
         "route:web_gateway",
         "network_profile:domain-allowlist",
         "target:docs.example.com",
     )
+    assert request is None
+
+
+def test_web_fetch_is_automatic_for_trusted_local_profile() -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.READ_ONLY,
+        network_profile=parse_network_profile("full-trusted-local"),
+    )
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("web.fetch", {"url": "https://docs.example.com/guide"})
+    )
+
+    assert decision.decision is PolicyDecisionType.ALLOW
+    assert decision.route == "web_gateway"
+    assert decision.target == "docs.example.com"
+    assert decision.network_profile == "full-trusted-local"
 
 
 def test_web_fetch_is_blocked_by_default_without_approval() -> None:
@@ -284,7 +298,7 @@ def test_web_fetch_is_blocked_by_default_without_approval() -> None:
     assert decision.decision is PolicyDecisionType.DENY
 
 
-def test_web_search_requires_exact_endpoint_authority_and_bounded_approval_scope() -> None:
+def test_web_search_uses_exact_endpoint_authority_without_reapproval() -> None:
     engine = LocalPolicyEngine(
         profile=PolicyProfile.READ_ONLY,
         network_profile=parse_network_profile(
@@ -296,7 +310,7 @@ def test_web_search_requires_exact_endpoint_authority_and_bounded_approval_scope
 
     decision = engine.evaluate_tool_call(tool_call)
 
-    assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+    assert decision.decision is PolicyDecisionType.ALLOW
     assert decision.route == "web_gateway"
     assert decision.target == "search.example.com"
     assert decision.scope == (

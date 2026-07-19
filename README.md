@@ -84,7 +84,9 @@ deployment does not change the product boundary above. Read
 - `trusted-local`, `oci-rootless`, and `gvisor` runtime classes
 - production fail-close on missing gVisor, mutable images, authority drift, or
   incompatible snapshots
-- default-deny network profiles, approval gates, credential boundaries, and audit
+- API/core default-deny network profiles; local Desktop pre-authorizes bounded
+  read-only Web access while MCP and side-effecting operations retain approval gates
+- HTTPS/SSRF/private-network/redirect/size controls, credential boundaries, and audit
 
 ### Model and context
 

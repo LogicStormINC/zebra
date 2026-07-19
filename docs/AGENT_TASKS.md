@@ -14611,6 +14611,52 @@ cancel, and accessibility contracts.
 - browser console had no warnings or errors
 - file-size, Ruff, strict Mypy, and release Eval gates passed
 
+### WEB-UX-01 - Trusted Local Read-Only Web Auto Execution
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `SECURITY / APP / UI / QA`
+- Depends on: merged `P122-WEB-01`, `P126-WEB-01`, and explicit maintainer approval
+- Branch: `codex/web-ux-01-trusted-local-auto-web`
+- Owned paths: `packages/agent-security/`, `UI/desktop/src/lib/task-launch-config.ts`,
+  `UI/desktop/src/components/conversation/TaskLaunchControls.tsx`,
+  `UI/desktop/src/components/CodexConversationPane.tsx`,
+  `UI/desktop/src/components/TaskLaunchSummary.tsx`,
+  `UI/desktop/src/lib/use-task-launch-config.ts`, `UI/desktop/checks/`,
+  `UI/desktop/e2e/`, `tests/agent_security/`,
+  `tests/worker/`, `tests/api/`,
+  `docs/AGENT_TASKS.md`, `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
+  `PROGRESS.md`, `README.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Treat durable task network authority as prior authorization for bounded,
+read-only Web Gateway calls. Local Desktop tasks should run `web.fetch` and
+configured `web.search` without per-call approval, while API/cloud defaults,
+private-network rejection, bounded gateway transport, MCP egress, and
+side-effecting tools remain fail-closed or approval-gated.
+
+#### Acceptance
+
+- [x] New Desktop tasks default to `full-trusted-local`; API and core defaults
+  remain `network_profile=none`. Existing Desktop `none` defaults migrate once,
+  after which an explicit user selection of `none` remains durable.
+- [x] `domain-allowlist` exact matches and `full-trusted-local` public HTTPS Web
+  routes receive `allow`, not `require_approval`.
+- [x] `network_profile=none`, malformed/private targets, and non-matching domains
+  remain denied before transport.
+- [x] MCP proxy and side-effecting tool approval behavior is unchanged.
+- [x] Focused backend, Desktop, full deterministic, and browser regressions pass.
+
+#### Validation Evidence
+
+- focused security/Worker regression: `57 passed`
+- full deterministic suite: `1505 passed, 5 skipped`
+- file-size, Ruff, strict Mypy over `417` source files, and `8/8` release Evals passed
+- all Desktop `check:*` scripts and the TypeScript/Vite production build passed
+- real Chromium: `8/8`, including the trusted-local default plus existing
+  streaming, reload, stop, Segment, approval, and terminal-failure regressions
+
 ### SUBAGENT-UX-01 - Model-Native Subagent Delegation
 
 - Status: `Review`
@@ -14624,9 +14670,9 @@ cancel, and accessibility contracts.
   `packages/agent-runtime/src/agent_runtime/harness.py`,
   `packages/agent-runtime/src/agent_runtime/research.py`, `tests/agent_core/`,
   `tests/agent_runtime/`, `tests/integration/`, `tests/worker/`,
-  `docs/superpowers/specs/`,
-  `docs/AGENT_TASKS.md`, `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
-  `PROGRESS.md`, `README.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+  `docs/superpowers/specs/`, `docs/AGENT_TASKS.md`,
+  `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`, `PROGRESS.md`,
+  `README.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
 
 #### Goal
 

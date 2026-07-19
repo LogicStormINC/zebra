@@ -18,6 +18,8 @@
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
+- Review task: `WEB-UX-01` makes durable local/allowlist Web authority
+  non-interactive while retaining fail-closed API defaults and side-effect approvals.
 
 ## Current Capability
 
@@ -44,6 +46,11 @@
   session-labelled cleanup.
 - Policy, HITL, network profiles, MCP/Web gates, credential boundaries, and
   audit remain independent of model output.
+- New local Desktop tasks use durable `full-trusted-local` authority so bounded
+  read-only `web.fetch` and configured `web.search` calls execute without
+  per-call approval. API/core defaults remain `network_profile=none`; exact
+  domain allowlists are also treated as prior task authority, while MCP and
+  side-effecting operations retain their approval boundaries.
 
 ### Context and model integration
 
@@ -82,6 +89,16 @@
   fallback while Policy, approval, protocol, effect, and budget stops remain hard.
 
 ## Latest Validation Baseline
+
+Validated on `codex/web-ux-01-trusted-local-auto-web` on 2026-07-19:
+
+- focused security and Worker Web execution: `57 passed`
+- `make test`: `1505 passed, 5 skipped`
+- `make check`: file-size, Ruff, strict Mypy over `417` source files, and `8/8`
+  release Eval cases passed
+- every deterministic Desktop `check:*` script and production build passed
+- real Chromium: `8/8`, covering the trusted-local launch default and all prior
+  streaming, reload, cancellation, Segment, approval, and terminal-failure paths
 
 Validated on `codex/subagent-delegation-model-native` on 2026-07-19:
 

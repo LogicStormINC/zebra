@@ -1,5 +1,15 @@
 # Task Plan
 
+## WEB-UX-01 - Trusted Local Read-Only Web Auto Execution
+
+1. `completed` - Register and claim a path-bounded task on an independent branch.
+2. `completed` - Treat durable allowlist/trusted-local Web authority as an
+   automatic allow while retaining MCP approval and fail-closed denial.
+3. `completed` - Default new Desktop tasks to trusted local Web authority and
+   preserve durable profile rendering.
+4. `completed` - Run focused, full repository, Desktop, and browser regressions;
+   then close the task with durable evidence.
+
 ## SUBAGENT-UX-01 - Model-Native Subagent Delegation
 
 1. `completed` - Approve and independently review the model-native delegation

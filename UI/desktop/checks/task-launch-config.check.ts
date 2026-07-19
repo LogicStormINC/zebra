@@ -5,16 +5,17 @@ import {
   normalizeTaskLaunchConfig,
   reconcileMcpPromptSelection,
   resolveSessionLaunchConfig,
+  taskNetworkProfileLabel,
   type TaskLaunchConfig,
   validateTaskLaunchConfig,
 } from "../src/lib/task-launch-config.ts";
 
-assert.deepEqual(normalizeTaskLaunchConfig(null), { workspace: ".", policyProfile: "workspace_write", toolProfile: "general", networkProfile: "none", networkAllowlist: [], mcpAllowlist: [], mcpResourceIds: [], mcpPromptId: null, mcpPromptArguments: {}, mcpPromptSchema: null });
+assert.deepEqual(normalizeTaskLaunchConfig(null), { workspace: ".", policyProfile: "workspace_write", toolProfile: "general", networkProfile: "full-trusted-local", networkAllowlist: [], mcpAllowlist: [], mcpResourceIds: [], mcpPromptId: null, mcpPromptArguments: {}, mcpPromptSchema: null });
 assert.deepEqual(normalizeTaskLaunchConfig({ workspace: "/repo", policyProfile: "full_access" }), {
   workspace: "/repo",
   policyProfile: "full_access",
   toolProfile: "general",
-  networkProfile: "none",
+  networkProfile: "full-trusted-local",
   networkAllowlist: [],
   mcpAllowlist: [],
   mcpResourceIds: [],
@@ -24,6 +25,8 @@ assert.deepEqual(normalizeTaskLaunchConfig({ workspace: "/repo", policyProfile: 
 });
 assert.equal(normalizeTaskLaunchConfig({ workspace: "/repo", policyProfile: "unknown" }).policyProfile, "workspace_write");
 assert.equal(normalizeTaskLaunchConfig({ workspace: "/repo", toolProfile: "coding" }).toolProfile, "coding");
+assert.equal(normalizeTaskLaunchConfig({ networkProfile: "none" }).networkProfile, "none");
+assert.equal(normalizeTaskLaunchConfig({ networkProfile: "full-trusted-local" }).networkProfile, "full-trusted-local");
 const base = { workspace: "/repo", policyProfile: "workspace_write", toolProfile: "general", networkProfile: "none", networkAllowlist: [], mcpAllowlist: [], mcpResourceIds: [], mcpPromptId: null, mcpPromptArguments: {}, mcpPromptSchema: null } as const;
 assert.equal(validateTaskLaunchConfig({ ...base, workspace: "  " }), "请先填写任务工作区路径");
 assert.equal(validateTaskLaunchConfig({ ...base, policyProfile: "unknown" } as TaskLaunchConfig), "不支持当前权限策略");
@@ -31,6 +34,7 @@ assert.equal(validateTaskLaunchConfig({ ...base, toolProfile: "unknown" } as Tas
 assert.equal(validateTaskLaunchConfig({ ...base, networkProfile: "domain-allowlist" }), "域名白名单至少需要一个域名");
 assert.equal(validateTaskLaunchConfig({ ...base, networkProfile: "domain-allowlist", networkAllowlist: ["docs.example.com"] }), null);
 assert.equal(validateTaskLaunchConfig({ ...base, networkProfile: "domain-allowlist", networkAllowlist: ["https://docs.example.com"] }), "域名白名单仅接受裸域名");
+assert.equal(validateTaskLaunchConfig({ ...base, networkProfile: "full-trusted-local" }), null);
 assert.equal(validateTaskLaunchConfig({ ...base, toolProfile: "coding" }), null);
 assert.equal(validateTaskLaunchConfig({ ...base, networkProfile: "mcp-proxy-only", mcpAllowlist: ["mcp.docs.search"] }, ["mcp.docs.search"]), null);
 assert.equal(validateTaskLaunchConfig({ ...base, mcpAllowlist: ["mcp.docs.search"] }), "选择 MCP 工具后需要启用仅 MCP 代理网络");
@@ -58,5 +62,6 @@ assert.equal(compactWorkspaceLabel("/Users/operator/zebra-agent/"), "zebra-agent
 assert.equal(compactWorkspaceLabel("relative-workspace/"), "relative-workspace");
 assert.equal(compactWorkspaceLabel("/"), "/");
 assert.equal(compactWorkspaceLabel(""), "未配置");
+assert.equal(taskNetworkProfileLabel("full-trusted-local"), "本地可信网络");
 assert.equal(resolveSessionLaunchConfig(base, { ...base, workspace: "" }).workspace, "/repo");
 assert.equal(resolveSessionLaunchConfig(base, { ...base, workspace: "/durable" }).workspace, "/durable");

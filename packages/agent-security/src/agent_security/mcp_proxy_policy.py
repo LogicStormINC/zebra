@@ -102,7 +102,7 @@ def _classify_web_egress(
             network_profile=network_profile.name.value,
             reason=str(exc),
         )
-    if (
+    if network_profile.name is NetworkProfileName.FULL_TRUSTED_LOCAL or (
         network_profile.name is NetworkProfileName.DOMAIN_ALLOWLIST
         and target.hostname in network_profile.domain_allowlist
     ):
@@ -137,7 +137,7 @@ def _classify_web_search_egress(
             network_profile=network_profile.name.value,
             reason=str(exc),
         )
-    if (
+    if network_profile.name is NetworkProfileName.FULL_TRUSTED_LOCAL or (
         network_profile.name is NetworkProfileName.DOMAIN_ALLOWLIST
         and target.hostname in network_profile.domain_allowlist
     ):

@@ -1,5 +1,23 @@
 # Findings
 
+## WEB-UX-01 - 2026-07-19
+
+- The reported failure was not a model tool-call protocol defect: DeepSeek
+  emitted `web.fetch`, then durable `network_profile=none` caused Policy denial.
+- Existing `domain-allowlist` authority still forced `require_approval`, so no
+  configuration-only switch could remove the interruption.
+- The smallest coherent boundary is one shared Policy change: authorized
+  `WEB_GATEWAY` routes return `allow`; `MCP_PROXY` continues to return
+  `require_approval`; blocked routes remain denied.
+- `full-trusted-local` already existed in the core network enum but Web routing
+  and Desktop launch controls did not consume it. Reusing it avoids a new mode.
+- Existing Desktop localStorage retained the old `none` default, so changing the
+  constant alone would not repair current installations. A one-time marker
+  migrates that legacy value while preserving later explicit offline choices.
+- Direct Web execution needs a multi-response model regression because the same
+  Worker attempt now executes the tool and performs final synthesis instead of
+  splitting those model calls across approval continuation attempts.
+
 ## UI-COMPOSER-01 - 2026-07-19
 
 - The oversized composer had two independent causes: fixed `126px` / `180px`

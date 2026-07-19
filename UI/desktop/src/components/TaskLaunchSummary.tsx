@@ -1,5 +1,5 @@
 import type { SessionSummary } from "../types";
-import { compactWorkspaceLabel, type TaskLaunchConfig } from "../lib/task-launch-config";
+import { compactWorkspaceLabel, taskNetworkProfileLabel, type TaskLaunchConfig } from "../lib/task-launch-config";
 
 interface TaskLaunchSummaryProps {
   className: string;
@@ -20,7 +20,7 @@ export function TaskLaunchSummary({ className, config, editable, errorText, sess
       <span title={config.workspace}>工作区 · {compactWorkspaceLabel(config.workspace)}</span>
       <span>权限 · {config.policyProfile === "full_access" ? "完整访问" : "工作区写入"}</span>
       <span>能力 · {config.toolProfile === "coding" ? "编码工具" : "通用工具"}</span>
-      <span>网络 · {config.networkProfile === "none" ? "无外部网络" : config.networkProfile}</span>
+      <span>网络 · {taskNetworkProfileLabel(config.networkProfile)}</span>
       {config.networkProfile === "mcp-proxy-only" ? <span>MCP · {config.mcpAllowlist.length} 工具 · {config.mcpResourceIds.length} 资源{editable ? ` · ${config.mcpPromptId ? 1 : 0} Prompt` : ""}</span> : null}
       {capturedPrompt ? <span title={promptTitle}>Prompt · {capturedPrompt.source_server ?? "MCP"} · {(capturedPrompt.source_argument_names ?? []).length} 参数</span> : null}
       {sessionSummary?.attachments?.length ? (

@@ -7,6 +7,7 @@ from agent_core.domain.tools import ToolCall
 from agent_security.external_policy import (
     blocked_route_reason,
     external_approval_decision,
+    external_read_allow_decision,
 )
 from agent_security.mcp_proxy_policy import (
     ToolEgressMetadata,
@@ -103,7 +104,13 @@ class LocalPolicyEngine:
         )
         if egress.route is ToolEgressRoute.BLOCKED:
             return _deny(self.profile, blocked_route_reason(egress))
-        if egress.route in (ToolEgressRoute.MCP_PROXY, ToolEgressRoute.WEB_GATEWAY):
+        if egress.route is ToolEgressRoute.WEB_GATEWAY:
+            return external_read_allow_decision(
+                policy_profile=self.profile.value,
+                tool_call=tool_call,
+                egress=egress,
+            )
+        if egress.route is ToolEgressRoute.MCP_PROXY:
             return external_approval_decision(
                 policy_profile=self.profile.value,
                 tool_call=tool_call,

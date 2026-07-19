@@ -1,5 +1,26 @@
 # Progress Log
 
+## 2026-07-19 WEB-UX-01 Trusted Local Read-Only Web Auto Execution
+
+- registered and claimed `WEB-UX-01` on
+  `codex/web-ux-01-trusted-local-auto-web`
+- changed authorized `web.fetch` and configured `web.search` routes from
+  per-call approval to direct bounded execution
+- enabled the existing `full-trusted-local` network profile for public Web
+  Gateway routing and made it the new local Desktop launch default
+- added a one-time Desktop migration from the previously persisted `none`
+  default; users can still explicitly select and retain offline mode afterward
+- retained API/core `none` defaults, exact allowlist checks, Web Gateway safety,
+  MCP approval, and side-effecting tool policy
+- focused validation passed: 57 backend tests, Desktop launch check, TypeScript,
+  and Vite production build
+- full validation passed: `1505 passed, 5 skipped`; file-size, Ruff, strict Mypy
+  over `417` source files, `8/8` release Evals, every Desktop check, and real
+  Chromium `8/8`
+- an initial aggregate Desktop check inherited Node 20 and failed before running
+  TypeScript; rerunning through the repository's Volta-pinned Node 22.17.0
+  completed every check successfully
+
 ## 2026-07-19 UI-COMPOSER-01 Compact Conversation Composer
 
 - claimed `UI-COMPOSER-01` in an isolated worktree on

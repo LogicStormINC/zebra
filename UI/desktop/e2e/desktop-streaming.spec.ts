@@ -25,6 +25,10 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByText("本地运行时已连接").first()).toBeVisible();
 });
 
+test("migrates the legacy no-network default to trusted read-only Web access", async ({ page }) => {
+  await expect(page.getByRole("button", { name: "网络: 本地可信网络" })).toBeVisible();
+});
+
 test("shows the resolved Runtime class and no-silent-fallback policy", async ({ page }) => {
   await page.getByLabel("运行配置").click();
   await expect(page.getByText("Runtime 级别", { exact: true })).toBeVisible();
