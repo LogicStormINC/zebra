@@ -8,8 +8,8 @@
 - Snapshot date: `2026-07-19`
 - Verified implementation baseline: `9a48312` (PR `#169`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
-- Active implementation task: `QA-PKG-E2E-02` stabilizes the packaged Tauri
-  gate after two connection-reset failures without retrying product assertions.
+- Active implementation task: `QA-PKG-E2E-03` recognizes the second observed
+  tauri-driver transport-close signature without retrying product assertions.
 - Active architecture task: none; `ARCH-SVC-BOUNDARY-01` merged via PR `#166`.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch

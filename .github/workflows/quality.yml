@@ -155,7 +155,8 @@ jobs:
             if [ "$status" -eq 0 ]; then
               break
             fi
-            if [ "$attempt" -eq 2 ] || ! grep -Fq "Connection reset by peer" "$log"; then
+            if [ "$attempt" -eq 2 ] || ! grep -Eq \
+              "Connection reset by peer|connection closed before message completed" "$log"; then
               exit "$status"
             fi
             echo "::warning::tauri-driver connection reset; retrying packaged drive once"

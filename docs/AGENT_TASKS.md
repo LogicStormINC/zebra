@@ -14364,6 +14364,35 @@ the test fixture's fixed date.
 - `make test`: `1492 passed, 7 skipped`
 - `make check`: file-size, Ruff, strict Mypy, and release Eval passed
 
+### QA-PKG-E2E-03 - Closed WebDriver Transport Recovery Signature
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `QA / RELEASE`
+- Depends on: merged `QA-PKG-E2E-02`
+- Branch: `codex/qa-pkg-e2e-03-closed-transport`
+- Owned paths: `.github/workflows/quality.yml`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`
+
+#### Goal
+
+Treat tauri-driver's observed `connection closed before message completed`
+transport failure like the already-bounded connection reset, without retrying
+ordinary product assertions.
+
+#### Acceptance
+
+- [x] The packaged drive retries once for either observed transport-close
+  signature and for no other log message.
+- [x] A second disconnect and every non-transport failure remain fatal.
+- [ ] Full deterministic checks and the real packaged Quality job pass.
+
+#### Local Validation
+
+- both known signatures matched; a product assertion did not match
+- `make test`: `1492 passed, 7 skipped`
+- `make check`: file-size, Ruff, strict Mypy, and release Eval passed
+
 ### QA-PKG-E2E-02 - Bounded Packaged WebDriver Connection Recovery
 
 - Status: `In Progress`
