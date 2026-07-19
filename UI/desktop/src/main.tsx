@@ -1,7 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import ThemeProvider from "@lobehub/ui/es/ThemeProvider/ThemeProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { App as AntApp, ConfigProvider, theme } from "antd";
+import { App as AntApp, theme } from "antd";
 import App from "./App";
 import "./styles.css";
 
@@ -11,7 +12,9 @@ const workbenchFontFamily =
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ConfigProvider
+    <ThemeProvider
+      appearance="dark"
+      themeMode="dark"
       theme={{
         algorithm: theme.darkAlgorithm,
         token: {
@@ -75,6 +78,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <App />
         </QueryClientProvider>
       </AntApp>
-    </ConfigProvider>
+    </ThemeProvider>
   </React.StrictMode>,
 );

@@ -126,7 +126,7 @@ them in frontend storage, request payloads, tracked files, responses, or logs.
 - `apps/`: API, CLI, config, and worker composition roots
 - `packages/`: core, context, integrations, observability, runtime, security,
   storage, and tools
-- `UI/desktop/`: React, Ant Design X, and Tauri desktop workspace
+- `UI/desktop/`: React, Ant Design X, Lobe UI, and Tauri desktop workspace
 - `tests/`: deterministic, contract, smoke, and integration coverage
 - `evals/`: release and provider evaluation cases
 - `docs/`: architecture, governance, acceptance records, and operator runbooks

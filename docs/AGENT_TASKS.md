@@ -27,7 +27,10 @@
 - `ARCH-RT-A2-SETUP-01` is `Done` via PR `#163`.
 - `ARCH-RT-A3-REL-01` is `Done` via PR `#164`.
 - `ARCH-RT-A4-E2E-01` is `Done` via PR `#165`.
-- `ARCH-SVC-BOUNDARY-01` is `In Progress` and owned by `lukeding`.
+- `UI-LOBE-01` is `Review` on PR `#168`.
+- `ARCH-SVC-BOUNDARY-01` is `Done` via PR `#166`.
+- `QA-HANDOFF-CLK-01`, `QA-PKG-E2E-02`, and `QA-PKG-E2E-03` are `Done` via
+  PRs `#170`, `#171`, and `#172`.
 - `QA-DESKTOP-E2E-01` is `Done` via PR `#161`.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
@@ -14300,11 +14303,12 @@ external model network with a deterministic local streaming provider.
 
 ### ARCH-SVC-BOUNDARY-01 - Agent Runtime Microservice Business Boundary
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `ARCHITECTURE / DOCS`
 - Depends on: current Agent Runtime and cloud target architecture
 - Branch: `codex/arch-svc-boundary-01`
+- Merged PR: `#166` (`fa10fa0`)
 - Owned paths: `docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md`,
   `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
   `docs/单机与云平台Runtime目标架构方案_v1.0.md`,
@@ -14338,11 +14342,12 @@ namespace isolation, concurrency, durability, and audit contracts.
 
 ### QA-HANDOFF-CLK-01 - Deterministic Stale Handoff Clock Boundary
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `QA / STORAGE`
 - Depends on: merged Session handoff persistence
 - Branch: `codex/qa-handoff-clock-regression`
+- Merged PR: `#170` (`09aee8e`)
 - Owned paths: `tests/agent_storage/test_session_handoffs.py`,
   `docs/AGENT_TASKS.md`, `PROGRESS.md`
 
@@ -14366,11 +14371,12 @@ the test fixture's fixed date.
 
 ### QA-PKG-E2E-03 - Closed WebDriver Transport Recovery Signature
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `QA / RELEASE`
 - Depends on: merged `QA-PKG-E2E-02`
 - Branch: `codex/qa-pkg-e2e-03-closed-transport`
+- Merged PR: `#172` (`7a9f97d`)
 - Owned paths: `.github/workflows/quality.yml`, `docs/AGENT_TASKS.md`,
   `PROGRESS.md`
 
@@ -14385,21 +14391,24 @@ ordinary product assertions.
 - [x] The packaged drive retries once for either observed transport-close
   signature and for no other log message.
 - [x] A second disconnect and every non-transport failure remain fatal.
-- [ ] Full deterministic checks and the real packaged Quality job pass.
+- [x] Full deterministic checks and the real packaged Quality job pass.
 
 #### Local Validation
 
 - both known signatures matched; a product assertion did not match
 - `make test`: `1492 passed, 7 skipped`
 - `make check`: file-size, Ruff, strict Mypy, and release Eval passed
+- Quality run `29677731289`: all seven jobs passed; the packaged Tauri job
+  exercised one bounded retry after a real connection reset and then completed
 
 ### QA-PKG-E2E-02 - Bounded Packaged WebDriver Connection Recovery
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `QA / RELEASE`
 - Depends on: merged `ARCH-RT-A4-E2E-01`
 - Branch: `codex/qa-pkg-e2e-02-driver-retry`
+- Merged PR: `#171` (`7f7c465`), delivered to `main` through PR `#170`
 - Owned paths: `.github/workflows/quality.yml`, `docs/AGENT_TASKS.md`,
   `PROGRESS.md`
 
@@ -14416,10 +14425,58 @@ failure for product assertions and every other error class.
 - [x] Product assertions, API failures, build failures, and a second transport
   reset still fail the Quality job.
 - [x] Both attempt logs and the final machine-readable evidence are retained.
-- [ ] Workflow syntax, repository checks, and the real packaged Quality job pass.
+- [x] Workflow syntax, repository checks, and the real packaged Quality job pass.
 
 #### Local Validation
 
 - workflow YAML parse and retry-signature inspection: passed
 - `make test`: `1492 passed, 7 skipped`
 - `make check`: file-size, Ruff, strict Mypy, and release Eval passed
+- Quality run `29677013935`: all seven jobs passed, including packaged Tauri
+
+### UI-LOBE-01 - Lobe UI Component Library Integration
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `APP / UI / QA`
+- Depends on: merged desktop UI baseline and explicit maintainer request
+- Branch: `codex/ui-lobe-01-component-library`
+- PR: `#168`
+- Owned paths: `UI/desktop/package.json`, `UI/desktop/pnpm-lock.yaml`,
+  `UI/desktop/tsconfig.json`, `UI/desktop/src/main.tsx`,
+  `UI/desktop/src/components/CodexWorkspace.tsx`, `UI/desktop/src/components/lobe/`,
+  `UI/desktop/checks/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`,
+  `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Introduce Lobe UI as a real runtime component-library provider without replacing
+Zebra's durable chat state, Ant Design X interaction contracts, or custom event
+projection.
+
+#### Acceptance
+
+- [x] The current `@lobehub/ui` release, React 19, Ant Design X, Ant Design and
+  antd-style resolve on mutually compatible top-level majors; the upstream
+  Emoji Mart React 19 peer warning is documented rather than suppressed.
+- [x] The desktop root mounts the Lobe theme provider while preserving Zebra's
+  existing dark theme and Ant Design X behavior.
+- [x] A deterministic check proves the provider is mounted and the production
+  build resolves Lobe UI through Vite.
+- [x] Desktop checks and production build pass; dependency and migration limits
+  are documented.
+
+#### Explicit Non-Goals
+
+- replacing Zebra session/event state with Lobe Chat application state
+- replacing Ant Design or Ant Design X rather than aligning their supported majors
+- wholesale restyling or rewriting existing conversation components
+
+#### Validation Evidence
+
+- current packages: `@lobehub/ui 5.22.3`, `antd 6.5.1`, `antd-style 4.1.0`
+- all deterministic Desktop checks passed
+- TypeScript and Vite production build passed
+- browser smoke rendered the existing dark workbench with no console warnings
+- main chunk stayed below the prior mainline bundle record
+- production dependency audit found no known vulnerabilities
