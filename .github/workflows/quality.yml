@@ -143,10 +143,23 @@ jobs:
       - name: Drive packaged app through real API, Worker, and OS sandbox
         run: |
           mkdir -p packaged-desktop-evidence
-          xvfb-run -a uv run python scripts/packaged_desktop_e2e.py \
-            --application UI/desktop/src-tauri/target/release/zebra-agent-desktop-ui \
-            --evidence packaged-desktop-evidence/result.json \
-            --screenshot packaged-desktop-evidence/final.png
+          for attempt in 1 2; do
+            log="packaged-desktop-evidence/attempt-${attempt}.log"
+            set +e
+            xvfb-run -a uv run python scripts/packaged_desktop_e2e.py \
+              --application UI/desktop/src-tauri/target/release/zebra-agent-desktop-ui \
+              --evidence packaged-desktop-evidence/result.json \
+              --screenshot packaged-desktop-evidence/final.png 2>&1 | tee "$log"
+            status=${PIPESTATUS[0]}
+            set -e
+            if [ "$status" -eq 0 ]; then
+              break
+            fi
+            if [ "$attempt" -eq 2 ] || ! grep -Fq "Connection reset by peer" "$log"; then
+              exit "$status"
+            fi
+            echo "::warning::tauri-driver connection reset; retrying packaged drive once"
+          done
       - name: Retain package and E2E evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
