@@ -27,7 +27,7 @@
 - `ARCH-RT-A2-SETUP-01` is `Done` via PR `#163`.
 - `ARCH-RT-A3-REL-01` is `Done` via PR `#164`.
 - `ARCH-RT-A4-E2E-01` is `Done` via PR `#165`.
-- `UI-LOBE-01` is `Review` on PR `#168`.
+- `UI-LOBE-01` is `Done` via PR `#168`.
 - `ARCH-SVC-BOUNDARY-01` is `Done` via PR `#166`.
 - `QA-HANDOFF-CLK-01`, `QA-PKG-E2E-02`, and `QA-PKG-E2E-03` are `Done` via
   PRs `#170`, `#171`, and `#172`.
@@ -14436,12 +14436,12 @@ failure for product assertions and every other error class.
 
 ### UI-LOBE-01 - Lobe UI Component Library Integration
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `APP / UI / QA`
 - Depends on: merged desktop UI baseline and explicit maintainer request
 - Branch: `codex/ui-lobe-01-component-library`
-- PR: `#168`
+- Merged PR: `#168` (`69545db`)
 - Owned paths: `UI/desktop/package.json`, `UI/desktop/pnpm-lock.yaml`,
   `UI/desktop/tsconfig.json`, `UI/desktop/src/main.tsx`,
   `UI/desktop/src/components/CodexWorkspace.tsx`, `UI/desktop/src/components/lobe/`,
