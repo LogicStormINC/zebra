@@ -28,7 +28,9 @@
   creation, and retained one conversation identity across automatic rollover
 - validated completed follow-up with text attachment, failed recovery, unsafe
   boundary pause, migration, concurrent successor exclusion, and stream filtering
-- validation: `make test` (`1499 passed, 7 skipped`), `make check`, all Desktop
+- fixed CI-discovered cancellation rendering and projected internal-Segment
+  approvals back to the stable Task ID while retaining the internal approval ID
+- validation: `make test` (`1500 passed, 7 skipped`), `make check`, all Desktop
   `check:*` scripts, production build, and Playwright Chromium (`7 passed`)
 
 ## 2026-07-05 UI Desktop Workspace Bootstrap

@@ -1,6 +1,6 @@
 import React from "react";
 import locale from "../_utils/local";
-import { sessionStatusLabel } from "../_utils/session-status";
+import { activeSessionStatusLabel } from "../_utils/session-status";
 import type { ChatMessage } from "../lib/chat-surface";
 import { projectRuntimeActivity } from "../lib/runtime-activity";
 import { optimisticTimelineMessages, projectSessionTimeline, timelinePlanPlacement, type TimelineMessageItem, type TimelineStatusItem } from "../lib/session-timeline";
@@ -100,11 +100,9 @@ export function SessionThreadWorkspace({
   const toolCount = timelineItems.filter((item) => item.kind === "tool").length;
   const activity = projectRuntimeActivity(sessionSummary?.status, events, isRequesting);
   const runtimeName = sessionSummary?.workspace?.runtime_name ?? locale.notBound;
-  const statusLabel = isRequesting
-    ? "运行中"
-    : isDraft
+  const statusLabel = isDraft
     ? locale.statusDraft
-    : sessionSummary ? sessionStatusLabel(sessionSummary.status) : "状态同步中";
+    : sessionSummary ? activeSessionStatusLabel(sessionSummary.status, isRequesting) : "状态同步中";
   const tabs: Array<{ key: InspectorTab; label: string }> = [
     { key: "context", label: locale.inspectorContext },
     { key: "logs", label: locale.inspectorLogs },

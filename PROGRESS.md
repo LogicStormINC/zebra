@@ -81,12 +81,14 @@
 
 Validated on `codex/ctx-seg-01-task-runtime` on 2026-07-19:
 
-- `make test`: `1499 passed, 7 skipped`
+- `make test`: `1500 passed, 7 skipped`
 - `make check`: file-size, Ruff, strict Mypy over `417` source files, and `8/8`
   release Eval cases passed
 - Desktop: every deterministic `check:*` script and production build passed
 - real Chromium: `7/7` long-stream, reload, stop, invisible Segment follow-up,
   approval, and failure regressions passed
+- terminal control state and approval identity now project through the stable Task
+  boundary even while an internal Segment execution request is settling
 
 Previous packaged mainline baseline:
 

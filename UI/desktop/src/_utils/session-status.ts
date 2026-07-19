@@ -15,6 +15,11 @@ export function sessionStatusLabel(status: string | undefined): string {
   return locale.statusDraft;
 }
 
+export function activeSessionStatusLabel(status: string | undefined, isRequesting: boolean): string {
+  const terminal = ["completed", "failed", "cancelled", "canceled", "stopped"].includes(status ?? "");
+  return isRequesting && !terminal ? locale.statusRunning : sessionStatusLabel(status);
+}
+
 export function sessionWorkspaceLabel(summary: SessionSummary | null | undefined): string {
   return projectWorkspaceLabel(summary?.workspace?.workspace_root, locale.notBound);
 }

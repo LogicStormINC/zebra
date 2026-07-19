@@ -15,7 +15,7 @@ import { Sender } from "@ant-design/x";
 import { Button, Dropdown, GetRef } from "antd";
 import React from "react";
 import locale from "../_utils/local";
-import { sessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-status";
+import { activeSessionStatusLabel, sessionWorkspaceLabel } from "../_utils/session-status";
 import type { ChatMessage, ConversationSeed } from "../lib/chat-surface";
 import { availableMcpPrompts, availableMcpResourceIds, availableMcpToolNames } from "../lib/mcp-capabilities";
 import type { RuntimeConnectionStatus } from "../lib/runtime-connection";
@@ -124,7 +124,7 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
     : props.runtimeStatus === "checking" ? locale.runtimeChecking : locale.runtimeDisconnected;
   const headerMeta = hasThread
     ? props.currentSessionId
-      ? `${props.isRequesting ? "运行中" : sessionStatusLabel(props.sessionSummary?.status)} · ${sessionWorkspaceLabel(props.sessionSummary)} · ${props.currentSessionId.slice(0, 8)}`
+      ? `${activeSessionStatusLabel(props.sessionSummary?.status, props.isRequesting)} · ${sessionWorkspaceLabel(props.sessionSummary)} · ${props.currentSessionId.slice(0, 8)}`
       : `${locale.statusDraft} · ${locale.notBound} · ${locale.notStarted}`
     : runtimeLabel;
 

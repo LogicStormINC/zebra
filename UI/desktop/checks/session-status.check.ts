@@ -5,6 +5,8 @@ const statusSource = readFileSync(new URL("../src/_utils/session-status.ts", imp
 const localeSource = readFileSync(new URL("../src/_utils/local.ts", import.meta.url), "utf8");
 
 assert.match(statusSource, /status === "suspended"\) return locale\.statusSuspended/u);
+assert.match(statusSource, /isRequesting && !terminal \? locale\.statusRunning/u);
+assert.match(statusSource, /"cancelled", "canceled", "stopped"/u);
 assert.match(localeSource, /statusSuspended: "已暂停"/u);
 
 console.log("session status checks passed");

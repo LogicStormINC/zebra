@@ -1,11 +1,14 @@
 import base64
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import UUID
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.session_projection import rebuild_session
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import SessionId
+from agent_core.domain.sessions import SessionStatus
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
 from zebra_agent_api import RouteAdapter, RouteRequest, create_app
 
@@ -137,6 +140,32 @@ def test_cancelled_task_follow_up_recovers_behind_the_same_task_id(tmp_path: Pat
     assert response.body["rolled_over"] is True
     assert len(segments.body["segments"]) == 2
     assert segments.body["segments"][1]["rollover_reason"] == "recovery"
+
+
+def test_internal_segment_approval_projects_the_stable_task_id(tmp_path: Path) -> None:
+    database = tmp_path / "tasks.sqlite"
+    task_id = str(_seed_completed(database, tmp_path, EventType.SESSION_CANCELLED))
+    adapter = RouteAdapter(create_app(database))
+    adapter.handle(
+        RouteRequest(
+            "POST",
+            f"/tasks/{task_id}/messages",
+            body={"content": "Continue into approval"},
+        )
+    )
+    segments = adapter.handle(RouteRequest("GET", f"/internal/tasks/{task_id}/segments"))
+    internal_id = segments.body["segments"][1]["session_id"]
+    projection_store = SQLiteProjectionStore(database)
+    internal = projection_store.get_session(SessionId(UUID(internal_id)))
+
+    assert internal is not None
+    projection_store.save_session(
+        internal.model_copy(update={"status": SessionStatus.WAITING_APPROVAL})
+    )
+    approval = adapter.handle(RouteRequest("GET", "/approvals")).body["approvals"][0]
+
+    assert approval["approval_id"] == internal_id
+    assert approval["session_id"] == task_id
 
 
 def _seed_completed(

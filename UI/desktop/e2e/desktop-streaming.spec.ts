@@ -3,8 +3,6 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
 const API_URL = "http://127.0.0.1:18080";
 const AUTH_HEADERS = { Authorization: "Bearer e2e-token" };
 
-test.describe.configure({ mode: "serial" });
-
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(({ apiUrl }) => {
     if (sessionStorage.getItem("zebra-e2e-configured")) return;
@@ -62,8 +60,8 @@ test("stops a running stream without a late completion", async ({ page, request 
   const sessionId = await activeSessionId(page);
 
   await page.locator('[aria-label="停止任务"] button').click();
-  await expect(page.getByText("已停止", { exact: true })).toBeVisible();
   await expect.poll(async () => (await session(request, sessionId)).status).toBe("cancelled");
+  await expect(page.getByText("已停止", { exact: true })).toBeVisible();
 
   await page.waitForTimeout(5_000);
   const stream = await request.get(`${API_URL}/tasks/${sessionId}/stream`, { headers: AUTH_HEADERS });
@@ -71,6 +69,11 @@ test("stops a running stream without a late completion", async ({ page, request 
   expect(events).toContain('"event_type": "session_cancelled"');
   expect(events).not.toContain('"event_type": "session_completed"');
   expect((await session(request, sessionId)).status).toBe("cancelled");
+
+  await submit(page, "E2E_APPROVAL continue the cancelled Task internally");
+  await expect(page.getByText("Agent 需要人工确认")).toBeVisible();
+  await page.getByRole("button", { name: "批准" }).click();
+  await expect(page.getByText("APPROVAL_COMPLETE", { exact: true })).toBeVisible();
 });
 
 test("continues a completed task through an invisible internal Segment", async ({ page, request }) => {
