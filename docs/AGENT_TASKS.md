@@ -14338,7 +14338,7 @@ namespace isolation, concurrency, durability, and audit contracts.
 
 ### QA-HANDOFF-CLK-01 - Deterministic Stale Handoff Clock Boundary
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `QA / STORAGE`
 - Depends on: merged Session handoff persistence
@@ -14382,9 +14382,15 @@ failure for product assertions and every other error class.
 
 #### Acceptance
 
-- [ ] A packaged drive is retried at most once and only when its captured log
+- [x] A packaged drive is retried at most once and only when its captured log
   contains the known WebDriver connection-reset signature.
-- [ ] Product assertions, API failures, build failures, and a second transport
+- [x] Product assertions, API failures, build failures, and a second transport
   reset still fail the Quality job.
-- [ ] Both attempt logs and the final machine-readable evidence are retained.
+- [x] Both attempt logs and the final machine-readable evidence are retained.
 - [ ] Workflow syntax, repository checks, and the real packaged Quality job pass.
+
+#### Local Validation
+
+- workflow YAML parse and retry-signature inspection: passed
+- `make test`: `1492 passed, 7 skipped`
+- `make check`: file-size, Ruff, strict Mypy, and release Eval passed
