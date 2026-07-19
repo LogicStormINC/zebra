@@ -18,7 +18,7 @@ P0-P4 的本地 SQLite/API/Desktop 合同已由 `CTX-SEG-01` 一次性落地：
 - `TaskId`、`AgentTask`、`ExecutionSegment`、Task Port 和可重建 SQLite 投影；
 - handoff 创建 child Segment 与 `active_segment_id` CAS 在同一事务提交；
 - `/tasks` 创建、读取、列表、消息、停止、挂起、恢复及跨 Segment 单调流；
-- 完成后的普通续问和失败后的恢复自动建立内部 Segment，附件保持可用；
+- 完成后的普通续问和取消/失败后的恢复自动建立内部 Segment，附件保持可用；
 - typed lifecycle controller 对上下文压力、恢复、Agent hint、审批、澄清、运行中
   工具、未知副作用和 drift 作确定性决策；rollover mutation 只由 internal 路由承载；
 - Desktop 全面使用稳定 Task identity，删除用户可见的 Handoff 表单、Envelope 与

@@ -276,6 +276,7 @@ def validate_session_handoff(
     failures: list[str] = []
     if context.source_status not in {
         SessionStatus.COMPLETED,
+        SessionStatus.CANCELLED,
         SessionStatus.SUSPENDED,
         SessionStatus.FAILED,
     }:

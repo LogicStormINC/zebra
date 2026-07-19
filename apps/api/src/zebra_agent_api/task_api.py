@@ -274,7 +274,11 @@ def append_task_message(
     session = SQLiteProjectionStore(app.database_path).get_session(active)
     if session is None:
         return ApiResponse(409, {"task_id": task_id, "status": "projection_incomplete"})
-    if session.status is not SessionStatus.COMPLETED:
+    if session.status not in {
+        SessionStatus.COMPLETED,
+        SessionStatus.CANCELLED,
+        SessionStatus.FAILED,
+    }:
         return finish(
             _rewrite_task_identity(app.append_session_message(str(active), payload), task_id)
         )
@@ -289,7 +293,11 @@ def append_task_message(
         idempotency_key=idempotency_key
         or _follow_up_key(task_id, session.current_sequence, content),
         actor_kind=HandoffActorKind.AUTOMATION,
-        rollover_reason=RolloverReason.TERMINAL_FOLLOW_UP,
+        rollover_reason=(
+            RolloverReason.TERMINAL_FOLLOW_UP
+            if session.status is SessionStatus.COMPLETED
+            else RolloverReason.RECOVERY
+        ),
     )
     if response.status_code not in {200, 201}:
         return response

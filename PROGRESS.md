@@ -29,7 +29,7 @@
   while the legacy ordinary-user mutation remains disabled by default.
 - Stable Task persistence aggregates root and child Segments behind one identity,
   one monotonic event cursor, and active-Segment message/control routing.
-- Completed-Task follow-up and failed-Task recovery create internal Segments
+- Completed-Task follow-up and cancelled/failed-Task recovery create internal Segments
   automatically; unsafe lifecycle boundaries pause or fail closed.
 
 ### Runtime and security
@@ -81,7 +81,7 @@
 
 Validated on `codex/ctx-seg-01-task-runtime` on 2026-07-19:
 
-- `make test`: `1498 passed, 7 skipped`
+- `make test`: `1499 passed, 7 skipped`
 - `make check`: file-size, Ruff, strict Mypy over `417` source files, and `8/8`
   release Eval cases passed
 - Desktop: every deterministic `check:*` script and production build passed

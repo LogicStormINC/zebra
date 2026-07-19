@@ -308,6 +308,7 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
         ).fetchone()
         if source is None or source["status"] not in {
             SessionStatus.COMPLETED.value,
+            SessionStatus.CANCELLED.value,
             SessionStatus.SUSPENDED.value,
             SessionStatus.FAILED.value,
         }:

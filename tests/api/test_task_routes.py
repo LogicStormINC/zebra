@@ -118,7 +118,32 @@ def test_internal_rollover_controller_pauses_unsafe_boundary(tmp_path: Path) -> 
     }
 
 
-def _seed_completed(database: Path, workspace: Path):
+def test_cancelled_task_follow_up_recovers_behind_the_same_task_id(tmp_path: Path) -> None:
+    database = tmp_path / "tasks.sqlite"
+    task_id = str(_seed_completed(database, tmp_path, EventType.SESSION_CANCELLED))
+    adapter = RouteAdapter(create_app(database))
+
+    response = adapter.handle(
+        RouteRequest(
+            "POST",
+            f"/tasks/{task_id}/messages",
+            body={"content": "Start the next request after cancellation"},
+        )
+    )
+    segments = adapter.handle(RouteRequest("GET", f"/internal/tasks/{task_id}/segments"))
+
+    assert response.status_code == 201
+    assert response.body["session_id"] == task_id
+    assert response.body["rolled_over"] is True
+    assert len(segments.body["segments"]) == 2
+    assert segments.body["segments"][1]["rollover_reason"] == "recovery"
+
+
+def _seed_completed(
+    database: Path,
+    workspace: Path,
+    terminal_event: EventType = EventType.SESSION_COMPLETED,
+):
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title="Stable task",
@@ -140,7 +165,7 @@ def _seed_completed(database: Path, workspace: Path):
         SessionEvent.create(
             session_id=bootstrap.session.session_id,
             sequence=4,
-            event_type=EventType.SESSION_COMPLETED,
+            event_type=terminal_event,
             actor=EventActor.HARNESS,
             payload={"summary": "done"},
             created_at=NOW,
