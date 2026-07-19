@@ -6,7 +6,7 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-07-19`
-- Verified implementation baseline: `09aee8e` (PR `#170`)
+- Verified implementation baseline: `7a9f97d` (PR `#172`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
 - Active implementation task: `UI-LOBE-01` is in review on
   `codex/ui-lobe-01-component-library`.
@@ -107,8 +107,8 @@ including a real thinking tool round trip.
   `QA-GOV-02` / PR `#144`.
 - `QA-148-MDL-01`, `QA-DESKTOP-E2E-01`, and all Phase A Runtime tasks
   `ARCH-RT-A1-OS-01` through `ARCH-RT-A4-E2E-01` are `Done`.
-- `QA-HANDOFF-CLK-01` and `QA-PKG-E2E-02` are `Done` via PRs `#170` and `#171`;
-  `UI-LOBE-01` is the only current `Review` task.
+- `QA-HANDOFF-CLK-01`, `QA-PKG-E2E-02`, and `QA-PKG-E2E-03` are `Done` via
+  PRs `#170`, `#171`, and `#172`; `UI-LOBE-01` is the only current `Review` task.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 
 ## Known Follow-Ups

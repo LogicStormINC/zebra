@@ -29,7 +29,8 @@
 - `ARCH-RT-A4-E2E-01` is `Done` via PR `#165`.
 - `UI-LOBE-01` is `Review` on PR `#168`.
 - `ARCH-SVC-BOUNDARY-01` is `Done` via PR `#166`.
-- `QA-HANDOFF-CLK-01` and `QA-PKG-E2E-02` are `Done` via PRs `#170` and `#171`.
+- `QA-HANDOFF-CLK-01`, `QA-PKG-E2E-02`, and `QA-PKG-E2E-03` are `Done` via
+  PRs `#170`, `#171`, and `#172`.
 - `QA-DESKTOP-E2E-01` is `Done` via PR `#161`.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
@@ -14367,6 +14368,38 @@ the test fixture's fixed date.
 - focused regression: `1 passed`
 - `make test`: `1492 passed, 7 skipped`
 - `make check`: file-size, Ruff, strict Mypy, and release Eval passed
+
+### QA-PKG-E2E-03 - Closed WebDriver Transport Recovery Signature
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `QA / RELEASE`
+- Depends on: merged `QA-PKG-E2E-02`
+- Branch: `codex/qa-pkg-e2e-03-closed-transport`
+- Merged PR: `#172` (`7a9f97d`)
+- Owned paths: `.github/workflows/quality.yml`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`
+
+#### Goal
+
+Treat tauri-driver's observed `connection closed before message completed`
+transport failure like the already-bounded connection reset, without retrying
+ordinary product assertions.
+
+#### Acceptance
+
+- [x] The packaged drive retries once for either observed transport-close
+  signature and for no other log message.
+- [x] A second disconnect and every non-transport failure remain fatal.
+- [x] Full deterministic checks and the real packaged Quality job pass.
+
+#### Local Validation
+
+- both known signatures matched; a product assertion did not match
+- `make test`: `1492 passed, 7 skipped`
+- `make check`: file-size, Ruff, strict Mypy, and release Eval passed
+- Quality run `29677731289`: all seven jobs passed; the packaged Tauri job
+  exercised one bounded retry after a real connection reset and then completed
 
 ### QA-PKG-E2E-02 - Bounded Packaged WebDriver Connection Recovery
 
