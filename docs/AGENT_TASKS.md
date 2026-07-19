@@ -10593,7 +10593,7 @@ it, expand the parent's authority, recursively delegate, or outlive its parent.
 
 ### FINOS-HAR-03 - Recoverable Bounded Material Reads
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `CORE / INTEGRATION`
 - Depends on: `FINOS-MCP-02`
@@ -14353,7 +14353,13 @@ the test fixture's fixed date.
 
 #### Acceptance
 
-- [ ] The test cutoff is derived from the reserved operation timestamp instead
+- [x] The test cutoff is derived from the reserved operation timestamp instead
   of the host clock or a fixed calendar day.
-- [ ] The focused regression and full deterministic suite pass on 2026-07-19
+- [x] The focused regression and full deterministic suite pass on 2026-07-19
   and remain independent of future wall-clock dates.
+
+#### Validation
+
+- focused regression: `1 passed`
+- `make test`: `1492 passed, 7 skipped`
+- `make check`: file-size, Ruff, strict Mypy, and release Eval passed
