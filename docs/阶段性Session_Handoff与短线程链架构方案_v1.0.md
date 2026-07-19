@@ -4,12 +4,19 @@
 
 | 字段 | 值 |
 |---|---|
-| 状态 | Design complete；实现未激活 |
+| 状态 | Superseded for ordinary user experience by ADR-013；backend safety contracts retained |
 | 任务 | `CTX-HO-PLAN-01` |
 | 分支 | `codex/ctx-handoff-stage-plan` |
 | 基线 | `CTX-LC-01` commit `0486069` |
 | 目标读者 | Core、Context、Storage、Worker、API、CLI、UI、QA |
 | 决策日期 | 2026-07-17 |
+
+> 2026-07-19 决策更新：本文关于“由普通用户预览 Envelope、确认创建阶段性
+> 新线程并导航到 child Session”的产品合同已由
+> [`ADR-013_用户任务连续性与内部执行分段.md`](./ADR-013_用户任务连续性与内部执行分段.md)
+> 取代。现有 lineage、Envelope、原子性、no-replay、authority narrowing 和恢复
+> 合同继续作为后台 Execution Segment rollover 的安全基础。本文其余历史设计与
+> 验收证据保留，不再作为普通 Desktop 交互规范。
 
 本文定义 Zebra 在明确阶段边界创建关联新 Session 的长期方案。它补充
 [`上下文生命周期与混合压缩架构方案_v1.0.md`](./上下文生命周期与混合压缩架构方案_v1.0.md)，但不改变首要决策：上下文高水位默认在当前 Session 内 Compaction，不能把“新开线程”当作绕过 Context Window Planner 的自动 fallback。
@@ -18,8 +25,8 @@
 
 1. 默认路径仍是同一 Session 内的 hard gate、Micro-compaction、Projection Folding、
    `ContextCapsule` 和 provider continuation。
-2. 阶段性新线程是显式产品操作，只在阶段完成、长期维护交接或用户主动要求时使用。
-3. Agent 可以建议 handoff，但 v1 必须由用户或 operator 明确确认，不能自行创建后台会话。
+2. 历史 v1 将阶段性新线程定义为显式产品操作；ADR-013 已废弃该普通用户合同。
+3. Agent 只能给出 typed rollover hint；是否创建内部 Segment 由后端生命周期控制器决定。
 4. 新 Session 不是旧历史的复制品，只接收可验证的 `SessionHandoffEnvelope`、必要
    Artifact 引用、工作空间绑定和最近精确证据。
 5. 父子 Session 都记录耐久关联事件；Session lineage 可查询、可审计、可重放。

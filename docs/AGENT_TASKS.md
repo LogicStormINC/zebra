@@ -13913,6 +13913,54 @@ changing the current default of same-Session compaction or activating runtime be
 - [x] Focused tests, `make test`, `make check`, desktop checks and documented real-provider smoke
   pass before the roadmap is marked Done.
 
+### CTX-SEG-P0-01 - Invisible Internal Execution Segments
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `ARCHITECTURE / CONTEXT / DESKTOP / QA`
+- Depends on: merged `CTX-HO-01E`, merged `CTX-LC-01`, explicit maintainer decision
+- Branch: `codex/ctx-seg-p0-invisible-ui`
+- Owned paths: `docs/ADR-013_用户任务连续性与内部执行分段.md`,
+  `docs/透明Context_Segment与自动Rollover实施方案_v1.0.md`,
+  `docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md`,
+  `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
+  `UI/desktop/src/App.tsx`, `UI/desktop/src/components/CodexWorkspace.tsx`,
+  `UI/desktop/src/components/SessionThreadWorkspace.tsx`,
+  `UI/desktop/src/components/SessionStageHandoffCard.tsx`,
+  `UI/desktop/src/lib/use-session-handoff.ts`,
+  `UI/desktop/src/lib/session-handoff.ts`, `UI/desktop/checks/session-handoff.check.ts`,
+  `docs/AGENT_TASKS.md`, `README.md`, `PROGRESS.md`, `task_plan.md`,
+  `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Make one user-visible Task the stable product boundary. Preserve the existing
+handoff safety contracts for later backend-internal Segment rollover, while
+removing child-Session creation, Envelope preview, stage prompts, and lineage
+identifiers from the ordinary Desktop user experience.
+
+#### Acceptance
+
+- [ ] ADR-013 supersedes the old explicit user handoff product decision and
+  defines stable Task identity plus hidden internal execution Segments.
+- [ ] The implementation plan separates the immediate UI correction from the
+  later Task projection, automatic lifecycle controller, migration, and API work.
+- [ ] Completed and suspended Sessions never render stage-title, objective,
+  stage-prompt, Envelope preview, or Start-next-stage controls in Desktop.
+- [ ] Desktop no longer imports or invokes public handoff creation actions;
+  approval, clarification, stop, resume, follow-up, and streaming stay intact.
+- [ ] Existing backend handoff persistence, recovery, no-replay, and authority
+  contracts remain unchanged and disabled by default in this slice.
+- [ ] A deterministic check prevents the ordinary user surface from regaining
+  handoff creation controls, and all Desktop/repository gates pass.
+
+#### Explicit Non-Goals
+
+- Task-level persistence schema, Task SSE, automatic rollover, data backfill,
+  removal of backend lineage audit, or public API migration in this first slice
+- authority expansion, silent replay, provider-private state transfer, or
+  hiding approvals and clarifications that genuinely require the user
+
 ### DS-OPT-01 - DeepSeek Specialized Optimization
 
 - Status: `Done`

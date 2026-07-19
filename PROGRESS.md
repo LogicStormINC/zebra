@@ -8,8 +8,10 @@
 - Snapshot date: `2026-07-19`
 - Verified implementation baseline: `f1e4965` (PR `#174`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
-- Active implementation task: none; `UI-COMPOSER-01` merged via PR `#174`.
-- Active architecture task: none; `ARCH-SVC-BOUNDARY-01` merged via PR `#166`.
+- Active implementation task: `CTX-SEG-P0-01` removes explicit stage handoff
+  controls from the ordinary Desktop surface on `codex/ctx-seg-p0-invisible-ui`.
+- Active architecture task: ADR-013 replaces user-visible child Sessions with a
+  stable Task boundary and backend-internal execution Segments.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
