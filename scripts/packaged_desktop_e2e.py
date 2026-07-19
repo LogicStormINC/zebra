@@ -335,7 +335,7 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         app.wait_body("APPROVAL_COMPLETE", timeout=40)
         session_id = app.active_session_id()
         session = request_json(
-            "GET", f"{API_URL}/sessions/{session_id}", headers=AUTH_HEADERS
+            "GET", f"{API_URL}/tasks/{session_id}", headers=AUTH_HEADERS
         )
         assert session["workspace"]["runtime_name"] == "os-sandbox"
         app.refresh()
@@ -350,7 +350,7 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         app.wait_body("失败 ·", timeout=40)
         failure_session_id = app.active_session_id()
         failure_session = request_json(
-            "GET", f"{API_URL}/sessions/{failure_session_id}", headers=AUTH_HEADERS
+            "GET", f"{API_URL}/tasks/{failure_session_id}", headers=AUTH_HEADERS
         )
         assert failure_session["status"] == "failed"
         steps.append("failure-visible")
@@ -364,7 +364,7 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         app.wait_body("E2E_FAILURE packaged failure", timeout=20)
         app.wait_body("失败 ·")
         recovered_session = request_json(
-            "GET", f"{API_URL}/sessions/{failure_session_id}", headers=AUTH_HEADERS
+            "GET", f"{API_URL}/tasks/{failure_session_id}", headers=AUTH_HEADERS
         )
         assert recovered_session["status"] == "failed"
         steps.append("restart-durable-recovery")

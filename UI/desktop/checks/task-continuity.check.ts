@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 const desktopRoot = resolve(import.meta.dirname, "..");
 const coreApi = readFileSync(resolve(desktopRoot, "src/lib/zebra-api-core.ts"), "utf8");
 const app = readFileSync(resolve(desktopRoot, "src/App.tsx"), "utf8");
+const packagedE2e = readFileSync(resolve(desktopRoot, "../../scripts/packaged_desktop_e2e.py"), "utf8");
 
 for (const route of [
   '"/tasks"',
@@ -20,6 +21,7 @@ for (const route of [
 }
 
 assert.equal(coreApi.includes("/sessions"), false, "ordinary Desktop core must not bind Session APIs");
+assert.equal(packagedE2e.includes("/sessions/"), false, "packaged Desktop evidence must read stable Task state");
 assert.equal(
   app.includes("isAppendToTerminalError"),
   false,
