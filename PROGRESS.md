@@ -14,7 +14,11 @@
   stable Task boundary and backend-internal execution Segments.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
-- Locked architecture tasks: ACP entry and optional code intelligence
+- Web Intelligence planning: `WEB-INT-PLAN-01` is in review; it defines a
+  provider-neutral native `web.*` surface over a replaceable wigolo Provider,
+  Zebra-owned orchestration/security, and durable Watch, without implementation
+- Locked architecture tasks: Web Intelligence implementation, ACP entry, and
+  optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
 
 ## Current Capability
@@ -140,6 +144,9 @@ including a real thinking tool round trip.
   are `Done` via PRs `#170`, `#171`, `#172`, and `#168`.
 - `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
+- `WEB-INT-PLAN-01` is documentation-only and in review. All `WEB-INT-*` and
+  `WEB-WATCH-*` implementation cards remain `Locked`; no wigolo runtime, new
+  native Tool, Research workflow, or Watch scheduler is currently delivered.
 
 ## Known Follow-Ups
 
@@ -152,6 +159,9 @@ including a real thinking tool round trip.
 5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
    Credential/Egress Broker, external-namespace isolation, and Kubernetes in
    dependency order.
+6. Decide explicitly whether to activate `WEB-INT-CON-01` after the
+   Web Intelligence nativeization plan merges; do not bypass the contract,
+   licensing, Provider, security, or durable Watch dependency order.
 
 ## Runtime Blueprint
 
@@ -197,6 +207,8 @@ real tool execution, failure visibility, API restart, and durable recovery.
 - external authority adapter and namespace-isolated cloud control plane
 - centralized Vault/KMS-backed credentials and production Egress
 - ecosystem marketplace, cross-organization A2A, and autonomous production release
+- Web Intelligence native contracts, wigolo Provider adapter, research/gather
+  orchestration, and durable Watch implementation
 
 ## Permanently External Business Responsibilities
 

@@ -4,7 +4,8 @@
 > Status, owner, branch, and evidence must be maintained by humans.
 > Current execution range: local Beta and single-host production foundations are
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
-> ACP and optional code intelligence remain locked.
+> the Web Intelligence nativeization plan is in review; its implementation,
+> ACP, and optional code intelligence remain locked.
 
 ## Global Rules
 
@@ -36,7 +37,382 @@
 - `QA-148-MDL-01` is `Done` via PR `#156`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
+- `WEB-INT-PLAN-01` is `Review` on `codex/web-int-plan-01`; it changes planning
+  and governance documents only.
+- `WEB-INT-CON-01`, `WEB-INT-ADP-01`, `WEB-INT-SEC-01`, `WEB-INT-TOOLS-01`,
+  `WEB-INT-CACHE-01`, `WEB-INT-BROWSER-01`, `WEB-INT-ORCH-01`,
+  `WEB-INT-OPS-01`, all four `WEB-WATCH-*` cards, and `WEB-INT-E2E-01`
+  remain `Locked` pending explicit maintainer activation.
 - No other card is `Ready`, `In Progress`, `Review`, or `Blocked`.
+
+## Web Intelligence Nativeization Plan
+
+The dependency graph describes capability order. Cards that share
+`agent-tools`, `agent-runtime`, or `agent-security` must not be active in
+parallel; activate them serially after the earlier shared-path card merges, or
+narrow the later card's Owned paths in its planning PR.
+
+### WEB-INT-PLAN-01 - Wigolo Capability Nativeization Plan
+
+- Status: `Review`
+- Owner: `lukeding`
+- Reviewer: `TBD`
+- Suggested role: `ARCHITECTURE / DOCS / SECURITY`
+- Depends on: current native Web, MCP, Policy, Artifact, Harness, and Runtime baseline
+- Branch: `codex/web-int-plan-01`
+- Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent-web-int-docs`
+- Owned paths: `docs/Wigolo_Web_Intelligence原生化架构与实施计划_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `docs/README.md`, `PROGRESS.md`
+- Risk: `L2`
+
+#### Goal
+
+Turn the audited wigolo capability surface into a bounded Zebra-native
+architecture, task dependency graph, security boundary, and acceptance plan
+without implementing, installing, or exposing new tools.
+
+#### Acceptance
+
+- [x] The plan distinguishes native Zebra contracts from an external wigolo Provider.
+- [x] All ten wigolo tools and supporting operational capabilities have an explicit destination.
+- [x] Policy, Credential, Artifact, Model, Watch, licensing, and supply-chain boundaries are explicit.
+- [x] Implementation is split into dependency-ordered cards with explicit shared-path serialization.
+- [x] Every implementation card remains `Locked`; the plan does not claim delivery.
+- [x] Reader testing and repository documentation checks pass.
+
+#### Explicit Non-Goals
+
+- modifying product code, installing wigolo, or downloading a browser/model
+- copying AGPL source into Zebra or making a final legal determination
+- activating implementation tasks or changing unrelated architecture cards
+
+#### Validation
+
+- Fresh-reader review correctly identified delivered versus Locked scope,
+  native-capability criteria, ownership, first activation task, stable Provider
+  contracts, and the no-copy decision.
+- A second reader pass confirmed the clarified `web.gather` shape, additive
+  compatibility strategy, Watch wiring owner, shared-path serialization,
+  Adapter/Setup boundary, and Provider Protocol authority with no blockers.
+- `git diff --check`
+- `make sync`
+- `make check`: file-size gate `898` files with zero violations, Ruff passed,
+  strict Mypy passed over `417` source files, release Eval `8/8`
+
+### WEB-INT-CON-01 - Native Web Intelligence Contracts
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `TOOLS`
+- Depends on: merged `WEB-INT-PLAN-01`
+- Suggested branch: `codex/web-int-con-01-native-contracts`
+- Owned paths: `packages/agent-tools/`, `tests/agent_tools/`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+- Risk: `L2`
+
+#### Goal
+
+Version the provider-neutral `web.*` schemas, result envelope, error codes, budgets,
+provenance, Artifact projection fields, and transport Protocol without execution wiring.
+
+#### Acceptance
+
+- [ ] Existing `web.search` and `web.fetch` calls remain backward compatible.
+- [ ] New contracts reject unknown, oversized, invalid, or mutually exclusive inputs.
+- [ ] Read, destructive, refresh, orchestration, and Watch mutations are separate tools.
+- [ ] The Provider-neutral transport Protocol lives in `agent-tools`; no wigolo,
+  Node, Playwright, REST, or MCP SDK type enters `agent-core`.
+
+### WEB-INT-ADP-01 - Pinned Wigolo Provider Adapter
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `RUNTIME / INTEGRATIONS`
+- Depends on: merged `WEB-INT-CON-01`
+- Suggested branch: `codex/web-int-adp-01-wigolo-provider`
+- Owned paths: `packages/agent-runtime/`, `packages/agent-integrations/`,
+  `apps/config/`, `apps/worker/`, `tests/agent_runtime/`, `tests/worker/`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+- Risk: `L3`
+
+#### Goal
+
+Add a fixed-version, isolated and replaceable wigolo Provider transport with
+health, cancellation, per-tool budgets, bounded process lifecycle, and no model exposure.
+
+#### Acceptance
+
+- [ ] The executable path, version, artifact digest, data directory, and startup mode are explicit.
+- [ ] Development uses an operator-provided verified preinstalled artifact; no
+  product Setup behavior is smuggled into the Adapter task.
+- [ ] Automatic downloads, upstream LLM, telemetry, arbitrary plugins, auth, and private targets are disabled.
+- [ ] Provider crash, timeout, cancellation, malformed JSON, oversized output, and version drift fail closed.
+- [ ] Large outputs use Zebra Artifact projection instead of widening generic MCP limits.
+
+### WEB-INT-SEC-01 - Web Intelligence Policy And Egress Boundary
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `SECURITY`
+- Depends on: merged `WEB-INT-CON-01`
+- Suggested branch: `codex/web-int-sec-01-policy-egress`
+- Owned paths: `packages/agent-security/`, narrowly required `packages/agent-core/`,
+  `tests/agent_security/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+- Risk: `L4`
+
+#### Goal
+
+Classify every native Web action and enforce target-aware Policy, approval,
+Egress, SSRF, redirect, Browser action, credential, and output-trust boundaries.
+
+#### Acceptance
+
+- [ ] Starting a Provider never grants blanket network authority.
+- [ ] DNS, redirects, IP/private targets, ports, userinfo, Webhooks, and rebinding have refusal tests.
+- [ ] Browser mutations, cache deletion, Watch mutation, and delivery receive separate decisions.
+- [ ] Credentials cannot enter model arguments, logs, events, Artifacts, or Provider persistence.
+
+### WEB-INT-TOOLS-01 - Native Read-Only Web Intelligence Tools
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `TOOLS / RUNTIME`
+- Depends on: merged `WEB-INT-ADP-01` and `WEB-INT-SEC-01`
+- Suggested branch: `codex/web-int-tools-01-readonly-tools`
+- Owned paths: `packages/agent-tools/`, `packages/agent-runtime/`,
+  `tests/agent_tools/`, `tests/agent_runtime/`, `tests/integration/`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+- Risk: `L3`
+
+#### Goal
+
+Expose provider-neutral `web.search`, `web.fetch`, `web.crawl`, `web.extract`,
+`web.find_similar`, `web.diff`, `web.cache.search`, and `web.cache.stats` through
+the normal Zebra Tool Gateway.
+
+#### Acceptance
+
+- [ ] Models discover stable `web.*` names and never require `mcp.wigolo.*`.
+- [ ] Each call crosses Policy and produces correlated Tool Run, Event and Artifact evidence.
+- [ ] Partial, degraded, stale, blocked and truncated results remain distinguishable.
+- [ ] Deterministic fake-Provider and real pinned-sidecar contract suites pass.
+
+### WEB-INT-CACHE-01 - Native Mutable Web Cache Operations
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `TOOLS / RUNTIME / SECURITY`
+- Depends on: merged `WEB-INT-TOOLS-01`
+- Suggested branch: `codex/web-int-cache-01-mutable-cache`
+- Owned paths: `packages/agent-tools/`, `packages/agent-runtime/`,
+  `packages/agent-security/`, `tests/agent_tools/`, `tests/agent_runtime/`,
+  `tests/agent_security/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+- Risk: `L3`
+
+#### Goal
+
+Add policy-separated `web.cache.clear` and `web.cache.refresh` with explicit
+scope, preview, namespace, retention, network and audit behavior.
+
+#### Acceptance
+
+- [ ] Clear requires a bounded selector, preview evidence and destructive approval.
+- [ ] Refresh reuses native fetch, Egress and budgets instead of Provider blanket access.
+- [ ] Private or authenticated evidence cannot cross namespace cache boundaries.
+- [ ] Cache removal never deletes Event, Tool Run, Artifact or Agent Memory authority.
+
+### WEB-INT-BROWSER-01 - Controlled Browser Actions And Auth
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `RUNTIME / SECURITY / CREDENTIALS`
+- Depends on: merged `WEB-INT-TOOLS-01`
+- Suggested branch: `codex/web-int-browser-01-actions-auth`
+- Owned paths: `packages/agent-tools/`, `packages/agent-runtime/`,
+  `packages/agent-security/`, `tests/agent_tools/`, `tests/agent_runtime/`,
+  `tests/agent_security/`,
+  `tests/integration/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+- Risk: `L4`
+
+#### Goal
+
+Add bounded screenshot, scroll, wait, selector, click, type and authenticated
+browsing through per-action Policy and Zebra-issued short-lived capabilities.
+
+#### Acceptance
+
+- [ ] Read-only and possibly mutating actions receive different Policy decisions.
+- [ ] Raw credentials never enter model arguments, Provider persistence or browser profiles.
+- [ ] Navigation and every redirect re-evaluate target authority and SSRF rules.
+- [ ] Transactional, publish, message, delete and other external side effects remain denied.
+
+### WEB-INT-ORCH-01 - Native Web Research And Gather Workflows
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `HARNESS / MODEL / CONTEXT`
+- Depends on: merged `WEB-INT-TOOLS-01`
+- Suggested branch: `codex/web-int-orch-01-research-gather`
+- Owned paths: `packages/agent-core/`, `packages/agent-runtime/`,
+  `packages/agent-context/`, `apps/worker/`, `tests/agent_core/`,
+  `tests/agent_runtime/`, `tests/worker/`, `tests/evals/`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+- Risk: `L3`
+
+#### Goal
+
+Implement `web.research` and `web.gather` as Zebra high-level Workflow Tools over
+native tools and the Zebra Model Gateway, not as a nested wigolo Agent or LLM path.
+
+#### Acceptance
+
+- [ ] Model, Tool, page, time and output budgets stop deterministically.
+- [ ] Cancellation, retry, recovery, citations, Artifact projection and Context Capsule paths work.
+- [ ] Provider text remains untrusted and cannot alter Policy or instructions.
+- [ ] Research Eval records answer quality, citation coverage, source quality, latency and cost.
+
+### WEB-INT-OPS-01 - Web Intelligence Operator Lifecycle
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `RUNTIME / CLI / RELEASE`
+- Depends on: merged `WEB-INT-TOOLS-01`
+- Suggested branch: `codex/web-int-ops-01-provider-lifecycle`
+- Owned paths: `apps/config/`, `apps/cli/`, `packages/agent-runtime/`,
+  `tests/config/`, `tests/cli/`, `tests/agent_runtime/`,
+  `docs/Web_Intelligence_Operator_Runbook.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`
+- Risk: `L3`
+
+#### Goal
+
+Provide operator-only setup, verify, health, warmup, tune, upgrade, cleanup,
+SBOM and rollback workflows without exposing maintenance controls to the model.
+
+#### Acceptance
+
+- [ ] Setup pins and verifies every executable, browser, native module and model artifact.
+- [ ] Health distinguishes missing, warming, ready, degraded, incompatible and failed states.
+- [ ] Upgrade and cleanup are explicit, reversible where practical and auditable.
+- [ ] No first Tool Call performs an implicit installation or unreviewed upgrade.
+
+### WEB-WATCH-CORE-01 - Durable Watch Domain And Ports
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `CORE / ARCHITECTURE`
+- Depends on: merged `WEB-INT-TOOLS-01`
+- Suggested branch: `codex/web-watch-core-01-domain-ports`
+- Owned paths: `packages/agent-core/`, `tests/agent_core/`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+- Risk: `L2`
+
+#### Goal
+
+Define provider-neutral WatchJob, Check, ChangeSnapshot and DeliveryAttempt states,
+commands, transitions, idempotency identities and storage/scheduling Ports.
+
+#### Acceptance
+
+- [ ] State transitions cover create, due, running, changed, unchanged, failed, paused and deleted.
+- [ ] Check and delivery identities support at-least-once scheduling without duplicate effects.
+- [ ] Core types contain no SQLite, HTTP, wigolo or scheduler implementation types.
+
+### WEB-WATCH-STO-01 - Durable Watch SQLite Stores
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `STORAGE`
+- Depends on: merged `WEB-WATCH-CORE-01`
+- Suggested branch: `codex/web-watch-sto-01-sqlite`
+- Owned paths: `packages/agent-storage/`, `tests/agent_storage/`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+- Risk: `L3`
+
+#### Goal
+
+Persist Watch jobs, due indexes, leases, checks, snapshots and delivery attempts
+with restart-safe migrations and deterministic concurrency behavior.
+
+#### Acceptance
+
+- [ ] Store reopen and migration preserve jobs, schedules and attempt history.
+- [ ] Competing workers cannot claim the same due check concurrently.
+- [ ] Retried checks and deliveries upsert by durable idempotency key.
+
+### WEB-WATCH-WRK-01 - Watch Scheduler And Delivery Worker
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `WORKER / SECURITY`
+- Depends on: merged `WEB-WATCH-STO-01`
+- Suggested branch: `codex/web-watch-wrk-01-scheduler-delivery`
+- Owned paths: `apps/worker/`, `packages/agent-runtime/`,
+  `packages/agent-integrations/`, `tests/worker/`, `tests/integration/`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+- Risk: `L4`
+
+#### Goal
+
+Run due checks without foreground traffic, use native fetch/diff, and deliver
+approved signed Webhooks with leases, retry, backoff, cancellation and audit.
+
+#### Acceptance
+
+- [ ] Restart, crash, timeout and lease expiry do not lose or duplicate work.
+- [ ] Every recurrence re-evaluates Policy, target, network profile and capability.
+- [ ] Redirects are refused and failed deliveries retain bounded durable evidence.
+
+### WEB-WATCH-SURF-01 - Watch API CLI And Desktop Parity
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `API / CLI / UI`
+- Depends on: merged `WEB-WATCH-WRK-01`
+- Suggested branch: `codex/web-watch-surf-01-operator-parity`
+- Owned paths: `packages/agent-tools/`, `packages/agent-runtime/`, `apps/api/`,
+  `apps/cli/`, `UI/desktop/`, `tests/agent_tools/`, `tests/agent_runtime/`,
+  `tests/api/`, `tests/cli/`, `tests/integration/`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`
+- Risk: `L3`
+
+#### Goal
+
+Wire native `web.watch.*` Tool Gateway handlers and expose create/list/check/
+pause/resume/delete, change evidence and delivery status consistently across
+API, CLI and Desktop over one durable state model.
+
+#### Acceptance
+
+- [ ] Cross-surface contract matrices agree for success, missing, denied and conflict cases.
+- [ ] Approval, current status, last check, next due, diff Artifact and delivery state are truthful.
+- [ ] UI does not become a scheduler or state authority.
+
+### WEB-INT-E2E-01 - Web Intelligence Release Gate
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `QA / SECURITY / RELEASE`
+- Depends on: merged `WEB-INT-CACHE-01`, `WEB-INT-BROWSER-01`,
+  `WEB-INT-ORCH-01`, `WEB-INT-OPS-01`, and `WEB-WATCH-SURF-01`
+- Suggested branch: `codex/web-int-e2e-01-release-gate`
+- Owned paths: `tests/fixtures/web_intelligence/`, `tests/integration/`,
+  `tests/evals/`, `tests/smoke/`, `.github/workflows/quality.yml`,
+  `docs/Web_Intelligence原生化验收记录.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+- Risk: `L3`
+
+#### Goal
+
+Prove the complete native Web Intelligence chain with deterministic fixtures,
+a pinned real wigolo sidecar, security/recovery matrices, Eval and product surfaces.
+
+#### Acceptance
+
+- [ ] All ten upstream user capabilities map to tested Zebra contracts or workflows.
+- [ ] HTML, PDF, SPA, robots, sitemap, redirects, SSRF and output-budget fixtures pass.
+- [ ] Provider/Worker/API restart, cancellation and Watch delivery recovery pass.
+- [ ] `make test`, `make check`, release Eval and applicable real-browser jobs pass.
+- [ ] Only this card may mark full Web Intelligence nativeization complete.
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.
