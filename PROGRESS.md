@@ -18,6 +18,9 @@
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
+- Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
+  non-interactive across Desktop/API/CLI/Worker, including existing Tasks, while
+  retaining fail-closed non-local defaults and hard Gateway/Runtime boundaries.
 
 ## Current Capability
 
@@ -44,6 +47,12 @@
   session-labelled cleanup.
 - Policy, HITL, network profiles, MCP/Web gates, credential boundaries, and
   audit remain independent of model output.
+- Explicit `local + trusted-local` mode uses effective `full-trusted-local`
+  authority across Desktop/API/CLI/Worker, so new and existing Tasks execute model
+  tools without per-call approval. One Agent Security resolver is the authority
+  source for every execution entry point. System HTTPS proxies are honored for
+  local Web execution; direct connections retain public-address DNS preflight.
+  Core and non-local deployments remain default-deny and approval-gated.
 
 ### Context and model integration
 
@@ -79,9 +88,26 @@
 - Typed local tools cover bounded file, command, patch, tests, Git, Web, Skill,
   MCP, and read-only Research paths according to the task profile.
 - Failed tools return structured observations for model-selected correction or
-  fallback while Policy, approval, protocol, effect, and budget stops remain hard.
+  fallback, including bounded failure reason and detail when output is empty,
+  while Policy, approval, protocol, effect, and budget stops remain hard.
 
 ## Latest Validation Baseline
+
+Validated on `codex/web-ux-01-trusted-local-auto-web` on 2026-07-19:
+
+- final focused authority, failure-observation, proxy, API, Worker and runtime:
+  `101 passed`
+- `make test`: `1515 passed, 7 skipped`
+- `make check`: file-size `899`, Ruff, strict Mypy over `418` source files, and
+  `8/8` release Eval cases passed
+- every deterministic Desktop `check:*` script and production build passed
+- real Chromium: `8/8`, covering the trusted-local launch default, automatic
+  command execution, streaming, reload, cancellation, Segment and failure paths
+- the original old Task completed a real OpenAI `web.fetch` via the configured
+  macOS HTTPS proxy without approval or `private_network_blocked`
+- real Zhipu Task `91fbddb3-d608-4e7c-a15b-694d6e55c9ae` recorded Policy
+  `allow`, recovered from the site's expired TLS certificate, and gave the model
+  the exact failure detail instead of a false allowlist explanation
 
 Validated on `codex/subagent-delegation-model-native` on 2026-07-19:
 

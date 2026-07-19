@@ -13,9 +13,7 @@ from agent_tools.web_gateway import (
 
 from agent_runtime.web_content import project_web_text
 
-ALLOWED_CONTENT_TYPES = frozenset(
-    {"application/json", "application/xml", "application/xhtml+xml"}
-)
+ALLOWED_CONTENT_TYPES = frozenset({"application/json", "application/xml", "application/xhtml+xml"})
 
 
 class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
@@ -26,10 +24,16 @@ class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
 class LocalWebGatewayTransport:
     """Bounded local adapter; production deployments should replace it with an egress proxy."""
 
+    def __init__(self, *, use_system_proxy: bool = False) -> None:
+        self._use_system_proxy = use_system_proxy
+
     def execute(self, request: WebGatewayRequest) -> WebGatewayResponse:
-        _reject_non_public_resolution(request.target.hostname)
+        proxies = _proxy_configuration(
+            request.target.hostname,
+            use_system_proxy=self._use_system_proxy,
+        )
         opener = urllib.request.build_opener(
-            urllib.request.ProxyHandler({}),
+            urllib.request.ProxyHandler(proxies),
             _NoRedirectHandler(),
         )
         outbound = urllib.request.Request(
@@ -87,8 +91,7 @@ class LocalWebGatewayTransport:
 def _reject_non_public_resolution(hostname: str) -> None:
     try:
         addresses = {
-            item[4][0]
-            for item in socket.getaddrinfo(hostname, 443, type=socket.SOCK_STREAM)
+            item[4][0] for item in socket.getaddrinfo(hostname, 443, type=socket.SOCK_STREAM)
         }
     except OSError as exc:
         raise WebGatewayError(f"web hostname resolution failed: {exc}") from exc
@@ -98,6 +101,16 @@ def _reject_non_public_resolution(hostname: str) -> None:
         raise WebGatewayError(
             "web hostname resolves to a non-public address", reason="private_network_blocked"
         )
+
+
+def _proxy_configuration(hostname: str, *, use_system_proxy: bool) -> dict[str, str]:
+    proxies = urllib.request.getproxies() if use_system_proxy else {}
+    if proxies.get("https"):
+        # ponytail: trusted-local delegates DNS and routing to the operator's HTTPS proxy;
+        # direct connections still keep the public-address preflight below.
+        return proxies
+    _reject_non_public_resolution(hostname)
+    return {}
 
 
 def _content_type(value: str) -> str:

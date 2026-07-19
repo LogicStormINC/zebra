@@ -142,7 +142,7 @@ def test_granted_tool_call_resumes_exactly_once_without_reproposal(
         service.execute_session(session_id, worker_id="worker-a", executed_at=created_at)
 
 
-def test_web_gateway_waits_for_approval_then_executes_exactly_once(
+def test_web_gateway_uses_durable_network_authority_and_executes_exactly_once(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -153,58 +153,53 @@ def test_web_gateway_waits_for_approval_then_executes_exactly_once(
         name="web.fetch",
         arguments={"url": "https://docs.example.com/guide"},
         created_at=created_at,
-        provider_call_id="call_web_approved",
+        provider_call_id="call_web_authorized",
     )
-    initial_gateway = _gateway("Reading approved Web content.", tool_call=tool_call)
-    final_gateway = _gateway("approved-web-output")
-    gateways = iter((initial_gateway, final_gateway))
+    gateway = _gateway(
+        "Reading authorized Web content.",
+        tool_call=tool_call,
+        follow_up="authorized-web-output",
+    )
     transport = RecordingWebTransport()
     monkeypatch.setattr(
         "zebra_agent_worker.execution.build_model_gateway",
-        lambda settings: next(gateways),
+        lambda settings: gateway,
     )
     monkeypatch.setattr(
         "agent_runtime.harness.LocalWebGatewayTransport",
-        lambda: transport,
+        lambda **kwargs: transport,
     )
     session_id = _seed_session(
         database_path,
         tmp_path,
-        network_profile="domain-allowlist",
-        network_allowlist=("docs.example.com",),
+        network_profile="none",
     )
-    service = _execution_service(database_path)
-
-    waiting = service.execute_session(
-        session_id, worker_id="worker-web", executed_at=created_at
+    workspace_store = SQLiteWorkspaceProjectionStore(database_path)
+    workspace = workspace_store.get_workspace(session_id)
+    assert workspace is not None
+    workspace_store.save_workspace(
+        workspace.model_copy(update={"runtime_spec_digest": "legacy-none-runtime-authority"})
     )
-
-    assert waiting.session.status is SessionStatus.WAITING_APPROVAL
-    assert transport.requests == []
-    approval = create_app(database_path, settings=_settings(database_path)).get_approval(
-        str(session_id)
-    )
-    assert approval.body["approval_context"]["route"] == "web_gateway"
-    assert approval.body["approval_context"]["target"] == "docs.example.com"
-    create_app(database_path, settings=_settings(database_path)).approve(
-        str(session_id),
-        {"operator": "tester", "reason": "approved bounded Web read"},
+    service = _execution_service(
+        database_path,
+        settings=_settings(database_path, profile="local"),
     )
 
-    completed = service.execute_session(
-        session_id, worker_id="worker-web", executed_at=created_at
-    )
+    completed = service.execute_session(session_id, worker_id="worker-web", executed_at=created_at)
 
     assert completed.session.status is SessionStatus.COMPLETED
-    assert completed.attempt_result.metadata["assistant_message"] == "approved-web-output"
+    assert completed.attempt_result.metadata["assistant_message"] == "authorized-web-output"
     assert len(transport.requests) == 1
     assert transport.requests[0].target.hostname == "docs.example.com"
     events = SQLiteEventStore(database_path).list_for_session(session_id)
-    assert sum(
-        event.event_type is EventType.TOOL_EXECUTION_STARTED
-        and event.payload.get("tool_name") == "web.fetch"
-        for event in events
-    ) == 1
+    assert (
+        sum(
+            event.event_type is EventType.TOOL_EXECUTION_STARTED
+            and event.payload.get("tool_name") == "web.fetch"
+            for event in events
+        )
+        == 1
+    )
 
 
 def test_mcp_stdio_waits_for_approval_then_recovers_exact_call(
@@ -261,19 +256,20 @@ def test_mcp_stdio_waits_for_approval_then_recovers_exact_call(
         {"operator": "tester", "reason": "approved exact MCP call"},
     )
 
-    completed = service.execute_session(
-        session_id, worker_id="worker-mcp", executed_at=created_at
-    )
+    completed = service.execute_session(session_id, worker_id="worker-mcp", executed_at=created_at)
 
     assert completed.session.status is SessionStatus.COMPLETED
     assert completed.attempt_result.metadata["assistant_message"] == "approved-mcp-complete"
     assert marker.read_text(encoding="utf-8") == "called"
     events = SQLiteEventStore(database_path).list_for_session(session_id)
-    assert sum(
-        event.event_type is EventType.TOOL_EXECUTION_STARTED
-        and event.payload.get("tool_name") == "mcp.fixture.echo"
-        for event in events
-    ) == 1
+    assert (
+        sum(
+            event.event_type is EventType.TOOL_EXECUTION_STARTED
+            and event.payload.get("tool_name") == "mcp.fixture.echo"
+            for event in events
+        )
+        == 1
+    )
 
 
 def test_large_mcp_catalog_bridge_waits_for_approval_then_recovers_provider_view(
@@ -319,9 +315,7 @@ def test_large_mcp_catalog_bridge_waits_for_approval_then_recovers_provider_view
         database_path,
         tmp_path,
         network_profile="mcp-proxy-only",
-        mcp_allowlist=tuple(
-            f"mcp.fixture.echo{index if index else ''}" for index in range(16)
-        ),
+        mcp_allowlist=tuple(f"mcp.fixture.echo{index if index else ''}" for index in range(16)),
     )
     service = _execution_service(database_path, settings=settings)
 
@@ -356,11 +350,14 @@ def test_large_mcp_catalog_bridge_waits_for_approval_then_recovers_provider_view
     assert resumed_call.provider_tool_name == MCP_TOOL_CALL_NAME
     assert resumed_call.provider_arguments == tool_call.arguments
     events = SQLiteEventStore(database_path).list_for_session(session_id)
-    assert sum(
-        event.event_type is EventType.TOOL_EXECUTION_STARTED
-        and event.payload.get("tool_name") == "mcp.fixture.echo"
-        for event in events
-    ) == 1
+    assert (
+        sum(
+            event.event_type is EventType.TOOL_EXECUTION_STARTED
+            and event.payload.get("tool_name") == "mcp.fixture.echo"
+            for event in events
+        )
+        == 1
+    )
 
 
 def test_mcp_recovery_fails_closed_when_selected_server_was_removed(
@@ -385,14 +382,17 @@ def test_mcp_recovery_fails_closed_when_selected_server_was_removed(
             settings=_settings(database_path),
         ).execute_session(session_id, worker_id="worker-mcp-removed")
     events = SQLiteEventStore(database_path).list_for_session(session_id)
-    assert sum(
-        event.event_type is EventType.TOOL_EXECUTION_STARTED
-        and event.payload.get("tool_name") == "mcp.fixture.echo"
-        for event in events
-    ) == 0
+    assert (
+        sum(
+            event.event_type is EventType.TOOL_EXECUTION_STARTED
+            and event.payload.get("tool_name") == "mcp.fixture.echo"
+            for event in events
+        )
+        == 0
+    )
 
 
-def test_web_search_waits_for_approval_then_executes_exactly_once(
+def test_web_search_uses_durable_network_authority_and_executes_exactly_once(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -403,22 +403,21 @@ def test_web_search_waits_for_approval_then_executes_exactly_once(
         name="web.search",
         arguments={"query": "zebra agent", "limit": 2},
         created_at=created_at,
-        provider_call_id="call_search_approved",
+        provider_call_id="call_search_authorized",
     )
-    gateways = iter(
-        (
-            _gateway("Searching approved sources.", tool_call=tool_call),
-            _gateway("approved-search-output"),
-        )
+    gateway = _gateway(
+        "Searching authorized sources.",
+        tool_call=tool_call,
+        follow_up="authorized-search-output",
     )
     transport = RecordingSearchTransport()
     monkeypatch.setattr(
         "zebra_agent_worker.execution.build_model_gateway",
-        lambda settings: next(gateways),
+        lambda settings: gateway,
     )
     monkeypatch.setattr(
         "agent_runtime.harness.LocalWebSearchTransport",
-        lambda: transport,
+        lambda **kwargs: transport,
     )
     session_id = _seed_session(
         database_path,
@@ -431,26 +430,6 @@ def test_web_search_waits_for_approval_then_executes_exactly_once(
         web_search_endpoint="https://search.example.com/search",
     )
     service = _execution_service(database_path, settings=settings)
-
-    waiting = service.execute_session(
-        session_id, worker_id="worker-search", executed_at=created_at
-    )
-
-    assert waiting.session.status is SessionStatus.WAITING_APPROVAL
-    assert transport.requests == []
-    app = create_app(database_path, settings=settings)
-    approval = app.get_approval(str(session_id))
-    context = approval.body["approval_context"]
-    assert context["target"] == "search.example.com"
-    assert context["scope"][-3:] == [
-        "query:zebra agent",
-        "limit:2",
-        "side_effect:read_only",
-    ]
-    app.approve(
-        str(session_id),
-        {"operator": "tester", "reason": "approved bounded Web search"},
-    )
 
     completed = service.execute_session(
         session_id, worker_id="worker-search", executed_at=created_at
@@ -604,20 +583,27 @@ def test_later_approved_tool_resumes_with_prior_tool_history(
     assert started_names == ["files.read", "command.run"]
 
 
-def _gateway(content: str, *, tool_call: ToolCall | None = None) -> ScriptedModelGateway:
+def _gateway(
+    content: str,
+    *,
+    tool_call: ToolCall | None = None,
+    follow_up: str | None = None,
+) -> ScriptedModelGateway:
+    contents = ((content, tool_call),) + (((follow_up, None),) if follow_up is not None else ())
     return ScriptedModelGateway(
-        responses=(
+        responses=tuple(
             ScriptedModelResponse(
                 completion=ModelCompletion(
                     assistant_message=SessionMessage(
                         message_id=new_message_id(),
                         role=MessageRole.ASSISTANT,
-                        content=content,
+                        content=response_content,
                         created_at=datetime(2026, 7, 14, 7, 0, tzinfo=UTC),
                     ),
-                    tool_calls=(tool_call,) if tool_call is not None else (),
+                    tool_calls=(response_tool_call,) if response_tool_call is not None else (),
                 )
-            ),
+            )
+            for response_content, response_tool_call in contents
         )
     )
 
@@ -677,11 +663,12 @@ def _execution_service(
 def _settings(
     database_path: Path,
     *,
+    profile: str = "test",
     web_search_endpoint: str | None = None,
     mcp_servers: tuple[McpServerSettings, ...] = (),
 ) -> ZebraAgentSettings:
     return ZebraAgentSettings(
-        profile="test",
+        profile=profile,
         database_url=str(database_path),
         api=ApiSettings(auth_token=None),
         model=ModelSettings(

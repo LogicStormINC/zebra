@@ -16,7 +16,7 @@ from agent_tools.web_search import (
     WebSearchResult,
 )
 
-from agent_runtime.web_gateway import _NoRedirectHandler, _reject_non_public_resolution
+from agent_runtime.web_gateway import _NoRedirectHandler, _proxy_configuration
 
 JSON_CONTENT_TYPE = "application/json"
 MAX_OUTPUT_CHARS = 20_000
@@ -25,10 +25,16 @@ MAX_OUTPUT_CHARS = 20_000
 class LocalWebSearchTransport:
     """Credential-free bounded SearXNG JSON adapter."""
 
+    def __init__(self, *, use_system_proxy: bool = False) -> None:
+        self._use_system_proxy = use_system_proxy
+
     def execute(self, request: WebSearchRequest) -> WebSearchResponse:
-        _reject_non_public_resolution(request.endpoint.hostname)
+        proxies = _proxy_configuration(
+            request.endpoint.hostname,
+            use_system_proxy=self._use_system_proxy,
+        )
         opener = urllib.request.build_opener(
-            urllib.request.ProxyHandler({}),
+            urllib.request.ProxyHandler(proxies),
             _NoRedirectHandler(),
         )
         outbound = urllib.request.Request(
@@ -69,9 +75,7 @@ class LocalWebSearchTransport:
 
 def _search_url(request: WebSearchRequest) -> str:
     separator = "&" if urllib.parse.urlsplit(request.endpoint.url).query else "?"
-    query = urllib.parse.urlencode(
-        {"q": request.query, "format": "json", "limit": request.limit}
-    )
+    query = urllib.parse.urlencode({"q": request.query, "format": "json", "limit": request.limit})
     return f"{request.endpoint.url}{separator}{query}"
 
 
@@ -125,10 +129,7 @@ def _normalize_result(value: object) -> WebSearchResult | None:
         return None
     if len(target.url) > MAX_WEB_SEARCH_URL_CHARS:
         return None
-    title = (
-        _bounded_text(value.get("title"), MAX_WEB_SEARCH_TITLE_CHARS)
-        or target.hostname
-    )
+    title = _bounded_text(value.get("title"), MAX_WEB_SEARCH_TITLE_CHARS) or target.hostname
     snippet = _bounded_text(value.get("content"), MAX_WEB_SEARCH_SNIPPET_CHARS)
     return WebSearchResult(title=title, url=target.url, snippet=snippet)
 

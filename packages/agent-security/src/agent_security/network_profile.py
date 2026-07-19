@@ -78,6 +78,16 @@ class NetworkProfile:
 
 
 DEFAULT_NETWORK_PROFILE = NetworkProfile(name=NetworkProfileName.NONE)
+TRUSTED_LOCAL_NETWORK_PROFILE = NetworkProfile(name=NetworkProfileName.FULL_TRUSTED_LOCAL)
+
+
+def resolve_effective_network_profile(
+    requested: NetworkProfile,
+    *,
+    trusted_local: bool,
+) -> NetworkProfile:
+    """Resolve runtime network authority once for every execution entry point."""
+    return TRUSTED_LOCAL_NETWORK_PROFILE if trusted_local else requested
 
 
 def parse_network_profile(

@@ -5,14 +5,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_context import LocalContextCompiler
-from agent_core.application import (
-    MemoryCandidateExtractionCommand,
-    MemoryCandidateExtractionService,
-)
+from agent_core.application import MemoryCandidateExtractionService
 from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.sessions import Session
 from agent_core.harness import (
     HarnessAttempt,
     HarnessContext,
@@ -27,7 +24,11 @@ from agent_core.harness.models import (
 )
 from agent_integrations import build_model_gateway
 from agent_runtime import LocalToolGateway
-from agent_security import LocalPolicyEngine, PolicyProfile
+from agent_security import (
+    LocalPolicyEngine,
+    PolicyProfile,
+    resolve_effective_network_profile,
+)
 from agent_storage import (
     SQLiteArtifactPayloadStore,
     SQLiteContextLifecycleStore,
@@ -41,7 +42,11 @@ from agent_storage import (
     SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
 )
-from zebra_agent_config import ZebraAgentSettings, load_settings
+from zebra_agent_config import (
+    ZebraAgentSettings,
+    load_settings,
+    trusted_local_mode_enabled,
+)
 
 import zebra_agent_worker.session_handoff as handoff
 from zebra_agent_worker.approved_continuation import (
@@ -63,6 +68,7 @@ from zebra_agent_worker.continuation_lifecycle import (
 )
 from zebra_agent_worker.control import SessionControlError, SessionControlService
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
+from zebra_agent_worker.execution_finalization import finalize_execution
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
@@ -179,6 +185,11 @@ class SessionExecutionService:
         except (FileNotFoundError, ValueError) as exc:
             self._claim_service.release_claim(claimed)
             raise WorkerExecutionError(str(exc)) from exc
+        trusted_local = trusted_local_mode_enabled(self._settings)
+        effective_network_profile = resolve_effective_network_profile(
+            task.network_profile,
+            trusted_local=trusted_local,
+        )
         try:
             model_gateway = build_model_gateway(self._settings)
         except ValueError:
@@ -190,7 +201,7 @@ class SessionExecutionService:
                 self._settings,
                 self._database_path,
                 workspace_root=task.workspace_root,
-                network_profile=task.network_profile.name.value,
+                network_profile=effective_network_profile.name.value,
                 session_id=session_id,
                 attempt_number=1,
                 artifact_store=self._artifact_payload_store,
@@ -199,7 +210,8 @@ class SessionExecutionService:
             runtime_handle = prepared_runtime.handle
             authority = runtime_handle.authority
             require_matching_runtime_authority(
-                runtime_handle, claimed.recovery.workspace.runtime_spec_digest
+                runtime_handle,
+                None if trusted_local else claimed.recovery.workspace.runtime_spec_digest,
             )
             authority_recorder = DurableHarnessEventRecorder(
                 session=claimed.recovery.session,
@@ -223,19 +235,21 @@ class SessionExecutionService:
                 skill_roots=self._settings.skill_roots,
                 mcp_servers=self._settings.mcp_servers,
                 mcp_allowlist=task.mcp_allowlist,
-                session_history=SQLiteSessionHistory(self._database_path,
-                    allowed_session_ids=task.history_session_ids),
+                session_history=SQLiteSessionHistory(
+                    self._database_path, allowed_session_ids=task.history_session_ids
+                ),
                 current_session_id=str(session_id),
                 runtime=runtime,
                 runtime_handle=runtime_handle,
                 artifact_payload_store=self._artifact_payload_store,
+                trusted_local=trusted_local,
             )
             tool_gateway = handoff.guard_effectful_tools(
                 local_tool_gateway,
                 database_path=self._database_path,
                 session_id=session_id,
                 recovered_handoff=recovered_handoff,
-                authority_scope=f"{task.workspace_root.resolve()}|{task.policy_profile}|{task.network_profile.name.value}",
+                authority_scope=f"{task.workspace_root.resolve()}|{task.policy_profile}|{effective_network_profile.name.value}",
             )
         except Exception as exc:
             cleanup_error = None
@@ -261,8 +275,8 @@ class SessionExecutionService:
                 workspace_root=task.workspace_root,
                 policy_profile=task.policy_profile,
                 tool_profile=task.tool_profile,
-                network_profile=task.network_profile.name.value,
-                network_allowlist=task.network_profile.domain_allowlist,
+                network_profile=effective_network_profile.name.value,
+                network_allowlist=effective_network_profile.domain_allowlist,
                 mcp_allowlist=tuple(tool.name for tool in tool_gateway.effective_mcp_tools),
                 confirmed_memories=list_confirmed_repo_memories(
                     self._database_path,
@@ -375,8 +389,9 @@ class SessionExecutionService:
             model_gateway,
             LocalPolicyEngine(
                 profile=PolicyProfile(task.policy_profile),
-                network_profile=task.network_profile,
+                network_profile=effective_network_profile,
                 web_search_endpoint=self._settings.web_search_endpoint,
+                trusted_local=trusted_local,
             ),
             tool_gateway,
             model_step=model_step,
@@ -437,7 +452,7 @@ class SessionExecutionService:
             cleanup_error = close_tool_gateway(tool_gateway)
         if cleanup_error is not None:
             attempt_result = runtime_cleanup_failure_result(cleanup_error, attempt_result)
-        emitted_events = _finalize_execution(
+        emitted_events = finalize_execution(
             recorder=recorder,
             attempt_result=attempt_result,
             memory_extraction_service=self._memory_extraction_service,
@@ -453,48 +468,3 @@ class SessionExecutionService:
             events=emitted_events,
             attempt_result=attempt_result,
         )
-
-
-def _finalize_execution(
-    *,
-    recorder: DurableHarnessEventRecorder,
-    attempt_result: HarnessAttemptResult,
-    memory_extraction_service: MemoryCandidateExtractionService,
-    event_store: SQLiteEventStore,
-    started_at: datetime,
-) -> tuple[SessionEvent, ...]:
-    if recorder.session.status in {
-        SessionStatus.CANCELLED,
-        SessionStatus.SUSPENDED,
-        SessionStatus.COMPLETED,
-        SessionStatus.FAILED,
-    }:
-        return recorder.events
-    if attempt_result.outcome not in {
-        HarnessAttemptOutcome.WAITING_APPROVAL,
-        HarnessAttemptOutcome.WAITING_INPUT,
-    }:
-        recorder.append(
-            EventType.SESSION_COMPLETED
-            if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
-            else EventType.SESSION_FAILED,
-            EventActor.HARNESS,
-            {
-                "attempt_number": 1,
-                "summary": attempt_result.summary,
-                "metadata": attempt_result.metadata,
-            },
-        )
-    if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
-        extraction = memory_extraction_service.extract(
-            session=recorder.session,
-            events=event_store.list_for_session(recorder.session.session_id),
-            next_sequence=recorder.next_sequence,
-            command=MemoryCandidateExtractionCommand(
-                repo_id=str(Path(recorder.workspace.workspace_root).expanduser().resolve()),
-                extracted_at=started_at,
-            ),
-        )
-        for event in extraction.events:
-            recorder.append_event(event)
-    return recorder.events

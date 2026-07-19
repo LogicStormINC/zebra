@@ -1,7 +1,7 @@
 import { Dropdown, Flex, Input, Popover } from "antd";
 import locale from "../../_utils/local";
 import type { McpCapabilitiesResponse, McpPromptsResponse } from "../../types";
-import { compactWorkspaceLabel, type TaskLaunchConfig } from "../../lib/task-launch-config";
+import { compactWorkspaceLabel, taskNetworkProfileLabel, type TaskLaunchConfig } from "../../lib/task-launch-config";
 import { McpTaskSelector } from "../McpTaskSelector";
 import { McpPromptSelector } from "../McpPromptSelector";
 import { useConversationPaneStyle } from "../CodexConversationPane.styles";
@@ -127,8 +127,9 @@ export function TaskLaunchControls({
           { key: "none", label: "网络: 无外部网络", onClick: () => onPatch({ networkProfile: "none", networkAllowlist: [], mcpAllowlist: [], mcpResourceIds: [], mcpPromptId: null, mcpPromptArguments: {}, mcpPromptSchema: null }) },
           { key: "domain-allowlist", label: "网络: 域名白名单", onClick: () => onPatch({ networkProfile: "domain-allowlist", mcpAllowlist: [], mcpResourceIds: [], mcpPromptId: null, mcpPromptArguments: {}, mcpPromptSchema: null }) },
           { key: "mcp-proxy-only", label: "网络: 仅 MCP 代理", onClick: () => onPatch({ networkProfile: "mcp-proxy-only", networkAllowlist: [] }) },
+          { key: "full-trusted-local", label: "网络: 本地可信网络", onClick: () => onPatch({ networkProfile: "full-trusted-local", networkAllowlist: [], mcpAllowlist: [], mcpResourceIds: [], mcpPromptId: null, mcpPromptArguments: {}, mcpPromptSchema: null }) },
         ] }} trigger={["click"]}>
-          <button className={styles.toolbarButton} type="button">网络: {config.networkProfile === "none" ? "无外部网络" : config.networkProfile}</button>
+          <button className={styles.toolbarButton} type="button">网络: {taskNetworkProfileLabel(config.networkProfile)}</button>
         </Dropdown>
       ) : null}
       {editable && config.networkProfile === "domain-allowlist" ? (

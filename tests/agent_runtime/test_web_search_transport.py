@@ -104,6 +104,35 @@ def test_searxng_adapter_rejects_non_json_response(
     assert error.value.reason == "unsupported_content_type"
 
 
+def test_trusted_local_search_uses_system_https_proxy_without_local_dns(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    opener = FakeOpener(FakeResponse({"results": []}))
+    handlers: list[object] = []
+    monkeypatch.setattr(
+        "agent_runtime.web_gateway.urllib.request.getproxies",
+        lambda: {"https": "http://127.0.0.1:7890"},
+    )
+    monkeypatch.setattr(
+        "agent_runtime.web_gateway.socket.getaddrinfo",
+        lambda *args, **kwargs: pytest.fail("proxy mode must not resolve fake IP locally"),
+    )
+
+    def capture_opener(*items: object) -> FakeOpener:
+        handlers.extend(items)
+        return opener
+
+    monkeypatch.setattr(
+        "agent_runtime.web_search.urllib.request.build_opener",
+        capture_opener,
+    )
+
+    response = LocalWebSearchTransport(use_system_proxy=True).execute(_request())
+
+    assert response.results == ()
+    assert handlers[0].proxies["https"] == "http://127.0.0.1:7890"  # type: ignore[attr-defined]
+
+
 def _request() -> WebSearchRequest:
     return WebSearchRequest(
         tool_call_id="call-search",

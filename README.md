@@ -84,7 +84,13 @@ deployment does not change the product boundary above. Read
 - `trusted-local`, `oci-rootless`, and `gvisor` runtime classes
 - production fail-close on missing gVisor, mutable images, authority drift, or
   incompatible snapshots
-- default-deny network profiles, approval gates, credential boundaries, and audit
+- core and non-local deployments default-deny network access; explicit
+  `local + trusted-local` mode gives Desktop/API/CLI/Worker one operator trust
+  boundary, including automatic upgrade of existing Tasks without approval popups
+- bounded HTTPS/URL/redirect/size controls; direct connections retain public-DNS
+  checks, while trusted local execution honors the operator's system HTTPS proxy
+- non-local MCP and side-effecting operations retain approval gates; trusted local
+  still enforces workspace paths, tool schemas, runtime boundaries, and audit
 
 ### Model and context
 

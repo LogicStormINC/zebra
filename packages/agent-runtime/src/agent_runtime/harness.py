@@ -84,6 +84,7 @@ def run_local_harness(
     attachments: tuple[AttachmentContextInput, ...] = (),
     mcp_servers: Sequence[McpServerSpec] = (),
     mcp_allowlist: Sequence[str] | None = None,
+    trusted_local: bool = False,
 ) -> HarnessLoopResult:
     tool_gateway = LocalToolGateway(
         workspace_root,
@@ -94,6 +95,7 @@ def run_local_harness(
         session_history=session_history,
         mcp_servers=mcp_servers,
         mcp_allowlist=mcp_allowlist,
+        trusted_local=trusted_local,
     )
     resolved_mcp_allowlist = (
         tuple(tool.name for tool in tool_gateway.effective_mcp_tools)
@@ -124,6 +126,7 @@ def run_local_harness(
                     profile=policy_profile,
                     network_profile=network_profile,
                     web_search_endpoint=web_search_endpoint,
+                    trusted_local=trusted_local,
                 ),
                 tool_gateway,
                 model_step=HarnessModelStep(
@@ -161,6 +164,7 @@ class LocalToolGateway(ToolGatewayPort):
         runtime: RuntimePort | None = None,
         runtime_handle: RuntimeHandle | None = None,
         artifact_payload_store: ArtifactPayloadStorePort | None = None,
+        trusted_local: bool = False,
     ) -> None:
         if research_child_limit <= 0:
             raise ValueError("research_child_limit must be positive")
@@ -204,7 +208,7 @@ class LocalToolGateway(ToolGatewayPort):
             ),
             CommandRunTool(self._runtime, self._workspace),
             WebFetchTool(
-                web_gateway_transport or LocalWebGatewayTransport(),
+                web_gateway_transport or LocalWebGatewayTransport(use_system_proxy=trusted_local),
                 max_output_bytes=262_144 if output_projector is not None else 65_536,
             ),
         )
@@ -216,7 +220,8 @@ class LocalToolGateway(ToolGatewayPort):
         if search_endpoint is not None and "web.search" in enabled_names:
             search = WebSearchTool(
                 endpoint=search_endpoint,
-                transport=web_search_transport or LocalWebSearchTransport(),
+                transport=web_search_transport
+                or LocalWebSearchTransport(use_system_proxy=trusted_local),
             )
             registry.register(search.contract, search.handle)
         if skill_roots:

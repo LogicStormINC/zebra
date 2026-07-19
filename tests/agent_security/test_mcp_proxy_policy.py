@@ -58,6 +58,16 @@ def test_classify_web_fetch_requires_exact_durable_allowlist_match() -> None:
     assert blocked.route is ToolEgressRoute.BLOCKED
 
 
+def test_classify_web_fetch_allows_public_target_for_trusted_local_profile() -> None:
+    metadata = classify_tool_egress(
+        _tool_call("web.fetch", {"url": "https://docs.example.com/guide"}),
+        network_profile=parse_network_profile("full-trusted-local"),
+    )
+
+    assert metadata.route is ToolEgressRoute.WEB_GATEWAY
+    assert metadata.target == "docs.example.com"
+
+
 def _tool_call(name: str, arguments: dict[str, object]) -> ToolCall:
     return ToolCall(
         tool_call_id=new_tool_call_id(),

@@ -4,6 +4,45 @@ from agent_core.domain.tools import ToolCall
 from agent_security.mcp_proxy_policy import ToolEgressMetadata, ToolEgressRoute
 
 
+def external_read_allow_decision(
+    *,
+    policy_profile: str,
+    tool_call: ToolCall,
+    egress: ToolEgressMetadata,
+) -> PolicyDecision:
+    target = egress.target or egress.tool_name
+    return PolicyDecision(
+        decision=PolicyDecisionType.ALLOW,
+        reason=(
+            f"{egress.tool_name} is allowed for bounded read-only Web retrieval to "
+            f"{target} under durable network profile {egress.network_profile}"
+        ),
+        policy_profile=policy_profile,
+        route=egress.route.value,
+        target=egress.target,
+        network_profile=egress.network_profile,
+        scope=_external_scope(tool_call, egress),
+    )
+
+
+def external_trusted_local_allow_decision(
+    *,
+    policy_profile: str,
+    tool_call: ToolCall,
+    egress: ToolEgressMetadata,
+) -> PolicyDecision:
+    target = egress.target or egress.tool_name
+    return PolicyDecision(
+        decision=PolicyDecisionType.ALLOW,
+        reason=(f"{egress.tool_name} is allowed to {target} by trusted local operator mode"),
+        policy_profile=policy_profile,
+        route=egress.route.value,
+        target=egress.target,
+        network_profile=egress.network_profile,
+        scope=_external_scope(tool_call, egress),
+    )
+
+
 def external_approval_decision(
     *,
     policy_profile: str,
@@ -33,9 +72,7 @@ def external_approval_decision(
 def blocked_route_reason(egress: ToolEgressMetadata) -> str:
     target = egress.target or egress.tool_name
     denied_capability = (
-        "mcp proxy egress"
-        if egress.tool_name.startswith("mcp.")
-        else "the requested egress"
+        "mcp proxy egress" if egress.tool_name.startswith("mcp.") else "the requested egress"
     )
     return (
         f"{egress.tool_name} is blocked on external route {target} because network profile "

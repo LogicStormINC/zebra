@@ -52,10 +52,12 @@ from agent_security.mcp_proxy_policy import (
 from agent_security.network_profile import (
     DEFAULT_NETWORK_PROFILE,
     SUPPORTED_NETWORK_PROFILES,
+    TRUSTED_LOCAL_NETWORK_PROFILE,
     NetworkProfile,
     NetworkProfileError,
     NetworkProfileName,
     parse_network_profile,
+    resolve_effective_network_profile,
 )
 from agent_security.policy import (
     ApprovalRequest,
@@ -127,6 +129,7 @@ __all__ = [
     "SHORT_LIVED_ARTIFACT_RETENTION",
     "STANDARD_ARTIFACT_RETENTION",
     "DEFAULT_NETWORK_PROFILE",
+    "TRUSTED_LOCAL_NETWORK_PROFILE",
     "get_secret_value",
     "InMemorySecretStore",
     "ToolEgressMetadata",
@@ -138,6 +141,7 @@ __all__ = [
     "classify_artifact_access",
     "classify_tool_egress",
     "parse_network_profile",
+    "resolve_effective_network_profile",
     "policy_profile",
     "policy_rank",
     "required_policy_profile_for_artifact_access",

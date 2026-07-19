@@ -1,5 +1,48 @@
 # Progress Log
 
+## 2026-07-19 WEB-UX-01 Trusted Local Read-Only Web Auto Execution
+
+- registered and claimed `WEB-UX-01` on
+  `codex/web-ux-01-trusted-local-auto-web`
+- changed authorized `web.fetch` and configured `web.search` routes from
+  per-call approval to direct bounded execution
+- enabled the existing `full-trusted-local` network profile for public Web
+  Gateway routing and made it the new local Desktop launch default
+- added a one-time Desktop migration from the previously persisted `none`
+  default; the local API also normalizes stale or explicit client profiles to
+  the operator-selected trusted authority
+- retained API/core `none` defaults, exact allowlist checks, Web Gateway safety,
+  MCP approval, and side-effecting tool policy
+- focused validation passed: 57 backend tests, Desktop launch check, TypeScript,
+  and Vite production build
+- full validation passed: `1505 passed, 5 skipped`; file-size, Ruff, strict Mypy
+  over `417` source files, `8/8` release Evals, every Desktop check, and real
+  Chromium `8/8`
+- an initial aggregate Desktop check inherited Node 20 and failed before running
+  TypeScript; rerunning through the repository's Volta-pinned Node 22.17.0
+  completed every check successfully
+- follow-up local-runtime repair derives effective `full-trusted-local` authority
+  for API/CLI/Worker execution, including old Tasks and automatic Segments, and
+  removes approval pauses for local command and MCP calls while retaining hard
+  validation, workspace, Gateway, Runtime, and audit boundaries
+- centralized that derivation in the Agent Security network-profile resolver so
+  API, CLI, Worker, recovery, and automatic Segment paths cannot drift apart
+- local Web transports now honor the macOS system HTTPS proxy in trusted mode;
+  direct and all non-local paths retain public-address DNS preflight
+- real regression on the original Task `ff198e19-9f46-42d0-b2bd-4d64e6166e67`
+  completed `web.fetch` against OpenAI `robots.txt` without approval; separate
+  `/news/` 403 and RSS size-limit results were correctly reported as transport
+  failures rather than Policy denials
+- real Zhipu regression proved Policy `allow` and recoverable completion, then
+  exposed and fixed empty failed-tool observations so the next model call sees
+  the actual TLS `reason/detail` instead of inventing an allowlist explanation
+- final validation passed: `101` focused tests, `1515 passed, 7 skipped` full
+  suite, file-size `899`, Ruff, strict Mypy over `418` files, `8/8` release
+  Evals, all Desktop checks/build, and real Chromium `8/8`
+- real Zhipu Task `91fbddb3-d608-4e7c-a15b-694d6e55c9ae` recorded Policy
+  `allow`, completed after an upstream expired-TLS failure, and the next model
+  call accurately consumed the structured failure observation
+
 ## 2026-07-19 UI-COMPOSER-01 Compact Conversation Composer
 
 - claimed `UI-COMPOSER-01` in an isolated worktree on

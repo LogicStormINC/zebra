@@ -90,6 +90,7 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
   const durableToolProfile = props.sessionSummary?.workspace?.tool_profile === "general" ? "general" : "coding";
   const durableNetworkProfile = props.sessionSummary?.workspace?.network_profile === "domain-allowlist"
     || props.sessionSummary?.workspace?.network_profile === "mcp-proxy-only"
+    || props.sessionSummary?.workspace?.network_profile === "full-trusted-local"
     ? props.sessionSummary.workspace.network_profile
     : "none";
   const durableMcpResourceIds = props.sessionSummary?.attachments

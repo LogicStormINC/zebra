@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from zebra_agent_config import load_settings
+from zebra_agent_config import load_settings, trusted_local_mode_enabled
 
 
 def test_load_settings_reads_default_profile() -> None:
@@ -33,6 +33,7 @@ def test_load_settings_reads_default_profile() -> None:
     assert settings.web_search_endpoint is None
     assert settings.skill_roots == ()
     assert settings.mcp_servers == ()
+    assert trusted_local_mode_enabled(settings) is True
 
 
 def test_load_settings_allows_env_override(tmp_path: Path) -> None:
@@ -64,6 +65,7 @@ def test_load_settings_allows_env_override(tmp_path: Path) -> None:
     )
 
     assert settings.profile == "ci"
+    assert trusted_local_mode_enabled(settings) is False
     assert settings.database_url == "ci.sqlite"
     assert settings.api.auth_token == "test-token"
     assert settings.session_handoff.enabled is True

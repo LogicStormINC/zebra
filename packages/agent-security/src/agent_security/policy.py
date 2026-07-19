@@ -7,6 +7,8 @@ from agent_core.domain.tools import ToolCall
 from agent_security.external_policy import (
     blocked_route_reason,
     external_approval_decision,
+    external_read_allow_decision,
+    external_trusted_local_allow_decision,
 )
 from agent_security.mcp_proxy_policy import (
     ToolEgressMetadata,
@@ -90,6 +92,7 @@ class LocalPolicyEngine:
     profile: PolicyProfile = PolicyProfile.READ_ONLY
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE
     web_search_endpoint: str | None = None
+    trusted_local: bool = False
 
     def evaluate_tool_call(self, tool_call: ToolCall) -> PolicyDecision:
         tool_name = tool_call.name
@@ -103,17 +106,41 @@ class LocalPolicyEngine:
         )
         if egress.route is ToolEgressRoute.BLOCKED:
             return _deny(self.profile, blocked_route_reason(egress))
-        if egress.route in (ToolEgressRoute.MCP_PROXY, ToolEgressRoute.WEB_GATEWAY):
+        if egress.route is ToolEgressRoute.WEB_GATEWAY:
+            return external_read_allow_decision(
+                policy_profile=self.profile.value,
+                tool_call=tool_call,
+                egress=egress,
+            )
+        if egress.route is ToolEgressRoute.MCP_PROXY:
+            if self.trusted_local:
+                return external_trusted_local_allow_decision(
+                    policy_profile=self.profile.value,
+                    tool_call=tool_call,
+                    egress=egress,
+                )
             return external_approval_decision(
                 policy_profile=self.profile.value,
                 tool_call=tool_call,
                 egress=egress,
             )
         if self.profile is PolicyProfile.READ_ONLY:
-            return _decision_for_read_only(tool_name, self.profile)
-        if self.profile is PolicyProfile.WORKSPACE_WRITE:
-            return _decision_for_workspace_write(tool_name, self.profile)
-        return _decision_for_full_access(tool_call, self.profile)
+            decision = _decision_for_read_only(tool_name, self.profile)
+        elif self.profile is PolicyProfile.WORKSPACE_WRITE:
+            decision = _decision_for_workspace_write(tool_name, self.profile)
+        else:
+            decision = _decision_for_full_access(tool_call, self.profile)
+        if self.trusted_local and decision.decision is PolicyDecisionType.REQUIRE_APPROVAL:
+            return PolicyDecision(
+                decision=PolicyDecisionType.ALLOW,
+                reason=f"{tool_name} is allowed by trusted local operator mode",
+                policy_profile=decision.policy_profile,
+                route=decision.route,
+                target=decision.target,
+                network_profile=decision.network_profile,
+                scope=decision.scope,
+            )
+        return decision
 
 
 def policy_profile() -> str:
