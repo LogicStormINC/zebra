@@ -8,8 +8,8 @@
 - Snapshot date: `2026-07-19`
 - Verified implementation baseline: `f1e4965` (PR `#174`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
-- Active implementation task: `CTX-SEG-P0-01` is in Review after removing explicit
-  stage handoff controls from the ordinary Desktop surface.
+- Active implementation task: `CTX-SEG-01` delivers the stable Task, internal
+  Segment, unified stream/routing, automatic rollover, and migration slice.
 - Active architecture task: ADR-013 replaces user-visible child Sessions with a
   stable Task boundary and backend-internal execution Segments.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`

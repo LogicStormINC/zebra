@@ -13913,13 +13913,13 @@ changing the current default of same-Session compaction or activating runtime be
 - [x] Focused tests, `make test`, `make check`, desktop checks and documented real-provider smoke
   pass before the roadmap is marked Done.
 
-### CTX-SEG-P0-01 - Invisible Internal Execution Segments
+### CTX-SEG-01 - Stable Task And Automatic Internal Execution Segments
 
-- Status: `Review`
+- Status: `In Progress`
 - Owner: `Codex`
 - Suggested role: `ARCHITECTURE / CONTEXT / DESKTOP / QA`
 - Depends on: merged `CTX-HO-01E`, merged `CTX-LC-01`, explicit maintainer decision
-- Branch: `codex/ctx-seg-p0-invisible-ui`
+- Branch: `codex/ctx-seg-01-task-runtime`
 - Owned paths: `docs/ADR-013_用户任务连续性与内部执行分段.md`,
   `docs/透明Context_Segment与自动Rollover实施方案_v1.0.md`,
   `docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md`,
@@ -13932,15 +13932,29 @@ changing the current default of same-Session compaction or activating runtime be
   `UI/desktop/src/lib/use-session-handoff.ts`,
   `UI/desktop/src/lib/session-handoff.ts`, `UI/desktop/src/lib/zebra-api-core.ts`,
   `UI/desktop/src/types/session.ts`, `UI/desktop/checks/session-handoff.check.ts`,
+  `packages/agent-core/src/agent_core/domain/identifiers.py`,
+  `packages/agent-core/src/agent_core/domain/agent_tasks.py`,
+  `packages/agent-core/src/agent_core/ports/agent_tasks.py`,
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `packages/agent-storage/src/agent_storage/agent_tasks.py`,
+  `packages/agent-storage/src/agent_storage/session_handoffs.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `apps/api/src/zebra_agent_api/task_api.py`,
+  `apps/api/src/zebra_agent_api/routes.py`, `apps/api/src/zebra_agent_api/http.py`,
+  `apps/api/src/zebra_agent_api/app.py`, `apps/api/src/zebra_agent_api/session_streaming.py`,
+  `tests/agent_core/test_agent_tasks.py`, `tests/agent_storage/test_agent_tasks.py`,
+  `tests/api/test_task_routes.py`, `tests/api/test_task_streaming.py`,
+  `UI/desktop/src/types/api.ts`, `UI/desktop/checks/task-continuity.check.ts`,
+  `UI/desktop/package.json`,
   `docs/AGENT_TASKS.md`, `README.md`, `PROGRESS.md`, `task_plan.md`,
   `findings.md`, `WORKLOG.md`
 
 #### Goal
 
-Make one user-visible Task the stable product boundary. Preserve the existing
-handoff safety contracts for later backend-internal Segment rollover, while
-removing child-Session creation, Envelope preview, stage prompts, and lineage
-identifiers from the ordinary Desktop user experience.
+Make one user-visible Task the stable product boundary. Reuse existing handoff
+safety contracts for automatic backend-internal Segment rollover, aggregate a
+monotonic Task stream, route controls to the active Segment, migrate existing
+lineage, and keep Segment mechanics out of the ordinary user experience.
 
 #### Acceptance
 
@@ -13956,11 +13970,20 @@ identifiers from the ordinary Desktop user experience.
   contracts remain unchanged and disabled by default in this slice.
 - [x] A deterministic check prevents the ordinary user surface from regaining
   handoff creation controls, and all Desktop/repository gates pass.
+- [ ] Existing root Sessions and handoff lineage rebuild into stable Tasks with
+  exactly one active internal Segment.
+- [ ] Task create/read/list/message/cancel/suspend/resume and replay-plus-tail
+  stream routes resolve the active Segment without exposing lineage.
+- [ ] Completed-task follow-up performs one idempotent automatic safe rollover;
+  unsafe boundaries fail closed and simple active Tasks do not create Segments.
+- [ ] Desktop uses `/tasks` and stable `task_id`; rollover does not add a sidebar
+  item, replace the conversation key, or reset the Task stream cursor.
+- [ ] Migration, concurrency, no-replay, authority/drift, and full quality gates pass.
 
 #### Explicit Non-Goals
 
-- Task-level persistence schema, Task SSE, automatic rollover, data backfill,
-  removal of backend lineage audit, or public API migration in this first slice
+- PostgreSQL implementation, distributed orchestration, or removal of operator
+  lineage audit; SQLite contracts must remain portable to a future adapter
 - authority expansion, silent replay, provider-private state transfer, or
   hiding approvals and clarifications that genuinely require the user
 
