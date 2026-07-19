@@ -9,7 +9,7 @@ from agent_core.domain.session_handoff import WorkspaceBindingRevision
 
 from agent_storage.database import SQLiteDatabase
 from agent_storage.session_handoff_facts import read_source_facts
-from agent_storage.session_handoffs import HandoffDispatch, HandoffStorageConflictError
+from agent_storage.session_handoff_rows import HandoffDispatch, HandoffStorageConflictError
 
 
 class SQLiteHandoffDispatchStore:

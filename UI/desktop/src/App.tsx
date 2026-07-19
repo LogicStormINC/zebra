@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CodexWorkspace } from "./components/CodexWorkspace";
 import locale from "./_utils/local";
-import { isAppendToTerminalError, streamEventsToMessages, toErrorMessage, type ChatMessage } from "./lib/chat-surface";
+import { streamEventsToMessages, toErrorMessage, type ChatMessage } from "./lib/chat-surface";
 import { buildClarificationResponsePayload } from "./lib/clarification-continuation";
 import { useOperatorConfig } from "./lib/operator-config";
 import { mergeSessionEvents } from "./lib/live-session";
@@ -331,24 +331,7 @@ export default function App() {
             [conversationKey]: sessionId!,
           }));
         } else {
-          try {
-            await api.appendMessage(sessionId, { content: trimmed, attachments });
-          } catch (error: unknown) {
-            if (!isAppendToTerminalError(error)) {
-              throw error;
-            }
-            const title = trimmed.slice(0, 36) || locale.newConversation;
-            const created = await api.createSession({ title, prompt: trimmed, workspace: launchConfig.workspace.trim(), execute: false, policy_profile: launchConfig.policyProfile, tool_profile: launchConfig.toolProfile, network_profile: launchConfig.networkProfile, network_allowlist: launchConfig.networkAllowlist, mcp_allowlist: launchConfig.mcpAllowlist, mcp_resource_ids: launchConfig.mcpResourceIds, mcp_prompt_id: launchConfig.mcpPromptId ?? undefined, mcp_prompt_arguments: launchConfig.mcpPromptId ? launchConfig.mcpPromptArguments : undefined, attachments });
-            sessionId = created.session_id;
-            patchConfig({ sessionId });
-            if (!createdFromWorkspaceHome) {
-              renameConversation(conversationKey, title);
-            }
-            setConversationToSessionId((current) => ({
-              ...current,
-              [conversationKey]: sessionId!,
-            }));
-          }
+          await api.appendMessage(sessionId, { content: trimmed, attachments });
         }
         await executeSession(conversationKey, sessionId);
         return true;

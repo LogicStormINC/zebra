@@ -1,5 +1,14 @@
 """Domain models for Zebra Agent."""
 
+from agent_core.domain.agent_tasks import (
+    AgentTask,
+    ContextLifecycleController,
+    ContextLifecycleDecision,
+    ContextLifecycleSignals,
+    ExecutionSegment,
+    RolloverReason,
+    SegmentVisibility,
+)
 from agent_core.domain.artifact_access import (
     ArtifactAccessClass,
     ArtifactAccessDescriptor,
@@ -66,11 +75,16 @@ __all__ = [
     "ArtifactPayloadStatus",
     "ArtifactPayloadWrite",
     "ArtifactRef",
+    "AgentTask",
     "AttachmentContextInput",
     "DeliveryAuditRecord",
     "ClarificationContext",
+    "ContextLifecycleController",
+    "ContextLifecycleDecision",
+    "ContextLifecycleSignals",
     "EventActor",
     "EventType",
+    "ExecutionSegment",
     "EffectIdentity",
     "CompletedToolEvidence",
     "HandoffActorKind",
@@ -96,6 +110,8 @@ __all__ = [
     "SessionEvent",
     "SessionMessage",
     "SessionStatus",
+    "RolloverReason",
+    "SegmentVisibility",
     "SessionPlan",
     "StoredArtifactPayload",
     "SessionAttachmentRef",

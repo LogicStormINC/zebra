@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -24,6 +24,7 @@ from agent_core.ports.session_handoff import (
     SessionHandoffResult,
 )
 
+from agent_storage.agent_tasks import TASK_SCHEMA, attach_handoff_segment_locked
 from agent_storage.database import SQLiteDatabase
 from agent_storage.leases import SQLiteLeaseStore
 from agent_storage.projections import SQLiteProjectionStore
@@ -31,6 +32,9 @@ from agent_storage.session_handoff_events import build_handoff_events, insert_ch
 from agent_storage.session_handoff_facts import HandoffSourceFacts, read_source_facts
 from agent_storage.session_handoff_rows import (
     SCHEMA,
+    HandoffDispatch,
+    HandoffIdempotencyConflictError,
+    HandoffStorageConflictError,
     insert_event,
     lineage_from_row,
     operation_from_row,
@@ -39,24 +43,6 @@ from agent_storage.session_handoff_rows import (
 )
 from agent_storage.sqlite import SQLiteEventStore
 from agent_storage.workspaces import SQLiteWorkspaceProjectionStore
-
-
-class HandoffStorageConflictError(ValueError):
-    """Raised when a handoff cannot satisfy its durable reservation."""
-
-
-class HandoffIdempotencyConflictError(HandoffStorageConflictError):
-    """Raised when a key is reused for a different handoff request."""
-
-
-@dataclass(frozen=True, slots=True)
-class HandoffDispatch:
-    delivery_id: str
-    child_session_id: SessionId
-    handoff_id: HandoffId
-    status: str
-    claimed_by: str | None = None
-    claim_expires_at: datetime | None = None
 
 
 class SQLiteSessionHandoffStore(SessionHandoffPort):
@@ -323,6 +309,7 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
         if source is None or source["status"] not in {
             SessionStatus.COMPLETED.value,
             SessionStatus.SUSPENDED.value,
+            SessionStatus.FAILED.value,
         }:
             raise HandoffStorageConflictError("handoff source is not at a safe boundary")
         facts = read_source_facts(
@@ -385,16 +372,6 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
                 (str(operation.source_session_id), str(operation.source_session_id)),
             )
         connection.execute(
-            "INSERT INTO session_lineage VALUES (?, ?, ?, ?, ?)",
-            (
-                str(operation.target_session_id),
-                str(envelope.root_session_id),
-                str(operation.source_session_id),
-                str(operation.handoff_id),
-                envelope.target_stage_index,
-            ),
-        )
-        connection.execute(
             "INSERT INTO session_handoff_envelopes VALUES (?, ?, ?, ?, ?, ?)",
             (
                 str(operation.handoff_id),
@@ -417,6 +394,25 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
             (parent_sequence, envelope.created_at.isoformat(), str(operation.source_session_id)),
         )
         insert_child_projections(connection, operation, request, workspace)
+        attached = attach_handoff_segment_locked(
+            connection,
+            root_session_id=envelope.root_session_id,
+            segment_id=operation.target_session_id,
+            predecessor_id=operation.source_session_id,
+            handoff_reason=envelope.reason.value,
+        )
+        if not attached:
+            raise HandoffStorageConflictError("handoff successor or active Segment conflict")
+        connection.execute(
+            "INSERT INTO session_lineage VALUES (?, ?, ?, ?, ?)",
+            (
+                str(operation.target_session_id),
+                str(envelope.root_session_id),
+                str(operation.source_session_id),
+                str(operation.handoff_id),
+                envelope.target_stage_index,
+            ),
+        )
         connection.execute(
             "INSERT INTO handoff_dispatch_outbox VALUES (?, ?, ?, 'pending', NULL, NULL, ?)",
             (
@@ -498,3 +494,4 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
     def _initialize(self) -> None:
         with self._database.connect() as connection:
             connection.executescript(SCHEMA)
+            connection.executescript(TASK_SCHEMA)

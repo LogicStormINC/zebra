@@ -16,6 +16,21 @@
 - merged PR `#174` after all seven required Quality jobs passed, including
   Desktop browser regressions and Packaged Tauri Runtime E2E
 
+## 2026-07-19 CTX-SEG-01 Stable Task And Internal Segments
+
+- implemented stable Task/Execution Segment domain and SQLite projections with
+  lazy migration of existing Session lineage
+- made Task active-Segment CAS atomic with the existing handoff transaction and
+  retained idempotency, authority narrowing, drift, outbox, and no-replay checks
+- added public Task API, monotonic cross-Segment read/tail stream, active-Segment
+  routing, internal lifecycle/lineage routes, and hidden child Session reads
+- moved Desktop core traffic to `/tasks`, removed terminal fallback session
+  creation, and retained one conversation identity across automatic rollover
+- validated completed follow-up with text attachment, failed recovery, unsafe
+  boundary pause, migration, concurrent successor exclusion, and stream filtering
+- validation: `make test` (`1498 passed, 7 skipped`), `make check`, all Desktop
+  `check:*` scripts, production build, and Playwright Chromium (`7 passed`)
+
 ## 2026-07-05 UI Desktop Workspace Bootstrap
 
 - created `UI/desktop` as a dedicated frontend workspace for future Zebra Agent operator UI development

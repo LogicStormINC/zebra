@@ -13,6 +13,24 @@
 - The compact layout adds no dependency and leaves the production bundle within
   the established Lobe UI baseline.
 
+## CTX-SEG-01 - 2026-07-19
+
+- The durable root Session UUID can serve as the initial Task UUID without a
+  destructive identifier migration; existing lineage is rebuilt lazily into
+  `agent_tasks`, `execution_segments`, and `task_event_index` projections.
+- Rollover correctness depends on updating the active Segment in the same SQLite
+  transaction that commits the handoff child and outbox. A separate post-commit
+  Task update would permit a visible stale active Segment after a crash.
+- Completed-Task follow-up uses an automation checkpoint message, then appends the
+  real user message to the new Segment. This keeps handoff metadata out of the
+  public stream and preserves ordinary text attachment semantics.
+- Desktop fallback creation was the remaining source of user-visible identity
+  churn. Removing it and routing all core calls through `/tasks` keeps the
+  conversation key, sidebar count, and SSE cursor stable.
+- The internal lifecycle controller treats model or authority uncertainty as
+  fail-closed and pending tools, approvals, clarifications, or unknown effects as
+  pause conditions; an Agent hint is only an input signal.
+
 ## UI-LOBE-01 - 2026-07-18
 
 - Lobe UI 5 is ESM-only and its current peer line requires React 19, Ant Design

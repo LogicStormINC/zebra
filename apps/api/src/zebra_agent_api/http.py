@@ -17,7 +17,8 @@ from zebra_agent_api.app import create_app
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
 from zebra_agent_api.session_identity_read import _parse_session_id
-from zebra_agent_api.session_streaming import tail_session_events
+from zebra_agent_api.session_streaming import tail_session_events, tail_task_events
+from zebra_agent_api.task_api import parse_task_id
 
 HTTP_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
 
@@ -84,22 +85,38 @@ def create_http_app(
         )
         response = await asyncio.to_thread(adapter.handle, route_request)
         if _is_stream_request(request) and response.status_code == 200:
-            session_key = _parse_session_id(_stream_session_id(request.url.path))
-            if isinstance(session_key, ApiResponse):
-                return JSONResponse(
-                    status_code=session_key.status_code,
-                    content=session_key.body,
-                )
+            stream_id = _stream_resource_id(request.url.path)
             after_sequence, cursor_error = _after_sequence(request)
             if cursor_error is not None:
                 return cursor_error
-            return StreamingResponse(
-                tail_session_events(
+            if request.url.path.startswith("/tasks/"):
+                task_key = parse_task_id(stream_id)
+                if isinstance(task_key, ApiResponse):
+                    return JSONResponse(
+                        status_code=task_key.status_code,
+                        content=task_key.body,
+                    )
+                stream = tail_task_events(
+                    database_path=active_database_path,
+                    task_id=task_key,
+                    request=request,
+                    after_sequence=after_sequence,
+                )
+            else:
+                session_key = _parse_session_id(stream_id)
+                if isinstance(session_key, ApiResponse):
+                    return JSONResponse(
+                        status_code=session_key.status_code,
+                        content=session_key.body,
+                    )
+                stream = tail_session_events(
                     database_path=active_database_path,
                     session_id=session_key,
                     request=request,
                     after_sequence=after_sequence,
-                ),
+                )
+            return StreamingResponse(
+                stream,
                 media_type="text/event-stream",
                 headers={
                     "Cache-Control": "no-cache",
@@ -144,7 +161,7 @@ async def _read_request_body(request: Request) -> tuple[dict[str, Any] | None, J
     return dict(payload), None
 
 
-def _stream_session_id(path: str) -> str:
+def _stream_resource_id(path: str) -> str:
     parts = [part for part in path.split("/") if part]
     return parts[-2] if len(parts) >= 2 else ""
 

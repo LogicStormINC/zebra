@@ -1,5 +1,6 @@
 """Storage adapters for Zebra Agent."""
 
+from agent_storage.agent_tasks import SQLiteAgentTaskStore
 from agent_storage.artifact_payloads import (
     ArtifactPayloadMissingError,
     SQLiteArtifactPayloadStore,
@@ -49,12 +50,12 @@ from agent_storage.session_attachments import (
 )
 from agent_storage.session_handoff_dispatch import SQLiteHandoffDispatchStore
 from agent_storage.session_handoff_facts import HandoffSourceFacts
-from agent_storage.session_handoffs import (
+from agent_storage.session_handoff_rows import (
     HandoffDispatch,
     HandoffIdempotencyConflictError,
     HandoffStorageConflictError,
-    SQLiteSessionHandoffStore,
 )
+from agent_storage.session_handoffs import SQLiteSessionHandoffStore
 from agent_storage.session_history import SQLiteSessionHistory
 from agent_storage.sqlite import SQLiteEventStore
 from agent_storage.tool_runs import SQLiteToolRunStore
@@ -85,6 +86,7 @@ __all__ = [
     "serialize_artifact_retrieval",
     "serialize_session_artifact_projection",
     "SQLiteArtifactPayloadStore",
+    "SQLiteAgentTaskStore",
     "SQLiteArtifactStore",
     "SQLiteContextLifecycleStore",
     "SQLiteDeliveryAuditStore",

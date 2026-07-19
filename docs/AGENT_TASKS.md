@@ -13915,7 +13915,7 @@ changing the current default of same-Session compaction or activating runtime be
 
 ### CTX-SEG-01 - Stable Task And Automatic Internal Execution Segments
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `ARCHITECTURE / CONTEXT / DESKTOP / QA`
 - Depends on: merged `CTX-HO-01E`, merged `CTX-LC-01`, explicit maintainer decision
@@ -13925,6 +13925,7 @@ changing the current default of same-Session compaction or activating runtime be
   `docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md`,
   `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
   `UI/desktop/src/App.tsx`, `UI/desktop/src/components/CodexWorkspace.tsx`,
+  `UI/desktop/src/_utils/local.ts`,
   `UI/desktop/src/components/CodexConversationPane.tsx`,
   `UI/desktop/src/components/conversation/ConversationThread.tsx`,
   `UI/desktop/src/components/SessionThreadWorkspace.tsx`,
@@ -13932,20 +13933,28 @@ changing the current default of same-Session compaction or activating runtime be
   `UI/desktop/src/lib/use-session-handoff.ts`,
   `UI/desktop/src/lib/session-handoff.ts`, `UI/desktop/src/lib/zebra-api-core.ts`,
   `UI/desktop/src/types/session.ts`, `UI/desktop/checks/session-handoff.check.ts`,
+  `packages/agent-core/src/agent_core/domain/__init__.py`,
   `packages/agent-core/src/agent_core/domain/identifiers.py`,
   `packages/agent-core/src/agent_core/domain/agent_tasks.py`,
+  `packages/agent-core/src/agent_core/domain/session_handoff.py`,
   `packages/agent-core/src/agent_core/ports/agent_tasks.py`,
   `packages/agent-core/src/agent_core/ports/__init__.py`,
   `packages/agent-storage/src/agent_storage/agent_tasks.py`,
   `packages/agent-storage/src/agent_storage/session_handoffs.py`,
+  `packages/agent-storage/src/agent_storage/session_handoff_rows.py`,
+  `packages/agent-storage/src/agent_storage/session_handoff_dispatch.py`,
   `packages/agent-storage/src/agent_storage/__init__.py`,
   `apps/api/src/zebra_agent_api/task_api.py`,
+  `apps/api/src/zebra_agent_api/task_routes.py`,
   `apps/api/src/zebra_agent_api/routes.py`, `apps/api/src/zebra_agent_api/http.py`,
   `apps/api/src/zebra_agent_api/app.py`, `apps/api/src/zebra_agent_api/session_streaming.py`,
-  `tests/agent_core/test_agent_tasks.py`, `tests/agent_storage/test_agent_tasks.py`,
+  `apps/api/src/zebra_agent_api/session_list.py`,
+  `tests/agent_core/test_agent_tasks.py`, `tests/agent_storage/test_agent_task_store.py`,
   `tests/api/test_task_routes.py`, `tests/api/test_task_streaming.py`,
+  `tests/api/test_session_handoff_routes.py`,
   `UI/desktop/src/types/api.ts`, `UI/desktop/checks/task-continuity.check.ts`,
-  `UI/desktop/package.json`,
+  `UI/desktop/checks/mcp-prompt-launch.check.ts`,
+  `UI/desktop/package.json`, `UI/desktop/e2e/desktop-streaming.spec.ts`,
   `docs/AGENT_TASKS.md`, `README.md`, `PROGRESS.md`, `task_plan.md`,
   `findings.md`, `WORKLOG.md`
 
@@ -13970,15 +13979,15 @@ lineage, and keep Segment mechanics out of the ordinary user experience.
   contracts remain unchanged and disabled by default in this slice.
 - [x] A deterministic check prevents the ordinary user surface from regaining
   handoff creation controls, and all Desktop/repository gates pass.
-- [ ] Existing root Sessions and handoff lineage rebuild into stable Tasks with
+- [x] Existing root Sessions and handoff lineage rebuild into stable Tasks with
   exactly one active internal Segment.
-- [ ] Task create/read/list/message/cancel/suspend/resume and replay-plus-tail
+- [x] Task create/read/list/message/cancel/suspend/resume and replay-plus-tail
   stream routes resolve the active Segment without exposing lineage.
-- [ ] Completed-task follow-up performs one idempotent automatic safe rollover;
+- [x] Completed-task follow-up performs one idempotent automatic safe rollover;
   unsafe boundaries fail closed and simple active Tasks do not create Segments.
-- [ ] Desktop uses `/tasks` and stable `task_id`; rollover does not add a sidebar
+- [x] Desktop uses `/tasks` and stable `task_id`; rollover does not add a sidebar
   item, replace the conversation key, or reset the Task stream cursor.
-- [ ] Migration, concurrency, no-replay, authority/drift, and full quality gates pass.
+- [x] Migration, concurrency, no-replay, authority/drift, and full quality gates pass.
 
 #### Explicit Non-Goals
 

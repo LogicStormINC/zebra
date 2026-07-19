@@ -50,7 +50,8 @@ The current mainline is a feature-complete local Beta and a single-host producti
 candidate. It includes:
 
 - durable provider-to-desktop Assistant streaming
-- recoverable context compaction with backend-internal execution segmentation
+- stable Task identity with recoverable context compaction and automatic,
+  backend-internal execution segmentation
 - DeepSeek Flash/Pro profiles with fail-closed capability validation
 - trusted-local, rootless OCI, and production gVisor runtime classes
 - pull-request and `main` quality gates for backend, desktop, and real gVisor
@@ -70,6 +71,7 @@ deployment does not change the product boundary above. Read
 - worker leases, cancellation, recovery, suspension, and snapshot restore
 - correlated model, tool, approval, clarification, artifact, memory, and trace evidence
 - backend-internal handoff safety contracts with authority narrowing and side-effect replay guards
+- stable Task projection, cross-Segment event cursor, and active-Segment command routing
 
 ### Runtime, policy, and tools
 
@@ -94,7 +96,7 @@ deployment does not change the product boundary above. Read
 - CLI, FastAPI, worker, and Tauri/React desktop composition roots
 - replay-plus-tail SSE with cursor recovery
 - real-Chromium regression coverage for long streaming, reload recovery,
-  cancellation, and terminal-session follow-up
+  cancellation, and completed-Task follow-up across an invisible Segment
 - durable approval and clarification continuation
 - artifact, diff, audit, memory, commit, and guarded pull-request operations
 - context inspection and manual compaction; internal execution boundaries are not user controls

@@ -67,6 +67,7 @@ export interface TaskPlan {
 }
 
 export interface SessionSummary {
+  task_id?: string;
   session_id: string;
   title: string;
   status: string;
@@ -112,6 +113,7 @@ export interface SessionDiffResponse {
 }
 
 export interface CreateSessionResponse {
+  task_id?: string;
   session_id: string;
   title: string;
   status: string;

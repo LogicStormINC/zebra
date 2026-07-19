@@ -3,11 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 from typing import Any
+from uuid import UUID
 
+from agent_core.domain.identifiers import SessionId
 from agent_core.domain.session_handoff import HandoffActorKind
+from agent_storage import SQLiteAgentTaskStore
 
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse
+from zebra_agent_api.task_routes import handle_task_route
 
 
 @dataclass(frozen=True)
@@ -37,6 +41,13 @@ class RouteAdapter:
             return self.app.create_session(
                 request.body or {}, idempotency_key=_idempotency_key(request)
             )
+        task_response = handle_task_route(self.app, request)
+        if task_response is not None:
+            return task_response
+        if request.path.startswith("/sessions/") and _is_hidden_internal_segment(
+            self.app, request.path
+        ):
+            return _not_found(request)
         if method == "POST" and request.path.startswith("/approvals/"):
             parts = _approval_path_parts(request.path)
             if len(parts) == 2 and parts[1] == "approve":
@@ -368,6 +379,15 @@ def _actor_kind(request: RouteRequest) -> HandoffActorKind:
         for name, value in (request.headers or {}).items()
     )
     return HandoffActorKind.OPERATOR if authenticated else HandoffActorKind.DIRECT_USER
+
+
+def _is_hidden_internal_segment(app: ZebraAgentApi, path: str) -> bool:
+    raw = path.removeprefix("/sessions/").split("/", 1)[0]
+    try:
+        session_id = SessionId(UUID(raw))
+    except ValueError:
+        return False
+    return SQLiteAgentTaskStore(app.database_path).is_internal_segment(session_id)
 
 
 def _not_found(request: RouteRequest) -> ApiResponse:

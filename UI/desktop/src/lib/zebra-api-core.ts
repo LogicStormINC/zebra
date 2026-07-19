@@ -38,37 +38,37 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
     approvals: () => requestJson<ApprovalsResponse>(baseUrl, "/approvals", { authToken }),
     approval: (approvalId: string) =>
       requestJson<ApprovalSummary>(baseUrl, `/approvals/${approvalId}`, { authToken }),
-    session: (sessionId: string) => requestJson<SessionSummary>(baseUrl, `/sessions/${sessionId}`, { authToken }),
-    sessions: (limit = 100) => requestJson<SessionListResponse>(baseUrl, `/sessions?limit=${limit}`, { authToken }),
+    session: (taskId: string) => requestJson<SessionSummary>(baseUrl, `/tasks/${taskId}`, { authToken }),
+    sessions: (limit = 100) => requestJson<SessionListResponse>(baseUrl, `/tasks?limit=${limit}`, { authToken }),
     stream: (
       sessionId: string,
       onEvent?: (event: SessionEvent) => void,
       options?: { signal?: AbortSignal; afterSequence?: number },
     ) => requestEventStream(
       baseUrl,
-      `/sessions/${sessionId}/stream`,
+      `/tasks/${sessionId}/stream`,
       authToken,
       onEvent,
       options,
     ),
     diff: (sessionId: string) =>
-      requestJson<SessionDiffResponse>(baseUrl, `/sessions/${sessionId}/diff`, { authToken }),
+      requestJson<SessionDiffResponse>(baseUrl, `/tasks/${sessionId}/diff`, { authToken }),
     artifacts: (sessionId: string) =>
-      requestJson<SessionArtifactsResponse>(baseUrl, `/sessions/${sessionId}/artifacts`, { authToken }),
+      requestJson<SessionArtifactsResponse>(baseUrl, `/tasks/${sessionId}/artifacts`, { authToken }),
     artifactDetail: (sessionId: string, artifactId: string) =>
-      requestJson<SessionArtifactDetailResponse>(baseUrl, `/sessions/${sessionId}/artifacts/${artifactId}`, {
+      requestJson<SessionArtifactDetailResponse>(baseUrl, `/tasks/${sessionId}/artifacts/${artifactId}`, {
         authToken,
       }),
     artifactContent: (sessionId: string, artifactId: string) =>
       requestJson<SessionArtifactContentResponse>(
         baseUrl,
-        `/sessions/${sessionId}/artifacts/${artifactId}/content`,
+        `/tasks/${sessionId}/artifacts/${artifactId}/content`,
         { authToken },
       ),
     pruneArtifact: (sessionId: string, artifactId: string) =>
       requestJson<SessionArtifactPruneResponse>(
         baseUrl,
-        `/sessions/${sessionId}/artifacts/${artifactId}/prune`,
+        `/tasks/${sessionId}/artifacts/${artifactId}/prune`,
         {
           method: "POST",
           authToken,
@@ -76,15 +76,15 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
         },
       ),
     deliveryAudit: (sessionId: string) =>
-      requestJson<SessionDeliveryAuditResponse>(baseUrl, `/sessions/${sessionId}/delivery-audit`, { authToken }),
+      requestJson<SessionDeliveryAuditResponse>(baseUrl, `/tasks/${sessionId}/delivery-audit`, { authToken }),
     createSession: (payload: { title: string; prompt: string; workspace?: string; execute?: boolean; policy_profile?: string; tool_profile?: string; network_profile?: string; network_allowlist?: string[]; mcp_allowlist?: string[]; mcp_resource_ids?: string[]; mcp_prompt_id?: string; mcp_prompt_arguments?: Record<string, string>; attachments?: AttachmentPayload[] }) =>
-      requestJson<CreateSessionResponse>(baseUrl, "/sessions", {
+      requestJson<CreateSessionResponse>(baseUrl, "/tasks", {
         method: "POST",
         authToken,
         body: payload,
       }),
     appendMessage: (sessionId: string, payload: { content: string; clarification_id?: string; attachments?: AttachmentPayload[] }) =>
-      requestJson<SessionMessageAppendResponse>(baseUrl, `/sessions/${sessionId}/messages`, {
+      requestJson<SessionMessageAppendResponse>(baseUrl, `/tasks/${sessionId}/messages`, {
         method: "POST",
         authToken,
         body: payload,
@@ -93,7 +93,7 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
       sessionId: string,
       payload: { message: string; author_name?: string; author_email?: string },
     ) =>
-      requestJson<SessionCommitResponse>(baseUrl, `/sessions/${sessionId}/commit`, {
+      requestJson<SessionCommitResponse>(baseUrl, `/tasks/${sessionId}/commit`, {
         method: "POST",
         authToken,
         body: payload,
@@ -102,7 +102,7 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
       sessionId: string,
       payload: { title: string; body: string; base_branch: string; head_branch?: string; dry_run: boolean },
     ) =>
-      requestJson<SessionPullRequestResponse>(baseUrl, `/sessions/${sessionId}/pull-request`, {
+      requestJson<SessionPullRequestResponse>(baseUrl, `/tasks/${sessionId}/pull-request`, {
         method: "POST",
         authToken,
         body: payload,
@@ -120,19 +120,19 @@ export function buildCoreApiClient({ baseUrl, authToken }: CoreApiContext) {
         body: payload ?? {},
       }),
     suspend: (sessionId: string) =>
-      requestJson<SessionControlResponse>(baseUrl, `/sessions/${sessionId}/suspend`, {
+      requestJson<SessionControlResponse>(baseUrl, `/tasks/${sessionId}/suspend`, {
         method: "POST",
         authToken,
         body: {},
       }),
     cancel: (sessionId: string) =>
-      requestJson<SessionControlResponse>(baseUrl, `/sessions/${sessionId}/cancel`, {
+      requestJson<SessionControlResponse>(baseUrl, `/tasks/${sessionId}/cancel`, {
         method: "POST",
         authToken,
         body: {},
       }),
     resume: (sessionId: string, payload?: { worker_id?: string; lease_ttl_seconds?: number }) =>
-      requestJson<SessionControlResponse>(baseUrl, `/sessions/${sessionId}/resume`, {
+      requestJson<SessionControlResponse>(baseUrl, `/tasks/${sessionId}/resume`, {
         method: "POST",
         authToken,
         body: payload ?? {},

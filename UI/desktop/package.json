@@ -30,6 +30,7 @@
     "check:runtime-activity": "node --experimental-strip-types checks/runtime-activity.check.ts",
     "check:streaming": "node --experimental-strip-types checks/streaming-messages.check.ts",
     "check:handoff": "node --experimental-strip-types checks/session-handoff.check.ts",
+    "check:task-continuity": "node --experimental-strip-types checks/task-continuity.check.ts",
     "check:lobe-ui": "node --experimental-strip-types checks/lobe-ui-integration.check.ts",
     "check:composer-layout": "node --experimental-strip-types checks/composer-layout.check.ts",
     "e2e": "playwright test",
