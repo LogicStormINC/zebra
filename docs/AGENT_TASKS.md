@@ -14363,3 +14363,28 @@ the test fixture's fixed date.
 - focused regression: `1 passed`
 - `make test`: `1492 passed, 7 skipped`
 - `make check`: file-size, Ruff, strict Mypy, and release Eval passed
+
+### QA-PKG-E2E-02 - Bounded Packaged WebDriver Connection Recovery
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `QA / RELEASE`
+- Depends on: merged `ARCH-RT-A4-E2E-01`
+- Branch: `codex/qa-pkg-e2e-02-driver-retry`
+- Owned paths: `.github/workflows/quality.yml`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`
+
+#### Goal
+
+Keep the packaged Tauri release gate deterministic when upstream WebDriver
+transport closes with `Connection reset by peer`, while preserving immediate
+failure for product assertions and every other error class.
+
+#### Acceptance
+
+- [ ] A packaged drive is retried at most once and only when its captured log
+  contains the known WebDriver connection-reset signature.
+- [ ] Product assertions, API failures, build failures, and a second transport
+  reset still fail the Quality job.
+- [ ] Both attempt logs and the final machine-readable evidence are retained.
+- [ ] Workflow syntax, repository checks, and the real packaged Quality job pass.
