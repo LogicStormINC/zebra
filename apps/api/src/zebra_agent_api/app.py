@@ -410,6 +410,8 @@ class ZebraAgentApi(
                 mcp_servers=self.settings.mcp_servers,
                 mcp_allowlist=parsed["mcp_allowlist"],
                 trusted_local=trusted_local,
+                max_model_calls=parsed["max_model_calls"],
+                max_tool_calls=parsed["max_tool_calls"],
                 session_history=SQLiteSessionHistory(
                     self.database_path, allowed_session_ids=parsed["history_session_ids"]
                 ),

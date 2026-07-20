@@ -96,6 +96,26 @@ def test_provider_batch_executes_all_calls_in_order_before_next_model_request() 
     ]
 
 
+def test_default_loop_allows_more_than_six_tool_calls() -> None:
+    calls = tuple(
+        _call("files.read", {"path": f"{index}.txt"}, f"call_{index}")
+        for index in range(7)
+    )
+    gateway = _gateway(
+        _completion("Read all inputs.", *calls),
+        _completion("All seven inputs were inspected."),
+    )
+    tools = RecordingToolGateway()
+
+    result = _run(gateway, tools)
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert result.run_result.max_model_calls is None
+    assert result.run_result.max_tool_calls is None
+    assert result.run_result.tool_calls_used == 7
+    assert tools.calls == list(calls)
+
+
 def test_provider_batch_lets_model_recover_from_failed_tool() -> None:
     failed = _call("files.read", {"path": "missing.txt"}, "call_missing")
     gateway = _gateway(
@@ -131,7 +151,7 @@ def test_provider_batch_stops_before_repeated_member_and_leaves_tail_unexecuted(
     assert tools.calls == [first]
 
 
-def test_provider_batch_stops_explicitly_when_tool_budget_is_exhausted() -> None:
+def test_provider_batch_suspends_before_over_budget_batch_starts() -> None:
     calls = (
         _call("files.read", {"path": "a.txt"}, "call_a"),
         _call("files.read", {"path": "b.txt"}, "call_b"),
@@ -142,11 +162,12 @@ def test_provider_batch_stops_explicitly_when_tool_budget_is_exhausted() -> None
 
     result = _run(gateway, tools, max_model_calls=3, max_tool_calls=2)
 
-    assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
     assert result.attempt_result.metadata["stop_reason"] == ("tool_call_budget_exhausted")
     assert result.run_result.stop_reason is HarnessStopReason.TOOL_CALL_BUDGET_EXHAUSTED
-    assert tools.calls == list(calls[:2])
-    assert sum(event.event_type is EventType.TOOL_CALL_PROPOSED for event in result.events) == 2
+    assert tools.calls == []
+    assert sum(event.event_type is EventType.TOOL_CALL_PROPOSED for event in result.events) == 0
+    assert result.events[-1].event_type is EventType.SESSION_SUSPENDED
 
 
 def test_provider_batch_denial_stops_before_denied_member_and_tail() -> None:
@@ -174,8 +195,8 @@ def _run(
     gateway: ScriptedModelGateway,
     tools: RecordingToolGateway,
     *,
-    max_model_calls: int,
-    max_tool_calls: int,
+    max_model_calls: int | None = None,
+    max_tool_calls: int | None = None,
     policy: PolicyByName | None = None,
 ):
     return HarnessLoop().run(

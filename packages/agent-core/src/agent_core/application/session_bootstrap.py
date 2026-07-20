@@ -24,8 +24,8 @@ class SessionBootstrapCommand:
     mcp_allowlist: tuple[str, ...] = ()
     history_session_ids: tuple[str, ...] | None = None
     max_attempts: int = 1
-    max_model_calls: int | None = 4
-    max_tool_calls: int | None = 3
+    max_model_calls: int | None = None
+    max_tool_calls: int | None = None
     created_at: datetime | None = None
 
 

@@ -37,6 +37,24 @@ def test_validate_event_payload_accepts_tool_execution_completed_shape() -> None
     }
 
 
+def test_validate_event_payload_accepts_budget_suspension_without_snapshot() -> None:
+    payload = validate_event_payload(
+        EventType.SESSION_SUSPENDED,
+        {
+            "reason": "tool_call_budget_exhausted",
+            "metadata": {"tool_call_limit": 2, "proposed_tool_call_count": 3},
+        },
+    )
+
+    assert payload == {
+        "runtime_name": None,
+        "snapshot_id": None,
+        "snapshot_path": None,
+        "reason": "tool_call_budget_exhausted",
+        "metadata": {"tool_call_limit": 2, "proposed_tool_call_count": 3},
+    }
+
+
 def test_validate_event_payload_accepts_memory_candidate_extracted_shape() -> None:
     payload = validate_event_payload(
         EventType.MEMORY_CANDIDATE_EXTRACTED,

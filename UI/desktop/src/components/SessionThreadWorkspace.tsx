@@ -3,7 +3,7 @@ import locale from "../_utils/local";
 import { activeSessionStatusLabel } from "../_utils/session-status";
 import type { ChatMessage } from "../lib/chat-surface";
 import { projectRuntimeActivity } from "../lib/runtime-activity";
-import { optimisticTimelineMessages, projectSessionTimeline, timelinePlanPlacement, type TimelineMessageItem, type TimelineStatusItem } from "../lib/session-timeline";
+import { isVisibleSessionEvent, optimisticTimelineMessages, projectSessionTimeline, timelinePlanPlacement, type TimelineMessageItem, type TimelineStatusItem } from "../lib/session-timeline";
 import { compactWorkspaceLabel } from "../lib/task-launch-config";
 import { hasVisibleTaskPlan } from "../lib/task-plan";
 import type { ApprovalSummary, SessionEvent, SessionSummary } from "../types";
@@ -139,7 +139,7 @@ export function SessionThreadWorkspace({
         <div className={styles.inspectorRow}><span>{locale.sequence}</span><span>{sessionSummary?.current_sequence ?? events.length}</span></div>
       </div>;
     }
-    const logs = events.slice(-5).reverse();
+    const logs = events.filter(isVisibleSessionEvent).slice(-5).reverse();
     return logs.length ? <div className={styles.inspectorList}>{logs.map((event) => (
       <div className={styles.logRow} key={event.event_id}>
         <span>{EVENT_LABELS[event.event_type] ?? event.event_type}</span>

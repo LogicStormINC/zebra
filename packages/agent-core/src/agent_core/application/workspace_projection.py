@@ -83,9 +83,11 @@ def apply_event(
             "workspace_writable"
         )
     if event.event_type is EventType.SESSION_SUSPENDED:
-        updates["runtime_name"] = _required_payload_string(event, "runtime_name")
-        updates["snapshot_id"] = _required_payload_string(event, "snapshot_id")
-        updates["snapshot_path"] = _required_payload_string(event, "snapshot_path")
+        snapshot_id = _optional_payload_string(event, "snapshot_id")
+        if snapshot_id is not None:
+            updates["runtime_name"] = _required_payload_string(event, "runtime_name")
+            updates["snapshot_id"] = snapshot_id
+            updates["snapshot_path"] = _required_payload_string(event, "snapshot_path")
     if event.event_type is EventType.SESSION_RESUMED:
         updates["workspace_root"] = _required_payload_string(event, "workspace_root")
         updates["runtime_name"] = _required_payload_string(event, "runtime_name")

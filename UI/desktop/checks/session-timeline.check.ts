@@ -61,6 +61,15 @@ assert.deepEqual(tools.map((tool) => tool.eventIds.length), [4, 4]);
 assert.equal(timeline.some((item) => "hidden_reasoning" in item), false);
 assert.equal(timeline.some((item) => item.sequence === 1), false);
 
+const verifierTimeline = projectSessionTimeline([
+  event(16, "tests_completed", { summary: "verifier hook skipped", passed: true }),
+  event(17, "tests_completed", { summary: "focused tests passed", passed: true }),
+]);
+assert.deepEqual(
+  verifierTimeline.filter((item) => item.kind === "status").map((item) => item.sequence),
+  [17],
+);
+
 const legacy = projectSessionTimeline([
   event(20, "tool_call_proposed", { attempt_number: 1, tool_name: "files.read", arguments: { path: "first.txt" } }),
   event(21, "tool_call_proposed", { attempt_number: 1, tool_name: "files.read", arguments: { path: "second.txt" } }),

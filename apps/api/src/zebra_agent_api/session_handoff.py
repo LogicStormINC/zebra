@@ -49,6 +49,7 @@ _FORBIDDEN_INPUTS = frozenset(
         "target_session_id",
     }
 )
+_CHECKPOINT_TEXT_LIMIT = 2_000
 
 
 class _ParsedCreate(TypedDict):
@@ -162,6 +163,9 @@ class SessionHandoffApi:
                 return ApiResponse(200, body)
         events = self._events.list_for_session(source_id)
         capsule = SQLiteContextLifecycleStore(self._database_path).get_active_capsule(source_id)
+        completed_work = parsed["completed_work"]
+        if actor_kind is HandoffActorKind.AUTOMATION and not completed_work:
+            completed_work = _conversation_checkpoint(events)
         envelope = build_handoff_envelope(
             HandoffEnvelopeBuildInput(
                 handoff_id=handoff_id,
@@ -172,7 +176,7 @@ class SessionHandoffApi:
                 reason=request.reason,
                 focus=request.focus,
                 objective=parsed["objective"],
-                completed_work=parsed["completed_work"],
+                completed_work=completed_work,
                 pending_work=parsed["pending_work"],
                 immediate_next=request.stage_prompt,
                 source_event_range=ContextSourceEventRange(
@@ -324,6 +328,43 @@ def _source_lineage(items: tuple[SessionLineage, ...], source_id: SessionId) -> 
 
 def _event_hash(events: list[SessionEvent]) -> str:
     return _hash_json([event.model_dump(mode="json") for event in events])
+
+
+def _conversation_checkpoint(events: list[SessionEvent]) -> tuple[str, ...]:
+    prior_user = next(
+        (
+            event.payload.get("content")
+            for event in reversed(events)
+            if event.event_type is EventType.USER_MESSAGE_RECEIVED
+            and event.payload.get("actor_kind") != HandoffActorKind.AUTOMATION.value
+        ),
+        None,
+    )
+    prior_assistant = next(
+        (
+            event.payload.get("assistant_message")
+            for event in reversed(events)
+            if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+        ),
+        None,
+    )
+    # ponytail: a two-message tail is enough for immediate follow-ups; long-running
+    # work upgrades to the existing Context Capsule compaction path.
+    return tuple(
+        f"{label}: {_bounded_checkpoint(value)}"
+        for label, value in (
+            ("Prior user request", prior_user),
+            ("Prior assistant response", prior_assistant),
+        )
+        if isinstance(value, str) and value.strip()
+    )
+
+
+def _bounded_checkpoint(value: str) -> str:
+    compact = value.strip()
+    if len(compact) <= _CHECKPOINT_TEXT_LIMIT:
+        return compact
+    return f"{compact[: _CHECKPOINT_TEXT_LIMIT - 1].rstrip()}…"
 
 
 def _hash_json(value: object) -> str:

@@ -188,14 +188,53 @@ def test_concurrent_failure_observes_every_started_sibling() -> None:
     assert terminal_ids == [str(call.tool_call_id) for call in calls]
 
 
-def test_candidate_batch_budget_rejection_starts_nothing() -> None:
+def test_candidate_batch_budget_rejection_suspends_without_starting_tools() -> None:
     calls = (_read("a.txt", "call_a"), _read("b.txt", "call_b"))
     tools = RecordingGateway()
     result, _ = _run(calls, tools, max_parallel=2, max_tool_calls=1)
 
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
     assert result.attempt_result.metadata["stop_reason"] == "tool_call_budget_exhausted"
     assert tools.calls == []
     assert _event_names(result, EventType.TOOL_EXECUTION_STARTED) == []
+
+
+def test_later_batch_over_budget_suspends_with_prior_evidence_preserved() -> None:
+    first = tuple(_read(f"{index}.txt", f"first_{index}") for index in range(5))
+    rejected = (_read("later-a.txt", "later_a"), _read("later-b.txt", "later_b"))
+    model = ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(completion=_completion("Collect evidence.", *first)),
+            ScriptedModelResponse(completion=_completion("Collect more.", *rejected)),
+        )
+    )
+    tools = RecordingGateway()
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Budget recovery",
+            user_input="Analyze the evidence.",
+            max_model_calls=4,
+            max_tool_calls=6,
+        ),
+        SingleAttemptOrchestrator(
+            model,
+            PolicyByProviderId(),
+            tools,
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+            parallel_safe_tools=frozenset({"files.read"}),
+            max_parallel_tool_calls=3,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert tools.calls == list(first)
+    assert result.run_result.tool_calls_used == 5
+    assert result.attempt_result.metadata["proposed_tool_call_count"] == 2
+    assert result.attempt_result.metadata["remaining_tool_budget"] == 1
+    assert len(model.requests) == 2
 
 
 def test_candidate_batch_capacity_rejection_starts_nothing() -> None:

@@ -60,14 +60,19 @@ Private-cloud deployment, external-namespace isolation, ACP, and optional
 code-intelligence work remains outside the active implementation scope. Cloud
 deployment does not change the product boundary above. Read
 [PROGRESS.md](./PROGRESS.md) for the live project snapshot and
-[docs/AGENT_TASKS.md](./docs/AGENT_TASKS.md) for task ownership and status.
+[docs/AGENT_TASKS.md](./docs/AGENT_TASKS.md) for task ownership and status. The
+adaptive execution boundary is specified in
+[docs/自适应Agent循环与预算治理方案_v1.0.md](./docs/自适应Agent循环与预算治理方案_v1.0.md).
 
 ## Capability Baseline
 
 ### Execution and recovery
 
 - durable event store and deterministic projections
-- bounded Harness loops with model and tool budgets
+- adaptive Harness loops: model/tool call counts are unlimited by default while
+  caller-supplied hard ceilings remain available as explicit execution contracts
+- progress-preserving budget handling: an oversized hard-budget batch starts
+  nothing and suspends recoverably instead of partially executing or failing
 - model-native Subagent selection: direct answers and parent tools stay local;
   only an explicit valid bounded research call creates a non-recursive child
 - recoverable tool failures return structured evidence to the model so it can
@@ -76,6 +81,7 @@ deployment does not change the product boundary above. Read
 - correlated model, tool, approval, clarification, artifact, memory, and trace evidence
 - backend-internal handoff safety contracts with authority narrowing and side-effect replay guards
 - stable Task projection, cross-Segment event cursor, and active-Segment command routing
+- bounded prior user/Assistant checkpoints for context-correct terminal follow-ups
 
 ### Runtime, policy, and tools
 

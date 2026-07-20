@@ -17,6 +17,7 @@ from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvide
 class HarnessAttemptOutcome(StrEnum):
     COMPLETED = "completed"
     FAILED = "failed"
+    SUSPENDED = "suspended"
     WAITING_APPROVAL = "waiting_approval"
     WAITING_INPUT = "waiting_input"
 

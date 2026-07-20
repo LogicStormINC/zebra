@@ -29,6 +29,7 @@ def finalize_execution(
     }:
         return recorder.events
     if attempt_result.outcome not in {
+        HarnessAttemptOutcome.SUSPENDED,
         HarnessAttemptOutcome.WAITING_APPROVAL,
         HarnessAttemptOutcome.WAITING_INPUT,
     }:
@@ -40,6 +41,15 @@ def finalize_execution(
             {
                 "attempt_number": 1,
                 "summary": attempt_result.summary,
+                "metadata": attempt_result.metadata,
+            },
+        )
+    elif attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED:
+        recorder.append(
+            EventType.SESSION_SUSPENDED,
+            EventActor.HARNESS,
+            {
+                "reason": str(attempt_result.metadata.get("stop_reason", "budget")),
                 "metadata": attempt_result.metadata,
             },
         )

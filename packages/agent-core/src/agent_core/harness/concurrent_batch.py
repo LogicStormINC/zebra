@@ -86,24 +86,11 @@ class ConcurrentToolBatchExecutor:
         emitted_events: list[HarnessEventDraft],
         model_calls_used: int,
         tool_calls_executed: int,
-        tool_call_limit: int,
+        tool_call_limit: int | None,
         fingerprints: set[str],
         metadata: dict[str, object],
         first_selection: ToolCallSelection | None,
     ) -> ToolBatchResult:
-        if tool_calls_executed + len(tool_calls) > tool_call_limit:
-            return self._terminal(
-                summary="tool call budget exhausted before concurrent batch started",
-                completion=completion,
-                emitted_events=emitted_events,
-                model_calls_used=model_calls_used,
-                tool_calls_executed=tool_calls_executed,
-                metadata={
-                    **metadata,
-                    "stop_reason": "tool_call_budget_exhausted",
-                    "remaining_tool_call_count": len(tool_calls),
-                },
-            )
         exceeded = self._exceeded_batch_limit(tool_calls)
         if exceeded is not None:
             tool_name, limit = exceeded

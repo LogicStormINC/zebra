@@ -85,6 +85,8 @@ def run_local_harness(
     mcp_servers: Sequence[McpServerSpec] = (),
     mcp_allowlist: Sequence[str] | None = None,
     trusted_local: bool = False,
+    max_model_calls: int | None = None,
+    max_tool_calls: int | None = None,
 ) -> HarnessLoopResult:
     tool_gateway = LocalToolGateway(
         workspace_root,
@@ -109,8 +111,8 @@ def run_local_harness(
                 title=title,
                 user_input=prompt,
                 max_attempts=1,
-                max_model_calls=4,
-                max_tool_calls=3,
+                max_model_calls=max_model_calls,
+                max_tool_calls=max_tool_calls,
                 workspace_root=workspace_root,
                 policy_profile=policy_profile.value,
                 tool_profile=tool_profile,
