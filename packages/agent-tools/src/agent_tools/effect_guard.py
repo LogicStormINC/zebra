@@ -29,6 +29,7 @@ class EffectLedgerLike(Protocol):
 class ToolGatewayLike(Protocol):
     model_tools: tuple[ModelToolDefinition, ...]
     effective_mcp_tools: tuple[ModelToolDefinition, ...]
+    effective_skill_components: tuple[str, ...]
     parallel_safe_tools: frozenset[str]
     parallel_batch_limits: dict[str, int]
 
@@ -80,6 +81,10 @@ class EffectGuardedToolGateway:
     @property
     def effective_mcp_tools(self) -> tuple[ModelToolDefinition, ...]:
         return self._gateway.effective_mcp_tools
+
+    @property
+    def effective_skill_components(self) -> tuple[str, ...]:
+        return self._gateway.effective_skill_components
 
     @property
     def parallel_safe_tools(self) -> frozenset[str]:

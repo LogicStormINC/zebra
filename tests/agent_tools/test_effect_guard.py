@@ -9,6 +9,7 @@ from agent_tools import EffectGuardedToolGateway
 class _Gateway:
     model_tools = ()
     effective_mcp_tools = ()
+    effective_skill_components = ()
     parallel_safe_tools = frozenset()
     parallel_batch_limits = {}
 
