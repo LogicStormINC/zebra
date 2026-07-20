@@ -76,6 +76,8 @@ def test_load_eval_cases_from_directory() -> None:
         "refactor-control-unrelated-diff",
         "refactor-cross-file",
         "security-block-env",
+        "skill-guided-bugfix",
+        "skill-guided-refactor",
     ]
 
 

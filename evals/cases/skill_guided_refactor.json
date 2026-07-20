@@ -1,0 +1,10 @@
+{
+  "case_id": "skill-guided-refactor",
+  "category": "refactor",
+  "title": "Behavior-preserving refactor guided by a local Skill",
+  "prompt": "Load the guided-refactor Skill, follow its steps, and apply a behavior-preserving refactor.",
+  "min_events": 4,
+  "min_tool_results": 2,
+  "max_cost_usd": 1.0,
+  "expected_skill_digest": "ad46814365c7402a4ada4f5f7451ffed670d590520fb4172175866a0fd247661"
+}

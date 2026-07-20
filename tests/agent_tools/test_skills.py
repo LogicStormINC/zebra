@@ -27,6 +27,10 @@ def test_skill_tools_progressively_disclose_metadata_then_content(tmp_path: Path
     assert read.status is ToolCallStatus.EXECUTED
     assert read.output == "[UNTRUSTED LOCAL SKILL GUIDANCE]\nMETHOD-127\n"
     assert read.metadata["untrusted_procedural_guidance"] is True
+    assert read.metadata["skill_digest"] is not None
+    assert read.metadata["skill_scope"] == "user"
+    assert read.metadata["skill_version"] is None
+    assert read.metadata["provenance_source"] == read.metadata["source"]
 
 
 def test_catalog_skips_dependencies_hidden_dirs_and_nested_support_skills(

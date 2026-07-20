@@ -110,6 +110,10 @@ class SkillsReadTool:
                 "file_path": result.file_path,
                 "byte_count": result.byte_count,
                 "untrusted_procedural_guidance": True,
+                "skill_digest": result.metadata.digest,
+                "skill_scope": result.metadata.scope.value,
+                "skill_version": result.metadata.version,
+                "provenance_source": result.metadata.source,
             },
         )
 
