@@ -24,6 +24,10 @@
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
   non-interactive across Desktop/API/CLI/Worker, including existing Tasks, while
   retaining fail-closed non-local defaults and hard Gateway/Runtime boundaries.
+- Completed documentation task: `EXT-PLAN-01` records the Skill, MCP, and Plugin
+  extension upgrade architecture, authority boundaries, phased task map, and
+  acceptance gates. It changes no product capability and does not activate the
+  deferred marketplace or remote MCP work.
 
 ## Current Capability
 
@@ -252,7 +256,9 @@ real tool execution, failure visibility, API restart, and durable recovery.
 - PostgreSQL/object-storage production control plane
 - external authority adapter and namespace-isolated cloud control plane
 - centralized Vault/KMS-backed credentials and production Egress
-- ecosystem marketplace, cross-organization A2A, and autonomous production release
+- public Skill/MCP/Plugin marketplace, cross-organization A2A, and autonomous
+  production release; local extension contracts may be planned separately but
+  do not activate public distribution
 
 ## Permanently External Business Responsibilities
 

@@ -14800,3 +14800,59 @@ treat caller-supplied hard-budget exhaustion as a recoverable suspension.
 - replaying provider-private continuation or raw tool output across Segments
 - removing explicit caller budgets or repeated-action stopping conditions
 - hard-coded finance, stock, or intent-specific routing heuristics
+
+## Extension Architecture Planning
+
+### EXT-PLAN-01 - Skill, MCP, And Plugin Architecture Upgrade Plan
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / SECURITY / PRODUCT`
+- Depends on: merged `P127-SKILL-01`, `P132-MCP-01`, `P134-MCP-01`,
+  `P135-MCP-01`, `P136-MCP-01`, and `P138-E2E-01`
+- Branch: `codex/ext-plan-01-skill-mcp-plugin-docs`
+- Owned paths: `docs/Skill_MCP_Plugin扩展体系优化升级方案_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record a durable, evidence-based upgrade plan for Zebra's Skill, MCP, and
+Plugin extension system. Preserve the existing typed Gateway, deterministic
+Policy, task-scoped authority, durable Event/Artifact, recovery, and local-first
+boundaries while defining the smallest safe path toward standard Skill
+governance, remote MCP, declarative Plugins, Hooks, and a later marketplace.
+
+#### Acceptance
+
+- [x] The plan compares current Zebra behavior with current Claude Code, Codex,
+  Hermes, Agent Skills, and MCP design lessons without treating another agent's
+  runtime as Zebra authority.
+- [x] Current implemented Skill and MCP capabilities are separated from actual
+  gaps; already-delivered progressive disclosure, task allowlists, Resources,
+  Prompts, Policy, approval, events, and recovery are not planned again.
+- [x] The target architecture separates availability, installation, enablement,
+  task grant, and per-call approval, and states that no earlier state implies a
+  later authority state.
+- [x] Skill v2, remote MCP/OAuth, declarative Plugin, Hook, Registry, supply-chain,
+  observability, and Eval boundaries have explicit non-goals and acceptance gates.
+- [x] Implementation phases preserve local-first sequencing and keep public
+  marketplace work locked behind private-cloud GA and security prerequisites.
+- [x] `PROGRESS.md` records the planning state without claiming any product
+  capability has been implemented.
+
+#### Validation Evidence
+
+- The focused architecture document is exactly 600 lines and remains within the
+  repository Markdown hard limit.
+- `make sync && make check` passed the file-size gate over 901 files, Ruff,
+  strict Mypy over 419 source files, and all 8/8 release Eval cases.
+- `git diff --check` passed; the slice changes only its three declared Owned paths.
+
+#### Explicit Non-Goals
+
+- product-code, configuration, dependency, database, API, CLI, Worker, Desktop,
+  runtime, Policy, or schema changes
+- activating Skill Registry, MCP Marketplace, remote MCP, OAuth, Plugin, Hook,
+  or connector implementation tasks
+- importing Hermes' in-process Python Plugin authority or Claude Code/Codex
+  permission semantics into Zebra without a separate security review
