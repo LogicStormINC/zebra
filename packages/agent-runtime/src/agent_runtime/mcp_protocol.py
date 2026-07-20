@@ -7,10 +7,14 @@ import subprocess
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from time import monotonic
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 MAX_MCP_FRAME_BYTES = 64 * 1024
-MCP_PROTOCOL_VERSION = "2025-06-18"
+# Bounded protocol negotiation set. The client advertises the latest version
+# and accepts any server-returned version in this set; anything else fails
+# closed (mirrors the "unrecognized capability is not auto-enabled" rule).
+SUPPORTED_PROTOCOL_VERSIONS: frozenset[str] = frozenset({"2025-06-18", "2025-11-25"})
+MCP_PROTOCOL_VERSION_LATEST = "2025-11-25"
 _SAFE_ENV_NAMES = ("HOME", "LANG", "LC_ALL", "PATH", "TMPDIR")
 
 
@@ -18,6 +22,7 @@ class McpProtocolError(ValueError):
     """Raised when a configured MCP server violates the bounded protocol."""
 
 
+@runtime_checkable
 class McpServerSpec(Protocol):
     @property
     def name(self) -> str: ...
@@ -27,6 +32,24 @@ class McpServerSpec(Protocol):
 
     @property
     def args(self) -> Sequence[str]: ...
+
+
+@runtime_checkable
+class McpHttpServerSpec(Protocol):
+    """A remote MCP server reachable over Streamable HTTP."""
+
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def url(self) -> str: ...
+
+    @property
+    def bearer_token_env(self) -> str | None: ...
+
+
+# Any configured MCP server, regardless of transport kind.
+McpAnyServerSpec = McpServerSpec | McpHttpServerSpec
 
 
 @dataclass
@@ -39,6 +62,7 @@ class StdioMcpSession:
     _request_id: int = field(default=0, init=False)
     _capabilities: dict[str, object] = field(default_factory=dict, init=False)
     _has_server_instructions: bool = field(default=False, init=False)
+    _protocol_version: str | None = field(default=None, init=False)
 
     def __enter__(self) -> StdioMcpSession:
         if self.timeout_seconds <= 0:
@@ -62,11 +86,20 @@ class StdioMcpSession:
             result = self.request(
                 "initialize",
                 {
-                    "protocolVersion": MCP_PROTOCOL_VERSION,
+                    "protocolVersion": MCP_PROTOCOL_VERSION_LATEST,
                     "capabilities": {},
                     "clientInfo": {"name": "zebra-agent", "version": "0.1.0"},
                 },
             )
+            server_version = result.get("protocolVersion")
+            if (
+                not isinstance(server_version, str)
+                or server_version not in SUPPORTED_PROTOCOL_VERSIONS
+            ):
+                raise McpProtocolError(
+                    f"MCP server {self.server.name} returned an unsupported protocol version"
+                )
+            self._protocol_version = server_version
             capabilities = result.get("capabilities")
             if not isinstance(capabilities, Mapping):
                 raise McpProtocolError(f"MCP server {self.server.name} has invalid capabilities")
@@ -123,6 +156,10 @@ class StdioMcpSession:
     @property
     def has_server_instructions(self) -> bool:
         return self._has_server_instructions
+
+    @property
+    def protocol_version(self) -> str | None:
+        return self._protocol_version
 
     def close(self) -> None:
         if self._selector is not None:

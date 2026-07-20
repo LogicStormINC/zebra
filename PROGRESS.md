@@ -30,7 +30,11 @@
   scope/namespace/digest, task-level skill-component snapshot +
   handoff/authority/recovery/API threading, the bounded admin surface with
   SQLite enable/disable state, and `skills.read` provenance + release-eval
-  cases). `EXT-MCP-01/02/06` are Phase A `Ready`; Plugin/Hook/Marketplace
+  cases). **`EXT-MCP-01` is `Done`** — bounded protocol-version negotiation
+  (`SUPPORTED_PROTOCOL_VERSIONS` with server-version validation) and a
+  Streamable HTTP transport (`mcp_http.py`) with bearer-token-via-env,
+  module-level SSRF guard, https enforcement, and stdio/http routing in the
+  harness. `EXT-MCP-02/06` are Phase A `Ready`; Plugin/Hook/Marketplace
   remain `Locked` pending private-cloud GA. Elicitation is reconciled to
   durable HITL; sampling stays a hard non-goal.
 

@@ -16,10 +16,10 @@ class _Server:
 
 
 def test_unconfigured_inventory_does_not_start_transport(monkeypatch) -> None:
-    def fail_if_started(_servers):
+    def fail_if_started(*_args, **_kwargs):
         raise AssertionError("transport must not start")
 
-    monkeypatch.setattr(inventory_module, "LocalStdioMcpTransport", fail_if_started)
+    monkeypatch.setattr(inventory_module, "build_mcp_transport", fail_if_started)
 
     assert build_mcp_capability_inventory(()).to_mapping() == {
         "status": "unconfigured",

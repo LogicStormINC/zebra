@@ -7,7 +7,13 @@ from urllib.parse import urlsplit
 
 from agent_core.domain.attachments import TextAttachmentInput
 
-from agent_runtime.mcp_protocol import McpProtocolError, McpServerSpec, StdioMcpSession
+from agent_runtime.mcp_protocol import (
+    McpAnyServerSpec,
+    McpHttpServerSpec,
+    McpProtocolError,
+    McpServerSpec,
+    StdioMcpSession,
+)
 from agent_runtime.mcp_stdio import MCP_DISCOVERY_TIMEOUT_SECONDS
 
 MAX_MCP_RESOURCES_TOTAL = 64
@@ -42,9 +48,11 @@ class McpResource:
         }
 
 
-def discover_mcp_resources(servers: Sequence[McpServerSpec]) -> tuple[McpResource, ...]:
+def discover_mcp_resources(servers: Sequence[McpAnyServerSpec]) -> tuple[McpResource, ...]:
+    # Resources are a stdio-only capability in Phase A; HTTP servers are skipped.
+    stdio_servers = [server for server in servers if not isinstance(server, McpHttpServerSpec)]
     resources: list[McpResource] = []
-    for server in sorted(servers, key=lambda item: item.name):
+    for server in sorted(stdio_servers, key=lambda item: item.name):
         resources.extend(_discover_server_resources(server))
         if len(resources) > MAX_MCP_RESOURCES_TOTAL:
             raise McpProtocolError(
@@ -72,7 +80,7 @@ def normalize_mcp_resource_ids(value: Sequence[str]) -> tuple[str, ...]:
 
 
 def read_mcp_resource_attachments(
-    servers: Sequence[McpServerSpec],
+    servers: Sequence[McpAnyServerSpec],
     resource_ids: Sequence[str],
 ) -> tuple[TextAttachmentInput, ...]:
     selected_ids = normalize_mcp_resource_ids(resource_ids)
@@ -82,7 +90,9 @@ def read_mcp_resource_attachments(
     missing = sorted(set(selected_ids) - set(resources))
     if missing:
         raise McpProtocolError(f"selected MCP resources are unavailable: {', '.join(missing)}")
-    servers_by_name = {server.name: server for server in servers}
+    servers_by_name = {
+        server.name: server for server in servers if not isinstance(server, McpHttpServerSpec)
+    }
     attachments: list[TextAttachmentInput] = []
     total_bytes = 0
     for resource_id in selected_ids:
