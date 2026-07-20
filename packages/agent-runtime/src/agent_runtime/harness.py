@@ -119,6 +119,7 @@ def run_local_harness(
                 network_profile=network_profile.name.value,
                 network_allowlist=network_profile.domain_allowlist,
                 mcp_allowlist=resolved_mcp_allowlist,
+                skill_components=tool_gateway.effective_skill_components,
                 confirmed_memories=confirmed_memories,
                 attachments=attachments,
             ),
@@ -226,8 +227,12 @@ class LocalToolGateway(ToolGatewayPort):
                 or LocalWebSearchTransport(use_system_proxy=trusted_local),
             )
             registry.register(search.contract, search.handle)
+        self._skill_component_names: tuple[str, ...] = ()
         if skill_roots:
             catalog = LocalSkillCatalog(skill_roots)
+            self._skill_component_names = tuple(
+                metadata.name for metadata in catalog.list()[0]
+            )
             for skill_tool in (SkillsListTool(catalog), SkillsReadTool(catalog)):
                 if skill_tool.contract.name in enabled_names:
                     registry.register(skill_tool.contract, skill_tool.handle)
@@ -280,6 +285,10 @@ class LocalToolGateway(ToolGatewayPort):
     @property
     def effective_mcp_tools(self) -> tuple[ModelToolDefinition, ...]:
         return self._mcp_catalog.definitions
+
+    @property
+    def effective_skill_components(self) -> tuple[str, ...]:
+        return self._skill_component_names
 
     @property
     def parallel_safe_tools(self) -> frozenset[str]:

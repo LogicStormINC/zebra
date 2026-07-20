@@ -31,6 +31,7 @@ def test_session_bootstrap_service_builds_ready_session_events() -> None:
         "network_profile": "none",
         "network_allowlist": [],
         "mcp_allowlist": [],
+        "skill_components": [],
         "max_attempts": 1,
         "max_model_calls": None,
         "max_tool_calls": None,

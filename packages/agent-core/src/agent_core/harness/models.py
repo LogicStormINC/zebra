@@ -10,6 +10,7 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.plans import SessionPlan
 from agent_core.domain.sessions import Session
+from agent_core.domain.skills import normalize_skill_components
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 
@@ -46,6 +47,7 @@ class HarnessTask:
     network_profile: str = "none"
     network_allowlist: tuple[str, ...] = ()
     mcp_allowlist: tuple[str, ...] = ()
+    skill_components: tuple[str, ...] = ()
     context_token_budget: int = 200
     runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = ()
@@ -68,6 +70,9 @@ class HarnessTask:
         if self.context_token_budget <= 0:
             raise ValueError("harness task context_token_budget must be positive")
         object.__setattr__(self, "mcp_allowlist", normalize_mcp_allowlist(self.mcp_allowlist))
+        object.__setattr__(
+            self, "skill_components", normalize_skill_components(self.skill_components)
+        )
         for memory in self.confirmed_memories:
             if not isinstance(memory, ConfirmedMemoryInput):
                 raise ValueError(

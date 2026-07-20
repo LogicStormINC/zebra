@@ -67,6 +67,7 @@ class HarnessLoop:
                 "network_profile": task.network_profile,
                 "network_allowlist": list(task.network_allowlist),
                 "mcp_allowlist": list(task.mcp_allowlist),
+                "skill_components": list(task.skill_components),
                 "max_attempts": task.max_attempts,
                 "max_model_calls": task.max_model_calls,
                 "max_tool_calls": task.max_tool_calls,

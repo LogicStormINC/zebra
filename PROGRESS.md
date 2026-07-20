@@ -24,6 +24,11 @@
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
   non-interactive across Desktop/API/CLI/Worker, including existing Tasks, while
   retaining fail-closed non-local defaults and hard Gateway/Runtime boundaries.
+- Active extension task: `EXT-0` registers the Skill/MCP/Plugin extension
+  control-plane contract (`ADR-014`); `EXT-SKILL-01..05` and `EXT-MCP-01/02/06`
+  are Phase A `Ready`; Plugin/Hook/Marketplace remain `Locked` pending
+  private-cloud GA. Elicitation is reconciled to durable HITL; sampling stays a
+  hard non-goal.
 
 ## Current Capability
 

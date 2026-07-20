@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
+from agent_core.domain.skills import normalize_skill_components
 from agent_core.domain.tool_profiles import ToolProfile
 
 
@@ -33,6 +34,7 @@ class WorkspaceProjection(BaseModel):
     network_profile: NetworkProfileName = NetworkProfileName.NONE
     network_allowlist: tuple[str, ...] = ()
     mcp_allowlist: tuple[str, ...] | None = None
+    skill_components: tuple[str, ...] | None = None
     last_attempt_number: int | None = None
     runtime_name: str | None = None
     runtime_engine: str | None = None
@@ -77,3 +79,11 @@ class WorkspaceProjection(BaseModel):
         value: tuple[str, ...] | None,
     ) -> tuple[str, ...] | None:
         return None if value is None else normalize_mcp_allowlist(value)
+
+    @field_validator("skill_components")
+    @classmethod
+    def ensure_valid_skill_components(
+        cls,
+        value: tuple[str, ...] | None,
+    ) -> tuple[str, ...] | None:
+        return None if value is None else normalize_skill_components(value)

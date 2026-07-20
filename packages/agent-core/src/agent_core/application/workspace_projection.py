@@ -1,6 +1,7 @@
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
+from agent_core.domain.skills import normalize_skill_components
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 
@@ -32,6 +33,7 @@ def rebuild_workspace(events: list[SessionEvent]) -> WorkspaceProjection:
         ),
         network_allowlist=_network_allowlist_from_event(prepared_event),
         mcp_allowlist=_mcp_allowlist_from_event(prepared_event),
+        skill_components=_skill_components_from_event(prepared_event),
     )
     for event in events:
         if event.sequence < prepared_event.sequence:
@@ -69,6 +71,7 @@ def apply_event(
         )
         updates["network_allowlist"] = _network_allowlist_from_event(event)
         updates["mcp_allowlist"] = _mcp_allowlist_from_event(event)
+        updates["skill_components"] = _skill_components_from_event(event)
     if event.event_type is EventType.RUNTIME_PROVISIONED:
         updates["runtime_name"] = _required_payload_string(event, "runtime_class")
         updates["runtime_engine"] = _required_payload_string(event, "engine")
@@ -166,6 +169,20 @@ def _mcp_allowlist_from_event(event: SessionEvent) -> tuple[str, ...] | None:
         return normalize_mcp_allowlist(value)
     except ValueError as exc:
         raise WorkspaceProjectionError("task_prepared contains invalid mcp_allowlist") from exc
+
+
+def _skill_components_from_event(event: SessionEvent) -> tuple[str, ...] | None:
+    if "skill_components" not in event.payload:
+        return None
+    value = event.payload["skill_components"]
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise WorkspaceProjectionError("task_prepared contains invalid skill_components")
+    try:
+        return normalize_skill_components(value)
+    except ValueError as exc:
+        raise WorkspaceProjectionError("task_prepared contains invalid skill_components") from exc
 
 
 def _optional_attempt_number(event: SessionEvent) -> int | None:

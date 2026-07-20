@@ -14800,3 +14800,463 @@ treat caller-supplied hard-budget exhaustion as a recoverable suspension.
 - replaying provider-private continuation or raw tool output across Segments
 - removing explicit caller budgets or repeated-action stopping conditions
 - hard-coded finance, stock, or intent-specific routing heuristics
+
+## Extension System (EXT) Task Board
+
+Extension control-plane for Skill, MCP, Plugin, Hook, and Marketplace. Authority
+source: `docs/ADR-014_扩展体系架构.md`, `docs/扩展体系状态机与契约_v1.0.md`,
+`docs/plugin_manifest.schema.json`, `docs/extension_threat_model.md`. Plugin/Hook/
+Marketplace remain `Locked` pending private-cloud GA and maintainer activation.
+
+### EXT-0 - Extension System Architecture Contract
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `DOC / CORE`
+- Depends on: explicit maintainer request (`EXT-PLAN-01` baseline verified)
+- Branch: `codex/ext-0-architecture-contract`
+- Owned paths: `docs/ADR-014_扩展体系架构.md`,
+  `docs/扩展体系状态机与契约_v1.0.md`, `docs/plugin_manifest.schema.json`,
+  `docs/extension_threat_model.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Freeze the five-layer extension state machine, stable component identity, Plugin
+manifest schema, and threat model so that `EXT-SKILL-*` and `EXT-MCP-*` implement
+against a single durable authority. Register the EXT task board.
+
+#### Acceptance
+
+- [x] ADR-014 codifies the five-layer state machine, extension kinds, untrusted
+  output stance, durable integration points, and Phase A vs B/C/D scope.
+- [x] State machine contract doc defines per-layer inputs, outputs, failure modes,
+  and reconciliation with existing Session/Event/Workspace projection.
+- [x] Plugin manifest JSON Schema draft covers id/version/scope/entry/permissions/
+  provenance and is well-formed JSON.
+- [x] Threat model maps untrusted skill content, MCP output, plugin code
+  execution, elicitation, sampling, SSRF, and marketplace to controls.
+- [x] ADR-014 §7 explicitly reconciles P127/P132-P138 elicitation non-goal;
+  sampling remains a hard non-goal.
+- [x] EXT task board registered with 9 Ready + 3 Locked cards.
+
+#### Explicit Non-Goals
+
+- implementing any code path; that belongs to `EXT-SKILL-*` / `EXT-MCP-*`
+- activating Plugin, Hook, or Marketplace implementation
+
+### EXT-SKILL-01 - Skill Metadata V2 Validation And Reason Enum
+
+- Status: `Ready`
+- Owner: `Codex`
+- Suggested role: `TOOLS / CORE`
+- Depends on: merged `EXT-0`
+- Branch: `codex/ext-skill-01-metadata-v2`
+- Owned paths: `packages/agent-tools/src/agent_tools/skills_catalog.py`,
+  `tests/agent_tools/test_skills.py`,
+  `tests/test_skills_catalog_contract_matrix.py`
+
+#### Goal
+
+Extend Skill metadata to the Agent Skills field set (version/license/
+compatibility/metadata/digest) with backward-compatible defaults, and consolidate
+the scattered SkillCatalog reason literals into a stable StrEnum without changing
+wire values.
+
+#### Acceptance
+
+- [ ] SkillMetadata gains optional version/license/compatibility/metadata/digest
+  fields with defaults; positional `(name, description, source)` unchanged.
+- [ ] SkillCatalogReason StrEnum replaces 15 scattered literals; `.reason` wire
+  values unchanged.
+- [ ] _frontmatter reads optional fields; old skills declaring only
+  name/description still validate.
+- [ ] Existing `tests/agent_tools/test_skills.py` passes unchanged; new
+  `tests/test_skills_catalog_contract_matrix.py` covers reason stability and
+  field defaults.
+- [ ] `make test` and `make check` pass.
+
+#### Explicit Non-Goals
+
+- scope/namespace resolution and digest computation (`EXT-SKILL-02`)
+- Task-level skill snapshot (`EXT-SKILL-03`)
+
+### EXT-SKILL-02 - Skill Scope Namespace Digest And No Silent Override
+
+- Status: `Ready`
+- Owner: `Codex`
+- Suggested role: `TOOLS / CONFIG`
+- Depends on: merged `EXT-SKILL-01`
+- Branch: `codex/ext-skill-02-scope-digest`
+- Owned paths: `packages/agent-tools/src/agent_tools/skills_scope.py` (new),
+  `packages/agent-tools/src/agent_tools/skills_catalog.py`,
+  `packages/agent-tools/src/agent_tools/skills.py`,
+  `apps/config/src/zebra_agent_config/settings.py`,
+  `tests/agent_tools/test_skills_scope.py`,
+  `tests/test_skills_scope_contract_matrix.py`
+
+#### Goal
+
+Add system/admin/user/repo scope, namespace, content digest, and a
+no-silent-override rule (higher scope wins across scopes; same-scope collisions
+remain ambiguous), evolving the current ambiguous-only behavior.
+
+#### Acceptance
+
+- [ ] SkillScope StrEnum and `_compute_skill_digest` (sha256, mirroring
+  `runtime_spec_digest`) live in new `skills_scope.py`; skills_catalog imports it.
+- [ ] settings.py accepts four ordered roots; legacy `ZEBRA_SKILL_ROOTS` maps to
+  USER scope (backward compatible).
+- [ ] Cross-scope same name resolves to higher scope; lower scope recorded in
+  skill_collisions (admin surface only, not model-visible); same-scope collisions
+  remain ambiguous.
+- [ ] One existing "two roots same name → ambiguous" test updated to
+  "two USER roots"; new scope matrix and digest stability tests added.
+- [ ] `make test` and `make check` pass.
+
+#### Explicit Non-Goals
+
+- enable/disable persistence and admin surface (`EXT-SKILL-04`)
+- per-Skill signing or marketplace provenance
+
+### EXT-SKILL-03 - Task Level Skill Snapshot
+
+- Status: `Ready`
+- Owner: `Codex`
+- Suggested role: `CORE / STORAGE / API / WORKER`
+- Depends on: merged `EXT-SKILL-02`, merged `EXT-0`
+- Branch: `codex/ext-skill-03-task-snapshot`
+- Owned paths:
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/harness/models.py`,
+  `packages/agent-core/src/agent_core/application/workspace_projection.py`,
+  `packages/agent-storage/src/agent_storage/workspaces.py`,
+  `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `apps/api/src/zebra_agent_api/task_api.py`,
+  `apps/api/src/zebra_agent_api/session_context.py`,
+  `apps/api/src/zebra_agent_api/session_context_inspection.py`,
+  `apps/cli/src/zebra_agent_cli/session_diff_read.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `packages/agent-storage/src/agent_storage/session_handoff_events.py`,
+  `tests/test_skill_snapshot_contract_matrix.py`
+
+#### Goal
+
+Persist task-time Skill selection as `skill_components` on TaskPreparedPayload
+(mirroring the existing mcp_allowlist pattern) so a resumed/inspected task shows
+which Skills were active without replaying catalog state.
+
+#### Acceptance
+
+- [ ] TaskPreparedPayload gains optional `skill_components: list[str] | None`
+  with the same exclude_if-None pattern as mcp_allowlist and a normalize
+  validator (<=32 entries, <=64 chars, `^[a-zA-Z][a-zA-Z0-9_-]{0,63}$`).
+- [ ] HarnessTask gains `skill_components: tuple[str, ...] = ()` threaded into
+  the TASK_PREPARED event.
+- [ ] workspace_projections gains `skill_components TEXT` via ALTER TABLE IF NOT
+  EXISTS; reader surfaces the field; old DBs auto-migrate.
+- [ ] All eight consumers (workspace_projection, task_api, session_context*,
+  session_diff_read, task_recovery, session_handoff_events, harness) handle the
+  optional field; existing fixtures unmodified.
+- [ ] New `tests/test_skill_snapshot_contract_matrix.py` covers payload
+  validation, projection rebuild, API surface, resume path, handoff compat.
+- [ ] Full deterministic suite passes; `make check` passes.
+
+#### Explicit Non-Goals
+
+- a separate TASK_EXTENSIONS_GRANTED event or task_extensions projection table
+  (Phase B, when mid-task enable/disable is needed)
+- persisting per-Skill digest in the snapshot (digest lives in the catalog)
+
+### EXT-SKILL-04 - Skill Management Surface
+
+- Status: `Ready`
+- Owner: `Codex`
+- Suggested role: `API / CLI / STORAGE / CONFIG`
+- Depends on: merged `EXT-SKILL-03`
+- Branch: `codex/ext-skill-04-admin-surface`
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/skills_state.py` (new),
+  `apps/api/src/zebra_agent_api/skills_admin.py` (new),
+  `apps/cli/src/zebra_agent_cli/skills_commands.py` (new),
+  `apps/api/src/zebra_agent_api/app.py` (route registration only),
+  `apps/cli/src/zebra_agent_cli/cli.py` (subcommand registration only),
+  `packages/agent-storage/src/agent_storage/sqlite.py` (table creation only),
+  `packages/agent-storage/src/agent_storage/__init__.py` (exports only),
+  `apps/config/src/zebra_agent_config/settings.py` (skills_state_path field only),
+  `configs/default.env`, `.env.example`,
+  `tests/api/test_skills_admin.py`,
+  `tests/cli/test_skills_commands.py`,
+  `tests/agent_storage/test_skills_state.py`,
+  `tests/test_skills_admin_contract_matrix.py`
+
+#### Goal
+
+Add a bounded admin surface (API + CLI) and SQLite-backed enable/disable
+persistence so operators can list, enable, and disable Skills per scope, with
+the catalog filtering disabled entries at harness construction.
+
+#### Acceptance
+
+- [ ] skills_state SQLite table (name, scope, enabled, updated_at, operator;
+  PK(name, scope)) with idempotent upsert.
+- [ ] API `GET /admin/skills`, `POST /admin/skills/{name}/enable|disable`,
+  `GET /admin/skills/{name}` with existing auth_token gating.
+- [ ] CLI `zebra skill list|enable|disable|show` subcommands.
+- [ ] LocalSkillCatalog accepts skills_state and filters disabled entries;
+  state=None means all enabled (backward compatible).
+- [ ] settings.py gains skills_state_path via _read_paths; .env.example and
+  configs/default.env document ZEBRA_SKILLS_STATE_PATH.
+- [ ] New admin/commands/state tests + contract matrix pass; `make check` passes.
+
+#### Explicit Non-Goals
+
+- mid-task enable/disable affecting a running Task (Enabled only affects new Tasks)
+- remote or marketplace skill installation
+
+### EXT-SKILL-05 - Skill Provenance And Eval Integration
+
+- Status: `Ready`
+- Owner: `Codex`
+- Suggested role: `TOOLS / EVAL / DOC`
+- Depends on: merged `EXT-SKILL-04`
+- Branch: `codex/ext-skill-05-provenance-eval`
+- Owned paths: `packages/agent-tools/src/agent_tools/skills.py`,
+  `evals/cases/skill_guided_refactor.json` (new),
+  `evals/cases/skill_guided_bugfix.json` (new),
+  `evals/fixtures/skills/` (new),
+  `tests/evals/test_skill_eval_replay.py` (new),
+  `docs/扩展体系PhaseA验收记录.md` (new)
+
+#### Goal
+
+Surface Skill provenance (digest/scope/version/source) in tool metadata, add
+release-eval cases that force the replay path through skills.read with a digest
+assertion, and record Phase A acceptance/rollback evidence.
+
+#### Acceptance
+
+- [ ] SkillsReadTool metadata includes skill_digest/skill_scope/skill_version/
+  provenance_source (written to TOOL_EXECUTION_COMPLETED metadata).
+- [ ] Two new eval cases (refactor, bugfix) with fixtures; replay forced through
+  skills.read (min_tool_results >= 2) and an expected_skill_digest assertion.
+- [ ] Existing 8/8 release eval unaffected; new 2/2 skill cases pass.
+- [ ] `docs/扩展体系PhaseA验收记录.md` records per-card merge sha, test counts,
+  rollback commands.
+- [ ] `make test` and `make check` pass; skill digest is byte-stable across
+  Linux/macOS.
+
+#### Explicit Non-Goals
+
+- real-LLM skill quality evaluation (eval gate is a contract/count gate)
+- signing or marketplace provenance
+
+### EXT-MCP-01 - MCP Protocol Negotiation And Streamable HTTP Transport
+
+- Status: `Ready`
+- Owner: `Codex`
+- Suggested role: `RUNTIME / CONFIG / SECURITY`
+- Depends on: merged `EXT-0`, merged `EXT-SKILL-03` (shared settings.py)
+- Branch: `codex/ext-mcp-01-protocol-http`
+- Owned paths:
+  `packages/agent-runtime/src/agent_runtime/mcp_protocol.py`,
+  `packages/agent-runtime/src/agent_runtime/mcp_http.py` (new),
+  `packages/agent-runtime/src/agent_runtime/web_gateway.py` (extract SSRF helper
+  to module level only),
+  `packages/agent-runtime/src/agent_runtime/harness.py` (http transport branch
+  only),
+  `apps/config/src/zebra_agent_config/settings.py` (McpHttpServerSettings +
+  reader only),
+  `configs/default.env`, `.env.example`,
+  `tests/agent_runtime/test_mcp_protocol_negotiation.py` (new),
+  `tests/agent_runtime/test_mcp_http_transport.py` (new),
+  `tests/test_mcp_http_contract_matrix.py` (new)
+
+#### Goal
+
+Replace the hardcoded single protocol version with a bounded negotiation set
+(validating the server-returned version), and add a Streamable HTTP transport
+reusing the transport-agnostic McpProxyTransport protocol with bearer-token-via-
+env and SSRF reuse. No OAuth in Phase A.
+
+#### Acceptance
+
+- [ ] mcp_protocol.py uses a SUPPORTED_PROTOCOL_VERSIONS set; StdioMcpSession
+  validates the server-returned version and fails closed on mismatch/absence.
+- [ ] New mcp_http.py StreamableHttpMcpTransport implements McpProxyTransport;
+  McpHttpServerSpec carries url + bearer_token_env (token never in manifest/
+  event/log).
+- [ ] web_gateway.py exposes module-level reject_non_public_resolution (old
+  private name kept as alias); HTTP transport calls it pre-connect; https
+  enforced; trusted_local honors operator HTTPS proxy.
+- [ ] settings.py McpHttpServerSettings + _read_mcp_http_servers shares
+  MAX_MCP_SERVERS with stdio.
+- [ ] harness.py routes stdio vs http transports.
+- [ ] New negotiation/http tests + contract matrix pass; 11 existing MCP test
+  files unbroken; `make check` passes.
+
+#### Explicit Non-Goals
+
+- OAuth, PKCE, token refresh, dynamic client registration (Phase B, Credential
+  Broker cloud form)
+- connection pooling and health (EXT-MCP-02)
+
+### EXT-MCP-02 - MCP Connection Lifecycle Health And Reconnect
+
+- Status: `Ready`
+- Owner: `Codex`
+- Suggested role: `RUNTIME`
+- Depends on: merged `EXT-MCP-01`
+- Branch: `codex/ext-mcp-02-lifecycle-health`
+- Owned paths: `packages/agent-runtime/src/agent_runtime/mcp_pool.py` (new),
+  `packages/agent-runtime/src/agent_runtime/mcp_protocol.py` (extract
+  SessionState dataclass only),
+  `tests/agent_runtime/test_mcp_pool.py` (new),
+  `tests/integration/test_mcp_lifecycle.py` (new)
+
+#### Goal
+
+Add a bounded session pool with health classification (healthy/degraded/
+quarantined) and bounded backoff reconnect shared by stdio and http transports.
+Phase A ships a lightweight pool: stdio remains spawn-per-call (tracking failure
+counts and backoff), HTTP reuses the httpx connection pool.
+
+#### Acceptance
+
+- [ ] New mcp_pool.py McpSessionPool with McpHealthState transitions, bounded
+  backoff, acquire/release/health/close.
+- [ ] mcp_protocol.py exposes a SessionState dataclass without changing wire
+  behavior.
+- [ ] Pool wraps both stdio and http transports via McpProxyTransport.
+- [ ] New pool unit tests + integration lifecycle test pass; `make check` passes.
+
+#### Explicit Non-Goals
+
+- long-lived stdio process watchdog (Phase B)
+- changing the existing per-call timeout/output limits
+
+### EXT-MCP-06 - Elicitation To Durable HITL Bridge
+
+- Status: `Ready`
+- Owner: `Codex`
+- Suggested role: `CORE / RUNTIME / CONFIG`
+- Depends on: merged `EXT-MCP-01`, merged `EXT-SKILL-03` (shared contracts/
+  events.py)
+- Branch: `codex/ext-mcp-06-elicitation-hitl`
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/clarifications.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`
+  (ClarificationRequestedPayload.response_schema only),
+  `packages/agent-runtime/src/agent_runtime/mcp_elicitation.py` (new),
+  `packages/agent-tools/src/agent_tools/mcp_disclosure.py` (elicitation routing
+  only),
+  `packages/agent-core/src/agent_core/harness/clarification_step.py`,
+  `apps/config/src/zebra_agent_config/settings.py`
+  (ZEBRA_MCP_ELICITATION only),
+  `tests/agent_core/test_clarification_elicitation_schema.py` (new),
+  `tests/agent_runtime/test_mcp_elicitation_bridge.py` (new),
+  `tests/test_elicitation_contract_matrix.py` (new)
+
+#### Goal
+
+Map server-initiated elicitation onto the existing durable ClarificationContext
+flow (with typed response_schema), emitting CLARIFICATION_REQUESTED and entering
+WAITING_INPUT. Default-enabled; operator can disable globally. Reconciles the
+P127/P132-P138 elicitation non-goal per ADR-014 §7.
+
+#### Acceptance
+
+- [ ] ClarificationContext gains optional response_schema and elicitation_source
+  (default agent.clarify); existing flow unchanged.
+- [ ] ClarificationRequestedPayload mirrors response_schema (optional).
+- [ ] New mcp_elicitation.py McpElicitationBridge converts elicitation/create to
+  ClarificationContext, emits CLARIFICATION_REQUESTED, suspends until response.
+- [ ] ZEBRA_MCP_ELICITATION=off rejects elicitation/create with a structured
+  error; default on.
+- [ ] New schema/bridge tests + contract matrix pass; `make check` passes.
+
+#### Explicit Non-Goals
+
+- server-initiated sampling (hard non-goal, needs its own threat model)
+- letting elicitation bypass Policy, Approval, or untrusted-output labeling
+
+### EXT-PLUGIN-01 - Plugin Manifest And Lifecycle
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `CORE / TOOLS / SECURITY / QA`
+- Depends on: `EXT-0` contract frozen and explicit maintainer activation
+- Branch: `TBD (suggested: codex/ext-plugin-01-manifest-lifecycle)`
+- Owned paths: `packages/agent-integrations/src/agent_integrations/plugins/`,
+  `packages/agent-core/src/agent_core/domain/plugins.py`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Realize the Plugin manifest schema and bounded lifecycle (load/activate/
+deactivate/unload) defined as draft in EXT-0, without a second authority source
+beside the Session Event Store.
+
+#### Pre-Ready Decisions
+
+- pin signing/digest format and plugin sandbox boundary (subprocess/sidecar vs
+  in-process)
+- pin lifecycle hook surface and failure semantics
+- define the first signed plugin fixture and exact validation commands
+
+#### Explicit Non-Goals
+
+- a marketplace, remote distribution, or auto-update
+
+### EXT-HOOK-01 - Hook Contract
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `CORE / SECURITY / QA`
+- Depends on: `EXT-PLUGIN-01` activation
+- Branch: `TBD`
+- Owned paths: `packages/agent-core/src/agent_core/harness/hooks.py`,
+  `packages/agent-integrations/src/agent_integrations/hooks/`,
+  `docs/AGENT_TASKS.md`
+
+#### Goal
+
+Implement declarative, deterministic hooks (PreToolUse deny/require-approval,
+PostToolUse audit/suggest, Stop, SessionStart, ArtifactCreated) bound to package
+digest with stable ordering, bounded timeouts, and fail-open/fail-closed
+classification. Hooks never bypass Policy or mutate result facts.
+
+#### Pre-Ready Decisions
+
+- pin hook sandbox boundary (in-process vs sidecar) and timeout budgets
+- pin fail-open vs fail-closed classification per hook kind
+
+#### Explicit Non-Goals
+
+- arbitrary executable hooks or hook-side Policy override
+
+### EXT-MARKETPLACE-01 - Plugin Marketplace Distribution
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `CORE / SECURITY / DEVOPS`
+- Depends on: `EXT-PLUGIN-01` + `EXT-HOOK-01` activation and private-cloud GA
+- Branch: `TBD`
+- Owned paths: `apps/marketplace/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Deliver governed plugin distribution: publisher verification, signing, SBOM,
+automated scanning, organizational policy, revocation, kill switch, canary, and
+version rollback. Depends on namespace, Credential, Egress, and Sandbox
+isolation completing in private cloud.
+
+#### Pre-Ready Decisions
+
+- pin distribution protocol (GitHub Release / OCI Artifact / self-hosted)
+- pin signature format and local cache directory policy
+- confirm private-cloud GA gate is met
+
+#### Explicit Non-Goals
+
+- public open marketplace before private-cloud GA
+- bypassing the install/enable/grant/approve five-layer state machine
