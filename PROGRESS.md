@@ -34,9 +34,13 @@
   (`SUPPORTED_PROTOCOL_VERSIONS` with server-version validation) and a
   Streamable HTTP transport (`mcp_http.py`) with bearer-token-via-env,
   module-level SSRF guard, https enforcement, and stdio/http routing in the
-  harness. `EXT-MCP-02/06` are Phase A `Ready`; Plugin/Hook/Marketplace
-  remain `Locked` pending private-cloud GA. Elicitation is reconciled to
-  durable HITL; sampling stays a hard non-goal.
+  harness. **`EXT-MCP-02` is `Done`** — `McpSessionPool` with
+  healthy/degraded/quarantined health classification, bounded backoff, and
+  acquire/release/health/close wrapping `McpProxyTransport` (shared by stdio +
+  http); `SessionState` dataclass exposed from `mcp_protocol`. `EXT-MCP-06`
+  is Phase A `Ready`; Plugin/Hook/Marketplace remain `Locked` pending
+  private-cloud GA. Elicitation is reconciled to durable HITL; sampling stays
+  a hard non-goal.
 
 ## Current Capability
 
