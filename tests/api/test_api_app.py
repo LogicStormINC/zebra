@@ -362,6 +362,15 @@ def test_api_create_session_execute_persists_harness_events(
     monkeypatch,
 ) -> None:
     database_path = tmp_path / "sessions.sqlite"
+    original_run_local_harness = api_app_module.run_local_harness
+    captured_budgets: dict[str, int | None] = {}
+
+    def capture_budgets(**kwargs):
+        captured_budgets.update(
+            max_model_calls=kwargs["max_model_calls"],
+            max_tool_calls=kwargs["max_tool_calls"],
+        )
+        return original_run_local_harness(**kwargs)
 
     def fake_build_model_gateway(settings: ZebraAgentSettings):
         del settings
@@ -383,6 +392,7 @@ def test_api_create_session_execute_persists_harness_events(
         )
 
     monkeypatch.setattr(api_app_module, "build_model_gateway", fake_build_model_gateway)
+    monkeypatch.setattr(api_app_module, "run_local_harness", capture_budgets)
 
     response = create_app(database_path, settings=_settings(database_path)).create_session(
         {
@@ -390,6 +400,8 @@ def test_api_create_session_execute_persists_harness_events(
             "title": "API execute session",
             "workspace": str(tmp_path),
             "execute": True,
+            "max_model_calls": 7,
+            "max_tool_calls": 9,
         }
     )
 
@@ -410,6 +422,7 @@ def test_api_create_session_execute_persists_harness_events(
     ]
     assert session is not None
     assert session.status is SessionStatus.COMPLETED
+    assert captured_budgets == {"max_model_calls": 7, "max_tool_calls": 9}
 
 
 def test_api_create_session_execute_runs_builtin_tool(

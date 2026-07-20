@@ -14743,13 +14743,16 @@ child only after an explicit valid `agent.research` call with a diagnostic reaso
 - Depends on: merged `CTX-SEG-01`
 - Branch: `codex/ctx-seg-02-followup-recovery`
 - Owned paths: `apps/api/src/zebra_agent_api/task_api.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
   `apps/api/src/zebra_agent_api/session_handoff.py`,
   `apps/api/src/zebra_agent_api/session_payloads.py`,
   `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
   `packages/agent-core/src/agent_core/application/session_bootstrap.py`,
   `packages/agent-core/src/agent_core/application/workspace_projection.py`,
   `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/contracts/session_control_events.py`,
   `packages/agent-core/src/agent_core/harness/`,
+  `packages/agent-runtime/src/agent_runtime/harness.py`,
   `packages/agent-context/src/agent_context/session_handoff.py`,
   `UI/desktop/src/lib/session-timeline.ts`,
   `UI/desktop/src/components/SessionThreadWorkspace.tsx`,
@@ -14759,7 +14762,7 @@ child only after an explicit valid `agent.research` call with a diagnostic reaso
   `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
   `docs/自适应Agent循环与预算治理方案_v1.0.md`,
   `docs/ADR-013_用户任务连续性与内部执行分段.md`, `docs/AGENT_TASKS.md`,
-  `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+  `README.md`, `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
 
 #### Goal
 
@@ -14784,11 +14787,12 @@ treat caller-supplied hard-budget exhaustion as a recoverable suspension.
 
 #### Validation Evidence
 
-- focused API/Core/Worker regression: `74 passed`
-- full deterministic suite: `1519 passed, 7 skipped`
-- file-size gate checked `899` files; Ruff passed; strict Mypy passed over `419`
+- focused API/Core/Runtime/Worker regression: `56 passed`
+- full deterministic suite: `1520 passed, 7 skipped`
+- file-size gate checked `901` files; Ruff passed; strict Mypy passed over `419`
   source files; all `8/8` release Eval cases passed
-- all `22` deterministic Desktop checks and the production Vite build passed;
+- all `22` deterministic Desktop checks passed before closeout; the affected
+  timeline check and production Vite build were rerun after the final fix;
   Tauri validation was intentionally omitted per explicit scope waiver
 
 #### Explicit Non-Goals

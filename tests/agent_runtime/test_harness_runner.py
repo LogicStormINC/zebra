@@ -122,6 +122,40 @@ def test_run_local_harness_executes_builtin_file_read(tmp_path) -> None:
     assert result.run_result.model_calls_used == 2
 
 
+def test_run_local_harness_has_no_implicit_tool_budget(tmp_path) -> None:
+    paths = tuple(f"proof-{index}.txt" for index in range(4))
+    for path in paths:
+        (tmp_path / path).write_text(path, encoding="utf-8")
+    responses = [
+        ScriptedModelResponse(
+            completion=_completion(
+                f"Reading {path}.",
+                ToolCall(
+                    tool_call_id=new_tool_call_id(),
+                    name="files.read",
+                    arguments={"path": path},
+                    created_at=_created_at(),
+                ),
+            )
+        )
+        for path in paths
+    ]
+    responses.append(ScriptedModelResponse(completion=_completion("All four files read.")))
+
+    result = run_local_harness(
+        prompt="Read every proof file.",
+        title="Unlimited local harness budget",
+        workspace_root=tmp_path.resolve(),
+        model_gateway=ScriptedModelGateway(responses=tuple(responses)),
+    )
+
+    assert result.session.status is SessionStatus.COMPLETED
+    assert result.run_result.model_calls_used == 5
+    assert result.run_result.tool_calls_used == 4
+    assert result.run_result.max_model_calls is None
+    assert result.run_result.max_tool_calls is None
+
+
 def test_run_local_harness_searches_then_reads_workspace_evidence(tmp_path) -> None:
     (tmp_path / "proof.txt").write_text("SEARCH-THEN-READ\n", encoding="utf-8")
     search_call = ToolCall(

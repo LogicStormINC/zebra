@@ -5623,3 +5623,10 @@
   and all `8/8` release Evals passed.
 - All `22` Desktop checks and the production Vite build passed with bundled
   Node 22; Tauri was intentionally omitted per the explicit scope waiver.
+- Closeout review found the local harness wrapper still imposed the legacy `4/3`
+  limits and the synchronous API dropped explicit budgets. The shared wrapper now
+  defaults both budgets to `None`, the API forwards caller limits, and direct
+  runtime/API regressions cover both paths.
+- Final closeout validation: focused `56 passed`; full `1520 passed, 7 skipped`;
+  file-size `901`, Ruff, strict Mypy over `419` source files, release Eval `8/8`,
+  affected Desktop timeline check, and production Vite build all passed.
