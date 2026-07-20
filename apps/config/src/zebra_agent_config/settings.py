@@ -115,6 +115,7 @@ class ZebraAgentSettings:
     skill_roots_system: tuple[str, ...] = ()
     skill_roots_admin: tuple[str, ...] = ()
     skill_roots_repo: tuple[str, ...] = ()
+    skills_state_path: str = ".zebra-agent/skills-state.sqlite"
     mcp_servers: tuple[McpServerSettings, ...] = ()
 
 
@@ -188,6 +189,11 @@ def load_settings(
         skill_roots_system=_read_paths(values, "ZEBRA_SKILL_ROOTS_SYSTEM"),
         skill_roots_admin=_read_paths(values, "ZEBRA_SKILL_ROOTS_ADMIN"),
         skill_roots_repo=_read_paths(values, "ZEBRA_SKILL_ROOTS_REPO"),
+        skills_state_path=_read(
+            values,
+            "ZEBRA_SKILLS_STATE_PATH",
+            default=".zebra-agent/skills-state.sqlite",
+        ),
         mcp_servers=_read_mcp_servers(values),
     )
 

@@ -76,6 +76,7 @@ from zebra_agent_api.session_payloads import (
     parse_resume_session_payload,
 )
 from zebra_agent_api.session_prompt_inputs import resolve_mcp_prompt_attachment
+from zebra_agent_api.skills_admin import ApiSkillsAdminMixin, runtime_skills_state
 
 
 @dataclass(frozen=True)
@@ -88,6 +89,7 @@ class ZebraAgentApi(
     ApiMemoryControlMixin,
     ApiScmMixin,
     ApiApprovalControlMixin,
+    ApiSkillsAdminMixin,
 ):
     database_path: Path
     settings: ZebraAgentSettings
@@ -407,6 +409,7 @@ class ZebraAgentApi(
                 network_profile=network_profile,
                 web_search_endpoint=self.settings.web_search_endpoint,
                 skill_roots=self.settings.skill_roots,
+                skills_state=runtime_skills_state(self.settings),
                 mcp_servers=self.settings.mcp_servers,
                 mcp_allowlist=parsed["mcp_allowlist"],
                 trusted_local=trusted_local,

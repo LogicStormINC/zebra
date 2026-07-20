@@ -57,6 +57,7 @@ from agent_storage.session_handoff_rows import (
 )
 from agent_storage.session_handoffs import SQLiteSessionHandoffStore
 from agent_storage.session_history import SQLiteSessionHistory
+from agent_storage.skills_state import SkillStateRecord, SQLiteSkillsStateStore
 from agent_storage.sqlite import SQLiteEventStore
 from agent_storage.tool_runs import SQLiteToolRunStore
 from agent_storage.workspaces import SQLiteWorkspaceProjectionStore
@@ -98,10 +99,12 @@ __all__ = [
     "SQLiteProjectionStore",
     "SQLiteProviderContinuationStore",
     "SQLiteSessionHistory",
+    "SQLiteSkillsStateStore",
     "SQLiteHandoffDispatchStore",
     "SQLiteSessionHandoffStore",
     "SQLiteToolRunStore",
     "SQLiteWorkspaceProjectionStore",
+    "SkillStateRecord",
     "StoredContextCapsule",
     "store_text_attachments",
     "store_initial_text_attachments",

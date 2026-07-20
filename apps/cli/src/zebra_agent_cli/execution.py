@@ -26,6 +26,7 @@ from agent_storage import (
     SQLiteEventStore,
     SQLiteProjectionStore,
     SQLiteSessionHistory,
+    SQLiteSkillsStateStore,
     SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
     store_initial_text_attachments,
@@ -77,6 +78,11 @@ def execute_durable_run(
         network_profile=effective_network_profile,
         web_search_endpoint=settings.web_search_endpoint,
         skill_roots=settings.skill_roots,
+        skills_state=(
+            SQLiteSkillsStateStore(settings.skills_state_path)
+            if settings.skill_roots
+            else None
+        ),
         mcp_servers=settings.mcp_servers,
         mcp_allowlist=mcp_allowlist,
         trusted_local=trusted_local,

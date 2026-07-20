@@ -88,6 +88,21 @@ def build_parser() -> argparse.ArgumentParser:
     context_recover.add_argument("capsule_id")
     context_recover.add_argument("--database")
 
+    skill = subcommands.add_parser(
+        "skill", help="Inventory, show, enable or disable local Skills."
+    )
+    skill_subcommands = skill.add_subparsers(dest="skill_command", required=True)
+    skill_subcommands.add_parser("list", help="List local Skills with enable state.")
+    skill_show = skill_subcommands.add_parser("show", help="Show one Skill detail.")
+    skill_show.add_argument("name")
+    for enable_disable in (
+        skill_subcommands.add_parser("enable", help="Enable a Skill for new Tasks."),
+        skill_subcommands.add_parser("disable", help="Disable a Skill for new Tasks."),
+    ):
+        enable_disable.add_argument("name")
+        enable_disable.add_argument("--scope")
+        enable_disable.add_argument("--operator")
+
     handoff = subcommands.add_parser("handoff", help="Preview, create or inspect a stage handoff.")
     handoff_subcommands = handoff.add_subparsers(dest="handoff_command", required=True)
     for action in ("preview", "create"):

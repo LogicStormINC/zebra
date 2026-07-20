@@ -76,6 +76,7 @@ CommandName = Literal[
     "delivery-audit",
     "commit",
     "pull-request",
+    "skill",
 ]
 
 

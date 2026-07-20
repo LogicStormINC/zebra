@@ -5,6 +5,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from types import MappingProxyType
+from typing import Protocol
 
 from agent_tools.skills_scope import (
     MAX_COMPATIBILITY_ENTRIES as MAX_COMPATIBILITY_ENTRIES,
@@ -61,11 +62,23 @@ __all__ = [
     "LocalSkillCatalog",
     "SkillCatalogError",
     "SkillCatalogReason",
+    "SkillEnablementState",
     "SkillMetadata",
     "SkillReadResult",
     "SkillScope",
     "ScopedSkillRoot",
 ]
+
+
+class SkillEnablementState(Protocol):
+    """Read-only view of which skill components are disabled.
+
+    The catalog stays decoupled from the concrete storage layer: any object
+    exposing ``disabled_components()`` satisfies it (structural protocol).
+    ``state=None`` at the catalog means "no filtering" (backward compatible).
+    """
+
+    def disabled_components(self) -> frozenset[tuple[str, str]]: ...
 
 
 @dataclass(frozen=True)
@@ -101,8 +114,14 @@ class _SkillEntry:
 class LocalSkillCatalog:
     """Bounded local catalog with scope-ordered, digest-pinned skill discovery."""
 
-    def __init__(self, roots: tuple[str | Path | ScopedSkillRoot, ...]) -> None:
+    def __init__(
+        self,
+        roots: tuple[str | Path | ScopedSkillRoot, ...],
+        *,
+        skills_state: SkillEnablementState | None = None,
+    ) -> None:
         self._roots = normalize_scoped_roots(roots)
+        self._skills_state = skills_state
 
     def list(self, *, limit: int = 100) -> tuple[tuple[SkillMetadata, ...], int, bool]:
         if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= MAX_SKILLS:
@@ -110,7 +129,16 @@ class LocalSkillCatalog:
                 SkillCatalogReason.INVALID_LIMIT, f"limit must be from 1 to {MAX_SKILLS}"
             )
         entries, ambiguous, truncated = self._discover()
-        available = tuple(entry.metadata for entry in entries.values())
+        disabled = (
+            self._skills_state.disabled_components()
+            if self._skills_state is not None
+            else frozenset[tuple[str, str]]()
+        )
+        available = tuple(
+            entry.metadata
+            for entry in entries.values()
+            if (entry.metadata.name, entry.metadata.scope.value) not in disabled
+        )
         return available[:limit], len(ambiguous), truncated or len(available) > limit
 
     def read(self, name: str, *, file_path: str = "SKILL.md") -> SkillReadResult:
