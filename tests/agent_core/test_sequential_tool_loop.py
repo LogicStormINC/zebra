@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
+from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
@@ -245,8 +246,9 @@ def test_bounded_loop_stops_when_no_model_call_remains_for_final_answer() -> Non
         created_at=NOW,
     )
 
-    assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
     assert result.attempt_result.metadata["stop_reason"] == ("model_call_budget_exhausted")
+    assert result.events[-1].event_type is EventType.SESSION_SUSPENDED
     assert result.run_result.stop_reason is HarnessStopReason.MODEL_CALL_BUDGET_EXHAUSTED
 
 

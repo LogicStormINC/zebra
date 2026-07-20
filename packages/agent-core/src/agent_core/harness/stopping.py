@@ -62,6 +62,7 @@ class HarnessStoppingPolicy:
         attempt_result: HarnessAttemptResult,
     ) -> bool:
         if attempt_result.outcome in {
+            HarnessAttemptOutcome.SUSPENDED,
             HarnessAttemptOutcome.WAITING_APPROVAL,
             HarnessAttemptOutcome.WAITING_INPUT,
         }:
@@ -92,6 +93,10 @@ class HarnessStoppingPolicy:
             return HarnessStopReason.CLARIFICATION_REQUIRED
         if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
             return HarnessStopReason.COMPLETED
+        if attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED:
+            if attempt_result.metadata.get("stop_reason") == "tool_call_budget_exhausted":
+                return HarnessStopReason.TOOL_CALL_BUDGET_EXHAUSTED
+            return HarnessStopReason.MODEL_CALL_BUDGET_EXHAUSTED
         if max_model_calls is not None and model_calls_used >= max_model_calls:
             return HarnessStopReason.MODEL_CALL_BUDGET_EXHAUSTED
         if max_tool_calls is not None and tool_calls_used >= max_tool_calls:

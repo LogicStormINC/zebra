@@ -1,5 +1,26 @@
 # Findings
 
+## CTX-SEG-02 - 2026-07-20
+
+- Task `d3206b32-fcb2-435a-9bca-34143cb3072f` failed without any Policy,
+  network, or tool error. Its terminal follow-up Envelope had no Capsule or
+  completed work, so “分析一下资金流向” lost the preceding stock context and the
+  model searched the Zebra repository instead.
+- The shared automatic Handoff builder is the smallest correct repair point.
+  It now projects the latest non-automation user message and Assistant response
+  into a bounded, low-trust checkpoint whenever automation has no explicit
+  completed-work or Capsule summary.
+- API and Harness defaults (`4/3` and `8/6`) were the systemic source of ordinary
+  work being stopped despite ongoing progress. Omitted limits now remain `None`.
+- Caller-supplied limits remain strict: a batch larger than the remaining hard
+  allowance starts nothing and suspends recoverably instead of becoming a Task failure.
+- A batch that exactly consumes an explicit tool allowance may use one remaining
+  tools-disabled model turn to summarize its actual results; another tool request pauses.
+- `tests_completed` with `summary=verifier hook skipped` is NoopVerifier plumbing,
+  not real validation. Desktop hides only that exact no-op event and retains real
+  verifier outcomes.
+
+
 ## WEB-UX-01 - 2026-07-19
 
 - The reported failure was not a model tool-call protocol defect: DeepSeek

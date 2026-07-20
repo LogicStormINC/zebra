@@ -28,9 +28,6 @@ from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 
-_DEFAULT_MODEL_CALL_LIMIT = 8
-_DEFAULT_TOOL_CALL_LIMIT = 6
-
 
 class SequentialToolLoop:
     def __init__(
@@ -245,20 +242,23 @@ class SequentialToolLoop:
         metadata: dict[str, object],
         fallback_message: str,
     ) -> HarnessAttemptResult:
-        model_limit = context.task.max_model_calls or _DEFAULT_MODEL_CALL_LIMIT
-        if model_calls_used >= model_limit:
+        model_limit = context.task.max_model_calls
+        if model_limit is not None and model_calls_used >= model_limit:
             return build_attempt_result(
-                outcome=HarnessAttemptOutcome.FAILED,
-                summary="model call budget exhausted before final answer",
+                outcome=HarnessAttemptOutcome.SUSPENDED,
+                summary="model call budget reached; execution can continue with a larger budget",
                 assistant_message=fallback_message,
                 model_calls_used=model_calls_used,
                 tool_calls_executed=tool_calls_executed,
                 emitted_events=emitted_events,
                 metadata={**metadata, "stop_reason": "model_call_budget_exhausted"},
             )
-        allow_tools = (
-            tool_calls_executed < _tool_limit(context) and model_calls_used + 1 < model_limit
+        tool_limit = _tool_limit(context)
+        tool_budget_open = tool_limit is None or tool_calls_executed < tool_limit
+        model_budget_allows_followup = (
+            model_limit is None or model_calls_used + 1 < model_limit
         )
+        allow_tools = tool_budget_open and model_budget_allows_followup
         if not allow_tools:
             self._model_step.append_final_answer_instruction(
                 messages,
@@ -306,14 +306,19 @@ class SequentialToolLoop:
             )
         )
         if completion.tool_calls and not allow_tools:
+            stop_reason = (
+                "tool_call_budget_exhausted"
+                if not tool_budget_open
+                else "model_call_budget_exhausted"
+            )
             return build_attempt_result(
-                outcome=HarnessAttemptOutcome.FAILED,
-                summary="model requested a tool after the tool boundary closed",
+                outcome=HarnessAttemptOutcome.SUSPENDED,
+                summary="explicit call budget reached; execution can continue with a larger budget",
                 assistant_message=completion.assistant_message.content,
                 model_calls_used=model_calls_used,
                 tool_calls_executed=tool_calls_executed,
                 emitted_events=emitted_events,
-                metadata={**metadata, "stop_reason": "tool_boundary_closed"},
+                metadata={**metadata, "stop_reason": stop_reason},
             )
         return self.advance(
             context,
@@ -339,5 +344,5 @@ def _executed_action_fingerprints(messages: list[SessionMessage]) -> set[str]:
     }
 
 
-def _tool_limit(context: HarnessContext) -> int:
-    return context.task.max_tool_calls or _DEFAULT_TOOL_CALL_LIMIT
+def _tool_limit(context: HarnessContext) -> int | None:
+    return context.task.max_tool_calls

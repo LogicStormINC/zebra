@@ -97,6 +97,13 @@ function attemptNumber(event: SessionEvent): number | undefined {
   return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
 }
 
+export function isVisibleSessionEvent(event: SessionEvent): boolean {
+  return !(
+    event.event_type === "tests_completed"
+    && objectValue(event.payload).summary === "verifier hook skipped"
+  );
+}
+
 function toolStatus(tool: ToolBuilder): TimelineToolStatus {
   if (tool.hasTerminal) return tool.status;
   if (tool.hasStarted) return "running";
@@ -177,6 +184,7 @@ export function projectSessionTimeline(events: SessionEvent[]): TimelineItem[] {
   for (const { event: sourceEvent } of ordered) {
     if (seenEventIds.has(sourceEvent.event_id)) continue;
     seenEventIds.add(sourceEvent.event_id);
+    if (!isVisibleSessionEvent(sourceEvent)) continue;
     const event = { ...sourceEvent, payload: objectValue(sourceEvent.payload) };
 
     if (

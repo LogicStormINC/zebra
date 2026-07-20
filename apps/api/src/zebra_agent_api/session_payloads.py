@@ -23,8 +23,8 @@ class CreateSessionPayload(TypedDict):
     execute: bool
     policy_profile: str
     tool_profile: str
-    max_model_calls: int
-    max_tool_calls: int
+    max_model_calls: int | None
+    max_tool_calls: int | None
     network_profile: str
     network_allowlist: list[str]
     mcp_allowlist: list[str]
@@ -132,13 +132,13 @@ def parse_create_session_payload(
     except ValueError:
         return bad_request("tool_profile is not supported")
 
-    max_model_calls = payload.get("max_model_calls", 4)
-    max_tool_calls = payload.get("max_tool_calls", 3)
+    max_model_calls = payload.get("max_model_calls")
+    max_tool_calls = payload.get("max_tool_calls")
     for field, value, maximum in (
         ("max_model_calls", max_model_calls, 16),
         ("max_tool_calls", max_tool_calls, 64),
     ):
-        if (
+        if value is not None and (
             not isinstance(value, int)
             or isinstance(value, bool)
             or not 1 <= value <= maximum
@@ -146,9 +146,8 @@ def parse_create_session_payload(
             return bad_request(
                 f"{field} must be an integer from 1 to {maximum} when provided"
             )
-    assert isinstance(max_model_calls, int)
-    assert isinstance(max_tool_calls, int)
-
+    assert max_model_calls is None or isinstance(max_model_calls, int)
+    assert max_tool_calls is None or isinstance(max_tool_calls, int)
     network_profile = payload.get("network_profile", "none")
     network_allowlist = payload.get("network_allowlist", [])
     if not isinstance(network_profile, str):

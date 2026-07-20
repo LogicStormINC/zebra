@@ -9,7 +9,12 @@ from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import SessionStatus
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
+from agent_storage import (
+    SQLiteEventStore,
+    SQLiteProjectionStore,
+    SQLiteSessionHandoffStore,
+    SQLiteWorkspaceProjectionStore,
+)
 from zebra_agent_api import RouteAdapter, RouteRequest, create_app
 
 NOW = datetime(2026, 7, 19, tzinfo=UTC)
@@ -39,7 +44,13 @@ def test_task_routes_keep_one_identity_across_automatic_follow_up_rollover(
     tmp_path: Path,
 ) -> None:
     database = tmp_path / "tasks.sqlite"
-    task_id = str(_seed_completed(database, tmp_path))
+    task_id = str(
+        _seed_completed(
+            database,
+            tmp_path,
+            assistant_message="长江电力今日上涨。需要继续分析资金流向吗？",
+        )
+    )
     adapter = RouteAdapter(create_app(database))
 
     before = adapter.handle(RouteRequest("GET", f"/tasks/{task_id}"))
@@ -94,6 +105,16 @@ def test_task_routes_keep_one_identity_across_automatic_follow_up_rollover(
     assert listing.body["count"] == 1
     assert len(internal.body["segments"]) == 2
     assert internal.body["segments"][1]["rollover_reason"] == "terminal_follow_up"
+    child_id = SessionId(UUID(internal.body["segments"][1]["session_id"]))
+    lineage = SQLiteSessionHandoffStore(database).get_lineage(child_id)
+    handoff_id = lineage[-1].inbound_handoff_id
+    assert handoff_id is not None
+    envelope = SQLiteSessionHandoffStore(database).get_envelope(handoff_id)
+    assert envelope is not None
+    assert envelope.completed_work == (
+        "Prior user request: Start",
+        "Prior assistant response: 长江电力今日上涨。需要继续分析资金流向吗？",
+    )
     assert "handoff_id" not in str(stream.body)
     assert (
         sum(
@@ -172,6 +193,8 @@ def _seed_completed(
     database: Path,
     workspace: Path,
     terminal_event: EventType = EventType.SESSION_COMPLETED,
+    *,
+    assistant_message: str = "Done",
 ):
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -194,9 +217,17 @@ def _seed_completed(
         SessionEvent.create(
             session_id=bootstrap.session.session_id,
             sequence=4,
+            event_type=EventType.MODEL_RESPONSE_RECEIVED,
+            actor=EventActor.HARNESS,
+            payload={"assistant_message": assistant_message},
+            created_at=NOW,
+        ),
+        SessionEvent.create(
+            session_id=bootstrap.session.session_id,
+            sequence=5,
             event_type=terminal_event,
             actor=EventActor.HARNESS,
-            payload={"summary": "done"},
+            payload={"summary": "done", "assistant_message": assistant_message},
             created_at=NOW,
         ),
     ]

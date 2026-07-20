@@ -1,5 +1,13 @@
 # Task Plan
 
+## CTX-SEG-02 - Follow-up Context And Budget Recovery
+
+1. `completed` - Register and claim the path-bounded repair task on an isolated branch.
+2. `completed` - Preserve a bounded prior user/assistant checkpoint across terminal follow-up rollover.
+3. `completed` - Remove implicit low call ceilings and suspend recoverably when an explicit hard budget cannot fit a complete batch.
+4. `completed` - Hide NoopVerifier status noise while keeping real verifier evidence visible.
+5. `completed` - Update durable architecture/status records and run focused, full, Desktop, and quality gates.
+
 ## WEB-UX-01 - Trusted Local Read-Only Web Auto Execution
 
 1. `completed` - Register and claim a path-bounded task on an independent branch.

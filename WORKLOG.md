@@ -5607,3 +5607,19 @@
   Ruff, strict Mypy `417`, and release Eval `8/8` passed.
 - Real-model isolated API Task `79c59c46-4869-4fd0-8383-db2528e955fc` answered
   `1+1` as `2` with no tools or Subagent lifecycle events.
+
+## 2026-07-20 CTX-SEG-02 Follow-up Context And Budget Recovery
+
+- Reconstructed failed Task `d3206b32-fcb2-435a-9bca-34143cb3072f` from its
+  durable Task/Segment stream and identified context loss before tool-budget failure.
+- Added bounded previous user/Assistant evidence to automatic Handoff Envelopes.
+- Replaced implicit API/Harness `4/3` and `8/6` call ceilings with optional limits.
+- Explicit over-budget batches now start nothing and suspend recoverably; batches
+  that exactly consume a tool allowance may use a remaining model turn to close.
+- Hid NoopVerifier status noise from Desktop timeline and log presentation.
+- Focused API/Core/Worker regression: `74 passed`.
+- Full deterministic suite: `1519 passed, 7 skipped`.
+- File-size gate checked `899` files; Ruff, strict Mypy over `419` source files,
+  and all `8/8` release Evals passed.
+- All `22` Desktop checks and the production Vite build passed with bundled
+  Node 22; Tauri was intentionally omitted per the explicit scope waiver.

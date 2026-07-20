@@ -10,6 +10,9 @@
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
 - Review task: `CTX-SEG-01` has delivered the stable Task, internal Segment,
   unified stream/routing, automatic safe rollover, and SQLite migration slice.
+- Active repair task: `CTX-SEG-02` preserves the latest bounded conversation
+  checkpoint across terminal follow-up Segments, removes implicit low call
+  ceilings, and converts explicit hard-budget exhaustion into recoverable pause.
 - Review task: `SUBAGENT-UX-01` makes Subagent use a model-native tool decision;
   simple work remains in the parent and every valid delegation records its reason.
 - Active architecture task: ADR-013 replaces user-visible child Sessions with a
@@ -36,6 +39,8 @@
   one monotonic event cursor, and active-Segment message/control routing.
 - Completed-Task follow-up and cancelled/failed-Task recovery create internal Segments
   automatically; unsafe lifecycle boundaries pause or fail closed.
+- Immediate terminal follow-ups inherit the previous user/Assistant checkpoint;
+  internal rollover no longer drops the subject needed by short replies.
 
 ### Runtime and security
 
@@ -90,8 +95,20 @@
 - Failed tools return structured observations for model-selected correction or
   fallback, including bounded failure reason and detail when output is empty,
   while Policy, approval, protocol, effect, and budget stops remain hard.
+- API and Harness model/tool call limits are optional and default to unlimited;
+  an explicit caller ceiling remains strict. A batch that cannot fit starts no
+  tools and suspends recoverably instead of becoming a generic Task failure.
 
 ## Latest Validation Baseline
+
+Validated on `codex/ctx-seg-02-followup-recovery` on 2026-07-20:
+
+- focused API/Core/Worker regression: `74 passed`
+- `make test`: `1519 passed, 7 skipped`
+- `make check`: file-size `899`, Ruff, strict Mypy over `419` source files,
+  and all `8/8` release Eval cases passed
+- all `22` deterministic Desktop checks and the production Vite build passed;
+  Tauri validation was intentionally omitted per explicit scope waiver
 
 Validated on `codex/web-ux-01-trusted-local-auto-web` on 2026-07-19:
 

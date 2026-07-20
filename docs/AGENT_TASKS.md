@@ -13539,6 +13539,7 @@ starting hard runtime, ACP, or code-intelligence implementation.
   `packages/agent-core/src/agent_core/domain/workspaces.py`,
   `packages/agent-core/src/agent_core/application/workspace_projection.py`,
   `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/contracts/session_control_events.py`,
   `packages/agent-core/src/agent_core/contracts/runtime_events.py`,
   `packages/agent-runtime/src/agent_runtime/`,
   `packages/agent-storage/src/agent_storage/workspaces.py`,
@@ -14733,3 +14734,65 @@ child only after an explicit valid `agent.research` call with a diagnostic reaso
 - isolated real-model API Task `79c59c46-4869-4fd0-8383-db2528e955fc`
   answered `1+1` with `2`; trace contained zero tools and the durable event stream
   contained no `agent.research`, tool-execution, or Subagent lifecycle event
+
+### CTX-SEG-02 - Follow-up Context And Budget Recovery
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE / CONTEXT / API / UI / QA`
+- Depends on: merged `CTX-SEG-01`
+- Branch: `codex/ctx-seg-02-followup-recovery`
+- Owned paths: `apps/api/src/zebra_agent_api/task_api.py`,
+  `apps/api/src/zebra_agent_api/session_handoff.py`,
+  `apps/api/src/zebra_agent_api/session_payloads.py`,
+  `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
+  `packages/agent-core/src/agent_core/application/session_bootstrap.py`,
+  `packages/agent-core/src/agent_core/application/workspace_projection.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/harness/`,
+  `packages/agent-context/src/agent_context/session_handoff.py`,
+  `UI/desktop/src/lib/session-timeline.ts`,
+  `UI/desktop/src/components/SessionThreadWorkspace.tsx`,
+  `UI/desktop/checks/session-timeline.check.ts`, `tests/agent_core/`,
+  `tests/agent_context/`, `tests/api/test_task_routes.py`,
+  `tests/worker/test_execution_finalization.py`,
+  `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
+  `docs/自适应Agent循环与预算治理方案_v1.0.md`,
+  `docs/ADR-013_用户任务连续性与内部执行分段.md`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Preserve the immediately relevant conversation checkpoint across an invisible
+terminal follow-up Segment, remove implicit low model/tool call ceilings, and
+treat caller-supplied hard-budget exhaustion as a recoverable suspension.
+
+#### Acceptance
+
+- [x] A terminal follow-up carries a bounded previous user/assistant checkpoint
+  into the child Segment without copying provider-private or raw tool state.
+- [x] API and harness tasks without explicit model/tool limits can continue while
+  the model is making progress, including beyond six tool calls.
+- [x] A caller-supplied hard limit remains strict; an over-budget batch starts no
+  tools and suspends the Session instead of failing or fabricating a final answer.
+- [x] Hard policy, approval, protocol, duplicate-effect, and cancellation stops
+  remain unchanged.
+- [x] Desktop hides NoopVerifier `tests_completed` noise while retaining real
+  verifier results.
+- [x] Focused regression, full deterministic tests, Desktop checks/build, and
+  repository quality gates pass.
+
+#### Validation Evidence
+
+- focused API/Core/Worker regression: `74 passed`
+- full deterministic suite: `1519 passed, 7 skipped`
+- file-size gate checked `899` files; Ruff passed; strict Mypy passed over `419`
+  source files; all `8/8` release Eval cases passed
+- all `22` deterministic Desktop checks and the production Vite build passed;
+  Tauri validation was intentionally omitted per explicit scope waiver
+
+#### Explicit Non-Goals
+
+- replaying provider-private continuation or raw tool output across Segments
+- removing explicit caller budgets or repeated-action stopping conditions
+- hard-coded finance, stock, or intent-specific routing heuristics

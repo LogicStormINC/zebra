@@ -25,6 +25,10 @@ from agent_core.contracts.model_events import (
     ModelResponseReceivedPayload,
 )
 from agent_core.contracts.runtime_events import RuntimeProvisionedPayload
+from agent_core.contracts.session_control_events import (
+    SessionResumedPayload,
+    SessionSuspendedPayload,
+)
 from agent_core.domain.clarifications import (
     MAX_CLARIFICATION_CHOICE_CHARS,
     MAX_CLARIFICATION_CHOICES,
@@ -305,38 +309,6 @@ class MemoryReviewRecordedPayload(BaseModel):
         stripped = value.strip()
         if not stripped:
             raise ValueError("field must not be blank when provided")
-        return stripped
-
-
-class SessionSuspendedPayload(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    runtime_name: str
-    snapshot_id: str
-    snapshot_path: str
-
-    @field_validator("runtime_name", "snapshot_id", "snapshot_path")
-    @classmethod
-    def ensure_field_not_blank(cls, value: str) -> str:
-        stripped = value.strip()
-        if not stripped:
-            raise ValueError("field must not be blank")
-        return stripped
-
-
-class SessionResumedPayload(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    runtime_name: str
-    snapshot_id: str
-    workspace_root: str
-
-    @field_validator("runtime_name", "snapshot_id", "workspace_root")
-    @classmethod
-    def ensure_field_not_blank(cls, value: str) -> str:
-        stripped = value.strip()
-        if not stripped:
-            raise ValueError("field must not be blank")
         return stripped
 
 

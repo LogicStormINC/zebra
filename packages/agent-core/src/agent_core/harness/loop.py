@@ -123,16 +123,26 @@ class HarnessLoop:
             terminal_event_type = (
                 EventType.SESSION_COMPLETED
                 if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+                else EventType.SESSION_SUSPENDED
+                if attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
                 else EventType.SESSION_FAILED
             )
+            payload = {
+                "attempt_number": attempt.number,
+                "summary": attempt_result.summary,
+                "metadata": attempt_result.metadata,
+            }
             recorder.record(
                 event_type=terminal_event_type,
                 actor=EventActor.HARNESS,
-                payload={
-                    "attempt_number": attempt.number,
-                    "summary": attempt_result.summary,
-                    "metadata": attempt_result.metadata,
-                },
+                payload=(
+                    {
+                        "reason": str(attempt_result.metadata.get("stop_reason", "budget")),
+                        "metadata": attempt_result.metadata,
+                    }
+                    if terminal_event_type is EventType.SESSION_SUSPENDED
+                    else payload
+                ),
             )
             return HarnessLoopResult(
                 session=recorder.session,

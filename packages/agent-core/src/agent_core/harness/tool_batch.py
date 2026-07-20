@@ -60,7 +60,7 @@ class ToolBatchExecutor:
         emitted_events: list[HarnessEventDraft],
         model_calls_used: int,
         tool_calls_executed: int,
-        tool_call_limit: int,
+        tool_call_limit: int | None,
         fingerprints: set[str],
         metadata: dict[str, object],
         execute_all: bool,
@@ -69,6 +69,26 @@ class ToolBatchExecutor:
     ) -> ToolBatchResult:
         if not tool_calls:
             raise ValueError("tool batch must not be empty")
+        if (
+            tool_call_limit is not None
+            and tool_calls_executed + len(tool_calls) > tool_call_limit
+        ):
+            return self._terminal(
+                outcome=HarnessAttemptOutcome.SUSPENDED,
+                summary="tool call budget cannot fit the complete proposed batch",
+                completion=completion,
+                emitted_events=emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                metadata={
+                    **metadata,
+                    "stop_reason": "tool_call_budget_exhausted",
+                    "tool_call_limit": tool_call_limit,
+                    "proposed_tool_call_count": len(tool_calls),
+                    "remaining_tool_budget": tool_call_limit - tool_calls_executed,
+                    "remaining_tool_call_count": len(tool_calls),
+                },
+            )
         clarification_calls = tuple(call for call in tool_calls if call.name == "agent.clarify")
         if clarification_calls and len(tool_calls) != 1:
             return self._terminal(
@@ -113,20 +133,6 @@ class ToolBatchExecutor:
                 first_selection=first_selection,
             )
         for index, tool_call in enumerate(tool_calls):
-            if tool_calls_executed >= tool_call_limit:
-                return self._terminal(
-                    outcome=HarnessAttemptOutcome.FAILED,
-                    summary="tool call budget exhausted before batch completed",
-                    completion=completion,
-                    emitted_events=emitted_events,
-                    model_calls_used=model_calls_used,
-                    tool_calls_executed=tool_calls_executed,
-                    metadata={
-                        **metadata,
-                        "stop_reason": "tool_call_budget_exhausted",
-                        "remaining_tool_call_count": len(tool_calls) - index,
-                    },
-                )
             approved_continuation = index == 0 and first_execution_started
             if not approved_continuation:
                 selection_summary, selection_metadata = selection_evidence(
