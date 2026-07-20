@@ -15102,7 +15102,7 @@ env and SSRF reuse. No OAuth in Phase A.
 
 ### EXT-MCP-02 - MCP Connection Lifecycle Health And Reconnect
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `RUNTIME`
 - Depends on: merged `EXT-MCP-01`
@@ -15122,12 +15122,12 @@ counts and backoff), HTTP reuses the httpx connection pool.
 
 #### Acceptance
 
-- [ ] New mcp_pool.py McpSessionPool with McpHealthState transitions, bounded
+- [x] New mcp_pool.py McpSessionPool with McpHealthState transitions, bounded
   backoff, acquire/release/health/close.
-- [ ] mcp_protocol.py exposes a SessionState dataclass without changing wire
+- [x] mcp_protocol.py exposes a SessionState dataclass without changing wire
   behavior.
-- [ ] Pool wraps both stdio and http transports via McpProxyTransport.
-- [ ] New pool unit tests + integration lifecycle test pass; `make check` passes.
+- [x] Pool wraps both stdio and http transports via McpProxyTransport.
+- [x] New pool unit tests + integration lifecycle test pass; `make check` passes.
 
 #### Explicit Non-Goals
 

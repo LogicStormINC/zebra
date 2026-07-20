@@ -52,6 +52,19 @@ class McpHttpServerSpec(Protocol):
 McpAnyServerSpec = McpServerSpec | McpHttpServerSpec
 
 
+@dataclass(frozen=True)
+class SessionState:
+    """Snapshot of a negotiated MCP session.
+
+    Captures what the session already holds internally; exposing it as a value
+    object does not change any wire behavior.
+    """
+
+    protocol_version: str | None
+    capabilities: Mapping[str, object]
+    has_server_instructions: bool
+
+
 @dataclass
 class StdioMcpSession:
     server: McpServerSpec
@@ -160,6 +173,14 @@ class StdioMcpSession:
     @property
     def protocol_version(self) -> str | None:
         return self._protocol_version
+
+    @property
+    def state(self) -> SessionState:
+        return SessionState(
+            protocol_version=self._protocol_version,
+            capabilities=dict(self._capabilities),
+            has_server_instructions=self._has_server_instructions,
+        )
 
     def close(self) -> None:
         if self._selector is not None:
