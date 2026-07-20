@@ -41,6 +41,7 @@ from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.plans import MAX_PLAN_STEPS, PlanStep, SessionPlan
 from agent_core.domain.session_history import normalize_history_session_ids
+from agent_core.domain.skills import normalize_skill_components
 from agent_core.domain.tool_profiles import ToolProfile
 
 
@@ -69,6 +70,10 @@ class TaskPreparedPayload(BaseModel):
     network_profile: NetworkProfileName | None = None
     network_allowlist: list[str] | None = None
     mcp_allowlist: list[str] | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
+    skill_components: list[str] | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
     )
@@ -102,6 +107,11 @@ class TaskPreparedPayload(BaseModel):
     @classmethod
     def ensure_valid_mcp_allowlist(cls, value: list[str] | None) -> list[str] | None:
         return None if value is None else list(normalize_mcp_allowlist(value))
+
+    @field_validator("skill_components")
+    @classmethod
+    def ensure_valid_skill_components(cls, value: list[str] | None) -> list[str] | None:
+        return None if value is None else list(normalize_skill_components(value))
 
     @field_validator("history_session_ids")
     @classmethod

@@ -22,6 +22,7 @@ class SessionBootstrapCommand:
     network_profile: str = "none"
     network_allowlist: tuple[str, ...] = ()
     mcp_allowlist: tuple[str, ...] = ()
+    skill_components: tuple[str, ...] = ()
     history_session_ids: tuple[str, ...] | None = None
     max_attempts: int = 1
     max_model_calls: int | None = None
@@ -75,6 +76,7 @@ class SessionBootstrapService:
                     "network_profile": command.network_profile,
                     "network_allowlist": list(command.network_allowlist),
                     "mcp_allowlist": list(mcp_allowlist),
+                    "skill_components": list(command.skill_components),
                     **(
                         {"history_session_ids": list(history_session_ids)}
                         if history_session_ids is not None
