@@ -120,3 +120,27 @@ def test_worker_reinjects_latest_durable_context_capsule(tmp_path: Path) -> None
     assert recovered.runtime_evidence[0].metadata["pending_tools"] == [
         {"call_id": "call-1", "name": "tests.run", "arguments": {"preset": "test"}}
     ]
+
+
+def test_worker_recovery_carries_skill_components_snapshot(tmp_path: Path) -> None:
+    database = tmp_path / "sessions.sqlite"
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Recover skills",
+            user_input="Continue with the skill set",
+            workspace_root=tmp_path,
+        )
+    )
+    events = list(bootstrap.events)
+    workspace = rebuild_workspace(events).model_copy(
+        update={"skill_components": ("Review", "evidence")}
+    )
+
+    recovered = recover_task(
+        events,
+        workspace=workspace,
+        fallback_title="fallback",
+        attachment_store=SQLiteArtifactPayloadStore(database),
+    )
+
+    assert recovered.skill_components == ("Review", "evidence")

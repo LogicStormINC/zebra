@@ -20,6 +20,8 @@ def serialize_workspace_projection(
     }
     if workspace.mcp_allowlist is not None:
         body["mcp_allowlist"] = list(workspace.mcp_allowlist)
+    if workspace.skill_components is not None:
+        body["skill_components"] = list(workspace.skill_components)
     if workspace.policy_profile is not None:
         body["policy_profile"] = workspace.policy_profile
     if workspace.last_attempt_number is not None:

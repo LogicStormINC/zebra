@@ -73,6 +73,11 @@ def build_handoff_events(
                     if workspace["mcp_allowlist"] is None
                     else json.loads(workspace["mcp_allowlist"])
                 ),
+                "skill_components": (
+                    None
+                    if workspace["skill_components"] is None
+                    else json.loads(workspace["skill_components"])
+                ),
             },
         ),
     )

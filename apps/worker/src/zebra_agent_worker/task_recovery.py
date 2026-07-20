@@ -25,6 +25,7 @@ class RecoveredTask:
     tool_profile: ToolProfile
     network_profile: NetworkProfile
     mcp_allowlist: tuple[str, ...] | None
+    skill_components: tuple[str, ...] | None
     history_session_ids: tuple[str, ...] | None
     max_attempts: int
     max_model_calls: int | None
@@ -76,6 +77,7 @@ def recover_task(
             domain_allowlist=workspace.network_allowlist,
         ),
         mcp_allowlist=workspace.mcp_allowlist,
+        skill_components=workspace.skill_components,
         history_session_ids=_history_session_ids(task_payload.get("history_session_ids")),
         max_attempts=_optional_positive_int(task_payload.get("max_attempts")) or 1,
         max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),

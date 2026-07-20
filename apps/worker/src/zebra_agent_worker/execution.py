@@ -278,6 +278,7 @@ class SessionExecutionService:
                 network_profile=effective_network_profile.name.value,
                 network_allowlist=effective_network_profile.domain_allowlist,
                 mcp_allowlist=tuple(tool.name for tool in tool_gateway.effective_mcp_tools),
+                skill_components=tool_gateway.effective_skill_components,
                 confirmed_memories=list_confirmed_repo_memories(
                     self._database_path,
                     repo_id=str(task.workspace_root.resolve()),
