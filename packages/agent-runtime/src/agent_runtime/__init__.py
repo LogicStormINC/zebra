@@ -23,6 +23,7 @@ from agent_runtime.git_commit import (
 )
 from agent_runtime.git_diff import WorkspaceDiffError, WorkspaceDiffResult, WorkspaceDiffService
 from agent_runtime.harness import LocalToolGateway, run_local_harness
+from agent_runtime.mcp_http import StreamableHttpMcpTransport
 from agent_runtime.mcp_inventory import (
     McpCapabilityInventory,
     McpServerCapability,
@@ -38,7 +39,12 @@ from agent_runtime.mcp_prompts import (
     discover_mcp_prompts,
     resolve_mcp_prompt,
 )
-from agent_runtime.mcp_protocol import McpProtocolError, McpServerSpec
+from agent_runtime.mcp_protocol import (
+    McpAnyServerSpec,
+    McpHttpServerSpec,
+    McpProtocolError,
+    McpServerSpec,
+)
 from agent_runtime.mcp_resources import (
     McpResource,
     discover_mcp_resources,
@@ -86,6 +92,8 @@ __all__ = [
     "LocalWorkspace",
     "LocalWorktree",
     "McpCapabilityInventory",
+    "McpHttpServerSpec",
+    "McpAnyServerSpec",
     "McpServerCapability",
     "McpToolCapability",
     "ReadOnlyToolGateway",
@@ -98,6 +106,7 @@ __all__ = [
     "RuntimeHandle",
     "RuntimeSnapshot",
     "SandboxSpec",
+    "StreamableHttpMcpTransport",
     "McpProtocolError",
     "McpPrompt",
     "McpPromptArgument",

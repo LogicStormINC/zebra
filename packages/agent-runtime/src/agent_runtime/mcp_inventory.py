@@ -5,9 +5,9 @@ from dataclasses import dataclass
 
 from agent_core.domain.mcp import normalize_mcp_allowlist
 
-from agent_runtime.mcp_protocol import McpServerSpec
+from agent_runtime.mcp_protocol import McpAnyServerSpec
 from agent_runtime.mcp_resources import McpResource, discover_mcp_resources
-from agent_runtime.mcp_stdio import LocalStdioMcpTransport
+from agent_runtime.mcp_routing import build_mcp_transport
 
 
 @dataclass(frozen=True)
@@ -63,11 +63,12 @@ class McpCapabilityInventory:
 
 
 def build_mcp_capability_inventory(
-    servers: Sequence[McpServerSpec],
+    servers: Sequence[McpAnyServerSpec],
 ) -> McpCapabilityInventory:
     if not servers:
         return McpCapabilityInventory(configured=False, available=False, servers=())
-    discovered = LocalStdioMcpTransport(servers).model_tools
+    transport = build_mcp_transport(servers, None, max_output_bytes=None)
+    discovered = transport.model_tools if transport is not None else ()
     discovered_resources = discover_mcp_resources(servers)
     tools_by_server: dict[str, list[McpToolCapability]] = {
         server.name: [] for server in servers
@@ -99,7 +100,7 @@ def build_mcp_capability_inventory(
 
 
 def validate_mcp_capability_selection(
-    servers: Sequence[McpServerSpec],
+    servers: Sequence[McpAnyServerSpec],
     selected_tools: Sequence[str],
 ) -> tuple[str, ...]:
     normalized = normalize_mcp_allowlist(selected_tools)

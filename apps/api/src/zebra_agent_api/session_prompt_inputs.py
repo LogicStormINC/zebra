@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from agent_core.application import build_mcp_prompt_attachment
 from agent_core.domain.attachments import TextAttachmentInput
-from agent_runtime import McpServerSpec, resolve_mcp_prompt
+from agent_runtime import McpAnyServerSpec, resolve_mcp_prompt
 
 
 def resolve_mcp_prompt_attachment(
-    servers: tuple[McpServerSpec, ...],
+    servers: tuple[McpAnyServerSpec, ...],
     prompt_id: str | None,
     arguments: dict[str, str],
 ) -> tuple[TextAttachmentInput, ...]:

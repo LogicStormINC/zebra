@@ -52,8 +52,8 @@ from agent_tools.errors import ToolRegistryError
 from agent_tools.skills_catalog import LocalSkillCatalog, SkillEnablementState
 
 from agent_runtime.adapters.local import LocalRuntime
-from agent_runtime.mcp_protocol import McpServerSpec
-from agent_runtime.mcp_stdio import LocalStdioMcpTransport
+from agent_runtime.mcp_protocol import McpAnyServerSpec
+from agent_runtime.mcp_routing import build_mcp_transport
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
 from agent_runtime.subagents import LocalResearchSubagentCoordinator
 from agent_runtime.web_gateway import LocalWebGatewayTransport
@@ -83,7 +83,7 @@ def run_local_harness(
     session_history: SessionHistoryPort | None = None,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
     attachments: tuple[AttachmentContextInput, ...] = (),
-    mcp_servers: Sequence[McpServerSpec] = (),
+    mcp_servers: Sequence[McpAnyServerSpec] = (),
     mcp_allowlist: Sequence[str] | None = None,
     trusted_local: bool = False,
     max_model_calls: int | None = None,
@@ -165,7 +165,7 @@ class LocalToolGateway(ToolGatewayPort):
         skills_state: SkillEnablementState | None = None,
         session_history: SessionHistoryPort | None = None,
         current_session_id: str | None = None,
-        mcp_servers: Sequence[McpServerSpec] = (),
+        mcp_servers: Sequence[McpAnyServerSpec] = (),
         mcp_allowlist: Sequence[str] | None = None,
         runtime: RuntimePort | None = None,
         runtime_handle: RuntimeHandle | None = None,
@@ -242,14 +242,10 @@ class LocalToolGateway(ToolGatewayPort):
         if session_history is not None and "sessions.search" in enabled_names:
             history_tool = SessionSearchTool(session_history, current_session_id)
             registry.register(history_tool.contract, history_tool.handle)
-        mcp_transport = (
-            LocalStdioMcpTransport(
-                mcp_servers,
-                mcp_allowlist,
-                max_output_bytes=None if output_projector is not None else 32_768,
-            )
-            if mcp_servers and (mcp_allowlist is None or mcp_allowlist)
-            else None
+        mcp_transport = build_mcp_transport(
+            mcp_servers,
+            mcp_allowlist,
+            max_output_bytes=None if output_projector is not None else 32_768,
         )
         self._mcp_catalog = AuthorizedMcpToolCatalog(
             mcp_transport.model_tools if mcp_transport is not None else ()

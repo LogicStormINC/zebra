@@ -127,7 +127,7 @@ def test_empty_task_allowlist_does_not_start_mcp_discovery(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "agent_runtime.harness.LocalStdioMcpTransport",
+        "agent_runtime.mcp_routing.LocalStdioMcpTransport",
         lambda *_args, **_kwargs: pytest.fail("MCP discovery must not start"),
     )
 

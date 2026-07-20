@@ -15052,7 +15052,7 @@ assertion, and record Phase A acceptance/rollback evidence.
 
 ### EXT-MCP-01 - MCP Protocol Negotiation And Streamable HTTP Transport
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `RUNTIME / CONFIG / SECURITY`
 - Depends on: merged `EXT-0`, merged `EXT-SKILL-03` (shared settings.py)
@@ -15080,18 +15080,18 @@ env and SSRF reuse. No OAuth in Phase A.
 
 #### Acceptance
 
-- [ ] mcp_protocol.py uses a SUPPORTED_PROTOCOL_VERSIONS set; StdioMcpSession
+- [x] mcp_protocol.py uses a SUPPORTED_PROTOCOL_VERSIONS set; StdioMcpSession
   validates the server-returned version and fails closed on mismatch/absence.
-- [ ] New mcp_http.py StreamableHttpMcpTransport implements McpProxyTransport;
+- [x] New mcp_http.py StreamableHttpMcpTransport implements McpProxyTransport;
   McpHttpServerSpec carries url + bearer_token_env (token never in manifest/
   event/log).
-- [ ] web_gateway.py exposes module-level reject_non_public_resolution (old
+- [x] web_gateway.py exposes module-level reject_non_public_resolution (old
   private name kept as alias); HTTP transport calls it pre-connect; https
   enforced; trusted_local honors operator HTTPS proxy.
-- [ ] settings.py McpHttpServerSettings + _read_mcp_http_servers shares
+- [x] settings.py McpHttpServerSettings + _read_mcp_http_servers shares
   MAX_MCP_SERVERS with stdio.
-- [ ] harness.py routes stdio vs http transports.
-- [ ] New negotiation/http tests + contract matrix pass; 11 existing MCP test
+- [x] harness.py routes stdio vs http transports.
+- [x] New negotiation/http tests + contract matrix pass; 11 existing MCP test
   files unbroken; `make check` passes.
 
 #### Explicit Non-Goals

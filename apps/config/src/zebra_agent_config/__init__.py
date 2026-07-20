@@ -1,5 +1,6 @@
 from zebra_agent_config.settings import (
     ApiSettings,
+    McpHttpServerSettings,
     McpServerSettings,
     ModelSettings,
     RuntimeSettings,
@@ -13,6 +14,7 @@ from zebra_agent_config.setup_settings import SetupDependencySettings, SetupSett
 
 __all__ = [
     "ApiSettings",
+    "McpHttpServerSettings",
     "McpServerSettings",
     "ModelSettings",
     "RuntimeSettings",

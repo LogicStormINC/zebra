@@ -5,7 +5,13 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from hashlib import sha256
 
-from agent_runtime.mcp_protocol import McpProtocolError, McpServerSpec, StdioMcpSession
+from agent_runtime.mcp_protocol import (
+    McpAnyServerSpec,
+    McpHttpServerSpec,
+    McpProtocolError,
+    McpServerSpec,
+    StdioMcpSession,
+)
 from agent_runtime.mcp_stdio import MCP_CALL_TIMEOUT_SECONDS, MCP_DISCOVERY_TIMEOUT_SECONDS
 
 MAX_MCP_PROMPT_PAGES = 4
@@ -68,10 +74,12 @@ class ResolvedMcpPrompt:
     messages: tuple[McpPromptMessage, ...]
 
 
-def discover_mcp_prompts(servers: Sequence[McpServerSpec]) -> tuple[McpPrompt, ...]:
-    _require_unique_server_names(servers)
+def discover_mcp_prompts(servers: Sequence[McpAnyServerSpec]) -> tuple[McpPrompt, ...]:
+    # Prompts are a stdio-only capability in Phase A; HTTP servers are skipped.
+    stdio_servers = [server for server in servers if not isinstance(server, McpHttpServerSpec)]
+    _require_unique_server_names(stdio_servers)
     prompts: list[McpPrompt] = []
-    for server in sorted(servers, key=lambda item: item.name):
+    for server in sorted(stdio_servers, key=lambda item: item.name):
         prompts.extend(_discover_server_prompts(server))
     prompt_ids = [prompt.prompt_id for prompt in prompts]
     if len(set(prompt_ids)) != len(prompt_ids):
@@ -80,7 +88,7 @@ def discover_mcp_prompts(servers: Sequence[McpServerSpec]) -> tuple[McpPrompt, .
 
 
 def resolve_mcp_prompt(
-    servers: Sequence[McpServerSpec],
+    servers: Sequence[McpAnyServerSpec],
     prompt_id: str,
     arguments: Mapping[str, str],
 ) -> ResolvedMcpPrompt:
@@ -91,7 +99,11 @@ def resolve_mcp_prompt(
     if prompt is None:
         raise McpProtocolError("selected MCP prompt is unavailable")
     normalized_arguments = _normalize_arguments(prompt, arguments)
-    server = next(server for server in servers if server.name == prompt.server_name)
+    server = next(
+        server
+        for server in servers
+        if not isinstance(server, McpHttpServerSpec) and server.name == prompt.server_name
+    )
     messages = _get_prompt(server, prompt, normalized_arguments)
     return ResolvedMcpPrompt(
         prompt_id=prompt.prompt_id,

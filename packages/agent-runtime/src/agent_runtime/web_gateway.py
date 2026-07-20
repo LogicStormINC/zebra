@@ -88,10 +88,11 @@ class LocalWebGatewayTransport:
             raise WebGatewayError(f"web gateway request failed: {exc}") from exc
 
 
-def _reject_non_public_resolution(hostname: str) -> None:
+def reject_non_public_resolution(hostname: str, *, port: int = 443) -> None:
     try:
         addresses = {
-            item[4][0] for item in socket.getaddrinfo(hostname, 443, type=socket.SOCK_STREAM)
+            item[4][0]
+            for item in socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
         }
     except OSError as exc:
         raise WebGatewayError(f"web hostname resolution failed: {exc}") from exc
@@ -101,6 +102,12 @@ def _reject_non_public_resolution(hostname: str) -> None:
         raise WebGatewayError(
             "web hostname resolves to a non-public address", reason="private_network_blocked"
         )
+
+
+def _reject_non_public_resolution(hostname: str) -> None:
+    # Backward-compatible alias; new callers (e.g. the MCP HTTP transport) should
+    # use the parameterized public helper directly.
+    reject_non_public_resolution(hostname)
 
 
 def _proxy_configuration(hostname: str, *, use_system_proxy: bool) -> dict[str, str]:

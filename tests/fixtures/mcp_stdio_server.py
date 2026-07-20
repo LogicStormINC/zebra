@@ -23,17 +23,21 @@ for raw_line in sys.stdin:
             capabilities["tools"] = {}
         if mode.startswith("resource") or mode == "resources-only":
             capabilities["resources"] = {}
-        send(
-            {
-                "jsonrpc": "2.0",
-                "id": request_id,
-                "result": {
-                    "protocolVersion": "2025-06-18",
-                    "capabilities": capabilities,
-                    "serverInfo": {"name": "fixture", "version": "1"},
-                },
-            }
-        )
+        if mode == "bad-protocol-version":
+            protocol_version: str | None = "9999-99-99"
+        elif mode == "missing-protocol-version":
+            protocol_version = None
+        elif mode == "new-protocol-version":
+            protocol_version = "2025-11-25"
+        else:
+            protocol_version = "2025-06-18"
+        result: dict[str, object] = {
+            "capabilities": capabilities,
+            "serverInfo": {"name": "fixture", "version": "1"},
+        }
+        if protocol_version is not None:
+            result["protocolVersion"] = protocol_version
+        send({"jsonrpc": "2.0", "id": request_id, "result": result})
     elif method == "tools/list":
         if mode == "invalid-json":
             sys.stdout.write("not-json\n")
