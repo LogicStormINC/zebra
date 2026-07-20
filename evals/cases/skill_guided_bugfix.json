@@ -1,0 +1,10 @@
+{
+  "case_id": "skill-guided-bugfix",
+  "category": "bugfix",
+  "title": "Defect isolation guided by a local Skill",
+  "prompt": "Load the guided-bugfix Skill, follow its steps, and fix the reported defect.",
+  "min_events": 4,
+  "min_tool_results": 2,
+  "max_cost_usd": 1.0,
+  "expected_skill_digest": "a6f53f60e63b55bd9b77a79e7638e61c3bd62dfa7e893337f4c3a79fa04d8616"
+}

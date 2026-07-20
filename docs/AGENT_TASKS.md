@@ -15015,7 +15015,7 @@ the catalog filtering disabled entries at harness construction.
 
 ### EXT-SKILL-05 - Skill Provenance And Eval Integration
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `TOOLS / EVAL / DOC`
 - Depends on: merged `EXT-SKILL-04`
@@ -15035,14 +15035,14 @@ assertion, and record Phase A acceptance/rollback evidence.
 
 #### Acceptance
 
-- [ ] SkillsReadTool metadata includes skill_digest/skill_scope/skill_version/
+- [x] SkillsReadTool metadata includes skill_digest/skill_scope/skill_version/
   provenance_source (written to TOOL_EXECUTION_COMPLETED metadata).
-- [ ] Two new eval cases (refactor, bugfix) with fixtures; replay forced through
+- [x] Two new eval cases (refactor, bugfix) with fixtures; replay forced through
   skills.read (min_tool_results >= 2) and an expected_skill_digest assertion.
-- [ ] Existing 8/8 release eval unaffected; new 2/2 skill cases pass.
-- [ ] `docs/扩展体系PhaseA验收记录.md` records per-card merge sha, test counts,
+- [x] Existing 8/8 release eval unaffected; new 2/2 skill cases pass.
+- [x] `docs/扩展体系PhaseA验收记录.md` records per-card merge sha, test counts,
   rollback commands.
-- [ ] `make test` and `make check` pass; skill digest is byte-stable across
+- [x] `make test` and `make check` pass; skill digest is byte-stable across
   Linux/macOS.
 
 #### Explicit Non-Goals
