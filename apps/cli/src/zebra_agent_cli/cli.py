@@ -48,6 +48,12 @@ from zebra_agent_cli.session_commit_write import commit_session
 from zebra_agent_cli.session_handoff_commands import session_handoff_result
 from zebra_agent_cli.session_message_append_write import append_session_message
 from zebra_agent_cli.session_pull_request_write import open_session_pull_request
+from zebra_agent_cli.skills_commands import (
+    disable_skill,
+    enable_skill,
+    list_skills,
+    show_skill,
+)
 
 
 def execute(
@@ -115,6 +121,8 @@ def execute(
             _database_path(namespace.database, active_settings),
             enabled=active_settings.session_handoff.enabled,
         )
+    if command == "skill":
+        return _skill_result(namespace, active_settings)
     if command == "approve":
         return _approval_result(namespace, _database_path(namespace.database, active_settings))
     if command == "memory-review":
@@ -386,3 +394,29 @@ def _model_result(
             ],
         },
     )
+
+
+def _skill_result(
+    namespace: argparse.Namespace,
+    settings: ZebraAgentSettings,
+) -> CliCommandResult:
+    action = namespace.skill_command
+    if action == "list":
+        payload: dict[str, object] = list_skills(settings=settings)
+    elif action == "show":
+        payload = show_skill(settings=settings, name=namespace.name)
+    elif action == "enable":
+        payload = enable_skill(
+            settings=settings,
+            name=namespace.name,
+            scope=namespace.scope,
+            operator=namespace.operator,
+        )
+    else:
+        payload = disable_skill(
+            settings=settings,
+            name=namespace.name,
+            scope=namespace.scope,
+            operator=namespace.operator,
+        )
+    return CliCommandResult(command="skill", payload={"action": action, **payload})

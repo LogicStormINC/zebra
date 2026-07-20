@@ -49,7 +49,7 @@ from agent_tools import (
     WorkspaceSearchTool,
 )
 from agent_tools.errors import ToolRegistryError
-from agent_tools.skills_catalog import LocalSkillCatalog
+from agent_tools.skills_catalog import LocalSkillCatalog, SkillEnablementState
 
 from agent_runtime.adapters.local import LocalRuntime
 from agent_runtime.mcp_protocol import McpServerSpec
@@ -79,6 +79,7 @@ def run_local_harness(
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
     web_search_endpoint: str | None = None,
     skill_roots: tuple[str, ...] = (),
+    skills_state: SkillEnablementState | None = None,
     session_history: SessionHistoryPort | None = None,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
     attachments: tuple[AttachmentContextInput, ...] = (),
@@ -94,6 +95,7 @@ def run_local_harness(
         tool_profile=tool_profile,
         web_search_endpoint=web_search_endpoint,
         skill_roots=skill_roots,
+        skills_state=skills_state,
         session_history=session_history,
         mcp_servers=mcp_servers,
         mcp_allowlist=mcp_allowlist,
@@ -160,6 +162,7 @@ class LocalToolGateway(ToolGatewayPort):
         web_search_endpoint: str | None = None,
         web_search_transport: WebSearchTransport | None = None,
         skill_roots: tuple[str, ...] = (),
+        skills_state: SkillEnablementState | None = None,
         session_history: SessionHistoryPort | None = None,
         current_session_id: str | None = None,
         mcp_servers: Sequence[McpServerSpec] = (),
@@ -229,7 +232,7 @@ class LocalToolGateway(ToolGatewayPort):
             registry.register(search.contract, search.handle)
         self._skill_component_names: tuple[str, ...] = ()
         if skill_roots:
-            catalog = LocalSkillCatalog(skill_roots)
+            catalog = LocalSkillCatalog(skill_roots, skills_state=skills_state)
             self._skill_component_names = tuple(
                 metadata.name for metadata in catalog.list()[0]
             )

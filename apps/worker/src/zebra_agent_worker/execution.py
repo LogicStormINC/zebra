@@ -38,6 +38,7 @@ from agent_storage import (
     SQLiteProjectionStore,
     SQLiteProviderContinuationStore,
     SQLiteSessionHistory,
+    SQLiteSkillsStateStore,
     SQLiteToolRunStore,
     SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
@@ -233,6 +234,11 @@ class SessionExecutionService:
                 tool_profile=task.tool_profile,
                 web_search_endpoint=self._settings.web_search_endpoint,
                 skill_roots=self._settings.skill_roots,
+                skills_state=(
+                    SQLiteSkillsStateStore(self._settings.skills_state_path)
+                    if self._settings.skill_roots
+                    else None
+                ),
                 mcp_servers=self._settings.mcp_servers,
                 mcp_allowlist=task.mcp_allowlist,
                 session_history=SQLiteSessionHistory(

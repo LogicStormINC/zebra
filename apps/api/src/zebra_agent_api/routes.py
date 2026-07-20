@@ -318,6 +318,18 @@ class RouteAdapter:
             if len(parts) == 2 and parts[1] == "delivery-audit":
                 return self.app.get_session_delivery_audit(parts[0])
             return _not_found(request)
+        if method == "GET" and request.path == "/admin/skills":
+            return self.app.list_skills()
+        if method == "GET" and request.path.startswith("/admin/skills/"):
+            parts = _admin_skills_path_parts(request.path)
+            if len(parts) == 1:
+                return self.app.show_skill(parts[0])
+        if method == "POST" and request.path.startswith("/admin/skills/"):
+            parts = _admin_skills_path_parts(request.path)
+            if len(parts) == 2 and parts[1] == "enable":
+                return self.app.enable_skill(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "disable":
+                return self.app.disable_skill(parts[0], request.body or {})
         if method == "GET" and request.path.startswith("/handoffs/"):
             handoff_id = request.path.removeprefix("/handoffs/").strip("/")
             return self.app.get_session_handoff(handoff_id)
@@ -347,6 +359,13 @@ def _users_path_parts(path: str) -> tuple[str, ...]:
 
 def _tenants_path_parts(path: str) -> tuple[str, ...]:
     suffix = path.removeprefix("/tenants/")
+    if not suffix:
+        return ()
+    return tuple(part for part in suffix.split("/") if part)
+
+
+def _admin_skills_path_parts(path: str) -> tuple[str, ...]:
+    suffix = path.removeprefix("/admin/skills/")
     if not suffix:
         return ()
     return tuple(part for part in suffix.split("/") if part)

@@ -26,11 +26,13 @@
   retaining fail-closed non-local defaults and hard Gateway/Runtime boundaries.
 - Active extension task: `EXT-0` registers the Skill/MCP/Plugin extension
   control-plane contract (`ADR-014`, merged via PR `#180`);
-  `EXT-SKILL-01..03` are `Done` — Skill v2 metadata, scope/namespace/digest, and
+  `EXT-SKILL-01..04` are `Done` — Skill v2 metadata, scope/namespace/digest,
   the task-level skill-component snapshot plus handoff/authority/recovery/API
-  threading; `EXT-SKILL-04/05` and `EXT-MCP-01/02/06` are Phase A `Ready`;
-  Plugin/Hook/Marketplace remain `Locked` pending private-cloud GA. Elicitation
-  is reconciled to durable HITL; sampling stays a hard non-goal.
+  threading, and the bounded admin surface (SQLite enable/disable state, API
+  `/admin/skills`, CLI `skill list|show|enable|disable`, catalog filtering at
+  harness construction); `EXT-SKILL-05` and `EXT-MCP-01/02/06` are Phase A
+  `Ready`; Plugin/Hook/Marketplace remain `Locked` pending private-cloud GA.
+  Elicitation is reconciled to durable HITL; sampling stays a hard non-goal.
 
 ## Current Capability
 

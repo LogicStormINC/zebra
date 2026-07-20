@@ -14969,7 +14969,7 @@ which Skills were active without replaying catalog state.
 
 ### EXT-SKILL-04 - Skill Management Surface
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `API / CLI / STORAGE / CONFIG`
 - Depends on: merged `EXT-SKILL-03`
@@ -14997,16 +14997,16 @@ the catalog filtering disabled entries at harness construction.
 
 #### Acceptance
 
-- [ ] skills_state SQLite table (name, scope, enabled, updated_at, operator;
+- [x] skills_state SQLite table (name, scope, enabled, updated_at, operator;
   PK(name, scope)) with idempotent upsert.
-- [ ] API `GET /admin/skills`, `POST /admin/skills/{name}/enable|disable`,
+- [x] API `GET /admin/skills`, `POST /admin/skills/{name}/enable|disable`,
   `GET /admin/skills/{name}` with existing auth_token gating.
-- [ ] CLI `zebra skill list|enable|disable|show` subcommands.
-- [ ] LocalSkillCatalog accepts skills_state and filters disabled entries;
+- [x] CLI `zebra skill list|enable|disable|show` subcommands.
+- [x] LocalSkillCatalog accepts skills_state and filters disabled entries;
   state=None means all enabled (backward compatible).
-- [ ] settings.py gains skills_state_path via _read_paths; .env.example and
+- [x] settings.py gains skills_state_path via _read_paths; .env.example and
   configs/default.env document ZEBRA_SKILLS_STATE_PATH.
-- [ ] New admin/commands/state tests + contract matrix pass; `make check` passes.
+- [x] New admin/commands/state tests + contract matrix pass; `make check` passes.
 
 #### Explicit Non-Goals
 
