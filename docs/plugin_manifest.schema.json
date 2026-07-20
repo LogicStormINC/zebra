@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zebra-agent/docs/plugin_manifest.schema.json",
+  "title": "Zebra Agent Plugin Manifest",
+  "description": "Draft manifest schema for Zebra extension plugins. Phase A contract only (EXT-0); implementation is Locked under EXT-PLUGIN-01. requested_capabilities and permissions are install-preview inputs only and NEVER form a Task grant.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["manifest_version", "id", "version", "scope", "entry"],
+  "properties": {
+    "manifest_version": {
+      "type": "string",
+      "enum": ["0.1"],
+      "description": "Manifest schema version. Bumped on breaking manifest changes."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{2,63}$",
+      "description": "Stable plugin id, lowercased kebab-case."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of this plugin package."
+    },
+    "publisher": {
+      "type": "string",
+      "description": "Publisher identity used in the stable component identity publisher/plugin@version#digest/..."
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["system", "admin", "user", "repo"],
+      "description": "Default scope. Higher scope wins on name collisions across scopes; same-scope collisions remain ambiguous."
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+      "description": "Optional explicit namespace. Defaults to the scope value."
+    },
+    "license": {
+      "type": "string",
+      "description": "SPDX license identifier or free-text license reference."
+    },
+    "compatibility": {
+      "type": "object",
+      "description": "Zebra runtime compatibility range.",
+      "properties": {
+        "zebra": {
+          "type": "string",
+          "description": "SemVer range of compatible Zebra versions, e.g. '>=0.1.0,<0.2.0'."
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "description": "The concrete extension this package contributes. v1 plugins declare exactly one entry kind.",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["skill-bundle", "mcp-stdio", "mcp-http", "hook"]
+        },
+        "skill_root": {
+          "type": "string",
+          "description": "For skill-bundle: relative directory containing SKILL.md."
+        },
+        "command": {
+          "type": "string",
+          "description": "For mcp-stdio: absolute executable path (resolved and validated by Zebra config loader)."
+        },
+        "args": {
+          "type": "array",
+          "items": {"type": "string"},
+          "maxItems": 16
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "For mcp-http: https:// URL. http:// is rejected."
+        },
+        "bearer_token_env": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{0,127}$",
+          "description": "For mcp-http: env variable NAME holding the bearer token. The token itself never enters the manifest, events, logs, or Artifact storage."
+        }
+      }
+    },
+    "requested_capabilities": {
+      "type": "object",
+      "description": "Install-preview only. Never forms a Task grant. Each requested capability still requires normal Policy at use time.",
+      "properties": {
+        "tools": {"type": "array", "items": {"type": "string"}},
+        "network": {"type": "array", "items": {"type": "string"}},
+        "elicitation": {"type": "boolean", "default": false}
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "description": "Content digest and optional signature. digest is mandatory and pinned at install time.",
+      "additionalProperties": false,
+      "required": ["digest"],
+      "properties": {
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "SHA-256 of the canonical package content, computed and pinned at install."
+        },
+        "signature": {"type": "string"},
+        "source_url": {"type": "string"}
+      }
+    }
+  }
+}
