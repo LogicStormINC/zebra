@@ -80,6 +80,7 @@ source = { editable = "packages/agent-runtime" }
 dependencies = [
     { name = "agent-core" },
     { name = "agent-security" },
+    { name = "agent-storage" },
     { name = "agent-tools" },
 ]
 
@@ -87,6 +88,7 @@ dependencies = [
 requires-dist = [
     { name = "agent-core", editable = "packages/agent-core" },
     { name = "agent-security", editable = "packages/agent-security" },
+    { name = "agent-storage", editable = "packages/agent-storage" },
     { name = "agent-tools", editable = "packages/agent-tools" },
 ]
 

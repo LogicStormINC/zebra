@@ -341,6 +341,44 @@ def test_web_search_uses_exact_endpoint_authority_without_reapproval() -> None:
     )
 
 
+def test_web_search_v2_accepts_pipeline_filters_and_keeps_read_only_scope() -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.READ_ONLY,
+        network_profile=parse_network_profile(
+            "domain-allowlist", domain_allowlist=("search.example.com",)
+        ),
+        web_search_endpoint="https://search.example.com/search",
+        web_pipeline_v2=True,
+    )
+    tool_call = _tool_call(
+        "web.search",
+        {
+            "query": "zebra agent",
+            "limit": 4,
+            "time_range": "day",
+            "include_domains": ["docs.example.com"],
+            "auto_fetch": 1,
+            "min_score": 0.2,
+            "format": "list",
+        },
+    )
+
+    decision = engine.evaluate_tool_call(tool_call)
+
+    assert decision.decision is PolicyDecisionType.ALLOW
+    assert decision.route == "web_gateway"
+    assert decision.target == "search.example.com"
+    assert decision.scope == (
+        "tool:web.search",
+        "route:web_gateway",
+        "network_profile:domain-allowlist",
+        "target:search.example.com",
+        "query:zebra agent",
+        "limit:4",
+        "side_effect:read_only",
+    )
+
+
 @pytest.mark.parametrize(
     ("endpoint", "arguments"),
     (

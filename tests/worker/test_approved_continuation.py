@@ -18,6 +18,8 @@ from agent_storage import (
     SQLiteWorkspaceProjectionStore,
 )
 from agent_tools.mcp_disclosure import MCP_TOOL_CALL_NAME
+from agent_tools.search_pipeline import SearchHit
+from agent_tools.web_crawl import FetchRequest, FetchResult
 from agent_tools.web_gateway import WebGatewayRequest, WebGatewayResponse
 from agent_tools.web_search import (
     WebSearchRequest,
@@ -441,6 +443,127 @@ def test_web_search_uses_durable_network_authority_and_executes_exactly_once(
     assert transport.requests[0].endpoint.hostname == "search.example.com"
 
 
+def test_web_fetch_v2_uses_durable_network_authority_and_executes_exactly_once(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """V2 native web.fetch must respect the same durable network authority and
+    execute-once semantics as v1 (WEB-PIPE durable-authority alignment)."""
+    database_path = tmp_path / "web-v2-continuation.sqlite"
+    created_at = datetime(2026, 7, 15, 8, 0, tzinfo=UTC)
+    tool_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="web.fetch",
+        arguments={"url": "https://docs.example.com/guide"},
+        created_at=created_at,
+        provider_call_id="call_web_v2_authorized",
+    )
+    gateway = _gateway(
+        "Reading authorized Web content.",
+        tool_call=tool_call,
+        follow_up="authorized-web-output-v2",
+    )
+    provider = RecordingFetchProvider()
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: gateway,
+    )
+    monkeypatch.setattr(
+        "agent_runtime.web_tools.LocalHttpFetchProvider",
+        lambda **kwargs: provider,
+    )
+    # Neutralize runtime DNS so the offline test does not depend on resolution.
+    monkeypatch.setattr(
+        "agent_runtime.crawl_gateway.resolve_and_validate",
+        lambda *args, **kwargs: ("93.184.216.34",),
+    )
+    session_id = _seed_session(database_path, tmp_path, network_profile="none")
+    service = _execution_service(
+        database_path,
+        settings=_settings(database_path, profile="local", web_pipeline_v2=True),
+    )
+
+    completed = service.execute_session(
+        session_id, worker_id="worker-web-v2", executed_at=created_at
+    )
+
+    assert completed.session.status is SessionStatus.COMPLETED
+    assert completed.attempt_result.metadata["assistant_message"] == "authorized-web-output-v2"
+    assert len(provider.requests) == 1
+    assert provider.requests[0].url == "https://docs.example.com/guide"
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
+    assert (
+        sum(
+            event.event_type is EventType.TOOL_EXECUTION_STARTED
+            and event.payload.get("tool_name") == "web.fetch"
+            for event in events
+        )
+        == 1
+    )
+
+
+def test_web_search_v2_uses_durable_network_authority_and_executes_exactly_once(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """V2 rebuilt web.search must respect the durable domain allowlist and the
+    durable execute-once semantics (WEB-PIPE durable-authority alignment)."""
+    database_path = tmp_path / "search-v2-continuation.sqlite"
+    created_at = datetime(2026, 7, 15, 8, 30, tzinfo=UTC)
+    tool_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="web.search",
+        arguments={"query": "zebra agent", "limit": 2},
+        created_at=created_at,
+        provider_call_id="call_search_v2_authorized",
+    )
+    gateway = _gateway(
+        "Searching authorized sources.",
+        tool_call=tool_call,
+        follow_up="authorized-search-output-v2",
+    )
+    provider = RecordingSearchProvider(endpoint="https://search.example.com/search")
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: gateway,
+    )
+    monkeypatch.setattr(
+        "agent_runtime.web_tools.SearXNGSearchProvider",
+        lambda **kwargs: provider,
+    )
+    session_id = _seed_session(
+        database_path,
+        tmp_path,
+        network_profile="domain-allowlist",
+        network_allowlist=("search.example.com",),
+    )
+    settings = _settings(
+        database_path,
+        web_search_endpoint="https://search.example.com/search",
+        web_pipeline_v2=True,
+    )
+    service = _execution_service(database_path, settings=settings)
+
+    completed = service.execute_session(
+        session_id, worker_id="worker-search-v2", executed_at=created_at
+    )
+
+    assert completed.session.status is SessionStatus.COMPLETED
+    # the rebuilt pipeline may expand the query (multi-query/RRF), but the TOOL
+    # must execute exactly once under the durable authority.
+    assert provider.queries  # at least the original query reached the provider
+    assert any(query == "zebra agent" for query in provider.queries)
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
+    assert (
+        sum(
+            event.event_type is EventType.TOOL_EXECUTION_STARTED
+            and event.payload.get("tool_name") == "web.search"
+            for event in events
+        )
+        == 1
+    )
+
+
 def test_approved_continuation_does_not_replay_uncertain_execution() -> None:
     session_id = new_session_id()
     created_at = datetime(2026, 7, 14, 7, 30, tzinfo=UTC)
@@ -665,6 +788,7 @@ def _settings(
     *,
     profile: str = "test",
     web_search_endpoint: str | None = None,
+    web_pipeline_v2: bool = False,
     mcp_servers: tuple[McpServerSettings, ...] = (),
 ) -> ZebraAgentSettings:
     return ZebraAgentSettings(
@@ -678,5 +802,6 @@ def _settings(
             model="test-model",
         ),
         web_search_endpoint=web_search_endpoint,
+        web_pipeline_v2=web_pipeline_v2,
         mcp_servers=mcp_servers,
     )

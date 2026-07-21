@@ -1,12 +1,28 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from ipaddress import ip_address
 from urllib.parse import urlsplit, urlunsplit
 
 
 class WebTargetError(ValueError):
     """Raised when a Web target is outside the bounded HTTPS contract."""
+
+
+class TruncationScope(str, Enum):
+    """Where in the web pipeline a result was bounded.
+
+    NONE: full result returned. SOURCE: bounded at the network/source layer.
+    CLEAN_TEXT: bounded after extraction/cleaning. PROJECTION: bounded when
+    selecting chunks for the model. OUTPUT: bounded at final JSON byte limit.
+    """
+
+    NONE = "none"
+    SOURCE = "source"
+    CLEAN_TEXT = "clean_text"
+    PROJECTION = "projection"
+    OUTPUT = "output"
 
 
 @dataclass(frozen=True)

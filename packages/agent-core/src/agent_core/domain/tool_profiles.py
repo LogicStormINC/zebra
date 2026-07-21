@@ -21,6 +21,10 @@ GENERAL_TOOL_NAMES = frozenset(
         "skills.read",
         "web.fetch",
         "web.search",
+        "web.crawl",
+        "web.extract",
+        "web.read",
+        "web.find",
     }
 )
 CODING_TOOL_NAMES = GENERAL_TOOL_NAMES | {"git.status", "tests.run"}

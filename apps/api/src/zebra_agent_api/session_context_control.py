@@ -200,7 +200,7 @@ class SessionContextControlApi:
                     capsule.approvals_and_policy_state
                 ),
                 readable_artifact_refs=frozenset(
-                    (*capsule.artifact_refs, *capsule.recent_exact_tail_refs)
+                    capsule.referenced_artifact_refs
                 ),
             ),
             sequence=event.sequence,

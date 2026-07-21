@@ -78,6 +78,7 @@ def execute_durable_run(
         tool_profile=tool_profile,
         network_profile=effective_network_profile,
         web_search_endpoint=settings.web_search_endpoint,
+        web_pipeline_v2=settings.web_pipeline_v2,
         skill_roots=build_scoped_skill_roots(
             system=settings.skill_roots_system,
             admin=settings.skill_roots_admin,

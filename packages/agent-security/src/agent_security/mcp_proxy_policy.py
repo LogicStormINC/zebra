@@ -5,7 +5,11 @@ from enum import StrEnum
 
 from agent_core.domain.tools import ToolCall
 from agent_core.domain.web import WebTargetError, parse_web_target
-from agent_core.domain.web_search import WebSearchInputError, parse_web_search_input
+from agent_core.domain.web_search import (
+    WebSearchInputError,
+    parse_web_search_input as parse_legacy_web_search_input,
+)
+from agent_tools.search_pipeline import SearchInputError, parse_search_query
 
 from agent_security.network_profile import (
     DEFAULT_NETWORK_PROFILE,
@@ -53,13 +57,17 @@ def classify_tool_egress(
     *,
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
     web_search_endpoint: str | None = None,
+    web_pipeline_v2: bool = False,
 ) -> ToolEgressMetadata:
     normalized_name = tool_call.name.strip()
     if normalized_name == "web.fetch":
         return _classify_web_egress(tool_call, network_profile)
     if normalized_name == "web.search":
         return _classify_web_search_egress(
-            tool_call, network_profile, web_search_endpoint
+            tool_call,
+            network_profile,
+            web_search_endpoint,
+            web_pipeline_v2=web_pipeline_v2,
         )
     target = _mcp_target(normalized_name)
     if target is None:
@@ -126,11 +134,16 @@ def _classify_web_search_egress(
     tool_call: ToolCall,
     network_profile: NetworkProfile,
     endpoint: str | None,
+    *,
+    web_pipeline_v2: bool,
 ) -> ToolEgressMetadata:
     try:
-        search = parse_web_search_input(tool_call.arguments)
+        search_query, search_limit = _parse_web_search_input_for_policy(
+            tool_call.arguments,
+            web_pipeline_v2=web_pipeline_v2,
+        )
         target = parse_web_target(endpoint)
-    except (WebSearchInputError, WebTargetError) as exc:
+    except (WebSearchInputError, SearchInputError, WebTargetError) as exc:
         return ToolEgressMetadata(
             tool_name=tool_call.name,
             route=ToolEgressRoute.BLOCKED,
@@ -148,7 +161,7 @@ def _classify_web_search_egress(
             target=target.hostname,
             reason=(
                 "configured search endpoint matches the durable domain allowlist; "
-                f"query={search.query!r}; limit={search.limit}; side_effect=read_only"
+                f"query={search_query!r}; limit={search_limit}; side_effect=read_only"
             ),
         )
     return ToolEgressMetadata(
@@ -169,3 +182,15 @@ def _mcp_target(tool_name: str) -> str | None:
     if not server_name or not remote_tool:
         return None
     return f"{server_name}.{remote_tool}"
+
+
+def _parse_web_search_input_for_policy(
+    arguments: object,
+    *,
+    web_pipeline_v2: bool,
+) -> tuple[str, int]:
+    if web_pipeline_v2:
+        parsed = parse_search_query(arguments)
+    else:
+        parsed = parse_legacy_web_search_input(arguments)
+    return parsed.query, parsed.limit

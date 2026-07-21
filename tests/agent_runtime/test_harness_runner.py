@@ -18,6 +18,8 @@ from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.tools import ToolCall
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_runtime import LocalToolGateway, run_local_harness
+from agent_runtime.web_gateway import LocalWebGatewayTransport
+from agent_runtime.web_search import LocalWebSearchTransport
 from agent_storage import SQLiteArtifactPayloadStore
 
 
@@ -397,6 +399,51 @@ def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
     assert file_read.parameters["required"] == ["path"]
 
 
+def test_local_tool_gateway_rejects_legacy_transports_when_v2_enabled(tmp_path) -> None:
+    with pytest.raises(
+        ValueError, match="legacy web transports are not supported when web_pipeline_v2 is enabled"
+    ):
+        LocalToolGateway(
+            tmp_path.resolve(),
+            web_pipeline_v2=True,
+            web_gateway_transport=LocalWebGatewayTransport(),
+        )
+    with pytest.raises(
+        ValueError, match="legacy web transports are not supported when web_pipeline_v2 is enabled"
+    ):
+        LocalToolGateway(
+            tmp_path.resolve(),
+            web_pipeline_v2=True,
+            web_search_transport=LocalWebSearchTransport(),
+        )
+    with pytest.raises(
+        ValueError,
+        match="web_search_endpoint is not a valid web target for web_pipeline_v2",
+    ):
+        LocalToolGateway(
+            tmp_path.resolve(),
+            web_pipeline_v2=True,
+            web_search_endpoint="http://search.example.com/search",
+        )
+
+
+def test_run_local_harness_rejects_invalid_web_search_endpoint_when_v2_enabled(tmp_path) -> None:
+    with pytest.raises(
+        ValueError,
+        match="web_search_endpoint is not a valid web target for web_pipeline_v2",
+    ):
+        run_local_harness(
+            prompt="Check search capabilities.",
+            title="Invalid v2 endpoint should fail fast",
+            workspace_root=tmp_path.resolve(),
+            web_search_endpoint="http://search.example.com/search",
+            web_pipeline_v2=True,
+            model_gateway=ScriptedModelGateway(
+                responses=(ScriptedModelResponse(completion=_completion("done")),)
+            ),
+        )
+
+
 def test_local_tool_gateway_exposes_only_parallel_safe_builtins(tmp_path) -> None:
     gateway = LocalToolGateway(tmp_path.resolve())
 
@@ -499,6 +546,22 @@ def test_local_tool_gateway_exposes_coding_profile_tools(tmp_path) -> None:
     assert gateway.parallel_safe_tools == frozenset(
         {"files.list", "files.read", "files.search", "git.status"}
     )
+
+
+def test_local_tool_gateway_registers_native_web_tools_when_v2_enabled(tmp_path) -> None:
+    gateway = LocalToolGateway(tmp_path.resolve(), web_pipeline_v2=True)
+
+    names = {tool.name for tool in gateway.model_tools}
+    assert {"web.fetch", "web.crawl", "web.extract", "web.read", "web.find"} <= names
+
+
+def test_local_tool_gateway_keeps_legacy_web_when_v2_disabled(tmp_path) -> None:
+    gateway = LocalToolGateway(tmp_path.resolve())
+
+    names = {tool.name for tool in gateway.model_tools}
+    assert "web.fetch" in names
+    assert "web.crawl" not in names
+    assert "web.read" not in names
 
 
 def test_local_tool_gateway_rejects_unknown_tool_profile(tmp_path) -> None:

@@ -93,6 +93,7 @@ class LocalPolicyEngine:
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE
     web_search_endpoint: str | None = None
     trusted_local: bool = False
+    web_pipeline_v2: bool = False
 
     def evaluate_tool_call(self, tool_call: ToolCall) -> PolicyDecision:
         tool_name = tool_call.name
@@ -103,6 +104,7 @@ class LocalPolicyEngine:
             tool_call,
             network_profile=self.network_profile,
             web_search_endpoint=self.web_search_endpoint,
+            web_pipeline_v2=self.web_pipeline_v2,
         )
         if egress.route is ToolEgressRoute.BLOCKED:
             return _deny(self.profile, blocked_route_reason(egress))
@@ -153,6 +155,7 @@ def build_approval_request(
     *,
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
     web_search_endpoint: str | None = None,
+    web_pipeline_v2: bool = False,
 ) -> ApprovalRequest | None:
     if decision.decision is not PolicyDecisionType.REQUIRE_APPROVAL:
         return None
@@ -160,6 +163,7 @@ def build_approval_request(
         tool_call,
         network_profile=network_profile,
         web_search_endpoint=web_search_endpoint,
+        web_pipeline_v2=web_pipeline_v2,
     )
     return ApprovalRequest(
         tool_name=tool_call.name,

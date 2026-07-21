@@ -126,6 +126,7 @@ class ZebraAgentSettings:
         )
     )
     web_search_endpoint: str | None = None
+    web_pipeline_v2: bool = False
     skill_roots: tuple[str, ...] = ()
     skill_roots_system: tuple[str, ...] = ()
     skill_roots_admin: tuple[str, ...] = ()
@@ -201,6 +202,7 @@ def load_settings(
         setup=load_setup_settings(values),
         scm=_load_scm_settings(values),
         web_search_endpoint=_read_optional(values, "ZEBRA_WEB_SEARCH_ENDPOINT"),
+        web_pipeline_v2=_read_bool(values, "ZEBRA_WEB_PIPELINE_V2", default=False),
         skill_roots=_read_paths(values, "ZEBRA_SKILL_ROOTS"),
         skill_roots_system=_read_paths(values, "ZEBRA_SKILL_ROOTS_SYSTEM"),
         skill_roots_admin=_read_paths(values, "ZEBRA_SKILL_ROOTS_ADMIN"),

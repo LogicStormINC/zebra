@@ -6,12 +6,14 @@ requires-python = ">=3.12,<4.0"
 dependencies = [
     "agent-core",
     "agent-security",
+    "agent-storage",
     "agent-tools",
 ]
 
 [tool.uv.sources]
 agent-core = { workspace = true }
 agent-security = { workspace = true }
+agent-storage = { workspace = true }
 agent-tools = { workspace = true }
 
 [build-system]

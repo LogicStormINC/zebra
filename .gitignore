@@ -13,6 +13,7 @@ build/
 evals/reports/
 node_modules/
 .pnpm-store/
+/.zebra-agent/
 UI/**/node_modules/
 UI/**/dist/
 UI/**/src-tauri/target/

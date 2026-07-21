@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_context import LocalContextCompiler
+from agent_core.domain.context_capsule import ContextCapsuleValidationError
 from agent_core.application import MemoryCandidateExtractionService
 from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType, SessionEvent
@@ -444,27 +445,36 @@ class SessionExecutionService:
             else:
                 attempt_result = orchestrator.run(context)
         except Exception as exc:
+            raw_error = str(exc).strip()
+            metadata = {
+                "stop_reason": "model_execution_failed",
+                "error_type": type(exc).__name__,
+                "model_calls_used": (
+                    clarification.model_calls_used + 1
+                    if clarification is not None
+                    else continuation.model_calls_used + 1
+                    if continuation is not None
+                    else 1
+                ),
+                "tool_calls_executed": (
+                    clarification.tool_calls_executed
+                    if clarification is not None
+                    else continuation.tool_calls_executed
+                    if continuation is not None
+                    else 0
+                ),
+            }
+            metadata["error_message"] = (
+                raw_error
+                if raw_error
+                else f"{metadata['error_type']} (no detail was provided)"
+            )
+            if isinstance(exc, ContextCapsuleValidationError):
+                metadata["error_message"] = str(exc)
             attempt_result = HarnessAttemptResult(
                 outcome=HarnessAttemptOutcome.FAILED,
                 summary="model execution failed",
-                metadata={
-                    "stop_reason": "model_execution_failed",
-                    "error_type": type(exc).__name__,
-                    "model_calls_used": (
-                        clarification.model_calls_used + 1
-                        if clarification is not None
-                        else continuation.model_calls_used + 1
-                        if continuation is not None
-                        else 1
-                    ),
-                    "tool_calls_executed": (
-                        clarification.tool_calls_executed
-                        if clarification is not None
-                        else continuation.tool_calls_executed
-                        if continuation is not None
-                        else 0
-                    ),
-                },
+                metadata=metadata,
             )
         finally:
             cleanup_error = close_tool_gateway(tool_gateway)

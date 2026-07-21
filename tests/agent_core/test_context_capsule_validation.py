@@ -32,6 +32,54 @@ def test_context_capsule_validator_protects_durable_state() -> None:
         )
 
 
+def test_context_capsule_validator_uses_recent_exact_tail_refs() -> None:
+    capsule = _capsule().model_copy(
+        update={"recent_exact_tail_refs": ("event://session/1", "artifact://recent")}
+    )
+    context = ContextCapsuleValidationContext(
+        expected_source_hash="a" * 64,
+        expected_source_event_range=ContextSourceEventRange(start_sequence=0, end_sequence=9),
+        unresolved_tool_call_ids=frozenset({"call-1"}),
+        protected_user_constraints=frozenset({"do not push"}),
+        approval_and_policy_state=frozenset({"write:approved"}),
+        readable_artifact_refs=frozenset(
+            {"artifact://evidence", "event://session/1", "artifact://recent"}
+        ),
+    )
+
+    validate_context_capsule(capsule, context)
+
+
+def test_context_capsule_validator_normalizes_artifact_refs_for_readability_check() -> None:
+    capsule = _capsule().model_copy(
+        update={
+            "artifact_refs": (
+                "artifact://evidence\",",
+                "artifact://stale\",)",
+            ),
+            "recent_exact_tail_refs": ("event://session/1\",", "artifact://recent"),
+        }
+    )
+    context = ContextCapsuleValidationContext(
+        expected_source_hash="a" * 64,
+        expected_source_event_range=ContextSourceEventRange(start_sequence=0, end_sequence=9),
+        unresolved_tool_call_ids=frozenset({"call-1"}),
+        protected_user_constraints=frozenset({"do not push"}),
+        approval_and_policy_state=frozenset({"write:approved"}),
+        readable_artifact_refs=frozenset(
+            {
+                "artifact://evidence",
+                "artifact://stale",
+                "event://session/1",
+                "artifact://recent",
+            }
+        ),
+    )
+    capsule = ContextCapsule.model_validate(capsule.model_dump())
+
+    validate_context_capsule(capsule, context)
+
+
 def test_context_capsule_created_event_has_a_strict_contract() -> None:
     schema = event_payload_schema_for(EventType.CONTEXT_CAPSULE_CREATED)
 

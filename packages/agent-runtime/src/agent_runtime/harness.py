@@ -58,6 +58,7 @@ from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagent
 from agent_runtime.subagents import LocalResearchSubagentCoordinator
 from agent_runtime.web_gateway import LocalWebGatewayTransport
 from agent_runtime.web_search import LocalWebSearchTransport
+from agent_runtime.web_tools import register_native_web_tools
 from agent_runtime.workspace import LocalWorkspace
 
 DEFAULT_TEST_PRESETS = {
@@ -88,6 +89,7 @@ def run_local_harness(
     trusted_local: bool = False,
     max_model_calls: int | None = None,
     max_tool_calls: int | None = None,
+    web_pipeline_v2: bool = False,
 ) -> HarnessLoopResult:
     tool_gateway = LocalToolGateway(
         workspace_root,
@@ -100,6 +102,7 @@ def run_local_harness(
         mcp_servers=mcp_servers,
         mcp_allowlist=mcp_allowlist,
         trusted_local=trusted_local,
+        web_pipeline_v2=web_pipeline_v2,
     )
     resolved_mcp_allowlist = (
         tuple(tool.name for tool in tool_gateway.effective_mcp_tools)
@@ -132,6 +135,7 @@ def run_local_harness(
                     network_profile=network_profile,
                     web_search_endpoint=web_search_endpoint,
                     trusted_local=trusted_local,
+                    web_pipeline_v2=web_pipeline_v2,
                 ),
                 tool_gateway,
                 model_step=HarnessModelStep(
@@ -171,6 +175,7 @@ class LocalToolGateway(ToolGatewayPort):
         runtime_handle: RuntimeHandle | None = None,
         artifact_payload_store: ArtifactPayloadStorePort | None = None,
         trusted_local: bool = False,
+        web_pipeline_v2: bool = False,
     ) -> None:
         if research_child_limit <= 0:
             raise ValueError("research_child_limit must be positive")
@@ -213,23 +218,22 @@ class LocalToolGateway(ToolGatewayPort):
                 DEFAULT_TEST_PRESETS,
             ),
             CommandRunTool(self._runtime, self._workspace),
-            WebFetchTool(
-                web_gateway_transport or LocalWebGatewayTransport(use_system_proxy=trusted_local),
-                max_output_bytes=262_144 if output_projector is not None else 65_536,
-            ),
         )
         enabled_names = tool_names_for_profile(tool_profile)
         for tool in tools:
             if tool.contract.name in enabled_names:
                 registry.register(tool.contract, tool.handle)
-        search_endpoint = _optional_web_search_endpoint(web_search_endpoint)
-        if search_endpoint is not None and "web.search" in enabled_names:
-            search = WebSearchTool(
-                endpoint=search_endpoint,
-                transport=web_search_transport
-                or LocalWebSearchTransport(use_system_proxy=trusted_local),
-            )
-            registry.register(search.contract, search.handle)
+        self._register_web_tools(
+            registry,
+            enabled_names=enabled_names,
+            workspace_root=workspace_root,
+            web_gateway_transport=web_gateway_transport,
+            web_search_endpoint=web_search_endpoint,
+            web_search_transport=web_search_transport,
+            trusted_local=trusted_local,
+            output_projector=output_projector,
+            web_pipeline_v2=web_pipeline_v2,
+        )
         self._skill_component_names: tuple[str, ...] = ()
         if skill_roots:
             catalog = LocalSkillCatalog(skill_roots, skills_state=skills_state)
@@ -276,6 +280,57 @@ class LocalToolGateway(ToolGatewayPort):
                 McpProxyToolGateway(mcp_transport) if mcp_transport is not None else None
             ),
         )
+
+    def _register_web_tools(
+        self,
+        registry: ToolRegistry,
+        *,
+        enabled_names: frozenset[str],
+        workspace_root: Path,
+        web_gateway_transport: WebGatewayTransport | None,
+        web_search_endpoint: str | None,
+        web_search_transport: WebSearchTransport | None,
+        trusted_local: bool,
+        output_projector: ToolOutputProjector | None,
+        web_pipeline_v2: bool,
+    ) -> None:
+        search_endpoint = _optional_web_search_endpoint(
+            web_search_endpoint,
+            web_pipeline_v2=web_pipeline_v2,
+        )
+        if web_pipeline_v2:
+            if web_gateway_transport is not None or web_search_transport is not None:
+                raise ValueError(
+                    "legacy web transports are not supported when web_pipeline_v2 is enabled"
+                )
+            # Native v2 path (opt-in via ZEBRA_WEB_PIPELINE_V2). See web_tools.py.
+            register_native_web_tools(
+                registry,
+                enabled_names=enabled_names,
+                workspace_root=workspace_root,
+                search_endpoint=search_endpoint,
+                trusted_local=trusted_local,
+            )
+            return
+        # Legacy v1 path (default). Preserves durable network-authority behavior
+        # guarded by tests/worker/test_approved_continuation.py — do not flip the
+        # default until v2 replicates that authority (see WEB-PIPE §14.2).
+        fetch_transport = web_gateway_transport or LocalWebGatewayTransport(
+            use_system_proxy=trusted_local
+        )
+        legacy_fetch = WebFetchTool(
+            fetch_transport,
+            max_output_bytes=262_144 if output_projector is not None else 65_536,
+        )
+        if "web.fetch" in enabled_names:
+            registry.register(legacy_fetch.contract, legacy_fetch.handle)
+        if search_endpoint is not None and "web.search" in enabled_names:
+            legacy_search = WebSearchTool(
+                endpoint=search_endpoint,
+                transport=web_search_transport
+                or LocalWebSearchTransport(use_system_proxy=trusted_local),
+            )
+            registry.register(legacy_search.contract, legacy_search.handle)
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
@@ -369,12 +424,20 @@ class LocalToolGateway(ToolGatewayPort):
                 self._runtime_handle = None
 
 
-def _optional_web_search_endpoint(value: str | None) -> WebTarget | None:
+def _optional_web_search_endpoint(
+    value: str | None,
+    *,
+    web_pipeline_v2: bool = False,
+) -> WebTarget | None:
     if value is None:
         return None
     try:
         return parse_web_target(value)
-    except WebTargetError:
+    except WebTargetError as exc:
+        if web_pipeline_v2:
+            raise ValueError(
+                f"web_search_endpoint is not a valid web target for web_pipeline_v2: {exc}"
+            ) from exc
         return None
 
 

@@ -95,3 +95,77 @@ def test_compaction_capsule_event_and_active_projection_commit_atomically(
     assert active is not None
     assert active.capsule.source_event_range is not None
     assert recorder.session.current_sequence == events[-1].sequence
+
+
+def test_compaction_includes_recent_exact_tail_refs_in_readability_check(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "context.sqlite"
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Context lifecycle",
+            user_input="Keep the acceptance criteria.",
+            workspace_root=tmp_path.resolve(),
+        )
+    )
+    event_store = SQLiteEventStore(database)
+    for event in bootstrap.events:
+        event_store.append(event)
+    projection_store = SQLiteProjectionStore(database)
+    projection_store.save_session(bootstrap.session)
+    workspace_store = SQLiteWorkspaceProjectionStore(database)
+    recovery = SessionRecoveryService(
+        event_store, projection_store, workspace_store
+    ).recover_session(bootstrap.session.session_id)
+    payload_store = SQLiteArtifactPayloadStore(database)
+    recorder = DurableHarnessEventRecorder(
+        session=recovery.session,
+        workspace=recovery.workspace,
+        event_store=event_store,
+        projection_store=projection_store,
+        workspace_store=workspace_store,
+        model_call_indexer=ModelCallIndexer(SQLiteModelCallStore(database)),
+        tool_run_indexer=ToolRunIndexer(SQLiteToolRunStore(database), payload_store),
+    )
+    capsule = ContextCapsule(
+        capsule_id="temporary-tail",
+        objective="Keep the acceptance criteria.",
+        constraints=("Keep the acceptance criteria.",),
+        immediate_next="Continue implementation.",
+        source_hash="b" * 64,
+        confidence=1.0,
+        created_at=NOW,
+        recent_exact_tail_refs=("event://session/1",),
+    )
+    draft = HarnessEventDraft(
+        event_type=EventType.CONTEXT_COMPACTED,
+        actor=EventActor.HARNESS,
+        payload={
+            "attempt_number": 1,
+            "before_tokens": 100,
+            "after_tokens": 40,
+            "removed_message_count": 4,
+            "retained_message_count": 2,
+            "within_budget": True,
+            "provenance": "test",
+            "capsule": capsule.model_dump(mode="json"),
+        },
+    )
+
+    persist_context_compaction(
+        draft,
+        recorder=recorder,
+        event_store=event_store,
+        lifecycle_store=SQLiteContextLifecycleStore(database),
+    )
+
+    events = event_store.list_for_session(bootstrap.session.session_id)
+    assert [event.event_type for event in events[-2:]] == [
+        EventType.CONTEXT_COMPACTED,
+        EventType.CONTEXT_CAPSULE_CREATED,
+    ]
+    active = SQLiteContextLifecycleStore(database).get_active_capsule(
+        bootstrap.session.session_id
+    )
+    assert active is not None
+    assert active.capsule.recent_exact_tail_refs == ("event://session/1",)
