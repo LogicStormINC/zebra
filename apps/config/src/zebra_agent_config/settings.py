@@ -132,6 +132,7 @@ class ZebraAgentSettings:
     skill_roots_repo: tuple[str, ...] = ()
     skills_state_path: str = ".zebra-agent/skills-state.sqlite"
     mcp_servers: tuple[McpServerSettings | McpHttpServerSettings, ...] = ()
+    mcp_elicitation_enabled: bool = True
 
 
 def trusted_local_mode_enabled(settings: ZebraAgentSettings) -> bool:
@@ -210,6 +211,9 @@ def load_settings(
             default=".zebra-agent/skills-state.sqlite",
         ),
         mcp_servers=_read_mcp_servers(values),
+        mcp_elicitation_enabled=_read_bool(
+            values, "ZEBRA_MCP_ELICITATION", default=True
+        ),
     )
 
 

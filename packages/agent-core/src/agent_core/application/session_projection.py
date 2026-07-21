@@ -153,6 +153,8 @@ def _clarification_context_from_event(event: SessionEvent) -> ClarificationConte
                 "context": event.payload.get("context"),
                 "assistant_message": event.payload.get("assistant_message"),
                 "requested_at": event.created_at,
+                "response_schema": event.payload.get("response_schema"),
+                "elicitation_source": event.payload.get("elicitation_source"),
             }
         )
     except ValueError:

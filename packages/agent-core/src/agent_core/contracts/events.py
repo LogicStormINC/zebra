@@ -339,6 +339,14 @@ class ClarificationRequestedPayload(BaseModel):
     conversation: list[dict[str, Any]]
     model_calls_used: int
     tool_calls_executed: int
+    # Optional MCP elicitation response schema + origin. None == agent.clarify and
+    # is excluded from serialization so the existing flow stays byte-identical.
+    response_schema: dict[str, Any] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    elicitation_source: str | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @field_validator("attempt_number")
     @classmethod

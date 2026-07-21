@@ -15136,7 +15136,7 @@ counts and backoff), HTTP reuses the httpx connection pool.
 
 ### EXT-MCP-06 - Elicitation To Durable HITL Bridge
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / RUNTIME / CONFIG`
 - Depends on: merged `EXT-MCP-01`, merged `EXT-SKILL-03` (shared contracts/
@@ -15165,14 +15165,14 @@ P127/P132-P138 elicitation non-goal per ADR-014 §7.
 
 #### Acceptance
 
-- [ ] ClarificationContext gains optional response_schema and elicitation_source
+- [x] ClarificationContext gains optional response_schema and elicitation_source
   (default agent.clarify); existing flow unchanged.
-- [ ] ClarificationRequestedPayload mirrors response_schema (optional).
-- [ ] New mcp_elicitation.py McpElicitationBridge converts elicitation/create to
+- [x] ClarificationRequestedPayload mirrors response_schema (optional).
+- [x] New mcp_elicitation.py McpElicitationBridge converts elicitation/create to
   ClarificationContext, emits CLARIFICATION_REQUESTED, suspends until response.
-- [ ] ZEBRA_MCP_ELICITATION=off rejects elicitation/create with a structured
+- [x] ZEBRA_MCP_ELICITATION=off rejects elicitation/create with a structured
   error; default on.
-- [ ] New schema/bridge tests + contract matrix pass; `make check` passes.
+- [x] New schema/bridge tests + contract matrix pass; `make check` passes.
 
 #### Explicit Non-Goals
 
