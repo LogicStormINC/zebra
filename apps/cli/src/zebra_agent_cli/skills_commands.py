@@ -2,22 +2,22 @@ from __future__ import annotations
 
 from agent_storage import SQLiteSkillsStateStore
 from agent_tools.skills_catalog import LocalSkillCatalog, SkillMetadata
-from agent_tools.skills_scope import ScopedSkillRoot, SkillScope
+from agent_tools.skills_scope import ScopedSkillRoot, build_scoped_skill_roots
 from zebra_agent_config import ZebraAgentSettings
 
 
 def scoped_skill_roots(settings: ZebraAgentSettings) -> tuple[ScopedSkillRoot, ...]:
-    """Build the scope-tagged discovery roots from the four settings roots."""
-    roots: list[ScopedSkillRoot] = []
-    for path in settings.skill_roots_system:
-        roots.append(ScopedSkillRoot(scope=SkillScope.SYSTEM, root=path))
-    for path in settings.skill_roots_admin:
-        roots.append(ScopedSkillRoot(scope=SkillScope.ADMIN, root=path))
-    for path in settings.skill_roots:
-        roots.append(ScopedSkillRoot(scope=SkillScope.USER, root=path))
-    for path in settings.skill_roots_repo:
-        roots.append(ScopedSkillRoot(scope=SkillScope.REPO, root=path))
-    return tuple(roots)
+    """Build the scope-tagged discovery roots from the four settings roots.
+
+    Delegates to the shared ``build_scoped_skill_roots`` so the CLI inventory and
+    the runtime harness discover identical scoped roots.
+    """
+    return build_scoped_skill_roots(
+        system=settings.skill_roots_system,
+        admin=settings.skill_roots_admin,
+        user=settings.skill_roots,
+        repo=settings.skill_roots_repo,
+    )
 
 
 def list_skills(*, settings: ZebraAgentSettings) -> dict[str, object]:

@@ -76,7 +76,11 @@ from zebra_agent_api.session_payloads import (
     parse_resume_session_payload,
 )
 from zebra_agent_api.session_prompt_inputs import resolve_mcp_prompt_attachment
-from zebra_agent_api.skills_admin import ApiSkillsAdminMixin, runtime_skills_state
+from zebra_agent_api.skills_admin import (
+    ApiSkillsAdminMixin,
+    runtime_skills_state,
+    scoped_skill_roots,
+)
 
 
 @dataclass(frozen=True)
@@ -139,9 +143,7 @@ class ZebraAgentApi(
         except ValueError as error:
             return bad_request(str(error))
         parsed["attachments"] = (
-            *parsed["attachments"],
-            *resource_attachments,
-            *prompt_attachments,
+            *parsed["attachments"], *resource_attachments, *prompt_attachments
         )
 
         response = (
@@ -408,7 +410,7 @@ class ZebraAgentApi(
                 tool_profile=ToolProfile(str(parsed["tool_profile"])),
                 network_profile=network_profile,
                 web_search_endpoint=self.settings.web_search_endpoint,
-                skill_roots=self.settings.skill_roots,
+                skill_roots=scoped_skill_roots(self.settings),
                 skills_state=runtime_skills_state(self.settings),
                 mcp_servers=self.settings.mcp_servers,
                 mcp_allowlist=parsed["mcp_allowlist"],

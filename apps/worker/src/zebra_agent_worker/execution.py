@@ -43,6 +43,7 @@ from agent_storage import (
     SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
 )
+from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import (
     ZebraAgentSettings,
     load_settings,
@@ -233,10 +234,20 @@ class SessionExecutionService:
                 model_gateway=model_gateway,
                 tool_profile=task.tool_profile,
                 web_search_endpoint=self._settings.web_search_endpoint,
-                skill_roots=self._settings.skill_roots,
+                skill_roots=build_scoped_skill_roots(
+                    system=self._settings.skill_roots_system,
+                    admin=self._settings.skill_roots_admin,
+                    user=self._settings.skill_roots,
+                    repo=self._settings.skill_roots_repo,
+                ),
                 skills_state=(
                     SQLiteSkillsStateStore(self._settings.skills_state_path)
-                    if self._settings.skill_roots
+                    if (
+                        self._settings.skill_roots
+                        or self._settings.skill_roots_system
+                        or self._settings.skill_roots_admin
+                        or self._settings.skill_roots_repo
+                    )
                     else None
                 ),
                 mcp_servers=self._settings.mcp_servers,

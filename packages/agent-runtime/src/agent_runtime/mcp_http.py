@@ -82,8 +82,10 @@ class McpHttpSession:
         if not isinstance(capabilities, Mapping):
             raise McpProtocolError(f"MCP server {self.server.name} has invalid capabilities")
         self._capabilities = dict(capabilities)
-        # notifications/initialized has no effect on a stateless Streamable HTTP
-        # server in Phase A, so it is intentionally a no-op here.
+        # Best-effort: tell a strict server the initialize handshake is complete.
+        # Streamable HTTP notifications have no JSON-RPC response, so failures are
+        # swallowed rather than killing the session.
+        self.notify("notifications/initialized")
         return self
 
     def __exit__(self, *_: object) -> None:
@@ -123,7 +125,22 @@ class McpHttpSession:
     def protocol_version(self) -> str | None:
         return self._protocol_version
 
+    def notify(self, method: str) -> None:
+        """Send a JSON-RPC notification (no id, no response) best-effort.
+
+        Streamable HTTP notifications are fire-and-forget; any network or server
+        error is swallowed so a notification can never kill the session.
+        """
+        try:
+            self._send_frame({"jsonrpc": "2.0", "method": method})
+        except McpProtocolError:
+            pass
+
     def _post(self, payload: Mapping[str, object]) -> dict[str, object]:
+        content_type, text = self._send_frame(payload)
+        return _parse_response_message(self.server.name, content_type, text)
+
+    def _send_frame(self, payload: Mapping[str, object]) -> tuple[str, str]:
         parsed = urllib.parse.urlparse(self.server.url)
         if parsed.scheme != "https":
             raise McpProtocolError(f"MCP server {self.server.name} url must use https")
@@ -159,7 +176,7 @@ class McpHttpSession:
         )
         try:
             with opener.open(request, timeout=self.timeout_seconds) as response:
-                content_type = (response.headers.get("Content-Type") or "")
+                content_type = response.headers.get("Content-Type") or ""
                 content_type = content_type.partition(";")[0].strip().lower()
                 body = response.read(MAX_MCP_FRAME_BYTES + 1)
         except urllib.error.HTTPError as exc:
@@ -178,7 +195,7 @@ class McpHttpSession:
             text = body.decode("utf-8")
         except UnicodeDecodeError as exc:
             raise McpProtocolError(f"MCP server {self.server.name} returned non-utf8 body") from exc
-        return _parse_response_message(self.server.name, content_type, text)
+        return content_type, text
 
 
 class StreamableHttpMcpTransport:

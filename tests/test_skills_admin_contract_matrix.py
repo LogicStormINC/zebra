@@ -4,6 +4,7 @@ from pathlib import Path
 
 from agent_storage import SQLiteSkillsStateStore
 from agent_tools.skills_catalog import LocalSkillCatalog
+from agent_tools.skills_scope import build_scoped_skill_roots
 
 
 def _skill(root: Path, name: str, description: str) -> None:
@@ -59,3 +60,38 @@ def test_disabled_filter_is_per_name_scope(tmp_path: Path) -> None:
     catalog = LocalSkillCatalog((str(skills),), skills_state=store)
     names = {metadata.name for metadata in catalog.list()[0]}
     assert names == {"evidence"}
+
+
+def test_build_scoped_skill_roots_tags_each_scope() -> None:
+    roots = build_scoped_skill_roots(
+        system=("/s",), admin=("/a",), user=("/u",), repo=("/r",)
+    )
+    assert [(root.scope.value, root.root) for root in roots] == [
+        ("system", "/s"),
+        ("admin", "/a"),
+        ("user", "/u"),
+        ("repo", "/r"),
+    ]
+
+
+def test_system_scope_skill_loads_and_filters_by_own_scope(tmp_path: Path) -> None:
+    system_root = tmp_path / "system-skills"
+    _skill(system_root / "planner", "planner", "Plan the work")
+    roots = build_scoped_skill_roots(system=(str(system_root),))
+
+    available = LocalSkillCatalog(roots).list()[0]
+    assert [metadata.name for metadata in available] == ["planner"]
+    assert available[0].scope.value == "system"
+
+    # disabling (planner, system) filters the system-scope component
+    store = SQLiteSkillsStateStore(tmp_path / "ss-system.sqlite")
+    store.set_enabled(name="planner", scope="system", enabled=False, operator="op")
+    filtered = LocalSkillCatalog(roots, skills_state=store).list()[0]
+    assert [metadata.name for metadata in filtered] == []
+
+    # disabling (planner, user) must NOT filter the system-scope component
+    other_store = SQLiteSkillsStateStore(tmp_path / "ss-user.sqlite")
+    other_store.set_enabled(name="planner", scope="user", enabled=False, operator="op")
+    unfiltered = LocalSkillCatalog(roots, skills_state=other_store).list()[0]
+    assert [metadata.name for metadata in unfiltered] == ["planner"]
+

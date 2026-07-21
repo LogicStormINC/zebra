@@ -6,6 +6,7 @@ from agent_core.domain.modeling import ModelToolDefinition
 from agent_tools import McpProxyRequest, McpProxyResponse
 
 from agent_runtime.mcp_http import StreamableHttpMcpTransport
+from agent_runtime.mcp_pool import McpSessionPool
 from agent_runtime.mcp_protocol import McpAnyServerSpec, McpHttpServerSpec, McpProtocolError
 from agent_runtime.mcp_stdio import LocalStdioMcpTransport
 
@@ -13,17 +14,14 @@ from agent_runtime.mcp_stdio import LocalStdioMcpTransport
 class _CompositeMcpTransport:
     """Unions stdio + HTTP sub-transports and routes calls by server name.
 
-    Each sub-transport already enforces its own allowlist over its discovered
-    tools, so the composite only unions ``model_tools`` and dispatches
-    ``execute`` to the owning sub-transport.
+    Each sub-transport is a :class:`McpSessionPool`; the composite only unions
+    ``model_tools`` and dispatches ``execute`` to the owning pool (which applies
+    health/backoff around the underlying transport).
     """
 
-    def __init__(
-        self,
-        transports: Sequence[LocalStdioMcpTransport | StreamableHttpMcpTransport],
-    ) -> None:
+    def __init__(self, transports: Sequence[McpSessionPool]) -> None:
         self._transports = tuple(transports)
-        routes: dict[str, LocalStdioMcpTransport | StreamableHttpMcpTransport] = {}
+        routes: dict[str, McpSessionPool] = {}
         combined: list[ModelToolDefinition] = []
         for transport in self._transports:
             for tool in transport.model_tools:
@@ -46,11 +44,13 @@ def build_mcp_transport(
     allowlist: Sequence[str] | None,
     *,
     max_output_bytes: int | None,
-) -> LocalStdioMcpTransport | StreamableHttpMcpTransport | _CompositeMcpTransport | None:
+) -> McpSessionPool | _CompositeMcpTransport | None:
     """Build the effective MCP transport(s), partitioning servers by kind.
 
-    Returns ``None`` when there are no servers or the allowlist is empty, mirroring
-    the original stdio-only guard.
+    Each sub-transport is wrapped in a :class:`McpSessionPool` so health
+    classification (healthy/degraded/quarantined) and bounded backoff are active
+    on the live harness path. Returns ``None`` when there are no servers or the
+    allowlist is empty, mirroring the original stdio-only guard.
     """
     if not servers or (allowlist is not None and not allowlist):
         return None
@@ -59,28 +59,32 @@ def build_mcp_transport(
     stdio_allowlist, http_allowlist = _partition_allowlist(
         allowlist, stdio_servers, http_servers
     )
-    transports: list[LocalStdioMcpTransport | StreamableHttpMcpTransport] = []
+    pools: list[McpSessionPool] = []
     if stdio_servers:
-        transports.append(
-            LocalStdioMcpTransport(
-                stdio_servers,
-                stdio_allowlist,
-                max_output_bytes=max_output_bytes,
+        pools.append(
+            McpSessionPool(
+                LocalStdioMcpTransport(
+                    stdio_servers,
+                    stdio_allowlist,
+                    max_output_bytes=max_output_bytes,
+                )
             )
         )
     if http_servers:
-        transports.append(
-            StreamableHttpMcpTransport(
-                http_servers,
-                http_allowlist,
-                max_output_bytes=max_output_bytes,
+        pools.append(
+            McpSessionPool(
+                StreamableHttpMcpTransport(
+                    http_servers,
+                    http_allowlist,
+                    max_output_bytes=max_output_bytes,
+                )
             )
         )
-    if not transports:
+    if not pools:
         return None
-    if len(transports) == 1:
-        return transports[0]
-    return _CompositeMcpTransport(transports)
+    if len(pools) == 1:
+        return pools[0]
+    return _CompositeMcpTransport(pools)
 
 
 def _partition_allowlist(
@@ -94,18 +98,26 @@ def _partition_allowlist(
     configured = {server.name for server in [*stdio_servers, *http_servers]}
     stdio_tools: list[str] = []
     http_tools: list[str] = []
-    orphan_tools: list[str] = []
+    malformed: list[str] = []
+    unknown_servers: list[str] = []
     for name in allowlist:
         server = _server_of(name)
         if server in http_names:
             http_tools.append(name)
         elif server in configured:
             stdio_tools.append(name)
+        elif server is None:
+            malformed.append(name)
         else:
-            orphan_tools.append(name)
-    if orphan_tools:
+            unknown_servers.append(name)
+    reasons: list[str] = []
+    if malformed:
+        reasons.append(f"malformed MCP tool names: {', '.join(sorted(set(malformed)))}")
+    if unknown_servers:
+        reasons.append(f"unknown MCP servers: {', '.join(sorted(set(unknown_servers)))}")
+    if reasons:
         raise McpProtocolError(
-            f"selected MCP tools are unavailable: {', '.join(sorted(set(orphan_tools)))}"
+            f"selected MCP tools are unavailable ({'; '.join(reasons)})"
         )
     return tuple(stdio_tools), tuple(http_tools)
 

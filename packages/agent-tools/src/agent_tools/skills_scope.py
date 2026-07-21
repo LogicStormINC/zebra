@@ -83,6 +83,31 @@ class ScopedSkillRoot:
     namespace: str | None = None
 
 
+def build_scoped_skill_roots(
+    *,
+    system: Sequence[str] = (),
+    admin: Sequence[str] = (),
+    user: Sequence[str] = (),
+    repo: Sequence[str] = (),
+) -> tuple[ScopedSkillRoot, ...]:
+    """Build scope-tagged discovery roots from the four settings root lists.
+
+    Centralizes the system/admin/user/repo ordering so the runtime harness and
+    the admin/CLI inventory discover the same scoped roots. Plain strings are
+    tagged with their scope; callers may also pass ``ScopedSkillRoot`` directly.
+    """
+    roots: list[ScopedSkillRoot] = []
+    for path in system:
+        roots.append(ScopedSkillRoot(scope=SkillScope.SYSTEM, root=path))
+    for path in admin:
+        roots.append(ScopedSkillRoot(scope=SkillScope.ADMIN, root=path))
+    for path in user:
+        roots.append(ScopedSkillRoot(scope=SkillScope.USER, root=path))
+    for path in repo:
+        roots.append(ScopedSkillRoot(scope=SkillScope.REPO, root=path))
+    return tuple(roots)
+
+
 def compute_skill_digest(manifest_bytes: bytes, body_bytes: bytes) -> str:
     """SHA-256 of canonical (manifest || body), mirroring ``runtime_spec_digest``."""
     digest = hashlib.sha256()

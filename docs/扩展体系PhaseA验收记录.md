@@ -64,6 +64,16 @@ git revert -m 1 c01819a   # 撤销 EXT-0 + SKILL-01/02/03(契约与 Skill v2 基
 - **完整 SSE 流式**(MCP-01):Phase A 仅 JSON-over-POST + 单消息 `text/event-stream` 解析。
 - **OAuth/PKCE/token 刷新/DCR**(MCP-03)、**Audience/Scope/Egress 全量策略**(MCP-04)、**structured content & Artifact 投影**(MCP-05):未在 Phase A 范围。
 - **长寿命 stdio 进程 watchdog**(MCP-02 非目标):当前 spawn-per-call,无需看护。
-- **runtime 贯通 scoped roots**:网关仍加载扁平 `skill_roots`(USER);system/admin/repo 三根未进 runtime,SKILL-04 的 per-scope 过滤运行时仅对 USER 生效(非 bug,覆盖待补)。
 - **Plugin/Hook/Marketplace**:全 Locked,待私有云 GA + 签名/SBOM/扫描/撤销/kill switch。
 - **新扩展事件(§13 extension_*  等)与版本级 Eval/可观测指标**:待对应 epic 落地。
+
+## 7. 复审修正（2026-07-21，本 PR）
+
+针对 EXT 链路 code review 的 4 项发现落地：
+
+- **[P1] runtime 贯通 scoped roots**:新增共享 `build_scoped_skill_roots(system/admin/user/repo)`;`run_local_harness`/`LocalToolGateway` 的 `skill_roots` 形参拓宽为 `str|Path|ScopedSkillRoot`;api/cli/worker 三个运行时入口改传四根 scoped roots(不再只喂 USER)。system/admin/repo 作用域技能现可被任务加载,SKILL-04 的 per-scope 启停在运行时按 `(name,scope)` 生效。admin/CLI 的 `scoped_skill_roots(settings)` 收敛到共享实现。
+- **[P4] McpSessionPool 接入主链路**:`build_mcp_transport` 现将每个 sub-transport 包进 `McpSessionPool` 再返回(单种→pool;混合→`_CompositeMcpTransport` of pools)。健康分类(healthy/degraded/quarantined)+ 有界退避在 harness 路径真正生效。
+- **[P2] MCP HTTP `notifications/initialized`**:`McpHttpSession.__enter__` 在 initialize 后补发 best-effort 通知(`notify` 走 `_send_frame`,失败吞掉,不杀会话),满足严格服务端握手。
+- **[P3] allowlist 错误细分**:`mcp_routing._partition_allowlist` 把 orphan 拆成「malformed 工具名」与「未知 server」两类分别报错。
+
+回归测试:`+3`(P1 system-scope 加载+按 scope 过滤 ×2、P4 `build_mcp_transport` 返回 pool 并执行)。`make check` clean(mypy 428);`1608 passed / 5 skipped`。
