@@ -7,7 +7,7 @@ from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 from agent_core.ports.workspace_projection_store import WorkspaceProjectionStorePort
 
-from agent_storage.database import SQLiteDatabase
+from agent_storage.database import SQLiteDatabase, ensure_column
 
 
 class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
@@ -198,19 +198,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                 )
                 """
             )
-            columns = {
-                row[1]
-                for row in connection.execute(
-                    "PRAGMA table_info(workspace_projections)"
-                ).fetchall()
-            }
-            if "runtime_name" not in columns:
-                connection.execute(
-                    """
-                    ALTER TABLE workspace_projections
-                    ADD COLUMN runtime_name TEXT
-                    """
-                )
+            ensure_column(connection, "workspace_projections", "runtime_name", "TEXT")
             for name, definition in (
                 ("runtime_engine", "TEXT"),
                 ("runtime_image", "TEXT"),
@@ -218,44 +206,26 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                 ("runtime_network_enforcement", "TEXT"),
                 ("runtime_workspace_writable", "INTEGER"),
             ):
-                if name not in columns:
-                    connection.execute(
-                        f"ALTER TABLE workspace_projections ADD COLUMN {name} {definition}"
-                    )
-            if "tool_profile" not in columns:
-                connection.execute(
-                    "ALTER TABLE workspace_projections "
-                    "ADD COLUMN tool_profile TEXT NOT NULL DEFAULT 'coding'"
-                )
-            if "network_profile" not in columns:
-                connection.execute(
-                    "ALTER TABLE workspace_projections "
-                    "ADD COLUMN network_profile TEXT NOT NULL DEFAULT 'none'"
-                )
-            if "network_allowlist" not in columns:
-                connection.execute(
-                    "ALTER TABLE workspace_projections "
-                    "ADD COLUMN network_allowlist TEXT NOT NULL DEFAULT '[]'"
-                )
-            if "mcp_allowlist" not in columns:
-                connection.execute(
-                    "ALTER TABLE workspace_projections ADD COLUMN mcp_allowlist TEXT"
-                )
-            if "skill_components" not in columns:
-                connection.execute(
-                    "ALTER TABLE workspace_projections ADD COLUMN skill_components TEXT"
-                )
-            if "snapshot_id" not in columns:
-                connection.execute(
-                    """
-                    ALTER TABLE workspace_projections
-                    ADD COLUMN snapshot_id TEXT
-                    """
-                )
-            if "snapshot_path" not in columns:
-                connection.execute(
-                    """
-                    ALTER TABLE workspace_projections
-                    ADD COLUMN snapshot_path TEXT
-                    """
-                )
+                ensure_column(connection, "workspace_projections", name, definition)
+            ensure_column(
+                connection,
+                "workspace_projections",
+                "tool_profile",
+                "TEXT NOT NULL DEFAULT 'coding'",
+            )
+            ensure_column(
+                connection,
+                "workspace_projections",
+                "network_profile",
+                "TEXT NOT NULL DEFAULT 'none'",
+            )
+            ensure_column(
+                connection,
+                "workspace_projections",
+                "network_allowlist",
+                "TEXT NOT NULL DEFAULT '[]'",
+            )
+            ensure_column(connection, "workspace_projections", "mcp_allowlist", "TEXT")
+            ensure_column(connection, "workspace_projections", "skill_components", "TEXT")
+            ensure_column(connection, "workspace_projections", "snapshot_id", "TEXT")
+            ensure_column(connection, "workspace_projections", "snapshot_path", "TEXT")

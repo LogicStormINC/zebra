@@ -6,7 +6,7 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.ports.model_call_store import ModelCallStorePort
 
-from agent_storage.database import SQLiteDatabase
+from agent_storage.database import SQLiteDatabase, ensure_column
 
 
 class SQLiteModelCallStore(ModelCallStorePort):
@@ -147,14 +147,9 @@ class SQLiteModelCallStore(ModelCallStorePort):
                 )
                 """
             )
-            existing = {
-                row["name"]
-                for row in connection.execute("PRAGMA table_info(model_calls)").fetchall()
-            }
             for name in (
                 "estimated_input_tokens",
                 "input_token_limit",
                 "input_token_estimate_error",
             ):
-                if name not in existing:
-                    connection.execute(f"ALTER TABLE model_calls ADD COLUMN {name} INTEGER")
+                ensure_column(connection, "model_calls", name, "INTEGER")
