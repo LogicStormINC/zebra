@@ -14810,7 +14810,7 @@ Marketplace remain `Locked` pending private-cloud GA and maintainer activation.
 
 ### EXT-0 - Extension System Architecture Contract
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `DOC / CORE`
 - Depends on: explicit maintainer request (`EXT-PLAN-01` baseline verified)
@@ -14846,7 +14846,7 @@ against a single durable authority. Register the EXT task board.
 
 ### EXT-SKILL-01 - Skill Metadata V2 Validation And Reason Enum
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `TOOLS / CORE`
 - Depends on: merged `EXT-0`
@@ -14864,16 +14864,16 @@ wire values.
 
 #### Acceptance
 
-- [ ] SkillMetadata gains optional version/license/compatibility/metadata/digest
+- [x] SkillMetadata gains optional version/license/compatibility/metadata/digest
   fields with defaults; positional `(name, description, source)` unchanged.
-- [ ] SkillCatalogReason StrEnum replaces 15 scattered literals; `.reason` wire
+- [x] SkillCatalogReason StrEnum replaces 15 scattered literals; `.reason` wire
   values unchanged.
-- [ ] _frontmatter reads optional fields; old skills declaring only
+- [x] _frontmatter reads optional fields; old skills declaring only
   name/description still validate.
-- [ ] Existing `tests/agent_tools/test_skills.py` passes unchanged; new
+- [x] Existing `tests/agent_tools/test_skills.py` passes unchanged; new
   `tests/test_skills_catalog_contract_matrix.py` covers reason stability and
   field defaults.
-- [ ] `make test` and `make check` pass.
+- [x] `make test` and `make check` pass.
 
 #### Explicit Non-Goals
 
@@ -14882,7 +14882,7 @@ wire values.
 
 ### EXT-SKILL-02 - Skill Scope Namespace Digest And No Silent Override
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `TOOLS / CONFIG`
 - Depends on: merged `EXT-SKILL-01`
@@ -14902,16 +14902,16 @@ remain ambiguous), evolving the current ambiguous-only behavior.
 
 #### Acceptance
 
-- [ ] SkillScope StrEnum and `_compute_skill_digest` (sha256, mirroring
+- [x] SkillScope StrEnum and `_compute_skill_digest` (sha256, mirroring
   `runtime_spec_digest`) live in new `skills_scope.py`; skills_catalog imports it.
-- [ ] settings.py accepts four ordered roots; legacy `ZEBRA_SKILL_ROOTS` maps to
+- [x] settings.py accepts four ordered roots; legacy `ZEBRA_SKILL_ROOTS` maps to
   USER scope (backward compatible).
-- [ ] Cross-scope same name resolves to higher scope; lower scope recorded in
+- [x] Cross-scope same name resolves to higher scope; lower scope recorded in
   skill_collisions (admin surface only, not model-visible); same-scope collisions
   remain ambiguous.
-- [ ] One existing "two roots same name → ambiguous" test updated to
+- [x] One existing "two roots same name → ambiguous" test updated to
   "two USER roots"; new scope matrix and digest stability tests added.
-- [ ] `make test` and `make check` pass.
+- [x] `make test` and `make check` pass.
 
 #### Explicit Non-Goals
 
@@ -14920,7 +14920,7 @@ remain ambiguous), evolving the current ambiguous-only behavior.
 
 ### EXT-SKILL-03 - Task Level Skill Snapshot
 
-- Status: `Ready`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / STORAGE / API / WORKER`
 - Depends on: merged `EXT-SKILL-02`, merged `EXT-0`
@@ -14947,19 +14947,19 @@ which Skills were active without replaying catalog state.
 
 #### Acceptance
 
-- [ ] TaskPreparedPayload gains optional `skill_components: list[str] | None`
+- [x] TaskPreparedPayload gains optional `skill_components: list[str] | None`
   with the same exclude_if-None pattern as mcp_allowlist and a normalize
   validator (<=32 entries, <=64 chars, `^[a-zA-Z][a-zA-Z0-9_-]{0,63}$`).
-- [ ] HarnessTask gains `skill_components: tuple[str, ...] = ()` threaded into
+- [x] HarnessTask gains `skill_components: tuple[str, ...] = ()` threaded into
   the TASK_PREPARED event.
-- [ ] workspace_projections gains `skill_components TEXT` via ALTER TABLE IF NOT
+- [x] workspace_projections gains `skill_components TEXT` via ALTER TABLE IF NOT
   EXISTS; reader surfaces the field; old DBs auto-migrate.
-- [ ] All eight consumers (workspace_projection, task_api, session_context*,
+- [x] All eight consumers (workspace_projection, task_api, session_context*,
   session_diff_read, task_recovery, session_handoff_events, harness) handle the
   optional field; existing fixtures unmodified.
-- [ ] New `tests/test_skill_snapshot_contract_matrix.py` covers payload
+- [x] New `tests/test_skill_snapshot_contract_matrix.py` covers payload
   validation, projection rebuild, API surface, resume path, handoff compat.
-- [ ] Full deterministic suite passes; `make check` passes.
+- [x] Full deterministic suite passes; `make check` passes.
 
 #### Explicit Non-Goals
 
