@@ -7,7 +7,7 @@ from agent_core.domain.plans import SessionPlan
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_core.ports.projection_store import ProjectionStorePort
 
-from agent_storage.database import SQLiteDatabase
+from agent_storage.database import SQLiteDatabase, ensure_column
 
 
 class SQLiteProjectionStore(ProjectionStorePort):
@@ -191,31 +191,9 @@ class SQLiteProjectionStore(ProjectionStorePort):
                 )
                 """
             )
-            columns = {
-                row[1]
-                for row in connection.execute("PRAGMA table_info(session_projections)").fetchall()
-            }
-            if "approval_context_json" not in columns:
-                connection.execute(
-                    """
-                    ALTER TABLE session_projections
-                    ADD COLUMN approval_context_json TEXT
-                    """
-                )
-            if "clarification_context_json" not in columns:
-                connection.execute(
-                    """
-                    ALTER TABLE session_projections
-                    ADD COLUMN clarification_context_json TEXT
-                    """
-                )
-            if "task_plan_json" not in columns:
-                connection.execute(
-                    """
-                    ALTER TABLE session_projections
-                    ADD COLUMN task_plan_json TEXT
-                    """
-                )
+            ensure_column(connection, "session_projections", "approval_context_json", "TEXT")
+            ensure_column(connection, "session_projections", "clarification_context_json", "TEXT")
+            ensure_column(connection, "session_projections", "task_plan_json", "TEXT")
 
 
 def _approval_context_json(context: ApprovalContext | None) -> str | None:

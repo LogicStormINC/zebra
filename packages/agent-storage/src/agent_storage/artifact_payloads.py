@@ -15,7 +15,7 @@ from agent_core.domain.artifact_payloads import (
 )
 from agent_core.domain.identifiers import ArtifactId, SessionId, new_artifact_id
 
-from agent_storage.database import SQLiteDatabase
+from agent_storage.database import SQLiteDatabase, ensure_column
 
 
 class ArtifactPayloadMissingError(FileNotFoundError):
@@ -260,33 +260,14 @@ class SQLiteArtifactPayloadStore:
                 )
                 """
             )
-            columns = {
-                row[1]
-                for row in connection.execute(
-                    "PRAGMA table_info(artifact_payloads)"
-                ).fetchall()
-            }
-            if "lifecycle_status" not in columns:
-                connection.execute(
-                    """
-                    ALTER TABLE artifact_payloads
-                    ADD COLUMN lifecycle_status TEXT NOT NULL DEFAULT 'active'
-                    """
-                )
-            if "retained_until" not in columns:
-                connection.execute(
-                    """
-                    ALTER TABLE artifact_payloads
-                    ADD COLUMN retained_until TEXT
-                    """
-                )
-            if "pruned_at" not in columns:
-                connection.execute(
-                    """
-                    ALTER TABLE artifact_payloads
-                    ADD COLUMN pruned_at TEXT
-                    """
-                )
+            ensure_column(
+                connection,
+                "artifact_payloads",
+                "lifecycle_status",
+                "TEXT NOT NULL DEFAULT 'active'",
+            )
+            ensure_column(connection, "artifact_payloads", "retained_until", "TEXT")
+            ensure_column(connection, "artifact_payloads", "pruned_at", "TEXT")
 
     def _payload_path(
         self,
