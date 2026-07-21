@@ -37,10 +37,15 @@
   harness. **`EXT-MCP-02` is `Done`** — `McpSessionPool` with
   healthy/degraded/quarantined health classification, bounded backoff, and
   acquire/release/health/close wrapping `McpProxyTransport` (shared by stdio +
-  http); `SessionState` dataclass exposed from `mcp_protocol`. `EXT-MCP-06`
-  is Phase A `Ready`; Plugin/Hook/Marketplace remain `Locked` pending
-  private-cloud GA. Elicitation is reconciled to durable HITL; sampling stays
-  a hard non-goal.
+  http); `SessionState` dataclass exposed from `mcp_protocol`. **`EXT-MCP-06`
+  is `Done`** — elicitation mapped onto the durable Clarification flow:
+  `ClarificationContext`/`ClarificationRequestedPayload` gain optional
+  `response_schema` + `elicitation_source` (existing flow byte-identical),
+  `McpElicitationBridge` converts `elicitation/create` → ClarificationContext,
+  and `ZEBRA_MCP_ELICITATION` gates it (default on). **This completes the EXT
+  Phase A scope** (EXT-0 + SKILL-01..05 + MCP-01/02/06).
+  Plugin/Hook/Marketplace remain `Locked` pending private-cloud GA. Elicitation
+  is reconciled to durable HITL; sampling stays a hard non-goal.
 
 ## Current Capability
 

@@ -23,6 +23,10 @@ from agent_runtime.git_commit import (
 )
 from agent_runtime.git_diff import WorkspaceDiffError, WorkspaceDiffResult, WorkspaceDiffService
 from agent_runtime.harness import LocalToolGateway, run_local_harness
+from agent_runtime.mcp_elicitation import (
+    McpElicitationBridge,
+    McpElicitationDisabledError,
+)
 from agent_runtime.mcp_http import StreamableHttpMcpTransport
 from agent_runtime.mcp_inventory import (
     McpCapabilityInventory,
@@ -92,6 +96,8 @@ __all__ = [
     "LocalWorkspace",
     "LocalWorktree",
     "McpCapabilityInventory",
+    "McpElicitationBridge",
+    "McpElicitationDisabledError",
     "McpHttpServerSpec",
     "McpAnyServerSpec",
     "McpServerCapability",
