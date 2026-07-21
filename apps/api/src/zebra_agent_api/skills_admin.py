@@ -5,7 +5,7 @@ from pathlib import Path
 
 from agent_storage import SQLiteSkillsStateStore
 from agent_tools.skills_catalog import LocalSkillCatalog, SkillMetadata
-from agent_tools.skills_scope import ScopedSkillRoot, SkillScope
+from agent_tools.skills_scope import ScopedSkillRoot, build_scoped_skill_roots
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_api.responses import ApiResponse, bad_request
@@ -16,26 +16,26 @@ def runtime_skills_state(
 ) -> SQLiteSkillsStateStore | None:
     """The enablement store used to filter the runtime catalog, or None.
 
-    Constructed lazily only when skill roots are configured so the default
+    Constructed lazily only when any skill root is configured so the default
     deployment does not create a skills-state database on every run.
     """
-    if not settings.skill_roots:
+    if not scoped_skill_roots(settings):
         return None
     return SQLiteSkillsStateStore(settings.skills_state_path)
 
 
 def scoped_skill_roots(settings: ZebraAgentSettings) -> tuple[ScopedSkillRoot, ...]:
-    """Build the scope-tagged discovery roots from the four settings roots."""
-    roots: list[ScopedSkillRoot] = []
-    for path in settings.skill_roots_system:
-        roots.append(ScopedSkillRoot(scope=SkillScope.SYSTEM, root=path))
-    for path in settings.skill_roots_admin:
-        roots.append(ScopedSkillRoot(scope=SkillScope.ADMIN, root=path))
-    for path in settings.skill_roots:
-        roots.append(ScopedSkillRoot(scope=SkillScope.USER, root=path))
-    for path in settings.skill_roots_repo:
-        roots.append(ScopedSkillRoot(scope=SkillScope.REPO, root=path))
-    return tuple(roots)
+    """Build the scope-tagged discovery roots from the four settings roots.
+
+    Delegates to the shared ``build_scoped_skill_roots`` so the admin inventory
+    and the runtime harness discover identical scoped roots.
+    """
+    return build_scoped_skill_roots(
+        system=settings.skill_roots_system,
+        admin=settings.skill_roots_admin,
+        user=settings.skill_roots,
+        repo=settings.skill_roots_repo,
+    )
 
 
 @dataclass(frozen=True)

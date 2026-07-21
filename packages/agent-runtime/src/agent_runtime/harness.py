@@ -49,7 +49,7 @@ from agent_tools import (
     WorkspaceSearchTool,
 )
 from agent_tools.errors import ToolRegistryError
-from agent_tools.skills_catalog import LocalSkillCatalog, SkillEnablementState
+from agent_tools.skills_catalog import LocalSkillCatalog, ScopedSkillRoot, SkillEnablementState
 
 from agent_runtime.adapters.local import LocalRuntime
 from agent_runtime.mcp_protocol import McpAnyServerSpec
@@ -78,7 +78,7 @@ def run_local_harness(
     tool_profile: ToolProfile = ToolProfile.GENERAL,
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
     web_search_endpoint: str | None = None,
-    skill_roots: tuple[str, ...] = (),
+    skill_roots: tuple[str | Path | ScopedSkillRoot, ...] = (),
     skills_state: SkillEnablementState | None = None,
     session_history: SessionHistoryPort | None = None,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
@@ -161,7 +161,7 @@ class LocalToolGateway(ToolGatewayPort):
         web_gateway_transport: WebGatewayTransport | None = None,
         web_search_endpoint: str | None = None,
         web_search_transport: WebSearchTransport | None = None,
-        skill_roots: tuple[str, ...] = (),
+        skill_roots: tuple[str | Path | ScopedSkillRoot, ...] = (),
         skills_state: SkillEnablementState | None = None,
         session_history: SessionHistoryPort | None = None,
         current_session_id: str | None = None,

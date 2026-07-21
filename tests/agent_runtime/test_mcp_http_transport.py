@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import urllib.request
 from dataclasses import dataclass
 
@@ -46,6 +47,11 @@ class _FakeOpener:
         timeout: float | None = None,
     ) -> _FakeResponse:
         self.last_request = request
+        # JSON-RPC notifications carry no `id`; the server acks them with no
+        # JSON-RPC body, so they do not consume a queued response.
+        payload = json.loads(request.data.decode()) if request.data else {}
+        if "id" not in payload:
+            return _FakeResponse(b"", "application/json")
         body, content_type = self._responses.pop(0)
         return _FakeResponse(body, content_type)
 

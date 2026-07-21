@@ -31,6 +31,7 @@ from agent_storage import (
     list_confirmed_repo_memories,
     store_initial_text_attachments,
 )
+from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import ZebraAgentSettings, trusted_local_mode_enabled
 
 
@@ -77,10 +78,20 @@ def execute_durable_run(
         tool_profile=tool_profile,
         network_profile=effective_network_profile,
         web_search_endpoint=settings.web_search_endpoint,
-        skill_roots=settings.skill_roots,
+        skill_roots=build_scoped_skill_roots(
+            system=settings.skill_roots_system,
+            admin=settings.skill_roots_admin,
+            user=settings.skill_roots,
+            repo=settings.skill_roots_repo,
+        ),
         skills_state=(
             SQLiteSkillsStateStore(settings.skills_state_path)
-            if settings.skill_roots
+            if (
+                settings.skill_roots
+                or settings.skill_roots_system
+                or settings.skill_roots_admin
+                or settings.skill_roots_repo
+            )
             else None
         ),
         mcp_servers=settings.mcp_servers,
