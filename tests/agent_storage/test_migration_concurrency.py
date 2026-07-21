@@ -70,6 +70,8 @@ def test_projection_store_init_is_concurrency_safe(tmp_path: Path) -> None:
     assert not errors
     columns = {
         row[1]
-        for row in sqlite3.connect(database).execute("PRAGMA table_info(session_projections)").fetchall()
+        for row in sqlite3.connect(database)
+        .execute("PRAGMA table_info(session_projections)")
+        .fetchall()
     }
     assert "clarification_context_json" in columns
