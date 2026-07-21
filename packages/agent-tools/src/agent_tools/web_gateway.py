@@ -10,7 +10,11 @@ from agent_tools.contracts import ToolContract
 from agent_tools.mcp_proxy import JsonValue
 
 DEFAULT_WEB_TIMEOUT_SECONDS = 10.0
-DEFAULT_WEB_MAX_BYTES = 262_144
+# Read cap for a single web.fetch. Raised from 256 KiB so heavy pages (e.g.
+# finance/quote SPAs that inline ~1 MiB of HTML) no longer fail with
+# response_too_large. Still bounded; projection to the model is governed
+# separately by max_output_bytes.
+DEFAULT_WEB_MAX_BYTES = 2_097_152
 DEFAULT_WEB_MAX_OUTPUT_BYTES = 65_536
 
 web_fetch_contract = ToolContract(
