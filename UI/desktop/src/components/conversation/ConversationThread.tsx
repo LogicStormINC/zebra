@@ -1,7 +1,9 @@
 import type { ChatMessage } from "../../lib/chat-surface";
+import type { TaskLaunchConfig } from "../../lib/task-launch-config";
 import type { ApprovalSummary, SessionEvent, SessionSummary } from "../../types";
 import { useConversationPaneStyle } from "../CodexConversationPane.styles";
 import { SessionThreadWorkspace } from "../SessionThreadWorkspace";
+import { ExecutionEnvironmentHint } from "./ExecutionEnvironmentCard";
 
 interface ConversationThreadProps {
   activeApproval: ApprovalSummary | undefined;
@@ -13,6 +15,7 @@ interface ConversationThreadProps {
   events: SessionEvent[];
   isDraft: boolean;
   isRequesting: boolean;
+  launchConfig: TaskLaunchConfig;
   listRef: React.RefObject<HTMLDivElement | null>;
   messages: ChatMessage[];
   onApprove: (approval: ApprovalSummary) => Promise<unknown>;
@@ -31,6 +34,7 @@ export function ConversationThread({
   events,
   isDraft,
   isRequesting,
+  launchConfig,
   listRef,
   messages,
   onApprove,
@@ -44,6 +48,7 @@ export function ConversationThread({
     <>
       <div className={styles.stream} ref={listRef}>
         <div className={styles.streamInner}>
+          <ExecutionEnvironmentHint config={launchConfig} />
           <SessionThreadWorkspace
             activeApproval={activeApproval}
             activeLabel={activeLabel}

@@ -1,8 +1,10 @@
 import locale from "../../_utils/local";
 import { sessionStatusLabel, sessionWorkspaceLabel } from "../../_utils/session-status";
 import type { ConversationSeed } from "../../lib/chat-surface";
+import type { TaskLaunchConfig } from "../../lib/task-launch-config";
 import type { SessionSummary } from "../../types";
 import { useConversationPaneStyle } from "../CodexConversationPane.styles";
+import { ExecutionEnvironmentCard } from "./ExecutionEnvironmentCard";
 
 const suggestedActions = [
   { label: locale.hintDocs, prompt: "阅读当前工作空间中的资料，并总结关键结论。" },
@@ -16,6 +18,8 @@ interface WorkspaceIdleProps {
   composer: React.ReactNode;
   conversations: ConversationSeed[];
   currentConversation: string;
+  launchConfig: TaskLaunchConfig;
+  launchEditable: boolean;
   launchError: string | null;
   onQuickAction: (prompt: string) => void;
   onSelectConversation: (key: string) => void;
@@ -26,6 +30,8 @@ export function WorkspaceIdle({
   composer,
   conversations,
   currentConversation,
+  launchConfig,
+  launchEditable,
   launchError,
   onQuickAction,
   onSelectConversation,
@@ -43,6 +49,7 @@ export function WorkspaceIdle({
     <div className={styles.idleWorkspace}>
       <h2 className={styles.idleQuestion}>{locale.idlePromptTitle}</h2>
       <div className={styles.idleSubtitle}>{locale.idlePromptSubtitle}</div>
+      <ExecutionEnvironmentCard config={launchConfig} editable={launchEditable} errorText={launchError} />
       {composer}
       <section className={styles.idleSection}>
         <div className={styles.idleSectionTitle}>{locale.suggestedActions}</div>

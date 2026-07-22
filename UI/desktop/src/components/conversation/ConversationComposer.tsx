@@ -74,7 +74,7 @@ export function ConversationComposer({
 
   return (
     <div className={styles.composerCard}>
-      {launchEditable ? (
+      {launchEditable && variant !== "idle" ? (
         <TaskLaunchSummary
           className={launchStyles.summary}
           config={effectiveLaunchConfig}
