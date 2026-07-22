@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_context import LocalContextCompiler
-from agent_core.application import MemoryCandidateExtractionService
+from agent_core.application import MemoryCandidateExtractionService, SessionTitleService
 from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
@@ -456,6 +456,7 @@ class SessionExecutionService:
             recorder=recorder,
             attempt_result=attempt_result,
             memory_extraction_service=self._memory_extraction_service,
+            title_service=SessionTitleService(model_gateway),
             event_store=self._event_store,
             started_at=started_at,
         )

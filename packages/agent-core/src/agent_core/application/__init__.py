@@ -35,6 +35,7 @@ from agent_core.application.session_messages import (
     SessionMessageAppendCommand,
     SessionMessageAppendService,
 )
+from agent_core.application.session_title import SessionTitleService
 
 __all__ = [
     "ApprovalDecisionAction",
@@ -58,4 +59,5 @@ __all__ = [
     "SessionBootstrapService",
     "SessionMessageAppendCommand",
     "SessionMessageAppendService",
+    "SessionTitleService",
 ]

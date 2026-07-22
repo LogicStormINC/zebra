@@ -4,6 +4,7 @@ from pathlib import Path
 from agent_core.application import (
     MemoryCandidateExtractionCommand,
     MemoryCandidateExtractionService,
+    SessionTitleService,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import SessionStatus
@@ -18,6 +19,7 @@ def finalize_execution(
     recorder: DurableHarnessEventRecorder,
     attempt_result: HarnessAttemptResult,
     memory_extraction_service: MemoryCandidateExtractionService,
+    title_service: SessionTitleService,
     event_store: SQLiteEventStore,
     started_at: datetime,
 ) -> tuple[SessionEvent, ...]:
@@ -65,4 +67,11 @@ def finalize_execution(
         )
         for event in extraction.events:
             recorder.append_event(event)
+        title_event = title_service.generate(
+            session=recorder.session,
+            events=event_store.list_for_session(recorder.session.session_id),
+            next_sequence=recorder.next_sequence,
+        )
+        if title_event is not None:
+            recorder.append_event(title_event)
     return recorder.events

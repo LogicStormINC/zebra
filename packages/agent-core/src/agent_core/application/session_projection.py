@@ -78,6 +78,8 @@ def apply_event(session: Session, event: SessionEvent) -> Session:
     task_plan = _task_plan_from_event(event)
     if task_plan is not None:
         updates["task_plan"] = task_plan
+    if event.event_type is EventType.SESSION_TITLE_UPDATED:
+        updates["title"] = _session_title_from_event(event)
     return projected.model_copy(update=updates)
 
 
