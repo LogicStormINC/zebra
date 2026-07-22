@@ -256,7 +256,9 @@ def test_worker_fails_closed_when_attachment_payload_digest_changes(tmp_path: Pa
     attachment_id = ArtifactId(UUID(created.body["attachments"][0]["attachment_id"]))
     stored = SQLiteArtifactPayloadStore(database_path).get_payload(attachment_id)
     assert stored is not None
-    Path(urlparse(stored.uri).path).write_bytes(b"tampered")
+    # CTX-ART-02: use access_uri (file://) for filesystem operations.
+    assert stored.access_uri is not None
+    Path(urlparse(stored.access_uri).path).write_bytes(b"tampered")
 
     response = app.resume_session(created.body["session_id"], {})
 

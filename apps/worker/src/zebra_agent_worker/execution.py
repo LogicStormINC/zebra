@@ -5,7 +5,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_context import LocalContextCompiler
-from agent_core.domain.context_capsule import ContextCapsuleValidationError
 from agent_core.application import MemoryCandidateExtractionService
 from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType, SessionEvent
@@ -19,7 +18,6 @@ from agent_core.harness import (
     SingleAttemptOrchestrator,
 )
 from agent_core.harness.models import (
-    HarnessAttemptOutcome,
     HarnessAttemptResult,
     HarnessEventDraft,
 )
@@ -70,6 +68,7 @@ from zebra_agent_worker.continuation_lifecycle import (
     mark_clarification_continuation_started,
 )
 from zebra_agent_worker.control import SessionControlError, SessionControlService
+from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import finalize_execution
 from zebra_agent_worker.model_call_index import ModelCallIndexer
@@ -261,6 +260,7 @@ class SessionExecutionService:
                 runtime_handle=runtime_handle,
                 artifact_payload_store=self._artifact_payload_store,
                 trusted_local=trusted_local,
+                web_pipeline_v2=self._settings.web_pipeline_v2,
             )
             tool_gateway = handoff.guard_effectful_tools(
                 local_tool_gateway,
@@ -445,36 +445,8 @@ class SessionExecutionService:
             else:
                 attempt_result = orchestrator.run(context)
         except Exception as exc:
-            raw_error = str(exc).strip()
-            metadata = {
-                "stop_reason": "model_execution_failed",
-                "error_type": type(exc).__name__,
-                "model_calls_used": (
-                    clarification.model_calls_used + 1
-                    if clarification is not None
-                    else continuation.model_calls_used + 1
-                    if continuation is not None
-                    else 1
-                ),
-                "tool_calls_executed": (
-                    clarification.tool_calls_executed
-                    if clarification is not None
-                    else continuation.tool_calls_executed
-                    if continuation is not None
-                    else 0
-                ),
-            }
-            metadata["error_message"] = (
-                raw_error
-                if raw_error
-                else f"{metadata['error_type']} (no detail was provided)"
-            )
-            if isinstance(exc, ContextCapsuleValidationError):
-                metadata["error_message"] = str(exc)
-            attempt_result = HarnessAttemptResult(
-                outcome=HarnessAttemptOutcome.FAILED,
-                summary="model execution failed",
-                metadata=metadata,
+            attempt_result = exception_attempt_result(
+                exc, error_metadata(exc, clarification, continuation)
             )
         finally:
             cleanup_error = close_tool_gateway(tool_gateway)

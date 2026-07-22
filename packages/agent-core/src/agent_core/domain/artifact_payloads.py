@@ -62,6 +62,7 @@ class StoredArtifactPayload(BaseModel):
     kind: str
     mime_type: str
     uri: str
+    access_uri: str | None = None
     sha256: str
     size_bytes: int
     lifecycle_status: ArtifactPayloadLifecycleStatus

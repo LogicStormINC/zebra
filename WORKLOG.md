@@ -5630,3 +5630,171 @@
 - Final closeout validation: focused `56 passed`; full `1520 passed, 7 skipped`;
   file-size `901`, Ruff, strict Mypy over `419` source files, release Eval `8/8`,
   affected Desktop timeline check, and production Vite build all passed.
+
+## 2026-07-22 — HAR-TOOL-RECOVERY-01: tool failure must not produce session terminal
+
+- **Trigger**: a `web.fetch` of a non-existent `README.md` returned HTTP 404;
+  the agent re-issued the identical call and hit `repeated_tool_call` which
+  produced `session_failed`, terminating the task instead of letting the model
+  self-correct to `SKILL.md`.
+- **Root cause**: `ToolBatchExecutor` treated the first repeated call as a
+  terminal `FAILED`, and sequential batches returned on the first tool failure
+  (leaving sibling calls unexecuted). There was also no provider-protocol
+  validation before model requests, so an unpaired tool batch could leak as a
+  DeepSeek `invalid_request`.
+- **Branch**: `codex/har-tool-recovery-01`.
+- **Changes**:
+  - `tool_batch.py`: repeated calls now become `ToolResult(FAILED)` observations
+    with `reason=repeated_tool_call`; a per-fingerprint counter in metadata
+    gates a `loop_guard_exhausted` hard stop at threshold (default 3). Sequential
+    batches `continue` past a mid-batch failure instead of returning early.
+  - `concurrent_batch.py`: same repeat-as-observation + threshold semantics;
+    duplicate calls inside a concurrent batch are excluded from execution and
+    merged as observations.
+  - `protocol_invariants.py` (new): `HarnessInvariantError` +
+    `validate_tool_call_pairing` enforcing orphan-result, dangling-call, and
+    duplicate-id invariants using the same wire key as the serializer.
+  - `model_step.py`: `request_completion` calls the firewall after the context
+    budget gate, before any gateway branch.
+  - `__init__.py`: export `HarnessInvariantError`.
+- **Tests**: `test_tool_failure_recovery.py` (9 new cases: batch-continues-after-
+  failure, all-failed-returns-to-model, 404-correction, repeat-as-observation,
+  firewall accepts/rejects orphan/unpaired/duplicate/out-of-order). Updated 3
+  existing tests whose `repeated_tool_call` terminal assertions no longer hold.
+- **Validation**: `tests/agent_core/` `222 passed, 1 skipped` (the single
+  `test_context_capsule_validation` failure is pre-existing on `main`). Full
+  suite `1719 passed, 6 skipped, 13 failed` — all 13 failures are pre-existing
+  on `main` (capsule artifact-refs + web-pipeline-v2 authority + one oversized
+  test file). Ruff and mypy clean on all touched source files.
+
+## 2026-07-22 — Pre-existing test failures resolved (13 → 0)
+
+While validating HAR-TOOL-RECOVERY-01, resolved 13 pre-existing test failures
+on `main` that fell into three independent root causes:
+
+### Cluster A — artifact_refs trailing-punctuation not stripped (8 tests)
+- **Root cause**: `_ARTIFACT_URI` regex in `agent_context/capsule.py` used
+  `[^\s\])]+` which did not exclude quotes/commas/parens, so
+  `file:///tmp/payload.txt",` was captured verbatim. The `ContextCapsule`
+  validator compared raw refs against `readable_artifact_refs` without
+  normalization, and `persist_context_compaction` built `readable_refs` only
+  from `artifact_refs` (omitting `recent_exact_tail_refs`).
+- **Fix**: tightened the regex character class, added `_normalize_artifact_ref`
+  in both `capsule.py` and `context_capsule.py` (field_validator on
+  `artifact_refs`/`recent_exact_tail_refs`), added `referenced_artifact_refs`
+  computed property, and expanded the worker's `readable_refs` to include
+  non-file refs from `recent_exact_tail_refs`.
+- **Files**: `packages/agent-context/src/agent_context/capsule.py`,
+  `packages/agent-core/src/agent_core/domain/context_capsule.py`,
+  `apps/worker/src/zebra_agent_worker/context_lifecycle.py`,
+  `apps/api/src/zebra_agent_api/session_context_control.py` (consumer of the
+  new property).
+
+### Cluster B — web pipeline v2 never activated in worker (4 tests)
+- **Root cause**: `LocalToolGateway` construction in
+  `apps/worker/src/zebra_agent_worker/execution.py` did not pass
+  `web_pipeline_v2=self._settings.web_pipeline_v2`, so the worker always used
+  the legacy v1 path regardless of the `ZEBRA_WEB_PIPELINE_V2` setting.
+  Additionally, `RecordingFetchProvider`/`RecordingSearchProvider` were defined
+  in `test_web_pipeline_v2_authority.py` but referenced (undefined) in
+  `test_approved_continuation.py`.
+- **Fix**: added the missing `web_pipeline_v2` kwarg to the worker's
+  `LocalToolGateway` call; extracted the two provider doubles into a shared
+  `tests/worker/web_v2_providers.py` module imported by both test files.
+- **Files**: `apps/worker/src/zebra_agent_worker/execution.py`,
+  `tests/worker/web_v2_providers.py` (new),
+  `tests/worker/test_web_pipeline_v2_authority.py`,
+  `tests/worker/test_approved_continuation.py`.
+
+### Cluster C — oversized test file (1 test)
+- **Root cause**: `tests/worker/test_approved_continuation.py` was 807 lines
+  (limit 700), inflated by two web-v2 tests that duplicated
+  `test_web_pipeline_v2_authority.py`.
+- **Fix**: removed the two duplicate v2 tests (already covered by the
+  authority test file) and their now-unused imports. File is now 684 lines.
+- **Files**: `tests/worker/test_approved_continuation.py`.
+
+### Validation
+- `make test`: `1730 passed, 6 skipped` (was `1719 passed, 13 failed`).
+- `make check`: file-size gate `956 checked, 0 violations`; Ruff clean on all
+  touched files; mypy clean on `agent-core` + `agent-context`.
+
+## 2026-07-22 — CTX-ART-01: Authoritative Artifact Refs And Safe Compaction Fallback
+
+System-level fix for the Context/Artifact architecture problems that caused the
+original capsule test failures. Rejects the "fix the regex" approach (which only
+hides the symptom) and addresses two root causes:
+
+### P1: Artifact refs come only from structured metadata
+- **Removed** free-text URI scanning from `agent_context/capsule.py`
+  (`_ARTIFACT_URI.findall(message.content)`) and `agent_context/projection.py`
+  (`_artifact_uri` helper). A URI appearing in a file read, command stdout, or
+  error traceback can no longer be promoted to a capsule artifact ref.
+- **Kept** only the structured `message.metadata["artifact_uri"]` channel, set
+  exclusively by `ToolOutputProjector`, `WebResultEnvelope`, and `SearchHit`.
+- **Tests**: `test_capsule.py` rewritten to verify that URIs in free text
+  produce no refs; only structured metadata is collected.
+
+### P3: Compaction failure degrades instead of terminating
+- **`apps/worker/.../context_lifecycle.py`**: `persist_context_compaction` now
+  catches `ContextCapsuleValidationError`, records a non-terminal
+  `CONTEXT_COMPACTION_REJECTED` diagnostic event, preserves the existing active
+  projection, and returns normally. The Agent continues with the in-memory
+  compacted conversation. Implements design doc §L4 item 4: "验证失败时回退到
+  确定性 Capsule;不得替换当前可用投影".
+- **`apps/worker/.../execution.py`**: the defensive `except` that previously
+  mapped `ContextCapsuleValidationError` to `session_failed` now classifies it
+  as `SUSPENDED` (`stop_reason="context_recovery_required"`) — a recovery
+  signal, not a model execution failure.
+- **`events.py`**: added `CONTEXT_COMPACTION_REJECTED` event type.
+- **`execution_errors.py` (new)**: extracted `exception_attempt_result` and
+  `error_metadata` helpers to keep `execution.py` under the 500-line limit.
+- **Test**: `test_compaction_validation_failure_degrades_instead_of_raising`
+  proves a capsule with an unreadable artifact ref produces
+  `CONTEXT_COMPACTION_REJECTED` (not `SESSION_FAILED`) and preserves the active
+  projection.
+
+### Validation
+- `make test`: `1732 passed, 6 skipped, 0 failed`.
+- `make check`: file-size `959 checked, 0 violations`; Ruff clean; mypy clean
+  on `agent-context` + `agent-core/domain/events.py`.
+
+### Not in scope (follow-up tasks)
+- CTX-ART-02: stable `artifact://` identity migration (file:// → artifact://).
+- CTX-OBS-01: terminal accounting for model/tool call count accuracy.
+
+## 2026-07-22 — CTX-ART-02: Stable artifact:// Identity Migration
+
+Migrates emitted artifact URIs from volatile `file://` locators to a stable
+`artifact://<uuid>` identity, resolved back to a file path only at the point of
+actual byte access.
+
+- **`agent_storage/artifact_payloads.py`**: `SQLiteArtifactPayloadStore.store`
+  now emits `uri=f"artifact://{artifact_id}"` and adds a new `access_uri` column
+  holding the original `file://` locator; `inspect_payload`/`prune_payload`/
+  `read_payload_bytes` resolve the file path through the new
+  `_stored_payload_path` helper (prefers `access_uri`, falls back to `uri` for
+  legacy rows).
+- **`agent_core/domain/artifact_payloads.py`**: `StoredArtifactPayload` gains
+  `access_uri: str | None`.
+- **`agent_storage/artifact_projection.py`**: `payload_for_artifact_uri` and
+  `serialize_artifact_retrieval` accept both `artifact://` and `file://`
+  schemes; `artifact://` retrievability is derived from lifecycle status
+  (identity is stable, file location is volatile).
+- **`agent_security/artifact_access.py`**: `artifact` added alongside `file` to
+  the non-`RESTRICTED` local URI scheme allowlist.
+- **API/CLI read paths** (`session_artifact_read_mixin.py`,
+  `artifact_read.py`): resolve `artifact://` through the payload store to the
+  volatile `access_uri` before reading bytes.
+- **Regression caught in review**: the API mixin's `artifact://` branch relied
+  on `serialize_artifact_retrieval`'s lifecycle-based `payload_available`
+  status and skipped the filesystem check the `file://` branch had, so a
+  physically-deleted-but-still-`ACTIVE` payload raised an unhandled
+  `FileNotFoundError` instead of the `artifact_payload_missing` response (2
+  test failures). Fixed by adding the same `read_path.is_file()` guard already
+  present in the CLI path.
+- **Validation**: `make test` `1732 passed, 6 skipped, 0 failed`; `make check`
+  file-size `959 checked, 0 violations`; Ruff and mypy clean on all touched
+  files (pre-existing failures in `web_crawl.py`, `mcp_proxy_policy.py`, and
+  the `web-native` test/tool cluster confirmed unrelated via `git stash`
+  comparison against the base commit).

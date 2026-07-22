@@ -333,13 +333,13 @@ If you stop mid-stream, leave behind:
 <claude-mem-context>
 # Memory Context
 
-# [zebra-agent] recent context, 2026-07-21 7:10pm GMT+8
+# [zebra-agent] recent context, 2026-07-22 4:02pm GMT+8
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 16 obs (4,155t read) | 0t work
+Stats: 25 obs (6,908t read) | 0t work
 
 ### Jul 20, 2026
 6 6:04p 🔵 Session Configuration Limits Discovery
@@ -358,4 +358,14 @@ Stats: 16 obs (4,155t read) | 0t work
 25 6:42p 🔵 Local Documentation Write Request
 27 " 🔵 GitHub Issue Review and Resolution Task Initiated
 26 6:43p 🟣 Skill MCP Plugin Documentation Worktree Setup
+### Jul 22, 2026
+196 1:46p 🔵 Frontend Design Skill Installation Failed Due to Web Fetch Error
+198 " 🔵 Web Fetch Failure Prevented Frontend Design Skill Installation
+199 " 🔵 Session Chain Investigation Reveals Persistent Artifact Reference Failures
+200 1:47p 🔵 Session Chain Investigation Reveals GitHub Skill Installation and Model Provider Failures
+201 1:48p 🔵 Web Tool Alternatives Successfully Retrieved GitHub Skill Content After Fetch Failure
+202 1:50p 🔵 Zebra Agent Tool Execution Failure Recovery and Synthesize Behavior Discovered
+203 2:15p 🔵 Tool Call Error Handling Architecture Discussion
+204 " 🔵 Zebra Agent Tool Execution Failure Handling Architecture Investigation
+205 2:17p 🔵 Tool Call Error Handling Architecture Deep Dive
 </claude-mem-context>

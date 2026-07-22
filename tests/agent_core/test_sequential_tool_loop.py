@@ -189,7 +189,7 @@ def test_bounded_loop_returns_one_repeated_read_to_model_without_reexecution() -
     assert len(tools.calls) == 1
 
 
-def test_bounded_loop_blocks_a_second_repeated_read() -> None:
+def test_bounded_loop_keeps_observing_repeated_reads_until_threshold() -> None:
     first = _tool_call("files.read", {"path": "same.txt"}, "call_one")
     repeated = _tool_call("files.read", {"path": "same.txt"}, "call_two")
     repeated_again = _tool_call("files.read", {"path": "same.txt"}, "call_three")
@@ -197,6 +197,7 @@ def test_bounded_loop_blocks_a_second_repeated_read() -> None:
         _completion("Read it.", first),
         _completion("Read it again.", repeated),
         _completion("Still read it again.", repeated_again),
+        _completion("Finished from prior evidence."),
     )
     tools = SequenceToolGateway()
 
@@ -204,7 +205,7 @@ def test_bounded_loop_blocks_a_second_repeated_read() -> None:
         HarnessTask(
             title="Repeated task",
             user_input="Inspect the file.",
-            max_model_calls=4,
+            max_model_calls=5,
             max_tool_calls=3,
         ),
         SingleAttemptOrchestrator(
@@ -217,10 +218,11 @@ def test_bounded_loop_blocks_a_second_repeated_read() -> None:
         created_at=NOW,
     )
 
-    assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
-    assert result.attempt_result.metadata["stop_reason"] == "repeated_tool_call"
+    # With threshold 3, two repeats (one recovered, one observed) do not
+    # hard-stop; the model keeps getting observations to self-correct.
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
     assert result.attempt_result.metadata["repeated_read_recovery_count"] == 1
-    assert result.run_result.model_calls_used == 3
+    assert result.run_result.model_calls_used == 4
     assert result.run_result.tool_calls_used == 1
     assert len(tools.calls) == 1
 

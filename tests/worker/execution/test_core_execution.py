@@ -14,12 +14,14 @@ from agent_core.ports.runtime import EffectiveRuntimeAuthority, RuntimeClass
 from agent_runtime import LocalRuntime
 from agent_security import LocalPolicyEngine, NetworkProfile
 from agent_storage import (
+    SQLiteArtifactPayloadStore,
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteModelCallStore,
     SQLiteToolRunStore,
     SQLiteWorkspaceProjectionStore,
 )
+from agent_storage.artifact_projection import payload_for_artifact_uri
 from worker_execution_support import (
     _assistant_only_gateway,
     _build_execution_service,
@@ -297,7 +299,12 @@ def test_worker_execution_service_indexes_tool_run(tmp_path: Path, monkeypatch) 
     assert tool_runs[0].tool_name == "files.read"
     assert tool_runs[0].status == "executed"
     assert tool_runs[0].artifact_uri is not None
+    # CTX-ART-02: artifact_uri is now artifact://; resolve via payload store.
+    stored_payload = payload_for_artifact_uri(
+        SQLiteArtifactPayloadStore(database_path), tool_runs[0].artifact_uri
+    )
+    assert stored_payload is not None
     assert (
-        Path(tool_runs[0].artifact_uri.removeprefix("file://")).read_text(encoding="utf-8")
+        Path(stored_payload.access_uri.removeprefix("file://")).read_text(encoding="utf-8")
         == "worker readme\n"
     )

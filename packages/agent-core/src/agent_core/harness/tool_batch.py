@@ -8,6 +8,7 @@ from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
 from agent_core.harness.clarification_step import clarification_stop_result
 from agent_core.harness.concurrent_batch import (
+    DEFAULT_REPEAT_HARD_STOP_THRESHOLD,
     ConcurrentToolBatchExecutor,
     ToolBatchResult,
     selection_evidence,
@@ -35,11 +36,15 @@ class ToolBatchExecutor:
         parallel_safe_tools: frozenset[str],
         parallel_batch_limits: Mapping[str, int] | None,
         max_parallel_tool_calls: int,
+        repeat_hard_stop_threshold: int = DEFAULT_REPEAT_HARD_STOP_THRESHOLD,
     ) -> None:
+        if repeat_hard_stop_threshold <= 0:
+            raise ValueError("repeat_hard_stop_threshold must be positive")
         self._policy_engine = policy_engine
         self._tool_gateway = tool_gateway
         self._model_step = model_step
         self._verifier = verifier
+        self._repeat_hard_stop_threshold = repeat_hard_stop_threshold
         self._concurrent = ConcurrentToolBatchExecutor(
             policy_engine=policy_engine,
             tool_gateway=tool_gateway,
@@ -48,6 +53,7 @@ class ToolBatchExecutor:
             parallel_safe_tools=parallel_safe_tools,
             parallel_batch_limits=parallel_batch_limits,
             max_parallel_tool_calls=max_parallel_tool_calls,
+            repeat_hard_stop_threshold=repeat_hard_stop_threshold,
         )
 
     def execute(
@@ -160,19 +166,59 @@ class ToolBatchExecutor:
                     "tool_selection_metadata": selection_metadata,
                 }
                 if action_fingerprint(tool_call) in fingerprints:
-                    return self._terminal(
-                        outcome=HarnessAttemptOutcome.FAILED,
-                        summary=f"repeated tool call blocked: {tool_call.name}",
-                        completion=completion,
-                        emitted_events=emitted_events,
-                        model_calls_used=model_calls_used,
-                        tool_calls_executed=tool_calls_executed,
+                    loop_guard_counts = _loop_guard_counts(metadata)
+                    fingerprint = action_fingerprint(tool_call)
+                    loop_guard_counts[fingerprint] = loop_guard_counts.get(fingerprint, 0) + 1
+                    metadata = {**metadata, "loop_guard_counts": loop_guard_counts}
+                    if loop_guard_counts[fingerprint] >= self._repeat_hard_stop_threshold:
+                        return self._terminal(
+                            outcome=HarnessAttemptOutcome.FAILED,
+                            summary=(
+                                f"loop guard exhausted: {tool_call.name} repeated "
+                                f"{loop_guard_counts[fingerprint]} times"
+                            ),
+                            completion=completion,
+                            emitted_events=emitted_events,
+                            model_calls_used=model_calls_used,
+                            tool_calls_executed=tool_calls_executed,
+                            metadata={
+                                **metadata,
+                                "stop_reason": "loop_guard_exhausted",
+                                "loop_guard_tool_name": tool_call.name,
+                                "loop_guard_repeat_count": loop_guard_counts[fingerprint],
+                                "remaining_tool_call_count": len(tool_calls) - index,
+                            },
+                        )
+                    result = ToolResult(
+                        tool_call_id=tool_call.tool_call_id,
+                        status=ToolCallStatus.FAILED,
+                        output=(
+                            "This tool call repeats a previous call with identical "
+                            "arguments. It was not executed again. Change the "
+                            "arguments or pick a different tool to make progress."
+                        ),
                         metadata={
-                            **metadata,
-                            "stop_reason": "repeated_tool_call",
-                            "remaining_tool_call_count": len(tool_calls) - index,
+                            "reason": "repeated_tool_call",
+                            "retryable": True,
+                            "executed": False,
+                            "repeat_count": loop_guard_counts[fingerprint],
                         },
                     )
+                    execution = record_tool_result(
+                        context,
+                        tool_call,
+                        result,
+                        verifier=self._verifier,
+                        emitted_events=emitted_events,
+                    )
+                    self._model_step.append_tool_result(
+                        messages,
+                        tool_call=tool_call,
+                        tool_result=result,
+                        created_at=context.attempt.started_at,
+                    )
+                    metadata = {**metadata, **execution.metadata}
+                    continue
                 decision = self._policy_engine.evaluate_tool_call(tool_call)
                 emitted_events.append(
                     HarnessEventDraft(
@@ -268,23 +314,8 @@ class ToolBatchExecutor:
                 created_at=context.attempt.started_at,
             )
             if execution.result.status is not ToolCallStatus.EXECUTED:
-                prior_failures = metadata.get("recoverable_tool_failure_count", 0)
-                failure_count = (
-                    prior_failures + 1
-                    if isinstance(prior_failures, int)
-                    and not isinstance(prior_failures, bool)
-                    else 1
-                )
-                return ToolBatchResult(
-                    None,
-                    tool_calls_executed,
-                    {
-                        **metadata,
-                        "recoverable_tool_failure_count": failure_count,
-                        "last_failed_tool_name": tool_call.name,
-                        "remaining_tool_call_count": len(tool_calls) - index - 1,
-                    },
-                )
+                metadata = _accumulate_failure(metadata, tool_call.name)
+                continue
             if not execute_all:
                 return self._terminal(
                     outcome=HarnessAttemptOutcome.COMPLETED,
@@ -403,3 +434,26 @@ def _can_recover_repeated_reads(
         and action_fingerprint(tool_call) in fingerprints
         for tool_call in tool_calls
     )
+
+
+def _loop_guard_counts(metadata: Mapping[str, object]) -> dict[str, int]:
+    raw = metadata.get("loop_guard_counts")
+    if isinstance(raw, dict):
+        return {str(k): v for k, v in raw.items() if isinstance(v, int) and not isinstance(v, bool)}
+    return {}
+
+
+def _accumulate_failure(
+    metadata: dict[str, object], tool_name: str
+) -> dict[str, object]:
+    prior_failures = metadata.get("recoverable_tool_failure_count", 0)
+    failure_count = (
+        prior_failures + 1
+        if isinstance(prior_failures, int) and not isinstance(prior_failures, bool)
+        else 1
+    )
+    return {
+        **metadata,
+        "recoverable_tool_failure_count": failure_count,
+        "last_failed_tool_name": tool_name,
+    }

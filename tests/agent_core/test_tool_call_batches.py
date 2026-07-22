@@ -136,19 +136,22 @@ def test_provider_batch_lets_model_recover_from_failed_tool() -> None:
     assert any(event.event_type is EventType.TOOL_EXECUTION_FAILED for event in result.events)
 
 
-def test_provider_batch_stops_before_repeated_member_and_leaves_tail_unexecuted() -> None:
+def test_provider_batch_repeated_member_becomes_observation_and_tail_still_runs() -> None:
     first = _call("files.read", {"path": "same.txt"}, "call_a")
     repeated = _call("files.read", {"path": "same.txt"}, "call_b")
     tail = _call("tests.run", {"preset": "test"}, "call_c")
-    gateway = _gateway(_completion("Repeat then test.", first, repeated, tail))
+    final = _completion("Done after repeat recovery.")
+    gateway = _gateway(_completion("Repeat then test.", first, repeated, tail), final)
     tools = RecordingToolGateway()
 
     result = _run(gateway, tools, max_model_calls=3, max_tool_calls=3)
 
-    assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
-    assert result.attempt_result.metadata["stop_reason"] == "repeated_tool_call"
-    assert result.attempt_result.metadata["remaining_tool_call_count"] == 2
-    assert tools.calls == [first]
+    # The repeated call becomes an observation instead of a terminal failure;
+    # the tail still executes, then the model gets a follow-up turn.
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert tools.calls == [first, tail]
+    counts = result.attempt_result.metadata["loop_guard_counts"]
+    assert isinstance(counts, dict) and len(counts) == 1
 
 
 def test_provider_batch_suspends_before_over_budget_batch_starts() -> None:

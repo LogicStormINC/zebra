@@ -152,7 +152,29 @@ def read_artifact_content(
             access=access,
         )
     assert resolved.uri is not None
-    payload = Path(urlparse(resolved.uri).path).read_bytes()
+    # CTX-ART-02: resolve artifact:// URI through the payload store to get the
+    # volatile file:// access path for reading bytes.
+    payload_store = SQLiteArtifactPayloadStore(database_path)
+    stored_payload = payload_for_artifact_uri(payload_store, resolved.uri)
+    if stored_payload is None:
+        return build_artifact_unavailable_result(
+            database_path=database_path,
+            session_id=session_id,
+            artifact_id=artifact_id,
+            reason="artifact_payload_missing",
+            access=access,
+        )
+    read_uri = stored_payload.access_uri or stored_payload.uri
+    read_path = Path(urlparse(read_uri).path)
+    if not read_path.is_file():
+        return build_artifact_unavailable_result(
+            database_path=database_path,
+            session_id=session_id,
+            artifact_id=artifact_id,
+            reason="artifact_payload_missing",
+            access=access,
+        )
+    payload = read_path.read_bytes()
     return {
         "session_id": session_id,
         "artifact_id": artifact_id,
@@ -190,7 +212,12 @@ def prune_artifact(
             artifact_id=artifact_id,
             reason="artifact_is_indexed_only",
         )
-    parsed = urlparse(resolved.uri)
+    payload_store = SQLiteArtifactPayloadStore(database_path)
+    # CTX-ART-02: resolve the stable artifact:// URI back to the payload store
+    # to obtain the volatile file:// access path for reading bytes.
+    payload = payload_for_artifact_uri(payload_store, resolved.uri)
+    read_uri = (payload.access_uri or payload.uri) if payload is not None else resolved.uri
+    parsed = urlparse(read_uri)
     if parsed.scheme != "file":
         return _unavailable_artifact(
             database_path=database_path,
@@ -198,7 +225,6 @@ def prune_artifact(
             artifact_id=artifact_id,
             reason="artifact_uses_external_reference",
         )
-    payload_store = SQLiteArtifactPayloadStore(database_path)
     payload = _payload_record_for_uri(payload_store, resolved.uri)
     if payload is None:
         return _unavailable_artifact(

@@ -52,7 +52,7 @@ def test_api_get_session_artifact_content_reports_missing_payload(tmp_path: Path
     database_path = tmp_path / "sessions.sqlite"
     session = _seed_session(database_path)
     payload = _seed_payload_backed_tool_artifact(database_path, session.session_id)
-    Path(payload.uri.removeprefix("file://")).unlink()
+    Path(payload.access_uri.removeprefix("file://")).unlink()
 
     response = create_app(database_path).get_session_artifact_content(
         str(session.session_id),

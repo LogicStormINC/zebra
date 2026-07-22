@@ -9,17 +9,15 @@ helpers are imported from ``test_approved_continuation``.
 
 from __future__ import annotations
 
-import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_tool_call_id
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tools import ToolCall
 from agent_storage import SQLiteEventStore
-from agent_tools.search_pipeline import SearchHit
-from agent_tools.web_crawl import FetchRequest, FetchResult
 
 # Same-dir helpers (pytest prepend mode puts tests/worker on sys.path).
 from test_approved_continuation import (
@@ -28,64 +26,7 @@ from test_approved_continuation import (
     _seed_session,
     _settings,
 )
-
-if sys.version_info < (3, 12):  # pragma: no cover - guard for typing only
-    pass
-
-
-class RecordingFetchProvider:
-    """V2 FetchProvider double: records the request, returns canned content."""
-
-    def __init__(self) -> None:
-        self.requests: list[FetchRequest] = []
-
-    @property
-    def name(self) -> str:
-        return "recording_fetch"
-
-    @property
-    def available(self) -> bool:
-        return True
-
-    def fetch(self, request: FetchRequest) -> FetchResult:
-        self.requests.append(request)
-        return FetchResult(
-            requested_url=request.url,
-            final_url=request.url,
-            clean_markdown="authorized-web-output-v2",
-            fetch_mode="http",
-            complete=True,
-            content_type="text/plain",
-            wire_bytes=19,
-            decoded_bytes=19,
-        )
-
-
-class RecordingSearchProvider:
-    """V2 SearchProvider double: records queries + the configured endpoint."""
-
-    def __init__(self, *, endpoint: str, use_system_proxy: bool = False) -> None:
-        self.endpoint = endpoint
-        self.queries: list[str] = []
-
-    @property
-    def name(self) -> str:
-        return "recording_search"
-
-    @property
-    def available(self) -> bool:
-        return True
-
-    def search(self, query, *, limit: int):
-        self.queries.append(query.query)
-        return (
-            SearchHit(
-                title="Approved result",
-                url="https://docs.example.com/result",
-                snippet="authorized-search-output-v2",
-                domain="docs.example.com",
-            ),
-        )
+from web_v2_providers import RecordingFetchProvider, RecordingSearchProvider
 
 
 def test_web_fetch_v2_uses_durable_network_authority_and_executes_exactly_once(

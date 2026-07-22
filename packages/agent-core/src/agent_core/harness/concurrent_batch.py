@@ -25,6 +25,8 @@ from agent_core.harness.tool_execution import record_tool_result
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 
+DEFAULT_REPEAT_HARD_STOP_THRESHOLD = 3
+
 
 @dataclass(frozen=True)
 class ToolBatchResult:
@@ -44,9 +46,12 @@ class ConcurrentToolBatchExecutor:
         parallel_safe_tools: frozenset[str],
         parallel_batch_limits: Mapping[str, int] | None,
         max_parallel_tool_calls: int,
+        repeat_hard_stop_threshold: int = DEFAULT_REPEAT_HARD_STOP_THRESHOLD,
     ) -> None:
         if max_parallel_tool_calls <= 0:
             raise ValueError("max_parallel_tool_calls must be positive")
+        if repeat_hard_stop_threshold <= 0:
+            raise ValueError("repeat_hard_stop_threshold must be positive")
         self._policy_engine = policy_engine
         self._tool_gateway = tool_gateway
         self._model_step = model_step
@@ -60,6 +65,7 @@ class ConcurrentToolBatchExecutor:
         if any(invalid_limits):
             raise ValueError("parallel batch limits require named tools and positive limits")
         self._max_parallel_tool_calls = max_parallel_tool_calls
+        self._repeat_hard_stop_threshold = repeat_hard_stop_threshold
 
     def can_execute(
         self,
@@ -109,6 +115,9 @@ class ConcurrentToolBatchExecutor:
                 },
             )
         seen = set(fingerprints)
+        loop_guard_counts = _loop_guard_counts(metadata)
+        metadata = {**metadata, "loop_guard_counts": dict(loop_guard_counts)}
+        duplicate_indices: set[int] = set()
         for index, tool_call in enumerate(tool_calls):
             summary, selection_metadata = selection_evidence(
                 index=index,
@@ -131,18 +140,28 @@ class ConcurrentToolBatchExecutor:
             )
             fingerprint = action_fingerprint(tool_call)
             if fingerprint in seen:
-                return self._terminal(
-                    summary=f"repeated tool call blocked: {tool_call.name}",
-                    completion=completion,
-                    emitted_events=emitted_events,
-                    model_calls_used=model_calls_used,
-                    tool_calls_executed=tool_calls_executed,
-                    metadata={
-                        **metadata,
-                        "stop_reason": "repeated_tool_call",
-                        "remaining_tool_call_count": len(tool_calls),
-                    },
+                loop_guard_counts[fingerprint] = (
+                    loop_guard_counts.get(fingerprint, 0) + 1
                 )
+                if loop_guard_counts[fingerprint] >= self._repeat_hard_stop_threshold:
+                    return self._terminal(
+                        summary=(
+                            f"loop guard exhausted: {tool_call.name} repeated "
+                            f"{loop_guard_counts[fingerprint]} times"
+                        ),
+                        completion=completion,
+                        emitted_events=emitted_events,
+                        model_calls_used=model_calls_used,
+                        tool_calls_executed=tool_calls_executed,
+                        metadata={
+                            **metadata,
+                            "stop_reason": "loop_guard_exhausted",
+                            "loop_guard_tool_name": tool_call.name,
+                            "loop_guard_repeat_count": loop_guard_counts[fingerprint],
+                            "remaining_tool_call_count": len(tool_calls),
+                        },
+                    )
+                duplicate_indices.add(index)
             seen.add(fingerprint)
             decision = self._policy_engine.evaluate_tool_call(tool_call)
             emitted_events.append(
@@ -175,9 +194,13 @@ class ConcurrentToolBatchExecutor:
             "parallel_batch_size": len(tool_calls),
             "parallelism_limit": self._max_parallel_tool_calls,
         }
+        executable_calls = tuple(
+            call for idx, call in enumerate(tool_calls) if idx not in duplicate_indices
+        )
         for tool_call in tool_calls:
             emitted_events.append(_started_event(context, tool_call))
-        results = self._execute_all(tool_calls)
+        executed_results = self._execute_all(executable_calls)
+        results = _merge_results(tool_calls, executable_calls, executed_results, duplicate_indices)
         failed_names: list[str] = []
         for tool_call, tool_result in zip(tool_calls, results, strict=True):
             execution = record_tool_result(
@@ -295,3 +318,43 @@ def _future_result(tool_call: ToolCall, future: Future[ToolResult]) -> ToolResul
             status=ToolCallStatus.FAILED,
             metadata={"reason": "tool_gateway_error", "detail": str(exc)},
         )
+
+
+def _loop_guard_counts(metadata: Mapping[str, object]) -> dict[str, int]:
+    raw = metadata.get("loop_guard_counts")
+    if isinstance(raw, dict):
+        return {str(k): v for k, v in raw.items() if isinstance(v, int) and not isinstance(v, bool)}
+    return {}
+
+
+def _merge_results(
+    tool_calls: tuple[ToolCall, ...],
+    executable_calls: tuple[ToolCall, ...],
+    executed_results: tuple[ToolResult, ...],
+    duplicate_indices: set[int],
+) -> tuple[ToolResult, ...]:
+    if not duplicate_indices:
+        return executed_results
+    results: list[ToolResult] = []
+    exec_iter = iter(executed_results)
+    for index, tool_call in enumerate(tool_calls):
+        if index in duplicate_indices:
+            results.append(
+                ToolResult(
+                    tool_call_id=tool_call.tool_call_id,
+                    status=ToolCallStatus.FAILED,
+                    output=(
+                        "This tool call repeats a previous call with identical "
+                        "arguments. It was not executed again. Change the "
+                        "arguments or pick a different tool to make progress."
+                    ),
+                    metadata={
+                        "reason": "repeated_tool_call",
+                        "retryable": True,
+                        "executed": False,
+                    },
+                )
+            )
+        else:
+            results.append(next(exec_iter))
+    return tuple(results)

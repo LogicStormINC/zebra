@@ -57,7 +57,8 @@ class SQLiteArtifactPayloadStore:
             session_id=payload.session_id,
             kind=payload.kind,
             mime_type=payload.mime_type,
-            uri=payload_path.resolve(strict=False).as_uri(),
+            uri=f"artifact://{artifact_id}",
+            access_uri=payload_path.resolve(strict=False).as_uri(),
             sha256=sha256(payload.payload).hexdigest(),
             size_bytes=len(payload.payload),
             lifecycle_status=ArtifactPayloadLifecycleStatus.ACTIVE,
@@ -76,13 +77,14 @@ class SQLiteArtifactPayloadStore:
                     kind,
                     mime_type,
                     uri,
+                    access_uri,
                     sha256,
                     size_bytes,
                     lifecycle_status,
                     retained_until,
                     pruned_at,
                     created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     str(stored.artifact_id),
@@ -90,6 +92,7 @@ class SQLiteArtifactPayloadStore:
                     stored.kind,
                     stored.mime_type,
                     stored.uri,
+                    stored.access_uri,
                     stored.sha256,
                     stored.size_bytes,
                     stored.lifecycle_status.value,
@@ -114,6 +117,7 @@ class SQLiteArtifactPayloadStore:
                     kind,
                     mime_type,
                     uri,
+                    access_uri,
                     sha256,
                     size_bytes,
                     lifecycle_status,
@@ -133,6 +137,7 @@ class SQLiteArtifactPayloadStore:
             kind=row["kind"],
             mime_type=row["mime_type"],
             uri=row["uri"],
+            access_uri=row["access_uri"],
             sha256=row["sha256"],
             size_bytes=row["size_bytes"],
             lifecycle_status=ArtifactPayloadLifecycleStatus(row["lifecycle_status"]),
@@ -158,7 +163,7 @@ class SQLiteArtifactPayloadStore:
         else:
             status = (
                 ArtifactPayloadStatus.AVAILABLE
-                if self._uri_path(stored.uri).is_file()
+                if self._stored_payload_path(stored).is_file()
                 else ArtifactPayloadStatus.MISSING
             )
         return ArtifactPayloadInspection(
@@ -178,7 +183,7 @@ class SQLiteArtifactPayloadStore:
             return None
         if stored.lifecycle_status is ArtifactPayloadLifecycleStatus.PRUNED:
             return stored
-        payload_path = self._uri_path(stored.uri)
+        payload_path = self._stored_payload_path(stored)
         if payload_path.exists():
             payload_path.unlink()
         effective_pruned_at = (pruned_at or datetime.now(UTC)).astimezone(UTC)
@@ -234,7 +239,7 @@ class SQLiteArtifactPayloadStore:
         inspection = self.inspect_payload(artifact_id)
         if inspection is None:
             raise ArtifactPayloadMissingError("artifact payload metadata was not found")
-        payload_path = self._uri_path(inspection.payload.uri)
+        payload_path = self._stored_payload_path(inspection.payload)
         if inspection.status is ArtifactPayloadStatus.PRUNED:
             raise ArtifactPayloadMissingError("artifact payload has been pruned")
         if inspection.status is ArtifactPayloadStatus.MISSING:
@@ -268,6 +273,7 @@ class SQLiteArtifactPayloadStore:
             )
             ensure_column(connection, "artifact_payloads", "retained_until", "TEXT")
             ensure_column(connection, "artifact_payloads", "pruned_at", "TEXT")
+            ensure_column(connection, "artifact_payloads", "access_uri", "TEXT")
 
     def _payload_path(
         self,
@@ -283,3 +289,13 @@ class SQLiteArtifactPayloadStore:
         if parsed.scheme != "file":
             raise ArtifactPayloadMissingError("artifact payload uri is not a local file uri")
         return Path(parsed.path)
+
+    def _stored_payload_path(self, stored: StoredArtifactPayload) -> Path:
+        """Resolve the local file path for a stored payload.
+
+        CTX-ART-02: prefers ``access_uri`` (the volatile file:// locator); falls
+        back to ``uri`` for legacy rows that still store file:// in ``uri``.
+        """
+        if stored.access_uri is not None:
+            return self._uri_path(stored.access_uri)
+        return self._uri_path(stored.uri)

@@ -130,7 +130,9 @@ def test_artifact_access_contract_matrix(
 
     if scenario == "content_unavailable":
         stored = _seed_payload_backed_tool_artifact(database_path, session.session_id)
-        Path(stored.uri.removeprefix("file://")).unlink()
+        # CTX-ART-02: access_uri holds the volatile file:// path.
+        assert stored.access_uri is not None
+        Path(stored.access_uri.removeprefix("file://")).unlink()
         api_response = create_app(database_path).get_session_artifact_content(
             str(session.session_id),
             "tool-run:5",

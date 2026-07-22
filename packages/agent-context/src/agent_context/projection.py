@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 from collections.abc import Callable
 from hashlib import sha256
 
@@ -19,7 +18,6 @@ from agent_context.projection_models import (
     ToolResultTombstone,
 )
 
-_ARTIFACT_URI = re.compile(r"(?:artifact|file|https?)://[^\s\])}]+")
 _UNRESOLVED_MARKERS = (
     "approval pending",
     "approval-pending",
@@ -258,16 +256,13 @@ def _content_locator(tool_name: str, arguments: dict[str, object]) -> str | None
     return str(value) if value is not None else None
 
 
-def _artifact_uri(content: str) -> str | None:
-    match = _ARTIFACT_URI.search(content)
-    return match.group(0) if match else None
-
-
 def _result_artifact_uri(message: SessionMessage) -> str | None:
+    # CTX-ART-01: artifact URIs come only from structured metadata, not from
+    # free-text scanning of tool output bodies.
     uri = message.metadata.get("artifact_uri")
     if isinstance(uri, str) and uri.strip():
         return uri.strip()
-    return _artifact_uri(message.content)
+    return None
 
 
 def _result_checksum(message: SessionMessage) -> str:

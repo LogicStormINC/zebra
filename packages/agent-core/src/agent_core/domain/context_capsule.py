@@ -3,6 +3,13 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+_TRAILING_PUNCT = "\"'),;>.]}"
+
+
+def _normalize_ref(value: str) -> str:
+    """Strip trailing punctuation that may cling to artifact/event references."""
+    return value.strip().rstrip(_TRAILING_PUNCT)
+
 
 class ContextCapsuleGenerator(StrEnum):
     DETERMINISTIC = "deterministic"
@@ -79,6 +86,11 @@ class ContextCapsule(BaseModel):
     known_omissions: tuple[str, ...] = ()
     created_at: datetime
 
+    @property
+    def referenced_artifact_refs(self) -> tuple[str, ...]:
+        """Union of artifact_refs and recent_exact_tail_refs, de-duplicated and sorted."""
+        return tuple(sorted(set(self.artifact_refs) | set(self.recent_exact_tail_refs)))
+
     @field_validator(
         "capsule_id",
         "version",
@@ -110,6 +122,12 @@ class ContextCapsule(BaseModel):
         if not stripped:
             raise ValueError("context capsule model_profile must not be blank")
         return stripped
+
+    @field_validator("artifact_refs", "recent_exact_tail_refs")
+    @classmethod
+    def normalize_artifact_refs(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        normalized = tuple(_normalize_ref(ref) for ref in value if _normalize_ref(ref))
+        return normalized
 
 
 def validate_context_capsule(

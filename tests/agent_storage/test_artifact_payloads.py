@@ -33,7 +33,7 @@ def test_sqlite_artifact_payload_store_persists_metadata_and_bytes(tmp_path: Pat
     assert reloaded.sha256 == stored.sha256
     assert reloaded.lifecycle_status is ArtifactPayloadLifecycleStatus.ACTIVE
     assert reloaded.pruned_at is None
-    assert Path(reloaded.uri.removeprefix("file://")).is_file()
+    assert Path(reloaded.access_uri.removeprefix("file://")).is_file()
     assert store.read_payload_bytes(stored.artifact_id) == b"pytest passed\n"
 
 
@@ -49,7 +49,7 @@ def test_sqlite_artifact_payload_store_reports_missing_file_explicitly(tmp_path:
             created_at=datetime(2026, 6, 29, 12, 0, tzinfo=UTC),
         )
     )
-    payload_path = Path(stored.uri.removeprefix("file://"))
+    payload_path = Path(stored.access_uri.removeprefix("file://"))
     payload_path.unlink()
 
     inspection = store.inspect_payload(stored.artifact_id)
