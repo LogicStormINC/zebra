@@ -216,6 +216,8 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
                 composer={renderComposer("idle")}
                 conversations={props.conversations}
                 currentConversation={props.currentConversation}
+                launchConfig={effectiveLaunchConfig}
+                launchEditable={launchEditable}
                 launchError={launchError}
                 onQuickAction={submitQuickAction}
                 onSelectConversation={props.onSelectConversation}
@@ -234,6 +236,7 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
             events={props.events}
             isDraft={!hasSessionThread}
             isRequesting={props.isRequesting}
+            launchConfig={effectiveLaunchConfig}
             listRef={props.listRef}
             messages={props.messages}
             onApprove={props.onApprove}

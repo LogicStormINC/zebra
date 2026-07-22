@@ -1,4 +1,5 @@
 import type { SessionSummary } from "../types";
+import locale from "../_utils/local";
 import { compactWorkspaceLabel, taskNetworkProfileLabel, type TaskLaunchConfig } from "../lib/task-launch-config";
 
 interface TaskLaunchSummaryProps {
@@ -16,7 +17,7 @@ export function TaskLaunchSummary({ className, config, editable, errorText, sess
     : undefined;
   return (
     <div className={className} role="status">
-      <strong>{editable ? "启动配置" : "会话配置"}</strong>
+      <strong>{locale.executionEnvironment}</strong>
       <span title={config.workspace}>工作区 · {compactWorkspaceLabel(config.workspace)}</span>
       <span>权限 · {config.policyProfile === "full_access" ? "完整访问" : "工作区写入"}</span>
       <span>能力 · {config.toolProfile === "coding" ? "编码工具" : "通用工具"}</span>

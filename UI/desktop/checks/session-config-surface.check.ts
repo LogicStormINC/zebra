@@ -4,9 +4,16 @@ import { readFileSync } from "node:fs";
 const composerSource = readFileSync(new URL("../src/components/conversation/ConversationComposer.tsx", import.meta.url), "utf8");
 const controlsSource = readFileSync(new URL("../src/components/conversation/TaskLaunchControls.tsx", import.meta.url), "utf8");
 const workspaceSource = readFileSync(new URL("../src/components/SessionThreadWorkspace.tsx", import.meta.url), "utf8");
+const idleSource = readFileSync(new URL("../src/components/conversation/WorkspaceIdle.tsx", import.meta.url), "utf8");
+const envCardSource = readFileSync(new URL("../src/components/conversation/ExecutionEnvironmentCard.tsx", import.meta.url), "utf8");
 
-assert.match(composerSource, /launchEditable \? \([\s\S]*?<TaskLaunchSummary/u);
+// The editable launch summary renders in the thread composer, but is suppressed
+// in the idle variant where the ExecutionEnvironmentCard shows the config instead.
+assert.match(composerSource, /launchEditable && variant !== "idle" \? \([\s\S]*?<TaskLaunchSummary/u);
 assert.match(composerSource, /<TaskLaunchSummary[\s\S]*?\n\s+editable\n[\s\S]*?\/>/u);
+// The idle workspace surfaces the execution environment as a four-cell card.
+assert.match(idleSource, /<ExecutionEnvironmentCard[\s\S]*?config=\{launchConfig\}/u);
+assert.match(envCardSource, /locale\.executionEnvironment/u);
 assert.doesNotMatch(controlsSource, /effectiveConfig/u);
 assert.doesNotMatch(controlsSource, /\) : <span className=\{launchStyles\.staticBadge\}>/u);
 for (const label of ["MCP", "Prompt", "材料", "模型"]) {
