@@ -77,6 +77,17 @@ export default function App() {
   useEffect(() => {
     conversationEventsRef.current = conversationEvents;
   }, [conversationEvents]);
+  useEffect(() => {
+    // Keep sidebar labels in sync with server-side titles. The worker backfills a
+    // semantic title after the first turn; when a fresher title arrives via the
+    // session summary poll, adopt it so the sidebar reflects the conversation topic.
+    for (const conversation of conversations) {
+      const title = sessionSummaries[conversation.key]?.title;
+      if (title && title !== conversation.label) {
+        renameConversation(conversation.key, title);
+      }
+    }
+  }, [conversations, sessionSummaries, renameConversation]);
   const syncConversationFromStream = useCallback(
     async (conversationKey: string, sessionId: string) => {
       if (conversationToSessionId[conversationKey] !== sessionId) conversationEventsRef.current = { ...conversationEventsRef.current, [conversationKey]: [] };

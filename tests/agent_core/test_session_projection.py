@@ -52,6 +52,58 @@ def test_rebuild_session_applies_status_transitions() -> None:
     assert session.updated_at == created_at + timedelta(seconds=3)
 
 
+def test_rebuild_session_applies_title_update_without_changing_status() -> None:
+    session_id = new_session_id()
+    created_at = datetime(2026, 6, 18, 10, 0, tzinfo=UTC)
+    events = [
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=0,
+            event_type=EventType.SESSION_CREATED,
+            actor=EventActor.SYSTEM,
+            payload={"title": "help me translate the READ"},
+            created_at=created_at,
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=1,
+            event_type=EventType.TASK_PREPARED,
+            actor=EventActor.HARNESS,
+            payload={"title": "help me translate the READ", "user_input": "translate"},
+            created_at=created_at + timedelta(seconds=1),
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=2,
+            event_type=EventType.MODEL_REQUEST_STARTED,
+            actor=EventActor.HARNESS,
+            created_at=created_at + timedelta(seconds=2),
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=3,
+            event_type=EventType.SESSION_COMPLETED,
+            actor=EventActor.SYSTEM,
+            created_at=created_at + timedelta(seconds=3),
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=4,
+            event_type=EventType.SESSION_TITLE_UPDATED,
+            actor=EventActor.HARNESS,
+            payload={"title": "Translate README to English"},
+            created_at=created_at + timedelta(seconds=4),
+        ),
+    ]
+
+    session = rebuild_session(events)
+
+    assert session.title == "Translate README to English"
+    # A title update must not resurrect a completed session.
+    assert session.status is SessionStatus.COMPLETED
+    assert session.current_sequence == 4
+
+
 def test_rebuild_session_requires_session_created_first() -> None:
     with pytest.raises(SessionProjectionError, match="first event must be session_created"):
         rebuild_session(

@@ -59,6 +59,20 @@ class SessionCreatedPayload(BaseModel):
         return stripped
 
 
+class SessionTitleUpdatedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str
+
+    @field_validator("title")
+    @classmethod
+    def ensure_title_not_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("title must not be blank")
+        return stripped
+
+
 class TaskPreparedPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -431,6 +445,7 @@ class ContextCapsuleCreatedPayload(BaseModel):
 
 _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SESSION_CREATED: SessionCreatedPayload,
+    EventType.SESSION_TITLE_UPDATED: SessionTitleUpdatedPayload,
     EventType.USER_MESSAGE_RECEIVED: UserMessageReceivedPayload,
     EventType.TASK_PREPARED: TaskPreparedPayload,
     EventType.RUNTIME_PROVISIONED: RuntimeProvisionedPayload,
