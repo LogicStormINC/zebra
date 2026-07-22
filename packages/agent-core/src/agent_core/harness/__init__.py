@@ -25,6 +25,7 @@ from agent_core.harness.models import (
 )
 from agent_core.harness.orchestrator import SingleAttemptOrchestrator
 from agent_core.harness.projection import HarnessTraceProjector
+from agent_core.harness.protocol_invariants import HarnessInvariantError
 from agent_core.harness.recorder import HarnessEventRecorder
 from agent_core.harness.retry_plan import RetryPlanHint, build_retry_plan_hint
 from agent_core.harness.selection import (
@@ -45,6 +46,7 @@ __all__ = [
     "HarnessContext",
     "HarnessEventDraft",
     "HarnessEventRecorder",
+    "HarnessInvariantError",
     "HarnessLoop",
     "HarnessLoopResult",
     "HarnessModelStep",

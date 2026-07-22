@@ -202,7 +202,9 @@ def test_cli_artifact_read_reports_missing_payload(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session = _seed_session(database_path)
     payload = _seed_payload_backed_tool_artifact(database_path, session.session_id)
-    Path(payload.uri.removeprefix("file://")).unlink()
+    # CTX-ART-02: access_uri holds the volatile file:// path.
+    assert payload.access_uri is not None
+    Path(payload.access_uri.removeprefix("file://")).unlink()
 
     result = execute(
         [

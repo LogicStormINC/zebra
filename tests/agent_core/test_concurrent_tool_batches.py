@@ -302,7 +302,7 @@ def test_completed_read_batch_returns_one_repeat_to_model_without_reexecution() 
     )
 
 
-def test_second_repeated_read_batch_keeps_the_deterministic_hard_stop() -> None:
+def test_second_repeated_read_batch_still_observes_until_threshold() -> None:
     first = (_read("a.txt", "call_a"), _read("b.txt", "call_b"))
     repeated = (_read("a.txt", "repeat_a"), _read("b.txt", "repeat_b"))
     repeated_again = (_read("a.txt", "again_a"), _read("b.txt", "again_b"))
@@ -313,6 +313,7 @@ def test_second_repeated_read_batch_keeps_the_deterministic_hard_stop() -> None:
             ScriptedModelResponse(
                 completion=_completion("Still read again.", *repeated_again)
             ),
+            ScriptedModelResponse(completion=_completion("Finished.")),
         )
     )
     tools = RecordingGateway()
@@ -321,7 +322,7 @@ def test_second_repeated_read_batch_keeps_the_deterministic_hard_stop() -> None:
         HarnessTask(
             title="Bound repeated reads",
             user_input="Inspect the inputs.",
-            max_model_calls=4,
+            max_model_calls=5,
             max_tool_calls=4,
         ),
         SingleAttemptOrchestrator(
@@ -336,21 +337,23 @@ def test_second_repeated_read_batch_keeps_the_deterministic_hard_stop() -> None:
         created_at=NOW,
     )
 
-    assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
-    assert result.attempt_result.metadata["stop_reason"] == "repeated_tool_call"
+    # With the threshold at 3, two repeated batches are not enough to hard-stop;
+    # the loop guard observes and returns to the model instead.
+    assert result.attempt_result.outcome is not HarnessAttemptOutcome.FAILED
     assert result.attempt_result.metadata["repeated_read_recovery_count"] == 1
     assert tools.calls == list(first)
-    assert result.run_result.tool_calls_used == 2
 
 
-def test_candidate_batch_duplicate_rejection_starts_nothing() -> None:
+def test_candidate_batch_duplicate_becomes_observation() -> None:
     calls = (_read("same.txt", "call_a"), _read("same.txt", "call_b"))
     tools = RecordingGateway()
     result, _ = _run(calls, tools, max_parallel=2)
 
-    assert result.attempt_result.metadata["stop_reason"] == "repeated_tool_call"
-    assert tools.calls == []
-    assert _event_names(result, EventType.TOOL_EXECUTION_STARTED) == []
+    # The first duplicate executes; the second becomes a FAILED observation
+    # instead of a terminal batch failure. Only one tool actually ran.
+    assert result.attempt_result.outcome is not HarnessAttemptOutcome.FAILED
+    assert result.attempt_result.metadata["recoverable_tool_failure_count"] == 1
+    assert len(tools.calls) == 1
 
 
 def _run(

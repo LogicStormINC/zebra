@@ -6,8 +6,10 @@ from urllib.parse import urlparse
 
 from agent_storage import (
     SessionArtifact,
+    SQLiteArtifactPayloadStore,
     SQLiteArtifactStore,
     SQLiteProjectionStore,
+    payload_for_artifact_uri,
     serialize_artifact_retrieval,
     serialize_session_artifact_projection,
 )
@@ -234,7 +236,37 @@ class SessionArtifactReadMixin:
             )
             return response
         assert artifact.uri is not None
-        payload = Path(urlparse(artifact.uri).path).read_bytes()
+        # CTX-ART-02: resolve artifact:// URI through the payload store to
+        # obtain the volatile file:// access path for reading bytes.
+        payload_store = SQLiteArtifactPayloadStore(self.database_path)
+        stored_payload = payload_for_artifact_uri(payload_store, artifact.uri)
+        read_uri = (
+            stored_payload.access_uri or stored_payload.uri
+            if stored_payload is not None
+            else artifact.uri
+        )
+        read_path = Path(urlparse(read_uri).path)
+        if not read_path.is_file():
+            response = build_artifact_unavailable_response(
+                session_id=session_id,
+                reason="artifact_payload_missing",
+                access=access,
+            )
+            record_delivery_audit(
+                database_path=self.database_path,
+                session_id=session_id,
+                action="session.artifact.content",
+                response=response,
+                policy_profile=access.session_policy_profile,
+                result_metadata=build_artifact_access_metadata(
+                    access,
+                    artifact=artifact,
+                    result_status="artifact_unavailable",
+                    retrieval_status="payload_missing",
+                ),
+            )
+            return response
+        payload = read_path.read_bytes()
         response = ApiResponse(
             status_code=200,
             body={

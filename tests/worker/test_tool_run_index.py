@@ -59,6 +59,11 @@ def test_tool_run_indexer_persists_output_payload_when_no_artifact_uri(
 
     assert record is not None
     assert record.artifact_uri is not None
-    assert Path(record.artifact_uri.removeprefix("file://")).read_text(encoding="utf-8") == (
+    # CTX-ART-02: artifact_uri is now artifact://; resolve via payload store.
+    from agent_storage.artifact_projection import payload_for_artifact_uri
+
+    stored_payload = payload_for_artifact_uri(payload_store, record.artifact_uri)
+    assert stored_payload is not None
+    assert Path(stored_payload.access_uri.removeprefix("file://")).read_text(encoding="utf-8") == (
         "README contents"
     )

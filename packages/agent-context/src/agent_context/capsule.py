@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import json
-import re
 from datetime import datetime
 from hashlib import sha256
 
 from agent_core.domain.context_capsule import ContextCapsule, PendingToolState
 from agent_core.domain.messages import MessageRole, SessionMessage
 
-_ARTIFACT_URI = re.compile(r"(?:artifact|file)://[^\s\])]+")
+_TRAILING_PUNCT = "\"'),;>.]}"
+
+
+def _normalize_artifact_ref(value: str) -> str:
+    """Strip trailing punctuation from structured artifact metadata."""
+    return value.strip().rstrip(_TRAILING_PUNCT)
 
 
 def build_context_capsule(
@@ -77,6 +81,11 @@ def build_context_capsule(
         for message in messages
         if message.role in {MessageRole.USER, MessageRole.ASSISTANT}
     )[-8:]
+    # CTX-ART-01: artifact strong references come ONLY from structured tool
+    # metadata (ToolOutputEnvelope / WebResultEnvelope / SearchHit), never from
+    # free-text regex scanning of tool output bodies. A URI appearing inside a
+    # file read, command stdout, or error traceback must NOT be promoted to a
+    # capsule artifact ref.
     artifact_refs = tuple(
         sorted(
             {
@@ -107,8 +116,15 @@ def build_context_capsule(
 
 
 def _message_artifact_refs(message: SessionMessage) -> tuple[str, ...]:
+    """Collect artifact refs from structured metadata only.
+
+    CTX-ART-01: free-text URI scanning is intentionally removed. Only the
+    ``artifact_uri`` metadata field — set by ToolOutputProjector, web envelopes,
+    and search pipeline — is a trustworthy provenance source.
+    """
     metadata_uri = message.metadata.get("artifact_uri")
-    embedded = tuple(_ARTIFACT_URI.findall(message.content))
-    if isinstance(metadata_uri, str) and metadata_uri.strip():
-        return (metadata_uri.strip(), *embedded)
-    return embedded
+    if isinstance(metadata_uri, str):
+        normalized = _normalize_artifact_ref(metadata_uri)
+        if normalized:
+            return (normalized,)
+    return ()

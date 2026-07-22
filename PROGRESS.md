@@ -46,6 +46,15 @@
   Phase A scope** (EXT-0 + SKILL-01..05 + MCP-01/02/06).
   Plugin/Hook/Marketplace remain `Locked` pending private-cloud GA. Elicitation
   is reconciled to durable HITL; sampling stays a hard non-goal.
+- Active harness task: `HAR-TOOL-RECOVERY-01` enforces the durable contract
+  that a single `ToolCallStatus.FAILED` (HTTP 4xx, missing file, timeout) must
+  surface as a structured observation for model-selected correction rather than
+  directly producing `session_failed`. Changes: repeated tool calls become
+  observations with a threshold-gated `loop_guard_exhausted` hard stop (default
+  3), sequential batches continue executing remaining tools after a mid-batch
+  failure (matching concurrent-batch semantics), and a provider protocol
+  firewall (`protocol_invariants.py`) validates tool-call/tool-result pairing
+  before every model request to prevent `invalid_request` leakage.
 
 ## Current Capability
 

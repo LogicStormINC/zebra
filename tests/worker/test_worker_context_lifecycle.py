@@ -169,3 +169,88 @@ def test_compaction_includes_recent_exact_tail_refs_in_readability_check(
     )
     assert active is not None
     assert active.capsule.recent_exact_tail_refs == ("event://session/1",)
+
+
+def test_compaction_validation_failure_degrades_instead_of_raising(tmp_path: Path) -> None:
+    """CTX-ART-01: a capsule that fails validation must not terminate the session.
+
+    The worker records a non-terminal ``CONTEXT_COMPACTION_REJECTED`` diagnostic,
+    preserves the existing active projection, and returns normally so the Agent
+    can continue with the in-memory compacted conversation.
+    """
+    database = tmp_path / "context-fallback.sqlite"
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Fallback test",
+            user_input="Keep going despite validation failure.",
+            workspace_root=tmp_path.resolve(),
+        )
+    )
+    event_store = SQLiteEventStore(database)
+    for event in bootstrap.events:
+        event_store.append(event)
+    projection_store = SQLiteProjectionStore(database)
+    projection_store.save_session(bootstrap.session)
+    workspace_store = SQLiteWorkspaceProjectionStore(database)
+    recovery = SessionRecoveryService(
+        event_store, projection_store, workspace_store
+    ).recover_session(bootstrap.session.session_id)
+    payload_store = SQLiteArtifactPayloadStore(database)
+    recorder = DurableHarnessEventRecorder(
+        session=recovery.session,
+        workspace=recovery.workspace,
+        event_store=event_store,
+        projection_store=projection_store,
+        workspace_store=workspace_store,
+        model_call_indexer=ModelCallIndexer(SQLiteModelCallStore(database)),
+        tool_run_indexer=ToolRunIndexer(SQLiteToolRunStore(database), payload_store),
+    )
+    lifecycle_store = SQLiteContextLifecycleStore(database)
+    # A capsule referencing a non-existent file:// artifact will fail the
+    # readability check in validation.
+    capsule = ContextCapsule(
+        capsule_id="bad-ref",
+        objective="Trigger validation failure",
+        constraints=("Keep going.",),
+        immediate_next="Continue",
+        source_hash="0" * 64,
+        confidence=1.0,
+        created_at=NOW,
+        artifact_refs=("file:///nonexistent/missing.txt",),
+    )
+    draft = HarnessEventDraft(
+        event_type=EventType.CONTEXT_COMPACTED,
+        actor=EventActor.HARNESS,
+        payload={
+            "attempt_number": 1,
+            "before_tokens": 100,
+            "after_tokens": 40,
+            "removed_message_count": 2,
+            "retained_message_count": 1,
+            "within_budget": True,
+            "provenance": "test",
+            "capsule": capsule.model_dump(mode="json"),
+        },
+    )
+
+    # Must not raise — the worker degrades gracefully.
+    persist_context_compaction(
+        draft,
+        recorder=recorder,
+        event_store=event_store,
+        lifecycle_store=lifecycle_store,
+    )
+
+    events = event_store.list_for_session(bootstrap.session.session_id)
+    event_types = [event.event_type for event in events]
+    # The non-terminal diagnostic event is recorded instead of a terminal failure.
+    assert EventType.CONTEXT_COMPACTION_REJECTED in event_types
+    # No capsule was persisted — the active projection is preserved.
+    assert EventType.CONTEXT_CAPSULE_CREATED not in event_types
+    rejected = next(
+        event
+        for event in events
+        if event.event_type is EventType.CONTEXT_COMPACTION_REJECTED
+    )
+    assert rejected.payload["fallback_mode"] == "retain_active_projection"
+    assert rejected.payload["preserved_active_projection"] is True

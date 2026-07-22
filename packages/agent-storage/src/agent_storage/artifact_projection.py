@@ -19,13 +19,25 @@ def payload_for_artifact_uri(
     if uri is None:
         return None
     parsed = urlparse(uri)
-    if parsed.scheme != "file":
-        return None
-    try:
-        artifact_id = ArtifactId(UUID(Path(parsed.path).parent.name))
-    except ValueError:
+    artifact_id = _artifact_id_from_uri(parsed)
+    if artifact_id is None:
         return None
     return payload_store.get_payload(artifact_id)
+
+
+def _artifact_id_from_uri(parsed) -> ArtifactId | None:  # type: ignore[no-untyped-def]
+    """Extract an ArtifactId from either an artifact:// or legacy file:// URI."""
+    if parsed.scheme == "artifact":
+        try:
+            return ArtifactId(UUID(parsed.path.lstrip("/") or parsed.netloc))
+        except ValueError:
+            return None
+    if parsed.scheme == "file":
+        try:
+            return ArtifactId(UUID(Path(parsed.path).parent.name))
+        except ValueError:
+            return None
+    return None
 
 
 def serialize_artifact_lifecycle(
@@ -61,7 +73,7 @@ def serialize_artifact_retrieval(
             "uri": None,
         }
     parsed = urlparse(uri)
-    if parsed.scheme != "file":
+    if parsed.scheme not in {"artifact", "file"}:
         return {
             "status": "external_reference",
             "retrievable": False,
@@ -71,6 +83,14 @@ def serialize_artifact_retrieval(
         return {
             "status": "payload_pruned",
             "retrievable": False,
+            "uri": uri,
+        }
+    if parsed.scheme == "artifact":
+        # artifact:// URIs are stable identities; retrievability is determined by
+        # the lifecycle status above, not by local filesystem checks.
+        return {
+            "status": "payload_available",
+            "retrievable": lifecycle is None or lifecycle.get("status") != "pruned",
             "uri": uri,
         }
     payload_path = Path(parsed.path)

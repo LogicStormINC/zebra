@@ -269,5 +269,5 @@ def test_cli_resume_command_execute_reports_tool_trace(
     assert metadata["path"] == "README.md"
     assert metadata["byte_count"] == 14
     assert metadata["truncated"] is False
-    assert metadata["artifact_uri"].startswith("file://")
+    assert metadata["artifact_uri"].startswith("artifact://")
     assert metadata["output_envelope"]["checksum"] == metadata["output_sha256"]

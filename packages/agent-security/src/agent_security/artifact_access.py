@@ -5,6 +5,8 @@ from agent_core.domain import ArtifactAccessClass, ArtifactAccessDescriptor
 from agent_security.policy import PolicyProfile
 
 _LOCAL_FILE_URI_SCHEME = "file"
+_LOCAL_ARTIFACT_URI_SCHEME = "artifact"
+_LOCAL_URI_SCHEMES = frozenset({_LOCAL_FILE_URI_SCHEME, _LOCAL_ARTIFACT_URI_SCHEME})
 _OPERATOR_SAFE_KINDS = frozenset({"assistant_message"})
 _LOCAL_TEXT_MIME_PREFIX = "text/"
 
@@ -35,7 +37,7 @@ def _is_restricted_external_reference(uri: str | None) -> bool:
     if uri is None:
         return False
     parsed = urlparse(uri)
-    return bool(parsed.scheme) and parsed.scheme != _LOCAL_FILE_URI_SCHEME
+    return bool(parsed.scheme) and parsed.scheme not in _LOCAL_URI_SCHEMES
 
 
 def _is_local_text_payload(mime_type: str | None) -> bool:

@@ -23,6 +23,7 @@ from agent_core.harness.model_request import (
     with_context_plan,
 )
 from agent_core.harness.models import HarnessEventDraft, HarnessTask
+from agent_core.harness.protocol_invariants import validate_tool_call_pairing
 from agent_core.harness.provider_continuation import (
     PreparedProviderContinuation,
     continuation_event,
@@ -180,6 +181,7 @@ class HarnessModelStep:
         plan = build_context_plan(tuple(messages), tools, window, model_gateway)
         if not plan.within_budget:
             raise ContextWindowExceededError(plan)
+        validate_tool_call_pairing(messages)
         if self._event_sink is None:
             if self._provider_continuation is not None and isinstance(
                 model_gateway, ProviderContinuationCompletionPort

@@ -14,6 +14,7 @@ evals/reports/
 node_modules/
 .pnpm-store/
 /.zebra-agent/
+/.zcode/
 UI/**/node_modules/
 UI/**/dist/
 UI/**/src-tauri/target/

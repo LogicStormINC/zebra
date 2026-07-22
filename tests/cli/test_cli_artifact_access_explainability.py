@@ -116,7 +116,9 @@ def test_cli_artifact_unavailable_includes_access_projection(tmp_path: Path) -> 
     session = _seed_session(database_path)
     _seed_workspace_policy(database_path, session.session_id, PolicyProfile.WORKSPACE_WRITE.value)
     stored = _seed_payload_backed_tool_artifact(database_path, session.session_id)
-    Path(stored.uri.removeprefix("file://")).unlink()
+    # CTX-ART-02: access_uri holds the volatile file:// path.
+    assert stored.access_uri is not None
+    Path(stored.access_uri.removeprefix("file://")).unlink()
 
     result = execute(
         [
