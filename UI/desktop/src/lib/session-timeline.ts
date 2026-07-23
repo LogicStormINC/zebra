@@ -45,6 +45,64 @@ export interface TimelineStatusItem extends TimelineBase {
 
 export type TimelineItem = TimelineMessageItem | TimelineToolItem | TimelineStatusItem;
 
+export interface TimelineToolGroupItem extends TimelineBase {
+  kind: "toolGroup";
+  tools: TimelineToolItem[];
+}
+
+export type TimelineRenderItem = TimelineItem | TimelineToolGroupItem;
+
+// Backend placeholder inserted when the model returns tool calls without any
+// assistant text (see agent_integrations openai_payloads._assistant_content).
+export const TOOL_CALL_PLACEHOLDER = "Tool calls proposed.";
+
+const ACTIVE_TOOL_STATUSES = new Set<TimelineToolStatus>([
+  "proposed",
+  "awaiting_approval",
+  "running",
+]);
+
+export function isActiveToolStatus(status: TimelineToolStatus): boolean {
+  return ACTIVE_TOOL_STATUSES.has(status);
+}
+
+// Fold each run of consecutive tool items into a single collapsible group,
+// dropping a "Tool calls proposed." placeholder message that directly precedes
+// it (the group header stands in for that placeholder).
+export function groupTimelineForRender(items: TimelineItem[]): TimelineRenderItem[] {
+  const out: TimelineRenderItem[] = [];
+  for (let index = 0; index < items.length; index += 1) {
+    const item = items[index];
+    if (
+      item.kind === "message"
+      && item.role === "assistant"
+      && item.content.trim() === TOOL_CALL_PLACEHOLDER
+      && items[index + 1]?.kind === "tool"
+    ) {
+      continue;
+    }
+    if (item.kind === "tool") {
+      const tools: TimelineToolItem[] = [];
+      let cursor = index;
+      while (cursor < items.length && items[cursor].kind === "tool") {
+        tools.push(items[cursor] as TimelineToolItem);
+        cursor += 1;
+      }
+      out.push({
+        kind: "toolGroup",
+        key: `toolGroup:${tools[0].key}`,
+        sequence: tools[0].sequence,
+        createdAt: tools[0].createdAt,
+        tools,
+      });
+      index = cursor - 1;
+      continue;
+    }
+    out.push(item);
+  }
+  return out;
+}
+
 export type TimelinePlanPlacement =
   | { mode: "replace" | "after"; anchorKey: string }
   | { mode: "start" };

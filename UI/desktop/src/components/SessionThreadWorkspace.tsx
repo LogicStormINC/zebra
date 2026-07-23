@@ -3,13 +3,14 @@ import locale from "../_utils/local";
 import { activeSessionStatusLabel } from "../_utils/session-status";
 import type { ChatMessage } from "../lib/chat-surface";
 import { projectRuntimeActivity } from "../lib/runtime-activity";
-import { isVisibleSessionEvent, optimisticTimelineMessages, projectSessionTimeline, timelinePlanPlacement, type TimelineMessageItem, type TimelineStatusItem } from "../lib/session-timeline";
+import { isVisibleSessionEvent, groupTimelineForRender, optimisticTimelineMessages, projectSessionTimeline, timelinePlanPlacement, type TimelineMessageItem, type TimelineStatusItem } from "../lib/session-timeline";
 import { compactWorkspaceLabel } from "../lib/task-launch-config";
 import { hasVisibleTaskPlan } from "../lib/task-plan";
 import type { ApprovalSummary, SessionEvent, SessionSummary } from "../types";
 import { AgentActivityCard } from "./AgentActivityCard";
 import { AssistantMessageBlock } from "./AssistantMessageBlock";
 import { SessionExecutionTrace } from "./SessionExecutionTrace";
+import { ToolCallGroup } from "./ToolCallGroup";
 import { SessionTaskPlan } from "./SessionTaskPlan";
 import { SessionApprovalPanel } from "./SessionApprovalPanel";
 import { SessionClarificationPanel } from "./SessionClarificationPanel";
@@ -91,6 +92,7 @@ export function SessionThreadWorkspace({
     ? `${capturedPrompt.source_server ?? "MCP"} · ${(capturedPrompt.source_argument_names ?? []).length} 参数`
     : "未使用";
   const timelineItems = projectSessionTimeline(events);
+  const renderItems = groupTimelineForRender(timelineItems);
   const optimisticMessages = optimisticTimelineMessages(timelineItems, messages);
   const visiblePlan = hasVisibleTaskPlan(sessionSummary?.task_plan) ? sessionSummary.task_plan : undefined;
   const planPlacement = visiblePlan ? timelinePlanPlacement(timelineItems) : undefined;
@@ -163,14 +165,16 @@ export function SessionThreadWorkspace({
         {!isDraft ? <>
           <div className={styles.eventStream}>
             {planPlacement?.mode === "start" ? planNode : null}
-            {timelineItems.map((item) => {
+            {renderItems.map((item) => {
               const isPlanEvent = item.kind === "status" && (item.eventType === "plan_proposed" || item.eventType === "plan_updated");
               if (isPlanEvent) {
                 return planPlacement?.mode === "replace" && planPlacement.anchorKey === item.key ? planNode : null;
               }
               const content = item.kind === "message"
                 ? renderMessage(item, item.key)
-                : item.kind === "tool" ? <SessionExecutionTrace key={item.key} tool={item} /> : renderStatus(item);
+                : item.kind === "toolGroup"
+                  ? <ToolCallGroup key={item.key} tools={item.tools} />
+                  : item.kind === "tool" ? <SessionExecutionTrace key={item.key} tool={item} /> : renderStatus(item);
               const insertPlanAfter = visiblePlan && planPlacement?.mode === "after" && planPlacement.anchorKey === item.key;
               return <React.Fragment key={`stream:${item.key}`}>
                 {content}

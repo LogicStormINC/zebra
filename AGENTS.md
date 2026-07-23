@@ -333,39 +333,75 @@ If you stop mid-stream, leave behind:
 <claude-mem-context>
 # Memory Context
 
-# [zebra-agent] recent context, 2026-07-22 4:02pm GMT+8
+# [zebra-agent] recent context, 2026-07-23 7:55pm GMT+8
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 25 obs (6,908t read) | 0t work
+Stats: 50 obs (20,088t read) | 680,779t work | 97% savings
 
-### Jul 20, 2026
-6 6:04p 🔵 Session Configuration Limits Discovery
-8 6:05p 🔵 Session Limit Parameters Flow
-9 6:06p 🟣 Removed Implicit Tool Call Limits from Harness Execution
-10 6:07p 🔵 Node Version Compatibility Issue Discovered
-11 6:08p 🟣 Completed CTX-SEG-02 Budget Limit Removal Implementation
-12 6:10p 🟣 Pull Request #179 Created for CTX-SEG-02 Implementation
-13 6:13p 🔵 GitHub Actions Quality Workflow Progress for PR #179
-14 6:14p 🔵 PR #179 Quality Checks Completion
-15 " ✅ PR #179 Merge Command Executed
-16 6:16p 🟣 CTX-SEG-02 Implementation Merged to Main
-17 " ✅ Post-Merge Cleanup Attempted for CTX-SEG-02 Branch
-18 6:18p ✅ Post-Merge Cleanup and Verification Completed
-20 6:26p 🔵 Zebra Agent Architecture Analysis Requested
-25 6:42p 🔵 Local Documentation Write Request
-27 " 🔵 GitHub Issue Review and Resolution Task Initiated
-26 6:43p 🟣 Skill MCP Plugin Documentation Worktree Setup
 ### Jul 22, 2026
-196 1:46p 🔵 Frontend Design Skill Installation Failed Due to Web Fetch Error
-198 " 🔵 Web Fetch Failure Prevented Frontend Design Skill Installation
-199 " 🔵 Session Chain Investigation Reveals Persistent Artifact Reference Failures
-200 1:47p 🔵 Session Chain Investigation Reveals GitHub Skill Installation and Model Provider Failures
-201 1:48p 🔵 Web Tool Alternatives Successfully Retrieved GitHub Skill Content After Fetch Failure
-202 1:50p 🔵 Zebra Agent Tool Execution Failure Recovery and Synthesize Behavior Discovered
-203 2:15p 🔵 Tool Call Error Handling Architecture Discussion
-204 " 🔵 Zebra Agent Tool Execution Failure Handling Architecture Investigation
-205 2:17p 🔵 Tool Call Error Handling Architecture Deep Dive
+261 5:46p 🔴 CTX-ART-02 Regression: API Artifact Read Does Not Guard Against Deleted File After access_uri Lookup
+262 5:48p 🔵 CTX-ART-02 API Regression Root Cause: artifact:// Retrievability Bypasses Filesystem Check
+264 5:49p 🔴 CTX-ART-02 API Regression Fixed: is_file() Guard Added Before read_bytes() in Session Artifact Read Mixin
+265 5:54p ✅ Full Test Suite Green After CTX-ART-01 + CTX-ART-02 + API Mixin Fix
+266 5:55p 🔵 make check Fails: 7 Pre-Existing Ruff I001 Import-Sort Errors in Integration Tests
+267 5:56p 🔵 Ruff I001 Pre-Existing Violations: Full File List Confirmed, All Untouched by Current Branch
+268 5:57p 🔵 Ruff + mypy Pre-Existing Failures Confirmed: Branch Fixes 10 of 17 Base Violations
+269 5:58p 🔵 .zcode/ Not in .gitignore; sessions.sqlite Tracked Despite Being Ignored
+270 5:59p ✅ CTX-ART-02 Test Consumer Migration: All Filesystem Operations Switch from .uri to .access_uri
+S167 查看本地分支并提交到 GitHub — codex/har-tool-recovery-01 分支三项功能全部验证完毕，已提交并开 PR #191 (Jul 22 at 6:04 PM)
+S165 Commit and push codex/har-tool-recovery-01 branch to GitHub — three feature areas (HAR-TOOL-RECOVERY-01, CTX-ART-01, CTX-ART-02) fully validated and shipped as PR #191 (Jul 22 at 6:04 PM)
+S174 Local Branch Cleanup and GitHub Push — Post PR #191 Merge Housekeeping (Jul 22 at 6:06 PM)
+276 6:20p 🔵 New Work Session Initiated — Local Branch Cleanup and GitHub Push Task
+S179 Remote Branch Cleanup — Delete Stale/Obsolete Branches, Preserve Active Contributor Work (Jul 22 at 6:20 PM)
+277 6:31p ✅ Remote Branch Cleanup Requested Post-PR #191 Merge
+279 " 🔵 Remote Branch Audit: 3 Unmerged Codex Branches Found on Origin
+280 " 🔵 codex/fix-artifact-ref-tail-commas Contains Unmerged Bug Fix Not Present on Main
+281 " 🔵 PR #74 (finos-vision-mcp) Open Since Jul 14 — Blocked on Real FinOS Deploy
+282 6:32p 🔵 Codex FinOS Branches Authored by vinson1101, PR #74 is Draft
+S182 Git status check — are there any uncommitted changes on the current branch? (Jul 22 at 6:33 PM)
+283 7:01p 🔵 Only Untracked Binary sessions.sqlite Has Uncommitted Changes on Main
+S186 Session title generation investigation — how does the desktop sidebar derive conversation titles? (Jul 22 at 7:01 PM)
+284 7:02p 🔵 Zebra Agent Desktop UI Architecture: Tauri + React/TypeScript with Checks System
+285 7:03p 🔵 Session Title Derivation: First 36 Chars of User Message, Stored in localStorage
+286 " 🔵 Workspace Session Reconciliation: Local-First with Server Merge on Startup
+S203 Semantic Session Title Feature — Full Implementation Complete, All Checks Green, Awaiting Commit/PR Decision (Jul 22 at 7:04 PM)
+287 7:04p 🔵 No Session Title Update Endpoint Exists in Backend — Title Is Permanently Set at Creation
+288 7:05p 🔵 Session Title Stored in Projection Table, Not Tasks Table; Bounded on History Write
+289 7:07p 🔵 Projection Store UPSERT Updates Title — Session Domain Object Title Change Would Auto-Persist
+290 " 🔵 apply_event Never Updates Session.title; No SESSION_TITLE_UPDATED EventType Exists
+291 7:09p ⚖️ Semantic Session Title Feature — Full Architecture Plan Written
+292 7:12p 🟣 Semantic Session Title Feature Implementation Started — Tasks Created
+293 " 🔵 SessionEvent.create() Has Optional Payload Validation — Unknown Event Types Fall Through Safely
+294 7:13p 🟣 SESSION_TITLE_UPDATED Event Type Implemented — Domain Layer Complete
+295 7:14p 🔵 Task 2 Groundwork — Key Payload Keys and Service Pattern Confirmed
+296 7:16p 🟣 Task 2 Complete + Task 3 Partially Wired — SessionTitleService Created and Injected Into Worker
+297 7:17p 🟣 Task 3 Complete — finalize_execution Wired to Call SessionTitleService After Memory Extraction
+298 7:18p 🟣 Task 4 Complete + Task 5 Begun — Frontend Sync useEffect Landed, Projection Test Added
+300 7:24p 🔵 Session Title Feature Files Pass mypy Type Check
+301 7:25p 🔵 SESSION_TITLE_UPDATED Payload Contract: Auto-Strips Whitespace, Rejects Blank Titles
+S207 Semantic Session Title Feature — Fully Shipped: Commit dfc04ca5, Branch feat/semantic-session-title, PR #192 Opened (Jul 22 at 7:25 PM)
+302 7:26p ✅ Feature Branch Created and Files Staged for Semantic Session Title
+303 7:27p 🟣 Semantic Session Title Feature Committed and PR #192 Opened
+S213 Desktop UI Live Preview — Zebra Agent Desktop App Launched for Visual Inspection, Awaiting UI Change Request (Jul 22 at 7:29 PM)
+304 7:32p 🔵 Desktop UI Component Hierarchy Mapped — CodexWorkspace as Top-Level Shell
+305 " 🔵 Vite Dev Server Port Mismatch — Configured 1420, Running on 5173/5174
+306 " 🔵 Zebra Desktop App Not Running — Ports 5173/5174 Belong to Other Projects
+307 7:33p ✅ Zebra Desktop Vite Dev Server Started on Port 1420
+330 8:12p 🔵 Publisher Platform Workspace vs Chat Differentiation — Evaluation Requested
+332 8:13p 🔵 Zebra Agent Desktop UI — Workspace vs Chat Architecture Mapped
+S229 Workspace home page differentiation design — Plan A approval checkpoint for four-cell execution environment card UI component (Jul 22 at 8:20 PM)
+383 9:21p 🟣 Tool Calls Proposed — Animated Label + Collapsible Panel UI Request
+384 " 🔵 Tool Call Proposed Event — Codebase Location Map
+385 9:22p 🔵 SessionExecutionTrace Component — Tool Call Rendering Architecture
+386 9:23p 🔵 "Tool calls proposed." Text — Backend-Injected Placeholder, Not Frontend Label
+400 10:00p 🔵 Zebra Agent Desktop — Branch Clean, No Uncommitted Changes
+401 10:01p 🔵 Zebra Agent Makefile Targets and API Architecture Confirmed
+402 10:02p 🔵 Zebra Agent Default SQLite Database Path Confirmed
+403 10:04p 🔵 Zebra Agent API Server Health Endpoint Response Confirmed
+405 10:05p 🔵 Zebra Agent UI Connected to Local Runtime — Existing Tasks Surfaced
+
+Access 681k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
