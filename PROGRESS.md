@@ -5,7 +5,7 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-07-19`
+- Snapshot date: `2026-07-23`
 - Verified implementation baseline: `f1e4965` (PR `#174`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
 - Review task: `CTX-SEG-01` has delivered the stable Task, internal Segment,
@@ -19,6 +19,14 @@
   stable Task boundary and backend-internal execution Segments.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
+- Review Embedded architecture task: `EMB-PLAN-01` on `zebra-cloud-trench`
+  replaces the conflicting draft with one CopilotKit/AG-UI target, ADR-015, and
+  a dependency-ordered task roadmap. It is documentation-only and does not
+  activate Phase B or any Trench implementation card.
+- Active compatibility task: `EMB-AGUI-SPIKE-01` is explicitly activated on
+  `codex/emb-agui-spike-01`. It is a test-only official Python SDK spike stacked
+  on the architecture branch; it adds no production API/Worker wiring and cannot
+  merge before `EMB-PLAN-01` reaches `main`.
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
@@ -237,11 +245,16 @@ including a real thinking tool round trip.
   are `Done` via PRs `#170`, `#171`, `#172`, and `#168`.
 - `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
+- `EMB-PLAN-01` is ready for review. `EMB-AGUI-SPIKE-01` is the only active
+  Embedded implementation card. All production AG-UI, CopilotKit, cloud, Trench,
+  analysis, writeback, Agent Memory, and GA cards remain `Locked` pending explicit
+  maintainer activation and merged dependencies.
 
 ## Known Follow-Ups
 
-1. Decide explicitly whether to activate Phase B private-cloud single-tenant work;
-   its database migration and recovery-model reviews remain required entry gates.
+1. Review and merge `EMB-PLAN-01`; complete the activated Zebra
+   `EMB-AGUI-SPIKE-01`, then separately decide whether to activate
+   `TRN-CPK-SPIKE-01` in the Trench repository.
 2. Keep DeepSeek thinking mode opt-in and preserve its private continuation
    fail-closed boundary.
 3. Add migration/backup evidence before any Phase B activation.
@@ -249,6 +262,9 @@ including a real thinking tool round trip.
 5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
    Credential/Egress Broker, external-namespace isolation, and Kubernetes in
    dependency order.
+6. Decide explicitly whether to activate Phase B private-cloud single-tenant work;
+   its database migration, backup, recovery, and rollback reviews remain required
+   entry gates before production claims.
 
 ## Runtime Blueprint
 
@@ -287,6 +303,9 @@ real tool execution, failure visibility, API restart, and durable recovery.
 
 ## Explicitly Deferred
 
+- Zebra AG-UI production adapter and HostSessionGrant verifier
+- Trench CopilotKit Runtime/BFF, read-only panel, frontend tools and writeback
+- Redis Agent Memory production integration
 - ACP entry adapter
 - optional code-intelligence adapter
 - Kubernetes/Kata/Firecracker and distributed Sandbox scheduling
@@ -315,6 +334,8 @@ business domains. The durable decision is `ADR-012`.
 | `task_plan.md` | current task checklist only |
 | `WORKLOG.md` | session-level execution history and handoff evidence |
 | final architecture | target architecture and invariants |
+| `docs/Zebra Embedded 生产级目标架构.md` | Embedded/Trench target and invariant boundaries |
+| `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md` | dependency, ownership and phase gates for Embedded delivery |
 | Phase 0-8 implementation document | historical dependency and acceptance baseline |
 
 ## Required Reading

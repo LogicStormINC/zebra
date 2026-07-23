@@ -1,5 +1,65 @@
 # Task Plan
 
+## EMB-AGUI-SPIKE-01 - Official Python AG-UI Compatibility Spike
+
+1. `in_progress` - Commit the reviewed Embedded architecture baseline without
+   the user's unrelated `AGENTS.md` timestamp change, then create the isolated
+   stacked worktree and task branch.
+2. `pending` - Pin and inspect the official Python AG-UI protocol SDK and encoder.
+3. `pending` - Add canonical stream, SSE round-trip, interrupt/resume, and
+   unknown-event compatibility fixtures under the task-owned test path.
+4. `pending` - Run focused, full, and quality validation; distinguish any
+   unrelated baseline failures from task regressions.
+5. `pending` - Record the version matrix, observed boundaries, follow-up contract
+   decisions, and final branch handoff.
+
+### Decisions
+
+- This is a test-only Spike. No production package, API route, Worker composition,
+  Zebra Domain Event, or Trench/CopilotKit code is in scope.
+- Maintainer direction explicitly activates the Spike before the architecture
+  branch merges. The implementation branch is stacked on `zebra-cloud-trench`
+  and must not merge first.
+- The generic worktree skill required by `executing-plans` is not installed;
+  use Git's native worktree commands with the same isolation guarantees.
+
+## EMB-PLAN-01 - Zebra Embedded Architecture Consolidation
+
+1. `completed` - Audit the draft Embedded architecture, repository source-of-truth
+   documents, current cloud activation state, and existing implementation seams.
+2. `completed` - Consolidate the draft into one authoritative architecture that
+   uses CopilotKit in Trench and removes the custom Zebra React SDK plan.
+3. `completed` - Register dependency-ordered Embedded, Trench, cloud, analysis,
+   writeback, memory, and GA task cards with explicit owned paths and gates.
+4. `completed` - Synchronize durable project progress and worklog records without
+   activating implementation tasks prematurely.
+5. `completed` - Validate document consistency, file limits, and the final diff.
+
+### Decisions
+
+- `zebra-cloud-trench` owns this architecture and task-registry change only;
+  implementation cards use one task, branch, worktree, owner, and PR each.
+- Trench owns CopilotKit React v2 and its Copilot Runtime/BFF. Zebra exposes an
+  AG-UI adapter and remains the durable Task, Event, Policy, approval, tool
+  receipt, and Artifact authority.
+- The first production business slice is read-only. Analysis, controlled
+  writeback, Redis Agent Memory, and multi-tenant GA follow explicit gates.
+
+### Errors Encountered
+
+- The first status-search command placed Markdown backticks inside a
+  double-quoted shell pattern, so zsh attempted command substitution for
+  `Ready` and `In`. No files changed. The replacement check uses literal
+  patterns without backticks.
+- The repository-wide file-size gate reports two pre-existing violations in
+  untouched files: `CodexConversationPane.styles.ts` at 561/500 lines and
+  `agent_core/contracts/events.py` at 505/500 lines. All three new documents are
+  within their applicable limits; the unrelated baseline was not modified.
+- The generic planning skill stop checker reported `0/0 phases` because this
+  repository's existing `task_plan.md` uses numbered backticked statuses rather
+  than the checker's checkbox headings. The five EMB-PLAN-01 entries above are
+  explicitly `completed`; targeted document validation is the completion gate.
+
 ## CTX-SEG-02 - Follow-up Context And Budget Recovery
 
 1. `completed` - Register and claim the path-bounded repair task on an isolated branch.

@@ -58,7 +58,11 @@ candidate. It includes:
 
 Private-cloud deployment, external-namespace isolation, ACP, and optional
 code-intelligence work remains outside the active implementation scope. Cloud
-deployment does not change the product boundary above. Read
+deployment does not change the product boundary above. The Zebra Embedded / Trench
+production target is now being consolidated as a documentation-only architecture
+task: Trench owns CopilotKit React v2 and its Runtime/BFF, while Zebra exposes an
+AG-UI adapter and retains durable Task/Event/Policy authority. This does not
+activate cloud or Trench implementation. Read
 [PROGRESS.md](./PROGRESS.md) for the live project snapshot and
 [docs/AGENT_TASKS.md](./docs/AGENT_TASKS.md) for task ownership and status. The
 adaptive execution boundary is specified in
@@ -192,6 +196,9 @@ Start with [docs/operator_runbook.md](./docs/operator_runbook.md).
 Focused references:
 
 - service boundary: [docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md](./docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md)
+- Embedded target: [docs/Zebra Embedded 生产级目标架构.md](./docs/Zebra%20Embedded%20生产级目标架构.md)
+- CopilotKit/AG-UI boundary: [docs/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md](./docs/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md)
+- Embedded task roadmap: [docs/Zebra Embedded与Trench实施任务拆解_v1.0.md](./docs/Zebra%20Embedded与Trench实施任务拆解_v1.0.md)
 - production Runtime: [docs/生产级Runtime实施方案_v1.0.md](./docs/生产级Runtime实施方案_v1.0.md)
 - context lifecycle: [docs/上下文生命周期与混合压缩架构方案_v1.0.md](./docs/上下文生命周期与混合压缩架构方案_v1.0.md)
 - Task continuity and internal Segments: [docs/ADR-013_用户任务连续性与内部执行分段.md](./docs/ADR-013_用户任务连续性与内部执行分段.md)

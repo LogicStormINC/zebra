@@ -20,6 +20,13 @@
 
 ## Current Board
 
+- `EMB-PLAN-01` is `Review` on `zebra-cloud-trench`; it consolidates the
+  Zebra Embedded target architecture and registers the dependency-ordered
+  CopilotKit/AG-UI, cloud, Trench, analysis, writeback, memory, and GA roadmap.
+- `EMB-AGUI-SPIKE-01` is `In Progress` on `codex/emb-agui-spike-01`, explicitly
+  activated by the maintainer on 2026-07-23. It is stacked on the local
+  `zebra-cloud-trench` architecture commit and must not merge before that
+  dependency reaches `main`.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -37,6 +44,95 @@
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
 - No other card is `Ready`, `In Progress`, `Review`, or `Blocked`.
+
+## Zebra Embedded And Trench Architecture Board
+
+### EMB-PLAN-01 - Embedded Architecture Consolidation
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `ARCH / DOC / PM`
+- Depends on: `ARCH-RT-BP-01`, `ARCH-SVC-BOUNDARY-01`, maintainer direction to
+  use CopilotKit instead of a Zebra React SDK
+- Branch: `zebra-cloud-trench`
+- Owned paths:
+  `docs/Zebra Embedded 生产级目标架构.md`,
+  `docs/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md` (new),
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md` (new),
+  `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`, `task_plan.md`,
+  `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Replace the conflicting concatenated Embedded drafts with one production target
+architecture, remove the custom Zebra React SDK plan, define the supported
+CopilotKit Runtime/BFF to Zebra AG-UI boundary, and produce an executable,
+dependency-ordered task roadmap without activating implementation prematurely.
+
+#### Acceptance
+
+- [x] One authoritative Embedded target remains; superseded React SDK and
+  Postgres/pgvector memory plans are removed.
+- [x] ADR-015 fixes the CopilotKit, AG-UI, durable authority, HostSessionGrant,
+  and external business-domain boundaries.
+- [x] The task plan defines per-card dependencies, owned paths, acceptance gates,
+  and explicit non-goals from architecture through GA.
+- [x] All implementation cards remain `Locked` until the maintainer explicitly
+  activates the next card and its prerequisites are merged.
+- [x] `PROGRESS.md`, `README.md`, planning records, and architecture ADR index are
+  synchronized; task-owned documents pass link, line-limit, consistency, and
+  diff checks. The repository-wide file-size gate retains two unrelated baseline
+  violations recorded in `WORKLOG.md`.
+
+#### Explicit Non-Goals
+
+- implementing AG-UI, CopilotKit, PostgreSQL, Redis, object storage, Kubernetes,
+  Trench tools, analysis, writeback, or Agent Memory
+- changing existing local SQLite/Desktop behavior
+- claiming private-cloud or multi-tenant production readiness
+
+### EMB-AGUI-SPIKE-01 - Zebra AG-UI Protocol Compatibility Spike
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `INTEGRATIONS / QA / DOC`
+- Depends on: `EMB-PLAN-01`; explicitly activated as a stacked local branch by
+  maintainer direction on 2026-07-23 and cannot merge before `EMB-PLAN-01`
+- Branch: `codex/emb-agui-spike-01`
+- Owned paths: `pyproject.toml`, `uv.lock`, `tests/spikes/ag_ui/` (new),
+  `docs/AG-UI协议兼容性验证记录.md` (new), `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Pin and exercise the official Python AG-UI protocol SDK in an isolated test-only
+slice before any production API or Worker adapter exists. Prove the exact event,
+SSE, tool-call, state, interrupt/resume, and forward-compatibility assumptions
+that the later `EMB-AGUI-CON-01` contract may safely adopt.
+
+#### Acceptance
+
+- [ ] `ag-ui-protocol` is pinned to one exact reviewed version in the development
+  dependency and lock file; no runtime package imports it.
+- [ ] A canonical stream covers run, text, tool-call, tool-result, state snapshot,
+  state delta, message snapshot, and successful finish events.
+- [ ] The official encoder produces a valid SSE stream that round-trips through
+  an independent bounded decoder while preserving event order and identifiers.
+- [ ] Interrupt fixtures prove snapshot-before-interrupt ordering, same-thread
+  full resume coverage, expiry/payload validation expectations, and idempotency
+  keys without implementing Zebra approval logic.
+- [ ] Unknown/custom events and schema drift have an explicit observed behavior;
+  the validation note records the version matrix and production follow-ups.
+- [ ] Focused tests pass, then `make test` and `make check` are run or every
+  unrelated baseline blocker is recorded with evidence.
+
+#### Explicit Non-Goals
+
+- production AG-UI routes, adapters, dependency injection, Event Store mapping,
+  HostSessionGrant, CopilotKit/Trench code, or UI changes
+- changing Zebra Domain Event, Task, Segment, Approval, or Worker behavior
+- treating a Spike fixture as the final `EMB-AGUI-CON-01` contract
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.

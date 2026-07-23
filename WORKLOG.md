@@ -1,5 +1,40 @@
 # Progress Log
 
+## 2026-07-23 EMB-AGUI-SPIKE-01 Official Python AG-UI Compatibility Spike
+
+- maintainer explicitly activated the Zebra-side Spike with all production
+  AG-UI, Trench, cloud, and Host authorization cards still Locked
+- registered exact task ownership for the SDK pin, isolated fixtures/tests,
+  compatibility record, and governance files
+- selected a stacked `codex/emb-agui-spike-01` worktree because the architecture
+  branch is reviewed locally but not yet merged; merge order remains mandatory
+- implementation and validation are in progress
+
+## 2026-07-23 EMB-PLAN-01 Zebra Embedded Architecture Consolidation
+
+- claimed the documentation-only architecture task on `zebra-cloud-trench` and
+  preserved the user's existing `AGENTS.md` modification
+- replaced the 4,288-line concatenated Embedded draft with one target architecture
+  aligned to ADR-012, stable Task/Segment authority, and the cloud Runtime blueprint
+- removed the custom Zebra React SDK, pgvector, Graphiti, Spark-first, dynamic
+  Python, and premature microservice plans from the active target
+- selected Trench-owned CopilotKit React v2 + Copilot Runtime/BFF -> Zebra AG-UI
+  as the supported production topology; browser direct connection remains spike-only
+- recorded ADR-015 for durable-state, HostSessionGrant, interrupt, surface, shared
+  state, tool receipt, Artifact, and security boundaries
+- added the dependency-ordered Embedded/Trench task roadmap from compatibility
+  spikes through read-only, collaboration, analysis, writeback, optional Redis
+  Agent Memory, namespace isolation, and GA
+- kept every implementation task `Locked`; Phase B and Trench implementation still
+  require explicit maintainer activation after merged prerequisites
+- synchronized README, PROGRESS, the final architecture ADR index, task registry,
+  task plan, and findings
+- targeted document checks pass for line limits, local links, single target title,
+  task status/ID consistency, trailing whitespace, and diff whitespace; the
+  repository-wide file-size gate remains blocked by untouched pre-existing
+  `CodexConversationPane.styles.ts` (561/500) and `events.py` (505/500)
+- moved `EMB-PLAN-01` to `Review`; no implementation task was activated
+
 ## 2026-07-19 WEB-UX-01 Trusted Local Read-Only Web Auto Execution
 
 - registered and claimed `WEB-UX-01` on

@@ -1647,6 +1647,8 @@ runtime:
 | ADR-011 | Redis Memory、Temporal、OPA 等均通过 Adapter 接入，不绑定核心领域模型 |
 | ADR-012 | Zebra 是 Agent Runtime 微服务；认证和业务用户/租户/订阅/计费均外置 |
 | ADR-013 | 用户只感知稳定 Task；Session/Context Segment rollover 由后端自动处理且普通 UI 不可见 |
+| ADR-014 | Skill、MCP、Plugin 采用统一扩展状态机和受治理的生命周期边界 |
+| ADR-015 | Zebra Embedded 以 AG-UI 暴露 Headless Runtime；Trench 直接采用 CopilotKit，Zebra 不建设 React SDK |
 
 # 28. 最终结论
 

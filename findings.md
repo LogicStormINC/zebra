@@ -1,5 +1,52 @@
 # Findings
 
+## EMB-AGUI-SPIKE-01 - 2026-07-23
+
+- The maintainer explicitly activated the Zebra-side compatibility Spike. The
+  Trench CopilotKit Spike remains out of this repository and stays Locked.
+- The architecture dependency is locally reviewed but not merged. To preserve
+  one-task/one-branch isolation, the Spike is a stacked branch based on the
+  architecture commit and carries a hard merge-order constraint.
+- The task owns only a development dependency, isolated protocol fixtures/tests,
+  one compatibility record, and governance files. Production imports and wiring
+  are forbidden by task scope.
+
+## EMB-PLAN-01 - 2026-07-23
+
+- `docs/Zebra Embedded 生产级目标架构.md` concatenates two incompatible target
+  designs. The later half reintroduces a custom React SDK and Postgres/pgvector
+  memory after the opening decisions replace that memory design with Redis Agent
+  Memory.
+- The repository is still on the local SQLite profile. Private-cloud Phase B is
+  deferred and requires an explicit activation decision plus migration, backup,
+  recovery, and rollback review before production claims are valid.
+- The minimum frontend boundary is Trench React -> CopilotKit React v2 -> a
+  Trench-hosted Copilot Runtime/BFF -> Zebra AG-UI. Browser UI state and
+  CopilotKit-managed threads are not Zebra durable truth.
+- Zebra keeps generic host authority through an opaque `namespace_id` and a
+  short-lived `HostSessionGrant`; Trench keeps business users, organizations,
+  RBAC, and authoritative tool-side authorization.
+- CopilotKit replaces only the proposed React integration layer. Zebra still
+  owns AG-UI mapping, durable interrupts, Surface Lease, semantic frontend tool
+  receipts, replay, Policy, and Artifact access contracts.
+- Redis Agent Memory remains an optional, replaceable, degraded-safe adapter and
+  is not on the first read-only Trench slice's critical path.
+- The draft is 4,288 lines because a second complete architecture starts at line
+  1,692. Replacing it with one bounded authoritative document is safer than
+  trying to patch both contradictory halves.
+- CopilotKit's current v2 boundary is `@copilotkit/react-core/v2` with
+  `<CopilotKit runtimeUrl=...>`, `useAgent`, `useAgentContext`,
+  `useFrontendTool`, and `useInterrupt`. The supported production topology keeps
+  Copilot Runtime in the Host application server; `agents__unsafe_dev_only` is
+  explicitly a development-only direct connection.
+- AG-UI wire values use `EventType` constants such as `RUN_STARTED`,
+  `TEXT_MESSAGE_START`, `TOOL_CALL_START`, and `STATE_SNAPSHOT`. Architecture
+  examples should name both the SDK class and exact wire value to avoid the
+  draft's CamelCase/uppercase ambiguity.
+- Current AG-UI interrupts finish a Run with an interrupt outcome, require state
+  and message snapshots before that boundary, and resume on the same `threadId`
+  through an idempotent `resume[]` response covering every open interrupt.
+
 ## CTX-SEG-02 - 2026-07-20
 
 - Task `d3206b32-fcb2-435a-9bca-34143cb3072f` failed without any Policy,
