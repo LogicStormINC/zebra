@@ -23,10 +23,11 @@
   replaces the conflicting draft with one CopilotKit/AG-UI target, ADR-015, and
   a dependency-ordered task roadmap. It is documentation-only and does not
   activate Phase B or any Trench implementation card.
-- Active compatibility task: `EMB-AGUI-SPIKE-01` is explicitly activated on
-  `codex/emb-agui-spike-01`. It is a test-only official Python SDK spike stacked
-  on the architecture branch; it adds no production API/Worker wiring and cannot
-  merge before `EMB-PLAN-01` reaches `main`.
+- Review compatibility task: `EMB-AGUI-SPIKE-01` on
+  `codex/emb-agui-spike-01` pins the official Python SDK and validates bounded
+  SSE, canonical events, interrupt/resume, and extension drift in 11 focused
+  tests. It adds no production API/Worker wiring and cannot merge before
+  `EMB-PLAN-01` reaches `main`.
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
@@ -245,15 +246,15 @@ including a real thinking tool round trip.
   are `Done` via PRs `#170`, `#171`, `#172`, and `#168`.
 - `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
-- `EMB-PLAN-01` is ready for review. `EMB-AGUI-SPIKE-01` is the only active
-  Embedded implementation card. All production AG-UI, CopilotKit, cloud, Trench,
+- `EMB-PLAN-01` and `EMB-AGUI-SPIKE-01` are ready for review. No Embedded
+  implementation card is active. All production AG-UI, CopilotKit, cloud, Trench,
   analysis, writeback, Agent Memory, and GA cards remain `Locked` pending explicit
   maintainer activation and merged dependencies.
 
 ## Known Follow-Ups
 
-1. Review and merge `EMB-PLAN-01`; complete the activated Zebra
-   `EMB-AGUI-SPIKE-01`, then separately decide whether to activate
+1. Review and merge `EMB-PLAN-01`, then review the stacked Zebra
+   `EMB-AGUI-SPIKE-01`; separately decide whether to activate
    `TRN-CPK-SPIKE-01` in the Trench repository.
 2. Keep DeepSeek thinking mode opt-in and preserve its private continuation
    fail-closed boundary.

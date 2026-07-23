@@ -23,7 +23,7 @@
 - `EMB-PLAN-01` is `Review` on `zebra-cloud-trench`; it consolidates the
   Zebra Embedded target architecture and registers the dependency-ordered
   CopilotKit/AG-UI, cloud, Trench, analysis, writeback, memory, and GA roadmap.
-- `EMB-AGUI-SPIKE-01` is `In Progress` on `codex/emb-agui-spike-01`, explicitly
+- `EMB-AGUI-SPIKE-01` is `Review` on `codex/emb-agui-spike-01`, explicitly
   activated by the maintainer on 2026-07-23. It is stacked on the local
   `zebra-cloud-trench` architecture commit and must not merge before that
   dependency reaches `main`.
@@ -94,7 +94,7 @@ dependency-ordered task roadmap without activating implementation prematurely.
 
 ### EMB-AGUI-SPIKE-01 - Zebra AG-UI Protocol Compatibility Spike
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `INTEGRATIONS / QA / DOC`
 - Depends on: `EMB-PLAN-01`; explicitly activated as a stacked local branch by
@@ -113,18 +113,18 @@ that the later `EMB-AGUI-CON-01` contract may safely adopt.
 
 #### Acceptance
 
-- [ ] `ag-ui-protocol` is pinned to one exact reviewed version in the development
+- [x] `ag-ui-protocol` is pinned to one exact reviewed version in the development
   dependency and lock file; no runtime package imports it.
-- [ ] A canonical stream covers run, text, tool-call, tool-result, state snapshot,
+- [x] A canonical stream covers run, text, tool-call, tool-result, state snapshot,
   state delta, message snapshot, and successful finish events.
-- [ ] The official encoder produces a valid SSE stream that round-trips through
+- [x] The official encoder produces a valid SSE stream that round-trips through
   an independent bounded decoder while preserving event order and identifiers.
-- [ ] Interrupt fixtures prove snapshot-before-interrupt ordering, same-thread
+- [x] Interrupt fixtures prove snapshot-before-interrupt ordering, same-thread
   full resume coverage, expiry/payload validation expectations, and idempotency
   keys without implementing Zebra approval logic.
-- [ ] Unknown/custom events and schema drift have an explicit observed behavior;
+- [x] Unknown/custom events and schema drift have an explicit observed behavior;
   the validation note records the version matrix and production follow-ups.
-- [ ] Focused tests pass, then `make test` and `make check` are run or every
+- [x] Focused tests pass, then `make test` and `make check` are run or every
   unrelated baseline blocker is recorded with evidence.
 
 #### Explicit Non-Goals

@@ -10,6 +10,24 @@
 - The task owns only a development dependency, isolated protocol fixtures/tests,
   one compatibility record, and governance files. Production imports and wiring
   are forbidden by task scope.
+- PyPI currently resolves `ag-ui-protocol==0.1.19`; the exact version and wheel
+  hash are pinned in `pyproject.toml` and `uv.lock`.
+- The official encoder emits blank-line-terminated `data:` SSE records with
+  camelCase JSON. Eleven focused tests now cover bounded independent decoding,
+  the canonical run/text/tool/state stream, interrupt/resume, and extension drift.
+- A test directory named `ag_ui` must remain a non-package. Adding
+  `__init__.py` shadows the installed official SDK during pytest collection.
+- The SDK union rejects unknown event discriminators, preserves extra fields on
+  known events, and provides explicit `CUSTOM`/`RAW` exits.
+- SDK validation is structural only: it does not enforce same-thread resume,
+  full open-interrupt coverage, RFC 3339 expiry, or response JSON Schema. The
+  future Zebra adapter must validate those facts against durable state.
+- Focused completion evidence is 11 passing tests plus clean task-owned Ruff,
+  formatter, lock, diff, file-size, and production-import checks.
+- Full validation collected 1,763 tests with nine failures. The exact failure
+  set reproduces on the architecture baseline without this dependency or test
+  directory. The same comparison confirms two file-size, 13 Ruff, and four
+  Mypy findings are pre-existing; all ten release Eval cases pass.
 
 ## EMB-PLAN-01 - 2026-07-23
 

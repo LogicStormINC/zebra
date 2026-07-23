@@ -4,7 +4,7 @@
 |---|---|
 | 日期 | 2026-07-23 |
 | 架构基线 | `Zebra Embedded 生产级目标架构.md`、ADR-015 |
-| 当前可执行任务 | `EMB-PLAN-01`（Review）、`EMB-AGUI-SPIKE-01`（In Progress） |
+| 当前可执行任务 | `EMB-PLAN-01`（Review）、`EMB-AGUI-SPIKE-01`（Review） |
 | 其他任务 | `Locked`，等待 maintainer 逐卡激活 |
 | 第一业务验收 | Trench Event Detail 的生产只读链路 |
 
@@ -53,7 +53,7 @@ Cloud foundation 和 read-only feature 可以在协议冻结后并行，但只�
 
 ### EMB-AGUI-SPIKE-01 — Zebra AG-UI protocol spike
 
-- Status: `In Progress`；branch `codex/emb-agui-spike-01`；Zebra repo。
+- Status: `Review`；branch `codex/emb-agui-spike-01`；Zebra repo。
 - Depends on: `EMB-PLAN-01`；maintainer 已明确激活 stacked local branch，合并仍等待依赖进入 `main`。
 - Owned paths: `pyproject.toml`, `uv.lock`, `tests/spikes/ag_ui/`, focused compatibility note and governance records。
 - Deliverable: pin `ag-ui-protocol`；验证 encoding、SSE、interrupt/resume、unknown event。

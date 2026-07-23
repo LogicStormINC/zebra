@@ -2,15 +2,15 @@
 
 ## EMB-AGUI-SPIKE-01 - Official Python AG-UI Compatibility Spike
 
-1. `in_progress` - Commit the reviewed Embedded architecture baseline without
+1. `completed` - Commit the reviewed Embedded architecture baseline without
    the user's unrelated `AGENTS.md` timestamp change, then create the isolated
    stacked worktree and task branch.
-2. `pending` - Pin and inspect the official Python AG-UI protocol SDK and encoder.
-3. `pending` - Add canonical stream, SSE round-trip, interrupt/resume, and
+2. `completed` - Pin and inspect the official Python AG-UI protocol SDK and encoder.
+3. `completed` - Add canonical stream, SSE round-trip, interrupt/resume, and
    unknown-event compatibility fixtures under the task-owned test path.
-4. `pending` - Run focused, full, and quality validation; distinguish any
+4. `completed` - Run focused, full, and quality validation; distinguish any
    unrelated baseline failures from task regressions.
-5. `pending` - Record the version matrix, observed boundaries, follow-up contract
+5. `completed` - Record the version matrix, observed boundaries, follow-up contract
    decisions, and final branch handoff.
 
 ### Decisions
@@ -22,6 +22,24 @@
   and must not merge first.
 - The generic worktree skill required by `executing-plans` is not installed;
   use Git's native worktree commands with the same isolation guarantees.
+
+### Errors Encountered
+
+- The first focused test collection failed because
+  `tests/spikes/ag_ui/__init__.py` made the task directory a top-level `ag_ui`
+  package and shadowed the official SDK. The directory remains, but the package
+  marker was removed and its README records the import boundary.
+- The first focused Ruff run found three import-order findings in new test files;
+  they are mechanical and are corrected before the second focused run.
+- The first Ruff format check reported four new test files requiring canonical
+  formatting. The repository formatter is applied once, followed by focused
+  tests and a second format check.
+- Full `make test` collected 1,763 tests and exposed nine failures. Replaying
+  those exact node IDs in the architecture baseline worktree reproduced all nine;
+  the task-owned focused suite remains green.
+- Repository quality gates retain unrelated baseline debt: two file-size
+  violations, 13 Ruff findings, and four Mypy errors. Each result was reproduced
+  unchanged without this Spike; the release Eval gate passes all ten cases.
 
 ## EMB-PLAN-01 - Zebra Embedded Architecture Consolidation
 

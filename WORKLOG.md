@@ -8,7 +8,21 @@
   compatibility record, and governance files
 - selected a stacked `codex/emb-agui-spike-01` worktree because the architecture
   branch is reviewed locally but not yet merged; merge order remains mandatory
-- implementation and validation are in progress
+- pinned `ag-ui-protocol==0.1.19` as a dev-only dependency and added isolated,
+  responsibility-split fixtures, bounded SSE decoding, and three test modules
+- first collection exposed and fixed an `ag_ui` test-package shadowing collision;
+  the non-package directory boundary is now documented
+- focused validation passes: `11 passed`; focused Ruff passes after three
+  mechanical import-order fixes
+- task-owned format, lock consistency, diff whitespace, file-size, and
+  production-import checks pass; release Eval passes 10/10 cases
+- full `make test` collected 1,763 tests and reported nine failures; replaying
+  the exact node IDs against the architecture baseline reproduced all nine
+- `make check` remains blocked by two pre-existing oversized files; standalone
+  Ruff reports 13 and Mypy reports four pre-existing findings, with identical
+  baseline output
+- moved the task to `Review`; production AG-UI wiring remains Locked and the
+  stacked branch cannot merge before `EMB-PLAN-01`
 
 ## 2026-07-23 EMB-PLAN-01 Zebra Embedded Architecture Consolidation
 
