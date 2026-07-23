@@ -4,12 +4,12 @@
 
 1. `completed` - Audit API/Worker SQLite construction, existing Store Ports,
    Agent Memory semantics and the revised dependency order.
-2. `in_progress` - Register and claim the path-bounded task on an isolated stacked
+2. `completed` - Register and claim the path-bounded task on an isolated stacked
    worktree while preserving the hard `EMB-PLAN-01` merge order.
-3. `pending` - Add one flat control-plane Store bundle and local SQLite builder.
-4. `pending` - Inject the bundle through API/SSE and Worker flows and add
-   distinct-path regression tests.
-5. `pending` - Run focused, full and quality validation; record remaining Port
+3. `completed` - Add one flat control-plane Store bundle and local SQLite builder.
+4. `completed` - Inject the bundle through API/SSE and Worker flows, prove
+   same-path injection and reject partial split backends before any write.
+5. `completed` - Run focused, full and quality validation; record remaining Port
    gaps and the next PostgreSQL/memory task without adding a cloud dependency.
 
 ### Decisions
@@ -20,7 +20,8 @@
   Redis live state is erasable, and Redis Agent Memory remains a separate,
   degraded-safe `AgentMemoryGateway` rather than a `MemoryStorePort` replacement.
 - This task composes only the five existing control-plane Ports. Legacy durable
-  stores without adequate Ports are recorded for focused follow-ups.
+  stores without adequate Ports are recorded in `CLOUD-STO-AUTH-01`; the partial
+  bundle fails closed if its database differs from those legacy stores.
 - Because PR `#194` is still open, this local branch is stacked and cannot merge
   before `EMB-PLAN-01`; it will not push or merge as part of this local task.
 

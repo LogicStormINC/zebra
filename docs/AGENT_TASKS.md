@@ -27,7 +27,7 @@
   activated by the maintainer on 2026-07-23. It is stacked on the local
   `zebra-cloud-trench` architecture commit and must not merge before that
   dependency reaches `main`.
-- `CLOUD-STO-SEAM-01` is `In Progress` on `codex/cloud-sto-seam-01`. The
+- `CLOUD-STO-SEAM-01` is `Review` on `codex/cloud-sto-seam-01`. The
   maintainer reprioritized Zebra durable storage and memory foundations ahead of
   further Trench work. This local task is stacked on `EMB-PLAN-01`, adds no cloud
   database dependency, and must not merge before the architecture baseline.
@@ -140,7 +140,7 @@ that the later `EMB-AGUI-CON-01` contract may safely adopt.
 
 ### CLOUD-STO-SEAM-01 - Control-Plane Storage Composition Seam
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `STORAGE / API / WORKER`
 - Depends on: locally reviewed `EMB-PLAN-01`, completed Runtime Phase A, and
@@ -152,10 +152,18 @@ that the later `EMB-AGUI-CON-01` contract may safely adopt.
   `apps/worker/src/zebra_agent_worker/execution.py`,
   `apps/worker/src/zebra_agent_worker/control.py`,
   `apps/worker/src/zebra_agent_worker/session_handoff.py`,
+  `apps/worker/src/zebra_agent_worker/execution_events.py`,
+  `apps/worker/src/zebra_agent_worker/continuation_lifecycle.py`,
+  `apps/worker/src/zebra_agent_worker/context_lifecycle.py`,
+  `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
+  `packages/agent-core/src/agent_core/ports/projection_store.py`,
   `packages/agent-storage/src/agent_storage/composition.py` (new),
   `packages/agent-storage/src/agent_storage/__init__.py`,
-  `tests/api/test_storage_composition.py` (new),
-  `tests/worker/test_storage_composition.py` (new), `docs/AGENT_TASKS.md`,
+  `packages/agent-storage/src/agent_storage/projections.py`,
+  `tests/agent_storage/test_storage_composition.py` (new),
+  `tests/agent_storage/test_sqlite_projection_store.py`,
+  `tests/api/test_api_storage_composition.py` (new),
+  `tests/worker/test_worker_storage_composition.py` (new), `docs/AGENT_TASKS.md`,
   `docs/Zebra Embedded 生产级目标架构.md`,
   `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
   `README.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
@@ -168,13 +176,13 @@ inside request or execution logic.
 
 #### Acceptance
 
-- [ ] One flat `ControlPlaneStores` value and one local SQLite builder exist; no
+- [x] One flat `ControlPlaneStores` value and one local SQLite builder exist; no
   backend hierarchy, backend enum, config switch or new dependency is introduced.
-- [ ] API, SSE and Worker receive the same injected ports; constructors for the
+- [x] API, SSE and Worker receive the same injected ports; constructors for the
   five target SQLite stores remain only in the local builder.
-- [ ] Distinct-path regression tests prove injected stores are used instead of a
-  hidden fallback to `database_path`.
-- [ ] Existing local SQLite behavior remains compatible and focused tests,
+- [x] Same-path spies prove every composed Port is used, and distinct-path tests
+  prove the partial seam fails before any hidden fallback or split write.
+- [x] Existing local SQLite behavior remains compatible and focused tests,
   `make test`, `make check`, and `git diff --check` pass or blockers are recorded.
 
 #### Explicit Non-Goals
@@ -184,6 +192,30 @@ inside request or execution logic.
 - replacing local `MemoryStorePort` with Redis Agent Memory
 - inventing Ports for legacy stores not needed by this first control-plane seam
 - changing CLI, Desktop, Domain Event, Task, Policy, runtime or user-visible behavior
+
+### CLOUD-STO-AUTH-01 - Complete Authoritative Store Composition
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `STORAGE / CORE / API / WORKER`
+- Depends on: merged `CLOUD-STO-SEAM-01` and explicit maintainer activation
+- Branch: `TBD`
+- Candidate owned paths: remaining storage Ports/adapters, API/Worker composition,
+  cross-backend context/handoff/memory/effect regressions and governance records
+
+#### Goal
+
+Compose every durable collaborator that can advance a Session, gate an effect or
+own governed memory before any PostgreSQL backend is selectable.
+
+#### Acceptance
+
+- context lifecycle, handoff/dispatch, idempotency, effect ledger, memory,
+  artifact and continuation authorities have typed composition boundaries
+- A/B tests cover compaction, recovery, handoff, memory review and effect replay
+  without splitting one durable stream across backends
+- `require_legacy_database_coherence` is removed only after those flows share one
+  authoritative backend; no PostgreSQL or Redis dependency is added in this card
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.

@@ -16,9 +16,10 @@ from agent_core.domain.context_capsule import (
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_storage import (
+    ControlPlaneStores,
     SQLiteContextLifecycleStore,
-    SQLiteEventStore,
-    SQLiteProjectionStore,
+    require_legacy_database_coherence,
+    sqlite_control_plane_stores,
 )
 
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict
@@ -30,8 +31,13 @@ from zebra_agent_api.session_identity_read import _parse_session_id
 
 
 class SessionContextControlApi:
-    def __init__(self, database_path: Path) -> None:
+    def __init__(
+        self, database_path: Path, stores: ControlPlaneStores | None = None
+    ) -> None:
+        if stores is not None:
+            require_legacy_database_coherence(stores, database_path)
         self._database_path = database_path
+        self._stores = stores or sqlite_control_plane_stores(database_path)
 
     def inspect(self, session_id: str) -> ApiResponse:
         resolved = self._resolve(session_id)
@@ -66,8 +72,7 @@ class SessionContextControlApi:
                 "state": {
                     "retained": occupancy["retained_event_count"],
                     "folded": sum(
-                        int(event.payload.get("removed_message_count", 0))
-                        for event in compacted
+                        int(event.payload.get("removed_message_count", 0)) for event in compacted
                     ),
                     "artifact_backed": occupancy["artifact_reference_count"],
                     "historical_capsules": [
@@ -83,21 +88,16 @@ class SessionContextControlApi:
                         else "capsule_fallback"
                     ),
                     "provider_native": (
-                        continuation is not None
-                        and continuation.get("mode") == "provider_native"
+                        continuation is not None and continuation.get("mode") == "provider_native"
                     ),
                     "authority": "session_events_and_capsule_artifact",
                     "reason": continuation.get("reason") if continuation else None,
-                    "artifact_id": (
-                        continuation.get("artifact_id") if continuation else None
-                    ),
+                    "artifact_id": (continuation.get("artifact_id") if continuation else None),
                 },
             },
         )
 
-    def compact(
-        self, session_id: str, body: Mapping[str, object] | None = None
-    ) -> ApiResponse:
+    def compact(self, session_id: str, body: Mapping[str, object] | None = None) -> ApiResponse:
         resolved = self._resolve(session_id)
         if isinstance(resolved, ApiResponse):
             return resolved
@@ -132,9 +132,7 @@ class SessionContextControlApi:
             return bad_request(
                 "through_sequence leaves more than 32 exact tail events; choose a later boundary"
             )
-        capsule = _capsule_from_events(
-            source_events, created_at=datetime.now(UTC), focus=focus
-        )
+        capsule = _capsule_from_events(source_events, created_at=datetime.now(UTC), focus=focus)
         if tail_events:
             capsule = capsule.model_copy(
                 update={
@@ -190,18 +188,10 @@ class SessionContextControlApi:
             validation_context=ContextCapsuleValidationContext(
                 expected_source_hash=capsule.source_hash,
                 expected_source_event_range=capsule.source_event_range,
-                unresolved_tool_call_ids=frozenset(
-                    tool.call_id for tool in capsule.pending_tools
-                ),
-                protected_user_constraints=frozenset(
-                    capsule.protected_user_constraints
-                ),
-                approval_and_policy_state=frozenset(
-                    capsule.approvals_and_policy_state
-                ),
-                readable_artifact_refs=frozenset(
-                    capsule.referenced_artifact_refs
-                ),
+                unresolved_tool_call_ids=frozenset(tool.call_id for tool in capsule.pending_tools),
+                protected_user_constraints=frozenset(capsule.protected_user_constraints),
+                approval_and_policy_state=frozenset(capsule.approvals_and_policy_state),
+                readable_artifact_refs=frozenset(capsule.referenced_artifact_refs),
             ),
             sequence=event.sequence,
             expected_active_capsule_id=active.capsule.capsule_id if active else None,
@@ -209,7 +199,7 @@ class SessionContextControlApi:
             created_at=capsule.created_at,
         )
         projection = apply_event(apply_event(session, event), stored.event)
-        SQLiteProjectionStore(self._database_path).save_session(projection)
+        self._stores.sessions.save_session(projection)
         return ApiResponse(
             status_code=200,
             body={
@@ -277,7 +267,7 @@ class SessionContextControlApi:
             expected_active_capsule_id=active.capsule.capsule_id if active else None,
             event=event,
         )
-        SQLiteProjectionStore(self._database_path).save_session(apply_event(session, event))
+        self._stores.sessions.save_session(apply_event(session, event))
         return ApiResponse(
             status_code=200,
             body={
@@ -295,13 +285,13 @@ class SessionContextControlApi:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self._database_path).get_session(session_key)
+        session = self._stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        events = SQLiteEventStore(self._database_path).list_for_session(session_key)
+        events = self._stores.events.list_for_session(session_key)
         return session, events
 
 

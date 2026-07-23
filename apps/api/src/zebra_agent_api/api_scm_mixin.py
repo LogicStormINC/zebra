@@ -6,6 +6,7 @@ from pathlib import Path
 from agent_core.domain.identifiers import SessionId
 from agent_integrations import GitHubPullRequestTransport, build_pull_request_gateway
 from agent_security import CredentialBroker
+from agent_storage import ControlPlaneStores
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_api.responses import ApiResponse, conflict
@@ -15,6 +16,7 @@ from zebra_agent_api.session_pull_request import SessionPullRequestApi
 
 class ApiScmMixin:
     database_path: Path
+    stores: ControlPlaneStores
     settings: ZebraAgentSettings
     credential_broker: CredentialBroker | None
     github_transport: GitHubPullRequestTransport | None
@@ -30,7 +32,7 @@ class ApiScmMixin:
         session_key = self._parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        return SessionCommitApi(self.database_path).commit(
+        return SessionCommitApi(self.database_path, self.stores).commit(
             str(session_key),
             payload,
             idempotency_key=idempotency_key,
@@ -60,6 +62,7 @@ class ApiScmMixin:
             )
         return SessionPullRequestApi(
             self.database_path,
+            self.stores,
             pull_request_gateway=gateway,
         ).open_pull_request(
             str(session_key),

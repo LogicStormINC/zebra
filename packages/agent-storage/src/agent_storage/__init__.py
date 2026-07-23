@@ -12,6 +12,11 @@ from agent_storage.artifact_projection import (
     serialize_session_artifact_projection,
 )
 from agent_storage.artifacts import SessionArtifact, SQLiteArtifactStore
+from agent_storage.composition import (
+    ControlPlaneStores,
+    require_legacy_database_coherence,
+    sqlite_control_plane_stores,
+)
 from agent_storage.context_lifecycle import (
     ActiveContextProjectionConflictError,
     ImmutableContextCapsuleConflictError,
@@ -64,6 +69,7 @@ from agent_storage.workspaces import SQLiteWorkspaceProjectionStore
 
 __all__ = [
     "ArtifactPayloadMissingError",
+    "ControlPlaneStores",
     "EffectLedgerStatus",
     "EffectReplayRejectedError",
     "EffectReservation",
@@ -86,6 +92,8 @@ __all__ = [
     "serialize_artifact_lifecycle",
     "serialize_artifact_retrieval",
     "serialize_session_artifact_projection",
+    "require_legacy_database_coherence",
+    "sqlite_control_plane_stores",
     "SQLiteArtifactPayloadStore",
     "SQLiteAgentTaskStore",
     "SQLiteArtifactStore",

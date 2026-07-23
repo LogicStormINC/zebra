@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from agent_core.domain.session_handoff import HandoffActorKind
+from agent_storage import ControlPlaneStores
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_api.responses import ApiResponse
@@ -9,6 +10,7 @@ from zebra_agent_api.session_handoff import SessionHandoffApi
 
 class ApiSessionHandoffMixin:
     database_path: Path
+    stores: ControlPlaneStores
     settings: ZebraAgentSettings
 
     def create_session_handoff(
@@ -30,7 +32,7 @@ class ApiSessionHandoffMixin:
                     "reason": "session handoff is disabled by operator configuration",
                 },
             )
-        return SessionHandoffApi(self.database_path).create(
+        return SessionHandoffApi(self.database_path, self.stores).create(
             session_id,
             payload,
             idempotency_key=idempotency_key,
@@ -40,7 +42,7 @@ class ApiSessionHandoffMixin:
         )
 
     def get_session_handoff(self, handoff_id: str) -> ApiResponse:
-        return SessionHandoffApi(self.database_path).inspect(handoff_id)
+        return SessionHandoffApi(self.database_path, self.stores).inspect(handoff_id)
 
     def get_session_lineage(self, session_id: str) -> ApiResponse:
-        return SessionHandoffApi(self.database_path).lineage(session_id)
+        return SessionHandoffApi(self.database_path, self.stores).lineage(session_id)

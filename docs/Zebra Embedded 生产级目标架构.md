@@ -488,6 +488,7 @@ artifact failure、namespace denial、memory degraded rate、token/cost evidence
 架构收敛
 → CopilotKit/AG-UI Spike
 → Zebra Storage composition seam
+→ Zebra authoritative Store composition completion
 → Cloud durable foundation
 → Redis Agent Memory Gateway / Preview gate（可降级增强）
 → Host/AG-UI/Surface 协议

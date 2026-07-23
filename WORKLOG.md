@@ -13,7 +13,26 @@
   not merge before PR `#194`
 - kept PostgreSQL/S3 as durable truth/payload stores, ordinary Redis ephemeral,
   and Redis Agent Memory separate from the governed local `MemoryStorePort`
-- implementation and validation are in progress
+- added one lazy `ControlPlaneStores` bundle for Event, Session Projection,
+  Workspace Projection, Task and Lease Ports; API, SSE and Worker reuse it
+- preserved all CLI helper signatures and added database-side waiting-approval
+  projection reads instead of an unbounded in-memory status scan
+- independent review found context-compaction and handoff split-write hazards;
+  partial split backends now fail closed at API, Worker and direct lifecycle roots
+- same-path spy regressions prove every composed Port is used; distinct-path
+  regressions prove rejection occurs before the decoy database is created
+- rejected SQLite `:memory:` composition because the existing per-operation
+  connection model cannot preserve one in-memory database across Store calls
+- final focused composition/approval/context/handoff regressions: `56 passed`;
+  API suite: `309 passed, 5` time-expired SCM fixture failures reproduced on base;
+  Worker suite: `68 passed, 1` pre-existing cancellation race reproduced on base
+- full `make test`: `1744 passed, 8 skipped, 9 failed`; every failure was reproduced
+  on the base branch (2 provider expectation drifts, 5 expired SCM fixtures,
+  1 existing file-size test and 1 cancellation race)
+- touched-file Ruff and `git diff --check` pass; Eval gate is `10/10`; repository
+  `make check` remains blocked by the two pre-existing 561/500 and 505/500 files,
+  while base and task branches share the same 13 Ruff and 4 Mypy baseline errors
+- moved the card to `Review`; branch remains local, stacked and unpushed
 
 ## 2026-07-23 EMB-AGUI-SPIKE-01 Official Python AG-UI Compatibility Spike
 

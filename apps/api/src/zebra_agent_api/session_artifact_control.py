@@ -7,10 +7,10 @@ from uuid import UUID
 from agent_core.domain.identifiers import SessionId
 from agent_security import build_artifact_control_audit_metadata
 from agent_storage import (
+    ControlPlaneStores,
     SessionArtifact,
     SQLiteArtifactPayloadStore,
     SQLiteArtifactStore,
-    SQLiteProjectionStore,
     payload_for_artifact_uri,
     serialize_artifact_lifecycle,
 )
@@ -28,6 +28,7 @@ from zebra_agent_api.responses import ApiResponse
 @dataclass(frozen=True)
 class SessionArtifactControlApi:
     database_path: Path
+    stores: ControlPlaneStores
 
     def prune_artifact(self, session_id: str, artifact_id: str) -> ApiResponse:
         artifact = self._resolve_session_artifact(session_id, artifact_id)
@@ -49,6 +50,7 @@ class SessionArtifactControlApi:
             )
         access = classify_session_artifact_access(
             self.database_path,
+            stores=self.stores,
             session_id=session_id,
             artifact=artifact,
         )
@@ -107,7 +109,7 @@ class SessionArtifactControlApi:
         artifact_id: str,
     ) -> SessionArtifact | ApiResponse:
         session_key = SessionId(UUID(session_id))
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,

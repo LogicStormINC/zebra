@@ -18,9 +18,9 @@ from agent_security import (
     policy_rank as shared_policy_rank,
 )
 from agent_storage import (
+    ControlPlaneStores,
     SessionArtifact,
     SQLiteArtifactPayloadStore,
-    SQLiteWorkspaceProjectionStore,
     payload_for_artifact_uri,
 )
 
@@ -52,6 +52,7 @@ class ArtifactAccessContext:
 def classify_session_artifact_access(
     database_path: Path,
     *,
+    stores: ControlPlaneStores,
     session_id: str,
     artifact: SessionArtifact,
 ) -> ArtifactAccessContext:
@@ -64,7 +65,7 @@ def classify_session_artifact_access(
             preview_redacted=artifact.preview_state["redacted"],
             preview_truncated=artifact.preview_state["truncated"],
         ),
-        session_policy_profile=session_policy_profile(database_path, session_id),
+        session_policy_profile=session_policy_profile(stores, session_id),
     )
     return ArtifactAccessContext(
         projection=projection,
@@ -203,10 +204,8 @@ def payload_record_for_uri(
     return payload_for_artifact_uri(SQLiteArtifactPayloadStore(database_path), uri)
 
 
-def session_policy_profile(database_path: Path, session_id: str) -> str:
-    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(
-        SessionId(UUID(session_id))
-    )
+def session_policy_profile(stores: ControlPlaneStores, session_id: str) -> str:
+    workspace = stores.workspaces.get_workspace(SessionId(UUID(session_id)))
     if workspace is None or workspace.policy_profile is None:
         return PolicyProfile.WORKSPACE_WRITE.value
     return workspace.policy_profile

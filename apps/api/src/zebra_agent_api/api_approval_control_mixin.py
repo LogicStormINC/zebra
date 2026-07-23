@@ -10,7 +10,7 @@ from agent_core.application import (
 )
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.identifiers import SessionId
-from agent_storage import SQLiteAgentTaskStore, SQLiteEventStore, SQLiteProjectionStore
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.approval_context import serialize_approval_context
 from zebra_agent_api.responses import ApiResponse, conflict
@@ -19,6 +19,7 @@ from zebra_agent_api.session_payloads import parse_approval_decision_payload
 
 class ApiApprovalControlMixin:
     database_path: Path
+    stores: ControlPlaneStores
     _parse_session_id: Callable[[str], SessionId | ApiResponse]
 
     def approve(self, approval_id: str, payload: dict[str, object]) -> ApiResponse:
@@ -56,7 +57,7 @@ class ApiApprovalControlMixin:
         if isinstance(session_key, ApiResponse):
             return session_key
 
-        projection_store = SQLiteProjectionStore(self.database_path)
+        projection_store = self.stores.sessions
         session = projection_store.get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -79,11 +80,11 @@ class ApiApprovalControlMixin:
                 status="invalid_state",
                 reason=str(error),
             )
-        event_store = SQLiteEventStore(self.database_path)
+        event_store = self.stores.events
         approval_context = serialize_approval_context(session.approval_context)
         event_store.append(event)
         updated_session = projection_store.save_session(apply_event(session, event))
-        task_id = SQLiteAgentTaskStore(self.database_path).ensure_for_session(session_key).task_id
+        task_id = self.stores.tasks.ensure_for_session(session_key).task_id
         body: dict[str, object] = {
             "approval_id": approval_id,
             "session_id": str(task_id),

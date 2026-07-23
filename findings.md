@@ -17,6 +17,19 @@
 - The storage seam has no technical dependency on Host/AG-UI contracts. The
   maintainer explicitly activated it as a local stacked task while PR `#194`
   remains the mandatory merge predecessor.
+- Independent review reproduced event-stream splits when context lifecycle or
+  handoff used a different SQLite path from injected control-plane Ports. The
+  first seam therefore records local database identity and rejects partial
+  split-backend composition before any write; it does not claim PostgreSQL readiness.
+- Existing SQLite adapters open a fresh connection per operation, so `:memory:`
+  cannot represent one coherent control-plane database. The local bundle rejects
+  that mode instead of advertising a composition that loses schema and state.
+- Approval listing cannot emulate its former SQL predicate with an unbounded
+  `list_recent_sessions` call. `ProjectionStorePort.list_waiting_approval_sessions`
+  preserves database-side filtering and oldest-first ordering for future adapters.
+- Remaining authoritative collaborators are not optional infrastructure details:
+  context lifecycle, handoff/dispatch, idempotency, effect ledger, governed
+  memory, Artifact and continuation state must enter composition before `CLOUD-PG-01`.
 
 ## EMB-AGUI-SPIKE-01 - 2026-07-23
 

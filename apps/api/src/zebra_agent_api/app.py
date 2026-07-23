@@ -30,13 +30,10 @@ from agent_security import (
     resolve_effective_network_profile,
 )
 from agent_storage import (
+    ControlPlaneStores,
     LeaseConflictError,
     SQLiteArtifactPayloadStore,
-    SQLiteEventStore,
-    SQLiteLeaseStore,
-    SQLiteProjectionStore,
     SQLiteSessionHistory,
-    SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
     store_text_attachments,
 )
@@ -81,10 +78,12 @@ from zebra_agent_api.skills_admin import (
     runtime_skills_state,
     scoped_skill_roots,
 )
+from zebra_agent_api.storage_composition import ControlPlaneStorageMixin
 
 
 @dataclass(frozen=True)
 class ZebraAgentApi(
+    ControlPlaneStorageMixin,
     ApiStatusMixin,
     ApiSessionReadMixin,
     ApiSessionHandoffMixin,
@@ -97,6 +96,7 @@ class ZebraAgentApi(
 ):
     database_path: Path
     settings: ZebraAgentSettings
+    _stores: ControlPlaneStores | None = None
     credential_broker: CredentialBroker | None = None
     github_transport: GitHubPullRequestTransport | None = None
 
@@ -170,11 +170,8 @@ class ZebraAgentApi(
             return session_key
 
         claim_service = SessionClaimService(
-            SQLiteLeaseStore(self.database_path),
-            SessionRecoveryService(
-                SQLiteEventStore(self.database_path),
-                SQLiteProjectionStore(self.database_path),
-            ),
+            self.stores.leases,
+            SessionRecoveryService(self.stores.events, self.stores.sessions),
         )
         try:
             result = SessionExecutionService(
@@ -182,6 +179,7 @@ class ZebraAgentApi(
                 claim_service=claim_service,
                 resume_service=SessionResumeService(claim_service),
                 settings=self.settings,
+                stores=self.stores,
             ).execute_session(
                 session_key,
                 worker_id=parsed["worker_id"],
@@ -232,13 +230,17 @@ class ZebraAgentApi(
         session_key = self._parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        return cancel_session_control(self.database_path, str(session_key), payload)
+        return cancel_session_control(
+            self.database_path, str(session_key), payload, stores=self.stores
+        )
 
     def suspend_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
         session_key = self._parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        return suspend_session_control(self.database_path, str(session_key), payload)
+        return suspend_session_control(
+            self.database_path, str(session_key), payload, stores=self.stores
+        )
 
     def append_session_message(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
         parsed = parse_append_session_message_payload(payload)
@@ -249,7 +251,7 @@ class ZebraAgentApi(
         if isinstance(session_key, ApiResponse):
             return session_key
 
-        projection_store = SQLiteProjectionStore(self.database_path)
+        projection_store = self.stores.sessions
         session = projection_store.get_session(session_key)
         if session is None:
             return ApiResponse(
@@ -283,7 +285,7 @@ class ZebraAgentApi(
             created_at=event.created_at,
         )
         event = attach_refs_to_user_event(event, attachment_refs)
-        SQLiteEventStore(self.database_path).append(event)
+        self.stores.events.append(event)
         updated_session = projection_store.save_session(apply_event(session, event))
         body: dict[str, object] = {
             "session_id": session_id,
@@ -342,13 +344,10 @@ class ZebraAgentApi(
             tuple(bootstrap.events),
             parsed["attachments"],
         )
-        event_store = SQLiteEventStore(self.database_path)
         for event in events:
-            event_store.append(event)
-        SQLiteProjectionStore(self.database_path).save_session(bootstrap.session)
-        SQLiteWorkspaceProjectionStore(self.database_path).save_workspace(
-            rebuild_workspace(list(events))
-        )
+            self.stores.events.append(event)
+        self.stores.sessions.save_session(bootstrap.session)
+        self.stores.workspaces.save_workspace(rebuild_workspace(list(events)))
         return ApiResponse(
             status_code=201,
             body={
@@ -441,13 +440,10 @@ class ZebraAgentApi(
             tuple(result.events),
             parsed["attachments"],
         )
-        event_store = SQLiteEventStore(self.database_path)
         for event in events:
-            event_store.append(event)
-        SQLiteProjectionStore(self.database_path).save_session(result.session)
-        SQLiteWorkspaceProjectionStore(self.database_path).save_workspace(
-            rebuild_workspace(list(events))
-        )
+            self.stores.events.append(event)
+        self.stores.sessions.save_session(result.session)
+        self.stores.workspaces.save_workspace(rebuild_workspace(list(events)))
         return ApiResponse(
             status_code=201,
             body={
@@ -481,20 +477,20 @@ def create_app(
     database_path: str | Path | None = None,
     *,
     settings: ZebraAgentSettings | None = None,
+    stores: ControlPlaneStores | None = None,
     credential_broker: CredentialBroker | None = None,
     credential_env: Mapping[str, str] | None = None,
     github_transport: GitHubPullRequestTransport | None = None,
 ) -> ZebraAgentApi:
     active_settings = settings or load_settings()
+    active_database_path = Path(database_path or active_settings.database_url)
     active_broker = credential_broker
     if active_broker is None:
-        active_broker = build_default_credential_broker(
-            active_settings.scm,
-            env=credential_env,
-        )
+        active_broker = build_default_credential_broker(active_settings.scm, env=credential_env)
     return ZebraAgentApi(
-        database_path=Path(database_path or active_settings.database_url),
+        database_path=active_database_path,
         settings=active_settings,
+        _stores=stores,
         credential_broker=active_broker,
         github_transport=github_transport,
     )

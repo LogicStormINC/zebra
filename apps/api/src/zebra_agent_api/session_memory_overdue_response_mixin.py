@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.memory_inventory_read import (
     read_repo_memory_overdue_escalation_lanes,
@@ -43,6 +43,7 @@ from zebra_agent_api.session_payloads import parse_memory_overview_payload
 
 class SessionMemoryOverdueResponseMixin:
     database_path: Path
+    stores: ControlPlaneStores
 
     def get_memory_overdue_trend_signals(
         self,
@@ -52,13 +53,13 @@ class SessionMemoryOverdueResponseMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        events = list(SQLiteEventStore(self.database_path).list_for_session(session_key))
+        events = list(self.stores.events.list_for_session(session_key))
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
             return conflict(
@@ -76,6 +77,7 @@ class SessionMemoryOverdueResponseMixin:
                 "scope_id": str(workspace_root),
                 **read_repo_memory_overdue_trend_signals(
                     database_path=self.database_path,
+                    stores=self.stores,
                     repo_id=str(workspace_root),
                     as_of=effective_as_of,
                 ),
@@ -88,6 +90,7 @@ class SessionMemoryOverdueResponseMixin:
                     "scope_id": parsed["user_id"],
                     **read_user_memory_overdue_trend_signals(
                         database_path=self.database_path,
+                        stores=self.stores,
                         user_id=parsed["user_id"],
                         as_of=effective_as_of,
                     ),
@@ -100,6 +103,7 @@ class SessionMemoryOverdueResponseMixin:
                     "scope_id": parsed["tenant_id"],
                     **read_tenant_memory_overdue_trend_signals(
                         database_path=self.database_path,
+                        stores=self.stores,
                         tenant_id=parsed["tenant_id"],
                         as_of=effective_as_of,
                     ),
@@ -155,13 +159,13 @@ class SessionMemoryOverdueResponseMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        events = list(SQLiteEventStore(self.database_path).list_for_session(session_key))
+        events = list(self.stores.events.list_for_session(session_key))
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
             return conflict(
@@ -179,6 +183,7 @@ class SessionMemoryOverdueResponseMixin:
                 "scope_id": str(workspace_root),
                 **read_repo_memory_overdue_intervention_hints(
                     database_path=self.database_path,
+                    stores=self.stores,
                     repo_id=str(workspace_root),
                     as_of=effective_as_of,
                 ),
@@ -191,6 +196,7 @@ class SessionMemoryOverdueResponseMixin:
                     "scope_id": parsed["user_id"],
                     **read_user_memory_overdue_intervention_hints(
                         database_path=self.database_path,
+                        stores=self.stores,
                         user_id=parsed["user_id"],
                         as_of=effective_as_of,
                     ),
@@ -203,6 +209,7 @@ class SessionMemoryOverdueResponseMixin:
                     "scope_id": parsed["tenant_id"],
                     **read_tenant_memory_overdue_intervention_hints(
                         database_path=self.database_path,
+                        stores=self.stores,
                         tenant_id=parsed["tenant_id"],
                         as_of=effective_as_of,
                     ),
@@ -258,13 +265,13 @@ class SessionMemoryOverdueResponseMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        events = list(SQLiteEventStore(self.database_path).list_for_session(session_key))
+        events = list(self.stores.events.list_for_session(session_key))
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
             return conflict(
@@ -282,6 +289,7 @@ class SessionMemoryOverdueResponseMixin:
                 "scope_id": str(workspace_root),
                 **read_repo_memory_overdue_escalation_lanes(
                     database_path=self.database_path,
+                    stores=self.stores,
                     repo_id=str(workspace_root),
                     as_of=effective_as_of,
                 ),
@@ -294,6 +302,7 @@ class SessionMemoryOverdueResponseMixin:
                     "scope_id": parsed["user_id"],
                     **read_user_memory_overdue_escalation_lanes(
                         database_path=self.database_path,
+                        stores=self.stores,
                         user_id=parsed["user_id"],
                         as_of=effective_as_of,
                     ),
@@ -306,6 +315,7 @@ class SessionMemoryOverdueResponseMixin:
                     "scope_id": parsed["tenant_id"],
                     **read_tenant_memory_overdue_escalation_lanes(
                         database_path=self.database_path,
+                        stores=self.stores,
                         tenant_id=parsed["tenant_id"],
                         as_of=effective_as_of,
                     ),
@@ -353,13 +363,13 @@ class SessionMemoryOverdueResponseMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        events = list(SQLiteEventStore(self.database_path).list_for_session(session_key))
+        events = list(self.stores.events.list_for_session(session_key))
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
             return conflict(
@@ -377,6 +387,7 @@ class SessionMemoryOverdueResponseMixin:
                 "scope_id": str(workspace_root),
                 **read_repo_memory_overdue_recovery_paths(
                     database_path=self.database_path,
+                    stores=self.stores,
                     repo_id=str(workspace_root),
                     as_of=effective_as_of,
                 ),
@@ -389,6 +400,7 @@ class SessionMemoryOverdueResponseMixin:
                     "scope_id": parsed["user_id"],
                     **read_user_memory_overdue_recovery_paths(
                         database_path=self.database_path,
+                        stores=self.stores,
                         user_id=parsed["user_id"],
                         as_of=effective_as_of,
                     ),
@@ -401,6 +413,7 @@ class SessionMemoryOverdueResponseMixin:
                     "scope_id": parsed["tenant_id"],
                     **read_tenant_memory_overdue_recovery_paths(
                         database_path=self.database_path,
+                        stores=self.stores,
                         tenant_id=parsed["tenant_id"],
                         as_of=effective_as_of,
                     ),

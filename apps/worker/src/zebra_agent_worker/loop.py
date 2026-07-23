@@ -7,11 +7,10 @@ from pathlib import Path
 
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_storage import (
+    ControlPlaneStores,
     LeaseConflictError,
-    SQLiteEventStore,
-    SQLiteLeaseStore,
-    SQLiteProjectionStore,
-    SQLiteWorkspaceProjectionStore,
+    require_legacy_database_coherence,
+    sqlite_control_plane_stores,
 )
 from zebra_agent_config import ZebraAgentSettings
 
@@ -145,14 +144,17 @@ def build_worker_loop_service(
     database_path: Path,
     settings: ZebraAgentSettings,
     sleep: Callable[[float], None] = time.sleep,
+    stores: ControlPlaneStores | None = None,
 ) -> WorkerLoopService:
-    projection_store = SQLiteProjectionStore(database_path)
+    if stores is not None:
+        require_legacy_database_coherence(stores, database_path)
+    active_stores = stores or sqlite_control_plane_stores(database_path)
     claim_service = SessionClaimService(
-        SQLiteLeaseStore(database_path),
+        active_stores.leases,
         SessionRecoveryService(
-            SQLiteEventStore(database_path),
-            projection_store,
-            SQLiteWorkspaceProjectionStore(database_path),
+            active_stores.events,
+            active_stores.sessions,
+            active_stores.workspaces,
         ),
     )
     execution_service = SessionExecutionService(
@@ -160,9 +162,10 @@ def build_worker_loop_service(
         claim_service=claim_service,
         resume_service=SessionResumeService(claim_service),
         settings=settings,
+        stores=active_stores,
     )
     return WorkerLoopService(
-        projection_store=projection_store,
+        projection_store=active_stores.sessions,
         execution_service=execution_service,
         sleep=sleep,
     )

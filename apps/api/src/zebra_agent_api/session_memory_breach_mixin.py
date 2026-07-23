@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.memory_inventory_read import (
     read_repo_memory_overdue_retention_breach_actions,
@@ -45,6 +45,7 @@ from zebra_agent_api.session_payloads import parse_memory_overview_payload
 
 class SessionMemoryBreachMixin:
     database_path: Path
+    stores: ControlPlaneStores
 
     def get_memory_overdue_retention_breach_actions(
         self,
@@ -54,13 +55,13 @@ class SessionMemoryBreachMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        events = list(SQLiteEventStore(self.database_path).list_for_session(session_key))
+        events = list(self.stores.events.list_for_session(session_key))
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
             return conflict(
@@ -78,6 +79,7 @@ class SessionMemoryBreachMixin:
                 "scope_id": str(workspace_root),
                 **read_repo_memory_overdue_retention_breach_actions(
                     database_path=self.database_path,
+                    stores=self.stores,
                     repo_id=str(workspace_root),
                     as_of=effective_as_of,
                 ),
@@ -90,6 +92,7 @@ class SessionMemoryBreachMixin:
                     "scope_id": parsed["user_id"],
                     **read_user_memory_overdue_retention_breach_actions(
                         database_path=self.database_path,
+                        stores=self.stores,
                         user_id=parsed["user_id"],
                         as_of=effective_as_of,
                     ),
@@ -102,6 +105,7 @@ class SessionMemoryBreachMixin:
                     "scope_id": parsed["tenant_id"],
                     **read_tenant_memory_overdue_retention_breach_actions(
                         database_path=self.database_path,
+                        stores=self.stores,
                         tenant_id=parsed["tenant_id"],
                         as_of=effective_as_of,
                     ),
@@ -158,13 +162,13 @@ class SessionMemoryBreachMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        events = list(SQLiteEventStore(self.database_path).list_for_session(session_key))
+        events = list(self.stores.events.list_for_session(session_key))
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
             return conflict(
@@ -182,6 +186,7 @@ class SessionMemoryBreachMixin:
                 "scope_id": str(workspace_root),
                 **read_repo_memory_overdue_retention_breach_lanes(
                     database_path=self.database_path,
+                    stores=self.stores,
                     repo_id=str(workspace_root),
                     as_of=effective_as_of,
                 ),
@@ -194,6 +199,7 @@ class SessionMemoryBreachMixin:
                     "scope_id": parsed["user_id"],
                     **read_user_memory_overdue_retention_breach_lanes(
                         database_path=self.database_path,
+                        stores=self.stores,
                         user_id=parsed["user_id"],
                         as_of=effective_as_of,
                     ),
@@ -206,6 +212,7 @@ class SessionMemoryBreachMixin:
                     "scope_id": parsed["tenant_id"],
                     **read_tenant_memory_overdue_retention_breach_lanes(
                         database_path=self.database_path,
+                        stores=self.stores,
                         tenant_id=parsed["tenant_id"],
                         as_of=effective_as_of,
                     ),
@@ -260,13 +267,13 @@ class SessionMemoryBreachMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        events = list(SQLiteEventStore(self.database_path).list_for_session(session_key))
+        events = list(self.stores.events.list_for_session(session_key))
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
             return conflict(
@@ -284,6 +291,7 @@ class SessionMemoryBreachMixin:
                 "scope_id": str(workspace_root),
                 **read_repo_memory_overdue_retention_breach_owner_targets(
                     database_path=self.database_path,
+                    stores=self.stores,
                     repo_id=str(workspace_root),
                     as_of=effective_as_of,
                 ),
@@ -296,6 +304,7 @@ class SessionMemoryBreachMixin:
                     "scope_id": parsed["user_id"],
                     **read_user_memory_overdue_retention_breach_owner_targets(
                         database_path=self.database_path,
+                        stores=self.stores,
                         user_id=parsed["user_id"],
                         as_of=effective_as_of,
                     ),
@@ -308,6 +317,7 @@ class SessionMemoryBreachMixin:
                     "scope_id": parsed["tenant_id"],
                     **read_tenant_memory_overdue_retention_breach_owner_targets(
                         database_path=self.database_path,
+                        stores=self.stores,
                         tenant_id=parsed["tenant_id"],
                         as_of=effective_as_of,
                     ),
@@ -366,13 +376,13 @@ class SessionMemoryBreachMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        events = list(SQLiteEventStore(self.database_path).list_for_session(session_key))
+        events = list(self.stores.events.list_for_session(session_key))
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
             return conflict(
@@ -390,6 +400,7 @@ class SessionMemoryBreachMixin:
                 "scope_id": str(workspace_root),
                 **read_repo_memory_overdue_retention_breach_follow_through_modes(
                     database_path=self.database_path,
+                    stores=self.stores,
                     repo_id=str(workspace_root),
                     as_of=effective_as_of,
                 ),
@@ -402,6 +413,7 @@ class SessionMemoryBreachMixin:
                     "scope_id": parsed["user_id"],
                     **read_user_memory_overdue_retention_breach_follow_through_modes(
                         database_path=self.database_path,
+                        stores=self.stores,
                         user_id=parsed["user_id"],
                         as_of=effective_as_of,
                     ),
@@ -414,6 +426,7 @@ class SessionMemoryBreachMixin:
                     "scope_id": parsed["tenant_id"],
                     **read_tenant_memory_overdue_retention_breach_follow_through_modes(
                         database_path=self.database_path,
+                        stores=self.stores,
                         tenant_id=parsed["tenant_id"],
                         as_of=effective_as_of,
                     ),

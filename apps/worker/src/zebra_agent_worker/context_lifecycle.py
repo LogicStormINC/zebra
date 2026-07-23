@@ -12,9 +12,9 @@ from agent_core.domain.context_capsule import (
 from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.harness.models import HarnessEventDraft
+from agent_core.ports import EventStorePort
 from agent_storage import (
     SQLiteContextLifecycleStore,
-    SQLiteEventStore,
     SQLiteProviderContinuationStore,
 )
 
@@ -25,7 +25,7 @@ def persist_context_compaction(
     draft: HarnessEventDraft,
     *,
     recorder: DurableHarnessEventRecorder,
-    event_store: SQLiteEventStore,
+    event_store: EventStorePort,
     lifecycle_store: SQLiteContextLifecycleStore,
 ) -> None:
     """Persist a compaction capsule, degrading gracefully on validation failure.

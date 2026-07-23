@@ -5,7 +5,7 @@ from pathlib import Path
 from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId
-from agent_storage import SQLiteDeliveryAuditStore, SQLiteProjectionStore
+from agent_storage import ControlPlaneStores, SQLiteDeliveryAuditStore
 
 from zebra_agent_api.responses import ApiResponse
 
@@ -13,10 +13,11 @@ from zebra_agent_api.responses import ApiResponse
 @dataclass(frozen=True)
 class SessionDeliveryAuditApi:
     database_path: Path
+    stores: ControlPlaneStores
 
     def get_delivery_audit(self, session_id: str) -> ApiResponse:
         session_key = SessionId(UUID(session_id))
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,

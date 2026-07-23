@@ -9,7 +9,7 @@ from agent_core.application import (
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import SessionStatus
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
-from agent_storage import SQLiteEventStore
+from agent_core.ports import EventStorePort
 
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 
@@ -20,7 +20,7 @@ def finalize_execution(
     attempt_result: HarnessAttemptResult,
     memory_extraction_service: MemoryCandidateExtractionService,
     title_service: SessionTitleService,
-    event_store: SQLiteEventStore,
+    event_store: EventStorePort,
     started_at: datetime,
 ) -> tuple[SessionEvent, ...]:
     if recorder.session.status in {

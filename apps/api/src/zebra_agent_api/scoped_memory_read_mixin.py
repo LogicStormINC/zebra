@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from agent_storage import ControlPlaneStores
+
 from zebra_agent_api.memory_inventory_read import (
     read_tenant_memory_inventory,
     read_tenant_memory_queue,
@@ -15,6 +17,7 @@ from zebra_agent_api.responses import ApiResponse
 
 class ScopedMemoryReadMixin:
     database_path: Path
+    stores: ControlPlaneStores
 
     def get_user_memory(self, user_id: str) -> ApiResponse:
         return ApiResponse(
@@ -23,6 +26,7 @@ class ScopedMemoryReadMixin:
                 "user_id": user_id,
                 "memories": read_user_memory_inventory(
                     database_path=self.database_path,
+                    stores=self.stores,
                     user_id=user_id,
                 ),
             },
@@ -35,6 +39,7 @@ class ScopedMemoryReadMixin:
                 "user_id": user_id,
                 "memories": read_user_memory_queue(
                     database_path=self.database_path,
+                    stores=self.stores,
                     user_id=user_id,
                 ),
             },
@@ -47,6 +52,7 @@ class ScopedMemoryReadMixin:
                 "user_id": user_id,
                 **read_user_memory_queue_summary(
                     database_path=self.database_path,
+                    stores=self.stores,
                     user_id=user_id,
                 ),
             },
@@ -59,6 +65,7 @@ class ScopedMemoryReadMixin:
                 "tenant_id": tenant_id,
                 "memories": read_tenant_memory_inventory(
                     database_path=self.database_path,
+                    stores=self.stores,
                     tenant_id=tenant_id,
                 ),
             },
@@ -71,6 +78,7 @@ class ScopedMemoryReadMixin:
                 "tenant_id": tenant_id,
                 "memories": read_tenant_memory_queue(
                     database_path=self.database_path,
+                    stores=self.stores,
                     tenant_id=tenant_id,
                 ),
             },
@@ -83,6 +91,7 @@ class ScopedMemoryReadMixin:
                 "tenant_id": tenant_id,
                 **read_tenant_memory_queue_summary(
                     database_path=self.database_path,
+                    stores=self.stores,
                     tenant_id=tenant_id,
                 ),
             },

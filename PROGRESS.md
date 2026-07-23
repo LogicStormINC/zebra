@@ -27,7 +27,7 @@
   `codex/emb-agui-spike-01` and is now in Review. It is a test-only official Python SDK spike stacked
   on the architecture branch; it adds no production API/Worker wiring and cannot
   merge before `EMB-PLAN-01` reaches `main`.
-- Active storage task: `CLOUD-STO-SEAM-01` on `codex/cloud-sto-seam-01` is the
+- Storage task in Review: `CLOUD-STO-SEAM-01` on `codex/cloud-sto-seam-01` is the
   first Zebra-foundation task after the maintainer reprioritized durable storage
   and memory ahead of further Trench work. It injects existing control-plane Store
   Ports while preserving the local SQLite profile and adds no cloud dependency.
@@ -249,26 +249,26 @@ including a real thinking tool round trip.
   are `Done` via PRs `#170`, `#171`, `#172`, and `#168`.
 - `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
-- `EMB-PLAN-01` and `EMB-AGUI-SPIKE-01` are in Review.
-  `CLOUD-STO-SEAM-01` is the only active implementation card; all PostgreSQL,
+- `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, and `CLOUD-STO-SEAM-01` are in Review.
+  No implementation card is active; all PostgreSQL,
   Redis, object-storage, production AG-UI, Trench, analysis, writeback, Agent
   Memory adapter, and GA cards remain `Locked` pending their explicit gates.
 
 ## Known Follow-Ups
 
 1. Review and merge `EMB-PLAN-01`; keep the completed AG-UI and Trench Spikes
-   parked while `CLOUD-STO-SEAM-01` establishes the Zebra storage boundary.
+   parked until `CLOUD-STO-SEAM-01` merges and `CLOUD-STO-AUTH-01` is activated.
 2. Keep DeepSeek thinking mode opt-in and preserve its private continuation
    fail-closed boundary.
-3. Approve the migration/backup/recovery/rollback model before `CLOUD-PG-01`;
-   the pure Store composition seam is explicitly allowed to precede that review.
+3. Merge and explicitly activate `CLOUD-STO-AUTH-01` before PostgreSQL selection;
+   then approve the migration/backup/recovery/rollback model before `CLOUD-PG-01`.
 4. Split or lazy-load the Desktop main bundle based on a repeatable bundle report.
 5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
    Credential/Egress Broker, external-namespace isolation, and Kubernetes in
    dependency order.
-6. After the seam, activate PostgreSQL, Lease/Outbox, Object Storage, Redis live,
-   recovery and the separate Redis Agent Memory Gateway one card at a time; no
-   production claim precedes real migration and restore evidence.
+6. After authoritative Store composition, activate PostgreSQL, Lease/Outbox,
+   Object Storage, Redis live, recovery and the separate Redis Agent Memory
+   Gateway one card at a time; no production claim precedes migration/restore evidence.
 
 ## Runtime Blueprint
 
@@ -313,7 +313,7 @@ real tool execution, failure visibility, API restart, and durable recovery.
 - ACP entry adapter
 - optional code-intelligence adapter
 - Kubernetes/Kata/Firecracker and distributed Sandbox scheduling
-- PostgreSQL/object-storage adapters (composition seam is active)
+- PostgreSQL/object-storage adapters (composition seam is in Review)
 - external authority adapter and namespace-isolated cloud control plane
 - centralized Vault/KMS-backed credentials and production Egress
 - ecosystem marketplace, cross-organization A2A, and autonomous production release

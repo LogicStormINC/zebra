@@ -9,7 +9,7 @@ from time import monotonic
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.sessions import SessionStatus
-from agent_storage import SQLiteAgentTaskStore, SQLiteEventStore, SQLiteProjectionStore
+from agent_storage import ControlPlaneStores, sqlite_control_plane_stores
 from fastapi import Request
 
 from zebra_agent_api.task_api import is_user_task_event, serialize_task_event
@@ -22,23 +22,23 @@ _ACTIVE_STATUSES = frozenset({SessionStatus.READY, SessionStatus.RUNNING})
 async def tail_session_events(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None = None,
     session_id: SessionId,
     request: Request,
     after_sequence: int,
 ) -> AsyncIterator[str]:
-    event_store = SQLiteEventStore(database_path)
-    projection_store = SQLiteProjectionStore(database_path)
+    active_stores = stores or sqlite_control_plane_stores(database_path)
     cursor = after_sequence
     last_delivery = monotonic()
     while not await request.is_disconnected():
-        events = await asyncio.to_thread(event_store.read_since, session_id, cursor)
+        events = await asyncio.to_thread(active_stores.events.read_since, session_id, cursor)
         for event in events:
             cursor = event.sequence
             last_delivery = monotonic()
             yield encode_sse_event(event)
         if events:
             continue
-        session = await asyncio.to_thread(projection_store.get_session, session_id)
+        session = await asyncio.to_thread(active_stores.sessions.get_session, session_id)
         if session is None or session.status not in _ACTIVE_STATUSES:
             return
         if monotonic() - last_delivery >= _KEEPALIVE_SECONDS:
@@ -50,11 +50,12 @@ async def tail_session_events(
 async def tail_task_events(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None = None,
     task_id: TaskId,
     request: Request,
     after_sequence: int,
 ) -> AsyncIterator[str]:
-    store = SQLiteAgentTaskStore(database_path)
+    store = (stores or sqlite_control_plane_stores(database_path)).tasks
     cursor = after_sequence
     last_delivery = monotonic()
     while not await request.is_disconnected():

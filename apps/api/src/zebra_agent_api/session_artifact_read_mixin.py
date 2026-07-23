@@ -5,10 +5,10 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from agent_storage import (
+    ControlPlaneStores,
     SessionArtifact,
     SQLiteArtifactPayloadStore,
     SQLiteArtifactStore,
-    SQLiteProjectionStore,
     payload_for_artifact_uri,
     serialize_artifact_retrieval,
     serialize_session_artifact_projection,
@@ -35,12 +35,13 @@ from zebra_agent_api.session_memory_overview_aggregation import (
 
 class SessionArtifactReadMixin:
     database_path: Path
+    stores: ControlPlaneStores
 
     def get_session_artifacts(self, session_id: str) -> ApiResponse:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
@@ -61,6 +62,7 @@ class SessionArtifactReadMixin:
             return artifact
         access = classify_session_artifact_access(
             self.database_path,
+            stores=self.stores,
             session_id=session_id,
             artifact=artifact,
         )
@@ -125,6 +127,7 @@ class SessionArtifactReadMixin:
             return artifact
         access = classify_session_artifact_access(
             self.database_path,
+            stores=self.stores,
             session_id=session_id,
             artifact=artifact,
         )
@@ -296,7 +299,9 @@ class SessionArtifactReadMixin:
         return response
 
     def get_session_delivery_audit(self, session_id: str) -> ApiResponse:
-        return SessionDeliveryAuditApi(self.database_path).get_delivery_audit(session_id)
+        return SessionDeliveryAuditApi(self.database_path, self.stores).get_delivery_audit(
+            session_id
+        )
 
     def _resolve_session_artifact(
         self,
@@ -306,7 +311,7 @@ class SessionArtifactReadMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
@@ -333,6 +338,7 @@ class SessionArtifactReadMixin:
     ) -> dict[str, object]:
         resolved_access = access or classify_session_artifact_access(
             self.database_path,
+            stores=self.stores,
             session_id=str(artifact.session_id),
             artifact=artifact,
         )

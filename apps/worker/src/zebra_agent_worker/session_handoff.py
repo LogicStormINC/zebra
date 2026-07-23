@@ -15,12 +15,12 @@ from agent_core.domain.identifiers import HandoffId, SessionId
 from agent_core.domain.session_handoff import SessionHandoffEnvelope
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
 from agent_storage import (
+    ControlPlaneStores,
     SQLiteEffectLedger,
-    SQLiteEventStore,
     SQLiteHandoffDispatchStore,
-    SQLiteProjectionStore,
     SQLiteSessionHandoffStore,
-    SQLiteWorkspaceProjectionStore,
+    require_legacy_database_coherence,
+    sqlite_control_plane_stores,
 )
 from agent_tools import EffectGuardedToolGateway
 
@@ -40,12 +40,20 @@ class RecoveredHandoff:
 
 
 class SessionHandoffRecoveryGate:
-    def __init__(self, database_path: str) -> None:
+    def __init__(
+        self,
+        database_path: str,
+        *,
+        stores: ControlPlaneStores | None = None,
+    ) -> None:
+        if stores is not None:
+            require_legacy_database_coherence(stores, database_path)
+        active_stores = stores or sqlite_control_plane_stores(database_path)
         self._handoffs = SQLiteSessionHandoffStore(database_path)
         self._dispatch = SQLiteHandoffDispatchStore(database_path)
-        self._events = SQLiteEventStore(database_path)
-        self._sessions = SQLiteProjectionStore(database_path)
-        self._workspaces = SQLiteWorkspaceProjectionStore(database_path)
+        self._events = active_stores.events
+        self._sessions = active_stores.sessions
+        self._workspaces = active_stores.workspaces
 
     def recover(
         self,

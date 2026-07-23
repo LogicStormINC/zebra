@@ -4,6 +4,7 @@ from pathlib import Path
 
 from agent_core.application import MemoryReviewAction
 from agent_core.domain.memories import MemoryVisibility
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.memory_review_execution import (
     _review_memory,
@@ -20,6 +21,7 @@ from zebra_agent_api.session_identity_read import _parse_session_id
 def review_session_memory(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     session_id: str,
     memory_id: str,
     payload: dict[str, object],
@@ -28,6 +30,7 @@ def review_session_memory(
 ) -> ApiResponse:
     return _review_memory(
         database_path=database_path,
+        stores=stores,
         memory_id=memory_id,
         payload=payload,
         action=action,
@@ -40,6 +43,7 @@ def review_session_memory(
 def review_user_memory(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     user_id: str,
     memory_id: str,
     payload: dict[str, object],
@@ -48,6 +52,7 @@ def review_user_memory(
 ) -> ApiResponse:
     return _review_memory(
         database_path=database_path,
+        stores=stores,
         memory_id=memory_id,
         payload=payload,
         action=action,
@@ -60,6 +65,7 @@ def review_user_memory(
 def review_tenant_memory(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     tenant_id: str,
     memory_id: str,
     payload: dict[str, object],
@@ -68,6 +74,7 @@ def review_tenant_memory(
 ) -> ApiResponse:
     return _review_memory(
         database_path=database_path,
+        stores=stores,
         memory_id=memory_id,
         payload=payload,
         action=action,
@@ -80,11 +87,13 @@ def review_tenant_memory(
 def review_session_memory_bulk(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     session_id: str,
     payload: dict[str, object],
 ) -> ApiResponse:
     return _review_memory_bulk(
         database_path=database_path,
+        stores=stores,
         payload=payload,
         expected_visibility=MemoryVisibility.REPO,
         expected_scope_id=session_id,
@@ -94,11 +103,13 @@ def review_session_memory_bulk(
 def review_user_memory_bulk(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     user_id: str,
     payload: dict[str, object],
 ) -> ApiResponse:
     return _review_memory_bulk(
         database_path=database_path,
+        stores=stores,
         payload=payload,
         expected_visibility=MemoryVisibility.USER,
         expected_scope_id=user_id,
@@ -108,11 +119,13 @@ def review_user_memory_bulk(
 def review_tenant_memory_bulk(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     tenant_id: str,
     payload: dict[str, object],
 ) -> ApiResponse:
     return _review_memory_bulk(
         database_path=database_path,
+        stores=stores,
         payload=payload,
         expected_visibility=MemoryVisibility.TENANT,
         expected_scope_id=tenant_id,
@@ -122,6 +135,7 @@ def review_tenant_memory_bulk(
 def review_session_memory_queue(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     session_id: str,
     payload: dict[str, object],
 ) -> ApiResponse:
@@ -130,6 +144,7 @@ def review_session_memory_queue(
         return session_key
     return _review_memory_queue(
         database_path=database_path,
+        stores=stores,
         payload=payload,
         expected_visibility=MemoryVisibility.REPO,
         expected_scope_id=str(session_key),
@@ -139,11 +154,13 @@ def review_session_memory_queue(
 def review_user_memory_queue(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     user_id: str,
     payload: dict[str, object],
 ) -> ApiResponse:
     return _review_memory_queue(
         database_path=database_path,
+        stores=stores,
         payload=payload,
         expected_visibility=MemoryVisibility.USER,
         expected_scope_id=user_id,
@@ -153,11 +170,13 @@ def review_user_memory_queue(
 def review_tenant_memory_queue(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     tenant_id: str,
     payload: dict[str, object],
 ) -> ApiResponse:
     return _review_memory_queue(
         database_path=database_path,
+        stores=stores,
         payload=payload,
         expected_visibility=MemoryVisibility.TENANT,
         expected_scope_id=tenant_id,
@@ -167,6 +186,7 @@ def review_tenant_memory_queue(
 def preview_session_memory_queue(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     session_id: str,
     payload: dict[str, object],
 ) -> ApiResponse:
@@ -175,6 +195,7 @@ def preview_session_memory_queue(
         return session_key
     return _preview_memory_queue(
         database_path=database_path,
+        stores=stores,
         payload=payload,
         expected_visibility=MemoryVisibility.REPO,
         expected_scope_id=str(session_key),
@@ -184,11 +205,13 @@ def preview_session_memory_queue(
 def preview_user_memory_queue(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     user_id: str,
     payload: dict[str, object],
 ) -> ApiResponse:
     return _preview_memory_queue(
         database_path=database_path,
+        stores=stores,
         payload=payload,
         expected_visibility=MemoryVisibility.USER,
         expected_scope_id=user_id,
@@ -198,11 +221,13 @@ def preview_user_memory_queue(
 def preview_tenant_memory_queue(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     tenant_id: str,
     payload: dict[str, object],
 ) -> ApiResponse:
     return _preview_memory_queue(
         database_path=database_path,
+        stores=stores,
         payload=payload,
         expected_visibility=MemoryVisibility.TENANT,
         expected_scope_id=tenant_id,

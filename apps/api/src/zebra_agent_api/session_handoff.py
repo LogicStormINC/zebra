@@ -26,13 +26,14 @@ from agent_core.ports.session_handoff import (
     SessionHandoffCreateRequest,
 )
 from agent_storage import (
+    ControlPlaneStores,
     HandoffIdempotencyConflictError,
     HandoffStorageConflictError,
     SQLiteContextLifecycleStore,
     SQLiteEffectLedger,
-    SQLiteEventStore,
-    SQLiteProjectionStore,
     SQLiteSessionHandoffStore,
+    require_legacy_database_coherence,
+    sqlite_control_plane_stores,
 )
 
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict
@@ -63,11 +64,16 @@ class _ParsedCreate(TypedDict):
 
 
 class SessionHandoffApi:
-    def __init__(self, database_path: Path) -> None:
+    def __init__(
+        self, database_path: Path, stores: ControlPlaneStores | None = None
+    ) -> None:
+        if stores is not None:
+            require_legacy_database_coherence(stores, database_path)
+        active_stores = stores or sqlite_control_plane_stores(database_path)
         self._database_path = database_path
         self._handoffs = SQLiteSessionHandoffStore(database_path)
-        self._events = SQLiteEventStore(database_path)
-        self._sessions = SQLiteProjectionStore(database_path)
+        self._events = active_stores.events
+        self._sessions = active_stores.sessions
         self._effects = SQLiteEffectLedger(database_path)
 
     def create(

@@ -29,18 +29,18 @@ from agent_security import (
     resolve_effective_network_profile,
 )
 from agent_storage import (
+    ControlPlaneStores,
     SQLiteArtifactPayloadStore,
     SQLiteContextLifecycleStore,
-    SQLiteEventStore,
     SQLiteMemoryStore,
     SQLiteModelCallStore,
-    SQLiteProjectionStore,
     SQLiteProviderContinuationStore,
     SQLiteSessionHistory,
     SQLiteSkillsStateStore,
     SQLiteToolRunStore,
-    SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
+    require_legacy_database_coherence,
+    sqlite_control_plane_stores,
 )
 from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import (
@@ -105,20 +105,28 @@ class SessionExecutionService:
         claim_service: SessionClaimService,
         resume_service: SessionResumeService,
         settings: ZebraAgentSettings | None = None,
+        stores: ControlPlaneStores | None = None,
     ) -> None:
+        if stores is not None:
+            require_legacy_database_coherence(stores, database_path)
         self._database_path = database_path
         self._claim_service = claim_service
         self._resume_service = resume_service
         self._settings = settings or load_settings()
-        self._event_store = SQLiteEventStore(database_path)
-        self._projection_store = SQLiteProjectionStore(database_path)
-        self._workspace_store = SQLiteWorkspaceProjectionStore(database_path)
+        active_stores = stores or sqlite_control_plane_stores(database_path)
+        self._event_store = active_stores.events
+        self._projection_store = active_stores.sessions
+        self._workspace_store = active_stores.workspaces
         self._recovery_service = SessionRecoveryService(
             self._event_store,
             self._projection_store,
             self._workspace_store,
         )
-        self._control_service = SessionControlService(database_path, settings=self._settings)
+        self._control_service = SessionControlService(
+            database_path,
+            settings=self._settings,
+            stores=active_stores,
+        )
         self._model_call_indexer = ModelCallIndexer(SQLiteModelCallStore(database_path))
         self._artifact_payload_store = SQLiteArtifactPayloadStore(database_path)
         self._context_lifecycle_store = SQLiteContextLifecycleStore(database_path)
@@ -130,7 +138,9 @@ class SessionExecutionService:
         self._memory_extraction_service = MemoryCandidateExtractionService(
             SQLiteMemoryStore(database_path)
         )
-        self._handoff_gate = handoff.SessionHandoffRecoveryGate(str(database_path))
+        self._handoff_gate = handoff.SessionHandoffRecoveryGate(
+            str(database_path), stores=active_stores
+        )
 
     def execute_session(
         self,

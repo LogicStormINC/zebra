@@ -4,8 +4,8 @@
 |---|---|
 | 日期 | 2026-07-23 |
 | 架构基线 | `Zebra Embedded 生产级目标架构.md`、ADR-015 |
-| 当前可执行任务 | `CLOUD-STO-SEAM-01`（In Progress） |
-| Review 任务 | `EMB-PLAN-01`、`EMB-AGUI-SPIKE-01`；Trench Spike 保持本地待处理 |
+| 当前可执行任务 | 无；等待已完成任务按依赖顺序评审、合并与重新激活 |
+| Review 任务 | `EMB-PLAN-01`、`EMB-AGUI-SPIKE-01`、`CLOUD-STO-SEAM-01`；Trench Spike 保持本地待处理 |
 | 其他任务 | `Locked`，等待依赖和 maintainer 逐卡激活 |
 | 第一业务验收 | Trench Event Detail 的生产只读链路 |
 
@@ -120,20 +120,30 @@ read-only。
 
 ### CLOUD-STO-SEAM-01 — Storage composition seam
 
-- Status: `In Progress`；Zebra repo；branch `codex/cloud-sto-seam-01`；owner `Codex`。
+- Status: `Review`；Zebra repo；branch `codex/cloud-sto-seam-01`；owner `Codex`。
 - Depends on: locally reviewed `EMB-PLAN-01` baseline、completed Runtime Phase A and
   maintainer activation on 2026-07-23；stacked branch must not merge before `EMB-PLAN-01`。
 - Owned paths: API storage wiring, Worker composition/execution wiring,
   `agent-storage` composition, focused API/Worker tests and task governance records。
 - Deliverable: one typed control-plane Store bundle and local SQLite builder; inject the
   existing Event/Projection/Workspace/Task/Lease Ports through API, SSE and Worker flows。
-- Acceptance: target Store constructors appear only in the local SQLite builder; injected
-  stores are proved with distinct-path regressions; local SQLite/full suite remain unchanged;
-  no PostgreSQL、Redis、S3、migration、backend enum or new dependency。
+- Acceptance: target Store constructors appear only in the local SQLite builder; same-path
+  spies prove injection and distinct-path use fails closed before a split write; local SQLite
+  behavior remains unchanged; no PostgreSQL、Redis、S3、migration、backend enum or new dependency。
+
+### CLOUD-STO-AUTH-01 — Complete authoritative Store composition
+
+- Status: `Locked`；depends on merged `CLOUD-STO-SEAM-01` and explicit activation。
+- Candidate paths: remaining Core Ports、storage adapters、API/Worker composition and
+  cross-backend regressions。
+- Deliverable: compose context lifecycle、handoff/dispatch、idempotency、effect ledger、
+  governed memory、Artifact and continuation authorities before backend selection。
+- Acceptance: compaction/recovery/handoff/memory/effect A/B tests keep one authoritative
+  stream；the temporary legacy-database coherence guard is removed only after this gate。
 
 ### CLOUD-PG-01 — PostgreSQL event and projection storage
 
-- Status: `Locked`；depends on `CLOUD-STO-SEAM-01` plus an approved database
+- Status: `Locked`；depends on `CLOUD-STO-AUTH-01` plus an approved database
   migration、backup、recovery and rollback model review。
 - Candidate paths: `packages/agent-storage/.../postgres/`, migrations, storage tests。
 - Deliverable: Event Store、Projection、monotonic sequence、expected-version CAS、replay。
@@ -418,13 +428,15 @@ Maintainer 在 2026-07-23 将执行优先级改为“先完成 Zebra 本体，�
 当前顺序固定为：
 
 1. `CLOUD-STO-SEAM-01`：只建立既有 Store Ports 的 composition seam；
-2. 评审 migration/backup/recovery/rollback 后，逐卡完成 PostgreSQL、Lease/Outbox、
+2. `CLOUD-STO-AUTH-01`：补齐所有会推进 Session、治理记忆或约束副作用的 durable
+   Store 边界，并以跨库回归证明不会分裂事件真相；
+3. 评审 migration/backup/recovery/rollback 后，逐卡完成 PostgreSQL、Lease/Outbox、
    Object Storage、Redis live 和 Cloud recovery gate；
-3. 依次完成 `MEM-RAM-CON-01`、`MEM-RAM-SPIKE-01`、Adapter、delivery ledger 和
+4. 依次完成 `MEM-RAM-CON-01`、`MEM-RAM-SPIKE-01`、Adapter、delivery ledger 和
    fault gate；
-4. 再恢复 Host/AG-UI contract 和 Trench read-only lane；P3 production E2E 必须等待
+5. 再恢复 Host/AG-UI contract 和 Trench read-only lane；P3 production E2E 必须等待
    P2 gate，但 Redis Agent Memory 故障或关闭不得阻塞 Run；
-5. 后续 Frontend、Analysis、Writeback 和 GA 仍逐阶段激活。
+6. 后续 Frontend、Analysis、Writeback 和 GA 仍逐阶段激活。
 
 `EMB-AGUI-SPIKE-01` 和本地 Trench Spike 的既有证据保留，不在 Cloud Store 任务中
 继续扩展或合并。
