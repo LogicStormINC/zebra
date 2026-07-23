@@ -1,11 +1,12 @@
-# Zebra Embedded 与 Trench 实施任务拆解 v1.0
+# Zebra Embedded 与 Trench 实施任务拆解 v1.1
 
 | 字段 | 值 |
 |---|---|
 | 日期 | 2026-07-23 |
 | 架构基线 | `Zebra Embedded 生产级目标架构.md`、ADR-015 |
-| 当前可执行任务 | `EMB-PLAN-01`（Review）、`EMB-AGUI-SPIKE-01`（In Progress） |
-| 其他任务 | `Locked`，等待 maintainer 逐卡激活 |
+| 当前可执行任务 | `CLOUD-STO-SEAM-01`（In Progress） |
+| Review 任务 | `EMB-PLAN-01`、`EMB-AGUI-SPIKE-01`；Trench Spike 保持本地待处理 |
+| 其他任务 | `Locked`，等待依赖和 maintainer 逐卡激活 |
 | 第一业务验收 | Trench Event Detail 的生产只读链路 |
 
 ## 1. 执行规则
@@ -26,20 +27,25 @@
 ```mermaid
 flowchart TD
     PLAN["P0 架构收敛"] --> SPIKE["P0 双仓库 Spike"]
+    PLAN --> SEAM["Zebra Storage Composition Seam"]
+    SEAM --> CLOUD["P2 Cloud Durable Foundation"]
+    CLOUD --> MEMORY["Redis Agent Memory Gateway"]
     SPIKE --> CONTRACT["P1 Host / AG-UI / Surface Contracts"]
-    CONTRACT --> CLOUD["P2 Cloud Durable Foundation"]
     CONTRACT --> READ["P3 Trench Read-only Slice"]
     CLOUD --> READGATE["Production Read-only E2E"]
     READ --> READGATE
     READGATE --> FRONTEND["P4 Frontend Collaboration"]
     FRONTEND --> ANALYSIS["P5 Deterministic Analysis"]
     ANALYSIS --> WRITE["P6 Controlled Writeback"]
-    WRITE --> MEMORY["P7 Redis Agent Memory"]
-    MEMORY --> GA["P8 Multi-tenant GA"]
+    WRITE --> GA["P8 Multi-tenant GA"]
+    MEMORY --> GA
 ```
 
-Cloud foundation 和 read-only feature 可以在协议冻结后并行，但只有两条线在
-真实环境汇合并通过恢复/安全门禁后，才可称为 production read-only。
+Storage Seam 使用现有通用 Store Ports，不依赖 Host/AG-UI/Surface 契约。当前调度
+优先完成 Zebra durable foundation 和 Agent Memory Gateway，再恢复 Trench 实施；
+Memory 仍是可降级增强能力，不进入 Run 或 read-only E2E 的必需运行时依赖。Cloud
+与 Host 协议两条线只有在真实环境汇合并通过恢复/安全门禁后，才可称为 production
+read-only。
 
 ## 3. P0：架构与兼容性
 
@@ -107,20 +113,28 @@ Cloud foundation 和 read-only feature 可以在协议冻结后并行，但只�
 
 - Python/JSON/TypeScript fixtures share versioned schemas and canonical examples。
 - Unknown fields/events have explicit forward-compatibility behavior。
-- Contract PRs merge before any storage, transport or UI adapter PR。
+- 相关 Domain/Port contract 必须先于对应 Adapter；Host/AG-UI/Surface 契约只阻塞
+  Host transport、Trench 和 UI Adapter，不阻塞复用现有 Store Ports 的 composition seam。
 
 ## 5. P2：Cloud durable foundation
 
 ### CLOUD-STO-SEAM-01 — Storage composition seam
 
-- Status: `Locked`；Zebra repo；depends on P1 contracts and explicit Phase B activation。
-- Candidate paths: API/Worker composition modules, config settings, focused tests。
-- Deliverable: inject existing Store Ports instead of constructing SQLite throughout request/worker flows。
-- Acceptance: local SQLite behavior and full suite remain unchanged; no PostgreSQL code yet。
+- Status: `In Progress`；Zebra repo；branch `codex/cloud-sto-seam-01`；owner `Codex`。
+- Depends on: locally reviewed `EMB-PLAN-01` baseline、completed Runtime Phase A and
+  maintainer activation on 2026-07-23；stacked branch must not merge before `EMB-PLAN-01`。
+- Owned paths: API storage wiring, Worker composition/execution wiring,
+  `agent-storage` composition, focused API/Worker tests and task governance records。
+- Deliverable: one typed control-plane Store bundle and local SQLite builder; inject the
+  existing Event/Projection/Workspace/Task/Lease Ports through API, SSE and Worker flows。
+- Acceptance: target Store constructors appear only in the local SQLite builder; injected
+  stores are proved with distinct-path regressions; local SQLite/full suite remain unchanged;
+  no PostgreSQL、Redis、S3、migration、backend enum or new dependency。
 
 ### CLOUD-PG-01 — PostgreSQL event and projection storage
 
-- Status: `Locked`；depends on `CLOUD-STO-SEAM-01`。
+- Status: `Locked`；depends on `CLOUD-STO-SEAM-01` plus an approved database
+  migration、backup、recovery and rollback model review。
 - Candidate paths: `packages/agent-storage/.../postgres/`, migrations, storage tests。
 - Deliverable: Event Store、Projection、monotonic sequence、expected-version CAS、replay。
 - Acceptance: concurrent append/idempotency/rebuild tests plus real PostgreSQL CI pass。
@@ -331,14 +345,25 @@ Cloud foundation 和 read-only feature 可以在协议冻结后并行，但只�
 
 ### MEM-RAM-CON-01 — AgentMemoryGateway contract
 
-- Status: `Locked`；Zebra repo；depends on P6 gate and explicit Preview-risk acceptance。
+- Status: `Locked`；Zebra repo；depends on `CLOUD-STO-SEAM-01` and explicit
+  Preview-risk acceptance；does not depend on the P6 writeback feature lane。
 - Candidate paths: new focused core Port/domain models and contract tests。
 - Deliverable: session event、long-term write/search/delete、snapshot/degraded responses。
 - Acceptance: distinct from local MemoryStorePort; no Redis SDK in core and no Trench identity domain。
 
+### MEM-RAM-SPIKE-01 — Managed Preview compatibility probe
+
+- Status: `Locked`；depends on `MEM-RAM-CON-01` and a disposable Redis Cloud
+  Agent Memory Store/key approved for test use。
+- Candidate paths: isolated contract fixtures/tests and a compatibility evidence record only。
+- Deliverable: pin current OpenAPI behavior for retry/idempotency、promotion delay、pagination、
+  filters、TTL/summarization、PATCH/delete、rate limits and error shapes。
+- Acceptance: no production import or credential persistence; observed drift and unsupported
+  behavior become explicit adapter gates。
+
 ### MEM-RAM-ADP-01 — Redis Agent Memory adapter
 
-- Status: `Locked`；depends on `MEM-RAM-CON-01`。
+- Status: `Locked`；depends on `MEM-RAM-SPIKE-01`。
 - Candidate paths: `agent-integrations/.../redis_agent_memory/`, config, tests。
 - Deliverable: feature flag、opaque mapping、redaction、timeout、rate limit、circuit breaker。
 - Acceptance: Embedded profile disables duplicate self-extraction; local profile remains compatible。
@@ -389,13 +414,20 @@ Cloud foundation 和 read-only feature 可以在协议冻结后并行，但只�
 
 ## 12. Activation order
 
-`EMB-PLAN-01` 完成后仍不自动激活代码。建议下一步只在两个仓库分别激活：
+Maintainer 在 2026-07-23 将执行优先级改为“先完成 Zebra 本体，再恢复 Trench”。
+当前顺序固定为：
 
-1. Zebra：`EMB-AGUI-SPIKE-01`；
-2. Trench：`TRN-CPK-SPIKE-01`。
+1. `CLOUD-STO-SEAM-01`：只建立既有 Store Ports 的 composition seam；
+2. 评审 migration/backup/recovery/rollback 后，逐卡完成 PostgreSQL、Lease/Outbox、
+   Object Storage、Redis live 和 Cloud recovery gate；
+3. 依次完成 `MEM-RAM-CON-01`、`MEM-RAM-SPIKE-01`、Adapter、delivery ledger 和
+   fault gate；
+4. 再恢复 Host/AG-UI contract 和 Trench read-only lane；P3 production E2E 必须等待
+   P2 gate，但 Redis Agent Memory 故障或关闭不得阻塞 Run；
+5. 后续 Frontend、Analysis、Writeback 和 GA 仍逐阶段激活。
 
-两张 Spike 合并后再激活 P1 协议卡。P2 与 P3 可以按 Owned paths 并行；P3 的
-production E2E 必须等待 P2 gate。后续阶段严格按 P4 → P5 → P6 → P7 → P8。
+`EMB-AGUI-SPIKE-01` 和本地 Trench Spike 的既有证据保留，不在 Cloud Store 任务中
+继续扩展或合并。
 
 ## 13. Global release blockers
 

@@ -1,5 +1,20 @@
 # Progress Log
 
+## 2026-07-23 CLOUD-STO-SEAM-01 Control-Plane Storage Composition Seam
+
+- maintainer reprioritized Zebra durable storage and memory foundations ahead of
+  further Trench work and explicitly allowed subagent-assisted implementation
+- audited API/Worker storage construction, task dependencies and official Redis
+  Agent Memory boundaries in three independent read-only lanes
+- confirmed the first seam can reuse existing Event/Projection/Workspace/Task/Lease
+  Ports without waiting for Host/AG-UI contracts or adding a cloud dependency
+- created isolated worktree `zebra-agent-cloud-sto-seam-01` on branch
+  `codex/cloud-sto-seam-01`, stacked on the local `EMB-PLAN-01` baseline; it may
+  not merge before PR `#194`
+- kept PostgreSQL/S3 as durable truth/payload stores, ordinary Redis ephemeral,
+  and Redis Agent Memory separate from the governed local `MemoryStorePort`
+- implementation and validation are in progress
+
 ## 2026-07-23 EMB-AGUI-SPIKE-01 Official Python AG-UI Compatibility Spike
 
 - maintainer explicitly activated the Zebra-side Spike with all production

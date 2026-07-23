@@ -370,9 +370,10 @@ namespace、retention、manifest 和 lineage。下载使用短期签名 URL，�
 
 ## 9. Agent Memory
 
-Embedded 首个只读切片不依赖远程长期记忆。现有 local profile 的本地 Memory
-保持兼容；Embedded production profile 后续通过独立 `AgentMemoryGateway`
-接入 Redis Agent Memory，而不是把远程服务强塞进现有本地 Store Port。
+Zebra durable foundation 的当前调度优先于 Trench read-only，但首个只读切片仍不
+把远程长期记忆设为运行时依赖。现有 local profile 的本地 Memory 保持兼容；
+Embedded production profile 通过独立 `AgentMemoryGateway` 接入 Redis Agent
+Memory，而不是把远程服务强塞进现有本地 Store Port。
 
 约束：
 
@@ -481,29 +482,32 @@ artifact failure、namespace denial、memory degraded rate、token/cost evidence
 完整任务卡、依赖、Owned paths 和验收见
 [`Zebra Embedded与Trench实施任务拆解_v1.0.md`](./Zebra%20Embedded与Trench实施任务拆解_v1.0.md)。
 
-固定顺序：
+两条基础 lane 与当前调度顺序：
 
 ```text
 架构收敛
 → CopilotKit/AG-UI Spike
+→ Zebra Storage composition seam
+→ Cloud durable foundation
+→ Redis Agent Memory Gateway / Preview gate（可降级增强）
 → Host/AG-UI/Surface 协议
-→ Cloud durable foundation 与 Trench 只读链路并行
+→ Trench 只读链路
 → 生产只读 E2E 汇合
 → 前端协同
 → 数据分析
 → 受控写回
-→ Redis Agent Memory
 → 多租户 GA
 ```
 
 任何实现卡开始前必须满足：
 
-1. 上游卡已合并到最新 `main`；
+1. 上游卡已合并到最新 `main`；显式批准的 stacked local task 必须记录硬性合并顺序；
 2. 卡在 `docs/AGENT_TASKS.md` 中为 `Ready`；
 3. 一个 owner、一个 branch、一个 worktree、一个主 PR；
 4. Owned paths 和验证命令已固定；
 5. 跨 Zebra/Trench 仓库工作拆成各自独立任务；
-6. Cloud Phase B 的迁移、备份、恢复和回滚设计已明确激活。
+6. PostgreSQL Adapter 开始前，Cloud Phase B 的迁移、备份、恢复和回滚模型已评审；
+   纯 composition seam 不以该评审为前置条件。
 
 ## 15. 阶段验收
 

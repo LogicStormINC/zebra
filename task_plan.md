@@ -1,5 +1,29 @@
 # Task Plan
 
+## CLOUD-STO-SEAM-01 - Control-Plane Storage Composition Seam
+
+1. `completed` - Audit API/Worker SQLite construction, existing Store Ports,
+   Agent Memory semantics and the revised dependency order.
+2. `in_progress` - Register and claim the path-bounded task on an isolated stacked
+   worktree while preserving the hard `EMB-PLAN-01` merge order.
+3. `pending` - Add one flat control-plane Store bundle and local SQLite builder.
+4. `pending` - Inject the bundle through API/SSE and Worker flows and add
+   distinct-path regression tests.
+5. `pending` - Run focused, full and quality validation; record remaining Port
+   gaps and the next PostgreSQL/memory task without adding a cloud dependency.
+
+### Decisions
+
+- The user reprioritized Zebra durable storage and memory foundations ahead of
+  further Trench work on 2026-07-23.
+- PostgreSQL remains durable truth, S3-compatible storage owns payload bytes,
+  Redis live state is erasable, and Redis Agent Memory remains a separate,
+  degraded-safe `AgentMemoryGateway` rather than a `MemoryStorePort` replacement.
+- This task composes only the five existing control-plane Ports. Legacy durable
+  stores without adequate Ports are recorded for focused follow-ups.
+- Because PR `#194` is still open, this local branch is stacked and cannot merge
+  before `EMB-PLAN-01`; it will not push or merge as part of this local task.
+
 ## EMB-AGUI-SPIKE-01 - Official Python AG-UI Compatibility Spike
 
 1. `in_progress` - Commit the reviewed Embedded architecture baseline without

@@ -23,10 +23,14 @@
 - `EMB-PLAN-01` is `Review` on `zebra-cloud-trench`; it consolidates the
   Zebra Embedded target architecture and registers the dependency-ordered
   CopilotKit/AG-UI, cloud, Trench, analysis, writeback, memory, and GA roadmap.
-- `EMB-AGUI-SPIKE-01` is `In Progress` on `codex/emb-agui-spike-01`, explicitly
+- `EMB-AGUI-SPIKE-01` is `Review` on `codex/emb-agui-spike-01`, explicitly
   activated by the maintainer on 2026-07-23. It is stacked on the local
   `zebra-cloud-trench` architecture commit and must not merge before that
   dependency reaches `main`.
+- `CLOUD-STO-SEAM-01` is `In Progress` on `codex/cloud-sto-seam-01`. The
+  maintainer reprioritized Zebra durable storage and memory foundations ahead of
+  further Trench work. This local task is stacked on `EMB-PLAN-01`, adds no cloud
+  database dependency, and must not merge before the architecture baseline.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -94,7 +98,7 @@ dependency-ordered task roadmap without activating implementation prematurely.
 
 ### EMB-AGUI-SPIKE-01 - Zebra AG-UI Protocol Compatibility Spike
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `INTEGRATIONS / QA / DOC`
 - Depends on: `EMB-PLAN-01`; explicitly activated as a stacked local branch by
@@ -113,18 +117,18 @@ that the later `EMB-AGUI-CON-01` contract may safely adopt.
 
 #### Acceptance
 
-- [ ] `ag-ui-protocol` is pinned to one exact reviewed version in the development
+- [x] `ag-ui-protocol` is pinned to one exact reviewed version in the development
   dependency and lock file; no runtime package imports it.
-- [ ] A canonical stream covers run, text, tool-call, tool-result, state snapshot,
+- [x] A canonical stream covers run, text, tool-call, tool-result, state snapshot,
   state delta, message snapshot, and successful finish events.
-- [ ] The official encoder produces a valid SSE stream that round-trips through
+- [x] The official encoder produces a valid SSE stream that round-trips through
   an independent bounded decoder while preserving event order and identifiers.
-- [ ] Interrupt fixtures prove snapshot-before-interrupt ordering, same-thread
+- [x] Interrupt fixtures prove snapshot-before-interrupt ordering, same-thread
   full resume coverage, expiry/payload validation expectations, and idempotency
   keys without implementing Zebra approval logic.
-- [ ] Unknown/custom events and schema drift have an explicit observed behavior;
+- [x] Unknown/custom events and schema drift have an explicit observed behavior;
   the validation note records the version matrix and production follow-ups.
-- [ ] Focused tests pass, then `make test` and `make check` are run or every
+- [x] Focused tests pass, then `make test` and `make check` are run or every
   unrelated baseline blocker is recorded with evidence.
 
 #### Explicit Non-Goals
@@ -133,6 +137,53 @@ that the later `EMB-AGUI-CON-01` contract may safely adopt.
   HostSessionGrant, CopilotKit/Trench code, or UI changes
 - changing Zebra Domain Event, Task, Segment, Approval, or Worker behavior
 - treating a Spike fixture as the final `EMB-AGUI-CON-01` contract
+
+### CLOUD-STO-SEAM-01 - Control-Plane Storage Composition Seam
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `STORAGE / API / WORKER`
+- Depends on: locally reviewed `EMB-PLAN-01`, completed Runtime Phase A, and
+  explicit maintainer activation on 2026-07-23. This is a stacked local task and
+  cannot merge before `EMB-PLAN-01`.
+- Branch: `codex/cloud-sto-seam-01`
+- Owned paths: `apps/api/src/zebra_agent_api/` (storage wiring only),
+  `apps/worker/src/zebra_agent_worker/loop.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/control.py`,
+  `apps/worker/src/zebra_agent_worker/session_handoff.py`,
+  `packages/agent-storage/src/agent_storage/composition.py` (new),
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `tests/api/test_storage_composition.py` (new),
+  `tests/worker/test_storage_composition.py` (new), `docs/AGENT_TASKS.md`,
+  `docs/Zebra Embedded 生产级目标架构.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `README.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Create one typed bundle for the existing Event, Projection, Workspace, Task and
+Lease Ports so API, SSE and Worker control-plane flows no longer choose SQLite
+inside request or execution logic.
+
+#### Acceptance
+
+- [ ] One flat `ControlPlaneStores` value and one local SQLite builder exist; no
+  backend hierarchy, backend enum, config switch or new dependency is introduced.
+- [ ] API, SSE and Worker receive the same injected ports; constructors for the
+  five target SQLite stores remain only in the local builder.
+- [ ] Distinct-path regression tests prove injected stores are used instead of a
+  hidden fallback to `database_path`.
+- [ ] Existing local SQLite behavior remains compatible and focused tests,
+  `make test`, `make check`, and `git diff --check` pass or blockers are recorded.
+
+#### Explicit Non-Goals
+
+- PostgreSQL, Redis, S3, migrations, dual-write, cloud credentials or production
+  backend selection
+- replacing local `MemoryStorePort` with Redis Agent Memory
+- inventing Ports for legacy stores not needed by this first control-plane seam
+- changing CLI, Desktop, Domain Event, Task, Policy, runtime or user-visible behavior
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.

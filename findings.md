@@ -1,5 +1,23 @@
 # Findings
 
+## CLOUD-STO-SEAM-01 - 2026-07-23
+
+- API and Worker construct the same SQLite control-plane adapters repeatedly;
+  SSE also bypasses `ZebraAgentApi`, so changing only `create_app` would leave a
+  false seam that cannot support a PostgreSQL adapter end to end.
+- Existing Event, Projection, Workspace, AgentTask and Lease Ports are sufficient
+  for the first bundle. Context lifecycle, idempotency, effect ledger, handoff
+  dispatch, artifact indexing and some approval reads need later focused Ports.
+- `MemoryStorePort` is Zebra's governed lifecycle projection: candidate,
+  confirmed, superseded, expired and deleted states retain provenance and review
+  semantics that Redis Agent Memory does not model. The remote service therefore
+  remains a separate derived Gateway with outbox/receipts and fail-open reads.
+- Redis Agent Memory is Public Preview and the old open-source V0 server is not a
+  production fallback. A managed-service compatibility Spike precedes its Adapter.
+- The storage seam has no technical dependency on Host/AG-UI contracts. The
+  maintainer explicitly activated it as a local stacked task while PR `#194`
+  remains the mandatory merge predecessor.
+
 ## EMB-AGUI-SPIKE-01 - 2026-07-23
 
 - The maintainer explicitly activated the Zebra-side compatibility Spike. The
