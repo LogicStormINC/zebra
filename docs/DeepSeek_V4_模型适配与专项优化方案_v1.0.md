@@ -345,6 +345,28 @@ DeepSeek Context Caching 默认开启，并依赖完全一致的重叠前缀。
 - non-thinking 且流程已确定必须调用某工具时使用 `required` 或指定工具；
 - 禁止为了“提高工具使用率”在开放式任务中全局设为 `required`。
 
+### 9.2 Provider 响应验收与定向修复
+
+OpenAI-compatible 只描述接口形状，不提供 DeepSeek 输出必然满足 OpenAI
+Structured Outputs 的保证。所有 Provider 响应必须先经过以下接纳边界：
+
+```text
+raw body / SSE -> transport decode -> tool-call assembly -> JSON/shape validation
+               -> ProposalAccepted | ModelResponseRejected
+```
+
+平台不变量：
+
+1. Provider 非法输出只是被拒绝的模型候选，不是工具失败或 Session 终态；
+2. 带工具的流式公开 Delta 在整次候选通过验收前暂存，拒绝时整体丢弃；
+3. 没有已公开输出或新副作用时最多执行一次定向修复，并计入
+   `response_repair_count`；
+4. 修复耗尽写入 `SESSION_SUSPENDED`，保留可恢复上下文，不写
+   `SESSION_FAILED`；
+5. 响应正文和非法参数不进入错误、日志或事件，只记录长度、位置和 SHA-256；
+6. Provider HTTP 重试使用 `retry_count`，模型语义修复使用
+   `response_repair_count`，两者不得混用。
+
 ### 9.2 Strict Mode Beta
 
 DeepSeek strict tools 当前需要 `/beta` endpoint，全部函数设置 `strict=true`，
@@ -395,11 +417,11 @@ DeepSeek 可能通过空行或 SSE `: keep-alive` 保持连接；官方说明未
 
 重试边界：
 
-- 首个公开 delta 之前，模型请求可按策略透明重试；
-- 首个公开 delta 之后，不透明重放，避免 UI 重复内容；
-- Tool Call 已进入审批或执行后，依靠耐久事件恢复，不重新生成后直接执行；
-- 有副作用工具完成后不得因模型失败而重放工具；
-- 降级模型必须创建新的 model call correlation，并记录原失败原因。
+- 首个公开 delta 之前，传输失败可按策略透明重试；
+- SSE、响应正文或 Tool Call 参数 JSON 无效时拒绝整个候选，禁止猜测修补后执行；
+- 候选尚未产生新工具副作用时，追加内部修复指令并进行一次有界重新生成；
+- 修复回合延续公开 delta 序号且不得重放已有 Tool Result，耗尽后可恢复暂停；
+- Tool Call 已进入审批或执行后依靠耐久事件恢复；降级调用记录原失败原因。
 
 ## 11. user_id 与隔离
 
@@ -460,7 +482,7 @@ cost_usd
 - tools 存在时强制禁用思考；
 - `stream_options.include_usage`；
 - SSE keep-alive、空 choices usage chunk 和 `[DONE]`；
-- fragmented content/tool calls；
+- fragmented content/tool calls，以及 malformed SSE/arguments 的有界修复；
 - `finish_reason` 全分支；
 - cache hit/miss 与 reasoning token 映射；
 - 400/401/402/422/429/500/503 分类；

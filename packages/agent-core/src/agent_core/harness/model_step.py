@@ -16,12 +16,8 @@ from agent_core.domain.modeling import (
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.hooks import CompactionHook
-from agent_core.harness.model_request import (
-    build_context_plan,
-    complete_model,
-    context_window,
-    with_context_plan,
-)
+from agent_core.harness.model_request import allowed_response_repairs, build_context_plan, complete_model
+from agent_core.harness.model_request import context_window, with_context_plan
 from agent_core.harness.models import HarnessEventDraft, HarnessTask
 from agent_core.harness.protocol_invariants import validate_tool_call_pairing
 from agent_core.harness.provider_continuation import (
@@ -34,13 +30,8 @@ from agent_core.ports.conversation_compactor import (
     ConversationCompactionResult,
     ConversationCompactorPort,
 )
-from agent_core.ports.model_gateway import (
-    ModelGatewayPort,
-    StreamingModelGatewayPort,
-)
-from agent_core.ports.provider_continuation import (
-    ProviderContinuationCompletionPort,
-)
+from agent_core.ports.model_gateway import ModelGatewayPort, ModelResponseRejectedError
+from agent_core.ports.provider_continuation import ProviderContinuationCompletionPort
 
 MODEL_NATIVE_DELEGATION_GUIDANCE = (
     "Subagent delegation:\n"
@@ -167,7 +158,8 @@ class HarnessModelStep:
             user_goal=task.user_input,
             created_at=now,
         )
-        return self.request_completion(messages, model_gateway, allow_tools=True)
+        repair_limit = allowed_response_repairs(task.max_model_calls, 0)
+        return self.request_completion(messages, model_gateway, allow_tools=True, response_repair_limit=repair_limit)
 
     def request_completion(
         self,
@@ -175,6 +167,7 @@ class HarnessModelStep:
         model_gateway: ModelGatewayPort,
         *,
         allow_tools: bool,
+        response_repair_limit: int = 1,
     ) -> ModelCompletion:
         tools = self._available_tools if allow_tools else ()
         window = context_window(model_gateway)
@@ -190,12 +183,31 @@ class HarnessModelStep:
                     completion = model_gateway.complete_from_reference(
                         self._provider_continuation, messages, tools=tools
                     )
-                except (NotImplementedError, TimeoutError, ValueError):
-                    completion = model_gateway.complete(messages, tools=tools)
+                except (
+                    NotImplementedError,
+                    TimeoutError,
+                    ValueError,
+                    ModelResponseRejectedError,
+                ):
+                    completion = complete_model(
+                        model_gateway,
+                        messages,
+                        tools,
+                        model_call_id="untracked",
+                        on_delta=lambda _model_call_id, _delta: None,
+                        response_repair_limit=response_repair_limit,
+                    )
                 finally:
                     self._provider_continuation = None
             else:
-                completion = model_gateway.complete(messages, tools=tools)
+                completion = complete_model(
+                    model_gateway,
+                    messages,
+                    tools,
+                    model_call_id="untracked",
+                    on_delta=lambda _model_call_id, _delta: None,
+                    response_repair_limit=response_repair_limit,
+                )
             return with_context_plan(completion, plan)
         model_call_id = str(new_correlation_id())
         self._event_sink(
@@ -228,7 +240,12 @@ class HarnessModelStep:
                     messages,
                     tools=tools,
                 )
-            except (NotImplementedError, TimeoutError, ValueError):
+            except (
+                NotImplementedError,
+                TimeoutError,
+                ValueError,
+                ModelResponseRejectedError,
+            ):
                 self._emit_continuation_selection(
                     PreparedProviderContinuation(
                         mode="capsule_fallback",
@@ -241,20 +258,19 @@ class HarnessModelStep:
                     tools,
                     model_call_id=model_call_id,
                     on_delta=self._emit_text_delta,
+                    response_repair_limit=response_repair_limit,
                 )
             finally:
                 self._provider_continuation = None
-        elif isinstance(model_gateway, StreamingModelGatewayPort):
-            completion = model_gateway.complete_stream(
-                messages,
-                tools=tools,
-                on_text_delta=lambda delta: self._emit_text_delta(
-                    model_call_id,
-                    delta,
-                ),
-            )
         else:
-            completion = model_gateway.complete(messages, tools=tools)
+            completion = complete_model(
+                model_gateway,
+                messages,
+                tools,
+                model_call_id=model_call_id,
+                on_delta=self._emit_text_delta,
+                response_repair_limit=response_repair_limit,
+            )
         planned_completion = with_context_plan(completion, plan)
         return replace(
             planned_completion,

@@ -66,6 +66,8 @@ def test_build_trace_record_summarizes_events_tools_and_cost() -> None:
                 "time_to_first_public_text_ms": 50,
                 "latency_ms": 200,
                 "retry_count": 1,
+                "response_repair_count": 1,
+                "normalized_error": "invalid_tool_arguments_json",
                 "system_fingerprint": "fp-1",
             },
             session_id=session_id,
@@ -101,6 +103,7 @@ def test_build_trace_record_summarizes_events_tools_and_cost() -> None:
     assert trace.model_calls[0].resolved_model == "deepseek-v4-pro"
     assert trace.model_calls[0].time_to_first_public_text_ms == 50
     assert trace.model_calls[0].retry_count == 1
+    assert trace.model_calls[0].response_repair_count == 1
     assert trace.model_calls[0].prompt_version == "zebra-deepseek-chat-v1"
     assert trace.model_calls[0].tool_schema_bytes == 128
     assert trace.model_calls[0].stable_prefix_hash == "prefix-hash"

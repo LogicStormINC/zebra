@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -8,6 +9,7 @@ from typing import Any
 
 import httpx
 from agent_core.domain.modeling import ModelTextDelta
+from agent_core.ports.model_gateway import ModelResponseRejectedError
 
 from agent_integrations.model_errors import ModelProviderError
 
@@ -82,9 +84,27 @@ def read_openai_stream(
             raw = line.removeprefix("data:").strip()
             if not raw or raw == "[DONE]":
                 continue
-            payload = json.loads(raw)
+            try:
+                payload = json.loads(raw)
+            except json.JSONDecodeError as exc:
+                encoded = raw.encode("utf-8")
+                raise ModelResponseRejectedError(
+                    "invalid_stream_event_json",
+                    phase="stream_event",
+                    retryable=True,
+                    error_position=exc.pos,
+                    payload_size=len(encoded),
+                    payload_sha256=hashlib.sha256(encoded).hexdigest(),
+                ) from exc
             if not isinstance(payload, dict):
-                raise ValueError("model stream event must be a JSON object")
+                encoded = raw.encode("utf-8")
+                raise ModelResponseRejectedError(
+                    "invalid_stream_event_shape",
+                    phase="stream_event",
+                    retryable=True,
+                    payload_size=len(encoded),
+                    payload_sha256=hashlib.sha256(encoded).hexdigest(),
+                )
             if "error" in payload:
                 raise ModelProviderError("provider_stream_error", retryable=True)
             elapsed_ms = int((perf_counter() - started) * 1000)
@@ -102,13 +122,23 @@ def read_openai_stream(
             current_usage = payload.get("usage")
             if isinstance(current_usage, dict):
                 usage = dict(current_usage)
-            choice_finish_reason, emitted_public_text = _consume_choices(
-                payload.get("choices"),
-                content_parts=content_parts,
-                reasoning_parts=reasoning_parts,
-                tool_parts=tool_parts,
-                coalescer=coalescer,
-            )
+            try:
+                choice_finish_reason, emitted_public_text = _consume_choices(
+                    payload.get("choices"),
+                    content_parts=content_parts,
+                    reasoning_parts=reasoning_parts,
+                    tool_parts=tool_parts,
+                    coalescer=coalescer,
+                )
+            except ValueError as exc:
+                encoded = raw.encode("utf-8")
+                raise ModelResponseRejectedError(
+                    "invalid_stream_event_shape",
+                    phase="stream_event",
+                    retryable=True,
+                    payload_size=len(encoded),
+                    payload_sha256=hashlib.sha256(encoded).hexdigest(),
+                ) from exc
             if choice_finish_reason is not None:
                 finish_reason = choice_finish_reason
             if emitted_public_text and first_public_text_ms is None:

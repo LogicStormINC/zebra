@@ -5,6 +5,17 @@ function readText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+const STREAM_RESET_EVENTS = new Set([
+  "model_request_started",
+  "harness_attempt_started",
+  "approval_requested",
+  "clarification_requested",
+  "session_suspended",
+  "session_completed",
+  "session_failed",
+  "session_cancelled",
+]);
+
 export function streamEventsToMessages(events: SessionEvent[]): ChatMessage[] {
   const messages = new Map<string, { message: ChatMessage; sequence: number }>();
   const streamed = new Map<string, {
@@ -12,6 +23,10 @@ export function streamEventsToMessages(events: SessionEvent[]): ChatMessage[] {
     key: string;
     sequence: number;
   }>();
+  const discardUncommittedStreams = () => {
+    for (const draft of streamed.values()) messages.delete(draft.key);
+    streamed.clear();
+  };
   [...events]
     .sort((left, right) => left.sequence - right.sequence)
     .forEach((event) => {
@@ -31,6 +46,10 @@ export function streamEventsToMessages(events: SessionEvent[]): ChatMessage[] {
             },
           });
         }
+        return;
+      }
+      if (STREAM_RESET_EVENTS.has(event.event_type)) {
+        discardUncommittedStreams();
         return;
       }
       if (event.event_type === "model_response_delta") {
@@ -62,11 +81,11 @@ export function streamEventsToMessages(events: SessionEvent[]): ChatMessage[] {
         return;
       }
       if (event.event_type !== "model_response_received") return;
-      const content = readText(event.payload.assistant_message);
-      if (!content) return;
       const modelCallId = readText(event.payload.model_call_id);
       const partial = modelCallId ? streamed.get(modelCallId) : undefined;
-      if (partial) messages.delete(partial.key);
+      discardUncommittedStreams();
+      const content = readText(event.payload.assistant_message);
+      if (!content) return;
       messages.set(event.event_id, {
         sequence: partial?.sequence ?? event.sequence,
         message: {

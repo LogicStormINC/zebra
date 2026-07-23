@@ -7,6 +7,7 @@ from agent_core.harness.attempt_result import action_fingerprint, build_attempt_
 from agent_core.harness.clarification_step import clarification_tool_result
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_step import HarnessModelStep
+from agent_core.harness.model_request import allowed_response_repairs
 from agent_core.harness.models import (
     HarnessAttemptOutcome,
     HarnessAttemptResult,
@@ -296,8 +297,12 @@ class SequentialToolLoop:
             messages,
             self._model_gateway,
             allow_tools=allow_tools,
+            response_repair_limit=allowed_response_repairs(
+                model_limit,
+                model_calls_used,
+            ),
         )
-        model_calls_used += 1
+        model_calls_used += 1 + completion.call_metadata.response_repair_count
         emitted_events.append(
             model_response_event(
                 completion,

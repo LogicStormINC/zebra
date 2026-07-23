@@ -14,6 +14,7 @@ from agent_core.domain.modeling import (
     ModelToolDefinition,
 )
 from agent_core.domain.tools import ToolCall
+from agent_core.ports.model_gateway import ModelResponseRejectedError
 from agent_integrations import ModelProviderError, OpenAICompatibleModelGateway
 
 
@@ -352,22 +353,24 @@ def test_deepseek_retries_retryable_error_only_before_public_delta() -> None:
 
 
 @pytest.mark.parametrize(
-    ("finish_reason", "normalized_error"),
+    ("finish_reason", "normalized_error", "retryable"),
     [
-        ("length", "output_truncated"),
-        ("content_filter", "content_filtered"),
+        ("length", "output_truncated", True),
+        ("content_filter", "content_filtered", False),
     ],
 )
 def test_deepseek_rejects_incomplete_finish_reasons(
     finish_reason: str,
     normalized_error: str,
+    retryable: bool,
 ) -> None:
-    with pytest.raises(ModelProviderError) as caught:
+    with pytest.raises(ModelResponseRejectedError) as caught:
         _gateway(lambda request: _completion("partial", finish_reason=finish_reason)).complete(
             [_message("finish")]
         )
 
-    assert caught.value.normalized_error == normalized_error
+    assert caught.value.reason == normalized_error
+    assert caught.value.retryable is retryable
 
 
 def test_deepseek_retries_insufficient_resources_before_public_output() -> None:

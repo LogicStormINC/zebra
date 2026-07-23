@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Mapping
 from datetime import UTC, datetime
@@ -15,9 +16,10 @@ from agent_core.domain.modeling import (
     ModelUsage,
 )
 from agent_core.domain.tools import ToolCall
+from agent_core.ports.model_gateway import ModelResponseRejectedError
 
 from agent_integrations.deepseek_profiles import ResolvedDeepSeekInvocation
-from agent_integrations.model_errors import finish_reason_error
+from agent_integrations.model_errors import ModelProviderError, finish_reason_error
 from agent_integrations.request_metadata import ModelRequestMetadata
 
 
@@ -112,6 +114,54 @@ def parse_completion(
     request_metadata: ModelRequestMetadata | None = None,
     internal_names: Mapping[str, str] | None = None,
 ) -> ModelCompletion:
+    try:
+        return _parse_completion(
+            payload,
+            provider_name=provider_name,
+            default_model_name=default_model_name,
+            latency_ms=latency_ms,
+            retry_count=retry_count,
+            resolved=resolved,
+            request_metadata=request_metadata,
+            internal_names=internal_names,
+        )
+    except ModelResponseRejectedError:
+        raise
+    except ModelProviderError as exc:
+        if exc.normalized_error == "insufficient_system_resource":
+            raise
+        raise ModelResponseRejectedError(
+            exc.normalized_error,
+            phase="finish_reason",
+            retryable=exc.normalized_error == "output_truncated",
+        ) from exc
+    except ValueError as exc:
+        encoded = json.dumps(
+            payload,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+        raise ModelResponseRejectedError(
+            "invalid_response_shape",
+            phase="response_payload",
+            retryable=True,
+            payload_size=len(encoded),
+            payload_sha256=hashlib.sha256(encoded).hexdigest(),
+        ) from exc
+
+
+def _parse_completion(
+    payload: dict[str, Any],
+    *,
+    provider_name: str,
+    default_model_name: str,
+    latency_ms: int,
+    retry_count: int = 0,
+    resolved: ResolvedDeepSeekInvocation | None = None,
+    request_metadata: ModelRequestMetadata | None = None,
+    internal_names: Mapping[str, str] | None = None,
+) -> ModelCompletion:
     choices = payload.get("choices")
     if not isinstance(choices, list) or not choices:
         raise ValueError("model gateway response must include at least one choice")
@@ -128,7 +178,7 @@ def parse_completion(
             raise finish_error
     tool_calls = _parse_tool_calls(
         message.get("tool_calls"),
-        internal_tool_names=internal_names or {},
+        internal_tool_names=internal_names,
     )
     requires_reasoning = bool(
         tool_calls
@@ -232,7 +282,7 @@ def _assistant_content(value: object, *, has_tool_calls: bool) -> str:
 def _parse_tool_calls(
     value: object,
     *,
-    internal_tool_names: Mapping[str, str],
+    internal_tool_names: Mapping[str, str] | None,
 ) -> list[ToolCall]:
     if value is None:
         return []
@@ -251,16 +301,26 @@ def _parse_tool_calls(
         provider_call_id = item.get("id")
         if not isinstance(provider_call_id, str) or not provider_call_id.strip():
             raise ValueError("tool_call id must not be blank")
-        if internal_tool_names:
+        provider_tool_name = name
+        if internal_tool_names is not None:
             try:
                 name = internal_tool_names[name]
             except KeyError as exc:
-                raise ValueError(f"model returned an unadvertised tool call: {name}") from exc
+                raise ModelResponseRejectedError(
+                    "unadvertised_tool_call",
+                    phase="tool_name",
+                    retryable=True,
+                    provider_call_id=provider_call_id,
+                ) from exc
         parsed.append(
             ToolCall(
                 tool_call_id=new_tool_call_id(),
                 name=name,
-                arguments=_parse_tool_arguments(function.get("arguments")),
+                arguments=_parse_tool_arguments(
+                    function.get("arguments"),
+                    provider_tool_name=provider_tool_name,
+                    provider_call_id=provider_call_id,
+                ),
                 created_at=datetime.now(UTC),
                 provider_call_id=provider_call_id,
             )
@@ -268,17 +328,49 @@ def _parse_tool_calls(
     return parsed
 
 
-def _parse_tool_arguments(value: object) -> dict[str, Any]:
+def _parse_tool_arguments(
+    value: object,
+    *,
+    provider_tool_name: str,
+    provider_call_id: str,
+) -> dict[str, Any]:
     if value is None:
         return {}
     if isinstance(value, dict):
         return dict(value)
     if isinstance(value, str):
-        parsed = json.loads(value)
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError as exc:
+            encoded = value.encode("utf-8")
+            raise ModelResponseRejectedError(
+                "invalid_tool_arguments_json",
+                phase="tool_arguments",
+                retryable=True,
+                provider_tool_name=provider_tool_name,
+                provider_call_id=provider_call_id,
+                error_position=exc.pos,
+                payload_size=len(encoded),
+                payload_sha256=hashlib.sha256(encoded).hexdigest(),
+            ) from exc
         if not isinstance(parsed, dict):
-            raise ValueError("tool_call arguments JSON must decode to an object")
+            raise ModelResponseRejectedError(
+                "invalid_tool_arguments_type",
+                phase="tool_arguments",
+                retryable=True,
+                provider_tool_name=provider_tool_name,
+                provider_call_id=provider_call_id,
+                payload_size=len(encoded),
+                payload_sha256=hashlib.sha256(encoded).hexdigest(),
+            )
         return parsed
-    raise ValueError("tool_call arguments must be an object or JSON string")
+    raise ModelResponseRejectedError(
+        "invalid_tool_arguments_type",
+        phase="tool_arguments",
+        retryable=True,
+        provider_tool_name=provider_tool_name,
+        provider_call_id=provider_call_id,
+    )
 
 
 def parse_usage(value: object) -> ModelUsage:

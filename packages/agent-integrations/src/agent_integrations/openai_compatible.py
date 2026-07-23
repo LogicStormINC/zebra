@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from collections.abc import Callable, Mapping
 from pathlib import Path
 from time import perf_counter
@@ -16,6 +18,7 @@ from agent_core.domain.modeling import (
     ModelThinkingMode,
     ModelToolDefinition,
 )
+from agent_core.ports.model_gateway import ModelResponseRejectedError
 from zebra_agent_config import ZebraAgentSettings
 
 from agent_integrations.deepseek_profiles import (
@@ -110,7 +113,7 @@ class OpenAICompatibleModelGateway:
                     internal_names=internal_tool_names(tools, tool_names),
                 )
             except Exception as exc:
-                if self._deepseek_router is None:
+                if isinstance(exc, ModelResponseRejectedError):
                     raise
                 if isinstance(exc, ValueError) and not isinstance(exc, ModelProviderError):
                     raise
@@ -180,7 +183,7 @@ class OpenAICompatibleModelGateway:
                         internal_names=internal_tool_names(tools, tool_names),
                     )
                 except Exception as exc:
-                    if self._deepseek_router is None:
+                    if isinstance(exc, ModelResponseRejectedError):
                         raise
                     if isinstance(exc, ValueError) and not isinstance(exc, ModelProviderError):
                         raise
@@ -304,9 +307,27 @@ class OpenAICompatibleModelGateway:
                 json=body,
             )
             response.raise_for_status()
-            payload = response.json()
+            try:
+                payload = response.json()
+            except json.JSONDecodeError as exc:
+                raw = response.content
+                raise ModelResponseRejectedError(
+                    "invalid_response_json",
+                    phase="response_body",
+                    retryable=True,
+                    error_position=exc.pos,
+                    payload_size=len(raw),
+                    payload_sha256=hashlib.sha256(raw).hexdigest(),
+                ) from exc
             if not isinstance(payload, dict):
-                raise ValueError("model gateway response must be a JSON object")
+                raw = response.content
+                raise ModelResponseRejectedError(
+                    "invalid_response_shape",
+                    phase="response_body",
+                    retryable=True,
+                    payload_size=len(raw),
+                    payload_sha256=hashlib.sha256(raw).hexdigest(),
+                )
             return payload
         finally:
             if should_close:

@@ -7,6 +7,7 @@ from agent_core.domain.identifiers import MessageId, new_message_id, new_tool_ca
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tools import ToolCall
+from agent_core.ports.model_gateway import ModelResponseRejectedError
 from agent_integrations import OpenAICompatibleModelGateway, build_model_gateway
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
@@ -188,6 +189,59 @@ def test_openai_compatible_gateway_rebuilds_fragmented_stream_tool_calls() -> No
     assert completion.tool_calls[0].arguments == {"path": "README.md"}
 
 
+def test_openai_compatible_gateway_rejects_malformed_stream_tool_arguments() -> None:
+    malformed = '{"path":"report.md" "content":"sensitive value"}'
+    event = {
+        "choices": [
+            {
+                "delta": {
+                    "tool_calls": [
+                        {
+                            "index": 0,
+                            "id": "call_1",
+                            "function": {
+                                "name": "files__write",
+                                "arguments": malformed,
+                            },
+                        }
+                    ]
+                },
+                "finish_reason": "tool_calls",
+            }
+        ]
+    }
+    response = f"data: {json.dumps(event)}\n\ndata: [DONE]\n\n"
+    gateway = OpenAICompatibleModelGateway(
+        provider_name="deepseek",
+        base_url="https://api.deepseek.com",
+        api_key="secret",
+        model_name="deepseek-v4-flash",
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(200, text=response))
+        ),
+    )
+    tool = ModelToolDefinition(
+        name="files.write",
+        description="Write one file.",
+        parameters={"type": "object", "properties": {}},
+    )
+
+    with pytest.raises(ModelResponseRejectedError) as caught:
+        gateway.complete_stream(
+            [_user_message("Write")],
+            tools=(tool,),
+            on_text_delta=lambda delta: None,
+        )
+
+    assert caught.value.reason == "invalid_tool_arguments_json"
+    assert caught.value.phase == "tool_arguments"
+    assert caught.value.provider_tool_name == "files__write"
+    assert caught.value.provider_call_id == "call_1"
+    assert caught.value.payload_size == len(malformed.encode())
+    assert caught.value.payload_sha256
+    assert "sensitive value" not in str(caught.value)
+
+
 def test_openai_compatible_gateway_serializes_tools_and_restores_internal_name() -> None:
     captured: dict[str, object] = {}
     client = httpx.Client(
@@ -242,8 +296,45 @@ def test_openai_compatible_gateway_rejects_unadvertised_tool_call() -> None:
         parameters={"type": "object", "properties": {}},
     )
 
-    with pytest.raises(ValueError, match="unadvertised tool call"):
+    with pytest.raises(ModelResponseRejectedError) as caught:
         gateway.complete([_user_message("Run something")], tools=(tool,))
+
+    assert caught.value.reason == "unadvertised_tool_call"
+    assert caught.value.phase == "tool_name"
+    assert caught.value.provider_call_id == "call_1"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"choices": []},
+        {"choices": [{"message": {"role": "assistant", "content": ""}}]},
+        {
+            "choices": [
+                {"message": {"role": "assistant", "content": None, "tool_calls": "bad"}}
+            ]
+        },
+    ],
+)
+def test_openai_compatible_gateway_rejects_invalid_provider_shapes(
+    payload: dict[str, object],
+) -> None:
+    gateway = OpenAICompatibleModelGateway(
+        provider_name="deepseek",
+        base_url="https://api.deepseek.com",
+        api_key="secret",
+        model_name="deepseek-v4-flash",
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: _json_response(payload))
+        ),
+    )
+
+    with pytest.raises(ModelResponseRejectedError) as caught:
+        gateway.complete([_user_message("Respond")])
+
+    assert caught.value.reason == "invalid_response_shape"
+    assert caught.value.phase == "response_payload"
+    assert caught.value.payload_sha256
 
 
 def test_openai_compatible_gateway_serializes_tool_result_conversation() -> None:

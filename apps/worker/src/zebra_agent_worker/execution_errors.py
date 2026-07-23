@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from agent_core.domain.context_capsule import ContextCapsuleValidationError
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
+from agent_core.ports.model_gateway import ModelResponseRejectedError
+from agent_integrations.model_errors import ModelProviderError
 
 
 def exception_attempt_result(
@@ -27,6 +29,18 @@ def exception_attempt_result(
                 "with a fresh context"
             ),
             metadata={**metadata, "stop_reason": "context_recovery_required"},
+        )
+    if isinstance(exc, ModelResponseRejectedError):
+        return HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.SUSPENDED,
+            summary="model response repair exhausted; execution can be resumed safely",
+            metadata={**metadata, "stop_reason": "model_response_repair_exhausted"},
+        )
+    if isinstance(exc, ModelProviderError) and exc.retryable:
+        return HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.SUSPENDED,
+            summary="model provider retry budget exhausted; execution can be resumed safely",
+            metadata={**metadata, "stop_reason": "model_provider_retry_exhausted"},
         )
     return HarnessAttemptResult(
         outcome=HarnessAttemptOutcome.FAILED,
@@ -51,10 +65,26 @@ def error_metadata(
         or getattr(continuation, "tool_calls_executed", None)
     )
     error_type = type(exc).__name__
-    return {
+    response_repair_count = (
+        exc.response_repair_count
+        if isinstance(exc, ModelResponseRejectedError)
+        else 0
+    )
+    metadata: dict[str, object] = {
         "stop_reason": "model_execution_failed",
         "error_type": error_type,
-        "model_calls_used": (model_calls or 0) + 1,
+        "model_calls_used": (model_calls or 0) + 1 + response_repair_count,
         "tool_calls_executed": tool_calls or 0,
         "error_message": raw_error or f"{error_type} (no detail was provided)",
     }
+    if isinstance(exc, ModelResponseRejectedError):
+        metadata.update(exc.metadata())
+    elif isinstance(exc, ModelProviderError):
+        metadata.update(
+            {
+                "normalized_error": exc.normalized_error,
+                "retryable": exc.retryable,
+                "retry_count": exc.retry_count,
+            }
+        )
+    return metadata

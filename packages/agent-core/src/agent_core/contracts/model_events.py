@@ -98,6 +98,7 @@ class ModelResponseReceivedPayload(BaseModel):
     finish_reason: str | None = None
     system_fingerprint: str | None = None
     retry_count: int | None = Field(default=None, ge=0)
+    response_repair_count: int | None = Field(default=None, ge=0)
     normalized_error: str | None = None
     cache_hit: bool | None = None
     cost_usd: float | None = Field(default=None, ge=0)

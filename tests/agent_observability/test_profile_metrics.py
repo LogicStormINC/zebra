@@ -23,6 +23,7 @@ def test_summarize_model_profiles_supports_offline_flash_pro_comparison() -> Non
                 cache_hit_tokens=80,
                 cache_miss_tokens=20,
                 cost_usd=0.01,
+                response_repair_count=1,
             ),
             _call(
                 "deepseek-v4-pro-reviewer-v1",
@@ -41,6 +42,7 @@ def test_summarize_model_profiles_supports_offline_flash_pro_comparison() -> Non
 
     assert flash.profile_id == "deepseek-v4-flash-executor-v1"
     assert flash.successful_call_count == 1
+    assert flash.repaired_call_count == 1
     assert flash.average_latency_ms == 100
     assert flash.prompt_cache_hit_tokens == 80
     assert pro.profile_id == "deepseek-v4-pro-reviewer-v1"
@@ -59,6 +61,7 @@ def _call(
     cache_hit_tokens: int,
     cache_miss_tokens: int,
     cost_usd: float,
+    response_repair_count: int = 0,
 ) -> ProviderModelCallTrace:
     return ProviderModelCallTrace(
         sequence=1,
@@ -71,4 +74,8 @@ def _call(
         prompt_cache_hit_tokens=cache_hit_tokens,
         prompt_cache_miss_tokens=cache_miss_tokens,
         cost_usd=cost_usd,
+        response_repair_count=response_repair_count,
+        normalized_error=(
+            "invalid_tool_arguments_json" if response_repair_count else None
+        ),
     )

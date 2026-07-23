@@ -120,6 +120,9 @@ def _model_call_from_json(value: object) -> ProviderModelCallTrace:
         time_to_first_public_text_ms=_read_optional_int(value, "time_to_first_public_text_ms"),
         latency_ms=_read_optional_int(value, "latency_ms"),
         retry_count=_read_optional_int(value, "retry_count") or 0,
+        response_repair_count=(
+            _read_optional_int(value, "response_repair_count") or 0
+        ),
         normalized_error=_read_optional_str(value, "normalized_error"),
         system_fingerprint=_read_optional_str(value, "system_fingerprint"),
     )

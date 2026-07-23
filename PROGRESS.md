@@ -55,6 +55,14 @@
   failure (matching concurrent-batch semantics), and a provider protocol
   firewall (`protocol_invariants.py`) validates tool-call/tool-result pairing
   before every model request to prevent `invalid_request` leakage.
+- Model-response acceptance is now a separate provider-neutral boundary:
+  malformed body/SSE/tool-call output becomes `ModelResponseRejectedError`,
+  tool-capable stream deltas are committed only after validation, one bounded
+  repair is allowed within the model-call budget, and exhaustion produces a
+  recoverable `SESSION_SUSPENDED` rather than `session_failed`. Provider
+  transport retries and semantic repairs have separate trace counters. The
+  implementation and regression cases are present in the working tree; runtime
+  validation has not been executed in this session.
 
 ## Current Capability
 
@@ -99,6 +107,8 @@
   deterministic provider-continuation fallback.
 - DeepSeek stable Flash/Pro profiles, streaming/cache/TTFT/error telemetry, and
   default-off Beta capabilities are implemented without exposing private reasoning.
+- Malformed provider JSON and Tool Call arguments are rejected before execution;
+  one bounded model repair is attempted, then execution suspends recoverably.
 - Explicit in-process DeepSeek thinking tool loops preserve and replay private
   `reasoning_content`; default executor profiles remain non-thinking, and missing
   continuation state fails before HTTP.

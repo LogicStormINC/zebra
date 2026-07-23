@@ -127,6 +127,7 @@ class ModelCallMetadata:
     time_to_first_public_text_ms: int | None = None
     system_fingerprint: str | None = None
     retry_count: int = 0
+    response_repair_count: int = 0
     normalized_error: str | None = None
     usage: ModelUsage = field(default_factory=ModelUsage)
 
@@ -164,8 +165,8 @@ class ModelCallMetadata:
                 raise ValueError(f"{field_name} must not be negative")
         if self.tool_schema_bytes is not None and self.tool_schema_bytes < 0:
             raise ValueError("tool_schema_bytes must not be negative")
-        if self.retry_count < 0:
-            raise ValueError("retry_count must not be negative")
+        if self.retry_count < 0 or self.response_repair_count < 0:
+            raise ValueError("model response retry counts must not be negative")
         if self.cost_usd is not None and self.cost_usd < 0:
             raise ValueError("cost_usd must not be negative")
         for field_name in ("estimated_input_tokens", "input_token_limit"):

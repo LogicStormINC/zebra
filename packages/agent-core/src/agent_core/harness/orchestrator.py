@@ -12,6 +12,7 @@ from agent_core.harness.hooks import (
     VerifierHook,
 )
 from agent_core.harness.model_step import HarnessModelStep
+from agent_core.harness.model_request import allowed_response_repairs
 from agent_core.harness.models import (
     HarnessAttemptResult,
     HarnessContext,
@@ -95,6 +96,7 @@ class SingleAttemptOrchestrator:
             messages,
             self._model_gateway,
             allow_tools=True,
+            response_repair_limit=allowed_response_repairs(task.max_model_calls, 0),
         )
         emitted_events.append(
             model_response_event(completion, attempt_number=context.attempt.number)
@@ -116,7 +118,7 @@ class SingleAttemptOrchestrator:
             messages=messages,
             completion=completion,
             emitted_events=emitted_events,
-            model_calls_used=1,
+            model_calls_used=1 + completion.call_metadata.response_repair_count,
             tool_calls_executed=0,
             fingerprints=set(),
             metadata={

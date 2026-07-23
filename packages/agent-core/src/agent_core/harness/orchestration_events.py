@@ -45,6 +45,7 @@ def model_response_event(
         "finish_reason": completion.call_metadata.finish_reason,
         "system_fingerprint": completion.call_metadata.system_fingerprint,
         "retry_count": completion.call_metadata.retry_count,
+        "response_repair_count": completion.call_metadata.response_repair_count,
         "normalized_error": completion.call_metadata.normalized_error,
     }
     if completion.call_metadata.model_call_id is not None:

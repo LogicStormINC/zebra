@@ -11,6 +11,7 @@ class ModelProfileSummary:
     profile_id: str
     call_count: int
     successful_call_count: int
+    repaired_call_count: int
     input_tokens: int
     output_tokens: int
     reasoning_tokens: int
@@ -41,9 +42,11 @@ def _summarize(
         profile_id=profile_id,
         call_count=len(calls),
         successful_call_count=sum(
-            call.normalized_error is None and call.finish_reason in {None, "stop", "tool_calls"}
+            (call.normalized_error is None or call.response_repair_count > 0)
+            and call.finish_reason in {None, "stop", "tool_calls"}
             for call in calls
         ),
+        repaired_call_count=sum(call.response_repair_count > 0 for call in calls),
         input_tokens=sum(call.input_tokens or 0 for call in calls),
         output_tokens=sum(call.output_tokens or 0 for call in calls),
         reasoning_tokens=sum(call.reasoning_tokens or 0 for call in calls),

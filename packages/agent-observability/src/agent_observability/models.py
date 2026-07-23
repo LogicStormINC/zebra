@@ -61,11 +61,12 @@ class ProviderModelCallTrace:
     time_to_first_public_text_ms: int | None = None
     latency_ms: int | None = None
     retry_count: int = 0
+    response_repair_count: int = 0
     normalized_error: str | None = None
     system_fingerprint: str | None = None
 
     def __post_init__(self) -> None:
-        if self.sequence < 0 or self.retry_count < 0:
+        if self.sequence < 0 or self.retry_count < 0 or self.response_repair_count < 0:
             raise ValueError("model trace counts must not be negative")
         for field_name in (
             "time_to_first_event_ms",
@@ -196,6 +197,7 @@ def _model_call_trace(event: SessionEvent) -> ProviderModelCallTrace:
         time_to_first_public_text_ms=_optional_int_payload(event, "time_to_first_public_text_ms"),
         latency_ms=_optional_int_payload(event, "latency_ms"),
         retry_count=_int_payload(event, "retry_count"),
+        response_repair_count=_int_payload(event, "response_repair_count"),
         normalized_error=_str_payload(event, "normalized_error"),
         system_fingerprint=_str_payload(event, "system_fingerprint"),
     )

@@ -11,7 +11,7 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tools import ToolCall
-from agent_core.ports.model_gateway import ModelGatewayPort
+from agent_core.ports.model_gateway import ModelGatewayPort, ModelResponseRejectedError
 from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
@@ -183,6 +183,35 @@ def test_clarification_provider_failure_becomes_durable_terminal_failure(
     assert SQLiteLeaseStore(database_path).get(session_id) is None
 
 
+def test_rejected_model_response_exhaustion_becomes_recoverable_suspension(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "response-rejected.sqlite"
+    gateway = RejectingModelGateway()
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: gateway,
+    )
+    session_id = _seed_session(database_path, tmp_path)
+
+    suspended = _execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-a",
+        executed_at=NOW,
+    )
+
+    assert gateway.calls == 2
+    assert suspended.session.status is SessionStatus.SUSPENDED
+    assert suspended.attempt_result.metadata["stop_reason"] == (
+        "model_response_repair_exhausted"
+    )
+    assert suspended.attempt_result.metadata["response_repair_count"] == 1
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
+    assert any(event.event_type is EventType.SESSION_SUSPENDED for event in events)
+    assert not any(event.event_type is EventType.SESSION_FAILED for event in events)
+
+
 class FailingModelGateway(ModelGatewayPort):
     def complete(
         self,
@@ -192,6 +221,26 @@ class FailingModelGateway(ModelGatewayPort):
     ) -> ModelCompletion:
         del messages, tools
         raise ValueError("provider body must not be persisted")
+
+
+class RejectingModelGateway(ModelGatewayPort):
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def complete(
+        self,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...] = (),
+    ) -> ModelCompletion:
+        del messages, tools
+        self.calls += 1
+        raise ModelResponseRejectedError(
+            "invalid_tool_arguments_json",
+            phase="tool_arguments",
+            retryable=True,
+            provider_tool_name="files__write",
+        )
 
 
 def _gateway(content: str, tool_call: ToolCall | None = None) -> ScriptedModelGateway:
