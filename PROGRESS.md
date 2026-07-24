@@ -31,6 +31,9 @@
   first Zebra-foundation task after the maintainer reprioritized durable storage
   and memory ahead of further Trench work. It injects existing control-plane Store
   Ports while preserving the local SQLite profile and adds no cloud dependency.
+- Active dependency-container task: `CLOUD-COMPOSE-INFRA-01` on
+  `codex/cloud-compose-infra-01` creates the separate Docker Compose dependency
+  stack. Zebra application containers remain locked until real cloud adapters exist.
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
@@ -250,7 +253,7 @@ including a real thinking tool round trip.
 - `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, and `CLOUD-STO-SEAM-01` are in Review.
-  No implementation card is active; all PostgreSQL,
+  `CLOUD-COMPOSE-INFRA-01` is the only active implementation card; all PostgreSQL,
   Redis, object-storage, production AG-UI, Trench, analysis, writeback, Agent
   Memory adapter, and GA cards remain `Locked` pending their explicit gates.
 
@@ -266,7 +269,8 @@ including a real thinking tool round trip.
 5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
    Credential/Egress Broker, external-namespace isolation, and Kubernetes in
    dependency order.
-6. After authoritative Store composition, activate PostgreSQL, Lease/Outbox,
+6. Land the dependency-only Compose baseline without adding Zebra main containers.
+7. After authoritative Store composition, activate PostgreSQL, Lease/Outbox,
    Object Storage, Redis live, recovery and the separate Redis Agent Memory
    Gateway one card at a time; no production claim precedes migration/restore evidence.
 

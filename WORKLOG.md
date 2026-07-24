@@ -1,5 +1,21 @@
 # Progress Log
 
+## 2026-07-24 CLOUD-COMPOSE-INFRA-01 Docker Compose Dependency Baseline
+
+- maintainer required every database dependency, including Redis Agent Memory,
+  to be represented through Docker Compose while separating dependency and Zebra
+  main-container lifecycles
+- live GitHub audit found PR `#194` still open with runner-allocation failures;
+  that investigation was paused when the maintainer reprioritized Compose work
+- official Redis sources show no current supported production Compose deployment:
+  self-managed Agent Memory is Helm/Kubernetes private preview, while open-source
+  V0 Compose is retained only for local development and compatibility validation
+- created isolated worktree `zebra-agent-cloud-compose-infra-01` on
+  `codex/cloud-compose-infra-01`, stacked on `CLOUD-STO-SEAM-01`; merge order is
+  `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-COMPOSE-INFRA-01`
+- registered a dependency-only active card and a separate locked Zebra
+  application-container card before adding deployment files
+
 ## 2026-07-23 CLOUD-STO-SEAM-01 Control-Plane Storage Composition Seam
 
 - maintainer reprioritized Zebra durable storage and memory foundations ahead of

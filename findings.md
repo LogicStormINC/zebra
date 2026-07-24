@@ -1,5 +1,19 @@
 # Findings
 
+## CLOUD-COMPOSE-INFRA-01 - 2026-07-24
+
+- The repository has no existing Dockerfile or Compose asset to reuse; only
+  runtime configuration and architecture references exist.
+- Current supported self-managed Redis Agent Memory is a private-preview
+  Helm/Kubernetes product. The official open-source V0 retains Docker Compose
+  and versioned images but is no longer an actively maintained production path.
+- Redis Agent Memory is an application service over Redis, not a replacement for
+  Redis itself. Its backing Redis needs Search and JSON and must be isolated from
+  Zebra's erasable live fan-out Redis.
+- Building Zebra API/Worker images before cloud adapters exist would create a
+  misleading SQLite-backed main stack. Application containers therefore remain
+  a separate locked task.
+
 ## CLOUD-STO-SEAM-01 - 2026-07-23
 
 - API and Worker construct the same SQLite control-plane adapters repeatedly;

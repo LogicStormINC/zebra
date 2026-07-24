@@ -31,6 +31,11 @@
   maintainer reprioritized Zebra durable storage and memory foundations ahead of
   further Trench work. This local task is stacked on `EMB-PLAN-01`, adds no cloud
   database dependency, and must not merge before the architecture baseline.
+- `CLOUD-COMPOSE-INFRA-01` is `In Progress` on
+  `codex/cloud-compose-infra-01`, explicitly activated by the maintainer on
+  2026-07-24. It defines only the Docker Compose dependency stack and is stacked
+  behind `CLOUD-STO-SEAM-01`; Zebra application containers remain a separate
+  locked task.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -216,6 +221,73 @@ own governed memory before any PostgreSQL backend is selectable.
   without splitting one durable stream across backends
 - `require_legacy_database_coherence` is removed only after those flows share one
   authoritative backend; no PostgreSQL or Redis dependency is added in this card
+
+### CLOUD-COMPOSE-INFRA-01 - Docker Compose Dependency Baseline
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `SRE / RUNTIME`
+- Depends on: explicit maintainer activation on 2026-07-24. Development is
+  stacked on `CLOUD-STO-SEAM-01`; merge order remains
+  `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-COMPOSE-INFRA-01`.
+- Branch: `codex/cloud-compose-infra-01`
+- Owned paths: `docker/compose.dependencies.yml`, `docker/.env.example`,
+  `docker/README.md`, `docs/AGENT_TASKS.md`,
+  `docs/Zebra Embedded 生产级目标架构.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `README.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Create one version-pinned Docker Compose dependency stack for PostgreSQL,
+ephemeral live Redis, MinIO and an isolated Redis Agent Memory backing store,
+without mixing Zebra API/Worker containers into the same lifecycle.
+
+#### Acceptance
+
+- third-party dependency containers live only in `compose.dependencies.yml`;
+  Zebra API/Worker/migration containers do not appear in this task
+- PostgreSQL, MinIO and Redis Agent Memory backing Redis have separate named
+  volumes; `redis-live` has a separate failure domain and remains non-authoritative
+- images use explicit versions, services have health checks and host ports bind
+  to loopback by default
+- open-source Agent Memory Server V0 API/worker are an explicit dev/test-only
+  profile backed by a dedicated Redis Stack service; no MCP sidecar is added
+- `docker compose config` passes and the base PostgreSQL/Redis/MinIO services
+  start healthy without committing credentials or generated data
+- docs record that current supported self-managed Agent Memory uses Helm/Kubernetes,
+  so the V0 Compose profile is not production evidence
+
+#### Explicit Non-Goals
+
+- PostgreSQL, Redis, object-storage or AgentMemoryGateway adapters
+- switching API/Worker away from the local SQLite profile
+- Zebra application images, migration jobs, Kubernetes, Helm, HA, PITR or GA claims
+- treating Redis or Redis Agent Memory as the durable Task/Event fact source
+
+### CLOUD-COMPOSE-APP-01 - Zebra Application Container Overlay
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `SRE / APP / CORE`
+- Depends on: merged `CLOUD-COMPOSE-INFRA-01`, `CLOUD-PG-01`,
+  `CLOUD-LEASE-01`, `CLOUD-ART-01` and `CLOUD-LIVE-01`
+- Branch: `TBD`
+- Candidate owned paths: `docker/compose.application.yml`, one multi-target Zebra
+  Dockerfile, container smoke tests, required config composition and governance records
+
+#### Goal
+
+Build one Zebra image and run migration, API and Worker as distinct commands over
+the real dependency adapters. Agent Memory remains optional and must not gate Run.
+
+#### Acceptance
+
+- dependency and application Compose projects remain independently operable and
+  join through one explicitly named network
+- API/Worker use PostgreSQL, object storage and live Redis without creating an
+  authoritative SQLite database
+- stopping Agent Memory does not prevent task creation, execution or recovery
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.
