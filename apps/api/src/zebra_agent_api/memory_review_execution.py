@@ -12,7 +12,7 @@ from agent_core.application import (
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.identifiers import MemoryId, SessionId
 from agent_core.domain.memories import MemoryQuery, MemoryRecord, MemoryStatus, MemoryVisibility
-from agent_storage import ControlPlaneStores, SQLiteMemoryStore
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.memory_review_serialization import (
     _bulk_outcome,
@@ -45,7 +45,7 @@ def _review_memory(
     )
     if isinstance(parsed, ApiResponse):
         return parsed
-    memory_store = SQLiteMemoryStore(database_path)
+    memory_store = stores.memories
     record = memory_store.get(MemoryId(UUID(memory_id)))
     if record is None or not _scope_matches(record, expected_visibility, expected_scope_id):
         return _not_found_response(
@@ -303,7 +303,7 @@ def _queued_memory_records(
     expected_visibility: MemoryVisibility,
     expected_scope_id: str,
 ) -> list[MemoryRecord]:
-    memory_store = SQLiteMemoryStore(database_path)
+    memory_store = stores.memories
     if expected_visibility is MemoryVisibility.REPO:
         session_key = SessionId(UUID(expected_scope_id))
         session = stores.sessions.get_session(session_key)

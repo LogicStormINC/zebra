@@ -336,6 +336,24 @@ PostgreSQL 保存：
 追加 Event、更新 Projection、写 Effect/Outbox 必须在明确事务边界内完成。
 所有异步消费者至少一次执行，因此外部副作用必须幂等。
 
+### 7.1.1 当前 authoritative composition 边界
+
+在选择 PostgreSQL Adapter 之前，Zebra API、SSE 与 Worker 必须接收同一个平坦的
+`ControlPlaneStores`。这个组合根覆盖所有会推进 Session、约束副作用或治理记忆的
+durable collaborator：Event/Projection、Workspace/Task/Lease、context lifecycle、
+handoff/dispatch、idempotency、effect ledger、governed memory、Artifact payload 与
+索引、provider continuation、session history 和 delivery audit。
+
+当前 local profile 仍由唯一 SQLite builder 构造这组 Ports；注入完成后，业务流不得
+再把 `database_path` 当作权威事实定位器或临时重建 Store。Context lifecycle 与
+handoff 继续作为聚合事务 Port，未来 PostgreSQL Adapter 必须在各自边界内保证 Event、
+Projection、dispatch/effect 等协调写入的原子性。Memory review 当前仅保证所有事实写入
+同一 backend，跨 Store call 的原子性由后续 PostgreSQL/Outbox 设计补齐。
+
+这条边界不选择 PostgreSQL、Redis、Object Storage 或远程语义记忆 provider，也不改变
+Zebra `MemoryStorePort` 的治理权威；Mem0 等候选服务只能通过单独门禁的、可降级的派生
+Gateway 接入。
+
 ### 7.2 Redis 临时职责
 
 Redis 只承担：

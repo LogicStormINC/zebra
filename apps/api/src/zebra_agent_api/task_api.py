@@ -242,11 +242,15 @@ def append_task_message(
     idempotency_key: str | None,
 ) -> ApiResponse:
     action = f"task-message:{task_id}"
-    replayed = replay_idempotent_response(
-        database_path=app.database_path,
-        action=action,
-        idempotency_key=idempotency_key,
-        payload=payload,
+    replayed = (
+        replay_idempotent_response(
+            store=app.stores.idempotency,
+            action=action,
+            idempotency_key=idempotency_key,
+            payload=payload,
+        )
+        if idempotency_key is not None
+        else None
     )
     if replayed is not None:
         return replayed
@@ -255,7 +259,7 @@ def append_task_message(
         if idempotency_key is None:
             return response
         return save_idempotent_response(
-            database_path=app.database_path,
+            store=app.stores.idempotency,
             action=action,
             idempotency_key=idempotency_key,
             payload=payload,

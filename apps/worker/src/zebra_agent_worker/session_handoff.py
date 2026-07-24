@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 from uuid import UUID
 
@@ -13,13 +12,10 @@ from agent_core.application.workspace_projection import apply_event as apply_wor
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import HandoffId, SessionId
 from agent_core.domain.session_handoff import SessionHandoffEnvelope
+from agent_core.ports import EffectLedgerPort
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
 from agent_storage import (
     ControlPlaneStores,
-    SQLiteEffectLedger,
-    SQLiteHandoffDispatchStore,
-    SQLiteSessionHandoffStore,
-    require_legacy_database_coherence,
     sqlite_control_plane_stores,
 )
 from agent_tools import EffectGuardedToolGateway
@@ -46,11 +42,9 @@ class SessionHandoffRecoveryGate:
         *,
         stores: ControlPlaneStores | None = None,
     ) -> None:
-        if stores is not None:
-            require_legacy_database_coherence(stores, database_path)
         active_stores = stores or sqlite_control_plane_stores(database_path)
-        self._handoffs = SQLiteSessionHandoffStore(database_path)
-        self._dispatch = SQLiteHandoffDispatchStore(database_path)
+        self._handoffs = active_stores.handoffs
+        self._dispatch = active_stores.handoff_dispatch
         self._events = active_stores.events
         self._sessions = active_stores.sessions
         self._workspaces = active_stores.workspaces
@@ -143,14 +137,14 @@ class SessionHandoffRecoveryGate:
 def guard_effectful_tools(
     gateway: Any,
     *,
-    database_path: Path,
+    ledger: EffectLedgerPort,
     session_id: SessionId,
     recovered_handoff: RecoveredHandoff | None,
     authority_scope: str,
 ) -> EffectGuardedToolGateway:
     return EffectGuardedToolGateway(
         gateway,
-        ledger=SQLiteEffectLedger(database_path),
+        ledger=ledger,
         root_session_id=(
             session_id if recovered_handoff is None else recovered_handoff.envelope.root_session_id
         ),

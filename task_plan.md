@@ -1,5 +1,32 @@
 # Task Plan
 
+## CLOUD-STO-AUTH-01 - Complete Authoritative Store Composition
+
+1. `completed` - Audit every API/Worker durable collaborator that can advance a
+   Session, gate an effect, or govern memory, including constructor call sites.
+2. `completed` - Claim the exact Core/Storage/API/Worker/test/governance paths on
+   an isolated branch stacked directly on `CLOUD-STO-SEAM-01`.
+3. `completed` - Extend the flat `ControlPlaneStores` with typed Ports and keep
+   the local SQLite builder as the only API/Worker constructor root.
+4. `completed` - Replace legacy path lookups with injected stores and add A/B
+   regressions that prove the unused database is not even created.
+5. `completed` - Run focused, full and quality validation, record inherited
+   baseline failures, close the card to Review, and commit the local slice.
+
+### Decisions
+
+- Keep one flat composition value. Backend hierarchies, backend enums and a
+  PostgreSQL selection switch would add no value before a second adapter exists.
+- Context lifecycle and handoff remain aggregate transaction boundaries; future
+  adapters implement those Ports atomically instead of exposing their tables to
+  API or Worker composition.
+- `database_path` remains a local-profile configuration input, not a durable
+  authority locator after a `ControlPlaneStores` bundle has been injected.
+- Zebra's governed `MemoryStorePort` remains authoritative. Any Mem0 or other
+  semantic-memory integration is a separate, derived, degraded-safe Gateway.
+- The branch is local and unpushed. Merge order remains
+  `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-STO-AUTH-01`.
+
 ## CLOUD-STO-SEAM-01 - Control-Plane Storage Composition Seam
 
 1. `completed` - Audit API/Worker SQLite construction, existing Store Ports,

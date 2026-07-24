@@ -32,8 +32,6 @@ from agent_security import (
 from agent_storage import (
     ControlPlaneStores,
     LeaseConflictError,
-    SQLiteArtifactPayloadStore,
-    SQLiteSessionHistory,
     list_confirmed_repo_memories,
     store_text_attachments,
 )
@@ -106,11 +104,15 @@ class ZebraAgentApi(
         *,
         idempotency_key: str | None = None,
     ) -> ApiResponse:
-        replayed = replay_idempotent_response(
-            database_path=self.database_path,
-            action="session.create",
-            idempotency_key=idempotency_key,
-            payload=payload,
+        replayed = (
+            replay_idempotent_response(
+                store=self.stores.idempotency,
+                action="session.create",
+                idempotency_key=idempotency_key,
+                payload=payload,
+            )
+            if idempotency_key is not None
+            else None
         )
         if replayed is not None:
             return replayed
@@ -142,9 +144,7 @@ class ZebraAgentApi(
             )
         except ValueError as error:
             return bad_request(str(error))
-        parsed["attachments"] = (
-            *parsed["attachments"], *resource_attachments, *prompt_attachments
-        )
+        parsed["attachments"] = (*parsed["attachments"], *resource_attachments, *prompt_attachments)
 
         response = (
             self._create_and_execute_session(parsed)
@@ -154,7 +154,7 @@ class ZebraAgentApi(
         if idempotency_key is None or response.status_code != 201:
             return response
         return save_idempotent_response(
-            database_path=self.database_path,
+            store=self.stores.idempotency,
             action="session.create",
             idempotency_key=idempotency_key,
             payload=payload,
@@ -278,7 +278,7 @@ class ZebraAgentApi(
                 ),
             )
         attachment_refs = store_text_attachments(
-            SQLiteArtifactPayloadStore(self.database_path),
+            self.stores.artifact_payloads,
             session_id=session_key,
             message_event=event,
             attachments=parsed["attachments"],
@@ -340,7 +340,7 @@ class ZebraAgentApi(
             )
         )
         events, attachment_refs = persist_initial_attachments(
-            self.database_path,
+            self.stores.artifact_payloads,
             tuple(bootstrap.events),
             parsed["attachments"],
         )
@@ -381,7 +381,7 @@ class ZebraAgentApi(
     def _create_and_execute_session(self, parsed: CreateSessionPayload) -> ApiResponse:
         workspace_root = Path(str(parsed["workspace"])).expanduser().resolve()
         confirmed_memories = list_confirmed_repo_memories(
-            self.database_path,
+            self.stores.memories,
             repo_id=str(workspace_root),
         )
         try:
@@ -416,9 +416,7 @@ class ZebraAgentApi(
                 trusted_local=trusted_local,
                 max_model_calls=parsed["max_model_calls"],
                 max_tool_calls=parsed["max_tool_calls"],
-                session_history=SQLiteSessionHistory(
-                    self.database_path, allowed_session_ids=parsed["history_session_ids"]
-                ),
+                session_history=self.stores.session_history.scoped(parsed["history_session_ids"]),
                 confirmed_memories=confirmed_memories,
                 attachments=tuple(
                     AttachmentContextInput.model_validate(
@@ -436,7 +434,7 @@ class ZebraAgentApi(
                 reason=str(error),
             )
         events, attachment_refs = persist_initial_attachments(
-            self.database_path,
+            self.stores.artifact_payloads,
             tuple(result.events),
             parsed["attachments"],
         )

@@ -31,6 +31,10 @@
   maintainer reprioritized Zebra durable storage and memory foundations ahead of
   further Trench work. This local task is stacked on `EMB-PLAN-01`, adds no cloud
   database dependency, and must not merge before the architecture baseline.
+- `CLOUD-STO-AUTH-01` is `Review` on `codex/cloud-sto-auth-01`. The local
+  implementation is based directly on `CLOUD-STO-SEAM-01` and cannot be pushed,
+  opened as a PR, or merged before `EMB-PLAN-01 -> CLOUD-STO-SEAM-01` lands in
+  that order.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -195,13 +199,29 @@ inside request or execution logic.
 
 ### CLOUD-STO-AUTH-01 - Complete Authoritative Store Composition
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `STORAGE / CORE / API / WORKER`
-- Depends on: merged `CLOUD-STO-SEAM-01` and explicit maintainer activation
-- Branch: `TBD`
-- Candidate owned paths: remaining storage Ports/adapters, API/Worker composition,
-  cross-backend context/handoff/memory/effect regressions and governance records
+- Depends on: explicit maintainer activation for local stacked work on 2026-07-24.
+  Development is based directly on local `CLOUD-STO-SEAM-01`; push, PR and merge
+  remain blocked until `EMB-PLAN-01 -> CLOUD-STO-SEAM-01` lands in that order.
+- Branch: `codex/cloud-sto-auth-01`
+- Worktree: `../zebra-agent-cloud-sto-auth-01`
+- Owned paths:
+  - focused Store Protocols and their value records under
+    `packages/agent-core/src/agent_core/{ports,domain}/`; no Event, Session or
+    Task state-machine changes
+  - `packages/agent-storage/src/agent_storage/{composition,__init__,context_lifecycle,session_handoffs,session_handoff_dispatch,session_handoff_facts,session_handoff_rows,idempotency,effect_ledger,memories,memory_lookup,artifact_payloads,artifact_projection,artifacts,session_attachments,model_calls,tool_runs,provider_continuations,session_history,delivery_audit}.py`
+  - API composition and target Store wiring under `apps/api/src/zebra_agent_api/`
+    limited to storage composition, context, handoff, idempotency, artifact,
+    delivery-audit and memory call sites
+  - Worker composition and target Store wiring under
+    `apps/worker/src/zebra_agent_worker/` limited to loop, control, execution,
+    handoff, context, recovery, indexing and finalization call sites
+  - authoritative-composition tests under `tests/{agent_storage,api,worker}/`
+  - `docs/AGENT_TASKS.md`, `docs/Zebra Embedded 生产级目标架构.md`,
+    `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+    `task_plan.md`, `findings.md`, `WORKLOG.md`
 
 #### Goal
 
@@ -210,12 +230,47 @@ own governed memory before any PostgreSQL backend is selectable.
 
 #### Acceptance
 
-- context lifecycle, handoff/dispatch, idempotency, effect ledger, memory,
-  artifact and continuation authorities have typed composition boundaries
-- A/B tests cover compaction, recovery, handoff, memory review and effect replay
-  without splitting one durable stream across backends
-- `require_legacy_database_coherence` is removed only after those flows share one
-  authoritative backend; no PostgreSQL or Redis dependency is added in this card
+- [x] The existing flat `ControlPlaneStores` exposes typed boundaries for
+  context lifecycle, handoff/dispatch, idempotency, effect ledger, governed
+  memory, artifact payload and indexes, provider continuation, session history
+  and delivery audit; the SQLite builder is their only API/Worker constructor root.
+- [x] API, SSE and Worker consume one injected bundle. Target `SQLite*`
+  constructors are absent from those call sites, excluding skills state and web
+  derived caches.
+- [x] Distinct-backend A/B regressions cover context compaction and recovery,
+  handoff commit/dispatch/recovery, idempotency and effect replay, memory review,
+  artifact/index recovery, provider continuation and session history without
+  writing or reading the legacy path.
+- [x] Same-path SQLite behavior remains compatible and `:memory:` remains
+  rejected because the adapters use independent connections.
+- [x] `legacy_database_path` and `require_legacy_database_coherence` are removed
+  only after every target flow consumes the bundle; focused tests, `make test`,
+  `make check`, file-size checks and `git diff --check` pass or blockers are recorded.
+
+#### Explicit Non-Goals
+
+- PostgreSQL, Redis, S3/MinIO, migrations, dual-write, backend selection and new
+  infrastructure dependencies
+- Mem0, embeddings and the derived semantic-memory Gateway; Zebra's
+  `MemoryStorePort` remains the governed authority
+- CLI, Desktop, AG-UI, Trench, Host auth, Policy, Runtime, Event or Task behavior
+- `SQLiteSkillsStateStore`, web-derived caches, schema redesign, data migration
+  and performance or naming refactors
+
+#### Validation And Handoff
+
+- Authoritative A/B composition regressions: `9 passed`; combined focused
+  Core/Storage/API/Worker coverage: `365 passed`.
+- Full `make test`: `1747 passed, 8 skipped, 9 failed`; all nine failures match
+  the inherited baseline (2 provider expectations, 5 expired SCM fixtures,
+  1 untouched file-size gate, 1 Worker cancellation race).
+- All 54 changed Python files pass Ruff and format checks; `git diff --check`
+  passes; release Eval passes `10/10`.
+- Repository `make check` stops at two untouched file-size violations
+  (`561/500`, `505/500`). Independent full Ruff and Mypy retain only the known
+  untouched baseline of 13 and 4 errors respectively.
+- Branch is local and unpushed. Required merge order remains
+  `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-STO-AUTH-01`.
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.

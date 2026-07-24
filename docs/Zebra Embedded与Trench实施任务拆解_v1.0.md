@@ -2,10 +2,10 @@
 
 | 字段 | 值 |
 |---|---|
-| 日期 | 2026-07-23 |
+| 日期 | 2026-07-24 |
 | 架构基线 | `Zebra Embedded 生产级目标架构.md`、ADR-015 |
 | 当前可执行任务 | 无；等待已完成任务按依赖顺序评审、合并与重新激活 |
-| Review 任务 | `EMB-PLAN-01`、`EMB-AGUI-SPIKE-01`、`CLOUD-STO-SEAM-01`；Trench Spike 保持本地待处理 |
+| Review 任务 | `EMB-PLAN-01`、`EMB-AGUI-SPIKE-01`、`CLOUD-STO-SEAM-01`、`CLOUD-STO-AUTH-01`；Trench Spike 保持本地待处理 |
 | 其他任务 | `Locked`，等待依赖和 maintainer 逐卡激活 |
 | 第一业务验收 | Trench Event Detail 的生产只读链路 |
 
@@ -28,7 +28,8 @@
 flowchart TD
     PLAN["P0 架构收敛"] --> SPIKE["P0 双仓库 Spike"]
     PLAN --> SEAM["Zebra Storage Composition Seam"]
-    SEAM --> CLOUD["P2 Cloud Durable Foundation"]
+    SEAM --> AUTH["Authoritative Store Composition"]
+    AUTH --> CLOUD["P2 Cloud Durable Foundation"]
     CLOUD --> MEMORY["Redis Agent Memory Gateway"]
     SPIKE --> CONTRACT["P1 Host / AG-UI / Surface Contracts"]
     CONTRACT --> READ["P3 Trench Read-only Slice"]
@@ -133,13 +134,18 @@ read-only。
 
 ### CLOUD-STO-AUTH-01 — Complete authoritative Store composition
 
-- Status: `Locked`；depends on merged `CLOUD-STO-SEAM-01` and explicit activation。
-- Candidate paths: remaining Core Ports、storage adapters、API/Worker composition and
-  cross-backend regressions。
+- Status: `Review`；Zebra repo；branch `codex/cloud-sto-auth-01`；owner `Codex`。
+- Depends on: maintainer explicitly activated local stacked implementation on
+  2026-07-24；branch is based directly on local `CLOUD-STO-SEAM-01` and must not
+  merge before `EMB-PLAN-01 -> CLOUD-STO-SEAM-01`。
+- Owned paths: focused Core Store Ports、SQLite adapter conformance、API/Worker
+  storage composition、authoritative A/B regressions and governance records。
 - Deliverable: compose context lifecycle、handoff/dispatch、idempotency、effect ledger、
-  governed memory、Artifact and continuation authorities before backend selection。
+  governed memory、Artifact payload/index、provider continuation、session history and
+  delivery-audit authorities before backend selection；remove the legacy path guard。
 - Acceptance: compaction/recovery/handoff/memory/effect A/B tests keep one authoritative
-  stream；the temporary legacy-database coherence guard is removed only after this gate。
+  stream and prove the unused path is not created；API/SSE/Worker contain no target
+  SQLite constructor；`:memory:` remains rejected；focused/full/quality blockers are recorded。
 
 ### CLOUD-PG-01 — PostgreSQL event and projection storage
 

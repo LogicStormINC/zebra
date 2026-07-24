@@ -2,17 +2,18 @@ from pathlib import Path
 from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId
-from agent_storage import SQLiteDeliveryAuditStore
+from agent_storage import sqlite_control_plane_stores
 from zebra_agent_api.delivery_audit import record_delivery_audit
 from zebra_agent_api.responses import ApiResponse
 
 
 def test_delivery_audit_records_created_pull_request_metadata(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
+    store = sqlite_control_plane_stores(database_path).delivery_audit
     session_id = "00000000-0000-0000-0000-000000000001"
 
     record_delivery_audit(
-        database_path=database_path,
+        store=store,
         session_id=session_id,
         action="session.pull_request",
         response=ApiResponse(
@@ -34,7 +35,7 @@ def test_delivery_audit_records_created_pull_request_metadata(tmp_path: Path) ->
         idempotency_key="pr-key-1",
     )
 
-    records = SQLiteDeliveryAuditStore(database_path).list_for_session(SessionId(UUID(session_id)))
+    records = store.list_for_session(SessionId(UUID(session_id)))
 
     assert len(records) == 1
     assert records[0].status == "created"

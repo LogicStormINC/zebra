@@ -1,17 +1,16 @@
 from datetime import UTC, datetime
-from pathlib import Path
 from uuid import UUID
 
 from agent_core.domain.delivery_audit import DeliveryAuditRecord
 from agent_core.domain.identifiers import SessionId
-from agent_storage import SQLiteDeliveryAuditStore
+from agent_core.ports import DeliveryAuditStorePort
 
 from zebra_agent_api.responses import ApiResponse
 
 
 def record_delivery_audit(
     *,
-    database_path: Path,
+    store: DeliveryAuditStorePort,
     session_id: str,
     action: str,
     response: ApiResponse,
@@ -22,7 +21,7 @@ def record_delivery_audit(
     metadata = _metadata_from_response(action, response)
     if result_metadata:
         metadata.update(result_metadata)
-    SQLiteDeliveryAuditStore(database_path).append(
+    store.append(
         DeliveryAuditRecord(
             session_id=SessionId(UUID(session_id)),
             action=action,

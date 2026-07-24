@@ -29,10 +29,6 @@ from agent_storage import (
     ControlPlaneStores,
     HandoffIdempotencyConflictError,
     HandoffStorageConflictError,
-    SQLiteContextLifecycleStore,
-    SQLiteEffectLedger,
-    SQLiteSessionHandoffStore,
-    require_legacy_database_coherence,
     sqlite_control_plane_stores,
 )
 
@@ -64,17 +60,13 @@ class _ParsedCreate(TypedDict):
 
 
 class SessionHandoffApi:
-    def __init__(
-        self, database_path: Path, stores: ControlPlaneStores | None = None
-    ) -> None:
-        if stores is not None:
-            require_legacy_database_coherence(stores, database_path)
+    def __init__(self, database_path: Path, stores: ControlPlaneStores | None = None) -> None:
         active_stores = stores or sqlite_control_plane_stores(database_path)
-        self._database_path = database_path
-        self._handoffs = SQLiteSessionHandoffStore(database_path)
+        self._context_lifecycle = active_stores.context_lifecycle
+        self._handoffs = active_stores.handoffs
         self._events = active_stores.events
         self._sessions = active_stores.sessions
-        self._effects = SQLiteEffectLedger(database_path)
+        self._effects = active_stores.effects
 
     def create(
         self,
@@ -168,7 +160,7 @@ class SessionHandoffApi:
                 body["idempotent_replay"] = True
                 return ApiResponse(200, body)
         events = self._events.list_for_session(source_id)
-        capsule = SQLiteContextLifecycleStore(self._database_path).get_active_capsule(source_id)
+        capsule = self._context_lifecycle.get_active_capsule(source_id)
         completed_work = parsed["completed_work"]
         if actor_kind is HandoffActorKind.AUTOMATION and not completed_work:
             completed_work = _conversation_checkpoint(events)

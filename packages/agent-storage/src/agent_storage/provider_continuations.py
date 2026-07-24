@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -11,17 +10,15 @@ from agent_core.domain.context_continuation import (
     ProviderContinuationArtifact,
     ProviderContinuationRef,
 )
+from agent_core.ports.provider_continuation_store import (
+    LoadedProviderContinuation,
+    ProviderContinuationStorePort,
+)
 
 from agent_storage.database import SQLiteDatabase
 
 
-@dataclass(frozen=True)
-class LoadedProviderContinuation:
-    artifact: ProviderContinuationArtifact
-    opaque_payload: bytes
-
-
-class SQLiteProviderContinuationStore:
+class SQLiteProviderContinuationStore(ProviderContinuationStorePort):
     """Tenant-isolated lifecycle store for provider-owned opaque state."""
 
     def __init__(self, database_path: str | Path) -> None:

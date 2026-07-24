@@ -1,33 +1,71 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import Mock
 
-import pytest
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.context_capsule import ContextCapsule
+from agent_core.domain.events import EventActor, EventType
+from agent_core.domain.identifiers import SessionId, new_session_id, new_tool_call_id
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.harness.models import HarnessEventDraft
 from agent_storage import ControlPlaneStores, sqlite_control_plane_stores
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
-from zebra_agent_worker import SessionExecutionService, build_worker_loop_service
-from zebra_agent_worker.session_handoff import SessionHandoffRecoveryGate
+from zebra_agent_worker import build_worker_loop_service
+from zebra_agent_worker.context_lifecycle import persist_context_compaction
+from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
+from zebra_agent_worker.model_call_index import ModelCallIndexer
+from zebra_agent_worker.recovery import SessionRecoveryService
+from zebra_agent_worker.session_handoff import guard_effectful_tools
+from zebra_agent_worker.tool_run_index import ToolRunIndexer
+
+
+class _CountingGateway:
+    model_tools = ()
+    effective_mcp_tools = ()
+    effective_skill_components = ()
+    parallel_safe_tools = frozenset()
+    parallel_batch_limits: dict[str, int] = {}
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def execute(self, tool_call: ToolCall) -> ToolResult:
+        self.calls += 1
+        return ToolResult(
+            tool_call_id=tool_call.tool_call_id,
+            status=ToolCallStatus.EXECUTED,
+            output="done",
+        )
+
+    def resolve_model_tool_calls(
+        self,
+        tool_calls: tuple[ToolCall, ...],
+    ) -> tuple[ToolCall, ...]:
+        return tool_calls
+
+    def close(self) -> None:
+        pass
 
 
 def test_worker_uses_supplied_stores_for_all_control_plane_services(tmp_path: Path) -> None:
     control_database = tmp_path / "control-plane.db"
+    legacy_database = tmp_path / "legacy.db"
     local = sqlite_control_plane_stores(control_database)
     event_store = Mock(wraps=local.events)
     projection_store = Mock(wraps=local.sessions)
     workspace_store = Mock(wraps=local.workspaces)
     task_store = Mock(wraps=local.tasks)
     lease_store = Mock(wraps=local.leases)
-    stores = ControlPlaneStores(
+    stores = replace(
+        local,
         events=event_store,
         sessions=projection_store,
         workspaces=workspace_store,
         tasks=task_store,
         leases=lease_store,
-        legacy_database_path=control_database.resolve(),
     )
     session_id = _seed_ready_session(stores, tmp_path)
     leased_at = datetime.now(UTC)
@@ -42,8 +80,8 @@ def test_worker_uses_supplied_stores_for_all_control_plane_services(tmp_path: Pa
         store.reset_mock()
 
     service = build_worker_loop_service(
-        database_path=control_database,
-        settings=_settings(control_database),
+        database_path=legacy_database,
+        settings=_settings(legacy_database),
         stores=stores,
         sleep=lambda _: None,
     )
@@ -69,43 +107,126 @@ def test_worker_uses_supplied_stores_for_all_control_plane_services(tmp_path: Pa
     assert execution._control_service._event_store is stores.events
     assert execution._control_service._projection_store is stores.sessions
     assert execution._control_service._workspace_store is stores.workspaces
+    assert execution._model_call_indexer._model_call_store is stores.model_calls
+    assert execution._artifact_payload_store is stores.artifact_payloads
+    assert execution._context_lifecycle_store is stores.context_lifecycle
+    assert execution._provider_continuation_store is stores.provider_continuations
+    assert execution._tool_run_indexer._tool_run_store is stores.tool_runs
+    assert execution._memory_extraction_service._memory_store is stores.memories
+    assert execution._effect_ledger is stores.effects
+    assert execution._session_history is stores.session_history
     assert execution._handoff_gate._events is stores.events
     assert execution._handoff_gate._sessions is stores.sessions
     assert execution._handoff_gate._workspaces is stores.workspaces
+    assert execution._handoff_gate._handoffs is stores.handoffs
+    assert execution._handoff_gate._dispatch is stores.handoff_dispatch
+
+    assert not legacy_database.exists()
+    legacy = sqlite_control_plane_stores(legacy_database)
+    assert legacy.events.list_for_session(session_id) == []
+    assert legacy.sessions.get_session(session_id) is None
 
 
-def test_worker_rejects_partial_split_backend(tmp_path: Path) -> None:
-    control_database = tmp_path / "control-plane.db"
-    runtime_database = tmp_path / "runtime-local.db"
+def test_compaction_and_recovery_stay_on_authoritative_backend(tmp_path: Path) -> None:
+    authority_path = tmp_path / "authority.db"
+    legacy_path = tmp_path / "legacy.db"
+    stores = sqlite_control_plane_stores(authority_path)
+    session_id = _seed_ready_session(stores, tmp_path)
+    recovery = SessionRecoveryService(
+        stores.events,
+        stores.sessions,
+        stores.workspaces,
+    ).recover_session(session_id)
+    recorder = DurableHarnessEventRecorder(
+        session=recovery.session,
+        workspace=recovery.workspace,
+        event_store=stores.events,
+        projection_store=stores.sessions,
+        workspace_store=stores.workspaces,
+        model_call_indexer=ModelCallIndexer(stores.model_calls),
+        tool_run_indexer=ToolRunIndexer(stores.tool_runs, stores.artifact_payloads),
+    )
+    capsule = ContextCapsule(
+        capsule_id="authoritative-context",
+        objective="Keep one durable stream.",
+        constraints=("Do not write the legacy path.",),
+        immediate_next="Continue from backend B.",
+        source_hash="a" * 64,
+        confidence=1.0,
+        created_at=datetime(2026, 7, 24, 4, 0, tzinfo=UTC),
+    )
+    draft = HarnessEventDraft(
+        event_type=EventType.CONTEXT_COMPACTED,
+        actor=EventActor.HARNESS,
+        payload={
+            "attempt_number": 1,
+            "before_tokens": 100,
+            "after_tokens": 40,
+            "removed_message_count": 3,
+            "retained_message_count": 2,
+            "within_budget": True,
+            "provenance": "authoritative-composition-test",
+            "capsule": capsule.model_dump(mode="json"),
+        },
+    )
 
-    with pytest.raises(ValueError, match="must share database_path"):
-        build_worker_loop_service(
-            database_path=runtime_database,
-            settings=_settings(runtime_database),
-            stores=sqlite_control_plane_stores(control_database),
-            sleep=lambda _: None,
-        )
+    persist_context_compaction(
+        draft,
+        recorder=recorder,
+        event_store=stores.events,
+        lifecycle_store=stores.context_lifecycle,
+    )
 
-    assert not runtime_database.exists()
+    events = stores.events.list_for_session(session_id)
+    assert [event.event_type for event in events[-2:]] == [
+        EventType.CONTEXT_COMPACTED,
+        EventType.CONTEXT_CAPSULE_CREATED,
+    ]
+    active = stores.context_lifecycle.get_active_capsule(session_id)
+    assert active is not None
+    assert active.capsule.objective == "Keep one durable stream."
+    session = stores.sessions.get_session(session_id)
+    assert session is not None
+    assert session.current_sequence == events[-1].sequence
+
+    assert not legacy_path.exists()
+    legacy = sqlite_control_plane_stores(legacy_path)
+    assert legacy.events.list_for_session(session_id) == []
+    assert legacy.context_lifecycle.get_active_capsule(session_id) is None
 
 
-def test_worker_lifecycle_roots_reject_partial_split_backend(tmp_path: Path) -> None:
-    control_database = tmp_path / "control-plane.db"
-    runtime_database = tmp_path / "runtime-local.db"
-    stores = sqlite_control_plane_stores(control_database)
+def test_effect_replay_uses_authoritative_backend(tmp_path: Path) -> None:
+    authority_path = tmp_path / "authority.db"
+    legacy_path = tmp_path / "legacy.db"
+    stores = sqlite_control_plane_stores(authority_path)
+    root_session_id = new_session_id()
+    gateway = _CountingGateway()
+    guarded = guard_effectful_tools(
+        gateway,
+        ledger=stores.effects,
+        session_id=root_session_id,
+        recovered_handoff=None,
+        authority_scope="workspace-write",
+    )
 
-    with pytest.raises(ValueError, match="must share database_path"):
-        SessionExecutionService(
-            database_path=runtime_database,
-            claim_service=Mock(),
-            resume_service=Mock(),
-            settings=_settings(runtime_database),
-            stores=stores,
-        )
-    with pytest.raises(ValueError, match="must share database_path"):
-        SessionHandoffRecoveryGate(str(runtime_database), stores=stores)
+    first = guarded.execute(_effect_call())
+    replayed = guarded.execute(_effect_call())
 
-    assert not runtime_database.exists()
+    assert replayed.output == first.output
+    assert gateway.calls == 1
+    assert stores.effects.terminal_keys(root_session_id)
+    assert not legacy_path.exists()
+    legacy = sqlite_control_plane_stores(legacy_path)
+    assert legacy.effects.terminal_keys(root_session_id) == frozenset()
+
+
+def _effect_call() -> ToolCall:
+    return ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="command.run",
+        arguments={"command": "deploy"},
+        created_at=datetime(2026, 7, 24, 7, 0, tzinfo=UTC),
+    )
 
 
 def _seed_ready_session(

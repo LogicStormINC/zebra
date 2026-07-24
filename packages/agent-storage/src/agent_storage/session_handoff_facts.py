@@ -1,23 +1,12 @@
 import json
 import sqlite3
-from dataclasses import dataclass
 from datetime import datetime
 
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.session_handoff import DEFAULT_MAX_HANDOFF_STAGE, WorkspaceBindingRevision
+from agent_core.domain.session_handoff import WorkspaceBindingRevision
+from agent_core.ports.session_handoff import HandoffSourceFacts
 
 from agent_storage.session_handoff_rows import sha256_text
-
-
-@dataclass(frozen=True, slots=True)
-class HandoffSourceFacts:
-    stream_version: int
-    lease_fencing_token: int | None
-    has_active_lease: bool
-    authority_revision: str
-    workspace_revision: WorkspaceBindingRevision
-    task_profile_revision: str
-    effective_depth_limit: int = DEFAULT_MAX_HANDOFF_STAGE
 
 
 def read_source_facts(

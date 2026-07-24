@@ -17,8 +17,6 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_storage import (
     ControlPlaneStores,
-    SQLiteContextLifecycleStore,
-    require_legacy_database_coherence,
     sqlite_control_plane_stores,
 )
 
@@ -31,12 +29,7 @@ from zebra_agent_api.session_identity_read import _parse_session_id
 
 
 class SessionContextControlApi:
-    def __init__(
-        self, database_path: Path, stores: ControlPlaneStores | None = None
-    ) -> None:
-        if stores is not None:
-            require_legacy_database_coherence(stores, database_path)
-        self._database_path = database_path
+    def __init__(self, database_path: Path, stores: ControlPlaneStores | None = None) -> None:
         self._stores = stores or sqlite_control_plane_stores(database_path)
 
     def inspect(self, session_id: str) -> ApiResponse:
@@ -46,9 +39,7 @@ class SessionContextControlApi:
         session, events = resolved
         compacted = [event for event in events if event.event_type is EventType.CONTEXT_COMPACTED]
         latest = compacted[-1] if compacted else None
-        active = SQLiteContextLifecycleStore(self._database_path).get_active_capsule(
-            session.session_id
-        )
+        active = self._stores.context_lifecycle.get_active_capsule(session.session_id)
         latest_payload = dict(latest.payload) if latest is not None else None
         if latest_payload is not None and active is not None:
             latest_payload["capsule"] = active.capsule.model_dump(mode="json")
@@ -178,7 +169,7 @@ class SessionContextControlApi:
             idempotency_key=f"manual-context-compact:{capsule.source_hash}",
             created_at=capsule.created_at,
         )
-        lifecycle = SQLiteContextLifecycleStore(self._database_path)
+        lifecycle = self._stores.context_lifecycle
         active = lifecycle.get_active_capsule(session.session_id)
         if capsule.source_event_range is None:
             raise ValueError("manual capsule source range is required")
@@ -229,7 +220,7 @@ class SessionContextControlApi:
         capsule_id = body.get("capsule_id")
         if not isinstance(capsule_id, str) or not capsule_id.strip():
             return bad_request("capsule_id must be a non-blank string")
-        lifecycle = SQLiteContextLifecycleStore(self._database_path)
+        lifecycle = self._stores.context_lifecycle
         stored_capsule = lifecycle.get_capsule(capsule_id.strip())
         if stored_capsule is None or stored_capsule.session_id != session.session_id:
             return ApiResponse(

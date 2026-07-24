@@ -7,7 +7,6 @@ from agent_core.application import serialize_scoped_memory_inventory
 from agent_core.domain.memories import MemoryQuery, MemoryRecord
 from agent_storage import (
     ControlPlaneStores,
-    SQLiteMemoryStore,
     sqlite_control_plane_stores,
 )
 
@@ -22,8 +21,9 @@ def _read_memory_inventory(
     stores: ControlPlaneStores | None,
     query: MemoryQuery,
 ) -> list[dict[str, object]]:
-    event_store = (stores or sqlite_control_plane_stores(database_path)).events
-    records = SQLiteMemoryStore(database_path).list(query)
+    active_stores = stores or sqlite_control_plane_stores(database_path)
+    event_store = active_stores.events
+    records = active_stores.memories.list(query)
     return serialize_scoped_memory_inventory(records, event_store.list_for_session)
 
 
@@ -33,7 +33,7 @@ def _read_memory_queue_summary(
     stores: ControlPlaneStores | None,
     query: MemoryQuery,
 ) -> dict[str, object]:
-    records = SQLiteMemoryStore(database_path).list(query)
+    records = (stores or sqlite_control_plane_stores(database_path)).memories.list(query)
     latest_record = _latest_record(records)
     return {
         "pending_count": len(records),
@@ -52,7 +52,7 @@ def _read_memory_backlog_aging_signals(
     query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
-    records = SQLiteMemoryStore(database_path).list(query)
+    records = (stores or sqlite_control_plane_stores(database_path)).memories.list(query)
     oldest_record = _oldest_record(records)
     normalized_as_of = as_of.astimezone(UTC)
     return {

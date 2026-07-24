@@ -5,7 +5,7 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-07-23`
+- Snapshot date: `2026-07-24`
 - Verified implementation baseline: `f1e4965` (PR `#174`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
 - Review task: `CTX-SEG-01` has delivered the stable Task, internal Segment,
@@ -31,6 +31,11 @@
   first Zebra-foundation task after the maintainer reprioritized durable storage
   and memory ahead of further Trench work. It injects existing control-plane Store
   Ports while preserving the local SQLite profile and adds no cloud dependency.
+- Authoritative storage task in Review: `CLOUD-STO-AUTH-01` on
+  `codex/cloud-sto-auth-01` extends that same flat bundle across every durable
+  API/Worker collaborator that advances Session state, gates effects or governs
+  memory. A/B regressions prove the legacy path is not created; no cloud backend,
+  migration or Mem0 integration is selected by this task.
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
@@ -249,19 +254,20 @@ including a real thinking tool round trip.
   are `Done` via PRs `#170`, `#171`, `#172`, and `#168`.
 - `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
-- `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, and `CLOUD-STO-SEAM-01` are in Review.
-  No implementation card is active; all PostgreSQL,
+- `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
+  `CLOUD-STO-AUTH-01` are in Review. No implementation card is active; all PostgreSQL,
   Redis, object-storage, production AG-UI, Trench, analysis, writeback, Agent
   Memory adapter, and GA cards remain `Locked` pending their explicit gates.
 
 ## Known Follow-Ups
 
 1. Review and merge `EMB-PLAN-01`; keep the completed AG-UI and Trench Spikes
-   parked until `CLOUD-STO-SEAM-01` merges and `CLOUD-STO-AUTH-01` is activated.
+   parked while the storage branches follow their recorded merge order.
 2. Keep DeepSeek thinking mode opt-in and preserve its private continuation
    fail-closed boundary.
-3. Merge and explicitly activate `CLOUD-STO-AUTH-01` before PostgreSQL selection;
-   then approve the migration/backup/recovery/rollback model before `CLOUD-PG-01`.
+3. Merge `CLOUD-STO-SEAM-01`, then `CLOUD-STO-AUTH-01`, before PostgreSQL
+   selection; approve the migration/backup/recovery/rollback model before
+   activating `CLOUD-PG-01`.
 4. Split or lazy-load the Desktop main bundle based on a repeatable bundle report.
 5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
    Credential/Egress Broker, external-namespace isolation, and Kubernetes in
@@ -313,7 +319,7 @@ real tool execution, failure visibility, API restart, and durable recovery.
 - ACP entry adapter
 - optional code-intelligence adapter
 - Kubernetes/Kata/Firecracker and distributed Sandbox scheduling
-- PostgreSQL/object-storage adapters (composition seam is in Review)
+- PostgreSQL/object-storage adapters (authoritative composition is in Review)
 - external authority adapter and namespace-isolated cloud control plane
 - centralized Vault/KMS-backed credentials and production Egress
 - ecosystem marketplace, cross-organization A2A, and autonomous production release

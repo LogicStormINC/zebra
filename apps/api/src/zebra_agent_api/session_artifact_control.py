@@ -5,12 +5,10 @@ from pathlib import Path
 from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId
+from agent_core.ports import SessionArtifact
 from agent_security import build_artifact_control_audit_metadata
 from agent_storage import (
     ControlPlaneStores,
-    SessionArtifact,
-    SQLiteArtifactPayloadStore,
-    SQLiteArtifactStore,
     payload_for_artifact_uri,
     serialize_artifact_lifecycle,
 )
@@ -34,7 +32,7 @@ class SessionArtifactControlApi:
         artifact = self._resolve_session_artifact(session_id, artifact_id)
         if isinstance(artifact, ApiResponse):
             return artifact
-        payload_store = SQLiteArtifactPayloadStore(self.database_path)
+        payload_store = self.stores.artifact_payloads
         payload = payload_for_artifact_uri(payload_store, artifact.uri)
         if artifact.uri is None:
             return self._unavailable(
@@ -49,7 +47,6 @@ class SessionArtifactControlApi:
                 reason="artifact_uses_external_reference",
             )
         access = classify_session_artifact_access(
-            self.database_path,
             stores=self.stores,
             session_id=session_id,
             artifact=artifact,
@@ -62,7 +59,7 @@ class SessionArtifactControlApi:
                 access=access,
             )
             record_delivery_audit(
-                database_path=self.database_path,
+                store=self.stores.delivery_audit,
                 session_id=session_id,
                 action="session.artifact.prune",
                 response=response,
@@ -86,7 +83,7 @@ class SessionArtifactControlApi:
             lifecycle=serialize_artifact_lifecycle(pruned),
         )
         record_delivery_audit(
-            database_path=self.database_path,
+            store=self.stores.delivery_audit,
             session_id=session_id,
             action="session.artifact.prune",
             response=response,
@@ -115,7 +112,7 @@ class SessionArtifactControlApi:
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        for artifact in SQLiteArtifactStore(self.database_path).list_for_session(session_key):
+        for artifact in self.stores.artifacts.list_for_session(session_key):
             if artifact.artifact_id == artifact_id:
                 return artifact
         return ApiResponse(
@@ -140,7 +137,7 @@ class SessionArtifactControlApi:
             reason=reason,
         )
         record_delivery_audit(
-            database_path=self.database_path,
+            store=self.stores.delivery_audit,
             session_id=session_id,
             action="session.artifact.prune",
             response=response,

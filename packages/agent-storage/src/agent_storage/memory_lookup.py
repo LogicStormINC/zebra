@@ -5,6 +5,7 @@ from pathlib import Path
 
 from agent_core.domain.memories import MemoryQuery, MemoryStatus, MemoryType, MemoryVisibility
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
+from agent_core.ports.memory_store import MemoryStorePort
 
 from agent_storage.memories import SQLiteMemoryStore
 
@@ -19,14 +20,14 @@ _TYPE_PRIORITY: dict[MemoryType, int] = {
 
 
 def list_confirmed_repo_memories(
-    database_path: str | Path,
+    store_or_database_path: MemoryStorePort | str | Path,
     *,
     repo_id: str,
     limit: int = 8,
     as_of: datetime | None = None,
 ) -> tuple[ConfirmedMemoryInput, ...]:
     effective_as_of = as_of or datetime.now(UTC)
-    records = SQLiteMemoryStore(database_path).list(
+    records = _memory_store(store_or_database_path).list(
         MemoryQuery(
             repo_id=repo_id,
             visibility=MemoryVisibility.REPO,
@@ -64,7 +65,7 @@ def list_confirmed_repo_memories(
 
 
 def list_confirmed_repo_memory_texts(
-    database_path: str | Path,
+    store_or_database_path: MemoryStorePort | str | Path,
     *,
     repo_id: str,
     limit: int = 8,
@@ -73,12 +74,16 @@ def list_confirmed_repo_memory_texts(
     return tuple(
         memory.text
         for memory in list_confirmed_repo_memories(
-            database_path,
+            store_or_database_path,
             repo_id=repo_id,
             limit=limit,
             as_of=as_of,
         )
     )
+
+
+def _memory_store(source: MemoryStorePort | str | Path) -> MemoryStorePort:
+    return SQLiteMemoryStore(source) if isinstance(source, str | Path) else source
 
 
 def _normalize_memory_text(text: str) -> str:

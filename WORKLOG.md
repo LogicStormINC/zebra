@@ -1,5 +1,38 @@
 # Progress Log
 
+## 2026-07-24 CLOUD-STO-AUTH-01 Complete Authoritative Store Composition
+
+- activated one isolated local branch, `codex/cloud-sto-auth-01`, based directly
+  on `CLOUD-STO-SEAM-01`; required merge order remains
+  `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-STO-AUTH-01`
+- used separate Core/Storage, API, Worker/test and final review lanes within the
+  registered owned paths; final independent review found no P0-P2 issue
+- extended the existing flat `ControlPlaneStores` across context lifecycle,
+  handoff/dispatch, idempotency, effects, governed memory, artifact payload and
+  indexes, provider continuation, scoped session history and delivery audit
+- added focused Core Ports and made SQLite adapters conform without introducing
+  a backend hierarchy, selector, cloud service or dependency
+- removed `legacy_database_path` and the temporary coherence guard after API,
+  SSE and Worker stopped reconstructing target stores from a path
+- preserved `SQLiteSkillsStateStore`, runtime filesystem configuration and
+  derived web caches as explicit non-authoritative local-profile exclusions
+- added A/B regressions for idempotency/attachments/SSE, compaction/recovery,
+  handoff/dispatch, effect replay, memory review, artifact/model/tool indexes,
+  provider continuation and session history; each proves the legacy path was
+  not created before inspection
+- retained `MemoryStorePort` as the governed authority; Mem0 or another semantic
+  memory provider remains a separately gated, degraded-safe derived Gateway
+- final authoritative A/B tests: `9 passed`; combined focused validation:
+  `365 passed`; all 54 changed Python files pass Ruff and format checks;
+  `git diff --check` passes; Eval release gate passes `10/10`
+- full `make test`: `1747 passed, 8 skipped, 9 failed`; failures match the prior
+  baseline (2 provider expectations, 5 expired SCM fixtures, 1 untouched
+  file-size test and 1 Worker cancellation race)
+- repository `make check` stops at the two untouched `561/500` and `505/500`
+  files; independent full Ruff/Mypy runs retain only 13/4 errors in untouched
+  harness, web and security paths
+- moved the task to `Review`; branch remains local and unpushed
+
 ## 2026-07-23 CLOUD-STO-SEAM-01 Control-Plane Storage Composition Seam
 
 - maintainer reprioritized Zebra durable storage and memory foundations ahead of

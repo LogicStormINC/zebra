@@ -9,7 +9,6 @@ from agent_core.ports.projection_store import ProjectionStorePort
 from agent_storage import (
     ControlPlaneStores,
     LeaseConflictError,
-    require_legacy_database_coherence,
     sqlite_control_plane_stores,
 )
 from zebra_agent_config import ZebraAgentSettings
@@ -146,8 +145,6 @@ def build_worker_loop_service(
     sleep: Callable[[float], None] = time.sleep,
     stores: ControlPlaneStores | None = None,
 ) -> WorkerLoopService:
-    if stores is not None:
-        require_legacy_database_coherence(stores, database_path)
     active_stores = stores or sqlite_control_plane_stores(database_path)
     claim_service = SessionClaimService(
         active_stores.leases,

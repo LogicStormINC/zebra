@@ -1,19 +1,20 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
 from pathlib import Path
-from typing import TypedDict
+from typing import TypedDict, overload
 
 from agent_core.domain.identifiers import SessionId
+from agent_core.ports.model_call_store import ModelCallStorePort
+from agent_core.ports.session_artifact_read import (
+    PreviewState,
+    SessionArtifact,
+    SessionArtifactReadPort,
+)
+from agent_core.ports.tool_run_store import ToolRunStorePort
 
 from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.tool_runs import SQLiteToolRunStore
-
-
-class PreviewState(TypedDict):
-    redacted: bool
-    truncated: bool
 
 
 class SanitizedPreview(TypedDict):
@@ -21,24 +22,34 @@ class SanitizedPreview(TypedDict):
     state: PreviewState
 
 
-@dataclass(frozen=True)
-class SessionArtifact:
-    artifact_id: str
-    session_id: SessionId
-    sequence: int
-    source: str
-    kind: str
-    label: str
-    uri: str | None
-    preview: str
-    preview_state: PreviewState
-    metadata: dict[str, object]
+class SQLiteArtifactStore(SessionArtifactReadPort):
+    @overload
+    def __init__(self, database_path: str | Path) -> None: ...
 
+    @overload
+    def __init__(
+        self,
+        database_path: ModelCallStorePort,
+        tool_runs: ToolRunStorePort,
+    ) -> None: ...
 
-class SQLiteArtifactStore:
-    def __init__(self, database_path: str | Path) -> None:
-        self._model_calls = SQLiteModelCallStore(database_path)
-        self._tool_runs = SQLiteToolRunStore(database_path)
+    def __init__(
+        self,
+        database_path: ModelCallStorePort | str | Path,
+        tool_runs: ToolRunStorePort | None = None,
+    ) -> None:
+        self._model_calls: ModelCallStorePort
+        self._tool_runs: ToolRunStorePort
+        if isinstance(database_path, str | Path):
+            if tool_runs is not None:
+                raise TypeError("tool_runs cannot be supplied with a database path")
+            self._model_calls = SQLiteModelCallStore(database_path)
+            self._tool_runs = SQLiteToolRunStore(database_path)
+            return
+        if tool_runs is None:
+            raise TypeError("tool_runs is required with an injected model-call store")
+        self._model_calls = database_path
+        self._tool_runs = tool_runs
 
     def list_for_session(self, session_id: SessionId) -> list[SessionArtifact]:
         artifacts = [

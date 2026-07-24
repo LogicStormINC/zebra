@@ -43,11 +43,15 @@ class SessionPullRequestApi:
         parsed = parse_pull_request_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
-        replayed = replay_idempotent_response(
-            database_path=self.database_path,
-            action="session.pull_request",
-            idempotency_key=idempotency_key,
-            payload=payload,
+        replayed = (
+            replay_idempotent_response(
+                store=self._control_stores.idempotency,
+                action="session.pull_request",
+                idempotency_key=idempotency_key,
+                payload=payload,
+            )
+            if idempotency_key is not None
+            else None
         )
         if replayed is not None:
             return replayed
@@ -177,15 +181,19 @@ class SessionPullRequestApi:
         policy_profile: str | None = None,
         audit_metadata: dict[str, object] | None = None,
     ) -> ApiResponse:
-        saved = save_idempotent_response(
-            database_path=self.database_path,
-            action="session.pull_request",
-            idempotency_key=idempotency_key,
-            payload=payload,
-            response=response,
-        )
+        if idempotency_key is None:
+            response.body["idempotency_key"] = None
+            saved = response
+        else:
+            saved = save_idempotent_response(
+                store=self._control_stores.idempotency,
+                action="session.pull_request",
+                idempotency_key=idempotency_key,
+                payload=payload,
+                response=response,
+            )
         record_delivery_audit(
-            database_path=self.database_path,
+            store=self._control_stores.delivery_audit,
             session_id=str(saved.body["session_id"]),
             action="session.pull_request",
             response=saved,

@@ -12,12 +12,11 @@ from agent_core.domain.attachments import (
 )
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
-
-from agent_storage.artifact_payloads import SQLiteArtifactPayloadStore
+from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 
 
 def store_text_attachments(
-    store: SQLiteArtifactPayloadStore,
+    store: ArtifactPayloadStorePort,
     *,
     session_id: SessionId,
     message_event: SessionEvent,
@@ -71,7 +70,7 @@ def store_text_attachments(
 
 
 def load_attachment_contexts(
-    store: SQLiteArtifactPayloadStore,
+    store: ArtifactPayloadStorePort,
     refs: tuple[SessionAttachmentRef, ...],
 ) -> tuple[AttachmentContextInput, ...]:
     contexts: list[AttachmentContextInput] = []
@@ -110,7 +109,7 @@ def load_attachment_contexts(
 
 
 def store_initial_text_attachments(
-    store: SQLiteArtifactPayloadStore,
+    store: ArtifactPayloadStorePort,
     events: tuple[SessionEvent, ...],
     attachments: tuple[TextAttachmentInput, ...],
 ) -> tuple[tuple[SessionEvent, ...], tuple[SessionAttachmentRef, ...]]:

@@ -1,5 +1,32 @@
 # Findings
 
+## CLOUD-STO-AUTH-01 - 2026-07-24
+
+- The first five-store seam could not safely select a cloud backend: context
+  lifecycle, handoff/dispatch, idempotency, effect replay, governed memory,
+  artifact indexes, provider continuations, session history and delivery audit
+  still reconstructed SQLite adapters from `database_path` inside API/Worker flows.
+- One flat `ControlPlaneStores` is sufficient. The missing boundaries were
+  existing cohesive storage responsibilities, so focused Core Ports and adapter
+  conformance remove the split without a backend hierarchy or new dependency.
+- Context lifecycle and handoff are aggregate transaction boundaries. Keeping
+  their event/projection/dispatch coordination behind one Port lets a future
+  PostgreSQL adapter provide atomicity without leaking database tables upward.
+- Distinct A/B regressions now exercise idempotency, attachments/SSE, context
+  compaction/recovery, handoff/dispatch, effect replay, memory review, artifact
+  and model/tool indexes, provider continuation and scoped session history. Each
+  asserts that the legacy SQLite path does not exist before the test inspects it.
+- With an injected bundle, `database_path` is compatibility configuration for
+  local-only collaborators such as skills state and derived web caches; it is no
+  longer an authority locator for durable API/Worker flows.
+- Governed memory review currently persists the Memory fact and its Event/
+  Projection through separate Store calls. This task guarantees one backend,
+  not cross-call atomicity; the PostgreSQL/outbox design must close that failure
+  window before production selection.
+- `MemoryStorePort` retains candidate/review/supersession/deletion authority.
+  Mem0 or another semantic-memory provider remains a separately gated derived
+  Gateway and does not alter this composition contract.
+
 ## CLOUD-STO-SEAM-01 - 2026-07-23
 
 - API and Worker construct the same SQLite control-plane adapters repeatedly;

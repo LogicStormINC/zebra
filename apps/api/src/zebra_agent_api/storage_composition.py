@@ -2,7 +2,6 @@ from pathlib import Path
 
 from agent_storage import (
     ControlPlaneStores,
-    require_legacy_database_coherence,
     sqlite_control_plane_stores,
 )
 
@@ -12,10 +11,6 @@ class ControlPlaneStorageMixin:
 
     database_path: Path
     _stores: ControlPlaneStores | None
-
-    def __post_init__(self) -> None:
-        if self._stores is not None:
-            require_legacy_database_coherence(self._stores, self.database_path)
 
     @property
     def stores(self) -> ControlPlaneStores:
