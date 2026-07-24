@@ -29,7 +29,7 @@ flowchart TD
     PLAN["P0 架构收敛"] --> SPIKE["P0 双仓库 Spike"]
     PLAN --> SEAM["Zebra Storage Composition Seam"]
     SEAM --> CLOUD["P2 Cloud Durable Foundation"]
-    CLOUD --> MEMORY["Redis Agent Memory Gateway"]
+    CLOUD --> MEMORY["Memory Gateway + Mem0 Gate"]
     SPIKE --> CONTRACT["P1 Host / AG-UI / Surface Contracts"]
     CONTRACT --> READ["P3 Trench Read-only Slice"]
     CLOUD --> READGATE["Production Read-only E2E"]
@@ -351,46 +351,51 @@ read-only。
 - Deliverable: approve/deny/expire/duplicate/crash/reconcile matrix on real services。
 - Acceptance: each success has Zebra Effect Receipt + Trench Business Receipt; zero double writes。
 
-## 10. P7：Redis Agent Memory
+## 10. P7：Provider-neutral Memory Gateway + Mem0
 
-### MEM-RAM-CON-01 — AgentMemoryGateway contract
+### MEM-GW-CON-01 — AgentMemoryGateway contract
 
-- Status: `Locked`；Zebra repo；depends on `CLOUD-STO-SEAM-01` and explicit
-  Preview-risk acceptance；does not depend on the P6 writeback feature lane。
-- Candidate paths: new focused core Port/domain models and contract tests。
-- Deliverable: session event、long-term write/search/delete、snapshot/degraded responses。
-- Acceptance: distinct from local MemoryStorePort; no Redis SDK in core and no Trench identity domain。
+- Status: `Locked`；Zebra repo；depends on merged `CLOUD-STO-AUTH-01` and explicit
+  maintainer activation；does not depend on the P6 writeback feature lane。
+- Candidate paths: focused core Gateway/domain models and contract tests。
+- Deliverable: confirmed-memory publish、search、delete and degraded-response contracts。
+- Acceptance: `MemoryStorePort` remains authoritative；no Mem0/provider SDK type enters core；
+  opaque namespace and Zebra memory ref are mandatory；outage cannot fail a Run。
 
-### MEM-RAM-SPIKE-01 — Managed Preview compatibility probe
+### MEM-MEM0-SPIKE-01 — Mem0 OSS contract and operations probe
 
-- Status: `Locked`；depends on `MEM-RAM-CON-01` and a disposable Redis Cloud
-  Agent Memory Store/key approved for test use。
-- Candidate paths: isolated contract fixtures/tests and a compatibility evidence record only。
-- Deliverable: pin current OpenAPI behavior for retry/idempotency、promotion delay、pagination、
-  filters、TTL/summarization、PATCH/delete、rate limits and error shapes。
-- Acceptance: no production import or credential persistence; observed drift and unsupported
-  behavior become explicit adapter gates。
+- Status: `Locked`；depends on merged `CLOUD-COMPOSE-INFRA-01`、`MEM-GW-CON-01`
+  and an approved disposable model/embedder credential。
+- Candidate paths: isolated REST fixtures/tests, Spike configuration and compatibility evidence only。
+- Deliverable: pin exact self-hosted OSS paths/shapes for `infer=false`、metadata filters、
+  expiration、search、update、history、delete、restart and error behavior。
+- Acceptance: observe duplicate delivery、timeout、provider failure and embedding-dimension
+  changes；persist no credential；unsupported behavior becomes an explicit adapter gate。
 
-### MEM-RAM-ADP-01 — Redis Agent Memory adapter
+### MEM-MEM0-ADP-01 — Mem0 Gateway adapter
 
-- Status: `Locked`；depends on `MEM-RAM-SPIKE-01`。
-- Candidate paths: `agent-integrations/.../redis_agent_memory/`, config, tests。
-- Deliverable: feature flag、opaque mapping、redaction、timeout、rate limit、circuit breaker。
-- Acceptance: Embedded profile disables duplicate self-extraction; local profile remains compatible。
+- Status: `Locked`；depends on `MEM-MEM0-SPIKE-01`。
+- Candidate paths: `agent-integrations/.../mem0/`, configuration and tests。
+- Deliverable: feature flag、opaque mapping、`infer=false`、redaction、timeout、rate limit、
+  circuit breaker and provider-version evidence。
+- Acceptance: only confirmed Zebra memories are published；remote score never changes Zebra
+  confidence/lifecycle；local profile remains compatible。
 
-### MEM-RAM-DEL-01 — Memory delivery and deletion ledger
+### MEM-GW-DEL-01 — Memory delivery and deletion ledger
 
-- Status: `Locked`；depends on `MEM-RAM-ADP-01` and `CLOUD-LEASE-01`。
+- Status: `Locked`；depends on `MEM-MEM0-ADP-01` and `CLOUD-LEASE-01`。
 - Candidate paths: delivery storage/worker adapter, delete audit and tests。
-- Deliverable: outbox/idempotency/reconciliation/retention/deletion evidence。
-- Acceptance: retry cannot duplicate memory; delete outcome is traceable without retaining deleted content。
+- Deliverable: outbox/idempotency/reconciliation/retention/deletion evidence and rebuild path。
+- Acceptance: retry cannot duplicate governed memory；search hits are revalidated through
+  `MemoryStorePort`；delete is traceable without retaining deleted content。
 
-### MEM-RAM-GATE-01 — Preview drift and fault gate
+### MEM-GW-GATE-01 — Contract drift and fault gate
 
 - Status: `Locked`；depends on all P7 cards。
 - Candidate paths: daily contract tests, fault injection and acceptance record。
-- Deliverable: schema/version drift detection, outage/rate-limit/timeout/deletion scenarios。
-- Acceptance: Memory outage never fails Run; no pgvector/Graphiti fallback fact source appears。
+- Deliverable: schema/version drift、outage、rate-limit、timeout、stale-hit and deletion scenarios。
+- Acceptance: Memory outage never fails Run；Mem0's isolated pgvector is rebuildable derived data；
+  no second Zebra fact source or Graphiti fallback appears。
 
 ## 11. P8：Namespace isolation and GA
 
@@ -432,10 +437,10 @@ Maintainer 在 2026-07-23 将执行优先级改为“先完成 Zebra 本体，�
    Store 边界，并以跨库回归证明不会分裂事件真相；
 3. 评审 migration/backup/recovery/rollback 后，逐卡完成 PostgreSQL、Lease/Outbox、
    Object Storage、Redis live 和 Cloud recovery gate；
-4. 依次完成 `MEM-RAM-CON-01`、`MEM-RAM-SPIKE-01`、Adapter、delivery ledger 和
-   fault gate；
+4. 依次完成 `MEM-GW-CON-01`、`MEM-MEM0-SPIKE-01`、Mem0 Adapter、delivery ledger
+   和 fault gate；
 5. 再恢复 Host/AG-UI contract 和 Trench read-only lane；P3 production E2E 必须等待
-   P2 gate，但 Redis Agent Memory 故障或关闭不得阻塞 Run；
+   P2 gate，但 Mem0 故障或关闭不得阻塞 Run；
 6. 后续 Frontend、Analysis、Writeback 和 GA 仍逐阶段激活。
 
 `EMB-AGUI-SPIKE-01` 和本地 Trench Spike 的既有证据保留，不在 Cloud Store 任务中

@@ -59,7 +59,7 @@
 | Artifact | S3 Compatible Object Storage，PostgreSQL 保存 metadata/manifest |
 | Runtime | Kubernetes + Linux gVisor，Sandbox 无业务凭证 |
 | 数据分析 | 首版 DuckDB + Polars + PyArrow 批准算子 |
-| Agent Memory | 后续可选 Redis Agent Memory Adapter，故障可降级 |
+| Agent Memory | Zebra 治理状态为权威；后续可选 Mem0 Gateway 只做可降级语义索引 |
 | 可观测性 | OpenTelemetry + 可关联 Task/Run/Tool/Receipt 证据 |
 | 部署交付 | Helm；Terraform/GitOps 在 GA 阶段进入门禁 |
 
@@ -95,7 +95,7 @@ flowchart LR
         PG["PostgreSQL Truth"]
         REDIS["Redis Ephemeral"]
         S3["Object Storage"]
-        MEMORY["Optional Redis Agent Memory"]
+        MEMORY["Optional Mem0 Semantic Index"]
     end
 
     UI --> CPK
@@ -371,22 +371,31 @@ namespace、retention、manifest 和 lineage。下载使用短期签名 URL，�
 ## 9. Agent Memory
 
 Zebra durable foundation 的当前调度优先于 Trench read-only，但首个只读切片仍不
-把远程长期记忆设为运行时依赖。现有 local profile 的本地 Memory 保持兼容；
-Embedded production profile 通过独立 `AgentMemoryGateway` 接入 Redis Agent
-Memory，而不是把远程服务强塞进现有本地 Store Port。
+把远程长期记忆设为运行时依赖。现有 `MemoryStorePort` 继续作为候选、确认、替代、
+过期、删除和 provenance 的唯一权威；后续 Embedded profile 只能通过 provider-neutral
+`AgentMemoryGateway` 把 Mem0 作为可重建的语义索引，不能用 Mem0 状态覆盖 Zebra
+治理状态。
 
 约束：
 
 - feature flag 默认关闭；
 - owner/session/namespace/topic 全部使用不透明 Host 映射；
-- 写入通过 delivery ledger/outbox 保证幂等和可对账；
+- 只发布 Zebra 已确认的记忆，首版固定 `infer=false`，禁止二次自由抽取；
+- 写入通过 delivery ledger/outbox 传递 Zebra memory ref，保证幂等和可对账；
+- search hit 必须重新读取 `MemoryStorePort`，只有仍可见、未删除且 namespace 匹配的
+  权威记录才能进入 Prompt；远端 score 不能成为 Zebra confidence；
 - timeout、rate limit、schema drift 或服务不可用时降级，不使 Run 失败；
 - 删除、保留期、redaction 和 audit 独立验证；
-- 每日 contract test 检测 Preview API 漂移；
-- 不建设 Embedded pgvector 或 Graphiti 备用事实源。
+- 每日 contract test 检测 REST schema/version 漂移；
+- Mem0 自用的隔离 pgvector/PostgreSQL 是派生索引，可由 Zebra 权威记录重建；不建设
+  第二套 Zebra 事实源或 Graphiti 回退路径。
 
-Redis Agent Memory 当前仍标注为 Public Preview，必须保持可替换边界：
-[Redis Agent Memory service](https://redis.io/docs/latest/operate/rc/context-engine/agent-memory/create-service/)。
+采用 Mem0 OSS 前必须完成 `infer=false`、filter、history、delete、重试、重启、模型失败、
+embedding 维度变更和 namespace 的实测 Spike。官方 Compose 仅是开发示例，本仓库的
+Compose 也只证明固定版本能够启动、迁移和鉴权，不构成生产可用性证据：
+[Mem0 OSS setup](https://docs.mem0.ai/open-source/setup)、
+[REST API](https://docs.mem0.ai/open-source/features/rest-api)、
+[OSS 与 Platform 边界](https://docs.mem0.ai/platform/platform-vs-oss)。
 
 ## 10. 生产部署单元
 
@@ -402,10 +411,15 @@ Zebra deployment
 ├── zebra-api
 ├── zebra-worker
 ├── zebra-analysis-worker       # 分析阶段再启用
-├── PostgreSQL
-├── Redis
+├── PostgreSQL                  # Zebra durable truth
+├── Redis                       # live only
 ├── S3-compatible Object Storage
 └── OpenTelemetry Collector
+
+Optional memory auxiliary
+├── mem0-api                    # replaceable semantic index
+├── mem0-postgres/pgvector      # isolated derived data
+└── mem0-history                # isolated operational history
 ```
 
 `zebra-worker` 初期组合 orchestrator、projection、outbox 和 retention。只有满足
@@ -490,7 +504,7 @@ artifact failure、namespace denial、memory degraded rate、token/cost evidence
 → Zebra Storage composition seam
 → Zebra authoritative Store composition completion
 → Cloud durable foundation
-→ Redis Agent Memory Gateway / Preview gate（可降级增强）
+→ provider-neutral Memory Gateway + Mem0 contract gate（可降级增强）
 → Host/AG-UI/Surface 协议
 → Trench 只读链路
 → 生产只读 E2E 汇合

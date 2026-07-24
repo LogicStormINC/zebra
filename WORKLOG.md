@@ -2,19 +2,53 @@
 
 ## 2026-07-24 CLOUD-COMPOSE-INFRA-01 Docker Compose Dependency Baseline
 
-- maintainer required every database dependency, including Redis Agent Memory,
-  to be represented through Docker Compose while separating dependency and Zebra
-  main-container lifecycles
+- maintainer required every database dependency to be represented through Docker
+  Compose while separating base dependencies, optional auxiliaries and future
+  Zebra main-container lifecycles
 - live GitHub audit found PR `#194` still open with runner-allocation failures;
   that investigation was paused when the maintainer reprioritized Compose work
-- official Redis sources show no current supported production Compose deployment:
-  self-managed Agent Memory is Helm/Kubernetes private preview, while open-source
-  V0 Compose is retained only for local development and compatibility validation
+- the first Redis Agent Memory V0 proposal was replaced after a live Mem0 audit:
+  Mem0 OSS fits self-hosted Compose better, but its official Compose remains a
+  development example and its public API image is not a reproducibly pinned release
 - created isolated worktree `zebra-agent-cloud-compose-infra-01` on
   `codex/cloud-compose-infra-01`, stacked on `CLOUD-STO-SEAM-01`; merge order is
   `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-COMPOSE-INFRA-01`
 - registered a dependency-only active card and a separate locked Zebra
   application-container card before adding deployment files
+- added `compose.dependencies.yml` for Zebra PostgreSQL, erasable Redis, MinIO and
+  isolated Mem0 PostgreSQL; added `compose.mem0.yml` for an auth-enabled,
+  telemetry-disabled API/migration overlay with separate history persistence
+- built the Mem0 boot-smoke image from release commit
+  `ca2abca2b884e038d3e525070e79d3057ef2012c` with `mem0ai==2.0.13`, non-root
+  execution and a read-only root filesystem; no Dashboard, Graph or MCP sidecar
+- generated a universal 78-package hash lock from the reviewed upstream input,
+  added a matching `psycopg-binary==3.3.4` runtime input for the slim image, and
+  made the build reject upstream drift, missing direct inputs and broken packages
+- redirected Mem0's generated client identity config to tmpfs after the first
+  read-only boot exposed an attempted `/home/mem0/.mem0` write; the authoritative
+  root filesystem stays read-only and only the separate history volume is durable
+- replaced the first setup-status health probe after review showed that it wrote
+  one durable audit row every 10 seconds; the final probe uses Mem0's audit-skipped
+  OpenAPI route for liveness plus a direct `SELECT 1` against the application DB
+- verified image `sha256:0892c163df54c7535d78f0a7afcdadb4fa4f69e006d7d2aa4eaf9c851722d58a`:
+  UID/GID `10001`, `mem0ai==2.0.13`, `psycopg==3.3.4` and
+  `psycopg-binary==3.3.4`
+- verified the real Compose stack: base PostgreSQL, Redis and MinIO are healthy;
+  MinIO init and Mem0 migration exit `0`; Mem0 PostgreSQL and API are healthy;
+  Alembic reaches `006`, setup status returns `200`, and anonymous memory access
+  returns `401`
+- left real memory write/search and vector initialization unexecuted because the
+  committed sentinel is boot-only; those provider-backed semantics remain the
+  credential-gated `MEM-MEM0-SPIKE-01`
+- kept `MemoryStorePort` authoritative and registered provider-neutral Gateway
+  plus Mem0 contract-Spike tasks before any adapter implementation
+- independent Compose/dependency review found no remaining code-level blocker;
+  `git diff --check`, deterministic lock comparison, upstream-input comparison,
+  both Compose renders and the Linux ARM64/AMD64 hash-lock resolution pass
+- repository `make test` remains at the reproduced baseline of `1744 passed`,
+  `8 skipped`, `9 failed`; Eval is `10/10`, while `make check` remains blocked by
+  two pre-existing file-size violations, 13 Ruff errors and 4 Mypy errors outside
+  this task's owned paths
 
 ## 2026-07-23 CLOUD-STO-SEAM-01 Control-Plane Storage Composition Seam
 

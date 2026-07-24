@@ -3,24 +3,27 @@
 ## CLOUD-COMPOSE-INFRA-01 - Docker Compose Dependency Baseline
 
 1. `completed` - Audit repository container assets, architecture sequencing and
-   current official Redis Agent Memory self-hosting support.
-2. `in_progress` - Register and claim the dependency-only task on an isolated
+   Mem0 OSS self-hosting and release behavior.
+2. `completed` - Register and claim the dependency-only task on an isolated
    branch stacked behind `CLOUD-STO-SEAM-01`.
-3. `pending` - Create `docker/compose.dependencies.yml`, a safe environment
-   template and an operator README with third-party dependencies only.
-4. `pending` - Validate rendered Compose contracts and start the base dependency
-   services through real health checks.
-5. `pending` - Update architecture/progress evidence, obtain independent review
+3. `completed` - Create the base dependency Compose, optional Mem0 overlay,
+   pinned non-root boot-smoke image, safe environment template and runbook.
+4. `completed` - Validate rendered contracts and start base plus optional Mem0
+   services through real migrations, health and authentication checks.
+5. `completed` - Update architecture/progress evidence, obtain independent review,
+   run repository checks
    and commit the task without pushing or merging stacked dependencies.
 
 ### Decisions
 
 - Dependency containers and Zebra application containers have separate task,
   file and Compose lifecycles.
-- `redis-live` and the Agent Memory backing Redis never share a service, volume
-  or authority role.
-- The open-source Agent Memory Server V0 profile is opt-in and dev/test-only;
-  current supported self-managed Agent Memory is Helm/Kubernetes-only.
+- `redis-live`, Zebra PostgreSQL, Mem0 PostgreSQL and Mem0 history never share a
+  persistence role; Mem0 remains derived and rebuildable.
+- `AgentMemoryGateway` is provider-neutral. Mem0 receives only confirmed memory
+  with `infer=false`; every retrieval is revalidated against `MemoryStorePort`.
+- The pinned Mem0 image and Compose overlay prove boot only. Real write/search,
+  idempotency, deletion and namespace behavior remain a separate credentialed Spike.
 
 ## CLOUD-STO-SEAM-01 - Control-Plane Storage Composition Seam
 
@@ -39,7 +42,7 @@
 - The user reprioritized Zebra durable storage and memory foundations ahead of
   further Trench work on 2026-07-23.
 - PostgreSQL remains durable truth, S3-compatible storage owns payload bytes,
-  Redis live state is erasable, and Redis Agent Memory remains a separate,
+  Redis live state is erasable, and semantic memory remains a separate,
   degraded-safe `AgentMemoryGateway` rather than a `MemoryStorePort` replacement.
 - This task composes only the five existing control-plane Ports. Legacy durable
   stores without adequate Ports are recorded in `CLOUD-STO-AUTH-01`; the partial
@@ -90,7 +93,7 @@
   AG-UI adapter and remains the durable Task, Event, Policy, approval, tool
   receipt, and Artifact authority.
 - The first production business slice is read-only. Analysis, controlled
-  writeback, Redis Agent Memory, and multi-tenant GA follow explicit gates.
+  writeback, the optional Memory Gateway, and multi-tenant GA follow explicit gates.
 
 ### Errors Encountered
 

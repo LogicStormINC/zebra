@@ -5,7 +5,7 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-07-23`
+- Snapshot date: `2026-07-24`
 - Verified implementation baseline: `f1e4965` (PR `#174`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
 - Review task: `CTX-SEG-01` has delivered the stable Task, internal Segment,
@@ -31,9 +31,12 @@
   first Zebra-foundation task after the maintainer reprioritized durable storage
   and memory ahead of further Trench work. It injects existing control-plane Store
   Ports while preserving the local SQLite profile and adds no cloud dependency.
-- Active dependency-container task: `CLOUD-COMPOSE-INFRA-01` on
-  `codex/cloud-compose-infra-01` creates the separate Docker Compose dependency
-  stack. Zebra application containers remain locked until real cloud adapters exist.
+- Dependency-container task in Review: `CLOUD-COMPOSE-INFRA-01` on
+  `codex/cloud-compose-infra-01` creates the base Docker Compose dependency stack
+  and a separate optional Mem0 boot-smoke overlay. Its pinned image, migrations,
+  health and anonymous-request rejection are verified locally. Mem0 remains
+  derived and replaceable; Zebra application containers stay locked until real
+  cloud adapters exist.
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
@@ -252,10 +255,12 @@ including a real thinking tool round trip.
   are `Done` via PRs `#170`, `#171`, `#172`, and `#168`.
 - `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
-- `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, and `CLOUD-STO-SEAM-01` are in Review.
-  `CLOUD-COMPOSE-INFRA-01` is the only active implementation card; all PostgreSQL,
-  Redis, object-storage, production AG-UI, Trench, analysis, writeback, Agent
-  Memory adapter, and GA cards remain `Locked` pending their explicit gates.
+- `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
+  `CLOUD-COMPOSE-INFRA-01` are in Review. No storage/memory implementation card
+  is active; all PostgreSQL,
+  Redis-live, object-storage, production AG-UI, Trench, analysis, writeback,
+  provider-neutral Memory Gateway/adapter, and GA cards remain `Locked` pending
+  their explicit gates.
 
 ## Known Follow-Ups
 
@@ -269,10 +274,11 @@ including a real thinking tool round trip.
 5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
    Credential/Egress Broker, external-namespace isolation, and Kubernetes in
    dependency order.
-6. Land the dependency-only Compose baseline without adding Zebra main containers.
+6. Land the dependency Compose baseline and optional Mem0 boot smoke without
+   adding Zebra main containers or claiming a verified semantic-memory contract.
 7. After authoritative Store composition, activate PostgreSQL, Lease/Outbox,
-   Object Storage, Redis live, recovery and the separate Redis Agent Memory
-   Gateway one card at a time; no production claim precedes migration/restore evidence.
+   Object Storage, Redis live, recovery and the separate Memory Gateway/Mem0 Spike
+   one card at a time; no production claim precedes migration/restore evidence.
 
 ## Runtime Blueprint
 
@@ -313,7 +319,7 @@ real tool execution, failure visibility, API restart, and durable recovery.
 
 - Zebra AG-UI production adapter and HostSessionGrant verifier
 - Trench CopilotKit Runtime/BFF, read-only panel, frontend tools and writeback
-- Redis Agent Memory production adapter and delivery ledger (contract/spike still gated)
+- provider-neutral Memory Gateway, Mem0 adapter and delivery ledger (contract/Spike gated)
 - ACP entry adapter
 - optional code-intelligence adapter
 - Kubernetes/Kata/Firecracker and distributed Sandbox scheduling
