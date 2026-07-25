@@ -17,6 +17,8 @@ SUPPORTED_PROTOCOL_VERSIONS: frozenset[str] = frozenset({"2025-06-18", "2025-11-
 MCP_PROTOCOL_VERSION_LATEST = "2025-11-25"
 _SAFE_ENV_NAMES = ("HOME", "LANG", "LC_ALL", "PATH", "TMPDIR")
 
+EnvMapping = "Mapping[str, str] | None"
+
 
 class McpProtocolError(ValueError):
     """Raised when a configured MCP server violates the bounded protocol."""
@@ -24,6 +26,8 @@ class McpProtocolError(ValueError):
 
 @runtime_checkable
 class McpServerSpec(Protocol):
+    env: EnvMapping
+
     @property
     def name(self) -> str: ...
 
@@ -81,6 +85,11 @@ class StdioMcpSession:
         if self.timeout_seconds <= 0:
             raise ValueError("MCP timeout must be positive")
         env = {key: os.environ[key] for key in _SAFE_ENV_NAMES if key in os.environ}
+        server_env = self.server.env
+        if server_env is not None:
+            for key, value in server_env.items():
+                if key and value is not None:
+                    env[key] = value
         try:
             self._process = subprocess.Popen(
                 [self.server.command, *self.server.args],

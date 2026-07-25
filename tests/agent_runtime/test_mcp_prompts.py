@@ -13,6 +13,7 @@ class _Server:
     name: str
     command: str = "unused"
     args: tuple[str, ...] = ()
+    env: dict[str, str] | None = None
 
 
 class _Session:

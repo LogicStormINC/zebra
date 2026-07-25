@@ -18,6 +18,7 @@ class _Server:
     name: str
     command: str
     args: tuple[str, ...]
+    env: dict[str, str] | None = None
 
 
 def _server(mode: str) -> _Server:

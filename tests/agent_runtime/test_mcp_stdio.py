@@ -34,6 +34,7 @@ class _Server:
     name: str
     command: str
     args: tuple[str, ...]
+    env: dict[str, str] | None = None
 
 
 def test_stdio_bridge_discovers_and_executes_untrusted_tool(tmp_path: Path) -> None:

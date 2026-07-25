@@ -30,7 +30,6 @@ _BLOCKED_MCP_EXECUTABLES = frozenset(
     }
 )
 
-
 @dataclass(frozen=True)
 class ModelSettings:
     provider: str
@@ -47,16 +46,13 @@ class ModelSettings:
     deepseek_beta_enabled: bool = False
     deepseek_beta_base_url: str | None = None
 
-
 @dataclass(frozen=True)
 class ApiSettings:
     auth_token: str | None
 
-
 @dataclass(frozen=True)
 class SessionHandoffSettings:
     enabled: bool = False
-
 
 @dataclass(frozen=True)
 class ScmSettings:
@@ -67,13 +63,12 @@ class ScmSettings:
     github_api_base_url: str
     pull_request_dry_run: bool
 
-
 @dataclass(frozen=True)
 class McpServerSettings:
     name: str
     command: str
     args: tuple[str, ...] = ()
-
+    env: dict[str, str] | None = None
 
 @dataclass(frozen=True)
 class McpHttpServerSettings:
@@ -86,7 +81,6 @@ class McpHttpServerSettings:
     name: str
     url: str
     bearer_token_env: str | None = None
-
 
 @dataclass(frozen=True)
 class RuntimeSettings:
@@ -104,7 +98,6 @@ class RuntimeSettings:
     container_gid: int = 65532
     require_workspace_quota: bool = False
     workspace_quota_mb: int = 10_240
-
 
 @dataclass(frozen=True)
 class ZebraAgentSettings:
@@ -135,10 +128,8 @@ class ZebraAgentSettings:
     mcp_servers: tuple[McpServerSettings | McpHttpServerSettings, ...] = ()
     mcp_elicitation_enabled: bool = True
 
-
 def trusted_local_mode_enabled(settings: ZebraAgentSettings) -> bool:
     return settings.profile == "local" and settings.runtime.runtime_class == "trusted-local"
-
 
 def load_settings(
     env: Mapping[str, str] | None = None,
@@ -218,7 +209,6 @@ def load_settings(
         ),
     )
 
-
 def _load_runtime_settings(
     values: Mapping[str, str],
     *,
@@ -280,7 +270,6 @@ def _load_runtime_settings(
         ),
     )
 
-
 def _read_mcp_servers(
     values: Mapping[str, str],
 ) -> tuple[McpServerSettings | McpHttpServerSettings, ...]:
@@ -311,9 +300,8 @@ def _read_mcp_servers(
             raise ValueError(f"MCP server {name} has unsupported kind {kind!r}")
     return tuple(servers)
 
-
 def _read_stdio_mcp_server(name: str, entry: Mapping[str, object]) -> McpServerSettings:
-    extra = set(entry) - {"kind", "command", "args"}
+    extra = set(entry) - {"kind", "command", "args", "env"}
     if extra:
         raise ValueError(f"MCP server {name} supports only command and args")
     command = entry.get("command")
@@ -331,8 +319,21 @@ def _read_stdio_mcp_server(name: str, entry: Mapping[str, object]) -> McpServerS
     if resolved_command.name.lower() in _BLOCKED_MCP_EXECUTABLES:
         raise ValueError(f"MCP server {name} command is not allowed")
     args = _read_mcp_args(name, entry.get("args", []), resolved_command.name.lower())
-    return McpServerSettings(name=name, command=str(resolved_command), args=args)
-
+    raw_env = entry.get("env", {})
+    if not isinstance(raw_env, dict):
+        raise ValueError(f"MCP server {name} env must be a JSON object")
+    env: dict[str, str] | None = None
+    if raw_env:
+        env = dict(os.environ)
+        for k, v in raw_env.items():
+            if not isinstance(k, str) or not k:
+                raise ValueError(f"MCP server {name} env key {k!r}")
+            if isinstance(v, str):
+                env[k] = os.environ.get(v[1:], "") if v.startswith("$") else v
+            else:
+                raise ValueError(f"MCP server {name} env val {k!r} must be str")
+    
+    return McpServerSettings(name=name, command=str(resolved_command), args=args, env=env)
 
 def _read_http_mcp_server(name: str, entry: Mapping[str, object]) -> McpHttpServerSettings:
     extra = set(entry) - {"kind", "url", "bearer_token_env"}
@@ -357,7 +358,6 @@ def _read_http_mcp_server(name: str, entry: Mapping[str, object]) -> McpHttpServ
         bearer_token_env=bearer_token_env if isinstance(bearer_token_env, str) else None,
     )
 
-
 def _read_mcp_args(name: str, value: object, executable: str) -> tuple[str, ...]:
     if not isinstance(value, list) or len(value) > 16:
         raise ValueError(f"MCP server {name} args must be a list with at most 16 entries")
@@ -371,7 +371,6 @@ def _read_mcp_args(name: str, value: object, executable: str) -> tuple[str, ...]
     if executable.startswith("python") and any(item in {"-c", "-m"} for item in args):
         raise ValueError(f"MCP server {name} cannot use inline Python execution")
     return tuple(args)
-
 
 def _load_scm_settings(values: Mapping[str, str]) -> ScmSettings:
     provider = _read(values, "ZEBRA_SCM_PROVIDER", default="local-only")
@@ -402,7 +401,6 @@ def _load_scm_settings(values: Mapping[str, str]) -> ScmSettings:
         ),
     )
 
-
 def _read_defaults(path: Path) -> dict[str, str]:
     if not path.exists():
         return {}
@@ -415,20 +413,17 @@ def _read_defaults(path: Path) -> dict[str, str]:
         defaults[key.strip()] = value.strip()
     return defaults
 
-
 def _read(values: Mapping[str, str], key: str, *, default: str) -> str:
     value = values.get(key, default).strip()
     if not value:
         return default
     return value
 
-
 def _read_optional(values: Mapping[str, str], key: str) -> str | None:
     value = values.get(key, "").strip()
     if not value:
         return None
     return value
-
 
 def _read_int(values: Mapping[str, str], key: str, *, default: int) -> int:
     raw = values.get(key, str(default)).strip()
@@ -440,7 +435,6 @@ def _read_int(values: Mapping[str, str], key: str, *, default: int) -> int:
         raise ValueError(f"{key} must be positive")
     return value
 
-
 def _read_non_negative_int(values: Mapping[str, str], key: str, *, default: int) -> int:
     raw = values.get(key, str(default)).strip()
     try:
@@ -451,7 +445,6 @@ def _read_non_negative_int(values: Mapping[str, str], key: str, *, default: int)
         raise ValueError(f"{key} must not be negative")
     return value
 
-
 def _read_float(values: Mapping[str, str], key: str, *, default: float) -> float:
     raw = values.get(key, str(default)).strip()
     try:
@@ -461,7 +454,6 @@ def _read_float(values: Mapping[str, str], key: str, *, default: float) -> float
     if value <= 0:
         raise ValueError(f"{key} must be positive")
     return value
-
 
 def _read_paths(values: Mapping[str, str], key: str) -> tuple[str, ...]:
     value = values.get(key, "").strip()
@@ -481,7 +473,6 @@ def _read_paths(values: Mapping[str, str], key: str) -> tuple[str, ...]:
             raise ValueError(f"{key} contains a duplicate path: {normalized}")
         roots.append(normalized)
     return tuple(roots)
-
 
 def _read_bool(values: Mapping[str, str], key: str, *, default: bool) -> bool:
     value = values.get(key, "").strip().lower()
