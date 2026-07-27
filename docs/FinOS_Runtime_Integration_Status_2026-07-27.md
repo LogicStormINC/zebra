@@ -6,7 +6,9 @@ replace Zebra's product architecture or FinOS's business authority contract.
 ## Branch scope
 
 - Base: `origin/main@f7d16c4`
-- Committed branch baseline before this snapshot: `37708b4` (`0 behind / 1 ahead`)
+- Snapshot: `40d6930` (`0 behind / 3 ahead` of `origin/main@f7d16c4`)
+- This synchronization adds `4459397` (runtime/tests) and `40d6930`
+  (governance/status) after the existing MiniMax commit `37708b4`.
 - Delivery: review branch plus Draft PR only; no `main` merge or deployment is
   implied by the GitHub synchronization.
 - Task card: `FINOS-RT-04` in `docs/AGENT_TASKS.md`
