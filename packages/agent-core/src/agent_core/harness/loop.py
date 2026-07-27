@@ -3,6 +3,7 @@ from dataclasses import replace
 from datetime import datetime
 
 from agent_core.domain.events import EventActor, EventType
+from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session
 from agent_core.harness.models import (
     HarnessAttempt,
@@ -37,9 +38,10 @@ class HarnessLoop:
         attempt_runner: AttemptRunner,
         *,
         created_at: datetime | None = None,
+        session_id: SessionId | None = None,
     ) -> HarnessLoopResult:
         started_at = created_at or self._clock.now()
-        session = Session.create(title=task.title, created_at=started_at)
+        session = Session.create(title=task.title, created_at=started_at, session_id=session_id)
         recorder = HarnessEventRecorder(session=session, clock=self._clock)
 
         recorder.record(

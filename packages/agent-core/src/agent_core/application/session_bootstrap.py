@@ -6,6 +6,7 @@ from pathlib import Path
 
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import SessionId
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.sessions import Session
@@ -28,6 +29,7 @@ class SessionBootstrapCommand:
     max_model_calls: int | None = None
     max_tool_calls: int | None = None
     created_at: datetime | None = None
+    session_id: SessionId | None = None
 
 
 @dataclass(frozen=True)
@@ -44,7 +46,11 @@ class SessionBootstrapService:
             if command.history_session_ids is None
             else normalize_history_session_ids(command.history_session_ids)
         )
-        session = Session.create(title=command.title, created_at=command.created_at)
+        session = Session.create(
+            title=command.title,
+            created_at=command.created_at,
+            session_id=command.session_id,
+        )
         events = (
             SessionEvent.create(
                 session_id=session.session_id,

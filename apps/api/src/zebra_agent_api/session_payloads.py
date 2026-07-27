@@ -13,7 +13,7 @@ from agent_runtime import normalize_mcp_resource_ids
 from agent_security import NetworkProfileError, PolicyProfile, parse_network_profile
 
 from zebra_agent_api.responses import ApiResponse, bad_request
-from zebra_agent_api.session_attachment_inputs import parse_attachment_inputs
+from zebra_agent_api.session_attachment_inputs import ImageAttachmentInput, parse_attachment_inputs
 
 
 class CreateSessionPayload(TypedDict):
@@ -33,6 +33,7 @@ class CreateSessionPayload(TypedDict):
     mcp_prompt_arguments: dict[str, str]
     history_session_ids: tuple[str, ...] | None
     attachments: tuple[TextAttachmentInput, ...]
+    image_attachments: tuple[ImageAttachmentInput, ...]
 
 
 CREATE_SESSION_FIELDS = frozenset(CreateSessionPayload.__annotations__)
@@ -55,6 +56,7 @@ class AppendSessionMessagePayload(TypedDict):
     content: str
     clarification_id: str | None
     attachments: tuple[TextAttachmentInput, ...]
+    image_attachments: tuple[ImageAttachmentInput, ...]
 
 
 class ApprovalDecisionPayload(TypedDict):
@@ -139,13 +141,9 @@ def parse_create_session_payload(
         ("max_tool_calls", max_tool_calls, 64),
     ):
         if value is not None and (
-            not isinstance(value, int)
-            or isinstance(value, bool)
-            or not 1 <= value <= maximum
+            not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= maximum
         ):
-            return bad_request(
-                f"{field} must be an integer from 1 to {maximum} when provided"
-            )
+            return bad_request(f"{field} must be an integer from 1 to {maximum} when provided")
     assert max_model_calls is None or isinstance(max_model_calls, int)
     assert max_tool_calls is None or isinstance(max_tool_calls, int)
     network_profile = payload.get("network_profile", "none")
@@ -161,7 +159,7 @@ def parse_create_session_payload(
     except NetworkProfileError as exc:
         return bad_request(str(exc))
     try:
-        attachments = parse_attachment_inputs(payload.get("attachments"))
+        parsed_attachments = parse_attachment_inputs(payload.get("attachments"))
     except ValueError as exc:
         return bad_request(str(exc))
     raw_history_session_ids = payload.get("history_session_ids")
@@ -232,7 +230,16 @@ def parse_create_session_payload(
         "mcp_prompt_id": normalized_prompt_id,
         "mcp_prompt_arguments": dict(raw_prompt_arguments),
         "history_session_ids": history_session_ids,
-        "attachments": attachments,
+        "attachments": tuple(
+            attachment
+            for attachment in parsed_attachments
+            if isinstance(attachment, TextAttachmentInput)
+        ),
+        "image_attachments": tuple(
+            attachment
+            for attachment in parsed_attachments
+            if isinstance(attachment, ImageAttachmentInput)
+        ),
     }
 
 
@@ -283,15 +290,24 @@ def parse_append_session_message_payload(
     ):
         return bad_request("clarification_id must be a non-blank string when provided")
     try:
-        attachments = parse_attachment_inputs(payload.get("attachments"))
+        parsed_attachments = parse_attachment_inputs(payload.get("attachments"))
     except ValueError as exc:
         return bad_request(str(exc))
-    if clarification_id is not None and attachments:
+    if clarification_id is not None and parsed_attachments:
         return bad_request("clarification responses do not accept attachments")
     return {
         "content": content.strip(),
         "clarification_id": clarification_id.strip() if clarification_id else None,
-        "attachments": attachments,
+        "attachments": tuple(
+            attachment
+            for attachment in parsed_attachments
+            if isinstance(attachment, TextAttachmentInput)
+        ),
+        "image_attachments": tuple(
+            attachment
+            for attachment in parsed_attachments
+            if isinstance(attachment, ImageAttachmentInput)
+        ),
     }
 
 

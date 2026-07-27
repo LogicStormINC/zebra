@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
 from typing import Protocol
@@ -15,12 +16,14 @@ from agent_core.domain.agent_tasks import (
     RolloverReason,
 )
 from agent_core.domain.events import EventType
-from agent_core.domain.identifiers import SessionId, TaskId
+from agent_core.domain.identifiers import SessionId, TaskId, new_task_id
 from agent_core.domain.session_handoff import HandoffActorKind
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.agent_tasks import TaskEvent
 from agent_storage import (
+    FinosJournalGrant,
     SQLiteAgentTaskStore,
+    SQLiteFinosJournalGrantStore,
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
 )
@@ -32,6 +35,17 @@ from zebra_agent_api.session_summary import serialize_session_summary
 
 DEFAULT_TASK_LIMIT = 50
 MAX_TASK_LIMIT = 100
+FINOS_JOURNAL_CONTRACT = "finos.journals.v1"
+FINOS_JOURNAL_TOOLS = (
+    "finos.journals.list",
+    "finos.journals.get",
+    "finos.snapshots.list",
+    "finos.snapshots.get",
+    "finos.transactions.list",
+    "finos.notes.list",
+    "finos.notes.get",
+    "finos.securities.resolve",
+)
 
 
 class TaskSessionApi(Protocol):
@@ -39,11 +53,19 @@ class TaskSessionApi(Protocol):
     def database_path(self) -> Path: ...
 
     def create_session(
-        self, payload: dict[str, object], *, idempotency_key: str | None = None
+        self,
+        payload: dict[str, object],
+        *,
+        idempotency_key: str | None = None,
+        session_id: SessionId | None = None,
     ) -> ApiResponse: ...
 
     def append_session_message(
-        self, session_id: str, payload: dict[str, object]
+        self,
+        session_id: str,
+        payload: dict[str, object],
+        *,
+        task_id: str | None = None,
     ) -> ApiResponse: ...
 
     def cancel_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse: ...
@@ -71,6 +93,7 @@ class TaskReadApi:
             task.active_segment_id
         )
         body = serialize_session_summary(session, workspace)
+        _hide_workspace_paths(body)
         body.update(
             task_id=task_id,
             session_id=task_id,
@@ -78,8 +101,7 @@ class TaskReadApi:
             status=task.status.value,
         )
         events = [
-            item.event
-            for item in SQLiteAgentTaskStore(self.database_path).read_events(parsed, -1)
+            item.event for item in SQLiteAgentTaskStore(self.database_path).read_events(parsed, -1)
         ]
         attachments = [
             ref.to_mapping() for event in events for ref in attachment_refs_from_event(event)
@@ -88,7 +110,12 @@ class TaskReadApi:
             body["attachments"] = attachments
         return ApiResponse(200, body)
 
-    def list(self, query: Mapping[str, str]) -> ApiResponse:
+    def list(
+        self,
+        query: Mapping[str, str],
+        *,
+        hide_workspace_paths: bool = False,
+    ) -> ApiResponse:
         limit = _parse_limit(query.get("limit"))
         if isinstance(limit, ApiResponse):
             return limit
@@ -105,6 +132,8 @@ class TaskReadApi:
                 workspace_store.get_workspace(task.active_segment_id),
                 include_timestamps=True,
             )
+            if hide_workspace_paths:
+                _hide_workspace_paths(body)
             body.update(
                 task_id=str(task.task_id),
                 session_id=str(task.task_id),
@@ -182,7 +211,20 @@ def create_task(
     *,
     idempotency_key: str | None,
 ) -> ApiResponse:
-    response = app.create_session(payload, idempotency_key=idempotency_key)
+    if "finos_journal_provider" in payload:
+        return ApiResponse(
+            400,
+            {
+                "status": "invalid_request",
+                "reason": "FinOS Journal provider must be bound after Task creation",
+            },
+        )
+    task_id = new_task_id()
+    response = app.create_session(
+        payload,
+        idempotency_key=idempotency_key,
+        session_id=SessionId(task_id),
+    )
     if response.status_code not in {200, 201}:
         return response
     session_id = response.body.get("session_id")
@@ -190,8 +232,103 @@ def create_task(
         return ApiResponse(409, {"status": "projection_incomplete"})
     task = SQLiteAgentTaskStore(app.database_path).ensure_for_session(SessionId(UUID(session_id)))
     body = dict(response.body)
+    body.pop("workspace", None)
     body.update(task_id=str(task.task_id), session_id=str(task.task_id))
     return ApiResponse(response.status_code, body)
+
+
+def bind_finos_journal_provider(
+    database_path: Path,
+    task_id: str,
+    payload: dict[str, object],
+) -> ApiResponse:
+    parsed_task_id = parse_task_id(task_id)
+    if isinstance(parsed_task_id, ApiResponse):
+        return parsed_task_id
+    if SQLiteAgentTaskStore(database_path).get_task(parsed_task_id) is None:
+        return _not_found(task_id)
+    provider = _parse_finos_journal_provider(payload)
+    if isinstance(provider, ApiResponse):
+        return provider
+    try:
+        SQLiteFinosJournalGrantStore(database_path).bind(
+            FinosJournalGrant(
+                task_id=parsed_task_id,
+                contract_version=FINOS_JOURNAL_CONTRACT,
+                grant=provider.grant,
+                expires_at=provider.expires_at,
+            )
+        )
+    except ValueError:
+        return ApiResponse(
+            409,
+            {
+                "task_id": task_id,
+                "status": "conflict",
+                "reason": "FinOS Journal provider rotation is stale or incompatible",
+            },
+        )
+    return ApiResponse(
+        200,
+        {
+            "task_id": task_id,
+            "business_tools": {
+                "contract_version": FINOS_JOURNAL_CONTRACT,
+                "names": list(FINOS_JOURNAL_TOOLS),
+            },
+        },
+    )
+
+
+@dataclass(frozen=True)
+class _ParsedFinosJournalProvider:
+    grant: str
+    expires_at: datetime
+
+
+def _parse_finos_journal_provider(
+    raw: object,
+) -> _ParsedFinosJournalProvider | ApiResponse:
+    if not isinstance(raw, dict):
+        return ApiResponse(
+            400,
+            {"status": "invalid_request", "reason": "finos_journal_provider must be an object"},
+        )
+    if set(raw) != {"contract_version", "grant", "expires_at"}:
+        return ApiResponse(
+            400,
+            {
+                "status": "invalid_request",
+                "reason": "finos_journal_provider has unsupported fields",
+            },
+        )
+    if raw.get("contract_version") != FINOS_JOURNAL_CONTRACT:
+        return ApiResponse(
+            400,
+            {"status": "invalid_request", "reason": "FinOS Journal contract is unsupported"},
+        )
+    grant = raw.get("grant")
+    if not isinstance(grant, str) or not grant.strip() or len(grant) > 4096:
+        return ApiResponse(
+            400,
+            {"status": "invalid_request", "reason": "FinOS Journal grant is invalid"},
+        )
+    expires_at = raw.get("expires_at")
+    try:
+        parsed_expiry = datetime.fromisoformat(expires_at) if isinstance(expires_at, str) else None
+    except ValueError:
+        parsed_expiry = None
+    if (
+        parsed_expiry is None
+        or parsed_expiry.tzinfo is None
+        or parsed_expiry.utcoffset() is None
+        or parsed_expiry <= datetime.now(UTC)
+    ):
+        return ApiResponse(
+            400,
+            {"status": "invalid_request", "reason": "FinOS Journal grant expiry is invalid"},
+        )
+    return _ParsedFinosJournalProvider(grant=grant.strip(), expires_at=parsed_expiry)
 
 
 def mutate_task(
@@ -280,11 +417,13 @@ def append_task_message(
         SessionStatus.FAILED,
     }:
         return finish(
-            _rewrite_task_identity(app.append_session_message(str(active), payload), task_id)
+            _rewrite_task_identity(
+                app.append_session_message(str(active), payload, task_id=task_id), task_id
+            )
         )
     content = payload.get("content")
     if not isinstance(content, str) or not content.strip():
-        return app.append_session_message(str(active), payload)
+        return app.append_session_message(str(active), payload, task_id=task_id)
     response = _rollover(
         app.database_path,
         task_id,
@@ -305,7 +444,7 @@ def append_task_message(
     if isinstance(next_active, ApiResponse):
         return finish(next_active)
     appended = _rewrite_task_identity(
-        app.append_session_message(str(next_active), payload), task_id
+        app.append_session_message(str(next_active), payload, task_id=task_id), task_id
     )
     if appended.status_code not in {200, 201}:
         return finish(appended)
@@ -351,12 +490,14 @@ def rollover_task(
 
 def serialize_task_event(item: TaskEvent) -> dict[str, object]:
     event = item.event
-    payload = event.payload
+    payload = dict(event.payload)
     if (
         event.event_type is EventType.USER_MESSAGE_RECEIVED
         and payload.get("source") == "session_handoff"
     ):
         payload = {"content": payload.get("content", "")}
+    elif event.event_type is EventType.TASK_PREPARED:
+        payload.pop("workspace_root", None)
     return {
         "event_id": str(event.event_id),
         "sequence": item.task_sequence,
@@ -416,8 +557,19 @@ def _rollover(
 
 def _rewrite_task_identity(response: ApiResponse, task_id: str) -> ApiResponse:
     body = dict(response.body)
+    body.pop("workspace", None)
     body.update(task_id=task_id, session_id=task_id)
     return ApiResponse(response.status_code, body)
+
+
+def _hide_workspace_paths(body: dict[str, object]) -> None:
+    workspace = body.get("workspace")
+    if not isinstance(workspace, dict):
+        return
+    workspace.pop("workspace_root", None)
+    snapshot = workspace.get("snapshot")
+    if isinstance(snapshot, dict):
+        snapshot.pop("snapshot_path", None)
 
 
 def _follow_up_key(task_id: str, sequence: int, content: str) -> str:

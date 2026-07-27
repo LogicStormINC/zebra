@@ -25,6 +25,8 @@ def test_http_app_serves_health(tmp_path: Path) -> None:
             "profile": "local",
             "runtime_class": "trusted-local",
             "fallback_allowed": False,
+            "build_commit": "unknown",
+            "task_image_attachments": True,
         },
     }
 

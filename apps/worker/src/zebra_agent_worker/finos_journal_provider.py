@@ -1,0 +1,38 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+from agent_core.domain.identifiers import SessionId
+from agent_runtime import FinosJournalProvider, FinosJournalTransport
+from agent_storage import SQLiteAgentTaskStore, SQLiteFinosJournalGrantStore
+from zebra_agent_config import ZebraAgentSettings
+
+FINOS_JOURNAL_CONTRACT = "finos.journals.v1"
+
+
+def build_finos_journal_provider(
+    *,
+    settings: ZebraAgentSettings,
+    database_path: Path,
+    session_id: SessionId,
+    transport: FinosJournalTransport | None = None,
+) -> FinosJournalProvider | None:
+    base_url = settings.finos_journal_provider.base_url
+    if base_url is None:
+        return None
+    task = SQLiteAgentTaskStore(database_path).ensure_for_session(session_id)
+    binding = SQLiteFinosJournalGrantStore(database_path).get(task.task_id)
+    if (
+        binding is None
+        or not binding.active
+        or binding.contract_version != FINOS_JOURNAL_CONTRACT
+    ):
+        return None
+    kwargs = {"transport": transport} if transport is not None else {}
+    return FinosJournalProvider(
+        base_url=base_url,
+        task_id=str(task.task_id),
+        grant=binding.grant,
+        timeout_seconds=settings.finos_journal_provider.timeout_seconds,
+        **kwargs,
+    )

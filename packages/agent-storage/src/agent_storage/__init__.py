@@ -25,6 +25,7 @@ from agent_storage.effect_ledger import (
     EffectReservation,
     SQLiteEffectLedger,
 )
+from agent_storage.finos_journal_grants import FinosJournalGrant, SQLiteFinosJournalGrantStore
 from agent_storage.idempotency import (
     IdempotencyConflictError,
     IdempotencyRecord,
@@ -67,6 +68,7 @@ __all__ = [
     "EffectLedgerStatus",
     "EffectReplayRejectedError",
     "EffectReservation",
+    "FinosJournalGrant",
     "ActiveContextProjectionConflictError",
     "IdempotencyConflictError",
     "IdempotencyRecord",
@@ -92,6 +94,7 @@ __all__ = [
     "SQLiteContextLifecycleStore",
     "SQLiteDeliveryAuditStore",
     "SQLiteEffectLedger",
+    "SQLiteFinosJournalGrantStore",
     "SQLiteEventStore",
     "SQLiteIdempotencyStore",
     "SQLiteLeaseStore",

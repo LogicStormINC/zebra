@@ -7,6 +7,7 @@ from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.task_api import (
     TaskReadApi,
     append_task_message,
+    bind_finos_journal_provider,
     create_task,
     mutate_task,
     rollover_task,
@@ -34,7 +35,10 @@ class TaskRouteRequest(Protocol):
 def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiResponse | None:
     method = request.method.upper()
     if method == "GET" and request.path == "/tasks":
-        return TaskReadApi(app.database_path).list(request.query or {})
+        return TaskReadApi(app.database_path).list(
+            request.query or {},
+            hide_workspace_paths=True,
+        )
     if method == "POST" and request.path == "/tasks":
         return create_task(app, request.body or {}, idempotency_key=_idempotency_key(request))
     if request.path.startswith("/internal/tasks/"):
@@ -52,6 +56,24 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
     if not request.path.startswith("/tasks/"):
         return None
     parts = _parts(request.path, "/tasks/")
+    if (
+        method == "PUT"
+        and len(parts) == 3
+        and parts[1:] == ("business-providers", "finos-journals")
+    ):
+        if app.settings.finos_journal_provider.base_url is None:
+            return ApiResponse(
+                503,
+                {
+                    "status": "provider_unavailable",
+                    "reason": "FinOS Journal provider is not configured",
+                },
+            )
+        return bind_finos_journal_provider(
+            app.database_path,
+            parts[0],
+            request.body or {},
+        )
     if method == "POST" and len(parts) == 2 and parts[1] == "messages":
         return append_task_message(
             app,

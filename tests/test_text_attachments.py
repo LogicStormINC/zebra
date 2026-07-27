@@ -47,7 +47,7 @@ def test_attachment_parser_accepts_bounded_utf8_text() -> None:
         ),
         (
             {"file_name": "image.png", "media_type": "image/png", "content_base64": "QQ=="},
-            "media_type is not supported",
+            "magic bytes are invalid",
         ),
         (
             {"file_name": "bad.txt", "media_type": "text/plain", "content_base64": "not base64"},
@@ -110,9 +110,10 @@ def test_queued_session_persists_attachment_without_exposing_payload(tmp_path: P
     assert refs[0].to_mapping() == attachment
     assert "content_base64" not in user_event.payload
     assert "ATTACHMENT-QUEUE-131" not in str(user_event.payload)
-    assert SQLiteArtifactPayloadStore(database_path).read_payload_bytes(
-        refs[0].attachment_id
-    ) == b"ATTACHMENT-QUEUE-131"
+    assert (
+        SQLiteArtifactPayloadStore(database_path).read_payload_bytes(refs[0].attachment_id)
+        == b"ATTACHMENT-QUEUE-131"
+    )
 
     restarted = create_app(database_path, settings=_settings(database_path))
     detail = restarted.get_session(str(session_id))

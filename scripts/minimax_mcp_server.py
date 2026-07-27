@@ -199,20 +199,25 @@ class MiniMaxMcpServer:
         if not isinstance(image_source, str) or not image_source.strip():
             _send_error(msg_id, -32602, "image_source must be a non-empty string")
             return
-        workspace_root = Path(os.environ.get("ZEBRA_WORKSPACE_ROOT", os.getcwd()))
+        workspace_root_value = os.environ.get("ZEBRA_WORKSPACE_ROOT", "").strip()
+        if not workspace_root_value:
+            _send_error(msg_id, -32000, "ZEBRA_WORKSPACE_ROOT is required for image analysis")
+            return
         try:
-            resolved = workspace_root.expanduser().resolve(strict=True)
-            candidate = (
-                resolved / image_source
-                if not Path(image_source).is_absolute()
-                else Path(image_source)
-            )
+            source = Path(image_source)
+            if source.is_absolute():
+                raise ValueError("image_source must be task-relative")
+            workspace_root = Path(workspace_root_value).expanduser()
+            if workspace_root.is_symlink():
+                raise ValueError("workspace root must not be a symlink")
+            resolved = workspace_root.resolve(strict=True)
+            candidate = resolved / source
+            if candidate.is_symlink():
+                raise ValueError("image_source must not be a symlink")
             candidate = candidate.resolve(strict=True)
             candidate.relative_to(resolved)
         except (FileNotFoundError, ValueError) as exc:
-            _send_error(
-                msg_id, -32000, f"image_source must resolve inside the workspace: {exc}"
-            )
+            _send_error(msg_id, -32000, f"image_source must resolve inside the workspace: {exc}")
             return
         if not candidate.is_file():
             _send_error(msg_id, -32000, "image_source must be a regular file")
@@ -227,6 +232,8 @@ class MiniMaxMcpServer:
             return
         try:
             image_bytes = candidate.read_bytes()
+            if not _has_image_magic(media_type, image_bytes):
+                raise ValueError("image_source has invalid image magic bytes")
             b64 = base64.b64encode(image_bytes).decode("ascii")
             data = self._post(
                 "/v1/coding_plan/vlm",
@@ -289,6 +296,16 @@ def _validated_api_host(value: str) -> str:
     ):
         raise ValueError("MiniMax API host must be the official global or mainland host")
     return f"https://{parsed.hostname}"
+
+
+def _has_image_magic(media_type: str, payload: bytes) -> bool:
+    return (
+        payload.startswith(b"\xff\xd8\xff")
+        if media_type == "image/jpeg"
+        else payload.startswith(b"\x89PNG\r\n\x1a\n")
+        if media_type == "image/png"
+        else payload.startswith(b"RIFF") and payload[8:12] == b"WEBP"
+    )
 
 
 def _send_result(msg_id: object, result: object) -> None:

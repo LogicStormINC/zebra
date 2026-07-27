@@ -76,6 +76,8 @@ def load_attachment_contexts(
 ) -> tuple[AttachmentContextInput, ...]:
     contexts: list[AttachmentContextInput] = []
     for ref in refs:
+        if ref.storage_kind == "task_workspace":
+            continue
         payload = store.read_payload_bytes(ref.attachment_id)
         if len(payload) != ref.size_bytes:
             raise ValueError("attachment payload size does not match durable metadata")

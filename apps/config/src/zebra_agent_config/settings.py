@@ -99,12 +99,24 @@ class RuntimeSettings:
     require_workspace_quota: bool = False
     workspace_quota_mb: int = 10_240
 
+
+@dataclass(frozen=True)
+class FinosJournalProviderSettings:
+    base_url: str | None = None
+    timeout_seconds: float = 10.0
+
+
 @dataclass(frozen=True)
 class ZebraAgentSettings:
     profile: str
     database_url: str
     api: ApiSettings
     model: ModelSettings
+    build_commit: str = "unknown"
+    task_workspace_root: Path = Path(".zebra-agent/task-workspaces")
+    finos_journal_provider: FinosJournalProviderSettings = field(
+        default_factory=FinosJournalProviderSettings
+    )
     session_handoff: SessionHandoffSettings = field(default_factory=SessionHandoffSettings)
     runtime: RuntimeSettings = field(default_factory=RuntimeSettings)
     setup: SetupSettings = field(default_factory=SetupSettings)
@@ -156,6 +168,9 @@ def load_settings(
             "ZEBRA_DATABASE_URL",
             default=".zebra-agent/sessions.sqlite",
         ),
+        task_workspace_root=Path(
+            _read(values, "ZEBRA_TASK_WORKSPACE_ROOT", default=".zebra-agent/task-workspaces")
+        ),
         api=ApiSettings(
             auth_token=_read_optional(values, "ZEBRA_API_AUTH_TOKEN"),
         ),
@@ -186,6 +201,8 @@ def load_settings(
             ),
             deepseek_beta_base_url=_read_optional(values, "ZEBRA_DEEPSEEK_BETA_BASE_URL"),
         ),
+        finos_journal_provider=_load_finos_journal_provider_settings(values),
+        build_commit=_read(values, "ZEBRA_BUILD_COMMIT", default="unknown"),
         session_handoff=SessionHandoffSettings(
             enabled=_read_bool(values, "ZEBRA_SESSION_HANDOFF_ENABLED", default=False),
         ),
@@ -204,10 +221,36 @@ def load_settings(
             default=".zebra-agent/skills-state.sqlite",
         ),
         mcp_servers=_read_mcp_servers(values),
-        mcp_elicitation_enabled=_read_bool(
-            values, "ZEBRA_MCP_ELICITATION", default=True
+        mcp_elicitation_enabled=_read_bool(values, "ZEBRA_MCP_ELICITATION", default=True),
+    )
+
+
+def _load_finos_journal_provider_settings(
+    values: Mapping[str, str],
+) -> FinosJournalProviderSettings:
+    base_url = _read_optional(values, "ZEBRA_FINOS_JOURNAL_PROVIDER_BASE_URL")
+    if base_url is not None:
+        parsed = urlparse(base_url)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError(
+                "ZEBRA_FINOS_JOURNAL_PROVIDER_BASE_URL must be a valid http or https URL"
+            )
+    return FinosJournalProviderSettings(
+        base_url=base_url.rstrip("/") if base_url is not None else None,
+        timeout_seconds=_read_float(
+            values,
+            "ZEBRA_FINOS_JOURNAL_PROVIDER_TIMEOUT_SECONDS",
+            default=10.0,
         ),
     )
+
 
 def _load_runtime_settings(
     values: Mapping[str, str],
@@ -293,14 +336,18 @@ def _read_mcp_servers(
             raise ValueError(f"MCP server {name} must be a JSON object")
         kind = entry.get("kind", "stdio")
         if kind == "stdio":
-            servers.append(_read_stdio_mcp_server(name, entry))
+            servers.append(_read_stdio_mcp_server(name, entry, values))
         elif kind == "http":
             servers.append(_read_http_mcp_server(name, entry))
         else:
             raise ValueError(f"MCP server {name} has unsupported kind {kind!r}")
     return tuple(servers)
 
-def _read_stdio_mcp_server(name: str, entry: Mapping[str, object]) -> McpServerSettings:
+def _read_stdio_mcp_server(
+    name: str,
+    entry: Mapping[str, object],
+    values: Mapping[str, str],
+) -> McpServerSettings:
     extra = set(entry) - {"kind", "command", "args", "env"}
     if extra:
         raise ValueError(f"MCP server {name} supports only command and args")
@@ -324,15 +371,15 @@ def _read_stdio_mcp_server(name: str, entry: Mapping[str, object]) -> McpServerS
         raise ValueError(f"MCP server {name} env must be a JSON object")
     env: dict[str, str] | None = None
     if raw_env:
-        env = dict(os.environ)
+        env = {}
         for k, v in raw_env.items():
             if not isinstance(k, str) or not k:
                 raise ValueError(f"MCP server {name} env key {k!r}")
             if isinstance(v, str):
-                env[k] = os.environ.get(v[1:], "") if v.startswith("$") else v
+                env[k] = values.get(v[1:], "") if v.startswith("$") else v
             else:
                 raise ValueError(f"MCP server {name} env val {k!r} must be str")
-    
+
     return McpServerSettings(name=name, command=str(resolved_command), args=args, env=env)
 
 def _read_http_mcp_server(name: str, entry: Mapping[str, object]) -> McpHttpServerSettings:
@@ -347,9 +394,8 @@ def _read_http_mcp_server(name: str, entry: Mapping[str, object]) -> McpHttpServ
         raise ValueError(f"MCP http server {name} url must be a valid https url")
     bearer_token_env = entry.get("bearer_token_env")
     if bearer_token_env is not None:
-        if (
-            not isinstance(bearer_token_env, str)
-            or not _MCP_BEARER_ENV_RE.fullmatch(bearer_token_env)
+        if not isinstance(bearer_token_env, str) or not _MCP_BEARER_ENV_RE.fullmatch(
+            bearer_token_env
         ):
             raise ValueError(f"MCP http server {name} bearer_token_env is invalid")
     return McpHttpServerSettings(
@@ -371,6 +417,7 @@ def _read_mcp_args(name: str, value: object, executable: str) -> tuple[str, ...]
     if executable.startswith("python") and any(item in {"-c", "-m"} for item in args):
         raise ValueError(f"MCP server {name} cannot use inline Python execution")
     return tuple(args)
+
 
 def _load_scm_settings(values: Mapping[str, str]) -> ScmSettings:
     provider = _read(values, "ZEBRA_SCM_PROVIDER", default="local-only")
@@ -401,6 +448,7 @@ def _load_scm_settings(values: Mapping[str, str]) -> ScmSettings:
         ),
     )
 
+
 def _read_defaults(path: Path) -> dict[str, str]:
     if not path.exists():
         return {}
@@ -413,17 +461,20 @@ def _read_defaults(path: Path) -> dict[str, str]:
         defaults[key.strip()] = value.strip()
     return defaults
 
+
 def _read(values: Mapping[str, str], key: str, *, default: str) -> str:
     value = values.get(key, default).strip()
     if not value:
         return default
     return value
 
+
 def _read_optional(values: Mapping[str, str], key: str) -> str | None:
     value = values.get(key, "").strip()
     if not value:
         return None
     return value
+
 
 def _read_int(values: Mapping[str, str], key: str, *, default: int) -> int:
     raw = values.get(key, str(default)).strip()
@@ -435,6 +486,7 @@ def _read_int(values: Mapping[str, str], key: str, *, default: int) -> int:
         raise ValueError(f"{key} must be positive")
     return value
 
+
 def _read_non_negative_int(values: Mapping[str, str], key: str, *, default: int) -> int:
     raw = values.get(key, str(default)).strip()
     try:
@@ -445,6 +497,7 @@ def _read_non_negative_int(values: Mapping[str, str], key: str, *, default: int)
         raise ValueError(f"{key} must not be negative")
     return value
 
+
 def _read_float(values: Mapping[str, str], key: str, *, default: float) -> float:
     raw = values.get(key, str(default)).strip()
     try:
@@ -454,6 +507,7 @@ def _read_float(values: Mapping[str, str], key: str, *, default: float) -> float
     if value <= 0:
         raise ValueError(f"{key} must be positive")
     return value
+
 
 def _read_paths(values: Mapping[str, str], key: str) -> tuple[str, ...]:
     value = values.get(key, "").strip()
@@ -473,6 +527,7 @@ def _read_paths(values: Mapping[str, str], key: str) -> tuple[str, ...]:
             raise ValueError(f"{key} contains a duplicate path: {normalized}")
         roots.append(normalized)
     return tuple(roots)
+
 
 def _read_bool(values: Mapping[str, str], key: str, *, default: bool) -> bool:
     value = values.get(key, "").strip().lower()

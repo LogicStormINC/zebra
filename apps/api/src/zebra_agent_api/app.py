@@ -3,18 +3,15 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from agent_core.application import (
     SessionBootstrapCommand,
     SessionBootstrapService,
-    SessionMessageAppendCommand,
-    SessionMessageAppendService,
-    attach_refs_to_user_event,
 )
-from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.attachments import AttachmentContextInput
+from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_integrations import GitHubPullRequestTransport, build_model_gateway
@@ -31,19 +28,18 @@ from agent_security import (
 )
 from agent_storage import (
     LeaseConflictError,
-    SQLiteArtifactPayloadStore,
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
     SQLiteSessionHistory,
     SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
-    store_text_attachments,
 )
 from zebra_agent_config import (
     ZebraAgentSettings,
     load_settings,
     trusted_local_mode_enabled,
+    with_task_workspace_root,
 )
 from zebra_agent_worker import (
     SessionClaimService,
@@ -61,6 +57,7 @@ from zebra_agent_api.api_memory_control_mixin import ApiMemoryControlMixin
 from zebra_agent_api.api_memory_read_mixin import ApiMemoryReadMixin
 from zebra_agent_api.api_scm_mixin import ApiScmMixin
 from zebra_agent_api.api_session_handoff_mixin import ApiSessionHandoffMixin
+from zebra_agent_api.api_session_message_append_mixin import ApiSessionMessageAppendMixin
 from zebra_agent_api.api_session_read_mixin import ApiSessionReadMixin
 from zebra_agent_api.api_status_mixin import ApiStatusMixin
 from zebra_agent_api.credential_broker import build_default_credential_broker
@@ -71,7 +68,6 @@ from zebra_agent_api.session_attachment_persistence import persist_initial_attac
 from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
-    parse_append_session_message_payload,
     parse_create_session_payload,
     parse_resume_session_payload,
 )
@@ -81,11 +77,17 @@ from zebra_agent_api.skills_admin import (
     runtime_skills_state,
     scoped_skill_roots,
 )
+from zebra_agent_api.task_image_attachments import (
+    cleanup_staged_task_images,
+    stage_task_images,
+    task_image_prompt_suffix,
+)
 
 
 @dataclass(frozen=True)
 class ZebraAgentApi(
     ApiStatusMixin,
+    ApiSessionMessageAppendMixin,
     ApiSessionReadMixin,
     ApiSessionHandoffMixin,
     ApiMemoryReadMixin,
@@ -105,6 +107,7 @@ class ZebraAgentApi(
         payload: dict[str, object],
         *,
         idempotency_key: str | None = None,
+        session_id: SessionId | None = None,
     ) -> ApiResponse:
         replayed = replay_idempotent_response(
             database_path=self.database_path,
@@ -142,14 +145,12 @@ class ZebraAgentApi(
             )
         except ValueError as error:
             return bad_request(str(error))
-        parsed["attachments"] = (
-            *parsed["attachments"], *resource_attachments, *prompt_attachments
-        )
-
+        parsed["attachments"] = (*parsed["attachments"], *resource_attachments, *prompt_attachments)
+        session_id = session_id or (SessionId(uuid4()) if parsed["image_attachments"] else None)
         response = (
-            self._create_and_execute_session(parsed)
+            self._create_and_execute_session(parsed, session_id=session_id)
             if parsed["execute"]
-            else self._create_queued_session(parsed)
+            else self._create_queued_session(parsed, session_id=session_id)
         )
         if idempotency_key is None or response.status_code != 201:
             return response
@@ -160,7 +161,6 @@ class ZebraAgentApi(
             payload=payload,
             response=response,
         )
-
     def resume_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
         parsed = parse_resume_session_payload(payload)
         if isinstance(parsed, ApiResponse):
@@ -168,7 +168,6 @@ class ZebraAgentApi(
         session_key = self._parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-
         claim_service = SessionClaimService(
             SQLiteLeaseStore(self.database_path),
             SessionRecoveryService(
@@ -227,86 +226,16 @@ class ZebraAgentApi(
                 "trace": serialize_trace_events(result.events),
             },
         )
-
     def cancel_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
         session_key = self._parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
         return cancel_session_control(self.database_path, str(session_key), payload)
-
     def suspend_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
         session_key = self._parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
         return suspend_session_control(self.database_path, str(session_key), payload)
-
-    def append_session_message(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
-        parsed = parse_append_session_message_payload(payload)
-        if isinstance(parsed, ApiResponse):
-            return parsed
-
-        session_key = self._parse_session_id(session_id)
-        if isinstance(session_key, ApiResponse):
-            return session_key
-
-        projection_store = SQLiteProjectionStore(self.database_path)
-        session = projection_store.get_session(session_key)
-        if session is None:
-            return ApiResponse(
-                status_code=404,
-                body={"session_id": session_id, "status": "not_found"},
-            )
-        try:
-            event = SessionMessageAppendService().build_event(
-                session=session,
-                next_sequence=session.current_sequence + 1,
-                command=SessionMessageAppendCommand(
-                    content=parsed["content"],
-                    clarification_id=parsed["clarification_id"],
-                ),
-            )
-        except ValueError as exc:
-            return conflict(
-                session_id=session_id,
-                status="not_appendable",
-                reason=(
-                    "cannot_append_to_terminal_session"
-                    if "terminal session" in str(exc)
-                    else str(exc)
-                ),
-            )
-        attachment_refs = store_text_attachments(
-            SQLiteArtifactPayloadStore(self.database_path),
-            session_id=session_key,
-            message_event=event,
-            attachments=parsed["attachments"],
-            created_at=event.created_at,
-        )
-        event = attach_refs_to_user_event(event, attachment_refs)
-        SQLiteEventStore(self.database_path).append(event)
-        updated_session = projection_store.save_session(apply_event(session, event))
-        body: dict[str, object] = {
-            "session_id": session_id,
-            "appended": True,
-            **(
-                {
-                    "clarification_resolved": True,
-                    "clarification_id": parsed["clarification_id"],
-                }
-                if event.event_type.value == "clarification_responded"
-                else {}
-            ),
-            "content": parsed["content"],
-            "sequence": event.sequence,
-            "status": updated_session.status.value,
-            "current_sequence": updated_session.current_sequence,
-        }
-        if attachment_refs:
-            body["attachments"] = [ref.to_mapping() for ref in attachment_refs]
-        return ApiResponse(
-            status_code=201,
-            body=body,
-        )
 
     def _parse_session_id(self, session_id: str) -> SessionId | ApiResponse:
         try:
@@ -321,34 +250,65 @@ class ZebraAgentApi(
                 },
             )
 
-    def _create_queued_session(self, parsed: CreateSessionPayload) -> ApiResponse:
-        bootstrap = SessionBootstrapService().build(
-            SessionBootstrapCommand(
-                title=str(parsed["title"]),
-                user_input=str(parsed["prompt"]),
-                workspace_root=Path(str(parsed["workspace"])).expanduser().resolve(),
-                policy_profile=str(parsed["policy_profile"]),
-                tool_profile=ToolProfile(str(parsed["tool_profile"])),
-                network_profile=str(parsed["network_profile"]),
-                network_allowlist=tuple(parsed["network_allowlist"]),
-                mcp_allowlist=tuple(parsed["mcp_allowlist"]),
-                history_session_ids=parsed["history_session_ids"],
-                max_model_calls=parsed["max_model_calls"],
-                max_tool_calls=parsed["max_tool_calls"],
+    def _create_queued_session(
+        self,
+        parsed: CreateSessionPayload,
+        *,
+        session_id: SessionId | None,
+    ) -> ApiResponse:
+        try:
+            staged_images = (
+                stage_task_images(
+                    self.settings,
+                    task_id=str(session_id),
+                    images=parsed["image_attachments"],
+                )
+                if parsed["image_attachments"]
+                else None
             )
-        )
-        events, attachment_refs = persist_initial_attachments(
-            self.database_path,
-            tuple(bootstrap.events),
-            parsed["attachments"],
-        )
-        event_store = SQLiteEventStore(self.database_path)
-        for event in events:
-            event_store.append(event)
-        SQLiteProjectionStore(self.database_path).save_session(bootstrap.session)
-        SQLiteWorkspaceProjectionStore(self.database_path).save_workspace(
-            rebuild_workspace(list(events))
-        )
+        except ValueError as error:
+            return bad_request(str(error))
+        images_durable = False
+        try:
+            bootstrap = SessionBootstrapService().build(
+                SessionBootstrapCommand(
+                    title=str(parsed["title"]),
+                    user_input=str(parsed["prompt"])
+                    + (task_image_prompt_suffix(staged_images) if staged_images else ""),
+                    workspace_root=(
+                        staged_images.workspace_root
+                        if staged_images is not None
+                        else Path(str(parsed["workspace"])).expanduser().resolve()
+                    ),
+                    policy_profile=str(parsed["policy_profile"]),
+                    tool_profile=ToolProfile(str(parsed["tool_profile"])),
+                    network_profile=str(parsed["network_profile"]),
+                    network_allowlist=tuple(parsed["network_allowlist"]),
+                    mcp_allowlist=tuple(parsed["mcp_allowlist"]),
+                    history_session_ids=parsed["history_session_ids"],
+                    max_model_calls=parsed["max_model_calls"],
+                    max_tool_calls=parsed["max_tool_calls"],
+                    session_id=session_id,
+                )
+            )
+            events, attachment_refs = persist_initial_attachments(
+                self.database_path,
+                tuple(bootstrap.events),
+                parsed["attachments"],
+                staged_images=staged_images,
+            )
+            event_store = SQLiteEventStore(self.database_path)
+            for event in events:
+                event_store.append(event)
+                images_durable |= event.event_type is EventType.USER_MESSAGE_RECEIVED
+            SQLiteProjectionStore(self.database_path).save_session(bootstrap.session)
+            SQLiteWorkspaceProjectionStore(self.database_path).save_workspace(
+                rebuild_workspace(list(events))
+            )
+        except Exception:
+            if staged_images is not None and not images_durable:
+                cleanup_staged_task_images(staged_images)
+            raise
         return ApiResponse(
             status_code=201,
             body={
@@ -379,12 +339,12 @@ class ZebraAgentApi(
             },
         )
 
-    def _create_and_execute_session(self, parsed: CreateSessionPayload) -> ApiResponse:
-        workspace_root = Path(str(parsed["workspace"])).expanduser().resolve()
-        confirmed_memories = list_confirmed_repo_memories(
-            self.database_path,
-            repo_id=str(workspace_root),
-        )
+    def _create_and_execute_session(
+        self,
+        parsed: CreateSessionPayload,
+        *,
+        session_id: SessionId | None,
+    ) -> ApiResponse:
         try:
             model_gateway = build_model_gateway(self.settings)
         except ValueError as error:
@@ -392,6 +352,28 @@ class ZebraAgentApi(
                 status="model_gateway_unavailable",
                 reason=str(error),
             )
+        try:
+            staged_images = (
+                stage_task_images(
+                    self.settings,
+                    task_id=str(session_id),
+                    images=parsed["image_attachments"],
+                )
+                if parsed["image_attachments"]
+                else None
+            )
+        except ValueError as error:
+            return bad_request(str(error))
+        images_durable = False
+        workspace_root = (
+            staged_images.workspace_root
+            if staged_images is not None
+            else Path(str(parsed["workspace"])).expanduser().resolve()
+        )
+        confirmed_memories = list_confirmed_repo_memories(
+            self.database_path,
+            repo_id=str(workspace_root),
+        )
         try:
             trusted_local = trusted_local_mode_enabled(self.settings)
             network_profile = resolve_effective_network_profile(
@@ -402,7 +384,8 @@ class ZebraAgentApi(
                 trusted_local=trusted_local,
             )
             result = run_local_harness(
-                prompt=str(parsed["prompt"]),
+                prompt=str(parsed["prompt"])
+                + (task_image_prompt_suffix(staged_images) if staged_images else ""),
                 title=str(parsed["title"]),
                 workspace_root=workspace_root,
                 model_gateway=model_gateway,
@@ -412,7 +395,13 @@ class ZebraAgentApi(
                 web_search_endpoint=self.settings.web_search_endpoint,
                 skill_roots=scoped_skill_roots(self.settings),
                 skills_state=runtime_skills_state(self.settings),
-                mcp_servers=self.settings.mcp_servers,
+                mcp_servers=(
+                    with_task_workspace_root(
+                        self.settings.mcp_servers, staged_images.workspace_root
+                    )
+                    if staged_images is not None
+                    else self.settings.mcp_servers
+                ),
                 mcp_allowlist=parsed["mcp_allowlist"],
                 trusted_local=trusted_local,
                 max_model_calls=parsed["max_model_calls"],
@@ -430,24 +419,36 @@ class ZebraAgentApi(
                     )
                     for attachment in parsed["attachments"]
                 ),
+                session_id=session_id,
             )
-        except ValueError as error:
+        except Exception as error:
+            if staged_images is not None and not images_durable:
+                cleanup_staged_task_images(staged_images)
+            if not isinstance(error, ValueError):
+                raise
             return service_unavailable(
                 status="tool_gateway_unavailable",
                 reason=str(error),
             )
-        events, attachment_refs = persist_initial_attachments(
-            self.database_path,
-            tuple(result.events),
-            parsed["attachments"],
-        )
-        event_store = SQLiteEventStore(self.database_path)
-        for event in events:
-            event_store.append(event)
-        SQLiteProjectionStore(self.database_path).save_session(result.session)
-        SQLiteWorkspaceProjectionStore(self.database_path).save_workspace(
-            rebuild_workspace(list(events))
-        )
+        try:
+            events, attachment_refs = persist_initial_attachments(
+                self.database_path,
+                tuple(result.events),
+                parsed["attachments"],
+                staged_images=staged_images,
+            )
+            event_store = SQLiteEventStore(self.database_path)
+            for event in events:
+                event_store.append(event)
+                images_durable |= event.event_type is EventType.USER_MESSAGE_RECEIVED
+            SQLiteProjectionStore(self.database_path).save_session(result.session)
+            SQLiteWorkspaceProjectionStore(self.database_path).save_workspace(
+                rebuild_workspace(list(events))
+            )
+        except Exception:
+            if staged_images is not None and not images_durable:
+                cleanup_staged_task_images(staged_images)
+            raise
         return ApiResponse(
             status_code=201,
             body={
@@ -475,7 +476,6 @@ class ZebraAgentApi(
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
-
 
 def create_app(
     database_path: str | Path | None = None,

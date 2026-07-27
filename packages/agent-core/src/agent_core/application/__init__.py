@@ -25,6 +25,7 @@ from agent_core.application.memory_reviews import (
 from agent_core.application.session_attachments import (
     attach_refs_to_user_event,
     attachment_refs_from_event,
+    task_workspace_image_prompt_suffix,
 )
 from agent_core.application.session_bootstrap import (
     BootstrappedSession,
@@ -43,6 +44,7 @@ __all__ = [
     "ApprovalDecisionService",
     "attach_refs_to_user_event",
     "attachment_refs_from_event",
+    "task_workspace_image_prompt_suffix",
     "build_mcp_prompt_attachment",
     "BootstrappedSession",
     "MemoryCandidateExtractionCommand",

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import PurePosixPath
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -75,6 +76,8 @@ class SessionAttachmentRef(BaseModel):
     media_type: str
     size_bytes: int = Field(ge=1)
     sha256: str
+    storage_kind: Literal["artifact_payload", "task_workspace"] = "artifact_payload"
+    workspace_path: str | None = None
     source_type: Literal["user_attachment", "mcp_resource", "mcp_prompt"] = "user_attachment"
     source_server: str | None = None
     source_id: str | None = None
@@ -101,6 +104,21 @@ class SessionAttachmentRef(BaseModel):
     @classmethod
     def ensure_sha256(cls, value: str) -> str:
         return _normalized_sha256(value, field_name="attachment sha256")
+
+    @field_validator("workspace_path")
+    @classmethod
+    def ensure_workspace_path_is_relative(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        path = PurePosixPath(value)
+        if (
+            not value
+            or path.is_absolute()
+            or any(part in {"", ".", ".."} for part in path.parts)
+            or "\\" in value
+        ):
+            raise ValueError("attachment workspace_path must be a safe relative path")
+        return path.as_posix()
 
     @field_validator("original_sha256")
     @classmethod
@@ -129,6 +147,15 @@ class SessionAttachmentRef(BaseModel):
             self.slide_count,
             self.extraction_status,
         )
+        if self.storage_kind == "artifact_payload":
+            if self.workspace_path is not None:
+                raise ValueError("artifact payload attachments must not include workspace_path")
+        elif (
+            self.source_type != "user_attachment"
+            or self.media_type not in {"image/jpeg", "image/png"}
+            or self.workspace_path is None
+        ):
+            raise ValueError("task workspace attachments must be user JPEG or PNG images")
         return self
 
     def to_mapping(self) -> dict[str, object]:
@@ -140,6 +167,13 @@ class SessionAttachmentRef(BaseModel):
             "size_bytes": self.size_bytes,
             "sha256": self.sha256,
         }
+        if self.storage_kind == "task_workspace":
+            result.update(
+                {
+                    "storage_kind": self.storage_kind,
+                    "workspace_path": self.workspace_path,
+                }
+            )
         if self.source_type in {"mcp_resource", "mcp_prompt"}:
             result.update(
                 {
@@ -288,15 +322,16 @@ def _validate_document_provenance(
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ):
         if paragraph_count is None or any(
-            value is not None
-            for value in (page_count, worksheet_count, cell_count, slide_count)
+            value is not None for value in (page_count, worksheet_count, cell_count, slide_count)
         ):
             raise ValueError("DOCX provenance requires only paragraph_count")
     elif original_media_type == (
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     ):
-        if worksheet_count is None or cell_count is None or any(
-            value is not None for value in (page_count, paragraph_count, slide_count)
+        if (
+            worksheet_count is None
+            or cell_count is None
+            or any(value is not None for value in (page_count, paragraph_count, slide_count))
         ):
             raise ValueError("XLSX provenance requires worksheet_count and cell_count")
     elif original_media_type == (
