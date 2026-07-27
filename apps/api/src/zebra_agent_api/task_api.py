@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
 from typing import Protocol
@@ -21,9 +20,7 @@ from agent_core.domain.session_handoff import HandoffActorKind
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.agent_tasks import TaskEvent
 from agent_storage import (
-    FinosJournalGrant,
     SQLiteAgentTaskStore,
-    SQLiteFinosJournalGrantStore,
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
 )
@@ -35,19 +32,6 @@ from zebra_agent_api.session_summary import serialize_session_summary
 
 DEFAULT_TASK_LIMIT = 50
 MAX_TASK_LIMIT = 100
-FINOS_JOURNAL_CONTRACT = "finos.journals.v1"
-FINOS_JOURNAL_TOOLS = (
-    "finos.journals.list",
-    "finos.journals.get",
-    "finos.snapshots.list",
-    "finos.snapshots.get",
-    "finos.transactions.list",
-    "finos.notes.list",
-    "finos.notes.get",
-    "finos.securities.resolve",
-)
-
-
 class TaskSessionApi(Protocol):
     @property
     def database_path(self) -> Path: ...
@@ -235,100 +219,6 @@ def create_task(
     body.pop("workspace", None)
     body.update(task_id=str(task.task_id), session_id=str(task.task_id))
     return ApiResponse(response.status_code, body)
-
-
-def bind_finos_journal_provider(
-    database_path: Path,
-    task_id: str,
-    payload: dict[str, object],
-) -> ApiResponse:
-    parsed_task_id = parse_task_id(task_id)
-    if isinstance(parsed_task_id, ApiResponse):
-        return parsed_task_id
-    if SQLiteAgentTaskStore(database_path).get_task(parsed_task_id) is None:
-        return _not_found(task_id)
-    provider = _parse_finos_journal_provider(payload)
-    if isinstance(provider, ApiResponse):
-        return provider
-    try:
-        SQLiteFinosJournalGrantStore(database_path).bind(
-            FinosJournalGrant(
-                task_id=parsed_task_id,
-                contract_version=FINOS_JOURNAL_CONTRACT,
-                grant=provider.grant,
-                expires_at=provider.expires_at,
-            )
-        )
-    except ValueError:
-        return ApiResponse(
-            409,
-            {
-                "task_id": task_id,
-                "status": "conflict",
-                "reason": "FinOS Journal provider rotation is stale or incompatible",
-            },
-        )
-    return ApiResponse(
-        200,
-        {
-            "task_id": task_id,
-            "business_tools": {
-                "contract_version": FINOS_JOURNAL_CONTRACT,
-                "names": list(FINOS_JOURNAL_TOOLS),
-            },
-        },
-    )
-
-
-@dataclass(frozen=True)
-class _ParsedFinosJournalProvider:
-    grant: str
-    expires_at: datetime
-
-
-def _parse_finos_journal_provider(
-    raw: object,
-) -> _ParsedFinosJournalProvider | ApiResponse:
-    if not isinstance(raw, dict):
-        return ApiResponse(
-            400,
-            {"status": "invalid_request", "reason": "finos_journal_provider must be an object"},
-        )
-    if set(raw) != {"contract_version", "grant", "expires_at"}:
-        return ApiResponse(
-            400,
-            {
-                "status": "invalid_request",
-                "reason": "finos_journal_provider has unsupported fields",
-            },
-        )
-    if raw.get("contract_version") != FINOS_JOURNAL_CONTRACT:
-        return ApiResponse(
-            400,
-            {"status": "invalid_request", "reason": "FinOS Journal contract is unsupported"},
-        )
-    grant = raw.get("grant")
-    if not isinstance(grant, str) or not grant.strip() or len(grant) > 4096:
-        return ApiResponse(
-            400,
-            {"status": "invalid_request", "reason": "FinOS Journal grant is invalid"},
-        )
-    expires_at = raw.get("expires_at")
-    try:
-        parsed_expiry = datetime.fromisoformat(expires_at) if isinstance(expires_at, str) else None
-    except ValueError:
-        parsed_expiry = None
-    if (
-        parsed_expiry is None
-        or parsed_expiry.tzinfo is None
-        or parsed_expiry.utcoffset() is None
-        or parsed_expiry <= datetime.now(UTC)
-    ):
-        return ApiResponse(
-            400,
-            {"status": "invalid_request", "reason": "FinOS Journal grant expiry is invalid"},
-        )
-    return _ParsedFinosJournalProvider(grant=grant.strip(), expires_at=parsed_expiry)
 
 
 def mutate_task(

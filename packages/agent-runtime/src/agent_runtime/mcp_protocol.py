@@ -17,16 +17,14 @@ SUPPORTED_PROTOCOL_VERSIONS: frozenset[str] = frozenset({"2025-06-18", "2025-11-
 MCP_PROTOCOL_VERSION_LATEST = "2025-11-25"
 _SAFE_ENV_NAMES = ("HOME", "LANG", "LC_ALL", "PATH", "TMPDIR")
 
-EnvMapping = "Mapping[str, str] | None"
-
-
 class McpProtocolError(ValueError):
     """Raised when a configured MCP server violates the bounded protocol."""
 
 
 @runtime_checkable
 class McpServerSpec(Protocol):
-    env: EnvMapping
+    @property
+    def env(self) -> Mapping[str, str] | None: ...
 
     @property
     def name(self) -> str: ...

@@ -7,12 +7,12 @@ from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.task_api import (
     TaskReadApi,
     append_task_message,
-    bind_finos_journal_provider,
     create_task,
     mutate_task,
     rollover_task,
     route_active_task,
 )
+from zebra_agent_api.task_finos_journal_provider import bind_finos_journal_provider
 
 
 class TaskRouteRequest(Protocol):

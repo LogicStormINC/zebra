@@ -34,9 +34,13 @@
   PRs `#170`, `#171`, and `#172`.
 - `QA-DESKTOP-E2E-01` is `Done` via PR `#161`.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
-- `FINOS-RT-04` is `Review` on `codex/finos-runtime-alignment`; focused
-  attachment/provider tests pass, while full repository and container release
-  gates remain open.
+- `FINOS-RT-04` is `Review` on `codex/finos-runtime-alignment`; 81 focused and
+  configuration-contract tests pass, and its branch-attributable size, MCP
+  Mypy, and MiniMax Ruff gates are closed. The current full suite matches
+  `origin/main` (`1792 passed, 9 failed, 8 skipped`): two existing file-size,
+  13 Ruff, four Mypy, and eight functional failures plus the file-size test
+  remain. CI jobs did not run because of the billing/spending limit; container
+  release gates remain open.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
 - No other card is `Ready`, `In Progress`, `Review`, or `Blocked`.
@@ -10638,6 +10642,18 @@ financial write authority.
   health checks with an immutable build commit.
 - [ ] Deployment requires API authentication and a reviewed private-network or
   TLS/mTLS provider route; expiry/replay/zero-Core-write acceptance is rerun.
+
+#### Review evidence — 2026-07-27
+
+- The 81 focused/provider and settings-contract tests pass. This branch no
+  longer contributes the `task_api.py`/`settings.py` file-size violations, 13
+  MCP Mypy errors, or four MiniMax Ruff line-length errors.
+- Current full-suite evidence is `1792 passed, 9 failed, 8 skipped`, matching
+  `origin/main` with no FinOS-focused regression. Remaining main-baseline gates
+  are two file-size, 13 Ruff, four Mypy, and eight functional failures; the
+  file-size test is the ninth test failure. CI jobs did not run because of the
+  billing/spending limit; `make check` and fresh-container evidence remain open.
+  Status remains `Review`.
 
 #### Explicit Non-Goals
 

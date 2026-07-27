@@ -40,10 +40,21 @@ replace Zebra's product architecture or FinOS's business authority contract.
 
 ## Not complete / release blockers
 
-- Full repository gates are not green for this working-tree snapshot:
-  `make test` reported `1792 passed, 9 failed, 8 skipped`; `make check` is
-  blocked by new file-size violations in `task_api.py` and `settings.py` plus
-  Ruff/Mypy failures. These remain Draft PR work, not release-ready evidence.
+- This branch's attributable static regressions are closed: `task_api.py` and
+  `settings.py` are below the 500-line limit; the MCP Protocol's 13 Mypy errors
+  and MiniMax's four Ruff line-length errors are gone. The 81 focused/provider
+  and settings-contract tests pass.
+- Current full-suite evidence is `uv run pytest -q -p no:cacheprovider`:
+  `1792 passed, 9 failed, 8 skipped`, matching the `origin/main` baseline with
+  no FinOS-focused regression. The nine failures are eight existing functional
+  failures (two provider assertions, five expired credentials, one Worker
+  cancellation) plus the existing file-size test.
+- Repository gates remain at the main baseline: two existing file-size
+  violations (`UI/desktop/src/components/CodexConversationPane.styles.ts` and
+  `packages/agent-core/src/agent_core/contracts/events.py`), 13 Ruff findings,
+  and four Mypy findings (`web_crawl.py:248-250` and
+  `mcp_proxy_policy.py:195`). CI jobs did not run because of the
+  billing/spending limit; `make check` is not green.
 - The Dockerfile path contract has a unit test, but a fresh image build,
   non-root write probe and real `/health` check still need to be recorded. The
   current workstation has no `docker` CLI, so this was not silently treated as
@@ -61,7 +72,8 @@ replace Zebra's product architecture or FinOS's business authority contract.
   aggregate. No replacement large-input framework is implemented here.
 - Final merge requires resolving all full-suite/check failures and rerunning a
   controlled FinOS acceptance for expiry, replay denial, owner/account scope,
-  all eight reads and zero Core writes.
+  all eight reads and zero Core writes; CI jobs remain blocked by the
+  billing/spending limit and fresh-container evidence remains open.
 
 ## External and paused work
 

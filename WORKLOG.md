@@ -13,8 +13,16 @@
   database and Task workspaces only under the two prepared volume paths
 - focused tests pass; external FinOS staging records real image, eight-tool and
   zero-Core-write acceptance
-- stopped at Draft status because full `make test`, `make check`, fresh-container
-  and authenticated private-network/TLS gates remain open; details are in
+- closed this branch's `task_api.py`/`settings.py` size violations, 13 MCP Mypy
+  errors, and four MiniMax Ruff line-length errors; 81 focused/provider and
+  settings-contract tests pass
+- current `uv run pytest -q -p no:cacheprovider` is `1792 passed, 9 failed, 8
+  skipped`, matching `origin/main` with no FinOS-focused regression: eight
+  existing functional failures plus the existing file-size test. Main also has
+  two file-size, 13 Ruff, and four Mypy findings; stopped at Draft status
+  because `make check`, CI jobs blocked by the billing/spending limit,
+  fresh-container, and authenticated private-network/TLS gates remain open;
+  details are in
   `docs/FinOS_Runtime_Integration_Status_2026-07-27.md`
 - local container validation could not start because this workstation has no
   `docker` CLI; the unit-level writable-path contract passed

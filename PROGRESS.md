@@ -65,10 +65,15 @@
   validation has not been executed in this session.
 - FinOS integration review `FINOS-RT-04` restores native Task JPEG/PNG
   attachments and adds a fixed eight-tool, Task-scoped read-only business
-  provider on `codex/finos-runtime-alignment`. Focused tests and external FinOS
-  staging evidence pass. Full `make test`/`make check`, container runtime and
-  production authentication/TLS gates remain open; this is a Draft candidate,
-  not a mainline or release claim. See
+  provider on `codex/finos-runtime-alignment`. Its 81 focused/provider and
+  settings-contract tests pass; the branch's two file-size, 13 MCP Mypy, and
+  four MiniMax Ruff regressions are closed. The current full suite is `1792
+  passed, 9 failed, 8 skipped`, matching `origin/main` with no FinOS-focused
+  regression: eight existing functional failures plus the existing file-size
+  test. Main still has two file-size, 13 Ruff, and four Mypy findings. CI jobs
+  did not run because of the billing/spending limit; `make check`, container
+  runtime, and production authentication/TLS gates remain open. This is a Draft
+  candidate, not a mainline or release claim. See
   `docs/FinOS_Runtime_Integration_Status_2026-07-27.md`.
 
 ## Current Capability
@@ -247,8 +252,10 @@ including a real thinking tool round trip.
 
 ## Known Follow-Ups
 
-1. Close `FINOS-RT-04` file-size, Ruff/Mypy, full-suite, fresh-container and
-   authenticated private-network/TLS acceptance before merge or release.
+1. Close `FINOS-RT-04` main-baseline gates (two file-size, 13 Ruff, four Mypy,
+   eight functional failures plus the file-size test), CI billing/spending,
+   fresh-container, and authenticated private-network/TLS acceptance before
+   merge or release.
 2. Add terminal/TTL cleanup for FinOS Task attachment workspaces without
    changing Journal, Note, Draft or Core lifecycle.
 3. Decide explicitly whether to activate Phase B private-cloud single-tenant work;
