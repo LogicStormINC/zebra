@@ -6,7 +6,9 @@ replace Zebra's product architecture or FinOS's business authority contract.
 ## Branch scope
 
 - Base: `origin/main@f7d16c4`
-- Snapshot: `983f082` (`0 behind / 6 ahead` of `origin/main@f7d16c4`)
+- Runtime snapshot: `983f082`; the review branch is `0 behind` of
+  `origin/main@f7d16c4` and has only status-document commits after this runtime
+  commit.
 - This synchronization includes `4459397` (runtime/tests), `40d6930` and
   `acac428` (governance/status), `ada7b80` (FinOS integration static cleanup),
   and `983f082` (stable Task public conversation projection) after MiniMax
