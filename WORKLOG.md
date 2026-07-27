@@ -1,5 +1,24 @@
 # Progress Log
 
+## 2026-07-27 FINOS-RT-04 GitHub Review Snapshot
+
+- registered `FINOS-RT-04` for `codex/finos-runtime-alignment`
+- restored Zebra-owned JPEG/PNG Task attachment ingress and exact MiniMax Task
+  workspace scoping
+- added a short-lived Task-scoped FinOS grant and exactly eight read-only
+  business tools; no FinOS write tool or database credential is exposed
+- moved the real broker screenshot and temporary env out of the repository
+  before staging
+- fixed `Dockerfile.finos` defaults so UID/GID `999:999` writes the SQLite
+  database and Task workspaces only under the two prepared volume paths
+- focused tests pass; external FinOS staging records real image, eight-tool and
+  zero-Core-write acceptance
+- stopped at Draft status because full `make test`, `make check`, fresh-container
+  and authenticated private-network/TLS gates remain open; details are in
+  `docs/FinOS_Runtime_Integration_Status_2026-07-27.md`
+- local container validation could not start because this workstation has no
+  `docker` CLI; the unit-level writable-path contract passed
+
 ## 2026-07-19 WEB-UX-01 Trusted Local Read-Only Web Auto Execution
 
 - registered and claimed `WEB-UX-01` on

@@ -34,6 +34,9 @@
   PRs `#170`, `#171`, and `#172`.
 - `QA-DESKTOP-E2E-01` is `Done` via PR `#161`.
 - `QA-148-MDL-01` is `Done` via PR `#156`.
+- `FINOS-RT-04` is `Review` on `codex/finos-runtime-alignment`; focused
+  attachment/provider tests pass, while full repository and container release
+  gates remain open.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
 - No other card is `Ready`, `In Progress`, `Review`, or `Blocked`.
@@ -10594,6 +10597,54 @@ it, expand the parent's authority, recursively delegate, or outlive its parent.
 - Tree-sitter, LSP, vector retrieval, or repository indexing changes
 
 ## FinOS Integration Task Board
+
+### FINOS-RT-04 - Native Task Attachments And Read-Only Business Provider
+
+- Status: `Review`
+- Owner: `vinson1101`
+- Suggested role: `RUNTIME / SECURITY / INTEGRATION`
+- Depends on: `FINOS-MCP-01`, `FINOS-MCP-02`, native Task attachment lifecycle
+- Branch: `codex/finos-runtime-alignment`
+- Owned paths: `.env.example`, `Dockerfile.finos`, `apps/api/`, `apps/config/`,
+  `apps/worker/`, `packages/agent-core/`, `packages/agent-runtime/`,
+  `packages/agent-security/`, `packages/agent-storage/`,
+  `scripts/minimax_mcp_server.py`, `tests/`, `docs/AGENT_TASKS.md`,
+  `docs/FinOS_Runtime_Integration_Status_2026-07-27.md`, `PROGRESS.md`,
+  `README.md`, `WORKLOG.md`
+
+#### Goal
+
+Restore Zebra-owned image ingress on the current Task API and expose a fixed,
+Task-scoped, read-only FinOS business provider without giving Zebra database or
+financial write authority.
+
+#### Acceptance
+
+- [x] JPEG/PNG create and same-Task follow-up use native Task attachments and a
+  generated Task workspace; bad format, size, path, symlink and cross-Task
+  access fail closed.
+- [x] Recovery and clarification retain durable attachment identity without
+  exposing absolute workspace paths.
+- [x] Only the selected MiniMax MCP child receives the exact Task workspace and
+  explicit child environment.
+- [x] A short-lived grant binds after Task creation, rejects stale rotation and
+  cross-Task replay, and is absent from public Task/session/event output.
+- [x] Exactly eight `finos.*` read tools are advertised; no FinOS write tool is
+  registered.
+- [x] Focused attachment, provider, policy, storage, worker and Dockerfile tests
+  pass; FinOS staging records real image and eight-tool read-only acceptance.
+- [ ] `make test` and `make check` pass without exclusions.
+- [ ] A fresh `Dockerfile.finos` image passes build, non-root write and real
+  health checks with an immutable build commit.
+- [ ] Deployment requires API authentication and a reviewed private-network or
+  TLS/mTLS provider route; expiry/replay/zero-Core-write acceptance is rerun.
+
+#### Explicit Non-Goals
+
+- any Core, Draft, Journal or Note database write authority for Zebra
+- a general FinOS MCP marketplace or arbitrary business URL supplied by a Task
+- a new streaming, attachment or large-input framework outside Zebra native contracts
+- FinOS backtesting, TradingView, Trench or product-page implementation
 
 ### FINOS-HAR-03 - Recoverable Bounded Material Reads
 

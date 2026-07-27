@@ -200,6 +200,8 @@ Focused references:
 - DeepSeek profiles: [docs/DeepSeek_V4_模型适配与专项优化方案_v1.0.md](./docs/DeepSeek_V4_模型适配与专项优化方案_v1.0.md)
 - CI gates: [docs/主线CI质量门禁说明_v1.0.md](./docs/主线CI质量门禁说明_v1.0.md)
 - architecture: [docs/Codex-like工程Agent平台最终架构设计_v1.0.md](./docs/Codex-like工程Agent平台最终架构设计_v1.0.md)
+- current FinOS integration candidate:
+  [docs/FinOS_Runtime_Integration_Status_2026-07-27.md](./docs/FinOS_Runtime_Integration_Status_2026-07-27.md)
 
 ## Governance Entry
 

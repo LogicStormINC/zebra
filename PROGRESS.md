@@ -5,7 +5,7 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-07-19`
+- Snapshot date: `2026-07-27`
 - Verified implementation baseline: `f1e4965` (PR `#174`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
 - Review task: `CTX-SEG-01` has delivered the stable Task, internal Segment,
@@ -63,6 +63,13 @@
   transport retries and semantic repairs have separate trace counters. The
   implementation and regression cases are present in the working tree; runtime
   validation has not been executed in this session.
+- FinOS integration review `FINOS-RT-04` restores native Task JPEG/PNG
+  attachments and adds a fixed eight-tool, Task-scoped read-only business
+  provider on `codex/finos-runtime-alignment`. Focused tests and external FinOS
+  staging evidence pass. Full `make test`/`make check`, container runtime and
+  production authentication/TLS gates remain open; this is a Draft candidate,
+  not a mainline or release claim. See
+  `docs/FinOS_Runtime_Integration_Status_2026-07-27.md`.
 
 ## Current Capability
 
@@ -240,13 +247,17 @@ including a real thinking tool round trip.
 
 ## Known Follow-Ups
 
-1. Decide explicitly whether to activate Phase B private-cloud single-tenant work;
+1. Close `FINOS-RT-04` file-size, Ruff/Mypy, full-suite, fresh-container and
+   authenticated private-network/TLS acceptance before merge or release.
+2. Add terminal/TTL cleanup for FinOS Task attachment workspaces without
+   changing Journal, Note, Draft or Core lifecycle.
+3. Decide explicitly whether to activate Phase B private-cloud single-tenant work;
    its database migration and recovery-model reviews remain required entry gates.
-2. Keep DeepSeek thinking mode opt-in and preserve its private continuation
+4. Keep DeepSeek thinking mode opt-in and preserve its private continuation
    fail-closed boundary.
-3. Add migration/backup evidence before any Phase B activation.
-4. Split or lazy-load the Desktop main bundle based on a repeatable bundle report.
-5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
+5. Add migration/backup evidence before any Phase B activation.
+6. Split or lazy-load the Desktop main bundle based on a repeatable bundle report.
+7. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
    Credential/Egress Broker, external-namespace isolation, and Kubernetes in
    dependency order.
 
