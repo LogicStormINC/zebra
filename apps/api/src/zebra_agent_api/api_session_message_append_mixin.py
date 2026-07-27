@@ -67,6 +67,7 @@ class ApiSessionMessageAppendMixin:
                     if staged_images is not None
                     else parsed["content"],
                     clarification_id=parsed["clarification_id"],
+                    public_content=parsed["public_content"],
                 ),
             )
         except ValueError as exc:

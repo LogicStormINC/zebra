@@ -10635,6 +10635,14 @@ financial write authority.
   cross-Task replay, and is absent from public Task/session/event output.
 - [x] Exactly eight `finos.*` read tools are advertised; no FinOS write tool is
   registered.
+- [x] `GET /tasks/{stable_task_id}/conversation` projects the durable native
+  Task event index by monotonic cursor, retaining every explicitly public user
+  turn and durable final answer in order across terminal follow-up Segments;
+  prompts, checkpoints, reasoning/deltas, and raw tool output remain private.
+  FinOS consumes this one Zebra Task projection and native Task stream without
+  creating a continuation Task or separate SSE/session framework.
+  `public_content` applies only to ordinary create/follow-up messages;
+  clarification remains `{content, clarification_id}` and rejects it.
 - [x] Focused attachment, provider, policy, storage, worker and Dockerfile tests
   pass; FinOS staging records real image and eight-tool read-only acceptance.
 - [ ] `make test` and `make check` pass without exclusions.
@@ -10654,6 +10662,12 @@ financial write authority.
   file-size test is the ninth test failure. CI jobs did not run because of the
   billing/spending limit; `make check` and fresh-container evidence remain open.
   Status remains `Review`.
+- The stable Task public-conversation repair has local evidence of `61 passed`
+  across projection, terminal rollover, Task API/native stream,
+  bootstrap/message/clarification, harness, and runtime focused tests. Its
+  explicit final items are event-scoped so two public turns cannot collapse to
+  a single latest Segment final; public input is durable separately from
+  internal prompt text and rejected on clarification responses.
 
 #### Explicit Non-Goals
 

@@ -73,6 +73,7 @@ DEFAULT_RESEARCH_CHILD_LIMIT = 3
 def run_local_harness(
     *,
     prompt: str,
+    public_content: str | None = None,
     title: str,
     workspace_root: Path,
     model_gateway: ModelGatewayPort,
@@ -117,6 +118,7 @@ def run_local_harness(
             HarnessTask(
                 title=title,
                 user_input=prompt,
+                public_content=public_content,
                 max_attempts=1,
                 max_model_calls=max_model_calls,
                 max_tool_calls=max_tool_calls,

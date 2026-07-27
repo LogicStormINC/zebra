@@ -282,6 +282,20 @@ def test_clarification_response_rejects_attachments(tmp_path: Path) -> None:
     assert response.body["reason"] == "clarification responses do not accept attachments"
 
 
+def test_clarification_response_rejects_public_content(tmp_path: Path) -> None:
+    response = create_app(tmp_path / "sessions.sqlite").append_session_message(
+        "00000000-0000-0000-0000-000000000001",
+        {
+            "content": "A",
+            "clarification_id": "clarify-1",
+            "public_content": "must not become a public turn",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.body["reason"] == "clarification responses do not accept public_content"
+
+
 def _attachment(file_name: str, content: str) -> dict[str, str]:
     return {
         "file_name": file_name,

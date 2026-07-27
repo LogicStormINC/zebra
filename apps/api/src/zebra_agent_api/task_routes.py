@@ -12,6 +12,7 @@ from zebra_agent_api.task_api import (
     rollover_task,
     route_active_task,
 )
+from zebra_agent_api.task_conversation import TaskConversationReadApi
 from zebra_agent_api.task_finos_journal_provider import bind_finos_journal_provider
 
 
@@ -94,6 +95,8 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
         return mutate_task(app, parts[0], parts[1], request.body or {})
     if method == "GET" and len(parts) == 1:
         return TaskReadApi(app.database_path).get(parts[0])
+    if method == "GET" and len(parts) == 2 and parts[1] == "conversation":
+        return TaskConversationReadApi(app.database_path).get(parts[0], request.query or {})
     if method == "GET" and len(parts) == 2 and parts[1] == "stream":
         return TaskReadApi(app.database_path).stream(parts[0])
     if method == "GET" and len(parts) == 2 and parts[1] == "diff":

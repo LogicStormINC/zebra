@@ -18,6 +18,7 @@ class SessionBootstrapCommand:
     title: str
     user_input: str
     workspace_root: Path
+    public_content: str | None = None
     policy_profile: str | None = None
     tool_profile: ToolProfile = ToolProfile.GENERAL
     network_profile: str = "none"
@@ -65,7 +66,14 @@ class SessionBootstrapService:
                 sequence=1,
                 event_type=EventType.USER_MESSAGE_RECEIVED,
                 actor=EventActor.USER,
-                payload={"content": command.user_input},
+                payload={
+                    "content": command.user_input,
+                    **(
+                        {"public_content": command.public_content}
+                        if command.public_content is not None
+                        else {}
+                    ),
+                },
                 created_at=session.created_at,
             ),
             SessionEvent.create(

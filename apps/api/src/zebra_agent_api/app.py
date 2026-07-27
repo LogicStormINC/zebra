@@ -275,7 +275,7 @@ class ZebraAgentApi(
                     title=str(parsed["title"]),
                     user_input=str(parsed["prompt"])
                     + (task_image_prompt_suffix(staged_images) if staged_images else ""),
-                    workspace_root=(
+                    public_content=parsed["public_content"], workspace_root=(
                         staged_images.workspace_root
                         if staged_images is not None
                         else Path(str(parsed["workspace"])).expanduser().resolve()
@@ -386,7 +386,7 @@ class ZebraAgentApi(
             result = run_local_harness(
                 prompt=str(parsed["prompt"])
                 + (task_image_prompt_suffix(staged_images) if staged_images else ""),
-                title=str(parsed["title"]),
+                public_content=parsed["public_content"], title=str(parsed["title"]),
                 workspace_root=workspace_root,
                 model_gateway=model_gateway,
                 policy_profile=PolicyProfile(str(parsed["policy_profile"])),

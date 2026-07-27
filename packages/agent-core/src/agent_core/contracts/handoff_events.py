@@ -8,6 +8,11 @@ class UserMessageReceivedPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     content: str
+    public_content: str | None = Field(
+        default=None,
+        max_length=64_000,
+        exclude_if=lambda value: value is None,
+    )
     source: str | None = Field(default=None, exclude_if=lambda value: value is None)
     handoff_id: str | None = Field(default=None, exclude_if=lambda value: value is None)
     principal_identity_hash: str | None = Field(
@@ -24,6 +29,16 @@ class UserMessageReceivedPayload(BaseModel):
         value = value.strip()
         if not value:
             raise ValueError("content must not be blank")
+        return value
+
+    @field_validator("public_content")
+    @classmethod
+    def ensure_public_content_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            raise ValueError("public_content must not be blank")
         return value
 
     @model_validator(mode="after")

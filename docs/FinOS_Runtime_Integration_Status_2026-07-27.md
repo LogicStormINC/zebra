@@ -38,6 +38,33 @@ replace Zebra's product architecture or FinOS's business authority contract.
    MiniMax run, native stream completion and unchanged Core holdings,
    transactions and snapshots.
 
+## Public conversation projection contract
+
+One stable Zebra Task remains the only conversation identity for a FinOS user
+turn and every terminal follow-up. `GET /tasks/{stable_task_id}/conversation`
+must rebuild its read-only view from Zebra's durable Task event index, using the
+Task's monotonic cursor: each explicitly public user turn and each durable
+final answer remains present in chronological cursor order, including across
+internal rollover Segments. A later final must not replace an earlier turn's
+final merely because both belong to the same Task or Segment.
+
+Only explicitly marked public user text and Zebra's durable final-response
+events may enter that view. Internal prompts, handoff/checkpoint data,
+provider-private continuation or reasoning, raw deltas, and raw tool output
+remain absent. FinOS consumes this Zebra-owned projection and the existing
+native Task stream; it does not create a continuation Task, second session, or
+second SSE protocol.
+
+`public_content` is accepted only for ordinary Task create and ordinary
+follow-up messages. Clarification responses retain their existing
+`{content, clarification_id}` contract and reject `public_content`; they do not
+create a separate public user event.
+
+Local repair evidence: the focused projection, Task rollover, API, native Task
+stream, bootstrap, message, clarification, harness, and runtime tests pass
+(`61 passed`). This is local branch evidence only; it does not claim a hosted
+deployment or replace FinOS's own authorization boundary.
+
 ## Not complete / release blockers
 
 - This branch's attributable static regressions are closed: `task_api.py` and

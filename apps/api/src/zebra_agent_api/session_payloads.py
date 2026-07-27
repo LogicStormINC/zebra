@@ -18,6 +18,7 @@ from zebra_agent_api.session_attachment_inputs import ImageAttachmentInput, pars
 
 class CreateSessionPayload(TypedDict):
     prompt: str
+    public_content: str | None
     title: str
     workspace: str
     execute: bool
@@ -54,6 +55,7 @@ class CancelSessionPayload(TypedDict):
 
 class AppendSessionMessagePayload(TypedDict):
     content: str
+    public_content: str | None
     clarification_id: str | None
     attachments: tuple[TextAttachmentInput, ...]
     image_attachments: tuple[ImageAttachmentInput, ...]
@@ -105,6 +107,13 @@ def parse_create_session_payload(
     prompt = payload.get("prompt")
     if not isinstance(prompt, str) or not prompt.strip():
         return bad_request("prompt must be a non-blank string")
+    public_content = payload.get("public_content")
+    if public_content is not None and (
+        not isinstance(public_content, str) or not public_content.strip()
+    ):
+        return bad_request("public_content must be a non-blank string when provided")
+    if isinstance(public_content, str) and len(public_content.strip()) > 64_000:
+        return bad_request("public_content must not exceed 64000 characters")
 
     title = payload.get("title", "Untitled task")
     if not isinstance(title, str) or not title.strip():
@@ -216,6 +225,9 @@ def parse_create_session_payload(
 
     return {
         "prompt": prompt.strip(),
+        "public_content": (
+            public_content.strip() if isinstance(public_content, str) else None
+        ),
         "title": title.strip(),
         "workspace": workspace.strip(),
         "execute": execute,
@@ -284,11 +296,20 @@ def parse_append_session_message_payload(
     content = payload.get("content")
     if not isinstance(content, str) or not content.strip():
         return bad_request("content must be a non-blank string")
+    public_content = payload.get("public_content")
+    if public_content is not None and (
+        not isinstance(public_content, str) or not public_content.strip()
+    ):
+        return bad_request("public_content must be a non-blank string when provided")
+    if isinstance(public_content, str) and len(public_content.strip()) > 64_000:
+        return bad_request("public_content must not exceed 64000 characters")
     clarification_id = payload.get("clarification_id")
     if clarification_id is not None and (
         not isinstance(clarification_id, str) or not clarification_id.strip()
     ):
         return bad_request("clarification_id must be a non-blank string when provided")
+    if clarification_id is not None and public_content is not None:
+        return bad_request("clarification responses do not accept public_content")
     try:
         parsed_attachments = parse_attachment_inputs(payload.get("attachments"))
     except ValueError as exc:
@@ -297,6 +318,9 @@ def parse_append_session_message_payload(
         return bad_request("clarification responses do not accept attachments")
     return {
         "content": content.strip(),
+        "public_content": (
+            public_content.strip() if isinstance(public_content, str) else None
+        ),
         "clarification_id": clarification_id.strip() if clarification_id else None,
         "attachments": tuple(
             attachment

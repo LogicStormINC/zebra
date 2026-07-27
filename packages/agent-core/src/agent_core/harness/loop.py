@@ -53,7 +53,14 @@ class HarnessLoop:
         recorder.record(
             event_type=EventType.USER_MESSAGE_RECEIVED,
             actor=EventActor.USER,
-            payload={"content": task.user_input},
+            payload={
+                "content": task.user_input,
+                **(
+                    {"public_content": task.public_content}
+                    if task.public_content is not None
+                    else {}
+                ),
+            },
         )
         recorder.record(
             event_type=EventType.TASK_PREPARED,
