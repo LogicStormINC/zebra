@@ -6,11 +6,14 @@ replace Zebra's product architecture or FinOS's business authority contract.
 ## Branch scope
 
 - Base: `origin/main@f7d16c4`
-- Snapshot: `40d6930` (`0 behind / 3 ahead` of `origin/main@f7d16c4`)
-- This synchronization adds `4459397` (runtime/tests) and `40d6930`
-  (governance/status) after the existing MiniMax commit `37708b4`.
-- Delivery: review branch plus Draft PR only; no `main` merge or deployment is
-  implied by the GitHub synchronization.
+- Snapshot: `983f082` (`0 behind / 6 ahead` of `origin/main@f7d16c4`)
+- This synchronization includes `4459397` (runtime/tests), `40d6930` and
+  `acac428` (governance/status), `ada7b80` (FinOS integration static cleanup),
+  and `983f082` (stable Task public conversation projection) after MiniMax
+  commit `37708b4`.
+- Delivery: review branch and Draft PR #196; no `main` merge is implied. Exact
+  build `983f082480f0c709b32fe1086b7a63a792c3c849` is deployed only to the
+  isolated FinOS staging profile.
 - Task card: `FINOS-RT-04` in `docs/AGENT_TASKS.md`
 
 ## Completed candidate behavior
@@ -37,6 +40,10 @@ replace Zebra's product architecture or FinOS's business authority contract.
    pass. FinOS's external staging record reports all eight tools, a real JPEG
    MiniMax run, native stream completion and unchanged Core holdings,
    transactions and snapshots.
+7. `GET /tasks/{stable_task_id}/conversation` exposes a durable public
+   projection. Ordinary Task create/follow-up accepts `public_content`, while
+   clarification keeps its existing `{content, clarification_id}` contract and
+   rejects that extension.
 
 ## Public conversation projection contract
 
@@ -62,8 +69,10 @@ create a separate public user event.
 
 Local repair evidence: the focused projection, Task rollover, API, native Task
 stream, bootstrap, message, clarification, harness, and runtime tests pass
-(`61 passed`). This is local branch evidence only; it does not claim a hosted
-deployment or replace FinOS's own authorization boundary.
+(`61 passed`). Hosted evidence is also complete: stable Task
+`0b23ea07-047e-490c-a964-4b48fe559ec0` retained two user turns and two finals in
+cursor order, and FinOS consumed that projection without a local conversation
+fallback. This does not replace FinOS's authorization boundary.
 
 ## Not complete / release blockers
 
@@ -72,20 +81,18 @@ deployment or replace FinOS's own authorization boundary.
   and MiniMax's four Ruff line-length errors are gone. The 81 focused/provider
   and settings-contract tests pass.
 - Current full-suite evidence is `uv run pytest -q -p no:cacheprovider`:
-  `1792 passed, 9 failed, 8 skipped`, matching the `origin/main` baseline with
+  `1795 passed, 9 failed, 8 skipped`, matching the `origin/main` baseline with
   no FinOS-focused regression. The nine failures are eight existing functional
   failures (two provider assertions, five expired credentials, one Worker
   cancellation) plus the existing file-size test.
 - Repository gates remain at the main baseline: two existing file-size
   violations (`UI/desktop/src/components/CodexConversationPane.styles.ts` and
-  `packages/agent-core/src/agent_core/contracts/events.py`), 13 Ruff findings,
-  and four Mypy findings (`web_crawl.py:248-250` and
-  `mcp_proxy_policy.py:195`). CI jobs did not run because of the
-  billing/spending limit; `make check` is not green.
-- The Dockerfile path contract has a unit test, but a fresh image build,
-  non-root write probe and real `/health` check still need to be recorded. The
-  current workstation has no `docker` CLI, so this was not silently treated as
-  a passing container test.
+  `packages/agent-core/src/agent_core/contracts/events.py`) and four existing
+  Mypy findings (`web_crawl.py:248-250` and `mcp_proxy_policy.py:195`). Changed
+  Ruff checks are green; `make check` is still not green.
+- A fresh `Dockerfile.finos` image build, non-root runtime, persistent workspace
+  mounts and real `/health` check passed in FinOS staging. The deployed runtime
+  reports `fallback_allowed=false` and `task_image_attachments=true`.
 - FinOS provider bearer grants may use `http://` only inside an explicitly
   controlled private network. Public or cross-host deployment requires TLS or
   mTLS, a non-empty `ZEBRA_API_AUTH_TOKEN`, restricted volumes and secret-log
@@ -97,10 +104,12 @@ deployment or replace FinOS's own authorization boundary.
   require a versioned lifecycle contract and release acceptance.
 - Zebra's native text attachment window remains 64 KiB per file / 128 KiB
   aggregate. No replacement large-input framework is implemented here.
-- Final merge requires resolving all full-suite/check failures and rerunning a
-  controlled FinOS acceptance for expiry, replay denial, owner/account scope,
-  all eight reads and zero Core writes; CI jobs remain blocked by the
-  billing/spending limit and fresh-container evidence remains open.
+- Final merge requires resolving or accepting all main-baseline suite/check
+  failures. Controlled FinOS acceptance for owner/account scope, all eight
+  reads, real image attachment, public multi-turn projection and zero Core
+  writes passed. PR #196 GitHub Actions failed to start because of the repository
+  billing/spending limit; the jobs must be rerun after that external block is
+  removed.
 
 ## External and paused work
 
