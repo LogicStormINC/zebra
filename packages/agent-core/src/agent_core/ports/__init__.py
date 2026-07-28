@@ -1,5 +1,11 @@
 """Hexagonal ports for Zebra Agent core."""
 
+from agent_core.domain.leases import (
+    LeaseCheckpointRegressionError,
+    LeaseConflictError,
+    LeaseFence,
+    LeaseLostError,
+)
 from agent_core.ports.agent_tasks import AgentTaskPort, TaskEvent
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.artifact_store import ArtifactStorePort
@@ -93,6 +99,10 @@ __all__ = [
     "IdempotencyRecord",
     "IdempotencyStorePort",
     "LeaseStorePort",
+    "LeaseCheckpointRegressionError",
+    "LeaseConflictError",
+    "LeaseFence",
+    "LeaseLostError",
     "MemoryStorePort",
     "ModelCallStorePort",
     "ModelGatewayPort",

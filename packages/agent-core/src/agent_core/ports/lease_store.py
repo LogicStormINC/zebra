@@ -1,8 +1,8 @@
-from datetime import datetime
+from datetime import timedelta
 from typing import Protocol
 
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.leases import WorkerLease
+from agent_core.domain.leases import LeaseFence, WorkerLease
 
 
 class LeaseStorePort(Protocol):
@@ -10,22 +10,20 @@ class LeaseStorePort(Protocol):
         self,
         session_id: SessionId,
         *,
-        worker_id: str,
-        acquired_at: datetime,
-        expires_at: datetime,
-        checkpoint: int = 0,
+        owner_instance_id: str,
+        ttl: timedelta,
+        checkpoint: int | None = None,
     ) -> WorkerLease: ...
 
     def heartbeat(
         self,
         session_id: SessionId,
         *,
-        worker_id: str,
-        heartbeat_at: datetime,
-        expires_at: datetime,
+        fence: LeaseFence,
+        ttl: timedelta,
         checkpoint: int,
     ) -> WorkerLease: ...
 
-    def release(self, session_id: SessionId, *, worker_id: str) -> None: ...
+    def release(self, session_id: SessionId, *, fence: LeaseFence) -> None: ...
 
     def get(self, session_id: SessionId) -> WorkerLease | None: ...

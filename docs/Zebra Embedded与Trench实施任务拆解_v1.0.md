@@ -177,13 +177,15 @@ read-only。
 
 ### CLOUD-LEASE-CON-01 — Core Lease and fencing contract
 
-- Status: `Locked`；depends on merged `CLOUD-LEASE-PLAN-01`；a separate explicit
-  waiver is required for any local stacked work and never changes merge order。
-- Candidate paths: Core Lease domain/Port/errors、SQLite Lease conformance、handoff fence
-  facts and focused tests。
-- Deliverable: typed epoch/token/owner fence、monotonic checkpoint、full-CAS errors。
+- Status: `Review`；branch `codex/cloud-lease-con-01`；maintainer explicitly
+  activated local stacked implementation on 2026-07-28；merge still requires
+  `CLOUD-LEASE-PLAN-01` first。
+- Implemented paths: Core Lease domain/Port/errors、SQLite Lease conformance、handoff
+  fence facts、Worker claim ordering and focused compatibility tests。
+- Deliverable: typed epoch/token/owner fence、monotonic checkpoint、full-CAS errors、
+  idempotent legacy migration and bounded TTL validation。
 - Acceptance: reacquire/takeover token monotonicity、stale fence rejection and checkpoint
-  independence pass without PostgreSQL or Worker changes。
+  independence pass without PostgreSQL、background heartbeat or Effect dispatch。
 
 ### CLOUD-LEASE-PG-01 — PostgreSQL epoch and Lease Adapter
 

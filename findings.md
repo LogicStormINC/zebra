@@ -387,3 +387,24 @@
   provider call may finish after lease loss, but its terminal mutation is fenced.
 - Failed-no-effect retry has an explicit monotonic attempt/retry-key transaction;
   uncertain execution never returns automatically to pending.
+
+## CLOUD-LEASE-CON-01 - 2026-07-28
+
+- Ownership is now one immutable `LeaseFence(epoch, token, owner)`; checkpoint is
+  recovery progress only and is never promoted into handoff authorization.
+- SQLite release retains the row and generation. Acquire, heartbeat and release
+  decide ownership with current epoch plus full-fence CAS; `get()` exposes only
+  a current, unexpired, unreleased lease and cannot revive diagnostic rows.
+- Upgrade migration must be row-state-driven rather than gated by one column.
+  Partial legacy rows are idempotently fail-closed with token zero, while
+  token-positive rows survive concurrent constructors unchanged.
+- Worker claims must acquire before recovery and then CAS checkpoint to the
+  recovered Event sequence before returning. Recovery or that CAS failing causes
+  a fenced cleanup attempt and never exposes a false successful claim.
+- TTL is bounded by a configurable maximum at both the caller and Adapter trust
+  boundaries; the caller validates the integer before constructing `timedelta`.
+- Two final independent reviews closed partial-schema, incomplete handoff tuple,
+  checkpoint advancement, TTL overflow and old direct-caller gaps with
+  `0 P0 / 0 P1 / 0 P2` remaining.
+- Background heartbeat, PostgreSQL/database-clock proof, fenced aggregate writes,
+  Effect Outbox and production composition remain later cards.

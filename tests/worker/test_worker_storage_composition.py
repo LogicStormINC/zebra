@@ -68,12 +68,10 @@ def test_worker_uses_supplied_stores_for_all_control_plane_services(tmp_path: Pa
         leases=lease_store,
     )
     session_id = _seed_ready_session(stores, tmp_path)
-    leased_at = datetime.now(UTC)
     stores.leases.acquire(
         session_id,
-        worker_id="worker-a",
-        acquired_at=leased_at,
-        expires_at=leased_at + timedelta(minutes=5),
+        owner_instance_id="worker-a",
+        ttl=timedelta(minutes=5),
         checkpoint=2,
     )
     for store in (event_store, projection_store, workspace_store, task_store, lease_store):
@@ -90,9 +88,9 @@ def test_worker_uses_supplied_stores_for_all_control_plane_services(tmp_path: Pa
     assert result.ready_session_ids == (str(session_id),)
     assert result.skipped_session_ids == (str(session_id),)
     projection_store.list_ready_sessions.assert_called_once_with(limit=1)
-    projection_store.get_session.assert_called_once_with(session_id)
-    assert event_store.read_since.call_count >= 1
-    workspace_store.get_workspace.assert_called_once_with(session_id)
+    projection_store.get_session.assert_not_called()
+    event_store.read_since.assert_not_called()
+    workspace_store.get_workspace.assert_not_called()
     lease_store.acquire.assert_called_once()
     assert service._projection_store is stores.sessions
     execution = service._execution_service

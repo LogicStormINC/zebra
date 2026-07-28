@@ -5,6 +5,7 @@ from uuid import UUID
 
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import HandoffId, SessionId
+from agent_core.domain.leases import LeaseFence
 from agent_core.domain.session_handoff import (
     HandoffOperationStatus,
     SessionLineage,
@@ -12,6 +13,7 @@ from agent_core.domain.session_handoff import (
 )
 from agent_core.ports.session_handoff import HandoffOperation
 
+from agent_storage.database import ensure_column
 from agent_storage.event_rows import serialize_event_payload
 
 
@@ -44,6 +46,17 @@ def insert_event(connection: sqlite3.Connection, event: SessionEvent) -> None:
 
 
 def operation_from_row(row: sqlite3.Row) -> HandoffOperation:
+    source_lease_fence = None
+    if (
+        row["source_lease_fencing_token"] is not None
+        and row["source_lease_epoch"] is not None
+        and row["source_lease_owner_instance_id"] is not None
+    ):
+        source_lease_fence = LeaseFence(
+            control_plane_epoch=UUID(row["source_lease_epoch"]),
+            fencing_token=row["source_lease_fencing_token"],
+            owner_instance_id=row["source_lease_owner_instance_id"],
+        )
     return HandoffOperation(
         operation_id=row["operation_id"],
         status=HandoffOperationStatus(row["status"]),
@@ -53,7 +66,7 @@ def operation_from_row(row: sqlite3.Row) -> HandoffOperation:
         idempotency_key_hash=row["idempotency_key_hash"],
         request_hash=row["request_hash"],
         expected_source_stream_version=row["expected_source_stream_version"],
-        source_lease_fencing_token=row["source_lease_fencing_token"],
+        source_lease_fence=source_lease_fence,
         authority_revision=row["authority_revision"],
         workspace_revision=WorkspaceBindingRevision.model_validate_json(row["workspace_revision"]),
         task_profile_revision=row["task_profile_revision"],
@@ -66,6 +79,7 @@ def operation_from_row(row: sqlite3.Row) -> HandoffOperation:
 
 
 def operation_values(operation: HandoffOperation) -> tuple[object, ...]:
+    fence = operation.source_lease_fence
     return (
         operation.operation_id,
         operation.status.value,
@@ -75,7 +89,9 @@ def operation_values(operation: HandoffOperation) -> tuple[object, ...]:
         operation.idempotency_key_hash,
         operation.request_hash,
         operation.expected_source_stream_version,
-        operation.source_lease_fencing_token,
+        None if fence is None else fence.fencing_token,
+        None if fence is None else str(fence.control_plane_epoch),
+        None if fence is None else fence.owner_instance_id,
         operation.authority_revision,
         operation.workspace_revision.model_dump_json(),
         operation.task_profile_revision,
@@ -103,16 +119,69 @@ def sha256_text(value: str) -> str:
     return hashlib.sha256(value.encode()).hexdigest()
 
 
+INSERT_HANDOFF_OPERATION = """
+INSERT INTO handoff_operations (
+    operation_id, status, source_session_id, target_session_id,
+    handoff_id, idempotency_key_hash, request_hash,
+    expected_source_stream_version, source_lease_fencing_token,
+    source_lease_epoch, source_lease_owner_instance_id,
+    authority_revision, workspace_revision, task_profile_revision,
+    effective_depth_limit, artifact_id, created_at, updated_at, abort_code
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+"""
+
+
+def migrate_handoff_fence_columns(connection: sqlite3.Connection, *, at: datetime) -> None:
+    ensure_column(connection, "handoff_operations", "source_lease_epoch", "TEXT")
+    ensure_column(
+        connection,
+        "handoff_operations",
+        "source_lease_owner_instance_id",
+        "TEXT",
+    )
+    connection.execute(
+        """
+        UPDATE handoff_operations
+        SET status = ?, abort_code = ?, updated_at = ?
+        WHERE status = ?
+          AND (
+            source_lease_fencing_token IS NOT NULL
+            OR source_lease_epoch IS NOT NULL
+            OR source_lease_owner_instance_id IS NOT NULL
+          )
+          AND NOT (
+            source_lease_fencing_token IS NOT NULL
+            AND source_lease_epoch IS NOT NULL
+            AND source_lease_owner_instance_id IS NOT NULL
+          )
+        """,
+        (
+            HandoffOperationStatus.ABORTED.value,
+            "legacy_lease_fence_incomplete",
+            at.isoformat(),
+            HandoffOperationStatus.PREPARING.value,
+        ),
+    )
+
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS handoff_operations (
     operation_id TEXT PRIMARY KEY, status TEXT NOT NULL, source_session_id TEXT NOT NULL,
     target_session_id TEXT NOT NULL UNIQUE, handoff_id TEXT NOT NULL UNIQUE,
     idempotency_key_hash TEXT NOT NULL, request_hash TEXT NOT NULL,
     expected_source_stream_version INTEGER NOT NULL, source_lease_fencing_token INTEGER,
+    source_lease_epoch TEXT, source_lease_owner_instance_id TEXT,
     authority_revision TEXT NOT NULL, workspace_revision TEXT NOT NULL,
     task_profile_revision TEXT NOT NULL, effective_depth_limit INTEGER NOT NULL,
     artifact_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, abort_code TEXT,
-    UNIQUE(source_session_id, idempotency_key_hash)
+    UNIQUE(source_session_id, idempotency_key_hash),
+    CHECK (
+        (source_lease_fencing_token IS NULL AND source_lease_epoch IS NULL
+         AND source_lease_owner_instance_id IS NULL)
+        OR
+        (source_lease_fencing_token IS NOT NULL AND source_lease_epoch IS NOT NULL
+         AND source_lease_owner_instance_id IS NOT NULL)
+    )
 );
 CREATE TABLE IF NOT EXISTS session_handoff_envelopes (
     handoff_id TEXT PRIMARY KEY, source_session_id TEXT NOT NULL, target_session_id TEXT NOT NULL,

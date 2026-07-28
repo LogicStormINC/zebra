@@ -39,6 +39,10 @@
   `codex/cloud-lease-plan-01`. It is a docs-only task stacked on the locally
   reviewed `CLOUD-PG-01`; it splits the oversized locked Lease/Outbox parent
   into path-bounded contract and implementation cards before any code changes.
+- `CLOUD-LEASE-CON-01` is `In Progress` on
+  `codex/cloud-lease-con-01`. The maintainer explicitly continued local stacked
+  work on 2026-07-28; this waiver does not change prerequisite merge order or
+  authorize push, PR, parent completion or production claims.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -416,19 +420,26 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
 
 ### CLOUD-LEASE-CON-01 - Core Lease And Fencing Contract
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
-- Depends on: merged `CLOUD-LEASE-PLAN-01` and explicit activation. Any local
-  stacked waiver must be granted separately and does not change merge order.
+- Status: `Review`
+- Owner: `Codex`
+- Depends on: locally reviewed `CLOUD-LEASE-PLAN-01`; explicitly activated for
+  local stacked implementation by the maintainer on 2026-07-28. Merge still
+  requires `CLOUD-LEASE-PLAN-01` first.
 - Branch: `codex/cloud-lease-con-01`
+- Worktree: `../zebra-agent-cloud-lease-con-01`
 - Owned paths: `packages/agent-core/src/agent_core/domain/leases.py`,
   `packages/agent-core/src/agent_core/{__init__,domain/__init__,ports/__init__,ports/lease_store}.py`,
   `packages/agent-core/src/agent_core/ports/session_handoff.py`,
   `packages/agent-storage/src/agent_storage/{__init__,leases,session_handoff_facts}.py`,
   `packages/agent-storage/src/agent_storage/{session_handoffs,session_handoff_rows}.py`,
+  `apps/api/src/zebra_agent_api/session_handoff.py`,
   `apps/worker/src/zebra_agent_worker/claims.py`,
   `tests/agent_storage/{test_sqlite_leases,test_session_handoffs}.py`,
-  `tests/worker/test_claims.py`, and this task's governance records
+  `tests/api/test_session_handoff_routes.py`,
+  `tests/worker/{test_claims,test_loop,test_resume,test_worker_storage_composition}.py`,
+  `tests/cli/run/cli_run_support.py`,
+  `tests/test_session_resume_execute_contract_matrix.py`,
+  and this task's governance records
 - Goal: separate checkpoint from typed epoch/token/owner fencing and make every
   Lease mutation a full-CAS contract while preserving local SQLite profile use.
 - Acceptance: active reacquire conflicts; release/takeover tokens are monotonic
@@ -436,6 +447,26 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
   stale epoch/token/owner and checkpoint regression fail closed; Worker claim
   acquires before recovery without adding the later background heartbeat.
 - Non-goals: PostgreSQL, Worker lifecycle, Effect dispatch and composition.
+
+#### Validation And Handoff
+
+- Core exposes an immutable epoch/token/owner `LeaseFence`; SQLite retains each
+  generation and uses full-fence CAS for heartbeat/release while legacy and
+  partial-schema rows migrate idempotently to a released, token-zero state.
+- Handoff reserve/commit persists and compares the complete fence; incomplete
+  legacy tuples abort, and checkpoint changes no longer masquerade as ownership.
+- Worker claim acquires before recovery, advances checkpoint with the same fence
+  after successful recovery, and fenced-releases on recovery failure. TTL input
+  has a shared one-hour default maximum and is rejected before arithmetic overflow.
+- Focused task matrix passes `55/55`; independent final reviews report
+  `0 P0 / 0 P1 / 0 P2`. Ruff, targeted Mypy, Eval `10/10`, and
+  `git diff --check` pass.
+- Full-suite failures remain the inherited baseline only: two DeepSeek response
+  assertions, five expired SCM credential fixtures, one file-size gate and one
+  Worker cancellation race. `make check` stops on the two inherited untouched
+  file-size violations (`561/500`, `505/500`).
+- Branch remains local, unpushed and stacked on `CLOUD-LEASE-PLAN-01`; merge and
+  the next PostgreSQL card remain gated by prerequisite merge and activation.
 
 ### CLOUD-LEASE-PG-01 - PostgreSQL Epoch And Lease Adapter
 

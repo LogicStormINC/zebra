@@ -1,5 +1,11 @@
 """Storage adapters for Zebra Agent."""
 
+from agent_core.domain.leases import (
+    LeaseCheckpointRegressionError,
+    LeaseConflictError,
+    LeaseFence,
+    LeaseLostError,
+)
 from agent_core.ports import (
     EffectLedgerStatus,
     EffectReservation,
@@ -43,7 +49,7 @@ from agent_storage.idempotency import (
     SQLiteIdempotencyStore,
     new_idempotency_record,
 )
-from agent_storage.leases import LeaseConflictError, SQLiteLeaseStore
+from agent_storage.leases import SQLiteLeaseStore
 from agent_storage.memories import SQLiteMemoryStore
 from agent_storage.memory_lookup import (
     list_confirmed_repo_memories,
@@ -91,6 +97,9 @@ __all__ = [
     "HandoffSourceFacts",
     "ImmutableContextCapsuleConflictError",
     "LeaseConflictError",
+    "LeaseCheckpointRegressionError",
+    "LeaseFence",
+    "LeaseLostError",
     "SessionArtifact",
     "SessionEventIdempotencyConflictError",
     "LoadedProviderContinuation",

@@ -33,7 +33,14 @@ from agent_core.domain.attachments import (
 from agent_core.domain.clarifications import ClarificationContext
 from agent_core.domain.delivery_audit import DeliveryAuditRecord
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.leases import WorkerLease
+from agent_core.domain.leases import (
+    DEFAULT_MAX_LEASE_TTL,
+    LeaseCheckpointRegressionError,
+    LeaseConflictError,
+    LeaseFence,
+    LeaseLostError,
+    WorkerLease,
+)
 from agent_core.domain.memories import (
     MemoryQuery,
     MemoryRecord,
@@ -97,6 +104,11 @@ __all__ = [
     "MemoryStatus",
     "MemoryType",
     "MemoryVisibility",
+    "LeaseCheckpointRegressionError",
+    "LeaseConflictError",
+    "DEFAULT_MAX_LEASE_TTL",
+    "LeaseFence",
+    "LeaseLostError",
     "ModelCallRecord",
     "PolicyDecision",
     "PolicyDecisionType",

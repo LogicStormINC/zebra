@@ -133,7 +133,7 @@ class SessionHandoffApi:
                     request,
                     request_hash=request_hash,
                     expected_source_stream_version=facts.stream_version,
-                    source_lease_fencing_token=facts.lease_fencing_token,
+                    source_lease_fence=facts.lease_fence,
                     authority_revision=facts.authority_revision,
                     workspace_revision=facts.workspace_revision,
                     task_profile_revision=facts.task_profile_revision,

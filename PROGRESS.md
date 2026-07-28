@@ -264,6 +264,10 @@ including a real thinking tool round trip.
   Effect transactions and Worker lifecycle boundaries. The parent stays Locked
   after the contract passed independent reader review and was split into four
   implementation cards. The separate full-aggregate fencing gate remains Locked.
+  `CLOUD-LEASE-CON-01` is now in Review under an explicit local stacked waiver.
+  Typed Core fencing, retained SQLite generations, complete handoff fences and
+  acquire-before-recovery Worker claims passed focused validation and two final
+  reader reviews; it cannot merge before the plan branch.
   PostgreSQL composition and all Redis, object-storage,
   production AG-UI, Trench, analysis, writeback, Agent Memory delivery, and GA
   cards remain `Locked` pending their explicit gates.

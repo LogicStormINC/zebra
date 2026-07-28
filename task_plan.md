@@ -1,5 +1,29 @@
 # Task Plan
 
+## CLOUD-LEASE-CON-01 - Core Lease And Fencing Contract
+
+1. `completed` - Trace every Lease and handoff fence caller, freeze the
+   additive typed contract and register exact compatibility changes.
+2. `completed` - Add `LeaseFence`, Core Lease errors and full-fence Port semantics.
+3. `completed` - Make SQLite Lease generations durable, CAS heartbeat/release and
+   separate handoff fencing from checkpoint.
+4. `completed` - Adapt Worker claim ordering and add focused Lease/handoff/claim
+   regressions without background heartbeat or PostgreSQL.
+5. `completed` - Run focused/full/quality validation, independent review, durable
+   evidence and local commit.
+
+### Decisions
+
+- This local branch is stacked on reviewed plan commit `e373786b`; the user's
+  continuation is a task-specific local waiver, not a merge or release waiver.
+- Keep the contract backend-neutral: SQLite uses an injected clock for local
+  determinism while PostgreSQL DB-clock authority remains the next card.
+- Do not add background heartbeat, Effect dispatch, PostgreSQL or composition.
+- API handoff reserve is the only additional caller discovered after claim; its
+  exact adapter and route test paths were added before implementation.
+- Two direct Lease setup tests also use the old concrete acquire signature;
+  their exact paths were added rather than retaining caller-clock compatibility.
+
 ## CLOUD-LEASE-PLAN-01 - Lease, Fencing And Effect Dispatch Contract
 
 1. `completed` - Audit current Lease, Effect ledger, handoff outbox and Worker

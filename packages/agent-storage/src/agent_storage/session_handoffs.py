@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import HandoffId, SessionId, new_handoff_id, new_session_id
+from agent_core.domain.leases import LeaseFence
 from agent_core.domain.session_handoff import (
     HandoffOperationStatus,
     SessionHandoffEnvelope,
@@ -33,11 +34,13 @@ from agent_storage.projections import SQLiteProjectionStore
 from agent_storage.session_handoff_events import build_handoff_events, insert_child_projections
 from agent_storage.session_handoff_facts import read_source_facts
 from agent_storage.session_handoff_rows import (
+    INSERT_HANDOFF_OPERATION,
     SCHEMA,
     HandoffIdempotencyConflictError,
     HandoffStorageConflictError,
     insert_event,
     lineage_from_row,
+    migrate_handoff_fence_columns,
     operation_from_row,
     operation_values,
     sha256_text,
@@ -65,7 +68,7 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
         *,
         request_hash: str,
         expected_source_stream_version: int,
-        source_lease_fencing_token: int | None,
+        source_lease_fence: LeaseFence | None,
         authority_revision: str,
         workspace_revision: WorkspaceBindingRevision,
         task_profile_revision: str,
@@ -83,7 +86,7 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
             idempotency_key_hash=sha256_text(request.idempotency_key),
             request_hash=request_hash,
             expected_source_stream_version=expected_source_stream_version,
-            source_lease_fencing_token=source_lease_fencing_token,
+            source_lease_fence=source_lease_fence,
             authority_revision=authority_revision,
             workspace_revision=workspace_revision,
             task_profile_revision=task_profile_revision,
@@ -107,14 +110,7 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
                         "handoff idempotency key reused with different request"
                     )
                 return stored
-            connection.execute(
-                """
-                INSERT INTO handoff_operations VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                )
-                """,
-                operation_values(operation),
-            )
+            connection.execute(INSERT_HANDOFF_OPERATION, operation_values(operation))
         return operation
 
     def commit(self, request: SessionHandoffCommitRequest) -> SessionHandoffResult:
@@ -324,7 +320,7 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
         if (
             facts.stream_version != operation.expected_source_stream_version
             or source["current_sequence"] != facts.stream_version
-            or facts.lease_fencing_token != operation.source_lease_fencing_token
+            or facts.lease_fence != operation.source_lease_fence
             or facts.authority_revision != operation.authority_revision
             or facts.workspace_revision != operation.workspace_revision
             or facts.task_profile_revision != operation.task_profile_revision
@@ -497,3 +493,4 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
         with self._database.connect() as connection:
             connection.executescript(SCHEMA)
             connection.executescript(TASK_SCHEMA)
+            migrate_handoff_fence_columns(connection, at=datetime.now(UTC))

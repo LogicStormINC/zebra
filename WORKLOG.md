@@ -5996,3 +5996,29 @@ actual byte access.
   `10/10` after `make sync`; `make check` retains the two inherited untouched
   file-size violations at `561/500` and `505/500`;
 - both task-owned docs are below the 600-line limit and `git diff --check` passes.
+
+## 2026-07-28 CLOUD-LEASE-CON-01 Core Lease And Fencing Contract
+
+- created local stacked worktree `../zebra-agent-cloud-lease-con-01` on branch
+  `codex/cloud-lease-con-01` from reviewed plan commit `e373786b`;
+- claimed the task and expanded exact owned paths before touching every newly
+  discovered API, Worker and compatibility-test caller;
+- added immutable Core Lease fence/errors and replaced caller-clock mutations
+  with TTL-based acquire plus full-fence heartbeat/release Ports;
+- retained SQLite generations, added local control-plane epoch, injected clock,
+  idempotent legacy/partial-schema fail-closed migration and bounded TTL;
+- persisted complete fences through handoff reserve/commit and aborted incomplete
+  legacy reservations instead of treating checkpoint as a fencing token;
+- changed Worker claim to acquire before recovery, CAS the recovered checkpoint,
+  and fenced-release on recovery failure without adding background heartbeat;
+- focused matrix passes `55/55`; broader storage/Worker/API matrix passes 496
+  with 14 PostgreSQL skips and retains six inherited failures;
+- full repository suite passes `1765`, skips `22` and retains the nine confirmed
+  inherited failures (two DeepSeek, five expired SCM fixtures, file size, cancellation);
+- targeted Mypy passes 151 package files plus the two touched app modules; Eval
+  passes `10/10`; Ruff and `git diff --check` pass;
+- final independent reviews report `0 P0 / 0 P1 / 0 P2` after exercising partial
+  migration concurrency and the old direct callers;
+- `make check` retains only the inherited untouched file-size violations at
+  `561/500` and `505/500`; GitHub Actions remains intentionally skipped under
+  the maintainer's temporary billing-limit direction.
