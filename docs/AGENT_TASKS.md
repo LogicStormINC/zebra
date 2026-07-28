@@ -56,6 +56,10 @@
 - `MEM-MEM0-ADP-01` is `Review` on `codex/mem0-adapter-01`. It implements the
   provider-neutral Gateway over the proven Mem0 REST subset and remains stacked
   behind the reviewed Mem0 Spike and its storage, Gateway, and Compose prerequisites.
+- `CLOUD-PG-PLAN-01` and `CLOUD-PG-01` are `Review` on their dedicated branches;
+  the docs-only migration/restore decisions precede the real PostgreSQL Event/Projection Adapter.
+- `CLOUD-LEASE-PLAN-01`, `CLOUD-LEASE-CON-01`, and `CLOUD-LEASE-PG-01` are `Review`
+  in dependency order. Effect Outbox/consumer and full aggregate fencing remain `Locked`.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -634,6 +638,297 @@ the real dependency adapters. Agent Memory remains optional and must not gate Ru
 - API/Worker use PostgreSQL, object storage and live Redis without creating an
   authoritative SQLite database
 - stopping Agent Memory does not prevent task creation, execution or recovery
+
+### CLOUD-PG-PLAN-01 - PostgreSQL Migration And Recovery Model Review
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `STORAGE / SRE / SECURITY`
+- Depends on: locally reviewed `CLOUD-STO-AUTH-01` and maintainer direction on
+  2026-07-28 to continue local implementation while GitHub Actions is blocked by
+  an account billing/spending-limit gate. The waiver permits local evidence only;
+  it does not make this stacked branch mergeable or production-ready.
+- Branch: `codex/cloud-pg-plan-01`
+- Worktree: `../zebra-agent-cloud-pg-plan-01`
+- Owned paths: `docs/PostgreSQL迁移备份恢复与回滚评审_v1.0.md` (new),
+  `docs/AGENT_TASKS.md`, `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`,
+  `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Freeze the minimum migration, backup, restore and rollback contract required
+before a PostgreSQL control-plane Adapter may be implemented.
+
+#### Acceptance
+
+- authoritative scope and excluded derived/local stores are explicit
+- cutover avoids cross-backend dual-write and preserves one fact source
+- pre-cutover abort, post-cutover application rollback and disaster restore are
+  distinct procedures with fail-closed validation
+- backup/PITR, Artifact consistency, fencing reset and outbox reconciliation
+  requirements are concrete without inventing unapproved RPO/RTO numbers
+- `CLOUD-PG-01` receives exact implementation and test gates; no Adapter,
+  migration executable, cloud dependency or production claim is added
+
+### CLOUD-PG-01 - PostgreSQL Event And Projection Storage
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `STORAGE`
+- Depends on: locally reviewed `CLOUD-STO-AUTH-01` and `CLOUD-PG-PLAN-01`;
+  `CLOUD-COMPOSE-INFRA-01@b23b8e76` supplies the separately owned real PostgreSQL
+  dependency service. On 2026-07-28 the maintainer approved the five database
+  review decisions by directing this plan to continue while GitHub Actions is
+  billing-blocked. Required merge order and CI gates remain unchanged.
+- Branch: `codex/cloud-pg-01-events-v1`
+- Worktree: `../zebra-agent-cloud-pg-01`
+- Owned paths: `packages/agent-storage/pyproject.toml`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `packages/agent-storage/src/agent_storage/event_rows.py`,
+  `packages/agent-storage/src/agent_storage/sqlite.py`,
+  `packages/agent-storage/src/agent_storage/postgres/` (new),
+  `tests/agent_storage/test_postgres_*.py` (new),
+  `tests/agent_storage/test_sqlite_event_store.py`, `uv.lock`, `README.md`,
+  `docs/PostgreSQL迁移备份恢复与回滚评审_v1.0.md`, `docs/AGENT_TASKS.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Implement explicit PostgreSQL migration plus Event/Projection Port Adapters with
+single-namespace isolation, monotonic Event CAS and replay-safe Projection writes.
+
+#### Acceptance
+
+- migration versions/checksums are explicit, serialized by advisory lock and
+  never run implicitly from an Adapter constructor
+- Event append CAS, idempotency conflict detection, namespace isolation,
+  read-since and concurrent writer behavior pass against real PostgreSQL
+- Projection round-trip, ordering, idempotent same-version save, stale/conflicting
+  version rejection and Event replay rebuild pass against real PostgreSQL
+- SQLite idempotency reuse with different Event meaning fails closed rather than
+  preserving a cross-backend semantic split
+- no `ControlPlaneStores` selector, API/Worker wiring, pool, ORM, Alembic,
+  testcontainers, online migration or production claim is added
+
+#### Result
+
+- Added one explicit psycopg dependency, checksum-verified serialized migrations
+  and namespace-scoped PostgreSQL Event/Projection Adapters.
+- Event stream version CAS and Event insert share one transaction; business-level
+  idempotency conflicts now fail closed in both PostgreSQL and SQLite.
+- Projection writes reject missing/ahead Event streams, stale versions and
+  same-version content conflicts while allowing replay lag and exact retries.
+- Real Compose PostgreSQL tests pass `14/14`; all storage tests pass `113/113`;
+  custom-format dump/restore into a fresh temporary database passes the same
+  PostgreSQL contract `14/14` before cleanup.
+- Independent final review found no P0-P2 issue. Branch is local and unpushed;
+  cloud composition remains Locked until every authoritative Store has a
+  PostgreSQL Adapter and the dependency stack is merged in order.
+
+### CLOUD-LEASE-PLAN-01 - Lease, Fencing And Effect Dispatch Contract
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `CORE / STORAGE / WORKER / SECURITY`
+- Depends on: locally reviewed `CLOUD-PG-01` and maintainer direction to continue
+  local work while GitHub Actions is billing-blocked. This task may produce
+  local documentation evidence only; it does not unlock merge or production use.
+- Branch: `codex/cloud-lease-plan-01`
+- Worktree: `../zebra-agent-cloud-lease-plan-01`
+- Owned paths: `docs/CLOUD_Lease_Fencing_Effect_Outbox合同_v1.0.md` (new),
+  `docs/AGENT_TASKS.md`, `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`,
+  `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Freeze the minimum control-plane epoch, Lease fencing, atomic Effect dispatch
+and crash-recovery contract, then split the locked parent into independently
+reviewable, dependency-ordered implementation cards with bounded owned paths.
+
+#### Acceptance
+
+- checkpoint and ownership fencing are separate typed concepts; the fence is an
+  epoch plus owner instance and a token monotonic within that database lineage
+- PostgreSQL database time, full-fence CAS, restore epoch rotation and retained
+  Lease generations have executable state-transition and failure semantics
+- Event/Effect/Outbox scheduling and terminalization have narrow aggregate
+  transaction boundaries without introducing a generic Unit of Work
+- durable intent at-least-once discovery/claim, uncertain external effects and
+  operator reconciliation have an explicit crash matrix that never claims
+  exactly-once external execution
+- the parent remains `Locked`; Core contract, PostgreSQL Lease, Effect Outbox and
+  Worker consumer implementation each receive one path-bounded follow-up card
+
+#### Explicit Non-Goals
+
+- Python implementation, migration SQL, Store selection or runtime wiring
+- Redis, Kafka, Temporal, a generic inbox or a generic Unit of Work
+- dual-write, multi-namespace delivery, production cutover or production claims
+
+#### Validation And Handoff
+
+- Three read-only audits identified the current Lease, Worker and Effect crash
+  gaps; two reader-review rounds closed all P0/P1 findings.
+- `make eval` passes `10/10` after the new worktree was synchronized;
+  `git diff --check` passes and both task-owned docs remain below 600 lines.
+- Repository `make check` retains only the inherited untouched file-size
+  violations (`561/500`, `505/500`); no implementation or test file changed.
+- Branch is local and unpushed. Every implementation child remains `Locked` and
+  requires merged prerequisites plus explicit activation.
+
+### CLOUD-LEASE-CON-01 - Core Lease And Fencing Contract
+
+- Status: `Review`
+- Owner: `Codex`
+- Depends on: locally reviewed `CLOUD-LEASE-PLAN-01`; explicitly activated for
+  local stacked implementation by the maintainer on 2026-07-28. Merge still
+  requires `CLOUD-LEASE-PLAN-01` first.
+- Branch: `codex/cloud-lease-con-01`
+- Worktree: `../zebra-agent-cloud-lease-con-01`
+- Owned paths: `packages/agent-core/src/agent_core/domain/leases.py`,
+  `packages/agent-core/src/agent_core/{__init__,domain/__init__,ports/__init__,ports/lease_store}.py`,
+  `packages/agent-core/src/agent_core/ports/session_handoff.py`,
+  `packages/agent-storage/src/agent_storage/{__init__,leases,session_handoff_facts}.py`,
+  `packages/agent-storage/src/agent_storage/{session_handoffs,session_handoff_rows}.py`,
+  `apps/api/src/zebra_agent_api/session_handoff.py`,
+  `apps/worker/src/zebra_agent_worker/claims.py`,
+  `tests/agent_storage/{test_sqlite_leases,test_session_handoffs}.py`,
+  `tests/api/test_session_handoff_routes.py`,
+  `tests/worker/{test_claims,test_loop,test_resume,test_worker_storage_composition}.py`,
+  `tests/cli/run/cli_run_support.py`,
+  `tests/test_session_resume_execute_contract_matrix.py`,
+  and this task's governance records
+- Goal: separate checkpoint from typed epoch/token/owner fencing and make every
+  Lease mutation a full-CAS contract while preserving local SQLite profile use.
+- Acceptance: active reacquire conflicts; release/takeover tokens are monotonic
+  within an epoch/database lineage; epoch mismatch enables immediate takeover;
+  stale epoch/token/owner and checkpoint regression fail closed; Worker claim
+  acquires before recovery without adding the later background heartbeat.
+- Non-goals: PostgreSQL, Worker lifecycle, Effect dispatch and composition.
+
+#### Validation And Handoff
+
+- Core exposes an immutable epoch/token/owner `LeaseFence`; SQLite retains each
+  generation and uses full-fence CAS for heartbeat/release while legacy and
+  partial-schema rows migrate idempotently to a released, token-zero state.
+- Handoff reserve/commit persists and compares the complete fence; incomplete
+  legacy tuples abort, and checkpoint changes no longer masquerade as ownership.
+- Worker claim acquires before recovery, advances checkpoint with the same fence
+  after successful recovery, and fenced-releases on recovery failure. TTL input
+  has a shared one-hour default maximum and is rejected before arithmetic overflow.
+- Focused task matrix passes `55/55`; independent final reviews report
+  `0 P0 / 0 P1 / 0 P2`. Ruff, targeted Mypy, Eval `10/10`, and
+  `git diff --check` pass.
+- Full-suite failures remain the inherited baseline only: two DeepSeek response
+  assertions, five expired SCM credential fixtures, one file-size gate and one
+  Worker cancellation race. `make check` stops on the two inherited untouched
+  file-size violations (`561/500`, `505/500`).
+- Branch remains local, unpushed and stacked on `CLOUD-LEASE-PLAN-01`; merge and
+  the next PostgreSQL card remain gated by prerequisite merge and activation.
+
+### CLOUD-LEASE-PG-01 - PostgreSQL Epoch And Lease Adapter
+
+- Status: `Review`
+- Owner: `Codex`
+- Depends on: locally reviewed `CLOUD-LEASE-CON-01` and `CLOUD-PG-01`;
+  explicitly activated for local stacked implementation by the maintainer on
+  2026-07-28. Merge still requires both dependency branches first.
+- Branch: `codex/cloud-lease-pg-01`
+- Worktree: `../zebra-agent-cloud-lease-pg-01`
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/{__init__,migrations,epoch,leases}.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `tests/agent_storage/test_postgres_{migrations,leases}.py`, and this task's
+  governance records
+- Goal: implement database-clock Lease ownership and restore epoch rotation for
+  one immutable deployment namespace.
+- Acceptance: real PostgreSQL race, same-worker collision, heartbeat, release,
+  takeover, clock-skew, namespace and restore tests pass.
+- Non-goals: Store selection, API/Worker wiring, Effect/Outbox and cutover.
+
+#### Validation And Handoff
+
+- Additive migration v2 creates namespace epoch authority and retained Lease
+  generations without changing v1 SQL/checksum or implicitly bootstrapping an epoch.
+- Bootstrap is strict and one-time; restore rotation issues an internal fresh UUID.
+  Runtime Lease constructors never run DDL or create/rotate authority.
+- Acquire, heartbeat and release lock the epoch row before the Lease row, use
+  PostgreSQL transaction time, and mutate only through full-fence CAS. A real
+  blocking test proves restore rotation waits for an in-flight fenced heartbeat.
+- Real Docker Compose PostgreSQL 17.5 evidence: focused migration/Event/Projection/
+  Lease matrix `34/34`; all storage tests `147/147`; critical concurrency matrix
+  passed ten consecutive runs. Independent final reviews report
+  `0 P0 / 0 P1 / 0 P2`.
+- Ruff, storage Mypy, Eval `10/10`, and `git diff --check` pass. Full suite with
+  PostgreSQL enabled passes `1799`, skips `8`, and retains the nine confirmed
+  inherited failures. `make check` stops only on inherited untouched file-size
+  violations (`561/500`, `505/500`).
+- Branch remains local, unpushed and stacked on unmerged dependencies. Store
+  selection, database roles, Worker wiring, cutover and production claims remain
+  explicitly outside this card.
+
+### CLOUD-EFFECT-OUTBOX-01 - Fenced Effect Dispatch Aggregate
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: merged `CLOUD-LEASE-PG-01` and explicit activation
+- Branch: `codex/cloud-effect-outbox-01`
+- Owned paths: `packages/agent-core/src/agent_core/domain/effect_dispatch.py` (new),
+  `packages/agent-core/src/agent_core/ports/effect_dispatch.py` (new),
+  `packages/agent-core/src/agent_core/{__init__,domain/__init__,ports/__init__}.py`,
+  `packages/agent-storage/src/agent_storage/postgres/{__init__,migrations,events,effects,outbox}.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `tests/agent_storage/test_postgres_effect_dispatch.py` (new), and governance records
+- Goal: atomically schedule and terminalize Event/Effect/Outbox mutations behind
+  a valid Lease fence, with claim and reconciliation states.
+- Acceptance: real PostgreSQL fault injection, concurrent idempotency, SKIP LOCKED,
+  stale-fence, explicit reconciliation/retry, crash-matrix and namespace tests pass.
+- Non-goals: generic Unit of Work/inbox, Tool Gateway/Worker integration, broker.
+
+### CLOUD-EFFECT-CONSUMER-01 - Worker Fenced Effect Consumer
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: merged `CLOUD-EFFECT-OUTBOX-01` and explicit activation
+- Branch: `codex/cloud-effect-consumer-01`
+- Owned paths: `apps/worker/src/zebra_agent_worker/{loop,claims,resume,execution,execution_events,continuation_lifecycle,context_lifecycle,execution_finalization,runtime_authority,session_handoff}.py`,
+  `apps/worker/src/zebra_agent_worker/lease_heartbeat.py` (new),
+  `packages/agent-core/src/agent_core/harness/tool_execution.py`,
+  `packages/agent-tools/src/agent_tools/effect_guard.py`,
+  `tests/agent_tools/test_effect_guard.py`, `tests/worker/{test_loop,test_claims,test_resume}.py`,
+  `tests/worker/test_fenced_effect_consumer.py` (new), and governance records
+- Goal: acquire before recovery, maintain background heartbeat, bind Event/Effect
+  execution mutations to the
+  current fence and reconcile uncertain external Effects without auto-replay.
+- Acceptance: lease loss stops new model/Event/Effect work; every exit attempts
+  fenced release; provider-success crash and terminal-response crash tests pass.
+- Non-goals: Redis/Kafka, cloud backend selector, production rollout.
+
+### CLOUD-LEASE-01 - Lease And Event/Effect Delivery Parent Gate
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: all four Lease/Effect implementation cards Done/merged and combined
+  real PostgreSQL evidence approved
+- Goal: close Session Lease plus Event/Effect execution ownership and delivery;
+  it does not certify every Worker-owned aggregate as multi-Worker safe.
+- Acceptance: the combined race, restore, crash and duplicate-delivery matrix
+  passes without claiming exactly-once external execution.
+
+### CLOUD-AGG-FENCE-01 - Full Worker Aggregate Fencing Gate
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: PostgreSQL Adapters for every authoritative Worker-owned aggregate,
+  merged `CLOUD-LEASE-01`, and a path inventory approved before activation
+- Branch: `TBD after prerequisite inventory`
+- Owned paths: none while Locked; this gate must be split into path-bounded
+  aggregate conformance cards before any implementation starts
+- Goal: require ContextLifecycle, Handoff/dispatch, Workspace/Task, Model/Tool run,
+  provider continuation/history, Artifact and delivery-audit transactions to
+  validate the current Lease fence in their own PostgreSQL transaction.
+- Acceptance: stale epoch/token/owner tests pass per aggregate on real PostgreSQL;
+  only then may the project claim complete multi-Worker safety.
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.

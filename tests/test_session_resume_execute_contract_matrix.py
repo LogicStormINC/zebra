@@ -312,12 +312,10 @@ def _seed_ready_session(
 
 
 def _seed_active_lease(database_path: Path, session_id: str, *, worker_id: str) -> None:
-    now = datetime.now(UTC)
     SQLiteLeaseStore(database_path).acquire(
         SessionId(UUID(session_id)),
-        worker_id=worker_id,
-        acquired_at=now,
-        expires_at=now + timedelta(minutes=1),
+        owner_instance_id=worker_id,
+        ttl=timedelta(minutes=1),
     )
 
 

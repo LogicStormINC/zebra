@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Protocol
 
 from agent_core.domain.identifiers import HandoffId, SessionId
+from agent_core.domain.leases import LeaseFence
 from agent_core.domain.session_handoff import (
     DEFAULT_MAX_HANDOFF_STAGE,
     HandoffActorKind,
@@ -18,7 +19,7 @@ from agent_core.ports.handoff_dispatch_store import HandoffDispatch
 @dataclass(frozen=True, slots=True)
 class HandoffSourceFacts:
     stream_version: int
-    lease_fencing_token: int | None
+    lease_fence: LeaseFence | None
     has_active_lease: bool
     authority_revision: str
     workspace_revision: WorkspaceBindingRevision
@@ -49,7 +50,7 @@ class HandoffOperation:
     idempotency_key_hash: str
     request_hash: str
     expected_source_stream_version: int
-    source_lease_fencing_token: int | None
+    source_lease_fence: LeaseFence | None
     authority_revision: str
     workspace_revision: WorkspaceBindingRevision
     task_profile_revision: str
@@ -99,7 +100,7 @@ class SessionHandoffPort(Protocol):
         *,
         request_hash: str,
         expected_source_stream_version: int,
-        source_lease_fencing_token: int | None,
+        source_lease_fence: LeaseFence | None,
         authority_revision: str,
         workspace_revision: WorkspaceBindingRevision,
         task_profile_revision: str,

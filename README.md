@@ -60,12 +60,14 @@ Private-cloud deployment, external-namespace isolation, ACP, and optional
 code-intelligence remain outside the verified implementation baseline. Cloud
 deployment does not change the product boundary above. Trench owns CopilotKit
 React v2 and its Runtime/BFF, while Zebra exposes an AG-UI adapter and retains
-durable Task/Event/Policy authority. The first cloud-foundation task is in Review:
-it injects existing Store Ports, fails closed on partial split backends and
-preserves SQLite; PostgreSQL, Redis, object storage and Trench production wiring
-remain locked. A separate local Compose baseline now runs PostgreSQL, ephemeral
-Redis and MinIO, with an opt-in pinned Mem0 boot smoke; none is wired as Zebra's
-authoritative backend yet. See [docker/README.md](./docker/README.md). Read
+durable Task/Event/Policy authority. Cloud-foundation work in local Review now
+includes the complete Store composition seam, the dependency-only Compose stack,
+the derived Mem0 Gateway lane, isolated PostgreSQL Event/Projection Adapters and
+the PostgreSQL epoch/Lease Adapter. Real PostgreSQL and restore/concurrency
+evidence exists, but runtime composition still selects SQLite because partial
+PostgreSQL wiring would split authority. Redis live state, object storage, Effect
+Outbox/consumer wiring and Trench production wiring remain locked. See
+[docker/README.md](./docker/README.md). Read
 [PROGRESS.md](./PROGRESS.md) for the live project snapshot and
 [docs/AGENT_TASKS.md](./docs/AGENT_TASKS.md) for task ownership and status. The
 adaptive execution boundary is specified in
@@ -130,7 +132,7 @@ The current repository does not claim:
 
 - Kubernetes or distributed Sandbox orchestration
 - private-cloud or multi-tenant production readiness
-- PostgreSQL/object-storage control-plane durability
+- complete PostgreSQL/object-storage control-plane composition or production durability
 - centralized production Credential/Egress Broker services
 - ACP or optional code-intelligence adapters
 - unrestricted browser automation or autonomous production deployment

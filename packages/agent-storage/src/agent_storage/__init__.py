@@ -1,5 +1,11 @@
 """Storage adapters for Zebra Agent."""
 
+from agent_core.domain.leases import (
+    LeaseCheckpointRegressionError,
+    LeaseConflictError,
+    LeaseFence,
+    LeaseLostError,
+)
 from agent_core.ports import (
     EffectLedgerStatus,
     EffectReservation,
@@ -37,18 +43,31 @@ from agent_storage.effect_ledger import (
     EffectReplayRejectedError,
     SQLiteEffectLedger,
 )
+from agent_storage.event_rows import SessionEventIdempotencyConflictError
 from agent_storage.idempotency import (
     IdempotencyConflictError,
     SQLiteIdempotencyStore,
     new_idempotency_record,
 )
-from agent_storage.leases import LeaseConflictError, SQLiteLeaseStore
+from agent_storage.leases import SQLiteLeaseStore
 from agent_storage.memories import SQLiteMemoryStore
 from agent_storage.memory_lookup import (
     list_confirmed_repo_memories,
     list_confirmed_repo_memory_texts,
 )
 from agent_storage.model_calls import SQLiteModelCallStore
+from agent_storage.postgres import (
+    PostgresControlPlaneEpochError,
+    PostgresEventStore,
+    PostgresLeaseStore,
+    PostgresMigrationError,
+    PostgresProjectionConflictError,
+    PostgresProjectionStore,
+    apply_postgres_migrations,
+    bootstrap_control_plane_epoch,
+    read_control_plane_epoch,
+    rotate_control_plane_epoch,
+)
 from agent_storage.projections import SQLiteProjectionStore
 from agent_storage.provider_continuations import SQLiteProviderContinuationStore
 from agent_storage.session_attachments import (
@@ -83,17 +102,31 @@ __all__ = [
     "HandoffSourceFacts",
     "ImmutableContextCapsuleConflictError",
     "LeaseConflictError",
+    "LeaseCheckpointRegressionError",
+    "LeaseFence",
+    "LeaseLostError",
     "SessionArtifact",
+    "SessionEventIdempotencyConflictError",
     "LoadedProviderContinuation",
     "list_confirmed_repo_memories",
     "SQLiteMemoryStore",
     "list_confirmed_repo_memory_texts",
     "load_attachment_contexts",
     "payload_for_artifact_uri",
+    "PostgresEventStore",
+    "PostgresControlPlaneEpochError",
+    "PostgresLeaseStore",
+    "PostgresMigrationError",
+    "PostgresProjectionConflictError",
+    "PostgresProjectionStore",
     "serialize_artifact_lifecycle",
     "serialize_artifact_retrieval",
     "serialize_session_artifact_projection",
     "sqlite_control_plane_stores",
+    "apply_postgres_migrations",
+    "bootstrap_control_plane_epoch",
+    "read_control_plane_epoch",
+    "rotate_control_plane_epoch",
     "SQLiteArtifactPayloadStore",
     "SQLiteAgentTaskStore",
     "SQLiteArtifactStore",

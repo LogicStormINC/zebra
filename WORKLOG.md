@@ -84,6 +84,76 @@
 - `make check` stops at the two untouched file-size violations (`561/500`,
   `505/500`); moved the task to Review with the local stacked merge gate intact
 
+## 2026-07-28 CLOUD-PG-01 PostgreSQL Event And Projection Storage
+
+- treated the maintainer's “continue” after the database review checkpoint as
+  approval of its five explicit decisions; kept merge, GitHub CI and production
+  gates unsatisfied
+- registered and claimed isolated branch `codex/cloud-pg-01-events-v1`, stacked
+  on `CLOUD-PG-PLAN-01`; reused the healthy PostgreSQL 17.5 service owned by
+  `CLOUD-COMPOSE-INFRA-01` without copying or changing Compose
+- added only psycopg 3 (`3.3.4` resolved), short connections, an explicit
+  migration runner and Event/Projection Adapters; added no pool, ORM, Alembic,
+  testcontainers, API/Worker selector or partial `ControlPlaneStores`
+- migration history records version/name/SHA-256 and runs under a transaction
+  advisory lock; concurrent first migration, repeated migration, checksum drift
+  and unknown versions are tested fail closed
+- implemented namespace-scoped Event stream CAS and Event insert in one
+  transaction, including concurrent sequence > 0 writers, concurrent retries,
+  namespace isolation and insert-failure rollback
+- fixed the shared SQLite idempotency root cause: a reused key returns the first
+  Event only when the business fingerprint matches, otherwise it raises an
+  explicit conflict
+- implemented JSONB Projection round trips and ordered reads; saves allow exact
+  retries and lagging replay but reject phantom/ahead streams, stale versions and
+  different content at the same sequence
+- final real PostgreSQL focused tests: `14 passed`; combined PostgreSQL/SQLite
+  focused tests: `22 passed`; complete storage suite: `113 passed`
+- created a custom-format `pg_dump --no-owner`, restored it into fresh temporary
+  database `zebra_cloud_pg_01_restore_final`, and reran the PostgreSQL contract:
+  `14 passed`; then deleted only that temporary database and dump
+- full `make test` with real PostgreSQL: `1762 passed, 8 skipped, 9 failed`; the
+  failures match the inherited two provider expectations, five expired SCM
+  fixtures, one untouched file-size test and one Worker cancellation race
+- Eval release gate passes `10/10`; touched Ruff/Mypy pass. Repository Ruff/Mypy
+  retain the inherited `13/4` errors, and `make check` retains the two untouched
+  `561/500` and `505/500` file-size violations
+- independent final review found no remaining P0, P1 or P2; task moved to Review,
+  branch remains local and unpushed
+
+## 2026-07-28 CLOUD-PG-PLAN-01 PostgreSQL Migration And Recovery Review
+
+- registered and claimed the docs-only `CLOUD-PG-PLAN-01` task on isolated local
+  branch `codex/cloud-pg-plan-01`, stacked on reviewed `CLOUD-STO-AUTH-01`
+- continued under the maintainer's temporary GitHub Actions billing waiver;
+  preserved all CI, merge and production gates as unsatisfied
+- traced the complete `ControlPlaneStores` authority rather than treating the
+  initial Event/Projection adapter slice as permission for partial backend cutover
+- selected a maintenance-window migration with canonical export manifests,
+  full validation, one atomic `ACTIVE` authority boundary and no dual-write
+- separated Event fact commits from replayable Projection progress and assigned
+  multi-table atomicity to focused aggregate Ports rather than a global unit of work
+- defined expand/contract schema compatibility, rollback-candidate tests,
+  PostgreSQL/object manifest coupling, logical restore validation and production
+  PITR admission gates
+- required restore-time epoch rotation and same-transaction fencing checks for
+  Lease/Effect/Outbox mutations before any endpoint reopens
+- kept RPO, RTO, retention and drill frequency explicitly `TBD`, which blocks
+  production traffic until maintainers approve measured values
+- independent reader testing exposed and closed the runtime/importer ACTIVE-gate
+  conflict, missing object commit ordering, restore identity transitions,
+  sequence/canonicalization ambiguity and cross-task test-scope drift
+- final independent reader pass found no remaining P0, P1 or P2 design issue
+- `make sync` passes; `git diff --check` passes; Eval release gate passes `10/10`
+- initial `make eval` before workspace sync failed during import because the new
+  worktree lacked `agent_observability`; the synchronized rerun passed
+- full `make test`: `1747 passed, 8 skipped, 9 failed`; failures match the inherited
+  provider, expired SCM fixture, file-size and Worker cancellation baseline
+- `make check` stops at the two untouched `561/500` and `505/500` file-size
+  violations; this docs-only task did not modify either file
+- implementation remains blocked on five explicit review decisions in the
+  decision record; no PostgreSQL adapter, migration or cloud selector was added
+
 ## 2026-07-24 CLOUD-STO-AUTH-01 Complete Authoritative Store Composition
 
 - activated one isolated local branch, `codex/cloud-sto-auth-01`, based directly
@@ -6044,3 +6114,79 @@ actual byte access.
   governance files may require ordinary rebase reconciliation later
 - completed current official-source comparison for Codex/OpenAI, Claude,
   Pi Agent and Hermes; design and implementation plan are being written first
+
+
+## 2026-07-28 CLOUD-LEASE-PLAN-01 Lease And Effect Dispatch Contract
+
+- created `codex/cloud-lease-plan-01` in
+  `../zebra-agent-cloud-lease-plan-01` from local `CLOUD-PG-01@15c386db`;
+- registered and claimed the docs-only task before changing the contract;
+- ran three independent read-only audits over Lease/Worker lifecycle,
+  Effect/Outbox crash windows and task/owned-path decomposition;
+- found P0 stale-worker gaps: no epoch/token, checkpoint used as a fence,
+  get-before-update heartbeat, deleted generations, no runtime heartbeat and
+  unfenced Worker Event/Effect writes;
+- found P0 Effect crash windows across started Event, ledger reservation,
+  provider call and terminal Event, plus response-cache idempotency that cannot
+  reserve commit/PR effects;
+- wrote `docs/CLOUD_Lease_Fencing_Effect_Outbox合同_v1.0.md` and split the locked
+  parent into Core, PostgreSQL Lease, Effect Outbox and Worker consumer cards;
+- kept Redis/Kafka/Temporal, generic Unit of Work/inbox, cloud selection,
+  cutover and production claims outside this task.
+- first reader review reported `3 P0 / 4 P1`; the contract was corrected for
+  PITR epoch semantics, new-owner reconciliation, aggregate scope, background
+  heartbeat, retry attempts, exact owned paths and merged dependency gates;
+- final reader review reports `0 P0 / 0 P1` and approves Review status;
+- fresh-worktree `make eval` initially failed before dependency sync, then passed
+  `10/10` after `make sync`; `make check` retains the two inherited untouched
+  file-size violations at `561/500` and `505/500`;
+- both task-owned docs are below the 600-line limit and `git diff --check` passes.
+
+## 2026-07-28 CLOUD-LEASE-CON-01 Core Lease And Fencing Contract
+
+- created local stacked worktree `../zebra-agent-cloud-lease-con-01` on branch
+  `codex/cloud-lease-con-01` from reviewed plan commit `e373786b`;
+- claimed the task and expanded exact owned paths before touching every newly
+  discovered API, Worker and compatibility-test caller;
+- added immutable Core Lease fence/errors and replaced caller-clock mutations
+  with TTL-based acquire plus full-fence heartbeat/release Ports;
+- retained SQLite generations, added local control-plane epoch, injected clock,
+  idempotent legacy/partial-schema fail-closed migration and bounded TTL;
+- persisted complete fences through handoff reserve/commit and aborted incomplete
+  legacy reservations instead of treating checkpoint as a fencing token;
+- changed Worker claim to acquire before recovery, CAS the recovered checkpoint,
+  and fenced-release on recovery failure without adding background heartbeat;
+- focused matrix passes `55/55`; broader storage/Worker/API matrix passes 496
+  with 14 PostgreSQL skips and retains six inherited failures;
+- full repository suite passes `1765`, skips `22` and retains the nine confirmed
+  inherited failures (two DeepSeek, five expired SCM fixtures, file size, cancellation);
+- targeted Mypy passes 151 package files plus the two touched app modules; Eval
+  passes `10/10`; Ruff and `git diff --check` pass;
+- final independent reviews report `0 P0 / 0 P1 / 0 P2` after exercising partial
+  migration concurrency and the old direct callers;
+- `make check` retains only the inherited untouched file-size violations at
+  `561/500` and `505/500`; GitHub Actions remains intentionally skipped under
+  the maintainer's temporary billing-limit direction.
+
+## 2026-07-28 CLOUD-LEASE-PG-01 PostgreSQL Epoch And Lease Adapter
+
+- created local stacked worktree `../zebra-agent-cloud-lease-pg-01` on branch
+  `codex/cloud-lease-pg-01` from `CLOUD-LEASE-CON-01@816a1e3b`;
+- claimed the task under the maintainer's explicit continuation while preserving
+  the unmerged-dependency, no-push and no-production boundaries;
+- added additive migration v2, strict epoch bootstrap/read/restore rotation and a
+  namespace-scoped `PostgresLeaseStore` without constructor DDL or new dependency;
+- standardized mutation locking as epoch `FOR SHARE` then Lease row mutation, with
+  rotation taking the conflicting epoch update lock;
+- added real PostgreSQL tests for migration compatibility, constructor isolation,
+  epoch lifecycle, DB-clock acquisition, same/different owner races, heartbeat,
+  retained release/reacquire, expiry, complete fence rejection, namespace/clock
+  isolation and restore concurrency;
+- used the existing `CLOUD-COMPOSE-INFRA-01` PostgreSQL 17.5 dependency container;
+  no Docker configuration was copied or modified in this task;
+- real PostgreSQL focused matrix passes `34/34`; all storage tests pass `147/147`;
+  critical concurrency/rotation tests passed ten consecutive runs;
+- full suite with PostgreSQL enabled passes `1799`, skips `8`, and retains the nine
+  inherited failures; Eval passes `10/10`, Ruff/Mypy/diff-check pass;
+- two final read-only reviews report `0 P0 / 0 P1 / 0 P2`; `make check` retains only
+  the inherited untouched file-size violations at `561/500` and `505/500`.

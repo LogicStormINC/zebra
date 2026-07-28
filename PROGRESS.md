@@ -56,6 +56,9 @@
   health and anonymous-request rejection are verified locally. Mem0 remains
   derived and replaceable; Zebra application containers stay locked until real
   cloud adapters exist.
+- PostgreSQL tasks in Review: `CLOUD-PG-01` implements isolated Event/Projection
+  Adapters, while `CLOUD-LEASE-PG-01` implements epoch-scoped, database-clock
+  Lease fencing. Both have real PostgreSQL evidence but neither is runtime-selected.
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
@@ -275,12 +278,14 @@ including a real thinking tool round trip.
 - `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
-  `CLOUD-STO-AUTH-01`, `CLOUD-COMPOSE-INFRA-01`, and `MEM-GW-CON-01` are in
-  Review. `MEM-MEM0-SPIKE-01` is also in Review after isolated real-server
-  contract validation. `MEM-MEM0-ADP-01` is in Review after focused and pinned
-  Compose validation; all
-  PostgreSQL, Redis-live, object-storage, production AG-UI, Trench, analysis,
-  writeback, Memory delivery/runtime wiring, and GA cards remain `Locked` pending their gates.
+  `CLOUD-STO-AUTH-01`, `CLOUD-COMPOSE-INFRA-01`, `MEM-GW-CON-01`,
+  `MEM-MEM0-SPIKE-01`, `MEM-MEM0-ADP-01`, `CLOUD-PG-PLAN-01`, `CLOUD-PG-01`,
+  `CLOUD-LEASE-PLAN-01`, `CLOUD-LEASE-CON-01`, and `CLOUD-LEASE-PG-01` are in
+  Review. Mem0 remains a derived, degraded-safe index; PostgreSQL Event/Projection
+  and epoch/Lease Adapters have real-service restore and concurrency evidence.
+  The local CI-billing waiver does not satisfy merge, runtime composition, release
+  or production gates. Effect Outbox/consumer, full aggregate fencing, Redis,
+  object storage, production AG-UI, Trench, analysis, writeback, Memory delivery and runtime wiring, and GA cards remain `Locked` pending their explicit gates.
 
 ## Known Follow-Ups
 
@@ -288,19 +293,22 @@ including a real thinking tool round trip.
    parked while the storage branches follow their recorded merge order.
 2. Keep DeepSeek thinking mode opt-in and preserve its private continuation
    fail-closed boundary.
-3. Merge `CLOUD-STO-SEAM-01`, then `CLOUD-STO-AUTH-01`, before PostgreSQL
-   selection; approve the migration/backup/recovery/rollback model before
-   activating `CLOUD-PG-01`.
+3. Preserve merge order from `CLOUD-STO-SEAM-01` through `CLOUD-STO-AUTH-01`,
+   `CLOUD-PG-PLAN-01`, `CLOUD-PG-01`, and the Lease contract/Adapter chain; do not
+   select PostgreSQL until every authoritative Store can move as one profile.
 4. Split or lazy-load the Desktop main bundle based on a repeatable bundle report.
 5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
    Credential/Egress Broker, external-namespace isolation, and Kubernetes in
    dependency order.
-6. Review the dependency Compose baseline and Mem0 contract Spike. Preserve its
-   observed duplicate, expired-search, timeout and error-classification gaps;
-   do not add Zebra main containers or claim real-provider compatibility.
-7. After authoritative Store composition, activate PostgreSQL, Lease/Outbox,
-   Object Storage, Redis live, recovery and the separate Memory Gateway/Mem0 Spike
-   one card at a time; no production claim precedes migration/restore evidence.
+6. Review the dependency Compose baseline and Mem0 contract/Adapter chain. Preserve
+   its duplicate, expired-search, timeout and error-classification findings; do not
+   claim real-provider compatibility or make Mem0 authoritative.
+7. Preserve the PostgreSQL/Lease order: `CLOUD-PG-PLAN-01 -> CLOUD-PG-01 ->
+   CLOUD-LEASE-PLAN-01 -> CLOUD-LEASE-CON-01 -> CLOUD-LEASE-PG-01`; only then may
+   fenced Effect Outbox and Worker consumer cards be activated.
+8. Activate Object Storage, Redis live state, recovery and Memory delivery/runtime
+   wiring one path-bounded card at a time; no production claim precedes complete
+   composition, migration, restore and failover evidence.
 
 ## Runtime Blueprint
 
@@ -341,11 +349,11 @@ real tool execution, failure visibility, API restart, and durable recovery.
 
 - Zebra AG-UI production adapter and HostSessionGrant verifier
 - Trench CopilotKit Runtime/BFF, read-only panel, frontend tools and writeback
-- Mem0 Gateway adapter and delivery ledger (contract/credentialed spike still gated)
+- Memory delivery ledger and runtime wiring (Mem0 contract, Spike and Adapter are in Review)
 - ACP entry adapter
 - optional code-intelligence adapter
 - Kubernetes/Kata/Firecracker and distributed Sandbox scheduling
-- PostgreSQL/object-storage adapters (authoritative composition is in Review)
+- complete PostgreSQL runtime composition and object-storage adapters
 - external authority adapter and namespace-isolated cloud control plane
 - centralized Vault/KMS-backed credentials and production Egress
 - ecosystem marketplace, cross-organization A2A, and autonomous production release

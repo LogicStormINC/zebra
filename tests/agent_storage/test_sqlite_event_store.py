@@ -6,6 +6,7 @@ from agent_core.application.session_projection import rebuild_session
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_session_id
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_storage.event_rows import SessionEventIdempotencyConflictError
 
 
 def test_sqlite_event_store_appends_and_lists_session_events(tmp_path: Path) -> None:
@@ -158,6 +159,38 @@ def test_sqlite_event_store_returns_existing_event_for_idempotent_retry(
 
     assert stored_event == first_event
     assert retried_event == first_event
+    assert store.list_for_session(session_id) == [first_event]
+
+
+def test_sqlite_event_store_rejects_idempotency_key_reuse_with_different_content(
+    tmp_path: Path,
+) -> None:
+    store = SQLiteEventStore(tmp_path / "events.db")
+    session_id = new_session_id()
+    created_at = datetime(2026, 6, 19, 23, 16, tzinfo=UTC)
+    first_event = SessionEvent.create(
+        session_id=session_id,
+        sequence=0,
+        event_type=EventType.USER_MESSAGE_RECEIVED,
+        actor=EventActor.USER,
+        payload={"content": "first"},
+        idempotency_key="message-1",
+        created_at=created_at,
+    )
+    conflicting_event = SessionEvent.create(
+        session_id=session_id,
+        sequence=1,
+        event_type=EventType.USER_MESSAGE_RECEIVED,
+        actor=EventActor.USER,
+        payload={"content": "different"},
+        idempotency_key="message-1",
+        created_at=created_at,
+    )
+    store.append(first_event)
+
+    with pytest.raises(SessionEventIdempotencyConflictError):
+        store.append(conflicting_event)
+
     assert store.list_for_session(session_id) == [first_event]
 
 

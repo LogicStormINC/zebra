@@ -149,18 +149,95 @@ read-only。
 
 ### CLOUD-PG-01 — PostgreSQL event and projection storage
 
-- Status: `Locked`；depends on `CLOUD-STO-AUTH-01` plus an approved database
-  migration、backup、recovery and rollback model review。
+- Status: `Review`；branch `codex/cloud-pg-01-events-v1`；depends on locally
+  reviewed `CLOUD-STO-AUTH-01` plus the approved `CLOUD-PG-PLAN-01` model。
 - Candidate paths: `packages/agent-storage/.../postgres/`, migrations, storage tests。
 - Deliverable: Event Store、Projection、monotonic sequence、expected-version CAS、replay。
 - Acceptance: concurrent append/idempotency/rebuild tests plus real PostgreSQL CI pass。
 
-### CLOUD-LEASE-01 — Lease, fencing and outbox/inbox
+### CLOUD-PG-PLAN-01 — PostgreSQL migration and recovery model review
 
-- Status: `Locked`；depends on `CLOUD-PG-01`。
-- Candidate paths: isolated PostgreSQL lease/outbox modules and worker integration tests。
-- Deliverable: fenced worker ownership、atomic effect/outbox、at-least-once consumers。
-- Acceptance: two-worker race, crash after commit and duplicate delivery never duplicate effects。
+- Status: `Review`；branch `codex/cloud-pg-plan-01`；docs-only local task。
+- Depends on: local reviewed `CLOUD-STO-AUTH-01` and maintainer waiver to continue
+  local evidence while GitHub Actions billing is blocked；merge/release gates remain。
+- Candidate paths: one focused decision document and governance records only。
+- Deliverable: authoritative scope、offline cutover、backup/PITR、restore validation、
+  fencing/outbox recovery and rollback boundaries。
+- Acceptance: unlock criteria for `CLOUD-PG-01` are executable and no unapproved
+  RPO/RTO、dual-write、Adapter、migration script or production claim is introduced。
+
+### CLOUD-LEASE-PLAN-01 — Lease, fencing and Effect dispatch contract
+
+- Status: `Review`；branch `codex/cloud-lease-plan-01`；docs-only local task。
+- Depends on: locally reviewed `CLOUD-PG-01` and the temporary local-evidence waiver。
+- Deliverable: separate checkpoint from fencing、freeze DB-clock Lease semantics、define
+  atomic Effect/Outbox and uncertain-effect recovery、split the oversized parent card。
+- Acceptance: one reviewed contract and four path-bounded implementation cards；the parent
+  remains Locked and no Python、migration SQL、generic UoW/inbox or production claim is added。
+
+### CLOUD-LEASE-CON-01 — Core Lease and fencing contract
+
+- Status: `Review`；branch `codex/cloud-lease-con-01`；maintainer explicitly
+  activated local stacked implementation on 2026-07-28；merge still requires
+  `CLOUD-LEASE-PLAN-01` first。
+- Implemented paths: Core Lease domain/Port/errors、SQLite Lease conformance、handoff
+  fence facts、Worker claim ordering and focused compatibility tests。
+- Deliverable: typed epoch/token/owner fence、monotonic checkpoint、full-CAS errors、
+  idempotent legacy migration and bounded TTL validation。
+- Acceptance: reacquire/takeover token monotonicity、stale fence rejection and checkpoint
+  independence pass without PostgreSQL、background heartbeat or Effect dispatch。
+
+### CLOUD-LEASE-PG-01 — PostgreSQL epoch and Lease Adapter
+
+- Status: `Review`；branch `codex/cloud-lease-pg-01`；maintainer explicitly
+  activated local stacked implementation on 2026-07-28；merge still requires
+  `CLOUD-LEASE-CON-01` and `CLOUD-PG-01` first。
+- Evidence: additive migration v2、strict epoch bootstrap/restore rotation、DB-clock
+  full-fence CAS、retained generation and real PostgreSQL races pass；Store selection、
+  runtime DB roles、Worker wiring and production cutover remain excluded。
+- Candidate paths: PostgreSQL migration、epoch/Lease modules、exports and real-service tests。
+- Deliverable: DB-clock expiry、retained generations、concurrent acquire and restore rotation。
+- Acceptance: two-worker race、same-worker-instance collision、takeover、wrong namespace and
+  old-epoch writes fail or succeed exactly as the Core contract requires。
+
+### CLOUD-EFFECT-OUTBOX-01 — Fenced Effect dispatch aggregate
+
+- Status: `Locked`；depends on merged `CLOUD-LEASE-PG-01`。
+- Candidate paths: focused Core dispatch Port/types、PostgreSQL Effect/Outbox modules,
+  migration and real-service tests。
+- Deliverable: atomic Event/Effect/Outbox schedule and terminal transactions、SKIP LOCKED
+  claim、uncertain/reconciliation lifecycle。
+- Acceptance: injected write failures leave no half-state；duplicate schedule/claim and stale
+  fences cannot duplicate an external-effect intent；no generic Unit of Work or inbox。
+
+### CLOUD-EFFECT-CONSUMER-01 — Worker fenced consumer integration
+
+- Status: `Locked`；depends on merged `CLOUD-EFFECT-OUTBOX-01`。
+- Candidate paths: Worker claim/recovery/heartbeat/Event lifecycle、agent-tools Effect
+  integration and focused Worker tests。
+- Deliverable: acquire-before-recover、periodic heartbeat、lost-Lease stop、fenced release and
+  provider reconciliation。
+- Acceptance: long-run lease loss stops new model/Event/Effect work；crash after provider
+  success never auto-replays an uncertain Effect；terminal replay returns durable result。
+
+### CLOUD-LEASE-01 — Lease, fencing and Event/Effect delivery parent gate
+
+- Status: `Locked`；depends on the four implementation cards above。
+- Deliverable: close Session Lease and fenced Event/Effect execution、atomic effect dispatch
+  and at-least-once discovery using combined real PostgreSQL evidence。
+- Acceptance: two-worker race、restore epoch、crash matrix and duplicate-delivery gates all
+  pass；the result is neither exactly-once external execution nor full Worker aggregate safety。
+
+### CLOUD-AGG-FENCE-01 — Full Worker aggregate fencing gate
+
+- Status: `Locked`；depends on PostgreSQL Adapters for every authoritative Worker-owned
+  aggregate and merged `CLOUD-LEASE-01`。
+- Candidate scope: ContextLifecycle、Handoff/dispatch、Workspace/Task、Model/Tool run、
+  provider continuation/history、Artifact and delivery-audit aggregate transactions。
+- Deliverable: split path-bounded conformance cards only after the PostgreSQL Adapter
+  inventory exists；each aggregate validates the current Lease fence inside its own transaction。
+- Acceptance: stale epoch/token/owner tests pass per aggregate on real PostgreSQL；before this
+  gate no document may claim complete multi-Worker safety。
 
 ### CLOUD-ART-01 — Object storage
 
@@ -171,7 +248,8 @@ read-only。
 
 ### CLOUD-LIVE-01 — Redis live fan-out
 
-- Status: `Locked`；depends on `CLOUD-PG-01` and `CLOUD-LEASE-01`。
+- Status: `Locked`；depends on `CLOUD-PG-01`、`CLOUD-LEASE-01` and
+  `CLOUD-AGG-FENCE-01`。
 - Candidate paths: Redis adapter, outbox publisher, API stream composition, integration tests。
 - Deliverable: replay-plus-tail without per-client SQLite polling；Redis remains ephemeral。
 - Acceptance: Redis restart/gap falls back to PostgreSQL cursor with no lost/duplicated public event。
@@ -450,10 +528,11 @@ Maintainer 在 2026-07-23 将执行优先级改为“先完成 Zebra 本体，�
 1. `CLOUD-STO-SEAM-01`：只建立既有 Store Ports 的 composition seam；
 2. `CLOUD-STO-AUTH-01`：补齐所有会推进 Session、治理记忆或约束副作用的 durable
    Store 边界，并以跨库回归证明不会分裂事件真相；
-3. 评审 migration/backup/recovery/rollback 后，逐卡完成 PostgreSQL、Lease/Outbox、
-   Object Storage、Redis live 和 Cloud recovery gate；
-4. 依次完成 `MEM-GW-CON-01`、`MEM-MEM0-SPIKE-01`、Mem0 Adapter、delivery ledger
-   和 fault gate；
+3. 评审 migration/backup/recovery/rollback 后，完成 PostgreSQL Event/Projection；
+   Lease/Outbox 先冻结合同，再依次完成 Core fencing、PostgreSQL Lease、Effect Outbox
+   和 Worker consumer，之后才进入 Object Storage、Redis live 和 Cloud recovery gate；
+4. 依次完成 `MEM-GW-CON-01`、`MEM-MEM0-SPIKE-01`、`MEM-MEM0-ADP-01`、delivery
+   ledger 和 fault gate；
 5. 再恢复 Host/AG-UI contract 和 Trench read-only lane；P3 production E2E 必须等待
    P2 gate，但 Mem0 故障或关闭不得阻塞 Run；
 6. 后续 Frontend、Analysis、Writeback 和 GA 仍逐阶段激活。

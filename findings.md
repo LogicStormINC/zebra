@@ -53,6 +53,51 @@
 - Mem0 and Redis names, SDK types, identities and transport details stay outside
   Core so the derived index remains replaceable.
 
+## CLOUD-PG-01 - 2026-07-28
+
+- The first PostgreSQL slice can implement and test Event/Projection Adapters,
+  but cannot enter `ControlPlaneStores`: the other authoritative Ports still
+  have only SQLite implementations, so partial wiring would create two facts.
+- `event.sequence - 1` is the existing expected-version contract. A dedicated
+  `session_streams` row performs SQL CAS in the same transaction as Event insert;
+  insert failure rolls the stream version back without a gap.
+- Existing SQLite idempotency treated any matching key as a successful retry.
+  The shared business fingerprint now excludes newly assigned Event ID, sequence
+  and timestamp while rejecting different type, actor, payload or provenance.
+- Projection may lag Event and replay, but may never lead or exist without its
+  Event stream. PostgreSQL saves check the authoritative stream version, reject
+  stale writes and reject divergent content at the same applied sequence.
+- Explicit migrations use one advisory lock plus recorded name/checksum. Adapter
+  construction never runs DDL, so future runtime identities need no schema rights.
+- The separately owned Compose PostgreSQL service is sufficient for real local
+  tests; this task does not duplicate Compose, add testcontainers or claim that
+  the dependency branch is already merged.
+- A custom-format logical backup restored into a fresh temporary database and
+  passed the full PostgreSQL contract before exact cleanup. This is development
+  evidence, not production PITR/RPO/RTO approval.
+
+## CLOUD-PG-PLAN-01 - 2026-07-28
+
+- PostgreSQL may replace SQLite only as one complete control-plane authority;
+  implementing adapters in slices does not permit Store-by-Store cutover or
+  SQLite/PostgreSQL dual-write.
+- Event append is the durable fact transaction. Projection is deliberately
+  allowed to lag and must converge by stream version; existing context and
+  handoff aggregate Ports retain ownership of their multi-table transactions.
+- The cutover state machine is `PREPARED -> VERIFIED -> ACTIVE`. `ACTIVE` is the
+  sole authority boundary and is not undone by an application rollback; the old
+  SQLite snapshot remains read-only migration evidence.
+- PostgreSQL and object payload recovery share a versioned manifest. Immutable
+  object versions/checksums and database recovery watermarks prevent a PITR
+  database from silently referencing a mismatched object set.
+- Restore must create a fresh random control-plane epoch before traffic opens.
+  Protected Lease, Effect and Outbox writes compare epoch, token and ownership
+  in the same SQL transaction so stale workers affect zero rows.
+- RPO, RTO, retention and drill cadence remain `TBD`; any missing approval or
+  measurement blocks production traffic without blocking local adapter work.
+- The maintainer's GitHub Actions billing waiver authorizes local continuation
+  only. It does not satisfy merge, release, production or real PostgreSQL gates.
+
 ## CLOUD-STO-AUTH-01 - 2026-07-24
 
 - The first five-store seam could not safely select a cloud backend: context
@@ -429,3 +474,81 @@
   `158` source files and release eval `10/10` pass. The full suite's nine
   failures reproduce on untouched `main`; `make check` only reports the two
   inherited out-of-scope file-size violations.
+
+
+## CLOUD-LEASE-PLAN-01 - 2026-07-28
+
+- The original `CLOUD-LEASE-01` is not one safe implementation slice. It spans
+  Core ownership types, PostgreSQL Lease/epoch state, Effect/Outbox aggregate
+  transactions and Worker/tool execution lifecycle, so it remains Locked.
+- Current `WorkerLease` has no epoch/token; heartbeat and release compare only
+  `worker_id`. A stale process reusing that ID can mutate a successor Lease.
+- `checkpoint` is execution progress, but handoff facts currently expose it as a
+  fencing token. The two concepts must become separate typed fields before any
+  PostgreSQL Lease Adapter is safe.
+- PostgreSQL must decide expiry from database time and retain each Session's
+  highest fencing generation after release. A get-before-update check or row
+  deletion cannot enforce ownership under races.
+- Worker recovery currently precedes acquire, no production path calls heartbeat,
+  and ordinary Event/Effect writes carry no Lease. A focused fenced Worker
+  mutation Port is required; the general `EventStorePort` should remain usable by
+  API/System writers that do not hold a Worker Lease.
+- Effect started Event, ledger transitions, provider call and terminal Event are
+  separate transactions. The minimum correction is a narrow Effect dispatch
+  aggregate that atomically writes Event + reservation + Outbox intent, not a
+  generic Unit of Work.
+- PostgreSQL Outbox is the v1 durable queue. With no broker or external consumer,
+  a generic inbox is YAGNI. An expired executing claim becomes uncertain and is
+  reconciled; it never returns automatically to pending.
+- The executable order is `CLOUD-LEASE-CON-01 -> CLOUD-LEASE-PG-01 ->
+  CLOUD-EFFECT-OUTBOX-01 -> CLOUD-EFFECT-CONSUMER-01`.
+- Reader review caught and closed three initial P0 contract gaps: PITR can reset
+  a raw token so authorization uses the full epoch/token/owner tuple; expired or
+  old-epoch claims need a new-owner reconciliation CAS; and this parent cannot
+  claim full Worker aggregate safety. `CLOUD-AGG-FENCE-01` now owns that later gate.
+- Background heartbeat uses an independent connection and lost flag. An in-flight
+  provider call may finish after lease loss, but its terminal mutation is fenced.
+- Failed-no-effect retry has an explicit monotonic attempt/retry-key transaction;
+  uncertain execution never returns automatically to pending.
+
+## CLOUD-LEASE-CON-01 - 2026-07-28
+
+- Ownership is now one immutable `LeaseFence(epoch, token, owner)`; checkpoint is
+  recovery progress only and is never promoted into handoff authorization.
+- SQLite release retains the row and generation. Acquire, heartbeat and release
+  decide ownership with current epoch plus full-fence CAS; `get()` exposes only
+  a current, unexpired, unreleased lease and cannot revive diagnostic rows.
+- Upgrade migration must be row-state-driven rather than gated by one column.
+  Partial legacy rows are idempotently fail-closed with token zero, while
+  token-positive rows survive concurrent constructors unchanged.
+- Worker claims must acquire before recovery and then CAS checkpoint to the
+  recovered Event sequence before returning. Recovery or that CAS failing causes
+  a fenced cleanup attempt and never exposes a false successful claim.
+- TTL is bounded by a configurable maximum at both the caller and Adapter trust
+  boundaries; the caller validates the integer before constructing `timedelta`.
+- Two final independent reviews closed partial-schema, incomplete handoff tuple,
+  checkpoint advancement, TTL overflow and old direct-caller gaps with
+  `0 P0 / 0 P1 / 0 P2` remaining.
+- Background heartbeat, PostgreSQL/database-clock proof, fenced aggregate writes,
+  Effect Outbox and production composition remain later cards.
+
+## CLOUD-LEASE-PG-01 - 2026-07-28
+
+- Restore rotation and Lease mutation require a shared lock order: every fenced
+  mutation first holds the namespace epoch row `FOR SHARE`, then mutates the Lease;
+  rotation updates that epoch row with a conflicting exclusive lock. Without this,
+  an old heartbeat could return success after rotation had already completed.
+- The PostgreSQL Adapter uses only `transaction_timestamp()` for acquisition,
+  heartbeat, expiry and release. TTL is a duration parameter; session timezone and
+  caller clocks cannot decide ownership.
+- Migration v2 is additive and does not bootstrap authority. Bootstrap is strict,
+  restore rotation generates its own UUID, and Adapter construction performs no DDL.
+- Lease rows retain the highest visible generation after release. Expiry, release
+  and epoch mismatch takeovers increment that token; active same-owner reacquire is
+  still a conflict and checkpoint remains monotonic recovery progress only.
+- Real PostgreSQL tests prove same/different owner races, clock-skew independence,
+  namespace isolation, full-fence rejection, retained generations and deterministic
+  heartbeat-versus-rotation ordering.
+- Python module separation is not a database permission boundary. Migration/restore
+  identities and runtime read-only epoch privileges remain composition/cutover work;
+  this card makes no production-safe or full multi-worker-safe claim.

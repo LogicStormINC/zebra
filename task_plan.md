@@ -83,6 +83,116 @@
   resolve `MemoryId` through the Store before prompt admission.
 - Mem0 is the first planned adapter, but no provider or transport type enters Core.
 
+## CLOUD-LEASE-PG-01 - PostgreSQL Epoch And Lease Adapter
+
+1. `completed` - Audit the reviewed PostgreSQL migration/Adapter patterns and
+   freeze the epoch bootstrap/rotation plus Lease SQL state machine.
+2. `completed` - Add explicit epoch and Lease migrations without constructor DDL.
+3. `completed` - Implement namespace-scoped database-clock acquire, heartbeat,
+   release, read and restore-rotation behavior behind the Core Port.
+4. `completed` - Add real PostgreSQL race, collision, takeover, stale-fence,
+   clock-skew, namespace and migration tests.
+5. `completed` - Run focused/full/quality validation, independent review, durable
+   evidence and a local commit without composition or push.
+
+### Decisions
+
+- This branch is stacked on local `CLOUD-LEASE-CON-01@816a1e3b`; continuation is
+  a local implementation waiver, not permission to merge, push or cut over.
+- Reuse the existing psycopg migration and transaction patterns from
+  `CLOUD-PG-01`; do not add an ORM, pool, testcontainers or constructor DDL.
+- PostgreSQL transaction time is the only ownership clock. Callers provide TTL,
+  never an expiry timestamp.
+- Do not modify Store composition, API, Worker or Effect execution in this card.
+
+## CLOUD-LEASE-CON-01 - Core Lease And Fencing Contract
+
+1. `completed` - Trace every Lease and handoff fence caller, freeze the
+   additive typed contract and register exact compatibility changes.
+2. `completed` - Add `LeaseFence`, Core Lease errors and full-fence Port semantics.
+3. `completed` - Make SQLite Lease generations durable, CAS heartbeat/release and
+   separate handoff fencing from checkpoint.
+4. `completed` - Adapt Worker claim ordering and add focused Lease/handoff/claim
+   regressions without background heartbeat or PostgreSQL.
+5. `completed` - Run focused/full/quality validation, independent review, durable
+   evidence and local commit.
+
+### Decisions
+
+- This local branch is stacked on reviewed plan commit `e373786b`; the user's
+  continuation is a task-specific local waiver, not a merge or release waiver.
+- Keep the contract backend-neutral: SQLite uses an injected clock for local
+  determinism while PostgreSQL DB-clock authority remains the next card.
+- Do not add background heartbeat, Effect dispatch, PostgreSQL or composition.
+- API handoff reserve is the only additional caller discovered after claim; its
+  exact adapter and route test paths were added before implementation.
+- Two direct Lease setup tests also use the old concrete acquire signature;
+  their exact paths were added rather than retaining caller-clock compatibility.
+
+## CLOUD-LEASE-PLAN-01 - Lease, Fencing And Effect Dispatch Contract
+
+1. `completed` - Audit current Lease, Effect ledger, handoff outbox and Worker
+   lifecycle behavior and identify stale-writer and crash windows.
+2. `completed` - Create an isolated stacked branch and register one docs-only
+   task with exact owned paths while keeping the parent Locked.
+3. `completed` - Define control-plane epoch, monotonic Lease fencing,
+   database-clock TTL and checkpoint-independent ownership semantics.
+4. `completed` - Define atomic Effect dispatch, durable intent discovery/claim,
+   uncertain-effect reconciliation and path-bounded follow-up cards.
+5. `completed` - Reader-test the contract, run documentation gates, record durable
+   evidence and commit the local review slice.
+
+### Decisions
+
+- Do not implement the original `CLOUD-LEASE-01` as one card; it crosses Core,
+  PostgreSQL, tool execution and Worker lifecycle ownership boundaries.
+- Keep ordinary API/System Event writes on `EventStorePort`; only leased Worker
+  mutations use a focused fenced aggregate Port.
+- Do not introduce a generic inbox before an external broker or consumer exists.
+
+## CLOUD-PG-01 - PostgreSQL Event And Projection Storage
+
+1. `completed` - Review the approved migration/recovery model, authoritative
+   Store boundary, existing SQLite semantics and real Compose PostgreSQL dependency.
+2. `completed` - Register and claim the isolated task with exact owned paths and
+   preserve the local stacked merge/CI constraints.
+3. `completed` - Add one explicit psycopg dependency, versioned migration runner
+   and namespace-scoped Event/Projection Adapters without runtime composition.
+4. `completed` - Add SQLite idempotency regression plus real PostgreSQL migration,
+   concurrency, idempotency, namespace, projection and replay tests.
+5. `completed` - Run focused and repository validation, independently review the
+   slice, update durable evidence and commit the local branch.
+
+### Decisions
+
+- Derive expected Event version from `event.sequence - 1` and persist stream
+  version with SQL CAS in the same transaction as Event insertion.
+- Adapter constructors never run DDL; only the explicit migration runner does.
+- Inject one immutable deployment namespace into each Adapter and include it in
+  every key and predicate.
+- Do not add a pool, ORM, Alembic, testcontainers or partial cloud composition.
+
+## CLOUD-PG-PLAN-01 - PostgreSQL Migration And Recovery Model Review
+
+1. `completed` - Trace the authoritative Store composition, PostgreSQL phase
+   dependency and existing recovery constraints.
+2. `completed` - Register and claim one docs-only task on the authoritative
+   Store branch with the CI-billing waiver recorded.
+3. `completed` - Define authority scope, migration/cutover invariants and explicit
+   abort versus rollback behavior.
+4. `completed` - Define backup/PITR, restore validation, fencing/outbox recovery and
+   measurable pre-production gates.
+5. `completed` - Reader-test the decision document, update governance evidence and
+   commit the local stacked review slice.
+
+### Decisions
+
+- Do not dual-write SQLite and PostgreSQL; the flat Store bundle selects one
+  authoritative backend for a process profile.
+- Do not invent production RPO/RTO. The document defines required measurements
+  and an approval field before production traffic.
+- This task writes no Adapter, migration executable or cloud dependency.
+
 ## CLOUD-STO-AUTH-01 - Complete Authoritative Store Composition
 
 1. `completed` - Audit every API/Worker durable collaborator that can advance a

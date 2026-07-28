@@ -6,7 +6,11 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.ports.event_store import EventStorePort
 
 from agent_storage.database import SQLiteDatabase
-from agent_storage.event_rows import deserialize_event_row, serialize_event_payload
+from agent_storage.event_rows import (
+    deserialize_event_row,
+    ensure_idempotent_event_retry,
+    serialize_event_payload,
+)
 
 
 class SQLiteEventStore(EventStorePort):
@@ -52,7 +56,7 @@ class SQLiteEventStore(EventStorePort):
             except sqlite3.IntegrityError as exc:
                 existing_event = self._find_existing_idempotent_event(connection, event)
                 if existing_event is not None:
-                    return existing_event
+                    return ensure_idempotent_event_retry(existing_event, event)
                 raise ValueError("duplicate or conflicting session event") from exc
         return event
 
