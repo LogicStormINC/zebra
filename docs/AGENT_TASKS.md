@@ -303,6 +303,62 @@ before a PostgreSQL control-plane Adapter may be implemented.
 - `CLOUD-PG-01` receives exact implementation and test gates; no Adapter,
   migration executable, cloud dependency or production claim is added
 
+### CLOUD-PG-01 - PostgreSQL Event And Projection Storage
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `STORAGE`
+- Depends on: locally reviewed `CLOUD-STO-AUTH-01` and `CLOUD-PG-PLAN-01`;
+  `CLOUD-COMPOSE-INFRA-01@b23b8e76` supplies the separately owned real PostgreSQL
+  dependency service. On 2026-07-28 the maintainer approved the five database
+  review decisions by directing this plan to continue while GitHub Actions is
+  billing-blocked. Required merge order and CI gates remain unchanged.
+- Branch: `codex/cloud-pg-01-events-v1`
+- Worktree: `../zebra-agent-cloud-pg-01`
+- Owned paths: `packages/agent-storage/pyproject.toml`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `packages/agent-storage/src/agent_storage/event_rows.py`,
+  `packages/agent-storage/src/agent_storage/sqlite.py`,
+  `packages/agent-storage/src/agent_storage/postgres/` (new),
+  `tests/agent_storage/test_postgres_*.py` (new),
+  `tests/agent_storage/test_sqlite_event_store.py`, `uv.lock`, `README.md`,
+  `docs/PostgreSQL迁移备份恢复与回滚评审_v1.0.md`, `docs/AGENT_TASKS.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Implement explicit PostgreSQL migration plus Event/Projection Port Adapters with
+single-namespace isolation, monotonic Event CAS and replay-safe Projection writes.
+
+#### Acceptance
+
+- migration versions/checksums are explicit, serialized by advisory lock and
+  never run implicitly from an Adapter constructor
+- Event append CAS, idempotency conflict detection, namespace isolation,
+  read-since and concurrent writer behavior pass against real PostgreSQL
+- Projection round-trip, ordering, idempotent same-version save, stale/conflicting
+  version rejection and Event replay rebuild pass against real PostgreSQL
+- SQLite idempotency reuse with different Event meaning fails closed rather than
+  preserving a cross-backend semantic split
+- no `ControlPlaneStores` selector, API/Worker wiring, pool, ORM, Alembic,
+  testcontainers, online migration or production claim is added
+
+#### Result
+
+- Added one explicit psycopg dependency, checksum-verified serialized migrations
+  and namespace-scoped PostgreSQL Event/Projection Adapters.
+- Event stream version CAS and Event insert share one transaction; business-level
+  idempotency conflicts now fail closed in both PostgreSQL and SQLite.
+- Projection writes reject missing/ahead Event streams, stale versions and
+  same-version content conflicts while allowing replay lag and exact retries.
+- Real Compose PostgreSQL tests pass `14/14`; all storage tests pass `113/113`;
+  custom-format dump/restore into a fresh temporary database passes the same
+  PostgreSQL contract `14/14` before cleanup.
+- Independent final review found no P0-P2 issue. Branch is local and unpushed;
+  cloud composition remains Locked until every authoritative Store has a
+  PostgreSQL Adapter and the dependency stack is merged in order.
+
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.
 

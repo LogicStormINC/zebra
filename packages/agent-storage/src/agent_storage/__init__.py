@@ -37,6 +37,7 @@ from agent_storage.effect_ledger import (
     EffectReplayRejectedError,
     SQLiteEffectLedger,
 )
+from agent_storage.event_rows import SessionEventIdempotencyConflictError
 from agent_storage.idempotency import (
     IdempotencyConflictError,
     SQLiteIdempotencyStore,
@@ -49,6 +50,13 @@ from agent_storage.memory_lookup import (
     list_confirmed_repo_memory_texts,
 )
 from agent_storage.model_calls import SQLiteModelCallStore
+from agent_storage.postgres import (
+    PostgresEventStore,
+    PostgresMigrationError,
+    PostgresProjectionConflictError,
+    PostgresProjectionStore,
+    apply_postgres_migrations,
+)
 from agent_storage.projections import SQLiteProjectionStore
 from agent_storage.provider_continuations import SQLiteProviderContinuationStore
 from agent_storage.session_attachments import (
@@ -84,16 +92,22 @@ __all__ = [
     "ImmutableContextCapsuleConflictError",
     "LeaseConflictError",
     "SessionArtifact",
+    "SessionEventIdempotencyConflictError",
     "LoadedProviderContinuation",
     "list_confirmed_repo_memories",
     "SQLiteMemoryStore",
     "list_confirmed_repo_memory_texts",
     "load_attachment_contexts",
     "payload_for_artifact_uri",
+    "PostgresEventStore",
+    "PostgresMigrationError",
+    "PostgresProjectionConflictError",
+    "PostgresProjectionStore",
     "serialize_artifact_lifecycle",
     "serialize_artifact_retrieval",
     "serialize_session_artifact_projection",
     "sqlite_control_plane_stores",
+    "apply_postgres_migrations",
     "SQLiteArtifactPayloadStore",
     "SQLiteAgentTaskStore",
     "SQLiteArtifactStore",

@@ -1,5 +1,28 @@
 # Findings
 
+## CLOUD-PG-01 - 2026-07-28
+
+- The first PostgreSQL slice can implement and test Event/Projection Adapters,
+  but cannot enter `ControlPlaneStores`: the other authoritative Ports still
+  have only SQLite implementations, so partial wiring would create two facts.
+- `event.sequence - 1` is the existing expected-version contract. A dedicated
+  `session_streams` row performs SQL CAS in the same transaction as Event insert;
+  insert failure rolls the stream version back without a gap.
+- Existing SQLite idempotency treated any matching key as a successful retry.
+  The shared business fingerprint now excludes newly assigned Event ID, sequence
+  and timestamp while rejecting different type, actor, payload or provenance.
+- Projection may lag Event and replay, but may never lead or exist without its
+  Event stream. PostgreSQL saves check the authoritative stream version, reject
+  stale writes and reject divergent content at the same applied sequence.
+- Explicit migrations use one advisory lock plus recorded name/checksum. Adapter
+  construction never runs DDL, so future runtime identities need no schema rights.
+- The separately owned Compose PostgreSQL service is sufficient for real local
+  tests; this task does not duplicate Compose, add testcontainers or claim that
+  the dependency branch is already merged.
+- A custom-format logical backup restored into a fresh temporary database and
+  passed the full PostgreSQL contract before exact cleanup. This is development
+  evidence, not production PITR/RPO/RTO approval.
+
 ## CLOUD-PG-PLAN-01 - 2026-07-28
 
 - PostgreSQL may replace SQLite only as one complete control-plane authority;

@@ -284,8 +284,12 @@ identity、非 ACTIVE runtime 写入 fail closed、唯一 ACTIVE 激活和激活
 
 进入 `CLOUD-PG-01` 前仍需维护者确认：
 
-- [ ] 同意首版使用维护窗口而非在线双写；
-- [ ] 同意 cutover 进入 `ACTIVE` 后不把旧 SQLite 当快速回滚目标；
-- [ ] 同意生产 RPO/RTO 保持 `TBD` 即禁止生产流量；
-- [ ] 同意 `control_plane_epoch` 是后续 Lease/Restore 的必需合同；
-- [ ] 同意首个 Adapter 切片只实现 Event/Projection，不激活 cloud composition。
+- [x] 同意首版使用维护窗口而非在线双写；
+- [x] 同意 cutover 进入 `ACTIVE` 后不把旧 SQLite 当快速回滚目标；
+- [x] 同意生产 RPO/RTO 保持 `TBD` 即禁止生产流量；
+- [x] 同意 `control_plane_epoch` 是后续 Lease/Restore 的必需合同；
+- [x] 同意首个 Adapter 切片只实现 Event/Projection，不激活 cloud composition。
+
+维护者于 2026-07-28 在本地评审提交后指示“继续”，本卡据此把上述五项视为已批准。
+批准只解锁本地 `CLOUD-PG-01` Adapter 实施；不替代依赖分支合并、GitHub CI、恢复演练
+或生产准入。

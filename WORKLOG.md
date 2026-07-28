@@ -1,5 +1,42 @@
 # Progress Log
 
+## 2026-07-28 CLOUD-PG-01 PostgreSQL Event And Projection Storage
+
+- treated the maintainer's “continue” after the database review checkpoint as
+  approval of its five explicit decisions; kept merge, GitHub CI and production
+  gates unsatisfied
+- registered and claimed isolated branch `codex/cloud-pg-01-events-v1`, stacked
+  on `CLOUD-PG-PLAN-01`; reused the healthy PostgreSQL 17.5 service owned by
+  `CLOUD-COMPOSE-INFRA-01` without copying or changing Compose
+- added only psycopg 3 (`3.3.4` resolved), short connections, an explicit
+  migration runner and Event/Projection Adapters; added no pool, ORM, Alembic,
+  testcontainers, API/Worker selector or partial `ControlPlaneStores`
+- migration history records version/name/SHA-256 and runs under a transaction
+  advisory lock; concurrent first migration, repeated migration, checksum drift
+  and unknown versions are tested fail closed
+- implemented namespace-scoped Event stream CAS and Event insert in one
+  transaction, including concurrent sequence > 0 writers, concurrent retries,
+  namespace isolation and insert-failure rollback
+- fixed the shared SQLite idempotency root cause: a reused key returns the first
+  Event only when the business fingerprint matches, otherwise it raises an
+  explicit conflict
+- implemented JSONB Projection round trips and ordered reads; saves allow exact
+  retries and lagging replay but reject phantom/ahead streams, stale versions and
+  different content at the same sequence
+- final real PostgreSQL focused tests: `14 passed`; combined PostgreSQL/SQLite
+  focused tests: `22 passed`; complete storage suite: `113 passed`
+- created a custom-format `pg_dump --no-owner`, restored it into fresh temporary
+  database `zebra_cloud_pg_01_restore_final`, and reran the PostgreSQL contract:
+  `14 passed`; then deleted only that temporary database and dump
+- full `make test` with real PostgreSQL: `1762 passed, 8 skipped, 9 failed`; the
+  failures match the inherited two provider expectations, five expired SCM
+  fixtures, one untouched file-size test and one Worker cancellation race
+- Eval release gate passes `10/10`; touched Ruff/Mypy pass. Repository Ruff/Mypy
+  retain the inherited `13/4` errors, and `make check` retains the two untouched
+  `561/500` and `505/500` file-size violations
+- independent final review found no remaining P0, P1 or P2; task moved to Review,
+  branch remains local and unpushed
+
 ## 2026-07-28 CLOUD-PG-PLAN-01 PostgreSQL Migration And Recovery Review
 
 - registered and claimed the docs-only `CLOUD-PG-PLAN-01` task on isolated local

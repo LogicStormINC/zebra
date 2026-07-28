@@ -256,9 +256,11 @@ including a real thinking tool round trip.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
   `CLOUD-STO-AUTH-01` are in Review. `CLOUD-PG-PLAN-01` is also in Review as a
-  docs-only local task under the maintainer's temporary CI-billing waiver; all PostgreSQL,
-  Redis, object-storage, production AG-UI, Trench, analysis, writeback, Agent
-  Memory adapter, and GA cards remain `Locked` pending their explicit gates.
+  docs-only local task. The maintainer approved its five decisions;
+  `CLOUD-PG-01` is now also in Review as a locally verified Event/Projection
+  PostgreSQL Adapter slice under the temporary CI-billing waiver. PostgreSQL composition and all Redis, object-storage,
+  production AG-UI, Trench, analysis, writeback, Agent Memory delivery, and GA
+  cards remain `Locked` pending their explicit gates.
 
 ## Known Follow-Ups
 

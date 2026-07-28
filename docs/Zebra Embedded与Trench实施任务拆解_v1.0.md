@@ -149,8 +149,8 @@ read-only。
 
 ### CLOUD-PG-01 — PostgreSQL event and projection storage
 
-- Status: `Locked`；depends on `CLOUD-STO-AUTH-01` plus an approved database
-  migration、backup、recovery and rollback model review。
+- Status: `Review`；branch `codex/cloud-pg-01-events-v1`；depends on locally
+  reviewed `CLOUD-STO-AUTH-01` plus the approved `CLOUD-PG-PLAN-01` model。
 - Candidate paths: `packages/agent-storage/.../postgres/`, migrations, storage tests。
 - Deliverable: Event Store、Projection、monotonic sequence、expected-version CAS、replay。
 - Acceptance: concurrent append/idempotency/rebuild tests plus real PostgreSQL CI pass。

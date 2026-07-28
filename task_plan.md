@@ -1,5 +1,27 @@
 # Task Plan
 
+## CLOUD-PG-01 - PostgreSQL Event And Projection Storage
+
+1. `completed` - Review the approved migration/recovery model, authoritative
+   Store boundary, existing SQLite semantics and real Compose PostgreSQL dependency.
+2. `completed` - Register and claim the isolated task with exact owned paths and
+   preserve the local stacked merge/CI constraints.
+3. `completed` - Add one explicit psycopg dependency, versioned migration runner
+   and namespace-scoped Event/Projection Adapters without runtime composition.
+4. `completed` - Add SQLite idempotency regression plus real PostgreSQL migration,
+   concurrency, idempotency, namespace, projection and replay tests.
+5. `completed` - Run focused and repository validation, independently review the
+   slice, update durable evidence and commit the local branch.
+
+### Decisions
+
+- Derive expected Event version from `event.sequence - 1` and persist stream
+  version with SQL CAS in the same transaction as Event insertion.
+- Adapter constructors never run DDL; only the explicit migration runner does.
+- Inject one immutable deployment namespace into each Adapter and include it in
+  every key and predicate.
+- Do not add a pool, ORM, Alembic, testcontainers or partial cloud composition.
+
 ## CLOUD-PG-PLAN-01 - PostgreSQL Migration And Recovery Model Review
 
 1. `completed` - Trace the authoritative Store composition, PostgreSQL phase
