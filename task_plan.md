@@ -329,6 +329,67 @@
   than the checker's checkbox headings. The five EMB-PLAN-01 entries above are
   explicitly `completed`; targeted document validation is the completion gate.
 
+## AGENT-DEF-ADR-01 - Definition Authority And Snapshot ADR
+
+1. `completed` - Reconcile the accepted direction with ADR-001/009/012/013/014,
+   current Task/Event/Skill/Memory contracts, and local/cloud authority boundaries.
+2. `completed` - Write ADR-016 and update the final architecture with only its stable
+   decisions and dependency unlock rule.
+3. `completed` - Align the proposal, docs guide, PROGRESS and task registry; keep all
+   implementation tasks locked.
+4. `completed` - Run fresh-reader decision/ambiguity review and documentation gates.
+5. `completed` - Record evidence and commit the docs-only ADR branch locally.
+
+### Decisions
+
+- This branch is stacked on accepted-direction commit `663a043d`; it does not
+  merge, push or modify the dirty main worktree.
+- Gate A may change only architecture/governance documents in its registered
+  Owned paths; Python, SQL, API and Docker work remain out of scope.
+
+## Agent Definition V2 - Accepted Direction And Task Activation
+
+1. `completed` - Separate immutable Task Definition configuration from per-Attempt
+   execution authority and align namespace with ADR-012.
+2. `completed` - Register the ADR, Core, SQLite/PostgreSQL Store, Publication,
+   Task binding, Memory, Trust and Eval task chain with dependency-ordered,
+   path-bounded gates.
+3. `completed` - Run a fresh-reader conflict and execution-order review, then
+   validate the documentation diff.
+4. `completed` - Record final evidence and commit the accepted-direction update.
+
+### Decisions
+
+- The proposal direction and ADR-016 are locally accepted, but remain non-executable
+  until `AGENT-DEF-ADR-01` is merged.
+- `AGENT-DEF-ADR-01` is the only active task; all Python/SQL/API/runtime work is
+  `Locked`.
+- Task identity and Definition configuration remain stable across Segments, while
+  external execution authority is revalidated for every Attempt.
+- Zebra stores only opaque `(authority_issuer, namespace_id)` isolation keys and
+  does not create a Tenant/User/Organization domain.
+
+## ARCH-RUNTIME-V2-PLAN-01 - Runtime V2 Proposal Current-State Alignment
+
+1. `completed` - Compare every proposal lane with current docs, code and task evidence.
+2. `completed` - Rewrite the proposal as a current-state delta with explicit authority
+   and non-executable status.
+3. `completed` - Align the docs guide, PROGRESS and task governance without modifying the
+   final architecture or activating implementation.
+4. `completed` - Run fresh-reader ambiguity/contradiction tests and documentation gates.
+5. `completed` - Record durable evidence and commit the docs-only branch locally.
+
+### Decisions
+
+- Use `origin/main@a6b47c3f` as the review baseline; keep the dirty local main
+  worktree and its untracked documents untouched.
+- Classify the proposal in `docs/README.md`, not the product README, so an
+  exploratory document is not mistaken for the operator or architecture entry.
+- A future reusable Agent is named `AgentDefinition`; existing `AgentTask` remains
+  the durable user execution identity.
+- This proposal may recommend ADRs and locked follow-up cards, but cannot modify
+  the final architecture or claim implementation completion.
+
 ## CTX-SEG-02 - Follow-up Context And Budget Recovery
 
 1. `completed` - Register and claim the path-bounded repair task on an isolated branch.

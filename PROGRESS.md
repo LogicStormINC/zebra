@@ -59,6 +59,16 @@
 - PostgreSQL tasks in Review: `CLOUD-PG-01` implements isolated Event/Projection
   Adapters, while `CLOUD-LEASE-PG-01` implements epoch-scoped, database-clock
   Lease fencing. Both have real PostgreSQL evidence but neither is runtime-selected.
+- Agent Definition architecture task in Review: `AGENT-DEF-ADR-01` records accepted
+  Definition control-plane decisions and updates the final architecture. It
+  separates Task-level Definition configuration from Attempt-level execution
+  authority and preserves ADR-012's opaque external namespace. Code audit also
+  confirmed that external Attempt authority snapshots and immutable Skill content
+  snapshots are not yet implemented; dedicated locked tasks now own those gaps.
+  This integration records the decision only; implementation remains governed by
+  the registered dependency DAG and explicit task activation.
+  The implementation order is `CON -> STO -> {PG,DRAFT}`, `CON -> AUTH`, then
+  `{DRAFT,AUTH} -> BIND -> MEM -> TRUST -> EVAL -> PUB`.
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
