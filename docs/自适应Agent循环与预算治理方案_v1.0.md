@@ -59,11 +59,20 @@ Zebra 当前在 API 和 harness 内部同时存在很低的默认模型/工具�
 默认无次数上限不等于无限死循环：
 
 - 相同工具+参数的重复 action 继续由现有 fingerprint 机制阻断。
+- 精确 action fingerprint 只承担幂等和副作用安全，不能独自判断进展；参数
+  不同但返回同一稳定 evidence 的调用仍属于无进展。
 - 被拒绝、失败、空读取结果必须作为结构化 tool result 回传模型，
   让模型更换工具、参数或直接回答。
-- 同一无进展路径再次重复时才作为硬停止；已产生新证据或副作用的调用
-  不应受低次数阈值影响。
+- Harness 以稳定 tool observation、Artifact/来源引用和现有 Task 状态变化判断
+  batch 是否产生新证据；只有连续无新证据才累计收敛计数。
+- 达到现有重复停止阈值后，不再继续执行工具，而是只允许一次禁用工具的终态
+  综合；仍请求工具或无法形成可用终答时进入 typed `SUSPENDED`。
+- 已产生新证据或副作用的调用重置无进展计数，不受低次数阈值影响。
 - 长会话依靠现有 context compaction 保持 provider 上下文可用。
+
+具体状态、分支和两阶段验收以
+[`执行收敛与最小Runtime_Task_Memory切片方案_v1.0.md`](./执行收敛与最小Runtime_Task_Memory切片方案_v1.0.md)
+为准。
 
 ### 3.5 用户界面
 
@@ -79,6 +88,8 @@ Zebra 当前在 API 和 harness 内部同时存在很低的默认模型/工具�
 3. 显式额度耗尽返回 `SUSPENDED` 并记录可恢复事件。
 4. 保留重复 action、Policy、Approval、取消与协议完整性边界。
 5. 保留终态续问检查点与 Desktop NoopVerifier 降噪。
+6. 后续 `HAR-CONV-01` 在不恢复默认次数上限的前提下补齐 observation-level
+   无进展检测和一次性终态综合。
 
 ## 5. 验收标准
 
@@ -87,6 +98,8 @@ Zebra 当前在 API 和 harness 内部同时存在很低的默认模型/工具�
   `suspended`，且不记录 `session_failed`。
 - 明确失败/拒绝的工具结果回传模型，模型可选择替代工具后完成。
 - 重复 action 仍可确定性停止，不会因取消默认次数上限而无界循环。
+- 参数变化但稳定 evidence 不变的循环同样会在有限轮次内完成或 typed suspend；
+  新 evidence 会重置收敛计数。
 - 终态续问保留最近 user/assistant 检查点，Desktop 不展示 NoopVerifier 噪声。
 - 目标回归、全量测试、Desktop checks/build 和 `make check` 通过。
 
@@ -95,3 +108,5 @@ Zebra 当前在 API 和 harness 内部同时存在很低的默认模型/工具�
 - 不取消 Policy、Approval、运行时隔离、出站网络或取消边界。
 - 不在本次引入计费、租户配额或订阅系统。
 - 不通过业务意图关键词或特定领域路由决定工具数量。
+- 不为循环收敛增加新的 Memory 数据库、`progress_score`、固定业务 phase 或
+  Agent/Knowledge Memory。

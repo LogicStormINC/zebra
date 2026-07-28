@@ -20,6 +20,12 @@
 
 ## Current Board
 
+- `HAR-CONV-01` is `In Progress` on
+  `codex/runtime-convergence-phase1`. The branch is stacked on PR `#198` and
+  includes current `origin/main`; it must not be merged or pushed to `main`
+  directly.
+- `CTX-REHYDRATE-02` remains `Locked` until PR `#198` and `HAR-CONV-01` are
+  merged and the maintainer explicitly activates Phase 2.
 - `CTX-MEM-01` is `Review` in PR `#198` on
   `codex/issue-197-context-memory-continuity`. It closes GitHub issue `#197`
   without depending on the stacked semantic-memory gateway: same-Task recovery
@@ -114,6 +120,100 @@ confirmed repo memory by current-task relevance within a token budget.
   model-inferred memories
 - no semantic provider or Mem0 integration; `MEM-GW-CON-01` owns that contract
 - no automatic child Session or Subagent creation to escape a context limit
+
+## Runtime Convergence Task Board
+
+Architecture authority:
+`docs/执行收敛与最小Runtime_Task_Memory切片方案_v1.0.md`.
+
+### HAR-CONV-01 - Progress-Aware Tool Loop Convergence
+
+- Status: `In Progress`
+- Owner: `Vinson`
+- Coding task: `019f9a26-59b5-77e2-b42e-5e6ede10520c`
+- Suggested role: `CORE / QA`
+- Depends on: PR `#198` (`CTX-MEM-01`) as a stacked development baseline;
+  merge to `main` is forbidden until the dependency is merged
+- Branch: `codex/runtime-convergence-phase1`
+- Worktree: `../zebra-runtime-convergence`
+- Owned paths:
+  `packages/agent-core/src/agent_core/harness/attempt_result.py`,
+  `packages/agent-core/src/agent_core/harness/concurrent_batch.py`,
+  `packages/agent-core/src/agent_core/harness/tool_batch.py`,
+  `packages/agent-core/src/agent_core/harness/sequential_loop.py`,
+  `packages/agent-core/src/agent_core/harness/models.py`,
+  `packages/agent-core/src/agent_core/harness/orchestrator.py`,
+  focused convergence tests under `tests/agent_core/` and `tests/integration/`,
+  `docs/执行收敛与最小Runtime_Task_Memory切片方案_v1.0.md`,
+  `docs/自适应Agent循环与预算治理方案_v1.0.md`, `docs/AGENT_TASKS.md`,
+  `docs/Zebra Agent Runtime Upgrade Proposal v2.0.md`, `docs/README.md`,
+  `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Extend the current exact repeated-action guard with observation-level progress
+detection and one bounded tool-disabled terminal synthesis, so argument variants
+that return the same evidence cannot keep a Task alive indefinitely while real
+new evidence and long legitimate tool chains remain unbounded by default.
+
+#### Acceptance
+
+- [ ] A red regression first reproduces changed tool arguments returning the
+  same stable evidence without reaching a final answer.
+- [ ] Exact action fingerprint remains the idempotency/effect guard; a stable
+  observation fingerprint detects no-new-evidence batches across argument variants.
+- [ ] New evidence or an existing durable Task/Plan/Approval state transition
+  resets the consecutive no-progress count.
+- [ ] The existing repeat threshold triggers exactly one tool-disabled final
+  synthesis; a non-empty answer completes, while another tool request or unusable
+  answer produces typed `SUSPENDED` instead of another loop.
+- [ ] Sequential and concurrent batches have the same convergence behavior;
+  a progressing task may exceed 8 or 16 tool calls and still complete.
+- [ ] Explicit budgets, Policy, Approval, cancellation, protocol validation and
+  effect deduplication remain unchanged.
+- [ ] Focused tests, `make test`, `make check`, and the read-only 3-image A/B
+  acceptance pass, or inherited blockers are recorded separately.
+
+#### Explicit Non-Goals
+
+- modifying `model_step.py`, Context, Storage, Worker, provider/MCP code or FinOS;
+  if root-cause tracing requires one of these paths, stop and record the exact caller
+- adding a Memory database, progress score, business phase enum, finance/image/Skill
+  heuristic, dependency, default call limit or autonomous retry framework
+- committing real images, account data or real business-write evidence
+
+### CTX-REHYDRATE-02 - Convergence Projection And On-Demand Rehydration
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested role: `CTX / CORE / WORKER / QA`
+- Depends on: merged PR `#198`, merged `HAR-CONV-01`, and explicit maintainer activation
+- Branch: `TBD (suggested: codex/context-rehydrate-phase2)`
+- Owned paths: to be narrowed after both dependencies merge; expected candidates
+  are existing Context projection/Capsule/rehydration paths, Harness model request
+  composition, Worker context lifecycle, focused tests, and the governing docs
+
+#### Goal
+
+Preserve the minimal convergence projection across compaction and Worker recovery,
+and invoke the existing `rehydrate_projection()` only when completion reasoning
+needs referenced evidence that is no longer active.
+
+#### Acceptance
+
+- [ ] Protected objective, acceptance criteria, convergence state and evidence
+  references survive forced repeated compaction and Worker restart.
+- [ ] Missing referenced evidence rehydrates from existing Event/Artifact sources
+  under token, Policy, checksum and provenance checks.
+- [ ] Recovery does not replay completed read-only tools or depend on provider-private
+  continuation state.
+- [ ] Event Store remains the only durable authority; no second database, business
+  semantics or implicit cross-Task long-term memory is introduced.
+
+#### Explicit Non-Goals
+
+- Agent Memory, Knowledge Memory, Memory Controller, embeddings, learning, TTL
+  platform, provider-specific compaction or automatic child Session creation
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.

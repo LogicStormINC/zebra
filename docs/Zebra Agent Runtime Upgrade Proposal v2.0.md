@@ -1,38 +1,18 @@
-明白。我会完全脱离你之前的 Vimala、FastAgent、AceStock、HuntMind 等规划，只站在 **Zebra 本身作为一个通用 Agent Runtime 基础设施项目** 的角度进行升级设计。
-
-目标不是增加业务能力，而是把 Zebra 从：
-
-> **Agent Runtime（执行内核）**
-
-升级为：
-
-> **Agent Operating Runtime（可承载 Agent 生命周期的基础平台）**
-
-重点补充三个缺失层：
-
-1. **Agent Layer（Agent 能力抽象层）**
-2. **Memory Architecture（下一代记忆体系）**
-3. **Security & Trust Layer（Agent 安全信任体系）**
-
-同时保持当前 Zebra 的核心边界：
-
-* 不负责业务系统
-* 不负责用户体系
-* 不负责商业化
-* 不绑定具体行业
-* 不成为 SaaS 产品
-
----
-
 # Zebra Agent Runtime Upgrade Proposal v2.0
 
 ## 从 Agent Runtime 到 Agent Operating Runtime
 
-版本：
+| 字段 | 值 |
+|---|---|
+| 状态 | 长期目标提案；不是当前可执行任务表 |
+| 版本 | v2.0 Draft |
+| 项目边界 | 通用 Agent Runtime 基础设施，不承载业务系统、用户体系或商业化 |
+| 当前实施基线 | [`执行收敛与最小Runtime_Task_Memory切片方案_v1.0.md`](./执行收敛与最小Runtime_Task_Memory切片方案_v1.0.md) |
 
-v2.0 Draft
-
-目标：
+本提案描述 Zebra 从 Agent Runtime 向 Agent Operating Runtime 演进的长期目标。
+2026-07-28 的循环故障修复只激活 Runtime / Task Memory 的最小事件投影切片，
+不提前激活本文完整 Memory 2.0、Agent Layer、Trust 或 Evaluation 路线。可执行
+状态、Owner、分支和 owned paths 以 `docs/AGENT_TASKS.md` 为准。
 
 将 Zebra 从单一 Agent 执行基础设施升级为支持：
 

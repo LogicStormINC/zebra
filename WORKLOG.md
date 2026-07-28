@@ -5836,3 +5836,21 @@ actual byte access.
   governance files may require ordinary rebase reconciliation later
 - completed current official-source comparison for Codex/OpenAI, Claude,
   Pi Agent and Hermes; design and implementation plan are being written first
+
+# 2026-07-28 HAR-CONV-01 Design Handoff
+
+- created `codex/runtime-convergence-phase1` in isolated worktree
+  `../zebra-runtime-convergence`; the branch is stacked on PR `#198` and merges
+  the current `origin/main@a6b47c3` proposal baseline without modifying `main`
+- added the executable two-stage convergence design and task cards; only
+  `HAR-CONV-01` is active, while `CTX-REHYDRATE-02` remains locked
+- Phase 1 owns the shared `agent-core` Harness convergence path and focused
+  tests; `model_step.py`, Context, Storage, Worker, providers/MCP and FinOS are
+  explicit stop boundaries
+- `git diff --check` passed and the uncommitted task diff is documentation-only
+- `make check` reached the inherited file-size gate and stopped on the same two
+  out-of-scope files already recorded by PR `#198`:
+  `CodexConversationPane.styles.ts` (561/500) and `events.py` (505/500)
+- next action: commit and push the documentation baseline, then hand the exact
+  branch/worktree and red-test-first instructions to Codex task
+  `019f9a26-59b5-77e2-b42e-5e6ede10520c`

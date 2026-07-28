@@ -5,6 +5,14 @@
 
 ## Current Mainline Snapshot
 
+- Active stacked task: `HAR-CONV-01` is being implemented on
+  `codex/runtime-convergence-phase1`, based on PR `#198` plus current
+  `origin/main`. It extends exact action repetition checks with stable evidence
+  progress, bounded no-progress detection, and one tool-disabled terminal
+  synthesis. It is not authorized to merge or push directly to `main`.
+- Locked follow-up: `CTX-REHYDRATE-02` may start only after PR `#198` and
+  `HAR-CONV-01` merge. It will reuse existing Event/Capsule/Artifact projection
+  and `rehydrate_projection()` rather than create a full Memory 2.0 subsystem.
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with
   an exact three-user-turn tail, complete tool groups, one strict retry from
   original history, recoverable context suspension, evidence-gated memory
@@ -16,7 +24,7 @@
   `30332213200` did not execute any step because GitHub reported an account
   payment/spending-limit gate.
 
-- Snapshot date: `2026-07-19`
+- Snapshot date: `2026-07-28`
 - Verified implementation baseline: `f1e4965` (PR `#174`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
 - Review task: `CTX-SEG-01` has delivered the stable Task, internal Segment,
@@ -31,7 +39,9 @@
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
-- Open product issue: none; `#148` closed with PR `#156`
+- Open runtime issue: `#197` is under review in PR `#198`; the separate execution
+  convergence gap is tracked by `HAR-CONV-01`. Product issue `#148` remains closed
+  through PR `#156`.
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
   non-interactive across Desktop/API/CLI/Worker, including existing Tasks, while
   retaining fail-closed non-local defaults and hard Gateway/Runtime boundaries.
@@ -57,7 +67,7 @@
   Phase A scope** (EXT-0 + SKILL-01..05 + MCP-01/02/06).
   Plugin/Hook/Marketplace remain `Locked` pending private-cloud GA. Elicitation
   is reconciled to durable HITL; sampling stays a hard non-goal.
-- Active harness task: `HAR-TOOL-RECOVERY-01` enforces the durable contract
+- Existing harness baseline `HAR-TOOL-RECOVERY-01` enforces the durable contract
   that a single `ToolCallStatus.FAILED` (HTTP 4xx, missing file, timeout) must
   surface as a structured observation for model-selected correction rather than
   directly producing `session_failed`. Changes: repeated tool calls become
@@ -65,7 +75,9 @@
   3), sequential batches continue executing remaining tools after a mid-batch
   failure (matching concurrent-batch semantics), and a provider protocol
   firewall (`protocol_invariants.py`) validates tool-call/tool-result pairing
-  before every model request to prevent `invalid_request` leakage.
+  before every model request to prevent `invalid_request` leakage. Its exact
+  `tool + arguments` guard does not detect argument variants returning the same
+  evidence; `HAR-CONV-01` owns that narrow follow-up.
 - Model-response acceptance is now a separate provider-neutral boundary:
   malformed body/SSE/tool-call output becomes `ModelResponseRejectedError`,
   tool-capable stream deltas are committed only after validation, one bounded
