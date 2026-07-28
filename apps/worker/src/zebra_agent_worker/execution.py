@@ -78,7 +78,10 @@ from zebra_agent_worker.control import SessionControlError, SessionControlServic
 from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import finalize_execution
-from zebra_agent_worker.finos_journal_provider import build_finos_journal_provider
+from zebra_agent_worker.finos_journal_provider import (
+    FINOS_JOURNAL_V2_CONTRACT,
+    build_finos_journal_provider,
+)
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
@@ -250,6 +253,11 @@ class SessionExecutionService:
                     recovery=self._recovery_service.recover_session(session_id),
                     lease=claimed.lease,
                 )
+            finos_journal_provider = build_finos_journal_provider(
+                settings=self._settings,
+                database_path=self._database_path,
+                session_id=session_id,
+            )
             local_tool_gateway = LocalToolGateway(
                 task.workspace_root,
                 model_gateway=model_gateway,
@@ -280,11 +288,7 @@ class SessionExecutionService:
                 runtime=runtime,
                 runtime_handle=runtime_handle,
                 artifact_payload_store=self._artifact_payload_store,
-                finos_journal_provider=build_finos_journal_provider(
-                    settings=self._settings,
-                    database_path=self._database_path,
-                    session_id=session_id,
-                ),
+                finos_journal_provider=finos_journal_provider,
                 trusted_local=trusted_local,
                 web_pipeline_v2=self._settings.web_pipeline_v2,
             )
@@ -437,6 +441,10 @@ class SessionExecutionService:
                 network_profile=effective_network_profile,
                 web_search_endpoint=self._settings.web_search_endpoint,
                 trusted_local=trusted_local,
+                allow_finos_account_changes_proposal=(
+                    finos_journal_provider is not None
+                    and finos_journal_provider.contract_version == FINOS_JOURNAL_V2_CONTRACT
+                ),
             ),
             tool_gateway,
             model_step=model_step,

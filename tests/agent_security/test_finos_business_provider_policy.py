@@ -55,3 +55,35 @@ def test_policy_does_not_treat_unlisted_finos_tools_as_read_only(tool_name: str)
     )
 
     assert decision.decision is PolicyDecisionType.DENY
+
+
+@pytest.mark.parametrize("profile", list(PolicyProfile))
+def test_account_change_proposal_is_denied_without_a_v2_task_provider(
+    profile: PolicyProfile,
+) -> None:
+    decision = LocalPolicyEngine(profile=profile).evaluate_tool_call(
+        ToolCall(
+            tool_call_id=new_tool_call_id(),
+            name="finos.account_changes.propose",
+            arguments={},
+            created_at=datetime.now(UTC),
+        )
+    )
+
+    assert decision.decision is PolicyDecisionType.DENY
+
+
+def test_account_change_proposal_requires_the_explicit_v2_task_provider_gate() -> None:
+    decision = LocalPolicyEngine(
+        profile=PolicyProfile.READ_ONLY,
+        allow_finos_account_changes_proposal=True,
+    ).evaluate_tool_call(
+        ToolCall(
+            tool_call_id=new_tool_call_id(),
+            name="finos.account_changes.propose",
+            arguments={},
+            created_at=datetime.now(UTC),
+        )
+    )
+
+    assert decision.decision is PolicyDecisionType.ALLOW

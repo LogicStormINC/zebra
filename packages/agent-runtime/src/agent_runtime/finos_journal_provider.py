@@ -12,12 +12,18 @@ from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_tools import ToolContract, ToolRegistry
 
 MAX_RESPONSE_BYTES = 524_288
+FINOS_JOURNAL_V1_CONTRACT = "finos.journals.v1"
+FINOS_JOURNAL_V2_CONTRACT = "finos.journals.v2"
+SUPPORTED_FINOS_JOURNAL_CONTRACTS = frozenset(
+    {FINOS_JOURNAL_V1_CONTRACT, FINOS_JOURNAL_V2_CONTRACT}
+)
 
 
 @dataclass(frozen=True)
 class _FinosTool:
     contract: ToolContract
     suffix: str
+    side_effect: str = "read_only"
 
 
 JOURNALS_LIST_CONTRACT = ToolContract(
@@ -108,6 +114,21 @@ SECURITIES_RESOLVE_CONTRACT = ToolContract(
         "query": {"type": "string", "minLength": 1, "maxLength": 128},
     },
 )
+ACCOUNT_CHANGES_PROPOSE_CONTRACT = ToolContract(
+    name="finos.account_changes.propose",
+    description="Record a typed account-change proposal for this authorized FinOS Task.",
+    capability_version="finos.account_changes.propose.v1",
+    required_arguments=("accounts", "evidence_coverage", "missing_evidence"),
+    argument_properties={
+        "accounts": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "object"},
+        },
+        "evidence_coverage": {"type": "array", "items": {"type": "object"}},
+        "missing_evidence": {"type": "array", "items": {"type": "string"}},
+    },
+)
 
 FINOS_TOOL_SPECS = (
     _FinosTool(JOURNALS_LIST_CONTRACT, "journals:list"),
@@ -118,6 +139,14 @@ FINOS_TOOL_SPECS = (
     _FinosTool(NOTES_LIST_CONTRACT, "notes:list"),
     _FinosTool(NOTES_GET_CONTRACT, "notes:get"),
     _FinosTool(SECURITIES_RESOLVE_CONTRACT, "securities:resolve"),
+)
+FINOS_V2_TOOL_SPECS = (
+    *FINOS_TOOL_SPECS,
+    _FinosTool(
+        ACCOUNT_CHANGES_PROPOSE_CONTRACT,
+        "account-changes:propose",
+        side_effect="proposal",
+    ),
 )
 
 
@@ -137,6 +166,7 @@ class FinosJournalProvider:
     base_url: str
     task_id: str
     grant: str = field(repr=False)
+    contract_version: str = FINOS_JOURNAL_V1_CONTRACT
     timeout_seconds: float = 10.0
     transport: FinosJournalTransport = field(default_factory=lambda: UrllibFinosTransport())
 
@@ -156,14 +186,25 @@ class FinosJournalProvider:
             raise ValueError("FinOS provider task_id must not be blank")
         if not self.grant.strip():
             raise ValueError("FinOS provider grant must not be blank")
+        contract_version = (
+            self.contract_version.strip() if isinstance(self.contract_version, str) else ""
+        )
+        if contract_version not in SUPPORTED_FINOS_JOURNAL_CONTRACTS:
+            raise ValueError("FinOS provider contract_version is unsupported")
         if self.timeout_seconds <= 0:
             raise ValueError("FinOS provider timeout must be positive")
         object.__setattr__(self, "base_url", base_url)
         object.__setattr__(self, "task_id", self.task_id.strip())
         object.__setattr__(self, "grant", self.grant.strip())
+        object.__setattr__(self, "contract_version", contract_version)
 
     def register(self, registry: ToolRegistry) -> None:
-        for spec in FINOS_TOOL_SPECS:
+        specs = (
+            FINOS_V2_TOOL_SPECS
+            if self.contract_version == FINOS_JOURNAL_V2_CONTRACT
+            else FINOS_TOOL_SPECS
+        )
+        for spec in specs:
             registry.register(spec.contract, self._handler(spec))
 
     def _handler(self, spec: _FinosTool) -> Callable[[ToolCall], ToolResult]:
@@ -204,7 +245,7 @@ class FinosJournalProvider:
             tool_call_id=call.tool_call_id,
             status=ToolCallStatus.EXECUTED,
             output=output,
-            metadata={"schema_version": response_schema, "side_effect": "read_only"},
+            metadata={"schema_version": response_schema, "side_effect": spec.side_effect},
         )
 
 

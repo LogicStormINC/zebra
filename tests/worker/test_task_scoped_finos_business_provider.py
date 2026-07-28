@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
+import pytest
 from agent_core.domain.identifiers import TaskId
 from agent_storage import FinosJournalGrant, SQLiteAgentTaskStore, SQLiteFinosJournalGrantStore
 from zebra_agent_api import RouteAdapter, RouteRequest, create_app
@@ -17,14 +18,18 @@ from zebra_agent_config import (
 from zebra_agent_worker.finos_journal_provider import build_finos_journal_provider
 
 
-def test_worker_builds_provider_only_for_active_task_binding(tmp_path: Path) -> None:
+@pytest.mark.parametrize("contract_version", ("finos.journals.v1", "finos.journals.v2"))
+def test_worker_builds_provider_only_for_active_task_binding(
+    tmp_path: Path,
+    contract_version: str,
+) -> None:
     database, task_id = _task(database=tmp_path / "tasks.sqlite", workspace=tmp_path)
     task = SQLiteAgentTaskStore(database).get_task(task_id)
     assert task is not None
     SQLiteFinosJournalGrantStore(database).bind(
         FinosJournalGrant(
             task_id=task_id,
-            contract_version="finos.journals.v1",
+            contract_version=contract_version,
             grant="active-private-grant",
             expires_at=datetime.now(UTC) + timedelta(hours=1),
         )
@@ -38,6 +43,7 @@ def test_worker_builds_provider_only_for_active_task_binding(tmp_path: Path) -> 
 
     assert provider is not None
     assert provider.task_id == str(task_id)
+    assert provider.contract_version == contract_version
     assert "active-private-grant" not in repr(provider)
 
 

@@ -156,6 +156,81 @@ def test_fixed_business_catalog_hides_authority_and_uses_fixed_paths_and_schemas
     assert grant not in str(rejected)
 
 
+def test_v2_business_catalog_adds_only_typed_account_change_proposal(
+    tmp_path: Path,
+) -> None:
+    transport = RecordingTransport()
+    task_id = "11111111-1111-4111-8111-111111111111"
+    provider = FinosJournalProvider(
+        base_url="https://finos.internal",
+        task_id=task_id,
+        grant="opaque-task-grant",
+        contract_version="finos.journals.v2",
+        transport=transport,
+    )
+    gateway = LocalToolGateway(tmp_path, finos_journal_provider=provider)
+    proposal_name = "finos.account_changes.propose"
+    definitions = {
+        item.name: item.parameters for item in gateway.model_tools if item.name.startswith("finos.")
+    }
+
+    assert provider.contract_version == "finos.journals.v2"
+    assert set(definitions) == {
+        "finos.journals.list",
+        "finos.journals.get",
+        "finos.snapshots.list",
+        "finos.snapshots.get",
+        "finos.transactions.list",
+        "finos.notes.list",
+        "finos.notes.get",
+        "finos.securities.resolve",
+        proposal_name,
+    }
+    assert definitions[proposal_name]["required"] == [
+        "accounts",
+        "evidence_coverage",
+        "missing_evidence",
+    ]
+    assert set(definitions[proposal_name]["properties"]) == {
+        "accounts",
+        "evidence_coverage",
+        "missing_evidence",
+    }
+
+    arguments = {
+        "accounts": [{"account_ref": "portfolio-main", "transactions": []}],
+        "evidence_coverage": [],
+        "missing_evidence": [],
+    }
+    result = gateway.execute(_call(proposal_name, arguments))
+    url, _, payload, _ = transport.calls[-1]
+
+    assert result.status is ToolCallStatus.EXECUTED
+    assert result.metadata == {
+        "schema_version": "finos.account_changes.propose.v1",
+        "side_effect": "proposal",
+    }
+    assert url == (
+        "https://finos.internal/internal/agent-provider/v1/tasks/"
+        f"{task_id}/account-changes:propose"
+    )
+    assert payload == {
+        "schema_version": "finos.account_changes.propose.request.v1",
+        **arguments,
+    }
+
+
+def test_business_provider_rejects_unsupported_contract_version(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="contract_version"):
+        FinosJournalProvider(
+            base_url="https://finos.internal",
+            task_id="11111111-1111-4111-8111-111111111111",
+            grant="private-grant",
+            contract_version="finos.journals.v3",
+            transport=RecordingTransport(),
+        )
+
+
 def test_business_provider_fails_closed_for_transport_schema_and_size_errors(
     tmp_path: Path,
 ) -> None:

@@ -7,7 +7,11 @@ from agent_runtime import FinosJournalProvider, FinosJournalTransport
 from agent_storage import SQLiteAgentTaskStore, SQLiteFinosJournalGrantStore
 from zebra_agent_config import ZebraAgentSettings
 
-FINOS_JOURNAL_CONTRACT = "finos.journals.v1"
+FINOS_JOURNAL_V1_CONTRACT = "finos.journals.v1"
+FINOS_JOURNAL_V2_CONTRACT = "finos.journals.v2"
+SUPPORTED_FINOS_JOURNAL_CONTRACTS = frozenset(
+    {FINOS_JOURNAL_V1_CONTRACT, FINOS_JOURNAL_V2_CONTRACT}
+)
 
 
 def build_finos_journal_provider(
@@ -25,7 +29,7 @@ def build_finos_journal_provider(
     if (
         binding is None
         or not binding.active
-        or binding.contract_version != FINOS_JOURNAL_CONTRACT
+        or binding.contract_version not in SUPPORTED_FINOS_JOURNAL_CONTRACTS
     ):
         return None
     kwargs = {"transport": transport} if transport is not None else {}
@@ -33,6 +37,7 @@ def build_finos_journal_provider(
         base_url=base_url,
         task_id=str(task.task_id),
         grant=binding.grant,
+        contract_version=binding.contract_version,
         timeout_seconds=settings.finos_journal_provider.timeout_seconds,
         **kwargs,
     )

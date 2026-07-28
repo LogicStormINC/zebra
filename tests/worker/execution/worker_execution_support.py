@@ -30,7 +30,11 @@ from zebra_agent_worker import (
 )
 
 
-def _build_execution_service(database_path: Path) -> SessionExecutionService:
+def _build_execution_service(
+    database_path: Path,
+    *,
+    settings: ZebraAgentSettings | None = None,
+) -> SessionExecutionService:
     claim_service = SessionClaimService(
         SQLiteLeaseStore(database_path),
         SessionRecoveryService(
@@ -43,7 +47,7 @@ def _build_execution_service(database_path: Path) -> SessionExecutionService:
         database_path=database_path,
         claim_service=claim_service,
         resume_service=SessionResumeService(claim_service),
-        settings=_settings(database_path),
+        settings=settings or _settings(database_path),
     )
 
 def _seed_ready_session(database_path: Path, workspace_root: Path) -> SessionId:

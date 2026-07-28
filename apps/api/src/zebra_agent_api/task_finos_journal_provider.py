@@ -9,7 +9,8 @@ from agent_storage import FinosJournalGrant, SQLiteAgentTaskStore, SQLiteFinosJo
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.task_api import _not_found, parse_task_id
 
-FINOS_JOURNAL_CONTRACT = "finos.journals.v1"
+FINOS_JOURNAL_V1_CONTRACT = "finos.journals.v1"
+FINOS_JOURNAL_V2_CONTRACT = "finos.journals.v2"
 FINOS_JOURNAL_TOOLS = (
     "finos.journals.list",
     "finos.journals.get",
@@ -20,6 +21,10 @@ FINOS_JOURNAL_TOOLS = (
     "finos.notes.get",
     "finos.securities.resolve",
 )
+FINOS_JOURNAL_TOOLS_BY_CONTRACT = {
+    FINOS_JOURNAL_V1_CONTRACT: FINOS_JOURNAL_TOOLS,
+    FINOS_JOURNAL_V2_CONTRACT: (*FINOS_JOURNAL_TOOLS, "finos.account_changes.propose"),
+}
 
 
 def bind_finos_journal_provider(
@@ -39,7 +44,7 @@ def bind_finos_journal_provider(
         SQLiteFinosJournalGrantStore(database_path).bind(
             FinosJournalGrant(
                 task_id=parsed_task_id,
-                contract_version=FINOS_JOURNAL_CONTRACT,
+                contract_version=provider.contract_version,
                 grant=provider.grant,
                 expires_at=provider.expires_at,
             )
@@ -58,8 +63,8 @@ def bind_finos_journal_provider(
         {
             "task_id": task_id,
             "business_tools": {
-                "contract_version": FINOS_JOURNAL_CONTRACT,
-                "names": list(FINOS_JOURNAL_TOOLS),
+                "contract_version": provider.contract_version,
+                "names": list(FINOS_JOURNAL_TOOLS_BY_CONTRACT[provider.contract_version]),
             },
         },
     )
@@ -67,6 +72,7 @@ def bind_finos_journal_provider(
 
 @dataclass(frozen=True)
 class _ParsedFinosJournalProvider:
+    contract_version: str
     grant: str
     expires_at: datetime
 
@@ -85,7 +91,8 @@ def _parse_finos_journal_provider(raw: object) -> _ParsedFinosJournalProvider | 
                 "reason": "finos_journal_provider has unsupported fields",
             },
         )
-    if raw.get("contract_version") != FINOS_JOURNAL_CONTRACT:
+    contract_version = raw.get("contract_version")
+    if contract_version not in FINOS_JOURNAL_TOOLS_BY_CONTRACT:
         return ApiResponse(
             400,
             {"status": "invalid_request", "reason": "FinOS Journal contract is unsupported"},
@@ -111,4 +118,8 @@ def _parse_finos_journal_provider(raw: object) -> _ParsedFinosJournalProvider | 
             400,
             {"status": "invalid_request", "reason": "FinOS Journal grant expiry is invalid"},
         )
-    return _ParsedFinosJournalProvider(grant=grant.strip(), expires_at=parsed_expiry)
+    return _ParsedFinosJournalProvider(
+        contract_version=contract_version,
+        grant=grant.strip(),
+        expires_at=parsed_expiry,
+    )

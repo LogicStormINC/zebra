@@ -22,6 +22,7 @@ FINOS_TOOLS = [
     "finos.notes.get",
     "finos.securities.resolve",
 ]
+FINOS_V2_TOOLS = [*FINOS_TOOLS, "finos.account_changes.propose"]
 
 
 def test_task_finos_provider_binding_is_private_and_advertises_fixed_catalog(
@@ -60,6 +61,31 @@ def test_task_finos_provider_binding_is_private_and_advertises_fixed_catalog(
     assert grant not in str(bound.body)
     assert grant not in str(public_task.body)
     assert grant not in str(public_stream.body)
+
+
+def test_task_finos_provider_binding_accepts_v2_with_only_the_proposal_addition(
+    tmp_path: Path,
+) -> None:
+    adapter = _adapter(tmp_path)
+    created = adapter.handle(
+        RouteRequest("POST", "/tasks", body={"prompt": "Review", "workspace": str(tmp_path)})
+    )
+    task_id = created.body["task_id"]
+
+    bound = adapter.handle(
+        RouteRequest(
+            "PUT",
+            f"/tasks/{task_id}/business-providers/finos-journals",
+            body=_binding("private-v2-grant", contract_version="finos.journals.v2"),
+        )
+    )
+
+    assert bound.status_code == 200
+    assert bound.body == {
+        "task_id": task_id,
+        "business_tools": {"contract_version": "finos.journals.v2", "names": FINOS_V2_TOOLS},
+    }
+    assert "private-v2-grant" not in str(bound.body)
 
 
 def test_task_finos_provider_rejects_when_endpoint_is_not_configured(tmp_path: Path) -> None:
@@ -203,9 +229,11 @@ def test_task_finos_provider_binding_survives_same_task_continuation(tmp_path: P
 def _binding(
     grant: str,
     expires_at: datetime | None = None,
+    *,
+    contract_version: str = "finos.journals.v1",
 ) -> dict[str, str]:
     return {
-        "contract_version": "finos.journals.v1",
+        "contract_version": contract_version,
         "grant": grant,
         "expires_at": (expires_at or datetime.now(UTC) + timedelta(minutes=5)).isoformat(),
     }

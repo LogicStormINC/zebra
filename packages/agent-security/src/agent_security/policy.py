@@ -86,6 +86,7 @@ SHELL_EXECUTABLES = frozenset({"bash", "fish", "powershell", "pwsh", "sh", "zsh"
 SHELL_INJECTION_MARKERS = ("&&", "||", "$(", "`", ";", "|", ">", "<")
 SENSITIVE_PATH_MARKERS = (".env", "credential", "id_rsa", "private_key", "secret", "token")
 EXFILTRATION_COMMANDS = frozenset({"curl", "nc", "netcat", "scp", "wget"})
+FINOS_ACCOUNT_CHANGES_PROPOSE_TOOL = "finos.account_changes.propose"
 PATH_ARGUMENTS_BY_TOOL = {
     "command.run": ("cwd",),
     "files.list": ("path",),
@@ -102,6 +103,7 @@ class LocalPolicyEngine:
     web_search_endpoint: str | None = None
     trusted_local: bool = False
     web_pipeline_v2: bool = False
+    allow_finos_account_changes_proposal: bool = False
 
     def evaluate_tool_call(self, tool_call: ToolCall) -> PolicyDecision:
         tool_name = tool_call.name
@@ -133,6 +135,16 @@ class LocalPolicyEngine:
                 policy_profile=self.profile.value,
                 tool_call=tool_call,
                 egress=egress,
+            )
+        if tool_name == FINOS_ACCOUNT_CHANGES_PROPOSE_TOOL:
+            if self.allow_finos_account_changes_proposal:
+                return _allow(
+                    self.profile,
+                    "finos.account_changes.propose is allowed by the v2 Task provider",
+                )
+            return _deny(
+                self.profile,
+                "finos.account_changes.propose requires the v2 Task provider",
             )
         if self.profile is PolicyProfile.READ_ONLY:
             decision = _decision_for_read_only(tool_name, self.profile)
