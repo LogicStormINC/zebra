@@ -389,10 +389,9 @@ namespace、retention、manifest 和 lineage。下载使用短期签名 URL，�
 ## 9. Agent Memory
 
 Zebra durable foundation 的当前调度优先于 Trench read-only，但首个只读切片仍不
-把远程长期记忆设为运行时依赖。现有 local profile 的本地 Memory 保持兼容；
-现有 `MemoryStorePort` 继续作为候选、确认、替代、过期、删除和 provenance 的
-唯一权威。Embedded production profile 只能通过 provider-neutral
-`AgentMemoryGateway` 接入 Mem0 等可替换语义索引，不能用远端状态覆盖 Zebra
+把远程长期记忆设为运行时依赖。现有 `MemoryStorePort` 继续作为候选、确认、替代、
+过期、删除和 provenance 的唯一权威；后续 Embedded profile 只能通过 provider-neutral
+`AgentMemoryGateway` 把 Mem0 作为可重建的语义索引，不能用 Mem0 状态覆盖 Zebra
 治理状态。
 
 约束：
@@ -400,15 +399,22 @@ Zebra durable foundation 的当前调度优先于 Trench read-only，但首个�
 - feature flag 默认关闭；
 - 只有 `confirmed` 记忆可发布，搜索命中必须按 Zebra `MemoryId` 回查权威 Store；
 - owner/session/namespace/topic 全部使用不透明 Host 映射；
-- 写入通过 delivery ledger/outbox 保证幂等和可对账；
+- 只发布 Zebra 已确认的记忆，首版固定 `infer=false`，禁止二次自由抽取；
+- 写入通过 delivery ledger/outbox 传递 Zebra memory ref，保证幂等和可对账；
+- search hit 必须重新读取 `MemoryStorePort`，只有仍可见、未删除且 namespace 匹配的
+  权威记录才能进入 Prompt；远端 score 不能成为 Zebra confidence；
 - timeout、rate limit、schema drift 或服务不可用时降级，不使 Run 失败；
 - 删除、保留期、redaction 和 audit 独立验证；
-- 每日 contract test 检测 provider API 漂移；
-- Mem0 自身的 pgvector 是可重建派生索引，不建设第二个 Zebra 事实源或 Graphiti
-  fallback。
+- 每日 contract test 检测 REST schema/version 漂移；
+- Mem0 自用的隔离 pgvector/PostgreSQL 是派生索引，可由 Zebra 权威记录重建；不建设
+  第二套 Zebra 事实源或 Graphiti 回退路径。
 
-Mem0 仍必须保持可替换边界；正式 Adapter 只能在固定版本、真实契约和故障门禁
-完成后启用。
+采用 Mem0 OSS 前必须完成 `infer=false`、filter、history、delete、重试、重启、模型失败、
+embedding 维度变更和 namespace 的实测 Spike。官方 Compose 仅是开发示例，本仓库的
+Compose 也只证明固定版本能够启动、迁移和鉴权，不构成生产可用性证据：
+[Mem0 OSS setup](https://docs.mem0.ai/open-source/setup)、
+[REST API](https://docs.mem0.ai/open-source/features/rest-api)、
+[OSS 与 Platform 边界](https://docs.mem0.ai/platform/platform-vs-oss)。
 
 ## 10. 生产部署单元
 
@@ -424,10 +430,15 @@ Zebra deployment
 ├── zebra-api
 ├── zebra-worker
 ├── zebra-analysis-worker       # 分析阶段再启用
-├── PostgreSQL
-├── Redis
+├── PostgreSQL                  # Zebra durable truth
+├── Redis                       # live only
 ├── S3-compatible Object Storage
 └── OpenTelemetry Collector
+
+Optional memory auxiliary
+├── mem0-api                    # replaceable semantic index
+├── mem0-postgres/pgvector      # isolated derived data
+└── mem0-history                # isolated operational history
 ```
 
 `zebra-worker` 初期组合 orchestrator、projection、outbox 和 retention。只有满足
@@ -512,7 +523,7 @@ artifact failure、namespace denial、memory degraded rate、token/cost evidence
 → Zebra Storage composition seam
 → Zebra authoritative Store composition completion
 → Cloud durable foundation
-→ Provider-neutral Memory Gateway / Mem0 gate（可降级增强）
+→ provider-neutral Memory Gateway + Mem0 contract gate（可降级增强）
 → Host/AG-UI/Surface 协议
 → Trench 只读链路
 → 生产只读 E2E 汇合

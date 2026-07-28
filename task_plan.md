@@ -1,5 +1,25 @@
 # Task Plan
 
+## MEM-MEM0-SPIKE-01 - Mem0 OSS Contract And Operations Probe
+
+1. `completed` - Inspect the pinned running Mem0 OpenAPI/source without reading
+   secrets or issuing memory writes.
+2. `in_progress` - Combine the reviewed Store, Gateway and Compose prerequisites
+   in an isolated stacked worktree and claim the Spike paths.
+3. `pending` - Add a deterministic OpenAI-compatible embedding stub and isolated
+   Compose test overlay with no external credential.
+4. `pending` - Exercise authenticated `infer=false` add/search/update/history/
+   delete, namespace filters, duplicate delivery, restart and failure behavior.
+5. `pending` - Record exact observed contracts, run focused/repository gates and
+   preserve the separate real-provider credential gate.
+
+### Decisions
+
+- The deterministic provider validates Mem0 OSS/server/pgvector semantics only;
+  it does not satisfy real-provider compatibility.
+- The Spike remains isolated from the long-running dependency volumes and never
+  changes Zebra's governed `MemoryStorePort` authority.
+
 ## MEM-GW-CON-01 - Provider-neutral Agent Memory Gateway Contract
 
 1. `completed` - Audit the governed `MemoryStorePort`, authoritative Store
@@ -44,6 +64,30 @@
   semantic-memory integration is a separate, derived, degraded-safe Gateway.
 - The branch is local and unpushed. Merge order remains
   `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-STO-AUTH-01`.
+## CLOUD-COMPOSE-INFRA-01 - Docker Compose Dependency Baseline
+
+1. `completed` - Audit repository container assets, architecture sequencing and
+   Mem0 OSS self-hosting and release behavior.
+2. `completed` - Register and claim the dependency-only task on an isolated
+   branch stacked behind `CLOUD-STO-SEAM-01`.
+3. `completed` - Create the base dependency Compose, optional Mem0 overlay,
+   pinned non-root boot-smoke image, safe environment template and runbook.
+4. `completed` - Validate rendered contracts and start base plus optional Mem0
+   services through real migrations, health and authentication checks.
+5. `completed` - Update architecture/progress evidence, obtain independent review,
+   run repository checks
+   and commit the task without pushing or merging stacked dependencies.
+
+### Decisions
+
+- Dependency containers and Zebra application containers have separate task,
+  file and Compose lifecycles.
+- `redis-live`, Zebra PostgreSQL, Mem0 PostgreSQL and Mem0 history never share a
+  persistence role; Mem0 remains derived and rebuildable.
+- `AgentMemoryGateway` is provider-neutral. Mem0 receives only confirmed memory
+  with `infer=false`; every retrieval is revalidated against `MemoryStorePort`.
+- The pinned Mem0 image and Compose overlay prove boot only. Real write/search,
+  idempotency, deletion and namespace behavior remain a separate credentialed Spike.
 
 ## CLOUD-STO-SEAM-01 - Control-Plane Storage Composition Seam
 

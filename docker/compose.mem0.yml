@@ -1,0 +1,93 @@
+name: zebra-dependencies
+
+x-mem0-environment: &mem0-environment
+  POSTGRES_HOST: mem0-postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: ${ZEBRA_MEM0_POSTGRES_DB:-mem0}
+  POSTGRES_USER: ${ZEBRA_MEM0_POSTGRES_USER:-mem0}
+  POSTGRES_PASSWORD: ${ZEBRA_MEM0_POSTGRES_PASSWORD:?set ZEBRA_MEM0_POSTGRES_PASSWORD}
+  POSTGRES_COLLECTION_NAME: ${ZEBRA_MEM0_COLLECTION_NAME:-zebra_memories}
+  APP_DB_NAME: ${ZEBRA_MEM0_POSTGRES_DB:-mem0}
+  HISTORY_DB_PATH: /app/history/history.db
+  ADMIN_API_KEY: ${ZEBRA_MEM0_ADMIN_API_KEY:?set ZEBRA_MEM0_ADMIN_API_KEY}
+  JWT_SECRET: ${ZEBRA_MEM0_JWT_SECRET:?set ZEBRA_MEM0_JWT_SECRET}
+  AUTH_DISABLED: "false"
+  MEM0_TELEMETRY: "false"
+  MEM0_DIR: /tmp/mem0
+  OPENAI_API_KEY: ${ZEBRA_MEM0_OPENAI_API_KEY:-mem0-healthcheck-only}
+  MEM0_DEFAULT_LLM_MODEL: ${ZEBRA_MEM0_LLM_MODEL:-gpt-4.1-nano-2025-04-14}
+  MEM0_DEFAULT_EMBEDDER_MODEL: ${ZEBRA_MEM0_EMBEDDER_MODEL:-text-embedding-3-small}
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUNBUFFERED: "1"
+
+x-mem0-image: &mem0-image
+  image: zebra/mem0-api:2.0.13-ca2abca2
+  build:
+    context: ./mem0
+    dockerfile: Dockerfile
+    additional_contexts:
+      mem0-source: https://github.com/mem0ai/mem0.git#ca2abca2b884e038d3e525070e79d3057ef2012c
+    args:
+      MEM0_PYTHON_VERSION: 2.0.13
+
+services:
+  mem0-migrate:
+    <<: *mem0-image
+    profiles: [mem0]
+    restart: "no"
+    command: [alembic, upgrade, head]
+    depends_on:
+      mem0-postgres:
+        condition: service_healthy
+    environment: *mem0-environment
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks:
+      - dependencies
+
+  mem0-api:
+    <<: *mem0-image
+    profiles: [mem0]
+    restart: unless-stopped
+    init: true
+    depends_on:
+      mem0-migrate:
+        condition: service_completed_successfully
+    environment: *mem0-environment
+    ports:
+      - "127.0.0.1:${ZEBRA_MEM0_API_PORT:-18088}:8000"
+    volumes:
+      - mem0-history-data:/app/history
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import os, urllib.request, psycopg;
+          urllib.request.urlopen('http://127.0.0.1:8000/openapi.json', timeout=3).read(1);
+          connection = psycopg.connect(host=os.environ['POSTGRES_HOST'],
+          port=os.environ['POSTGRES_PORT'], dbname=os.environ['APP_DB_NAME'],
+          user=os.environ['POSTGRES_USER'], password=os.environ['POSTGRES_PASSWORD'],
+          connect_timeout=3); connection.execute('SELECT 1').fetchone(); connection.close()
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      - dependencies
+
+volumes:
+  mem0-history-data:
+
+networks:
+  dependencies:
+    name: zebra-dependencies

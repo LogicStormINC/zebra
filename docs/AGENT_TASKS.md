@@ -39,6 +39,15 @@
   explicitly continued the memory-first Zebra foundation on 2026-07-28. This
   provider-neutral contract is stacked on local `CLOUD-STO-AUTH-01`; it must not
   merge before the authoritative Store composition.
+- `CLOUD-COMPOSE-INFRA-01` is `Review` on
+  `codex/cloud-compose-infra-01`, explicitly activated by the maintainer on
+  2026-07-24. It defines only the Docker Compose dependency stack and is stacked
+  behind `CLOUD-STO-SEAM-01`; Zebra application containers remain a separate
+  locked task.
+- `MEM-MEM0-SPIKE-01` is `In Progress` on `codex/mem0-contract-spike-01`.
+  The maintainer explicitly continued the memory/Compose lane on 2026-07-28;
+  this local branch combines the reviewed Store, Gateway and Compose prerequisites
+  and remains blocked from merge until those predecessors land.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -329,6 +338,189 @@ derived semantic-memory service without weakening Zebra's governed memory truth.
 - `make check` stops at the two untouched file-size violations (`561/500`,
   `505/500`). The branch remains local and stacked; Mem0 adapter work is still
   locked behind the Compose baseline, this contract and a credentialed Spike.
+
+### CLOUD-COMPOSE-INFRA-01 - Docker Compose Dependency Baseline
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `SRE / RUNTIME`
+- Depends on: explicit maintainer activation on 2026-07-24. Development is
+  stacked on `CLOUD-STO-SEAM-01`; merge order remains
+  `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-COMPOSE-INFRA-01`.
+- Branch: `codex/cloud-compose-infra-01`
+- Owned paths: `docker/compose.dependencies.yml`, `docker/compose.mem0.yml`,
+  `docker/mem0/`, `docker/.env.example`, `docker/README.md`, `docs/AGENT_TASKS.md`,
+  `docs/Zebra Embedded 生产级目标架构.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `README.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Create a version-pinned Docker Compose baseline that separates PostgreSQL,
+ephemeral live Redis, MinIO and Mem0 data dependencies from the optional Mem0
+service and from future Zebra API/Worker application containers.
+
+#### Acceptance
+
+- database and object-storage containers live only in `compose.dependencies.yml`;
+  the optional Mem0 service lives in `compose.mem0.yml`, while Zebra
+  API/Worker/migration containers do not appear in this task
+- Zebra PostgreSQL, MinIO, Mem0 PostgreSQL and Mem0 history have separate named
+  volumes; `redis-live` has a separate failure domain and remains non-authoritative
+- images use explicit versions, services have health checks and host ports bind
+  to loopback by default
+- Mem0 source and the `mem0ai` package are pinned for a reproducible boot-smoke
+  image; the optional service keeps auth enabled, telemetry disabled and adds no
+  Dashboard, Graph or MCP sidecar
+- `docker compose config` passes and the base PostgreSQL/Redis/MinIO services
+  plus Mem0 PostgreSQL/API start healthy without committing credentials or
+  requiring a real model credential for the health check
+- docs record that Mem0's official Compose is a development stack and that
+  write/search, idempotency, deletion and namespace behavior remain gated by a
+  separate contract Spike; container health is not production evidence
+
+#### Validation Evidence (2026-07-24)
+
+- both Compose renders and the reproducible 78-package hash lock pass; the pinned
+  image runs as UID/GID `10001` with read-only root, all capabilities dropped and
+  `no-new-privileges`
+- base PostgreSQL, Redis and MinIO are healthy; MinIO init and Mem0 migration exit
+  `0`; Mem0 PostgreSQL and API are healthy after Alembic `006`
+- `/auth/setup-status` returns `200` and an anonymous memory request returns `401`;
+  no provider-backed write/search was attempted with the boot-only sentinel
+
+#### Explicit Non-Goals
+
+- PostgreSQL, Redis, object-storage or AgentMemoryGateway adapters
+- switching API/Worker away from the local SQLite profile
+- Zebra application images, migration jobs, Kubernetes, Helm, HA, PITR or GA claims
+- publishing a production Mem0 image or treating Mem0 as the durable Task/Event
+  or governed-memory fact source
+
+### MEM-MEM0-SPIKE-01 - Mem0 OSS Contract And Operations Probe
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `INTEGRATIONS / STORAGE / SECURITY`
+- Depends on: locally reviewed `CLOUD-COMPOSE-INFRA-01`, `CLOUD-STO-AUTH-01`,
+  `MEM-GW-CON-01` and explicit maintainer continuation on 2026-07-28. A local
+  deterministic OpenAI-compatible embedding stub may validate OSS semantics;
+  real-provider compatibility remains credential-gated.
+- Branch: `codex/mem0-contract-spike-01`
+- Worktree: `../zebra-agent-mem0-contract-spike-01`
+- Owned paths: `docker/compose.mem0.test.yml` (new), focused files under
+  `docker/mem0/`, `tests/spikes/mem0/` (new),
+  `docs/Mem0 OSS协议兼容性验证记录.md` (new), `docs/AGENT_TASKS.md`,
+  `docs/Zebra Embedded 生产级目标架构.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `README.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Pin the self-hosted OSS REST contract and prove whether Mem0 can remain a
+degraded-safe semantic index behind Zebra's governed memory lifecycle.
+
+#### Acceptance
+
+- exact OSS paths and response shapes are captured for `infer=false`, metadata
+  filters, expiration, search, update, history and deletion
+- restart, duplicate delivery, timeout, provider failure and embedding-dimension
+  changes have explicit observed outcomes
+- authenticated requests cannot bypass Zebra's opaque namespace checks; Mem0 is
+  never exposed as the tenant authorization boundary
+- every search hit carries a Zebra memory reference and is revalidated against
+  the authoritative `MemoryStorePort` before prompt admission
+- deterministic provider coverage is not evidence of real OpenAI compatibility;
+  the credentialed provider check remains explicitly unverified
+
+### MEM-MEM0-ADP-01 - Mem0 Gateway Adapter
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `INTEGRATIONS / SECURITY`
+- Depends on: merged `MEM-MEM0-SPIKE-01`
+- Branch: `TBD`
+- Candidate owned paths: focused `agent-integrations` Mem0 adapter, configuration,
+  fixtures and tests
+
+#### Goal
+
+Implement the provider-neutral Gateway contract over only the Mem0 behavior proven
+by the Spike, with no Mem0 type escaping the integration package.
+
+#### Acceptance
+
+- only confirmed Zebra memory is published and extraction is fixed to `infer=false`
+- opaque namespace and Zebra memory references survive every request and response
+- timeout, rate limit, partial response and provider errors return degraded outcomes
+- local profile and Run execution remain functional when Mem0 is disabled or down
+
+### MEM-GW-DEL-01 - Memory Delivery And Deletion Ledger
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `STORAGE / WORKER`
+- Depends on: merged `MEM-MEM0-ADP-01` and `CLOUD-LEASE-01`
+- Branch: `TBD`
+- Candidate owned paths: focused memory delivery/outbox storage, worker adapter,
+  reconciliation and tests
+
+#### Goal
+
+Make publish/delete retryable and auditable while keeping Zebra lifecycle state
+authoritative and Mem0 fully rebuildable.
+
+#### Acceptance
+
+- duplicate delivery cannot create a second governed memory
+- stale or deleted Mem0 hits are rejected by authoritative-store revalidation
+- delete evidence retains no deleted content and reconciliation has bounded retries
+- a documented rebuild path repopulates derived Mem0 data from confirmed Zebra memory
+
+### MEM-GW-GATE-01 - Semantic Memory Fault And Drift Gate
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `QA / INTEGRATIONS / SRE`
+- Depends on: merged `MEM-GW-DEL-01`
+- Branch: `TBD`
+- Candidate owned paths: focused contract tests, fault injection and acceptance evidence
+
+#### Goal
+
+Prove the optional memory path remains safe across schema drift, outages, retries,
+deletion and index rebuilds before production activation.
+
+#### Acceptance
+
+- daily contract checks detect incompatible REST/version changes
+- outage, timeout, rate limit, duplicate, stale-hit and deletion matrices pass
+- Mem0 or its PostgreSQL loss never fails a Run or changes authoritative memory state
+- no second Zebra fact source or Graphiti fallback is introduced
+
+### CLOUD-COMPOSE-APP-01 - Zebra Application Container Overlay
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `SRE / APP / CORE`
+- Depends on: merged `CLOUD-COMPOSE-INFRA-01`, `CLOUD-PG-01`,
+  `CLOUD-LEASE-01`, `CLOUD-ART-01` and `CLOUD-LIVE-01`
+- Branch: `TBD`
+- Candidate owned paths: `docker/compose.application.yml`, one multi-target Zebra
+  Dockerfile, container smoke tests, required config composition and governance records
+
+#### Goal
+
+Build one Zebra image and run migration, API and Worker as distinct commands over
+the real dependency adapters. Agent Memory remains optional and must not gate Run.
+
+#### Acceptance
+
+- dependency and application Compose projects remain independently operable and
+  join through one explicitly named network
+- API/Worker use PostgreSQL, object storage and live Redis without creating an
+  authoritative SQLite database
+- stopping Agent Memory does not prevent task creation, execution or recovery
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.

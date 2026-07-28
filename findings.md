@@ -38,6 +38,43 @@
 - `MemoryStorePort` retains candidate/review/supersession/deletion authority.
   Mem0 or another semantic-memory provider remains a separately gated derived
   Gateway and does not alter this composition contract.
+## CLOUD-COMPOSE-INFRA-01 - 2026-07-24
+
+- The repository has no existing Dockerfile or Compose asset to reuse; only
+  runtime configuration and architecture references exist.
+- Mem0 OSS is a better self-hosted candidate than Redis Agent Memory V0 for this
+  Compose-first phase, but it is still an auxiliary semantic service rather than
+  a governed-memory database. Its official Compose is a development example and
+  the published API image exposes only a mutable old `latest`, so the boot smoke
+  builds from release commit `ca2abca2b884e038d3e525070e79d3057ef2012c` and pins
+  `mem0ai==2.0.13` instead of claiming a production artifact.
+- Zebra `MemoryStorePort` already models candidate, confirmed, superseded,
+  expired and deleted states with provenance. Mem0 must not replace those states:
+  publish only confirmed memory with `infer=false`, carry a Zebra memory ref, and
+  revalidate every hit against the authoritative Store before prompt admission.
+- Mem0's isolated pgvector PostgreSQL and SQLite history volume are derived and
+  rebuildable. They share neither data nor authority with Zebra PostgreSQL or
+  erasable `redis-live`.
+- The slim Python image needs the self-contained `psycopg-binary` distribution;
+  installing only upstream's pure-Python `psycopg` package leaves no `libpq`.
+  A separate runtime input preserves exact upstream comparison while the combined
+  hash lock, no-index direct-input check and `pip check` close dependency drift.
+- Mem0 imports create `~/.mem0` even with telemetry disabled. `MEM0_DIR` therefore
+  points to tmpfs so the API can retain a read-only root filesystem; this generated
+  identity config is operational scratch data, not governed or semantic memory.
+- `/auth/setup-status` is request-audited, so using it every 10 seconds as a
+  health probe would itself add about 8,640 persistent rows per day. The final
+  check uses an audit-skipped HTTP path for process liveness and a direct SQL
+  query for application-database readiness.
+- A successful boot applies only the REST server's relational migrations. The
+  `vector` extension and semantic collection are intentionally not initialized by
+  the sentinel-key smoke and must be observed during the credentialed contract Spike.
+- Container boot does not prove write/search contracts. Exact REST shapes,
+  duplicate delivery, restart, deletion, provider failure, embedding changes and
+  namespace behavior require `MEM-MEM0-SPIKE-01` with disposable credentials.
+- Building Zebra API/Worker images before cloud adapters exist would create a
+  misleading SQLite-backed main stack. Application containers therefore remain
+  a separate locked task.
 
 ## CLOUD-STO-SEAM-01 - 2026-07-23
 
@@ -49,10 +86,10 @@
   dispatch, artifact indexing and some approval reads need later focused Ports.
 - `MemoryStorePort` is Zebra's governed lifecycle projection: candidate,
   confirmed, superseded, expired and deleted states retain provenance and review
-  semantics that Redis Agent Memory does not model. The remote service therefore
+  semantics that an external semantic index does not model. The remote service therefore
   remains a separate derived Gateway with outbox/receipts and fail-open reads.
-- Redis Agent Memory is Public Preview and the old open-source V0 server is not a
-  production fallback. A managed-service compatibility Spike precedes its Adapter.
+- The current Mem0 candidate remains replaceable. A self-hosted contract and
+  operations Spike precedes its Adapter.
 - The storage seam has no technical dependency on Host/AG-UI contracts. The
   maintainer explicitly activated it as a local stacked task while PR `#194`
   remains the mandatory merge predecessor.
@@ -99,8 +136,8 @@
 - CopilotKit replaces only the proposed React integration layer. Zebra still
   owns AG-UI mapping, durable interrupts, Surface Lease, semantic frontend tool
   receipts, replay, Policy, and Artifact access contracts.
-- Redis Agent Memory remains an optional, replaceable, degraded-safe adapter and
-  is not on the first read-only Trench slice's critical path.
+- External semantic memory remains optional, replaceable and degraded-safe; the
+  later Mem0 candidate is not on the first read-only Trench slice's critical path.
 - The draft is 4,288 lines because a second complete architecture starts at line
   1,692. Replacing it with one bounded authoritative document is safer than
   trying to patch both contradictory halves.
