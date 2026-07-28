@@ -1,5 +1,27 @@
 # Task Plan
 
+## Agent Definition V2 - Accepted Direction And Task Activation
+
+1. `completed` - Separate immutable Task Definition configuration from per-Attempt
+   execution authority and align namespace with ADR-012.
+2. `completed` - Register the ADR, Core, SQLite/PostgreSQL Store, Publication,
+   Task binding, Memory, Trust and Eval task chain with dependency-ordered,
+   path-bounded gates.
+3. `completed` - Run a fresh-reader conflict and execution-order review, then
+   validate the documentation diff.
+4. `completed` - Record final evidence and commit the accepted-direction update.
+
+### Decisions
+
+- The proposal direction is accepted, but remains non-executable until
+  `AGENT-DEF-ADR-01` is approved and merged.
+- `AGENT-DEF-ADR-01` is the only `Ready` task; all Python/SQL/API/runtime work is
+  `Locked`.
+- Task identity and Definition configuration remain stable across Segments, while
+  external execution authority is revalidated for every Attempt.
+- Zebra stores only opaque `(authority_issuer, namespace_id)` isolation keys and
+  does not create a Tenant/User/Organization domain.
+
 ## ARCH-RUNTIME-V2-PLAN-01 - Runtime V2 Proposal Current-State Alignment
 
 1. `completed` - Compare every proposal lane with current docs, code and task evidence.

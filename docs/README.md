@@ -39,12 +39,12 @@ Use these files for implementation, task claiming, collaboration, and phase prog
 
 Historical documents must not override the active execution set.
 
-## Exploratory And Non-Executable Proposals
+## Accepted Directions And Non-Executable Proposals
 
-- `Zebra Agent Runtime Upgrade Proposal v2.0.md` is a reviewed current-state
-  delta for a possible versioned Agent Definition control plane. It does not
-  replace ADR-012, the final architecture, PROGRESS, or the task registry, and
-  it activates no implementation work.
+- `Zebra Agent Runtime Upgrade Proposal v2.0.md` is the accepted direction for a
+  versioned Agent Definition control plane. It does not replace ADR-012 or the
+  final architecture: Gate A must first produce an approved focused ADR. Only
+  Gate A is `Ready`; implementation Gates B-G remain `Locked`.
 
-Exploratory proposals become executable only after the required ADR is approved
-and a path-bounded task is explicitly activated in `AGENT_TASKS.md`.
+Accepted directions become executable only after their required ADR is approved
+and a path-bounded implementation task is explicitly activated in `AGENT_TASKS.md`.

@@ -15276,8 +15276,8 @@ isolation completing in private cloud.
 #### Goal
 
 Reconcile the Runtime v2 proposal with Zebra's implemented Task/Segment, Skill,
-Memory, Trust/Security and Eval baselines; preserve real future gaps without
-turning an unapproved proposal into executable architecture.
+Memory, Trust/Security and Eval baselines; record the accepted direction without
+turning it into executable architecture before the focused ADR is approved.
 
 #### Acceptance
 
@@ -15300,17 +15300,274 @@ turning an unapproved proposal into executable architecture.
 
 #### Validation And Handoff
 
-- proposal reduced from 1,078 lines to a 422-line current-state delta and remains
+- proposal reduced from 1,078 lines to a 447-line accepted-direction delta and remains
   below the repository Markdown limit
 - fresh-reader review correctly identified the current Runtime baseline, existing
   Skill/Memory/Trust/Eval foundations, non-executable status, and ADR-first next step
 - ambiguity follow-up clarified review versus approval, object lifecycle ownership,
-  authority snapshot, optional-provider degradation, revocation choice, deployment
-  authority, and Agent-version publication gates
+  Definition/Attempt snapshot separation, optional-provider degradation, revocation
+  choice, deployment authority, and Agent-version publication gates
 - relative document links and `git diff --check` pass
 - Eval release gate passes 10/10 after `make sync`
 - repository file-size gate retains two pre-existing violations in
   `CodexConversationPane.styles.ts` (561/500) and `events.py` (505/500); neither
   file is modified by this docs-only task
-- no implementation task is unlocked; the next optional action is a separately
-  approved and path-bounded Gate A ADR task
+- no implementation task is unlocked; the next action is the path-bounded
+  `AGENT-DEF-ADR-01` Gate A ADR task
+- accepted task chain registers one `Ready` ADR plus eight `Locked` Core, SQLite,
+  PostgreSQL, publication, binding, Memory, Trust and Eval tasks
+
+## Agent Definition V2 Task Board
+
+Direction source: `docs/Zebra Agent Runtime Upgrade Proposal v2.0.md`.
+
+Execution rule: only `AGENT-DEF-ADR-01` is `Ready`. Every later task remains
+`Locked` until its dependencies are merged to `main`; a locked card's paths must
+be rechecked and narrowed against the approved ADR before it is claimed.
+
+### AGENT-DEF-ADR-01 - Definition Authority And Snapshot ADR
+
+- Status: `Ready`
+- Owner: `Unassigned`
+- Suggested branch: `codex/agent-def-adr-01`
+- Depends on: accepted Runtime v2 direction
+- Owned paths: `docs/ADR-015_Agent_Definition控制面与版本发布边界.md`,
+  `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
+  `docs/Zebra Agent Runtime Upgrade Proposal v2.0.md`, `docs/README.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Freeze Definition/Version/Release authority, opaque external namespace,
+publication/revocation, schema evolution, local/cloud Store authority, and the
+Task/Attempt snapshot split before implementation begins.
+
+#### Acceptance
+
+- `AgentDefinitionSnapshot` is immutable for a Task and contains configuration,
+  never durable execution permission
+- `ExecutionAuthoritySnapshot` is validated per Attempt under ADR-012 and cannot
+  be bypassed by a frozen Definition
+- Registry is the Definition metadata authority; Session Event Store remains the
+  only durable execution fact source
+- `(authority_issuer, namespace_id)` is the isolation key; no Zebra Tenant/User/
+  Organization domain is introduced
+- release, Skill, external authority, Credential, and security-policy revocation
+  semantics are distinct and fail closed where required
+- final architecture records the stable decision and unlock criteria for
+  `AGENT-DEF-CON-01`
+
+#### Explicit Non-Goals
+
+- Python, SQL, API, CLI or UI implementation
+- creating a second Task/Event/Skill/Memory runtime
+- activating any later Agent Definition task
+
+### AGENT-DEF-CON-01 - Core Definition And Registry Contracts
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested branch: `codex/agent-def-con-01`
+- Depends on: `AGENT-DEF-ADR-01` merged to `main`
+- Owned paths: `packages/agent-core/src/agent_core/domain/agent_definitions.py`,
+  `packages/agent-core/src/agent_core/domain/identifiers.py`,
+  `packages/agent-core/src/agent_core/domain/__init__.py`,
+  `packages/agent-core/src/agent_core/ports/agent_registry.py`,
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `tests/agent_core/test_agent_definitions.py`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Implement the smallest immutable Definition/Version/Release models and narrow
+Registry Port in `agent-core`, with no infrastructure dependency.
+
+#### Acceptance
+
+- schema, digest, version ordering and lifecycle transitions are deterministic
+- published content cannot be mutated in place
+- references contain no secrets, executable code or unversioned capabilities
+- negative tests cover namespace mismatch, digest drift and invalid transitions
+
+### AGENT-DEF-STO-01 - Local SQLite Registry Authority
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested branch: `codex/agent-def-sto-01`
+- Depends on: `AGENT-DEF-CON-01` merged to `main`
+- Owned paths: `packages/agent-storage/src/agent_storage/agent_registry.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `tests/agent_storage/test_agent_registry.py`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Implement the local single-authority Registry Adapter with additive schema,
+CAS publication/revocation, idempotency and namespace isolation.
+
+#### Acceptance
+
+- SQLite restart, migration, concurrent publish and revoke paths are tested
+- every query keys on `(authority_issuer, namespace_id)` where applicable
+- no Event/Task checkpoint, Tool result or mutable execution state is stored
+- PostgreSQL remains a separate private-cloud Adapter task, never dual-write
+
+### AGENT-DEF-PG-01 - Private-Cloud PostgreSQL Registry Adapter
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested branch: `codex/agent-def-pg-01`
+- Depends on: `AGENT-DEF-STO-01` merged to `main`
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres_agent_registry.py`,
+  `packages/agent-storage/migrations/agent_registry/`,
+  `tests/agent_storage/test_postgres_agent_registry.py`,
+  `docker/dependencies/compose.agent-definition.yml`, `docs/operator_runbook.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Implement the private-cloud PostgreSQL Registry Adapter against the same Core
+Port and manage only its database dependency through Docker Compose. The Zebra
+application container remains outside this task and consumes the dependency by
+configured connection contract.
+
+#### Acceptance
+
+- PostgreSQL schema, transaction/CAS, namespace, restart and migration tests pass
+- dependency Compose and the Zebra application container remain separate layers
+- one deployment environment selects exactly one Registry authority
+- SQLite-to-PostgreSQL transition uses export/import verification and cutover,
+  never runtime dual-write
+- credentials stay outside images, events, Definition metadata and logs
+
+### AGENT-DEF-PUB-01 - Definition Publication Use Cases And API
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested branch: `codex/agent-def-pub-01`
+- Depends on: `AGENT-DEF-STO-01` merged to `main`
+- Owned paths: `packages/agent-core/src/agent_core/application/agent_definitions.py`,
+  `apps/api/src/zebra_agent_api/agent_definitions.py`,
+  `apps/api/src/zebra_agent_api/app.py`, `tests/api/test_agent_definitions.py`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Expose bounded create-draft, validate, publish, deprecate and revoke operations
+without adding a marketplace or business user/tenant model.
+
+#### Acceptance
+
+- every mutation validates external publisher authority and idempotency
+- Definition can only narrow publisher grant
+- secrets, unpinned references and cross-namespace access fail closed
+- no Desktop UI or public marketplace is added
+
+### AGENT-DEF-BIND-01 - Immutable Task Definition Binding
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested branch: `codex/agent-def-bind-01`
+- Depends on: `AGENT-DEF-PUB-01` merged to `main`
+- Owned paths: `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/domain/workspaces.py`,
+  `packages/agent-core/src/agent_core/application/session_bootstrap.py`,
+  `packages/agent-core/src/agent_core/application/workspace_projection.py`,
+  `packages/agent-storage/src/agent_storage/workspaces.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/cli/src/zebra_agent_cli/run_command_execution.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `tests/test_agent_definition_binding_contract_matrix.py`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Resolve one published Definition into an immutable Task-level snapshot while
+continuing to revalidate execution authority for every Attempt.
+
+#### Acceptance
+
+- `TASK_PREPARED` carries a backward-compatible optional Definition snapshot
+- existing policy/tool/network/MCP/Skill fields are resolved once and reused,
+  not duplicated in a parallel execution configuration
+- recovery validates Definition digest without reading mutable draft state
+- same-Attempt resume/failover rejects expired, revoked or widened authority;
+  a distinct new Attempt validates a fresh snapshot that may differ, then applies
+  Definition capability, Zebra Policy, Approval and Sandbox narrowing
+- legacy Tasks without a Definition retain current behavior
+
+### AGENT-DEF-MEM-01 - Definition-Scoped Governed Memory
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested branch: `codex/agent-def-mem-01`
+- Depends on: `AGENT-DEF-BIND-01` merged to `main`
+- Owned paths: `packages/agent-core/src/agent_core/domain/memories.py`,
+  `packages/agent-core/src/agent_core/ports/memory_store.py`,
+  `packages/agent-core/src/agent_core/application/memory_candidates.py`,
+  `packages/agent-storage/src/agent_storage/memories.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `tests/test_agent_definition_memory_contract_matrix.py`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Bind governed derived Memory to Definition scope/policy/version compatibility
+without turning Memory or an external provider into execution truth.
+
+#### Acceptance
+
+- new durable isolation uses `(authority_issuer, namespace_id)` plus explicit
+  Definition scope; legacy `tenant_id/user_id` columns are compatibility input only
+- legacy rows migrate only through a trusted explicit issuer/namespace mapping;
+  implementations must not infer issuer or business relationships, perform bare
+  legacy-key lookup, or write new records using the legacy columns
+- source event range, lifecycle, deletion and supersede semantics are preserved
+- provider mapping, timeout reconciliation and deletion propagation are idempotent
+- optional provider outage degrades by frozen policy; required capability fails
+- Event Store remains the only durable Task/Attempt execution fact source
+
+### AGENT-DEF-TRUST-01 - Publication And Ingress Trust Coverage
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested branch: `codex/agent-def-trust-01`
+- Depends on: `AGENT-DEF-BIND-01` and `AGENT-DEF-MEM-01` merged to `main`
+- Owned paths: `packages/agent-context/src/agent_context/trust.py`,
+  `packages/agent-security/src/agent_security/agent_definitions.py`,
+  `tests/test_agent_definition_trust_contract_matrix.py`,
+  `docs/Agent_Definition威胁模型_v1.0.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Apply typed provenance/risk evidence and publisher/execution authority separation
+to Registry, Skill, Memory, knowledge and Eval ingress.
+
+#### Acceptance
+
+- content trust never grants tools, network, files, Memory write or publication
+- publisher grant, Definition snapshot and Attempt authority are independently traced
+- cross-issuer/namespace, prompt-injection and reference-substitution tests fail closed
+- external authority/Credential/security-policy revocation cannot use Definition
+  release continuation policy as a bypass
+
+### AGENT-DEF-EVAL-01 - Agent Version Publication Gate
+
+- Status: `Locked`
+- Owner: `Unassigned`
+- Suggested branch: `codex/agent-def-eval-01`
+- Depends on: `AGENT-DEF-TRUST-01` merged to `main`
+- Owned paths: `packages/agent-observability/src/agent_observability/agent_versions.py`,
+  `evals/agent_definitions/`, `tests/agent_observability/test_agent_version_gate.py`,
+  `docs/operator_runbook.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Aggregate existing deterministic Eval/replay evidence by Definition version and
+produce an auditable `AgentVersionPublicationGate` decision.
+
+#### Acceptance
+
+- results pin Definition, fixture, dataset, evaluator and policy versions
+- regression, safety, recovery, cost and latency conditions have explicit reasons
+- LLM-as-judge is supplemental and cannot replace deterministic/security gates
+- publish/revoke/rollback evidence and operator runbook are complete

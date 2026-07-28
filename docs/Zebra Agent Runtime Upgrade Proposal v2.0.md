@@ -1,6 +1,6 @@
 # Zebra Agent Runtime 升级提案 v2.0
 
-状态：`Exploratory / Current-state reviewed / Architecture not approved / Non-executable`
+状态：`Direction accepted / ADR pending / Non-executable`
 
 规划记录：`ARCH-RUNTIME-V2-PLAN-01`（仅核对文档，不是 Agent Definition 实现任务）
 
@@ -64,10 +64,14 @@ v2 使用以下名称，避免引入第二个含糊的 `Agent` 实体：
 ### 2.2 术语
 
 - `authority`：某类数据或决策的唯一权威来源；不等于内容可信度；
-- `publisher grant`：发布者已被授予的能力上限，Definition 只能收窄它；
+- `publisher grant`：外部 authority 在一次发布操作中授予发布者的能力上限，Definition
+  只能收窄它；
 - `ingress`：外部定义、Skill、Memory、知识或 Eval 数据进入 Zebra 的入口；
-- `namespace`：租户/组织隔离边界，所有引用和授权均受它约束；
-- `authority snapshot`：Task 创建时冻结的 Definition 版本、解析引用和授权证据；
+- `namespace`：由 `(authority_issuer, namespace_id)` 标识的不透明隔离边界，不表示
+  Zebra 拥有 Tenant、Organization 或成员关系；
+- `AgentDefinitionSnapshot`：Task 创建时冻结的 Definition 版本和解析配置；
+- `ExecutionAuthoritySnapshot`：每个 Attempt 重新验证的外部 authority、limits 与
+  Zebra 收紧后的执行权限；
 - `release gate`：现有 Run/Eval case gate；v2 候选新增门禁统一称为
   `AgentVersionPublicationGate`。
 
@@ -94,15 +98,23 @@ Session Event Store
 规则：
 
 - Event Store 不复制整份 Agent Definition；
-- Task 创建时记录不可变 version reference、digest 和解析后的 authority snapshot；
+- Task 创建时记录不可变 version reference、digest 和解析后的
+  `AgentDefinitionSnapshot`；
+- 当前 Attempt 单独记录 `ExecutionAuthoritySnapshot`；同一 Attempt 的 resume/failover
+  必须重新验证有效性且不得超过已持久化快照；真正创建的新 Attempt 使用重新验证后的
+  当前 authority，可与旧 Attempt 不同，但仍受 Definition capability、Zebra Policy、
+  Approval 和 Sandbox 收紧；retry 按其是否创建新 Attempt 适用对应规则；
 - 运行中的 Task 不因 Registry 中的 mutable draft 变化而漂移；
 - 已发布版本不可原地修改，只能发布新版本；
 - Registry 不保存 Session checkpoint、Tool result 或恢复状态；
 - Registry 和 Event Store 的跨库 dual-write 不在 v2 初始切片中。
 
-authority snapshot 的最小语义包括：Definition version/digest、namespace、publisher
-grant、解析后的 versioned references/digests、policy versions 和创建时间。生成者、签名
-范围与恢复校验算法必须在 Gate A ADR 中冻结，不能由 Adapter 各自定义。
+`AgentDefinitionSnapshot` 的最小语义包括：Definition version/digest、
+`(authority_issuer, namespace_id)`、解析后的 versioned references/digests、Definition
+policy versions、degradation policy 和创建时间。`ExecutionAuthoritySnapshot` 继续遵守
+ADR-012，包含外部 authority/limits 的 issuer、subject、expiry 与 Zebra 收紧结果。
+两者的生成者、摘要范围与恢复校验算法必须在 Gate A ADR 中分别冻结，不能由 Adapter
+各自定义或合并成一个长期权限快照。
 
 ### 3.2 运行时解析
 
@@ -140,7 +152,8 @@ AgentDefinitionVersion
   "definition_id": "agentdef_xxx",
   "name": "research-agent",
   "description": "Bounded research and evidence synthesis",
-  "owner_namespace": "tenant_xxx",
+  "authority_issuer": "https://business.example.com",
+  "namespace_id": "opaque-business-scope",
   "status": "active",
   "current_published_version": 3
 }
@@ -171,8 +184,8 @@ AgentDefinitionVersion
   生命周期实体；从未发布时，`current_published_version` 为 `null`；
 - Version 创建即不可变；任何内容修改都产生新 version，可处于
   `Validated` 或 `Rejected`；
-- Release 是某 namespace/environment 对某个 Version 的生效记录，可处于
-  `Published`、`Deprecated` 或 `Revoked`。
+- Release 是某 `(authority_issuer, namespace_id)`/environment 对某个 Version 的生效
+  记录，可处于 `Published`、`Deprecated` 或 `Revoked`。
 
 发布生命周期为：
 
@@ -194,7 +207,7 @@ Definition、Version 或 Release 生命周期，否则 Registry 会与 Runtime �
 - Memory scope 和删除策略明确；
 - required Eval cases 通过；
 - secrets 只以 broker reference 表示；
-- namespace、owner、审计 actor 和幂等键完整；
+- `authority_issuer`、`namespace_id`、外部主体引用、审计 actor 和幂等键完整；
 - 撤销后新 Task 不得继续使用该版本。
 
 ## 5. Skill：复用，不重建
@@ -206,10 +219,14 @@ Agent Definition 只新增：
 
 - 发布时解析一个 immutable Skill component snapshot；
 - 校验版本、scope、namespace、digest 和 enable/grant 状态；
-- 把 snapshot digest 写入 Task authority snapshot；
+- 把 snapshot digest 写入 Task 的 `AgentDefinitionSnapshot`；
 - Skill 后续禁用或撤销时，对新 Task fail closed；
 - 运行中 Task 的处置由 Gate A 在继续、暂停待批、下个 Segment 停止或立即终止中明确
   选择，不能静默热更新。
+
+这里的处置选项只适用于 Definition Release 或 Skill 内容撤销。外部身份、执行 authority、
+Credential 或强制安全 Policy 的撤销继续遵守 ADR-012 和现有 Security 合同，新 Attempt
+必须重新验证并 fail closed，不能选择“继续”来绕过。
 
 Plugin、Hook 和 Marketplace 继续遵守 ADR-014 的五层状态机，不由 Agent Registry 绕过。
 
@@ -226,7 +243,8 @@ Session Event Store 保存 Task/Segment 状态、Tool execution、审批、失�
 ### 6.2 Active context
 
 Conversation projection、Context Capsule、compaction 和 provider continuation 是可重建的
-执行上下文。它们受 token budget、provenance 和 authority snapshot 约束。
+执行上下文。它们同时受 token budget、provenance、Task 级
+`AgentDefinitionSnapshot` 和当前 Attempt 的 `ExecutionAuthoritySnapshot` 约束。
 
 ### 6.3 Governed durable memory
 
@@ -255,8 +273,8 @@ Task memory 与 Agent memory 应优先表现为：
 - 原始外部知识始终以 untrusted evidence 进入 Context Compiler。
 
 发布和 Task binding 阶段的必需引用失败必须 fail closed。运行期间的可选知识/语义
-provider 不可用时，只能按 authority snapshot 中已冻结的 degradation policy 降级；被声明为
-必需的 Memory capability 不可用时仍然失败。
+provider 不可用时，只能按 `AgentDefinitionSnapshot` 中已冻结的 degradation policy
+降级；被声明为必需的 Memory capability 不可用时仍然失败。
 
 ## 7. Trust 与 Security：证据，不是分数授权
 
@@ -280,7 +298,8 @@ policy_version
 - 内容不能通过自称 system/admin 获得权限；
 - suspicious marker 是风险信号，不是唯一安全判断；
 - untrusted 内容可以被读取和总结，但不能授予工具、网络、文件或 memory write 权限；
-- Agent Definition 只能收窄 publisher grant，不能扩大；
+- Agent Definition 只能收窄发布操作的 publisher grant，不能扩大；运行时仍以当前
+  Attempt 的 `ExecutionAuthoritySnapshot` 为权限上界；
 - Tool Gateway、Policy、Approval、Credential Broker、Egress 和 Runtime isolation 继续独立；
 - trust evidence 必须进入 trace/audit，但敏感原文和 secrets 不进入控制元数据。
 
@@ -326,55 +345,60 @@ packages/agent-registry
 
 ## 10. 候选决策顺序（非执行 Phase）
 
-所有阶段默认 `Locked`，必须先在 `docs/AGENT_TASKS.md` 注册、获得 owner、branch 和
-Owned paths；本提案本身不解锁任何一项。
+架构方向已经接受，但只有 Gate A 在 `docs/AGENT_TASKS.md` 中进入 `Ready`；Gate B-G
+保持 `Locked`。每项开始前仍必须获得 owner、branch 和 Owned paths。
 
-### Gate A：决策冻结
+### Gate A：决策冻结（`AGENT-DEF-ADR-01`）
 
 - 编写 Agent Definition/Version/Release ADR；
-- 冻结 Registry authority、namespace、发布/撤销和 Task binding；
+- 冻结 Registry authority、不透明 namespace、发布/撤销和 Task binding；
+- 冻结 Task 级 `AgentDefinitionSnapshot` 与 Attempt 级
+  `ExecutionAuthoritySnapshot` 的生成、摘要、恢复和重新验证边界；
 - 冻结 Definition schema evolution 和 immutable digest；
 - 明确本地 SQLite 与云 PostgreSQL 的权威选择，不 dual-write。
 
 每个部署环境只能有一个 Registry authority：本地阶段为 SQLite，私有云阶段为
 PostgreSQL；迁移采用离线导入、校验和切换，不并行 dual-write。
 
-### Gate B：Core contract
+### Gate B：Core contract（`AGENT-DEF-CON-01`）
 
 - `AgentDefinition`、`AgentDefinitionVersion`、`AgentRelease` domain model；
 - narrow Registry Port；
 - schema validation、digest 和 state transition tests；
 - 不实现 UI、云 Store 或自动学习。
 
-### Gate C：Registry Adapter
+### Gate C：Registry Adapter（`AGENT-DEF-STO-01` / `AGENT-DEF-PG-01`）
 
 - local-first SQLite Adapter；
 - version/publish/revoke CAS；
 - namespace、idempotency、audit 和 migration tests；
-- 云 PostgreSQL Adapter 等权威存储 gate 完成后另立任务。
+- 云 PostgreSQL Adapter 已登记为 `AGENT-DEF-PG-01` 并保持 `Locked`，待本地 Store
+  合同合并后再认领；其 Compose 仅管理数据库依赖，不混入 Zebra 主应用容器。
 
-### Gate D：Task binding
+### Gate D：发布与 Task binding（`AGENT-DEF-PUB-01` / `AGENT-DEF-BIND-01`）
 
 - Task 创建时解析 published version；
-- 写入 immutable authority snapshot；
+- 写入 immutable `AgentDefinitionSnapshot`，并复用现有 Attempt 级
+  `ExecutionAuthoritySnapshot`；
 - recovery/replay 验证 digest 和 policy reference；
 - Definition drift/revocation fail closed。
 
-### Gate E：Memory policy binding
+### Gate E：Memory policy binding（`AGENT-DEF-MEM-01`）
 
 - 复用 governed Memory contract；
 - 增加 Definition scope/policy/version compatibility；
 - 外部 provider mapping、降级、幂等和 deletion propagation；
 - 不把 provider 变成执行事实源。
 
-### Gate F：Trust coverage
+### Gate F：Trust coverage（`AGENT-DEF-TRUST-01`）
 
 - Registry ingress、Skill snapshot、Memory provider、knowledge retrieval 和 Eval dataset
   使用一致 provenance/risk evidence；
-- publisher grant、Task authority 和 content trust 分离；
+- publisher grant、Definition snapshot、Attempt execution authority 和 content trust
+  分离；
 - threat model 和 negative tests 通过。
 
-### Gate G：Agent version evaluation
+### Gate G：Agent version evaluation（`AGENT-DEF-EVAL-01`）
 
 - Definition version 到 Eval suite 的稳定映射；
 - regression、cost、latency、recovery 和 safety gate；
@@ -401,7 +425,8 @@ v2 初始阶段不包含：
 
 1. focused ADR 获批，最终架构记录并引用其稳定结论，Gate B 任务随后被显式激活；
 2. Definition/Version/Release 有唯一事实源和迁移/恢复合同；
-3. Task 绑定不可变 version/digest，恢复不会读取 mutable draft；
+3. Task 绑定不可变 Definition version/digest，恢复不会读取 mutable draft；同一
+   Attempt 的恢复不得扩权，新 Attempt 则重新验证当前 execution authority；
 4. Skill、Memory、Security、Model、Runtime 和 Eval reference 均可验证且 fail closed；
 5. namespace、publisher grant、revocation 和 audit negative tests 通过；
 6. deterministic tests、Eval、threat model、rollback 和 operator runbook 完整；
@@ -418,5 +443,5 @@ v2 初始阶段不包含：
 - [生产级 Runtime 实施方案](./生产级Runtime实施方案_v1.0.md)
 - [上下文生命周期与混合压缩](./上下文生命周期与混合压缩架构方案_v1.0.md)
 
-如果未来获得架构方向批准，第一项产物是 Gate A 的 focused ADR，而不是代码；当前的
-`Current-state reviewed` 只表示本文已完成现状核对，不表示方案获批或任务解锁。
+架构方向已经接受。第一项产物是 Gate A 的 focused ADR，而不是代码；只有该 ADR
+获批并把稳定结论写回最终架构后，Gate B 才能从 `Locked` 转为 `Ready`。
