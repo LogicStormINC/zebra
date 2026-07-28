@@ -249,3 +249,35 @@
   protocol, repeated-effect, and budget stops remain deterministic.
 - The task branch was rebuilt from `origin/main`; the unmerged Web branch no longer
   acts as a hidden branch dependency.
+# CTX-MEM-01 Findings - 2026-07-28
+
+- Issue `#197` is partially valid. The worker process does not crash, but a
+  `ContextWindowExceededError` currently falls through to terminal `FAILED`.
+  Same-session user instructions are preserved by the protected ledger, while
+  older assistant/tool detail is reduced by a fixed 240+240-token summary.
+- Completed Sessions already extract memory candidates, but no automatic
+  candidate-to-confirmed path exists. Confirmed repo injection sorts by type and
+  recency, takes eight records, and does not consider the current user request.
+- Existing primitives are sufficient: `ContextCapsule`, protected ledger,
+  active projection/tombstones, `MemoryReviewService`, `MemoryQuery`, SQLite and
+  `sessions.search`. A second memory framework or vector dependency is YAGNI.
+- Codex separates memory generation from memory use and treats provider
+  compaction items as opaque continuation state. Claude recommends server-side
+  compaction/tool-result clearing. Pi preserves a token-sized exact tail at turn
+  boundaries and appends a durable compaction entry. Hermes uses normal and
+  emergency thresholds plus structured summaries, but its documented summary
+  failure can silently discard middle context.
+- Zebra should keep three different truths separate: active same-Task context
+  comes from Event Store + Capsule; cross-Task hints come only from confirmed
+  governed Memory; exact older evidence remains available through durable
+  Session/Event search and Artifact retrieval.
+- `MEM-GW-CON-01` is a local stacked Review task for a future provider-neutral
+  semantic gateway. `CTX-MEM-01` must not touch that Port or depend on its branch.
+- Implementation evidence confirms the smallest shared-path fix: one compaction
+  recovery function serves every model request, one governed promotion service
+  reuses the existing review state machine, and FTS remains an index over the
+  authoritative MemoryStore rather than a parallel memory truth.
+- Final local gates: `63` focused tests, changed-file Ruff, relevant Mypy over
+  `158` source files and release eval `10/10` pass. The full suite's nine
+  failures reproduce on untouched `main`; `make check` only reports the two
+  inherited out-of-scope file-size violations.

@@ -1,3 +1,4 @@
+import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -162,6 +163,74 @@ def test_sqlite_memory_store_filters_session_before_applying_limit(tmp_path: Pat
     assert [record.memory_id for record in records] == [target.memory_id]
 
 
+def test_sqlite_memory_store_fts_ranks_current_query_and_isolates_repo(
+    tmp_path: Path,
+) -> None:
+    store = SQLiteMemoryStore(tmp_path / "fts.sqlite")
+    relevant = _record(
+        memory_type=MemoryType.PROCEDURE,
+        text="Run pytest for context compaction regressions.",
+        visibility=MemoryVisibility.REPO,
+        repo_id="zebra-agent",
+        updated_at=_now(),
+    )
+    unrelated = _record(
+        memory_type=MemoryType.PROCEDURE,
+        text="Build desktop assets with pnpm.",
+        visibility=MemoryVisibility.REPO,
+        repo_id="zebra-agent",
+        updated_at=_now() + timedelta(minutes=1),
+    )
+    other_repo = _record(
+        memory_type=MemoryType.PROCEDURE,
+        text="Run pytest for context compaction regressions.",
+        visibility=MemoryVisibility.REPO,
+        repo_id="other-repo",
+        updated_at=_now() + timedelta(minutes=2),
+    )
+    for record in (relevant, unrelated, other_repo):
+        store.upsert(record)
+
+    records = store.list(
+        MemoryQuery(repo_id="zebra-agent", text_query="pytest context compaction")
+    )
+
+    assert [record.memory_id for record in records] == [relevant.memory_id]
+
+
+def test_sqlite_memory_store_backfills_and_updates_fts_rows(tmp_path: Path) -> None:
+    database = tmp_path / "fts-migration.sqlite"
+    record = _record(
+        memory_type=MemoryType.PROCEDURE,
+        text="Run old validation command.",
+        visibility=MemoryVisibility.REPO,
+        repo_id="zebra-agent",
+        updated_at=_now(),
+    )
+    store = SQLiteMemoryStore(database)
+    store.upsert(record)
+    with sqlite3.connect(database) as connection:
+        connection.execute("DROP TABLE memory_records_fts")
+
+    migrated = SQLiteMemoryStore(database)
+    assert migrated.list(MemoryQuery(repo_id="zebra-agent", text_query="old validation"))
+
+    migrated.upsert(
+        record.model_copy(
+            update={
+                "text": "Run new focused regression command.",
+                "updated_at": _now() + timedelta(minutes=1),
+            }
+        )
+    )
+
+    assert migrated.list(MemoryQuery(repo_id="zebra-agent", text_query="old validation")) == []
+    updated = migrated.list(
+        MemoryQuery(repo_id="zebra-agent", text_query="focused regression")
+    )
+    assert [item.memory_id for item in updated] == [record.memory_id]
+
+
 def test_list_confirmed_repo_memory_texts_returns_confirmed_records_only(tmp_path: Path) -> None:
     store = SQLiteMemoryStore(tmp_path / "memory-texts.sqlite")
     store.upsert(
@@ -284,6 +353,52 @@ def test_list_confirmed_repo_memories_skips_expired_records(tmp_path: Path) -> N
     assert [(memory.memory_type, memory.text) for memory in memories] == [
         (MemoryType.PROCEDURE, "Fresh procedure."),
     ]
+
+
+def test_list_confirmed_repo_memories_combines_stable_and_relevant_with_token_cap(
+    tmp_path: Path,
+) -> None:
+    store = SQLiteMemoryStore(tmp_path / "memory-relevant.sqlite")
+    store.upsert(
+        _record(
+            memory_type=MemoryType.PROJECT_RULE,
+            text="Keep agent-core provider neutral.",
+            visibility=MemoryVisibility.REPO,
+            repo_id="zebra-agent",
+            updated_at=_now(),
+        )
+    )
+    store.upsert(
+        _record(
+            memory_type=MemoryType.PROCEDURE,
+            text="Run pytest for context compaction regressions.",
+            visibility=MemoryVisibility.REPO,
+            repo_id="zebra-agent",
+            updated_at=_now() + timedelta(minutes=1),
+        )
+    )
+    store.upsert(
+        _record(
+            memory_type=MemoryType.PROCEDURE,
+            text="Build unrelated desktop release assets.",
+            visibility=MemoryVisibility.REPO,
+            repo_id="zebra-agent",
+            updated_at=_now() + timedelta(minutes=2),
+        )
+    )
+
+    memories = list_confirmed_repo_memories(
+        tmp_path / "memory-relevant.sqlite",
+        repo_id="zebra-agent",
+        query_text="fix context compaction pytest",
+        max_tokens=30,
+    )
+
+    assert [memory.text for memory in memories] == [
+        "Keep agent-core provider neutral.",
+        "Run pytest for context compaction regressions.",
+    ]
+    assert sum((len(memory.text) + 3) // 4 for memory in memories) <= 30
 
 
 def _record(

@@ -24,7 +24,7 @@ from worker_execution_support import (
 )
 
 
-def test_worker_execution_service_persists_memory_candidate_on_success(
+def test_worker_execution_service_promotes_procedure_on_success(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -46,7 +46,7 @@ def test_worker_execution_service_persists_memory_candidate_on_success(
     records = SQLiteMemoryStore(database_path).list(
         MemoryQuery(
             repo_id=str(tmp_path.resolve()),
-            statuses=(MemoryStatus.CANDIDATE,),
+            statuses=(MemoryStatus.CONFIRMED,),
         )
     )
 
@@ -59,8 +59,13 @@ def test_worker_execution_service_persists_memory_candidate_on_success(
         event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED
         for event in result.events
     )
+    assert any(
+        event.event_type is EventType.MEMORY_REVIEW_RECORDED
+        and event.payload["status"] == "confirmed"
+        for event in result.events
+    )
 
-def test_worker_execution_service_persists_project_rule_candidate_from_agents_read(
+def test_worker_execution_service_promotes_project_rule_from_agents_read(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -89,7 +94,7 @@ def test_worker_execution_service_persists_project_rule_candidate_from_agents_re
     records = SQLiteMemoryStore(database_path).list(
         MemoryQuery(
             repo_id=str(tmp_path.resolve()),
-            statuses=(MemoryStatus.CANDIDATE,),
+            statuses=(MemoryStatus.CONFIRMED,),
         )
     )
 
@@ -105,7 +110,7 @@ def test_worker_execution_service_persists_project_rule_candidate_from_agents_re
         for event in result.events
     )
 
-def test_worker_execution_service_persists_architecture_fact_candidate_from_agents_read(
+def test_worker_execution_service_promotes_architecture_fact_from_agents_read(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -133,7 +138,7 @@ def test_worker_execution_service_persists_architecture_fact_candidate_from_agen
     records = SQLiteMemoryStore(database_path).list(
         MemoryQuery(
             repo_id=str(tmp_path.resolve()),
-            statuses=(MemoryStatus.CANDIDATE,),
+            statuses=(MemoryStatus.CONFIRMED,),
         )
     )
 
@@ -238,7 +243,7 @@ def test_worker_execution_service_expires_stale_confirmed_procedure_after_refres
         for event in result.events
     )
 
-def test_worker_execution_service_persists_preference_candidate_from_explicit_user_message(
+def test_worker_execution_service_promotes_preference_from_explicit_user_message(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -263,7 +268,7 @@ def test_worker_execution_service_persists_preference_candidate_from_explicit_us
     records = SQLiteMemoryStore(database_path).list(
         MemoryQuery(
             repo_id=str(tmp_path.resolve()),
-            statuses=(MemoryStatus.CANDIDATE,),
+            statuses=(MemoryStatus.CONFIRMED,),
         )
     )
 

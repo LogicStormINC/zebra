@@ -14,10 +14,16 @@ from agent_core.domain.modeling import (
     ModelToolDefinition,
 )
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.harness.context_recovery import prepare_bounded_conversation
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.hooks import CompactionHook
-from agent_core.harness.model_request import allowed_response_repairs, build_context_plan, complete_model
-from agent_core.harness.model_request import context_window, with_context_plan
+from agent_core.harness.model_request import (
+    allowed_response_repairs,
+    build_context_plan,
+    complete_model,
+    context_window,
+    with_context_plan,
+)
 from agent_core.harness.models import HarnessEventDraft, HarnessTask
 from agent_core.harness.protocol_invariants import validate_tool_call_pairing
 from agent_core.harness.provider_continuation import (
@@ -68,9 +74,7 @@ class HarnessModelStep:
         conversation_compactor: ConversationCompactorPort | None = None,
         conversation_token_budget: int | None = None,
         event_sink: Callable[[HarnessEventDraft], None] | None = None,
-        continuation_sink: Callable[
-            [ProviderContinuationRef, bytes | None, int | None], str | None
-        ]
+        continuation_sink: Callable[[ProviderContinuationRef, bytes | None, int | None], str | None]
         | None = None,
         provider_continuation: ProviderContinuationRef | None = None,
         compaction_hook: CompactionHook | None = None,
@@ -99,32 +103,17 @@ class HarnessModelStep:
         user_goal: str,
         created_at: datetime,
     ) -> ConversationCompactionResult | None:
-        tools = self._available_tools if allow_tools else ()
-        window = context_window(model_gateway)
-        budget = min(
-            self._conversation_token_budget or window.compact_at,
-            window.compact_at,
+        return prepare_bounded_conversation(
+            messages,
+            model_gateway,
+            allow_tools=allow_tools,
+            available_tools=self._available_tools,
+            conversation_compactor=self._conversation_compactor,
+            conversation_token_budget=self._conversation_token_budget,
+            compaction_hook=self._compaction_hook,
+            user_goal=user_goal,
+            created_at=created_at,
         )
-        result = None
-        if self._conversation_compactor is not None:
-            if self._compaction_hook is not None:
-                self._compaction_hook.pre_compact(tuple(messages), max_tokens=budget)
-            result = self._conversation_compactor.compact_conversation(
-                tuple(messages),
-                user_goal=user_goal,
-                max_tokens=budget,
-                created_at=created_at,
-            )
-            messages[:] = result.messages
-            if self._compaction_hook is not None:
-                self._compaction_hook.post_compact(result)
-        attempted = (result.provenance,) if result is not None and result.compacted else ()
-        plan = build_context_plan(
-            tuple(messages), tools, window, model_gateway, attempted_strategies=attempted
-        )
-        if not plan.within_budget:
-            raise ContextWindowExceededError(plan)
-        return result
 
     def compact_conversation(
         self,
@@ -159,7 +148,9 @@ class HarnessModelStep:
             created_at=now,
         )
         repair_limit = allowed_response_repairs(task.max_model_calls, 0)
-        return self.request_completion(messages, model_gateway, allow_tools=True, response_repair_limit=repair_limit)
+        return self.request_completion(
+            messages, model_gateway, allow_tools=True, response_repair_limit=repair_limit
+        )
 
     def request_completion(
         self,
@@ -293,14 +284,10 @@ class HarnessModelStep:
         self._provider_continuation = selection.reference
         self._emit_continuation_selection(selection)
 
-    def _emit_continuation_selection(
-        self, selection: PreparedProviderContinuation
-    ) -> None:
+    def _emit_continuation_selection(self, selection: PreparedProviderContinuation) -> None:
         if self._event_sink is None:
             return
-        self._event_sink(
-            continuation_event(selection, attempt_number=self._attempt_number)
-        )
+        self._event_sink(continuation_event(selection, attempt_number=self._attempt_number))
 
     def _emit_text_delta(self, model_call_id: str, delta: ModelTextDelta) -> None:
         if self._event_sink is None:
@@ -368,6 +355,7 @@ class HarnessModelStep:
                 metadata=dict(tool_result.metadata),
             )
         )
+
     def request_tool_result_completion(
         self,
         task: HarnessTask,
@@ -453,10 +441,7 @@ class HarnessModelStep:
             if messages:
                 messages[-1] = messages[-1].model_copy(
                     update={
-                        "content": (
-                            f"{messages[-1].content}\n\n"
-                            f"{MODEL_NATIVE_DELEGATION_GUIDANCE}"
-                        )
+                        "content": (f"{messages[-1].content}\n\n{MODEL_NATIVE_DELEGATION_GUIDANCE}")
                     }
                 )
             else:
@@ -469,9 +454,7 @@ class HarnessModelStep:
                     )
                 )
         active_steps = tuple(
-            step
-            for step in task.task_plan.steps
-            if step.status.value in {"pending", "in_progress"}
+            step for step in task.task_plan.steps if step.status.value in {"pending", "in_progress"}
         )
         if active_steps:
             messages.append(

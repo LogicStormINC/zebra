@@ -5,7 +5,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_context import LocalContextCompiler
-from agent_core.application import MemoryCandidateExtractionService, SessionTitleService
+from agent_core.application import (
+    MemoryCandidateExtractionService,
+    MemoryCandidatePromotionService,
+    SessionTitleService,
+)
 from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
@@ -127,9 +131,9 @@ class SessionExecutionService:
             SQLiteToolRunStore(database_path),
             self._artifact_payload_store,
         )
-        self._memory_extraction_service = MemoryCandidateExtractionService(
-            SQLiteMemoryStore(database_path)
-        )
+        memory_store = SQLiteMemoryStore(database_path)
+        self._memory_extraction_service = MemoryCandidateExtractionService(memory_store)
+        self._memory_promotion_service = MemoryCandidatePromotionService(memory_store)
         self._handoff_gate = handoff.SessionHandoffRecoveryGate(str(database_path))
 
     def execute_session(
@@ -300,6 +304,7 @@ class SessionExecutionService:
                 confirmed_memories=list_confirmed_repo_memories(
                     self._database_path,
                     repo_id=str(task.workspace_root.resolve()),
+                    query_text=task.user_input,
                 ),
                 attachments=task.attachments,
                 runtime_evidence=task.runtime_evidence,
@@ -456,6 +461,7 @@ class SessionExecutionService:
             recorder=recorder,
             attempt_result=attempt_result,
             memory_extraction_service=self._memory_extraction_service,
+            memory_promotion_service=self._memory_promotion_service,
             title_service=SessionTitleService(model_gateway),
             event_store=self._event_store,
             started_at=started_at,
