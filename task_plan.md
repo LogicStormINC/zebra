@@ -1,5 +1,27 @@
 # Task Plan
 
+## CLOUD-LEASE-PG-01 - PostgreSQL Epoch And Lease Adapter
+
+1. `completed` - Audit the reviewed PostgreSQL migration/Adapter patterns and
+   freeze the epoch bootstrap/rotation plus Lease SQL state machine.
+2. `completed` - Add explicit epoch and Lease migrations without constructor DDL.
+3. `completed` - Implement namespace-scoped database-clock acquire, heartbeat,
+   release, read and restore-rotation behavior behind the Core Port.
+4. `completed` - Add real PostgreSQL race, collision, takeover, stale-fence,
+   clock-skew, namespace and migration tests.
+5. `completed` - Run focused/full/quality validation, independent review, durable
+   evidence and a local commit without composition or push.
+
+### Decisions
+
+- This branch is stacked on local `CLOUD-LEASE-CON-01@816a1e3b`; continuation is
+  a local implementation waiver, not permission to merge, push or cut over.
+- Reuse the existing psycopg migration and transaction patterns from
+  `CLOUD-PG-01`; do not add an ORM, pool, testcontainers or constructor DDL.
+- PostgreSQL transaction time is the only ownership clock. Callers provide TTL,
+  never an expiry timestamp.
+- Do not modify Store composition, API, Worker or Effect execution in this card.
+
 ## CLOUD-LEASE-CON-01 - Core Lease And Fencing Contract
 
 1. `completed` - Trace every Lease and handoff fence caller, freeze the

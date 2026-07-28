@@ -101,6 +101,39 @@ MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=2,
+        name="control_plane_epoch_and_leases",
+        statements=(
+            """
+            CREATE TABLE control_plane_epochs (
+                deployment_namespace TEXT PRIMARY KEY,
+                epoch UUID NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT transaction_timestamp()
+            )
+            """,
+            """
+            CREATE TABLE worker_leases (
+                deployment_namespace TEXT NOT NULL,
+                session_id UUID NOT NULL,
+                control_plane_epoch UUID NOT NULL,
+                fencing_token BIGINT NOT NULL CHECK (fencing_token >= 1),
+                owner_instance_id TEXT NOT NULL CHECK (length(btrim(owner_instance_id)) > 0),
+                checkpoint BIGINT NOT NULL CHECK (checkpoint >= 0),
+                acquired_at TIMESTAMPTZ NOT NULL,
+                heartbeat_at TIMESTAMPTZ NOT NULL,
+                expires_at TIMESTAMPTZ NOT NULL,
+                released_at TIMESTAMPTZ,
+                PRIMARY KEY (deployment_namespace, session_id),
+                FOREIGN KEY (deployment_namespace)
+                    REFERENCES control_plane_epochs (deployment_namespace),
+                CHECK (acquired_at <= heartbeat_at),
+                CHECK (heartbeat_at < expires_at),
+                CHECK (released_at IS NULL OR released_at >= acquired_at)
+            )
+            """,
+        ),
+    ),
 )
 
 _MIGRATION_LOCK_ID = 9_187_330_641

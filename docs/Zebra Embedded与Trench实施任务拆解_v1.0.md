@@ -189,7 +189,12 @@ read-only。
 
 ### CLOUD-LEASE-PG-01 — PostgreSQL epoch and Lease Adapter
 
-- Status: `Locked`；depends on merged `CLOUD-LEASE-CON-01` and `CLOUD-PG-01`。
+- Status: `Review`；branch `codex/cloud-lease-pg-01`；maintainer explicitly
+  activated local stacked implementation on 2026-07-28；merge still requires
+  `CLOUD-LEASE-CON-01` and `CLOUD-PG-01` first。
+- Evidence: additive migration v2、strict epoch bootstrap/restore rotation、DB-clock
+  full-fence CAS、retained generation and real PostgreSQL races pass；Store selection、
+  runtime DB roles、Worker wiring and production cutover remain excluded。
 - Candidate paths: PostgreSQL migration、epoch/Lease modules、exports and real-service tests。
 - Deliverable: DB-clock expiry、retained generations、concurrent acquire and restore rotation。
 - Acceptance: two-worker race、same-worker-instance collision、takeover、wrong namespace and

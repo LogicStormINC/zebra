@@ -470,10 +470,13 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
 
 ### CLOUD-LEASE-PG-01 - PostgreSQL Epoch And Lease Adapter
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
-- Depends on: merged `CLOUD-LEASE-CON-01`, `CLOUD-PG-01`, explicit activation
+- Status: `Review`
+- Owner: `Codex`
+- Depends on: locally reviewed `CLOUD-LEASE-CON-01` and `CLOUD-PG-01`;
+  explicitly activated for local stacked implementation by the maintainer on
+  2026-07-28. Merge still requires both dependency branches first.
 - Branch: `codex/cloud-lease-pg-01`
+- Worktree: `../zebra-agent-cloud-lease-pg-01`
 - Owned paths: `packages/agent-storage/src/agent_storage/postgres/{__init__,migrations,epoch,leases}.py`,
   `packages/agent-storage/src/agent_storage/__init__.py`,
   `tests/agent_storage/test_postgres_{migrations,leases}.py`, and this task's
@@ -483,6 +486,27 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
 - Acceptance: real PostgreSQL race, same-worker collision, heartbeat, release,
   takeover, clock-skew, namespace and restore tests pass.
 - Non-goals: Store selection, API/Worker wiring, Effect/Outbox and cutover.
+
+#### Validation And Handoff
+
+- Additive migration v2 creates namespace epoch authority and retained Lease
+  generations without changing v1 SQL/checksum or implicitly bootstrapping an epoch.
+- Bootstrap is strict and one-time; restore rotation issues an internal fresh UUID.
+  Runtime Lease constructors never run DDL or create/rotate authority.
+- Acquire, heartbeat and release lock the epoch row before the Lease row, use
+  PostgreSQL transaction time, and mutate only through full-fence CAS. A real
+  blocking test proves restore rotation waits for an in-flight fenced heartbeat.
+- Real Docker Compose PostgreSQL 17.5 evidence: focused migration/Event/Projection/
+  Lease matrix `34/34`; all storage tests `147/147`; critical concurrency matrix
+  passed ten consecutive runs. Independent final reviews report
+  `0 P0 / 0 P1 / 0 P2`.
+- Ruff, storage Mypy, Eval `10/10`, and `git diff --check` pass. Full suite with
+  PostgreSQL enabled passes `1799`, skips `8`, and retains the nine confirmed
+  inherited failures. `make check` stops only on inherited untouched file-size
+  violations (`561/500`, `505/500`).
+- Branch remains local, unpushed and stacked on unmerged dependencies. Store
+  selection, database roles, Worker wiring, cutover and production claims remain
+  explicitly outside this card.
 
 ### CLOUD-EFFECT-OUTBOX-01 - Fenced Effect Dispatch Aggregate
 

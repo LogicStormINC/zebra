@@ -6022,3 +6022,26 @@ actual byte access.
 - `make check` retains only the inherited untouched file-size violations at
   `561/500` and `505/500`; GitHub Actions remains intentionally skipped under
   the maintainer's temporary billing-limit direction.
+
+## 2026-07-28 CLOUD-LEASE-PG-01 PostgreSQL Epoch And Lease Adapter
+
+- created local stacked worktree `../zebra-agent-cloud-lease-pg-01` on branch
+  `codex/cloud-lease-pg-01` from `CLOUD-LEASE-CON-01@816a1e3b`;
+- claimed the task under the maintainer's explicit continuation while preserving
+  the unmerged-dependency, no-push and no-production boundaries;
+- added additive migration v2, strict epoch bootstrap/read/restore rotation and a
+  namespace-scoped `PostgresLeaseStore` without constructor DDL or new dependency;
+- standardized mutation locking as epoch `FOR SHARE` then Lease row mutation, with
+  rotation taking the conflicting epoch update lock;
+- added real PostgreSQL tests for migration compatibility, constructor isolation,
+  epoch lifecycle, DB-clock acquisition, same/different owner races, heartbeat,
+  retained release/reacquire, expiry, complete fence rejection, namespace/clock
+  isolation and restore concurrency;
+- used the existing `CLOUD-COMPOSE-INFRA-01` PostgreSQL 17.5 dependency container;
+  no Docker configuration was copied or modified in this task;
+- real PostgreSQL focused matrix passes `34/34`; all storage tests pass `147/147`;
+  critical concurrency/rotation tests passed ten consecutive runs;
+- full suite with PostgreSQL enabled passes `1799`, skips `8`, and retains the nine
+  inherited failures; Eval passes `10/10`, Ruff/Mypy/diff-check pass;
+- two final read-only reviews report `0 P0 / 0 P1 / 0 P2`; `make check` retains only
+  the inherited untouched file-size violations at `561/500` and `505/500`.

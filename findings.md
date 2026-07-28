@@ -408,3 +408,24 @@
   `0 P0 / 0 P1 / 0 P2` remaining.
 - Background heartbeat, PostgreSQL/database-clock proof, fenced aggregate writes,
   Effect Outbox and production composition remain later cards.
+
+## CLOUD-LEASE-PG-01 - 2026-07-28
+
+- Restore rotation and Lease mutation require a shared lock order: every fenced
+  mutation first holds the namespace epoch row `FOR SHARE`, then mutates the Lease;
+  rotation updates that epoch row with a conflicting exclusive lock. Without this,
+  an old heartbeat could return success after rotation had already completed.
+- The PostgreSQL Adapter uses only `transaction_timestamp()` for acquisition,
+  heartbeat, expiry and release. TTL is a duration parameter; session timezone and
+  caller clocks cannot decide ownership.
+- Migration v2 is additive and does not bootstrap authority. Bootstrap is strict,
+  restore rotation generates its own UUID, and Adapter construction performs no DDL.
+- Lease rows retain the highest visible generation after release. Expiry, release
+  and epoch mismatch takeovers increment that token; active same-owner reacquire is
+  still a conflict and checkpoint remains monotonic recovery progress only.
+- Real PostgreSQL tests prove same/different owner races, clock-skew independence,
+  namespace isolation, full-fence rejection, retained generations and deterministic
+  heartbeat-versus-rotation ordering.
+- Python module separation is not a database permission boundary. Migration/restore
+  identities and runtime read-only epoch privileges remain composition/cutover work;
+  this card makes no production-safe or full multi-worker-safe claim.

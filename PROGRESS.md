@@ -268,6 +268,10 @@ including a real thinking tool round trip.
   Typed Core fencing, retained SQLite generations, complete handoff fences and
   acquire-before-recovery Worker claims passed focused validation and two final
   reader reviews; it cannot merge before the plan branch.
+  `CLOUD-LEASE-PG-01` is now in Review under the same explicit local stacked
+  waiver. PostgreSQL epoch/Lease migrations, DB-clock full-fence CAS and restore
+  rotation passed real-service concurrency tests; composition, database roles,
+  Worker wiring, cutover and production claims remain gated.
   PostgreSQL composition and all Redis, object-storage,
   production AG-UI, Trench, analysis, writeback, Agent Memory delivery, and GA
   cards remain `Locked` pending their explicit gates.
