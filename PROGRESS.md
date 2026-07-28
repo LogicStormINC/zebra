@@ -12,7 +12,9 @@
   validation: `63` focused tests, changed-file Ruff, Mypy over `158` source
   files, and release eval `10/10` pass. Full suite: `1747 passed, 8 skipped`;
   the same nine failures reproduce on untouched `main`. `make check` is blocked
-  only by two inherited file-size violations outside this task.
+  only by two inherited file-size violations outside this task. PR CI run
+  `30332213200` did not execute any step because GitHub reported an account
+  payment/spending-limit gate.
 
 - Snapshot date: `2026-07-19`
 - Verified implementation baseline: `f1e4965` (PR `#174`)

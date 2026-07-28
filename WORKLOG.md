@@ -22,6 +22,10 @@
 - committed the owned implementation as `752a3154`, pushed
   `codex/issue-197-context-memory-continuity`, and opened PR `#198` with
   `Closes #197`; merge remains a maintainer action
+- GitHub Actions run `30332213200` created seven zero-step failures; the Backend
+  quality check annotation says the jobs were not started because account
+  payments failed or the spending limit must be increased. This is an external
+  billing gate, not a code/test result.
 
 ## 2026-07-19 WEB-UX-01 Trusted Local Read-Only Web Auto Execution
 

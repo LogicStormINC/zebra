@@ -54,6 +54,8 @@
   `MEM-GW-CON-01` provider gateway contract
 - Branch: `codex/issue-197-context-memory-continuity`
 - PR: `#198`
+- Review blocker: GitHub Actions run `30332213200` has zero executed steps; its
+  annotation reports an account payment/spending-limit gate.
 - Worktree: `../zebra-agent-issue-197`
 - Owned paths:
   `docs/上下文连续性与治理记忆改进方案_v1.1.md` (new),
