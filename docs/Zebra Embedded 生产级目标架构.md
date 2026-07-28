@@ -59,7 +59,7 @@
 | Artifact | S3 Compatible Object Storage，PostgreSQL 保存 metadata/manifest |
 | Runtime | Kubernetes + Linux gVisor，Sandbox 无业务凭证 |
 | 数据分析 | 首版 DuckDB + Polars + PyArrow 批准算子 |
-| Agent Memory | 后续可选 Redis Agent Memory Adapter，故障可降级 |
+| Agent Memory | Zebra 治理状态为权威；后续可选 Mem0 Gateway 只做可降级语义索引 |
 | 可观测性 | OpenTelemetry + 可关联 Task/Run/Tool/Receipt 证据 |
 | 部署交付 | Helm；Terraform/GitOps 在 GA 阶段进入门禁 |
 
@@ -95,7 +95,7 @@ flowchart LR
         PG["PostgreSQL Truth"]
         REDIS["Redis Ephemeral"]
         S3["Object Storage"]
-        MEMORY["Optional Redis Agent Memory"]
+        MEMORY["Optional Mem0 Semantic Index"]
     end
 
     UI --> CPK
@@ -390,21 +390,25 @@ namespace、retention、manifest 和 lineage。下载使用短期签名 URL，�
 
 Zebra durable foundation 的当前调度优先于 Trench read-only，但首个只读切片仍不
 把远程长期记忆设为运行时依赖。现有 local profile 的本地 Memory 保持兼容；
-Embedded production profile 通过独立 `AgentMemoryGateway` 接入 Redis Agent
-Memory，而不是把远程服务强塞进现有本地 Store Port。
+现有 `MemoryStorePort` 继续作为候选、确认、替代、过期、删除和 provenance 的
+唯一权威。Embedded production profile 只能通过 provider-neutral
+`AgentMemoryGateway` 接入 Mem0 等可替换语义索引，不能用远端状态覆盖 Zebra
+治理状态。
 
 约束：
 
 - feature flag 默认关闭；
+- 只有 `confirmed` 记忆可发布，搜索命中必须按 Zebra `MemoryId` 回查权威 Store；
 - owner/session/namespace/topic 全部使用不透明 Host 映射；
 - 写入通过 delivery ledger/outbox 保证幂等和可对账；
 - timeout、rate limit、schema drift 或服务不可用时降级，不使 Run 失败；
 - 删除、保留期、redaction 和 audit 独立验证；
-- 每日 contract test 检测 Preview API 漂移；
-- 不建设 Embedded pgvector 或 Graphiti 备用事实源。
+- 每日 contract test 检测 provider API 漂移；
+- Mem0 自身的 pgvector 是可重建派生索引，不建设第二个 Zebra 事实源或 Graphiti
+  fallback。
 
-Redis Agent Memory 当前仍标注为 Public Preview，必须保持可替换边界：
-[Redis Agent Memory service](https://redis.io/docs/latest/operate/rc/context-engine/agent-memory/create-service/)。
+Mem0 仍必须保持可替换边界；正式 Adapter 只能在固定版本、真实契约和故障门禁
+完成后启用。
 
 ## 10. 生产部署单元
 
@@ -508,7 +512,7 @@ artifact failure、namespace denial、memory degraded rate、token/cost evidence
 → Zebra Storage composition seam
 → Zebra authoritative Store composition completion
 → Cloud durable foundation
-→ Redis Agent Memory Gateway / Preview gate（可降级增强）
+→ Provider-neutral Memory Gateway / Mem0 gate（可降级增强）
 → Host/AG-UI/Surface 协议
 → Trench 只读链路
 → 生产只读 E2E 汇合

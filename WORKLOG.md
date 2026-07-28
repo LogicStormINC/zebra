@@ -1,5 +1,21 @@
 # Progress Log
 
+## 2026-07-28 MEM-GW-CON-01 Provider-neutral Agent Memory Gateway Contract
+
+- activated `codex/mem-gw-con-01` in an isolated worktree stacked directly on
+  local reviewed `CLOUD-STO-AUTH-01`; no main workspace changes were touched
+- limited implementation to one Core Port/value module, its public exports and
+  one focused contract test; no provider dependency or runtime wiring was added
+- initial test collection found the new worktree had not installed workspace
+  packages; `make sync` resolved the environment before contract validation
+- gateway contract `13 passed`; all agent-core tests `221 passed`; strict Mypy
+  passed `116` source files; touched Ruff, diff check and release Eval `10/10` passed
+- final full suite: `1760 passed, 8 skipped, 9 failed`; the failure set exactly
+  matches the inherited auth-branch baseline (2 provider expectations, 5 expired
+  SCM credential fixtures, 1 untouched file-size gate, 1 Worker cancellation race)
+- `make check` stops at the two untouched file-size violations (`561/500`,
+  `505/500`); moved the task to Review with the local stacked merge gate intact
+
 ## 2026-07-24 CLOUD-STO-AUTH-01 Complete Authoritative Store Composition
 
 - activated one isolated local branch, `codex/cloud-sto-auth-01`, based directly

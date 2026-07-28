@@ -35,6 +35,10 @@
   implementation is based directly on `CLOUD-STO-SEAM-01` and cannot be pushed,
   opened as a PR, or merged before `EMB-PLAN-01 -> CLOUD-STO-SEAM-01` lands in
   that order.
+- `MEM-GW-CON-01` is `Review` on `codex/mem-gw-con-01`. The maintainer
+  explicitly continued the memory-first Zebra foundation on 2026-07-28. This
+  provider-neutral contract is stacked on local `CLOUD-STO-AUTH-01`; it must not
+  merge before the authoritative Store composition.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -193,7 +197,7 @@ inside request or execution logic.
 
 - PostgreSQL, Redis, S3, migrations, dual-write, cloud credentials or production
   backend selection
-- replacing local `MemoryStorePort` with Redis Agent Memory
+- replacing local `MemoryStorePort` with any derived semantic-memory provider
 - inventing Ports for legacy stores not needed by this first control-plane seam
 - changing CLI, Desktop, Domain Event, Task, Policy, runtime or user-visible behavior
 
@@ -271,6 +275,60 @@ own governed memory before any PostgreSQL backend is selectable.
   untouched baseline of 13 and 4 errors respectively.
 - Branch is local and unpushed. Required merge order remains
   `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-STO-AUTH-01`.
+
+### MEM-GW-CON-01 - Provider-neutral Agent Memory Gateway Contract
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `CORE / INTEGRATIONS`
+- Depends on: local reviewed `CLOUD-STO-AUTH-01` and explicit maintainer
+  continuation on 2026-07-28. This is a stacked local task; merge remains blocked
+  until the authoritative Store chain lands.
+- Branch: `codex/mem-gw-con-01`
+- Worktree: `../zebra-agent-mem-gw-con-01`
+- Owned paths:
+  `packages/agent-core/src/agent_core/ports/agent_memory_gateway.py` (new),
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `tests/agent_core/test_agent_memory_gateway_contract.py` (new),
+  `docs/AGENT_TASKS.md`, `docs/Zebra Embedded 生产级目标架构.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Define the smallest provider-neutral publish, search and delete boundary for a
+derived semantic-memory service without weakening Zebra's governed memory truth.
+
+#### Acceptance
+
+- [x] Only confirmed Zebra memories can cross the publication contract; opaque
+  namespace, Zebra `MemoryId` and idempotency key are mandatory.
+- [x] Search hits contain only a Zebra `MemoryId`, opaque provider reference and
+  separately named provider score, so callers must revalidate lifecycle and text
+  through `MemoryStorePort`.
+- [x] Success, partial, not-found, degraded and disabled outcomes are typed;
+  unavailable searches cannot expose hits and do not require exceptions.
+- [x] Core contains no Mem0, Redis, HTTP or provider SDK type; focused tests,
+  Ruff, Mypy and relevant repository gates pass or blockers are recorded.
+
+#### Explicit Non-Goals
+
+- Mem0 SDK/REST calls, credentials, Docker, configuration or feature flags
+- delivery/outbox wiring, API/Worker integration, prompt admission or migration
+- changing `MemoryStorePort`, `MemoryRecord`, extraction, review or lifecycle rules
+
+#### Validation And Handoff
+
+- Gateway contract: `13 passed`; all `221` agent-core tests passed.
+- Strict Mypy passed all `116` agent-core source files; touched Python files pass
+  Ruff; release Eval passed `10/10`; `git diff --check` passed.
+- Final full suite: `1760 passed, 8 skipped, 9 failed`. The same nine inherited
+  failures recorded by `CLOUD-STO-AUTH-01` remain: two stale provider
+  expectations, five expired SCM credential fixtures, one untouched file-size
+  gate and one Worker cancellation race.
+- `make check` stops at the two untouched file-size violations (`561/500`,
+  `505/500`). The branch remains local and stacked; Mem0 adapter work is still
+  locked behind the Compose baseline, this contract and a credentialed Spike.
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.

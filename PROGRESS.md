@@ -36,6 +36,10 @@
   API/Worker collaborator that advances Session state, gates effects or governs
   memory. A/B regressions prove the legacy path is not created; no cloud backend,
   migration or Mem0 integration is selected by this task.
+- Memory contract task in Review: `MEM-GW-CON-01` on `codex/mem-gw-con-01` defines
+  provider-neutral confirmed-memory publish, search and delete outcomes. Remote
+  hits contain only a Zebra `MemoryId` for mandatory Store revalidation; no Mem0
+  adapter, credential, Docker or runtime wiring is part of this slice.
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
@@ -255,7 +259,8 @@ including a real thinking tool round trip.
 - `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
-  `CLOUD-STO-AUTH-01` are in Review. No implementation card is active; all PostgreSQL,
+  `CLOUD-STO-AUTH-01` and `MEM-GW-CON-01` are in Review. The latter is a stacked local
+  contract task; all PostgreSQL,
   Redis, object-storage, production AG-UI, Trench, analysis, writeback, Agent
   Memory adapter, and GA cards remain `Locked` pending their explicit gates.
 
@@ -273,7 +278,7 @@ including a real thinking tool round trip.
    Credential/Egress Broker, external-namespace isolation, and Kubernetes in
    dependency order.
 6. After authoritative Store composition, activate PostgreSQL, Lease/Outbox,
-   Object Storage, Redis live, recovery and the separate Redis Agent Memory
+   Object Storage, Redis live, recovery and the separate Mem0-backed Memory
    Gateway one card at a time; no production claim precedes migration/restore evidence.
 
 ## Runtime Blueprint
@@ -315,7 +320,7 @@ real tool execution, failure visibility, API restart, and durable recovery.
 
 - Zebra AG-UI production adapter and HostSessionGrant verifier
 - Trench CopilotKit Runtime/BFF, read-only panel, frontend tools and writeback
-- Redis Agent Memory production adapter and delivery ledger (contract/spike still gated)
+- Mem0 Gateway adapter and delivery ledger (contract/credentialed spike still gated)
 - ACP entry adapter
 - optional code-intelligence adapter
 - Kubernetes/Kata/Firecracker and distributed Sandbox scheduling

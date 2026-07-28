@@ -1,5 +1,15 @@
 """Hexagonal ports for Zebra Agent core."""
 
+from agent_core.ports.agent_memory_gateway import (
+    AgentMemoryGatewayPort,
+    ConfirmedMemoryPublication,
+    MemoryGatewayDeleteRequest,
+    MemoryGatewayHit,
+    MemoryGatewayMutationResult,
+    MemoryGatewaySearchRequest,
+    MemoryGatewaySearchResult,
+    MemoryGatewayStatus,
+)
 from agent_core.ports.agent_tasks import AgentTaskPort, TaskEvent
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.artifact_store import ArtifactStorePort
@@ -73,6 +83,7 @@ from agent_core.ports.workspace import WorkspacePort
 from agent_core.ports.workspace_projection_store import WorkspaceProjectionStorePort
 
 __all__ = [
+    "AgentMemoryGatewayPort",
     "ArtifactPayloadStorePort",
     "AgentTaskPort",
     "ArtifactStorePort",
@@ -94,6 +105,13 @@ __all__ = [
     "IdempotencyStorePort",
     "LeaseStorePort",
     "MemoryStorePort",
+    "ConfirmedMemoryPublication",
+    "MemoryGatewayDeleteRequest",
+    "MemoryGatewayHit",
+    "MemoryGatewayMutationResult",
+    "MemoryGatewaySearchRequest",
+    "MemoryGatewaySearchResult",
+    "MemoryGatewayStatus",
     "ModelCallStorePort",
     "ModelGatewayPort",
     "LoadedProviderContinuation",

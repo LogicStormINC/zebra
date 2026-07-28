@@ -1,5 +1,17 @@
 # Findings
 
+## MEM-GW-CON-01 - 2026-07-28
+
+- The safest remote-memory contract does not return text. A hit carries only the
+  governed Zebra `MemoryId`, an opaque provider reference and a separately named
+  provider score, forcing lifecycle/content revalidation through `MemoryStorePort`.
+- Confirmed-only publication belongs at the typed trust boundary. Candidate,
+  superseded, expired and deleted records cannot be represented as publications.
+- Degraded, disabled and partial provider behavior are ordinary typed outcomes;
+  they are not reasons to fail an Agent Run.
+- Mem0 and Redis names, SDK types, identities and transport details stay outside
+  Core so the derived index remains replaceable.
+
 ## CLOUD-STO-AUTH-01 - 2026-07-24
 
 - The first five-store seam could not safely select a cloud backend: context

@@ -1,5 +1,23 @@
 # Task Plan
 
+## MEM-GW-CON-01 - Provider-neutral Agent Memory Gateway Contract
+
+1. `completed` - Audit the governed `MemoryStorePort`, authoritative Store
+   composition, Mem0 direction and task dependency boundary.
+2. `completed` - Claim an isolated stacked worktree on `CLOUD-STO-AUTH-01` with
+   provider-neutral Core/test ownership only.
+3. `completed` - Implement validated publish/search/delete values and Protocol.
+4. `completed` - Prove confirmed-only publication, opaque authority, revalidatable
+   hits, partial/degraded behavior and provider-independent schemas.
+5. `completed` - Run focused and repository validation, record evidence and handoff.
+
+### Decisions
+
+- `MemoryStorePort` remains authoritative for governed lifecycle and content.
+- Gateway hits intentionally omit memory text and Zebra confidence; callers must
+  resolve `MemoryId` through the Store before prompt admission.
+- Mem0 is the first planned adapter, but no provider or transport type enters Core.
+
 ## CLOUD-STO-AUTH-01 - Complete Authoritative Store Composition
 
 1. `completed` - Audit every API/Worker durable collaborator that can advance a
@@ -44,7 +62,7 @@
 - The user reprioritized Zebra durable storage and memory foundations ahead of
   further Trench work on 2026-07-23.
 - PostgreSQL remains durable truth, S3-compatible storage owns payload bytes,
-  Redis live state is erasable, and Redis Agent Memory remains a separate,
+  Redis live state is erasable, and semantic memory remains a separate,
   degraded-safe `AgentMemoryGateway` rather than a `MemoryStorePort` replacement.
 - This task composes only the five existing control-plane Ports. Legacy durable
   stores without adequate Ports are recorded in `CLOUD-STO-AUTH-01`; the partial
@@ -95,7 +113,7 @@
   AG-UI adapter and remains the durable Task, Event, Policy, approval, tool
   receipt, and Artifact authority.
 - The first production business slice is read-only. Analysis, controlled
-  writeback, Redis Agent Memory, and multi-tenant GA follow explicit gates.
+  writeback, the optional Memory Gateway, and multi-tenant GA follow explicit gates.
 
 ### Errors Encountered
 
