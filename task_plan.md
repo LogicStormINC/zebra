@@ -1,5 +1,26 @@
 # Task Plan
 
+## ARCH-RUNTIME-V2-PLAN-01 - Runtime V2 Proposal Current-State Alignment
+
+1. `completed` - Compare every proposal lane with current docs, code and task evidence.
+2. `completed` - Rewrite the proposal as a current-state delta with explicit authority
+   and non-executable status.
+3. `completed` - Align the docs guide, PROGRESS and task governance without modifying the
+   final architecture or activating implementation.
+4. `completed` - Run fresh-reader ambiguity/contradiction tests and documentation gates.
+5. `completed` - Record durable evidence and commit the docs-only branch locally.
+
+### Decisions
+
+- Use `origin/main@a6b47c3f` as the review baseline; keep the dirty local main
+  worktree and its untracked documents untouched.
+- Classify the proposal in `docs/README.md`, not the product README, so an
+  exploratory document is not mistaken for the operator or architecture entry.
+- A future reusable Agent is named `AgentDefinition`; existing `AgentTask` remains
+  the durable user execution identity.
+- This proposal may recommend ADRs and locked follow-up cards, but cannot modify
+  the final architecture or claim implementation completion.
+
 ## CTX-SEG-02 - Follow-up Context And Budget Recovery
 
 1. `completed` - Register and claim the path-bounded repair task on an isolated branch.

@@ -15260,3 +15260,57 @@ isolation completing in private cloud.
 
 - public open marketplace before private-cloud GA
 - bypassing the install/enable/grant/approve five-layer state machine
+
+### ARCH-RUNTIME-V2-PLAN-01 - Runtime V2 Proposal Current-State Alignment
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `ARCHITECTURE / DOCS / QA`
+- Depends on: current mainline architecture and explicit maintainer request
+- Branch: `codex/runtime-upgrade-v2-doc-alignment`
+- Worktree: `../zebra-agent-runtime-v2-doc-alignment`
+- Owned paths: `docs/Zebra Agent Runtime Upgrade Proposal v2.0.md`,
+  `docs/README.md`, `PROGRESS.md`, `docs/AGENT_TASKS.md`, `task_plan.md`,
+  `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Reconcile the Runtime v2 proposal with Zebra's implemented Task/Segment, Skill,
+Memory, Trust/Security and Eval baselines; preserve real future gaps without
+turning an unapproved proposal into executable architecture.
+
+#### Acceptance
+
+- implemented capabilities are not described as missing
+- `AgentTask` execution identity is distinct from a future reusable
+  `AgentDefinition` and version registry
+- Event Store authority, governed derived Memory and replaceable knowledge
+  providers remain separate
+- trust is typed provenance/risk evidence and never a hard-coded scalar authority
+- package and phase recommendations preserve current dependency rules and use
+  explicit ADR/task activation gates
+- README/PROGRESS/task registry point to one consistent proposal status
+- a fresh reader review can distinguish current, local/unmerged and proposed state
+
+#### Explicit Non-Goals
+
+- Python implementation, package creation, schema migration or Runtime wiring
+- modifying the final architecture source of truth before a focused ADR is approved
+- activating Agent Registry, memory, trust or evaluation implementation cards
+
+#### Validation And Handoff
+
+- proposal reduced from 1,078 lines to a 422-line current-state delta and remains
+  below the repository Markdown limit
+- fresh-reader review correctly identified the current Runtime baseline, existing
+  Skill/Memory/Trust/Eval foundations, non-executable status, and ADR-first next step
+- ambiguity follow-up clarified review versus approval, object lifecycle ownership,
+  authority snapshot, optional-provider degradation, revocation choice, deployment
+  authority, and Agent-version publication gates
+- relative document links and `git diff --check` pass
+- Eval release gate passes 10/10 after `make sync`
+- repository file-size gate retains two pre-existing violations in
+  `CodexConversationPane.styles.ts` (561/500) and `events.py` (505/500); neither
+  file is modified by this docs-only task
+- no implementation task is unlocked; the next optional action is a separately
+  approved and path-bounded Gate A ADR task

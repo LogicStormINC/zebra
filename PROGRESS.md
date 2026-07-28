@@ -19,6 +19,10 @@
   stable Task boundary and backend-internal execution Segments.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
+- Architecture review task: `ARCH-RUNTIME-V2-PLAN-01` aligns the Runtime v2
+  proposal with the implemented Task/Segment, Skill, Memory, Trust/Security and
+  Eval baseline. The proposal is planning input only; it does not modify the
+  final architecture or activate Agent Definition implementation.
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution

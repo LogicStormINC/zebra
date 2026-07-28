@@ -38,3 +38,13 @@ Use these files for implementation, task claiming, collaboration, and phase prog
 - `agent架构设计0.1.0.md` is an older design exploration document.
 
 Historical documents must not override the active execution set.
+
+## Exploratory And Non-Executable Proposals
+
+- `Zebra Agent Runtime Upgrade Proposal v2.0.md` is a reviewed current-state
+  delta for a possible versioned Agent Definition control plane. It does not
+  replace ADR-012, the final architecture, PROGRESS, or the task registry, and
+  it activates no implementation work.
+
+Exploratory proposals become executable only after the required ADR is approved
+and a path-bounded task is explicitly activated in `AGENT_TASKS.md`.
