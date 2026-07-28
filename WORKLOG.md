@@ -6190,3 +6190,35 @@ actual byte access.
   inherited failures; Eval passes `10/10`, Ruff/Mypy/diff-check pass;
 - two final read-only reviews report `0 P0 / 0 P1 / 0 P2`; `make check` retains only
   the inherited untouched file-size violations at `561/500` and `505/500`.
+
+## 2026-07-28 CLOUD-EFFECT-OUTBOX-01 Fenced Effect Dispatch Aggregate
+
+- continued from integrated cloud baseline `31969e22` in writable worktree
+  `zebra-cloud-mainline` on `codex/cloud-effect-outbox-01`, leaving the original
+  dirty `main` checkout untouched;
+- added typed Effect schedule/claim/status/evidence contracts and one additive
+  PostgreSQL v3 aggregate table carrying both Effect reservation and Outbox intent;
+- extracted a connection-aware Event append and strict epoch-then-Lease fence
+  assertion so schedule, claim and terminal writes share one transaction and lock order;
+- implemented fenced schedule, `FOR UPDATE SKIP LOCKED` claim, success/failure/
+  uncertain terminalization, expired-claim reconciliation, explicit resolution,
+  failed-no-effect retry and operator dead-letter transitions;
+- preserved separate execution Session authority and root Session dedupe scope;
+  raw credentials/payloads, Worker wiring, broker, Redis and generic UoW remain out;
+- Core/storage matrix passes `367` locally; focused contract tests pass `22` with
+  PostgreSQL cases skipped inside the Seatbelt sandbox. Ruff, Mypy and diff-check pass;
+- full suite passes `1837`, skips `59`, and retains the same nine inherited failures
+  (two provider expectations, five expired SCM fixtures, file-size gate and Worker
+  cancellation race);
+- added a separate real-PostgreSQL fault suite using namespace-scoped temporary
+  triggers; it proves schedule-Outbox insert, terminal-Outbox update and retry-
+  Outbox insert failures roll back their same-transaction Events. The three tests
+  statically validate and skip cleanly when a real DSN is absent;
+- ran the complete PostgreSQL matrix in a dedicated host Docker Compose project
+  against PostgreSQL 17.5: `49 passed in 3.74s`. This includes migrations,
+  Event/Projection, Lease, Effect dispatch and trigger fault rollback. The script
+  removed its dedicated container, volume and network after success; task moved to Review.
+- final focused Core/storage matrix passes `367` with `49` PostgreSQL skips inside
+  the sandbox; Ruff and Mypy pass, direct Eval passes `10/10`, and `git diff --check`
+  passes. `make eval` itself cannot initialize `~/.cache/uv` under Seatbelt, so the
+  already-synced virtual environment ran the identical release-check script directly.

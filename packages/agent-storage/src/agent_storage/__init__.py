@@ -58,6 +58,7 @@ from agent_storage.memory_lookup import (
 from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.postgres import (
     PostgresControlPlaneEpochError,
+    PostgresEffectDispatchStore,
     PostgresEventStore,
     PostgresLeaseStore,
     PostgresMigrationError,
@@ -114,6 +115,7 @@ __all__ = [
     "load_attachment_contexts",
     "payload_for_artifact_uri",
     "PostgresEventStore",
+    "PostgresEffectDispatchStore",
     "PostgresControlPlaneEpochError",
     "PostgresLeaseStore",
     "PostgresMigrationError",

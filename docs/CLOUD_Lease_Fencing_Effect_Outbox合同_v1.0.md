@@ -227,7 +227,8 @@ ledger，外层另写 started/terminal Event。崩溃会留下无法判定的半
 
 ```text
 schedule(request, fence) -> EffectDispatch
-claim(dispatch_id, fence, claim_ttl) -> EffectClaim
+claim_next(execution_session_id, fence, claim_ttl) -> EffectClaim | None
+list_reconcilable(execution_session_id, current_fence, limit) -> EffectClaim[]
 complete(claim, result, terminal_event) -> SessionEvent
 fail_no_effect(claim, reason, terminal_event) -> SessionEvent
 mark_uncertain(claim, evidence, terminal_event) -> SessionEvent
@@ -257,6 +258,7 @@ mark_dead_letter(dispatch_id, current_fence, evidence) -> EffectDispatch
 effect_outbox(
   deployment_namespace,
   dispatch_id,
+  execution_session_id,
   root_session_id,
   ledger_key,
   attempt,
@@ -270,10 +272,15 @@ effect_outbox(
   claim_expires_at,
   intent_event_id,
   terminal_event_id,
+  evidence_history,
   timestamps,
   unique (deployment_namespace, root_session_id, ledger_key, attempt)
 )
 ```
+
+`execution_session_id` 是当前持有 Lease 并写 started/terminal Event 的 Session；
+`root_session_id` 是跨 handoff 的 Effect ledger 去重域。Child Session 不得使用
+root Session 的 fence，两者不得合并或互相推导。
 
 Outbox 不保存原始凭据。payload 必须是 bounded typed value 或受治理 Artifact reference；
 短期 credential 只能在实际执行时通过既有安全边界解析。
@@ -288,6 +295,11 @@ mutation 必须再次比较同一 claim 与当前 Lease fence。
 外部调用在数据库 transaction 外执行。delivery 是 at-least-once discovery，不是
 exactly-once effect。稳定 provider idempotency/operation ID 应被传入并只持久化可查询
 标识或 hash；它增强 reconciliation，但不能替代本地 fence。
+
+Worker 重启后不依赖进程内保存的 `EffectClaim`。当前 owner 先用
+`list_reconcilable(execution_session_id, current_fence, limit)` 发现已过期或 claim fence
+已被当前 Lease 取代的 durable claimed intent，再把返回的旧 claim 作为
+`reconcile_expired` 的 CAS 输入。发现接口只读且有上限，不自动改变状态或调用 provider。
 
 ### 6.5 Terminal 状态
 
@@ -306,6 +318,11 @@ provider 查询得到确定证据后，当前 owner 用 `resolve_uncertain` 把 
 `succeeded` 或 `failed_no_effect` 并写 terminal Event；不可查询时保持 uncertain。
 `dead_letter` 只能由当前 owner 依据 operator-approved evidence 调用 `mark_dead_letter`，
 不能成为静默超时转换。
+
+每次 reconcile、resolve 或 dead-letter evidence 都追加到 immutable
+`evidence_history`；`evidence` 只是最新值的便捷投影，不得覆盖或删除先前恢复证据。
+Evidence 只接受有界、已脱敏摘要和 SHA-256 provider operation hash；长诊断或原始
+响应必须写入受治理 Artifact，并仅在 Outbox 中保存 Artifact reference。
 
 初始 attempt 为 `1`。只有 `failed_no_effect` 可调用 `retry_failed_no_effect`：transaction
 校验当前 fence 与旧 terminal attempt，用唯一 `retry_key` 原子创建 `attempt + 1` 的新
@@ -396,6 +413,7 @@ multi-worker safe。
 ### 9.2 Effect/Outbox
 
 - 对 schedule transaction 每个 SQL 写点注入失败，不留下半状态；
+- child `execution_session_id` 的 Lease/Event 与 `root_session_id` ledger 去重同时成立；
 - 同 ledger key 并发 schedule 只产生一个 Effect 与一个 Outbox；
 - 两个 consumer 对同一 intent 只能 claim 一个；
 - stale fence 的 claim 与 terminal mutation 全部失败；

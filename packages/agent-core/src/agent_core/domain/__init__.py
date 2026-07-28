@@ -32,6 +32,16 @@ from agent_core.domain.attachments import (
 )
 from agent_core.domain.clarifications import ClarificationContext
 from agent_core.domain.delivery_audit import DeliveryAuditRecord
+from agent_core.domain.effect_dispatch import (
+    EffectClaim,
+    EffectDispatch,
+    EffectDispatchConflictError,
+    EffectDispatchStateError,
+    EffectDispatchStatus,
+    EffectEvidence,
+    EffectResolutionOutcome,
+    EffectScheduleRequest,
+)
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.leases import (
     DEFAULT_MAX_LEASE_TTL,
@@ -91,8 +101,16 @@ __all__ = [
     "ContextLifecycleSignals",
     "EventActor",
     "EventType",
+    "EffectClaim",
+    "EffectDispatch",
+    "EffectDispatchConflictError",
+    "EffectDispatchStateError",
+    "EffectDispatchStatus",
+    "EffectEvidence",
     "ExecutionSegment",
     "EffectIdentity",
+    "EffectResolutionOutcome",
+    "EffectScheduleRequest",
     "CompletedToolEvidence",
     "HandoffActorKind",
     "HandoffOperationStatus",

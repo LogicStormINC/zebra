@@ -134,6 +134,82 @@ MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=3,
+        name="fenced_effect_dispatch_outbox",
+        statements=(
+            """
+            CREATE TABLE effect_outbox (
+                deployment_namespace TEXT NOT NULL,
+                dispatch_id UUID NOT NULL,
+                execution_session_id UUID NOT NULL,
+                root_session_id UUID NOT NULL,
+                ledger_key TEXT NOT NULL,
+                attempt INTEGER NOT NULL CHECK (attempt >= 1),
+                retry_key TEXT,
+                request_hash TEXT NOT NULL CHECK (length(request_hash) = 64),
+                effect_identity JSONB NOT NULL,
+                payload_artifact_ref TEXT NOT NULL
+                    CHECK (length(btrim(payload_artifact_ref)) > 0),
+                status TEXT NOT NULL CHECK (status IN (
+                    'pending', 'claimed', 'succeeded', 'failed_no_effect',
+                    'uncertain', 'dead_letter'
+                )),
+                claim_epoch UUID,
+                claim_fencing_token BIGINT CHECK (claim_fencing_token >= 1),
+                claim_owner_instance_id TEXT,
+                claim_expires_at TIMESTAMPTZ,
+                intent_event_id UUID NOT NULL,
+                terminal_event_id UUID,
+                result JSONB,
+                evidence JSONB,
+                evidence_history JSONB NOT NULL DEFAULT '[]'::jsonb
+                    CHECK (jsonb_typeof(evidence_history) = 'array'),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT transaction_timestamp(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT transaction_timestamp(),
+                PRIMARY KEY (deployment_namespace, dispatch_id),
+                UNIQUE (deployment_namespace, root_session_id, ledger_key, attempt),
+                FOREIGN KEY (deployment_namespace, intent_event_id)
+                    REFERENCES session_events (deployment_namespace, event_id),
+                FOREIGN KEY (deployment_namespace, terminal_event_id)
+                    REFERENCES session_events (deployment_namespace, event_id),
+                CHECK ((status = 'claimed') = (
+                    claim_epoch IS NOT NULL
+                    AND claim_fencing_token IS NOT NULL
+                    AND claim_owner_instance_id IS NOT NULL
+                    AND claim_expires_at IS NOT NULL
+                )),
+                CHECK (status != 'succeeded' OR result IS NOT NULL),
+                CHECK (status = 'succeeded' OR result IS NULL),
+                CHECK (status NOT IN ('pending', 'claimed') OR (
+                    terminal_event_id IS NULL AND evidence IS NULL
+                    AND evidence_history = '[]'::jsonb
+                )),
+                CHECK (status NOT IN ('succeeded', 'failed_no_effect', 'dead_letter')
+                    OR terminal_event_id IS NOT NULL),
+                CHECK (status NOT IN ('failed_no_effect', 'uncertain', 'dead_letter')
+                    OR (evidence IS NOT NULL AND jsonb_array_length(evidence_history) > 0))
+            )
+            """,
+            """
+            CREATE UNIQUE INDEX effect_outbox_retry_key
+            ON effect_outbox (deployment_namespace, root_session_id, ledger_key, retry_key)
+            WHERE retry_key IS NOT NULL
+            """,
+            """
+            CREATE INDEX effect_outbox_pending_delivery
+            ON effect_outbox (
+                deployment_namespace, execution_session_id, created_at, dispatch_id
+            )
+            WHERE status = 'pending'
+            """,
+            """
+            CREATE INDEX effect_outbox_reconciliation
+            ON effect_outbox (deployment_namespace, claim_expires_at, dispatch_id)
+            WHERE status = 'claimed'
+            """,
+        ),
+    ),
 )
 
 _MIGRATION_LOCK_ID = 9_187_330_641

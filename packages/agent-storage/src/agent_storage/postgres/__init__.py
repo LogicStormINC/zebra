@@ -12,6 +12,7 @@ from agent_storage.postgres.migrations import (
     PostgresMigrationError,
     apply_postgres_migrations,
 )
+from agent_storage.postgres.outbox import PostgresEffectDispatchStore
 from agent_storage.postgres.projections import (
     PostgresProjectionConflictError,
     PostgresProjectionStore,
@@ -19,6 +20,7 @@ from agent_storage.postgres.projections import (
 
 __all__ = [
     "PostgresEventStore",
+    "PostgresEffectDispatchStore",
     "PostgresControlPlaneEpochError",
     "PostgresLeaseStore",
     "PostgresMigrationError",

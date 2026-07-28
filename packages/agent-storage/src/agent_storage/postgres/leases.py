@@ -289,3 +289,41 @@ def _lease_from_row(row: dict[str, Any]) -> WorkerLease:
         heartbeat_at=row["heartbeat_at"],
         expires_at=row["expires_at"],
     )
+
+
+def assert_current_lease_fence(
+    connection: Any,
+    deployment_namespace: str,
+    session_id: SessionId,
+    fence: LeaseFence,
+) -> None:
+    """Lock the namespace authority and reject a stale Worker mutation."""
+    authority = connection.execute(
+        """
+        SELECT epoch FROM control_plane_epochs
+        WHERE deployment_namespace = %s
+        FOR SHARE
+        """,
+        (deployment_namespace,),
+    ).fetchone()
+    if authority is None or authority["epoch"] != fence.control_plane_epoch:
+        raise LeaseLostError("effect mutation rejected by the current lease fence")
+    row = connection.execute(
+        """
+        SELECT session_id FROM worker_leases
+        WHERE deployment_namespace = %s AND session_id = %s
+          AND control_plane_epoch = %s AND fencing_token = %s
+          AND owner_instance_id = %s AND released_at IS NULL
+          AND expires_at > transaction_timestamp()
+        FOR SHARE
+        """,
+        (
+            deployment_namespace,
+            session_id,
+            fence.control_plane_epoch,
+            fence.fencing_token,
+            fence.owner_instance_id,
+        ),
+    ).fetchone()
+    if row is None:
+        raise LeaseLostError("effect mutation rejected by the current lease fence")

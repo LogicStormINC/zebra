@@ -30,6 +30,7 @@ from agent_core.ports.conversation_compactor import (
     ConversationCompactorPort,
 )
 from agent_core.ports.delivery_audit_store import DeliveryAuditStorePort
+from agent_core.ports.effect_dispatch import EffectDispatchPort
 from agent_core.ports.effect_ledger import (
     EffectLedgerPort,
     EffectLedgerStatus,
@@ -99,6 +100,7 @@ __all__ = [
     "ConversationCompactionResult",
     "ConversationCompactorPort",
     "DeliveryAuditStorePort",
+    "EffectDispatchPort",
     "EffectLedgerPort",
     "EffectLedgerStatus",
     "EffectReservation",

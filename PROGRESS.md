@@ -59,6 +59,12 @@
 - PostgreSQL tasks in Review: `CLOUD-PG-01` implements isolated Event/Projection
   Adapters, while `CLOUD-LEASE-PG-01` implements epoch-scoped, database-clock
   Lease fencing. Both have real PostgreSQL evidence but neither is runtime-selected.
+- Effect Outbox task in Review: `CLOUD-EFFECT-OUTBOX-01` now has typed Core
+  dispatch states and a PostgreSQL aggregate for fenced schedule, `SKIP LOCKED`
+  claim, terminal commit, uncertain reconciliation and explicit retry. Its isolated
+  Docker Compose PostgreSQL 17.5 matrix passes `49/49`, including fault rollback,
+  concurrency, restore epoch, namespace and response-loss cases. It is not runtime-
+  selected; Worker integration and any cloud-readiness claim remain locked.
 - Agent Definition architecture task in Review: `AGENT-DEF-ADR-01` records accepted
   Definition control-plane decisions and updates the final architecture. It
   separates Task-level Definition configuration from Attempt-level execution

@@ -62,10 +62,31 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
             ORDER BY ordinal_position
             """
         ).fetchall()
+        outbox_columns = connection.execute(
+            """
+            SELECT column_name FROM information_schema.columns
+            WHERE table_schema = current_schema() AND table_name = 'effect_outbox'
+            ORDER BY ordinal_position
+            """
+        ).fetchall()
+        outbox_indexes = connection.execute(
+            """
+            SELECT indexdef FROM pg_indexes
+            WHERE schemaname = current_schema() AND tablename = 'effect_outbox'
+            """
+        ).fetchall()
+        outbox_constraints = connection.execute(
+            """
+            SELECT pg_get_constraintdef(oid)
+            FROM pg_constraint
+            WHERE conrelid = 'effect_outbox'::regclass
+            """
+        ).fetchall()
 
     assert migrations == [
         (1, "event_and_projection_storage", 64),
         (2, "control_plane_epoch_and_leases", 64),
+        (3, "fenced_effect_dispatch_outbox", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [
@@ -80,6 +101,51 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         "expires_at",
         "released_at",
     ]
+    assert {
+        "deployment_namespace",
+        "dispatch_id",
+        "execution_session_id",
+        "root_session_id",
+        "ledger_key",
+        "attempt",
+        "request_hash",
+        "effect_identity",
+        "payload_artifact_ref",
+        "status",
+        "claim_epoch",
+        "claim_fencing_token",
+        "claim_owner_instance_id",
+        "claim_expires_at",
+        "intent_event_id",
+        "terminal_event_id",
+        "result",
+        "evidence",
+        "evidence_history",
+        "retry_key",
+        "created_at",
+        "updated_at",
+    } <= {row[0] for row in outbox_columns}
+    assert any(
+        all(part in index[0] for part in ("root_session_id", "ledger_key", "attempt"))
+        for index in outbox_indexes
+    )
+    assert any(
+        all(part in index[0] for part in ("execution_session_id", "status"))
+        for index in outbox_indexes
+    )
+    constraint_sql = "\n".join(row[0] for row in outbox_constraints)
+    assert all(
+        part in constraint_sql
+        for part in (
+            "root_session_id, ledger_key, attempt",
+            "claim_epoch IS NOT NULL",
+            "claim_fencing_token IS NOT NULL",
+            "claim_owner_instance_id IS NOT NULL",
+            "claim_expires_at IS NOT NULL",
+            "status = 'succeeded'",
+            "result IS NOT NULL",
+        )
+    )
 
 
 def test_postgres_lease_constructor_does_not_run_ddl(

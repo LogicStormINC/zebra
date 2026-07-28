@@ -552,3 +552,26 @@
 - Python module separation is not a database permission boundary. Migration/restore
   identities and runtime read-only epoch privileges remain composition/cutover work;
   this card makes no production-safe or full multi-worker-safe claim.
+
+## CLOUD-EFFECT-OUTBOX-01 - 2026-07-28
+
+- `execution_session_id` and `root_session_id` are different authorities: the
+  former selects the Lease and Event stream, while the latter is only the durable
+  cross-handoff Effect dedupe scope. A child must never write with the root fence.
+- One aggregate `effect_outbox` row is sufficient for v1 because PostgreSQL itself
+  is the durable queue. Splitting Effect and Outbox tables adds a synchronization
+  invariant without adding a broker or independent delivery lifecycle.
+- Every mutation locks the namespace epoch, then the current Session Lease, then
+  the Effect row and Event stream. Restore rotation therefore cannot complete while
+  an old fenced transaction remains capable of committing.
+- A claimed operation that loses its receipt never returns to pending. Expiry or
+  epoch replacement only permits a CAS transition to `uncertain`; a current owner
+  must resolve provider evidence or dead-letter it explicitly.
+- Same-key schedule and retry APIs are idempotent only when durable meaning matches.
+  Failed-no-effect may create one monotonic next attempt; uncertain execution cannot
+  be replayed automatically.
+- The isolated PostgreSQL 17.5 matrix passes `49/49`, proving Compose-backed
+  concurrency, rollback, restore epoch and namespace behavior for this slice.
+- PostgreSQL trigger injection is the smallest faithful way to test rollback after
+  an Event insert but before the aggregate row commit. Namespace-scoped trigger
+  predicates avoid changing production code or adding a generic failure hook.

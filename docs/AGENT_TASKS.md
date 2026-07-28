@@ -869,20 +869,27 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
 
 ### CLOUD-EFFECT-OUTBOX-01 - Fenced Effect Dispatch Aggregate
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
-- Depends on: merged `CLOUD-LEASE-PG-01` and explicit activation
+- Status: `Review`
+- Owner: `Codex`
+- Depends on: `CLOUD-LEASE-PG-01` integrated at `31969e22` and explicit
+  maintainer activation on 2026-07-28
 - Branch: `codex/cloud-effect-outbox-01`
+- Worktree: cloud-mainline writable integration clone
 - Owned paths: `packages/agent-core/src/agent_core/domain/effect_dispatch.py` (new),
   `packages/agent-core/src/agent_core/ports/effect_dispatch.py` (new),
   `packages/agent-core/src/agent_core/{__init__,domain/__init__,ports/__init__}.py`,
-  `packages/agent-storage/src/agent_storage/postgres/{__init__,migrations,events,effects,outbox}.py`,
+  `packages/agent-storage/src/agent_storage/postgres/{__init__,migrations,events,leases,effects,outbox}.py`,
   `packages/agent-storage/src/agent_storage/__init__.py`,
-  `tests/agent_storage/test_postgres_effect_dispatch.py` (new), and governance records
+  `tests/agent_core/test_effect_dispatch.py` (new),
+  `tests/agent_storage/test_postgres_effect_dispatch.py` (new),
+  `tests/agent_storage/test_postgres_effect_faults.py` (new),
+  `tests/agent_storage/test_postgres_migrations.py`, and governance records
 - Goal: atomically schedule and terminalize Event/Effect/Outbox mutations behind
   a valid Lease fence, with claim and reconciliation states.
 - Acceptance: real PostgreSQL fault injection, concurrent idempotency, SKIP LOCKED,
   stale-fence, explicit reconciliation/retry, crash-matrix and namespace tests pass.
+- Evidence: isolated Docker Compose PostgreSQL 17.5 matrix `49/49` on 2026-07-28;
+  dedicated test container, volume and network were removed after the run.
 - Non-goals: generic Unit of Work/inbox, Tool Gateway/Worker integration, broker.
 
 ### CLOUD-EFFECT-CONSUMER-01 - Worker Fenced Effect Consumer

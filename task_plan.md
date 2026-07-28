@@ -1,5 +1,29 @@
 # Task Plan
 
+## CLOUD-EFFECT-OUTBOX-01 - Fenced Effect Dispatch Aggregate
+
+1. `completed` - Reconcile the frozen Lease/Effect contract with existing
+   PostgreSQL Event, Lease and Effect-ledger primitives; freeze the minimum types.
+2. `completed` - Implement additive migration plus atomic schedule, claim, terminal,
+   reconciliation and retry operations behind full Lease-fence validation.
+3. `completed` - Add real PostgreSQL and deterministic contract tests for namespace,
+   concurrency, stale fences, idempotency and crash rollback.
+4. `completed` - Run focused/full validation, record evidence and preserve the result
+   as an importable cloud-mainline bundle.
+
+### Decisions
+
+- Work is based on verified cloud integration commit `31969e22`; the original
+  repository remains read-only and its dirty `main` worktree is untouched.
+- This slice does not modify Worker, Tool Gateway, Redis, broker or runtime Store
+  selection; those remain owned by `CLOUD-EFFECT-CONSUMER-01` or later gates.
+- Deterministic Core/storage validation is green. The isolated host-run Docker
+  Compose PostgreSQL 17.5 matrix passes `49/49`; the task is ready for Review.
+- Recovery discovery, old-epoch reconciliation, terminal rollback, response-loss
+  idempotency, namespace isolation, concurrent claim/reconcile CAS and retry-key
+  conflict cases are present in the real PostgreSQL matrix. Trigger-backed fault
+  injection covers schedule insert, terminal update and retry insert rollback.
+
 ## CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 
 1. `completed` - Verify issue `#197`, compare Codex, Claude Code, Pi Agent and
