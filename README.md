@@ -194,6 +194,7 @@ Focused references:
 - service boundary: [docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md](./docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md)
 - production Runtime: [docs/生产级Runtime实施方案_v1.0.md](./docs/生产级Runtime实施方案_v1.0.md)
 - context lifecycle: [docs/上下文生命周期与混合压缩架构方案_v1.0.md](./docs/上下文生命周期与混合压缩架构方案_v1.0.md)
+- context continuity and governed memory v1.1: [docs/上下文连续性与治理记忆改进方案_v1.1.md](./docs/上下文连续性与治理记忆改进方案_v1.1.md)
 - Task continuity and internal Segments: [docs/ADR-013_用户任务连续性与内部执行分段.md](./docs/ADR-013_用户任务连续性与内部执行分段.md)
 - automatic rollover roadmap: [docs/透明Context_Segment与自动Rollover实施方案_v1.0.md](./docs/透明Context_Segment与自动Rollover实施方案_v1.0.md)
 - historical handoff safety contract: [docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md](./docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md)

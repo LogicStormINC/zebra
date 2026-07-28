@@ -1,5 +1,28 @@
 # Task Plan
 
+## CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
+
+1. `completed` - Verify issue `#197`, compare Codex, Claude Code, Pi Agent and
+   Hermes, register one path-bounded task, and establish an isolated worktree.
+2. `completed` - Land the v1.1 design baseline and executable implementation
+   plan before changing runtime behavior.
+3. `completed` - Add exact-tail compaction and one stricter original-history retry,
+   then classify persistent context overflow as recoverable suspension.
+4. `completed` - Add evidence-gated, conflict-safe candidate promotion and append
+   its review events through the existing memory governance flow.
+5. `completed` - Add SQLite FTS-backed relevant recall with stable-rule lane,
+   deduplication, repo isolation and a token budget.
+6. `in_progress` - Run focused, full, static and Eval gates; update durable evidence,
+   commit, push and open the focused PR.
+
+### CTX-MEM-01 Errors Encountered
+
+- The first baseline command used nonexistent paths
+  `tests/agent_core/test_context_window.py` and
+  `tests/worker/test_execution_errors.py`; no tests ran. The actual context test
+  is `tests/agent_core/test_context_window_gate.py`, and worker coverage is in
+  lifecycle/finalization suites. The corrected baseline passed `33` tests.
+
 ## CTX-SEG-02 - Follow-up Context And Budget Recovery
 
 1. `completed` - Register and claim the path-bounded repair task on an isolated branch.

@@ -5,6 +5,15 @@
 
 ## Current Mainline Snapshot
 
+- Review task: `CTX-MEM-01` closes the valid parts of GitHub issue `#197` with
+  an exact three-user-turn tail, complete tool groups, one strict retry from
+  original history, recoverable context suspension, evidence-gated memory
+  promotion, and repo-scoped SQLite FTS recall under a token budget. Local
+  validation: `63` focused tests, changed-file Ruff, Mypy over `158` source
+  files, and release eval `10/10` pass. Full suite: `1747 passed, 8 skipped`;
+  the same nine failures reproduce on untouched `main`. `make check` is blocked
+  only by two inherited file-size violations outside this task.
+
 - Snapshot date: `2026-07-19`
 - Verified implementation baseline: `f1e4965` (PR `#174`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`

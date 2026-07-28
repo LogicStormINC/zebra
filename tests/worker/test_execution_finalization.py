@@ -35,6 +35,7 @@ def test_budget_exhaustion_is_persisted_as_suspension_not_failure() -> None:
         recorder=recorder,  # type: ignore[arg-type]
         attempt_result=result,
         memory_extraction_service=None,  # type: ignore[arg-type]
+        memory_promotion_service=None,  # type: ignore[arg-type]
         title_service=None,  # type: ignore[arg-type]
         event_store=None,  # type: ignore[arg-type]
         started_at=datetime(2026, 7, 20, tzinfo=UTC),

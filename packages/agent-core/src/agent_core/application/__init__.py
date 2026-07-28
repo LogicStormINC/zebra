@@ -6,6 +6,10 @@ from agent_core.application.approvals import (
     ApprovalDecisionService,
 )
 from agent_core.application.mcp_prompt_attachments import build_mcp_prompt_attachment
+from agent_core.application.memory_candidate_promotions import (
+    MemoryCandidatePromotionResult,
+    MemoryCandidatePromotionService,
+)
 from agent_core.application.memory_candidates import (
     MemoryCandidateExtractionCommand,
     MemoryCandidateExtractionResult,
@@ -48,6 +52,8 @@ __all__ = [
     "MemoryCandidateExtractionCommand",
     "MemoryCandidateExtractionResult",
     "MemoryCandidateExtractionService",
+    "MemoryCandidatePromotionResult",
+    "MemoryCandidatePromotionService",
     "serialize_memory_inventory",
     "serialize_scoped_memory_inventory",
     "MemoryReviewAction",

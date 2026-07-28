@@ -7,6 +7,7 @@ size limit (AGENTS.md hard limit: 500 lines for source files).
 from __future__ import annotations
 
 from agent_core.domain.context_capsule import ContextCapsuleValidationError
+from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports.model_gateway import ModelResponseRejectedError
 from agent_integrations.model_errors import ModelProviderError
@@ -29,6 +30,12 @@ def exception_attempt_result(
                 "with a fresh context"
             ),
             metadata={**metadata, "stop_reason": "context_recovery_required"},
+        )
+    if isinstance(exc, ContextWindowExceededError):
+        return HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.SUSPENDED,
+            summary="context window remains over budget after strict compaction",
+            metadata={**metadata, "stop_reason": "context_window_exceeded"},
         )
     if isinstance(exc, ModelResponseRejectedError):
         return HarnessAttemptResult(
@@ -79,6 +86,16 @@ def error_metadata(
     }
     if isinstance(exc, ModelResponseRejectedError):
         metadata.update(exc.metadata())
+    elif isinstance(exc, ContextWindowExceededError):
+        metadata.update(
+            {
+                "estimated_input_tokens": exc.plan.estimated_input_tokens,
+                "input_token_limit": exc.plan.input_token_limit,
+                "context_profile": exc.plan.profile_name,
+                "token_breakdown": exc.plan.token_breakdown,
+                "attempted_strategies": list(exc.plan.attempted_strategies),
+            }
+        )
     elif isinstance(exc, ModelProviderError):
         metadata.update(
             {

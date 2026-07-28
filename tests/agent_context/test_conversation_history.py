@@ -2,7 +2,6 @@ from datetime import UTC, datetime
 
 import pytest
 from agent_context import (
-    LEDGER_MARKER,
     SUMMARY_MARKER,
     compact_message_history,
     estimate_message_tokens,
@@ -116,7 +115,7 @@ def test_unresolved_latest_call_is_never_summarized_away() -> None:
     assert result.capsule.pending_tools[0].name == "files.read"
 
 
-def test_later_user_constraint_is_promoted_to_protected_ledger() -> None:
+def test_later_user_constraint_remains_in_protected_exact_tail() -> None:
     old_call = _call("old.txt", "call_old")
     latest_call = _call("latest.txt", "call_latest")
     messages = (
@@ -136,9 +135,48 @@ def test_later_user_constraint_is_promoted_to_protected_ledger() -> None:
         created_at=NOW,
     )
 
-    ledger = next(message for message in result.messages if LEDGER_MARKER in message.content)
-    assert ledger.role is MessageRole.SYSTEM
-    assert "Do not modify storage." in ledger.content
+    constraint = next(
+        message for message in result.messages if message.content == "Do not modify storage."
+    )
+    assert constraint.role is MessageRole.USER
+
+
+def test_compaction_keeps_last_three_user_turns_and_complete_tool_group() -> None:
+    old_call = _call("old.txt", "call_old")
+    recent_call = _call("recent.txt", "call_recent")
+    messages = (
+        _message(MessageRole.USER, "Initial objective."),
+        _assistant("Reading old evidence.", old_call),
+        _tool("call_old", "OLD-" * 800),
+        _message(MessageRole.USER, "Second turn must stay exact."),
+        _assistant("Reading recent evidence.", recent_call),
+        _tool("call_recent", "RECENT-EVIDENCE"),
+        _message(MessageRole.USER, "Third turn must stay exact."),
+        _message(MessageRole.ASSISTANT, "Acknowledged." + "x" * 600),
+        _message(MessageRole.USER, "Fourth turn must stay exact."),
+    )
+
+    result = compact_message_history(
+        messages,
+        user_goal="Initial objective.",
+        max_tokens=620,
+        created_at=NOW,
+    )
+
+    exact_user_turns = [
+        message.content for message in result.messages if message.role is MessageRole.USER
+    ]
+    assert exact_user_turns[-3:] == [
+        "Second turn must stay exact.",
+        "Third turn must stay exact.",
+        "Fourth turn must stay exact.",
+    ]
+    recent_assistant = next(
+        message for message in result.messages if message.tool_calls == (recent_call,)
+    )
+    recent_index = result.messages.index(recent_assistant)
+    assert result.messages[recent_index + 1].tool_call_id == "call_recent"
+    assert result.within_budget is True
 
 
 @pytest.mark.parametrize("exchange_count", [50, 100, 200])

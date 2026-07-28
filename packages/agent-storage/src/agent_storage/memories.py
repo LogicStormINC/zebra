@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+import builtins
 import sqlite3
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
@@ -14,6 +18,13 @@ from agent_core.domain.memories import (
 from agent_core.ports.memory_store import MemoryStorePort
 
 from agent_storage.database import SQLiteDatabase
+from agent_storage.memory_search import (
+    MEMORY_COLUMNS,
+    append_text_fallback,
+    fts_query,
+    initialize_memory_search,
+    sync_memory_search,
+)
 
 
 class SQLiteMemoryStore(MemoryStorePort):
@@ -82,6 +93,7 @@ class SQLiteMemoryStore(MemoryStorePort):
                     record.updated_at.isoformat(),
                 ),
             )
+            sync_memory_search(connection, record)
         return record
 
     def get(self, memory_id: MemoryId) -> MemoryRecord | None:
@@ -119,55 +131,74 @@ class SQLiteMemoryStore(MemoryStorePort):
         clauses = ["1 = 1"]
         parameters: list[object] = []
         if query.tenant_id is not None:
-            clauses.append("tenant_id = ?")
+            clauses.append("memory.tenant_id = ?")
             parameters.append(query.tenant_id)
         if query.user_id is not None:
-            clauses.append("user_id = ?")
+            clauses.append("memory.user_id = ?")
             parameters.append(query.user_id)
         if query.repo_id is not None:
-            clauses.append("repo_id = ?")
+            clauses.append("memory.repo_id = ?")
             parameters.append(query.repo_id)
         if query.source_session_id is not None:
-            clauses.append("source_session_id = ?")
+            clauses.append("memory.source_session_id = ?")
             parameters.append(str(query.source_session_id))
         if query.visibility is not None:
-            clauses.append("visibility = ?")
+            clauses.append("memory.visibility = ?")
             parameters.append(query.visibility.value)
         if query.memory_types:
-            clauses.append(
-                f"memory_type IN ({', '.join('?' for _ in query.memory_types)})"
-            )
+            clauses.append(f"memory.memory_type IN ({', '.join('?' for _ in query.memory_types)})")
             parameters.extend(memory_type.value for memory_type in query.memory_types)
         if query.statuses:
-            clauses.append(f"status IN ({', '.join('?' for _ in query.statuses)})")
+            clauses.append(f"memory.status IN ({', '.join('?' for _ in query.statuses)})")
             parameters.extend(status.value for status in query.statuses)
-        parameters.append(query.limit)
+        if query.text_query is not None:
+            try:
+                return self._list_fts(query, clauses, parameters)
+            except sqlite3.OperationalError:
+                append_text_fallback(clauses, parameters, query.text_query)
+        return self._list_rows(clauses, parameters, limit=query.limit)
+
+    def _list_fts(
+        self,
+        query: MemoryQuery,
+        clauses: Sequence[str],
+        parameters: Sequence[object],
+    ) -> builtins.list[MemoryRecord]:
+        match_query = fts_query(query.text_query or "")
+        if not match_query:
+            return self._list_rows(clauses, parameters, limit=query.limit)
+        fts_clauses = [*clauses, "memory_records_fts MATCH ?"]
+        fts_parameters = [*parameters, match_query, query.limit]
         sql = f"""
             SELECT
-                memory_id,
-                memory_type,
-                text,
-                confidence,
-                status,
-                visibility,
-                tenant_id,
-                user_id,
-                repo_id,
-                source_session_id,
-                source_event_start,
-                source_event_end,
-                source_commit_sha,
-                superseded_by,
-                expires_at,
-                created_at,
-                updated_at
-            FROM memory_records
-            WHERE {' AND '.join(clauses)}
-            ORDER BY updated_at DESC, created_at DESC, memory_id ASC
+                {MEMORY_COLUMNS}
+            FROM memory_records AS memory
+            JOIN memory_records_fts ON memory_records_fts.memory_id = memory.memory_id
+            WHERE {" AND ".join(fts_clauses)}
+            ORDER BY bm25(memory_records_fts), memory.updated_at DESC,
+                     memory.created_at DESC, memory.memory_id ASC
             LIMIT ?
         """
         with self._database.connect() as connection:
-            rows = connection.execute(sql, parameters).fetchall()
+            rows = connection.execute(sql, fts_parameters).fetchall()
+        return [_memory_record_from_row(row) for row in rows]
+
+    def _list_rows(
+        self,
+        clauses: Sequence[str],
+        parameters: Sequence[object],
+        *,
+        limit: int,
+    ) -> builtins.list[MemoryRecord]:
+        sql = f"""
+            SELECT {MEMORY_COLUMNS}
+            FROM memory_records AS memory
+            WHERE {" AND ".join(clauses)}
+            ORDER BY memory.updated_at DESC, memory.created_at DESC, memory.memory_id ASC
+            LIMIT ?
+        """
+        with self._database.connect() as connection:
+            rows = connection.execute(sql, [*parameters, limit]).fetchall()
         return [_memory_record_from_row(row) for row in rows]
 
     def _initialize(self) -> None:
@@ -219,6 +250,7 @@ class SQLiteMemoryStore(MemoryStorePort):
                 ON memory_records(tenant_id, status, updated_at DESC)
                 """
             )
+            initialize_memory_search(connection)
 
 
 def _memory_record_from_row(row: sqlite3.Row) -> MemoryRecord:
