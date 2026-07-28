@@ -4,13 +4,13 @@
 
 1. `completed` - Inspect the pinned running Mem0 OpenAPI/source without reading
    secrets or issuing memory writes.
-2. `in_progress` - Combine the reviewed Store, Gateway and Compose prerequisites
+2. `completed` - Combine the reviewed Store, Gateway and Compose prerequisites
    in an isolated stacked worktree and claim the Spike paths.
-3. `pending` - Add a deterministic OpenAI-compatible embedding stub and isolated
+3. `completed` - Add a deterministic OpenAI-compatible embedding stub and isolated
    Compose test overlay with no external credential.
-4. `pending` - Exercise authenticated `infer=false` add/search/update/history/
+4. `completed` - Exercise authenticated `infer=false` add/search/update/history/
    delete, namespace filters, duplicate delivery, restart and failure behavior.
-5. `pending` - Record exact observed contracts, run focused/repository gates and
+5. `completed` - Record exact observed contracts, run focused/repository gates and
    preserve the separate real-provider credential gate.
 
 ### Decisions

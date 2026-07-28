@@ -1,5 +1,25 @@
 # Progress Log
 
+## 2026-07-28 MEM-MEM0-SPIKE-01 Mem0 OSS Contract And Operations Probe
+
+- combined the reviewed Store, Gateway and Compose prerequisites on isolated
+  branch `codex/mem0-contract-spike-01`; the branch remains local and stacked
+- added a non-root, read-only deterministic OpenAI-compatible embedding service
+  and isolated test Compose project with its own network, ports and volumes
+- exercised the pinned Mem0 server through authenticated REST calls for
+  `infer=false`, namespace filters, expiration, update/history, restart and delete
+- proved duplicate delivery creates distinct IDs; expired search ignores
+  `show_expired=true`; provider 503 maps to `502/provider_unavailable`; dimension
+  mismatch maps to `502/unknown`; provider stall reaches the caller deadline
+- kept Zebra `MemoryStorePort` authoritative and recorded the required Adapter
+  delivery mapping, opaque namespace and hit-revalidation boundaries
+- preserved real-provider validation as a separate credentialed release gate
+- focused Ruff and Mypy pass; Compose render passes; isolated real-server Spike
+  passes `2/2`; release Eval passes `10/10`; `git diff --check` passes
+- full suite is `1761 passed, 9 skipped, 9 failed`; the nine failures exactly
+  match the inherited provider, expired SCM fixture, file-size and cancellation
+  baseline, so merge/PR remains blocked and the task moves to local `Review`
+
 ## 2026-07-28 MEM-GW-CON-01 Provider-neutral Agent Memory Gateway Contract
 
 - activated `codex/mem-gw-con-01` in an isolated worktree stacked directly on

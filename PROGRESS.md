@@ -266,7 +266,8 @@ including a real thinking tool round trip.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
   `CLOUD-STO-AUTH-01`, `CLOUD-COMPOSE-INFRA-01`, and `MEM-GW-CON-01` are in
-  Review. `MEM-MEM0-SPIKE-01` is active as a stacked local contract task; all
+  Review. `MEM-MEM0-SPIKE-01` is also in Review after isolated real-server
+  contract validation; all
   PostgreSQL, Redis-live, object-storage, production AG-UI, Trench, analysis,
   writeback, Memory adapter, and GA cards remain `Locked` pending their gates.
 
@@ -283,8 +284,9 @@ including a real thinking tool round trip.
 5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
    Credential/Egress Broker, external-namespace isolation, and Kubernetes in
    dependency order.
-6. Land the dependency Compose baseline and optional Mem0 boot smoke without
-   adding Zebra main containers or claiming a verified semantic-memory contract.
+6. Review the dependency Compose baseline and Mem0 contract Spike. Preserve its
+   observed duplicate, expired-search, timeout and error-classification gaps;
+   do not add Zebra main containers or claim real-provider compatibility.
 7. After authoritative Store composition, activate PostgreSQL, Lease/Outbox,
    Object Storage, Redis live, recovery and the separate Memory Gateway/Mem0 Spike
    one card at a time; no production claim precedes migration/restore evidence.

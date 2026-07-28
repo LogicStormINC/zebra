@@ -1,5 +1,24 @@
 # Findings
 
+## MEM-MEM0-SPIKE-01 - 2026-07-28
+
+- Pinned Mem0 OSS accepts authenticated `infer=false` writes through a local
+  embedding-only provider; the successful path never calls chat completion.
+- Identical delivery creates distinct Mem0 UUIDs. Zebra therefore needs its own
+  durable `MemoryId -> provider_ref` mapping and idempotent delivery ledger.
+- Hashed `user_id` scopes isolate the tested searches, but Mem0 is not the Host
+  authorization boundary and every returned Zebra reference still needs Store
+  revalidation.
+- Expired records can be listed with `show_expired=true` but cannot be searched
+  with the same flag in the pinned version.
+- Provider 503 becomes `502/provider_unavailable`; bad dimensions become
+  `502/unknown`; a stalled provider blocks until the caller deadline. All three
+  belong to the Adapter's degraded path.
+- Restart preserves vector and history data in their isolated volumes. Both are
+  derived evidence only; `MemoryStorePort` remains Zebra's fact source.
+- The deterministic provider proves the OSS REST/pgvector path, not real-provider
+  credentials, rate limits, proxy/TLS behavior or production SLO.
+
 ## MEM-GW-CON-01 - 2026-07-28
 
 - The safest remote-memory contract does not return text. A hit carries only the

@@ -98,9 +98,26 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
   'http://127.0.0.1:18088/memories?user_id=anonymous-probe'
 ```
 
-The final command must print `401`. Real write/search, duplicate delivery,
-restart, deletion, namespace and embedding-dimension behavior remain acceptance
-criteria of `MEM-MEM0-SPIKE-01`, which requires a disposable approved model key.
+The final command must print `401`. The deterministic Spike below covers the
+remaining OSS write/search and failure contracts without an external key; only
+real-provider compatibility remains credential-gated.
+
+## Run the isolated deterministic Mem0 contract spike
+
+The test-only `compose.mem0.test.yml` redirects Mem0's OpenAI-compatible
+embedding calls to a deterministic local stub. Chat completions deliberately
+fail, so a successful write proves that `infer=false` did not call the LLM. The
+Spike uses a separate Compose project, network, ports and volumes; it does not
+touch the long-running dependency data.
+
+```bash
+ZEBRA_RUN_MEM0_SPIKE=1 uv run pytest -q \
+  tests/spikes/mem0/test_mem0_oss_contract.py
+```
+
+This validates Mem0 OSS/REST/pgvector behavior without an external credential.
+It does not validate a real model provider; that remains a separate release
+gate. See `docs/Mem0 OSS协议兼容性验证记录.md` for the observed limitations.
 
 ## Stop and cleanup
 

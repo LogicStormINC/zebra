@@ -371,7 +371,7 @@ read-only。
 
 ### MEM-MEM0-SPIKE-01 — Mem0 OSS contract and operations probe
 
-- Status: `In Progress`；branch `codex/mem0-contract-spike-01`；stacked on local
+- Status: `Review`；branch `codex/mem0-contract-spike-01`；stacked on local
   reviewed `CLOUD-COMPOSE-INFRA-01`、`CLOUD-STO-AUTH-01` and `MEM-GW-CON-01`。
 - Candidate paths: isolated REST fixtures/tests, Spike configuration and compatibility evidence only。
 - Deliverable: pin exact self-hosted OSS paths/shapes for `infer=false`、metadata filters、
@@ -379,6 +379,9 @@ read-only。
 - Acceptance: observe duplicate delivery、timeout、provider failure and embedding-dimension
   changes；persist no credential；a deterministic local provider may validate OSS semantics,
   while real provider compatibility remains a separate credentialed gate。
+- Observed: duplicate delivery creates distinct provider IDs；provider stall reaches the
+  caller deadline；provider 503 maps to `502/provider_unavailable`；dimension mismatch maps
+  to `502/unknown`；expired records remain absent from search even with `show_expired=true`。
 
 ### MEM-MEM0-ADP-01 — Mem0 Gateway adapter
 

@@ -44,7 +44,7 @@
   2026-07-24. It defines only the Docker Compose dependency stack and is stacked
   behind `CLOUD-STO-SEAM-01`; Zebra application containers remain a separate
   locked task.
-- `MEM-MEM0-SPIKE-01` is `In Progress` on `codex/mem0-contract-spike-01`.
+- `MEM-MEM0-SPIKE-01` is `Review` on `codex/mem0-contract-spike-01`.
   The maintainer explicitly continued the memory/Compose lane on 2026-07-28;
   this local branch combines the reviewed Store, Gateway and Compose prerequisites
   and remains blocked from merge until those predecessors land.
@@ -399,7 +399,7 @@ service and from future Zebra API/Worker application containers.
 
 ### MEM-MEM0-SPIKE-01 - Mem0 OSS Contract And Operations Probe
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `INTEGRATIONS / STORAGE / SECURITY`
 - Depends on: locally reviewed `CLOUD-COMPOSE-INFRA-01`, `CLOUD-STO-AUTH-01`,
@@ -432,6 +432,19 @@ degraded-safe semantic index behind Zebra's governed memory lifecycle.
   the authoritative `MemoryStorePort` before prompt admission
 - deterministic provider coverage is not evidence of real OpenAI compatibility;
   the credentialed provider check remains explicitly unverified
+
+#### Validation and handoff
+
+- isolated real-server contract test covers authentication, `infer=false`, scope,
+  duplicate delivery, expiration, update/history, restart, delete, provider 503,
+  caller timeout and embedding-dimension mismatch
+- fixed-version gaps are explicit: duplicate add is not idempotent,
+  `search(show_expired=true)` omits expired records and dimension mismatch maps to
+  generic `502/unknown`
+- next Adapter must own a delivery mapping/ledger, hash Zebra namespaces, impose
+  a caller deadline and revalidate every hit through `MemoryStorePort`
+- this stacked local branch cannot merge until its Store, Gateway and Compose
+  predecessors land; real-provider compatibility remains a separate gate
 
 ### MEM-MEM0-ADP-01 - Mem0 Gateway Adapter
 
