@@ -1,5 +1,26 @@
 # Task Plan
 
+## CLOUD-LEASE-PLAN-01 - Lease, Fencing And Effect Dispatch Contract
+
+1. `completed` - Audit current Lease, Effect ledger, handoff outbox and Worker
+   lifecycle behavior and identify stale-writer and crash windows.
+2. `completed` - Create an isolated stacked branch and register one docs-only
+   task with exact owned paths while keeping the parent Locked.
+3. `completed` - Define control-plane epoch, monotonic Lease fencing,
+   database-clock TTL and checkpoint-independent ownership semantics.
+4. `completed` - Define atomic Effect dispatch, durable intent discovery/claim,
+   uncertain-effect reconciliation and path-bounded follow-up cards.
+5. `completed` - Reader-test the contract, run documentation gates, record durable
+   evidence and commit the local review slice.
+
+### Decisions
+
+- Do not implement the original `CLOUD-LEASE-01` as one card; it crosses Core,
+  PostgreSQL, tool execution and Worker lifecycle ownership boundaries.
+- Keep ordinary API/System Event writes on `EventStorePort`; only leased Worker
+  mutations use a focused fenced aggregate Port.
+- Do not introduce a generic inbox before an external broker or consumer exists.
+
 ## CLOUD-PG-01 - PostgreSQL Event And Projection Storage
 
 1. `completed` - Review the approved migration/recovery model, authoritative

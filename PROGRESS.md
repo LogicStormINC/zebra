@@ -258,7 +258,13 @@ including a real thinking tool round trip.
   `CLOUD-STO-AUTH-01` are in Review. `CLOUD-PG-PLAN-01` is also in Review as a
   docs-only local task. The maintainer approved its five decisions;
   `CLOUD-PG-01` is now also in Review as a locally verified Event/Projection
-  PostgreSQL Adapter slice under the temporary CI-billing waiver. PostgreSQL composition and all Redis, object-storage,
+  PostgreSQL Adapter slice under the temporary CI-billing waiver.
+  `CLOUD-LEASE-PLAN-01` is in Review as a docs-only decomposition: audits
+  proved the original Lease/Outbox parent crosses Core fencing, PostgreSQL,
+  Effect transactions and Worker lifecycle boundaries. The parent stays Locked
+  after the contract passed independent reader review and was split into four
+  implementation cards. The separate full-aggregate fencing gate remains Locked.
+  PostgreSQL composition and all Redis, object-storage,
   production AG-UI, Trench, analysis, writeback, Agent Memory delivery, and GA
   cards remain `Locked` pending their explicit gates.
 
@@ -278,6 +284,9 @@ including a real thinking tool round trip.
 6. After authoritative Store composition, activate PostgreSQL, Lease/Outbox,
    Object Storage, Redis live, recovery and the separate Redis Agent Memory
    Gateway one card at a time; no production claim precedes migration/restore evidence.
+7. For Lease/Outbox, finish `CLOUD-LEASE-PLAN-01`, then activate Core contract,
+   PostgreSQL Lease, fenced Effect Outbox and Worker consumer cards in that order;
+   do not implement or close the original parent as one broad change.
 
 ## Runtime Blueprint
 

@@ -352,3 +352,38 @@
   protocol, repeated-effect, and budget stops remain deterministic.
 - The task branch was rebuilt from `origin/main`; the unmerged Web branch no longer
   acts as a hidden branch dependency.
+
+## CLOUD-LEASE-PLAN-01 - 2026-07-28
+
+- The original `CLOUD-LEASE-01` is not one safe implementation slice. It spans
+  Core ownership types, PostgreSQL Lease/epoch state, Effect/Outbox aggregate
+  transactions and Worker/tool execution lifecycle, so it remains Locked.
+- Current `WorkerLease` has no epoch/token; heartbeat and release compare only
+  `worker_id`. A stale process reusing that ID can mutate a successor Lease.
+- `checkpoint` is execution progress, but handoff facts currently expose it as a
+  fencing token. The two concepts must become separate typed fields before any
+  PostgreSQL Lease Adapter is safe.
+- PostgreSQL must decide expiry from database time and retain each Session's
+  highest fencing generation after release. A get-before-update check or row
+  deletion cannot enforce ownership under races.
+- Worker recovery currently precedes acquire, no production path calls heartbeat,
+  and ordinary Event/Effect writes carry no Lease. A focused fenced Worker
+  mutation Port is required; the general `EventStorePort` should remain usable by
+  API/System writers that do not hold a Worker Lease.
+- Effect started Event, ledger transitions, provider call and terminal Event are
+  separate transactions. The minimum correction is a narrow Effect dispatch
+  aggregate that atomically writes Event + reservation + Outbox intent, not a
+  generic Unit of Work.
+- PostgreSQL Outbox is the v1 durable queue. With no broker or external consumer,
+  a generic inbox is YAGNI. An expired executing claim becomes uncertain and is
+  reconciled; it never returns automatically to pending.
+- The executable order is `CLOUD-LEASE-CON-01 -> CLOUD-LEASE-PG-01 ->
+  CLOUD-EFFECT-OUTBOX-01 -> CLOUD-EFFECT-CONSUMER-01`.
+- Reader review caught and closed three initial P0 contract gaps: PITR can reset
+  a raw token so authorization uses the full epoch/token/owner tuple; expired or
+  old-epoch claims need a new-owner reconciliation CAS; and this parent cannot
+  claim full Worker aggregate safety. `CLOUD-AGG-FENCE-01` now owns that later gate.
+- Background heartbeat uses an independent connection and lost flag. An in-flight
+  provider call may finish after lease loss, but its terminal mutation is fenced.
+- Failed-no-effect retry has an explicit monotonic attempt/retry-key transaction;
+  uncertain execution never returns automatically to pending.

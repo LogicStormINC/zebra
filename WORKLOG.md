@@ -5970,3 +5970,29 @@ actual byte access.
   files (pre-existing failures in `web_crawl.py`, `mcp_proxy_policy.py`, and
   the `web-native` test/tool cluster confirmed unrelated via `git stash`
   comparison against the base commit).
+
+## 2026-07-28 CLOUD-LEASE-PLAN-01 Lease And Effect Dispatch Contract
+
+- created `codex/cloud-lease-plan-01` in
+  `../zebra-agent-cloud-lease-plan-01` from local `CLOUD-PG-01@15c386db`;
+- registered and claimed the docs-only task before changing the contract;
+- ran three independent read-only audits over Lease/Worker lifecycle,
+  Effect/Outbox crash windows and task/owned-path decomposition;
+- found P0 stale-worker gaps: no epoch/token, checkpoint used as a fence,
+  get-before-update heartbeat, deleted generations, no runtime heartbeat and
+  unfenced Worker Event/Effect writes;
+- found P0 Effect crash windows across started Event, ledger reservation,
+  provider call and terminal Event, plus response-cache idempotency that cannot
+  reserve commit/PR effects;
+- wrote `docs/CLOUD_Lease_Fencing_Effect_Outbox合同_v1.0.md` and split the locked
+  parent into Core, PostgreSQL Lease, Effect Outbox and Worker consumer cards;
+- kept Redis/Kafka/Temporal, generic Unit of Work/inbox, cloud selection,
+  cutover and production claims outside this task.
+- first reader review reported `3 P0 / 4 P1`; the contract was corrected for
+  PITR epoch semantics, new-owner reconciliation, aggregate scope, background
+  heartbeat, retry attempts, exact owned paths and merged dependency gates;
+- final reader review reports `0 P0 / 0 P1` and approves Review status;
+- fresh-worktree `make eval` initially failed before dependency sync, then passed
+  `10/10` after `make sync`; `make check` retains the two inherited untouched
+  file-size violations at `561/500` and `505/500`;
+- both task-owned docs are below the 600-line limit and `git diff --check` passes.
