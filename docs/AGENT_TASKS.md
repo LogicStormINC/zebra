@@ -448,13 +448,20 @@ degraded-safe semantic index behind Zebra's governed memory lifecycle.
 
 ### MEM-MEM0-ADP-01 - Mem0 Gateway Adapter
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `Review`
+- Owner: `Codex`
 - Suggested role: `INTEGRATIONS / SECURITY`
-- Depends on: merged `MEM-MEM0-SPIKE-01`
-- Branch: `TBD`
-- Candidate owned paths: focused `agent-integrations` Mem0 adapter, configuration,
-  fixtures and tests
+- Depends on: locally reviewed `MEM-MEM0-SPIKE-01` and explicit maintainer
+  continuation on 2026-07-28. This stacked implementation cannot merge until the
+  Spike and all of its predecessors land.
+- Branch: `codex/mem0-adapter-01`
+- Worktree: `../zebra-agent-mem0-adapter-01`
+- Owned paths: `packages/agent-integrations/src/agent_integrations/mem0/` (new),
+  `packages/agent-integrations/src/agent_integrations/__init__.py`,
+  `tests/agent_integrations/mem0/` (new), `docs/AGENT_TASKS.md`,
+  `tests/spikes/mem0/test_mem0_oss_contract.py`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `task_plan.md`, `findings.md`, `WORKLOG.md`
 
 #### Goal
 
@@ -467,6 +474,19 @@ by the Spike, with no Mem0 type escaping the integration package.
 - opaque namespace and Zebra memory references survive every request and response
 - timeout, rate limit, partial response and provider errors return degraded outcomes
 - local profile and Run execution remain functional when Mem0 is disabled or down
+
+#### Validation and handoff
+
+- default-disabled configuration performs no network I/O; HTTP credentials require
+  explicit insecure-local opt-in and environment proxies are disabled by default
+- publish fixes `infer=false`; namespace is SHA-256 mapped; responses expose only
+  canonical Mem0 UUID, Zebra `MemoryId` and provider score
+- timeout, rate limit, 5xx, oversized/schema-drift responses and an open circuit
+  return typed degraded outcomes; a half-open circuit admits one probe
+- delete requires the future namespace-aware delivery-ledger lookup; absent or
+  failing lookup degrades, lookup miss is not-found, and no in-memory map is added
+- focused contract tests and the pinned real Compose Mem0 lifecycle pass; no
+  runtime wiring or automatic write retry is included before `MEM-GW-DEL-01`
 
 ### MEM-GW-DEL-01 - Memory Delivery And Deletion Ledger
 

@@ -1,5 +1,26 @@
 # Progress Log
 
+## 2026-07-28 MEM-MEM0-ADP-01 Mem0 Gateway Adapter
+
+- activated isolated `codex/mem0-adapter-01`, stacked on the reviewed Mem0 Spike;
+  merge remains blocked by the full predecessor chain
+- implemented the provider-neutral Core Gateway over Mem0 REST using existing
+  `httpx`, with no SDK, runtime wiring, Store mutation or write retry
+- added default-disabled configuration, explicit insecure-local HTTP, opaque
+  namespace hashing, canonical provider UUIDs and environment-proxy opt-in
+- added bounded streaming, bounded hit parsing, redacted degraded outcomes and a
+  process-local circuit with one half-open probe
+- delete consumes a namespace-aware provider-ref lookup; missing/failing lookup
+  degrades and no hidden in-memory identity map was introduced
+- independent review found and verified fixes for delete false-not-found, lookup
+  exception leakage, provider-ref traversal, breaker reset, unbounded responses,
+  cleartext credential opt-in and all-invalid-hit schema drift
+- focused Core/Adapter tests pass `36/36`; pinned Compose lifecycle passes `3/3`;
+  Ruff, Mypy, diff check and release Eval `10/10` pass
+- full suite is `1784 passed, 10 skipped, 9 failed`; the nine failures exactly
+  match the inherited provider, expired SCM fixture, file-size and cancellation
+  baseline, so the task moves to local `Review` without push or PR
+
 ## 2026-07-28 MEM-MEM0-SPIKE-01 Mem0 OSS Contract And Operations Probe
 
 - combined the reviewed Store, Gateway and Compose prerequisites on isolated

@@ -385,12 +385,16 @@ read-only。
 
 ### MEM-MEM0-ADP-01 — Mem0 Gateway adapter
 
-- Status: `Locked`；depends on `MEM-MEM0-SPIKE-01`。
+- Status: `Review`；branch `codex/mem0-adapter-01`；stacked on local reviewed
+  `MEM-MEM0-SPIKE-01` after explicit maintainer continuation on 2026-07-28。
 - Candidate paths: `agent-integrations/.../mem0/`, configuration and tests。
 - Deliverable: feature flag、opaque mapping、`infer=false`、redaction、timeout、rate limit、
   circuit breaker and provider-version evidence。
 - Acceptance: only confirmed Zebra memories are published；remote score never changes Zebra
   confidence/lifecycle；local profile remains compatible。
+- Observed: fixed `infer=false` and opaque namespace mapping pass against the pinned real
+  Compose service；timeout、429、5xx、schema drift and lookup outage degrade；provider refs
+  are canonical UUIDs；disabled mode performs no network I/O。
 
 ### MEM-GW-DEL-01 — Memory delivery and deletion ledger
 

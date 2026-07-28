@@ -11,8 +11,17 @@ import urllib.request
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import pytest
+from agent_core.domain.identifiers import MemoryId
+from agent_core.ports.agent_memory_gateway import (
+    ConfirmedMemoryPublication,
+    MemoryGatewayDeleteRequest,
+    MemoryGatewaySearchRequest,
+    MemoryGatewayStatus,
+)
+from agent_integrations.mem0 import Mem0AgentMemoryGateway, Mem0GatewayConfig
 
 ROOT = Path(__file__).resolve().parents[3]
 BASE_URL = "http://127.0.0.1:28088"
@@ -202,6 +211,58 @@ def test_authenticated_infer_false_memory_lifecycle(mem0_stack: None) -> None:
     )
     assert after_delete.status == 200
     assert after_delete.body["results"] == []
+
+
+def test_zebra_adapter_matches_pinned_mem0_contract(mem0_stack: None) -> None:
+    memory_id = MemoryId(uuid4())
+    provider_refs = _ProviderRefs()
+    gateway = Mem0AgentMemoryGateway(
+        Mem0GatewayConfig(
+            enabled=True,
+            base_url=BASE_URL,
+            api_key=ADMIN_KEY,
+            allow_insecure_http=True,
+        ),
+        provider_refs=provider_refs,
+    )
+
+    publication = gateway.publish(
+        ConfirmedMemoryPublication(
+            memory_id=memory_id,
+            namespace="opaque-adapter-contract-scope",
+            text="Adapter contract memory.",
+            idempotency_key="adapter-contract-delivery",
+        )
+    )
+    assert publication.status is MemoryGatewayStatus.SUCCEEDED
+    assert publication.provider_ref is not None
+    provider_refs.provider_ref = publication.provider_ref
+
+    search = gateway.search(
+        MemoryGatewaySearchRequest(
+            namespace="opaque-adapter-contract-scope",
+            query="Adapter contract memory.",
+        )
+    )
+    assert search.status is MemoryGatewayStatus.SUCCEEDED
+    assert any(hit.memory_id == memory_id for hit in search.hits)
+
+    deletion = gateway.delete(
+        MemoryGatewayDeleteRequest(
+            memory_id=memory_id,
+            namespace="opaque-adapter-contract-scope",
+            idempotency_key="adapter-contract-delete",
+        )
+    )
+    assert deletion.status is MemoryGatewayStatus.SUCCEEDED
+
+
+class _ProviderRefs:
+    def __init__(self) -> None:
+        self.provider_ref: str | None = None
+
+    def resolve(self, *, memory_id: MemoryId, namespace: str) -> str | None:
+        return self.provider_ref
 
 
 class Response:

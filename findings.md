@@ -1,5 +1,27 @@
 # Findings
 
+## MEM-MEM0-ADP-01 - 2026-07-28
+
+- The installed `httpx` client is sufficient; no Mem0 SDK or new dependency is
+  needed for the proven REST surface.
+- A default-disabled Adapter can preserve local behavior without runtime wiring.
+  Enabled plain HTTP requires an explicit local-only opt-in, and implicit
+  environment proxy discovery stays off to avoid credential leakage or localhost
+  interception.
+- Mem0 provider refs in the pinned OSS version are UUIDs. Canonical UUID parsing
+  at publish, search and delete closes path traversal and schema-drift ambiguity.
+- The Adapter cannot own delete identity: a namespace-aware provider-ref lookup
+  is required, while durable mapping/idempotency remains `MEM-GW-DEL-01`.
+- A provider lookup outage is degraded, not not-found. Only a successful lookup
+  miss or provider `404` is not-found, preserving deletion retry/audit semantics.
+- Response bytes and hit counts are bounded. Whole-response drift or an entirely
+  invalid non-empty hit set counts toward the circuit; partial is reserved for a
+  response with at least one revalidatable hit.
+- The process-local circuit admits one half-open probe. Multi-Worker coordination
+  remains a later operational gate rather than hidden shared state in this Adapter.
+- The Adapter itself passes publish/search/delete against the pinned isolated
+  Compose Mem0 server. Real provider, TLS/proxy and production SLO remain unverified.
+
 ## MEM-MEM0-SPIKE-01 - 2026-07-28
 
 - Pinned Mem0 OSS accepts authenticated `infer=false` writes through a local

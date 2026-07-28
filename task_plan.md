@@ -1,5 +1,27 @@
 # Task Plan
 
+## MEM-MEM0-ADP-01 - Mem0 Gateway Adapter
+
+1. `completed` - Review the proven Mem0 REST contract, Core Gateway values and
+   existing integration HTTP patterns.
+2. `completed` - Claim a dedicated stacked branch with exact integration,
+   test and governance paths.
+3. `completed` - Implement disabled-safe configuration, opaque namespace mapping,
+   strict REST decoding and bounded circuit-breaker behavior.
+4. `completed` - Implement publish/search/delete over the Core Port with
+   `infer=false`, provider-ref lookup and degraded error normalization.
+5. `completed` - Add focused contract/fault tests, run repository validation and
+   record the stacked handoff.
+
+### Decisions
+
+- Use the installed `httpx` dependency directly; the Mem0 SDK adds no needed
+  contract and would leak provider behavior upward.
+- Provider-ref persistence remains `MEM-GW-DEL-01`. This Adapter consumes a
+  narrow lookup Port for delete and never creates a hidden in-memory fact source.
+- Disabled and failed Mem0 paths return typed Gateway outcomes and never alter
+  authoritative `MemoryStorePort` state.
+
 ## MEM-MEM0-SPIKE-01 - Mem0 OSS Contract And Operations Probe
 
 1. `completed` - Inspect the pinned running Mem0 OpenAPI/source without reading

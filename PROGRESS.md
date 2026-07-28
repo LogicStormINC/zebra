@@ -267,7 +267,8 @@ including a real thinking tool round trip.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
   `CLOUD-STO-AUTH-01`, `CLOUD-COMPOSE-INFRA-01`, and `MEM-GW-CON-01` are in
   Review. `MEM-MEM0-SPIKE-01` is also in Review after isolated real-server
-  contract validation; all
+  contract validation. `MEM-MEM0-ADP-01` is in Review after focused and pinned
+  Compose validation; all
   PostgreSQL, Redis-live, object-storage, production AG-UI, Trench, analysis,
   writeback, Memory adapter, and GA cards remain `Locked` pending their gates.
 
