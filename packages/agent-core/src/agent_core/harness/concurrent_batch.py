@@ -8,7 +8,11 @@ from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.policies import PolicyDecisionType
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
-from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
+from agent_core.harness.attempt_result import (
+    action_fingerprint,
+    build_attempt_result,
+    update_batch_observation_progress,
+)
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import (
@@ -97,6 +101,7 @@ class ConcurrentToolBatchExecutor:
         metadata: dict[str, object],
         first_selection: ToolCallSelection | None,
     ) -> ToolBatchResult:
+        batch_event_start = len(emitted_events)
         exceeded = self._exceeded_batch_limit(tool_calls)
         if exceeded is not None:
             tool_name, limit = exceeded
@@ -118,6 +123,7 @@ class ConcurrentToolBatchExecutor:
         loop_guard_counts = _loop_guard_counts(metadata)
         metadata = {**metadata, "loop_guard_counts": dict(loop_guard_counts)}
         duplicate_indices: set[int] = set()
+        observations: list[tuple[ToolCall, ToolResult]] = []
         for index, tool_call in enumerate(tool_calls):
             summary, selection_metadata = selection_evidence(
                 index=index,
@@ -212,6 +218,7 @@ class ConcurrentToolBatchExecutor:
             )
             tool_calls_executed += 1
             fingerprints.add(action_fingerprint(tool_call))
+            observations.append((tool_call, tool_result))
             self._model_step.append_tool_result(
                 messages,
                 tool_call=tool_call,
@@ -225,6 +232,12 @@ class ConcurrentToolBatchExecutor:
                 batch_metadata,
                 tool_result,
             )
+        batch_metadata = update_batch_observation_progress(
+            batch_metadata,
+            observations,
+            emitted_events[batch_event_start:],
+            threshold=self._repeat_hard_stop_threshold,
+        )
         if failed_names:
             prior_failures = batch_metadata.get("recoverable_tool_failure_count", 0)
             failure_count = (

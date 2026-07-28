@@ -20,10 +20,10 @@
 
 ## Current Board
 
-- `HAR-CONV-01` is `In Progress` on
-  `codex/runtime-convergence-phase1`. The branch is stacked on PR `#198` and
-  includes current `origin/main`; it must not be merged or pushed to `main`
-  directly.
+- `HAR-CONV-01` is `Review` on `codex/runtime-convergence-phase1`. Its
+  deterministic Phase 1 checks pass; the read-only three-image A/B remains a
+  human acceptance step. The branch is stacked on PR `#198`, includes current
+  `origin/main`, and must not be merged or pushed to `main` directly.
 - `CTX-REHYDRATE-02` remains `Locked` until PR `#198` and `HAR-CONV-01` are
   merged and the maintainer explicitly activates Phase 2.
 - `CTX-MEM-01` is `Review` in PR `#198` on
@@ -128,7 +128,7 @@ Architecture authority:
 
 ### HAR-CONV-01 - Progress-Aware Tool Loop Convergence
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Vinson`
 - Coding task: `019f9a26-59b5-77e2-b42e-5e6ede10520c`
 - Suggested role: `CORE / QA`
@@ -158,21 +158,22 @@ new evidence and long legitimate tool chains remain unbounded by default.
 
 #### Acceptance
 
-- [ ] A red regression first reproduces changed tool arguments returning the
+- [x] A red regression first reproduces changed tool arguments returning the
   same stable evidence without reaching a final answer.
-- [ ] Exact action fingerprint remains the idempotency/effect guard; a stable
+- [x] Exact action fingerprint remains the idempotency/effect guard; a stable
   observation fingerprint detects no-new-evidence batches across argument variants.
-- [ ] New evidence or an existing durable Task/Plan/Approval state transition
+- [x] New evidence or an existing durable Task/Plan/Approval state transition
   resets the consecutive no-progress count.
-- [ ] The existing repeat threshold triggers exactly one tool-disabled final
+- [x] The existing repeat threshold triggers exactly one tool-disabled final
   synthesis; a non-empty answer completes, while another tool request or unusable
   answer produces typed `SUSPENDED` instead of another loop.
-- [ ] Sequential and concurrent batches have the same convergence behavior;
+- [x] Sequential and concurrent batches have the same convergence behavior;
   a progressing task may exceed 8 or 16 tool calls and still complete.
-- [ ] Explicit budgets, Policy, Approval, cancellation, protocol validation and
+- [x] Explicit budgets, Policy, Approval, cancellation, protocol validation and
   effect deduplication remain unchanged.
-- [ ] Focused tests, `make test`, `make check`, and the read-only 3-image A/B
-  acceptance pass, or inherited blockers are recorded separately.
+- [x] Focused tests, target Ruff/Mypy, `make test`, and `make check` ran; inherited
+  blockers are recorded separately.
+- [ ] The read-only three-image A/B acceptance remains a human review step.
 
 #### Explicit Non-Goals
 

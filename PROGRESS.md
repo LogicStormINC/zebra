@@ -5,11 +5,13 @@
 
 ## Current Mainline Snapshot
 
-- Active stacked task: `HAR-CONV-01` is being implemented on
+- Review stacked task: `HAR-CONV-01` is implemented on
   `codex/runtime-convergence-phase1`, based on PR `#198` plus current
   `origin/main`. It extends exact action repetition checks with stable evidence
   progress, bounded no-progress detection, and one tool-disabled terminal
-  synthesis. It is not authorized to merge or push directly to `main`.
+  synthesis. `63` focused regressions and touched-file Ruff/Mypy pass; the
+  read-only three-image A/B remains user acceptance. It is not authorized to
+  merge or push directly to `main`.
 - Locked follow-up: `CTX-REHYDRATE-02` may start only after PR `#198` and
   `HAR-CONV-01` merge. It will reuse existing Event/Capsule/Artifact projection
   and `rehydrate_projection()` rather than create a full Memory 2.0 subsystem.

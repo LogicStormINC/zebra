@@ -5854,3 +5854,34 @@ actual byte access.
 - next action: commit and push the documentation baseline, then hand the exact
   branch/worktree and red-test-first instructions to Codex task
   `019f9a26-59b5-77e2-b42e-5e6ede10520c`
+
+# 2026-07-28 HAR-CONV-01 Phase 1 Coding Handoff
+
+- **Scope**: implemented only the authorized shared Harness paths plus
+  `tests/agent_core/test_harness_convergence.py`; did not modify `model_step.py`,
+  Context, Storage, Worker, provider/MCP, UI, FinOS, or `main`.
+- **Root fix**: exact action fingerprints remain the effect/idempotency guard.
+  Executed results now produce stable observation fingerprints from tool name,
+  status, normalized output, and stable artifact/source references, excluding
+  provider IDs, timestamps, and JSON display order. Batch-level new evidence or
+  durable Plan/Approval state changes reset the no-progress counter.
+- **Convergence**: threshold exhaustion writes a structured model-visible
+  observation, permits exactly one `allow_tools=False` synthesis, completes on
+  non-empty text, and otherwise returns `SUSPENDED` with
+  `stop_reason=tool_loop_no_progress`. No default call limit, state database,
+  business heuristic, retry framework, or Phase 2 rehydration work was added.
+- **Deterministic evidence**: red-first convergence suite initially failed `5`;
+  final focused suite passed `63`, including semantic argument variants,
+  provider-id/timestamp and JSON-order stability, exact-repeat dedupe,
+  Plan/Approval reset, sequential/concurrent parity, one terminal synthesis,
+  typed suspension, and a progressing nine-tool chain. Touched-file Ruff and
+  Mypy passed; `git diff --check` passed.
+- **Full validation**: `make test` ran `1773` tests: `1756 passed, 9 failed,
+  8 skipped`. The nine failures are inherited outside owned paths (two provider
+  parser cases, five SCM credential cases, the two-file size gate, and one
+  worker cancellation case). `make check` stops at the documented file-size
+  gate: `CodexConversationPane.styles.ts` `561/500` and `events.py` `505/500`.
+- **Commit / review**: the Phase 1 delivery commit is on
+  `codex/runtime-convergence-phase1` only; do not merge or push it to `main`.
+  The remaining user acceptance is the read-only three-image A/B; Phase 2
+  `CTX-REHYDRATE-02` stays `Locked`.

@@ -5,7 +5,11 @@ from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.policies import PolicyDecisionType
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
-from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
+from agent_core.harness.attempt_result import (
+    action_fingerprint,
+    build_attempt_result,
+    update_batch_observation_progress,
+)
 from agent_core.harness.clarification_step import clarification_stop_result
 from agent_core.harness.concurrent_batch import (
     DEFAULT_REPEAT_HARD_STOP_THRESHOLD,
@@ -138,6 +142,8 @@ class ToolBatchExecutor:
                 metadata=metadata,
                 first_selection=first_selection,
             )
+        batch_event_start = len(emitted_events)
+        observations: list[tuple[ToolCall, ToolResult]] = []
         for index, tool_call in enumerate(tool_calls):
             approved_continuation = index == 0 and first_execution_started
             if not approved_continuation:
@@ -211,6 +217,7 @@ class ToolBatchExecutor:
                         verifier=self._verifier,
                         emitted_events=emitted_events,
                     )
+                    observations.append((tool_call, result))
                     self._model_step.append_tool_result(
                         messages,
                         tool_call=tool_call,
@@ -306,6 +313,7 @@ class ToolBatchExecutor:
                 )
             tool_calls_executed += 1
             fingerprints.add(action_fingerprint(tool_call))
+            observations.append((tool_call, execution.result))
             metadata = {**metadata, **execution.metadata}
             self._model_step.append_tool_result(
                 messages,
@@ -317,6 +325,12 @@ class ToolBatchExecutor:
                 metadata = _accumulate_failure(metadata, tool_call.name)
                 continue
             if not execute_all:
+                metadata = update_batch_observation_progress(
+                    metadata,
+                    observations,
+                    emitted_events[batch_event_start:],
+                    threshold=self._repeat_hard_stop_threshold,
+                )
                 return self._terminal(
                     outcome=HarnessAttemptOutcome.COMPLETED,
                     summary=f"tool call completed: {tool_call.name}",
@@ -326,7 +340,16 @@ class ToolBatchExecutor:
                     tool_calls_executed=tool_calls_executed,
                     metadata=metadata,
                 )
-        return ToolBatchResult(None, tool_calls_executed, metadata)
+        return ToolBatchResult(
+            None,
+            tool_calls_executed,
+            update_batch_observation_progress(
+                metadata,
+                observations,
+                emitted_events[batch_event_start:],
+                threshold=self._repeat_hard_stop_threshold,
+            ),
+        )
 
     def _recover_repeated_reads(
         self,
@@ -340,6 +363,8 @@ class ToolBatchExecutor:
         first_selection: ToolCallSelection | None,
     ) -> ToolBatchResult:
         recovered_metadata = dict(metadata)
+        batch_event_start = len(emitted_events)
+        observations: list[tuple[ToolCall, ToolResult]] = []
         for index, tool_call in enumerate(tool_calls):
             summary, selection_metadata = selection_evidence(
                 index=index,
@@ -381,6 +406,7 @@ class ToolBatchExecutor:
                 verifier=self._verifier,
                 emitted_events=emitted_events,
             )
+            observations.append((tool_call, result))
             self._model_step.append_tool_result(
                 messages,
                 tool_call=tool_call,
@@ -388,6 +414,12 @@ class ToolBatchExecutor:
                 created_at=context.attempt.started_at,
             )
             recovered_metadata = {**recovered_metadata, **execution.metadata}
+        recovered_metadata = update_batch_observation_progress(
+            recovered_metadata,
+            observations,
+            emitted_events[batch_event_start:],
+            threshold=self._repeat_hard_stop_threshold,
+        )
         return ToolBatchResult(
             None,
             tool_calls_executed,
