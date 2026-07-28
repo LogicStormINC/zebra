@@ -19,11 +19,7 @@ from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.session_handoff import HandoffActorKind
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.agent_tasks import TaskEvent
-from agent_storage import (
-    SQLiteAgentTaskStore,
-    SQLiteProjectionStore,
-    SQLiteWorkspaceProjectionStore,
-)
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
 from zebra_agent_api.responses import ApiResponse
@@ -37,6 +33,9 @@ MAX_TASK_LIMIT = 100
 class TaskSessionApi(Protocol):
     @property
     def database_path(self) -> Path: ...
+
+    @property
+    def stores(self) -> ControlPlaneStores: ...
 
     def create_session(
         self, payload: dict[str, object], *, idempotency_key: str | None = None
@@ -55,21 +54,19 @@ class TaskSessionApi(Protocol):
 
 @dataclass(frozen=True)
 class TaskReadApi:
-    database_path: Path
+    stores: ControlPlaneStores
 
     def get(self, task_id: str) -> ApiResponse:
         parsed = parse_task_id(task_id)
         if isinstance(parsed, ApiResponse):
             return parsed
-        task = SQLiteAgentTaskStore(self.database_path).get_task(parsed)
+        task = self.stores.tasks.get_task(parsed)
         if task is None:
             return _not_found(task_id)
-        session = SQLiteProjectionStore(self.database_path).get_session(task.active_segment_id)
+        session = self.stores.sessions.get_session(task.active_segment_id)
         if session is None:
             return ApiResponse(409, {"task_id": task_id, "status": "projection_incomplete"})
-        workspace = SQLiteWorkspaceProjectionStore(self.database_path).get_workspace(
-            task.active_segment_id
-        )
+        workspace = self.stores.workspaces.get_workspace(task.active_segment_id)
         body = serialize_session_summary(session, workspace)
         body.update(
             task_id=task_id,
@@ -77,10 +74,7 @@ class TaskReadApi:
             current_sequence=task.current_sequence,
             status=task.status.value,
         )
-        events = [
-            item.event
-            for item in SQLiteAgentTaskStore(self.database_path).read_events(parsed, -1)
-        ]
+        events = [item.event for item in self.stores.tasks.read_events(parsed, -1)]
         attachments = [
             ref.to_mapping() for event in events for ref in attachment_refs_from_event(event)
         ]
@@ -92,9 +86,9 @@ class TaskReadApi:
         limit = _parse_limit(query.get("limit"))
         if isinstance(limit, ApiResponse):
             return limit
-        store = SQLiteAgentTaskStore(self.database_path)
-        projection_store = SQLiteProjectionStore(self.database_path)
-        workspace_store = SQLiteWorkspaceProjectionStore(self.database_path)
+        store = self.stores.tasks
+        projection_store = self.stores.sessions
+        workspace_store = self.stores.workspaces
         items: list[dict[str, object]] = []
         for task in store.list_tasks(limit=limit):
             session = projection_store.get_session(task.active_segment_id)
@@ -121,7 +115,7 @@ class TaskReadApi:
         parsed = parse_task_id(task_id)
         if isinstance(parsed, ApiResponse):
             return parsed
-        store = SQLiteAgentTaskStore(self.database_path)
+        store = self.stores.tasks
         if store.get_task(parsed) is None:
             return _not_found(task_id)
         return ApiResponse(
@@ -141,14 +135,14 @@ class TaskReadApi:
         parsed = parse_task_id(task_id)
         if isinstance(parsed, ApiResponse):
             return parsed
-        active = SQLiteAgentTaskStore(self.database_path).active_segment(parsed)
+        active = self.stores.tasks.active_segment(parsed)
         return _not_found(task_id) if active is None else active
 
     def internal_segments(self, task_id: str) -> ApiResponse:
         parsed = parse_task_id(task_id)
         if isinstance(parsed, ApiResponse):
             return parsed
-        store = SQLiteAgentTaskStore(self.database_path)
+        store = self.stores.tasks
         task = store.get_task(parsed)
         if task is None:
             return _not_found(task_id)
@@ -188,7 +182,7 @@ def create_task(
     session_id = response.body.get("session_id")
     if not isinstance(session_id, str):
         return ApiResponse(409, {"status": "projection_incomplete"})
-    task = SQLiteAgentTaskStore(app.database_path).ensure_for_session(SessionId(UUID(session_id)))
+    task = app.stores.tasks.ensure_for_session(SessionId(UUID(session_id)))
     body = dict(response.body)
     body.update(task_id=str(task.task_id), session_id=str(task.task_id))
     return ApiResponse(response.status_code, body)
@@ -200,14 +194,15 @@ def mutate_task(
     action: str,
     payload: dict[str, object],
 ) -> ApiResponse:
-    reader = TaskReadApi(app.database_path)
+    reader = TaskReadApi(app.stores)
     active = reader.active_segment(task_id)
     if isinstance(active, ApiResponse):
         return active
-    session = SQLiteProjectionStore(app.database_path).get_session(active)
+    session = app.stores.sessions.get_session(active)
     if action == "resume" and session is not None and session.status is SessionStatus.FAILED:
         rollover = _rollover(
             app.database_path,
+            app.stores,
             task_id,
             stage_prompt="Recover from the verified Task checkpoint and continue.",
             objective=f"Recover and continue {session.title}",
@@ -229,11 +224,11 @@ def mutate_task(
 
 
 def route_active_task(
-    database_path: Path,
+    stores: ControlPlaneStores,
     task_id: str,
     handler: Callable[[str], ApiResponse],
 ) -> ApiResponse:
-    active = TaskReadApi(database_path).active_segment(task_id)
+    active = TaskReadApi(stores).active_segment(task_id)
     if isinstance(active, ApiResponse):
         return active
     return _rewrite_task_identity(handler(str(active)), task_id)
@@ -247,11 +242,15 @@ def append_task_message(
     idempotency_key: str | None,
 ) -> ApiResponse:
     action = f"task-message:{task_id}"
-    replayed = replay_idempotent_response(
-        database_path=app.database_path,
-        action=action,
-        idempotency_key=idempotency_key,
-        payload=payload,
+    replayed = (
+        replay_idempotent_response(
+            store=app.stores.idempotency,
+            action=action,
+            idempotency_key=idempotency_key,
+            payload=payload,
+        )
+        if idempotency_key is not None
+        else None
     )
     if replayed is not None:
         return replayed
@@ -260,18 +259,18 @@ def append_task_message(
         if idempotency_key is None:
             return response
         return save_idempotent_response(
-            database_path=app.database_path,
+            store=app.stores.idempotency,
             action=action,
             idempotency_key=idempotency_key,
             payload=payload,
             response=response,
         )
 
-    reader = TaskReadApi(app.database_path)
+    reader = TaskReadApi(app.stores)
     active = reader.active_segment(task_id)
     if isinstance(active, ApiResponse):
         return active
-    session = SQLiteProjectionStore(app.database_path).get_session(active)
+    session = app.stores.sessions.get_session(active)
     if session is None:
         return ApiResponse(409, {"task_id": task_id, "status": "projection_incomplete"})
     if session.status not in {
@@ -287,6 +286,7 @@ def append_task_message(
         return app.append_session_message(str(active), payload)
     response = _rollover(
         app.database_path,
+        app.stores,
         task_id,
         stage_prompt="Continue from the verified Task checkpoint.",
         objective=content.strip(),
@@ -334,6 +334,7 @@ def rollover_task(
         return ApiResponse(400, {"task_id": task_id, "status": "invalid_request"})
     return _rollover(
         app.database_path,
+        app.stores,
         task_id,
         stage_prompt=prompt.strip(),
         objective=objective.strip(),
@@ -386,6 +387,7 @@ def is_user_task_event(item: TaskEvent) -> bool:
 
 def _rollover(
     database_path: Path,
+    stores: ControlPlaneStores,
     task_id: str,
     *,
     stage_prompt: str,
@@ -394,13 +396,13 @@ def _rollover(
     actor_kind: HandoffActorKind,
     rollover_reason: RolloverReason,
 ) -> ApiResponse:
-    active = TaskReadApi(database_path).active_segment(task_id)
+    active = TaskReadApi(stores).active_segment(task_id)
     if isinstance(active, ApiResponse):
         return active
-    source = SQLiteProjectionStore(database_path).get_session(active)
+    source = stores.sessions.get_session(active)
     if source is None:
         return ApiResponse(409, {"task_id": task_id, "status": "projection_incomplete"})
-    return SessionHandoffApi(database_path).create(
+    return SessionHandoffApi(database_path, stores).create(
         str(active),
         {
             "title": source.title,

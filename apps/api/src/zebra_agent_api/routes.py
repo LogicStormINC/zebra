@@ -7,7 +7,6 @@ from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.session_handoff import HandoffActorKind
-from agent_storage import SQLiteAgentTaskStore
 
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse
@@ -406,7 +405,11 @@ def _is_hidden_internal_segment(app: ZebraAgentApi, path: str) -> bool:
         session_id = SessionId(UUID(raw))
     except ValueError:
         return False
-    return SQLiteAgentTaskStore(app.database_path).is_internal_segment(session_id)
+    try:
+        task = app.stores.tasks.ensure_for_session(session_id)
+    except ValueError:
+        return False
+    return str(task.task_id) != str(session_id)
 
 
 def _not_found(request: RouteRequest) -> ApiResponse:

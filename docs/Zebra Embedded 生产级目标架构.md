@@ -59,7 +59,7 @@
 | Artifact | S3 Compatible Object Storage，PostgreSQL 保存 metadata/manifest |
 | Runtime | Kubernetes + Linux gVisor，Sandbox 无业务凭证 |
 | 数据分析 | 首版 DuckDB + Polars + PyArrow 批准算子 |
-| Agent Memory | 后续可选 Redis Agent Memory Adapter，故障可降级 |
+| Agent Memory | Zebra 治理状态为权威；后续可选 Mem0 Gateway 只做可降级语义索引 |
 | 可观测性 | OpenTelemetry + 可关联 Task/Run/Tool/Receipt 证据 |
 | 部署交付 | Helm；Terraform/GitOps 在 GA 阶段进入门禁 |
 
@@ -95,7 +95,7 @@ flowchart LR
         PG["PostgreSQL Truth"]
         REDIS["Redis Ephemeral"]
         S3["Object Storage"]
-        MEMORY["Optional Redis Agent Memory"]
+        MEMORY["Optional Mem0 Semantic Index"]
     end
 
     UI --> CPK
@@ -336,6 +336,24 @@ PostgreSQL 保存：
 追加 Event、更新 Projection、写 Effect/Outbox 必须在明确事务边界内完成。
 所有异步消费者至少一次执行，因此外部副作用必须幂等。
 
+### 7.1.1 当前 authoritative composition 边界
+
+在选择 PostgreSQL Adapter 之前，Zebra API、SSE 与 Worker 必须接收同一个平坦的
+`ControlPlaneStores`。这个组合根覆盖所有会推进 Session、约束副作用或治理记忆的
+durable collaborator：Event/Projection、Workspace/Task/Lease、context lifecycle、
+handoff/dispatch、idempotency、effect ledger、governed memory、Artifact payload 与
+索引、provider continuation、session history 和 delivery audit。
+
+当前 local profile 仍由唯一 SQLite builder 构造这组 Ports；注入完成后，业务流不得
+再把 `database_path` 当作权威事实定位器或临时重建 Store。Context lifecycle 与
+handoff 继续作为聚合事务 Port，未来 PostgreSQL Adapter 必须在各自边界内保证 Event、
+Projection、dispatch/effect 等协调写入的原子性。Memory review 当前仅保证所有事实写入
+同一 backend，跨 Store call 的原子性由后续 PostgreSQL/Outbox 设计补齐。
+
+这条边界不选择 PostgreSQL、Redis、Object Storage 或远程语义记忆 provider，也不改变
+Zebra `MemoryStorePort` 的治理权威；Mem0 等候选服务只能通过单独门禁的、可降级的派生
+Gateway 接入。
+
 ### 7.2 Redis 临时职责
 
 Redis 只承担：
@@ -370,22 +388,33 @@ namespace、retention、manifest 和 lineage。下载使用短期签名 URL，�
 
 ## 9. Agent Memory
 
-Embedded 首个只读切片不依赖远程长期记忆。现有 local profile 的本地 Memory
-保持兼容；Embedded production profile 后续通过独立 `AgentMemoryGateway`
-接入 Redis Agent Memory，而不是把远程服务强塞进现有本地 Store Port。
+Zebra durable foundation 的当前调度优先于 Trench read-only，但首个只读切片仍不
+把远程长期记忆设为运行时依赖。现有 `MemoryStorePort` 继续作为候选、确认、替代、
+过期、删除和 provenance 的唯一权威；后续 Embedded profile 只能通过 provider-neutral
+`AgentMemoryGateway` 把 Mem0 作为可重建的语义索引，不能用 Mem0 状态覆盖 Zebra
+治理状态。
 
 约束：
 
 - feature flag 默认关闭；
+- 只有 `confirmed` 记忆可发布，搜索命中必须按 Zebra `MemoryId` 回查权威 Store；
 - owner/session/namespace/topic 全部使用不透明 Host 映射；
-- 写入通过 delivery ledger/outbox 保证幂等和可对账；
+- 只发布 Zebra 已确认的记忆，首版固定 `infer=false`，禁止二次自由抽取；
+- 写入通过 delivery ledger/outbox 传递 Zebra memory ref，保证幂等和可对账；
+- search hit 必须重新读取 `MemoryStorePort`，只有仍可见、未删除且 namespace 匹配的
+  权威记录才能进入 Prompt；远端 score 不能成为 Zebra confidence；
 - timeout、rate limit、schema drift 或服务不可用时降级，不使 Run 失败；
 - 删除、保留期、redaction 和 audit 独立验证；
-- 每日 contract test 检测 Preview API 漂移；
-- 不建设 Embedded pgvector 或 Graphiti 备用事实源。
+- 每日 contract test 检测 REST schema/version 漂移；
+- Mem0 自用的隔离 pgvector/PostgreSQL 是派生索引，可由 Zebra 权威记录重建；不建设
+  第二套 Zebra 事实源或 Graphiti 回退路径。
 
-Redis Agent Memory 当前仍标注为 Public Preview，必须保持可替换边界：
-[Redis Agent Memory service](https://redis.io/docs/latest/operate/rc/context-engine/agent-memory/create-service/)。
+采用 Mem0 OSS 前必须完成 `infer=false`、filter、history、delete、重试、重启、模型失败、
+embedding 维度变更和 namespace 的实测 Spike。官方 Compose 仅是开发示例，本仓库的
+Compose 也只证明固定版本能够启动、迁移和鉴权，不构成生产可用性证据：
+[Mem0 OSS setup](https://docs.mem0.ai/open-source/setup)、
+[REST API](https://docs.mem0.ai/open-source/features/rest-api)、
+[OSS 与 Platform 边界](https://docs.mem0.ai/platform/platform-vs-oss)。
 
 ## 10. 生产部署单元
 
@@ -401,10 +430,15 @@ Zebra deployment
 ├── zebra-api
 ├── zebra-worker
 ├── zebra-analysis-worker       # 分析阶段再启用
-├── PostgreSQL
-├── Redis
+├── PostgreSQL                  # Zebra durable truth
+├── Redis                       # live only
 ├── S3-compatible Object Storage
 └── OpenTelemetry Collector
+
+Optional memory auxiliary
+├── mem0-api                    # replaceable semantic index
+├── mem0-postgres/pgvector      # isolated derived data
+└── mem0-history                # isolated operational history
 ```
 
 `zebra-worker` 初期组合 orchestrator、projection、outbox 和 retention。只有满足
@@ -481,29 +515,33 @@ artifact failure、namespace denial、memory degraded rate、token/cost evidence
 完整任务卡、依赖、Owned paths 和验收见
 [`Zebra Embedded与Trench实施任务拆解_v1.0.md`](./Zebra%20Embedded与Trench实施任务拆解_v1.0.md)。
 
-固定顺序：
+两条基础 lane 与当前调度顺序：
 
 ```text
 架构收敛
 → CopilotKit/AG-UI Spike
+→ Zebra Storage composition seam
+→ Zebra authoritative Store composition completion
+→ Cloud durable foundation
+→ provider-neutral Memory Gateway + Mem0 contract gate（可降级增强）
 → Host/AG-UI/Surface 协议
-→ Cloud durable foundation 与 Trench 只读链路并行
+→ Trench 只读链路
 → 生产只读 E2E 汇合
 → 前端协同
 → 数据分析
 → 受控写回
-→ Redis Agent Memory
 → 多租户 GA
 ```
 
 任何实现卡开始前必须满足：
 
-1. 上游卡已合并到最新 `main`；
+1. 上游卡已合并到最新 `main`；显式批准的 stacked local task 必须记录硬性合并顺序；
 2. 卡在 `docs/AGENT_TASKS.md` 中为 `Ready`；
 3. 一个 owner、一个 branch、一个 worktree、一个主 PR；
 4. Owned paths 和验证命令已固定；
 5. 跨 Zebra/Trench 仓库工作拆成各自独立任务；
-6. Cloud Phase B 的迁移、备份、恢复和回滚设计已明确激活。
+6. PostgreSQL Adapter 开始前，Cloud Phase B 的迁移、备份、恢复和回滚模型已评审；
+   纯 composition seam 不以该评审为前置条件。
 
 ## 15. 阶段验收
 

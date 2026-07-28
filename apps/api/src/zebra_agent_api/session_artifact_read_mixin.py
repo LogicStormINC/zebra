@@ -2,13 +2,10 @@ from __future__ import annotations
 
 import base64
 from pathlib import Path
-from urllib.parse import urlparse
 
+from agent_core.ports import SessionArtifact
 from agent_storage import (
-    SessionArtifact,
-    SQLiteArtifactPayloadStore,
-    SQLiteArtifactStore,
-    SQLiteProjectionStore,
+    ControlPlaneStores,
     payload_for_artifact_uri,
     serialize_artifact_retrieval,
     serialize_session_artifact_projection,
@@ -35,18 +32,19 @@ from zebra_agent_api.session_memory_overview_aggregation import (
 
 class SessionArtifactReadMixin:
     database_path: Path
+    stores: ControlPlaneStores
 
     def get_session_artifacts(self, session_id: str) -> ApiResponse:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        artifacts = SQLiteArtifactStore(self.database_path).list_for_session(session_key)
+        artifacts = self.stores.artifacts.list_for_session(session_key)
         return ApiResponse(
             status_code=200,
             body={
@@ -60,7 +58,7 @@ class SessionArtifactReadMixin:
         if isinstance(artifact, ApiResponse):
             return artifact
         access = classify_session_artifact_access(
-            self.database_path,
+            stores=self.stores,
             session_id=session_id,
             artifact=artifact,
         )
@@ -72,7 +70,7 @@ class SessionArtifactReadMixin:
                 access=access,
             )
             record_delivery_audit(
-                database_path=self.database_path,
+                store=self.stores.delivery_audit,
                 session_id=session_id,
                 action="session.artifact.detail",
                 response=response,
@@ -99,7 +97,7 @@ class SessionArtifactReadMixin:
         retrieval_status = retrieval["status"]
         assert isinstance(retrieval_status, str)
         record_delivery_audit(
-            database_path=self.database_path,
+            store=self.stores.delivery_audit,
             session_id=session_id,
             action="session.artifact.detail",
             response=response,
@@ -124,7 +122,7 @@ class SessionArtifactReadMixin:
         if isinstance(artifact, ApiResponse):
             return artifact
         access = classify_session_artifact_access(
-            self.database_path,
+            stores=self.stores,
             session_id=session_id,
             artifact=artifact,
         )
@@ -136,7 +134,7 @@ class SessionArtifactReadMixin:
                 access=access,
             )
             record_delivery_audit(
-                database_path=self.database_path,
+                store=self.stores.delivery_audit,
                 session_id=session_id,
                 action="session.artifact.content",
                 response=response,
@@ -149,7 +147,7 @@ class SessionArtifactReadMixin:
                 ),
             )
             return response
-        lifecycle = _artifact_lifecycle(self.database_path, artifact.uri)
+        lifecycle = _artifact_lifecycle(self.stores.artifact_payloads, artifact.uri)
         retrieval = serialize_artifact_retrieval(
             artifact.uri,
             lifecycle=lifecycle,
@@ -162,7 +160,7 @@ class SessionArtifactReadMixin:
                 access=access,
             )
             record_delivery_audit(
-                database_path=self.database_path,
+                store=self.stores.delivery_audit,
                 session_id=session_id,
                 action="session.artifact.content",
                 response=response,
@@ -182,7 +180,7 @@ class SessionArtifactReadMixin:
                 access=access,
             )
             record_delivery_audit(
-                database_path=self.database_path,
+                store=self.stores.delivery_audit,
                 session_id=session_id,
                 action="session.artifact.content",
                 response=response,
@@ -202,7 +200,7 @@ class SessionArtifactReadMixin:
                 access=access,
             )
             record_delivery_audit(
-                database_path=self.database_path,
+                store=self.stores.delivery_audit,
                 session_id=session_id,
                 action="session.artifact.content",
                 response=response,
@@ -222,7 +220,7 @@ class SessionArtifactReadMixin:
                 access=access,
             )
             record_delivery_audit(
-                database_path=self.database_path,
+                store=self.stores.delivery_audit,
                 session_id=session_id,
                 action="session.artifact.content",
                 response=response,
@@ -237,23 +235,21 @@ class SessionArtifactReadMixin:
             return response
         assert artifact.uri is not None
         # CTX-ART-02: resolve artifact:// URI through the payload store to
-        # obtain the volatile file:// access path for reading bytes.
-        payload_store = SQLiteArtifactPayloadStore(self.database_path)
+        # read bytes through the injected backend rather than its volatile URI.
+        payload_store = self.stores.artifact_payloads
         stored_payload = payload_for_artifact_uri(payload_store, artifact.uri)
-        read_uri = (
-            stored_payload.access_uri or stored_payload.uri
-            if stored_payload is not None
-            else artifact.uri
-        )
-        read_path = Path(urlparse(read_uri).path)
-        if not read_path.is_file():
+        try:
+            if stored_payload is None:
+                raise FileNotFoundError("artifact payload metadata was not found")
+            payload = payload_store.read_payload_bytes(stored_payload.artifact_id)
+        except FileNotFoundError:
             response = build_artifact_unavailable_response(
                 session_id=session_id,
                 reason="artifact_payload_missing",
                 access=access,
             )
             record_delivery_audit(
-                database_path=self.database_path,
+                store=self.stores.delivery_audit,
                 session_id=session_id,
                 action="session.artifact.content",
                 response=response,
@@ -266,7 +262,6 @@ class SessionArtifactReadMixin:
                 ),
             )
             return response
-        payload = read_path.read_bytes()
         response = ApiResponse(
             status_code=200,
             body={
@@ -280,7 +275,7 @@ class SessionArtifactReadMixin:
             },
         )
         record_delivery_audit(
-            database_path=self.database_path,
+            store=self.stores.delivery_audit,
             session_id=session_id,
             action="session.artifact.content",
             response=response,
@@ -296,7 +291,7 @@ class SessionArtifactReadMixin:
         return response
 
     def get_session_delivery_audit(self, session_id: str) -> ApiResponse:
-        return SessionDeliveryAuditApi(self.database_path).get_delivery_audit(session_id)
+        return SessionDeliveryAuditApi(self.stores).get_delivery_audit(session_id)
 
     def _resolve_session_artifact(
         self,
@@ -306,13 +301,13 @@ class SessionArtifactReadMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        artifacts = SQLiteArtifactStore(self.database_path).list_for_session(session_key)
+        artifacts = self.stores.artifacts.list_for_session(session_key)
         for artifact in artifacts:
             if artifact.artifact_id == artifact_id:
                 return artifact
@@ -332,11 +327,11 @@ class SessionArtifactReadMixin:
         access: ArtifactAccessContext | None = None,
     ) -> dict[str, object]:
         resolved_access = access or classify_session_artifact_access(
-            self.database_path,
+            stores=self.stores,
             session_id=str(artifact.session_id),
             artifact=artifact,
         )
-        lifecycle = _artifact_lifecycle(self.database_path, artifact.uri)
+        lifecycle = _artifact_lifecycle(self.stores.artifact_payloads, artifact.uri)
         projection = serialize_session_artifact_projection(
             artifact,
             lifecycle=lifecycle,

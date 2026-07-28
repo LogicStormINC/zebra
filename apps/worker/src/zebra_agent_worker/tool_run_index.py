@@ -1,16 +1,15 @@
-
 from agent_core.domain.artifact_payloads import ArtifactPayloadWrite
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.tool_runs import ToolRunRecord
+from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.tool_run_store import ToolRunStorePort
-from agent_storage import SQLiteArtifactPayloadStore
 
 
 class ToolRunIndexer:
     def __init__(
         self,
         tool_run_store: ToolRunStorePort,
-        artifact_payload_store: SQLiteArtifactPayloadStore | None = None,
+        artifact_payload_store: ArtifactPayloadStorePort | None = None,
     ) -> None:
         self._tool_run_store = tool_run_store
         self._artifact_payload_store = artifact_payload_store
@@ -69,8 +68,7 @@ def _artifact_uri_from_payload(payload: dict[str, object]) -> str | None:
 
 def _payload_file_name(tool_name: str, sequence: int) -> str:
     safe_name = "".join(
-        character if character.isalnum() else "-"
-        for character in tool_name.strip().lower()
+        character if character.isalnum() else "-" for character in tool_name.strip().lower()
     ).strip("-")
     normalized = safe_name or "tool-output"
     return f"{normalized}-{sequence}.txt"

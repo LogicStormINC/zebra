@@ -8,6 +8,7 @@ from typing import Any
 
 from agent_integrations import GitHubPullRequestTransport
 from agent_security import CredentialBroker
+from agent_storage import ControlPlaneStores
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
@@ -27,21 +28,22 @@ def create_http_app(
     database_path: str | Path | None = None,
     *,
     settings: ZebraAgentSettings | None = None,
+    stores: ControlPlaneStores | None = None,
     credential_broker: CredentialBroker | None = None,
     credential_env: Mapping[str, str] | None = None,
     github_transport: GitHubPullRequestTransport | None = None,
 ) -> FastAPI:
     active_settings = settings or load_settings()
     active_database_path = Path(database_path or active_settings.database_url)
-    adapter = RouteAdapter(
-        create_app(
-            active_database_path,
-            settings=active_settings,
-            credential_broker=credential_broker,
-            credential_env=credential_env,
-            github_transport=github_transport,
-        )
+    api = create_app(
+        active_database_path,
+        settings=active_settings,
+        stores=stores,
+        credential_broker=credential_broker,
+        credential_env=credential_env,
+        github_transport=github_transport,
     )
+    adapter = RouteAdapter(api)
     app = FastAPI(title="Zebra Agent API")
     app.add_middleware(
         CORSMiddleware,
@@ -98,6 +100,7 @@ def create_http_app(
                     )
                 stream = tail_task_events(
                     database_path=active_database_path,
+                    stores=api.stores,
                     task_id=task_key,
                     request=request,
                     after_sequence=after_sequence,
@@ -111,6 +114,7 @@ def create_http_app(
                     )
                 stream = tail_session_events(
                     database_path=active_database_path,
+                    stores=api.stores,
                     session_id=session_key,
                     request=request,
                     after_sequence=after_sequence,

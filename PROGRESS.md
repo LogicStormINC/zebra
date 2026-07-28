@@ -5,7 +5,7 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-07-23`
+- Snapshot date: `2026-07-28`
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with
   an exact three-user-turn tail, complete tool groups, one strict retry from
   original history, recoverable context suspension, evidence-gated memory
@@ -33,10 +33,29 @@
   replaces the conflicting draft with one CopilotKit/AG-UI target, ADR-015, and
   a dependency-ordered task roadmap. It is documentation-only and does not
   activate Phase B or any Trench implementation card.
-- Active compatibility task: `EMB-AGUI-SPIKE-01` is explicitly activated on
+- Compatibility task in Review: `EMB-AGUI-SPIKE-01` is explicitly activated on
   `codex/emb-agui-spike-01`. It is a test-only official Python SDK spike stacked
   on the architecture branch; it adds no production API/Worker wiring and cannot
   merge before `EMB-PLAN-01` reaches `main`.
+- Storage task in Review: `CLOUD-STO-SEAM-01` on `codex/cloud-sto-seam-01` is the
+  first Zebra-foundation task after the maintainer reprioritized durable storage
+  and memory ahead of further Trench work. It injects existing control-plane Store
+  Ports while preserving the local SQLite profile and adds no cloud dependency.
+- Authoritative storage task in Review: `CLOUD-STO-AUTH-01` on
+  `codex/cloud-sto-auth-01` extends that same flat bundle across every durable
+  API/Worker collaborator that advances Session state, gates effects or governs
+  memory. A/B regressions prove the legacy path is not created; no cloud backend,
+  migration or Mem0 integration is selected by this task.
+- Memory contract task in Review: `MEM-GW-CON-01` on `codex/mem-gw-con-01` defines
+  provider-neutral confirmed-memory publish, search and delete outcomes. Remote
+  hits contain only a Zebra `MemoryId` for mandatory Store revalidation; no Mem0
+  adapter, credential, Docker or runtime wiring is part of this slice.
+- Dependency-container task in Review: `CLOUD-COMPOSE-INFRA-01` on
+  `codex/cloud-compose-infra-01` creates the base Docker Compose dependency stack
+  and a separate optional Mem0 boot-smoke overlay. Its pinned image, migrations,
+  health and anonymous-request rejection are verified locally. Mem0 remains
+  derived and replaceable; Zebra application containers stay locked until real
+  cloud adapters exist.
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
@@ -255,26 +274,33 @@ including a real thinking tool round trip.
   are `Done` via PRs `#170`, `#171`, `#172`, and `#168`.
 - `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
-- `EMB-PLAN-01` is ready for review. `EMB-AGUI-SPIKE-01` is the only active
-  Embedded implementation card. All production AG-UI, CopilotKit, cloud, Trench,
-  analysis, writeback, Agent Memory, and GA cards remain `Locked` pending explicit
-  maintainer activation and merged dependencies.
+- `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
+  `CLOUD-STO-AUTH-01`, `CLOUD-COMPOSE-INFRA-01`, and `MEM-GW-CON-01` are in
+  Review. `MEM-MEM0-SPIKE-01` is also in Review after isolated real-server
+  contract validation. `MEM-MEM0-ADP-01` is in Review after focused and pinned
+  Compose validation; all
+  PostgreSQL, Redis-live, object-storage, production AG-UI, Trench, analysis,
+  writeback, Memory delivery/runtime wiring, and GA cards remain `Locked` pending their gates.
 
 ## Known Follow-Ups
 
-1. Review and merge `EMB-PLAN-01`; complete the activated Zebra
-   `EMB-AGUI-SPIKE-01`, then separately decide whether to activate
-   `TRN-CPK-SPIKE-01` in the Trench repository.
+1. Review and merge `EMB-PLAN-01`; keep the completed AG-UI and Trench Spikes
+   parked while the storage branches follow their recorded merge order.
 2. Keep DeepSeek thinking mode opt-in and preserve its private continuation
    fail-closed boundary.
-3. Add migration/backup evidence before any Phase B activation.
+3. Merge `CLOUD-STO-SEAM-01`, then `CLOUD-STO-AUTH-01`, before PostgreSQL
+   selection; approve the migration/backup/recovery/rollback model before
+   activating `CLOUD-PG-01`.
 4. Split or lazy-load the Desktop main bundle based on a repeatable bundle report.
 5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,
    Credential/Egress Broker, external-namespace isolation, and Kubernetes in
    dependency order.
-6. Decide explicitly whether to activate Phase B private-cloud single-tenant work;
-   its database migration, backup, recovery, and rollback reviews remain required
-   entry gates before production claims.
+6. Review the dependency Compose baseline and Mem0 contract Spike. Preserve its
+   observed duplicate, expired-search, timeout and error-classification gaps;
+   do not add Zebra main containers or claim real-provider compatibility.
+7. After authoritative Store composition, activate PostgreSQL, Lease/Outbox,
+   Object Storage, Redis live, recovery and the separate Memory Gateway/Mem0 Spike
+   one card at a time; no production claim precedes migration/restore evidence.
 
 ## Runtime Blueprint
 
@@ -315,11 +341,11 @@ real tool execution, failure visibility, API restart, and durable recovery.
 
 - Zebra AG-UI production adapter and HostSessionGrant verifier
 - Trench CopilotKit Runtime/BFF, read-only panel, frontend tools and writeback
-- Redis Agent Memory production integration
+- Mem0 Gateway adapter and delivery ledger (contract/credentialed spike still gated)
 - ACP entry adapter
 - optional code-intelligence adapter
 - Kubernetes/Kata/Firecracker and distributed Sandbox scheduling
-- PostgreSQL/object-storage production control plane
+- PostgreSQL/object-storage adapters (authoritative composition is in Review)
 - external authority adapter and namespace-isolated cloud control plane
 - centralized Vault/KMS-backed credentials and production Egress
 - ecosystem marketplace, cross-organization A2A, and autonomous production release

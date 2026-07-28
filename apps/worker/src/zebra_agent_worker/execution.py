@@ -33,18 +33,10 @@ from agent_security import (
     resolve_effective_network_profile,
 )
 from agent_storage import (
-    SQLiteArtifactPayloadStore,
-    SQLiteContextLifecycleStore,
-    SQLiteEventStore,
-    SQLiteMemoryStore,
-    SQLiteModelCallStore,
-    SQLiteProjectionStore,
-    SQLiteProviderContinuationStore,
-    SQLiteSessionHistory,
+    ControlPlaneStores,
     SQLiteSkillsStateStore,
-    SQLiteToolRunStore,
-    SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
+    sqlite_control_plane_stores,
 )
 from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import (
@@ -109,32 +101,42 @@ class SessionExecutionService:
         claim_service: SessionClaimService,
         resume_service: SessionResumeService,
         settings: ZebraAgentSettings | None = None,
+        stores: ControlPlaneStores | None = None,
     ) -> None:
         self._database_path = database_path
         self._claim_service = claim_service
         self._resume_service = resume_service
         self._settings = settings or load_settings()
-        self._event_store = SQLiteEventStore(database_path)
-        self._projection_store = SQLiteProjectionStore(database_path)
-        self._workspace_store = SQLiteWorkspaceProjectionStore(database_path)
+        active_stores = stores or sqlite_control_plane_stores(database_path)
+        self._event_store = active_stores.events
+        self._projection_store = active_stores.sessions
+        self._workspace_store = active_stores.workspaces
         self._recovery_service = SessionRecoveryService(
             self._event_store,
             self._projection_store,
             self._workspace_store,
         )
-        self._control_service = SessionControlService(database_path, settings=self._settings)
-        self._model_call_indexer = ModelCallIndexer(SQLiteModelCallStore(database_path))
-        self._artifact_payload_store = SQLiteArtifactPayloadStore(database_path)
-        self._context_lifecycle_store = SQLiteContextLifecycleStore(database_path)
-        self._provider_continuation_store = SQLiteProviderContinuationStore(database_path)
+        self._control_service = SessionControlService(
+            database_path,
+            settings=self._settings,
+            stores=active_stores,
+        )
+        self._model_call_indexer = ModelCallIndexer(active_stores.model_calls)
+        self._artifact_payload_store = active_stores.artifact_payloads
+        self._context_lifecycle_store = active_stores.context_lifecycle
+        self._provider_continuation_store = active_stores.provider_continuations
         self._tool_run_indexer = ToolRunIndexer(
-            SQLiteToolRunStore(database_path),
+            active_stores.tool_runs,
             self._artifact_payload_store,
         )
-        memory_store = SQLiteMemoryStore(database_path)
-        self._memory_extraction_service = MemoryCandidateExtractionService(memory_store)
-        self._memory_promotion_service = MemoryCandidatePromotionService(memory_store)
-        self._handoff_gate = handoff.SessionHandoffRecoveryGate(str(database_path))
+        self._memory_store = active_stores.memories
+        self._memory_extraction_service = MemoryCandidateExtractionService(self._memory_store)
+        self._memory_promotion_service = MemoryCandidatePromotionService(self._memory_store)
+        self._effect_ledger = active_stores.effects
+        self._session_history = active_stores.session_history
+        self._handoff_gate = handoff.SessionHandoffRecoveryGate(
+            str(database_path), stores=active_stores
+        )
 
     def execute_session(
         self,
@@ -256,9 +258,7 @@ class SessionExecutionService:
                 ),
                 mcp_servers=self._settings.mcp_servers,
                 mcp_allowlist=task.mcp_allowlist,
-                session_history=SQLiteSessionHistory(
-                    self._database_path, allowed_session_ids=task.history_session_ids
-                ),
+                session_history=self._session_history.scoped(task.history_session_ids),
                 current_session_id=str(session_id),
                 runtime=runtime,
                 runtime_handle=runtime_handle,
@@ -268,7 +268,7 @@ class SessionExecutionService:
             )
             tool_gateway = handoff.guard_effectful_tools(
                 local_tool_gateway,
-                database_path=self._database_path,
+                ledger=self._effect_ledger,
                 session_id=session_id,
                 recovered_handoff=recovered_handoff,
                 authority_scope=f"{task.workspace_root.resolve()}|{task.policy_profile}|{effective_network_profile.name.value}",
@@ -302,7 +302,7 @@ class SessionExecutionService:
                 mcp_allowlist=tuple(tool.name for tool in tool_gateway.effective_mcp_tools),
                 skill_components=tool_gateway.effective_skill_components,
                 confirmed_memories=list_confirmed_repo_memories(
-                    self._database_path,
+                    self._memory_store,
                     repo_id=str(task.workspace_root.resolve()),
                     query_text=task.user_input,
                 ),

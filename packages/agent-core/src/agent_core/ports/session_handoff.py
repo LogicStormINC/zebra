@@ -4,6 +4,7 @@ from typing import Protocol
 
 from agent_core.domain.identifiers import HandoffId, SessionId
 from agent_core.domain.session_handoff import (
+    DEFAULT_MAX_HANDOFF_STAGE,
     HandoffActorKind,
     HandoffOperationStatus,
     HandoffReason,
@@ -11,6 +12,18 @@ from agent_core.domain.session_handoff import (
     SessionLineage,
     WorkspaceBindingRevision,
 )
+from agent_core.ports.handoff_dispatch_store import HandoffDispatch
+
+
+@dataclass(frozen=True, slots=True)
+class HandoffSourceFacts:
+    stream_version: int
+    lease_fencing_token: int | None
+    has_active_lease: bool
+    authority_revision: str
+    workspace_revision: WorkspaceBindingRevision
+    task_profile_revision: str
+    effective_depth_limit: int = DEFAULT_MAX_HANDOFF_STAGE
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,6 +86,13 @@ class SessionHandoffResult:
 
 
 class SessionHandoffPort(Protocol):
+    def inspect_source_facts(
+        self,
+        session_id: SessionId,
+        *,
+        at: datetime,
+    ) -> HandoffSourceFacts: ...
+
     def reserve(
         self,
         request: SessionHandoffCreateRequest,
@@ -92,4 +112,20 @@ class SessionHandoffPort(Protocol):
 
     def get_handoff(self, handoff_id: HandoffId) -> SessionHandoffResult | None: ...
 
+    def get_envelope(self, handoff_id: HandoffId) -> SessionHandoffEnvelope | None: ...
+
     def get_lineage(self, session_id: SessionId) -> tuple[SessionLineage, ...]: ...
+
+    def rebuild_lineage_index(self) -> int: ...
+
+    def abort_stale_preparing(self, *, before: datetime) -> int: ...
+
+    def claim_dispatch(
+        self,
+        *,
+        worker_id: str,
+        claimed_at: datetime,
+        lease_seconds: int = 60,
+    ) -> HandoffDispatch | None: ...
+
+    def acknowledge_dispatch(self, delivery_id: str, *, worker_id: str) -> None: ...

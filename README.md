@@ -57,12 +57,15 @@ candidate. It includes:
 - pull-request and `main` quality gates for backend, desktop, and real gVisor
 
 Private-cloud deployment, external-namespace isolation, ACP, and optional
-code-intelligence work remains outside the active implementation scope. Cloud
-deployment does not change the product boundary above. The Zebra Embedded / Trench
-production target is now being consolidated as a documentation-only architecture
-task: Trench owns CopilotKit React v2 and its Runtime/BFF, while Zebra exposes an
-AG-UI adapter and retains durable Task/Event/Policy authority. This does not
-activate cloud or Trench implementation. Read
+code-intelligence remain outside the verified implementation baseline. Cloud
+deployment does not change the product boundary above. Trench owns CopilotKit
+React v2 and its Runtime/BFF, while Zebra exposes an AG-UI adapter and retains
+durable Task/Event/Policy authority. The first cloud-foundation task is in Review:
+it injects existing Store Ports, fails closed on partial split backends and
+preserves SQLite; PostgreSQL, Redis, object storage and Trench production wiring
+remain locked. A separate local Compose baseline now runs PostgreSQL, ephemeral
+Redis and MinIO, with an opt-in pinned Mem0 boot smoke; none is wired as Zebra's
+authoritative backend yet. See [docker/README.md](./docker/README.md). Read
 [PROGRESS.md](./PROGRESS.md) for the live project snapshot and
 [docs/AGENT_TASKS.md](./docs/AGENT_TASKS.md) for task ownership and status. The
 adaptive execution boundary is specified in
@@ -152,6 +155,8 @@ them in frontend storage, request payloads, tracked files, responses, or logs.
 - `tests/`: deterministic, contract, smoke, and integration coverage
 - `evals/`: release and provider evaluation cases
 - `docs/`: architecture, governance, acceptance records, and operator runbooks
+- `docker/`: dependency Compose and optional auxiliary-service overlays; no Zebra
+  application image exists yet
 
 `agent-core` remains infrastructure-independent. Other packages may depend on
 core; packages must not import from applications.

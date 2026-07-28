@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -15,6 +14,10 @@ from agent_core.domain.context_capsule import (
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import ArtifactId, SessionId, new_artifact_id
+from agent_core.ports.context_lifecycle_store import (
+    ContextLifecycleStorePort,
+    StoredContextCapsule,
+)
 
 from agent_storage.database import SQLiteDatabase
 from agent_storage.event_rows import serialize_event_payload
@@ -28,17 +31,7 @@ class ImmutableContextCapsuleConflictError(RuntimeError):
     """Raised when a capsule id is reused for different immutable content."""
 
 
-@dataclass(frozen=True)
-class StoredContextCapsule:
-    artifact_id: ArtifactId
-    session_id: SessionId
-    capsule: ContextCapsule
-    payload_sha256: str
-    event: SessionEvent
-    compaction_event: SessionEvent | None = None
-
-
-class SQLiteContextLifecycleStore:
+class SQLiteContextLifecycleStore(ContextLifecycleStorePort):
     """Atomically persist a canonical capsule, its event, and active pointer."""
 
     def __init__(self, database_path: str | Path) -> None:

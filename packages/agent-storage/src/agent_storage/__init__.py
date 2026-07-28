@@ -1,5 +1,16 @@
 """Storage adapters for Zebra Agent."""
 
+from agent_core.ports import (
+    EffectLedgerStatus,
+    EffectReservation,
+    HandoffDispatch,
+    HandoffSourceFacts,
+    IdempotencyRecord,
+    LoadedProviderContinuation,
+    SessionArtifact,
+    StoredContextCapsule,
+)
+
 from agent_storage.agent_tasks import SQLiteAgentTaskStore
 from agent_storage.artifact_payloads import (
     ArtifactPayloadMissingError,
@@ -11,23 +22,23 @@ from agent_storage.artifact_projection import (
     serialize_artifact_retrieval,
     serialize_session_artifact_projection,
 )
-from agent_storage.artifacts import SessionArtifact, SQLiteArtifactStore
+from agent_storage.artifacts import SQLiteArtifactStore
+from agent_storage.composition import (
+    ControlPlaneStores,
+    sqlite_control_plane_stores,
+)
 from agent_storage.context_lifecycle import (
     ActiveContextProjectionConflictError,
     ImmutableContextCapsuleConflictError,
     SQLiteContextLifecycleStore,
-    StoredContextCapsule,
 )
 from agent_storage.delivery_audit import SQLiteDeliveryAuditStore
 from agent_storage.effect_ledger import (
-    EffectLedgerStatus,
     EffectReplayRejectedError,
-    EffectReservation,
     SQLiteEffectLedger,
 )
 from agent_storage.idempotency import (
     IdempotencyConflictError,
-    IdempotencyRecord,
     SQLiteIdempotencyStore,
     new_idempotency_record,
 )
@@ -39,19 +50,14 @@ from agent_storage.memory_lookup import (
 )
 from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.projections import SQLiteProjectionStore
-from agent_storage.provider_continuations import (
-    LoadedProviderContinuation,
-    SQLiteProviderContinuationStore,
-)
+from agent_storage.provider_continuations import SQLiteProviderContinuationStore
 from agent_storage.session_attachments import (
     load_attachment_contexts,
     store_initial_text_attachments,
     store_text_attachments,
 )
 from agent_storage.session_handoff_dispatch import SQLiteHandoffDispatchStore
-from agent_storage.session_handoff_facts import HandoffSourceFacts
 from agent_storage.session_handoff_rows import (
-    HandoffDispatch,
     HandoffIdempotencyConflictError,
     HandoffStorageConflictError,
 )
@@ -64,6 +70,7 @@ from agent_storage.workspaces import SQLiteWorkspaceProjectionStore
 
 __all__ = [
     "ArtifactPayloadMissingError",
+    "ControlPlaneStores",
     "EffectLedgerStatus",
     "EffectReplayRejectedError",
     "EffectReservation",
@@ -86,6 +93,7 @@ __all__ = [
     "serialize_artifact_lifecycle",
     "serialize_artifact_retrieval",
     "serialize_session_artifact_projection",
+    "sqlite_control_plane_stores",
     "SQLiteArtifactPayloadStore",
     "SQLiteAgentTaskStore",
     "SQLiteArtifactStore",

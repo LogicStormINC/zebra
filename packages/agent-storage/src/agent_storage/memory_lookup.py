@@ -11,6 +11,7 @@ from agent_core.domain.memories import (
     MemoryVisibility,
 )
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
+from agent_core.ports.memory_store import MemoryStorePort
 
 from agent_storage.memories import SQLiteMemoryStore
 
@@ -25,7 +26,7 @@ _TYPE_PRIORITY: dict[MemoryType, int] = {
 
 
 def list_confirmed_repo_memories(
-    database_path: str | Path,
+    store_or_database_path: MemoryStorePort | str | Path,
     *,
     repo_id: str,
     limit: int = 8,
@@ -36,7 +37,7 @@ def list_confirmed_repo_memories(
     if max_tokens <= 0:
         raise ValueError("memory max_tokens must be positive")
     effective_as_of = as_of or datetime.now(UTC)
-    store = SQLiteMemoryStore(database_path)
+    store = _memory_store(store_or_database_path)
     if query_text is None or not query_text.strip():
         records = store.list(
             MemoryQuery(
@@ -109,7 +110,7 @@ def _estimate_tokens(text: str) -> int:
 
 
 def list_confirmed_repo_memory_texts(
-    database_path: str | Path,
+    store_or_database_path: MemoryStorePort | str | Path,
     *,
     repo_id: str,
     limit: int = 8,
@@ -120,7 +121,7 @@ def list_confirmed_repo_memory_texts(
     return tuple(
         memory.text
         for memory in list_confirmed_repo_memories(
-            database_path,
+            store_or_database_path,
             repo_id=repo_id,
             limit=limit,
             query_text=query_text,
@@ -128,6 +129,10 @@ def list_confirmed_repo_memory_texts(
             as_of=as_of,
         )
     )
+
+
+def _memory_store(source: MemoryStorePort | str | Path) -> MemoryStorePort:
+    return SQLiteMemoryStore(source) if isinstance(source, str | Path) else source
 
 
 def _normalize_memory_text(text: str) -> str:

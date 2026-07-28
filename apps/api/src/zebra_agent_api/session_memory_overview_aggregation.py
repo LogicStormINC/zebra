@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-from pathlib import Path
-
-from agent_storage import (
-    SQLiteArtifactPayloadStore,
-    payload_for_artifact_uri,
-    serialize_artifact_lifecycle,
-)
+from agent_core.ports import ArtifactPayloadStorePort
+from agent_storage import payload_for_artifact_uri, serialize_artifact_lifecycle
 
 
-def _artifact_lifecycle(database_path: Path, uri: str | None) -> dict[str, object] | None:
-    payload = payload_for_artifact_uri(SQLiteArtifactPayloadStore(database_path), uri)
+def _artifact_lifecycle(
+    payload_store: ArtifactPayloadStorePort,
+    uri: str | None,
+) -> dict[str, object] | None:
+    payload = payload_for_artifact_uri(payload_store, uri)
     return serialize_artifact_lifecycle(payload)
 
 

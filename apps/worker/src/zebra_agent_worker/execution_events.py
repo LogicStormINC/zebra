@@ -10,10 +10,10 @@ from agent_core.domain.identifiers import CorrelationId
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.harness.models import HarnessEventDraft
-from agent_storage import (
-    SQLiteEventStore,
-    SQLiteProjectionStore,
-    SQLiteWorkspaceProjectionStore,
+from agent_core.ports import (
+    EventStorePort,
+    ProjectionStorePort,
+    WorkspaceProjectionStorePort,
 )
 
 from zebra_agent_worker.model_call_index import ModelCallIndexer
@@ -39,9 +39,9 @@ class DurableHarnessEventRecorder:
         *,
         session: Session,
         workspace: WorkspaceProjection,
-        event_store: SQLiteEventStore,
-        projection_store: SQLiteProjectionStore,
-        workspace_store: SQLiteWorkspaceProjectionStore,
+        event_store: EventStorePort,
+        projection_store: ProjectionStorePort,
+        workspace_store: WorkspaceProjectionStorePort,
         model_call_indexer: ModelCallIndexer,
         tool_run_indexer: ToolRunIndexer,
     ) -> None:

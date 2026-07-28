@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from agent_core.domain.memories import MemoryQuery, MemoryStatus, MemoryVisibility
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.memory_inventory_review_metrics_read import (
     _read_memory_backlog_aging_signals,
@@ -33,10 +34,12 @@ _QUEUE_STATUSES = (MemoryStatus.CANDIDATE,)
 def read_tenant_memory_inventory(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None = None,
     tenant_id: str,
 ) -> list[dict[str, object]]:
     return _read_memory_inventory(
         database_path=database_path,
+        stores=stores,
         query=MemoryQuery(
             tenant_id=tenant_id,
             visibility=MemoryVisibility.TENANT,
@@ -48,10 +51,12 @@ def read_tenant_memory_inventory(
 def read_tenant_memory_queue(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None = None,
     tenant_id: str,
 ) -> list[dict[str, object]]:
     return _read_memory_inventory(
         database_path=database_path,
+        stores=stores,
         query=MemoryQuery(
             tenant_id=tenant_id,
             visibility=MemoryVisibility.TENANT,
@@ -63,10 +68,12 @@ def read_tenant_memory_queue(
 def read_tenant_memory_queue_summary(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None = None,
     tenant_id: str,
 ) -> dict[str, object]:
     return _read_memory_queue_summary(
         database_path=database_path,
+        stores=stores,
         query=MemoryQuery(
             tenant_id=tenant_id,
             visibility=MemoryVisibility.TENANT,
@@ -78,10 +85,12 @@ def read_tenant_memory_queue_summary(
 def read_tenant_memory_governance_signals(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None = None,
     tenant_id: str,
 ) -> dict[str, object]:
     return _read_memory_governance_signals(
         database_path=database_path,
+        stores=stores,
         inventory_query=MemoryQuery(
             tenant_id=tenant_id,
             visibility=MemoryVisibility.TENANT,
@@ -98,11 +107,13 @@ def read_tenant_memory_governance_signals(
 def read_tenant_memory_backlog_aging_signals(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None = None,
     tenant_id: str,
     as_of: datetime,
 ) -> dict[str, object]:
     return _read_memory_backlog_aging_signals(
         database_path=database_path,
+        stores=stores,
         query=MemoryQuery(
             tenant_id=tenant_id,
             visibility=MemoryVisibility.TENANT,
@@ -115,11 +126,13 @@ def read_tenant_memory_backlog_aging_signals(
 def read_tenant_memory_review_velocity_signals(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None = None,
     tenant_id: str,
     as_of: datetime,
 ) -> dict[str, object]:
     return _read_memory_review_velocity_signals(
         database_path=database_path,
+        stores=stores,
         inventory_query=MemoryQuery(
             tenant_id=tenant_id,
             visibility=MemoryVisibility.TENANT,
@@ -132,11 +145,13 @@ def read_tenant_memory_review_velocity_signals(
 def read_tenant_memory_backlog_pressure_signals(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None = None,
     tenant_id: str,
     as_of: datetime,
 ) -> dict[str, object]:
     return _read_memory_backlog_pressure_signals(
         database_path=database_path,
+        stores=stores,
         queue_query=MemoryQuery(
             tenant_id=tenant_id,
             visibility=MemoryVisibility.TENANT,
@@ -154,11 +169,13 @@ def read_tenant_memory_backlog_pressure_signals(
 def read_tenant_memory_pressure_action_hints(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None = None,
     tenant_id: str,
     as_of: datetime,
 ) -> dict[str, object]:
     return _read_memory_pressure_action_hints(
         database_path=database_path,
+        stores=stores,
         queue_query=MemoryQuery(
             tenant_id=tenant_id,
             visibility=MemoryVisibility.TENANT,
@@ -176,11 +193,13 @@ def read_tenant_memory_pressure_action_hints(
 def read_tenant_memory_pressure_escalation_recommendations(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None = None,
     tenant_id: str,
     as_of: datetime,
 ) -> dict[str, object]:
     return _read_memory_pressure_escalation_recommendations(
         database_path=database_path,
+        stores=stores,
         queue_query=MemoryQuery(
             tenant_id=tenant_id,
             visibility=MemoryVisibility.TENANT,
@@ -198,11 +217,13 @@ def read_tenant_memory_pressure_escalation_recommendations(
 def read_tenant_memory_escalation_follow_up_windows(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None = None,
     tenant_id: str,
     as_of: datetime,
 ) -> dict[str, object]:
     return _read_memory_escalation_follow_up_windows(
         database_path=database_path,
+        stores=stores,
         queue_query=MemoryQuery(
             tenant_id=tenant_id,
             visibility=MemoryVisibility.TENANT,
@@ -220,11 +241,13 @@ def read_tenant_memory_escalation_follow_up_windows(
 def read_tenant_memory_follow_up_overdue_flags(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None = None,
     tenant_id: str,
     as_of: datetime,
 ) -> dict[str, object]:
     return _read_memory_follow_up_overdue_flags(
         database_path=database_path,
+        stores=stores,
         queue_query=MemoryQuery(
             tenant_id=tenant_id,
             visibility=MemoryVisibility.TENANT,

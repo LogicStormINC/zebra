@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+
+from agent_core.ports.idempotency_store import IdempotencyRecord, IdempotencyStorePort
 
 from agent_storage.database import SQLiteDatabase
 
@@ -12,17 +13,7 @@ class IdempotencyConflictError(ValueError):
     """Raised when an idempotency key is reused with a different request."""
 
 
-@dataclass(frozen=True)
-class IdempotencyRecord:
-    action: str
-    idempotency_key: str
-    request_hash: str
-    status_code: int
-    response_body: dict[str, object]
-    created_at: datetime
-
-
-class SQLiteIdempotencyStore:
+class SQLiteIdempotencyStore(IdempotencyStorePort):
     def __init__(self, database_path: str | Path) -> None:
         self._database = SQLiteDatabase(database_path)
         self._initialize()

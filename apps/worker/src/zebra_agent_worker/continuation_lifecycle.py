@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_storage import SQLiteEventStore
+from agent_core.ports import EventStorePort
 
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.recovery import SessionRecoveryService
@@ -10,7 +10,7 @@ from zebra_agent_worker.recovery import SessionRecoveryService
 def mark_approved_continuation_started(
     claimed: ClaimedSession,
     *,
-    event_store: SQLiteEventStore,
+    event_store: EventStorePort,
     recovery_service: SessionRecoveryService,
     tool_name: str,
     tool_call_id: str,
@@ -46,7 +46,7 @@ def mark_approved_continuation_started(
 def mark_clarification_continuation_started(
     claimed: ClaimedSession,
     *,
-    event_store: SQLiteEventStore,
+    event_store: EventStorePort,
     recovery_service: SessionRecoveryService,
     clarification_id: str,
     started_at: datetime,

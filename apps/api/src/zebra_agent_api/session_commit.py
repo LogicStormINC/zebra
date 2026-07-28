@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId
 from agent_runtime import WorkspaceCommitCommand, WorkspaceCommitError, WorkspaceCommitService
 from agent_security import CommitPolicy, DeliveryDecisionType
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_storage import ControlPlaneStores, sqlite_control_plane_stores
 
 from zebra_agent_api.delivery_audit import record_delivery_audit
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
@@ -19,6 +20,11 @@ from zebra_agent_api.session_payloads import parse_commit_session_payload
 @dataclass(frozen=True)
 class SessionCommitApi:
     database_path: Path
+    stores: ControlPlaneStores | None = None
+
+    @cached_property
+    def _control_stores(self) -> ControlPlaneStores:
+        return self.stores or sqlite_control_plane_stores(self.database_path)
 
     def commit(
         self,
@@ -30,17 +36,21 @@ class SessionCommitApi:
         parsed = parse_commit_session_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
-        replayed = replay_idempotent_response(
-            database_path=self.database_path,
-            action="session.commit",
-            idempotency_key=idempotency_key,
-            payload=payload,
+        replayed = (
+            replay_idempotent_response(
+                store=self._control_stores.idempotency,
+                action="session.commit",
+                idempotency_key=idempotency_key,
+                payload=payload,
+            )
+            if idempotency_key is not None
+            else None
         )
         if replayed is not None:
             return replayed
 
         session_key = SessionId(UUID(session_id))
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self._control_stores.sessions.get_session(session_key)
         if session is None:
             return self._save(
                 payload,
@@ -50,7 +60,7 @@ class SessionCommitApi:
                     body={"session_id": session_id, "status": "not_found"},
                 ),
             )
-        events = SQLiteEventStore(self.database_path).list_for_session(session_key)
+        events = self._control_stores.events.list_for_session(session_key)
         policy_decision = CommitPolicy().evaluate(session_policy_profile(events))
         if policy_decision.decision is DeliveryDecisionType.DENY:
             return self._save(
@@ -120,15 +130,19 @@ class SessionCommitApi:
         *,
         policy_profile: str | None = None,
     ) -> ApiResponse:
-        saved = save_idempotent_response(
-            database_path=self.database_path,
-            action="session.commit",
-            idempotency_key=idempotency_key,
-            payload=payload,
-            response=response,
-        )
+        if idempotency_key is None:
+            response.body["idempotency_key"] = None
+            saved = response
+        else:
+            saved = save_idempotent_response(
+                store=self._control_stores.idempotency,
+                action="session.commit",
+                idempotency_key=idempotency_key,
+                payload=payload,
+                response=response,
+            )
         record_delivery_audit(
-            database_path=self.database_path,
+            store=self._control_stores.delivery_audit,
             session_id=str(saved.body["session_id"]),
             action="session.commit",
             response=saved,

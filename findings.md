@@ -1,5 +1,153 @@
 # Findings
 
+## MEM-MEM0-ADP-01 - 2026-07-28
+
+- The installed `httpx` client is sufficient; no Mem0 SDK or new dependency is
+  needed for the proven REST surface.
+- A default-disabled Adapter can preserve local behavior without runtime wiring.
+  Enabled plain HTTP requires an explicit local-only opt-in, and implicit
+  environment proxy discovery stays off to avoid credential leakage or localhost
+  interception.
+- Mem0 provider refs in the pinned OSS version are UUIDs. Canonical UUID parsing
+  at publish, search and delete closes path traversal and schema-drift ambiguity.
+- The Adapter cannot own delete identity: a namespace-aware provider-ref lookup
+  is required, while durable mapping/idempotency remains `MEM-GW-DEL-01`.
+- A provider lookup outage is degraded, not not-found. Only a successful lookup
+  miss or provider `404` is not-found, preserving deletion retry/audit semantics.
+- Response bytes and hit counts are bounded. Whole-response drift or an entirely
+  invalid non-empty hit set counts toward the circuit; partial is reserved for a
+  response with at least one revalidatable hit.
+- The process-local circuit admits one half-open probe. Multi-Worker coordination
+  remains a later operational gate rather than hidden shared state in this Adapter.
+- The Adapter itself passes publish/search/delete against the pinned isolated
+  Compose Mem0 server. Real provider, TLS/proxy and production SLO remain unverified.
+
+## MEM-MEM0-SPIKE-01 - 2026-07-28
+
+- Pinned Mem0 OSS accepts authenticated `infer=false` writes through a local
+  embedding-only provider; the successful path never calls chat completion.
+- Identical delivery creates distinct Mem0 UUIDs. Zebra therefore needs its own
+  durable `MemoryId -> provider_ref` mapping and idempotent delivery ledger.
+- Hashed `user_id` scopes isolate the tested searches, but Mem0 is not the Host
+  authorization boundary and every returned Zebra reference still needs Store
+  revalidation.
+- Expired records can be listed with `show_expired=true` but cannot be searched
+  with the same flag in the pinned version.
+- Provider 503 becomes `502/provider_unavailable`; bad dimensions become
+  `502/unknown`; a stalled provider blocks until the caller deadline. All three
+  belong to the Adapter's degraded path.
+- Restart preserves vector and history data in their isolated volumes. Both are
+  derived evidence only; `MemoryStorePort` remains Zebra's fact source.
+- The deterministic provider proves the OSS REST/pgvector path, not real-provider
+  credentials, rate limits, proxy/TLS behavior or production SLO.
+
+## MEM-GW-CON-01 - 2026-07-28
+
+- The safest remote-memory contract does not return text. A hit carries only the
+  governed Zebra `MemoryId`, an opaque provider reference and a separately named
+  provider score, forcing lifecycle/content revalidation through `MemoryStorePort`.
+- Confirmed-only publication belongs at the typed trust boundary. Candidate,
+  superseded, expired and deleted records cannot be represented as publications.
+- Degraded, disabled and partial provider behavior are ordinary typed outcomes;
+  they are not reasons to fail an Agent Run.
+- Mem0 and Redis names, SDK types, identities and transport details stay outside
+  Core so the derived index remains replaceable.
+
+## CLOUD-STO-AUTH-01 - 2026-07-24
+
+- The first five-store seam could not safely select a cloud backend: context
+  lifecycle, handoff/dispatch, idempotency, effect replay, governed memory,
+  artifact indexes, provider continuations, session history and delivery audit
+  still reconstructed SQLite adapters from `database_path` inside API/Worker flows.
+- One flat `ControlPlaneStores` is sufficient. The missing boundaries were
+  existing cohesive storage responsibilities, so focused Core Ports and adapter
+  conformance remove the split without a backend hierarchy or new dependency.
+- Context lifecycle and handoff are aggregate transaction boundaries. Keeping
+  their event/projection/dispatch coordination behind one Port lets a future
+  PostgreSQL adapter provide atomicity without leaking database tables upward.
+- Distinct A/B regressions now exercise idempotency, attachments/SSE, context
+  compaction/recovery, handoff/dispatch, effect replay, memory review, artifact
+  and model/tool indexes, provider continuation and scoped session history. Each
+  asserts that the legacy SQLite path does not exist before the test inspects it.
+- With an injected bundle, `database_path` is compatibility configuration for
+  local-only collaborators such as skills state and derived web caches; it is no
+  longer an authority locator for durable API/Worker flows.
+- Governed memory review currently persists the Memory fact and its Event/
+  Projection through separate Store calls. This task guarantees one backend,
+  not cross-call atomicity; the PostgreSQL/outbox design must close that failure
+  window before production selection.
+- `MemoryStorePort` retains candidate/review/supersession/deletion authority.
+  Mem0 or another semantic-memory provider remains a separately gated derived
+  Gateway and does not alter this composition contract.
+## CLOUD-COMPOSE-INFRA-01 - 2026-07-24
+
+- The repository has no existing Dockerfile or Compose asset to reuse; only
+  runtime configuration and architecture references exist.
+- Mem0 OSS is a better self-hosted candidate than Redis Agent Memory V0 for this
+  Compose-first phase, but it is still an auxiliary semantic service rather than
+  a governed-memory database. Its official Compose is a development example and
+  the published API image exposes only a mutable old `latest`, so the boot smoke
+  builds from release commit `ca2abca2b884e038d3e525070e79d3057ef2012c` and pins
+  `mem0ai==2.0.13` instead of claiming a production artifact.
+- Zebra `MemoryStorePort` already models candidate, confirmed, superseded,
+  expired and deleted states with provenance. Mem0 must not replace those states:
+  publish only confirmed memory with `infer=false`, carry a Zebra memory ref, and
+  revalidate every hit against the authoritative Store before prompt admission.
+- Mem0's isolated pgvector PostgreSQL and SQLite history volume are derived and
+  rebuildable. They share neither data nor authority with Zebra PostgreSQL or
+  erasable `redis-live`.
+- The slim Python image needs the self-contained `psycopg-binary` distribution;
+  installing only upstream's pure-Python `psycopg` package leaves no `libpq`.
+  A separate runtime input preserves exact upstream comparison while the combined
+  hash lock, no-index direct-input check and `pip check` close dependency drift.
+- Mem0 imports create `~/.mem0` even with telemetry disabled. `MEM0_DIR` therefore
+  points to tmpfs so the API can retain a read-only root filesystem; this generated
+  identity config is operational scratch data, not governed or semantic memory.
+- `/auth/setup-status` is request-audited, so using it every 10 seconds as a
+  health probe would itself add about 8,640 persistent rows per day. The final
+  check uses an audit-skipped HTTP path for process liveness and a direct SQL
+  query for application-database readiness.
+- A successful boot applies only the REST server's relational migrations. The
+  `vector` extension and semantic collection are intentionally not initialized by
+  the sentinel-key smoke and must be observed during the credentialed contract Spike.
+- Container boot does not prove write/search contracts. Exact REST shapes,
+  duplicate delivery, restart, deletion, provider failure, embedding changes and
+  namespace behavior require `MEM-MEM0-SPIKE-01` with disposable credentials.
+- Building Zebra API/Worker images before cloud adapters exist would create a
+  misleading SQLite-backed main stack. Application containers therefore remain
+  a separate locked task.
+
+## CLOUD-STO-SEAM-01 - 2026-07-23
+
+- API and Worker construct the same SQLite control-plane adapters repeatedly;
+  SSE also bypasses `ZebraAgentApi`, so changing only `create_app` would leave a
+  false seam that cannot support a PostgreSQL adapter end to end.
+- Existing Event, Projection, Workspace, AgentTask and Lease Ports are sufficient
+  for the first bundle. Context lifecycle, idempotency, effect ledger, handoff
+  dispatch, artifact indexing and some approval reads need later focused Ports.
+- `MemoryStorePort` is Zebra's governed lifecycle projection: candidate,
+  confirmed, superseded, expired and deleted states retain provenance and review
+  semantics that an external semantic index does not model. The remote service therefore
+  remains a separate derived Gateway with outbox/receipts and fail-open reads.
+- The current Mem0 candidate remains replaceable. A self-hosted contract and
+  operations Spike precedes its Adapter.
+- The storage seam has no technical dependency on Host/AG-UI contracts. The
+  maintainer explicitly activated it as a local stacked task while PR `#194`
+  remains the mandatory merge predecessor.
+- Independent review reproduced event-stream splits when context lifecycle or
+  handoff used a different SQLite path from injected control-plane Ports. The
+  first seam therefore records local database identity and rejects partial
+  split-backend composition before any write; it does not claim PostgreSQL readiness.
+- Existing SQLite adapters open a fresh connection per operation, so `:memory:`
+  cannot represent one coherent control-plane database. The local bundle rejects
+  that mode instead of advertising a composition that loses schema and state.
+- Approval listing cannot emulate its former SQL predicate with an unbounded
+  `list_recent_sessions` call. `ProjectionStorePort.list_waiting_approval_sessions`
+  preserves database-side filtering and oldest-first ordering for future adapters.
+- Remaining authoritative collaborators are not optional infrastructure details:
+  context lifecycle, handoff/dispatch, idempotency, effect ledger, governed
+  memory, Artifact and continuation state must enter composition before `CLOUD-PG-01`.
+
 ## EMB-AGUI-SPIKE-01 - 2026-07-23
 
 - The maintainer explicitly activated the Zebra-side compatibility Spike. The
@@ -29,8 +177,8 @@
 - CopilotKit replaces only the proposed React integration layer. Zebra still
   owns AG-UI mapping, durable interrupts, Surface Lease, semantic frontend tool
   receipts, replay, Policy, and Artifact access contracts.
-- Redis Agent Memory remains an optional, replaceable, degraded-safe adapter and
-  is not on the first read-only Trench slice's critical path.
+- External semantic memory remains optional, replaceable and degraded-safe; the
+  later Mem0 candidate is not on the first read-only Trench slice's critical path.
 - The draft is 4,288 lines because a second complete architecture starts at line
   1,692. Replacing it with one bounded authoritative document is safer than
   trying to patch both contradictory halves.

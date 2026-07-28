@@ -5,7 +5,10 @@ from pathlib import Path
 
 from agent_core.application import serialize_scoped_memory_inventory
 from agent_core.domain.memories import MemoryQuery, MemoryRecord
-from agent_storage import SQLiteEventStore, SQLiteMemoryStore
+from agent_storage import (
+    ControlPlaneStores,
+    sqlite_control_plane_stores,
+)
 
 from zebra_agent_api.memory_follow_through_classification_read import (
     _int_field,
@@ -15,19 +18,22 @@ from zebra_agent_api.memory_follow_through_classification_read import (
 def _read_memory_inventory(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     query: MemoryQuery,
 ) -> list[dict[str, object]]:
-    event_store = SQLiteEventStore(database_path)
-    records = SQLiteMemoryStore(database_path).list(query)
+    active_stores = stores or sqlite_control_plane_stores(database_path)
+    event_store = active_stores.events
+    records = active_stores.memories.list(query)
     return serialize_scoped_memory_inventory(records, event_store.list_for_session)
 
 
 def _read_memory_queue_summary(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     query: MemoryQuery,
 ) -> dict[str, object]:
-    records = SQLiteMemoryStore(database_path).list(query)
+    records = (stores or sqlite_control_plane_stores(database_path)).memories.list(query)
     latest_record = _latest_record(records)
     return {
         "pending_count": len(records),
@@ -42,15 +48,17 @@ def _read_memory_queue_summary(
 def _read_memory_backlog_aging_signals(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
-    records = SQLiteMemoryStore(database_path).list(query)
+    records = (stores or sqlite_control_plane_stores(database_path)).memories.list(query)
     oldest_record = _oldest_record(records)
     normalized_as_of = as_of.astimezone(UTC)
     return {
         **_read_memory_queue_summary(
             database_path=database_path,
+            stores=stores,
             query=query,
         ),
         "reference_at": normalized_as_of.isoformat(),
@@ -77,11 +85,13 @@ def _read_memory_backlog_aging_signals(
 def _read_memory_review_velocity_signals(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     inventory_rows = _read_memory_inventory(
         database_path=database_path,
+        stores=stores,
         query=inventory_query,
     )
     normalized_as_of = as_of.astimezone(UTC)
@@ -118,17 +128,20 @@ def _read_memory_review_velocity_signals(
 def _read_memory_backlog_pressure_signals(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     aging = _read_memory_backlog_aging_signals(
         database_path=database_path,
+        stores=stores,
         query=queue_query,
         as_of=as_of,
     )
     velocity = _read_memory_review_velocity_signals(
         database_path=database_path,
+        stores=stores,
         inventory_query=inventory_query,
         as_of=as_of,
     )
@@ -150,19 +163,23 @@ def _latest_record(records: list[MemoryRecord]) -> MemoryRecord | None:
 def _read_memory_governance_signals(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     inventory_query: MemoryQuery,
     queue_query: MemoryQuery,
 ) -> dict[str, object]:
     inventory_rows = _read_memory_inventory(
         database_path=database_path,
+        stores=stores,
         query=inventory_query,
     )
     queue_rows = _read_memory_inventory(
         database_path=database_path,
+        stores=stores,
         query=queue_query,
     )
     queue_summary = _read_memory_queue_summary(
         database_path=database_path,
+        stores=stores,
         query=queue_query,
     )
     latest_review = _latest_review(inventory_rows)

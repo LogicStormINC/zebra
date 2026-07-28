@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from agent_storage import ControlPlaneStores
+
 from zebra_agent_api.scoped_memory_read_mixin import ScopedMemoryReadMixin
 from zebra_agent_api.session_artifact_read_mixin import SessionArtifactReadMixin
 from zebra_agent_api.session_identity_read import (
@@ -124,6 +126,7 @@ class SessionReadApi(
     SessionArtifactReadMixin,
 ):
     database_path: Path
+    stores: ControlPlaneStores
 
 
 __all__ = (

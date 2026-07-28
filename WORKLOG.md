@@ -27,6 +27,179 @@
   payments failed or the spending limit must be increased. This is an external
   billing gate, not a code/test result.
 
+## 2026-07-28 MEM-MEM0-ADP-01 Mem0 Gateway Adapter
+
+- activated isolated `codex/mem0-adapter-01`, stacked on the reviewed Mem0 Spike;
+  merge remains blocked by the full predecessor chain
+- implemented the provider-neutral Core Gateway over Mem0 REST using existing
+  `httpx`, with no SDK, runtime wiring, Store mutation or write retry
+- added default-disabled configuration, explicit insecure-local HTTP, opaque
+  namespace hashing, canonical provider UUIDs and environment-proxy opt-in
+- added bounded streaming, bounded hit parsing, redacted degraded outcomes and a
+  process-local circuit with one half-open probe
+- delete consumes a namespace-aware provider-ref lookup; missing/failing lookup
+  degrades and no hidden in-memory identity map was introduced
+- independent review found and verified fixes for delete false-not-found, lookup
+  exception leakage, provider-ref traversal, breaker reset, unbounded responses,
+  cleartext credential opt-in and all-invalid-hit schema drift
+- focused Core/Adapter tests pass `36/36`; pinned Compose lifecycle passes `3/3`;
+  Ruff, Mypy, diff check and release Eval `10/10` pass
+- full suite is `1784 passed, 10 skipped, 9 failed`; the nine failures exactly
+  match the inherited provider, expired SCM fixture, file-size and cancellation
+  baseline, so the task moves to local `Review` without push or PR
+
+## 2026-07-28 MEM-MEM0-SPIKE-01 Mem0 OSS Contract And Operations Probe
+
+- combined the reviewed Store, Gateway and Compose prerequisites on isolated
+  branch `codex/mem0-contract-spike-01`; the branch remains local and stacked
+- added a non-root, read-only deterministic OpenAI-compatible embedding service
+  and isolated test Compose project with its own network, ports and volumes
+- exercised the pinned Mem0 server through authenticated REST calls for
+  `infer=false`, namespace filters, expiration, update/history, restart and delete
+- proved duplicate delivery creates distinct IDs; expired search ignores
+  `show_expired=true`; provider 503 maps to `502/provider_unavailable`; dimension
+  mismatch maps to `502/unknown`; provider stall reaches the caller deadline
+- kept Zebra `MemoryStorePort` authoritative and recorded the required Adapter
+  delivery mapping, opaque namespace and hit-revalidation boundaries
+- preserved real-provider validation as a separate credentialed release gate
+- focused Ruff and Mypy pass; Compose render passes; isolated real-server Spike
+  passes `2/2`; release Eval passes `10/10`; `git diff --check` passes
+- full suite is `1761 passed, 9 skipped, 9 failed`; the nine failures exactly
+  match the inherited provider, expired SCM fixture, file-size and cancellation
+  baseline, so merge/PR remains blocked and the task moves to local `Review`
+
+## 2026-07-28 MEM-GW-CON-01 Provider-neutral Agent Memory Gateway Contract
+
+- activated `codex/mem-gw-con-01` in an isolated worktree stacked directly on
+  local reviewed `CLOUD-STO-AUTH-01`; no main workspace changes were touched
+- limited implementation to one Core Port/value module, its public exports and
+  one focused contract test; no provider dependency or runtime wiring was added
+- initial test collection found the new worktree had not installed workspace
+  packages; `make sync` resolved the environment before contract validation
+- gateway contract `13 passed`; all agent-core tests `221 passed`; strict Mypy
+  passed `116` source files; touched Ruff, diff check and release Eval `10/10` passed
+- final full suite: `1760 passed, 8 skipped, 9 failed`; the failure set exactly
+  matches the inherited auth-branch baseline (2 provider expectations, 5 expired
+  SCM credential fixtures, 1 untouched file-size gate, 1 Worker cancellation race)
+- `make check` stops at the two untouched file-size violations (`561/500`,
+  `505/500`); moved the task to Review with the local stacked merge gate intact
+
+## 2026-07-24 CLOUD-STO-AUTH-01 Complete Authoritative Store Composition
+
+- activated one isolated local branch, `codex/cloud-sto-auth-01`, based directly
+  on `CLOUD-STO-SEAM-01`; required merge order remains
+  `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-STO-AUTH-01`
+- used separate Core/Storage, API, Worker/test and final review lanes within the
+  registered owned paths; final independent review found no P0-P2 issue
+- extended the existing flat `ControlPlaneStores` across context lifecycle,
+  handoff/dispatch, idempotency, effects, governed memory, artifact payload and
+  indexes, provider continuation, scoped session history and delivery audit
+- added focused Core Ports and made SQLite adapters conform without introducing
+  a backend hierarchy, selector, cloud service or dependency
+- removed `legacy_database_path` and the temporary coherence guard after API,
+  SSE and Worker stopped reconstructing target stores from a path
+- preserved `SQLiteSkillsStateStore`, runtime filesystem configuration and
+  derived web caches as explicit non-authoritative local-profile exclusions
+- added A/B regressions for idempotency/attachments/SSE, compaction/recovery,
+  handoff/dispatch, effect replay, memory review, artifact/model/tool indexes,
+  provider continuation and session history; each proves the legacy path was
+  not created before inspection
+- retained `MemoryStorePort` as the governed authority; Mem0 or another semantic
+  memory provider remains a separately gated, degraded-safe derived Gateway
+- final authoritative A/B tests: `9 passed`; combined focused validation:
+  `365 passed`; all 54 changed Python files pass Ruff and format checks;
+  `git diff --check` passes; Eval release gate passes `10/10`
+- full `make test`: `1747 passed, 8 skipped, 9 failed`; failures match the prior
+  baseline (2 provider expectations, 5 expired SCM fixtures, 1 untouched
+  file-size test and 1 Worker cancellation race)
+- repository `make check` stops at the two untouched `561/500` and `505/500`
+  files; independent full Ruff/Mypy runs retain only 13/4 errors in untouched
+  harness, web and security paths
+- moved the task to `Review`; branch remains local and unpushed
+## 2026-07-24 CLOUD-COMPOSE-INFRA-01 Docker Compose Dependency Baseline
+
+- maintainer required every database dependency to be represented through Docker
+  Compose while separating base dependencies, optional auxiliaries and future
+  Zebra main-container lifecycles
+- live GitHub audit found PR `#194` still open with runner-allocation failures;
+  that investigation was paused when the maintainer reprioritized Compose work
+- the first Redis Agent Memory V0 proposal was replaced after a live Mem0 audit:
+  Mem0 OSS fits self-hosted Compose better, but its official Compose remains a
+  development example and its public API image is not a reproducibly pinned release
+- created isolated worktree `zebra-agent-cloud-compose-infra-01` on
+  `codex/cloud-compose-infra-01`, stacked on `CLOUD-STO-SEAM-01`; merge order is
+  `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-COMPOSE-INFRA-01`
+- registered a dependency-only active card and a separate locked Zebra
+  application-container card before adding deployment files
+- added `compose.dependencies.yml` for Zebra PostgreSQL, erasable Redis, MinIO and
+  isolated Mem0 PostgreSQL; added `compose.mem0.yml` for an auth-enabled,
+  telemetry-disabled API/migration overlay with separate history persistence
+- built the Mem0 boot-smoke image from release commit
+  `ca2abca2b884e038d3e525070e79d3057ef2012c` with `mem0ai==2.0.13`, non-root
+  execution and a read-only root filesystem; no Dashboard, Graph or MCP sidecar
+- generated a universal 78-package hash lock from the reviewed upstream input,
+  added a matching `psycopg-binary==3.3.4` runtime input for the slim image, and
+  made the build reject upstream drift, missing direct inputs and broken packages
+- redirected Mem0's generated client identity config to tmpfs after the first
+  read-only boot exposed an attempted `/home/mem0/.mem0` write; the authoritative
+  root filesystem stays read-only and only the separate history volume is durable
+- replaced the first setup-status health probe after review showed that it wrote
+  one durable audit row every 10 seconds; the final probe uses Mem0's audit-skipped
+  OpenAPI route for liveness plus a direct `SELECT 1` against the application DB
+- verified image `sha256:0892c163df54c7535d78f0a7afcdadb4fa4f69e006d7d2aa4eaf9c851722d58a`:
+  UID/GID `10001`, `mem0ai==2.0.13`, `psycopg==3.3.4` and
+  `psycopg-binary==3.3.4`
+- verified the real Compose stack: base PostgreSQL, Redis and MinIO are healthy;
+  MinIO init and Mem0 migration exit `0`; Mem0 PostgreSQL and API are healthy;
+  Alembic reaches `006`, setup status returns `200`, and anonymous memory access
+  returns `401`
+- left real memory write/search and vector initialization unexecuted because the
+  committed sentinel is boot-only; those provider-backed semantics remain the
+  credential-gated `MEM-MEM0-SPIKE-01`
+- kept `MemoryStorePort` authoritative and registered provider-neutral Gateway
+  plus Mem0 contract-Spike tasks before any adapter implementation
+- independent Compose/dependency review found no remaining code-level blocker;
+  `git diff --check`, deterministic lock comparison, upstream-input comparison,
+  both Compose renders and the Linux ARM64/AMD64 hash-lock resolution pass
+- repository `make test` remains at the reproduced baseline of `1744 passed`,
+  `8 skipped`, `9 failed`; Eval is `10/10`, while `make check` remains blocked by
+  two pre-existing file-size violations, 13 Ruff errors and 4 Mypy errors outside
+  this task's owned paths
+
+## 2026-07-23 CLOUD-STO-SEAM-01 Control-Plane Storage Composition Seam
+
+- maintainer reprioritized Zebra durable storage and memory foundations ahead of
+  further Trench work and explicitly allowed subagent-assisted implementation
+- audited API/Worker storage construction, task dependencies and official Redis
+  Agent Memory boundaries in three independent read-only lanes
+- confirmed the first seam can reuse existing Event/Projection/Workspace/Task/Lease
+  Ports without waiting for Host/AG-UI contracts or adding a cloud dependency
+- created isolated worktree `zebra-agent-cloud-sto-seam-01` on branch
+  `codex/cloud-sto-seam-01`, stacked on the local `EMB-PLAN-01` baseline; it may
+  not merge before PR `#194`
+- kept PostgreSQL/S3 as durable truth/payload stores, ordinary Redis ephemeral,
+  and Redis Agent Memory separate from the governed local `MemoryStorePort`
+- added one lazy `ControlPlaneStores` bundle for Event, Session Projection,
+  Workspace Projection, Task and Lease Ports; API, SSE and Worker reuse it
+- preserved all CLI helper signatures and added database-side waiting-approval
+  projection reads instead of an unbounded in-memory status scan
+- independent review found context-compaction and handoff split-write hazards;
+  partial split backends now fail closed at API, Worker and direct lifecycle roots
+- same-path spy regressions prove every composed Port is used; distinct-path
+  regressions prove rejection occurs before the decoy database is created
+- rejected SQLite `:memory:` composition because the existing per-operation
+  connection model cannot preserve one in-memory database across Store calls
+- final focused composition/approval/context/handoff regressions: `56 passed`;
+  API suite: `309 passed, 5` time-expired SCM fixture failures reproduced on base;
+  Worker suite: `68 passed, 1` pre-existing cancellation race reproduced on base
+- full `make test`: `1744 passed, 8 skipped, 9 failed`; every failure was reproduced
+  on the base branch (2 provider expectation drifts, 5 expired SCM fixtures,
+  1 existing file-size test and 1 cancellation race)
+- touched-file Ruff and `git diff --check` pass; Eval gate is `10/10`; repository
+  `make check` remains blocked by the two pre-existing 561/500 and 505/500 files,
+  while base and task branches share the same 13 Ruff and 4 Mypy baseline errors
+- moved the card to `Review`; branch remains local, stacked and unpushed
+
 ## 2026-07-23 EMB-AGUI-SPIKE-01 Official Python AG-UI Compatibility Spike
 
 - maintainer explicitly activated the Zebra-side Spike with all production

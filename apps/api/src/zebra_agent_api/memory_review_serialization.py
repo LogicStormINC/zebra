@@ -1,22 +1,20 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from agent_core.application import MemoryReviewResult, serialize_scoped_memory_inventory
 from agent_core.domain.memories import MemoryRecord, MemoryType, MemoryVisibility
-from agent_storage import SQLiteEventStore
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.responses import ApiResponse
 
 
 def _serialize_records(
     *,
-    database_path: Path,
+    stores: ControlPlaneStores,
     records: list[MemoryRecord],
 ) -> list[dict[str, object]]:
     return serialize_scoped_memory_inventory(
         records,
-        SQLiteEventStore(database_path).list_for_session,
+        stores.events.list_for_session,
     )
 
 

@@ -1,11 +1,12 @@
-# Zebra Embedded 与 Trench 实施任务拆解 v1.0
+# Zebra Embedded 与 Trench 实施任务拆解 v1.1
 
 | 字段 | 值 |
 |---|---|
-| 日期 | 2026-07-23 |
+| 日期 | 2026-07-24 |
 | 架构基线 | `Zebra Embedded 生产级目标架构.md`、ADR-015 |
-| 当前可执行任务 | `EMB-PLAN-01`（Review）、`EMB-AGUI-SPIKE-01`（In Progress） |
-| 其他任务 | `Locked`，等待 maintainer 逐卡激活 |
+| 当前可执行任务 | 无；等待已完成任务按依赖顺序评审、合并与重新激活 |
+| Review 任务 | `EMB-PLAN-01`、`EMB-AGUI-SPIKE-01`、`CLOUD-STO-SEAM-01`、`CLOUD-STO-AUTH-01`；Trench Spike 保持本地待处理 |
+| 其他任务 | `Locked`，等待依赖和 maintainer 逐卡激活 |
 | 第一业务验收 | Trench Event Detail 的生产只读链路 |
 
 ## 1. 执行规则
@@ -26,20 +27,26 @@
 ```mermaid
 flowchart TD
     PLAN["P0 架构收敛"] --> SPIKE["P0 双仓库 Spike"]
+    PLAN --> SEAM["Zebra Storage Composition Seam"]
+    SEAM --> AUTH["Authoritative Store Composition"]
+    AUTH --> CLOUD["P2 Cloud Durable Foundation"]
+    CLOUD --> MEMORY["Memory Gateway + Mem0 Gate"]
     SPIKE --> CONTRACT["P1 Host / AG-UI / Surface Contracts"]
-    CONTRACT --> CLOUD["P2 Cloud Durable Foundation"]
     CONTRACT --> READ["P3 Trench Read-only Slice"]
     CLOUD --> READGATE["Production Read-only E2E"]
     READ --> READGATE
     READGATE --> FRONTEND["P4 Frontend Collaboration"]
     FRONTEND --> ANALYSIS["P5 Deterministic Analysis"]
     ANALYSIS --> WRITE["P6 Controlled Writeback"]
-    WRITE --> MEMORY["P7 Redis Agent Memory"]
-    MEMORY --> GA["P8 Multi-tenant GA"]
+    WRITE --> GA["P8 Multi-tenant GA"]
+    MEMORY --> GA
 ```
 
-Cloud foundation 和 read-only feature 可以在协议冻结后并行，但只有两条线在
-真实环境汇合并通过恢复/安全门禁后，才可称为 production read-only。
+Storage Seam 使用现有通用 Store Ports，不依赖 Host/AG-UI/Surface 契约。当前调度
+优先完成 Zebra durable foundation 和 Agent Memory Gateway，再恢复 Trench 实施；
+Memory 仍是可降级增强能力，不进入 Run 或 read-only E2E 的必需运行时依赖。Cloud
+与 Host 协议两条线只有在真实环境汇合并通过恢复/安全门禁后，才可称为 production
+read-only。
 
 ## 3. P0：架构与兼容性
 
@@ -107,20 +114,43 @@ Cloud foundation 和 read-only feature 可以在协议冻结后并行，但只�
 
 - Python/JSON/TypeScript fixtures share versioned schemas and canonical examples。
 - Unknown fields/events have explicit forward-compatibility behavior。
-- Contract PRs merge before any storage, transport or UI adapter PR。
+- 相关 Domain/Port contract 必须先于对应 Adapter；Host/AG-UI/Surface 契约只阻塞
+  Host transport、Trench 和 UI Adapter，不阻塞复用现有 Store Ports 的 composition seam。
 
 ## 5. P2：Cloud durable foundation
 
 ### CLOUD-STO-SEAM-01 — Storage composition seam
 
-- Status: `Locked`；Zebra repo；depends on P1 contracts and explicit Phase B activation。
-- Candidate paths: API/Worker composition modules, config settings, focused tests。
-- Deliverable: inject existing Store Ports instead of constructing SQLite throughout request/worker flows。
-- Acceptance: local SQLite behavior and full suite remain unchanged; no PostgreSQL code yet。
+- Status: `Review`；Zebra repo；branch `codex/cloud-sto-seam-01`；owner `Codex`。
+- Depends on: locally reviewed `EMB-PLAN-01` baseline、completed Runtime Phase A and
+  maintainer activation on 2026-07-23；stacked branch must not merge before `EMB-PLAN-01`。
+- Owned paths: API storage wiring, Worker composition/execution wiring,
+  `agent-storage` composition, focused API/Worker tests and task governance records。
+- Deliverable: one typed control-plane Store bundle and local SQLite builder; inject the
+  existing Event/Projection/Workspace/Task/Lease Ports through API, SSE and Worker flows。
+- Acceptance: target Store constructors appear only in the local SQLite builder; same-path
+  spies prove injection and distinct-path use fails closed before a split write; local SQLite
+  behavior remains unchanged; no PostgreSQL、Redis、S3、migration、backend enum or new dependency。
+
+### CLOUD-STO-AUTH-01 — Complete authoritative Store composition
+
+- Status: `Review`；Zebra repo；branch `codex/cloud-sto-auth-01`；owner `Codex`。
+- Depends on: maintainer explicitly activated local stacked implementation on
+  2026-07-24；branch is based directly on local `CLOUD-STO-SEAM-01` and must not
+  merge before `EMB-PLAN-01 -> CLOUD-STO-SEAM-01`。
+- Owned paths: focused Core Store Ports、SQLite adapter conformance、API/Worker
+  storage composition、authoritative A/B regressions and governance records。
+- Deliverable: compose context lifecycle、handoff/dispatch、idempotency、effect ledger、
+  governed memory、Artifact payload/index、provider continuation、session history and
+  delivery-audit authorities before backend selection；remove the legacy path guard。
+- Acceptance: compaction/recovery/handoff/memory/effect A/B tests keep one authoritative
+  stream and prove the unused path is not created；API/SSE/Worker contain no target
+  SQLite constructor；`:memory:` remains rejected；focused/full/quality blockers are recorded。
 
 ### CLOUD-PG-01 — PostgreSQL event and projection storage
 
-- Status: `Locked`；depends on `CLOUD-STO-SEAM-01`。
+- Status: `Locked`；depends on `CLOUD-STO-AUTH-01` plus an approved database
+  migration、backup、recovery and rollback model review。
 - Candidate paths: `packages/agent-storage/.../postgres/`, migrations, storage tests。
 - Deliverable: Event Store、Projection、monotonic sequence、expected-version CAS、replay。
 - Acceptance: concurrent append/idempotency/rebuild tests plus real PostgreSQL CI pass。
@@ -327,35 +357,60 @@ Cloud foundation 和 read-only feature 可以在协议冻结后并行，但只�
 - Deliverable: approve/deny/expire/duplicate/crash/reconcile matrix on real services。
 - Acceptance: each success has Zebra Effect Receipt + Trench Business Receipt; zero double writes。
 
-## 10. P7：Redis Agent Memory
+## 10. P7：Provider-neutral Memory Gateway + Mem0
 
-### MEM-RAM-CON-01 — AgentMemoryGateway contract
+### MEM-GW-CON-01 — AgentMemoryGateway contract
 
-- Status: `Locked`；Zebra repo；depends on P6 gate and explicit Preview-risk acceptance。
+- Status: `Review`；branch `codex/mem-gw-con-01`；depends on local reviewed
+  `CLOUD-STO-AUTH-01` and explicit maintainer continuation；merge remains blocked
+  until the authoritative Store chain lands。
 - Candidate paths: new focused core Port/domain models and contract tests。
-- Deliverable: session event、long-term write/search/delete、snapshot/degraded responses。
-- Acceptance: distinct from local MemoryStorePort; no Redis SDK in core and no Trench identity domain。
+- Deliverable: confirmed-memory publish、search、delete and degraded-response contracts。
+- Acceptance: `MemoryStorePort` remains authoritative；no Mem0/provider SDK type enters core；
+  opaque namespace and Zebra memory ref are mandatory；outage cannot fail a Run。
 
-### MEM-RAM-ADP-01 — Redis Agent Memory adapter
+### MEM-MEM0-SPIKE-01 — Mem0 OSS contract and operations probe
 
-- Status: `Locked`；depends on `MEM-RAM-CON-01`。
-- Candidate paths: `agent-integrations/.../redis_agent_memory/`, config, tests。
-- Deliverable: feature flag、opaque mapping、redaction、timeout、rate limit、circuit breaker。
-- Acceptance: Embedded profile disables duplicate self-extraction; local profile remains compatible。
+- Status: `Review`；branch `codex/mem0-contract-spike-01`；stacked on local
+  reviewed `CLOUD-COMPOSE-INFRA-01`、`CLOUD-STO-AUTH-01` and `MEM-GW-CON-01`。
+- Candidate paths: isolated REST fixtures/tests, Spike configuration and compatibility evidence only。
+- Deliverable: pin exact self-hosted OSS paths/shapes for `infer=false`、metadata filters、
+  expiration、search、update、history、delete、restart and error behavior。
+- Acceptance: observe duplicate delivery、timeout、provider failure and embedding-dimension
+  changes；persist no credential；a deterministic local provider may validate OSS semantics,
+  while real provider compatibility remains a separate credentialed gate。
+- Observed: duplicate delivery creates distinct provider IDs；provider stall reaches the
+  caller deadline；provider 503 maps to `502/provider_unavailable`；dimension mismatch maps
+  to `502/unknown`；expired records remain absent from search even with `show_expired=true`。
 
-### MEM-RAM-DEL-01 — Memory delivery and deletion ledger
+### MEM-MEM0-ADP-01 — Mem0 Gateway adapter
 
-- Status: `Locked`；depends on `MEM-RAM-ADP-01` and `CLOUD-LEASE-01`。
+- Status: `Review`；branch `codex/mem0-adapter-01`；stacked on local reviewed
+  `MEM-MEM0-SPIKE-01` after explicit maintainer continuation on 2026-07-28。
+- Candidate paths: `agent-integrations/.../mem0/`, configuration and tests。
+- Deliverable: feature flag、opaque mapping、`infer=false`、redaction、timeout、rate limit、
+  circuit breaker and provider-version evidence。
+- Acceptance: only confirmed Zebra memories are published；remote score never changes Zebra
+  confidence/lifecycle；local profile remains compatible。
+- Observed: fixed `infer=false` and opaque namespace mapping pass against the pinned real
+  Compose service；timeout、429、5xx、schema drift and lookup outage degrade；provider refs
+  are canonical UUIDs；disabled mode performs no network I/O。
+
+### MEM-GW-DEL-01 — Memory delivery and deletion ledger
+
+- Status: `Locked`；depends on `MEM-MEM0-ADP-01` and `CLOUD-LEASE-01`。
 - Candidate paths: delivery storage/worker adapter, delete audit and tests。
-- Deliverable: outbox/idempotency/reconciliation/retention/deletion evidence。
-- Acceptance: retry cannot duplicate memory; delete outcome is traceable without retaining deleted content。
+- Deliverable: outbox/idempotency/reconciliation/retention/deletion evidence and rebuild path。
+- Acceptance: retry cannot duplicate governed memory；search hits are revalidated through
+  `MemoryStorePort`；delete is traceable without retaining deleted content。
 
-### MEM-RAM-GATE-01 — Preview drift and fault gate
+### MEM-GW-GATE-01 — Contract drift and fault gate
 
 - Status: `Locked`；depends on all P7 cards。
 - Candidate paths: daily contract tests, fault injection and acceptance record。
-- Deliverable: schema/version drift detection, outage/rate-limit/timeout/deletion scenarios。
-- Acceptance: Memory outage never fails Run; no pgvector/Graphiti fallback fact source appears。
+- Deliverable: schema/version drift、outage、rate-limit、timeout、stale-hit and deletion scenarios。
+- Acceptance: Memory outage never fails Run；Mem0's isolated pgvector is rebuildable derived data；
+  no second Zebra fact source or Graphiti fallback appears。
 
 ## 11. P8：Namespace isolation and GA
 
@@ -389,13 +444,22 @@ Cloud foundation 和 read-only feature 可以在协议冻结后并行，但只�
 
 ## 12. Activation order
 
-`EMB-PLAN-01` 完成后仍不自动激活代码。建议下一步只在两个仓库分别激活：
+Maintainer 在 2026-07-23 将执行优先级改为“先完成 Zebra 本体，再恢复 Trench”。
+当前顺序固定为：
 
-1. Zebra：`EMB-AGUI-SPIKE-01`；
-2. Trench：`TRN-CPK-SPIKE-01`。
+1. `CLOUD-STO-SEAM-01`：只建立既有 Store Ports 的 composition seam；
+2. `CLOUD-STO-AUTH-01`：补齐所有会推进 Session、治理记忆或约束副作用的 durable
+   Store 边界，并以跨库回归证明不会分裂事件真相；
+3. 评审 migration/backup/recovery/rollback 后，逐卡完成 PostgreSQL、Lease/Outbox、
+   Object Storage、Redis live 和 Cloud recovery gate；
+4. 依次完成 `MEM-GW-CON-01`、`MEM-MEM0-SPIKE-01`、Mem0 Adapter、delivery ledger
+   和 fault gate；
+5. 再恢复 Host/AG-UI contract 和 Trench read-only lane；P3 production E2E 必须等待
+   P2 gate，但 Mem0 故障或关闭不得阻塞 Run；
+6. 后续 Frontend、Analysis、Writeback 和 GA 仍逐阶段激活。
 
-两张 Spike 合并后再激活 P1 协议卡。P2 与 P3 可以按 Owned paths 并行；P3 的
-production E2E 必须等待 P2 gate。后续阶段严格按 P4 → P5 → P6 → P7 → P8。
+`EMB-AGUI-SPIKE-01` 和本地 Trench Spike 的既有证据保留，不在 Cloud Store 任务中
+继续扩展或合并。
 
 ## 13. Global release blockers
 

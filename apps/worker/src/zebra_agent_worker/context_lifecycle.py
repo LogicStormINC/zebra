@@ -12,10 +12,10 @@ from agent_core.domain.context_capsule import (
 from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.harness.models import HarnessEventDraft
-from agent_storage import (
-    SQLiteContextLifecycleStore,
-    SQLiteEventStore,
-    SQLiteProviderContinuationStore,
+from agent_core.ports import (
+    ContextLifecycleStorePort,
+    EventStorePort,
+    ProviderContinuationStorePort,
 )
 
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
@@ -25,8 +25,8 @@ def persist_context_compaction(
     draft: HarnessEventDraft,
     *,
     recorder: DurableHarnessEventRecorder,
-    event_store: SQLiteEventStore,
-    lifecycle_store: SQLiteContextLifecycleStore,
+    event_store: EventStorePort,
+    lifecycle_store: ContextLifecycleStorePort,
 ) -> None:
     """Persist a compaction capsule, degrading gracefully on validation failure.
 
@@ -66,9 +66,7 @@ def persist_context_compaction(
             validation_context=ContextCapsuleValidationContext(
                 expected_source_hash=capsule.source_hash,
                 expected_source_event_range=capsule.source_event_range,
-                unresolved_tool_call_ids=frozenset(
-                    tool.call_id for tool in capsule.pending_tools
-                ),
+                unresolved_tool_call_ids=frozenset(tool.call_id for tool in capsule.pending_tools),
                 protected_user_constraints=frozenset(capsule.protected_user_constraints),
                 approval_and_policy_state=frozenset(capsule.approvals_and_policy_state),
                 readable_artifact_refs=readable_refs,
@@ -114,7 +112,7 @@ def _record_compaction_rejected(
 
 def recover_provider_continuation(
     events: list[SessionEvent],
-    store: SQLiteProviderContinuationStore,
+    store: ProviderContinuationStorePort,
 ) -> ProviderContinuationRef | None:
     for event in reversed(events):
         if event.event_type is not EventType.CONTEXT_CONTINUATION_SELECTED:

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from agent_core.application import attachment_refs_from_event
 from agent_runtime import WorkspaceDiffError, WorkspaceDiffService
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.memory_inventory_read import (
     read_repo_memory_inventory,
@@ -21,12 +21,13 @@ from zebra_agent_api.session_summary import serialize_session_summary
 
 class SessionStateReadMixin:
     database_path: Path
+    stores: ControlPlaneStores
 
     def get_session(self, session_id: str) -> ApiResponse:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
@@ -35,9 +36,9 @@ class SessionStateReadMixin:
                     "status": "not_found",
                 },
             )
-        workspace = SQLiteWorkspaceProjectionStore(self.database_path).get_workspace(session_key)
+        workspace = self.stores.workspaces.get_workspace(session_key)
         body = serialize_session_summary(session, workspace)
-        events = SQLiteEventStore(self.database_path).list_for_session(session_key)
+        events = self.stores.events.list_for_session(session_key)
         attachments = [
             ref.to_mapping() for event in events for ref in attachment_refs_from_event(event)
         ]
@@ -52,7 +53,7 @@ class SessionStateReadMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
@@ -61,7 +62,7 @@ class SessionStateReadMixin:
                     "status": "not_found",
                 },
             )
-        events = SQLiteEventStore(self.database_path).list_for_session(session_key)
+        events = self.stores.events.list_for_session(session_key)
         return ApiResponse(
             status_code=200,
             body={
@@ -84,15 +85,13 @@ class SessionStateReadMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        workspace_root = session_workspace_root(
-            SQLiteEventStore(self.database_path).list_for_session(session_key)
-        )
+        workspace_root = session_workspace_root(self.stores.events.list_for_session(session_key))
         if workspace_root is None:
             return conflict(
                 session_id=session_id,
@@ -122,13 +121,13 @@ class SessionStateReadMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        events = list(SQLiteEventStore(self.database_path).list_for_session(session_key))
+        events = list(self.stores.events.list_for_session(session_key))
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
             return conflict(
@@ -143,6 +142,7 @@ class SessionStateReadMixin:
                 "repo_id": str(workspace_root),
                 "memories": read_repo_memory_inventory(
                     database_path=self.database_path,
+                    stores=self.stores,
                     repo_id=str(workspace_root),
                 ),
             },
@@ -152,13 +152,13 @@ class SessionStateReadMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        events = list(SQLiteEventStore(self.database_path).list_for_session(session_key))
+        events = list(self.stores.events.list_for_session(session_key))
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
             return conflict(
@@ -173,6 +173,7 @@ class SessionStateReadMixin:
                 "repo_id": str(workspace_root),
                 "memories": read_repo_memory_queue(
                     database_path=self.database_path,
+                    stores=self.stores,
                     repo_id=str(workspace_root),
                 ),
             },
@@ -182,13 +183,13 @@ class SessionStateReadMixin:
         session_key = _parse_session_id(session_id)
         if isinstance(session_key, ApiResponse):
             return session_key
-        session = SQLiteProjectionStore(self.database_path).get_session(session_key)
+        session = self.stores.sessions.get_session(session_key)
         if session is None:
             return ApiResponse(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        events = list(SQLiteEventStore(self.database_path).list_for_session(session_key))
+        events = list(self.stores.events.list_for_session(session_key))
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
             return conflict(
@@ -203,6 +204,7 @@ class SessionStateReadMixin:
                 "repo_id": str(workspace_root),
                 **read_repo_memory_queue_summary(
                     database_path=self.database_path,
+                    stores=self.stores,
                     repo_id=str(workspace_root),
                 ),
             },

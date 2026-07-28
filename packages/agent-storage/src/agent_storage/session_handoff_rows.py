@@ -1,6 +1,5 @@
 import hashlib
 import sqlite3
-from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
@@ -14,16 +13,6 @@ from agent_core.domain.session_handoff import (
 from agent_core.ports.session_handoff import HandoffOperation
 
 from agent_storage.event_rows import serialize_event_payload
-
-
-@dataclass(frozen=True, slots=True)
-class HandoffDispatch:
-    delivery_id: str
-    child_session_id: SessionId
-    handoff_id: HandoffId
-    status: str
-    claimed_by: str | None = None
-    claim_expires_at: datetime | None = None
 
 
 class HandoffStorageConflictError(ValueError):

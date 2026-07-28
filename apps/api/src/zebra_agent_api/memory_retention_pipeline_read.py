@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from agent_core.domain.memories import MemoryQuery
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.memory_breach_classification_read import (
     _classify_overdue_retention_breach_action,
@@ -32,12 +33,14 @@ from zebra_agent_api.memory_retention_classification_read import (
 def _read_memory_overdue_archive_recommendations(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_closure_decisions(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -55,12 +58,14 @@ def _read_memory_overdue_archive_recommendations(
 def _read_memory_overdue_retention_guidance(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_archive_recommendations(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -79,12 +84,14 @@ def _read_memory_overdue_retention_guidance(
 def _read_memory_overdue_retention_windows(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_retention_guidance(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -103,12 +110,14 @@ def _read_memory_overdue_retention_windows(
 def _read_memory_overdue_retention_breaches(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_retention_windows(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -127,12 +136,14 @@ def _read_memory_overdue_retention_breaches(
 def _read_memory_overdue_retention_breach_aging(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_retention_breaches(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -150,12 +161,14 @@ def _read_memory_overdue_retention_breach_aging(
 def _read_memory_overdue_retention_breach_actions(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_retention_breach_aging(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -173,12 +186,14 @@ def _read_memory_overdue_retention_breach_actions(
 def _read_memory_overdue_retention_breach_lanes(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_retention_breach_actions(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -196,12 +211,14 @@ def _read_memory_overdue_retention_breach_lanes(
 def _read_memory_overdue_retention_breach_owner_targets(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_retention_breach_lanes(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -219,12 +236,14 @@ def _read_memory_overdue_retention_breach_owner_targets(
 def _read_memory_overdue_retention_breach_follow_through_modes(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_retention_breach_owner_targets(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -242,12 +261,14 @@ def _read_memory_overdue_retention_breach_follow_through_modes(
 def _read_memory_overdue_retention_breach_follow_through_outcomes(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_retention_breach_follow_through_modes(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -265,12 +286,14 @@ def _read_memory_overdue_retention_breach_follow_through_outcomes(
 def _read_memory_overdue_retention_breach_follow_through_completion_states(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_retention_breach_follow_through_outcomes(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -290,12 +313,14 @@ def _read_memory_overdue_retention_breach_follow_through_completion_states(
 def _read_memory_overdue_retention_breach_follow_through_verification_states(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_retention_breach_follow_through_completion_states(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -317,12 +342,14 @@ def _read_memory_overdue_retention_breach_follow_through_verification_states(
 def _read_memory_overdue_retention_breach_follow_through_verification_outcomes(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_retention_breach_follow_through_verification_states(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,

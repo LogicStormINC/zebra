@@ -12,7 +12,7 @@ from agent_core.application import (
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.identifiers import MemoryId, SessionId
 from agent_core.domain.memories import MemoryQuery, MemoryRecord, MemoryStatus, MemoryVisibility
-from agent_storage import SQLiteEventStore, SQLiteMemoryStore, SQLiteProjectionStore
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.memory_review_serialization import (
     _bulk_outcome,
@@ -31,6 +31,7 @@ from zebra_agent_api.session_payloads import (
 def _review_memory(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     memory_id: str,
     payload: dict[str, object],
     action: MemoryReviewAction,
@@ -44,7 +45,7 @@ def _review_memory(
     )
     if isinstance(parsed, ApiResponse):
         return parsed
-    memory_store = SQLiteMemoryStore(database_path)
+    memory_store = stores.memories
     record = memory_store.get(MemoryId(UUID(memory_id)))
     if record is None or not _scope_matches(record, expected_visibility, expected_scope_id):
         return _not_found_response(
@@ -58,7 +59,7 @@ def _review_memory(
             visibility=expected_visibility,
             scope_id=expected_scope_id,
         )
-    projection_store = SQLiteProjectionStore(database_path)
+    projection_store = stores.sessions
     session = projection_store.get_session(record.source_session_id)
     if session is None:
         return _not_found_response(
@@ -92,7 +93,7 @@ def _review_memory(
     memory_store.upsert(result.record)
     for superseded in result.superseded_records:
         memory_store.upsert(superseded)
-    SQLiteEventStore(database_path).append(result.event)
+    stores.events.append(result.event)
     updated_session = projection_store.save_session(apply_event(session, result.event))
     return ApiResponse(
         status_code=200,
@@ -111,6 +112,7 @@ def _review_memory(
 def _review_memory_bulk(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     payload: dict[str, object],
     expected_visibility: MemoryVisibility,
     expected_scope_id: str,
@@ -123,6 +125,7 @@ def _review_memory_bulk(
     )
     return _review_memory_ids(
         database_path=database_path,
+        stores=stores,
         memory_ids=parsed["memory_ids"],
         action=action,
         decision=parsed["decision"],
@@ -136,6 +139,7 @@ def _review_memory_bulk(
 def _review_memory_queue(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     payload: dict[str, object],
     expected_visibility: MemoryVisibility,
     expected_scope_id: str,
@@ -156,11 +160,13 @@ def _review_memory_queue(
     action = MemoryReviewAction.CONFIRM if decision == "confirm" else MemoryReviewAction.EXPIRE
     memory_ids = _queued_memory_ids(
         database_path=database_path,
+        stores=stores,
         expected_visibility=expected_visibility,
         expected_scope_id=expected_scope_id,
     )
     response = _review_memory_ids(
         database_path=database_path,
+        stores=stores,
         memory_ids=memory_ids,
         action=action,
         decision=decision,
@@ -178,6 +184,7 @@ def _review_memory_queue(
 def _review_memory_ids(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     memory_ids: list[str],
     action: MemoryReviewAction,
     decision: str,
@@ -221,6 +228,7 @@ def _review_memory_ids(
             continue
         response = _review_memory(
             database_path=database_path,
+            stores=stores,
             memory_id=memory_id,
             payload=dict(shared_payload),
             action=action,
@@ -273,6 +281,7 @@ def _review_memory_ids(
 def _queued_memory_ids(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     expected_visibility: MemoryVisibility,
     expected_scope_id: str,
 ) -> list[str]:
@@ -280,6 +289,7 @@ def _queued_memory_ids(
         str(record.memory_id)
         for record in _queued_memory_records(
             database_path=database_path,
+            stores=stores,
             expected_visibility=expected_visibility,
             expected_scope_id=expected_scope_id,
         )
@@ -289,16 +299,17 @@ def _queued_memory_ids(
 def _queued_memory_records(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     expected_visibility: MemoryVisibility,
     expected_scope_id: str,
 ) -> list[MemoryRecord]:
-    memory_store = SQLiteMemoryStore(database_path)
+    memory_store = stores.memories
     if expected_visibility is MemoryVisibility.REPO:
         session_key = SessionId(UUID(expected_scope_id))
-        session = SQLiteProjectionStore(database_path).get_session(session_key)
+        session = stores.sessions.get_session(session_key)
         if session is None:
             return []
-        events = list(SQLiteEventStore(database_path).list_for_session(session_key))
+        events = list(stores.events.list_for_session(session_key))
         workspace_root = session_workspace_root(events)
         if workspace_root is None:
             return []

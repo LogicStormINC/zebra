@@ -11,9 +11,10 @@ from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection
+from agent_core.ports import ArtifactPayloadStorePort
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
 from agent_security import NetworkProfile, PolicyProfile, parse_network_profile
-from agent_storage import SQLiteArtifactPayloadStore, load_attachment_contexts
+from agent_storage import load_attachment_contexts
 
 
 @dataclass(frozen=True)
@@ -39,7 +40,7 @@ def recover_task(
     *,
     workspace: WorkspaceProjection,
     fallback_title: str,
-    attachment_store: SQLiteArtifactPayloadStore,
+    attachment_store: ArtifactPayloadStorePort,
     active_capsule: ContextCapsule | None = None,
     handoff_evidence: RuntimeEvidenceInput | None = None,
 ) -> RecoveredTask:
