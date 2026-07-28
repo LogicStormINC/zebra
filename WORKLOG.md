@@ -19,6 +19,9 @@
   skipped, 9 failed`, with all nine failures reproduced on untouched `main`
 - `make check` remains blocked only by inherited 561/500 and 505/500 file-size
   violations outside the task; all task source files remain below 500 lines
+- committed the owned implementation as `752a3154`, pushed
+  `codex/issue-197-context-memory-continuity`, and opened PR `#198` with
+  `Closes #197`; merge remains a maintainer action
 
 ## 2026-07-19 WEB-UX-01 Trusted Local Read-Only Web Auto Execution
 

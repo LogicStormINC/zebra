@@ -12,7 +12,7 @@
    its review events through the existing memory governance flow.
 5. `completed` - Add SQLite FTS-backed relevant recall with stable-rule lane,
    deduplication, repo isolation and a token budget.
-6. `in_progress` - Run focused, full, static and Eval gates; update durable evidence,
+6. `completed` - Run focused, full, static and Eval gates; update durable evidence,
    commit, push and open the focused PR.
 
 ### CTX-MEM-01 Errors Encountered

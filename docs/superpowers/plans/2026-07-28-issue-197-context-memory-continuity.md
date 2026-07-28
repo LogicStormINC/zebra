@@ -91,7 +91,7 @@
 - [x] Run `make test`.
 - [x] Run `make check`.
 - [x] Inspect `git diff --check`, file lengths and branch status.
-- [ ] Commit only owned paths, push the branch and open one PR against `main`.
+- [x] Commit only owned paths, push the branch and open one PR against `main`.
 
 ## Errors Encountered
 

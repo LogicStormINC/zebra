@@ -5,7 +5,7 @@
 
 ## Current Mainline Snapshot
 
-- Review task: `CTX-MEM-01` closes the valid parts of GitHub issue `#197` with
+- Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with
   an exact three-user-turn tail, complete tool groups, one strict retry from
   original history, recoverable context suspension, evidence-gated memory
   promotion, and repo-scoped SQLite FTS recall under a token budget. Local

@@ -20,7 +20,7 @@
 
 ## Current Board
 
-- `CTX-MEM-01` is `Review` on
+- `CTX-MEM-01` is `Review` in PR `#198` on
   `codex/issue-197-context-memory-continuity`. It closes GitHub issue `#197`
   without depending on the stacked semantic-memory gateway: same-Task recovery
   remains Event/Capsule-backed, while confirmed local memories gain governed
@@ -53,6 +53,7 @@
 - Depends on: merged `CTX-LC-01`; intentionally independent of the local stacked
   `MEM-GW-CON-01` provider gateway contract
 - Branch: `codex/issue-197-context-memory-continuity`
+- PR: `#198`
 - Worktree: `../zebra-agent-issue-197`
 - Owned paths:
   `docs/上下文连续性与治理记忆改进方案_v1.1.md` (new),
