@@ -272,6 +272,37 @@ own governed memory before any PostgreSQL backend is selectable.
 - Branch is local and unpushed. Required merge order remains
   `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-STO-AUTH-01`.
 
+### CLOUD-PG-PLAN-01 - PostgreSQL Migration And Recovery Model Review
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `STORAGE / SRE / SECURITY`
+- Depends on: locally reviewed `CLOUD-STO-AUTH-01` and maintainer direction on
+  2026-07-28 to continue local implementation while GitHub Actions is blocked by
+  an account billing/spending-limit gate. The waiver permits local evidence only;
+  it does not make this stacked branch mergeable or production-ready.
+- Branch: `codex/cloud-pg-plan-01`
+- Worktree: `../zebra-agent-cloud-pg-plan-01`
+- Owned paths: `docs/PostgreSQL迁移备份恢复与回滚评审_v1.0.md` (new),
+  `docs/AGENT_TASKS.md`, `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`,
+  `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Freeze the minimum migration, backup, restore and rollback contract required
+before a PostgreSQL control-plane Adapter may be implemented.
+
+#### Acceptance
+
+- authoritative scope and excluded derived/local stores are explicit
+- cutover avoids cross-backend dual-write and preserves one fact source
+- pre-cutover abort, post-cutover application rollback and disaster restore are
+  distinct procedures with fail-closed validation
+- backup/PITR, Artifact consistency, fencing reset and outbox reconciliation
+  requirements are concrete without inventing unapproved RPO/RTO numbers
+- `CLOUD-PG-01` receives exact implementation and test gates; no Adapter,
+  migration executable, cloud dependency or production claim is added
+
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.
 

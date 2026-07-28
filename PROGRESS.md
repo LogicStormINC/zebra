@@ -255,7 +255,8 @@ including a real thinking tool round trip.
 - `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
-  `CLOUD-STO-AUTH-01` are in Review. No implementation card is active; all PostgreSQL,
+  `CLOUD-STO-AUTH-01` are in Review. `CLOUD-PG-PLAN-01` is also in Review as a
+  docs-only local task under the maintainer's temporary CI-billing waiver; all PostgreSQL,
   Redis, object-storage, production AG-UI, Trench, analysis, writeback, Agent
   Memory adapter, and GA cards remain `Locked` pending their explicit gates.
 

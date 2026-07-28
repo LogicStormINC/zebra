@@ -1,5 +1,27 @@
 # Findings
 
+## CLOUD-PG-PLAN-01 - 2026-07-28
+
+- PostgreSQL may replace SQLite only as one complete control-plane authority;
+  implementing adapters in slices does not permit Store-by-Store cutover or
+  SQLite/PostgreSQL dual-write.
+- Event append is the durable fact transaction. Projection is deliberately
+  allowed to lag and must converge by stream version; existing context and
+  handoff aggregate Ports retain ownership of their multi-table transactions.
+- The cutover state machine is `PREPARED -> VERIFIED -> ACTIVE`. `ACTIVE` is the
+  sole authority boundary and is not undone by an application rollback; the old
+  SQLite snapshot remains read-only migration evidence.
+- PostgreSQL and object payload recovery share a versioned manifest. Immutable
+  object versions/checksums and database recovery watermarks prevent a PITR
+  database from silently referencing a mismatched object set.
+- Restore must create a fresh random control-plane epoch before traffic opens.
+  Protected Lease, Effect and Outbox writes compare epoch, token and ownership
+  in the same SQL transaction so stale workers affect zero rows.
+- RPO, RTO, retention and drill cadence remain `TBD`; any missing approval or
+  measurement blocks production traffic without blocking local adapter work.
+- The maintainer's GitHub Actions billing waiver authorizes local continuation
+  only. It does not satisfy merge, release, production or real PostgreSQL gates.
+
 ## CLOUD-STO-AUTH-01 - 2026-07-24
 
 - The first five-store seam could not safely select a cloud backend: context

@@ -155,6 +155,17 @@ read-only。
 - Deliverable: Event Store、Projection、monotonic sequence、expected-version CAS、replay。
 - Acceptance: concurrent append/idempotency/rebuild tests plus real PostgreSQL CI pass。
 
+### CLOUD-PG-PLAN-01 — PostgreSQL migration and recovery model review
+
+- Status: `Review`；branch `codex/cloud-pg-plan-01`；docs-only local task。
+- Depends on: local reviewed `CLOUD-STO-AUTH-01` and maintainer waiver to continue
+  local evidence while GitHub Actions billing is blocked；merge/release gates remain。
+- Candidate paths: one focused decision document and governance records only。
+- Deliverable: authoritative scope、offline cutover、backup/PITR、restore validation、
+  fencing/outbox recovery and rollback boundaries。
+- Acceptance: unlock criteria for `CLOUD-PG-01` are executable and no unapproved
+  RPO/RTO、dual-write、Adapter、migration script or production claim is introduced。
+
 ### CLOUD-LEASE-01 — Lease, fencing and outbox/inbox
 
 - Status: `Locked`；depends on `CLOUD-PG-01`。

@@ -1,5 +1,26 @@
 # Task Plan
 
+## CLOUD-PG-PLAN-01 - PostgreSQL Migration And Recovery Model Review
+
+1. `completed` - Trace the authoritative Store composition, PostgreSQL phase
+   dependency and existing recovery constraints.
+2. `completed` - Register and claim one docs-only task on the authoritative
+   Store branch with the CI-billing waiver recorded.
+3. `completed` - Define authority scope, migration/cutover invariants and explicit
+   abort versus rollback behavior.
+4. `completed` - Define backup/PITR, restore validation, fencing/outbox recovery and
+   measurable pre-production gates.
+5. `completed` - Reader-test the decision document, update governance evidence and
+   commit the local stacked review slice.
+
+### Decisions
+
+- Do not dual-write SQLite and PostgreSQL; the flat Store bundle selects one
+  authoritative backend for a process profile.
+- Do not invent production RPO/RTO. The document defines required measurements
+  and an approval field before production traffic.
+- This task writes no Adapter, migration executable or cloud dependency.
+
 ## CLOUD-STO-AUTH-01 - Complete Authoritative Store Composition
 
 1. `completed` - Audit every API/Worker durable collaborator that can advance a

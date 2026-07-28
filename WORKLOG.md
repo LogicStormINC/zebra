@@ -1,5 +1,38 @@
 # Progress Log
 
+## 2026-07-28 CLOUD-PG-PLAN-01 PostgreSQL Migration And Recovery Review
+
+- registered and claimed the docs-only `CLOUD-PG-PLAN-01` task on isolated local
+  branch `codex/cloud-pg-plan-01`, stacked on reviewed `CLOUD-STO-AUTH-01`
+- continued under the maintainer's temporary GitHub Actions billing waiver;
+  preserved all CI, merge and production gates as unsatisfied
+- traced the complete `ControlPlaneStores` authority rather than treating the
+  initial Event/Projection adapter slice as permission for partial backend cutover
+- selected a maintenance-window migration with canonical export manifests,
+  full validation, one atomic `ACTIVE` authority boundary and no dual-write
+- separated Event fact commits from replayable Projection progress and assigned
+  multi-table atomicity to focused aggregate Ports rather than a global unit of work
+- defined expand/contract schema compatibility, rollback-candidate tests,
+  PostgreSQL/object manifest coupling, logical restore validation and production
+  PITR admission gates
+- required restore-time epoch rotation and same-transaction fencing checks for
+  Lease/Effect/Outbox mutations before any endpoint reopens
+- kept RPO, RTO, retention and drill frequency explicitly `TBD`, which blocks
+  production traffic until maintainers approve measured values
+- independent reader testing exposed and closed the runtime/importer ACTIVE-gate
+  conflict, missing object commit ordering, restore identity transitions,
+  sequence/canonicalization ambiguity and cross-task test-scope drift
+- final independent reader pass found no remaining P0, P1 or P2 design issue
+- `make sync` passes; `git diff --check` passes; Eval release gate passes `10/10`
+- initial `make eval` before workspace sync failed during import because the new
+  worktree lacked `agent_observability`; the synchronized rerun passed
+- full `make test`: `1747 passed, 8 skipped, 9 failed`; failures match the inherited
+  provider, expired SCM fixture, file-size and Worker cancellation baseline
+- `make check` stops at the two untouched `561/500` and `505/500` file-size
+  violations; this docs-only task did not modify either file
+- implementation remains blocked on five explicit review decisions in the
+  decision record; no PostgreSQL adapter, migration or cloud selector was added
+
 ## 2026-07-24 CLOUD-STO-AUTH-01 Complete Authoritative Store Composition
 
 - activated one isolated local branch, `codex/cloud-sto-auth-01`, based directly
