@@ -1,5 +1,23 @@
 # Task Plan
 
+## AGENT-DEF-ADR-01 - Definition Authority And Snapshot ADR
+
+1. `completed` - Reconcile the accepted direction with ADR-001/009/012/013/014,
+   current Task/Event/Skill/Memory contracts, and local/cloud authority boundaries.
+2. `completed` - Write ADR-015 and update the final architecture with only its stable
+   decisions and dependency unlock rule.
+3. `completed` - Align the proposal, docs guide, PROGRESS and task registry; keep all
+   implementation tasks locked.
+4. `completed` - Run fresh-reader decision/ambiguity review and documentation gates.
+5. `completed` - Record evidence and commit the docs-only ADR branch locally.
+
+### Decisions
+
+- This branch is stacked on accepted-direction commit `663a043d`; it does not
+  merge, push or modify the dirty main worktree.
+- Gate A may change only architecture/governance documents in its registered
+  Owned paths; Python, SQL, API and Docker work remain out of scope.
+
 ## Agent Definition V2 - Accepted Direction And Task Activation
 
 1. `completed` - Separate immutable Task Definition configuration from per-Attempt
@@ -13,9 +31,9 @@
 
 ### Decisions
 
-- The proposal direction is accepted, but remains non-executable until
-  `AGENT-DEF-ADR-01` is approved and merged.
-- `AGENT-DEF-ADR-01` is the only `Ready` task; all Python/SQL/API/runtime work is
+- The proposal direction and ADR-015 are locally accepted, but remain non-executable
+  until `AGENT-DEF-ADR-01` is merged.
+- `AGENT-DEF-ADR-01` is the only active task; all Python/SQL/API/runtime work is
   `Locked`.
 - Task identity and Definition configuration remain stable across Segments, while
   external execution authority is revalidated for every Attempt.

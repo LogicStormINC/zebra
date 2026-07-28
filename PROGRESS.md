@@ -19,12 +19,13 @@
   stable Task boundary and backend-internal execution Segments.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
-- Accepted architecture direction: `ARCH-RUNTIME-V2-PLAN-01` aligns the Runtime
-  v2 proposal with the implemented Task/Segment, Skill, Memory, Trust/Security
-  and Eval baseline. `AGENT-DEF-ADR-01` is the only `Ready` follow-up; it must
-  separate Task-level Definition snapshots from Attempt-level execution
-  authority and preserve ADR-012's opaque external namespace. Implementation
-  tasks remain `Locked` until that ADR updates the final architecture.
+- Active architecture task: `AGENT-DEF-ADR-01` has written accepted ADR-015 on
+  local branch `codex/agent-def-adr-01` and updated the final architecture. It
+  separates Task-level Definition configuration from Attempt-level execution
+  authority and preserves ADR-012's opaque external namespace. Code audit also
+  confirmed that external Attempt authority snapshots and immutable Skill content
+  snapshots are not yet implemented; dedicated locked tasks now own those gaps.
+  No implementation task unlocks until ADR-015 is merged to `main`.
 - Locked architecture tasks: ACP entry and optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution

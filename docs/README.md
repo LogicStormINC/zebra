@@ -17,6 +17,9 @@ Use these files for implementation, task claiming, collaboration, and phase prog
 - `实施任务拆解与阶段验收.md`: historical Phase 0-8 dependency and acceptance baseline
 - `02_Codex-like工程Agent平台_多人协作任务分配与RACI_v1.0.md`: collaboration model, ownership, and review rules
 - `AGENT_TASKS.md`: current executable task registry
+- `ADR-015_Agent_Definition控制面与版本发布边界.md`: accepted Agent Definition
+  metadata authority, Task/Attempt snapshot separation, release and migration
+  contract; implementation remains task-gated
 - `DeepSeek_V4_模型适配与专项优化方案_v1.0.md`: implemented `DS-OPT-01`
   provider-profile, protocol-safety, routing, caching, observability, and Eval baseline
 - `上下文生命周期与混合压缩架构方案_v1.0.md`: implemented `CTX-LC-01`
@@ -42,9 +45,9 @@ Historical documents must not override the active execution set.
 ## Accepted Directions And Non-Executable Proposals
 
 - `Zebra Agent Runtime Upgrade Proposal v2.0.md` is the accepted direction for a
-  versioned Agent Definition control plane. It does not replace ADR-012 or the
-  final architecture: Gate A must first produce an approved focused ADR. Only
-  Gate A is `Ready`; implementation Gates B-G remain `Locked`.
+  versioned Agent Definition control plane. Locally accepted ADR-015 is the stable decision
+  authority and corrects the proposal wherever they differ. Implementation tasks
+  remain `Locked` until ADR-015 is merged and the registry explicitly advances them.
 
 Accepted directions become executable only after their required ADR is approved
 and a path-bounded implementation task is explicitly activated in `AGENT_TASKS.md`.

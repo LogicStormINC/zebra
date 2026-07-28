@@ -1,6 +1,6 @@
 # Zebra Agent Runtime 升级提案 v2.0
 
-状态：`Direction accepted / ADR pending / Non-executable`
+状态：`Direction accepted / ADR-015 accepted locally / Not merged / Non-executable`
 
 规划记录：`ARCH-RUNTIME-V2-PLAN-01`（仅核对文档，不是 Agent Definition 实现任务）
 
@@ -44,7 +44,7 @@ implemented/tested/merged/deployed 状态继续以 `PROGRESS.md` 和对应任务
 | --- | --- | --- |
 | 执行身份 | 稳定 `AgentTask`、内部 `ExecutionSegment`、Session Event Store | 可复用 Agent Definition 及其版本绑定 |
 | Runtime | Harness、Worker、恢复、Tool Gateway、Sandbox、Artifact、Streaming | Agent 版本到 Runtime profile 的确定性解析 |
-| Skill | Catalog、scope、digest、Task snapshot、enable/disable、provenance、Eval | Agent Definition 对 immutable Skill snapshot 的发布绑定 |
+| Skill | Catalog、scope、digest、Task name-selection snapshot、enable/disable、provenance、Eval | 发布固定 component identity/digest；Task binding 生成 immutable content/grant snapshot |
 | Memory | Event 事实源、Context Capsule、governed `MemoryStorePort`、生命周期与来源 | Agent-scoped policy、provider mapping、版本兼容和删除传播 |
 | Trust/Security | typed trust level、provenance、untrusted output、Policy、Approval、Credential/Egress 边界 | Agent publish/grant authority 与所有 ingress 的统一 trust evidence |
 | Eval | Trace、local Eval runner、release gate、replay cases | 按 Agent version 聚合的质量基线、回归门禁和发布证据 |
@@ -71,7 +71,7 @@ v2 使用以下名称，避免引入第二个含糊的 `Agent` 实体：
   Zebra 拥有 Tenant、Organization 或成员关系；
 - `AgentDefinitionSnapshot`：Task 创建时冻结的 Definition 版本和解析配置；
 - `ExecutionAuthoritySnapshot`：每个 Attempt 重新验证的外部 authority、limits 与
-  Zebra 收紧后的执行权限；
+  Zebra 收紧后的执行权限；这是 ADR-012/015 冻结但当前代码尚未实现的合同；
 - `release gate`：现有 Run/Eval case gate；v2 候选新增门禁统一称为
   `AgentVersionPublicationGate`。
 
@@ -116,6 +116,10 @@ ADR-012，包含外部 authority/limits 的 issuer、subject、expiry 与 Zebra 
 两者的生成者、摘要范围与恢复校验算法必须在 Gate A ADR 中分别冻结，不能由 Adapter
 各自定义或合并成一个长期权限快照。
 
+当前代码只有 Attempt number、Runtime authority 与局部 effect scope hash，不存在可
+复用的外部 `ExecutionAuthoritySnapshot`；后续必须由独立任务先补齐 durable event，
+Task binding 不能把 Definition snapshot 当作替代品。
+
 ### 3.2 运行时解析
 
 `AgentDefinitionVersion` 只引用已经存在的稳定合同：
@@ -153,16 +157,14 @@ AgentDefinitionVersion
   "name": "research-agent",
   "description": "Bounded research and evidence synthesis",
   "authority_issuer": "https://business.example.com",
-  "namespace_id": "opaque-business-scope",
-  "status": "active",
-  "current_published_version": 3
+  "namespace_id": "opaque-business-scope"
 }
 ```
 
 ```json
 {
   "definition_id": "agentdef_xxx",
-  "version": 3,
+  "version_id": "version-3",
   "schema_version": "agent-definition/1",
   "skill_snapshot_digest": "sha256:...",
   "model_policy_ref": "model-policy/research-default@2",
@@ -179,23 +181,26 @@ AgentDefinitionVersion
 
 三类对象职责必须分开：
 
-- Definition 是逻辑容器，可处于 `Active` 或 `Archived`；
+- Definition 是逻辑容器；archive 是元数据/tombstone 操作，不承载发布状态；
 - mutable draft 只是 Definition 下尚未生成 Version 的可变编辑载荷，不是独立事实源或
-  生命周期实体；从未发布时，`current_published_version` 为 `null`；
-- Version 创建即不可变；任何内容修改都产生新 version，可处于
-  `Validated` 或 `Rejected`；
-- Release 是某 `(authority_issuer, namespace_id)`/environment 对某个 Version 的生效
+  生命周期实体；从未发布时不存在有效 Release projection；
+- 校验失败只产生 append-only validation result，不产生 Version；
+- Version 只在校验通过后创建且立即不可变；任何内容修改都产生新 version；
+- Release 是某 `(authority_issuer, namespace_id, definition_id)`/environment 对某个 Version 的生效
   记录，可处于 `Published`、`Deprecated` 或 `Revoked`。
 
 发布生命周期为：
 
 ```text
-mutable draft -> immutable Version: Validated | Rejected
-Validated Version -> Release: Published -> Deprecated | Revoked
+mutable draft -> validation result: rejected
+mutable draft -> validated immutable Version
+immutable Version -> Release: Published -> Deprecated | Revoked
 ```
 
 `Running` 属于 Task/Session；`Learning` 属于 Memory/Eval workflow。它们不能混进
 Definition、Version 或 Release 生命周期，否则 Registry 会与 Runtime 状态机形成双事实源。
+`current_published_version` 只能由 Release history 派生为可重建 projection/cache，不能
+与 Release 同时成为权威字段。
 
 ### 4.3 发布门禁
 
@@ -203,7 +208,7 @@ Definition、Version 或 Release 生命周期，否则 Registry 会与 Runtime �
 
 - schema 和引用完整性通过；
 - Skill、Runtime image 和 policy reference 均固定版本/digest；
-- capability 不超过 publisher grant；
+- 声明的 capability ceiling 不超过本次发布操作的 publisher grant；
 - Memory scope 和删除策略明确；
 - required Eval cases 通过；
 - secrets 只以 broker reference 表示；
@@ -212,14 +217,17 @@ Definition、Version 或 Release 生命周期，否则 Registry 会与 Runtime �
 
 ## 5. Skill：复用，不重建
 
-Zebra 已经具备 Skill metadata、scope、digest、Task snapshot、管理状态、`skills.read`
-provenance 和 release-eval。v2 不创建平行的 `skill-runtime` 或第二套 Skill Store。
+Zebra 已经具备 Skill metadata、scope、digest、Task 名称选择快照、管理状态、
+`skills.read` provenance 和 release-eval。现有 Task snapshot 只固定 Skill 名称，不固定
+scope/version/digest/content；v2 不创建平行的 `skill-runtime` 或第二套 Skill Store。
 
 Agent Definition 只新增：
 
-- 发布时解析一个 immutable Skill component snapshot；
-- 校验版本、scope、namespace、digest 和 enable/grant 状态；
-- 把 snapshot digest 写入 Task 的 `AgentDefinitionSnapshot`；
+- 发布时校验 pinned component identity、scope、namespace、version、digest 和兼容性，
+  但不产生 Task grant；
+- Task binding 时根据当前 external authority、Enabled 状态、Definition ceiling 和
+  Zebra Policy 计算 Granted，并把 resolved content snapshot/digest 写入
+  `AgentDefinitionSnapshot`/`TASK_PREPARED`；
 - Skill 后续禁用或撤销时，对新 Task fail closed；
 - 运行中 Task 的处置由 Gate A 在继续、暂停待批、下个 Segment 停止或立即终止中明确
   选择，不能静默热更新。
@@ -345,8 +353,8 @@ packages/agent-registry
 
 ## 10. 候选决策顺序（非执行 Phase）
 
-架构方向已经接受，但只有 Gate A 在 `docs/AGENT_TASKS.md` 中进入 `Ready`；Gate B-G
-保持 `Locked`。每项开始前仍必须获得 owner、branch 和 Owned paths。
+架构方向已经接受，Gate A 已由 `AGENT-DEF-ADR-01` 激活；Gate B-G 保持 `Locked`。
+每项开始前仍必须获得 owner、branch 和 Owned paths。
 
 ### Gate A：决策冻结（`AGENT-DEF-ADR-01`）
 
@@ -375,9 +383,13 @@ PostgreSQL；迁移采用离线导入、校验和切换，不并行 dual-write�
 - 云 PostgreSQL Adapter 已登记为 `AGENT-DEF-PG-01` 并保持 `Locked`，待本地 Store
   合同合并后再认领；其 Compose 仅管理数据库依赖，不混入 Zebra 主应用容器。
 
-### Gate D：发布与 Task binding（`AGENT-DEF-PUB-01` / `AGENT-DEF-BIND-01`）
+### Gate D：Draft、authority 与 Task binding（`AGENT-DEF-DRAFT-01` / `AGENT-AUTH-SNAPSHOT-01` /
+`AGENT-DEF-BIND-01`）
 
-- Task 创建时解析 published version；
+- Draft 校验成功后生成 immutable Version，此 Gate 不修改 Release；
+- 生产 Task 创建时解析 published version；发布前 Eval 只能在隔离的
+  non-production environment 由 evaluator authority exact-pin candidate Version；
+- 独立补齐 ADR-012 的 Attempt-level `ExecutionAuthoritySnapshot` durable event；
 - 写入 immutable `AgentDefinitionSnapshot`，并复用现有 Attempt 级
   `ExecutionAuthoritySnapshot`；
 - recovery/replay 验证 digest 和 policy reference；
@@ -398,11 +410,13 @@ PostgreSQL；迁移采用离线导入、校验和切换，不并行 dual-write�
   分离；
 - threat model 和 negative tests 通过。
 
-### Gate G：Agent version evaluation（`AGENT-DEF-EVAL-01`）
+### Gate G：Agent version evaluation 与 gated publication（`AGENT-DEF-EVAL-01` /
+`AGENT-DEF-PUB-01`）
 
 - Definition version 到 Eval suite 的稳定映射；
 - regression、cost、latency、recovery 和 safety gate；
-- 发布证据、撤销和回滚 runbook。
+- Eval 通过后才可发布，一个完整 scope 最多一个有效 Published Release；
+- 发布、弃用、撤销和回滚证据及 runbook。
 
 ## 11. 非目标
 
@@ -443,5 +457,6 @@ v2 初始阶段不包含：
 - [生产级 Runtime 实施方案](./生产级Runtime实施方案_v1.0.md)
 - [上下文生命周期与混合压缩](./上下文生命周期与混合压缩架构方案_v1.0.md)
 
-架构方向已经接受。第一项产物是 Gate A 的 focused ADR，而不是代码；只有该 ADR
-获批并把稳定结论写回最终架构后，Gate B 才能从 `Locked` 转为 `Ready`。
+架构方向已经接受，ADR-015 已在本地文档中标记 `Accepted`。在该文档分支
+合并到 `main` 前，所有实现任务仍为 `Locked`；合并后只允许
+`AGENT-DEF-CON-01` 首先转为 `Ready`，其余任务按依赖 DAG 解锁。
