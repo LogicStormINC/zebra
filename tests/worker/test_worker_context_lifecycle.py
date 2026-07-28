@@ -4,6 +4,7 @@ from pathlib import Path
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.events import EventActor, EventType
+from agent_core.harness.context_window import ContextWindowExceededError, ContextWindowPlan
 from agent_core.harness.models import HarnessEventDraft
 from agent_storage import (
     SQLiteArtifactPayloadStore,
@@ -15,12 +16,39 @@ from agent_storage import (
     SQLiteWorkspaceProjectionStore,
 )
 from zebra_agent_worker.context_lifecycle import persist_context_compaction
+from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 
 NOW = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
+
+
+def test_context_window_overflow_is_a_recoverable_suspension() -> None:
+    error = ContextWindowExceededError(
+        ContextWindowPlan(
+            estimated_input_tokens=420,
+            input_token_limit=300,
+            within_budget=False,
+            compact_at=250,
+            profile_name="tiny",
+            estimate_method="chars_div_4",
+            token_breakdown={"system": 20, "messages": 350, "tools": 50},
+            attempted_strategies=("projection", "strict_original_history_retry"),
+        )
+    )
+
+    result = exception_attempt_result(error, error_metadata(error, None, None))
+
+    assert result.outcome.value == "suspended"
+    assert result.metadata["stop_reason"] == "context_window_exceeded"
+    assert result.metadata["estimated_input_tokens"] == 420
+    assert result.metadata["input_token_limit"] == 300
+    assert result.metadata["attempted_strategies"] == [
+        "projection",
+        "strict_original_history_retry",
+    ]
 
 
 def test_compaction_capsule_event_and_active_projection_commit_atomically(
@@ -89,9 +117,7 @@ def test_compaction_capsule_event_and_active_projection_commit_atomically(
         EventType.CONTEXT_COMPACTED,
         EventType.CONTEXT_CAPSULE_CREATED,
     ]
-    active = SQLiteContextLifecycleStore(database).get_active_capsule(
-        bootstrap.session.session_id
-    )
+    active = SQLiteContextLifecycleStore(database).get_active_capsule(bootstrap.session.session_id)
     assert active is not None
     assert active.capsule.source_event_range is not None
     assert recorder.session.current_sequence == events[-1].sequence
@@ -164,9 +190,7 @@ def test_compaction_includes_recent_exact_tail_refs_in_readability_check(
         EventType.CONTEXT_COMPACTED,
         EventType.CONTEXT_CAPSULE_CREATED,
     ]
-    active = SQLiteContextLifecycleStore(database).get_active_capsule(
-        bootstrap.session.session_id
-    )
+    active = SQLiteContextLifecycleStore(database).get_active_capsule(bootstrap.session.session_id)
     assert active is not None
     assert active.capsule.recent_exact_tail_refs == ("event://session/1",)
 
@@ -248,9 +272,7 @@ def test_compaction_validation_failure_degrades_instead_of_raising(tmp_path: Pat
     # No capsule was persisted — the active projection is preserved.
     assert EventType.CONTEXT_CAPSULE_CREATED not in event_types
     rejected = next(
-        event
-        for event in events
-        if event.event_type is EventType.CONTEXT_COMPACTION_REJECTED
+        event for event in events if event.event_type is EventType.CONTEXT_COMPACTION_REJECTED
     )
     assert rejected.payload["fallback_mode"] == "retain_active_projection"
     assert rejected.payload["preserved_active_projection"] is True

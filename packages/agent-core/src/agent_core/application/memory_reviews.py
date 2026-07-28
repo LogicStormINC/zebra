@@ -33,6 +33,7 @@ class MemoryReviewCommand:
     action: MemoryReviewAction
     operator: str
     reason: str
+    actor: EventActor = EventActor.USER
     created_at: datetime | None = None
 
     def __post_init__(self) -> None:
@@ -95,7 +96,7 @@ class MemoryReviewService:
             session_id=session.session_id,
             sequence=next_sequence,
             event_type=EventType.MEMORY_REVIEW_RECORDED,
-            actor=EventActor.USER,
+            actor=command.actor,
             payload={
                 "memory_id": str(record.memory_id),
                 "memory_type": record.memory_type.value,

@@ -20,6 +20,11 @@
 
 ## Current Board
 
+- `CTX-MEM-01` is `Review` in PR `#198` on
+  `codex/issue-197-context-memory-continuity`. It closes GitHub issue `#197`
+  without depending on the stacked semantic-memory gateway: same-Task recovery
+  remains Event/Capsule-backed, while confirmed local memories gain governed
+  promotion and query-aware SQLite recall.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -44,6 +49,78 @@
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
 - No other card is `Ready`, `In Progress`, `Review`, or `Blocked`.
+
+## Context Continuity And Governed Memory Board
+
+### CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `CTX / CORE / STORAGE`
+- Depends on: merged `CTX-LC-01`; intentionally independent of the local stacked
+  `MEM-GW-CON-01` provider gateway contract
+- Branch: `codex/issue-197-context-memory-continuity`
+- PR: `#198`
+- Review blocker: GitHub Actions run `30332213200` has zero executed steps; its
+  annotation reports an account payment/spending-limit gate.
+- Worktree: `../zebra-agent-issue-197`
+- Owned paths:
+  `docs/上下文连续性与治理记忆改进方案_v1.1.md` (new),
+  `docs/superpowers/plans/2026-07-28-issue-197-context-memory-continuity.md` (new),
+  `packages/agent-context/src/agent_context/conversation.py`,
+  `packages/agent-core/src/agent_core/application/memory_candidate_promotions.py` (new),
+  `packages/agent-core/src/agent_core/application/__init__.py`,
+  `packages/agent-core/src/agent_core/application/memory_reviews.py`,
+  `packages/agent-core/src/agent_core/domain/memories.py`,
+  `packages/agent-core/src/agent_core/harness/context_recovery.py` (new),
+  `packages/agent-core/src/agent_core/harness/model_step.py`,
+  `packages/agent-storage/src/agent_storage/memories.py`,
+  `packages/agent-storage/src/agent_storage/memory_search.py` (new),
+  `packages/agent-storage/src/agent_storage/memory_lookup.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/execution_errors.py`,
+  `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
+  `tests/agent_context/test_conversation_history.py`,
+  `tests/agent_core/test_context_window_gate.py`,
+  `tests/agent_core/test_memory_candidate_promotions.py` (new),
+  `tests/agent_core/test_memory_reviews.py`,
+  `tests/agent_storage/test_sqlite_memories.py`,
+  `tests/worker/test_execution_finalization.py`,
+  `tests/worker/test_worker_context_lifecycle.py`,
+  `README.md`, `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Close the real parts of issue `#197` through one provider-neutral path: preserve
+the most recent user turns and complete tool groups during compaction, retry one
+stricter projection before a recoverable context pause, automatically confirm
+only deterministic high-evidence memory candidates without conflicts, and rank
+confirmed repo memory by current-task relevance within a token budget.
+
+#### Acceptance
+
+- [x] Compaction keeps the initial objective, at least the latest three real
+  user turns, and complete unresolved or recent tool call/result groups.
+- [x] A first over-budget projection gets one stricter retry from the original
+  messages; persistent overflow suspends with typed plan diagnostics instead of
+  producing a terminal Session failure.
+- [x] Only candidates reconstructed from direct user preference syntax,
+  successful local command/test evidence, or a complete `AGENTS.md` read may be
+  auto-confirmed; conflicting candidates stay queued for review.
+- [x] Confirmed repo memories are retrieved by SQLite FTS relevance plus a small
+  stable-rule lane, deduplicated and bounded by tokens rather than only count.
+- [x] Existing Event Store, Artifact, Capsule, Policy and manual memory-review
+  authority remain unchanged; no provider gateway or vector dependency is added.
+- [x] Focused regressions, full tests, static checks and release evals pass, or
+  inherited unrelated blockers are recorded with reproducible evidence.
+
+#### Explicit Non-Goals
+
+- no hidden chain-of-thought persistence
+- no automatic promotion of episodic, failed-attempt, external Web/MCP, or
+  model-inferred memories
+- no semantic provider or Mem0 integration; `MEM-GW-CON-01` owns that contract
+- no automatic child Session or Subagent creation to escape a context limit
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.

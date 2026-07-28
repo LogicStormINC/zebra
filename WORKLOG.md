@@ -1,5 +1,32 @@
 # Progress Log
 
+## 2026-07-28 CTX-MEM-01 Context Continuity And Governed Recall
+
+- audited GitHub issue `#197` against the runtime path and found three real gaps:
+  no exact multi-turn tail guarantee, terminal classification after persistent
+  context overflow, and recency-only confirmed-memory recall
+- compared official Codex/OpenAI, Claude, Pi Agent and Hermes behavior and
+  recorded the Zebra-specific v1.1 architecture before runtime changes
+- preserved the latest three real user turns and complete tool groups, rendered
+  middle history from the existing ContextCapsule, and added one stricter retry
+  from original history before recoverable suspension
+- reused MemoryReviewService to auto-confirm only reconstructable, low-risk,
+  conflict-free candidates and retained all uncertain candidates for review
+- added repo-scoped SQLite FTS5 recall with deterministic fallback, stable-rule
+  lane, expiry/deduplication checks and a token budget
+- validation: `63 passed` focused; changed-file Ruff passed; relevant Mypy passed
+  over `158` source files; release eval `10/10`; full suite `1747 passed, 8
+  skipped, 9 failed`, with all nine failures reproduced on untouched `main`
+- `make check` remains blocked only by inherited 561/500 and 505/500 file-size
+  violations outside the task; all task source files remain below 500 lines
+- committed the owned implementation as `752a3154`, pushed
+  `codex/issue-197-context-memory-continuity`, and opened PR `#198` with
+  `Closes #197`; merge remains a maintainer action
+- GitHub Actions run `30332213200` created seven zero-step failures; the Backend
+  quality check annotation says the jobs were not started because account
+  payments failed or the spending limit must be increased. This is an external
+  billing gate, not a code/test result.
+
 ## 2026-07-27 FINOS-RT-04 GitHub Review Snapshot
 
 - registered `FINOS-RT-04` for `codex/finos-runtime-alignment`
@@ -5825,3 +5852,14 @@ actual byte access.
   files (pre-existing failures in `web_crawl.py`, `mcp_proxy_policy.py`, and
   the `web-native` test/tool cluster confirmed unrelated via `git stash`
   comparison against the base commit).
+# 2026-07-28 CTX-MEM-01 Issue #197 Context Continuity
+
+- verified main at `f7d16c45`; preserved dirty user-owned `AGENTS.md` and
+  `.zebra-agent/sessions.sqlite` in the main checkout
+- created `codex/issue-197-context-memory-continuity` in isolated worktree
+  `../zebra-agent-issue-197` from `origin/main`
+- ran `make sync`; corrected focused baseline passed `33` tests
+- confirmed no implementation overlap with stacked `MEM-GW-CON-01`; shared
+  governance files may require ordinary rebase reconciliation later
+- completed current official-source comparison for Codex/OpenAI, Claude,
+  Pi Agent and Hermes; design and implementation plan are being written first

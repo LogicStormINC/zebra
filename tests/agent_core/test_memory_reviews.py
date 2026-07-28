@@ -7,7 +7,7 @@ from agent_core.application import (
     MemoryReviewCommand,
     MemoryReviewService,
 )
-from agent_core.domain.events import EventType
+from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import MemoryId
 from agent_core.domain.memories import MemoryRecord, MemoryStatus, MemoryType, MemoryVisibility
 from agent_core.domain.sessions import Session, SessionStatus
@@ -43,6 +43,24 @@ def test_memory_review_service_confirms_candidate_memory() -> None:
         "superseded_memory_ids": [],
         "duplicate_of_memory_id": None,
     }
+
+
+def test_memory_review_service_accepts_explicit_system_actor() -> None:
+    session = _completed_session()
+
+    result = MemoryReviewService().review(
+        session=session,
+        record=_candidate_record(session),
+        next_sequence=4,
+        command=MemoryReviewCommand(
+            action=MemoryReviewAction.CONFIRM,
+            operator="system:auto-promotion",
+            reason="reconstructed from typed local evidence",
+            actor=EventActor.HARNESS,
+        ),
+    )
+
+    assert result.event.actor is EventActor.HARNESS
 
 
 def test_memory_review_service_expires_candidate_memory() -> None:
