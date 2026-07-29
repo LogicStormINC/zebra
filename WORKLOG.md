@@ -1,5 +1,21 @@
 # Progress Log
 
+## 2026-07-30 CLOUD-MEMORY-PG-01 implementation and review
+
+- added PostgreSQL v10 governed Memory authority, revision CAS, Worker/Admin aggregate
+  receipts, no-text tombstones and restart-safe content-free management snapshots
+- added explicit SQLite `mode=ro` keyset preflight/import with content-free quarantine,
+  one PostgreSQL transaction, target table lock, idempotent replay and FTS rebuild
+- closed canonical-ID typing, exact Event mapping, receipt-anchor validation and stable
+  deployment signing-key findings; final storage/import review found no open P0/P1
+- isolated PostgreSQL 17.5 validation passed `29/29` and cleaned its Compose container,
+  network and volume; release Eval passed `10/10`
+- full tests passed `1977` with `162` skips and one inherited Desktop size failure;
+  full Ruff/Mypy retained only known issues in untouched Web/Harness/Security files
+- removed the attempted optional Worker/API runtime seam after review proved that
+  terminal finalization, active-set concurrency and mixed-store recovery require the
+  later unified cloud composition rather than an optional adapter switch
+
 ## 2026-07-29 CLOUD-MEMORY-PG-01 activation
 
 - fast-forwarded reviewed Core governed-memory contract `4bda7f72` into

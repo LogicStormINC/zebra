@@ -79,6 +79,15 @@ class GovernedMemoryStorePort(Protocol):
 
     def list(self, query: MemoryQuery) -> list[MemoryRecord]: ...
 
+    def list_for_worker(
+        self,
+        query: MemoryQuery,
+        *,
+        authority: WorkerMutationAuthority,
+    ) -> tuple[GovernedMemoryEntry, ...]:
+        """Read revisioned authority for a fenced Worker mutation plan."""
+        ...
+
     def get_authority(
         self,
         memory_id: MemoryId,

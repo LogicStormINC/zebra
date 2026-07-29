@@ -209,11 +209,15 @@
   file-size violation reproduced on the untouched cloud mainline.
   PostgreSQL v10, Mem0 v11, runtime selection, SQLite feature work and Desktop remain
   outside this task.
-- Active PostgreSQL governed-memory slice `CLOUD-MEMORY-PG-01` starts from integrated
-  Core contract `4bda7f72`. It owns v10 authority/receipt storage, exact namespace
-  reads and snapshot scans, Worker/Admin aggregate transactions, repeatable SQLite
-  import tooling and focused cloud composition seams. Mem0 delivery, Desktop/SQLite
-  feature work, generic backend selection and production cutover remain excluded.
+- Completed PostgreSQL governed-memory slice `CLOUD-MEMORY-PG-01` starts from integrated
+  Core contract `4bda7f72`. It adds v10 authority/receipt storage, exact namespace reads,
+  restart-safe content-free scans, Worker/Admin aggregate transactions and repeatable
+  read-only SQLite import tooling. The isolated PostgreSQL 17.5 matrix passes `29/29`;
+  full tests pass `1977` with `162` gated skips and only the inherited Desktop size
+  failure. Runtime wiring was deliberately removed after review exposed terminal-event,
+  active-set and mixed-store recovery gaps; it remains gated on one coherent cloud
+  composition. Mem0 delivery, Desktop/SQLite feature work and production cutover remain
+  excluded.
 - Completed Artifact contract slice: `CLOUD-ART-LIFECYCLE-CON-01` separates the
   provider-neutral cloud lifecycle Port/domain from the unchanged local
   `ArtifactPayloadStorePort`. It can proceed in Core without touching Handoff v8,

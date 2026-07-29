@@ -107,6 +107,13 @@ v11 对一个精确 namespace/scope 做完整 rebuild。现有 `MemoryStorePort.
 首次 scan 必须建立一个逻辑快照；后续页只接受 Store 签发的 opaque snapshot token 与
 position token，不能以可变 `updated_at` 充当跨页快照。scan scope 按 visibility 恰好
 包含一个对应 repo/user/tenant identity，并拒绝额外 scope、text 或 source-session filter。
+v10 使用无正文的持久 membership snapshot 支持跨实例/重启续扫：registry 保存 exact
+scope digest、TTL 与操作审计，items 只保存 ordinal、Memory ID 和 captured revision。
+翻页时重新验证当前 authority；已不再 confirmed 的项不返回，新 confirmed 由 v11 在
+snapshot high-watermark 之后的 delivery 增量收敛。快照必须有每 namespace 数量上限和
+显式 GC，不允许持有跨请求 PostgreSQL transaction/connection。cursor MAC 必须由部署级
+稳定高熵密钥派生并显式注入 Store；不得从 DSN、数据库密码或 namespace 猜测生成，以保证
+不同 API/Worker 实例使用不同连接身份时仍能安全续扫。
 
 ### 3.3 状态不变量
 
@@ -181,8 +188,9 @@ Event/Memory ID。receipt、Memory rows、Events 与 Projection 在同一事务�
 
 ### 4.4 不新增的表
 
-除上述 aggregate receipt 外，v10 不创建 Mem0 mapping/outbox、第二份 Memory projection、
-Redis cache、tenant directory 或 provider history。v11 才拥有 delivery state，避免
+除上述 aggregate receipt 和无正文临时 scan membership 外，v10 不创建 Mem0
+mapping/outbox、第二份 Memory projection、Redis cache、tenant directory 或 provider
+history。scan membership 不是事实源，过期后可删除；v11 才拥有 delivery state，避免
 Memory authority migration 与外部 Effect 生命周期在一个卡中扩张。
 
 ## 5. 原子事务

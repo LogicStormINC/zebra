@@ -139,6 +139,38 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
             ORDER BY table_name
             """
         ).fetchall()
+        memory_tables = connection.execute(
+            """
+            SELECT table_name FROM information_schema.tables
+            WHERE table_schema = current_schema()
+              AND table_name IN (
+                'governed_memory_records',
+                'governed_memory_operations',
+                'governed_memory_scan_snapshots',
+                'governed_memory_scan_items'
+              )
+            ORDER BY table_name
+            """
+        ).fetchall()
+        memory_constraints = connection.execute(
+            """
+            SELECT pg_get_constraintdef(oid)
+            FROM pg_constraint
+            WHERE conrelid IN (
+                'governed_memory_records'::regclass,
+                'governed_memory_operations'::regclass,
+                'governed_memory_scan_snapshots'::regclass,
+                'governed_memory_scan_items'::regclass
+            )
+            """
+        ).fetchall()
+        memory_indexes = connection.execute(
+            """
+            SELECT indexdef FROM pg_indexes
+            WHERE schemaname = current_schema()
+              AND tablename IN ('governed_memory_records', 'governed_memory_scan_snapshots')
+            """
+        ).fetchall()
 
     assert migrations == [
         (1, "event_and_projection_storage", 64),
@@ -150,6 +182,7 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         (7, "fenced_context_lifecycle", 64),
         (8, "fenced_session_handoff", 64),
         (9, "fenced_artifact_payload_lifecycle", 64),
+        (10, "governed_memory_authority", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [
@@ -257,6 +290,27 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         ("artifact_payload_management_audit",),
         ("artifact_payload_mutations",),
     ]
+    assert memory_tables == [
+        ("governed_memory_operations",),
+        ("governed_memory_records",),
+        ("governed_memory_scan_items",),
+        ("governed_memory_scan_snapshots",),
+    ]
+    memory_constraint_sql = "".join(row[0] for row in memory_constraints).replace(" ", "")
+    assert all(
+        part in memory_constraint_sql
+        for part in (
+            "PRIMARYKEY(deployment_namespace,memory_id)",
+            "UNIQUE(deployment_namespace,creation_key)",
+            "REFERENCESsession_events(deployment_namespace,session_id,sequence)",
+            "REFERENCESsession_events(deployment_namespace,session_id,sequence,event_id)",
+            "status='deleted'",
+            "superseded_by<>memory_id",
+        )
+    )
+    memory_index_sql = "\n".join(row[0] for row in memory_indexes)
+    assert "USING gin (search_vector) WHERE (status <> 'deleted'::text)" in memory_index_sql
+    assert memory_index_sql.count("UNIQUE INDEX governed_memory_") >= 3
     assert [row[0] for row in workspace_columns] == [
         "deployment_namespace",
         "session_id",

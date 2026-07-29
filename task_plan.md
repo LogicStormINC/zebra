@@ -2,13 +2,13 @@
 
 ## CLOUD-MEMORY-PG-01 - PostgreSQL Governed Memory Authority
 
-1. `in_progress` - Re-audit v1-v9 migrations and aggregate transaction patterns,
+1. `completed` - Re-audit v1-v9 migrations and aggregate transaction patterns,
    then freeze the smallest v10 schema and lock order against the reviewed contract.
-2. `pending` - Implement namespace-bound PostgreSQL reads, authority/tombstone scan,
+2. `completed` - Implement namespace-bound PostgreSQL reads, authority/tombstone scan,
    Worker candidate aggregate and administrative review aggregate with receipts.
-3. `pending` - Add repeatable SQLite import/rebuild tooling and narrow cloud
-   composition seams without enabling mixed-authority runtime selection.
-4. `pending` - Prove migration, namespace/query parity, CAS/concurrency, rollback,
+3. `completed` - Add repeatable SQLite import/rebuild tooling while keeping runtime
+   composition gated on a coherent cloud authority bundle.
+4. `completed` - Prove migration, namespace/query parity, CAS/concurrency, rollback,
    response-loss replay and snapshot scan against real PostgreSQL 17.5; review and
    integrate into `zebra-cloud-trench`.
 
@@ -20,6 +20,9 @@
   patterns; do not add a generic Unit of Work or change local SQLite behavior.
 - Runtime cutover remains gated until all authoritative stores are available in one
   coherent cloud composition.
+- Do not land an optional Worker Memory seam before terminal finalization, authority
+  active-set validation and the Event/Projection/Memory bundle share one recoverable
+  cloud boundary; the reviewed prototype was removed rather than preserve split state.
 
 ## CLOUD-MEMORY-CON-01 - Governed Memory Mutation Contract
 

@@ -19,6 +19,13 @@ from agent_storage.postgres.epoch import (
     rotate_control_plane_epoch,
 )
 from agent_storage.postgres.events import PostgresEventStore
+from agent_storage.postgres.governed_memories import PostgresGovernedMemoryStore
+from agent_storage.postgres.governed_memory_import import (
+    GovernedMemoryImportError,
+    GovernedMemoryImportQuarantine,
+    GovernedMemoryImportReport,
+    import_sqlite_governed_memories,
+)
 from agent_storage.postgres.leases import PostgresLeaseStore
 from agent_storage.postgres.migration_runner import apply_postgres_migrations
 from agent_storage.postgres.migration_types import PostgresMigrationError
@@ -51,6 +58,11 @@ __all__ = [
     "PostgresContextLifecycleConflictError",
     "PostgresContextLifecycleStore",
     "PostgresLeaseStore",
+    "PostgresGovernedMemoryStore",
+    "GovernedMemoryImportError",
+    "GovernedMemoryImportQuarantine",
+    "GovernedMemoryImportReport",
+    "import_sqlite_governed_memories",
     "PostgresModelToolProjectionConflictError",
     "PostgresModelToolProjectionStore",
     "PostgresMigrationError",

@@ -636,13 +636,13 @@ by the Spike, with no Mem0 type escaping the integration package.
 
 ### CLOUD-MEMORY-PG-01 - PostgreSQL Governed Memory Authority
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Branch: `codex/cloud-memory-pg-01`
 - Depends on: `CLOUD-MEMORY-CON-01` and integrated PostgreSQL v1-v9
 - Owned paths: PostgreSQL governed Memory migration/adapter/aggregate/operation-receipt
-  modules,
-  narrow API/Worker injection seams, explicit SQLite import/rebuild tooling,
+  modules, the focused Worker-authority revisioned-read seam in the Core governed
+  Memory Port, explicit SQLite import/rebuild tooling,
   isolated PostgreSQL runner and focused tests, plus this task's governance records
 - Migration: v10 `governed_memory_authority`; v1-v9 remain immutable.
 - Goal: move Zebra governed Memory facts to namespace-scoped PostgreSQL before any
@@ -650,8 +650,15 @@ by the Spike, with no Mem0 type escaping the integration package.
 - Acceptance: query/search safety, revision CAS, concurrent review, candidate/Event/
   Projection atomicity, stale-fence zero-write, response-loss replay, namespace
   isolation and repeatable import pass against real PostgreSQL 17.5.
-- Non-goals: no Mem0 delivery, Desktop/SQLite feature work, complete backend selector,
-  Host tenant directory or production cutover.
+- Non-goals: no Mem0 delivery, Desktop/SQLite feature work, API/Worker runtime
+  composition, complete backend selector, Host tenant directory or production cutover.
+- Evidence: v10 authority, no-text tombstones, content-free persistent scans, canonical
+  receipts and offline SQLite import pass the isolated PostgreSQL 17.5 matrix `29/29`.
+  The full suite passes `1977` with `162` environment skips and only the inherited
+  Desktop 561/500 file-size failure. Changed-path Ruff/Mypy, release Eval `10/10` and
+  final P0/P1 review pass. An attempted optional Worker seam was removed after review:
+  terminal finalization, active-set validation and a verifiable unified cloud Store
+  bundle must land atomically in the later runtime-composition task.
 
 ### MEM-GW-DEL-01 - Memory Delivery And Deletion Ledger
 

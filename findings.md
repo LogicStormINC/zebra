@@ -842,3 +842,17 @@
   for shape only and never becomes cloud lease authority.
 - Reusing an owner name is not authority: release plus reacquire increments the Lease
   generation, and an ACK carrying the earlier token/fence must affect zero rows.
+## CLOUD-MEMORY-PG-01 durable findings (2026-07-30)
+
+- PostgreSQL governed Memory can be authoritative before runtime cutover: v10 owns
+  current rows, canonical operation receipts and temporary no-text scan membership;
+  Mem0 remains a rebuildable derived index.
+- A safe cloud Worker cutover cannot be expressed as an optional Memory Store alone.
+  `SESSION_COMPLETED`, Memory planning/mutations/Events and Session/Workspace projections
+  need one recoverable finalization boundary, and planning must validate its active
+  scope set under the commit lock. The composition root must also prove all participating
+  Stores share the same PostgreSQL namespace. Keep runtime wiring deferred until those
+  three conditions are represented together.
+- Legacy SQLite import is an explicit offline operation: open with `mode=ro`, preflight
+  the complete source before PostgreSQL writes, lock and revalidate the target in one
+  transaction, and emit only identifiers/codes/digests in quarantine evidence.

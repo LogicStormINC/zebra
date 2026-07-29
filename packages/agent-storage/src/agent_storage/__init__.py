@@ -63,6 +63,9 @@ from agent_storage.memory_lookup import (
 )
 from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.postgres import (
+    GovernedMemoryImportError,
+    GovernedMemoryImportQuarantine,
+    GovernedMemoryImportReport,
     PostgresAgentTaskConflictError,
     PostgresAgentTaskStore,
     PostgresCloudArtifactPayloadStore,
@@ -71,6 +74,7 @@ from agent_storage.postgres import (
     PostgresControlPlaneEpochError,
     PostgresEffectDispatchStore,
     PostgresEventStore,
+    PostgresGovernedMemoryStore,
     PostgresHandoffDispatchStore,
     PostgresLeaseStore,
     PostgresMigrationError,
@@ -85,6 +89,7 @@ from agent_storage.postgres import (
     apply_postgres_migrations,
     attach_segment_in_transaction,
     bootstrap_control_plane_epoch,
+    import_sqlite_governed_memories,
     read_control_plane_epoch,
     rebuild_task_in_transaction,
     rotate_control_plane_epoch,
@@ -143,6 +148,11 @@ __all__ = [
     "PostgresCloudArtifactPayloadStore",
     "PostgresEventStore",
     "PostgresHandoffDispatchStore",
+    "PostgresGovernedMemoryStore",
+    "GovernedMemoryImportError",
+    "GovernedMemoryImportQuarantine",
+    "GovernedMemoryImportReport",
+    "import_sqlite_governed_memories",
     "PostgresSessionHandoffStore",
     "PostgresEffectDispatchStore",
     "PostgresControlPlaneEpochError",
