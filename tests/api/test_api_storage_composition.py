@@ -4,7 +4,7 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import Mock
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.session_projection import rebuild_session
@@ -18,6 +18,7 @@ from agent_core.domain.identifiers import (
     new_memory_id,
     new_tool_call_id,
 )
+from agent_core.domain.leases import LeaseFence
 from agent_core.domain.memories import (
     MemoryRecord,
     MemoryStatus,
@@ -199,11 +200,15 @@ def test_handoff_and_effect_replay_stay_on_authoritative_backend(tmp_path: Path)
     assert stores.handoffs.get_handoff(handoff_id) is not None
     dispatch = stores.handoff_dispatch.claim_for_child(
         child_id,
-        worker_id="worker-b",
+        fence=LeaseFence(
+            control_plane_epoch=uuid4(), fencing_token=1, owner_instance_id="worker-b"
+        ),
         claimed_at=datetime(2026, 7, 24, 3, 0, tzinfo=UTC),
     )
     assert dispatch is not None
-    stores.handoff_dispatch.acknowledge(dispatch.delivery_id, worker_id="worker-b")
+    stores.handoff_dispatch.acknowledge(
+        dispatch, checked_at=datetime(2026, 7, 24, 3, 0, tzinfo=UTC)
+    )
     assert stores.effects.terminal_keys(source_id)
 
     assert not legacy_path.exists()
@@ -213,7 +218,9 @@ def test_handoff_and_effect_replay_stay_on_authoritative_backend(tmp_path: Path)
     assert (
         legacy.handoff_dispatch.claim_for_child(
             child_id,
-            worker_id="worker-a",
+            fence=LeaseFence(
+                control_plane_epoch=uuid4(), fencing_token=1, owner_instance_id="worker-a"
+            ),
             claimed_at=datetime(2026, 7, 24, 3, 0, tzinfo=UTC),
         )
         is None

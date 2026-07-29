@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Protocol
 
 from agent_core.domain.identifiers import HandoffId, SessionId
+from agent_core.domain.leases import LeaseFence
 from agent_core.domain.session_handoff import WorkspaceBindingRevision
 
 
@@ -13,6 +14,8 @@ class HandoffDispatch:
     handoff_id: HandoffId
     status: str
     claimed_by: str | None = None
+    claim_token: str | None = None
+    claim_fence: LeaseFence | None = None
     claim_expires_at: datetime | None = None
 
 
@@ -21,19 +24,17 @@ class HandoffDispatchStorePort(Protocol):
         self,
         child_session_id: SessionId,
         *,
-        worker_id: str,
+        fence: LeaseFence,
         claimed_at: datetime,
         lease_seconds: int = 60,
     ) -> HandoffDispatch | None: ...
 
-    def acknowledge(self, delivery_id: str, *, worker_id: str) -> None: ...
+    def acknowledge(self, claim: HandoffDispatch, *, checked_at: datetime) -> None: ...
 
     def acknowledge_if_workspace_matches(
         self,
-        delivery_id: str,
+        claim: HandoffDispatch,
         *,
-        child_session_id: SessionId,
-        worker_id: str,
         expected: WorkspaceBindingRevision,
         checked_at: datetime,
     ) -> WorkspaceBindingRevision: ...
