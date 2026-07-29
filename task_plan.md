@@ -60,6 +60,25 @@
 - Effect linkage, API read composition, runtime profile selection and Desktop stay
   in their dedicated successor cards.
 
+## CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
+
+1. `in_progress` - Freeze the smallest cloud-only domain and Port surface while
+   preserving the local Artifact Port unchanged.
+2. `pending` - Implement frozen request/result/receipt types, typed failures and
+   Worker/management authority-separated Protocol methods.
+3. `pending` - Prove validation, immutability, public exports, Protocol shape and
+   local compatibility with focused Core tests.
+4. `pending` - Run Core Ruff/Mypy/tests/file-size gates, record evidence and integrate
+   the focused branch into `zebra-cloud-trench` without touching v8.
+
+### Decisions
+
+- This contract-only card is independent of migration v8 and unlocks v9 without
+  weakening Handoff's migration ownership.
+- Add focused cloud-only modules instead of optional cloud fields on the local Port.
+- Keep orchestration, storage error mapping and lifecycle transition enforcement in
+  later adapters/services; Core only makes invalid requests unrepresentable.
+
 ## CLOUD-AGG-HANDOFF-CON-01 - Fenced Handoff Dispatch Contract
 
 1. `completed` - Trace actual Worker claim/ACK callers and reject unrelated Port cleanup.

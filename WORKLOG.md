@@ -6423,3 +6423,12 @@ actual byte access.
   five governance files. The repository source-size gate still reports exactly the
   two inherited violations: untouched Desktop stylesheet `561/500` and active
   PostgreSQL migration hotspot `508/500`; Handoff v8 already owns the required split.
+
+## 2026-07-29 - CLOUD-ART-LIFECYCLE-CON-01 activation
+
+- Split the cloud-only Artifact lifecycle contract from the Locked v9 adapter so Core
+  work can proceed without competing for Handoff's migration v8 hotspot.
+- Claimed one focused branch and path-bounded card for domain, Port, public exports,
+  Core tests and governance only.
+- Preserved local `ArtifactPayloadStorePort`, SQLite, PostgreSQL, MinIO, Worker,
+  runtime selection and Desktop outside the owned paths.

@@ -1238,7 +1238,7 @@ cloud mainline and is not built or changed by these cards.
 
 - Status: `Locked`
 - Owner: `UNASSIGNED`
-- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-ART-OBJ-CON-01`, and completed
+- Depends on: `CLOUD-ART-LIFECYCLE-CON-01` and completed
   `CLOUD-AGG-HANDOFF-PG-01`; Handoff exclusively owns migration v8 until merged.
 - Branch: `codex/cloud-art-payload-pg-01` after the v8 owner reaches Review and is
   integrated into `zebra-cloud-trench`
@@ -1269,6 +1269,30 @@ cloud mainline and is not built or changed by these cards.
 - Non-goals: no Desktop/local SQLite feature work, runtime backend selector, API
   signed-URL route, Effect payload linkage, Artifact read composition, provider
   lifecycle rules, multipart upload, or production credential policy.
+
+### CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Branch: `codex/cloud-art-lifecycle-con-01`
+- Depends on: `CLOUD-AGG-FENCE-CON-01` and `CLOUD-ART-OBJ-CON-01`
+- Owned paths: `packages/agent-core/src/agent_core/domain/cloud_artifact_payloads.py`
+  (new), `packages/agent-core/src/agent_core/domain/__init__.py`,
+  `packages/agent-core/src/agent_core/ports/cloud_artifact_payload_store.py` (new),
+  `packages/agent-core/src/agent_core/ports/__init__.py`, focused
+  `tests/agent_core/test_cloud_artifact_payload_contract.py` (new), and this task's
+  governance records
+- Goal: define the minimum provider-neutral staged/finalize/compensate/prune contract
+  required by ADR-017 without implementing an adapter or changing local behavior.
+- Acceptance: every Worker mutation requires complete `WorkerMutationAuthority`;
+  management reconciliation requires `AdministrativeMutationCAS`; lifecycle,
+  idempotency, Event binding, object verification and typed conflict/state outcomes
+  are explicit; invalid namespace, digest, size, timestamps and transition requests
+  fail at the Core boundary.
+- Compatibility: the existing `ArtifactPayloadStorePort`, local lifecycle enums and
+  SQLite adapter remain byte-for-byte unchanged and require no cloud-only arguments.
+- Non-goals: no PostgreSQL migration/adapter, S3 SDK, MinIO, Worker orchestration,
+  Effect linkage, API route, runtime selection, local SQLite or Desktop change.
 
 ### CLOUD-ART-OBJ-CON-01 - Artifact Object And Metadata Authority Contract
 
