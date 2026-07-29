@@ -107,10 +107,16 @@
   derivation and canonical lost-response retry paths. The card is in Review and
   unlocks only `CLOUD-AGG-TASK-PG-01`; `CLOUD-CONTROL-PLANE-PG-01`, not this card,
   owns the cloud Worker composition root and runtime backend selection.
-- Active Task/Segment adapter task: `CLOUD-AGG-TASK-PG-01` is claimed on its own
-  worktree and owns the next serialized migration, namespace-scoped read-only Task
-  index, connection-scoped rollover primitive and real PostgreSQL concurrency/fault
-  matrix. Parallel sessions are limited to read-only planning for later cards.
+- Completed Task/Segment adapter task: `CLOUD-AGG-TASK-PG-01` adds PostgreSQL v5,
+  a namespace-scoped Task read model, deterministic explicit rebuild and a
+  connection-scoped rollover primitive. Reads never write; rebuild and rollover
+  share a Task advisory lock, Handoff Event pairs are validated by common identity,
+  and composite foreign keys prevent cross-Task ownership. Ruff, strict Mypy over
+  `166` files, the `911`-file microservice size gate, `473 passed, 77 skipped`
+  related regressions and Eval `10/10` pass. The real PostgreSQL 17.5 matrix passes
+  `32/32`; the card is in Review and unlocks only `CLOUD-MODEL-TOOL-PG-01` for the
+  next serialized migration. Context and Handoff continue planning in separate
+  sidebar tasks without writing the migration hotspot.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
   on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
   path-bounded microservice cards own provider expectations, SCM credential

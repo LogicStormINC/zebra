@@ -6370,3 +6370,20 @@ actual byte access.
   created the isolated `codex/cloud-agg-task-pg-01` worktree and claimed the only
   Ready implementation card. Other sessions may audit successor cards in parallel
   but cannot edit the shared migration hotspot until this card integrates.
+- implemented PostgreSQL migration v5 and split the Task adapter into a 176-line
+  read facade, 315-line transaction module and 171-line lineage module. Read APIs
+  are pure; explicit rebuild and caller-owned rollover share one Task advisory lock.
+- two read-only review rounds fixed tuple-row caller compatibility, lock ordering,
+  deterministic stale-row cleanup, typed uniqueness conflicts, cross-Task foreign
+  keys, ambiguous Handoff lineage, artifact identity and SQLite reason parity.
+  Final review found no remaining P0-P2 issues.
+- local validation passes Ruff, strict Core/Storage Mypy over `166` files, the
+  microservice size gate over `911` tracked and new files, related backend/API
+  regressions `473 passed, 77 skipped`, and release Eval `10/10`.
+- the isolated PostgreSQL 17.5 host matrix passes `32/32` in `6.38s`; its dedicated
+  container and volume were removed. The existing shared-network ownership warning
+  is informational and no unknown network was deleted. The Task card moves to
+  Review and unlocks only Model/Tool for the next serialized migration.
+- created separate Codex sidebar tasks for Model/Tool, Context Lifecycle and
+  Handoff planning from `zebra-cloud-trench`. They may audit in parallel but must
+  wait for the current migration owner before implementation.

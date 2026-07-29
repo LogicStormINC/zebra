@@ -1097,16 +1097,24 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-TASK-PG-01 - PostgreSQL Task And Segment Index
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Branch: `codex/cloud-agg-task-pg-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`
-- Owned paths: `packages/agent-storage/src/agent_storage/postgres/agent_tasks.py`,
-  the current migration hotspot, task composition and real PostgreSQL Task tests
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/{agent_tasks,task_index_transactions,task_lineage,migrations,__init__}.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`, focused migration and
+  real PostgreSQL Task tests, the host Compose runner, and governance records
 - Goal: provide a read-without-write Task index and connection-scoped rollover
   primitive for Handoff transactions.
 - Acceptance: concurrent rollover has one winner, task event order is unique,
   rebuild is idempotent and reads never trigger hidden writes.
+- Evidence: reads remain pure; explicit rebuild deterministically replaces stale
+  Segment/Event rows; rebuild and rollover share a Task advisory lock; Handoff
+  received/committed Events require matching target, handoff, stage, checksum and
+  artifact identities; expected uniqueness races map to one typed conflict. Ruff,
+  strict Mypy over `166` files, the `911`-file microservice size gate, `473 passed,
+  77 skipped` related regressions and Eval `10/10` pass. The isolated PostgreSQL
+  17.5 host Compose matrix passes `32/32`, then removes its container and volume.
 
 ### CLOUD-AGG-CTX-PG-01 - Fenced Context Lifecycle Aggregate
 
@@ -1134,7 +1142,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-MODEL-TOOL-PG-01 - PostgreSQL Model And Tool Projections
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `UNASSIGNED`
 - Depends on: `CLOUD-AGG-FENCE-CON-01` and `CLOUD-AGG-WORKSPACE-PG-01`
 - Owned paths: focused PostgreSQL model/tool modules, current migration hotspot,

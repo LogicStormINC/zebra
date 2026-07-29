@@ -627,3 +627,20 @@
   deployment namespace are injected. This card exposes the injection seam but
   deliberately does not select a backend or modify Desktop/local-agent composition;
   the complete cloud composition root belongs to `CLOUD-CONTROL-PLANE-PG-01`.
+
+## CLOUD-AGG-TASK-PG-01 - 2026-07-29
+
+- AgentTask is an Event/Handoff-derived index. PostgreSQL reads must never repair
+  or create it; `ensure_for_session()` and `rebuild_all()` are explicit write paths.
+- Rebuild and rollover use the same namespace/Task advisory transaction lock.
+  Rebuild replaces derived Segment/Event rows from sequence zero, so stale rows
+  cannot survive as contradictory secondary facts.
+- A child Handoff belongs to a lineage only when received and committed Events
+  uniquely match target Session, handoff id, stage, checksum and artifact id.
+  Ambiguous, orphaned or mismatched pairs fail closed before index mutation.
+- The caller-owned rollover primitive uses a savepoint and mapping-row cursor, so
+  it works inside the future Handoff transaction and translates expected uniqueness
+  races into a stable storage conflict without aborting the caller transaction.
+- Composite ownership foreign keys keep active Segment, predecessor and indexed
+  Event Segment inside the same Task. The active constraint is deferred so a
+  deterministic delete/reinsert rebuild remains one valid transaction.
