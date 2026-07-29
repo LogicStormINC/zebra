@@ -1,5 +1,25 @@
 # Task Plan
 
+## CLOUD-MEMORY-CON-01 - Governed Memory Mutation Contract
+
+1. `in_progress` - Freeze the smallest validated authority, revision, operation,
+   tombstone and aggregate request/result types.
+2. `pending` - Extract deterministic candidate/promotion/review planning from current
+   services while retaining behavior-compatible local wrappers.
+3. `pending` - Prove invalid authority, stale shapes, no-text tombstones, pure plans,
+   canonical digests and local Memory regressions.
+4. `pending` - Run Core static/test/eval gates, review the slice and integrate it into
+   `zebra-cloud-trench` without SQL or runtime wiring.
+
+### Decisions
+
+- Add a focused cloud authority Port rather than weakening the local
+  `MemoryStorePort.upsert()` signature with optional revisions and authority.
+- Pure planners generate mutations and Events but perform no I/O; existing services
+  remain compatibility wrappers for the SQLite profile.
+- Canonical replay results contain identifiers/revisions/Event references only, never
+  Memory text or provider data.
+
 ## CLOUD-MEMORY-PG-PLAN-01 - PostgreSQL Governed Memory Authority Plan
 
 1. `completed` - Inventory the current SQLite Memory fact source, all mutation/read

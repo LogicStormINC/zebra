@@ -606,13 +606,14 @@ by the Spike, with no Mem0 type escaping the integration package.
 
 ### CLOUD-MEMORY-CON-01 - Governed Memory Mutation Contract
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `lukeding`
+- Branch: `codex/cloud-memory-con-01`
 - Depends on: reviewed `CLOUD-MEMORY-PG-PLAN-01`
-- Owned paths: focused governed Memory authority domain/request/result modules and
-  Port under `packages/agent-core`, pure planning seams in the existing Memory
-  candidate/promotion/review application modules, compatibility wrappers, their
-  public exports, focused Core tests, and this task's governance records
+- Owned paths: `packages/agent-core/src/agent_core/domain/governed_memories.py`
+  (new), `packages/agent-core/src/agent_core/ports/governed_memory_store.py` (new),
+  focused pure planning seams in `memory_{candidates,candidate_promotions,reviews}.py`,
+  their public exports, focused Core tests, and this task's governance records
 - Goal: replace unversioned cloud writes with typed creation idempotency, record
   revision CAS, Worker candidate and administrative review aggregate requests.
 - Acceptance: stale/missing authority cannot form a valid mutation; Worker and

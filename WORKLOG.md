@@ -1,5 +1,13 @@
 # Progress Log
 
+## 2026-07-29 CLOUD-MEMORY-CON-01 activation
+
+- fast-forwarded reviewed governed-memory plan `2c43af0f` into
+  `zebra-cloud-trench`, removed its clean worktree/branch and created this Core task
+- claimed focused provider-neutral authority/Port, pure planner and Core test paths;
+  no SQL, Mem0, runtime selector, SQLite behavior or Desktop is in scope
+
+
 ## 2026-07-29 CLOUD-MEMORY-PG-PLAN-01 activation
 
 - stopped `CLOUD-SESSION-HISTORY-PG-01` before implementation after independent
