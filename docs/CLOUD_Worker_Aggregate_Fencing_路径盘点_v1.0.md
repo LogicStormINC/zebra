@@ -92,8 +92,9 @@ Workspace、Task 与 Dispatch 拆成顺序提交。
 ### 4.4 Payload
 
 Tool output 与 Effect 输入会先写 `ArtifactPayloadStorePort`。云端实现应复用 Docker
-依赖栈中的对象存储能力，但本文不提前选择对象 key 布局或引入新 SDK；对应任务先
-冻结 object-store Port 和失败补偿合同。
+依赖栈中的对象存储能力。对象 key 布局、SDK 与 provider 保持未选择；
+[`ADR-017_Artifact对象存储与元数据权威边界.md`](./ADR-017_Artifact对象存储与元数据权威边界.md)
+先冻结 object-store capability、失败补偿与管理恢复合同。
 
 ## 5. 任务 DAG
 
@@ -102,7 +103,7 @@ CLOUD-AGG-FENCE-CON-01
 ├── CLOUD-AGG-WORKSPACE-PG-01
 ├── CLOUD-AGG-TASK-PG-01
 ├── CLOUD-AGG-CTX-PG-01
-├── CLOUD-ART-PAYLOAD-PG-01
+├── CLOUD-ART-OBJ-CON-01 ──> CLOUD-ART-PAYLOAD-PG-01
 └── CLOUD-PROVIDER-CONT-PG-01
 
 WORKSPACE + TASK + CON ──> CLOUD-AGG-HANDOFF-PG-01
@@ -156,11 +157,12 @@ sequence 回滚、active pointer CAS、内容幂等/冲突、stale fence 与 API
 实现 continuation payload 的 tenant/fence/TTL/SHA/soft-delete parity。验证引用不
 指向缺失 payload、跨 Worker 恢复、跨 tenant 拒绝及 sweep 管理语义。
 
-### CLOUD-ART-PAYLOAD-PG-01 / CLOUD-EFFECT-PAYLOAD-ATOMIC-01
+### CLOUD-ART-OBJ-CON-01 / CLOUD-ART-PAYLOAD-PG-01 / CLOUD-EFFECT-PAYLOAD-ATOMIC-01
 
-先实现共享对象 payload，再闭合 Effect intent 引用。验证同 ID 内容冲突不覆盖、
-metadata/object 故障补偿、跨 Worker 读取、stale fence 无 payload/intent，以及
-schedule 失败无永久 orphan。
+ADR-017 先冻结 stable identity、metadata/bytes authority、staged/finalize/
+compensate 与管理恢复。随后实现共享对象 payload，再闭合 Effect intent 引用。验证
+同 ID 内容冲突不覆盖、metadata/object 故障补偿、跨 Worker 读取、stale fence 无
+payload/intent，以及 schedule 失败无永久 orphan。
 
 ### CLOUD-SESSION-HISTORY-PG-01 / CLOUD-ART-READ-COMP-01
 

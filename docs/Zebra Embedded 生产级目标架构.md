@@ -372,6 +372,10 @@ Sandbox Snapshot payload。PostgreSQL 保存 checksum、size、content type、
 namespace、retention、manifest 和 lineage。下载使用短期签名 URL，并在读取时
 校验 namespace、资源绑定和文件存在性。
 
+Artifact payload 的 authority、`artifact://` identity、temporary access URL、
+staged/finalize/compensate lifecycle 与 provider-neutral boundary 由 ADR-017
+冻结；该 ADR 不选择 provider、SDK、key encoding 或 API route。
+
 ## 8. 数据分析
 
 首版只支持可预测、可复现的批准算子：
@@ -588,9 +592,13 @@ artifact failure、namespace denial、memory degraded rate、token/cost evidence
 - ADR-013：稳定 Task 与内部 Execution Segment；
 - ADR-014：Skill、MCP、Plugin 扩展体系；
 - ADR-015：Zebra Embedded 使用 CopilotKit/AG-UI，取消 Zebra React SDK。
+- ADR-017：Artifact 对象存储与元数据权威边界。
 
 ADR-015 见
 [`ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md`](./ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md)。
+
+ADR-017 见
+[`ADR-017_Artifact对象存储与元数据权威边界.md`](./ADR-017_Artifact对象存储与元数据权威边界.md)。
 
 ## 17. 明确非目标
 

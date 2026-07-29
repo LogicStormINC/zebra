@@ -242,6 +242,9 @@ read-only。
 ### CLOUD-ART-01 — Object storage
 
 - Status: `Locked`；depends on `CLOUD-PG-01`；may parallel `CLOUD-LEASE-01` by subpath。
+- This is the phase-level parent. Its provider-neutral authority contract is
+  `CLOUD-ART-OBJ-CON-01` / ADR-017; implementation remains split between
+  `CLOUD-ART-PAYLOAD-PG-01`, Effect payload linkage and Artifact read composition.
 - Candidate paths: `agent-storage` object adapter, Artifact/Snapshot composition, tests。
 - Deliverable: S3/MinIO payload、PostgreSQL manifest、checksum、signed access、retention。
 - Acceptance: missing/deleted object, cross-namespace access and restore are covered。

@@ -4,11 +4,12 @@
 
 1. `completed` - Audit the existing local Artifact authority, MinIO baseline and
    cloud aggregate dependency gaps.
-2. `in_progress` - Write ADR-017 with the provider-neutral identity, lifecycle,
+2. `completed` - Write ADR-017 with the provider-neutral identity, lifecycle,
    compensation, fencing, reconciliation and non-goal decisions.
-3. `pending` - Link the architecture, aggregate inventory and Trench task plan to
+3. `completed` - Link the architecture, aggregate inventory and Trench task plan to
    the ADR without duplicating its protocol.
-4. `pending` - Validate links and terminology, record evidence and move to Review.
+4. `completed` - Validate links and terminology, record evidence and prepare the
+   Review handoff.
 
 ### Decisions
 

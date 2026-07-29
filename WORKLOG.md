@@ -6387,3 +6387,17 @@ actual byte access.
 - created separate Codex sidebar tasks for Model/Tool, Context Lifecycle and
   Handoff planning from `zebra-cloud-trench`. They may audit in parallel but must
   wait for the current migration owner before implementation.
+## 2026-07-29 - CLOUD-ART-OBJ-CON-01
+
+- Based `codex/cloud-art-obj-con-01` on local `zebra-cloud-trench@8035c61b` after
+  verifying the claimed task and its documentation-only Owned paths.
+- Added ADR-017 and linked the final architecture, aggregate-fencing inventory and
+  phase-level Trench breakdown without selecting an object provider, SDK, object
+  key encoding, migration, API route or cloud runtime profile.
+- Recorded the provider-neutral Artifact authority and recovery contract: stable
+  `artifact://` identity, opaque external references, staged/finalize/compensate,
+  fenced Worker writes, management reconciliation and retention prune semantics.
+- Validation: changed-document local links and `git diff --check` pass. The
+  repository file-size gate checks `1025` source files and retains only baseline
+  violations in the untouched Desktop stylesheet (`561/500`) and PostgreSQL
+  migrations (`508/500`); both match `8035c61b` exactly.

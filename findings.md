@@ -644,3 +644,13 @@
 - Composite ownership foreign keys keep active Segment, predecessor and indexed
   Event Segment inside the same Task. The active constraint is deferred so a
   deterministic delete/reinsert rebuild remains one valid transaction.
+## CLOUD-ART-OBJ-CON-01 - 2026-07-29
+
+- ADR-017 is the sole detailed cloud Artifact payload contract. PostgreSQL
+  metadata and verified object bytes jointly form authority; `artifact://` is
+  stable identity, while object locators and temporary access URLs stay internal.
+- Model/Tool external `artifact_uri` remains an opaque external reference. Replay
+  and read composition cannot fetch, sign, copy or convert it into managed bytes.
+- The contract freezes staged/finalize/compensate and pruning recovery before any
+  object SDK, provider, key encoding, migration, API route or Worker profile is
+  chosen. `CLOUD-ART-PAYLOAD-PG-01` owns the later shared implementation.
