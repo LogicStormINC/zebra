@@ -71,7 +71,13 @@ class _FakeS3Client:
         self._record("get_object", kwargs)
         item = self._item(kwargs)
         self.last_body = _Body(cast(bytes, item["Body"]))
-        return {"Body": self.last_body}
+        return {
+            "Body": self.last_body,
+            "ContentLength": len(cast(bytes, item["Body"])),
+            "Metadata": item["Metadata"],
+            "VersionId": item["VersionId"],
+            "LastModified": item["LastModified"],
+        }
 
     def delete_object(self, **kwargs: object) -> Mapping[str, object]:
         self._record("delete_object", kwargs)

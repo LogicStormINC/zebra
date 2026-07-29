@@ -1386,7 +1386,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-EFFECT-PAYLOAD-ATOMIC-01 - Effect Payload And Intent Linkage
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Branch: `codex/cloud-effect-payload-atomic-01`
 - Depends on: `CLOUD-ART-PAYLOAD-PG-01` integrated at `b87760b6` and
@@ -1443,6 +1443,15 @@ cloud mainline and is not built or changed by these cards.
 - Non-goals: no new Artifact authority table or migration, SQLite feature work,
   Desktop, signed-URL delivery, runtime backend selector, lifecycle mutation or
   production credential policy.
+- Evidence: PostgreSQL reads use one namespace/Session-scoped `UNION ALL` snapshot
+  over the replayable v6 indexes and reuse the local Artifact composer. Cloud reads
+  require canonical URI, exact Event binding, finalized v9 metadata and the recorded
+  S3 object version; other lifecycle/object outcomes fail closed. Custom cloud readers
+  disable legacy prune. The isolated PostgreSQL 17.5 plus versioned MinIO matrix passes
+  `39/39`; the full repository passes `1943` tests with `145` gated skips and only the
+  inherited Desktop stylesheet size failure. Changed Ruff, Core/Storage Mypy,
+  `git diff --check` and Eval `10/10` pass; full Mypy retains four inherited errors in
+  two untouched files.
 
 ### CLOUD-DELIVERY-TXN-PG-01 - PostgreSQL Delivery Command Transaction
 

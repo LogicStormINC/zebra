@@ -4,9 +4,8 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from agent_core.domain import ArtifactAccessDescriptor
-from agent_core.domain.artifact_payloads import StoredArtifactPayload
 from agent_core.domain.identifiers import SessionId
-from agent_core.ports import ArtifactPayloadStorePort, SessionArtifact
+from agent_core.ports import ArtifactPayloadReadInspection, SessionArtifact
 from agent_security import (
     ArtifactAccessProjection,
     PolicyProfile,
@@ -17,18 +16,16 @@ from agent_security import (
 from agent_security import (
     policy_rank as shared_policy_rank,
 )
-from agent_storage import (
-    ControlPlaneStores,
-    payload_for_artifact_uri,
-)
+from agent_storage import ControlPlaneStores
 
+from zebra_agent_api.artifact_payload_read import describe_artifact_payload
 from zebra_agent_api.responses import ApiResponse, conflict
 
 
 @dataclass(frozen=True)
 class ArtifactAccessContext:
     projection: ArtifactAccessProjection
-    payload: StoredArtifactPayload | None
+    payload: ArtifactPayloadReadInspection | None
 
     @property
     def allowed(self) -> bool:
@@ -53,7 +50,7 @@ def classify_session_artifact_access(
     session_id: str,
     artifact: SessionArtifact,
 ) -> ArtifactAccessContext:
-    payload = payload_record_for_uri(stores.artifact_payloads, artifact.uri)
+    payload = describe_artifact_payload(stores, SessionId(UUID(session_id)), artifact.uri)
     projection = build_artifact_access_projection(
         ArtifactAccessDescriptor(
             kind=artifact.kind,
@@ -192,13 +189,6 @@ def artifact_policy_denied_reason(
     action: str,
 ) -> str:
     return f"artifact_{action}_requires_{access.required_policy_profile}_policy"
-
-
-def payload_record_for_uri(
-    payload_store: ArtifactPayloadStorePort,
-    uri: str | None,
-) -> StoredArtifactPayload | None:
-    return payload_for_artifact_uri(payload_store, uri)
 
 
 def session_policy_profile(stores: ControlPlaneStores, session_id: str) -> str:

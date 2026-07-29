@@ -747,6 +747,14 @@
 - Artifact payload v9 deliberately uses a cloud-only lifecycle Port. API composition
   must adapt its finalized/pruned metadata plus verified object bytes to read concerns
   without weakening the local payload Port or inventing a second Artifact authority.
+- A read identity is the Tool projection's source Event plus the v9 binding, not only
+  an Artifact UUID. Cloud aliases (`file://`, query/fragment variants) and same-Session
+  swapped references must fail closed even if the target bytes otherwise exist.
+- Exact-version GET is necessary because a HEAD followed by a generic latest-version
+  read has a race and does not prove the bytes belong to the finalized v9 receipt.
+- Read and control capabilities remain separate. Injecting a cloud reader must disable
+  the legacy one-step SQLite prune path until a management-authorized cloud command
+  transaction is implemented.
 
 ## CLOUD-ART-LIFECYCLE-CON-01 - 2026-07-29
 

@@ -23,6 +23,12 @@ def payload_for_artifact_uri(
     return payload_store.get_payload(artifact_id)
 
 
+def artifact_id_from_uri(uri: str | None) -> ArtifactId | None:
+    if uri is None:
+        return None
+    return _artifact_id_from_uri(urlparse(uri))
+
+
 def _artifact_id_from_uri(parsed) -> ArtifactId | None:  # type: ignore[no-untyped-def]
     """Extract an ArtifactId from either an artifact:// or legacy file:// URI."""
     if parsed.scheme == "artifact":

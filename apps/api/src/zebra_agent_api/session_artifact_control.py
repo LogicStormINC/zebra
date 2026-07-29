@@ -32,6 +32,12 @@ class SessionArtifactControlApi:
         artifact = self._resolve_session_artifact(session_id, artifact_id)
         if isinstance(artifact, ApiResponse):
             return artifact
+        if not self.stores.legacy_artifact_control_enabled:
+            return self._unavailable(
+                session_id,
+                artifact_id,
+                reason="cloud_artifact_prune_requires_management_transaction",
+            )
         payload_store = self.stores.artifact_payloads
         payload = payload_for_artifact_uri(payload_store, artifact.uri)
         if artifact.uri is None:

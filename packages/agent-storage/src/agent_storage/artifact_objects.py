@@ -120,11 +120,18 @@ class S3ArtifactObjectStore:
             )
         receipt = verification.receipt
         assert receipt is not None
+        return self.read_version_verified(expectation, receipt.object_version)
+
+    def read_version_verified(
+        self,
+        expectation: ArtifactObjectExpectation,
+        object_version: str,
+    ) -> bytes:
         try:
             response = self._client.get_object(
                 Bucket=self._bucket,
                 Key=self._key(expectation),
-                VersionId=receipt.object_version,
+                VersionId=object_version,
             )
         except ClientError as error:
             if is_not_found(error):
@@ -134,6 +141,21 @@ class S3ArtifactObjectStore:
             raise unavailable("artifact object read failed", error) from error
         except BotoCoreError as error:
             raise unavailable("artifact object read failed", error) from error
+        try:
+            verification = self._verification(expectation, response)
+        except Exception:
+            _close_response_body(response)
+            raise
+        receipt = verification.receipt
+        if (
+            verification.status is not ArtifactObjectVerificationStatus.VERIFIED
+            or receipt is None
+            or receipt.object_version != object_version
+        ):
+            _close_response_body(response)
+            raise ArtifactObjectIntegrityError(
+                "artifact object version does not match read expectation"
+            )
         raw_body = response.get("Body")
         read = getattr(raw_body, "read", None)
         close = getattr(raw_body, "close", None)
@@ -275,6 +297,16 @@ def _metadata(expectation: ArtifactObjectExpectation) -> dict[str, str]:
     }
 
 
+def _close_response_body(response: Mapping[str, object]) -> None:
+    close = getattr(response.get("Body"), "close", None)
+    if not callable(close):
+        return
+    try:
+        close()
+    except Exception as error:
+        raise ArtifactObjectUnavailableError("artifact object body close failed") from error
+
+
 def _canonical_text(value: str, *, field_name: str) -> str:
     if not value or value != value.strip():
         raise ValueError(f"{field_name} must be non-blank and trimmed")
@@ -286,4 +318,3 @@ def _canonical_prefix(value: str) -> str:
     if not value or any(segment in {"", ".", ".."} for segment in value.split("/")):
         raise ValueError("key_prefix must contain canonical non-empty segments")
     return value
-

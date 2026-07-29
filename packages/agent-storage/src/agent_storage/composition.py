@@ -3,6 +3,7 @@ from pathlib import Path
 
 from agent_core.ports import (
     AgentTaskPort,
+    ArtifactPayloadReadPort,
     ArtifactPayloadStorePort,
     ContextLifecycleStorePort,
     DeliveryAuditStorePort,
@@ -23,6 +24,7 @@ from agent_core.ports import (
 )
 
 from agent_storage.agent_tasks import SQLiteAgentTaskStore
+from agent_storage.artifact_payload_reads import LocalArtifactPayloadReader
 from agent_storage.artifact_payloads import SQLiteArtifactPayloadStore
 from agent_storage.artifacts import SQLiteArtifactStore
 from agent_storage.context_lifecycle import SQLiteContextLifecycleStore
@@ -56,12 +58,20 @@ class ControlPlaneStores:
     effects: EffectLedgerPort
     memories: MemoryStorePort
     artifact_payloads: ArtifactPayloadStorePort
+    artifact_payload_reader: ArtifactPayloadReadPort
     model_calls: ModelCallStorePort
     tool_runs: ToolRunStorePort
     artifacts: SessionArtifactReadPort
     provider_continuations: ProviderContinuationStorePort
     session_history: SessionHistoryPort
     delivery_audit: DeliveryAuditStorePort
+
+    @property
+    def legacy_artifact_control_enabled(self) -> bool:
+        reader = self.artifact_payload_reader
+        return isinstance(reader, LocalArtifactPayloadReader) and reader.controls(
+            self.artifact_payloads
+        )
 
 
 def sqlite_control_plane_stores(database_path: str | Path) -> ControlPlaneStores:
@@ -70,6 +80,7 @@ def sqlite_control_plane_stores(database_path: str | Path) -> ControlPlaneStores
         raise ValueError("sqlite control-plane composition requires a filesystem-backed database")
     model_calls = SQLiteModelCallStore(local_path)
     tool_runs = SQLiteToolRunStore(local_path)
+    artifact_payloads = SQLiteArtifactPayloadStore(local_path)
     return ControlPlaneStores(
         events=SQLiteEventStore(local_path),
         sessions=SQLiteProjectionStore(local_path),
@@ -82,11 +93,12 @@ def sqlite_control_plane_stores(database_path: str | Path) -> ControlPlaneStores
         idempotency=SQLiteIdempotencyStore(local_path),
         effects=SQLiteEffectLedger(local_path),
         memories=SQLiteMemoryStore(local_path),
-        artifact_payloads=SQLiteArtifactPayloadStore(local_path),
+        artifact_payloads=artifact_payloads,
         model_calls=model_calls,
         tool_runs=tool_runs,
         artifacts=SQLiteArtifactStore(model_calls, tool_runs),
         provider_continuations=SQLiteProviderContinuationStore(local_path),
         session_history=SQLiteSessionHistory(local_path),
         delivery_audit=SQLiteDeliveryAuditStore(local_path),
+        artifact_payload_reader=LocalArtifactPayloadReader(artifact_payloads),
     )

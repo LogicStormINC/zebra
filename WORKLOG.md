@@ -6653,3 +6653,23 @@ actual byte access.
 - Verified PostgreSQL Model/Tool v6 and Artifact payload v9 are integrated ancestors.
   The task reuses their existing tables and the current API read contract; it owns no
   migration, SQLite feature work, Desktop path or complete runtime selection.
+
+## 2026-07-29 - CLOUD-ART-READ-COMP-01 implementation
+
+- Added a required read-only payload capability distinct from the local write/prune
+  Port. SQLite keeps its existing behavior, including physical missing-file detection;
+  cloud lifecycle states and object failures have typed fail-closed outcomes.
+- PostgreSQL composes Model/Tool Artifacts from one `UNION ALL` snapshot and reuses the
+  shared sanitizer, truncation and ordering implementation. Source Event IDs remain
+  internal read evidence and are not added to the public response.
+- Cloud content requires canonical `artifact://UUID`, matching v9 Event ID/sequence,
+  `FINALIZED` metadata and exact recorded object-version GET with response metadata and
+  byte verification. A custom cloud reader disables legacy SQLite prune before any
+  payload lookup, preventing split authority even on an ID collision.
+- The isolated PostgreSQL 17.5 plus versioned MinIO matrix passes `39/39` and cleans its
+  containers, network and volumes. The full suite records `1943` passed and `145`
+  skipped, with only the inherited Desktop stylesheet size-gate failure. Changed Ruff,
+  Core/Storage Mypy,
+  `git diff --check` and Eval `10/10` pass; full Mypy retains the same four inherited
+  errors in untouched Web/Policy files. Two independent P0/P1 reviews found no open
+  issue after the binding, exact-version, lifecycle and control-boundary fixes.

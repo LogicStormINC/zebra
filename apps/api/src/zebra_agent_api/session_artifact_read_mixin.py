@@ -3,11 +3,17 @@ from __future__ import annotations
 import base64
 from pathlib import Path
 
-from agent_core.ports import SessionArtifact
+from agent_core.domain.artifact_objects import (
+    ArtifactObjectIntegrityError,
+    ArtifactObjectUnavailableError,
+)
+from agent_core.ports import (
+    ArtifactPayloadReadPrunedError,
+    ArtifactPayloadReadUnavailableError,
+    SessionArtifact,
+)
 from agent_storage import (
     ControlPlaneStores,
-    payload_for_artifact_uri,
-    serialize_artifact_retrieval,
     serialize_session_artifact_projection,
 )
 
@@ -19,14 +25,17 @@ from zebra_agent_api.artifact_access import (
     classify_session_artifact_access,
     serialize_artifact_access,
 )
+from zebra_agent_api.artifact_payload_read import (
+    inspect_artifact_payload,
+    payload_reader,
+    serialize_read_lifecycle,
+    serialize_read_retrieval,
+)
 from zebra_agent_api.delivery_audit import record_delivery_audit
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_delivery_audit import SessionDeliveryAuditApi
 from zebra_agent_api.session_identity_read import (
     _parse_session_id,
-)
-from zebra_agent_api.session_memory_overview_aggregation import (
-    _artifact_lifecycle,
 )
 
 
@@ -147,121 +156,57 @@ class SessionArtifactReadMixin:
                 ),
             )
             return response
-        lifecycle = _artifact_lifecycle(self.stores.artifact_payloads, artifact.uri)
-        retrieval = serialize_artifact_retrieval(
-            artifact.uri,
-            lifecycle=lifecycle,
-        )
+        inspection = inspect_artifact_payload(self.stores, artifact)
+        retrieval = serialize_read_retrieval(artifact.uri, inspection)
         status = str(retrieval["status"])
-        if status == "indexed_only":
-            response = build_artifact_unavailable_response(
-                session_id=session_id,
-                reason="artifact_is_indexed_only",
-                access=access,
+        unavailable_reason = _UNAVAILABLE_REASONS.get(status)
+        if unavailable_reason is not None:
+            return self._artifact_content_unavailable(
+                session_id,
+                artifact,
+                access,
+                reason=unavailable_reason,
+                retrieval_status=status,
             )
-            record_delivery_audit(
-                store=self.stores.delivery_audit,
-                session_id=session_id,
-                action="session.artifact.content",
-                response=response,
-                policy_profile=access.session_policy_profile,
-                result_metadata=build_artifact_access_metadata(
-                    access,
-                    artifact=artifact,
-                    result_status="artifact_unavailable",
-                    retrieval_status=status,
-                ),
-            )
-            return response
-        if status == "external_reference":
-            response = build_artifact_unavailable_response(
-                session_id=session_id,
-                reason="artifact_uses_external_reference",
-                access=access,
-            )
-            record_delivery_audit(
-                store=self.stores.delivery_audit,
-                session_id=session_id,
-                action="session.artifact.content",
-                response=response,
-                policy_profile=access.session_policy_profile,
-                result_metadata=build_artifact_access_metadata(
-                    access,
-                    artifact=artifact,
-                    result_status="artifact_unavailable",
-                    retrieval_status=status,
-                ),
-            )
-            return response
-        if status == "payload_missing":
-            response = build_artifact_unavailable_response(
-                session_id=session_id,
-                reason="artifact_payload_missing",
-                access=access,
-            )
-            record_delivery_audit(
-                store=self.stores.delivery_audit,
-                session_id=session_id,
-                action="session.artifact.content",
-                response=response,
-                policy_profile=access.session_policy_profile,
-                result_metadata=build_artifact_access_metadata(
-                    access,
-                    artifact=artifact,
-                    result_status="artifact_unavailable",
-                    retrieval_status=status,
-                ),
-            )
-            return response
-        if status == "payload_pruned":
-            response = build_artifact_unavailable_response(
-                session_id=session_id,
-                reason="artifact_payload_pruned",
-                access=access,
-            )
-            record_delivery_audit(
-                store=self.stores.delivery_audit,
-                session_id=session_id,
-                action="session.artifact.content",
-                response=response,
-                policy_profile=access.session_policy_profile,
-                result_metadata=build_artifact_access_metadata(
-                    access,
-                    artifact=artifact,
-                    result_status="artifact_unavailable",
-                    retrieval_status=status,
-                ),
-            )
-            return response
         assert artifact.uri is not None
-        # CTX-ART-02: resolve artifact:// URI through the payload store to
-        # read bytes through the injected backend rather than its volatile URI.
-        payload_store = self.stores.artifact_payloads
-        stored_payload = payload_for_artifact_uri(payload_store, artifact.uri)
+        assert inspection is not None
         try:
-            if stored_payload is None:
-                raise FileNotFoundError("artifact payload metadata was not found")
-            payload = payload_store.read_payload_bytes(stored_payload.artifact_id)
+            payload = payload_reader(self.stores).read_payload_bytes(
+                artifact.session_id,
+                artifact.uri,
+            )
+        except ArtifactPayloadReadPrunedError:
+            return self._artifact_content_unavailable(
+                session_id,
+                artifact,
+                access,
+                reason="artifact_payload_pruned",
+                retrieval_status="payload_pruned",
+            )
+        except ArtifactPayloadReadUnavailableError:
+            return self._artifact_content_unavailable(
+                session_id,
+                artifact,
+                access,
+                reason="artifact_payload_unavailable",
+                retrieval_status="payload_unavailable",
+            )
         except FileNotFoundError:
-            response = build_artifact_unavailable_response(
-                session_id=session_id,
+            return self._artifact_content_unavailable(
+                session_id,
+                artifact,
+                access,
                 reason="artifact_payload_missing",
-                access=access,
+                retrieval_status="payload_missing",
             )
-            record_delivery_audit(
-                store=self.stores.delivery_audit,
-                session_id=session_id,
-                action="session.artifact.content",
-                response=response,
-                policy_profile=access.session_policy_profile,
-                result_metadata=build_artifact_access_metadata(
-                    access,
-                    artifact=artifact,
-                    result_status="artifact_unavailable",
-                    retrieval_status="payload_missing",
-                ),
+        except (ArtifactObjectIntegrityError, ArtifactObjectUnavailableError):
+            return self._artifact_content_unavailable(
+                session_id,
+                artifact,
+                access,
+                reason="artifact_payload_unavailable",
+                retrieval_status="payload_unavailable",
             )
-            return response
         response = ApiResponse(
             status_code=200,
             body={
@@ -286,6 +231,35 @@ class SessionArtifactReadMixin:
                 result_status="ok",
                 retrieval_status=status,
                 extra={"size_bytes": len(payload)},
+            ),
+        )
+        return response
+
+    def _artifact_content_unavailable(
+        self,
+        session_id: str,
+        artifact: SessionArtifact,
+        access: ArtifactAccessContext,
+        *,
+        reason: str,
+        retrieval_status: str,
+    ) -> ApiResponse:
+        response = build_artifact_unavailable_response(
+            session_id=session_id,
+            reason=reason,
+            access=access,
+        )
+        record_delivery_audit(
+            store=self.stores.delivery_audit,
+            session_id=session_id,
+            action="session.artifact.content",
+            response=response,
+            policy_profile=access.session_policy_profile,
+            result_metadata=build_artifact_access_metadata(
+                access,
+                artifact=artifact,
+                result_status="artifact_unavailable",
+                retrieval_status=retrieval_status,
             ),
         )
         return response
@@ -331,10 +305,21 @@ class SessionArtifactReadMixin:
             session_id=str(artifact.session_id),
             artifact=artifact,
         )
-        lifecycle = _artifact_lifecycle(self.stores.artifact_payloads, artifact.uri)
+        inspection = inspect_artifact_payload(self.stores, artifact)
+        lifecycle = serialize_read_lifecycle(inspection)
         projection = serialize_session_artifact_projection(
             artifact,
             lifecycle=lifecycle,
+            retrieval=serialize_read_retrieval(artifact.uri, inspection),
         )
         projection["access"] = serialize_artifact_access(resolved_access)
         return projection
+
+
+_UNAVAILABLE_REASONS = {
+    "indexed_only": "artifact_is_indexed_only",
+    "external_reference": "artifact_uses_external_reference",
+    "payload_missing": "artifact_payload_missing",
+    "payload_pruned": "artifact_payload_pruned",
+    "payload_unavailable": "artifact_payload_unavailable",
+}

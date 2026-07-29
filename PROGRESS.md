@@ -181,12 +181,15 @@
   terminal result Artifact binding are implemented without migration v10. Real
   PostgreSQL+MinIO tests pass `53/53`; Tools/Worker/Runtime pass `418/418` and Storage
   passes `131/131`. It excludes SQLite, Desktop, runtime selection and delivery APIs.
-- Active Artifact read-composition slice `CLOUD-ART-READ-COMP-01` starts from
+- Completed Artifact read-composition review slice `CLOUD-ART-READ-COMP-01` starts from
   `zebra-cloud-trench@4480ca66` after both PostgreSQL Model/Tool v6 and Artifact
-  payload v9 dependencies were integrated. It will add namespace-scoped reads over
-  those existing facts and inject them through the current API store boundary; it
-  adds no Artifact authority table, migration, SQLite feature, Desktop path or
-  runtime backend selector.
+  payload v9 dependencies were integrated. It adds one-snapshot namespace-scoped
+  reads over those existing facts and injects a separate required payload-read
+  capability through the current API store boundary. Canonical URI, exact Event
+  binding, finalized lifecycle, recorded object version and verified bytes are all
+  required; cloud composition disables legacy prune. The real PostgreSQL+MinIO matrix
+  passes `39/39`, full tests pass `1943` with `145` gated skips, and no Artifact table
+  or migration, SQLite feature, Desktop path or runtime backend selector was added.
 - Completed Artifact contract slice: `CLOUD-ART-LIFECYCLE-CON-01` separates the
   provider-neutral cloud lifecycle Port/domain from the unchanged local
   `ArtifactPayloadStorePort`. It can proceed in Core without touching Handoff v8,

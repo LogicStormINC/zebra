@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Protocol, TypedDict
 
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import EventId, SessionId
 
 
 class PreviewState(TypedDict):
@@ -21,6 +21,7 @@ class SessionArtifact:
     preview: str
     preview_state: PreviewState
     metadata: dict[str, object]
+    source_event_id: EventId | None = None
 
 
 class SessionArtifactReadPort(Protocol):

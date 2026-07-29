@@ -22,6 +22,14 @@ from agent_core.ports.aggregate_mutation import (
     WorkerMutationAuthority,
 )
 from agent_core.ports.artifact_object_store import ArtifactObjectStorePort
+from agent_core.ports.artifact_payload_read import (
+    ArtifactPayloadObjectReadPort,
+    ArtifactPayloadReadInspection,
+    ArtifactPayloadReadPort,
+    ArtifactPayloadReadPrunedError,
+    ArtifactPayloadReadStatus,
+    ArtifactPayloadReadUnavailableError,
+)
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.artifact_store import ArtifactStorePort
 from agent_core.ports.clock import ClockPort
@@ -104,6 +112,12 @@ __all__ = [
     "AgentMemoryGatewayPort",
     "AdministrativeMutationCAS",
     "ArtifactPayloadStorePort",
+    "ArtifactPayloadReadInspection",
+    "ArtifactPayloadObjectReadPort",
+    "ArtifactPayloadReadPort",
+    "ArtifactPayloadReadPrunedError",
+    "ArtifactPayloadReadStatus",
+    "ArtifactPayloadReadUnavailableError",
     "ArtifactObjectStorePort",
     "AgentTaskPort",
     "ArtifactStorePort",

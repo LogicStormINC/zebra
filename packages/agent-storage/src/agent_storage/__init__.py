@@ -19,17 +19,22 @@ from agent_core.ports import (
 
 from agent_storage.agent_tasks import SQLiteAgentTaskStore
 from agent_storage.artifact_objects import S3ArtifactObjectStore
+from agent_storage.artifact_payload_reads import (
+    CloudArtifactPayloadReader,
+    LocalArtifactPayloadReader,
+)
 from agent_storage.artifact_payloads import (
     ArtifactPayloadMissingError,
     SQLiteArtifactPayloadStore,
 )
 from agent_storage.artifact_projection import (
+    artifact_id_from_uri,
     payload_for_artifact_uri,
     serialize_artifact_lifecycle,
     serialize_artifact_retrieval,
     serialize_session_artifact_projection,
 )
-from agent_storage.artifacts import SQLiteArtifactStore
+from agent_storage.artifacts import SQLiteArtifactStore, compose_session_artifacts
 from agent_storage.composition import (
     ControlPlaneStores,
     sqlite_control_plane_stores,
@@ -73,6 +78,7 @@ from agent_storage.postgres import (
     PostgresModelToolProjectionStore,
     PostgresProjectionConflictError,
     PostgresProjectionStore,
+    PostgresSessionArtifactReadStore,
     PostgresSessionHandoffStore,
     PostgresWorkspaceProjectionConflictError,
     PostgresWorkspaceProjectionStore,
@@ -104,6 +110,7 @@ from agent_storage.workspaces import SQLiteWorkspaceProjectionStore
 
 __all__ = [
     "ArtifactPayloadMissingError",
+    "CloudArtifactPayloadReader",
     "S3ArtifactObjectStore",
     "ControlPlaneStores",
     "EffectLedgerStatus",
@@ -125,7 +132,9 @@ __all__ = [
     "SessionEventIdempotencyConflictError",
     "LoadedProviderContinuation",
     "list_confirmed_repo_memories",
+    "artifact_id_from_uri",
     "SQLiteMemoryStore",
+    "LocalArtifactPayloadReader",
     "list_confirmed_repo_memory_texts",
     "load_attachment_contexts",
     "payload_for_artifact_uri",
@@ -145,11 +154,13 @@ __all__ = [
     "PostgresMigrationError",
     "PostgresProjectionConflictError",
     "PostgresProjectionStore",
+    "PostgresSessionArtifactReadStore",
     "PostgresWorkspaceProjectionConflictError",
     "PostgresWorkspaceProjectionStore",
     "serialize_artifact_lifecycle",
     "serialize_artifact_retrieval",
     "serialize_session_artifact_projection",
+    "compose_session_artifacts",
     "sqlite_control_plane_stores",
     "apply_postgres_migrations",
     "attach_segment_in_transaction",

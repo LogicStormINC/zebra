@@ -90,13 +90,13 @@
 
 ## CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
 
-1. `in_progress` - Audit the existing API/SQLite read contract and the PostgreSQL
+1. `completed` - Audit the existing API/SQLite read contract and the PostgreSQL
    Model/Tool plus payload lifecycle query seams.
-2. `pending` - Implement namespace-scoped PostgreSQL Model/Tool reads and reuse the
+2. `completed` - Implement namespace-scoped PostgreSQL Model/Tool reads and reuse the
    existing Artifact projection sanitizer and ordering logic.
-3. `pending` - Compose cloud payload lifecycle/object reads into the existing API
+3. `completed` - Compose cloud payload lifecycle/object reads into the existing API
    contract without adding an Artifact authority table or migration.
-4. `pending` - Prove SQLite/PostgreSQL parity, namespace isolation, redaction,
+4. `completed` - Prove SQLite/PostgreSQL parity, namespace isolation, redaction,
    lifecycle states and Event-rebuild recovery with isolated PostgreSQL/MinIO tests.
 
 ### Decisions
@@ -106,6 +106,9 @@
 - Reuse `SessionArtifactReadPort` and the existing API serialization/access policy;
   do not fork cloud routes or duplicate redaction rules.
 - This task does not choose the complete cloud control-plane runtime backend.
+- Cloud content additionally binds the v9 Event ID/sequence and exact object version;
+  a canonical URI alone is not sufficient authority.
+- Legacy one-step prune is disabled whenever a non-local read capability is injected.
 
 ## CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
 

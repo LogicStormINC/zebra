@@ -7,6 +7,7 @@ from agent_storage.postgres.agent_tasks import (
     rebuild_task_in_transaction,
 )
 from agent_storage.postgres.artifact_payloads import PostgresCloudArtifactPayloadStore
+from agent_storage.postgres.artifact_reads import PostgresSessionArtifactReadStore
 from agent_storage.postgres.context_lifecycle import (
     PostgresContextLifecycleConflictError,
     PostgresContextLifecycleStore,
@@ -41,6 +42,7 @@ __all__ = [
     "PostgresAgentTaskConflictError",
     "PostgresAgentTaskStore",
     "PostgresCloudArtifactPayloadStore",
+    "PostgresSessionArtifactReadStore",
     "PostgresEventStore",
     "PostgresHandoffDispatchStore",
     "PostgresSessionHandoffStore",
