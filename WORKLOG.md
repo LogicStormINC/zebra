@@ -6599,3 +6599,18 @@ actual byte access.
 - Worker+Runtime tests pass `260` with `10` skips; Storage tests pass `131` with `114`
   skips. The isolated real PostgreSQL+MinIO matrix passes `24/24`; focused Ruff,
   strict Mypy and `git diff --check` pass.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 fault-matrix closeout
+
+- Expanded the isolated real PostgreSQL+MinIO matrix to `30/30`: concurrent retention
+  prune has exactly one lifecycle-CAS winner and one audit row; lost put/Event
+  acknowledgements, sequence drift, explicit Event rejection and finalize failure all
+  preserve staged evidence without unsafe inline object deletion.
+- Worker/Runtime regression passes `260/260` with `16` environment-gated skips;
+  Storage passes `131/131` with `114` environment-gated skips. Focused Ruff, strict
+  Mypy, `git diff --check` and the `10/10` release eval pass. Full Mypy retains the
+  same six inherited errors in three untouched files; full Ruff retains ten inherited
+  Web/Harness import-order or unused-import findings; the size gate retains only the
+  untouched Desktop stylesheet violation.
+- The task moved to Review. SQLite and Desktop remain unchanged; fenced Effect payload
+  linkage and generic Artifact read composition remain explicit successor tasks.

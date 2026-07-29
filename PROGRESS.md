@@ -154,7 +154,7 @@
   finalize/compensate ordering; its object boundary is direct botocore with MinIO
   bucket versioning and exact object-version evidence. It explicitly excludes SQLite,
   Desktop, runtime selection, Effect linkage and API read composition.
-- Active Artifact v9 implementation now starts from integrated Handoff v8 at
+- Completed Artifact v9 review slice starts from integrated Handoff v8 at
   `cfe40713`. `CLOUD-ART-PAYLOAD-PG-01` owns the PostgreSQL lifecycle metadata,
   provider-neutral object orchestration, Worker Event binding and isolated
   PostgreSQL/MinIO fault matrix; it does not select a runtime backend or add Desktop.
@@ -170,7 +170,10 @@
   receipt -> Event -> finalize ordering. Managed URI spoofing fails closed, external
   references remain opaque, fenced Effect composition fails fast until its dedicated
   task, and uncertain outcomes remain staged for management reconcile. The real
-  PostgreSQL+MinIO matrix passes `24/24`; broader fault coverage remains active.
+  PostgreSQL+MinIO matrix passes `30/30`, including lost put/Event acknowledgements,
+  sequence drift, finalize failure and concurrent retention prune. Worker/Runtime
+  pass `260/260` with `16` environment-gated skips; Storage passes `131/131` with
+  `114` environment-gated skips. The task is ready for review.
 - Completed Artifact contract slice: `CLOUD-ART-LIFECYCLE-CON-01` separates the
   provider-neutral cloud lifecycle Port/domain from the unchanged local
   `ArtifactPayloadStorePort`. It can proceed in Core without touching Handoff v8,
@@ -429,8 +432,10 @@ including a real thinking tool round trip.
   Review. Mem0 remains a derived, degraded-safe index; PostgreSQL Event/Projection
   and epoch/Lease Adapters have real-service restore and concurrency evidence.
   The local CI-billing waiver does not satisfy merge, runtime composition, release
-  or production gates. Effect Outbox/consumer, full aggregate fencing, Redis,
-  object storage, production AG-UI, Trench, analysis, writeback, Memory delivery and runtime wiring, and GA cards remain `Locked` pending their explicit gates.
+  or production gates. The reviewed Effect and Artifact foundations are not runtime-
+  selected; full aggregate fencing, Redis, production AG-UI, Trench, analysis,
+  writeback, Memory delivery/runtime wiring and GA remain `Locked` pending explicit
+  gates.
 
 ## Known Follow-Ups
 

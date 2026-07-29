@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Generator
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 from uuid import UUID, uuid4
@@ -9,8 +10,12 @@ from uuid import UUID, uuid4
 import psycopg
 import pytest
 from agent_core.domain.artifact_objects import ArtifactObjectExpectation
-from agent_core.domain.cloud_artifact_payloads import CloudArtifactPayloadLifecycleStatus
+from agent_core.domain.cloud_artifact_payloads import (
+    CloudArtifactPayloadLifecycleStatus,
+    CloudArtifactPayloadStateError,
+)
 from agent_core.domain.cloud_artifact_requests import (
+    ArtifactBeginPruneRequest,
     ArtifactEventBinding,
     ArtifactFinalizeRequest,
     ArtifactManagementContext,
@@ -20,6 +25,7 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import ArtifactId, SessionId, new_session_id
 from agent_core.harness.models import HarnessEventDraft
 from agent_core.ports import AdministrativeMutationCAS, WorkerMutationAuthority
+from agent_core.ports.artifact_object_store import ArtifactObjectStorePort
 from agent_storage import (
     PostgresCloudArtifactPayloadStore,
     PostgresEventStore,
@@ -89,6 +95,137 @@ def test_tool_output_commits_postgres_event_and_versioned_object(dsn: str) -> No
     assert context.objects.read_verified(expectation) == b"complete cloud tool output"
 
 
+def test_failed_tool_output_uses_the_same_managed_lifecycle(dsn: str) -> None:
+    context = _context(dsn)
+    projected = context.coordinator.output_projector.project_text(
+        "failed tool evidence",
+        artifact_name="failed-command.txt",
+    )
+    event = context.coordinator.append_draft(
+        _terminal_draft(
+            projected.model_output,
+            projected.metadata,
+            event_type=EventType.TOOL_EXECUTION_FAILED,
+            status="failed",
+        ),
+        cast(DurableHarnessEventRecorder, context.recorder),
+    )
+    artifact_id = _artifact_id(projected.metadata)
+    metadata = context.metadata.get_metadata(
+        ArtifactMetadataQuery(
+            deployment_namespace=context.namespace,
+            artifact_id=artifact_id,
+            session_id=context.session_id,
+        )
+    )
+
+    assert event.event_type is EventType.TOOL_EXECUTION_FAILED
+    assert metadata is not None
+    assert metadata.lifecycle_status is CloudArtifactPayloadLifecycleStatus.FINALIZED
+
+
+def test_concurrent_retention_prune_has_one_audited_winner(dsn: str) -> None:
+    context = _context(dsn)
+    projected = context.coordinator.output_projector.project_text(
+        "retained output",
+        artifact_name="retention.txt",
+    )
+    context.coordinator.append_draft(
+        _terminal_draft(projected.model_output, projected.metadata),
+        cast(DurableHarnessEventRecorder, context.recorder),
+    )
+    artifact_id = _artifact_id(projected.metadata)
+    authority = AdministrativeMutationCAS(
+        deployment_namespace=context.namespace,
+        session_id=context.session_id,
+        expected_stream_revision=1,
+    )
+
+    def begin(index: int) -> object | None:
+        try:
+            return context.metadata.begin_retention_prune(
+                ArtifactBeginPruneRequest(
+                    artifact_id=artifact_id,
+                    session_id=context.session_id,
+                    expected_lifecycle_revision=2,
+                    idempotency_key=f"retention-prune-{index}",
+                    requested_at=datetime.now(UTC),
+                ),
+                authority=authority,
+                audit=ArtifactManagementContext(
+                    operation_id=uuid4(),
+                    operator_id="retention-sweeper",
+                    reason=f"concurrent retention sweep {index}",
+                ),
+            )
+        except CloudArtifactPayloadStateError:
+            return None
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = tuple(executor.map(begin, range(2)))
+
+    assert sum(result is not None for result in results) == 1
+    current = context.metadata.get_metadata(
+        ArtifactMetadataQuery(
+            deployment_namespace=context.namespace,
+            artifact_id=artifact_id,
+            session_id=context.session_id,
+        )
+    )
+    assert current is not None
+    assert current.lifecycle_status is CloudArtifactPayloadLifecycleStatus.PRUNING
+    with psycopg.connect(dsn) as connection:
+        audit_count = connection.execute(
+            "SELECT count(*) FROM artifact_payload_management_audit"
+        ).fetchone()
+    assert audit_count == (1,)
+
+
+@pytest.mark.parametrize("persisted", [True, False])
+def test_put_response_loss_is_reconciled_without_guessing(
+    dsn: str,
+    *,
+    persisted: bool,
+) -> None:
+    context = _context(dsn)
+    context.coordinator = CloudToolOutputArtifactCoordinator(
+        context.session_id,
+        context.metadata,
+        cast(ArtifactObjectStorePort, _LostPutAckObjects(context.objects, persisted=persisted)),
+    )
+    projected = context.coordinator.output_projector.project_text(
+        "uncertain put output",
+        artifact_name="uncertain-put.txt",
+    )
+    draft = _terminal_draft(projected.model_output, projected.metadata)
+    if persisted:
+        context.coordinator.append_draft(
+            draft,
+            cast(DurableHarnessEventRecorder, context.recorder),
+        )
+    else:
+        with pytest.raises(RuntimeError, match="lost put acknowledgement"):
+            context.coordinator.append_draft(
+                draft,
+                cast(DurableHarnessEventRecorder, context.recorder),
+            )
+    artifact_id = _artifact_id(projected.metadata)
+    metadata = context.metadata.get_metadata(
+        ArtifactMetadataQuery(
+            deployment_namespace=context.namespace,
+            artifact_id=artifact_id,
+            session_id=context.session_id,
+        )
+    )
+    assert metadata is not None
+    expected_status = (
+        CloudArtifactPayloadLifecycleStatus.FINALIZED
+        if persisted
+        else CloudArtifactPayloadLifecycleStatus.COMPENSATED
+    )
+    assert metadata.lifecycle_status is expected_status
+
+
 def test_lost_event_ack_keeps_staged_payload_for_management_finalize(dsn: str) -> None:
     context = _context(dsn, fail_after_event_commit=True)
     projected = context.coordinator.output_projector.project_text(
@@ -139,6 +276,61 @@ def test_lost_event_ack_keeps_staged_payload_for_management_finalize(dsn: str) -
         ),
     )
     assert finalized.lifecycle_status is CloudArtifactPayloadLifecycleStatus.FINALIZED
+
+
+def test_finalize_failure_keeps_committed_event_and_verified_staged_object(dsn: str) -> None:
+    context = _context(dsn)
+    context.coordinator = CloudToolOutputArtifactCoordinator(
+        context.session_id,
+        cast(Any, _FailFinalizeMetadata(context.metadata)),
+        context.objects,
+    )
+    projected = context.coordinator.output_projector.project_text(
+        "finalize recovery evidence",
+        artifact_name="finalize-failure.txt",
+    )
+    with pytest.raises(RuntimeError, match="finalize rejected"):
+        context.coordinator.append_draft(
+            _terminal_draft(projected.model_output, projected.metadata),
+            cast(DurableHarnessEventRecorder, context.recorder),
+        )
+    artifact_id = _artifact_id(projected.metadata)
+    metadata = context.metadata.get_metadata(
+        ArtifactMetadataQuery(
+            deployment_namespace=context.namespace,
+            artifact_id=artifact_id,
+            session_id=context.session_id,
+        )
+    )
+    assert metadata is not None
+    assert metadata.lifecycle_status is CloudArtifactPayloadLifecycleStatus.STAGED
+    assert metadata.object_receipt is not None
+    assert len(context.events.list_for_session(context.session_id)) == 2
+
+
+def test_event_sequence_drift_leaves_staged_evidence_without_append(dsn: str) -> None:
+    context = _context(dsn, drift_on_prepare=True)
+    projected = context.coordinator.output_projector.project_text(
+        "drift recovery evidence",
+        artifact_name="sequence-drift.txt",
+    )
+    with pytest.raises(ValueError, match="Event sequence changed"):
+        context.coordinator.append_draft(
+            _terminal_draft(projected.model_output, projected.metadata),
+            cast(DurableHarnessEventRecorder, context.recorder),
+        )
+    artifact_id = _artifact_id(projected.metadata)
+    metadata = context.metadata.get_metadata(
+        ArtifactMetadataQuery(
+            deployment_namespace=context.namespace,
+            artifact_id=artifact_id,
+            session_id=context.session_id,
+        )
+    )
+    assert metadata is not None
+    assert metadata.lifecycle_status is CloudArtifactPayloadLifecycleStatus.STAGED
+    assert metadata.object_receipt is not None
+    assert len(context.events.list_for_session(context.session_id)) == 2
 
 
 def test_rejected_event_keeps_staged_object_for_safe_reconcile(dsn: str) -> None:
@@ -206,11 +398,13 @@ class _Recorder:
         events: PostgresEventStore,
         authority: WorkerMutationAuthority,
         *,
+        drift_on_prepare: bool,
         fail_before_event_commit: bool,
         fail_after_event_commit: bool,
     ) -> None:
         self._events = events
         self.worker_mutation_authority = authority
+        self.drift_on_prepare = drift_on_prepare
         self.fail_before_event_commit = fail_before_event_commit
         self.fail_after_event_commit = fail_after_event_commit
 
@@ -226,6 +420,19 @@ class _Recorder:
         *,
         created_at: datetime | None = None,
     ) -> SessionEvent:
+        if self.drift_on_prepare:
+            drift = SessionEvent.create(
+                session_id=self.worker_mutation_authority.session_id,
+                sequence=self.next_sequence,
+                event_type=EventType.HARNESS_ATTEMPT_STARTED,
+                actor=EventActor.HARNESS,
+                payload={"attempt_number": 1},
+                created_at=datetime.now(UTC),
+            )
+            self._events.append(drift)
+            self.worker_mutation_authority = self.worker_mutation_authority.model_copy(
+                update={"expected_stream_revision": drift.sequence}
+            )
         return SessionEvent.create(
             session_id=self.worker_mutation_authority.session_id,
             sequence=self.next_sequence,
@@ -249,18 +456,30 @@ class _Recorder:
     def append_draft(self, draft: HarnessEventDraft) -> SessionEvent:
         return self.append_event(self.prepare(draft.event_type, draft.actor, draft.payload))
 
-    def canonical_event_at(self, sequence: int) -> SessionEvent | None:
-        return next(
-            (
-                event
-                for event in self._events.read_since(
-                    self.worker_mutation_authority.session_id,
-                    sequence - 1,
-                )
-                if event.sequence == sequence
-            ),
-            None,
-        )
+
+class _LostPutAckObjects:
+    def __init__(self, delegate: S3ArtifactObjectStore, *, persisted: bool) -> None:
+        self._delegate = delegate
+        self._persisted = persisted
+
+    def put_if_absent(self, request: Any) -> Any:
+        if self._persisted:
+            self._delegate.put_if_absent(request)
+        raise RuntimeError("lost put acknowledgement")
+
+    def verify(self, expectation: ArtifactObjectExpectation) -> Any:
+        return self._delegate.verify(expectation)
+
+
+class _FailFinalizeMetadata:
+    def __init__(self, delegate: PostgresCloudArtifactPayloadStore) -> None:
+        self._delegate = delegate
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._delegate, name)
+
+    def finalize_for_worker(self, *_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("finalize rejected")
 
 
 class _Context:
@@ -289,6 +508,7 @@ class _Context:
 def _context(
     dsn: str,
     *,
+    drift_on_prepare: bool = False,
     fail_before_event_commit: bool = False,
     fail_after_event_commit: bool = False,
 ) -> _Context:
@@ -326,6 +546,7 @@ def _context(
         _Recorder(
             events,
             authority,
+            drift_on_prepare=drift_on_prepare,
             fail_before_event_commit=fail_before_event_commit,
             fail_after_event_commit=fail_after_event_commit,
         ),
@@ -352,14 +573,20 @@ def _bucket() -> str:
     return os.environ.get("ZEBRA_TEST_S3_BUCKET", "zebra-artifacts")
 
 
-def _terminal_draft(output: str, metadata: dict[str, object]) -> HarnessEventDraft:
+def _terminal_draft(
+    output: str,
+    metadata: dict[str, object],
+    *,
+    event_type: EventType = EventType.TOOL_EXECUTION_COMPLETED,
+    status: str = "executed",
+) -> HarnessEventDraft:
     return HarnessEventDraft(
-        event_type=EventType.TOOL_EXECUTION_COMPLETED,
+        event_type=event_type,
         actor=EventActor.TOOL,
         payload={
             "attempt_number": 1,
             "tool_name": "command.run",
-            "status": "executed",
+            "status": status,
             "output": output,
             "metadata": metadata,
         },

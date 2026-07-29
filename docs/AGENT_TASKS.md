@@ -81,7 +81,9 @@
 - `QA-148-MDL-01` is `Done` via PR `#156`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
-- No other card is `Ready`, `In Progress`, `Review`, or `Blocked`.
+- Cloud aggregate and Artifact task state is maintained in the cloud board below;
+  no successor card is `Ready` until explicitly activated after its dependencies
+  are integrated.
 
 ## Context Continuity And Governed Memory Board
 
@@ -1250,7 +1252,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-ART-PAYLOAD-PG-01 - Shared Artifact Payload Authority
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Depends on: `CLOUD-ART-LIFECYCLE-CON-01`, `CLOUD-ART-OBJECT-S3-01`, and completed
   `CLOUD-AGG-HANDOFF-PG-01`; all three dependencies are integrated in
@@ -1294,7 +1296,10 @@ cloud mainline and is not built or changed by these cards.
   prune transitions plus audited management recovery and scoped reconcile listing.
   The optional Worker seam captures bytes before parallel Tool completion, reserves
   the exact terminal Event slot before Event creation, preserves external URIs and
-  rejects uncaptured managed URIs. Real PostgreSQL+MinIO tests pass `24/24`.
+  rejects uncaptured managed URIs. Lost put/Event acknowledgements, sequence drift,
+  finalize failure and concurrent retention prune retain recoverable evidence without
+  unsafe Worker deletion. Real PostgreSQL+MinIO tests pass `30/30`; Worker/Runtime
+  pass `260/260` and Storage passes `131/131`.
 
 ### CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
 

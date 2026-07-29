@@ -27,7 +27,7 @@
    local compatibility Port.
 3. `completed` - Implement fenced reserve, conditional object put/head, Event URI
    binding, finalize, compensation, prune and management reconcile as explicit steps.
-4. `in_progress` - Prove the PostgreSQL/MinIO fault matrix, concurrent idempotency,
+4. `completed` - Prove the PostgreSQL/MinIO fault matrix, concurrent idempotency,
    namespace isolation and cross-process reads with an isolated host runner.
 
 ### Decisions
