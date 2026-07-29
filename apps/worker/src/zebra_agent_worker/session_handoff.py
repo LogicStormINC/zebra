@@ -47,6 +47,7 @@ class SessionHandoffRecoveryGate:
         self._handoffs = active_stores.handoffs
         self._dispatch = active_stores.handoff_dispatch
         self._events = active_stores.events
+        self._leases = active_stores.leases
         self._sessions = active_stores.sessions
         self._workspaces = active_stores.workspaces
 
@@ -82,16 +83,17 @@ class SessionHandoffRecoveryGate:
             # ponytail: the inherited revision is checked before the first attempt;
             # later continuations validate current runtime authority through normal setup.
             return recovered
+        lease = self._leases.get(session_id)
+        if lease is None or lease.owner_instance_id != worker_id:
+            raise ValueError("handoff child is not leased by the recovering worker")
         dispatch = self._dispatch.claim_for_child(
-            session_id, worker_id=worker_id, claimed_at=recovered_at
+            session_id, fence=lease.fence, claimed_at=recovered_at
         )
         current_revision = (
             self._handoffs.inspect_source_facts(session_id, at=recovered_at).workspace_revision
             if dispatch is None
             else self._dispatch.acknowledge_if_workspace_matches(
-                dispatch.delivery_id,
-                child_session_id=session_id,
-                worker_id=worker_id,
+                dispatch,
                 expected=envelope.workspace_revision,
                 checked_at=recovered_at,
             )

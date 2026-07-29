@@ -32,6 +32,7 @@ from agent_storage import (
     SQLiteProjectionStore,
     SQLiteSessionHandoffStore,
     SQLiteWorkspaceProjectionStore,
+    sqlite_control_plane_stores,
 )
 from zebra_agent_worker.session_handoff import (
     HandoffWorkspaceDriftError,
@@ -39,6 +40,12 @@ from zebra_agent_worker.session_handoff import (
 )
 
 NOW = datetime(2026, 7, 18, 0, 0, tzinfo=UTC)
+
+
+def _recovery_gate(database_path: Path) -> tuple[SessionHandoffRecoveryGate, SQLiteLeaseStore]:
+    leases = SQLiteLeaseStore(database_path, clock=lambda: NOW)
+    stores = replace(sqlite_control_plane_stores(database_path), leases=leases)
+    return SessionHandoffRecoveryGate(str(database_path), stores=stores), leases
 
 
 def test_commit_atomically_creates_child_events_lineage_envelope_and_outbox(
@@ -67,8 +74,10 @@ def test_commit_atomically_creates_child_events_lineage_envelope_and_outbox(
         EventType.USER_MESSAGE_RECEIVED,
         EventType.TASK_PREPARED,
     ]
-    assert child_events[2].payload["actor_kind"] == "operator"
-    assert child_events[2].payload["content"] == "Start storage implementation"
+    received_payload = child_events[2].payload
+    assert received_payload is not None
+    assert received_payload["actor_kind"] == "operator"
+    assert received_payload["content"] == "Start storage implementation"
     child_session = SQLiteProjectionStore(database_path).get_session(operation.target_session_id)
     assert child_session is not None
     assert child_session.status.value == "ready"
@@ -91,17 +100,26 @@ def test_child_recovery_revalidates_workspace_even_after_dispatch_ack(tmp_path: 
     handoffs = SQLiteSessionHandoffStore(database_path)
     operation, request = _prepared_commit(handoffs, source)
     handoffs.commit(request)
-    gate = SessionHandoffRecoveryGate(str(database_path))
+    gate, leases = _recovery_gate(database_path)
+    first_lease = leases.acquire(
+        operation.target_session_id, owner_instance_id="worker-1", ttl=timedelta(minutes=1)
+    )
 
     recovered = gate.recover(operation.target_session_id, worker_id="worker-1", recovered_at=NOW)
     assert recovered is not None
-    assert recovered.runtime_evidence.metadata["trust"] == "untrusted_handoff_evidence"
+    metadata = recovered.runtime_evidence.metadata
+    assert metadata is not None
+    assert metadata["trust"] == "untrusted_handoff_evidence"
 
     workspaces = SQLiteWorkspaceProjectionStore(database_path)
     workspace = workspaces.get_workspace(operation.target_session_id)
     assert workspace is not None
     workspaces.save_workspace(
         workspace.model_copy(update={"workspace_root": str(tmp_path / "drifted")})
+    )
+    leases.release(operation.target_session_id, fence=first_lease.fence)
+    leases.acquire(
+        operation.target_session_id, owner_instance_id="worker-2", ttl=timedelta(minutes=1)
     )
 
     with pytest.raises(HandoffWorkspaceDriftError):
@@ -125,7 +143,10 @@ def test_child_continuation_does_not_reapply_the_initial_workspace_revision(
     handoffs = SQLiteSessionHandoffStore(database_path)
     operation, request = _prepared_commit(handoffs, source)
     handoffs.commit(request)
-    gate = SessionHandoffRecoveryGate(str(database_path))
+    gate, leases = _recovery_gate(database_path)
+    first_lease = leases.acquire(
+        operation.target_session_id, owner_instance_id="worker-1", ttl=timedelta(minutes=1)
+    )
 
     first = gate.recover(operation.target_session_id, worker_id="worker-1", recovered_at=NOW)
     assert first is not None
@@ -147,6 +168,10 @@ def test_child_continuation_does_not_reapply_the_initial_workspace_revision(
     workspace = workspaces.get_workspace(operation.target_session_id)
     assert workspace is not None
     workspaces.save_workspace(workspace.model_copy(update={"runtime_name": "os-sandbox"}))
+    leases.release(operation.target_session_id, fence=first_lease.fence)
+    leases.acquire(
+        operation.target_session_id, owner_instance_id="worker-2", ttl=timedelta(minutes=1)
+    )
 
     resumed = gate.recover(
         operation.target_session_id,

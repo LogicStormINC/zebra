@@ -412,7 +412,10 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
             ),
         )
         connection.execute(
-            "INSERT INTO handoff_dispatch_outbox VALUES (?, ?, ?, 'pending', NULL, NULL, ?)",
+            "INSERT INTO handoff_dispatch_outbox (delivery_id, child_session_id, handoff_id, "
+            "status, claimed_by, claim_token, claim_epoch, claim_fencing_token, "
+            "claim_owner_instance_id, claim_expires_at, created_at) "
+            "VALUES (?, ?, ?, 'pending', NULL, NULL, NULL, NULL, NULL, NULL, ?)",
             (
                 str(operation.target_session_id),
                 str(operation.target_session_id),

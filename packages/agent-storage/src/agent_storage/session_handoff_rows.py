@@ -162,6 +162,39 @@ def migrate_handoff_fence_columns(connection: sqlite3.Connection, *, at: datetim
             HandoffOperationStatus.PREPARING.value,
         ),
     )
+    migrate_handoff_dispatch_claim_columns(connection)
+
+
+def migrate_handoff_dispatch_claim_columns(connection: sqlite3.Connection) -> None:
+    for column, definition in (
+        ("claim_token", "TEXT"),
+        ("claim_epoch", "TEXT"),
+        ("claim_fencing_token", "INTEGER"),
+        ("claim_owner_instance_id", "TEXT"),
+    ):
+        ensure_column(connection, "handoff_dispatch_outbox", column, definition)
+    connection.execute(
+        """
+        UPDATE handoff_dispatch_outbox
+        SET claimed_by = NULL, claim_expires_at = NULL, claim_token = NULL,
+            claim_epoch = NULL, claim_fencing_token = NULL,
+            claim_owner_instance_id = NULL
+        WHERE status IN ('pending', 'acked')
+        """
+    )
+    connection.execute(
+        """
+        UPDATE handoff_dispatch_outbox
+        SET status = 'pending', claimed_by = NULL, claim_expires_at = NULL,
+            claim_token = NULL, claim_epoch = NULL, claim_fencing_token = NULL,
+            claim_owner_instance_id = NULL
+        WHERE status = 'claimed' AND (
+            claim_token IS NULL OR claim_epoch IS NULL
+            OR claim_fencing_token IS NULL OR claim_owner_instance_id IS NULL
+            OR claim_expires_at IS NULL
+        )
+        """
+    )
 
 
 SCHEMA = """
@@ -195,7 +228,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_session_lineage_successor
 ON session_lineage(parent_session_id) WHERE parent_session_id IS NOT NULL;
 CREATE TABLE IF NOT EXISTS handoff_dispatch_outbox (
     delivery_id TEXT PRIMARY KEY, child_session_id TEXT NOT NULL UNIQUE, handoff_id TEXT NOT NULL,
-    status TEXT NOT NULL, claimed_by TEXT, claim_expires_at TEXT, created_at TEXT NOT NULL
+    status TEXT NOT NULL, claimed_by TEXT, claim_token TEXT, claim_epoch TEXT,
+    claim_fencing_token INTEGER, claim_owner_instance_id TEXT, claim_expires_at TEXT,
+    created_at TEXT NOT NULL
 );
 CREATE TRIGGER IF NOT EXISTS immutable_handoff_envelope_update
 BEFORE UPDATE ON session_handoff_envelopes BEGIN
