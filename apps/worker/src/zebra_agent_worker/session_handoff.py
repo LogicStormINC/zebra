@@ -26,6 +26,7 @@ from agent_storage import (
     sqlite_control_plane_stores,
 )
 from agent_tools import EffectGuardedToolGateway, FencedEffectToolGateway
+from agent_tools.effect_guard_support import EffectPayloadCoordinatorLike
 
 
 class HandoffWorkspaceDriftError(ValueError):
@@ -177,6 +178,8 @@ def guard_effectful_tools(
     next_event: Callable[[EventType, EventActor, dict[str, object]], SessionEvent] | None = None,
     accept_event: Callable[[SessionEvent], object] | None = None,
     ownership_check: Callable[[], None] | None = None,
+    effect_payloads: EffectPayloadCoordinatorLike | None = None,
+    mutation_authority: Callable[[], WorkerMutationAuthority] | None = None,
 ) -> EffectGuardedToolGateway | FencedEffectToolGateway:
     root_session_id = (
         session_id if recovered_handoff is None else recovered_handoff.envelope.root_session_id
@@ -185,7 +188,6 @@ def guard_effectful_tools(
         if any(
             value is None
             for value in (
-                artifacts,
                 fence,
                 claim_ttl,
                 next_event,
@@ -194,7 +196,6 @@ def guard_effectful_tools(
             )
         ):
             raise ValueError("fenced Effect dispatch requires its complete runtime context")
-        assert artifacts is not None
         assert fence is not None
         assert claim_ttl is not None
         assert next_event is not None
@@ -212,9 +213,13 @@ def guard_effectful_tools(
             next_event=next_event,
             accept_event=accept_event,
             ownership_check=ownership_check,
+            effect_payloads=effect_payloads,
+            mutation_authority=mutation_authority,
         )
         guarded.reconcile_expired()
         return guarded
+    if effect_payloads is not None or mutation_authority is not None:
+        raise ValueError("cloud Effect payload coordination requires fenced dispatch")
     return EffectGuardedToolGateway(
         gateway,
         ledger=ledger,

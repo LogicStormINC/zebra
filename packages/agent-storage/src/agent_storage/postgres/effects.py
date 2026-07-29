@@ -220,7 +220,11 @@ def same_schedule(
     existing: EffectDispatch,
     request: EffectScheduleRequest,
 ) -> EffectDispatch:
-    if existing.identity != request.identity or existing.request_hash != request.request_hash:
+    if (
+        existing.identity != request.identity
+        or existing.request_hash != request.request_hash
+        or existing.payload_artifact_ref != request.payload_artifact_ref
+    ):
         raise EffectDispatchConflictError("effect ledger identity has conflicting meaning")
     return existing
 

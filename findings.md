@@ -713,6 +713,29 @@
   path because Effect commits its terminal Event outside this coordinator. The two
   configurations fail fast until `CLOUD-EFFECT-PAYLOAD-ATOMIC-01` owns that aggregate.
 
+## CLOUD-EFFECT-PAYLOAD-ATOMIC-01 - 2026-07-29
+
+- No v10 migration is needed. The v9 Artifact metadata and existing Effect outbox can
+  share the canonical Event transaction; a second Artifact ID column or FK would not
+  prove finalized lifecycle or object availability and would add duplicate identity.
+- Effect request Artifact IDs derive from root Session plus canonical Effect identity,
+  not the attempt-specific ToolCall ID. Schedule acknowledgement loss therefore reuses
+  the exact object even when recovery creates a new ToolCall ID, while
+  `same_schedule` now rejects a changed payload reference instead of leaking an orphan.
+- Object I/O remains outside PostgreSQL locks. Reserve, conditional put/verification
+  and receipt recording precede one transaction that appends the Event, finalizes
+  Artifact metadata and mutates the Effect outbox. Unknown outcomes remain staged for
+  management recovery; the Worker never guesses by deleting inline.
+- Cross-Worker reads require finalized metadata plus exact verified object evidence.
+  Unknown managed terminal URIs fail closed. Effect terminal outputs captured by the
+  projector use the same Event/finalize/outbox transaction as request payloads.
+- The local SQLite payload path remains unchanged. Cloud composition is accepted only
+  when the dispatch exposes all payload-aware atomic methods.
+- An initially stale fence fails at reserve before object I/O. If authority is lost
+  after a verified object exists, inline deletion is unsafe without a pre-delete claim;
+  the receipt remains `STAGED`, absent from Event/outbox, and visible to management
+  reconcile. Unknown commit outcomes follow the same replay/reconcile rule.
+
 ## CLOUD-ART-LIFECYCLE-CON-01 - 2026-07-29
 
 - A separate cloud contract is required because the local payload Port cannot express

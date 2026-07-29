@@ -17,8 +17,8 @@ if TYPE_CHECKING:
     from agent_tools.effect_guard import (
         EffectGuardedToolGateway,
         FencedEffectToolGateway,
-        effect_identity,
     )
+    from agent_tools.effect_guard_support import effect_identity
     from agent_tools.executor import ToolExecutor
     from agent_tools.mcp_disclosure import (
         AuthorizedMcpToolCatalog,
@@ -174,7 +174,7 @@ _EXPORTS = {
     "WebSearchTransport": ("agent_tools.web_search", "WebSearchTransport"),
     "build_mcp_proxy_request": ("agent_tools.mcp_proxy", "build_mcp_proxy_request"),
     "command_run_contract": ("agent_tools.builtin.command", "command_run_contract"),
-    "effect_identity": ("agent_tools.effect_guard", "effect_identity"),
+    "effect_identity": ("agent_tools.effect_guard_support", "effect_identity"),
     "clarify_contract": ("agent_tools.builtin.clarify", "clarify_contract"),
     "file_read_contract": ("agent_tools.builtin.files", "file_read_contract"),
     "files_list_contract": ("agent_tools.builtin.listing", "files_list_contract"),

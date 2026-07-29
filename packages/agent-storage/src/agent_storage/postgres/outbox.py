@@ -22,6 +22,11 @@ from psycopg import errors
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.effect_payload_dispatch import EffectPayloadDispatchMixin
+from agent_storage.postgres.effect_payload_transactions import (
+    finish_claim_in_transaction,
+    schedule_effect_in_transaction,
+)
 from agent_storage.postgres.effects import (
     assert_terminal_event,
     effect_claim_from_row,
@@ -43,7 +48,7 @@ from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.leases import assert_current_lease_fence
 
 
-class PostgresEffectDispatchStore(EffectDispatchPort):
+class PostgresEffectDispatchStore(EffectPayloadDispatchMixin, EffectDispatchPort):
     """Keep Event intent, delivery state, and terminal fact in one transaction."""
 
     def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
@@ -63,42 +68,7 @@ class PostgresEffectDispatchStore(EffectDispatchPort):
                     request.execution_session_id,
                     fence,
                 )
-                existing = find_initial_dispatch(
-                    connection,
-                    self._namespace,
-                    request.root_session_id,
-                    request.ledger_key,
-                )
-                if existing is not None:
-                    return same_schedule(existing, request)
-                append_event_in_transaction(
-                    connection,
-                    self._namespace,
-                    request.started_event,
-                )
-                row = connection.execute(
-                    """
-                    INSERT INTO effect_outbox (
-                        deployment_namespace, dispatch_id, execution_session_id,
-                        root_session_id, ledger_key, attempt, request_hash,
-                        effect_identity, payload_artifact_ref, status, intent_event_id
-                    ) VALUES (%s, %s, %s, %s, %s, 1, %s, %s, %s, 'pending', %s)
-                    RETURNING *
-                    """,
-                    (
-                        self._namespace,
-                        uuid4(),
-                        request.execution_session_id,
-                        request.root_session_id,
-                        request.ledger_key,
-                        request.request_hash,
-                        Jsonb(request.identity.model_dump(mode="json")),
-                        request.payload_artifact_ref,
-                        request.started_event.event_id,
-                    ),
-                ).fetchone()
-                assert row is not None
-            return effect_dispatch_from_row(row)
+                return schedule_effect_in_transaction(connection, self._namespace, request)
         except (errors.UniqueViolation, ValueError):
             with self._database.connect() as connection:
                 existing = find_initial_dispatch(
@@ -448,31 +418,13 @@ class PostgresEffectDispatchStore(EffectDispatchPort):
         result: ToolResult | None = None,
         evidence: EffectEvidence | None = None,
     ) -> SessionEvent:
-        assert_terminal_event(claim.dispatch, status, terminal_event)
         with self._database.connect() as connection:
-            assert_current_lease_fence(
+            return finish_claim_in_transaction(
                 connection,
                 self._namespace,
-                claim.dispatch.execution_session_id,
-                claim.claim_fence,
-            )
-            row = lock_dispatch(connection, self._namespace, claim.dispatch.dispatch_id)
-            require_same_claim(row, claim)
-            active = connection.execute(
-                "SELECT %s::timestamptz > transaction_timestamp() AS is_active",
-                (claim.claim_expires_at,),
-            ).fetchone()
-            assert active is not None
-            if not active["is_active"]:
-                raise EffectDispatchStateError("effect claim has expired")
-            append_event_in_transaction(connection, self._namespace, terminal_event)
-            write_terminal(
-                connection,
-                self._namespace,
-                claim.dispatch.dispatch_id,
+                claim,
                 status=status,
                 terminal_event=terminal_event,
                 result=result,
                 evidence=evidence,
             )
-        return terminal_event

@@ -168,16 +168,19 @@
   Isolated PostgreSQL 17.5 migration/lifecycle tests pass `19/19`. Worker orchestration
   now uses a default-off injection seam with strict reserve -> versioned put/head ->
   receipt -> Event -> finalize ordering. Managed URI spoofing fails closed, external
-  references remain opaque, fenced Effect composition fails fast until its dedicated
-  task, and uncertain outcomes remain staged for management reconcile. The real
+  references remain opaque, and uncertain outcomes remain staged for management
+  reconcile. The real
   PostgreSQL+MinIO matrix passes `30/30`, including lost put/Event acknowledgements,
   sequence drift, finalize failure and concurrent retention prune. Worker/Runtime
   pass `260/260` with `16` environment-gated skips; Storage passes `131/131` with
   `114` environment-gated skips. The task is ready for review.
-- Active Effect/Artifact linkage task `CLOUD-EFFECT-PAYLOAD-ATOMIC-01` starts from
+- Completed Effect/Artifact review slice `CLOUD-EFFECT-PAYLOAD-ATOMIC-01` starts from
   `zebra-cloud-trench@b87760b6`. Its dependencies are integrated; it owns the narrow
   transaction that binds the verified Effect request Artifact to the intent Event and
-  Effect outbox row. It excludes SQLite, Desktop, runtime selection and delivery APIs.
+  Effect outbox row. Stable request identity, finalized-only cross-Worker reads and
+  terminal result Artifact binding are implemented without migration v10. Real
+  PostgreSQL+MinIO tests pass `53/53`; Tools/Worker/Runtime pass `418/418` and Storage
+  passes `131/131`. It excludes SQLite, Desktop, runtime selection and delivery APIs.
 - Completed Artifact contract slice: `CLOUD-ART-LIFECYCLE-CON-01` separates the
   provider-neutral cloud lifecycle Port/domain from the unchanged local
   `ArtifactPayloadStorePort`. It can proceed in Core without touching Handoff v8,

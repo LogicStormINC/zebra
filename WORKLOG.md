@@ -6624,3 +6624,24 @@ actual byte access.
 - The task will bind a verified immutable Effect request object to the intent Event and
   outbox row in one PostgreSQL transaction. It does not add SQLite/Desktop behavior,
   runtime selection, a broker, signed delivery or a generic Unit of Work.
+
+## 2026-07-29 - CLOUD-EFFECT-PAYLOAD-ATOMIC-01 implementation
+
+- Added stable cloud Effect request Artifact identity, shared object staging and
+  finalized-only cross-Worker reads. Provider bytes stay outside PostgreSQL locks.
+- Added payload-aware schedule, complete and uncertain transitions that atomically
+  commit the canonical Event, Artifact finalize and Effect outbox mutation. No v10
+  migration was required; replay now conflicts on a changed payload reference.
+- Effect terminal outputs captured by the cloud projector use the same atomic boundary;
+  unknown managed URIs fail closed, while external references and the local SQLite path
+  preserve their existing behavior.
+- Real PostgreSQL 17.5 plus versioned MinIO integration passes `53/53` and removes its
+  isolated containers, network and volumes. Tools/Worker/Runtime pass `418/418` with
+  `17` environment-gated skips; Storage passes `131/131` with `121` skips. Changed-file
+  Ruff, release Eval `10/10` and `git diff --check` pass. Full Mypy retains four
+  inherited errors in untouched Web/Policy files; the size gate retains only the
+  untouched Desktop stylesheet violation.
+- Final P0/P1 review found and closed attempt-specific request Artifact identity and
+  stale-fence wording gaps. Effect identity now survives a new ToolCall ID; tests prove
+  initial stale zero-write, mid-flight takeover as management-visible `STAGED`, durable
+  response-loss replay and terminal rollback without unsafe object deletion.

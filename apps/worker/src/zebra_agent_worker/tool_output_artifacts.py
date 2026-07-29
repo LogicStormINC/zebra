@@ -14,10 +14,15 @@ from agent_core.domain.artifact_objects import (
     ArtifactObjectReceipt,
     ArtifactObjectVerificationStatus,
 )
+from agent_core.domain.cloud_artifact_payloads import (
+    CloudArtifactPayloadConflictError,
+    CloudArtifactPayloadLifecycleStatus,
+)
 from agent_core.domain.cloud_artifact_requests import (
     ArtifactCompensateRequest,
     ArtifactEventBinding,
     ArtifactFinalizeRequest,
+    ArtifactMetadataQuery,
     ArtifactRecordObjectRequest,
     ArtifactReserveRequest,
 )
@@ -49,6 +54,35 @@ class _PendingToolOutput:
         return f"artifact://{self.artifact_id}"
 
 
+@dataclass(frozen=True, slots=True)
+class PreparedCloudArtifact:
+    artifact_id: ArtifactId
+    session_id: SessionId
+    receipt: ArtifactObjectReceipt
+    idempotency_scope: str
+    intended_event_sequence: int
+
+    @property
+    def uri(self) -> str:
+        return f"artifact://{self.artifact_id}"
+
+    def finalize_request(self, event: SessionEvent) -> ArtifactFinalizeRequest:
+        return ArtifactFinalizeRequest(
+            artifact_id=self.artifact_id,
+            session_id=self.session_id,
+            expected_lifecycle_revision=1,
+            idempotency_key=f"{self.idempotency_scope}-finalize:{self.artifact_id}",
+            event_binding=ArtifactEventBinding(
+                session_id=self.session_id,
+                event_id=event.event_id,
+                sequence=event.sequence,
+                artifact_uri=self.uri,
+            ),
+            object_receipt=self.receipt,
+            finalized_at=event.created_at,
+        )
+
+
 class CloudToolOutputArtifactCoordinator:
     """Bind captured bytes to the exact terminal Event chosen by the recorder."""
 
@@ -76,43 +110,20 @@ class CloudToolOutputArtifactCoordinator:
         authority = recorder.worker_mutation_authority
         if authority is None:
             raise ValueError("cloud Artifact output requires Worker mutation authority")
-        reservation = ArtifactReserveRequest(
+        prepared = self.stage_bytes(
             artifact_id=pending.artifact_id,
-            session_id=self._session_id,
-            intended_event_sequence=recorder.next_sequence,
+            payload=pending.payload,
             kind="tool_output",
             mime_type="text/plain",
-            sha256=sha256(pending.payload).hexdigest(),
-            size_bytes=len(pending.payload),
-            idempotency_key=f"tool-output-reserve:{pending.artifact_id}",
             file_name=pending.file_name,
             created_at=pending.created_at,
-        )
-        self._metadata_store.reserve_for_worker(reservation, authority=authority)
-        expectation = ArtifactObjectExpectation(
-            deployment_namespace=authority.deployment_namespace,
-            artifact_id=pending.artifact_id,
-            sha256=reservation.sha256,
-            size_bytes=reservation.size_bytes,
-        )
-        receipt = self._put_or_recover(
-            ArtifactObjectPutRequest(expectation=expectation, payload=pending.payload),
-            reservation,
-            authority,
+            intended_event_sequence=recorder.next_sequence,
+            authority=authority,
+            idempotency_scope="tool-output",
         )
         try:
-            self._metadata_store.record_object_for_worker(
-                ArtifactRecordObjectRequest(
-                    artifact_id=pending.artifact_id,
-                    session_id=self._session_id,
-                    expected_lifecycle_revision=0,
-                    idempotency_key=f"tool-output-record:{pending.artifact_id}",
-                    object_receipt=receipt,
-                ),
-                authority=authority,
-            )
             event = recorder.prepare(draft.event_type, draft.actor, draft.payload)
-            if event.sequence != reservation.intended_event_sequence:
+            if event.sequence != prepared.intended_event_sequence:
                 raise ValueError("reserved Artifact Event sequence changed before append")
         except Exception:
             # ponytail: once object I/O succeeds, inline deletion is unsafe without
@@ -123,31 +134,146 @@ class CloudToolOutputArtifactCoordinator:
         if finalized_authority is None:
             raise ValueError("cloud Artifact Event commit lost Worker authority")
         self._metadata_store.finalize_for_worker(
-            ArtifactFinalizeRequest(
-                artifact_id=pending.artifact_id,
-                session_id=self._session_id,
-                expected_lifecycle_revision=1,
-                idempotency_key=f"tool-output-finalize:{pending.artifact_id}",
-                event_binding=ArtifactEventBinding(
-                    session_id=self._session_id,
-                    event_id=persisted.event_id,
-                    sequence=persisted.sequence,
-                    artifact_uri=pending.uri,
-                ),
-                object_receipt=receipt,
-                finalized_at=datetime.now(UTC),
-            ),
+            prepared.finalize_request(persisted),
             authority=finalized_authority,
         )
-        with self._lock:
-            self._pending.pop(pending.uri, None)
+        self.release_pending(pending.uri)
         return persisted
+
+    def stage_bytes(
+        self,
+        *,
+        artifact_id: ArtifactId,
+        payload: bytes,
+        kind: str,
+        mime_type: str,
+        file_name: str,
+        created_at: datetime,
+        intended_event_sequence: int,
+        authority: WorkerMutationAuthority,
+        idempotency_scope: str,
+        allow_finalized_sequence_replay: bool = False,
+    ) -> PreparedCloudArtifact:
+        reservation = ArtifactReserveRequest(
+            artifact_id=artifact_id,
+            session_id=self._session_id,
+            intended_event_sequence=intended_event_sequence,
+            kind=kind,
+            mime_type=mime_type,
+            sha256=sha256(payload).hexdigest(),
+            size_bytes=len(payload),
+            idempotency_key=f"{idempotency_scope}-reserve:{artifact_id}",
+            file_name=file_name,
+            created_at=created_at,
+        )
+        expectation = ArtifactObjectExpectation(
+            deployment_namespace=authority.deployment_namespace,
+            artifact_id=artifact_id,
+            sha256=reservation.sha256,
+            size_bytes=reservation.size_bytes,
+        )
+        existing = self._metadata_store.get_metadata(
+            ArtifactMetadataQuery(
+                deployment_namespace=authority.deployment_namespace,
+                artifact_id=artifact_id,
+                session_id=self._session_id,
+            )
+        )
+        if existing is not None and existing.object_receipt is not None:
+            same_reservation = existing.reservation == reservation
+            if (
+                allow_finalized_sequence_replay
+                and existing.lifecycle_status is CloudArtifactPayloadLifecycleStatus.FINALIZED
+            ):
+                same_reservation = existing.reservation.model_copy(
+                    update={"intended_event_sequence": intended_event_sequence}
+                ) == reservation
+            if not same_reservation or existing.object_receipt.expectation != expectation:
+                raise CloudArtifactPayloadConflictError(
+                    "stable Artifact identity was reused with different payload meaning"
+                )
+            return PreparedCloudArtifact(
+                artifact_id,
+                self._session_id,
+                existing.object_receipt,
+                idempotency_scope,
+                intended_event_sequence,
+            )
+        self._metadata_store.reserve_for_worker(reservation, authority=authority)
+        receipt = self._put_or_recover(
+            ArtifactObjectPutRequest(expectation=expectation, payload=payload),
+            reservation,
+            authority,
+            idempotency_scope=idempotency_scope,
+        )
+        self._metadata_store.record_object_for_worker(
+            ArtifactRecordObjectRequest(
+                artifact_id=artifact_id,
+                session_id=self._session_id,
+                expected_lifecycle_revision=0,
+                idempotency_key=f"{idempotency_scope}-record:{artifact_id}",
+                object_receipt=receipt,
+            ),
+            authority=authority,
+        )
+        return PreparedCloudArtifact(
+            artifact_id,
+            self._session_id,
+            receipt,
+            idempotency_scope,
+            intended_event_sequence,
+        )
+
+    def stage_pending_output(
+        self,
+        artifact_uri: str,
+        *,
+        intended_event_sequence: int,
+        authority: WorkerMutationAuthority,
+    ) -> PreparedCloudArtifact | None:
+        with self._lock:
+            pending = self._pending.get(artifact_uri)
+        if pending is None:
+            return None
+        return self.stage_bytes(
+            artifact_id=pending.artifact_id,
+            payload=pending.payload,
+            kind="tool_output",
+            mime_type="text/plain",
+            file_name=pending.file_name,
+            created_at=pending.created_at,
+            intended_event_sequence=intended_event_sequence,
+            authority=authority,
+            idempotency_scope="tool-output",
+        )
+
+    def read_verified(self, artifact_id: ArtifactId, *, namespace: str) -> bytes:
+        metadata = self._metadata_store.get_metadata(
+            ArtifactMetadataQuery(
+                deployment_namespace=namespace,
+                artifact_id=artifact_id,
+                session_id=self._session_id,
+            )
+        )
+        if (
+            metadata is None
+            or metadata.lifecycle_status is not CloudArtifactPayloadLifecycleStatus.FINALIZED
+            or metadata.object_receipt is None
+        ):
+            raise FileNotFoundError("cloud Artifact payload is unavailable")
+        return self._object_store.read_verified(metadata.object_receipt.expectation)
+
+    def release_pending(self, artifact_uri: str) -> None:
+        with self._lock:
+            self._pending.pop(artifact_uri, None)
 
     def _put_or_recover(
         self,
         request: ArtifactObjectPutRequest,
         reservation: ArtifactReserveRequest,
         authority: WorkerMutationAuthority,
+        *,
+        idempotency_scope: str,
     ) -> ArtifactObjectReceipt:
         try:
             return self._object_store.put_if_absent(request)
@@ -170,7 +296,7 @@ class CloudToolOutputArtifactCoordinator:
                             session_id=self._session_id,
                             expected_lifecycle_revision=0,
                             idempotency_key=(
-                                f"tool-output-compensate:{reservation.artifact_id}"
+                                f"{idempotency_scope}-compensate:{reservation.artifact_id}"
                             ),
                             object_cleanup=ArtifactObjectCleanupEvidence(
                                 verification=verification

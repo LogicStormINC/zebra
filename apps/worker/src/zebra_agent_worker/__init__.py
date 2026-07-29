@@ -7,9 +7,9 @@ from zebra_agent_worker.control import (
     SessionControlService,
     SuspendedSession,
 )
-from zebra_agent_worker.execution import (
+from zebra_agent_worker.execution import SessionExecutionService
+from zebra_agent_worker.execution_finalization import (
     ExecutedSession,
-    SessionExecutionService,
     WorkerExecutionError,
 )
 from zebra_agent_worker.loop import (

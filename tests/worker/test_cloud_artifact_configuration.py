@@ -21,10 +21,10 @@ def test_cloud_artifact_output_requires_fenced_projection_transaction(tmp_path: 
         )
 
 
-def test_cloud_artifact_output_rejects_fenced_effect_dispatch_until_atomic_linkage(
+def test_cloud_artifact_output_rejects_dispatch_without_atomic_payload_linkage(
     tmp_path: Path,
 ) -> None:
-    with pytest.raises(ValueError, match="fenced Effect dispatch is not implemented"):
+    with pytest.raises(ValueError, match="requires atomic payload linkage"):
         SessionExecutionService(
             database_path=tmp_path / "sessions.sqlite",
             claim_service=cast(Any, object()),
@@ -34,3 +34,22 @@ def test_cloud_artifact_output_rejects_fenced_effect_dispatch_until_atomic_linka
             deployment_namespace="cloud-test",
             cloud_artifact_factory=_factory,
         )
+
+
+def test_cloud_artifact_output_accepts_payload_aware_effect_dispatch(tmp_path: Path) -> None:
+    class PayloadAwareDispatch:
+        schedule_with_payload = staticmethod(lambda *args, **kwargs: None)
+        complete_with_payload = staticmethod(lambda *args, **kwargs: None)
+        mark_uncertain_with_payload = staticmethod(lambda *args, **kwargs: None)
+
+    service = SessionExecutionService(
+        database_path=tmp_path / "sessions.sqlite",
+        claim_service=cast(Any, object()),
+        resume_service=cast(Any, object()),
+        effect_dispatch=cast(Any, PayloadAwareDispatch()),
+        worker_projection_transaction=cast(Any, object()),
+        deployment_namespace="cloud-test",
+        cloud_artifact_factory=_factory,
+    )
+
+    assert service is not None

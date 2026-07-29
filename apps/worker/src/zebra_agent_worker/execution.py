@@ -21,7 +21,6 @@ from agent_core.harness import (
 from agent_core.harness.models import HarnessEventDraft
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_integrations import build_model_gateway
-from agent_runtime import LocalToolGateway
 from agent_security import (
     LocalPolicyEngine,
     PolicyProfile,
@@ -29,10 +28,8 @@ from agent_security import (
 )
 from agent_storage import (
     ControlPlaneStores,
-    SQLiteSkillsStateStore,
     sqlite_control_plane_stores,
 )
-from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import (
     ZebraAgentSettings,
     load_settings,
@@ -41,6 +38,7 @@ from zebra_agent_config import (
 
 import zebra_agent_worker.runtime_setup as runtime_setup
 import zebra_agent_worker.session_handoff as handoff
+import zebra_agent_worker.tool_output_artifact_runtime as artifact_runtime
 from zebra_agent_worker.approved_continuation import (
     ApprovedContinuationError,
     recover_approved_continuation,
@@ -59,6 +57,7 @@ from zebra_agent_worker.continuation_lifecycle import (
     mark_clarification_continuation_started,
 )
 from zebra_agent_worker.control import SessionControlError, SessionControlService
+from zebra_agent_worker.effect_runtime import guard_worker_effects
 from zebra_agent_worker.execution_context import harness_task_for_recovered
 from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
@@ -77,11 +76,7 @@ from zebra_agent_worker.runtime_authority import (
     runtime_cleanup_failure_result,
 )
 from zebra_agent_worker.task_recovery import recover_task
-from zebra_agent_worker.tool_output_artifact_runtime import (
-    CloudArtifactCoordinatorFactory,
-    persist_worker_event,
-    validate_cloud_artifact_factory,
-)
+from zebra_agent_worker.tool_gateway_runtime import build_worker_tool_gateway
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
 
@@ -98,9 +93,9 @@ class SessionExecutionService:
         effect_dispatch: EffectDispatchPort | None = None,
         worker_projection_transaction: WorkerProjectionTransactionPort | None = None,
         deployment_namespace: str | None = None,
-        cloud_artifact_factory: CloudArtifactCoordinatorFactory | None = None,
+        cloud_artifact_factory: artifact_runtime.CloudArtifactCoordinatorFactory | None = None,
     ) -> None:
-        cloud_artifact_factory = validate_cloud_artifact_factory(
+        cloud_artifact_factory = artifact_runtime.validate_cloud_artifact_factory(
             cloud_artifact_factory,
             worker_projection_transaction,
             deployment_namespace,
@@ -276,41 +271,19 @@ class SessionExecutionService:
                     recovery=self._recovery_service.recover_session(session_id),
                     lease=claimed.lease,
                 )
-            local_tool_gateway = LocalToolGateway(
-                task.workspace_root,
+            local_tool_gateway = build_worker_tool_gateway(
+                task,
+                settings=self._settings,
                 model_gateway=model_gateway,
-                tool_profile=task.tool_profile,
-                web_search_endpoint=self._settings.web_search_endpoint,
-                skill_roots=build_scoped_skill_roots(
-                    system=self._settings.skill_roots_system,
-                    admin=self._settings.skill_roots_admin,
-                    user=self._settings.skill_roots,
-                    repo=self._settings.skill_roots_repo,
-                ),
-                skills_state=(
-                    SQLiteSkillsStateStore(self._settings.skills_state_path)
-                    if (
-                        self._settings.skill_roots
-                        or self._settings.skill_roots_system
-                        or self._settings.skill_roots_admin
-                        or self._settings.skill_roots_repo
-                    )
-                    else None
-                ),
-                mcp_servers=self._settings.mcp_servers,
-                mcp_allowlist=task.mcp_allowlist,
-                session_history=self._session_history.scoped(task.history_session_ids),
-                current_session_id=str(session_id),
+                session_history=self._session_history,
+                session_id=session_id,
                 runtime=runtime,
                 runtime_handle=runtime_handle,
-                artifact_payload_store=(
-                    self._artifact_payload_store if cloud_artifacts is None else None
-                ),
-                output_projector=cloud_artifacts.output_projector if cloud_artifacts else None,
+                local_artifacts=self._artifact_payload_store,
+                cloud_artifacts=cloud_artifacts,
                 trusted_local=trusted_local,
-                web_pipeline_v2=self._settings.web_pipeline_v2,
             )
-            tool_gateway = handoff.guard_effectful_tools(
+            tool_gateway = guard_worker_effects(
                 local_tool_gateway,
                 ledger=self._effect_ledger,
                 session_id=session_id,
@@ -320,14 +293,11 @@ class SessionExecutionService:
                     f"{effective_network_profile.name.value}"
                 ),
                 dispatch=self._effect_dispatch,
-                artifacts=self._artifact_payload_store,
-                fence=claimed.lease.fence,
-                claim_ttl=claimed.lease.expires_at - claimed.lease.heartbeat_at,
-                next_event=lambda event_type, actor, payload: effect_recorder[-1].prepare(
-                    event_type, actor, payload
-                ),
-                accept_event=lambda event: effect_recorder[-1].accept_persisted_event(event),
+                local_artifacts=self._artifact_payload_store,
+                lease=claimed.lease,
+                recorders=effect_recorder,
                 ownership_check=ownership_check,
+                cloud_artifacts=cloud_artifacts,
             )
         except Exception as exc:
             cleanup_error = None
@@ -411,7 +381,7 @@ class SessionExecutionService:
         )
 
         def persist_event(draft: HarnessEventDraft) -> None:
-            persist_worker_event(
+            artifact_runtime.persist_worker_event(
                 draft,
                 recorder=recorder,
                 event_store=self._event_store,

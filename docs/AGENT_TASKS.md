@@ -1180,7 +1180,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-CTX-ADMIN-PG-01 - PostgreSQL Administrative Context Recovery
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Branch: `codex/cloud-agg-ctx-admin-pg-01`
 - Depends on: `CLOUD-AGG-CTX-PG-01` and `CLOUD-AGG-WORKSPACE-PG-01`
@@ -1398,14 +1398,23 @@ cloud mainline and is not built or changed by these cards.
   isolated PostgreSQL/MinIO runner and effect-payload fault/integration tests, plus
   this task's governance records
 - Goal: prevent durable Effect intents from referencing unavailable local payloads.
-- Acceptance: another Worker can claim/read, stale fence creates no payload/intent,
-  schedule failure leaves no permanent orphan and response-loss recovery is safe.
+- Acceptance: another Worker can claim/read; an initially stale fence fails before
+  object I/O with no metadata/Event/outbox, while a mid-flight takeover preserves
+  fenced `STAGED` evidence for management reconcile rather than deleting inline.
+  Schedule failure leaves no untracked orphan and response-loss recovery is safe.
   The object provider must not be enlisted in a PostgreSQL transaction; reserve and
   verified object receipt precede one database transaction that commits the intent
   Event, outbox row and Artifact finalization. Unknown provider or database outcomes
   remain recoverable without automatic Effect replay or unsafe object deletion.
 - Non-goals: no new SQLite behavior, Desktop, runtime backend selector, signed delivery,
   broker, generic Unit of Work, multipart upload or production credential policy.
+- Evidence: stable request Artifact identity survives schedule acknowledgement loss;
+  only finalized metadata is readable across Workers. PostgreSQL payload-aware schedule
+  and terminal methods atomically commit Event, Artifact finalize and outbox mutation,
+  while provider I/O remains outside database locks. Unknown managed result URIs fail
+  closed and different payload refs conflict on replay. Real PostgreSQL+MinIO tests pass
+  `53/53`; Tools/Worker/Runtime pass `418/418` with `17` environment-gated skips and
+  Storage passes `131/131` with `121` environment-gated skips. No v10 migration was added.
 
 ### CLOUD-SESSION-HISTORY-PG-01 - PostgreSQL Session History Read Model
 

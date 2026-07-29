@@ -70,13 +70,13 @@
 
 ## CLOUD-EFFECT-PAYLOAD-ATOMIC-01 - Effect Payload And Intent Linkage
 
-1. `in_progress` - Audit the current EffectGuard, fenced outbox and Artifact v9
+1. `completed` - Audit the current EffectGuard, fenced outbox and Artifact v9
    transaction seams; freeze lock order, idempotency and failure outcomes.
-2. `pending` - Stage and verify the immutable Effect request object under the current
+2. `completed` - Stage and verify the immutable Effect request object under the current
    Worker fence without extending the local SQLite payload Port.
-3. `pending` - Commit intent Event, Effect outbox row and Artifact finalization in one
+3. `completed` - Commit intent Event, Effect outbox row and Artifact finalization in one
    PostgreSQL transaction, then remove the guarded cloud composition rejection.
-4. `pending` - Prove cross-Worker read, stale-fence rollback, schedule failure,
+4. `completed` - Prove cross-Worker read, stale-fence rollback, schedule failure,
    response-loss recovery and provider/database fault windows with PostgreSQL+MinIO.
 
 ### Decisions
@@ -85,8 +85,8 @@
   verified before the database aggregate commit and is never held inside its lock.
 - Unknown outcomes preserve staged evidence for reconciliation and never authorize
   automatic Effect replay or inline object deletion.
-- No migration is claimed until the seam audit proves the v9 and Effect tables cannot
-  express the required binding.
+- No v10 migration is required: v9 metadata, the existing Effect outbox and their
+  deferred Event bindings express the aggregate without a duplicate Artifact FK.
 
 ## CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
 

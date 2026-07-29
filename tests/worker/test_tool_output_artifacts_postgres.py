@@ -22,22 +22,32 @@ from agent_core.domain.cloud_artifact_requests import (
     ArtifactMetadataQuery,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import ArtifactId, SessionId, new_session_id
+from agent_core.domain.identifiers import (
+    ArtifactId,
+    SessionId,
+    new_artifact_id,
+    new_session_id,
+    new_tool_call_id,
+)
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness.models import HarnessEventDraft
 from agent_core.ports import AdministrativeMutationCAS, WorkerMutationAuthority
 from agent_core.ports.artifact_object_store import ArtifactObjectStorePort
 from agent_storage import (
     PostgresCloudArtifactPayloadStore,
+    PostgresEffectDispatchStore,
     PostgresEventStore,
     PostgresLeaseStore,
     S3ArtifactObjectStore,
     apply_postgres_migrations,
     bootstrap_control_plane_epoch,
 )
+from agent_tools.effect_guard_support import effect_identity
 from botocore.config import Config  # type: ignore[import-untyped]
 from botocore.session import Session  # type: ignore[import-untyped]
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
+from zebra_agent_worker.cloud_effect_payloads import CloudEffectPayloadCoordinator
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.tool_output_artifacts import CloudToolOutputArtifactCoordinator
 
@@ -122,6 +132,92 @@ def test_failed_tool_output_uses_the_same_managed_lifecycle(dsn: str) -> None:
     assert event.event_type is EventType.TOOL_EXECUTION_FAILED
     assert metadata is not None
     assert metadata.lifecycle_status is CloudArtifactPayloadLifecycleStatus.FINALIZED
+
+
+def test_effect_request_is_finalized_and_readable_by_another_worker(dsn: str) -> None:
+    context = _context(dsn)
+    dispatch = PostgresEffectDispatchStore(dsn, deployment_namespace=context.namespace)
+    writer = CloudEffectPayloadCoordinator(context.session_id, context.coordinator, dispatch)
+    call = ToolCall(
+        tool_call_id=new_tool_call_id(), name="command.run",
+        arguments={"command": "deploy"}, created_at=datetime.now(UTC)
+    )
+    identity = effect_identity(call, "workspace-write")
+    artifact_ref = writer.request_artifact_ref(
+        root_session_id=context.session_id,
+        identity=identity,
+    )
+    started = SessionEvent.create(
+        session_id=context.session_id,
+        sequence=1,
+        event_type=EventType.TOOL_EXECUTION_STARTED,
+        actor=EventActor.HARNESS,
+        payload={
+            "attempt_number": 1,
+            "tool_name": call.name,
+            "tool_call_id": str(call.tool_call_id),
+            "metadata": {"artifact_uri": artifact_ref},
+        },
+    )
+    authority = context.recorder.worker_mutation_authority
+
+    writer.prepare_schedule(
+        call,
+        root_session_id=context.session_id,
+        identity=identity,
+        started_event=started,
+        authority=authority,
+    )
+
+    reader_artifacts = CloudToolOutputArtifactCoordinator(
+        context.session_id,
+        PostgresCloudArtifactPayloadStore(dsn, deployment_namespace=context.namespace),
+        S3ArtifactObjectStore(_s3_client(), bucket=_bucket()),
+    )
+    reader = CloudEffectPayloadCoordinator(context.session_id, reader_artifacts, dispatch)
+    assert reader.read_tool_call(artifact_ref, namespace=context.namespace) == call
+
+    claim = dispatch.claim_next(
+        context.session_id, fence=authority.lease_fence, claim_ttl=timedelta(minutes=1)
+    )
+    assert claim is not None
+    projected = context.coordinator.output_projector.project_text(
+        "effect result evidence", artifact_name="effect-result.txt"
+    )
+    result = ToolResult(
+        tool_call_id=call.tool_call_id,
+        status=ToolCallStatus.EXECUTED,
+        output=projected.model_output,
+        metadata=projected.metadata,
+    )
+    terminal_draft = _terminal_draft(result.output, result.metadata)
+    terminal = SessionEvent.create(
+        session_id=context.session_id,
+        sequence=2,
+        event_type=terminal_draft.event_type,
+        actor=terminal_draft.actor,
+        payload=terminal_draft.payload,
+    )
+    assert writer.complete_with_payload(
+        claim,
+        result=result,
+        terminal_event=terminal,
+        authority=authority.model_copy(update={"expected_stream_revision": 1}),
+    ) == terminal
+    assert reader_artifacts.read_verified(
+        _artifact_id(result.metadata), namespace=context.namespace
+    ) == b"effect result evidence"
+
+    staged = reader_artifacts.stage_bytes(
+        artifact_id=new_artifact_id(), payload=b"not yet committed",
+        kind="effect_tool_call", mime_type="application/json",
+        file_name="tool-call.json", created_at=datetime.now(UTC),
+        intended_event_sequence=3,
+        authority=authority.model_copy(update={"expected_stream_revision": 2}),
+        idempotency_scope="staged-read-check",
+    )
+    with pytest.raises(FileNotFoundError, match="unavailable"):
+        reader.read_tool_call(staged.uri, namespace=context.namespace)
 
 
 def test_concurrent_retention_prune_has_one_audited_winner(dsn: str) -> None:

@@ -32,7 +32,15 @@ def validate_cloud_artifact_factory(
             "cloud Artifact output requires the fenced Worker projection transaction"
         )
     if factory is not None and effect_dispatch is not None:
-        raise ValueError("cloud Artifact output with fenced Effect dispatch is not implemented")
+        required = (
+            "schedule_with_payload",
+            "complete_with_payload",
+            "mark_uncertain_with_payload",
+        )
+        if any(not callable(getattr(effect_dispatch, name, None)) for name in required):
+            raise ValueError(
+                "cloud Artifact output with fenced Effect dispatch requires atomic payload linkage"
+            )
     return factory
 
 

@@ -6,11 +6,13 @@ from agent_core.domain.effect_dispatch import (
     EffectClaim,
     EffectDispatch,
     EffectDispatchStatus,
+    EffectScheduleRequest,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_session_id, new_tool_call_id
 from agent_core.domain.leases import LeaseFence, LeaseLostError
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.ports import WorkerMutationAuthority
 from agent_storage import SQLiteArtifactPayloadStore, SQLiteEffectLedger
 from agent_tools import EffectGuardedToolGateway, FencedEffectToolGateway
 
@@ -105,6 +107,61 @@ class _Dispatch:
         )
 
 
+class _CloudPayloads:
+    def __init__(self, dispatch: _Dispatch) -> None:
+        self.dispatch = dispatch
+        self.call: ToolCall | None = None
+        self.started: SessionEvent | None = None
+        self.completed = 0
+
+    def request_artifact_ref(self, *, root_session_id, identity) -> str:
+        return f"artifact://{root_session_id}-{identity.ledger_key()}"
+
+    def prepare_schedule(
+        self,
+        tool_call: ToolCall,
+        *,
+        root_session_id,
+        identity,
+        started_event,
+        authority,
+    ):
+        del authority
+        self.call = tool_call
+        self.started = started_event
+        return self.dispatch.schedule(
+            EffectScheduleRequest(
+                root_session_id=root_session_id,
+                identity=identity,
+                request_hash=identity.canonical_effect_hash,
+                payload_artifact_ref=self.request_artifact_ref(
+                    root_session_id=root_session_id,
+                    identity=identity,
+                ),
+                started_event=started_event,
+            ),
+            fence=_fence(),
+        )
+
+    def read_tool_call(self, artifact_ref: str, *, namespace: str) -> ToolCall:
+        del artifact_ref, namespace
+        assert self.call is not None
+        return self.call
+
+    def complete_with_payload(
+        self, claim, *, result, terminal_event, authority
+    ) -> SessionEvent:
+        del claim, result, authority
+        self.completed += 1
+        return terminal_event
+
+    def mark_uncertain_with_payload(
+        self, claim, *, result, evidence, terminal_event, authority
+    ) -> SessionEvent:
+        del claim, result, evidence, authority
+        return terminal_event
+
+
 def _call(name: str) -> ToolCall:
     return ToolCall(
         tool_call_id=new_tool_call_id(),
@@ -173,6 +230,65 @@ def test_fenced_effect_persists_intent_and_terminal_around_provider(tmp_path) ->
 
     assert result.output == "ok"
     assert gateway.calls == 1
+    assert [event.event_type for event in accepted] == [
+        EventType.TOOL_EXECUTION_STARTED,
+        EventType.TOOL_EXECUTION_COMPLETED,
+    ]
+
+
+def test_fenced_cloud_effect_uses_payload_coordinator_for_started_and_terminal() -> None:
+    gateway = _Gateway()
+    dispatch = _Dispatch()
+    payloads = _CloudPayloads(dispatch)
+    session_id = new_session_id()
+    accepted: list[SessionEvent] = []
+    sequence = 0
+
+    def next_event(event_type, actor, payload):
+        nonlocal sequence
+        event = SessionEvent.create(
+            session_id=session_id,
+            sequence=sequence,
+            event_type=event_type,
+            actor=actor,
+            payload=payload,
+        )
+        sequence += 1
+        return event
+
+    fence = _fence()
+    authority = WorkerMutationAuthority(
+        deployment_namespace="cloud-test",
+        session_id=session_id,
+        lease_fence=fence,
+        expected_stream_revision=0,
+    )
+    guarded = FencedEffectToolGateway(
+        gateway,
+        dispatch=dispatch,
+        artifacts=None,
+        execution_session_id=session_id,
+        root_session_id=session_id,
+        fence=fence,
+        claim_ttl=timedelta(seconds=30),
+        authority_scope="workspace-write",
+        next_event=next_event,
+        accept_event=accepted.append,
+        ownership_check=lambda: None,
+        effect_payloads=payloads,
+        mutation_authority=lambda: authority,
+    )
+
+    call = _call("command.run")
+    result = guarded.execute(call)
+
+    assert result.status is ToolCallStatus.EXECUTED
+    assert payloads.started is not None
+    assert payloads.started.payload["metadata"] == {
+        "artifact_uri": dispatch.last_claim.dispatch.payload_artifact_ref
+    }
+    assert payloads.started.payload["tool_call_id"] == str(call.tool_call_id)
+    assert payloads.completed == 1
     assert [event.event_type for event in accepted] == [
         EventType.TOOL_EXECUTION_STARTED,
         EventType.TOOL_EXECUTION_COMPLETED,
