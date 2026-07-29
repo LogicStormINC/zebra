@@ -1,5 +1,24 @@
 # Task Plan
 
+## CLOUD-AGG-WORKSPACE-PG-01 - Fenced Workspace Projection
+
+1. `in_progress` - Trace Workspace projection shape, replay semantics and existing
+   PostgreSQL Event/Session transaction helpers; freeze the smallest Adapter API.
+2. `pending` - Add the additive Workspace migration and PostgreSQL adapter with
+   transaction-local `WorkerMutationAuthority` validation and monotonic revision CAS.
+3. `pending` - Add deterministic contract/fault tests and the host Docker Compose
+   real-PostgreSQL runner without selecting the adapter at runtime.
+4. `pending` - Run static/Core/storage gates, record host evidence, move the card to
+   Review and unlock only the next migration-safe aggregate card.
+
+### Decisions
+
+- Workspace remains an Event-derived projection. The adapter must support safe
+  replay and reject stale overwrites; it does not create a new fact source.
+- Reuse existing PostgreSQL database, epoch, Lease and projection row helpers. Do
+  not add a generic Unit of Work, broker or backend selector.
+- Desktop and local-agent composition remain out of scope.
+
 ## CLOUD-AGG-FENCE-CON-01 - Worker Mutation Fencing Contract
 
 1. `completed` - Reuse the existing LeaseFence/domain vocabulary and trace the

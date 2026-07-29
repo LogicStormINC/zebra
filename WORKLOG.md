@@ -6337,3 +6337,7 @@ actual byte access.
 - accepted the Core authority contract for isolated local mainline integration.
   Only the fenced Workspace projection becomes Ready; all later aggregate adapters
   and the complete fencing gate remain Locked.
+- fast-forwarded the accepted contract onto isolated `zebra-cloud-trench`, created
+  `codex/cloud-agg-workspace-pg-01`, and claimed the only Ready adapter card. Owned
+  implementation is limited to Workspace PostgreSQL schema/adapter, focused Worker
+  transaction seam, real PostgreSQL tests and governance.

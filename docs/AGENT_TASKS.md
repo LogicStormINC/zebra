@@ -1069,8 +1069,9 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-WORKSPACE-PG-01 - Fenced Workspace Projection
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `Codex`
+- Branch: `codex/cloud-agg-workspace-pg-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`
 - Owned paths: `packages/agent-storage/src/agent_storage/postgres/workspaces.py`,
   the current migration hotspot, focused Worker transaction wiring and real

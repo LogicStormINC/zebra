@@ -94,6 +94,9 @@
   focused `19/19`, Core `270/270`, Ruff, strict Mypy and Eval `10/10` gates pass;
   it does not implement PostgreSQL, change Store selection or touch Desktop. Its
   local acceptance unlocks only `CLOUD-AGG-WORKSPACE-PG-01`.
+- Active Workspace adapter task: `CLOUD-AGG-WORKSPACE-PG-01` owns the additive
+  PostgreSQL projection schema, fenced monotonic write adapter and real-database
+  tests only. It does not select PostgreSQL in API/Worker composition.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
   on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
   path-bounded microservice cards own provider expectations, SCM credential
