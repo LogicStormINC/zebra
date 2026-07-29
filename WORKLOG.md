@@ -6256,3 +6256,8 @@ actual byte access.
   and the Worker cancellation race. The temporary worktree was removed afterward.
   This proves the cloud stack adds no failure to that set, but it does not waive the
   repository rule that prevents merge while the complete suite is red.
+- split the confirmed business-baseline failures into five non-overlapping repair
+  cards. Provider and SCM audits found stale tests/fixtures with correct production
+  behavior; Worker audit found a real durable-cancellation finalization race; the
+  size gate is one Desktop style extraction and one existing Core contract move.
+  Activated only `BASE-MDL-EXPECT-01`; later cards remain Ready and path-bounded.

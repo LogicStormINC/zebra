@@ -1,5 +1,23 @@
 # Task Plan
 
+## BASE-MDL-EXPECT-01 - Provider Rejection Contract Expectations
+
+1. `completed` - Reproduce both failures on exact `zebra-cloud-trench@375dca92`
+   and trace production callers plus the typed rejection boundary.
+2. `in_progress` - Update only stale provider tests: advertise the positive tool
+   and assert the typed DeepSeek invalid-response rejection.
+3. `pending` - Run both provider files, the focused rejection trio, Ruff and the
+   complete repository suite; record the reduced baseline.
+4. `pending` - Move the card to Review and activate `BASE-SCM-CRED-01` on a new
+   path-bounded branch.
+
+### Decisions
+
+- Production parsing, retry and safe unadvertised-tool rejection are correct and
+  remain unchanged.
+- Baseline repairs stack locally on the reviewed cloud branch only to restore its
+  merge gate; they do not authorize a push, merge, backend selection or rollout.
+
 ## CLOUD-EFFECT-CONSUMER-01 - Worker Fenced Effect Consumer
 
 1. `completed` - Trace Worker recovery, Lease lifecycle, tool execution and

@@ -58,8 +58,12 @@
   behind the reviewed Mem0 Spike and its storage, Gateway, and Compose prerequisites.
 - `CLOUD-PG-PLAN-01` and `CLOUD-PG-01` are `Review` on their dedicated branches;
   the docs-only migration/restore decisions precede the real PostgreSQL Event/Projection Adapter.
-- `CLOUD-LEASE-PLAN-01`, `CLOUD-LEASE-CON-01`, and `CLOUD-LEASE-PG-01` are `Review`
-  in dependency order. Effect Outbox/consumer and full aggregate fencing remain `Locked`.
+- `CLOUD-LEASE-PLAN-01`, `CLOUD-LEASE-CON-01`, `CLOUD-LEASE-PG-01`,
+  `CLOUD-EFFECT-OUTBOX-01`, and `CLOUD-EFFECT-CONSUMER-01` are `Review` in
+  dependency order. Full aggregate fencing remains `Locked`.
+- Exact replay on `zebra-cloud-trench@375dca92` proves all nine remaining suite
+  failures are business-baseline defects. `BASE-MDL-EXPECT-01` is `In Progress`;
+  the four disjoint SCM, Worker, Desktop and Core repair cards are `Ready`.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -926,12 +930,88 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
   default.
 - Non-goals: Redis/Kafka, cloud backend selector, production rollout.
 
+## Zebra Cloud Business-Baseline Recovery Board
+
+These cards restore the exact `zebra-cloud-trench@375dca92` quality baseline
+before any reviewed cloud stack is merged. They do not weaken tests or expand the
+cloud architecture scope.
+
+### BASE-MDL-EXPECT-01 - Provider Rejection Contract Expectations
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Branch: `codex/baseline-model-contract-01`
+- Depends on: exact baseline replay recorded on 2026-07-29
+- Owned paths: `tests/agent_integrations/test_openai_compatible.py`,
+  `tests/agent_integrations/test_deepseek_specialization.py`, and governance records
+- Goal: align two stale positive/negative tests with the existing typed model
+  rejection and advertised-tool boundary without changing production code.
+- Acceptance: advertised tool calls map back to internal names; unadvertised calls
+  remain rejected; invalid DeepSeek reasoning is a typed retryable rejection.
+
+### BASE-SCM-CRED-01 - Time-Stable SCM Credential Fixtures
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested branch: `codex/baseline-scm-credential-fixtures-01`
+- Depends on: none; execute after `BASE-MDL-EXPECT-01` in the local repair stack
+- Owned paths: `tests/api/session_pull_request/pull_request_support.py` and
+  governance records
+- Goal: replace expired wall-clock fixture dates with one deterministic valid
+  credential expiry while preserving production expiry-first validation.
+- Acceptance: all session pull-request tests pass after the current date and the
+  production credential broker remains unchanged.
+
+### BASE-WKR-CANCEL-01 - Durable Cancellation Finalization Race
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested branch: `codex/baseline-worker-cancel-01`
+- Depends on: none; execute after `BASE-SCM-CRED-01` in the local repair stack
+- Owned paths: `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
+  `apps/worker/src/zebra_agent_worker/execution_events.py`,
+  `tests/worker/test_execution_finalization.py`,
+  `tests/worker/execution/test_core_execution.py`, and governance records
+- Goal: converge an external durable terminal state that wins during finalization
+  without leaking `ExecutionInterrupted` or overwriting cancellation as failure.
+- Acceptance: cancellation wins at append and append-event boundaries; lease loss
+  and unrelated persistence errors still fail closed.
+
+### BASE-UI-SIZE-01 - Conversation Idle Style Extraction
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested branch: `codex/baseline-ui-size-01`
+- Depends on: none; execute after `BASE-WKR-CANCEL-01` in the local repair stack
+- Owned paths: `UI/desktop/src/components/CodexConversationPane.styles.ts`,
+  `UI/desktop/src/components/conversation/WorkspaceIdle.styles.ts` (new),
+  `UI/desktop/src/components/conversation/WorkspaceIdle.tsx`, and governance records
+- Goal: move WorkspaceIdle-only classes into its component-owned style module
+  without changing layout, class hooks or visible behavior.
+- Acceptance: both files remain below the repository limit and Desktop build plus
+  composer layout checks pass.
+
+### BASE-EVT-SIZE-01 - Context Event Contract Extraction
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested branch: `codex/baseline-event-contract-size-01`
+- Depends on: none; execute after `BASE-UI-SIZE-01` in the local repair stack
+- Owned paths: `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/contracts/context_events.py`,
+  `tests/agent_core/test_context_capsule_validation.py`, and governance records
+- Goal: move the context-capsule payload contract into the existing focused module
+  while preserving registry and public import compatibility.
+- Acceptance: event schema lookup is unchanged, no circular import is introduced,
+  both files remain below the limit, and Core contract tests plus strict Mypy pass.
+
 ### CLOUD-LEASE-01 - Lease And Event/Effect Delivery Parent Gate
 
 - Status: `Locked`
 - Owner: `UNASSIGNED`
-- Depends on: all four Lease/Effect implementation cards Done/merged and combined
-  real PostgreSQL evidence approved
+- Depends on: all four Lease/Effect implementation cards Done/merged, all five
+  business-baseline repair cards Done/merged, and combined real PostgreSQL evidence
+  approved
 - Goal: close Session Lease plus Event/Effect execution ownership and delivery;
   it does not certify every Worker-owned aggregate as multi-Worker safe.
 - Acceptance: the combined race, restore, crash and duplicate-delivery matrix

@@ -76,6 +76,11 @@
   crash, response-loss and reconciliation cases; dedicated containers, volumes and
   network were removed after the run. Deterministic and full-suite gates retain
   only the confirmed inherited failures.
+- Business-baseline recovery is active before cloud-stack integration. Exact replay
+  on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Five
+  path-bounded cards own provider expectations, SCM credential fixtures, Worker
+  cancellation convergence, Desktop style extraction and Core Event contract
+  extraction; `BASE-MDL-EXPECT-01` is the only active implementation card.
 - Agent Definition architecture task in Review: `AGENT-DEF-ADR-01` records accepted
   Definition control-plane decisions and updates the final architecture. It
   separates Task-level Definition configuration from Attempt-level execution
