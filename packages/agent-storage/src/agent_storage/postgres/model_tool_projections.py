@@ -132,7 +132,7 @@ def _model_record(event: SessionEvent) -> ModelCallRecord:
         output_tokens=_int(payload, "output_tokens"),
         total_tokens=_int(payload, "total_tokens"),
         latency_ms=_int(payload, "latency_ms"),
-        cache_hit=_bool(payload, "cache_hit"),
+        cache_hit=_cache_hit(payload),
         cost_usd=_float(payload, "cost_usd"),
         assistant_message=str(payload["assistant_message"]),
         tool_call_count=int(payload["tool_call_count"]),
@@ -208,6 +208,14 @@ def _int(payload: dict[str, object], key: str) -> int | None:
 def _bool(payload: dict[str, object], key: str) -> bool | None:
     value = payload.get(key)
     return value if isinstance(value, bool) else None
+
+
+def _cache_hit(payload: dict[str, object]) -> bool | None:
+    explicit = _bool(payload, "cache_hit")
+    if explicit is not None:
+        return explicit
+    tokens = _int(payload, "prompt_cache_hit_tokens")
+    return None if tokens is None else tokens > 0
 
 
 def _float(payload: dict[str, object], key: str) -> float | None:

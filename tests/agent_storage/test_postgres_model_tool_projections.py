@@ -53,7 +53,12 @@ def test_worker_index_is_fenced_idempotent_and_replayable(dsn: str) -> None:
         session_id,
         1,
         EventType.MODEL_RESPONSE_RECEIVED,
-        {"attempt_number": 1, "assistant_message": "answer", "tool_call_count": 0},
+        {
+            "attempt_number": 1,
+            "assistant_message": "answer",
+            "tool_call_count": 0,
+            "prompt_cache_hit_tokens": 1,
+        },
     )
     tool = _event(
         session_id,
@@ -94,6 +99,9 @@ def test_worker_index_is_fenced_idempotent_and_replayable(dsn: str) -> None:
     with pytest.raises(LeaseLostError):
         store.index_worker_event(tool, authority=stale)
     with psycopg.connect(dsn) as connection:
+        assert connection.execute("SELECT cache_hit FROM model_call_projections").fetchone() == (
+            True,
+        )
         assert connection.execute("SELECT count(*) FROM model_call_projections").fetchone() == (1,)
         assert connection.execute("SELECT count(*) FROM tool_run_projections").fetchone() == (1,)
 
