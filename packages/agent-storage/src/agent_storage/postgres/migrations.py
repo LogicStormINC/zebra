@@ -396,6 +396,11 @@ MIGRATIONS = (
         name="fenced_context_lifecycle",
         statements=(
             """
+            ALTER TABLE session_events
+            ADD CONSTRAINT session_events_session_event_identity
+            UNIQUE (deployment_namespace, session_id, event_id)
+            """,
+            """
             CREATE TABLE context_capsule_artifacts (
                 deployment_namespace TEXT NOT NULL,
                 capsule_id TEXT NOT NULL CHECK (length(btrim(capsule_id)) > 0),
@@ -411,8 +416,27 @@ MIGRATIONS = (
                 UNIQUE (deployment_namespace, artifact_id),
                 UNIQUE (deployment_namespace, compaction_event_id),
                 UNIQUE (deployment_namespace, capsule_event_id),
+                UNIQUE (
+                    deployment_namespace, session_id, compaction_event_id
+                ),
+                UNIQUE (
+                    deployment_namespace, session_id, capsule_event_id
+                ),
+                UNIQUE (
+                    deployment_namespace, session_id, capsule_id, artifact_id
+                ),
                 FOREIGN KEY (deployment_namespace, session_id)
-                    REFERENCES session_streams (deployment_namespace, session_id)
+                    REFERENCES session_streams (deployment_namespace, session_id),
+                FOREIGN KEY (
+                    deployment_namespace, session_id, compaction_event_id
+                ) REFERENCES session_events (
+                    deployment_namespace, session_id, event_id
+                ),
+                FOREIGN KEY (
+                    deployment_namespace, session_id, capsule_event_id
+                ) REFERENCES session_events (
+                    deployment_namespace, session_id, event_id
+                )
             )
             """,
             """
@@ -425,8 +449,11 @@ MIGRATIONS = (
                 event_sequence BIGINT NOT NULL CHECK (event_sequence >= 0),
                 updated_at TIMESTAMPTZ NOT NULL,
                 PRIMARY KEY (deployment_namespace, session_id),
-                FOREIGN KEY (deployment_namespace, capsule_id)
-                    REFERENCES context_capsule_artifacts (deployment_namespace, capsule_id)
+                FOREIGN KEY (
+                    deployment_namespace, session_id, capsule_id, artifact_id
+                ) REFERENCES context_capsule_artifacts (
+                    deployment_namespace, session_id, capsule_id, artifact_id
+                )
             )
             """,
         ),

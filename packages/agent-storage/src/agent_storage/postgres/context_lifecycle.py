@@ -85,18 +85,23 @@ class PostgresContextLifecycleStore(ContextLifecycleStorePort):
             )
             if canonical_compaction.sequence != authority.expected_stream_revision + 1:
                 raise PostgresContextLifecycleConflictError("compaction stream revision changed")
-            self._insert_capsule(connection, capsule, canonical_compaction, capsule_event)
             canonical_capsule = append_event_in_transaction(
                 connection, self._database.deployment_namespace, capsule_event
             )
+            self._validate_capsule_event(canonical_capsule, capsule, canonical_compaction)
+            self._insert_capsule(connection, capsule, canonical_compaction, canonical_capsule)
             self._advance_pointer(
-                connection, session.session_id, capsule, capsule_event, expected_active_capsule_id
+                connection,
+                session.session_id,
+                capsule,
+                canonical_capsule,
+                expected_active_capsule_id,
             )
             stored_session, stored_workspace = self._save_projections(
                 connection, session, workspace, canonical_compaction, canonical_capsule
             )
         stored = StoredContextCapsule(
-            artifact_id=ArtifactId(UUID(str(capsule_event.payload["artifact_id"]))),
+            artifact_id=ArtifactId(UUID(str(canonical_capsule.payload["artifact_id"]))),
             session_id=session.session_id,
             capsule=capsule,
             payload_sha256=_payload_sha(capsule),
@@ -118,6 +123,10 @@ class PostgresContextLifecycleStore(ContextLifecycleStorePort):
         event: SessionEvent,
     ) -> ContextLifecycleCommitResult:
         self._validate_administrator(authority, session, workspace, event)
+        if expected_active_capsule_id is None:
+            raise PostgresContextLifecycleConflictError(
+                "administrative Context activation requires an existing active pointer"
+            )
         with self._database.connect() as connection:
             stored = self._stored_capsule(connection, capsule_id)
             if stored is None or stored.session_id != session.session_id:
@@ -253,6 +262,30 @@ class PostgresContextLifecycleStore(ContextLifecycleStorePort):
             event,
             compaction,
         )
+
+    @staticmethod
+    def _validate_capsule_event(
+        event: SessionEvent,
+        capsule: ContextCapsule,
+        compaction: SessionEvent,
+    ) -> None:
+        if (
+            event.session_id != compaction.session_id
+            or event.sequence != compaction.sequence + 1
+            or event.event_type is not EventType.CONTEXT_CAPSULE_CREATED
+            or event.payload.get("capsule_id") != capsule.capsule_id
+            or event.payload.get("source_hash") != capsule.source_hash
+            or not isinstance(event.payload.get("artifact_id"), str)
+        ):
+            raise PostgresContextLifecycleConflictError(
+                "canonical Context capsule Event does not match the capsule"
+            )
+        try:
+            UUID(event.payload["artifact_id"])
+        except ValueError as exc:
+            raise PostgresContextLifecycleConflictError(
+                "canonical Context capsule Event artifact is malformed"
+            ) from exc
 
     def _event(self, connection: Any, event_id: UUID) -> SessionEvent:
         row = connection.execute(
@@ -427,8 +460,10 @@ def _payload_sha(capsule: ContextCapsule) -> str:
 
 def _same_event(left: SessionEvent, right: SessionEvent) -> bool:
     return (
-        left.sequence == right.sequence
+        left.session_id == right.session_id
+        and left.sequence == right.sequence
         and left.event_type is right.event_type
         and left.actor is right.actor
         and left.payload == right.payload
+        and left.idempotency_key == right.idempotency_key
     )

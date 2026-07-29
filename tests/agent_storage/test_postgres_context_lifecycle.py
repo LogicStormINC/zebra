@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
@@ -10,6 +10,7 @@ import psycopg
 import pytest
 from agent_core.application.session_projection import rebuild_session
 from agent_core.application.workspace_projection import rebuild_workspace
+from agent_core.contracts.events import ContextCapsuleCreatedPayload
 from agent_core.domain.context_capsule import (
     ContextCapsule,
     ContextCapsuleValidationContext,
@@ -17,7 +18,9 @@ from agent_core.domain.context_capsule import (
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_session_id
-from agent_core.domain.leases import LeaseLostError
+from agent_core.domain.leases import LeaseLostError, WorkerLease
+from agent_core.domain.sessions import Session
+from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.ports import AdministrativeMutationCAS, WorkerMutationAuthority
 from agent_storage import (
     PostgresContextLifecycleConflictError,
@@ -42,12 +45,10 @@ def postgres_dsn() -> str:
 
 
 @pytest.fixture
-def namespace(postgres_dsn: str) -> str:
+def namespace(postgres_dsn: str) -> Generator[str, None, None]:
     value = f"context-{uuid4()}"
     bootstrap_control_plane_epoch(postgres_dsn, deployment_namespace=value)
     yield value
-    import psycopg
-
     with psycopg.connect(postgres_dsn) as connection:
         for table in (
             "active_context_projections",
@@ -92,7 +93,7 @@ def test_worker_context_commit_is_atomic_and_idempotent(postgres_dsn: str, names
         capsule=capsule,
         validation_context=_validation(capsule),
         expected_active_capsule_id=None,
-        compaction_event=event,
+        compaction_event=event.model_copy(update={"event_id": uuid4()}),
     )
     assert retried == committed
     assert (
@@ -103,6 +104,127 @@ def test_worker_context_commit_is_atomic_and_idempotent(postgres_dsn: str, names
         )
         == 4
     )
+
+
+def test_worker_context_uses_existing_canonical_capsule_event(
+    postgres_dsn: str, namespace: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    session, workspace, lease = _prepared(postgres_dsn, namespace)
+    capsule = _capsule("capsule-canonical")
+    assert capsule.source_event_range is not None
+    compaction = _compaction(session, capsule)
+    canonical_artifact_id = uuid4()
+    canonical_capsule = SessionEvent.create(
+        session_id=session.session_id,
+        sequence=compaction.sequence + 1,
+        event_type=EventType.CONTEXT_CAPSULE_CREATED,
+        actor=EventActor.SYSTEM,
+        payload=ContextCapsuleCreatedPayload(
+            capsule_id=capsule.capsule_id,
+            artifact_id=str(canonical_artifact_id),
+            schema_version=capsule.version,
+            source_hash=capsule.source_hash,
+            source_event_range=capsule.source_event_range,
+            previous_capsule_id=None,
+        ).model_dump(mode="json"),
+        idempotency_key=f"context-capsule:{capsule.capsule_id}",
+        created_at=compaction.created_at,
+    )
+    monkeypatch.setattr(
+        "agent_storage.postgres.context_lifecycle.new_artifact_id",
+        lambda: canonical_artifact_id,
+    )
+    events = PostgresEventStore(postgres_dsn, deployment_namespace=namespace)
+    events.append(compaction)
+    events.append(canonical_capsule)
+
+    result = PostgresContextLifecycleStore(
+        postgres_dsn, deployment_namespace=namespace
+    ).commit_worker_compaction(
+        authority=_authority(namespace, lease, session.current_sequence),
+        session=session,
+        workspace=workspace,
+        capsule=capsule,
+        validation_context=_validation(capsule),
+        expected_active_capsule_id=None,
+        compaction_event=compaction.model_copy(update={"event_id": uuid4()}),
+    )
+
+    assert result.stored_capsule.event.event_id == canonical_capsule.event_id
+    assert result.stored_capsule.artifact_id == canonical_artifact_id
+    assert result.session.current_sequence == canonical_capsule.sequence
+    assert result.workspace.current_sequence == canonical_capsule.sequence
+
+
+def test_context_schema_rejects_cross_session_event_and_pointer_artifact(
+    postgres_dsn: str, namespace: str
+) -> None:
+    session, workspace, lease = _prepared(postgres_dsn, namespace)
+    capsule = _capsule("capsule-fk")
+    committed = PostgresContextLifecycleStore(
+        postgres_dsn, deployment_namespace=namespace
+    ).commit_worker_compaction(
+        authority=_authority(namespace, lease, session.current_sequence),
+        session=session,
+        workspace=workspace,
+        capsule=capsule,
+        validation_context=_validation(capsule),
+        expected_active_capsule_id=None,
+        compaction_event=_compaction(session, capsule),
+    )
+    other_session_id = new_session_id()
+    other_event = SessionEvent.create(
+        session_id=other_session_id,
+        sequence=0,
+        event_type=EventType.SESSION_CREATED,
+        actor=EventActor.USER,
+        payload={"title": "Other"},
+        created_at=datetime(2026, 7, 29, tzinfo=UTC),
+    )
+    PostgresEventStore(postgres_dsn, deployment_namespace=namespace).append(other_event)
+
+    with psycopg.connect(postgres_dsn) as connection:
+        with pytest.raises(psycopg.errors.ForeignKeyViolation):
+            connection.execute(
+                """
+                INSERT INTO context_capsule_artifacts (
+                    deployment_namespace, capsule_id, artifact_id, session_id, payload,
+                    payload_sha256, source_hash, compaction_event_id, capsule_event_id,
+                    created_at
+                ) VALUES (%s, %s, %s, %s, '{}'::jsonb, %s, %s, %s, %s, %s)
+                """,
+                (
+                    namespace,
+                    "capsule-cross-session-event",
+                    uuid4(),
+                    session.session_id,
+                    "b" * 64,
+                    "c" * 64,
+                    other_event.event_id,
+                    other_event.event_id,
+                    datetime(2026, 7, 29, tzinfo=UTC),
+                ),
+            )
+
+    with psycopg.connect(postgres_dsn) as connection:
+        with pytest.raises(psycopg.errors.ForeignKeyViolation):
+            connection.execute(
+                """
+                INSERT INTO active_context_projections (
+                    deployment_namespace, session_id, capsule_id, artifact_id,
+                    source_hash, event_sequence, updated_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    namespace,
+                    other_session_id,
+                    capsule.capsule_id,
+                    committed.stored_capsule.artifact_id,
+                    capsule.source_hash,
+                    0,
+                    datetime(2026, 7, 29, tzinfo=UTC),
+                ),
+            )
 
 
 def test_worker_context_rejects_stale_fence_without_writes(
@@ -202,6 +324,51 @@ def test_administrative_context_cas_advances_primary_projections(
     assert result.session.current_sequence == result.workspace.current_sequence
 
 
+def test_administrative_context_missing_pointer_rolls_back_event(
+    postgres_dsn: str, namespace: str
+) -> None:
+    session, workspace, lease = _prepared(postgres_dsn, namespace)
+    store = PostgresContextLifecycleStore(postgres_dsn, deployment_namespace=namespace)
+    capsule = _capsule("capsule-admin-missing")
+    committed = store.commit_worker_compaction(
+        authority=_authority(namespace, lease, session.current_sequence),
+        session=session,
+        workspace=workspace,
+        capsule=capsule,
+        validation_context=_validation(capsule),
+        expected_active_capsule_id=None,
+        compaction_event=_compaction(session, capsule),
+    )
+    with psycopg.connect(postgres_dsn) as connection:
+        connection.execute(
+            "DELETE FROM active_context_projections "
+            "WHERE deployment_namespace = %s AND session_id = %s",
+            (namespace, session.session_id),
+        )
+
+    with pytest.raises(PostgresContextLifecycleConflictError):
+        store.commit_administrative_activation(
+            authority=AdministrativeMutationCAS(
+                deployment_namespace=namespace,
+                session_id=session.session_id,
+                expected_stream_revision=committed.session.current_sequence,
+            ),
+            session=committed.session,
+            workspace=committed.workspace,
+            capsule_id=capsule.capsule_id,
+            expected_active_capsule_id=None,
+            event=_compaction(committed.session, capsule).model_copy(
+                update={"idempotency_key": "context-admin-missing"}
+            ),
+        )
+    assert store.get_active_capsule(session.session_id) is None
+    assert len(
+        PostgresEventStore(postgres_dsn, deployment_namespace=namespace).list_for_session(
+            session.session_id
+        )
+    ) == 4
+
+
 def test_worker_context_rolls_back_capsule_and_events_on_projection_fault(
     postgres_dsn: str,
     namespace: str,
@@ -232,7 +399,7 @@ def test_worker_context_rolls_back_capsule_and_events_on_projection_fault(
     )
 
 
-def _prepared(dsn: str, namespace: str):
+def _prepared(dsn: str, namespace: str) -> tuple[Session, WorkspaceProjection, WorkerLease]:
     session_id = new_session_id()
     now = datetime(2026, 7, 29, tzinfo=UTC)
     created = SessionEvent.create(
@@ -271,7 +438,7 @@ def _prepared(dsn: str, namespace: str):
     return session, workspace, lease
 
 
-def _authority(namespace: str, lease, revision: int) -> WorkerMutationAuthority:
+def _authority(namespace: str, lease: WorkerLease, revision: int) -> WorkerMutationAuthority:
     return WorkerMutationAuthority(
         deployment_namespace=namespace,
         session_id=lease.session_id,
@@ -293,13 +460,14 @@ def _capsule(capsule_id: str) -> ContextCapsule:
 
 
 def _validation(capsule: ContextCapsule) -> ContextCapsuleValidationContext:
+    assert capsule.source_event_range is not None
     return ContextCapsuleValidationContext(
         expected_source_hash=capsule.source_hash,
         expected_source_event_range=capsule.source_event_range,
     )
 
 
-def _compaction(session, capsule: ContextCapsule) -> SessionEvent:
+def _compaction(session: Session, capsule: ContextCapsule) -> SessionEvent:
     return SessionEvent.create(
         session_id=session.session_id,
         sequence=session.current_sequence + 1,
