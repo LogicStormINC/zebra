@@ -52,6 +52,22 @@
   do not duplicate their rules inside the Handoff adapter.
 - v8 is serialized on this task; Artifact payload cannot edit migrations concurrently.
 
+## CLOUD-AGG-CTX-ADMIN-PG-01 - PostgreSQL Administrative Context Recovery
+
+1. `completed` - Trace manual compact and historical recovery API paths and retain
+   manual compact as a local-only capability for now.
+2. `in_progress` - Add an explicitly injected PostgreSQL recovery path using the
+   existing administrative Context CAS and canonical transaction result.
+3. `pending` - Prove stale revision, missing/stale pointer, namespace isolation,
+   projection atomicity and HTTP compatibility on real PostgreSQL.
+4. `pending` - Run API/storage gates, record evidence and move to Review.
+
+### Decisions
+
+- YAGNI: do not invent a PostgreSQL administrative new-capsule transaction.
+- Do not perform a second Session/Workspace save after the aggregate commit.
+- Runtime profile selection remains owned by `CLOUD-CONTROL-PLANE-PG-01`.
+
 ## CLOUD-AGG-TASK-PG-01 - PostgreSQL Task And Segment Index
 
 1. `completed` - Trace the SQLite Task/Segment projection, explicit rebuild and

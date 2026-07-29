@@ -132,6 +132,9 @@
   before the PostgreSQL Handoff aggregate. Its `290` related tests pass; SQLite
   work stops at this compatibility contract. `CLOUD-AGG-HANDOFF-PG-01` is now the
   active v8 migration owner, while Artifact payload implementation remains locked.
+- Active Context follow-up: `CLOUD-AGG-CTX-ADMIN-PG-01` reuses the v7
+  administrative CAS only for historical capsule recovery in an explicitly injected
+  PostgreSQL store. It does not add PostgreSQL manual compact or select a backend.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
   on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
   path-bounded microservice cards own provider expectations, SCM credential

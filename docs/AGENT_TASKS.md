@@ -1162,6 +1162,24 @@ cloud mainline and is not built or changed by these cards.
 - Acceptance: stale source facts cause zero writes, concurrent successor is unique,
   all Handoff rows roll back together, and old claims cannot acknowledge new work.
 
+### CLOUD-AGG-CTX-ADMIN-PG-01 - PostgreSQL Administrative Context Recovery
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Branch: `codex/cloud-agg-ctx-admin-pg-01`
+- Depends on: `CLOUD-AGG-CTX-PG-01` and `CLOUD-AGG-WORKSPACE-PG-01`
+- Owned paths: `apps/api/src/zebra_agent_api/session_context_control.py`, focused
+  API composition seam if required, `tests/api/test_session_context_control.py`,
+  focused PostgreSQL Context recovery tests, and this task's governance records
+- Goal: map historical-capsule recovery in an explicitly injected PostgreSQL
+  Context store to the existing `commit_administrative_activation` transaction.
+- Acceptance: namespace comes only from composition; expected Session revision and
+  active capsule are explicit CAS inputs; canonical Event/Session/Workspace results
+  are returned without a second projection write; stale/missing pointer and Workspace
+  facts fail closed; the existing HTTP request/response remains compatible.
+- Non-goals: PostgreSQL manual compact, new capsule creation, migration, backend
+  selector, full PostgreSQL Store bundle, environment configuration or Desktop.
+
 ### CLOUD-AGG-HANDOFF-CON-01 - Fenced Handoff Dispatch Contract
 
 - Status: `Review`
