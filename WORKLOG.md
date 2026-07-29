@@ -6294,3 +6294,15 @@ actual byte access.
   files are `480/119` lines, the microservice file-size gate passes `901` files,
   backend tests pass `1851` with `60` skips, and release Eval passes `10/10`.
   Global Ruff/Mypy still report the known Web-pipeline baseline outside this card.
+- fast-forwarded the isolated local business branch `zebra-cloud-trench` from
+  `375dca92` to the verified microservice stack at `2759345c`; the original dirty
+  `main` worktree and external remote remain untouched. Target-branch verification
+  passes microservice file-size `901`, backend `1851 passed, 60 skipped`, and Eval
+  `10/10`. Activated `CLOUD-LEASE-01` only for combined evidence documentation;
+  full aggregate fencing remains locked.
+- completed the `CLOUD-LEASE-01` combined acceptance record. It reconciles real
+  PostgreSQL Lease `34/34`, Outbox `49/49` and combined consumer `58/58` evidence
+  with the current microservice backend/file-size/Eval gates, while explicitly
+  excluding Desktop, exactly-once claims, runtime backend selection, full aggregate
+  fencing and production cutover. Parent card moved to Review; `CLOUD-AGG-FENCE-01`
+  remains Locked.

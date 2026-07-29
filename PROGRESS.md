@@ -65,7 +65,7 @@
   Docker Compose PostgreSQL 17.5 matrix passes `49/49`, including fault rollback,
   concurrency, restore epoch, namespace and response-loss cases. It is not runtime-
   selected; Worker integration and any cloud-readiness claim remain locked.
-- Effect consumer task in Review: `CLOUD-EFFECT-CONSUMER-01` runs Lease heartbeat
+- Integrated Effect consumer task: `CLOUD-EFFECT-CONSUMER-01` runs Lease heartbeat
   on a background thread before recovery, checks ownership at Event and external
   Effect boundaries, and releases through one fenced lifecycle exit. Explicitly
   injected cloud runtimes can now schedule, claim and terminalize durable Effect
@@ -76,16 +76,18 @@
   crash, response-loss and reconciliation cases; dedicated containers, volumes and
   network were removed after the run. Deterministic and full-suite gates retain
   only the confirmed inherited failures.
+- Local microservice integration: the reviewed Lease contract, PostgreSQL Lease,
+  Effect Outbox and Worker consumer cards are fast-forwarded onto the isolated
+  `zebra-cloud-trench@2759345c`. `CLOUD-LEASE-01` is in Review with a combined
+  evidence record; it does not select PostgreSQL at runtime or claim full
+  aggregate fencing, production cutover or exactly-once external execution.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
   on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
   path-bounded microservice cards own provider expectations, SCM credential
   fixtures, Worker cancellation convergence and Core Event contract
-  extraction. `BASE-MDL-EXPECT-01` is in Review after reducing the full suite from
-  nine to seven failures. `BASE-SCM-CRED-01` is also in Review after removing all
-  five expired-fixture failures. `BASE-WKR-CANCEL-01` is in Review after closing
-  the durable cancellation race, and `BASE-EVT-SIZE-01` is in Review after the
-  microservice file-size, backend, Core typing and Eval gates pass. Desktop is
-  explicitly outside the new Zebra microservice mainline.
+  extraction. All four microservice repair cards are locally integrated after the
+  provider, SCM, cancellation, Core file-size, backend and Eval gates pass. Desktop
+  is explicitly outside the new Zebra microservice mainline.
 - Agent Definition architecture task in Review: `AGENT-DEF-ADR-01` records accepted
   Definition control-plane decisions and updates the final architecture. It
   separates Task-level Definition configuration from Attempt-level execution

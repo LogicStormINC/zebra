@@ -1,5 +1,23 @@
 # Task Plan
 
+## CLOUD-LEASE-01 - Lease And Event/Effect Delivery Parent Gate
+
+1. `completed` - Fast-forward the reviewed cloud and microservice repair stack onto
+   the isolated local `zebra-cloud-trench` business branch.
+2. `completed` - Reconcile the separate Lease `34/34`, Outbox `49/49` and combined
+   Consumer/PostgreSQL `58/58` evidence against the frozen parent contract.
+3. `completed` - Write the combined acceptance record with guarantees, exclusions
+   and the explicit no-exactly-once/no-production-cutover boundary.
+4. `completed` - Run document consistency checks, move the parent gate to Review and
+   leave full aggregate fencing locked.
+
+### Decisions
+
+- The existing consumer host script is already the combined matrix; no duplicate
+  Compose runner or broker is needed.
+- Desktop is outside this microservice gate. Core/API/Worker/storage/PostgreSQL,
+  dependency Compose and release Eval remain in scope.
+
 ## BASE-EVT-SIZE-01 - Context Event Contract Extraction
 
 1. `completed` - Confirm `ContextCapsuleCreatedPayload` is the smallest cohesive

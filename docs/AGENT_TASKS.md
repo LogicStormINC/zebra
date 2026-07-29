@@ -58,13 +58,13 @@
   behind the reviewed Mem0 Spike and its storage, Gateway, and Compose prerequisites.
 - `CLOUD-PG-PLAN-01` and `CLOUD-PG-01` are `Review` on their dedicated branches;
   the docs-only migration/restore decisions precede the real PostgreSQL Event/Projection Adapter.
-- `CLOUD-LEASE-PLAN-01`, `CLOUD-LEASE-CON-01`, `CLOUD-LEASE-PG-01`,
-  `CLOUD-EFFECT-OUTBOX-01`, and `CLOUD-EFFECT-CONSUMER-01` are `Review` in
-  dependency order. Full aggregate fencing remains `Locked`.
+- `CLOUD-LEASE-CON-01`, `CLOUD-LEASE-PG-01`, `CLOUD-EFFECT-OUTBOX-01`, and
+  `CLOUD-EFFECT-CONSUMER-01` are `Done` on the isolated local business branch.
+  Their parent `CLOUD-LEASE-01` is `Review`; full aggregate fencing remains `Locked`.
 - Exact replay on `zebra-cloud-trench@375dca92` proves all nine remaining suite
-  failures are business-baseline defects. `BASE-MDL-EXPECT-01` and
-  `BASE-SCM-CRED-01`, `BASE-WKR-CANCEL-01`, and `BASE-EVT-SIZE-01` are `Review`.
-  No business-baseline repair card remains active.
+  failures are business-baseline defects. `BASE-MDL-EXPECT-01`,
+  `BASE-SCM-CRED-01`, `BASE-WKR-CANCEL-01`, and `BASE-EVT-SIZE-01` are `Done`.
+  No microservice baseline repair card remains active.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -784,7 +784,7 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
 
 ### CLOUD-LEASE-CON-01 - Core Lease And Fencing Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Depends on: locally reviewed `CLOUD-LEASE-PLAN-01`; explicitly activated for
   local stacked implementation by the maintainer on 2026-07-28. Merge still
@@ -834,7 +834,7 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
 
 ### CLOUD-LEASE-PG-01 - PostgreSQL Epoch And Lease Adapter
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Depends on: locally reviewed `CLOUD-LEASE-CON-01` and `CLOUD-PG-01`;
   explicitly activated for local stacked implementation by the maintainer on
@@ -874,7 +874,7 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
 
 ### CLOUD-EFFECT-OUTBOX-01 - Fenced Effect Dispatch Aggregate
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Depends on: `CLOUD-LEASE-PG-01` integrated at `31969e22` and explicit
   maintainer activation on 2026-07-28
@@ -899,7 +899,7 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
 
 ### CLOUD-EFFECT-CONSUMER-01 - Worker Fenced Effect Consumer
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Depends on: locally reviewed `CLOUD-EFFECT-OUTBOX-01@69e34c0c` and explicit
   maintainer activation on 2026-07-28. This is a local stacked implementation
@@ -939,7 +939,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### BASE-MDL-EXPECT-01 - Provider Rejection Contract Expectations
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Branch: `codex/baseline-model-contract-01`
 - Depends on: exact baseline replay recorded on 2026-07-29
@@ -955,7 +955,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### BASE-SCM-CRED-01 - Time-Stable SCM Credential Fixtures
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Branch: `codex/baseline-scm-credential-fixtures-01`
 - Depends on: none; execute after `BASE-MDL-EXPECT-01` in the local repair stack
@@ -971,7 +971,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### BASE-WKR-CANCEL-01 - Durable Cancellation Finalization Race
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Branch: `codex/baseline-worker-cancel-01`
 - Depends on: none; execute after `BASE-SCM-CRED-01` in the local repair stack
@@ -990,7 +990,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### BASE-EVT-SIZE-01 - Context Event Contract Extraction
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Branch: `codex/baseline-event-contract-size-01`
 - Depends on: none; execute after `BASE-WKR-CANCEL-01` in the local repair stack
@@ -1009,15 +1009,21 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-LEASE-01 - Lease And Event/Effect Delivery Parent Gate
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
-- Depends on: all four Lease/Effect implementation cards Done/merged, all four
-  business-baseline repair cards Done/merged, and combined real PostgreSQL evidence
-  approved
+- Status: `Review`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
+- Owned paths: `docs/CLOUD_Lease_Effect_联合验收记录_v1.0.md` (new) and governance
+  records
+- Depends on: all four Lease/Effect implementation cards and all four microservice
+  baseline repair cards integrated locally into `zebra-cloud-trench@2759345c`;
+  combined real PostgreSQL evidence `58/58` supplied by the maintainer on 2026-07-29
 - Goal: close Session Lease plus Event/Effect execution ownership and delivery;
   it does not certify every Worker-owned aggregate as multi-Worker safe.
 - Acceptance: the combined race, restore, crash and duplicate-delivery matrix
   passes without claiming exactly-once external execution.
+- Evidence: `docs/CLOUD_Lease_Effect_联合验收记录_v1.0.md` reconciles Lease
+  `34/34`, Outbox `49/49`, combined PostgreSQL/consumer `58/58`, microservice
+  backend `1851 passed, 60 skipped`, file-size `901` and Eval `10/10`.
 
 ### CLOUD-AGG-FENCE-01 - Full Worker Aggregate Fencing Gate
 
