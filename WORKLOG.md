@@ -6319,3 +6319,6 @@ actual byte access.
 - validated the inventory and registry with `git diff --check`, confirmed the new
   focused document is `178` lines, and confirmed no implementation card was
   accidentally made Ready or In Progress. The planning card is ready for Review.
+- accepted the validated documentation-only inventory for local mainline
+  integration. Only the prerequisite contract card becomes Ready; no PostgreSQL
+  aggregate adapter or parent safety gate is unlocked by this acceptance.

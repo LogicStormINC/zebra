@@ -81,12 +81,12 @@
   `zebra-cloud-trench@2759345c`. `CLOUD-LEASE-01` is in Review with a combined
   evidence record; it does not select PostgreSQL at runtime or claim full
   aggregate fencing, production cutover or exactly-once external execution.
-- Review aggregate-fencing inventory: `CLOUD-AGG-FENCE-PLAN-01` traces the
+- Completed aggregate-fencing inventory: `CLOUD-AGG-FENCE-PLAN-01` traces the
   authoritative Context, Handoff, Workspace/Task, Model/Tool, provider-history,
   Artifact and delivery-audit paths and splits them into dependency-ordered cards.
   It keeps Event-derived/read-only models out of the authority layer and API
-  commands outside Worker Lease fencing. It is documentation-only;
-  `CLOUD-AGG-FENCE-01` and all implementation cards remain Locked pending review.
+  commands outside Worker Lease fencing. It is documentation-only and unlocks only
+  `CLOUD-AGG-FENCE-CON-01`; the parent gate and adapter cards remain Locked.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
   on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
   path-bounded microservice cards own provider expectations, SCM credential

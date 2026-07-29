@@ -1027,7 +1027,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Branch: `codex/cloud-agg-fence-plan-01`
 - Depends on: reviewed `CLOUD-LEASE-01` evidence and the integrated local
@@ -1048,7 +1048,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-FENCE-CON-01 - Worker Mutation Fencing Contract
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `UNASSIGNED`
 - Branch: `codex/cloud-agg-fence-con-01` after inventory approval
 - Depends on: approved and integrated `CLOUD-AGG-FENCE-PLAN-01`
