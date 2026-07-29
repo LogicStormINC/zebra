@@ -21,17 +21,36 @@
 ## CLOUD-AGG-HANDOFF-CON-01 - Fenced Handoff Dispatch Contract
 
 1. `completed` - Trace actual Worker claim/ACK callers and reject unrelated Port cleanup.
-2. `in_progress` - Add claim token and full LeaseFence receipt semantics to the
+2. `completed` - Add claim token and full LeaseFence receipt semantics to the
    portable dispatch Port, SQLite migration and Worker recovery path.
-3. `pending` - Prove legacy-claim requeue, token rotation, stale fence/expiry ACK
+3. `completed` - Prove legacy-claim requeue, token rotation, stale fence/expiry ACK
    rejection and local/API compatibility.
-4. `pending` - Run Core/Storage/Worker gates, record evidence and move to Review.
+4. `completed` - Run Core/Storage/Worker gates, record evidence and move to Review.
 
 ### Decisions
 
 - Preserve unused legacy `SessionHandoffPort` batch wrappers for compatibility;
   only the independently injected dispatch Store becomes the strict Worker path.
 - Use a standard-library random token and do not touch PostgreSQL migrations.
+
+## CLOUD-AGG-HANDOFF-PG-01 - PostgreSQL Handoff And Dispatch Aggregate
+
+1. `in_progress` - Rebase the frozen Handoff aggregate boundary on v1-v7 and split
+   the oversized migration catalog without changing historical checksums.
+2. `pending` - Add v8 PostgreSQL Handoff operation/envelope/lineage/dispatch schema
+   and one connection-scoped atomic commit using existing Event, Lease, Workspace
+   and Task primitives.
+3. `pending` - Implement database-time fenced dispatch claim/reclaim/ACK and prove
+   concurrency, stale authority, rollback, lost-response and recovery behavior.
+4. `pending` - Run real PostgreSQL and microservice gates, record host evidence and
+   move to Review without selecting the runtime backend.
+
+### Decisions
+
+- PostgreSQL owns the cloud Handoff fact source; SQLite receives no further feature work.
+- Reuse v5 Task rollover and existing Event/Workspace/Lease transaction primitives;
+  do not duplicate their rules inside the Handoff adapter.
+- v8 is serialized on this task; Artifact payload cannot edit migrations concurrently.
 
 ## CLOUD-AGG-TASK-PG-01 - PostgreSQL Task And Segment Index
 

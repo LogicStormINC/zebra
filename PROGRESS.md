@@ -129,7 +129,9 @@
   authority, and leaves provider, key encoding, API delivery and runtime selection
   unchosen. It unlocks planning for `CLOUD-ART-PAYLOAD-PG-01`. The active
   `CLOUD-AGG-HANDOFF-CON-01` adds a tokenized Lease-fenced SQLite dispatch receipt
-  before the PostgreSQL Handoff aggregate. The latter does not reserve a migration.
+  before the PostgreSQL Handoff aggregate. Its `290` related tests pass; SQLite
+  work stops at this compatibility contract. `CLOUD-AGG-HANDOFF-PG-01` is now the
+  active v8 migration owner, while Artifact payload implementation remains locked.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
   on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
   path-bounded microservice cards own provider expectations, SCM credential

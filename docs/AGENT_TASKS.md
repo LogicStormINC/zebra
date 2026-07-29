@@ -1146,12 +1146,17 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-HANDOFF-PG-01 - PostgreSQL Handoff And Dispatch Aggregate
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `lukeding`
+- Branch: `codex/cloud-agg-handoff-pg-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01`,
   `CLOUD-AGG-TASK-PG-01`, and `CLOUD-AGG-HANDOFF-CON-01`
-- Owned paths: focused PostgreSQL Handoff/dispatch modules, current migration
-  hotspot, API/Worker Handoff wiring and real PostgreSQL tests
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/{session_handoffs,session_handoff_dispatch,session_handoff_facts,migrations,__init__}.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`, focused API/Worker
+  PostgreSQL Handoff wiring, real PostgreSQL Handoff/dispatch tests, the host
+  Compose runner, and this task's governance records
+- Migration: v8; split the current migration catalog before adding v8 so source
+  files return below the repository's 500-line hard limit.
 - Goal: preserve the existing all-or-nothing Handoff boundary and add fenced,
   multi-Worker dispatch claim/ack.
 - Acceptance: stale source facts cause zero writes, concurrent successor is unique,
@@ -1159,7 +1164,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-HANDOFF-CON-01 - Fenced Handoff Dispatch Contract
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Branch: `codex/cloud-agg-handoff-con-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-LEASE-CON-01`, and the existing
@@ -1178,6 +1183,11 @@ cloud mainline and is not built or changed by these cards.
   and the legacy `SessionHandoffPort` batch wrappers remain compatible.
 - Non-goals: no PostgreSQL migration, Handoff aggregate implementation, generic
   authority abstraction, API route change, or removal of compatibility wrappers.
+- Evidence: claim and ACK verify the child Session's current complete LeaseFence
+  in the same SQLite transaction as dispatch mutation; reclaim rotates a standard-
+  library random token, incomplete legacy claims are requeued, and old receipts
+  cannot ACK after release/takeover. Changed-scope Ruff and strict Mypy pass;
+  `290` Core/Storage/Worker/API tests and `git diff --check` pass.
 
 ### CLOUD-MODEL-TOOL-PG-01 - PostgreSQL Model And Tool Projections
 
