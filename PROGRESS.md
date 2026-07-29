@@ -148,14 +148,16 @@
   full-fence ACK; Worker recovery now threads the acquired fence and cloud drift writes
   use the existing fenced projection transaction. The isolated PostgreSQL aggregate
   matrix passes `20/20`; Core/Storage/API/Worker pass `822/822` with `102` skips.
-- Artifact v9 is implementation-ready but remains correctly Locked behind active
-  Handoff migration v8. The preflight audit found no installed S3-compatible SDK and
-  confirmed that the local `ArtifactPayloadStorePort` lacks namespace/fence/staged
-  lifecycle semantics. The v9 card now requires a separate fenced cloud lifecycle
-  Port and reserve -> object verification -> Event -> finalize/compensate ordering;
-  its minimum S3 client is direct botocore with MinIO bucket versioning and exact
-  object-version evidence. It explicitly excludes SQLite, Desktop, runtime selection,
-  Effect linkage and API read composition.
+- Artifact v9 preflight confirmed that the local `ArtifactPayloadStorePort` lacks
+  namespace/fence/staged lifecycle semantics. The v9 card requires the reviewed
+  fenced cloud lifecycle Port and reserve -> object verification -> Event ->
+  finalize/compensate ordering; its object boundary is direct botocore with MinIO
+  bucket versioning and exact object-version evidence. It explicitly excludes SQLite,
+  Desktop, runtime selection, Effect linkage and API read composition.
+- Active Artifact v9 implementation now starts from integrated Handoff v8 at
+  `cfe40713`. `CLOUD-ART-PAYLOAD-PG-01` owns the PostgreSQL lifecycle metadata,
+  provider-neutral object orchestration, Worker Event binding and isolated
+  PostgreSQL/MinIO fault matrix; it does not select a runtime backend or add Desktop.
 - Completed Artifact contract slice: `CLOUD-ART-LIFECYCLE-CON-01` separates the
   provider-neutral cloud lifecycle Port/domain from the unchanged local
   `ArtifactPayloadStorePort`. It can proceed in Core without touching Handoff v8,

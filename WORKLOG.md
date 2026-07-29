@@ -6519,3 +6519,13 @@ actual byte access.
   response replay. Core/Storage/API/Worker suites pass `822/822` with `102` skips;
   scoped Ruff and `git diff --check` pass. Full Mypy retains the same six inherited
   errors in untouched web-crawl, MCP policy and Worker export files.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 activation
+
+- Fast-forwarded reviewed Handoff v8 through `cfe40713` into `zebra-cloud-trench`,
+  removed its clean merged task worktree/branch and created this task from that head.
+- Moved the v9 card from Locked to In Progress with one owner and branch. Its owned
+  boundary remains PostgreSQL lifecycle metadata, the reviewed S3 object adapter,
+  focused Worker Event orchestration, real PostgreSQL/MinIO tests and governance.
+- Preserved SQLite, Desktop, runtime selection, signed delivery, Effect linkage and
+  generic Artifact read composition outside this task.

@@ -18,11 +18,11 @@
 - `artifact://` is stable identity; provider locator and credentials stay internal.
 - Freeze the failure protocol before choosing an SDK, adapter or migration.
 
-## CLOUD-ART-PAYLOAD-PG-01 - Shared Artifact Payload Authority (Locked)
+## CLOUD-ART-PAYLOAD-PG-01 - Shared Artifact Payload Authority
 
 1. `completed` - Audit the current local payload Port, Worker/Event write paths,
    PostgreSQL migration serialization and MinIO dependency baseline.
-2. `pending` - After Handoff v8 is integrated, claim the card and add migration v9
+2. `in_progress` - After Handoff v8 is integrated, claim the card and add migration v9
    plus a focused cloud lifecycle Port; do not add optional fence parameters to the
    local compatibility Port.
 3. `pending` - Implement fenced reserve, conditional object put/head, Event URI

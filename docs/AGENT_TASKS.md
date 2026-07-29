@@ -1250,20 +1250,19 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-ART-PAYLOAD-PG-01 - Shared Artifact Payload Authority
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `lukeding`
 - Depends on: `CLOUD-ART-LIFECYCLE-CON-01`, `CLOUD-ART-OBJECT-S3-01`, and completed
-  `CLOUD-AGG-HANDOFF-PG-01`; Handoff exclusively owns migration v8 until merged.
-- Branch: `codex/cloud-art-payload-pg-01` after the v8 owner reaches Review and is
-  integrated into `zebra-cloud-trench`
+  `CLOUD-AGG-HANDOFF-PG-01`; all three dependencies are integrated in
+  `zebra-cloud-trench`.
+- Branch: `codex/cloud-art-payload-pg-01`
 - Owned paths: focused cloud Artifact lifecycle Port/domain under `agent-core`,
   PostgreSQL metadata and provider-neutral S3-compatible object adapters under
   `agent-storage`, `packages/agent-storage/pyproject.toml`, `uv.lock`, migration v9
   and exports, focused Worker Event preparation seam, MinIO bucket-versioning
   bootstrap, isolated PostgreSQL/MinIO Compose runner, Artifact lifecycle/fault tests,
   and this task's governance records
-- Migration: v9 only after the immutable v1-v8 catalog is integrated; this task may
-  not edit the migration hotspot while v8 is active.
+- Migration: v9; the immutable v1-v8 catalog is integrated at `cfe40713`.
 - Goal: replace local filesystem payload authority with cross-Worker storage.
 - Acceptance: idempotency/conflict, SHA, stale fence, cross-process read, object/
   metadata fault compensation, prune/sweep concurrency and namespace tests pass.
