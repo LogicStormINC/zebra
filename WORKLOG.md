@@ -1,5 +1,15 @@
 # Progress Log
 
+## 2026-07-29 CLOUD-MEMORY-PG-01 activation
+
+- fast-forwarded reviewed Core governed-memory contract `4bda7f72` into
+  `zebra-cloud-trench`, removed its clean task worktree/branch and created this
+  PostgreSQL v10 task from the updated mainline
+- claimed only v10 authority/receipt adapters, aggregate transactions, repeatable
+  import/rebuild tooling, narrow cloud composition seams and focused tests
+- kept Mem0 delivery, local SQLite feature work, Desktop, generic runtime selection
+  and production cutover outside the task
+
 ## 2026-07-29 CLOUD-MEMORY-CON-01 completion
 
 - added governed Memory entry/tombstone, creation/revision transition, Worker/Admin

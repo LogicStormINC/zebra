@@ -1,5 +1,26 @@
 # Task Plan
 
+## CLOUD-MEMORY-PG-01 - PostgreSQL Governed Memory Authority
+
+1. `in_progress` - Re-audit v1-v9 migrations and aggregate transaction patterns,
+   then freeze the smallest v10 schema and lock order against the reviewed contract.
+2. `pending` - Implement namespace-bound PostgreSQL reads, authority/tombstone scan,
+   Worker candidate aggregate and administrative review aggregate with receipts.
+3. `pending` - Add repeatable SQLite import/rebuild tooling and narrow cloud
+   composition seams without enabling mixed-authority runtime selection.
+4. `pending` - Prove migration, namespace/query parity, CAS/concurrency, rollback,
+   response-loss replay and snapshot scan against real PostgreSQL 17.5; review and
+   integrate into `zebra-cloud-trench`.
+
+### Decisions
+
+- PostgreSQL v10 is the sole cloud governed-Memory fact contract; Mem0 remains a
+  derived index and stays outside this task.
+- Reuse the existing PostgreSQL transaction, migration and aggregate authority
+  patterns; do not add a generic Unit of Work or change local SQLite behavior.
+- Runtime cutover remains gated until all authoritative stores are available in one
+  coherent cloud composition.
+
 ## CLOUD-MEMORY-CON-01 - Governed Memory Mutation Contract
 
 1. `completed` - Freeze the smallest validated authority, revision, operation,

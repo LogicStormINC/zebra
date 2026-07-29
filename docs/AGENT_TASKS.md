@@ -636,8 +636,9 @@ by the Spike, with no Mem0 type escaping the integration package.
 
 ### CLOUD-MEMORY-PG-01 - PostgreSQL Governed Memory Authority
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `lukeding`
+- Branch: `codex/cloud-memory-pg-01`
 - Depends on: `CLOUD-MEMORY-CON-01` and integrated PostgreSQL v1-v9
 - Owned paths: PostgreSQL governed Memory migration/adapter/aggregate/operation-receipt
   modules,
