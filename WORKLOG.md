@@ -1,5 +1,15 @@
 # Progress Log
 
+## 2026-07-29 CLOUD-MEMORY-PG-PLAN-01 activation
+
+- stopped `CLOUD-SESSION-HISTORY-PG-01` before implementation after independent
+  audits showed request-provided UUIDs are not an approved tenant/session scope
+- verified Mem0 adapter and Lease/Effect prerequisites are integrated, then found the
+  governed `MemoryStorePort` still has only a SQLite implementation
+- created isolated `codex/cloud-memory-pg-plan-01` and claimed a docs-only planning
+  boundary so PostgreSQL Memory authority precedes the Mem0 delivery ledger
+
+
 ## 2026-07-28 CTX-MEM-01 Context Continuity And Governed Recall
 
 - audited GitHub issue `#197` against the runtime path and found three real gaps:

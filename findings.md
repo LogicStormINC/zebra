@@ -1,5 +1,21 @@
 # Findings
 
+## CLOUD-MEMORY-PG-PLAN-01 preflight - 2026-07-29
+
+- `MemoryStorePort` is injected across API and Worker, but only
+  `SQLiteMemoryStore` implements it. No PostgreSQL table or adapter currently owns
+  governed Memory facts on the cloud branch.
+- Mem0 is already behind a provider-neutral Gateway and correctly returns references
+  that require `MemoryStorePort` revalidation. Its missing delivery ledger must not
+  be built on top of the remaining local SQLite authority.
+- Current review is a multi-write sequence: read candidate/scope, update reviewed and
+  superseded records, append review Event, then save Session projection. Blind
+  last-writer-wins `upsert` cannot make this crash- or concurrency-safe in PostgreSQL.
+- The next implementation must preserve the rich repo/user/tenant inventory/query
+  surface while distinguishing opaque deployment namespace isolation from business
+  visibility labels. Zebra does not become a tenant directory.
+
+
 ## MEM-MEM0-ADP-01 - 2026-07-28
 
 - The installed `httpx` client is sufficient; no Mem0 SDK or new dependency is

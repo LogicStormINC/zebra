@@ -1,5 +1,25 @@
 # Task Plan
 
+## CLOUD-MEMORY-PG-PLAN-01 - PostgreSQL Governed Memory Authority Plan
+
+1. `in_progress` - Inventory the current SQLite Memory fact source, all mutation/read
+   callers, Event coupling, scope semantics and Mem0 delivery boundary.
+2. `pending` - Freeze PostgreSQL identity, revision/CAS, atomic review, namespace,
+   query/search, migration, rebuild and recovery contracts.
+3. `pending` - Split Core contract, PostgreSQL adapter and Mem0 delivery successors
+   with non-overlapping owned paths and dependency gates.
+4. `pending` - Review the plan against current code and architecture, record evidence
+   and move the docs-only card to Review.
+
+### Decisions
+
+- Zebra governed `MemoryRecord` remains the fact source; Mem0 is a rebuildable derived
+  semantic index and never receives authority over lifecycle or content.
+- A PostgreSQL delivery ledger cannot safely depend on the current SQLite-only
+  `MemoryStorePort`, so governed-memory migration precedes `MEM-GW-DEL-01`.
+- Do not preserve blind last-writer-wins `upsert` as the cloud mutation contract;
+  review, supersession, Event and Session Projection require an explicit aggregate.
+
 ## CLOUD-ART-OBJ-CON-01 - Artifact Object And Metadata Authority Contract
 
 1. `completed` - Audit the existing local Artifact authority, MinIO baseline and

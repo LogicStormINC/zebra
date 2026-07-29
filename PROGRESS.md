@@ -190,6 +190,12 @@
   required; cloud composition disables legacy prune. The real PostgreSQL+MinIO matrix
   passes `39/39`, full tests pass `1943` with `145` gated skips, and no Artifact table
   or migration, SQLite feature, Desktop path or runtime backend selector was added.
+- Active governed-memory planning slice `CLOUD-MEMORY-PG-PLAN-01` starts from
+  `zebra-cloud-trench@f9568e34`. Audit confirmed the cloud branch still has only a
+  SQLite `MemoryStorePort`; Mem0 is correctly derived but its future delivery ledger
+  would otherwise depend on a local fact source. This docs-only card freezes the
+  PostgreSQL Memory authority and atomic review boundary before migration or delivery
+  implementation. Session History remains Locked on trusted Host scope.
 - Completed Artifact contract slice: `CLOUD-ART-LIFECYCLE-CON-01` separates the
   provider-neutral cloud lifecycle Port/domain from the unchanged local
   `ArtifactPayloadStorePort`. It can proceed in Core without touching Handoff v8,

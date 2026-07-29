@@ -477,9 +477,21 @@ read-only。
   Compose service；timeout、429、5xx、schema drift and lookup outage degrade；provider refs
   are canonical UUIDs；disabled mode performs no network I/O。
 
+### CLOUD-MEMORY-PG-PLAN-01 — PostgreSQL governed memory authority plan
+
+- Status: `In Progress`；docs-only；branch `codex/cloud-memory-pg-plan-01`。
+- Depends on: integrated PostgreSQL v1-v9、authoritative Store seam、Memory Gateway
+  contract and Mem0 Adapter。
+- Deliverable: freeze governed Memory identity/revision, atomic review/Event boundary,
+  namespace isolation, SQLite migration/rebuild and PostgreSQL acceptance matrix；split
+  Core and Storage implementation cards。
+- Acceptance: Mem0 delivery cannot begin while governed facts remain SQLite-only；no
+  implementation or production claim is added by this plan。
+
 ### MEM-GW-DEL-01 — Memory delivery and deletion ledger
 
-- Status: `Locked`；depends on `MEM-MEM0-ADP-01` and `CLOUD-LEASE-01`。
+- Status: `Locked`；depends on `MEM-MEM0-ADP-01`, `CLOUD-LEASE-01` and the
+  PostgreSQL governed-memory implementation split by `CLOUD-MEMORY-PG-PLAN-01`。
 - Candidate paths: delivery storage/worker adapter, delete audit and tests。
 - Deliverable: outbox/idempotency/reconciliation/retention/deletion evidence and rebuild path。
 - Acceptance: retry cannot duplicate governed memory；search hits are revalidated through

@@ -579,12 +579,33 @@ by the Spike, with no Mem0 type escaping the integration package.
 - focused contract tests and the pinned real Compose Mem0 lifecycle pass; no
   runtime wiring or automatic write retry is included before `MEM-GW-DEL-01`
 
+### CLOUD-MEMORY-PG-PLAN-01 - PostgreSQL Governed Memory Authority Plan
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Branch: `codex/cloud-memory-pg-plan-01`
+- Depends on: integrated PostgreSQL v1-v9 foundation, `CLOUD-STO-AUTH-01`,
+  `MEM-GW-CON-01` and `MEM-MEM0-ADP-01`
+- Owned paths: `docs/CLOUD_PostgreSQL_Governed_Memory_权威与迁移合同_v1.0.md`
+  (new), `docs/AGENT_TASKS.md`, `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`,
+  `PROGRESS.md`, `task_plan.md`, `findings.md`, and `WORKLOG.md`
+- Goal: freeze the PostgreSQL governed-memory fact source, atomic mutation,
+  namespace, migration and Mem0-derived-index boundaries before implementation.
+- Acceptance: every Memory read/write caller is assigned to a fact or projection;
+  blind upsert races, review/Event atomicity, scope isolation, search parity,
+  migration/rebuild order and real-PostgreSQL gates are explicit; implementation is
+  split into dependency-ordered path-bounded cards.
+- Non-goals: no Python/SQL implementation, SQLite behavior change, Mem0 call,
+  backend selector, Desktop, Host tenant directory or production cutover claim.
+
 ### MEM-GW-DEL-01 - Memory Delivery And Deletion Ledger
 
 - Status: `Locked`
 - Owner: `UNASSIGNED`
 - Suggested role: `STORAGE / WORKER`
-- Depends on: merged `MEM-MEM0-ADP-01` and `CLOUD-LEASE-01`
+- Depends on: merged `MEM-MEM0-ADP-01`, `CLOUD-LEASE-01`, and the reviewed
+  PostgreSQL governed-memory authority implementation split by
+  `CLOUD-MEMORY-PG-PLAN-01`
 - Branch: `TBD`
 - Candidate owned paths: focused memory delivery/outbox storage, worker adapter,
   reconciliation and tests
