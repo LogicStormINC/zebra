@@ -6261,3 +6261,8 @@ actual byte access.
   behavior; Worker audit found a real durable-cancellation finalization race; the
   size gate is one Desktop style extraction and one existing Core contract move.
   Activated only `BASE-MDL-EXPECT-01`; later cards remain Ready and path-bounded.
+- `BASE-MDL-EXPECT-01` changed only two stale tests: the positive OpenAI-compatible
+  case now advertises its tool and DeepSeek invalid reasoning asserts the typed
+  retryable rejection. Provider files pass `41/41`, the security trio passes
+  `3/3`, Ruff passes, and the full suite improves to `1846 passed, 60 skipped,
+  7 failed`. Activated `BASE-SCM-CRED-01` next.

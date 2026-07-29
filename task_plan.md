@@ -1,14 +1,14 @@
 # Task Plan
 
-## BASE-MDL-EXPECT-01 - Provider Rejection Contract Expectations
+## BASE-SCM-CRED-01 - Time-Stable SCM Credential Fixtures
 
-1. `completed` - Reproduce both failures on exact `zebra-cloud-trench@375dca92`
-   and trace production callers plus the typed rejection boundary.
-2. `in_progress` - Update only stale provider tests: advertise the positive tool
-   and assert the typed DeepSeek invalid-response rejection.
-3. `pending` - Run both provider files, the focused rejection trio, Ruff and the
-   complete repository suite; record the reduced baseline.
-4. `pending` - Move the card to Review and activate `BASE-SCM-CRED-01` on a new
+1. `completed` - Reproduce all five failures and prove the shared fixed expiry is
+   checked against the real clock before token lookup or transport execution.
+2. `in_progress` - Replace only non-expiry-specialized fixture dates with one
+   deterministic valid expiry; keep production broker behavior unchanged.
+3. `pending` - Run session pull-request, SCM/broker, Ruff and complete repository
+   tests; record the reduced baseline.
+4. `pending` - Move the card to Review and activate `BASE-WKR-CANCEL-01` on a new
    path-bounded branch.
 
 ### Decisions
@@ -17,6 +17,14 @@
   remain unchanged.
 - Baseline repairs stack locally on the reviewed cloud branch only to restore its
   merge gate; they do not authorize a push, merge, backend selection or rollout.
+
+## BASE-MDL-EXPECT-01 - Provider Rejection Contract Expectations
+
+1. `completed` - Reproduce both failures and trace typed rejection callers.
+2. `completed` - Advertise the positive tool and assert typed DeepSeek rejection.
+3. `completed` - Pass provider `41/41`, security trio `3/3`, Ruff and full-suite
+   reduction to `7 failed, 1846 passed, 60 skipped`.
+4. `completed` - Move the card to Review and activate the SCM fixture card.
 
 ## CLOUD-EFFECT-CONSUMER-01 - Worker Fenced Effect Consumer
 

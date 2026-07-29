@@ -62,8 +62,9 @@
   `CLOUD-EFFECT-OUTBOX-01`, and `CLOUD-EFFECT-CONSUMER-01` are `Review` in
   dependency order. Full aggregate fencing remains `Locked`.
 - Exact replay on `zebra-cloud-trench@375dca92` proves all nine remaining suite
-  failures are business-baseline defects. `BASE-MDL-EXPECT-01` is `In Progress`;
-  the four disjoint SCM, Worker, Desktop and Core repair cards are `Ready`.
+  failures are business-baseline defects. `BASE-MDL-EXPECT-01` is `Review`,
+  `BASE-SCM-CRED-01` is `In Progress`, and the three disjoint Worker, Desktop and
+  Core repair cards are `Ready`.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -938,7 +939,7 @@ cloud architecture scope.
 
 ### BASE-MDL-EXPECT-01 - Provider Rejection Contract Expectations
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Branch: `codex/baseline-model-contract-01`
 - Depends on: exact baseline replay recorded on 2026-07-29
@@ -948,12 +949,15 @@ cloud architecture scope.
   rejection and advertised-tool boundary without changing production code.
 - Acceptance: advertised tool calls map back to internal names; unadvertised calls
   remain rejected; invalid DeepSeek reasoning is a typed retryable rejection.
+- Evidence: both provider files pass `41/41`, the focused security trio passes
+  `3/3`, Ruff passes, and the full suite improves from nine to seven failures with
+  `1846 passed, 60 skipped`.
 
 ### BASE-SCM-CRED-01 - Time-Stable SCM Credential Fixtures
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
-- Suggested branch: `codex/baseline-scm-credential-fixtures-01`
+- Status: `In Progress`
+- Owner: `Codex`
+- Branch: `codex/baseline-scm-credential-fixtures-01`
 - Depends on: none; execute after `BASE-MDL-EXPECT-01` in the local repair stack
 - Owned paths: `tests/api/session_pull_request/pull_request_support.py` and
   governance records

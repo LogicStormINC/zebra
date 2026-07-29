@@ -79,7 +79,14 @@ def test_openai_compatible_gateway_parses_tool_calls() -> None:
                 content="Read the README",
                 created_at=_created_at(),
             )
-        ]
+        ],
+        tools=(
+            ModelToolDefinition(
+                name="files.read",
+                description="Read one file.",
+                parameters={"type": "object", "properties": {}},
+            ),
+        ),
     )
 
     assert completion.assistant_message.content == "Tool calls proposed."
@@ -600,7 +607,7 @@ def _handle_tool_call_completion(request: httpx.Request) -> httpx.Response:
                                 "id": "call_1",
                                 "type": "function",
                                 "function": {
-                                    "name": "files.read",
+                                    "name": "files__read",
                                     "arguments": '{"path":"README.md"}',
                                 },
                             }
