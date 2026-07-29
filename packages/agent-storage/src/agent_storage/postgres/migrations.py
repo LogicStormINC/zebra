@@ -346,6 +346,11 @@ MIGRATIONS = (
         name="model_and_tool_event_projections",
         statements=(
             """
+            ALTER TABLE session_events
+            ADD CONSTRAINT session_events_projection_source
+            UNIQUE (deployment_namespace, session_id, sequence, event_id)
+            """,
+            """
             CREATE TABLE model_call_projections (
                 deployment_namespace TEXT NOT NULL,
                 session_id UUID NOT NULL,
@@ -361,8 +366,10 @@ MIGRATIONS = (
                 created_at TIMESTAMPTZ NOT NULL,
                 PRIMARY KEY (deployment_namespace, session_id, sequence),
                 UNIQUE (deployment_namespace, event_id),
-                FOREIGN KEY (deployment_namespace, event_id)
-                    REFERENCES session_events (deployment_namespace, event_id)
+                FOREIGN KEY (deployment_namespace, session_id, sequence, event_id)
+                    REFERENCES session_events (
+                        deployment_namespace, session_id, sequence, event_id
+                    )
             )
             """,
             """
@@ -376,8 +383,10 @@ MIGRATIONS = (
                 created_at TIMESTAMPTZ NOT NULL,
                 PRIMARY KEY (deployment_namespace, session_id, sequence),
                 UNIQUE (deployment_namespace, event_id),
-                FOREIGN KEY (deployment_namespace, event_id)
-                    REFERENCES session_events (deployment_namespace, event_id)
+                FOREIGN KEY (deployment_namespace, session_id, sequence, event_id)
+                    REFERENCES session_events (
+                        deployment_namespace, session_id, sequence, event_id
+                    )
             )
             """,
         ),

@@ -92,9 +92,11 @@ def index_event_in_transaction(
 
 def _upsert(connection: Any, table: str, values: tuple[object, ...]) -> None:
     columns = _MODEL_COLUMNS if table == "model_call_projections" else _TOOL_COLUMNS
+    updates = _MODEL_UPDATES if table == "model_call_projections" else _TOOL_UPDATES
     row = connection.execute(
         f"INSERT INTO {table} ({columns}) VALUES ({', '.join(['%s'] * len(values))}) "
-        "ON CONFLICT (deployment_namespace, session_id, sequence) DO NOTHING RETURNING event_id",
+        "ON CONFLICT (deployment_namespace, session_id, sequence) DO UPDATE SET "
+        f"{updates} WHERE {table}.event_id = EXCLUDED.event_id RETURNING event_id",
         values,
     ).fetchone()
     if row is not None:
@@ -116,6 +118,19 @@ input_token_estimate_error, output_tokens, total_tokens, latency_ms, cache_hit,
 cost_usd, assistant_message, tool_call_count, created_at"""
 _TOOL_COLUMNS = """deployment_namespace, session_id, sequence, event_id, tool_name,
 status, idempotency_key, output, artifact_uri, created_at"""
+_MODEL_UPDATES = """event_id = EXCLUDED.event_id, provider = EXCLUDED.provider,
+model_name = EXCLUDED.model_name, input_tokens = EXCLUDED.input_tokens,
+estimated_input_tokens = EXCLUDED.estimated_input_tokens,
+input_token_limit = EXCLUDED.input_token_limit,
+input_token_estimate_error = EXCLUDED.input_token_estimate_error,
+output_tokens = EXCLUDED.output_tokens, total_tokens = EXCLUDED.total_tokens,
+latency_ms = EXCLUDED.latency_ms, cache_hit = EXCLUDED.cache_hit,
+cost_usd = EXCLUDED.cost_usd, assistant_message = EXCLUDED.assistant_message,
+tool_call_count = EXCLUDED.tool_call_count, created_at = EXCLUDED.created_at"""
+_TOOL_UPDATES = """event_id = EXCLUDED.event_id, tool_name = EXCLUDED.tool_name,
+status = EXCLUDED.status, idempotency_key = EXCLUDED.idempotency_key,
+output = EXCLUDED.output, artifact_uri = EXCLUDED.artifact_uri,
+created_at = EXCLUDED.created_at"""
 
 
 def _model_record(event: SessionEvent) -> ModelCallRecord:

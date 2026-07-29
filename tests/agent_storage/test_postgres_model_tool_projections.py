@@ -88,6 +88,13 @@ def test_worker_index_is_fenced_idempotent_and_replayable(dsn: str) -> None:
     assert store.index_worker_event(model, authority=authority) is not None
     assert store.index_worker_event(tool, authority=authority) is not None
     assert store.index_worker_event(model, authority=authority) is not None
+    with psycopg.connect(dsn) as connection:
+        connection.execute(
+            "UPDATE model_call_projections SET assistant_message = 'corrupt', cache_hit = false"
+        )
+        connection.execute(
+            "UPDATE tool_run_projections SET tool_name = 'corrupt', output = 'corrupt'"
+        )
     assert store.replay_session(session_id) == 2
 
     conflicting = model.model_copy(update={"event_id": uuid4()})
@@ -102,8 +109,58 @@ def test_worker_index_is_fenced_idempotent_and_replayable(dsn: str) -> None:
         assert connection.execute("SELECT cache_hit FROM model_call_projections").fetchone() == (
             True,
         )
+        assert connection.execute(
+            "SELECT assistant_message FROM model_call_projections"
+        ).fetchone() == ("answer",)
+        assert connection.execute(
+            "SELECT tool_name, output FROM tool_run_projections"
+        ).fetchone() == (
+            "files.read",
+            "ok",
+        )
         assert connection.execute("SELECT count(*) FROM model_call_projections").fetchone() == (1,)
         assert connection.execute("SELECT count(*) FROM tool_run_projections").fetchone() == (1,)
+
+
+def test_projection_foreign_key_rejects_event_from_another_session(dsn: str) -> None:
+    namespace = f"model-tool-fk-{uuid4()}"
+    events = PostgresEventStore(dsn, deployment_namespace=namespace)
+    first = new_session_id()
+    second = new_session_id()
+    first_created = _event(first, 0, EventType.SESSION_CREATED, {"title": "first"})
+    first_model = _event(
+        first,
+        1,
+        EventType.MODEL_RESPONSE_RECEIVED,
+        {"attempt_number": 1, "assistant_message": "first", "tool_call_count": 0},
+    )
+    second_created = _event(second, 0, EventType.SESSION_CREATED, {"title": "second"})
+    second_model = _event(
+        second,
+        1,
+        EventType.MODEL_RESPONSE_RECEIVED,
+        {"attempt_number": 1, "assistant_message": "second", "tool_call_count": 0},
+    )
+    for event in (first_created, first_model, second_created, second_model):
+        events.append(event)
+
+    with psycopg.connect(dsn) as connection:
+        with pytest.raises(psycopg.errors.ForeignKeyViolation):
+            connection.execute(
+                """INSERT INTO model_call_projections (
+                    deployment_namespace, session_id, sequence, event_id,
+                    assistant_message, tool_call_count, created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                (
+                    namespace,
+                    first,
+                    first_model.sequence,
+                    second_model.event_id,
+                    "forged",
+                    0,
+                    first_model.created_at,
+                ),
+            )
 
 
 def _event(
