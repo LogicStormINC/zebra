@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |---|---|
-| 状态 | Phase 1 Runtime guard 已完成；Phase 1.5 完成切片已激活；完整 Phase 2 锁定 |
+| 状态 | Phase 1 Runtime guard 已完成；Phase 1.5 完成切片及 Policy Recovery P1 已激活；完整 Phase 2 锁定 |
 | 日期 | 2026-07-29 |
 | 当前任务 | `CTX-REHYDRATE-02`（Phase 1.5） |
 | 依赖 | `CTX-MEM-01` / PR `#198` |
@@ -17,7 +17,9 @@
 2. `CTX-REHYDRATE-02` 最小切片：作为 A 线必需的 Phase 1.5，复用现有
    `ContextCapsule`、`ProtectedInstructionLedger`、`ActiveContextProjection` 和
    `rehydrate_projection()`，让一次有界、禁用工具的终态综合消费恢复后的状态；
-3. 完整 Phase 2：Worker 重启后的广义按需重水合和长期 Memory 路线继续锁定。
+3. `HAR-CONV-01-POLICY-RECOVERY`：作为同一 Phase 1.5 的 P1 补完项，仅把 Policy
+   明确标记为可纠正的只读工具输入拒绝转换成一次结构化失败 observation；
+4. 完整 Phase 2：Worker 重启后的广义按需重水合和长期 Memory 路线继续锁定。
 
 `HAR-CONV-01` 的 typed `SUSPENDED` 是安全失败，不是业务成功。A 线只有在固定输入
 最终产生符合原始请求的完整结果时才通过；“不再无限循环”不能替代结果验收。
@@ -34,6 +36,7 @@ Memory 数据库，也不包含 Agent Memory、Knowledge Memory、学习策略�
 | 当前 Zebra 集成任务 | 13 次模型调用、20 次工具调用、9 次压缩；同一图片证据被重复读取，仍未形成终答 |
 | Zebra `main` 文本等价任务 | 取消前已发生 11 次模型调用、13 次抓取、7 次压缩，仍处于无进展路径 |
 | `HAR-CONV-01@efbb8a3` 文本等价任务 | 一次有效澄清后，11 次模型调用、12 次抓取、7 次压缩；安全结束为 `tool_loop_no_progress`，但没有输出交易日志 |
+| Phase 1.5 纯 A 线首次真实回放 | 完整 A 线源码、不含 FinOS/MiniMax/MCP；5 次模型调用、6 次工具调用后，模型提交带 fragment 的只读 `web.fetch` URL，Policy 正确拒绝，但 Harness 直接将唯一 Attempt 标为 `FAILED/retry_exhausted`，仍无交易日志 |
 | 普通 Chat 模型对照 | 约 2 分钟内完成一次图片读取、13 个公开来源查询、一次计算和一个最终回答 |
 
 这些证据说明：
@@ -46,6 +49,8 @@ Memory 数据库，也不包含 Agent Memory、Knowledge Memory、学习策略�
   从“继续找资料”切换到“形成最终回答”。
 - 当前终态综合路径只追加通用停止指令，没有消费已经存在的 Capsule、protected
   ledger 和 projection recovery；因此恢复基础设施存在，但最后一次综合没有接线。
+- 当前 Policy 审计能正确拒绝不合规 URL，但 Harness 把所有 `DENY` 都视为不可恢复
+  Attempt 失败；这混淆了“可纠正的只读输入错误”和“不可绕过的授权/安全拒绝”。
 
 因此根因是执行阶段缺少“新证据、无进展、终态”之间的闭环，而不是缺少更大的
 `max_tool_calls`。
@@ -54,7 +59,8 @@ Memory 数据库，也不包含 Agent Memory、Knowledge Memory、学习策略�
 
 1. Session Event Store 继续是唯一耐久执行真相；不得增加第二套状态数据库或双写。
 2. 默认 `max_model_calls=None`、`max_tool_calls=None` 保持不变；显式调用方预算仍严格执行。
-3. Policy、Approval、取消、协议校验、幂等与副作用防重边界保持不变。
+3. Policy、Approval、取消、协议校验、幂等与副作用防重边界保持不变。Policy 是
+   deny 是否可纠正的唯一分类权威；Harness 不得解析 reason 文本自行放宽权限。
 4. Zebra 只理解通用的目标、证据、工具结果、状态变化和终态，不引入金融、图片、
    交易日志或某个 Skill 的完成状态。
 5. “未找到”“不可用”“权限不足”是可记录的证据状态；是否足以完成任务由用户目标和
@@ -127,6 +133,29 @@ Phase 1 只修改 `agent-core` Harness 的共享路径及其回归测试。不�
 Phase 1.5 不增加 Agent Memory、Knowledge Memory、Memory Controller、向量库、TTL
 平台或跨任务学习。Worker 重启后的完整按需重水合仍属于后续 Phase 2。
 
+### 5.1 Tool Policy Deny Recovery Boundary
+
+真实 A 线回放证明同一 Attempt 还缺一条执行恢复边界。`parse_web_target()` 和现有
+Policy 校验保持 fail closed，不静默删除 fragment，也不把 `DENY` 改成 `ALLOW`。
+
+最小状态机为：
+
+1. Policy 仍产生并持久记录 `POLICY_DECISION_MADE: deny`；
+2. 只有 Policy 通过结构化字段显式标记为可纠正的只读工具输入错误时，Harness 才把
+   它转换为 `ToolCallStatus.FAILED` observation，并向同一 Attempt 再开放一次模型纠正；
+3. 该 observation 只说明“工具未执行及原因”，不得伪造外部结果，也不得消耗一次
+   已执行工具计数；
+4. 同一 Attempt 第二次出现可纠正 Policy deny 时，不继续循环，转入现有的一次
+   recovered `allow_tools=False` synthesis；该综合仍不能执行工具；
+5. 纠正后的工具产生新 evidence 时恢复普通循环；无进展时继续使用 Phase 1 的既有
+   收敛阈值和终态综合；
+6. `REQUIRE_APPROVAL`、人工拒绝、写入/副作用授权拒绝、网络权限拒绝、凭据/敏感路径、
+   sandbox/工作区越界和任何未显式标为 recoverable 的 deny 仍立即等待或失败。
+
+结构化分类复用现有 `PolicyDecision` 合约，只增加默认 fail-closed 的布尔标记；不新增
+Policy 状态机、Event schema 或业务枚举。Web 输入校验可以设置该标记，Harness 和
+测试不得依赖英文 reason 字符串、域名、金融业务、模型或 provider 特判。
+
 ## 6. 分支与合并路线
 
 ```text
@@ -139,7 +168,7 @@ origin/main @ a6b47c3
                            |
                            v
           codex/context-rehydrate-phase1-5
-          (先提交本文档，再实现最小完成切片)
+          (先提交本文档，再实现最小完成切片及 Policy Recovery P1)
                            |
                    A 线完整日志人工验收
                            |
@@ -183,6 +212,11 @@ HAR-CONV-01 使用同一份 Skill 指令和同一份人工识别文字，对未�
 - 缺失投影证据仅按现有引用重水合，checksum、Policy、provenance 或 token budget
   不通过时 fail closed；
 - 正常产生 evidence/state delta 的长任务不被误杀；
+- 带 fragment 的 `web.fetch` 被 Policy 拒绝并保留审计，模型只获得一次结构化纠正
+  机会；纠正后可继续或形成最终日志，不能直接 `retry_exhausted`；
+- 第二次 recoverable deny 进入一次工具禁用综合，不得形成新的 Policy/tool 循环；
+- 写入、副作用、凭据、网络授权、越界和人工拒绝保持 terminal/waiting，不得进入
+  recoverable observation；
 - FinOS 核心业务表前后全行哈希一致；
 - 无第二状态源、无业务语义、无跨任务隐式长期记忆。
 

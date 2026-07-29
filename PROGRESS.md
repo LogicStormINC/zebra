@@ -22,7 +22,13 @@
   completion slice on `codex/context-rehydrate-phase1-5`. It must reuse existing
   Capsule/ledger/projection/rehydration paths through the Core Port boundary,
   perform at most one recovered tool-disabled synthesis, and make the fixed text
-  A line produce the complete log. Full Memory 2.0, Worker/Storage changes and
+  A line produce the complete log. The first pure A-line live replay exposed one
+  additional P1 in the same phase: a correctly denied `web.fetch` URL containing
+  a fragment was treated as terminal `retry_exhausted` instead of a correctable
+  failed-tool observation. `HAR-CONV-01-POLICY-RECOVERY` therefore adds one
+  explicitly classified, same-Attempt correction for read-only input validation;
+  every unmarked, authority, side-effect, credential, boundary or human deny stays
+  terminal/waiting. Full Memory 2.0, Policy relaxation, Worker/Storage changes and
   direct merge to `main` remain out of scope.
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with
   an exact three-user-turn tail, complete tool groups, one strict retry from
@@ -35,7 +41,7 @@
   `30332213200` did not execute any step because GitHub reported an account
   payment/spending-limit gate.
 
-- Snapshot date: `2026-07-28`
+- Snapshot date: `2026-07-29`
 - Verified implementation baseline: `f1e4965` (PR `#174`)
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
 - Review task: `CTX-SEG-01` has delivered the stable Task, internal Segment,

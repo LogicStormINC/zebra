@@ -5937,3 +5937,26 @@ actual byte access.
   Worker/Storage changes or FinOS orchestration without new red-test evidence
 - hard live gate: complete log after any necessary clarification, no continued
   tool loop or false completion, and identical FinOS core-table full-row hashes
+
+# 2026-07-29 Phase 1.5 Recoverable Policy Deny P1
+
+- the first pure A-line live replay used the complete Phase 1.5 source, the same
+  14,118-character text input, `read_only` Policy and `full-trusted-local` network,
+  with FinOS provider, MiniMax, MCP and image input disabled
+- after 5 model calls and 6 tool calls, the model proposed a read-only
+  `web.fetch` URL containing a fragment; `parse_web_target()` and Policy correctly
+  denied the request, but Harness immediately failed the only Attempt as
+  `retry_exhausted`, leaving a 15-character assistant fragment and no transaction log
+- ChatGPT Pro classified this as a Phase 1.5 P1 rather than a new stage: Policy
+  enforcement stays fail closed, while an explicitly marked model-correctable
+  read-only input deny may become one non-executed failed-tool observation in the
+  same Attempt
+- `HAR-CONV-01-POLICY-RECOVERY` is recorded as a work item inside
+  `CTX-REHYDRATE-02` on the existing branch/worktree; it must not parse reason
+  strings, strip URL fragments, start a second Attempt, or relax any authority
+- a second recoverable deny routes to the existing one-shot recovered
+  `allow_tools=False` synthesis; approval, human refusal, side-effect/write,
+  network-authority, credential, sensitive-path, sandbox/workspace and all
+  unmarked denies remain terminal or waiting
+- coding remains blocked until this incremental docs baseline is committed and
+  receives a fresh coding-before review

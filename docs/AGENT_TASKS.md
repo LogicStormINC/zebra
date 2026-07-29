@@ -28,7 +28,10 @@
   `main` directly. FinOS image attachment and MiniMax MCP acceptance are separate.
 - `CTX-REHYDRATE-02` is `In Progress` as the required Phase 1.5 completion slice
   on `codex/context-rehydrate-phase1-5`. It remains stacked on PR `#198` and
-  `HAR-CONV-01`; direct merge to `main` is forbidden.
+  `HAR-CONV-01`; direct merge to `main` is forbidden. Its P1 work item
+  `HAR-CONV-01-POLICY-RECOVERY` is part of this same task/branch, not a second
+  stage: one explicitly recoverable read-only input deny may return to the model
+  as a failed-tool observation, while all unmarked or authority denies remain terminal.
 - `CTX-MEM-01` is `Review` in PR `#198` on
   `codex/issue-197-context-memory-continuity`. It closes GitHub issue `#197`
   without depending on the stacked semantic-memory gateway: same-Task recovery
@@ -206,10 +209,17 @@ new evidence and long legitimate tool chains remain unbounded by default.
   `packages/agent-context/src/agent_context/capsule.py`,
   `packages/agent-context/src/agent_context/conversation.py`,
   `packages/agent-context/src/agent_context/projection.py`,
+  `packages/agent-core/src/agent_core/domain/policies.py`,
   `packages/agent-core/src/agent_core/ports/conversation_compactor.py`,
   `packages/agent-core/src/agent_core/harness/model_step.py`,
+  `packages/agent-core/src/agent_core/harness/policy_step.py`,
+  `packages/agent-core/src/agent_core/harness/tool_batch.py`,
+  `packages/agent-core/src/agent_core/harness/concurrent_batch.py`,
   `packages/agent-core/src/agent_core/harness/sequential_loop.py`,
-  focused tests under `tests/agent_context/`, `tests/agent_core/` and
+  `packages/agent-security/src/agent_security/mcp_proxy_policy.py`,
+  `packages/agent-security/src/agent_security/policy.py`,
+  focused tests under `tests/agent_context/`, `tests/agent_core/`,
+  `tests/agent_security/` and
   `tests/integration/`, plus this task card, the governing design, `PROGRESS.md`
   and `WORKLOG.md`
 
@@ -218,7 +228,10 @@ new evidence and long legitimate tool chains remain unbounded by default.
 Complete the existing same-Attempt terminal synthesis path from a recovered
 Context projection. Reuse `ContextCapsule`, `ProtectedInstructionLedger`,
 `ActiveContextProjection` and `rehydrate_projection()` through the existing Core
-Port boundary; do not create another Runtime state model or automatic second Attempt.
+Port boundary. Also close the P1 exposed by the live replay: let Policy explicitly
+classify one model-correctable read-only input deny as a failed-tool observation,
+without weakening the deny, retrying a side effect, creating another Runtime state
+model, or starting an automatic second Attempt.
 
 #### Acceptance
 
@@ -229,10 +242,22 @@ Port boundary; do not create another Runtime state model or automatic second Att
   Skill or provider heuristics.
 - [ ] The terminal path performs at most one recovered `allow_tools=False`
   synthesis; it never executes a second tool batch or starts a second Attempt.
+- [ ] `PolicyDecision` defaults every deny to terminal and can explicitly mark only
+  a model-correctable read-only input validation deny as recoverable; Harness never
+  infers recoverability from reason strings, domains, business semantics or provider.
+- [ ] The first recoverable deny keeps the deny audit, appends one non-executed
+  `ToolCallStatus.FAILED` observation, and permits one same-Attempt correction; a
+  second recoverable deny enters the existing recovered tool-disabled synthesis.
+- [ ] `REQUIRE_APPROVAL`, human denial, side-effect/write authority, network authority,
+  credentials/sensitive paths, sandbox/workspace escape and unmarked deny remain
+  waiting or terminal and cannot use the recovery path.
 - [ ] Missing referenced evidence uses the existing projection/rehydration path
   under token, Policy, checksum and provenance checks.
 - [ ] The fixed Skill + 14,118-character text case produces the complete transaction
   log after clarification; `SUSPENDED` is a failed A-line acceptance.
+- [ ] A regression reproduces the live fragment URL: Policy still denies it, no
+  request reaches the Gateway, the corrected read may proceed, and the task reaches
+  the final synthetic transaction-log marker rather than `retry_exhausted`.
 - [ ] New evidence and auditable state changes still allow legitimate long tasks;
   exact side-effect deduplication and existing safety contracts remain unchanged.
 - [ ] FinOS core business-table full-row hashes are unchanged before/after the live
@@ -244,6 +269,7 @@ Port boundary; do not create another Runtime state model or automatic second Att
 
 - Agent Memory, Knowledge Memory, Memory Controller, embeddings, learning, TTL
   platform, provider-specific compaction, automatic child Session creation,
+  silent URL normalization, reason-string classification, Policy relaxation,
   Worker/Storage changes or automatic retry Attempts unless a red test proves the
   existing same-Attempt Port boundary cannot satisfy the acceptance contract
 
