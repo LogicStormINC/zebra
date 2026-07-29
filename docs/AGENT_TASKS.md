@@ -1238,12 +1238,37 @@ cloud mainline and is not built or changed by these cards.
 
 - Status: `Locked`
 - Owner: `UNASSIGNED`
-- Depends on: `CLOUD-AGG-FENCE-CON-01` and `CLOUD-ART-OBJ-CON-01`
-- Owned paths: Artifact payload Port/domain if required, PostgreSQL metadata and
-  object-storage adapters, migration/composition, Docker contract docs and tests
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-ART-OBJ-CON-01`, and completed
+  `CLOUD-AGG-HANDOFF-PG-01`; Handoff exclusively owns migration v8 until merged.
+- Branch: `codex/cloud-art-payload-pg-01` after the v8 owner reaches Review and is
+  integrated into `zebra-cloud-trench`
+- Owned paths: focused cloud Artifact lifecycle Port/domain under `agent-core`,
+  PostgreSQL metadata and provider-neutral S3-compatible object adapters under
+  `agent-storage`, `packages/agent-storage/pyproject.toml`, `uv.lock`, migration v9
+  and exports, focused Worker Event preparation seam, MinIO bucket-versioning
+  bootstrap, isolated PostgreSQL/MinIO Compose runner, Artifact lifecycle/fault tests,
+  and this task's governance records
+- Migration: v9 only after the immutable v1-v8 catalog is integrated; this task may
+  not edit the migration hotspot while v8 is active.
 - Goal: replace local filesystem payload authority with cross-Worker storage.
 - Acceptance: idempotency/conflict, SHA, stale fence, cross-process read, object/
   metadata fault compensation, prune/sweep concurrency and namespace tests pass.
+  A fenced metadata reserve must precede object I/O and Event creation; the Event
+  receives the stable `artifact://` URI before append; only a committed Event plus
+  verified object may finalize metadata. Event failure compensates the staged object,
+  and a lost finalize response is recoverable by an explicitly authorized management
+  reconcile path without replaying the Event or synthesizing bytes.
+- Contract boundary: do not extend the local `ArtifactPayloadStorePort` with optional
+  authority arguments. Add a focused cloud lifecycle Port that requires namespace,
+  complete `WorkerMutationAuthority`, expected binding and idempotency on every Worker
+  mutation; preserve the old Port and SQLite implementation for local compatibility.
+- Object adapter: add direct `botocore>=1.42.97,<1.43.0` to `agent-storage`; do not
+  add boto3/s3transfer, MinIO SDK, an async AWS SDK or hand-written SigV4. Use
+  conditional put, Zebra SHA-256/size metadata, verified head/read and bucket
+  `VersionId` for exact deletion; ETag is not a payload digest.
+- Non-goals: no Desktop/local SQLite feature work, runtime backend selector, API
+  signed-URL route, Effect payload linkage, Artifact read composition, provider
+  lifecycle rules, multipart upload, or production credential policy.
 
 ### CLOUD-ART-OBJ-CON-01 - Artifact Object And Metadata Authority Contract
 

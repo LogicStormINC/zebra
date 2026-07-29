@@ -18,6 +18,48 @@
 - `artifact://` is stable identity; provider locator and credentials stay internal.
 - Freeze the failure protocol before choosing an SDK, adapter or migration.
 
+## CLOUD-ART-PAYLOAD-PG-01 - Shared Artifact Payload Authority (Locked)
+
+1. `completed` - Audit the current local payload Port, Worker/Event write paths,
+   PostgreSQL migration serialization and MinIO dependency baseline.
+2. `pending` - After Handoff v8 is integrated, claim the card and add migration v9
+   plus a focused cloud lifecycle Port; do not add optional fence parameters to the
+   local compatibility Port.
+3. `pending` - Implement fenced reserve, conditional object put/head, Event URI
+   binding, finalize, compensation, prune and management reconcile as explicit steps.
+4. `pending` - Prove the PostgreSQL/MinIO fault matrix, concurrent idempotency,
+   namespace isolation and cross-process reads with an isolated host runner.
+
+### Decisions
+
+- v8 remains exclusively owned by Handoff; Artifact implementation starts at v9.
+- The existing `ArtifactPayloadStorePort` and SQLite file store remain local-only.
+- Tool output must obtain its stable URI before Event append; the post-Event
+  `ToolRunIndexer` fallback cannot be the cloud payload authority path.
+- Use a synchronous low-level botocore client. Do not add boto3, s3transfer, MinIO
+  SDK, an async AWS SDK or hand-written SigV4.
+- MinIO bucket versioning is part of the v9 test/dependency contract so finalize,
+  compensation and prune retain exact object-version evidence.
+- v9 owns one authoritative `artifact_payload_metadata` table, not a second Artifact
+  projection. Its composite identity is `(deployment_namespace, artifact_id)`; it
+  also uniquely binds `(namespace, session, idempotency_key)`, the intended Event
+  sequence and an internal object locator.
+- Required lifecycle is `staged -> finalized -> pruning -> pruned`, with
+  `staged -> compensated`; `missing` remains a read inspection outcome. A monotonic
+  lifecycle revision and row lock serialize every transition.
+- Reserve stores request hash, expected Event sequence, digest/size/type/retention,
+  object locator and the complete reservation fence. Verified upload records the
+  exact object version while still staged. Finalize binds the canonical Event ID and
+  sequence after checking its Session and `artifact_uri`.
+- Event outcome uncertainty never triggers deletion. Worker compensation requires a
+  proven absent Event and exact-version delete; stale-fence rows move to bounded,
+  explicitly authorized management reconcile.
+- Keep the cross-system orchestration in one focused Tool-output Artifact commit
+  service. `ToolRunIndexer` remains a pure Event projection and object I/O never runs
+  inside a PostgreSQL transaction.
+- Effect linkage, API read composition, runtime profile selection and Desktop stay
+  in their dedicated successor cards.
+
 ## CLOUD-AGG-HANDOFF-CON-01 - Fenced Handoff Dispatch Contract
 
 1. `completed` - Trace actual Worker claim/ACK callers and reject unrelated Port cleanup.

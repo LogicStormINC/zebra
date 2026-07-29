@@ -135,6 +135,14 @@
 - Active Context follow-up: `CLOUD-AGG-CTX-ADMIN-PG-01` reuses the v7
   administrative CAS only for historical capsule recovery in an explicitly injected
   PostgreSQL store. It does not add PostgreSQL manual compact or select a backend.
+- Artifact v9 is implementation-ready but remains correctly Locked behind active
+  Handoff migration v8. The preflight audit found no installed S3-compatible SDK and
+  confirmed that the local `ArtifactPayloadStorePort` lacks namespace/fence/staged
+  lifecycle semantics. The v9 card now requires a separate fenced cloud lifecycle
+  Port and reserve -> object verification -> Event -> finalize/compensate ordering;
+  its minimum S3 client is direct botocore with MinIO bucket versioning and exact
+  object-version evidence. It explicitly excludes SQLite, Desktop, runtime selection,
+  Effect linkage and API read composition.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
   on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
   path-bounded microservice cards own provider expectations, SCM credential

@@ -6401,3 +6401,25 @@ actual byte access.
   repository file-size gate checks `1025` source files and retains only baseline
   violations in the untouched Desktop stylesheet (`561/500`) and PostgreSQL
   migrations (`508/500`); both match `8035c61b` exactly.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 preflight
+
+- Confirmed `zebra-cloud-trench@d11cf9e9` is clean and that Handoff exclusively owns
+  migration v8.
+- Audited the current Artifact domain/Port, local SQLite adapter, Worker/Event write
+  seams, PostgreSQL transaction patterns, dependency manifests and MinIO Compose.
+- Tightened the Locked v9 task with explicit dependency, owned paths, lifecycle
+  ordering, management recovery, fault-matrix and non-goal boundaries.
+- Selected direct low-level botocore as the minimum future S3 dependency and required
+  MinIO bucket versioning plus exact object-version evidence; no dependency was added
+  while the card remains Locked.
+- Froze the single metadata-table boundary, staged/finalized/compensated/pruning/pruned
+  transitions, exact Event/object/fence bindings and real PostgreSQL/MinIO failure
+  windows. `MISSING` remains an inspection result rather than a lifecycle fact.
+- No implementation, dependency, migration, runtime selector, SQLite or Desktop file
+  changed; v9 remains blocked until the active Handoff card reaches Review and is
+  integrated.
+- Validation: `git diff --check` passes and the changed-path audit contains only the
+  five governance files. The repository source-size gate still reports exactly the
+  two inherited violations: untouched Desktop stylesheet `561/500` and active
+  PostgreSQL migration hotspot `508/500`; Handoff v8 already owns the required split.

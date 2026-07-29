@@ -654,3 +654,43 @@
 - The contract freezes staged/finalize/compensate and pruning recovery before any
   object SDK, provider, key encoding, migration, API route or Worker profile is
   chosen. `CLOUD-ART-PAYLOAD-PG-01` owns the later shared implementation.
+
+## CLOUD-ART-PAYLOAD-PG-01 preflight - 2026-07-29
+
+- `agent-storage` currently depends only on `agent-core` and `psycopg`; neither the
+  workspace lock nor package manifests contain boto3, botocore, MinIO or another S3
+  SDK. The base Compose already provides pinned MinIO plus idempotent bucket creation.
+- Direct synchronous `botocore>=1.42.97,<1.43.0` is the minimum SDK: its low-level
+  S3 model exposes conditional put, checksum metadata, version-aware head/get/delete
+  and presigning without boto3's unused `s3transfer`. Existing `httpx` must not be
+  expanded into a hand-written SigV4, credential, retry and error-mapping client.
+- The MinIO bucket bootstrap currently creates the bucket but does not enable
+  versioning. v9 must enable it and prove real MinIO `VersionId` behavior; ETag cannot
+  substitute for Zebra's SHA-256/size or exact deletion evidence.
+- The local `ArtifactPayloadStorePort` has no deployment namespace, Lease fence,
+  expected revision or staged lifecycle. Adding optional cloud authority to it would
+  let callers accidentally execute an unfenced cloud write, so v9 needs a focused
+  cloud lifecycle Port while the existing Port remains a local compatibility surface.
+- `ToolOutputProjector` persists bytes before it constructs Event metadata, which is
+  the correct cloud seam once its persistence callback implements staged reserve and
+  verified object upload. `ToolRunIndexer` currently has a post-Event fallback that
+  creates payload bytes; that fallback must not become the cloud authority path.
+- `EffectExecutionGuard` also persists payload before scheduling its durable Event and
+  outbox intent. Atomic Effect-to-payload linkage remains owned by
+  `CLOUD-EFFECT-PAYLOAD-ATOMIC-01`; v9 supplies the finalized cross-Worker payload
+  primitive but must not broaden itself into the Effect aggregate.
+- Migration v8 is actively owned by Handoff. Artifact can refine contracts and tests,
+  but cannot claim or edit migration v9 until v8 is integrated.
+- The minimum v9 metadata row needs namespace/artifact/session identity, intended
+  Event sequence, idempotency key and canonical request hash; payload kind/type/name,
+  SHA-256/size/retention; internal locator and exact object version; lifecycle status
+  and revision; reservation fence; finalized Event identity; verification and
+  transition timestamps. Composite foreign keys bind Session and finalized Event.
+- Lifecycle checks make finalized/pruning/pruned rows require Event identity, object
+  version and verification evidence; compensated rows cannot retain a finalized Event.
+  State changes additionally lock the row and compare lifecycle revision because SQL
+  checks alone cannot serialize concurrent transitions.
+- Fault acceptance must cover response loss after reserve/Event/finalize, unknown put
+  and Event outcomes, Lease takeover, object mismatch/permission/transport failures,
+  exact-version compensation, management reconcile, cross-namespace access and
+  concurrent prune/sweep. Unknown outcomes remain staged and fail closed.
