@@ -6445,3 +6445,12 @@ actual byte access.
 - Validation: focused contract/authority/SQLite `45/45`, all Core `290/290`, strict
   Core Mypy `126` files, changed-scope Ruff and `git diff --check` pass. The global
   size gate retains only inherited Desktop `561/500` and migration `508/500` failures.
+
+## 2026-07-29 - CLOUD-ART-OBJECT-S3-01 activation
+
+- Split the immutable object adapter from the still-Locked PostgreSQL Artifact
+  lifecycle card so it can proceed without competing for migration v8.
+- Claimed botocore dependency, focused storage adapter/export, MinIO bucket-versioning
+  bootstrap, isolated real-object tests and governance paths only.
+- Kept PostgreSQL metadata/migration, orchestration, signed delivery, Worker/API,
+  SQLite, runtime selection and Desktop outside the task.

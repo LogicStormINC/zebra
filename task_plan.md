@@ -79,6 +79,25 @@
 - Keep orchestration, storage error mapping and lifecycle transition enforcement in
   later adapters/services; Core only makes invalid requests unrepresentable.
 
+## CLOUD-ART-OBJECT-S3-01 - S3-Compatible Immutable Artifact Object Adapter
+
+1. `in_progress` - Claim the object-only adapter card and freeze botocore/MinIO
+   configuration, error mapping and internal key boundary.
+2. `pending` - Implement conditional put, verified head/read and exact-version delete
+   against the reviewed Core object Port.
+3. `pending` - Enable bucket versioning and prove canonical retry, conflict, mismatch,
+   namespace isolation and cross-client behavior on isolated MinIO.
+4. `pending` - Run storage/compatibility/static gates, record evidence and integrate
+   without touching PostgreSQL migrations or lifecycle orchestration.
+
+### Decisions
+
+- This object-only card is independent of active migration v8.
+- Add direct botocore only; do not add boto3/s3transfer, MinIO SDK, async AWS SDK or
+  hand-written SigV4.
+- Internal keys are derived only from canonical namespace and Artifact ID; file names,
+  provider locators, credentials and ETags never enter Core identity.
+
 ## CLOUD-AGG-HANDOFF-CON-01 - Fenced Handoff Dispatch Contract
 
 1. `completed` - Trace actual Worker claim/ACK callers and reject unrelated Port cleanup.

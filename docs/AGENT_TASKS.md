@@ -1238,7 +1238,7 @@ cloud mainline and is not built or changed by these cards.
 
 - Status: `Locked`
 - Owner: `UNASSIGNED`
-- Depends on: `CLOUD-ART-LIFECYCLE-CON-01` and completed
+- Depends on: `CLOUD-ART-LIFECYCLE-CON-01`, `CLOUD-ART-OBJECT-S3-01`, and completed
   `CLOUD-AGG-HANDOFF-PG-01`; Handoff exclusively owns migration v8 until merged.
 - Branch: `codex/cloud-art-payload-pg-01` after the v8 owner reaches Review and is
   integrated into `zebra-cloud-trench`
@@ -1303,6 +1303,28 @@ cloud mainline and is not built or changed by these cards.
   tests pass `290/290`; strict Core Mypy passes `126` files, changed-scope Ruff and
   `git diff --check` pass. The repository size gate retains only the two inherited
   Desktop `561/500` and active migration `508/500` violations.
+
+### CLOUD-ART-OBJECT-S3-01 - S3-Compatible Immutable Artifact Object Adapter
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Branch: `codex/cloud-art-object-s3-01`
+- Depends on: `CLOUD-ART-LIFECYCLE-CON-01`, `CLOUD-ART-OBJ-CON-01`, and reviewed
+  `CLOUD-COMPOSE-INFRA-01` MinIO baseline
+- Owned paths: `packages/agent-storage/pyproject.toml`, `uv.lock`, focused
+  `packages/agent-storage/src/agent_storage/{artifact_objects,__init__}.py`,
+  `docker/compose.dependencies.yml`, `docker/README.md`, isolated Artifact object
+  Compose runner, focused adapter/real-MinIO tests, and this task's governance records
+- Goal: implement the frozen `ArtifactObjectStorePort` with immutable conditional put,
+  verified head/read and exact-version deletion across Workers.
+- Acceptance: direct low-level botocore is the only new SDK dependency; object keys are
+  adapter-internal and namespace-scoped; same content is canonical, different content
+  never overwrites; digest/size/version mismatches fail closed; missing, mismatch,
+  permission/transport ambiguity remain distinct; MinIO bucket versioning and
+  cross-client real-container tests pass.
+- Non-goals: no PostgreSQL metadata/migration, lifecycle orchestration, Worker/API
+  wiring, signed-URL delivery surface, multipart upload, Effect linkage, SQLite,
+  runtime backend selection or Desktop.
 
 ### CLOUD-ART-OBJ-CON-01 - Artifact Object And Metadata Authority Contract
 
