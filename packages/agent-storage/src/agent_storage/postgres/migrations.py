@@ -257,6 +257,90 @@ MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=5,
+        name="task_and_segment_index",
+        statements=(
+            """
+            CREATE TABLE agent_tasks (
+                deployment_namespace TEXT NOT NULL,
+                task_id UUID NOT NULL,
+                root_session_id UUID NOT NULL,
+                active_segment_id UUID NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL,
+                PRIMARY KEY (deployment_namespace, task_id),
+                UNIQUE (deployment_namespace, root_session_id),
+                FOREIGN KEY (deployment_namespace, root_session_id)
+                    REFERENCES session_projections (deployment_namespace, session_id),
+                FOREIGN KEY (deployment_namespace, active_segment_id)
+                    REFERENCES session_projections (deployment_namespace, session_id),
+                CHECK (created_at <= updated_at)
+            )
+            """,
+            """
+            CREATE TABLE execution_segments (
+                deployment_namespace TEXT NOT NULL,
+                session_id UUID NOT NULL,
+                task_id UUID NOT NULL,
+                predecessor_id UUID,
+                segment_index INTEGER NOT NULL CHECK (segment_index >= 0),
+                visibility TEXT NOT NULL CHECK (visibility = 'internal'),
+                rollover_reason TEXT CHECK (rollover_reason IN (
+                    'context_pressure', 'recovery', 'terminal_follow_up', 'agent_hint'
+                )),
+                PRIMARY KEY (deployment_namespace, session_id),
+                UNIQUE (deployment_namespace, task_id, segment_index),
+                UNIQUE (deployment_namespace, task_id, session_id),
+                FOREIGN KEY (deployment_namespace, task_id)
+                    REFERENCES agent_tasks (deployment_namespace, task_id)
+                    ON DELETE CASCADE,
+                FOREIGN KEY (deployment_namespace, session_id)
+                    REFERENCES session_projections (deployment_namespace, session_id),
+                FOREIGN KEY (deployment_namespace, task_id, predecessor_id)
+                    REFERENCES execution_segments (
+                        deployment_namespace, task_id, session_id
+                    ) DEFERRABLE INITIALLY DEFERRED,
+                CHECK ((segment_index = 0) = (predecessor_id IS NULL))
+            )
+            """,
+            """
+            ALTER TABLE agent_tasks
+            ADD CONSTRAINT agent_tasks_active_segment_owner
+            FOREIGN KEY (deployment_namespace, task_id, active_segment_id)
+            REFERENCES execution_segments (deployment_namespace, task_id, session_id)
+            DEFERRABLE INITIALLY DEFERRED
+            """,
+            """
+            CREATE INDEX execution_segments_task_order
+            ON execution_segments (deployment_namespace, task_id, segment_index)
+            """,
+            """
+            CREATE TABLE task_event_index (
+                deployment_namespace TEXT NOT NULL,
+                task_id UUID NOT NULL,
+                task_sequence BIGINT NOT NULL CHECK (task_sequence >= 0),
+                event_id UUID NOT NULL,
+                segment_id UUID NOT NULL,
+                segment_sequence BIGINT NOT NULL CHECK (segment_sequence >= 0),
+                PRIMARY KEY (deployment_namespace, task_id, task_sequence),
+                UNIQUE (deployment_namespace, event_id),
+                UNIQUE (
+                    deployment_namespace, task_id, segment_id, segment_sequence
+                ),
+                FOREIGN KEY (deployment_namespace, task_id)
+                    REFERENCES agent_tasks (deployment_namespace, task_id)
+                    ON DELETE CASCADE,
+                FOREIGN KEY (deployment_namespace, event_id)
+                    REFERENCES session_events (deployment_namespace, event_id),
+                FOREIGN KEY (deployment_namespace, task_id, segment_id)
+                    REFERENCES execution_segments (
+                        deployment_namespace, task_id, session_id
+                    )
+            )
+            """,
+        ),
+    ),
 )
 
 _MIGRATION_LOCK_ID = 9_187_330_641

@@ -57,6 +57,8 @@ from agent_storage.memory_lookup import (
 )
 from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.postgres import (
+    PostgresAgentTaskConflictError,
+    PostgresAgentTaskStore,
     PostgresControlPlaneEpochError,
     PostgresEffectDispatchStore,
     PostgresEventStore,
@@ -67,8 +69,10 @@ from agent_storage.postgres import (
     PostgresWorkspaceProjectionConflictError,
     PostgresWorkspaceProjectionStore,
     apply_postgres_migrations,
+    attach_segment_in_transaction,
     bootstrap_control_plane_epoch,
     read_control_plane_epoch,
+    rebuild_task_in_transaction,
     rotate_control_plane_epoch,
 )
 from agent_storage.projections import SQLiteProjectionStore
@@ -116,6 +120,8 @@ __all__ = [
     "list_confirmed_repo_memory_texts",
     "load_attachment_contexts",
     "payload_for_artifact_uri",
+    "PostgresAgentTaskConflictError",
+    "PostgresAgentTaskStore",
     "PostgresEventStore",
     "PostgresEffectDispatchStore",
     "PostgresControlPlaneEpochError",
@@ -130,9 +136,11 @@ __all__ = [
     "serialize_session_artifact_projection",
     "sqlite_control_plane_stores",
     "apply_postgres_migrations",
+    "attach_segment_in_transaction",
     "bootstrap_control_plane_epoch",
     "read_control_plane_epoch",
     "rotate_control_plane_epoch",
+    "rebuild_task_in_transaction",
     "SQLiteArtifactPayloadStore",
     "SQLiteAgentTaskStore",
     "SQLiteArtifactStore",

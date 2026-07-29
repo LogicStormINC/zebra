@@ -10,6 +10,7 @@ import psycopg
 import pytest
 from agent_core.domain.identifiers import new_session_id
 from agent_storage import (
+    PostgresAgentTaskStore,
     PostgresControlPlaneEpochError,
     PostgresLeaseStore,
     PostgresWorkspaceProjectionStore,
@@ -90,12 +91,24 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
             ORDER BY ordinal_position
             """
         ).fetchall()
+        task_constraints = connection.execute(
+            """
+            SELECT pg_get_constraintdef(oid)
+            FROM pg_constraint
+            WHERE conrelid IN (
+                'agent_tasks'::regclass,
+                'execution_segments'::regclass,
+                'task_event_index'::regclass
+            )
+            """
+        ).fetchall()
 
     assert migrations == [
         (1, "event_and_projection_storage", 64),
         (2, "control_plane_epoch_and_leases", 64),
         (3, "fenced_effect_dispatch_outbox", 64),
         (4, "fenced_workspace_projections", 64),
+        (5, "task_and_segment_index", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [
@@ -179,6 +192,19 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         "snapshot_id",
         "snapshot_path",
     ]
+    task_constraint_sql = "\n".join(row[0] for row in task_constraints)
+    assert all(
+        part in task_constraint_sql
+        for part in (
+            "deployment_namespace, task_id, task_sequence",
+            "deployment_namespace, task_id, segment_index",
+            "deployment_namespace, event_id",
+            "task_id, active_segment_id",
+            "task_id, predecessor_id",
+            "task_id, segment_id",
+            "segment_index >= 0",
+        )
+    )
 
 
 def test_postgres_lease_constructor_does_not_run_ddl(
@@ -203,6 +229,18 @@ def test_postgres_workspace_constructor_does_not_run_ddl(
 
     with pytest.raises(errors.UndefinedTable):
         store.get_workspace(new_session_id())
+
+
+def test_postgres_task_constructor_and_reads_do_not_run_ddl(
+    isolated_migration_dsn: str,
+) -> None:
+    store = PostgresAgentTaskStore(
+        isolated_migration_dsn,
+        deployment_namespace="constructor-no-ddl",
+    )
+
+    with pytest.raises(errors.UndefinedTable):
+        store.get_task(new_session_id())
 
 
 def test_epoch_bootstrap_read_and_restore_rotation_are_explicit(
