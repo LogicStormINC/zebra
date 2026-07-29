@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |---|---|
-| 状态 | Phase 1 Runtime guard 已完成；Phase 1.5 完成切片及 Policy Recovery P1 已激活；完整 Phase 2 锁定 |
+| 状态 | Phase 1 Runtime guard 已完成；Phase 1.5、Policy Recovery P1 本地实现已验证但未提交；Terminal Follow-up P1 已激活；完整 Phase 2 锁定 |
 | 日期 | 2026-07-29 |
 | 当前任务 | `CTX-REHYDRATE-02`（Phase 1.5） |
 | 依赖 | `CTX-MEM-01` / PR `#198` |
@@ -19,7 +19,9 @@
    `rehydrate_projection()`，让一次有界、禁用工具的终态综合消费恢复后的状态；
 3. `HAR-CONV-01-POLICY-RECOVERY`：作为同一 Phase 1.5 的 P1 补完项，仅把 Policy
    明确标记为可纠正的只读工具输入拒绝转换成一次结构化失败 observation；
-4. 完整 Phase 2：Worker 重启后的广义按需重水合和长期 Memory 路线继续锁定。
+4. `CTX-SEG-02-FOLLOWUP-REHYDRATE`：修复同一 Task 的 terminal follow-up 长上下文
+   回归，使同步 API 与 Worker 复用同一 Capsule/Projection 持久化与恢复合同；
+5. 完整 Phase 2：Worker 重启后的广义按需重水合和长期 Memory 路线继续锁定。
 
 `HAR-CONV-01` 的 typed `SUSPENDED` 是安全失败，不是业务成功。A 线只有在固定输入
 最终产生符合原始请求的完整结果时才通过；“不再无限循环”不能替代结果验收。
@@ -37,6 +39,7 @@ Memory 数据库，也不包含 Agent Memory、Knowledge Memory、学习策略�
 | Zebra `main` 文本等价任务 | 取消前已发生 11 次模型调用、13 次抓取、7 次压缩，仍处于无进展路径 |
 | `HAR-CONV-01@efbb8a3` 文本等价任务 | 一次有效澄清后，11 次模型调用、12 次抓取、7 次压缩；安全结束为 `tool_loop_no_progress`，但没有输出交易日志 |
 | Phase 1.5 纯 A 线首次真实回放 | 完整 A 线源码、不含 FinOS/MiniMax/MCP；5 次模型调用、6 次工具调用后，模型提交带 fragment 的只读 `web.fetch` URL，Policy 正确拒绝，但 Harness 直接将唯一 Attempt 标为 `FAILED/retry_exhausted`，仍无交易日志 |
+| Phase 1.5 + Policy Recovery 纯 A 线回放 | 单 Segment 已 `COMPLETED` 并输出 8,655 字结构化日志，但保留交易澄清；同一 Task 提交确认后正常 rollover，child Segment 仅输出 167 字并重新索要交易详情，未形成确认后的最终日志 |
 | 普通 Chat 模型对照 | 约 2 分钟内完成一次图片读取、13 个公开来源查询、一次计算和一个最终回答 |
 
 这些证据说明：
@@ -51,6 +54,9 @@ Memory 数据库，也不包含 Agent Memory、Knowledge Memory、学习策略�
   ledger 和 projection recovery；因此恢复基础设施存在，但最后一次综合没有接线。
 - 当前 Policy 审计能正确拒绝不合规 URL，但 Harness 把所有 `DENY` 都视为不可恢复
   Attempt 失败；这混淆了“可纠正的只读输入错误”和“不可绕过的授权/安全拒绝”。
+- `CTX-SEG-02` 的文本 checkpoint 能覆盖短跟进，但同步 `execute=true` 路径没有像
+  Worker 一样推进 active Capsule；terminal handoff 随后又把两条各约 2,000 字的
+  checkpoint 合并后整体截为约 2,000 字，长任务的目标、完成条件和结果证据未进入 child。
 
 因此根因是执行阶段缺少“新证据、无进展、终态”之间的闭环，而不是缺少更大的
 `max_tool_calls`。
@@ -68,6 +74,8 @@ Memory 数据库，也不包含 Agent Memory、Knowledge Memory、学习策略�
 6. FinOS 或其它调用方不复制循环、预算、压缩或终态状态机。
 7. `SUSPENDED`、raw tool protocol 文本或“已尝试综合”都不等于业务完成；调用方和
    验收记录必须以实际最终输出为准。
+8. 同一 Task 的 terminal follow-up 是正常多轮能力。若 source 有可验证的 Capsule /
+   Projection，child 必须优先消费它；文本 checkpoint 只能在投影不存在时作有界兜底。
 
 ## 4. Phase 1：进展感知与终态收敛
 
@@ -156,6 +164,30 @@ Policy 校验保持 fail closed，不静默删除 fragment，也不把 `DENY` �
 Policy 状态机、Event schema 或业务枚举。Web 输入校验可以设置该标记，Harness 和
 测试不得依赖英文 reason 字符串、域名、金融业务、模型或 provider 特判。
 
+### 5.2 Terminal Follow-up Recovery Boundary
+
+`CTX-SEG-02-FOLLOWUP-REHYDRATE` 是既有 terminal follow-up 能力的长上下文 P1，仍属
+A 线完成门的必要补完，不是 Memory 2.0。最小合同为：
+
+1. 同步 `POST /tasks execute=true` 与 Worker 必须通过同一个 Context Port 语义持久化
+   已验证的 compaction / active Capsule；API 不得导入 Worker 私有实现或另写第二份状态；
+2. rollover 继续使用现有 Task、Segment、Handoff 和 Event Store 生命周期，不新增
+   Task、Attempt、表或 Event schema；
+3. source 存在 active Capsule / projection 时，handoff 必须携带其已有引用、校验信息
+   和 source event range；child 通过现有 Context/rehydration Port 恢复原目标、完成条件、
+   用户可见的最近对话和完成所需证据，再叠加本次 follow-up 用户消息；
+4. 当前 follow-up 文本可以成为 child 的 immediate objective，但不得覆盖或替代原始
+   Task objective、acceptance、decision 和 evidence；
+5. 只有在 source 没有可用投影时，才使用有界 conversation checkpoint。存在投影时
+   不得退化为两次固定字符截断，也不得仅靠 prior assistant/head-tail 猜测任务状态；
+6. 重水合继续执行 checksum、source range/hash、Policy、provenance 和 token budget
+   校验；不得带入 provider-private continuation、reasoning、凭据或 raw tool output；
+7. 投影缺失、损坏或超预算时 fail closed，并留下可诊断状态；不得伪造“已恢复”或
+   拼接业务 prompt 以绕过同一 Task 多轮合同。
+
+允许为复用共享 persistence/rehydration Port 扩大 API、Context、Core 和执行入口的
+owned paths；不授权新 Worker 架构、Storage schema、FinOS/provider 或业务特判。
+
 ## 6. 分支与合并路线
 
 ```text
@@ -168,7 +200,7 @@ origin/main @ a6b47c3
                            |
                            v
           codex/context-rehydrate-phase1-5
-          (先提交本文档，再实现最小完成切片及 Policy Recovery P1)
+          (最小完成切片 + Policy Recovery + Terminal Follow-up P1)
                            |
                    A 线完整日志人工验收
                            |
@@ -217,6 +249,12 @@ HAR-CONV-01 使用同一份 Skill 指令和同一份人工识别文字，对未�
 - 第二次 recoverable deny 进入一次工具禁用综合，不得形成新的 Policy/tool 循环；
 - 写入、副作用、凭据、网络授权、越界和人工拒绝保持 terminal/waiting，不得进入
   recoverable observation；
+- 同一 `/tasks/{id}` 先输出待确认日志，再提交确认并发生 terminal rollover；child
+  必须恢复 source Capsule/Projection，输出确认后的完整日志，不得重新索要已给数据；
+- 同步 API 与 Worker 对同一 compaction 产生等价的 active Capsule；handoff 在有
+  Capsule 时不得只使用固定 2,000 字 checkpoint；
+- child 只恢复用户可见对话、Capsule 状态和经验证的 evidence；provider-private、
+  reasoning、凭据及 raw tool output 仍不可跨 Segment；
 - FinOS 核心业务表前后全行哈希一致；
 - 无第二状态源、无业务语义、无跨任务隐式长期记忆。
 

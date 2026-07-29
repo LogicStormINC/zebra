@@ -28,8 +28,14 @@
   failed-tool observation. `HAR-CONV-01-POLICY-RECOVERY` therefore adds one
   explicitly classified, same-Attempt correction for read-only input validation;
   every unmarked, authority, side-effect, credential, boundary or human deny stays
-  terminal/waiting. Full Memory 2.0, Policy relaxation, Worker/Storage changes and
-  direct merge to `main` remain out of scope.
+  terminal/waiting. Local validation is `71` focused and `1773 passed, 9 inherited
+  failures, 8 skipped` full-suite. The resulting live Segment now completes with an
+  8,655-character structured log, but the confirmation follow-up exposed a separate
+  `CTX-SEG-02-FOLLOWUP-REHYDRATE` P1: rollover succeeded, while the child received
+  only the truncated checkpoint and returned 167 characters asking again for known
+  trade details. Sync API/Worker active-Capsule parity and projection-first handoff
+  are active on this same branch. Full Memory 2.0, Policy relaxation, new Worker
+  architecture/Storage schema and direct merge to `main` remain out of scope.
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with
   an exact three-user-turn tail, complete tool groups, one strict retry from
   original history, recoverable context suspension, evidence-gated memory
@@ -46,9 +52,9 @@
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
 - Review task: `CTX-SEG-01` has delivered the stable Task, internal Segment,
   unified stream/routing, automatic safe rollover, and SQLite migration slice.
-- Active repair task: `CTX-SEG-02` preserves the latest bounded conversation
-  checkpoint across terminal follow-up Segments, removes implicit low call
-  ceilings, and converts explicit hard-budget exhaustion into recoverable pause.
+- `CTX-SEG-02` is merged for short terminal follow-ups and budget recovery; the
+  long-context projection regression is reopened narrowly as
+  `CTX-SEG-02-FOLLOWUP-REHYDRATE` under the active Phase 1.5 branch.
 - Review task: `SUBAGENT-UX-01` makes Subagent use a model-native tool decision;
   simple work remains in the parent and every valid delegation records its reason.
 - Active architecture task: ADR-013 replaces user-visible child Sessions with a

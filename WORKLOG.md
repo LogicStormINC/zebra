@@ -5960,3 +5960,28 @@ actual byte access.
   unmarked denies remain terminal or waiting
 - coding remains blocked until this incremental docs baseline is committed and
   receives a fresh coding-before review
+
+# 2026-07-29 CTX-SEG-02 Long-Context Terminal Follow-up P1
+
+- Phase 1.5 plus Policy Recovery passed `71` focused tests; the full suite is
+  `1773 passed, 9 inherited failures, 8 skipped`, with changed-file Ruff, Mypy
+  and `git diff --check` green
+- a pure A-line live Segment now completes in one Attempt after 14 model responses,
+  13 tool proposals and 7 compactions, producing an 8,655-character structured
+  log; it still correctly requests confirmation for a conflicting sell record
+- the stable Task follow-up route accepted `确认存在这笔卖出，纳入今日日志`, created a
+  `terminal_follow_up` Segment and resumed it, but the child returned only 167
+  characters and asked again for the stock, quantity and price
+- source evidence proves the child lost long context rather than model capability:
+  the source had a final 14,118-character Capsule objective with one acceptance
+  criterion and eight plan entries, while the Handoff Envelope had no active
+  Capsule fields and only two roughly 2,000-character checkpoint strings
+- the mismatch comes from two existing paths: synchronous `execute=true` persists
+  compaction events without advancing `SQLiteContextLifecycleStore`, and handoff
+  runtime evidence later truncates the combined checkpoint to about 2,000 characters
+- ChatGPT Pro classified this as a narrow `CTX-SEG-02` P1, not Memory 2.0: align
+  synchronous API and Worker active-Capsule persistence, then make terminal handoff
+  prefer existing Capsule/Projection rehydration with checkpoint text only as fallback
+- no new Memory, table, Event schema, provider/private continuation, raw tool output,
+  finance/Skill special case or FinOS change is authorized; coding waits for this
+  docs increment to be committed and reviewed

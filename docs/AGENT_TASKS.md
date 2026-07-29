@@ -32,6 +32,9 @@
   `HAR-CONV-01-POLICY-RECOVERY` is part of this same task/branch, not a second
   stage: one explicitly recoverable read-only input deny may return to the model
   as a failed-tool observation, while all unmarked or authority denies remain terminal.
+  Live multi-turn acceptance also activated `CTX-SEG-02-FOLLOWUP-REHYDRATE` on
+  this branch: terminal rollover must consume existing Capsule/Projection state,
+  not only a truncated text checkpoint.
 - `CTX-MEM-01` is `Review` in PR `#198` on
   `codex/issue-197-context-memory-continuity`. It closes GitHub issue `#197`
   without depending on the stacked semantic-memory gateway: same-Task recovery
@@ -207,8 +210,10 @@ new evidence and long legitimate tool chains remain unbounded by default.
 - Worktree: `../zebra-context-rehydrate`
 - Owned paths:
   `packages/agent-context/src/agent_context/capsule.py`,
+  `packages/agent-context/src/agent_context/adapter.py`,
   `packages/agent-context/src/agent_context/conversation.py`,
   `packages/agent-context/src/agent_context/projection.py`,
+  `packages/agent-context/src/agent_context/session_handoff.py`,
   `packages/agent-core/src/agent_core/domain/policies.py`,
   `packages/agent-core/src/agent_core/ports/conversation_compactor.py`,
   `packages/agent-core/src/agent_core/harness/model_step.py`,
@@ -218,10 +223,14 @@ new evidence and long legitimate tool chains remain unbounded by default.
   `packages/agent-core/src/agent_core/harness/sequential_loop.py`,
   `packages/agent-security/src/agent_security/mcp_proxy_policy.py`,
   `packages/agent-security/src/agent_security/policy.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/session_handoff.py`,
+  `apps/api/src/zebra_agent_api/task_api.py`,
+  existing shared context-lifecycle wiring under `apps/worker/src/zebra_agent_worker/`
+  only if required to remove API/Worker duplication,
   focused tests under `tests/agent_context/`, `tests/agent_core/`,
-  `tests/agent_security/` and
-  `tests/integration/`, plus this task card, the governing design, `PROGRESS.md`
-  and `WORKLOG.md`
+  `tests/agent_security/`, `tests/api/`, `tests/worker/` and `tests/integration/`,
+  plus this task card, the governing design, `PROGRESS.md` and `WORKLOG.md`
 
 #### Goal
 
@@ -231,7 +240,10 @@ Context projection. Reuse `ContextCapsule`, `ProtectedInstructionLedger`,
 Port boundary. Also close the P1 exposed by the live replay: let Policy explicitly
 classify one model-correctable read-only input deny as a failed-tool observation,
 without weakening the deny, retrying a side effect, creating another Runtime state
-model, or starting an automatic second Attempt.
+model, or starting an automatic second Attempt. Finally, close the existing
+`CTX-SEG-02` long-context regression: synchronous Task execution and Worker execution
+must publish equivalent active Capsule state, and a terminal follow-up Segment must
+rehydrate that state before handling the new user message.
 
 #### Acceptance
 
@@ -258,6 +270,21 @@ model, or starting an automatic second Attempt.
 - [ ] A regression reproduces the live fragment URL: Policy still denies it, no
   request reaches the Gateway, the corrected read may proceed, and the task reaches
   the final synthetic transaction-log marker rather than `retry_exhausted`.
+- [ ] Synchronous `POST /tasks execute=true` and Worker execution persist equivalent
+  validated compaction/active-Capsule state through a shared existing boundary; API
+  does not import a Worker-private helper or create another persistence model.
+- [ ] A completed Task can receive a follow-up, rollover behind the same Task id and
+  restore the source objective, acceptance, decisions, user-visible conversation and
+  required evidence through existing Capsule/Projection references before synthesis.
+- [ ] When a valid source projection exists, terminal handoff does not use the fixed
+  2,000-character checkpoint as its primary state. Text checkpoint remains a bounded
+  fallback only when no validated projection is available.
+- [ ] Handoff recovery enforces source hash/range, checksum, provenance, Policy and
+  token budget and excludes provider-private continuation, reasoning, credentials and
+  raw tool output.
+- [ ] The fixed Task flow — initial 14,118-character text, draft/clarification,
+  follow-up confirmation, terminal rollover and resume — ends with the complete final
+  transaction log and does not ask again for known trade details.
 - [ ] New evidence and auditable state changes still allow legitimate long tasks;
   exact side-effect deduplication and existing safety contracts remain unchanged.
 - [ ] FinOS core business-table full-row hashes are unchanged before/after the live
@@ -270,8 +297,8 @@ model, or starting an automatic second Attempt.
 - Agent Memory, Knowledge Memory, Memory Controller, embeddings, learning, TTL
   platform, provider-specific compaction, automatic child Session creation,
   silent URL normalization, reason-string classification, Policy relaxation,
-  Worker/Storage changes or automatic retry Attempts unless a red test proves the
-  existing same-Attempt Port boundary cannot satisfy the acceptance contract
+  new Worker architecture, new Storage/Event schema, fixed-size checkpoint inflation,
+  forced `agent.clarify`, prompt concatenation workarounds or automatic retry Attempts
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.
