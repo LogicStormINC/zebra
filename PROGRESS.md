@@ -165,8 +165,12 @@
   derives its private key. The PostgreSQL adapter now implements the complete fenced
   Worker lifecycle, canonical Event JSON binding, DB-owned transition timestamps,
   safe compensation, audited management recovery and Session-scoped reconcile reads.
-  Isolated PostgreSQL 17.5 migration/lifecycle tests pass `19/19`; object I/O and
-  Worker orchestration remain the active part of this card.
+  Isolated PostgreSQL 17.5 migration/lifecycle tests pass `19/19`. Worker orchestration
+  now uses a default-off injection seam with strict reserve -> versioned put/head ->
+  receipt -> Event -> finalize ordering. Managed URI spoofing fails closed, external
+  references remain opaque, fenced Effect composition fails fast until its dedicated
+  task, and uncertain outcomes remain staged for management reconcile. The real
+  PostgreSQL+MinIO matrix passes `24/24`; broader fault coverage remains active.
 - Completed Artifact contract slice: `CLOUD-ART-LIFECYCLE-CON-01` separates the
   provider-neutral cloud lifecycle Port/domain from the unchanged local
   `ArtifactPayloadStorePort`. It can proceed in Core without touching Handoff v8,

@@ -174,6 +174,7 @@ class LocalToolGateway(ToolGatewayPort):
         runtime: RuntimePort | None = None,
         runtime_handle: RuntimeHandle | None = None,
         artifact_payload_store: ArtifactPayloadStorePort | None = None,
+        output_projector: ToolOutputProjector | None = None,
         trusted_local: bool = False,
         web_pipeline_v2: bool = False,
     ) -> None:
@@ -189,9 +190,10 @@ class LocalToolGateway(ToolGatewayPort):
         self._workspace.ensure()
         self._runtime = runtime or LocalRuntime()
         self._runtime_handle = runtime_handle
-        output_projector = _output_projector(
-            artifact_payload_store,
-            current_session_id=current_session_id,
+        if artifact_payload_store is not None and output_projector is not None:
+            raise ValueError("configure one Tool output persistence strategy")
+        output_projector = output_projector or _output_projector(
+            artifact_payload_store, current_session_id=current_session_id
         )
         self._output_projector = output_projector
         registry = ToolRegistry()
@@ -358,7 +360,7 @@ class LocalToolGateway(ToolGatewayPort):
             return self._project_tool_output(tool_call, result)
         except ToolRegistryError as exc:
             detail = str(exc)[:1000]
-            return ToolResult(
+            failed = ToolResult(
                 tool_call_id=tool_call.tool_call_id,
                 status=ToolCallStatus.FAILED,
                 output=json.dumps(
@@ -375,9 +377,13 @@ class LocalToolGateway(ToolGatewayPort):
                     "detail": detail,
                 },
             )
+            return self._project_tool_output(tool_call, failed)
 
     def _project_tool_output(self, tool_call: ToolCall, result: ToolResult) -> ToolResult:
         if self._output_projector is None:
+            return result
+        existing_uri = result.metadata.get("artifact_uri")
+        if isinstance(existing_uri, str) and existing_uri.strip():
             return result
         stderr = result.metadata.get("stderr")
         if tool_call.name in {"command.run", "tests.run"} and isinstance(stderr, str):

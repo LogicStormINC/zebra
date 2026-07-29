@@ -25,9 +25,9 @@
 2. `completed` - After Handoff v8 is integrated, claim the card and add migration v9
    plus a focused cloud lifecycle Port; do not add optional fence parameters to the
    local compatibility Port.
-3. `in_progress` - Implement fenced reserve, conditional object put/head, Event URI
+3. `completed` - Implement fenced reserve, conditional object put/head, Event URI
    binding, finalize, compensation, prune and management reconcile as explicit steps.
-4. `pending` - Prove the PostgreSQL/MinIO fault matrix, concurrent idempotency,
+4. `in_progress` - Prove the PostgreSQL/MinIO fault matrix, concurrent idempotency,
    namespace isolation and cross-process reads with an isolated host runner.
 
 ### Decisions
@@ -56,6 +56,11 @@
 - Event outcome uncertainty never triggers deletion. Worker compensation requires a
   proven absent Event and exact-version delete; stale-fence rows move to bounded,
   explicitly authorized management reconcile.
+- The Worker coordinator never deletes an object inline after object I/O begins: the
+  current lifecycle has no fenced pre-delete claim, so checking authority after S3
+  deletion is unsafe. Known absence can use the Worker compensation primitive from a
+  caller that already owns safe cleanup evidence; orchestration failures remain staged
+  for audited management reconcile.
 - Keep the cross-system orchestration in one focused Tool-output Artifact commit
   service. `ToolRunIndexer` remains a pure Event projection and object I/O never runs
   inside a PostgreSQL transaction.

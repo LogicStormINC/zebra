@@ -16,7 +16,6 @@ from agent_core.harness import (
     HarnessAttempt,
     HarnessContext,
     HarnessModelStep,
-    HarnessTask,
     SingleAttemptOrchestrator,
 )
 from agent_core.harness.models import HarnessEventDraft
@@ -31,7 +30,6 @@ from agent_security import (
 from agent_storage import (
     ControlPlaneStores,
     SQLiteSkillsStateStore,
-    list_confirmed_repo_memories,
     sqlite_control_plane_stores,
 )
 from agent_tools.skills_scope import build_scoped_skill_roots
@@ -53,7 +51,6 @@ from zebra_agent_worker.clarification_continuation import (
     recover_clarification_continuation,
 )
 from zebra_agent_worker.context_lifecycle import (
-    persist_context_compaction,
     persist_provider_continuation,
     recover_provider_continuation,
 )
@@ -62,6 +59,7 @@ from zebra_agent_worker.continuation_lifecycle import (
     mark_clarification_continuation_started,
 )
 from zebra_agent_worker.control import SessionControlError, SessionControlService
+from zebra_agent_worker.execution_context import harness_task_for_recovered
 from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import (
@@ -79,6 +77,11 @@ from zebra_agent_worker.runtime_authority import (
     runtime_cleanup_failure_result,
 )
 from zebra_agent_worker.task_recovery import recover_task
+from zebra_agent_worker.tool_output_artifact_runtime import (
+    CloudArtifactCoordinatorFactory,
+    persist_worker_event,
+    validate_cloud_artifact_factory,
+)
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
 
@@ -95,7 +98,14 @@ class SessionExecutionService:
         effect_dispatch: EffectDispatchPort | None = None,
         worker_projection_transaction: WorkerProjectionTransactionPort | None = None,
         deployment_namespace: str | None = None,
+        cloud_artifact_factory: CloudArtifactCoordinatorFactory | None = None,
     ) -> None:
+        cloud_artifact_factory = validate_cloud_artifact_factory(
+            cloud_artifact_factory,
+            worker_projection_transaction,
+            deployment_namespace,
+            effect_dispatch,
+        )
         self._database_path = database_path
         self._claim_service = claim_service
         self._resume_service = resume_service
@@ -140,6 +150,7 @@ class SessionExecutionService:
             worker_projection_transaction=worker_projection_transaction,
             deployment_namespace=deployment_namespace,
         )
+        self._cloud_artifact_factory = cloud_artifact_factory
 
     def execute_session(
         self,
@@ -184,6 +195,11 @@ class SessionExecutionService:
         ownership_check: Callable[[], None],
     ) -> ExecutedSession:
         session_id = claimed.lease.session_id
+        cloud_artifacts = (
+            self._cloud_artifact_factory(session_id)
+            if self._cloud_artifact_factory
+            else None
+        )
         try:
             restored = self._control_service.restore_suspended_workspace(
                 session_id,
@@ -287,7 +303,10 @@ class SessionExecutionService:
                 current_session_id=str(session_id),
                 runtime=runtime,
                 runtime_handle=runtime_handle,
-                artifact_payload_store=self._artifact_payload_store,
+                artifact_payload_store=(
+                    self._artifact_payload_store if cloud_artifacts is None else None
+                ),
+                output_projector=cloud_artifacts.output_projector if cloud_artifacts else None,
                 trusted_local=trusted_local,
                 web_pipeline_v2=self._settings.web_pipeline_v2,
             )
@@ -324,26 +343,11 @@ class SessionExecutionService:
             raise WorkerExecutionError(str(exc)) from exc
         context_compiler = LocalContextCompiler()
         context = HarnessContext(
-            task=HarnessTask(
-                title=task.title,
-                user_input=task.user_input,
-                max_attempts=task.max_attempts,
-                max_model_calls=task.max_model_calls,
-                max_tool_calls=task.max_tool_calls,
-                workspace_root=task.workspace_root,
-                policy_profile=task.policy_profile,
-                tool_profile=task.tool_profile,
-                network_profile=effective_network_profile.name.value,
-                network_allowlist=effective_network_profile.domain_allowlist,
-                mcp_allowlist=tuple(tool.name for tool in tool_gateway.effective_mcp_tools),
-                skill_components=tool_gateway.effective_skill_components,
-                confirmed_memories=list_confirmed_repo_memories(
-                    self._memory_store,
-                    repo_id=str(task.workspace_root.resolve()),
-                    query_text=task.user_input,
-                ),
-                attachments=task.attachments,
-                runtime_evidence=task.runtime_evidence,
+            task=harness_task_for_recovered(
+                task,
+                network_profile=effective_network_profile,
+                tool_gateway=tool_gateway,
+                memory_store=self._memory_store,
             ),
             session=claimed.recovery.session,
             attempt=HarnessAttempt(number=1, started_at=started_at),
@@ -407,15 +411,13 @@ class SessionExecutionService:
         )
 
         def persist_event(draft: HarnessEventDraft) -> None:
-            if draft.event_type is EventType.CONTEXT_COMPACTED:
-                persist_context_compaction(
-                    draft,
-                    recorder=recorder,
-                    event_store=self._event_store,
-                    lifecycle_store=self._context_lifecycle_store,
-                )
-            else:
-                recorder.append_draft(draft)
+            persist_worker_event(
+                draft,
+                recorder=recorder,
+                event_store=self._event_store,
+                lifecycle_store=self._context_lifecycle_store,
+                cloud_artifacts=cloud_artifacts,
+            )
 
         model_step = HarnessModelStep(
             context_compiler=context_compiler,

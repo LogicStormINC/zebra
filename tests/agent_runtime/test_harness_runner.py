@@ -15,12 +15,13 @@ from agent_core.domain.session_history import (
 )
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tool_profiles import ToolProfile
-from agent_core.domain.tools import ToolCall
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_runtime import LocalToolGateway, run_local_harness
 from agent_runtime.web_gateway import LocalWebGatewayTransport
 from agent_runtime.web_search import LocalWebSearchTransport
 from agent_storage import SQLiteArtifactPayloadStore
+from agent_tools import ToolOutputProjector
 
 
 class EmptyHistory:
@@ -479,6 +480,68 @@ def test_local_tool_gateway_persists_complete_file_before_bounded_projection(tmp
     assert envelope["artifact_uri"] == result.metadata["artifact_uri"]
     stored = next((tmp_path / "sessions-artifacts").rglob("*.txt"))
     assert stored.read_text(encoding="utf-8") == content
+
+
+def test_local_tool_gateway_projects_validation_failures_with_injected_projector(
+    tmp_path,
+) -> None:
+    captured: list[str] = []
+
+    def persist(content: str, _file_name: str) -> str:
+        captured.append(content)
+        return "artifact://00000000-0000-0000-0000-000000000001"
+
+    gateway = LocalToolGateway(
+        tmp_path.resolve(),
+        output_projector=ToolOutputProjector(persist),
+    )
+    result = gateway.execute(
+        ToolCall(
+            tool_call_id=new_tool_call_id(),
+            name="unknown.tool",
+            arguments={},
+            created_at=_created_at(),
+        )
+    )
+
+    assert result.status.value == "failed"
+    assert result.metadata["artifact_uri"].startswith("artifact://")
+    assert len(captured) == 1
+
+
+def test_local_tool_gateway_rejects_two_output_persistence_strategies(tmp_path) -> None:
+    with pytest.raises(ValueError, match="one Tool output persistence strategy"):
+        LocalToolGateway(
+            tmp_path.resolve(),
+            current_session_id="b678bd4d-c5e3-44d6-b49d-68fe33a041dc",
+            artifact_payload_store=SQLiteArtifactPayloadStore(tmp_path / "sessions.sqlite"),
+            output_projector=ToolOutputProjector(lambda _content, _name: "artifact://test"),
+        )
+
+
+def test_local_tool_gateway_preserves_existing_external_artifact_uri(tmp_path) -> None:
+    captured: list[str] = []
+    gateway = LocalToolGateway(
+        tmp_path.resolve(),
+        output_projector=ToolOutputProjector(
+            lambda content, _name: captured.append(content) or "artifact://managed"
+        ),
+    )
+    call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="web.fetch",
+        arguments={"url": "https://example.com"},
+        created_at=_created_at(),
+    )
+    external = ToolResult(
+        tool_call_id=call.tool_call_id,
+        status=ToolCallStatus.EXECUTED,
+        output="provider-owned",
+        metadata={"artifact_uri": "https://provider.example/result"},
+    )
+
+    assert gateway._project_tool_output(call, external) == external
+    assert captured == []
 
 
 def test_local_tool_gateway_registers_search_only_with_valid_configuration(tmp_path) -> None:

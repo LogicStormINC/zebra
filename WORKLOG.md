@@ -6581,3 +6581,21 @@ actual byte access.
   both the live fence and stream CAS before returning a prior row.
 - Real PostgreSQL migration/lifecycle/management tests pass `19/19`; focused Ruff,
   strict Mypy and `git diff --check` pass.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 Tool-output orchestration
+
+- Added a default-off Worker coordinator that captures complete Tool output bytes and
+  stable Artifact identity before parallel completion, then uses the sequential Event
+  sink for fenced reserve, versioned object put/head, receipt recording, canonical
+  Event append and finalize.
+- Added a narrow `LocalToolGateway` projector injection. Validation failures now use
+  the same output projection path; existing external URIs remain opaque, while an
+  uncaptured managed URI fails before Event append.
+- Cloud Artifact composition requires PostgreSQL Worker projection authority and fails
+  fast when combined with fenced Effect dispatch, whose atomic linkage remains a
+  successor task.
+- P0/P1 review removed unsafe inline object deletion: once object I/O succeeds, any
+  prepare/Event/finalize uncertainty remains staged for audited management reconcile.
+- Worker+Runtime tests pass `260` with `10` skips; Storage tests pass `131` with `114`
+  skips. The isolated real PostgreSQL+MinIO matrix passes `24/24`; focused Ruff,
+  strict Mypy and `git diff --check` pass.

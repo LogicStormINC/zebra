@@ -695,6 +695,24 @@
   exact-version compensation, management reconcile, cross-namespace access and
   concurrent prune/sweep. Unknown outcomes remain staged and fail closed.
 
+## CLOUD-ART-PAYLOAD-PG-01 Worker orchestration review - 2026-07-29
+
+- Stable Artifact identity and complete bytes are captured in memory during parallel
+  Tool execution. PostgreSQL reserve waits until the terminal draft reaches the
+  sequential Event sink, so its intended sequence is authoritative without creating
+  a SessionEvent before reserve.
+- Inline Worker deletion after object I/O is unsafe with the v9 state model: S3 delete
+  cannot precede fence validation, while holding a PostgreSQL transaction across S3
+  would violate the provider boundary. Therefore prepare/Event/finalize uncertainty
+  remains staged with receipt evidence for management reconcile; no single empty read
+  is treated as proof that an Event transaction cannot commit later.
+- Existing external Artifact URIs are opaque and bypass managed capture. Conversely,
+  an `artifact://` URI absent from the coordinator's pending map fails closed before
+  canonical Event append.
+- Cloud Tool-output composition and fenced Effect dispatch cannot yet share the Event
+  path because Effect commits its terminal Event outside this coordinator. The two
+  configurations fail fast until `CLOUD-EFFECT-PAYLOAD-ATOMIC-01` owns that aggregate.
+
 ## CLOUD-ART-LIFECYCLE-CON-01 - 2026-07-29
 
 - A separate cloud contract is required because the local payload Port cannot express

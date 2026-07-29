@@ -1259,7 +1259,8 @@ cloud mainline and is not built or changed by these cards.
 - Owned paths: focused cloud Artifact lifecycle Port/domain under `agent-core`,
   PostgreSQL metadata and provider-neutral S3-compatible object adapters under
   `agent-storage`, `packages/agent-storage/pyproject.toml`, `uv.lock`, migration v9
-  and exports, focused Worker Event preparation seam, MinIO bucket-versioning
+  and exports, focused Worker Event preparation seam plus the narrow optional
+  `LocalToolGateway` output-projector injection in `agent-runtime`, MinIO bucket-versioning
   bootstrap, isolated PostgreSQL/MinIO Compose runner, Artifact lifecycle/fault tests,
   and this task's governance records
 - Migration: v9; the immutable v1-v8 catalog is integrated at `cfe40713`.
@@ -1268,9 +1269,10 @@ cloud mainline and is not built or changed by these cards.
   metadata fault compensation, prune/sweep concurrency and namespace tests pass.
   A fenced metadata reserve must precede object I/O and Event creation; the Event
   receives the stable `artifact://` URI before append; only a committed Event plus
-  verified object may finalize metadata. Event failure compensates the staged object,
-  and a lost finalize response is recoverable by an explicitly authorized management
-  reconcile path without replaying the Event or synthesizing bytes.
+  verified object may finalize metadata. Because v9 has no fenced pre-delete claim,
+  the Worker coordinator must not delete after an Event/object outcome becomes
+  uncertain; it leaves staged evidence for explicitly authorized management reconcile
+  without replaying the Event or synthesizing bytes.
 - Contract boundary: do not extend the local `ArtifactPayloadStorePort` with optional
   authority arguments. Add a focused cloud lifecycle Port that requires namespace,
   complete `WorkerMutationAuthority`, expected binding and idempotency on every Worker
@@ -1290,6 +1292,9 @@ cloud mainline and is not built or changed by these cards.
   migration and lifecycle tests pass `19/19`; focused Core contract tests pass
   `17/17`. The adapter now covers complete Worker reserve/object/finalize/compensate/
   prune transitions plus audited management recovery and scoped reconcile listing.
+  The optional Worker seam captures bytes before parallel Tool completion, reserves
+  the exact terminal Event slot before Event creation, preserves external URIs and
+  rejects uncaptured managed URIs. Real PostgreSQL+MinIO tests pass `24/24`.
 
 ### CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
 
