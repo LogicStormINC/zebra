@@ -46,6 +46,10 @@ Host ports bind to `127.0.0.1` and default to `15432`, `16379`, `19000`
 and `19001`. The services join the explicitly named `zebra-dependencies`
 network so a future application project can join without owning their lifecycle.
 
+`minio-init` also enables bucket versioning. Artifact deletion is bound to the exact
+opaque object version returned by the S3-compatible provider; ETag is never treated
+as Zebra's SHA-256 authority.
+
 ## Start the optional Mem0 boot smoke
 
 Mem0's official Compose file is a development example. This repository instead

@@ -81,13 +81,13 @@
 
 ## CLOUD-ART-OBJECT-S3-01 - S3-Compatible Immutable Artifact Object Adapter
 
-1. `in_progress` - Claim the object-only adapter card and freeze botocore/MinIO
+1. `completed` - Claim the object-only adapter card and freeze botocore/MinIO
    configuration, error mapping and internal key boundary.
-2. `pending` - Implement conditional put, verified head/read and exact-version delete
+2. `completed` - Implement conditional put, verified head/read and exact-version delete
    against the reviewed Core object Port.
-3. `pending` - Enable bucket versioning and prove canonical retry, conflict, mismatch,
+3. `completed` - Enable bucket versioning and prove canonical retry, conflict, mismatch,
    namespace isolation and cross-client behavior on isolated MinIO.
-4. `pending` - Run storage/compatibility/static gates, record evidence and integrate
+4. `completed` - Run storage/compatibility/static gates, record evidence and integrate
    without touching PostgreSQL migrations or lifecycle orchestration.
 
 ### Decisions

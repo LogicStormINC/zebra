@@ -6454,3 +6454,18 @@ actual byte access.
   bootstrap, isolated real-object tests and governance paths only.
 - Kept PostgreSQL metadata/migration, orchestration, signed delivery, Worker/API,
   SQLite, runtime selection and Desktop outside the task.
+
+## 2026-07-29 - CLOUD-ART-OBJECT-S3-01 implementation
+
+- Added a direct low-level botocore adapter for immutable conditional put, verified
+  head/read and exact-version delete. Keys hash the deployment namespace and never
+  expose the raw namespace or provider locator through Core.
+- Mapped absence, integrity mismatch, immutable identity conflict and provider
+  ambiguity separately. Invalid version/timestamp/body evidence fails closed through
+  typed domain errors rather than leaking SDK or validation exceptions.
+- Enabled MinIO bucket versioning and added an isolated host Compose runner with its
+  own project, loopback ports, network and volume cleanup.
+- Validation: real MinIO and focused adapter matrix `15/15`; all storage tests `130`
+  passed with `87` environment-gated skips; strict storage Mypy `49` files, scoped
+  Ruff and `git diff --check` pass. No PostgreSQL migration, SQLite, Worker/API,
+  runtime selection or Desktop file changed.

@@ -151,10 +151,14 @@
   Event/object evidence, Worker versus management authority, safe cleanup evidence
   and staged/finalized/compensated/pruning/pruned shapes without changing local
   behavior.
-- Active object adapter slice: `CLOUD-ART-OBJECT-S3-01` implements only the immutable
+- Completed object adapter slice: `CLOUD-ART-OBJECT-S3-01` implements the immutable
   S3-compatible bytes boundary and MinIO versioning against the reviewed Core Port.
-  It proceeds independently of Handoff v8 and leaves PostgreSQL metadata, lifecycle
-  orchestration, runtime selection, signed delivery, SQLite and Desktop untouched.
+  Conditional put, canonical retry, digest/size verification, exact-version read and
+  delete, namespace-private keys and typed provider failures pass an isolated real
+  MinIO cross-client matrix (`15/15`). All storage tests pass `130` with `87` gated
+  skips and strict storage Mypy passes `49` files. PostgreSQL metadata, lifecycle
+  orchestration, runtime selection, signed delivery, SQLite and Desktop remain
+  untouched.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
   on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
   path-bounded microservice cards own provider expectations, SCM credential

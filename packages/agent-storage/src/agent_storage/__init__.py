@@ -18,6 +18,7 @@ from agent_core.ports import (
 )
 
 from agent_storage.agent_tasks import SQLiteAgentTaskStore
+from agent_storage.artifact_objects import S3ArtifactObjectStore
 from agent_storage.artifact_payloads import (
     ArtifactPayloadMissingError,
     SQLiteArtifactPayloadStore,
@@ -100,6 +101,7 @@ from agent_storage.workspaces import SQLiteWorkspaceProjectionStore
 
 __all__ = [
     "ArtifactPayloadMissingError",
+    "S3ArtifactObjectStore",
     "ControlPlaneStores",
     "EffectLedgerStatus",
     "EffectReplayRejectedError",

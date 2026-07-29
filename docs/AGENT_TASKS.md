@@ -1306,13 +1306,13 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-ART-OBJECT-S3-01 - S3-Compatible Immutable Artifact Object Adapter
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Branch: `codex/cloud-art-object-s3-01`
 - Depends on: `CLOUD-ART-LIFECYCLE-CON-01`, `CLOUD-ART-OBJ-CON-01`, and reviewed
   `CLOUD-COMPOSE-INFRA-01` MinIO baseline
 - Owned paths: `packages/agent-storage/pyproject.toml`, `uv.lock`, focused
-  `packages/agent-storage/src/agent_storage/{artifact_objects,__init__}.py`,
+  `packages/agent-storage/src/agent_storage/{artifact_objects,s3_error_mapping,__init__}.py`,
   `docker/compose.dependencies.yml`, `docker/README.md`, isolated Artifact object
   Compose runner, focused adapter/real-MinIO tests, and this task's governance records
 - Goal: implement the frozen `ArtifactObjectStorePort` with immutable conditional put,
@@ -1325,6 +1325,9 @@ cloud mainline and is not built or changed by these cards.
 - Non-goals: no PostgreSQL metadata/migration, lifecycle orchestration, Worker/API
   wiring, signed-URL delivery surface, multipart upload, Effect linkage, SQLite,
   runtime backend selection or Desktop.
+- Evidence: isolated MinIO bucket-versioning/cross-client matrix passes `15/15`;
+  all storage tests pass `130` with `87` environment-gated skips; strict storage
+  Mypy passes `49` source files; changed-scope Ruff and `git diff --check` pass.
 
 ### CLOUD-ART-OBJ-CON-01 - Artifact Object And Metadata Authority Contract
 

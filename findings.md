@@ -716,3 +716,15 @@
 - Initial review caught weak management authority, incomplete finalized proof and
   contradictory lifecycle evidence despite green tests. Those P1 gaps were fixed and
   regression cases added before the card moved to Review.
+
+## CLOUD-ART-OBJECT-S3-01 - 2026-07-29
+
+- MinIO returns opaque non-`null` `VersionId` values once bucket versioning is enabled;
+  two independent clients can observe the same canonical conditional write and read
+  the exact version. Deleting that version preserves idempotent absence semantics.
+- S3 response data is a trust boundary. Blank, padded, oversized or `null` versions,
+  naive timestamps, malformed bodies and conflicting digest/size evidence must map to
+  Zebra typed failures instead of escaping botocore, attribute or Pydantic errors.
+- A dedicated Compose project plus explicit network override is required for safe
+  `down --volumes`; relying on the base Compose network name would collide with the
+  long-lived dependency stack and reproduce network-ownership warnings.
