@@ -856,3 +856,16 @@
 - Legacy SQLite import is an explicit offline operation: open with `mode=ro`, preflight
   the complete source before PostgreSQL writes, lock and revalidate the target in one
   transaction, and emit only identifiers/codes/digests in quarantine evidence.
+
+## CLOUD-AGG-CTX-ADMIN-PG-01 durable findings (2026-07-30)
+
+- A preflight Workspace read in the API is not an authority check: another writer can
+  change or remove the projection before commit. Administrative aggregate transactions
+  must lock the Session stream and compare both current projections inside PostgreSQL.
+- Historical activation must keep two times distinct: Artifact identity and content
+  come from the selected capsule's creation Event, while active-pointer `updated_at`
+  comes from the new canonical recovery Event.
+- Keep cloud recovery opt-in through an explicit composition namespace. Inferring the
+  backend or namespace from a concrete adapter would couple API code to infrastructure;
+  adding it to the full Store bundle before cloud composition is complete would spread
+  an unfinished runtime selector.

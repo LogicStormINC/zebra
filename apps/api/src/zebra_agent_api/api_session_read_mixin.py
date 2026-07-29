@@ -15,6 +15,7 @@ from zebra_agent_api.session_read import SessionReadApi
 class ApiSessionReadMixin:
     database_path: Path
     stores: ControlPlaneStores
+    administrative_context_namespace: str | None
 
     def get_session(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_session(session_id)
@@ -45,7 +46,11 @@ class ApiSessionReadMixin:
         )
 
     def recover_session_context(self, session_id: str, body: Mapping[str, object]) -> ApiResponse:
-        return SessionContextControlApi(self.database_path, self.stores).recover(session_id, body)
+        return SessionContextControlApi(
+            self.database_path,
+            self.stores,
+            administrative_context_namespace=self.administrative_context_namespace,
+        ).recover(session_id, body)
 
     def get_session_memory(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_session_memory(session_id)

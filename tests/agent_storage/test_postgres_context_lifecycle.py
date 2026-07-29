@@ -356,7 +356,7 @@ def test_administrative_context_missing_pointer_rolls_back_event(
             session=committed.session,
             workspace=committed.workspace,
             capsule_id=capsule.capsule_id,
-            expected_active_capsule_id=None,
+            expected_active_capsule_id=capsule.capsule_id,
             event=_compaction(committed.session, capsule).model_copy(
                 update={"idempotency_key": "context-admin-missing"}
             ),

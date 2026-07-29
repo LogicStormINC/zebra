@@ -1271,9 +1271,12 @@ cloud mainline and is not built or changed by these cards.
 - Owner: `lukeding`
 - Branch: `codex/cloud-agg-ctx-admin-pg-01`
 - Depends on: `CLOUD-AGG-CTX-PG-01` and `CLOUD-AGG-WORKSPACE-PG-01`
-- Owned paths: `apps/api/src/zebra_agent_api/session_context_control.py`, focused
-  API composition seam if required, `tests/api/test_session_context_control.py`,
-  focused PostgreSQL Context recovery tests, and this task's governance records
+- Worktree: `../zebra-cloud-ctx-admin-pg-01`
+- Owned paths: `apps/api/src/zebra_agent_api/{app,api_session_read_mixin,http,session_context_control,session_context_recovery}.py`,
+  `tests/api/{test_session_context_control,test_api_storage_composition}.py`, focused
+  PostgreSQL Context recovery tests and runner,
+  `packages/agent-storage/src/agent_storage/postgres/{context_lifecycle,context_authority}.py`,
+  and this task's governance records
 - Goal: map historical-capsule recovery in an explicitly injected PostgreSQL
   Context store to the existing `commit_administrative_activation` transaction.
 - Acceptance: namespace comes only from composition; expected Session revision and
@@ -1282,6 +1285,14 @@ cloud mainline and is not built or changed by these cards.
   facts fail closed; the existing HTTP request/response remains compatible.
 - Non-goals: PostgreSQL manual compact, new capsule creation, migration, backend
   selector, full PostgreSQL Store bundle, environment configuration or Desktop.
+- Evidence: the API receives namespace only through explicit composition, preserves
+  the SQLite compatibility branch and uses the canonical PostgreSQL aggregate result
+  without a second projection save. The transaction locks the stream and rejects
+  missing or changed Session/Workspace facts before append; historical pointer time
+  comes from the recovery Event. The isolated PostgreSQL 17.5 matrix passes `19/19`,
+  API/Storage regressions pass `323/323` with `14` environment skips, focused Ruff,
+  strict Mypy and `git diff --check` pass. Full tests are `1977 passed, 167 skipped`
+  with only the inherited Desktop stylesheet 561/500 size-gate failure.
 
 ### CLOUD-AGG-HANDOFF-CON-01 - Fenced Handoff Dispatch Contract
 

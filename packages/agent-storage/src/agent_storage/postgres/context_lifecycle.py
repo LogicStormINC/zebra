@@ -1,5 +1,6 @@
 """Fenced PostgreSQL Context Capsule aggregate."""
 
+from datetime import datetime
 from hashlib import sha256
 from typing import Any
 from uuid import UUID
@@ -28,6 +29,10 @@ from agent_core.ports.context_lifecycle_store import (
 )
 from psycopg.types.json import Jsonb
 
+from agent_storage.postgres.context_authority import (
+    PostgresContextLifecycleConflictError,
+    require_administrative_projections,
+)
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.leases import assert_current_lease_fence
@@ -39,10 +44,6 @@ from agent_storage.postgres.workspaces import (
     get_workspace_in_transaction,
     save_workspace_in_transaction,
 )
-
-
-class PostgresContextLifecycleConflictError(ValueError):
-    """Raised when the immutable capsule or active-pointer CAS conflicts."""
 
 
 class PostgresContextLifecycleStore(ContextLifecycleStorePort):
@@ -132,6 +133,13 @@ class PostgresContextLifecycleStore(ContextLifecycleStorePort):
             if stored is None or stored.session_id != session.session_id:
                 raise KeyError("context capsule is unavailable for this session")
             self._require_pointer(connection, session.session_id, expected_active_capsule_id)
+            require_administrative_projections(
+                connection,
+                self._database.deployment_namespace,
+                authority=authority,
+                session=session,
+                workspace=workspace,
+            )
             canonical = append_event_in_transaction(
                 connection, self._database.deployment_namespace, event
             )
@@ -146,6 +154,7 @@ class PostgresContextLifecycleStore(ContextLifecycleStorePort):
                 stored.event,
                 expected_active_capsule_id,
                 event_sequence=canonical.sequence,
+                updated_at=canonical.created_at,
             )
             stored_session, stored_workspace = self._save_projections(
                 connection, session, workspace, canonical
@@ -387,6 +396,7 @@ class PostgresContextLifecycleStore(ContextLifecycleStorePort):
         expected: str | None,
         *,
         event_sequence: int | None = None,
+        updated_at: datetime | None = None,
     ) -> None:
         artifact_id = created.payload.get("artifact_id")
         if not isinstance(artifact_id, str):
@@ -408,7 +418,7 @@ class PostgresContextLifecycleStore(ContextLifecycleStorePort):
                     artifact_id,
                     capsule.source_hash,
                     sequence,
-                    created.created_at,
+                    updated_at or created.created_at,
                 ),
             )
         else:
@@ -424,7 +434,7 @@ class PostgresContextLifecycleStore(ContextLifecycleStorePort):
                     artifact_id,
                     capsule.source_hash,
                     sequence,
-                    created.created_at,
+                    updated_at or created.created_at,
                     self._database.deployment_namespace,
                     session_id,
                     expected,

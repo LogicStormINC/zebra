@@ -6737,3 +6737,18 @@ actual byte access.
   `git diff --check` and Eval `10/10` pass; full Mypy retains the same four inherited
   errors in untouched Web/Policy files. Two independent P0/P1 reviews found no open
   issue after the binding, exact-version, lifecycle and control-boundary fixes.
+
+## 2026-07-30 - CLOUD-AGG-CTX-ADMIN-PG-01 implementation
+
+- Added an explicit API composition namespace for PostgreSQL historical Context
+  recovery. The local SQLite branch and manual compaction behavior remain unchanged.
+- PostgreSQL administrative activation now locks the Session stream and verifies the
+  current Session and Workspace projections before appending the recovery Event. A
+  missing, stale or altered projection fails with zero writes instead of being rebuilt.
+- API recovery uses the aggregate's canonical Event and projections and performs no
+  second Session/Workspace save. Active-pointer `updated_at` uses the recovery Event,
+  not the historical capsule creation time.
+- The isolated PostgreSQL 17.5 matrix passes `19/19`; API/Storage regressions pass
+  `323/323` with `14` skips; focused Ruff, strict Mypy and `git diff --check` pass.
+  Full tests are `1977 passed, 167 skipped` with only the inherited Desktop stylesheet
+  561/500 size-gate failure.

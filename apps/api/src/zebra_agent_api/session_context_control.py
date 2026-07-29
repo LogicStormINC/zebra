@@ -25,12 +25,20 @@ from zebra_agent_api.session_context_inspection import (
     context_occupancy as _context_occupancy,
 )
 from zebra_agent_api.session_context_inspection import estimate_tokens as _estimate_tokens
+from zebra_agent_api.session_context_recovery import commit_administrative_recovery
 from zebra_agent_api.session_identity_read import _parse_session_id
 
 
 class SessionContextControlApi:
-    def __init__(self, database_path: Path, stores: ControlPlaneStores | None = None) -> None:
+    def __init__(
+        self,
+        database_path: Path,
+        stores: ControlPlaneStores | None = None,
+        *,
+        administrative_context_namespace: str | None = None,
+    ) -> None:
         self._stores = stores or sqlite_control_plane_stores(database_path)
+        self._administrative_context_namespace = administrative_context_namespace
 
     def inspect(self, session_id: str) -> ApiResponse:
         resolved = self._resolve(session_id)
@@ -223,14 +231,7 @@ class SessionContextControlApi:
         lifecycle = self._stores.context_lifecycle
         stored_capsule = lifecycle.get_capsule(capsule_id.strip())
         if stored_capsule is None or stored_capsule.session_id != session.session_id:
-            return ApiResponse(
-                status_code=404,
-                body={
-                    "session_id": session_id,
-                    "status": "capsule_not_found",
-                    "capsule_id": capsule_id.strip(),
-                },
-            )
+            return _capsule_not_found(session_id, capsule_id.strip())
         capsule = stored_capsule.capsule
         event = SessionEvent.create(
             session_id=session.session_id,
@@ -251,20 +252,41 @@ class SessionContextControlApi:
             idempotency_key=f"context-recover:{capsule.capsule_id}:{session.current_sequence + 1}",
             created_at=datetime.now(UTC),
         )
-        active = lifecycle.get_active_capsule(session.session_id)
-        lifecycle.activate_capsule(
-            session_id=session.session_id,
-            capsule_id=capsule.capsule_id,
-            expected_active_capsule_id=active.capsule.capsule_id if active else None,
-            event=event,
-        )
-        self._stores.sessions.save_session(apply_event(session, event))
+        if self._administrative_context_namespace is None:
+            active = lifecycle.get_active_capsule(session.session_id)
+            lifecycle.activate_capsule(
+                session_id=session.session_id,
+                capsule_id=capsule.capsule_id,
+                expected_active_capsule_id=active.capsule.capsule_id if active else None,
+                event=event,
+            )
+            self._stores.sessions.save_session(apply_event(session, event))
+            canonical_event = event
+        else:
+            try:
+                committed = commit_administrative_recovery(
+                    stores=self._stores,
+                    deployment_namespace=self._administrative_context_namespace,
+                    session=session,
+                    capsule_id=capsule.capsule_id,
+                    event=event,
+                )
+            except KeyError:
+                return _capsule_not_found(session_id, capsule_id.strip())
+            except ValueError as exc:
+                return conflict(
+                    session_id=session_id,
+                    status="context_projection_conflict",
+                    reason=str(exc),
+                )
+            capsule = committed.stored_capsule.capsule
+            canonical_event = committed.compaction_event
         return ApiResponse(
             status_code=200,
             body={
                 "session_id": session_id,
                 "status": "recovered",
-                "sequence": event.sequence,
+                "sequence": canonical_event.sequence,
                 "capsule": capsule.model_dump(mode="json"),
             },
         )
@@ -284,6 +306,17 @@ class SessionContextControlApi:
             )
         events = self._stores.events.list_for_session(session_key)
         return session, events
+
+
+def _capsule_not_found(session_id: str, capsule_id: str) -> ApiResponse:
+    return ApiResponse(
+        status_code=404,
+        body={
+            "session_id": session_id,
+            "status": "capsule_not_found",
+            "capsule_id": capsule_id,
+        },
+    )
 
 
 def _capsule_from_events(

@@ -132,9 +132,13 @@
   before the PostgreSQL Handoff aggregate. Its `290` related tests pass; SQLite
   work stops at this compatibility contract. `CLOUD-AGG-HANDOFF-PG-01` is now the
   active v8 migration owner, while Artifact payload implementation remains locked.
-- Active Context follow-up: `CLOUD-AGG-CTX-ADMIN-PG-01` reuses the v7
+- Completed Context follow-up: `CLOUD-AGG-CTX-ADMIN-PG-01` reuses the v7
   administrative CAS only for historical capsule recovery in an explicitly injected
-  PostgreSQL store. It does not add PostgreSQL manual compact or select a backend.
+  PostgreSQL store. API recovery consumes the canonical Event/Session/Workspace result
+  without a second projection write; the transaction rejects missing or changed
+  projections and updates the active pointer with recovery Event time. Its isolated
+  PostgreSQL 17.5 matrix passes `19/19`. It does not add PostgreSQL manual compact,
+  Desktop behavior or runtime backend selection.
 - Completed Handoff v8 review slice preserves the exact v1-v7 migration names and
   checksums while splitting migration types, execution and the v8 catalog into focused
   files. The real PostgreSQL 17.5 migration matrix passes `6/6`; v8 adds only
