@@ -6568,3 +6568,16 @@ actual byte access.
   slot, including an unrelated Event outcome.
 - Real PostgreSQL migration/lifecycle tests pass `16/16`; focused Ruff and strict
   Mypy pass across all v9 adapter modules and tests.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 management recovery
+
+- Added management finalize/compensate/prune entry points backed by explicit Session
+  stream CAS and immutable operation/operator/reason audit rows; no Worker fence is
+  fabricated for recovery.
+- Management metadata, mutation ledger and audit commit in one PostgreSQL transaction.
+  Reused operation IDs bind the complete request and audit meaning; changed retries
+  fail closed. Reconcile listing is namespace/Session/age/status scoped and read-only.
+- PostgreSQL now owns lifecycle transition timestamps. Worker reserve retries validate
+  both the live fence and stream CAS before returning a prior row.
+- Real PostgreSQL migration/lifecycle/management tests pass `19/19`; focused Ruff,
+  strict Mypy and `git diff --check` pass.

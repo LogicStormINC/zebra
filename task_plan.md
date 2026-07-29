@@ -22,10 +22,10 @@
 
 1. `completed` - Audit the current local payload Port, Worker/Event write paths,
    PostgreSQL migration serialization and MinIO dependency baseline.
-2. `in_progress` - After Handoff v8 is integrated, claim the card and add migration v9
+2. `completed` - After Handoff v8 is integrated, claim the card and add migration v9
    plus a focused cloud lifecycle Port; do not add optional fence parameters to the
    local compatibility Port.
-3. `pending` - Implement fenced reserve, conditional object put/head, Event URI
+3. `in_progress` - Implement fenced reserve, conditional object put/head, Event URI
    binding, finalize, compensation, prune and management reconcile as explicit steps.
 4. `pending` - Prove the PostgreSQL/MinIO fault matrix, concurrent idempotency,
    namespace isolation and cross-process reads with an isolated host runner.

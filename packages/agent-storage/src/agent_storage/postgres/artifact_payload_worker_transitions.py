@@ -78,6 +78,14 @@ def finalize(
     authority: WorkerMutationAuthority,
 ) -> CloudArtifactPayloadRecord:
     assert_worker_boundary(connection, namespace, request.session_id, authority)
+    return finalize_after_boundary(connection, namespace, request)
+
+
+def finalize_after_boundary(
+    connection: Any,
+    namespace: str,
+    request: ArtifactFinalizeRequest,
+) -> CloudArtifactPayloadRecord:
     row = lock_payload(connection, namespace, request.artifact_id, request.session_id)
     replay = mutation_replay(connection, namespace, row, "finalize", request)
     if replay is not None:
@@ -107,7 +115,7 @@ def finalize(
         UPDATE artifact_payload_metadata
         SET lifecycle_status = 'finalized', lifecycle_revision = %s,
             event_id = %s, event_sequence = %s, artifact_uri = %s,
-            finalized_at = %s, updated_at = transaction_timestamp()
+            finalized_at = transaction_timestamp(), updated_at = transaction_timestamp()
         WHERE deployment_namespace = %s AND artifact_id = %s
         RETURNING *
         """,
@@ -116,7 +124,6 @@ def finalize(
             binding.event_id,
             binding.sequence,
             binding.artifact_uri,
-            request.finalized_at,
             namespace,
             request.artifact_id,
         ),
@@ -133,6 +140,14 @@ def compensate(
     authority: WorkerMutationAuthority,
 ) -> CloudArtifactPayloadRecord:
     assert_worker_boundary(connection, namespace, request.session_id, authority)
+    return compensate_after_boundary(connection, namespace, request)
+
+
+def compensate_after_boundary(
+    connection: Any,
+    namespace: str,
+    request: ArtifactCompensateRequest,
+) -> CloudArtifactPayloadRecord:
     row = lock_payload(connection, namespace, request.artifact_id, request.session_id)
     replay = mutation_replay(connection, namespace, row, "compensate", request)
     if replay is not None:
@@ -158,13 +173,12 @@ def compensate(
         """
         UPDATE artifact_payload_metadata
         SET lifecycle_status = 'compensated', lifecycle_revision = %s,
-            compensated_at = %s, updated_at = transaction_timestamp()
+            compensated_at = transaction_timestamp(), updated_at = transaction_timestamp()
         WHERE deployment_namespace = %s AND artifact_id = %s
         RETURNING *
         """,
         (
             revision,
-            request.compensated_at,
             namespace,
             request.artifact_id,
         ),

@@ -21,6 +21,7 @@ from agent_core.domain.leases import LeaseLostError
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 from psycopg import errors
 
+from agent_storage.postgres.artifact_payload_management import ArtifactPayloadManagementMixin
 from agent_storage.postgres.artifact_payload_pruning import begin_prune, complete_prune
 from agent_storage.postgres.artifact_payload_rows import artifact_payload_from_row
 from agent_storage.postgres.artifact_payload_worker_transitions import (
@@ -32,7 +33,7 @@ from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.leases import assert_current_lease_fence
 
 
-class PostgresCloudArtifactPayloadStore:
+class PostgresCloudArtifactPayloadStore(ArtifactPayloadManagementMixin):
     """Persist cloud payload lifecycle facts without performing object I/O."""
 
     def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
@@ -56,6 +57,12 @@ class PostgresCloudArtifactPayloadStore:
                     request.session_id,
                     authority.lease_fence,
                 )
+                _assert_stream_revision(
+                    connection,
+                    namespace,
+                    request.session_id,
+                    authority.expected_stream_revision,
+                )
                 replay = _find_reservation(
                     connection,
                     namespace,
@@ -65,12 +72,6 @@ class PostgresCloudArtifactPayloadStore:
                 )
                 if replay is not None:
                     return _require_same_reservation(replay, request_hash)
-                _assert_stream_revision(
-                    connection,
-                    namespace,
-                    request.session_id,
-                    authority.expected_stream_revision,
-                )
                 row = connection.execute(
                     """
                     INSERT INTO artifact_payload_metadata (

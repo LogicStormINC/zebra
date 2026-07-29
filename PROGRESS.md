@@ -162,7 +162,11 @@
   non-authoritative mutation/audit ledgers, exact Event/stream/fence bindings and
   reconcile/retention indexes. Core supplies one canonical reservation digest, while
   `(namespace, artifact_id)` remains the logical object locator and only the S3 adapter
-  derives its private key. Isolated PostgreSQL 17.5 migration tests pass `6/6`.
+  derives its private key. The PostgreSQL adapter now implements the complete fenced
+  Worker lifecycle, canonical Event JSON binding, DB-owned transition timestamps,
+  safe compensation, audited management recovery and Session-scoped reconcile reads.
+  Isolated PostgreSQL 17.5 migration/lifecycle tests pass `19/19`; object I/O and
+  Worker orchestration remain the active part of this card.
 - Completed Artifact contract slice: `CLOUD-ART-LIFECYCLE-CON-01` separates the
   provider-neutral cloud lifecycle Port/domain from the unchanged local
   `ArtifactPayloadStorePort`. It can proceed in Core without touching Handoff v8,

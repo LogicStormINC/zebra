@@ -29,14 +29,16 @@ from agent_core.domain.cloud_artifact_requests import (
     ArtifactCompletePruneRequest,
     ArtifactEventBinding,
     ArtifactFinalizeRequest,
+    ArtifactManagementContext,
     ArtifactMetadataQuery,
+    ArtifactReconcileQuery,
     ArtifactRecordObjectRequest,
     ArtifactReserveRequest,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import ArtifactId, SessionId, new_artifact_id, new_session_id
 from agent_core.domain.leases import LeaseLostError, WorkerLease
-from agent_core.ports import WorkerMutationAuthority
+from agent_core.ports import AdministrativeMutationCAS, WorkerMutationAuthority
 from agent_storage import (
     PostgresCloudArtifactPayloadStore,
     PostgresEventStore,
@@ -159,6 +161,19 @@ def test_reserve_rejects_stale_authority_without_writes(dsn: str) -> None:
     assert _metadata_count(dsn) == 0
 
 
+def test_reserve_replay_still_requires_current_stream_revision(dsn: str) -> None:
+    namespace, session_id, lease = _prepared_worker(dsn)
+    store = PostgresCloudArtifactPayloadStore(dsn, deployment_namespace=namespace)
+    request = _reservation(session_id)
+    authority = _authority(namespace, session_id, lease, revision=0)
+    store.reserve_for_worker(request, authority=authority)
+    PostgresEventStore(dsn, deployment_namespace=namespace).append(_artifact_event(request))
+
+    with pytest.raises(CloudArtifactPayloadConflictError):
+        store.reserve_for_worker(request, authority=authority)
+    assert _metadata_count(dsn) == 1
+
+
 def test_concurrent_identical_reservations_create_one_row(dsn: str) -> None:
     namespace, session_id, lease = _prepared_worker(dsn)
     request = _reservation(session_id)
@@ -209,7 +224,7 @@ def test_record_object_and_finalize_bind_canonical_event(dsn: str) -> None:
             artifact_uri=f"artifact://{reservation.artifact_id}",
         ),
         object_receipt=receipt,
-        finalized_at=datetime.now(UTC),
+        finalized_at=NOW,
     )
     after_event = _authority(namespace, session_id, lease, revision=1)
     finalized = store.finalize_for_worker(finalize_request, authority=after_event)
@@ -222,6 +237,11 @@ def test_record_object_and_finalize_bind_canonical_event(dsn: str) -> None:
     assert finalized.lifecycle_revision == 2
     assert finalized.event_binding == finalize_request.event_binding
     assert _mutation_count(dsn) == 2
+    with psycopg.connect(dsn) as connection:
+        times = connection.execute(
+            "SELECT reserved_at, finalized_at FROM artifact_payload_metadata"
+        ).fetchone()
+    assert times is not None and times[1] >= times[0]
 
 
 def test_finalize_rejects_event_without_canonical_artifact_uri(dsn: str) -> None:
@@ -400,6 +420,117 @@ def test_worker_prune_is_exact_versioned_and_idempotent(dsn: str) -> None:
     assert _mutation_count(dsn) == 4
 
 
+def test_management_finalize_recovers_with_audited_stream_cas(dsn: str) -> None:
+    namespace, session_id, lease = _prepared_worker(dsn)
+    store = PostgresCloudArtifactPayloadStore(dsn, deployment_namespace=namespace)
+    reservation = _reservation(session_id)
+    worker = _authority(namespace, session_id, lease, revision=0)
+    store.reserve_for_worker(reservation, authority=worker)
+    receipt = _receipt(namespace, reservation)
+    store.record_object_for_worker(
+        ArtifactRecordObjectRequest(
+            artifact_id=reservation.artifact_id,
+            session_id=session_id,
+            expected_lifecycle_revision=0,
+            idempotency_key="record-1",
+            object_receipt=receipt,
+        ),
+        authority=worker,
+    )
+    event = _artifact_event(reservation)
+    PostgresEventStore(dsn, deployment_namespace=namespace).append(event)
+    PostgresLeaseStore(dsn, deployment_namespace=namespace).release(
+        session_id,
+        fence=lease.fence,
+    )
+    request = ArtifactFinalizeRequest(
+        artifact_id=reservation.artifact_id,
+        session_id=session_id,
+        expected_lifecycle_revision=1,
+        idempotency_key="management-finalize-1",
+        event_binding=ArtifactEventBinding(
+            session_id=session_id,
+            event_id=event.event_id,
+            sequence=1,
+            artifact_uri=f"artifact://{reservation.artifact_id}",
+        ),
+        object_receipt=receipt,
+        finalized_at=datetime.now(UTC),
+    )
+    authority = AdministrativeMutationCAS(
+        deployment_namespace=namespace,
+        session_id=session_id,
+        expected_stream_revision=1,
+    )
+    audit = ArtifactManagementContext(
+        operation_id=uuid4(),
+        operator_id="artifact-reconciler",
+        reason="recover lost Worker finalize response",
+    )
+
+    finalized = store.finalize_reconciled(request, authority=authority, audit=audit)
+    replay = store.finalize_reconciled(request, authority=authority, audit=audit)
+    assert finalized == replay
+    assert finalized.lifecycle_status is CloudArtifactPayloadLifecycleStatus.FINALIZED
+    with psycopg.connect(dsn) as connection:
+        audit_row = connection.execute(
+            """
+            SELECT operation_kind, operator_id, reason, from_status, to_status,
+                   expected_stream_revision, resulting_lifecycle_revision
+            FROM artifact_payload_management_audit
+            """
+        ).fetchone()
+    assert audit_row == (
+        "finalize",
+        "artifact-reconciler",
+        "recover lost Worker finalize response",
+        "staged",
+        "finalized",
+        1,
+        2,
+    )
+    with pytest.raises(CloudArtifactPayloadConflictError):
+        store.finalize_reconciled(
+            request,
+            authority=authority,
+            audit=audit.model_copy(update={"reason": "changed reason"}),
+        )
+
+
+def test_list_reconcilable_is_session_scoped_and_read_only(dsn: str) -> None:
+    namespace, session_id, lease = _prepared_worker(dsn)
+    store = PostgresCloudArtifactPayloadStore(dsn, deployment_namespace=namespace)
+    reservation = _reservation(session_id)
+    store.reserve_for_worker(
+        reservation,
+        authority=_authority(namespace, session_id, lease, revision=0),
+    )
+    authority = AdministrativeMutationCAS(
+        deployment_namespace=namespace,
+        session_id=session_id,
+        expected_stream_revision=0,
+    )
+    audit = ArtifactManagementContext(
+        operation_id=uuid4(),
+        operator_id="artifact-reconciler",
+        reason="inspect staged payloads",
+    )
+
+    records = store.list_reconcilable(
+        ArtifactReconcileQuery(older_than=datetime.now(UTC) + timedelta(seconds=1)),
+        authority=authority,
+        audit=audit,
+    )
+    assert tuple(record.artifact_id for record in records) == (reservation.artifact_id,)
+    assert _management_audit_count(dsn) == 0
+    with pytest.raises(CloudArtifactPayloadConflictError):
+        store.list_reconcilable(
+            ArtifactReconcileQuery(older_than=datetime.now(UTC) + timedelta(seconds=1)),
+            authority=authority.model_copy(update={"session_id": new_session_id()}),
+            audit=audit,
+        )
+
+
 def _prepared_worker(dsn: str) -> tuple[str, SessionId, WorkerLease]:
     namespace = f"artifact-{uuid4()}"
     bootstrap_control_plane_epoch(dsn, deployment_namespace=namespace)
@@ -522,5 +653,14 @@ def _metadata_count(dsn: str) -> int:
 def _mutation_count(dsn: str) -> int:
     with psycopg.connect(dsn) as connection:
         row = connection.execute("SELECT count(*) FROM artifact_payload_mutations").fetchone()
+    assert row is not None
+    return int(row[0])
+
+
+def _management_audit_count(dsn: str) -> int:
+    with psycopg.connect(dsn) as connection:
+        row = connection.execute(
+            "SELECT count(*) FROM artifact_payload_management_audit"
+        ).fetchone()
     assert row is not None
     return int(row[0])

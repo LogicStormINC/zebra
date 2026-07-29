@@ -30,6 +30,14 @@ def begin_prune(
     authority: WorkerMutationAuthority,
 ) -> CloudArtifactPayloadRecord:
     assert_worker_boundary(connection, namespace, request.session_id, authority)
+    return begin_prune_after_boundary(connection, namespace, request)
+
+
+def begin_prune_after_boundary(
+    connection: Any,
+    namespace: str,
+    request: ArtifactBeginPruneRequest,
+) -> CloudArtifactPayloadRecord:
     row = lock_payload(connection, namespace, request.artifact_id, request.session_id)
     replay = mutation_replay(connection, namespace, row, "begin_prune", request)
     if replay is not None:
@@ -42,11 +50,11 @@ def begin_prune(
         """
         UPDATE artifact_payload_metadata
         SET lifecycle_status = 'pruning', lifecycle_revision = %s,
-            pruning_at = %s, updated_at = transaction_timestamp()
+            pruning_at = transaction_timestamp(), updated_at = transaction_timestamp()
         WHERE deployment_namespace = %s AND artifact_id = %s
         RETURNING *
         """,
-        (revision, request.requested_at, namespace, request.artifact_id),
+        (revision, namespace, request.artifact_id),
     ).fetchone()
     assert updated is not None
     insert_mutation(connection, namespace, request.artifact_id, "begin_prune", request, revision)
@@ -60,6 +68,14 @@ def complete_prune(
     authority: WorkerMutationAuthority,
 ) -> CloudArtifactPayloadRecord:
     assert_worker_boundary(connection, namespace, request.session_id, authority)
+    return complete_prune_after_boundary(connection, namespace, request)
+
+
+def complete_prune_after_boundary(
+    connection: Any,
+    namespace: str,
+    request: ArtifactCompletePruneRequest,
+) -> CloudArtifactPayloadRecord:
     row = lock_payload(connection, namespace, request.artifact_id, request.session_id)
     replay = mutation_replay(connection, namespace, row, "complete_prune", request)
     if replay is not None:
@@ -84,11 +100,11 @@ def complete_prune(
         """
         UPDATE artifact_payload_metadata
         SET lifecycle_status = 'pruned', lifecycle_revision = %s,
-            pruned_at = %s, updated_at = transaction_timestamp()
+            pruned_at = transaction_timestamp(), updated_at = transaction_timestamp()
         WHERE deployment_namespace = %s AND artifact_id = %s
         RETURNING *
         """,
-        (revision, request.pruned_at, namespace, request.artifact_id),
+        (revision, namespace, request.artifact_id),
     ).fetchone()
     assert updated is not None
     insert_mutation(

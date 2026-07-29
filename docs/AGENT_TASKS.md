@@ -1287,7 +1287,9 @@ cloud mainline and is not built or changed by these cards.
   identity has one shared Core SHA-256 contract; DB constraints bind intended Event
   sequence to the reserved stream revision, complete LeaseFence, exact Event identity,
   lifecycle evidence and DB-time transition ordering. Isolated PostgreSQL 17.5
-  migration tests pass `6/6`; focused Core contract tests pass `17/17`.
+  migration and lifecycle tests pass `19/19`; focused Core contract tests pass
+  `17/17`. The adapter now covers complete Worker reserve/object/finalize/compensate/
+  prune transitions plus audited management recovery and scoped reconcile listing.
 
 ### CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
 
