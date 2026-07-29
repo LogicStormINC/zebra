@@ -2,13 +2,13 @@
 
 ## CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 
-1. `in_progress` - Trace every authoritative Worker-owned aggregate from Port to
+1. `completed` - Trace every authoritative Worker-owned aggregate from Port to
    adapter and mutation caller, including its current transaction boundary.
-2. `pending` - Classify PostgreSQL adapter and Lease-fence coverage gaps without
+2. `completed` - Classify PostgreSQL adapter and Lease-fence coverage gaps without
    changing production code.
-3. `pending` - Write the approved path inventory and split implementation into
+3. `completed` - Write the reviewable path inventory and split implementation into
    dependency-ordered, non-overlapping task cards with real PostgreSQL tests.
-4. `pending` - Validate documentation consistency, move the planning card to
+4. `completed` - Validate documentation consistency, move the planning card to
    Review and leave the parent gate Locked until its prerequisites are merged.
 
 ### Decisions

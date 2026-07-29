@@ -6310,3 +6310,12 @@ actual byte access.
   `codex/cloud-agg-fence-plan-01` from the clean integrated cloud baseline. The
   task owns only the aggregate path inventory and governance records; production
   adapters, runtime selection and Desktop remain out of scope.
+- completed the read-only authority and transaction inventory across Context,
+  Handoff, Workspace/Task, Model/Tool, continuation/history, Artifact payload/read,
+  Effect payload linkage and delivery audit/idempotency. The resulting v1.0 path
+  document separates authoritative payloads from Event-derived projections and
+  read models, registers dependency-ordered implementation cards, and leaves every
+  production card plus the parent gate Locked pending inventory review.
+- validated the inventory and registry with `git diff --check`, confirmed the new
+  focused document is `178` lines, and confirmed no implementation card was
+  accidentally made Ready or In Progress. The planning card is ready for Review.

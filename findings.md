@@ -575,3 +575,20 @@
 - PostgreSQL trigger injection is the smallest faithful way to test rollback after
   an Event insert but before the aggregate row commit. Namespace-scoped trigger
   predicates avoid changing production code or adding a generic failure hook.
+
+## CLOUD-AGG-FENCE-PLAN-01 - 2026-07-29
+
+- Full aggregate fencing is not a table-by-table SQLite port. The authority map
+  separates Event-derived projections and read models from additional payload or
+  command authorities before choosing PostgreSQL schemas.
+- Model Call, Tool Run, Workspace and Task remain replayable projections. Session
+  History and Artifact list remain read composition. Creating separate authority
+  tables for the latter two would add conflicting sources of truth.
+- Context, Handoff/dispatch, Provider continuation payload and Artifact payload
+  contain durable state outside the Session Event stream. Their PostgreSQL writes
+  require transaction-local namespace and Lease-fence validation.
+- API delivery/idempotency is not a Worker Lease problem. It needs a command claim,
+  durable external Effect and atomic receipt/audit semantics under API authority.
+- `postgres/migrations.py` and Store composition are coordination hotspots. Cards
+  that otherwise own separate aggregate modules must integrate migrations in DAG
+  order instead of editing those shared files concurrently.

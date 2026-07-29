@@ -1027,7 +1027,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Branch: `codex/cloud-agg-fence-plan-01`
 - Depends on: reviewed `CLOUD-LEASE-01` evidence and the integrated local
@@ -1041,6 +1041,162 @@ cloud mainline and is not built or changed by these cards.
 - Acceptance: every aggregate named by `CLOUD-AGG-FENCE-01` has an explicit source
   of truth, PostgreSQL-adapter status, fencing gap, owned paths, dependency and
   real-PostgreSQL acceptance matrix; no production code changes in this task.
+- Evidence: `docs/CLOUD_Worker_Aggregate_Fencing_路径盘点_v1.0.md` records the
+  authority map, transaction seams, shared-file hotspots, implementation DAG and
+  per-card real PostgreSQL matrix. It explicitly keeps read models out of the
+  authority layer and keeps API delivery commands outside the Worker Lease lane.
+
+### CLOUD-AGG-FENCE-CON-01 - Worker Mutation Fencing Contract
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Branch: `codex/cloud-agg-fence-con-01` after inventory approval
+- Depends on: approved and integrated `CLOUD-AGG-FENCE-PLAN-01`
+- Owned paths: focused aggregate Store Ports under
+  `packages/agent-core/src/agent_core/ports/`, one focused transaction contract,
+  corresponding `tests/agent_core/`, and governance records
+- Goal: make namespace, full LeaseFence, expected revision and administrative CAS
+  explicit without implementing an infrastructure adapter.
+- Acceptance: missing or stale Worker authority is not expressible as a valid
+  mutation request; API CAS and Worker fenced writes are distinct typed paths.
+
+### CLOUD-AGG-WORKSPACE-PG-01 - Fenced Workspace Projection
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/workspaces.py`,
+  the current migration hotspot, focused Worker transaction wiring and real
+  PostgreSQL Workspace tests
+- Goal: persist Workspace as an Event-derived fenced projection, never as a second
+  fact source.
+- Acceptance: stale epoch/token/owner and old sequence writes change zero rows;
+  Event/Session/Workspace failure and replay matrices pass on PostgreSQL.
+
+### CLOUD-AGG-TASK-PG-01 - PostgreSQL Task And Segment Index
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/agent_tasks.py`,
+  the current migration hotspot, task composition and real PostgreSQL Task tests
+- Goal: provide a read-without-write Task index and connection-scoped rollover
+  primitive for Handoff transactions.
+- Acceptance: concurrent rollover has one winner, task event order is unique,
+  rebuild is idempotent and reads never trigger hidden writes.
+
+### CLOUD-AGG-CTX-PG-01 - Fenced Context Lifecycle Aggregate
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/context_lifecycle.py`,
+  the current migration hotspot, focused Worker/API context wiring and PostgreSQL tests
+- Goal: commit capsule, lifecycle Events and active pointer under one authority boundary.
+- Acceptance: content/idempotency, pointer CAS, stale fence, duplicate sequence,
+  administrative CAS and rollback matrices pass on real PostgreSQL.
+
+### CLOUD-AGG-HANDOFF-PG-01 - PostgreSQL Handoff And Dispatch Aggregate
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01` and
+  `CLOUD-AGG-TASK-PG-01`
+- Owned paths: focused PostgreSQL Handoff/dispatch modules, current migration
+  hotspot, API/Worker Handoff wiring and real PostgreSQL tests
+- Goal: preserve the existing all-or-nothing Handoff boundary and add fenced,
+  multi-Worker dispatch claim/ack.
+- Acceptance: stale source facts cause zero writes, concurrent successor is unique,
+  all Handoff rows roll back together, and old claims cannot acknowledge new work.
+
+### CLOUD-MODEL-TOOL-PG-01 - PostgreSQL Model And Tool Projections
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: `CLOUD-AGG-FENCE-CON-01` and `CLOUD-AGG-WORKSPACE-PG-01`
+- Owned paths: focused PostgreSQL model/tool modules, current migration hotspot,
+  Worker index/replay wiring and real PostgreSQL tests
+- Goal: maintain Model/Tool as replayable Event-derived projections.
+- Acceptance: same-event replay is idempotent, different content fails closed,
+  stale Worker writes zero rows and partial projection failure is recoverable.
+
+### CLOUD-PROVIDER-CONT-PG-01 - Fenced Provider Continuation Payload
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: `CLOUD-AGG-FENCE-CON-01` and an approved tenant/namespace boundary
+- Owned paths: Provider continuation Port/domain if required, focused PostgreSQL
+  adapter and migration, Worker continuation wiring and real PostgreSQL tests
+- Goal: make opaque continuation payload shared, tenant-scoped and fence-validated.
+- Acceptance: stale authority and cross-tenant access fail, TTL/SHA/delete semantics
+  match SQLite, Event references remain resolvable and sweep is management-scoped.
+
+### CLOUD-ART-PAYLOAD-PG-01 - Shared Artifact Payload Authority
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: `CLOUD-AGG-FENCE-CON-01` and approved object-storage contract
+- Owned paths: Artifact payload Port/domain if required, PostgreSQL metadata and
+  object-storage adapters, migration/composition, Docker contract docs and tests
+- Goal: replace local filesystem payload authority with cross-Worker storage.
+- Acceptance: idempotency/conflict, SHA, stale fence, cross-process read, object/
+  metadata fault compensation, prune/sweep concurrency and namespace tests pass.
+
+### CLOUD-EFFECT-PAYLOAD-ATOMIC-01 - Effect Payload And Intent Linkage
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: `CLOUD-ART-PAYLOAD-PG-01` and `CLOUD-EFFECT-OUTBOX-01`
+- Owned paths: `packages/agent-tools/src/agent_tools/effect_guard.py`, focused
+  PostgreSQL outbox coordination, and effect payload fault/integration tests
+- Goal: prevent durable Effect intents from referencing unavailable local payloads.
+- Acceptance: another Worker can claim/read, stale fence creates no payload/intent,
+  schedule failure leaves no permanent orphan and response-loss recovery is safe.
+
+### CLOUD-SESSION-HISTORY-PG-01 - PostgreSQL Session History Read Model
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: PostgreSQL Event/Session Projection and approved tenant/session scope
+- Owned paths: PostgreSQL Session History adapter, read composition and parity tests
+- Goal: provide namespace-scoped consistent history reads without adding a write aggregate.
+- Acceptance: SQLite/PG behavior, pagination, safety filters, stable ordering and
+  allowed-session isolation match; Lease fencing is explicitly not applicable.
+
+### CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: `CLOUD-MODEL-TOOL-PG-01` and `CLOUD-ART-PAYLOAD-PG-01`
+- Owned paths: Artifact read composition, API composition and contract tests
+- Goal: compose Artifact reads from Model/Tool projections and payload lifecycle
+  without creating another Artifact authority table.
+- Acceptance: SQLite/PG list, order, redaction and lifecycle semantics match and
+  missing indexes can be rebuilt from Events.
+
+### CLOUD-DELIVERY-TXN-PG-01 - PostgreSQL Delivery Command Transaction
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: cloud Effect dispatch and PostgreSQL control-plane composition
+- Owned paths: delivery-audit/idempotency Ports if required, focused PostgreSQL
+  adapters/migration, API commit/PR command wiring and concurrency/fault tests
+- Goal: claim API commands durably and commit response receipt plus audit without
+  conflating API authority with Worker Lease fencing.
+- Acceptance: concurrent same key has one owner, request mismatch conflicts,
+  crash recovery does not repeat external actions and receipt/audit has no half-state.
+
+### CLOUD-CONTROL-PLANE-PG-01 - Complete PostgreSQL Store Composition
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: all aggregate PostgreSQL adapter and read-composition cards above
+- Owned paths: storage/API/Worker composition, runtime backend selection, config,
+  Compose application profile and integration tests
+- Goal: select a complete PostgreSQL `ControlPlaneStores` profile explicitly while
+  retaining SQLite for the local profile.
+- Acceptance: cloud startup fails on any missing adapter, never silently mixes
+  backends, and the combined multi-Worker restore/fault matrix passes.
 
 ### CLOUD-AGG-FENCE-01 - Full Worker Aggregate Fencing Gate
 
