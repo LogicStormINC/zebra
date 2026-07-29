@@ -30,6 +30,7 @@ class HarnessStopReason(StrEnum):
     RETRY_EXHAUSTED = "retry_exhausted"
     RETRY_ALLOWED = "retry_allowed"
     TOOL_CALL_BUDGET_EXHAUSTED = "tool_call_budget_exhausted"
+    TOOL_LOOP_NO_PROGRESS = "tool_loop_no_progress"
     APPROVAL_REQUIRED = "approval_required"
     CLARIFICATION_REQUIRED = "clarification_required"
 

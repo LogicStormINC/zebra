@@ -114,33 +114,6 @@ def update_batch_observation_progress(
     )
 
 
-def repeat_threshold_metadata(
-    tool_calls: tuple[ToolCall, ...],
-    fingerprints: set[str],
-    metadata: Mapping[str, object],
-    *,
-    threshold: int,
-) -> dict[str, object] | None:
-    counts = _loop_guard_counts(metadata)
-    for tool_call in tool_calls:
-        fingerprint = action_fingerprint(tool_call)
-        if fingerprint not in fingerprints:
-            continue
-        repeat_count = counts.get(fingerprint, 0) + 1
-        if repeat_count < threshold:
-            continue
-        counts[fingerprint] = repeat_count
-        return {
-            **metadata,
-            "loop_guard_counts": counts,
-            "loop_guard_tool_name": tool_call.name,
-            "loop_guard_repeat_count": repeat_count,
-            "consecutive_no_progress_batches": repeat_count,
-            "tool_loop_no_progress": True,
-        }
-    return None
-
-
 def append_no_progress_observation(
     messages: list[SessionMessage],
     *,
@@ -150,7 +123,7 @@ def append_no_progress_observation(
     messages.append(
         SessionMessage(
             message_id=new_message_id(),
-            role=MessageRole.USER,
+            role=MessageRole.SYSTEM,
             content="Runtime convergence observation: "
             + json.dumps(
                 {
@@ -161,7 +134,9 @@ def append_no_progress_observation(
                 },
                 separators=(",", ":"),
                 sort_keys=True,
-            ),
+            )
+            + "\nUse the available tool results to answer the original request. "
+            "Do not request or invoke another tool.",
             created_at=created_at,
             metadata={"tool_loop_no_progress": True},
         )
@@ -169,6 +144,9 @@ def append_no_progress_observation(
 
 
 def _normalized_result_summary(tool_result: ToolResult) -> str:
+    output_checksum = tool_result.metadata.get("output_sha256")
+    if isinstance(output_checksum, str) and output_checksum.strip():
+        return f"sha256:{output_checksum.strip()}"
     if tool_result.output:
         try:
             return json.dumps(
@@ -189,7 +167,6 @@ def _normalized_result_summary(tool_result: ToolResult) -> str:
 
 def _stable_references(metadata: Mapping[str, object]) -> list[str]:
     keys = {
-        "artifact_uri",
         "artifact_ref",
         "artifact_id",
         "source_uri",
@@ -217,14 +194,3 @@ def _string_set(value: object) -> set[str]:
     if not isinstance(value, list | tuple | set):
         return set()
     return {item for item in value if isinstance(item, str)}
-
-
-def _loop_guard_counts(metadata: Mapping[str, object]) -> dict[str, int]:
-    raw = metadata.get("loop_guard_counts")
-    if not isinstance(raw, dict):
-        return {}
-    return {
-        str(key): value
-        for key, value in raw.items()
-        if isinstance(value, int) and not isinstance(value, bool)
-    }

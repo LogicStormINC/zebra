@@ -176,25 +176,6 @@ class ToolBatchExecutor:
                     fingerprint = action_fingerprint(tool_call)
                     loop_guard_counts[fingerprint] = loop_guard_counts.get(fingerprint, 0) + 1
                     metadata = {**metadata, "loop_guard_counts": loop_guard_counts}
-                    if loop_guard_counts[fingerprint] >= self._repeat_hard_stop_threshold:
-                        return self._terminal(
-                            outcome=HarnessAttemptOutcome.FAILED,
-                            summary=(
-                                f"loop guard exhausted: {tool_call.name} repeated "
-                                f"{loop_guard_counts[fingerprint]} times"
-                            ),
-                            completion=completion,
-                            emitted_events=emitted_events,
-                            model_calls_used=model_calls_used,
-                            tool_calls_executed=tool_calls_executed,
-                            metadata={
-                                **metadata,
-                                "stop_reason": "loop_guard_exhausted",
-                                "loop_guard_tool_name": tool_call.name,
-                                "loop_guard_repeat_count": loop_guard_counts[fingerprint],
-                                "remaining_tool_call_count": len(tool_calls) - index,
-                            },
-                        )
                     result = ToolResult(
                         tool_call_id=tool_call.tool_call_id,
                         status=ToolCallStatus.FAILED,

@@ -9,9 +9,14 @@
   `codex/runtime-convergence-phase1`, based on PR `#198` plus current
   `origin/main`. It extends exact action repetition checks with stable evidence
   progress, bounded no-progress detection, and one tool-disabled terminal
-  synthesis. `63` focused regressions and touched-file Ruff/Mypy pass; the
-  read-only three-image A/B remains user acceptance. It is not authorized to
-  merge or push directly to `main`.
+  synthesis. Post-review repairs preserve mixed-batch work, ignore volatile
+  artifact URIs, keep internal convergence instructions out of the user tail,
+  propagate `tool_loop_no_progress`, and reject raw DSML tool requests as final
+  answers. `70` focused regressions and touched-file Ruff/Mypy pass; full tests
+  are `1763 passed, 9 inherited failures, 8 skipped`. A provider-neutral live
+  replay now typed-suspends instead of looping or falsely completing. FinOS
+  image/MiniMax acceptance is separate. The branch awaits external review and
+  is not authorized to merge directly to `main`.
 - Locked follow-up: `CTX-REHYDRATE-02` may start only after PR `#198` and
   `HAR-CONV-01` merge. It will reuse existing Event/Capsule/Artifact projection
   and `rehydrate_projection()` rather than create a full Memory 2.0 subsystem.

@@ -7,10 +7,8 @@ from agent_core.harness.attempt_result import (
     action_fingerprint,
     append_no_progress_observation,
     build_attempt_result,
-    repeat_threshold_metadata,
 )
 from agent_core.harness.clarification_step import clarification_tool_result
-from agent_core.harness.concurrent_batch import DEFAULT_REPEAT_HARD_STOP_THRESHOLD
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_request import allowed_response_repairs
 from agent_core.harness.model_step import HarnessModelStep
@@ -215,22 +213,6 @@ class SequentialToolLoop:
             )
         selection = self._tool_selector.select(completion.tool_calls)
         calls = completion.tool_calls if self._synthesize_tool_results else (selection.tool_call,)
-        repeat_metadata = repeat_threshold_metadata(
-            calls,
-            fingerprints,
-            metadata,
-            threshold=DEFAULT_REPEAT_HARD_STOP_THRESHOLD,
-        )
-        if repeat_metadata is not None:
-            return self._request_terminal_synthesis(
-                context,
-                messages=messages,
-                emitted_events=emitted_events,
-                model_calls_used=model_calls_used,
-                tool_calls_executed=tool_calls_executed,
-                metadata=repeat_metadata,
-                fallback_message=completion.assistant_message.content,
-            )
         self._model_step.append_tool_batch(
             messages,
             completion=completion,
@@ -406,10 +388,6 @@ class SequentialToolLoop:
             metadata=metadata,
             created_at=context.attempt.started_at,
         )
-        self._model_step.append_final_answer_instruction(
-            messages,
-            created_at=context.attempt.started_at,
-        )
         compaction = self._model_step.prepare_conversation(
             messages,
             self._model_gateway,
@@ -449,7 +427,11 @@ class SequentialToolLoop:
                 response_stage="final",
             )
         )
-        if completion.tool_calls or not completion.assistant_message.content.strip():
+        if (
+            completion.tool_calls
+            or _is_raw_dsml_tool_request(completion.assistant_message.content)
+            or not completion.assistant_message.content.strip()
+        ):
             return build_attempt_result(
                 outcome=HarnessAttemptOutcome.SUSPENDED,
                 summary="tool loop made no new progress and final synthesis was unavailable",
@@ -484,3 +466,16 @@ def _executed_action_fingerprints(messages: list[SessionMessage]) -> set[str]:
 
 def _tool_limit(context: HarnessContext) -> int | None:
     return context.task.max_tool_calls
+
+
+def _is_raw_dsml_tool_request(content: str) -> bool:
+    marker = "<｜｜DSML｜｜tool_calls>"
+    marker_index = content.find(marker)
+    if marker_index < 0 or _is_inside_fenced_code_block(content, marker_index):
+        return False
+    prefix = content[:marker_index].strip()
+    return prefix in {"", "Tool calls proposed."} and "invoke name=" in content[marker_index:]
+
+
+def _is_inside_fenced_code_block(content: str, position: int) -> bool:
+    return sum(line.lstrip().startswith("```") for line in content[:position].splitlines()) % 2 == 1

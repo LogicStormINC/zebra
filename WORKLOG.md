@@ -5883,5 +5883,38 @@ actual byte access.
   gate: `CodexConversationPane.styles.ts` `561/500` and `events.py` `505/500`.
 - **Commit / review**: the Phase 1 delivery commit is on
   `codex/runtime-convergence-phase1` only; do not merge or push it to `main`.
-  The remaining user acceptance is the read-only three-image A/B; Phase 2
+  This original handoff treated the read-only three-image A/B as remaining user
+  acceptance; the 2026-07-29 record below supersedes that boundary and assigns
+  image/MiniMax acceptance to the FinOS project branch. Phase 2
   `CTX-REHYDRATE-02` stays `Locked`.
+
+# 2026-07-29 HAR-CONV-01 Post-review Repair And Text A/B
+
+- separated the Zebra `main` convergence line from FinOS image attachment and
+  MiniMax MCP acceptance; HAR-CONV-01 now uses the same Skill plus manually
+  transcribed evidence with no image attachment, MCP allowlist or FinOS provider
+- added red regressions for volatile production Artifact URIs, mixed batches
+  containing historical and fresh work, convergence instructions displacing
+  real user turns, typed stop-reason propagation, and raw DeepSeek DSML tool
+  requests being falsely accepted as final answers
+- the minimal repair uses `output_sha256` before volatile projection references,
+  preserves fresh mixed-batch calls and Policy/Plan/Approval audit, emits one
+  internal SYSTEM convergence instruction, and returns typed
+  `tool_loop_no_progress` when tool-disabled synthesis still requests a tool
+- deterministic verification passes `70` focused tests plus touched-file Ruff,
+  Mypy and `git diff --check`; the latest full run is `1763 passed, 9 failed,
+  8 skipped`, with the same inherited provider, SCM credential, Worker
+  cancellation and two file-size failures
+- live baseline evidence on unmodified `main@a6b47c3` had no image/MiniMax/FinOS
+  dependency and was manually cancelled after 10 complete model responses,
+  13 `web.fetch` calls and 7 compactions without a final answer
+- the final isolated Phase 1 replay used the same 14,118-character prompt and
+  no default model/tool budgets; after one valid clarification it stopped at
+  sequence 225 with 11 model calls, 12 `web.fetch` calls, 7 compactions,
+  `status=suspended`, `stop_reason=tool_loop_no_progress`, and exactly one
+  terminal synthesis instead of continuing or falsely completing
+- FinOS `accounts`, snapshots, transactions, import drafts, journal artifacts
+  and notes had identical pre/post row hashes; temporary prompt, database,
+  container and remote acceptance files were removed after verification
+- Phase 2 `CTX-REHYDRATE-02` remains `Locked`; this branch stays `Review` until
+  external review and maintainer merge authorization

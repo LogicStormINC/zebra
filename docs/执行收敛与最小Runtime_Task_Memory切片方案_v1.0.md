@@ -146,15 +146,18 @@ origin/main @ a6b47c3
 - 显式预算、Policy、Approval、取消、协议和副作用防重回归不变；
 - focused tests、`make test`、`make check` 通过；继承阻塞必须单独列证据。
 
-### 7.2 A/B 验收
+### 7.2 Provider-neutral A/B 验收
 
-使用同一组 3 张图片和同一份 Skill 指令，对普通 Chat 与 Zebra 做只读 A/B：
+HAR-CONV-01 使用同一份 Skill 指令和同一份人工识别文字，对未修改的 `main`
+与 Phase 1 做只读 A/B；不加载图片附件、MiniMax MCP 或 FinOS provider：
 
-- 输入、允许的公开数据源和“不得写入真实业务数据”约束一致；
-- Zebra 在无默认调用次数上限下形成一个最终回答或明确 typed suspend；
-- 不重复读取相同图片证据，不因参数微调反复取得相同 Web 证据；
+- 输入、模型、允许的公开数据源和“不得写入真实业务数据”约束一致；
+- Zebra 在无默认调用次数上限下形成最终回答或明确 typed suspend；
+- 参数或 URL 变化但没有新证据时必须收敛，不能把原始工具协议文本误报为完成；
 - 记录模型调用、工具调用、压缩、重复 evidence、终态和总耗时；
-- 真实图片和账户数据只用于本地人工验收，不进入 fixture、commit、日志正文或 PR。
+- 真实图片只作为人工识别文字的离线来源，不进入 fixture、commit、日志正文或 PR；
+- FinOS 项目分支的图片附件、MiniMax MCP 和镜像验收独立进行，不作为 Zebra
+  `main` 收敛修复的前置条件。
 
 ### 7.3 Phase 2 门禁
 

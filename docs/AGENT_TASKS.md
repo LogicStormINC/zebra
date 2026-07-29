@@ -21,9 +21,12 @@
 ## Current Board
 
 - `HAR-CONV-01` is `Review` on `codex/runtime-convergence-phase1`. Its
-  deterministic Phase 1 checks pass; the read-only three-image A/B remains a
-  human acceptance step. The branch is stacked on PR `#198`, includes current
-  `origin/main`, and must not be merged or pushed to `main` directly.
+  deterministic checks and provider-neutral text A/B pass: the reproduced
+  `main` loop now ends in a typed `tool_loop_no_progress` suspension instead of
+  continuing or falsely completing on raw DSML. The branch is stacked on PR
+  `#198`, includes current `origin/main`, and awaits external review; it must not
+  be merged or pushed to `main` directly. FinOS image attachment and MiniMax MCP
+  acceptance are a separate project-branch concern.
 - `CTX-REHYDRATE-02` remains `Locked` until PR `#198` and `HAR-CONV-01` are
   merged and the maintainer explicitly activates Phase 2.
 - `CTX-MEM-01` is `Review` in PR `#198` on
@@ -142,6 +145,7 @@ Architecture authority:
   `packages/agent-core/src/agent_core/harness/tool_batch.py`,
   `packages/agent-core/src/agent_core/harness/sequential_loop.py`,
   `packages/agent-core/src/agent_core/harness/models.py`,
+  `packages/agent-core/src/agent_core/harness/stopping.py`,
   `packages/agent-core/src/agent_core/harness/orchestrator.py`,
   focused convergence tests under `tests/agent_core/` and `tests/integration/`,
   `docs/执行收敛与最小Runtime_Task_Memory切片方案_v1.0.md`,
@@ -173,7 +177,10 @@ new evidence and long legitimate tool chains remain unbounded by default.
   effect deduplication remain unchanged.
 - [x] Focused tests, target Ruff/Mypy, `make test`, and `make check` ran; inherited
   blockers are recorded separately.
-- [ ] The read-only three-image A/B acceptance remains a human review step.
+- [x] A provider-neutral A/B uses the same Skill plus manually transcribed image
+  evidence on `main` and Phase 1, with no image attachment, MCP allowlist or
+  FinOS provider. Phase 1 must complete or typed-suspend without a raw DSML
+  false completion; FinOS image/MiniMax acceptance is tracked separately.
 
 #### Explicit Non-Goals
 

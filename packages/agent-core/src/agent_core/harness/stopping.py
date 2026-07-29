@@ -96,6 +96,8 @@ class HarnessStoppingPolicy:
         if attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED:
             if attempt_result.metadata.get("stop_reason") == "tool_call_budget_exhausted":
                 return HarnessStopReason.TOOL_CALL_BUDGET_EXHAUSTED
+            if attempt_result.metadata.get("stop_reason") == "tool_loop_no_progress":
+                return HarnessStopReason.TOOL_LOOP_NO_PROGRESS
             return HarnessStopReason.MODEL_CALL_BUDGET_EXHAUSTED
         if max_model_calls is not None and model_calls_used >= max_model_calls:
             return HarnessStopReason.MODEL_CALL_BUDGET_EXHAUSTED
