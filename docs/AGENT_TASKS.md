@@ -1138,9 +1138,10 @@ cloud mainline and is not built or changed by these cards.
 - Acceptance: content/idempotency, pointer CAS, stale fence, duplicate sequence,
   administrative CAS, two-Event projection revision, and rollback matrices pass on
   real PostgreSQL; no Task/Segment index write or generic Worker transaction expansion.
-- Evidence: isolated PostgreSQL 17.5 matrix passes `5/5` for canonical retry,
+- Evidence: host PostgreSQL 17.5 runner passes `14/14`, covering v1-v7 migration
+  registry/checksums, v7 composite Event/pointer constraints, canonical retries,
   stale fence, pointer CAS, administrative CAS, and injected Workspace projection
-  rollback. Focused SQLite/Worker regressions pass `6/6`; changed-scope Ruff,
+  rollback. Focused SQLite/Worker regressions pass `11/11`; changed-scope Ruff,
   strict Mypy, and `git diff --check` pass.
 
 ### CLOUD-AGG-HANDOFF-PG-01 - PostgreSQL Handoff And Dispatch Aggregate

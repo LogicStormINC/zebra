@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import psycopg
 import pytest
-from agent_core.domain.identifiers import new_session_id
+from agent_core.domain.identifiers import new_session_id, new_task_id
 from agent_storage import (
     PostgresAgentTaskStore,
     PostgresControlPlaneEpochError,
@@ -102,6 +102,17 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
             )
             """
         ).fetchall()
+        context_constraints = connection.execute(
+            """
+            SELECT pg_get_constraintdef(oid)
+            FROM pg_constraint
+            WHERE conrelid IN (
+                'session_events'::regclass,
+                'context_capsule_artifacts'::regclass,
+                'active_context_projections'::regclass
+            )
+            """
+        ).fetchall()
 
     assert migrations == [
         (1, "event_and_projection_storage", 64),
@@ -110,6 +121,7 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         (4, "fenced_workspace_projections", 64),
         (5, "task_and_segment_index", 64),
         (6, "model_and_tool_event_projections", 64),
+        (7, "fenced_context_lifecycle", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [
@@ -167,6 +179,21 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
             "claim_expires_at IS NOT NULL",
             "status = 'succeeded'",
             "result IS NOT NULL",
+        )
+    )
+    context_constraint_sql = "".join(row[0] for row in context_constraints).replace(" ", "")
+    assert all(
+        part in context_constraint_sql
+        for part in (
+            "UNIQUE(deployment_namespace,session_id,event_id)",
+            "UNIQUE(deployment_namespace,session_id,capsule_id,artifact_id)",
+            "FOREIGNKEY(deployment_namespace,session_id,compaction_event_id)"
+            "REFERENCESsession_events(deployment_namespace,session_id,event_id)",
+            "FOREIGNKEY(deployment_namespace,session_id,capsule_event_id)"
+            "REFERENCESsession_events(deployment_namespace,session_id,event_id)",
+            "FOREIGNKEY(deployment_namespace,session_id,capsule_id,artifact_id)"
+            "REFERENCEScontext_capsule_artifacts("
+            "deployment_namespace,session_id,capsule_id,artifact_id)",
         )
     )
     assert [row[0] for row in workspace_columns] == [
@@ -241,7 +268,7 @@ def test_postgres_task_constructor_and_reads_do_not_run_ddl(
     )
 
     with pytest.raises(errors.UndefinedTable):
-        store.get_task(new_session_id())
+        store.get_task(new_task_id())
 
 
 def test_epoch_bootstrap_read_and_restore_rotation_are_explicit(
