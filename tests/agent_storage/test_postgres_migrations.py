@@ -113,6 +113,32 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
             )
             """
         ).fetchall()
+        artifact_columns = connection.execute(
+            """
+            SELECT column_name FROM information_schema.columns
+            WHERE table_schema = current_schema()
+              AND table_name = 'artifact_payload_metadata'
+            ORDER BY ordinal_position
+            """
+        ).fetchall()
+        artifact_constraints = connection.execute(
+            """
+            SELECT pg_get_constraintdef(oid)
+            FROM pg_constraint
+            WHERE conrelid = 'artifact_payload_metadata'::regclass
+            """
+        ).fetchall()
+        artifact_auxiliary_tables = connection.execute(
+            """
+            SELECT table_name FROM information_schema.tables
+            WHERE table_schema = current_schema()
+              AND table_name IN (
+                'artifact_payload_mutations',
+                'artifact_payload_management_audit'
+              )
+            ORDER BY table_name
+            """
+        ).fetchall()
 
     assert migrations == [
         (1, "event_and_projection_storage", 64),
@@ -123,6 +149,7 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         (6, "model_and_tool_event_projections", 64),
         (7, "fenced_context_lifecycle", 64),
         (8, "fenced_session_handoff", 64),
+        (9, "fenced_artifact_payload_lifecycle", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [
@@ -197,6 +224,39 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
             "deployment_namespace,session_id,capsule_id,artifact_id)",
         )
     )
+    assert {
+        "artifact_id",
+        "session_id",
+        "intended_event_sequence",
+        "expected_stream_revision",
+        "reservation_epoch",
+        "reservation_fencing_token",
+        "reservation_owner_instance_id",
+        "lifecycle_status",
+        "lifecycle_revision",
+        "object_version",
+        "event_id",
+        "request_created_at",
+        "reserved_at",
+        "updated_at",
+    } <= {row[0] for row in artifact_columns}
+    artifact_constraint_sql = "".join(row[0] for row in artifact_constraints).replace(" ", "")
+    assert all(
+        part in artifact_constraint_sql
+        for part in (
+            "staged",
+            "finalized",
+            "compensated",
+            "pruning",
+            "pruned",
+            "deployment_namespace,session_id,event_sequence,event_id",
+            "artifact://",
+        )
+    )
+    assert artifact_auxiliary_tables == [
+        ("artifact_payload_management_audit",),
+        ("artifact_payload_mutations",),
+    ]
     assert [row[0] for row in workspace_columns] == [
         "deployment_namespace",
         "session_id",

@@ -42,13 +42,15 @@
   compensation and prune retain exact object-version evidence.
 - v9 owns one authoritative `artifact_payload_metadata` table, not a second Artifact
   projection. Its composite identity is `(deployment_namespace, artifact_id)`; it
-  also uniquely binds `(namespace, session, idempotency_key)`, the intended Event
-  sequence and an internal object locator.
+  also uniquely binds `(namespace, session, idempotency_key)` and the intended Event
+  sequence. `(namespace, artifact_id)` is the provider-neutral logical object locator;
+  the S3 adapter alone derives its private key, so PostgreSQL does not duplicate that
+  provider-specific encoding.
 - Required lifecycle is `staged -> finalized -> pruning -> pruned`, with
   `staged -> compensated`; `missing` remains a read inspection outcome. A monotonic
   lifecycle revision and row lock serialize every transition.
 - Reserve stores request hash, expected Event sequence, digest/size/type/retention,
-  object locator and the complete reservation fence. Verified upload records the
+  logical object identity and the complete reservation fence. Verified upload records the
   exact object version while still staged. Finalize binds the canonical Event ID and
   sequence after checking its Session and `artifact_uri`.
 - Event outcome uncertainty never triggers deletion. Worker compensation requires a

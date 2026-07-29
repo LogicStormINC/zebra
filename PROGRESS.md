@@ -158,6 +158,11 @@
   `cfe40713`. `CLOUD-ART-PAYLOAD-PG-01` owns the PostgreSQL lifecycle metadata,
   provider-neutral object orchestration, Worker Event binding and isolated
   PostgreSQL/MinIO fault matrix; it does not select a runtime backend or add Desktop.
+  The v9 migration foundation now adds one authoritative lifecycle metadata table,
+  non-authoritative mutation/audit ledgers, exact Event/stream/fence bindings and
+  reconcile/retention indexes. Core supplies one canonical reservation digest, while
+  `(namespace, artifact_id)` remains the logical object locator and only the S3 adapter
+  derives its private key. Isolated PostgreSQL 17.5 migration tests pass `6/6`.
 - Completed Artifact contract slice: `CLOUD-ART-LIFECYCLE-CON-01` separates the
   provider-neutral cloud lifecycle Port/domain from the unchanged local
   `ArtifactPayloadStorePort`. It can proceed in Core without touching Handoff v8,

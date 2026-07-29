@@ -1282,6 +1282,12 @@ cloud mainline and is not built or changed by these cards.
 - Non-goals: no Desktop/local SQLite feature work, runtime backend selector, API
   signed-URL route, Effect payload linkage, Artifact read composition, provider
   lifecycle rules, multipart upload, or production credential policy.
+- Current evidence: v9 preserves immutable v1-v8 and adds one lifecycle authority
+  table plus append-oriented mutation and management audit ledgers. Reservation
+  identity has one shared Core SHA-256 contract; DB constraints bind intended Event
+  sequence to the reserved stream revision, complete LeaseFence, exact Event identity,
+  lifecycle evidence and DB-time transition ordering. Isolated PostgreSQL 17.5
+  migration tests pass `6/6`; focused Core contract tests pass `17/17`.
 
 ### CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
 

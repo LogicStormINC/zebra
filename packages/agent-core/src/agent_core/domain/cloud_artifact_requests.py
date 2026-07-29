@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import datetime
 from typing import Self
 from uuid import UUID
@@ -90,6 +92,27 @@ class ArtifactReserveRequest(BaseModel):
         if self.retained_until is not None and self.retained_until < self.created_at:
             raise ValueError("retained_until must not precede created_at")
         return self
+
+
+def canonical_artifact_reserve_hash(
+    deployment_namespace: str,
+    request: ArtifactReserveRequest,
+) -> str:
+    """Hash the complete logical reservation before any provider I/O."""
+    namespace = _require_text(
+        deployment_namespace,
+        field_name="deployment_namespace",
+    )
+    encoded = json.dumps(
+        {
+            "deployment_namespace": namespace,
+            "reservation": request.model_dump(mode="json"),
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 class ArtifactEventBinding(BaseModel):

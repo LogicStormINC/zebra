@@ -20,6 +20,9 @@ from agent_core.domain.artifact_objects import ArtifactObjectExpectation as Dire
 from agent_core.domain.cloud_artifact_requests import (
     ArtifactManagementContext as DirectManagementContext,
 )
+from agent_core.domain.cloud_artifact_requests import (
+    canonical_artifact_reserve_hash,
+)
 from agent_core.domain.identifiers import ArtifactId, EventId, SessionId
 from agent_core.ports import (
     AdministrativeMutationCAS,
@@ -124,6 +127,23 @@ def test_reservation_is_frozen_and_forbids_extra_fields() -> None:
         reservation.kind = "other"
     with pytest.raises(ValidationError):
         ArtifactReserveRequest.model_validate({**reservation.model_dump(), "provider": "minio"})
+
+
+def test_reservation_hash_binds_namespace_and_complete_request() -> None:
+    reservation = _reservation()
+
+    digest = canonical_artifact_reserve_hash("cloud-a", reservation)
+
+    assert len(digest) == 64
+    assert canonical_artifact_reserve_hash("cloud-a", reservation) == digest
+    assert canonical_artifact_reserve_hash("cloud-b", reservation) != digest
+    assert (
+        canonical_artifact_reserve_hash(
+            "cloud-a",
+            reservation.model_copy(update={"mime_type": "application/json"}),
+        )
+        != digest
+    )
 
 
 def test_lifecycle_record_requires_exact_state_evidence() -> None:

@@ -6529,3 +6529,19 @@ actual byte access.
   focused Worker Event orchestration, real PostgreSQL/MinIO tests and governance.
 - Preserved SQLite, Desktop, runtime selection, signed delivery, Effect linkage and
   generic Artifact read composition outside this task.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 migration v9 foundation
+
+- Added a canonical Core reservation digest binding namespace and every logical
+  Artifact reservation input before provider I/O.
+- Added v9 lifecycle metadata with namespace/session/Event identity, intended Event
+  sequence, complete reserve fence, request/object/Event evidence, monotonic revision
+  and exact staged/finalized/compensated/pruning/pruned shapes.
+- Added non-authoritative transition idempotency and management audit ledgers without
+  creating a second Artifact projection. Reconcile and retention indexes are scoped by
+  namespace plus Session.
+- Resolved the locator boundary: `(namespace, artifact_id)` is the logical locator;
+  PostgreSQL does not copy the S3 adapter's private key encoding.
+- Fresh-worktree `make sync` completed. Focused Core tests pass `17/17`; scoped Ruff,
+  strict Mypy and `git diff --check` pass; isolated PostgreSQL 17.5 v1-v9 migration
+  tests pass `6/6` and clean their container, network and volume.

@@ -64,6 +64,7 @@ from agent_core.domain.cloud_artifact_requests import (
     ArtifactReconcileQuery,
     ArtifactRecordObjectRequest,
     ArtifactReserveRequest,
+    canonical_artifact_reserve_hash,
 )
 from agent_core.domain.delivery_audit import DeliveryAuditRecord
 from agent_core.domain.effect_dispatch import (
@@ -148,6 +149,7 @@ __all__ = [
     "ArtifactReconcileQuery",
     "ArtifactRecordObjectRequest",
     "ArtifactReserveRequest",
+    "canonical_artifact_reserve_hash",
     "ArtifactRef",
     "AgentTask",
     "AttachmentContextInput",
