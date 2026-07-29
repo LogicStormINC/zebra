@@ -6288,3 +6288,9 @@ actual byte access.
   from subsequent acceptance. Core/API/Worker/storage/cloud-service validation
   remains active; `BASE-EVT-SIZE-01` continues because `agent-core` is shared by
   the microservices.
+- `BASE-EVT-SIZE-01` moves `ContextCapsuleCreatedPayload` into the existing focused
+  context contract module and keeps an explicit compatibility re-export. Core/
+  Storage context tests pass `6/6`, focused Ruff and Core strict Mypy pass, source
+  files are `480/119` lines, the microservice file-size gate passes `901` files,
+  backend tests pass `1851` with `60` skips, and release Eval passes `10/10`.
+  Global Ruff/Mypy still report the known Web-pipeline baseline outside this card.

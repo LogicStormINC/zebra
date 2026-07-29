@@ -4,10 +4,10 @@
 
 1. `completed` - Confirm `ContextCapsuleCreatedPayload` is the smallest cohesive
    move and the existing context-events module is its natural owner.
-2. `in_progress` - Move the payload model and preserve registry/public imports.
-3. `pending` - Run context contract tests, file-size gate, Ruff, strict Mypy,
+2. `completed` - Move the payload model and preserve registry/public imports.
+3. `completed` - Run context contract tests, microservice file-size gate, Ruff, strict Mypy,
    complete repository tests and release Eval.
-4. `pending` - Move the card to Review and re-evaluate the cloud integration gate.
+4. `completed` - Move the card to Review and re-evaluate the cloud integration gate.
 
 ### Decisions
 
@@ -15,6 +15,8 @@
   remain unchanged.
 - Baseline repairs stack locally on the reviewed cloud branch only to restore its
   merge gate; they do not authorize a push, merge, backend selection or rollout.
+- Microservice acceptance excludes `UI/desktop`; it covers Core, API, Worker,
+  storage, integrations, security, Docker-managed dependencies and release Eval.
 
 ## BASE-MDL-EXPECT-01 - Provider Rejection Contract Expectations
 

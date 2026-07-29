@@ -63,8 +63,8 @@
   dependency order. Full aggregate fencing remains `Locked`.
 - Exact replay on `zebra-cloud-trench@375dca92` proves all nine remaining suite
   failures are business-baseline defects. `BASE-MDL-EXPECT-01` and
-  `BASE-SCM-CRED-01` and `BASE-WKR-CANCEL-01` are `Review`;
-  `BASE-EVT-SIZE-01` is the only `In Progress` repair card.
+  `BASE-SCM-CRED-01`, `BASE-WKR-CANCEL-01`, and `BASE-EVT-SIZE-01` are `Review`.
+  No business-baseline repair card remains active.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -990,7 +990,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### BASE-EVT-SIZE-01 - Context Event Contract Extraction
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Branch: `codex/baseline-event-contract-size-01`
 - Depends on: none; execute after `BASE-WKR-CANCEL-01` in the local repair stack
@@ -1001,6 +1001,11 @@ cloud mainline and is not built or changed by these cards.
   while preserving registry and public import compatibility.
 - Acceptance: event schema lookup is unchanged, no circular import is introduced,
   Core source files remain below the limit, and contract tests plus strict Mypy pass.
+- Evidence: Core/Storage context contract tests pass `6/6`; `events.py` is `480`
+  lines and `context_events.py` is `119` lines; focused Ruff and Core strict Mypy
+  pass. The microservice file-size gate passes `901` files, backend tests pass
+  `1851` with `60` infrastructure/platform skips, and release Eval passes `10/10`.
+  Desktop remains outside this mainline.
 
 ### CLOUD-LEASE-01 - Lease And Event/Effect Delivery Parent Gate
 

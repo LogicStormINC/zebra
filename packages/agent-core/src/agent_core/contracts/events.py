@@ -10,6 +10,9 @@ from pydantic import (
 )
 
 from agent_core.contracts.context_events import (
+    ContextCapsuleCreatedPayload as ContextCapsuleCreatedPayload,
+)
+from agent_core.contracts.context_events import (
     ContextCompactedPayload,
     ContextContinuationSelectedPayload,
 )
@@ -35,7 +38,6 @@ from agent_core.domain.clarifications import (
     MAX_CLARIFICATION_CONTEXT_CHARS,
     MAX_CLARIFICATION_QUESTION_CHARS,
 )
-from agent_core.domain.context_capsule import ContextSourceEventRange
 from agent_core.domain.events import EventType
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
@@ -414,33 +416,6 @@ class ClarificationRespondedPayload(BaseModel):
         if not normalized:
             raise ValueError("clarification response fields must not be blank")
         return normalized
-
-
-class ContextCapsuleCreatedPayload(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    capsule_id: str
-    artifact_id: str
-    schema_version: str
-    source_hash: str
-    source_event_range: ContextSourceEventRange
-    previous_capsule_id: str | None = None
-
-    @field_validator(
-        "capsule_id",
-        "artifact_id",
-        "schema_version",
-        "source_hash",
-        "previous_capsule_id",
-    )
-    @classmethod
-    def ensure_capsule_text(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        stripped = value.strip()
-        if not stripped:
-            raise ValueError("context capsule event fields must not be blank")
-        return stripped
 
 
 _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {

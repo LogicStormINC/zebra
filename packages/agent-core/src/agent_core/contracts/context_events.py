@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
-from agent_core.domain.context_capsule import ContextCapsule
+from agent_core.domain.context_capsule import ContextCapsule, ContextSourceEventRange
 
 
 class ContextCompactedPayload(BaseModel):
@@ -56,6 +56,33 @@ class ContextCompactedPayload(BaseModel):
         stripped = value.strip()
         if not stripped:
             raise ValueError("provenance must not be blank")
+        return stripped
+
+
+class ContextCapsuleCreatedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    capsule_id: str
+    artifact_id: str
+    schema_version: str
+    source_hash: str
+    source_event_range: ContextSourceEventRange
+    previous_capsule_id: str | None = None
+
+    @field_validator(
+        "capsule_id",
+        "artifact_id",
+        "schema_version",
+        "source_hash",
+        "previous_capsule_id",
+    )
+    @classmethod
+    def ensure_capsule_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("context capsule event fields must not be blank")
         return stripped
 
 
