@@ -6469,3 +6469,16 @@ actual byte access.
   passed with `87` environment-gated skips; strict storage Mypy `49` files, scoped
   Ruff and `git diff --check` pass. No PostgreSQL migration, SQLite, Worker/API,
   runtime selection or Desktop file changed.
+
+## 2026-07-29 - CLOUD-AGG-HANDOFF-PG-01 migration v8 foundation
+
+- Corrected the task registry: Handoff PostgreSQL remains In Progress, while the
+  already integrated Artifact lifecycle contract is Review.
+- Split migration definitions and execution from the historical catalog; v1-v7 names
+  and checksums remain byte-identical and the former 508-line hotspot is now 443 lines.
+- Added v8 operation, immutable envelope and fenced dispatch tables with namespace,
+  identity, status-shape, full LeaseFence and exact child-envelope constraints. The
+  existing v5 Task/Segment index remains the only lineage projection.
+- Validation: scoped Ruff and strict Mypy pass; isolated PostgreSQL 17.5 applies v1-v8
+  concurrently and repeatably with `6/6` migration tests, then removes the container,
+  network and volume.

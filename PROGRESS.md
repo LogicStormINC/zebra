@@ -135,6 +135,12 @@
 - Active Context follow-up: `CLOUD-AGG-CTX-ADMIN-PG-01` reuses the v7
   administrative CAS only for historical capsule recovery in an explicitly injected
   PostgreSQL store. It does not add PostgreSQL manual compact or select a backend.
+- Active Handoff v8 implementation preserves the exact v1-v7 migration names and
+  checksums while splitting migration types, execution and the v8 catalog into focused
+  files. The real PostgreSQL 17.5 migration matrix passes `6/6`; v8 adds only
+  namespace-scoped operation, immutable envelope and fenced dispatch tables, reusing
+  the v5 Task/Segment index instead of creating a second lineage authority. Aggregate
+  transaction and dispatch adapters remain in progress.
 - Artifact v9 is implementation-ready but remains correctly Locked behind active
   Handoff migration v8. The preflight audit found no installed S3-compatible SDK and
   confirmed that the local `ArtifactPayloadStorePort` lacks namespace/fence/staged

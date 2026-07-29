@@ -728,3 +728,14 @@
 - A dedicated Compose project plus explicit network override is required for safe
   `down --volumes`; relying on the base Compose network name would collide with the
   long-lived dependency stack and reproduce network-ownership warnings.
+
+## CLOUD-AGG-HANDOFF-PG-01 migration foundation - 2026-07-29
+
+- PostgreSQL Handoff must reuse `agent_tasks`, `execution_segments` and
+  `task_event_index`; adding a `session_lineage` table would create a second authority.
+- v8 needs only reservation/operation, immutable envelope and fenced dispatch tables.
+  Every key and foreign key is namespace-scoped, while claim token plus the complete
+  LeaseFence are all-present only in the claimed state.
+- The legacy batch claim/ACK methods cannot prove token and full fence. Cloud Worker
+  recovery must use `HandoffDispatchStorePort` and pass the fence acquired for the
+  current execution instead of rediscovering authority by owner name.

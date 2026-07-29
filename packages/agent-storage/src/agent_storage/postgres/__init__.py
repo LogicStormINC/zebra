@@ -18,10 +18,8 @@ from agent_storage.postgres.epoch import (
 )
 from agent_storage.postgres.events import PostgresEventStore
 from agent_storage.postgres.leases import PostgresLeaseStore
-from agent_storage.postgres.migrations import (
-    PostgresMigrationError,
-    apply_postgres_migrations,
-)
+from agent_storage.postgres.migration_runner import apply_postgres_migrations
+from agent_storage.postgres.migration_types import PostgresMigrationError
 from agent_storage.postgres.model_tool_projections import (
     PostgresModelToolProjectionConflictError,
     PostgresModelToolProjectionStore,

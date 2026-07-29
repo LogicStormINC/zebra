@@ -1146,12 +1146,12 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-HANDOFF-PG-01 - PostgreSQL Handoff And Dispatch Aggregate
 
-- Status: `Review`
+- Status: `In Progress`
 - Owner: `lukeding`
 - Branch: `codex/cloud-agg-handoff-pg-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01`,
   `CLOUD-AGG-TASK-PG-01`, and `CLOUD-AGG-HANDOFF-CON-01`
-- Owned paths: `packages/agent-storage/src/agent_storage/postgres/{session_handoffs,session_handoff_dispatch,session_handoff_facts,migrations,__init__}.py`,
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/{session_handoffs,session_handoff_dispatch,session_handoff_facts,handoff_migration,migration_runner,migration_types,migrations,__init__}.py`,
   `packages/agent-storage/src/agent_storage/__init__.py`, focused API/Worker
   PostgreSQL Handoff wiring, real PostgreSQL Handoff/dispatch tests, the host
   Compose runner, and this task's governance records
@@ -1272,7 +1272,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Branch: `codex/cloud-art-lifecycle-con-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01` and `CLOUD-ART-OBJ-CON-01`

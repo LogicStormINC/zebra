@@ -115,9 +115,9 @@
 
 ## CLOUD-AGG-HANDOFF-PG-01 - PostgreSQL Handoff And Dispatch Aggregate
 
-1. `in_progress` - Rebase the frozen Handoff aggregate boundary on v1-v7 and split
+1. `completed` - Rebase the frozen Handoff aggregate boundary on v1-v7 and split
    the oversized migration catalog without changing historical checksums.
-2. `pending` - Add v8 PostgreSQL Handoff operation/envelope/lineage/dispatch schema
+2. `in_progress` - Add v8 PostgreSQL Handoff operation/envelope/dispatch schema
    and one connection-scoped atomic commit using existing Event, Lease, Workspace
    and Task primitives.
 3. `pending` - Implement database-time fenced dispatch claim/reclaim/ACK and prove
