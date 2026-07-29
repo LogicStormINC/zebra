@@ -1,10 +1,10 @@
 import asyncio
 import base64
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import Mock
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.session_projection import rebuild_session
@@ -18,7 +18,6 @@ from agent_core.domain.identifiers import (
     new_memory_id,
     new_tool_call_id,
 )
-from agent_core.domain.leases import LeaseFence
 from agent_core.domain.memories import (
     MemoryRecord,
     MemoryStatus,
@@ -198,16 +197,18 @@ def test_handoff_and_effect_replay_stay_on_authoritative_backend(tmp_path: Path)
     handoff_id = HandoffId(UUID(str(created.body["handoff_id"])))
     child_id = SessionId(UUID(str(created.body["child_session_id"])))
     assert stores.handoffs.get_handoff(handoff_id) is not None
+    claimed_at = datetime.now(UTC)
+    lease = stores.leases.acquire(
+        child_id, owner_instance_id="worker-b", ttl=timedelta(minutes=1)
+    )
     dispatch = stores.handoff_dispatch.claim_for_child(
         child_id,
-        fence=LeaseFence(
-            control_plane_epoch=uuid4(), fencing_token=1, owner_instance_id="worker-b"
-        ),
-        claimed_at=datetime(2026, 7, 24, 3, 0, tzinfo=UTC),
+        fence=lease.fence,
+        claimed_at=claimed_at,
     )
     assert dispatch is not None
     stores.handoff_dispatch.acknowledge(
-        dispatch, checked_at=datetime(2026, 7, 24, 3, 0, tzinfo=UTC)
+        dispatch, checked_at=claimed_at
     )
     assert stores.effects.terminal_keys(source_id)
 
@@ -218,9 +219,7 @@ def test_handoff_and_effect_replay_stay_on_authoritative_backend(tmp_path: Path)
     assert (
         legacy.handoff_dispatch.claim_for_child(
             child_id,
-            fence=LeaseFence(
-                control_plane_epoch=uuid4(), fencing_token=1, owner_instance_id="worker-a"
-            ),
+            fence=lease.fence,
             claimed_at=datetime(2026, 7, 24, 3, 0, tzinfo=UTC),
         )
         is None
