@@ -27,6 +27,8 @@ from agent_security import (
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 from zebra_agent_config import ApiSettings, ModelSettings, ScmSettings, ZebraAgentSettings
 
+_VALID_CREDENTIAL_EXPIRY = datetime.max.replace(tzinfo=UTC)
+
 
 def _seed_ready_session(
     database_path: Path,
@@ -103,7 +105,7 @@ def _github_broker(*, env: dict[str, str]) -> EnvironmentCredentialBroker:
                 audience="repo:octo-org/zebra-agent",
                 scopes=("pull_request:create",),
                 token_env="GITHUB_TOKEN",
-                expires_at=datetime(2026, 7, 23, 12, 30, tzinfo=UTC),
+                expires_at=_VALID_CREDENTIAL_EXPIRY,
             ),
         ),
         env=env,
@@ -123,7 +125,7 @@ def _github_capability() -> CredentialCapability:
         provider="github",
         audience="repo:octo-org/zebra-agent",
         scopes=("pull_request:create",),
-        expires_at=datetime(2026, 7, 23, 12, 30, tzinfo=UTC),
+        expires_at=_VALID_CREDENTIAL_EXPIRY,
         token_value="broker-token",
     )
 
@@ -226,7 +228,7 @@ class _FakeGitHubAppTransport:
         assert private_key == "private-key-material"
         return GitHubAppInstallationToken(
             token_value="github-app-token",
-            expires_at=datetime(2026, 7, 23, 12, 30, tzinfo=UTC),
+            expires_at=_VALID_CREDENTIAL_EXPIRY,
         )
 
 class _FailingGitHubAppTransport:

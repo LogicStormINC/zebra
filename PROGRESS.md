@@ -81,7 +81,9 @@
   path-bounded cards own provider expectations, SCM credential fixtures, Worker
   cancellation convergence, Desktop style extraction and Core Event contract
   extraction. `BASE-MDL-EXPECT-01` is in Review after reducing the full suite from
-  nine to seven failures; `BASE-SCM-CRED-01` is the only active card.
+  nine to seven failures. `BASE-SCM-CRED-01` is also in Review after removing all
+  five expired-fixture failures; `BASE-WKR-CANCEL-01` is the only active card and
+  the full suite now retains two failures.
 - Agent Definition architecture task in Review: `AGENT-DEF-ADR-01` records accepted
   Definition control-plane decisions and updates the final architecture. It
   separates Task-level Definition configuration from Attempt-level execution

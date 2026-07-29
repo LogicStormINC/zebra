@@ -62,9 +62,9 @@
   `CLOUD-EFFECT-OUTBOX-01`, and `CLOUD-EFFECT-CONSUMER-01` are `Review` in
   dependency order. Full aggregate fencing remains `Locked`.
 - Exact replay on `zebra-cloud-trench@375dca92` proves all nine remaining suite
-  failures are business-baseline defects. `BASE-MDL-EXPECT-01` is `Review`,
-  `BASE-SCM-CRED-01` is `In Progress`, and the three disjoint Worker, Desktop and
-  Core repair cards are `Ready`.
+  failures are business-baseline defects. `BASE-MDL-EXPECT-01` and
+  `BASE-SCM-CRED-01` are `Review`, `BASE-WKR-CANCEL-01` is `In Progress`, and the
+  two disjoint Desktop and Core repair cards are `Ready`.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -955,7 +955,7 @@ cloud architecture scope.
 
 ### BASE-SCM-CRED-01 - Time-Stable SCM Credential Fixtures
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Branch: `codex/baseline-scm-credential-fixtures-01`
 - Depends on: none; execute after `BASE-MDL-EXPECT-01` in the local repair stack
@@ -965,12 +965,15 @@ cloud architecture scope.
   credential expiry while preserving production expiry-first validation.
 - Acceptance: all session pull-request tests pass after the current date and the
   production credential broker remains unchanged.
+- Evidence: session pull-request tests pass `25/25`, SCM/broker regressions pass
+  `40/40`, Ruff passes, and the full suite improves to `1851 passed, 60 skipped,
+  2 failed` with only the Worker race and file-size gate remaining.
 
 ### BASE-WKR-CANCEL-01 - Durable Cancellation Finalization Race
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
-- Suggested branch: `codex/baseline-worker-cancel-01`
+- Status: `In Progress`
+- Owner: `Codex`
+- Branch: `codex/baseline-worker-cancel-01`
 - Depends on: none; execute after `BASE-SCM-CRED-01` in the local repair stack
 - Owned paths: `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
   `apps/worker/src/zebra_agent_worker/execution_events.py`,

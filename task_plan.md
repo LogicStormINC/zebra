@@ -1,14 +1,14 @@
 # Task Plan
 
-## BASE-SCM-CRED-01 - Time-Stable SCM Credential Fixtures
+## BASE-WKR-CANCEL-01 - Durable Cancellation Finalization Race
 
-1. `completed` - Reproduce all five failures and prove the shared fixed expiry is
-   checked against the real clock before token lookup or transport execution.
-2. `in_progress` - Replace only non-expiry-specialized fixture dates with one
-   deterministic valid expiry; keep production broker behavior unchanged.
-3. `pending` - Run session pull-request, SCM/broker, Ruff and complete repository
-   tests; record the reduced baseline.
-4. `pending` - Move the card to Review and activate `BASE-WKR-CANCEL-01` on a new
+1. `completed` - Reproduce the deterministic cancellation race and trace the stale
+   recorder status through the unique finalization convergence boundary.
+2. `in_progress` - Treat only typed durable interruption as an externally won
+   terminal race and align append-event preflight/CAS recovery with append.
+3. `pending` - Add finalization regressions, then run focused Worker, Ruff, Mypy
+   and complete repository tests.
+4. `pending` - Move the card to Review and activate `BASE-UI-SIZE-01` on a new
    path-bounded branch.
 
 ### Decisions
@@ -25,6 +25,14 @@
 3. `completed` - Pass provider `41/41`, security trio `3/3`, Ruff and full-suite
    reduction to `7 failed, 1846 passed, 60 skipped`.
 4. `completed` - Move the card to Review and activate the SCM fixture card.
+
+## BASE-SCM-CRED-01 - Time-Stable SCM Credential Fixtures
+
+1. `completed` - Prove fixed expiry drift across all five failures.
+2. `completed` - Introduce one deterministic valid test expiry only in fixtures.
+3. `completed` - Pass pull-request `25/25`, SCM/broker `40/40`, Ruff and full-suite
+   reduction to `2 failed, 1851 passed, 60 skipped`.
+4. `completed` - Move the card to Review and activate the Worker race card.
 
 ## CLOUD-EFFECT-CONSUMER-01 - Worker Fenced Effect Consumer
 

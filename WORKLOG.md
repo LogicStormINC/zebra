@@ -6266,3 +6266,8 @@ actual byte access.
   retryable rejection. Provider files pass `41/41`, the security trio passes
   `3/3`, Ruff passes, and the full suite improves to `1846 passed, 60 skipped,
   7 failed`. Activated `BASE-SCM-CRED-01` next.
+- `BASE-SCM-CRED-01` replaces three non-expiry-specialized fixed dates with one
+  `datetime.max` test expiry. Production expiry-first validation is untouched.
+  Pull-request tests pass `25/25`, SCM/broker regressions pass `40/40`, Ruff passes,
+  and the full suite improves to `1851 passed, 60 skipped, 2 failed`. Activated
+  `BASE-WKR-CANCEL-01` next.
