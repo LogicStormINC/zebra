@@ -6555,3 +6555,16 @@ actual byte access.
   collisions, stale authorities and cross-scope attempts fail without partial writes.
 - Real PostgreSQL v1-v9 migration plus reserve tests pass `11/11`, including two-client
   concurrent idempotency. Focused Ruff and strict Mypy pass.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 Worker lifecycle
+
+- Added explicit fenced transactions for object receipt recording, canonical Event
+  finalize, safe compensation, prune start and exact-version prune completion.
+- Every Worker replay still validates the current LeaseFence and stream revision.
+  Lifecycle row locks and revisions serialize transitions; a mutation ledger detects
+  changed idempotent retries without becoming a second fact source.
+- Finalize reads the canonical Event JSON and requires its nested metadata URI.
+  Compensation proves object absence/deletion and rejects any occupied reserved Event
+  slot, including an unrelated Event outcome.
+- Real PostgreSQL migration/lifecycle tests pass `16/16`; focused Ruff and strict
+  Mypy pass across all v9 adapter modules and tests.

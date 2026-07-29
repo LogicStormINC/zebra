@@ -8,7 +8,12 @@ from agent_core.domain.cloud_artifact_payloads import (
     CloudArtifactPayloadRecord,
 )
 from agent_core.domain.cloud_artifact_requests import (
+    ArtifactBeginPruneRequest,
+    ArtifactCompensateRequest,
+    ArtifactCompletePruneRequest,
+    ArtifactFinalizeRequest,
     ArtifactMetadataQuery,
+    ArtifactRecordObjectRequest,
     ArtifactReserveRequest,
     canonical_artifact_reserve_hash,
 )
@@ -16,7 +21,13 @@ from agent_core.domain.leases import LeaseLostError
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 from psycopg import errors
 
+from agent_storage.postgres.artifact_payload_pruning import begin_prune, complete_prune
 from agent_storage.postgres.artifact_payload_rows import artifact_payload_from_row
+from agent_storage.postgres.artifact_payload_worker_transitions import (
+    compensate,
+    finalize,
+    record_object,
+)
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.leases import assert_current_lease_fence
 
@@ -139,6 +150,76 @@ class PostgresCloudArtifactPayloadStore:
                 ),
             ).fetchone()
         return None if row is None else artifact_payload_from_row(row)
+
+    def record_object_for_worker(
+        self,
+        request: ArtifactRecordObjectRequest,
+        *,
+        authority: WorkerMutationAuthority,
+    ) -> CloudArtifactPayloadRecord:
+        with self._database.connect() as connection:
+            return record_object(
+                connection,
+                self._database.deployment_namespace,
+                request,
+                authority,
+            )
+
+    def finalize_for_worker(
+        self,
+        request: ArtifactFinalizeRequest,
+        *,
+        authority: WorkerMutationAuthority,
+    ) -> CloudArtifactPayloadRecord:
+        with self._database.connect() as connection:
+            return finalize(
+                connection,
+                self._database.deployment_namespace,
+                request,
+                authority,
+            )
+
+    def compensate_for_worker(
+        self,
+        request: ArtifactCompensateRequest,
+        *,
+        authority: WorkerMutationAuthority,
+    ) -> CloudArtifactPayloadRecord:
+        with self._database.connect() as connection:
+            return compensate(
+                connection,
+                self._database.deployment_namespace,
+                request,
+                authority,
+            )
+
+    def begin_prune_for_worker(
+        self,
+        request: ArtifactBeginPruneRequest,
+        *,
+        authority: WorkerMutationAuthority,
+    ) -> CloudArtifactPayloadRecord:
+        with self._database.connect() as connection:
+            return begin_prune(
+                connection,
+                self._database.deployment_namespace,
+                request,
+                authority,
+            )
+
+    def complete_prune_for_worker(
+        self,
+        request: ArtifactCompletePruneRequest,
+        *,
+        authority: WorkerMutationAuthority,
+    ) -> CloudArtifactPayloadRecord:
+        with self._database.connect() as connection:
+            return complete_prune(
+                connection,
+                self._database.deployment_namespace,
+                request,
+                authority,
+            )
 
     def _validate_worker_authority(
         self,
