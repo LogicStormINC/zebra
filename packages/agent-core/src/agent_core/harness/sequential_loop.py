@@ -3,11 +3,15 @@ from collections.abc import Callable, Mapping
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCall
-from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
+from agent_core.harness.attempt_result import (
+    action_fingerprint,
+    append_no_progress_observation,
+    build_attempt_result,
+)
 from agent_core.harness.clarification_step import clarification_tool_result
 from agent_core.harness.hooks import VerifierHook
-from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.model_request import allowed_response_repairs
+from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import (
     HarnessAttemptOutcome,
     HarnessAttemptResult,
@@ -77,6 +81,7 @@ class SequentialToolLoop:
         messages = list(conversation) or self._model_step.build_initial_messages(
             context.task,
             created_at=context.attempt.started_at,
+            model_gateway=self._model_gateway,
         )
         calls = (tool_call, *remaining_tool_calls)
         if not conversation:
@@ -103,6 +108,16 @@ class SequentialToolLoop:
         )
         if batch.terminal_result is not None:
             return batch.terminal_result
+        if _needs_terminal_synthesis(batch.metadata):
+            return self._request_terminal_synthesis(
+                context,
+                messages=messages,
+                emitted_events=emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=batch.tool_calls_executed,
+                metadata=batch.metadata,
+                fallback_message=completion.assistant_message.content,
+            )
         return self._request_next_completion(
             context,
             messages=messages,
@@ -220,6 +235,16 @@ class SequentialToolLoop:
         )
         if batch.terminal_result is not None:
             return batch.terminal_result
+        if _needs_terminal_synthesis(batch.metadata):
+            return self._request_terminal_synthesis(
+                context,
+                messages=messages,
+                emitted_events=emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=batch.tool_calls_executed,
+                metadata=batch.metadata,
+                fallback_message=completion.assistant_message.content,
+            )
         return self._request_next_completion(
             context,
             messages=messages,
@@ -336,6 +361,100 @@ class SequentialToolLoop:
             metadata=metadata,
         )
 
+    def _request_terminal_synthesis(
+        self,
+        context: HarnessContext,
+        *,
+        messages: list[SessionMessage],
+        emitted_events: list[HarnessEventDraft],
+        model_calls_used: int,
+        tool_calls_executed: int,
+        metadata: dict[str, object],
+        fallback_message: str,
+    ) -> HarnessAttemptResult:
+        model_limit = context.task.max_model_calls
+        if model_limit is not None and model_calls_used >= model_limit:
+            return build_attempt_result(
+                outcome=HarnessAttemptOutcome.SUSPENDED,
+                summary="model call budget reached before tool-loop final synthesis",
+                assistant_message=fallback_message,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                emitted_events=emitted_events,
+                metadata={**metadata, "stop_reason": "model_call_budget_exhausted"},
+            )
+        metadata = {**metadata, "terminal_synthesis_attempted": True}
+        append_no_progress_observation(
+            messages,
+            metadata=metadata,
+            created_at=context.attempt.started_at,
+        )
+        if self._model_step.recover_conversation(messages, self._model_gateway):
+            compaction = None
+        else:
+            compaction = self._model_step.prepare_conversation(
+                messages,
+                self._model_gateway,
+                allow_tools=False,
+                user_goal=context.task.user_input,
+                created_at=context.attempt.started_at,
+            )
+        if compaction is not None and compaction.compacted:
+            emitted_events.append(
+                context_compacted_event(compaction, attempt_number=context.attempt.number)
+            )
+            prior_count = metadata.get("conversation_compaction_count", 0)
+            compaction_count = (
+                prior_count
+                if isinstance(prior_count, int) and not isinstance(prior_count, bool)
+                else 0
+            )
+            metadata = {
+                **metadata,
+                "conversation_compaction_count": compaction_count + 1,
+                "conversation_tokens_after_compaction": compaction.after_tokens,
+            }
+            self._model_step.prepare_provider_continuation(
+                self._model_gateway, compaction
+            )
+        completion = self._model_step.request_completion(
+            messages,
+            self._model_gateway,
+            allow_tools=False,
+            response_repair_limit=allowed_response_repairs(model_limit, model_calls_used),
+        )
+        model_calls_used += 1 + completion.call_metadata.response_repair_count
+        emitted_events.append(
+            model_response_event(
+                completion,
+                attempt_number=context.attempt.number,
+                response_stage="final",
+            )
+        )
+        if (
+            completion.tool_calls
+            or _is_raw_dsml_tool_request(completion.assistant_message.content)
+            or not completion.assistant_message.content.strip()
+        ):
+            return build_attempt_result(
+                outcome=HarnessAttemptOutcome.SUSPENDED,
+                summary="tool loop made no new progress and final synthesis was unavailable",
+                assistant_message=completion.assistant_message.content,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                emitted_events=emitted_events,
+                metadata={**metadata, "stop_reason": "tool_loop_no_progress"},
+            )
+        return build_attempt_result(
+            outcome=HarnessAttemptOutcome.COMPLETED,
+            summary="tool loop converged with a final answer",
+            assistant_message=completion.assistant_message.content,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            emitted_events=emitted_events,
+            metadata=metadata,
+        )
+
 
 def _executed_action_fingerprints(messages: list[SessionMessage]) -> set[str]:
     completed_ids = {
@@ -351,3 +470,30 @@ def _executed_action_fingerprints(messages: list[SessionMessage]) -> set[str]:
 
 def _tool_limit(context: HarnessContext) -> int | None:
     return context.task.max_tool_calls
+
+
+def _needs_terminal_synthesis(metadata: Mapping[str, object]) -> bool:
+    return metadata.get("tool_loop_no_progress") is True or (
+        metadata.get("policy_recovery_terminal_synthesis") is True
+    )
+
+
+def _is_raw_dsml_tool_request(content: str) -> bool:
+    marker = "<｜｜DSML｜｜tool_calls>"
+    marker_index = 0
+    while True:
+        marker_index = content.find(marker, marker_index)
+        if marker_index < 0:
+            return False
+        invoke_index = content.find("invoke name=", marker_index + len(marker))
+        if (
+            not _is_inside_fenced_code_block(content, marker_index)
+            and invoke_index >= 0
+            and not _is_inside_fenced_code_block(content, invoke_index)
+        ):
+            return True
+        marker_index += len(marker)
+
+
+def _is_inside_fenced_code_block(content: str, position: int) -> bool:
+    return sum(line.lstrip().startswith("```") for line in content[:position].splitlines()) % 2 == 1

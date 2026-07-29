@@ -5863,3 +5863,233 @@ actual byte access.
   governance files may require ordinary rebase reconciliation later
 - completed current official-source comparison for Codex/OpenAI, Claude,
   Pi Agent and Hermes; design and implementation plan are being written first
+
+# 2026-07-28 HAR-CONV-01 Design Handoff
+
+- created `codex/runtime-convergence-phase1` in isolated worktree
+  `../zebra-runtime-convergence`; the branch is stacked on PR `#198` and merges
+  the current `origin/main@a6b47c3` proposal baseline without modifying `main`
+- added the executable two-stage convergence design and task cards; only
+  `HAR-CONV-01` is active, while `CTX-REHYDRATE-02` remains locked
+- Phase 1 owns the shared `agent-core` Harness convergence path and focused
+  tests; `model_step.py`, Context, Storage, Worker, providers/MCP and FinOS are
+  explicit stop boundaries
+- `git diff --check` passed and the uncommitted task diff is documentation-only
+- `make check` reached the inherited file-size gate and stopped on the same two
+  out-of-scope files already recorded by PR `#198`:
+  `CodexConversationPane.styles.ts` (561/500) and `events.py` (505/500)
+- next action: commit and push the documentation baseline, then hand the exact
+  branch/worktree and red-test-first instructions to Codex task
+  `019f9a26-59b5-77e2-b42e-5e6ede10520c`
+
+# 2026-07-28 HAR-CONV-01 Phase 1 Coding Handoff
+
+- **Scope**: implemented only the authorized shared Harness paths plus
+  `tests/agent_core/test_harness_convergence.py`; did not modify `model_step.py`,
+  Context, Storage, Worker, provider/MCP, UI, FinOS, or `main`.
+- **Root fix**: exact action fingerprints remain the effect/idempotency guard.
+  Executed results now produce stable observation fingerprints from tool name,
+  status, normalized output, and stable artifact/source references, excluding
+  provider IDs, timestamps, and JSON display order. Batch-level new evidence or
+  durable Plan/Approval state changes reset the no-progress counter.
+- **Convergence**: threshold exhaustion writes a structured model-visible
+  observation, permits exactly one `allow_tools=False` synthesis, completes on
+  non-empty text, and otherwise returns `SUSPENDED` with
+  `stop_reason=tool_loop_no_progress`. No default call limit, state database,
+  business heuristic, retry framework, or Phase 2 rehydration work was added.
+- **Deterministic evidence**: red-first convergence suite initially failed `5`;
+  final focused suite passed `63`, including semantic argument variants,
+  provider-id/timestamp and JSON-order stability, exact-repeat dedupe,
+  Plan/Approval reset, sequential/concurrent parity, one terminal synthesis,
+  typed suspension, and a progressing nine-tool chain. Touched-file Ruff and
+  Mypy passed; `git diff --check` passed.
+- **Full validation**: `make test` ran `1773` tests: `1756 passed, 9 failed,
+  8 skipped`. The nine failures are inherited outside owned paths (two provider
+  parser cases, five SCM credential cases, the two-file size gate, and one
+  worker cancellation case). `make check` stops at the documented file-size
+  gate: `CodexConversationPane.styles.ts` `561/500` and `events.py` `505/500`.
+- **Commit / review**: the Phase 1 delivery commit is on
+  `codex/runtime-convergence-phase1` only; do not merge or push it to `main`.
+  This original handoff treated the read-only three-image A/B as remaining user
+  acceptance; the 2026-07-29 record below supersedes that boundary and assigns
+  image/MiniMax acceptance to the FinOS project branch. Phase 2
+  `CTX-REHYDRATE-02` stays `Locked`.
+
+# 2026-07-29 HAR-CONV-01 Post-review Repair And Text A/B
+
+- separated the Zebra `main` convergence line from FinOS image attachment and
+  MiniMax MCP acceptance; HAR-CONV-01 now uses the same Skill plus manually
+  transcribed evidence with no image attachment, MCP allowlist or FinOS provider
+- added red regressions for volatile production Artifact URIs, mixed batches
+  containing historical and fresh work, convergence instructions displacing
+  real user turns, typed stop-reason propagation, and raw DeepSeek DSML tool
+  requests being falsely accepted as final answers
+- the minimal repair uses `output_sha256` before volatile projection references,
+  preserves fresh mixed-batch calls and Policy/Plan/Approval audit, emits one
+  internal SYSTEM convergence instruction, and returns typed
+  `tool_loop_no_progress` when tool-disabled synthesis still requests a tool
+- deterministic verification passes `70` focused tests plus touched-file Ruff,
+  Mypy and `git diff --check`; the latest full run is `1763 passed, 9 failed,
+  8 skipped`, with the same inherited provider, SCM credential, Worker
+  cancellation and two file-size failures
+- live baseline evidence on unmodified `main@a6b47c3` had no image/MiniMax/FinOS
+  dependency and was manually cancelled after 10 complete model responses,
+  13 `web.fetch` calls and 7 compactions without a final answer
+- the final isolated Phase 1 replay used the same 14,118-character prompt and
+  no default model/tool budgets; after one valid clarification it stopped at
+  sequence 225 with 11 model calls, 12 `web.fetch` calls, 7 compactions,
+  `status=suspended`, `stop_reason=tool_loop_no_progress`, and exactly one
+  terminal synthesis instead of continuing or falsely completing
+- FinOS `accounts`, snapshots, transactions, import drafts, journal artifacts
+  and notes had identical pre/post row hashes; temporary prompt, database,
+  container and remote acceptance files were removed after verification
+- Phase 2 `CTX-REHYDRATE-02` remains `Locked`; this branch stays `Review` until
+  external review and maintainer merge authorization
+
+# 2026-07-29 A-Line Completion Gate And Phase 1.5 Activation
+
+- user acceptance supersedes the prior handoff: typed `SUSPENDED` proves the
+  Runtime no longer loops, but does not pass the A line unless the fixed Skill +
+  14,118-character text input produces the complete transaction log
+- ChatGPT Pro and local source tracing agree that the existing recovery slice is
+  present but bypassed by `_request_terminal_synthesis()`; the previous proposal
+  to add another Runtime state model was rejected
+- activated `CTX-REHYDRATE-02` as a narrow Phase 1.5 task stacked on
+  `HAR-CONV-01@efbb8a3`, with a separate branch/worktree and no direct `main` merge
+- implementation must reuse `ContextCapsule`, `ProtectedInstructionLedger`,
+  `ActiveContextProjection` and `rehydrate_projection()` through the existing
+  Core Port boundary; `agent-core` must not import `agent-context`
+- the slice allows at most one recovered `allow_tools=False` synthesis and does
+  not add a second Attempt, Memory 2.0, finance/Skill/provider heuristics,
+  Worker/Storage changes or FinOS orchestration without new red-test evidence
+- hard live gate: complete log after any necessary clarification, no continued
+  tool loop or false completion, and identical FinOS core-table full-row hashes
+
+# 2026-07-29 Phase 1.5 Recoverable Policy Deny P1
+
+- the first pure A-line live replay used the complete Phase 1.5 source, the same
+  14,118-character text input, `read_only` Policy and `full-trusted-local` network,
+  with FinOS provider, MiniMax, MCP and image input disabled
+- after 5 model calls and 6 tool calls, the model proposed a read-only
+  `web.fetch` URL containing a fragment; `parse_web_target()` and Policy correctly
+  denied the request, but Harness immediately failed the only Attempt as
+  `retry_exhausted`, leaving a 15-character assistant fragment and no transaction log
+- ChatGPT Pro classified this as a Phase 1.5 P1 rather than a new stage: Policy
+  enforcement stays fail closed, while an explicitly marked model-correctable
+  read-only input deny may become one non-executed failed-tool observation in the
+  same Attempt
+- `HAR-CONV-01-POLICY-RECOVERY` is recorded as a work item inside
+  `CTX-REHYDRATE-02` on the existing branch/worktree; it must not parse reason
+  strings, strip URL fragments, start a second Attempt, or relax any authority
+- a second recoverable deny routes to the existing one-shot recovered
+  `allow_tools=False` synthesis; approval, human refusal, side-effect/write,
+  network-authority, credential, sensitive-path, sandbox/workspace and all
+  unmarked denies remain terminal or waiting
+- coding remains blocked until this incremental docs baseline is committed and
+  receives a fresh coding-before review
+
+# 2026-07-29 CTX-SEG-02 Long-Context Terminal Follow-up P1
+
+- Phase 1.5 plus Policy Recovery passed `71` focused tests; the full suite is
+  `1773 passed, 9 inherited failures, 8 skipped`, with changed-file Ruff, Mypy
+  and `git diff --check` green
+- a pure A-line live Segment now completes in one Attempt after 14 model responses,
+  13 tool proposals and 7 compactions, producing an 8,655-character structured
+  log; it still correctly requests confirmation for a conflicting sell record
+- the stable Task follow-up route accepted `确认存在这笔卖出，纳入今日日志`, created a
+  `terminal_follow_up` Segment and resumed it, but the child returned only 167
+  characters and asked again for the stock, quantity and price
+- source evidence proves the child lost long context rather than model capability:
+  the source had a final 14,118-character Capsule objective with one acceptance
+  criterion and eight plan entries, while the Handoff Envelope had no active
+  Capsule fields and only two roughly 2,000-character checkpoint strings
+- the mismatch comes from two existing paths: synchronous `execute=true` persists
+  compaction events without advancing `SQLiteContextLifecycleStore`, and handoff
+  runtime evidence later truncates the combined checkpoint to about 2,000 characters
+- ChatGPT Pro classified this as a narrow `CTX-SEG-02` P1, not Memory 2.0: align
+  synchronous API and Worker active-Capsule persistence, then make terminal handoff
+  prefer existing Capsule/Projection rehydration with checkpoint text only as fallback
+- no new Memory, table, Event schema, provider/private continuation, raw tool output,
+  finance/Skill special case or FinOS change is authorized; coding waits for this
+  docs increment to be committed and reviewed
+
+# 2026-07-29 A-Line Continuity Budget And Terminal Contract Review
+
+- the first terminal-follow-up implementation passed its synthetic tests but failed
+  the fixed live A line: the valid active Capsule retained a 14,118-character
+  objective, while the child handoff compiled only 427 characters and omitted every
+  required transaction fact after character 12,000
+- the test was falsely green because its goal/completion markers were placed in the
+  objective prefix that survived the 60-character adapter limit; the replacement red
+  test must place required evidence after 12K and inspect the actual child compiled
+  messages
+- the same isolated replay produced a 7,571-character intermediate log but exposed
+  only a 387-character non-self-contained completion notice as FINAL; after the user
+  confirmation and rollover, the child returned a 311-character prefixed raw DSML
+  tool request and was incorrectly marked `COMPLETED`
+- PostgreSQL counts and full-row hashes for accounts, snapshots, transactions,
+  import drafts, journal artifacts and notes were identical before and after; the
+  temporary acceptance container/image/directories were removed and official FinOS
+  services remained healthy
+- ChatGPT Pro locked route A without Conversation Message Replay: for
+  `active_projection`, `HarnessModelStep` computes
+  `max(task.context_token_budget, ModelContextWindow.compaction_reserve_tokens)` and
+  passes it to the existing Context Compiler; adapter-level 60/128/85/65 character
+  limits and `capsule.plan`-as-visible-conversation are forbidden
+- terminal completion uses a stronger self-contained synthesis instruction and the
+  existing typed suspension path for any unfenced DSML `tool_calls` + `invoke`
+  grammar, even with ordinary explanatory text before it; business-log completeness
+  remains the fixed live A-line Eval, not a finance/language/length validator in Harness
+- A-line input is the already recognized Skill + 14,118-character OCR text. Zebra
+  `main` does not gain image recognition, MiniMax MCP, FinOS provider or image fixtures
+  from this repair; Memory 2.0, new Task/Storage/Event schema and direct `main` changes
+  remain forbidden
+
+# 2026-07-29 A-Line Follow-up Resolution Contract P1
+
+- the continuity-budget / FINAL / DSML repair passes `43` core and `36` API/Worker
+  focused regressions, Ruff, Mypy over 19 changed source files and `git diff --check`;
+  the full suite is `1783 passed, 9 inherited failures, 8 skipped`
+- the isolated pure A-line replay used the same recognized Skill + 14,118-character
+  OCR text with MiniMax, MCP and image input disabled; its initial Segment completed
+  in one Attempt with a 7,757-character structured log containing the known sell facts
+- the source active Capsule and child compiled system both preserved the full objective;
+  the sell name was after character 12,000 and its price after character 14,000, proving
+  that this failure is no longer context truncation
+- after `确认存在这笔卖出，纳入今日日志`, terminal rollover succeeded, but the child
+  called `files.list`, observed an empty workspace, then repeated the same
+  `agent.clarify` and entered `waiting_input` instead of producing the final log
+- all six FinOS PostgreSQL business-table counts and full-row hashes were byte-for-byte
+  unchanged before and after the failed replay
+- ChatGPT Pro selected route A: the latest follow-up must first resolve a matching
+  recovered pending clarification before new planning/tool exploration; normal tool
+  access remains available for genuinely new follow-up work
+- no finance/Skill/language/length/provider heuristic, Conversation Replay, Memory 2.0,
+  new Runtime state/schema, FinOS, MCP or direct `main` change is authorized
+
+# 2026-07-29 A-Line Route A Final Acceptance
+
+- route A adds a generic continuation contract only when runtime evidence is both
+  `active_projection` and `internal_terminal_follow_up`; the existing handoff reason
+  is carried as metadata, without a new schema or state model
+- non-terminal active handoffs do not receive the terminal guidance, while genuinely
+  new terminal follow-ups retain normal `allow_tools=true` capability
+- local validation is `80` related regressions, touched-file Ruff, Mypy over 19 source
+  files and `git diff --check`; the full suite is `1784 passed, 9 inherited failures,
+  8 skipped`, matching the inherited nine-failure baseline
+- the fixed 14,118-character pure Zebra input first entered structured clarification;
+  the exact confirmation resumed the same Segment and produced an 8,536-character
+  complete structured transaction log
+- after completion, the exact same confirmation triggered terminal rollover; the child
+  restored the complete objective with the sell name after character 12,000 and price
+  after character 14,000, then completed in two model calls with a 6,686-character,
+  261-line self-contained log
+- the final includes account overview, the confirmed sell, all 18 visible holdings,
+  costs, risk notes and `review_ready_data`; it has no repeated `agent.clarify`,
+  `waiting_input`, raw DSML, completion-only notice, suspension or failure
+- one empty, read-only `files.list` preceded the final answer but caused no loop or
+  state change; ChatGPT Pro classified it as non-blocking and optional P2 optimization
+- FinOS PostgreSQL counts and full-row hashes for accounts, snapshots, transactions,
+  import drafts, journal artifacts and notes were exactly identical before and after
+- ChatGPT Pro final verdict: `DECISION: PASS`, `BUSINESS GATE: PASS`,
+  `RUNTIME GATE: PASS`, `FILES.LIST VERDICT: non-blocking`, `P1: none`

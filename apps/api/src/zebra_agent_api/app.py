@@ -61,6 +61,7 @@ from zebra_agent_api.api_session_message_append_mixin import ApiSessionMessageAp
 from zebra_agent_api.api_session_read_mixin import ApiSessionReadMixin
 from zebra_agent_api.api_status_mixin import ApiStatusMixin
 from zebra_agent_api.credential_broker import build_default_credential_broker
+from zebra_agent_api.execution_context_lifecycle import persist_execution_events
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
@@ -437,27 +438,26 @@ class ZebraAgentApi(
                 parsed["attachments"],
                 staged_images=staged_images,
             )
-            event_store = SQLiteEventStore(self.database_path)
-            for event in events:
-                event_store.append(event)
-                images_durable |= event.event_type is EventType.USER_MESSAGE_RECEIVED
-            SQLiteProjectionStore(self.database_path).save_session(result.session)
-            SQLiteWorkspaceProjectionStore(self.database_path).save_workspace(
-                rebuild_workspace(list(events))
-            )
+            session = persist_execution_events(self.database_path, events)
         except Exception:
             if staged_images is not None and not images_durable:
-                cleanup_staged_task_images(staged_images)
+                if not any(
+                    event.event_type is EventType.USER_MESSAGE_RECEIVED
+                    for event in SQLiteEventStore(self.database_path).list_for_session(
+                        result.session.session_id
+                    )
+                ):
+                    cleanup_staged_task_images(staged_images)
             raise
         return ApiResponse(
             status_code=201,
             body={
-                "session_id": str(result.session.session_id),
+                "session_id": str(session.session_id),
                 "title": str(parsed["title"]),
                 "prompt": str(parsed["prompt"]),
                 "workspace": str(parsed["workspace"]),
                 "executed": True,
-                "status": result.session.status.value,
+                "status": session.status.value,
                 "assistant_message": result.attempt_result.metadata.get("assistant_message"),
                 "stop_reason": result.run_result.stop_reason.value,
                 "attempts_used": result.run_result.attempts_used,

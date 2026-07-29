@@ -5,7 +5,11 @@ from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.policies import PolicyDecisionType
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
-from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
+from agent_core.harness.attempt_result import (
+    action_fingerprint,
+    build_attempt_result,
+    update_batch_observation_progress,
+)
 from agent_core.harness.clarification_step import clarification_stop_result
 from agent_core.harness.concurrent_batch import (
     DEFAULT_REPEAT_HARD_STOP_THRESHOLD,
@@ -18,7 +22,11 @@ from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessContext, HarnessEventDraft
 from agent_core.harness.orchestration_events import policy_decision_payload
 from agent_core.harness.plan_step import execute_plan_call
-from agent_core.harness.policy_step import policy_stop_result
+from agent_core.harness.policy_step import (
+    policy_recovery_metadata,
+    policy_stop_result,
+    recoverable_policy_deny_observation,
+)
 from agent_core.harness.selection import ToolCallSelection
 from agent_core.harness.tool_execution import execute_tool_call, record_tool_result
 from agent_core.ports.policy_engine import PolicyEnginePort
@@ -138,6 +146,8 @@ class ToolBatchExecutor:
                 metadata=metadata,
                 first_selection=first_selection,
             )
+        batch_event_start = len(emitted_events)
+        observations: list[tuple[ToolCall, ToolResult]] = []
         for index, tool_call in enumerate(tool_calls):
             approved_continuation = index == 0 and first_execution_started
             if not approved_continuation:
@@ -170,25 +180,6 @@ class ToolBatchExecutor:
                     fingerprint = action_fingerprint(tool_call)
                     loop_guard_counts[fingerprint] = loop_guard_counts.get(fingerprint, 0) + 1
                     metadata = {**metadata, "loop_guard_counts": loop_guard_counts}
-                    if loop_guard_counts[fingerprint] >= self._repeat_hard_stop_threshold:
-                        return self._terminal(
-                            outcome=HarnessAttemptOutcome.FAILED,
-                            summary=(
-                                f"loop guard exhausted: {tool_call.name} repeated "
-                                f"{loop_guard_counts[fingerprint]} times"
-                            ),
-                            completion=completion,
-                            emitted_events=emitted_events,
-                            model_calls_used=model_calls_used,
-                            tool_calls_executed=tool_calls_executed,
-                            metadata={
-                                **metadata,
-                                "stop_reason": "loop_guard_exhausted",
-                                "loop_guard_tool_name": tool_call.name,
-                                "loop_guard_repeat_count": loop_guard_counts[fingerprint],
-                                "remaining_tool_call_count": len(tool_calls) - index,
-                            },
-                        )
                     result = ToolResult(
                         tool_call_id=tool_call.tool_call_id,
                         status=ToolCallStatus.FAILED,
@@ -211,6 +202,7 @@ class ToolBatchExecutor:
                         verifier=self._verifier,
                         emitted_events=emitted_events,
                     )
+                    observations.append((tool_call, result))
                     self._model_step.append_tool_result(
                         messages,
                         tool_call=tool_call,
@@ -232,6 +224,29 @@ class ToolBatchExecutor:
                     )
                 )
                 if decision.decision is not PolicyDecisionType.ALLOW:
+                    if decision.decision is PolicyDecisionType.DENY and decision.recoverable:
+                        observation = recoverable_policy_deny_observation(
+                            context,
+                            messages=messages,
+                            tool_call=tool_call,
+                            decision=decision,
+                            retained_tool_calls=tool_calls[: index + 1],
+                            model_step=self._model_step,
+                            verifier=self._verifier,
+                            emitted_events=emitted_events,
+                        )
+                        observations.append((tool_call, observation.result))
+                        metadata = policy_recovery_metadata({**metadata, **observation.metadata})
+                        return ToolBatchResult(
+                            None,
+                            tool_calls_executed,
+                            update_batch_observation_progress(
+                                metadata,
+                                observations,
+                                emitted_events[batch_event_start:],
+                                threshold=self._repeat_hard_stop_threshold,
+                            ),
+                        )
                     terminal = policy_stop_result(
                         context,
                         messages=messages,
@@ -306,6 +321,7 @@ class ToolBatchExecutor:
                 )
             tool_calls_executed += 1
             fingerprints.add(action_fingerprint(tool_call))
+            observations.append((tool_call, execution.result))
             metadata = {**metadata, **execution.metadata}
             self._model_step.append_tool_result(
                 messages,
@@ -317,6 +333,12 @@ class ToolBatchExecutor:
                 metadata = _accumulate_failure(metadata, tool_call.name)
                 continue
             if not execute_all:
+                metadata = update_batch_observation_progress(
+                    metadata,
+                    observations,
+                    emitted_events[batch_event_start:],
+                    threshold=self._repeat_hard_stop_threshold,
+                )
                 return self._terminal(
                     outcome=HarnessAttemptOutcome.COMPLETED,
                     summary=f"tool call completed: {tool_call.name}",
@@ -326,7 +348,16 @@ class ToolBatchExecutor:
                     tool_calls_executed=tool_calls_executed,
                     metadata=metadata,
                 )
-        return ToolBatchResult(None, tool_calls_executed, metadata)
+        return ToolBatchResult(
+            None,
+            tool_calls_executed,
+            update_batch_observation_progress(
+                metadata,
+                observations,
+                emitted_events[batch_event_start:],
+                threshold=self._repeat_hard_stop_threshold,
+            ),
+        )
 
     def _recover_repeated_reads(
         self,
@@ -340,6 +371,8 @@ class ToolBatchExecutor:
         first_selection: ToolCallSelection | None,
     ) -> ToolBatchResult:
         recovered_metadata = dict(metadata)
+        batch_event_start = len(emitted_events)
+        observations: list[tuple[ToolCall, ToolResult]] = []
         for index, tool_call in enumerate(tool_calls):
             summary, selection_metadata = selection_evidence(
                 index=index,
@@ -381,6 +414,7 @@ class ToolBatchExecutor:
                 verifier=self._verifier,
                 emitted_events=emitted_events,
             )
+            observations.append((tool_call, result))
             self._model_step.append_tool_result(
                 messages,
                 tool_call=tool_call,
@@ -388,6 +422,12 @@ class ToolBatchExecutor:
                 created_at=context.attempt.started_at,
             )
             recovered_metadata = {**recovered_metadata, **execution.metadata}
+        recovered_metadata = update_batch_observation_progress(
+            recovered_metadata,
+            observations,
+            emitted_events[batch_event_start:],
+            threshold=self._repeat_hard_stop_threshold,
+        )
         return ToolBatchResult(
             None,
             tool_calls_executed,

@@ -5,7 +5,65 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-07-28`
+- Snapshot date: `2026-07-29`
+- Review stacked task: `HAR-CONV-01` is implemented on
+  `codex/runtime-convergence-phase1`, based on PR `#198` plus current
+  `origin/main`. It extends exact action repetition checks with stable evidence
+  progress, bounded no-progress detection, and one tool-disabled terminal
+  synthesis. Post-review repairs preserve mixed-batch work, ignore volatile
+  artifact URIs, keep internal convergence instructions out of the user tail,
+  propagate `tool_loop_no_progress`, and reject raw DSML tool requests as final
+  answers. `70` focused regressions and touched-file Ruff/Mypy pass; full tests
+  are `1763 passed, 9 inherited failures, 8 skipped`. A provider-neutral live
+  replay now typed-suspends instead of looping or falsely completing, but it did
+  not output the required transaction log; the Runtime guard passed while the A
+  line business gate failed. FinOS image/MiniMax acceptance is separate. The
+  branch is not authorized to merge directly to `main`.
+- Review stacked task: `CTX-REHYDRATE-02` is the completed Phase 1.5
+  completion slice on `codex/context-rehydrate-phase1-5`. It must reuse existing
+  Capsule/ledger/projection/rehydration paths through the Core Port boundary,
+  perform at most one recovered tool-disabled synthesis, and make the fixed text
+  A line produce the complete log. The first pure A-line live replay exposed one
+  additional P1 in the same phase: a correctly denied `web.fetch` URL containing
+  a fragment was treated as terminal `retry_exhausted` instead of a correctable
+  failed-tool observation. `HAR-CONV-01-POLICY-RECOVERY` therefore adds one
+  explicitly classified, same-Attempt correction for read-only input validation;
+  every unmarked, authority, side-effect, credential, boundary or human deny stays
+  terminal/waiting. Local validation is `71` focused and `1773 passed, 9 inherited
+  failures, 8 skipped` full-suite. The resulting live Segment now completes with an
+  8,655-character structured log, but the confirmation follow-up exposed a separate
+  `CTX-SEG-02-FOLLOWUP-REHYDRATE` P1: rollover succeeded, while the child received
+  only the truncated checkpoint and returned 167 characters asking again for known
+  trade details. Sync API/Worker active-Capsule parity and projection-first handoff
+  were implemented locally, but the next isolated acceptance proved the content path
+  still incomplete: the active 14,118-character Capsule compiled to only 427
+  characters, with every required fact after character 12,000 absent. The source
+  final was a non-self-contained 387-character completion notice, and the child
+  falsely completed with a 311-character prefixed raw DSML tool request. The locked
+  repair uses `max(task.context_token_budget,
+  ModelContextWindow.compaction_reserve_tokens)` for active-projection continuity,
+  removes fixed character limits and `plan`-as-conversation, strengthens the
+  self-contained synthesis instruction, and rejects any unfenced DSML tool grammar.
+  That repair passes `43` core and `36` API/Worker focused regressions, touched-file
+  Ruff and Mypy, with the full suite at `1783 passed, 9 inherited failures, 8 skipped`.
+  The next isolated live replay produced a 7,757-character initial structured log and
+  proved the child compiled the complete 14,118-character active projection, including
+  facts after character 12,000. After the exact user confirmation, however, the child
+  still called `files.list`, repeated the already answered `agent.clarify`, and entered
+  `waiting_input`. Pro therefore locked route A for the remaining P1: latest user
+  follow-up must resolve the matching recovered pending clarification before new
+  planning/tool exploration; ordinary follow-ups keep normal tool capability.
+  Route A is now implemented only for active-projection terminal follow-ups and
+  passes the final live gate: the clarification continuation produced an 8,536-character
+  log, then the completed Task rolled over and its child produced a 6,686-character,
+  261-line self-contained log in two model calls with no repeated clarification,
+  waiting state, DSML or business write. Current validation is `80` related tests,
+  touched-file Ruff, Mypy over `19` source files and `git diff --check`; the full suite
+  is `1784 passed, 9 inherited failures, 8 skipped`. ChatGPT Pro marked Business and
+  Runtime gates PASS. One harmless read-only `files.list` is optional P2 optimization.
+  The A-line fixture is already recognized OCR text; Zebra image recognition remains
+  outside this lane. Full Memory 2.0, Policy relaxation, new Worker architecture /
+  Storage schema and direct merge to `main` remain out of scope.
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with
   an exact three-user-turn tail, complete tool groups, one strict retry from
   original history, recoverable context suspension, evidence-gated memory
@@ -20,9 +78,9 @@
 - Product posture: `embeddable Agent Runtime / feature-complete local Beta / single-host Phase A complete`
 - Review task: `CTX-SEG-01` has delivered the stable Task, internal Segment,
   unified stream/routing, automatic safe rollover, and SQLite migration slice.
-- Active repair task: `CTX-SEG-02` preserves the latest bounded conversation
-  checkpoint across terminal follow-up Segments, removes implicit low call
-  ceilings, and converts explicit hard-budget exhaustion into recoverable pause.
+- `CTX-SEG-02` is merged for short terminal follow-ups and budget recovery; the
+  long-context projection regression is reopened narrowly as
+  `CTX-SEG-02-FOLLOWUP-REHYDRATE` under the active Phase 1.5 branch.
 - Review task: `SUBAGENT-UX-01` makes Subagent use a model-native tool decision;
   simple work remains in the parent and every valid delegation records its reason.
 - Active architecture task: ADR-013 replaces user-visible child Sessions with a
@@ -30,7 +88,9 @@
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
 - Locked architecture tasks: ACP entry and optional code intelligence
-- Open product issue: none; `#148` closed with PR `#156`
+- Open runtime issue: `#197` is under review in PR `#198`; the separate execution
+  convergence gap is tracked by `HAR-CONV-01`. Product issue `#148` remains closed
+  through PR `#156`.
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
   non-interactive across Desktop/API/CLI/Worker, including existing Tasks, while
   retaining fail-closed non-local defaults and hard Gateway/Runtime boundaries.
@@ -56,7 +116,7 @@
   Phase A scope** (EXT-0 + SKILL-01..05 + MCP-01/02/06).
   Plugin/Hook/Marketplace remain `Locked` pending private-cloud GA. Elicitation
   is reconciled to durable HITL; sampling stays a hard non-goal.
-- Active harness task: `HAR-TOOL-RECOVERY-01` enforces the durable contract
+- Existing harness baseline `HAR-TOOL-RECOVERY-01` enforces the durable contract
   that a single `ToolCallStatus.FAILED` (HTTP 4xx, missing file, timeout) must
   surface as a structured observation for model-selected correction rather than
   directly producing `session_failed`. Changes: repeated tool calls become
@@ -64,7 +124,9 @@
   3), sequential batches continue executing remaining tools after a mid-batch
   failure (matching concurrent-batch semantics), and a provider protocol
   firewall (`protocol_invariants.py`) validates tool-call/tool-result pairing
-  before every model request to prevent `invalid_request` leakage.
+  before every model request to prevent `invalid_request` leakage. Its exact
+  `tool + arguments` guard does not detect argument variants returning the same
+  evidence; `HAR-CONV-01` owns that narrow follow-up.
 - Model-response acceptance is now a separate provider-neutral boundary:
   malformed body/SSE/tool-call output becomes `ModelResponseRejectedError`,
   tool-capable stream deltas are committed only after validation, one bounded

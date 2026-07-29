@@ -20,6 +20,35 @@
 
 ## Current Board
 
+- `HAR-CONV-01` is `Review` on `codex/runtime-convergence-phase1`. Its
+  deterministic Runtime-safety checks pass, but its provider-neutral text A/B
+  ended in typed `tool_loop_no_progress` without the required transaction log.
+  Typed suspension is not business completion. The branch is stacked on PR
+  `#198`, includes current `origin/main`, and must not be merged or pushed to
+  `main` directly. FinOS image attachment and MiniMax MCP acceptance are separate.
+- `CTX-REHYDRATE-02` is `Review` as the required Phase 1.5 completion slice
+  on `codex/context-rehydrate-phase1-5`. It remains stacked on PR `#198` and
+  `HAR-CONV-01`; direct merge to `main` is forbidden. Its P1 work item
+  `HAR-CONV-01-POLICY-RECOVERY` is part of this same task/branch, not a second
+  stage: one explicitly recoverable read-only input deny may return to the model
+  as a failed-tool observation, while all unmarked or authority denies remain terminal.
+  Live multi-turn acceptance also activated `CTX-SEG-02-FOLLOWUP-REHYDRATE` on
+  this branch: terminal rollover must consume existing Capsule/Projection state,
+  not only a truncated text checkpoint. The first implementation persisted the
+  active Capsule but still reduced its 14,118-character objective to a 427-character
+  compiled handoff, then falsely completed on a non-self-contained summary and a
+  prefixed raw DSML request. The locked repair uses the existing model compaction
+  reserve for active-projection context and closes the terminal output/DSML contract.
+  The next isolated replay proved that continuity now reaches the child intact and
+  the initial Segment produces a 7,757-character structured log, but the child still
+  treated the explicit confirmation as a new inquiry, explored an empty workspace,
+  repeated the same `agent.clarify`, and entered `waiting_input`. ChatGPT Pro locked
+  route A: advance a resolved follow-up clarification before new planning while
+  preserving normal tool capability; no business heuristic or new state schema is allowed.
+  Route A now passes the fixed live gate: the terminal child restored the complete
+  14,118-character objective and emitted a 6,686-character self-contained log with
+  no repeated clarification, waiting state, DSML or FinOS write. One harmless
+  read-only `files.list` is recorded as optional P2 optimization, not a Phase 1.5 blocker.
 - `CTX-MEM-01` is `Review` in PR `#198` on
   `codex/issue-197-context-memory-continuity`. It closes GitHub issue `#197`
   without depending on the stacked semantic-memory gateway: same-Task recovery
@@ -121,6 +150,204 @@ confirmed repo memory by current-task relevance within a token budget.
   model-inferred memories
 - no semantic provider or Mem0 integration; `MEM-GW-CON-01` owns that contract
 - no automatic child Session or Subagent creation to escape a context limit
+
+## Runtime Convergence Task Board
+
+Architecture authority:
+`docs/执行收敛与最小Runtime_Task_Memory切片方案_v1.0.md`.
+
+### HAR-CONV-01 - Progress-Aware Tool Loop Convergence
+
+- Status: `Review`
+- Owner: `Vinson`
+- Coding task: `019f9a26-59b5-77e2-b42e-5e6ede10520c`
+- Suggested role: `CORE / QA`
+- Depends on: PR `#198` (`CTX-MEM-01`) as a stacked development baseline;
+  merge to `main` is forbidden until the dependency is merged
+- Branch: `codex/runtime-convergence-phase1`
+- Worktree: `../zebra-runtime-convergence`
+- Owned paths:
+  `packages/agent-core/src/agent_core/harness/attempt_result.py`,
+  `packages/agent-core/src/agent_core/harness/concurrent_batch.py`,
+  `packages/agent-core/src/agent_core/harness/tool_batch.py`,
+  `packages/agent-core/src/agent_core/harness/sequential_loop.py`,
+  `packages/agent-core/src/agent_core/harness/models.py`,
+  `packages/agent-core/src/agent_core/harness/stopping.py`,
+  `packages/agent-core/src/agent_core/harness/orchestrator.py`,
+  focused convergence tests under `tests/agent_core/` and `tests/integration/`,
+  `docs/执行收敛与最小Runtime_Task_Memory切片方案_v1.0.md`,
+  `docs/自适应Agent循环与预算治理方案_v1.0.md`, `docs/AGENT_TASKS.md`,
+  `docs/Zebra Agent Runtime Upgrade Proposal v2.0.md`, `docs/README.md`,
+  `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Extend the current exact repeated-action guard with observation-level progress
+detection and one bounded tool-disabled terminal synthesis, so argument variants
+that return the same evidence cannot keep a Task alive indefinitely while real
+new evidence and long legitimate tool chains remain unbounded by default.
+
+#### Acceptance
+
+- [x] A red regression first reproduces changed tool arguments returning the
+  same stable evidence without reaching a final answer.
+- [x] Exact action fingerprint remains the idempotency/effect guard; a stable
+  observation fingerprint detects no-new-evidence batches across argument variants.
+- [x] New evidence or an existing durable Task/Plan/Approval state transition
+  resets the consecutive no-progress count.
+- [x] The existing repeat threshold triggers exactly one tool-disabled final
+  synthesis; a non-empty answer completes, while another tool request or unusable
+  answer produces typed `SUSPENDED` instead of another loop.
+- [x] Sequential and concurrent batches have the same convergence behavior;
+  a progressing task may exceed 8 or 16 tool calls and still complete.
+- [x] Explicit budgets, Policy, Approval, cancellation, protocol validation and
+  effect deduplication remain unchanged.
+- [x] Focused tests, target Ruff/Mypy, `make test`, and `make check` ran; inherited
+  blockers are recorded separately.
+- [ ] A provider-neutral A/B uses the same Skill plus manually transcribed image
+  evidence on `main` and Phase 1.5, with no image attachment, MCP allowlist or
+  FinOS provider. After any necessary clarification it must output the complete
+  transaction log; typed suspend, raw DSML or loop termination without the log
+  is a failed business acceptance. FinOS image/MiniMax acceptance is separate.
+
+#### Explicit Non-Goals
+
+- modifying `model_step.py`, Context, Storage, Worker, provider/MCP code or FinOS;
+  if root-cause tracing requires one of these paths, stop and record the exact caller
+- adding a Memory database, progress score, business phase enum, finance/image/Skill
+  heuristic, dependency, default call limit or autonomous retry framework
+- committing real images, account data or real business-write evidence
+
+### CTX-REHYDRATE-02 - Convergence Projection And On-Demand Rehydration
+
+- Status: `In Progress`
+- Owner: `Vinson`
+- Coding task: `ctx_rehydrate_phase1_5` (`gpt-5.6-terra`, max)
+- Suggested role: `CTX / CORE / WORKER / QA`
+- Depends on: PR `#198` implementation baseline and `HAR-CONV-01@efbb8a3` as a
+  stacked development baseline; both dependencies must still merge before this
+  task can merge to `main`
+- Branch: `codex/context-rehydrate-phase1-5`
+- Worktree: `../zebra-context-rehydrate`
+- Owned paths:
+  `packages/agent-context/src/agent_context/capsule.py`,
+  `packages/agent-context/src/agent_context/adapter.py`,
+  `packages/agent-context/src/agent_context/conversation.py`,
+  `packages/agent-context/src/agent_context/projection.py`,
+  `packages/agent-context/src/agent_context/session_handoff.py`,
+  `packages/agent-core/src/agent_core/domain/policies.py`,
+  `packages/agent-core/src/agent_core/ports/conversation_compactor.py`,
+  `packages/agent-core/src/agent_core/harness/model_step.py`,
+  `packages/agent-core/src/agent_core/harness/policy_step.py`,
+  `packages/agent-core/src/agent_core/harness/tool_batch.py`,
+  `packages/agent-core/src/agent_core/harness/concurrent_batch.py`,
+  `packages/agent-core/src/agent_core/harness/sequential_loop.py`,
+  `packages/agent-security/src/agent_security/mcp_proxy_policy.py`,
+  `packages/agent-security/src/agent_security/policy.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/session_handoff.py`,
+  `apps/api/src/zebra_agent_api/task_api.py`,
+  existing shared context-lifecycle wiring under `apps/worker/src/zebra_agent_worker/`
+  only if required to remove API/Worker duplication,
+  focused tests under `tests/agent_context/`, `tests/agent_core/`,
+  `tests/agent_security/`, `tests/api/`, `tests/worker/` and `tests/integration/`,
+  plus this task card, the governing design, `PROGRESS.md` and `WORKLOG.md`
+
+#### Goal
+
+Complete the existing same-Attempt terminal synthesis path from a recovered
+Context projection. Reuse `ContextCapsule`, `ProtectedInstructionLedger`,
+`ActiveContextProjection` and `rehydrate_projection()` through the existing Core
+Port boundary. Also close the P1 exposed by the live replay: let Policy explicitly
+classify one model-correctable read-only input deny as a failed-tool observation,
+without weakening the deny, retrying a side effect, creating another Runtime state
+model, or starting an automatic second Attempt. Finally, close the existing
+`CTX-SEG-02` long-context regression: synchronous Task execution and Worker execution
+must publish equivalent active Capsule state, and a terminal follow-up Segment must
+rehydrate that state before handling the new user message.
+
+The fixed A-line input is the already recognized Skill + 14,118-character OCR
+text. Zebra `main` does not perform image recognition in this lane; image/Vision,
+MiniMax MCP and FinOS attachment acceptance remain separate. The active-projection
+path must use `max(task.context_token_budget,
+ModelContextWindow.compaction_reserve_tokens)` before calling the existing Context
+Compiler. It must not use fixed character limits or treat `capsule.plan` as visible
+conversation. Terminal synthesis must request a self-contained FINAL body, while
+business completeness remains a live Eval concern rather than a Harness heuristic.
+
+#### Acceptance
+
+- [x] Red tests first prove that repeated compaction currently loses the completion
+  contract/evidence needed by terminal synthesis.
+- [x] Existing Capsule fields preserve the protected objective, explicit completion
+  requirement, later real-user decisions and Artifact references without finance,
+  Skill or provider heuristics.
+- [x] The terminal path performs at most one recovered `allow_tools=False`
+  synthesis; it never executes a second tool batch or starts a second Attempt.
+- [x] `PolicyDecision` defaults every deny to terminal and can explicitly mark only
+  a model-correctable read-only input validation deny as recoverable; Harness never
+  infers recoverability from reason strings, domains, business semantics or provider.
+- [x] The first recoverable deny keeps the deny audit, appends one non-executed
+  `ToolCallStatus.FAILED` observation, and permits one same-Attempt correction; a
+  second recoverable deny enters the existing recovered tool-disabled synthesis.
+- [x] `REQUIRE_APPROVAL`, human denial, side-effect/write authority, network authority,
+  credentials/sensitive paths, sandbox/workspace escape and unmarked deny remain
+  waiting or terminal and cannot use the recovery path.
+- [x] Missing referenced evidence uses the existing projection/rehydration path
+  under token, Policy, checksum and provenance checks.
+- [x] The fixed Skill + 14,118-character text case produces the complete transaction
+  log after clarification; `SUSPENDED` is a failed A-line acceptance.
+- [x] A long-tail red test places required evidence after character 12,000 and proves
+  the child compiled messages contain it; markers kept only in the objective prefix
+  and `handoff_source=active_projection` metadata cannot satisfy this gate.
+- [x] A regression reproduces the live fragment URL: Policy still denies it, no
+  request reaches the Gateway, the corrected read may proceed, and the task reaches
+  the final synthetic transaction-log marker rather than `retry_exhausted`.
+- [x] Synchronous `POST /tasks execute=true` and Worker execution persist equivalent
+  validated compaction/active-Capsule state through a shared existing boundary; API
+  does not import a Worker-private helper or create another persistence model.
+- [x] A completed Task can receive a follow-up, rollover behind the same Task id and
+  restore the source objective, acceptance, decisions, user-visible conversation and
+  required evidence through existing Capsule/Projection references before synthesis.
+- [x] When a valid source projection exists, terminal handoff does not use the fixed
+  2,000-character checkpoint as its primary state. Text checkpoint remains a bounded
+  fallback only when no validated projection is available.
+- [x] Handoff recovery enforces source hash/range, checksum, provenance, Policy and
+  token budget and excludes provider-private continuation, reasoning, credentials and
+  raw tool output.
+- [x] Active-projection context uses the existing provider-neutral model compaction
+  reserve through `HarnessModelStep`; no new token constant, Task field or provider
+  branch is added, and `plan_context_window` remains the final request hard gate.
+- [x] The handoff adapter emits only validated objective, acceptance, protected
+  constraints, decisions and Artifact/evidence references. It neither applies
+  fixed 60/128/85/65-character limits nor maps `capsule.plan` to visible conversation.
+- [x] The fixed Task flow — initial 14,118-character text, draft/clarification,
+  follow-up confirmation, terminal rollover and resume — ends with the complete final
+  self-contained transaction-log body and does not ask again for known trade details.
+- [x] A terminal-follow-up red test proves that the latest user message closes the
+  matching recovered pending clarification before planning: the child must not repeat
+  the same `agent.clarify` or enter `waiting_input`, while a genuinely new unresolved
+  request retains normal tool access. One harmless empty-workspace read is P2 only.
+- [x] Terminal synthesis explicitly requests a self-contained answer. Business output
+  completeness is enforced by the fixed live A-line Eval, not by language, length,
+  finance or Skill heuristics in the generic Harness.
+- [x] Any unfenced DSML `tool_calls` + `invoke` grammar returned from tool-disabled
+  terminal synthesis, including ordinary explanatory text before the marker, produces
+  typed `SUSPENDED` and can never be reported as `COMPLETED`; fenced examples remain valid.
+- [x] New evidence and auditable state changes still allow legitimate long tasks;
+  exact side-effect deduplication and existing safety contracts remain unchanged.
+- [x] FinOS core business-table full-row hashes are unchanged before/after the live
+  replay.
+- [x] Event Store remains the only durable authority; no second database, business
+  semantics or implicit cross-Task long-term memory is introduced.
+
+#### Explicit Non-Goals
+
+- Agent Memory, Knowledge Memory, Memory Controller, embeddings, learning, TTL
+  platform, provider-specific compaction, automatic child Session creation,
+  silent URL normalization, reason-string classification, Policy relaxation,
+  new Worker architecture, new Storage/Event schema, fixed-size checkpoint inflation,
+  forced `agent.clarify`, prompt concatenation workarounds or automatic retry Attempts
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.
