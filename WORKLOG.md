@@ -6545,3 +6545,13 @@ actual byte access.
 - Fresh-worktree `make sync` completed. Focused Core tests pass `17/17`; scoped Ruff,
   strict Mypy and `git diff --check` pass; isolated PostgreSQL 17.5 v1-v9 migration
   tests pass `6/6` and clean their container, network and volume.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 reserve authority
+
+- Added the first PostgreSQL metadata adapter slice: fenced Worker reservation and
+  namespace/Artifact/Session-scoped metadata reads.
+- Reserve validates the complete LeaseFence and exact stream revision in its write
+  transaction. Canonical retries return the original row; changed requests, Artifact
+  collisions, stale authorities and cross-scope attempts fail without partial writes.
+- Real PostgreSQL v1-v9 migration plus reserve tests pass `11/11`, including two-client
+  concurrent idempotency. Focused Ruff and strict Mypy pass.

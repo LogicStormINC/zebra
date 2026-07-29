@@ -60,6 +60,7 @@ from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.postgres import (
     PostgresAgentTaskConflictError,
     PostgresAgentTaskStore,
+    PostgresCloudArtifactPayloadStore,
     PostgresContextLifecycleConflictError,
     PostgresContextLifecycleStore,
     PostgresControlPlaneEpochError,
@@ -130,6 +131,7 @@ __all__ = [
     "payload_for_artifact_uri",
     "PostgresAgentTaskConflictError",
     "PostgresAgentTaskStore",
+    "PostgresCloudArtifactPayloadStore",
     "PostgresEventStore",
     "PostgresHandoffDispatchStore",
     "PostgresSessionHandoffStore",
