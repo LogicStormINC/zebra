@@ -143,11 +143,14 @@
   its minimum S3 client is direct botocore with MinIO bucket versioning and exact
   object-version evidence. It explicitly excludes SQLite, Desktop, runtime selection,
   Effect linkage and API read composition.
-- Active Artifact contract slice: `CLOUD-ART-LIFECYCLE-CON-01` separates the
+- Completed Artifact contract slice: `CLOUD-ART-LIFECYCLE-CON-01` separates the
   provider-neutral cloud lifecycle Port/domain from the unchanged local
   `ArtifactPayloadStorePort`. It can proceed in Core without touching Handoff v8,
   PostgreSQL, MinIO, SQLite, Worker composition or Desktop, and becomes the explicit
-  contract dependency for Artifact v9.
+  contract dependency for Artifact v9. The Core contract now freezes exact
+  Event/object evidence, Worker versus management authority, safe cleanup evidence
+  and staged/finalized/compensated/pruning/pruned shapes without changing local
+  behavior.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
   on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
   path-bounded microservice cards own provider expectations, SCM credential

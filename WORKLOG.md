@@ -6432,3 +6432,16 @@ actual byte access.
   Core tests and governance only.
 - Preserved local `ArtifactPayloadStorePort`, SQLite, PostgreSQL, MinIO, Worker,
   runtime selection and Desktop outside the owned paths.
+
+## 2026-07-29 - CLOUD-ART-LIFECYCLE-CON-01 implementation
+
+- Added focused provider-neutral object expectation/receipt/verification/delete and
+  safe-cleanup contracts plus an immutable object Port.
+- Added cloud reserve, Event binding, lifecycle mutation/query models, exact record
+  state validation and authority-separated metadata Port.
+- Split source and test modules so every new file remains below the 300-line target.
+- Review found and drove fixes for management CAS, exact Event/object binding,
+  contradictory state evidence and raw query validation.
+- Validation: focused contract/authority/SQLite `45/45`, all Core `290/290`, strict
+  Core Mypy `126` files, changed-scope Ruff and `git diff --check` pass. The global
+  size gate retains only inherited Desktop `561/500` and migration `508/500` failures.

@@ -1146,7 +1146,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-HANDOFF-PG-01 - PostgreSQL Handoff And Dispatch Aggregate
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Branch: `codex/cloud-agg-handoff-pg-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01`,
@@ -1276,16 +1276,17 @@ cloud mainline and is not built or changed by these cards.
 - Owner: `lukeding`
 - Branch: `codex/cloud-art-lifecycle-con-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01` and `CLOUD-ART-OBJ-CON-01`
-- Owned paths: `packages/agent-core/src/agent_core/domain/cloud_artifact_payloads.py`
+- Owned paths: `packages/agent-core/src/agent_core/domain/{cloud_artifact_payloads,cloud_artifact_requests,artifact_objects}.py`
   (new), `packages/agent-core/src/agent_core/domain/__init__.py`,
-  `packages/agent-core/src/agent_core/ports/cloud_artifact_payload_store.py` (new),
-  `packages/agent-core/src/agent_core/ports/__init__.py`, focused
-  `tests/agent_core/test_cloud_artifact_payload_contract.py` (new), and this task's
-  governance records
+  `packages/agent-core/src/agent_core/ports/{cloud_artifact_payload_store,artifact_object_store}.py`
+  (new), `packages/agent-core/src/agent_core/ports/__init__.py`, focused
+  `tests/agent_core/test_{cloud_artifact_payload,artifact_object}_contract.py` (new),
+  and this task's governance records
 - Goal: define the minimum provider-neutral staged/finalize/compensate/prune contract
   required by ADR-017 without implementing an adapter or changing local behavior.
 - Acceptance: every Worker mutation requires complete `WorkerMutationAuthority`;
-  management reconciliation requires `AdministrativeMutationCAS`; lifecycle,
+  management reconciliation requires `AdministrativeMutationCAS` plus explicit
+  operator/reason audit context; lifecycle,
   idempotency, Event binding, object verification and typed conflict/state outcomes
   are explicit; invalid namespace, digest, size, timestamps and transition requests
   fail at the Core boundary.
@@ -1293,6 +1294,15 @@ cloud mainline and is not built or changed by these cards.
   SQLite adapter remain byte-for-byte unchanged and require no cloud-only arguments.
 - Non-goals: no PostgreSQL migration/adapter, S3 SDK, MinIO, Worker orchestration,
   Effect linkage, API route, runtime selection, local SQLite or Desktop change.
+- Evidence: focused provider-neutral object and cloud lifecycle modules keep every
+  source/test file below the 300-line target; Worker operations require complete
+  `WorkerMutationAuthority`, while management operations require
+  `AdministrativeMutationCAS` plus immutable operator/reason context. Exact Event,
+  object digest/size/version, namespace, Session and lifecycle evidence bindings fail
+  closed. Focused contract/authority/SQLite compatibility tests pass `45/45`; all Core
+  tests pass `290/290`; strict Core Mypy passes `126` files, changed-scope Ruff and
+  `git diff --check` pass. The repository size gate retains only the two inherited
+  Desktop `561/500` and active migration `508/500` violations.
 
 ### CLOUD-ART-OBJ-CON-01 - Artifact Object And Metadata Authority Contract
 

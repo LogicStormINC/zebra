@@ -62,13 +62,13 @@
 
 ## CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
 
-1. `in_progress` - Freeze the smallest cloud-only domain and Port surface while
+1. `completed` - Freeze the smallest cloud-only domain and Port surface while
    preserving the local Artifact Port unchanged.
-2. `pending` - Implement frozen request/result/receipt types, typed failures and
+2. `completed` - Implement frozen request/result/receipt types, typed failures and
    Worker/management authority-separated Protocol methods.
-3. `pending` - Prove validation, immutability, public exports, Protocol shape and
+3. `completed` - Prove validation, immutability, public exports, Protocol shape and
    local compatibility with focused Core tests.
-4. `pending` - Run Core Ruff/Mypy/tests/file-size gates, record evidence and integrate
+4. `completed` - Run Core Ruff/Mypy/tests/file-size gates, record evidence and integrate
    the focused branch into `zebra-cloud-trench` without touching v8.
 
 ### Decisions

@@ -694,3 +694,25 @@
   and Event outcomes, Lease takeover, object mismatch/permission/transport failures,
   exact-version compensation, management reconcile, cross-namespace access and
   concurrent prune/sweep. Unknown outcomes remain staged and fail closed.
+
+## CLOUD-ART-LIFECYCLE-CON-01 - 2026-07-29
+
+- A separate cloud contract is required because the local payload Port cannot express
+  namespace, fence, staged lifecycle, exact object version or management recovery.
+  The old Port/domain/SQLite files remain unchanged rather than gaining optional
+  cloud arguments.
+- Provider-neutral object primitives bind namespace, Artifact ID, Zebra SHA-256,
+  size and opaque version evidence. Put validates exact bytes; verification separates
+  not-found/mismatch from unavailable errors; cleanup proves either exact-version
+  deletion or verified absence.
+- Lifecycle records retain the full object receipt and Event binding rather than only
+  caller-supplied IDs. Finalized/pruning/pruned states validate namespace, Session,
+  intended sequence, canonical `artifact://` URI, digest, size and version; all five
+  states reject contradictory evidence.
+- Worker and management writes use different mandatory signatures. Management reuses
+  `AdministrativeMutationCAS` for the Session/revision boundary and adds immutable
+  operation/operator/reason audit context instead of weakening or faking a Worker
+  fence.
+- Initial review caught weak management authority, incomplete finalized proof and
+  contradictory lifecycle evidence despite green tests. Those P1 gaps were fixed and
+  regression cases added before the card moved to Review.

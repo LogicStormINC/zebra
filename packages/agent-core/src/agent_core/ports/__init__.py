@@ -21,9 +21,11 @@ from agent_core.ports.aggregate_mutation import (
     AdministrativeMutationCAS,
     WorkerMutationAuthority,
 )
+from agent_core.ports.artifact_object_store import ArtifactObjectStorePort
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.artifact_store import ArtifactStorePort
 from agent_core.ports.clock import ClockPort
+from agent_core.ports.cloud_artifact_payload_store import CloudArtifactPayloadStorePort
 from agent_core.ports.context_compiler import ContextCompilerPort, RuntimeEvidenceInput
 from agent_core.ports.context_lifecycle_store import (
     ContextLifecycleCommitResult,
@@ -102,9 +104,11 @@ __all__ = [
     "AgentMemoryGatewayPort",
     "AdministrativeMutationCAS",
     "ArtifactPayloadStorePort",
+    "ArtifactObjectStorePort",
     "AgentTaskPort",
     "ArtifactStorePort",
     "ClockPort",
+    "CloudArtifactPayloadStorePort",
     "ContextCompilerPort",
     "ContextLifecycleCommitResult",
     "ContextLifecycleStorePort",
