@@ -9,7 +9,7 @@
 3. `completed` - Guard external Effect execution with durable claim/terminalization
    and explicit uncertain reconciliation without automatic replay.
 4. `completed` - Add deterministic crash, stale-fence and lifecycle regressions.
-5. `in_progress` - Run focused/full validation, record evidence and preserve the
+5. `completed` - Run focused/full validation, record evidence and preserve the
    stacked result for review without claiming production cutover.
 
 ### Decisions
@@ -20,8 +20,8 @@
   does not mark any dependency merged or authorize push, rollout or Store selection.
 - Reuse the existing Lease and Effect dispatch contracts. Do not add a broker,
   Redis, generic Unit of Work, new dependency or cloud backend selector.
-- The sandbox matrix passes; the host Docker PostgreSQL consumer matrix is the
-  remaining acceptance item and has a dedicated one-command script.
+- The host Docker Compose PostgreSQL 17.5 consumer matrix passes `58/58`; its
+  dedicated container, volume and network were removed after the run.
 
 ## CLOUD-EFFECT-OUTBOX-01 - Fenced Effect Dispatch Aggregate
 

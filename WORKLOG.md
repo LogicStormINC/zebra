@@ -6240,10 +6240,12 @@ actual byte access.
   provider-success/terminal-commit crash, response loss after terminal commit,
   failed-result uncertainty and legacy helper compatibility;
 - Worker plus agent-tools regression passes `227` tests and retains only the
-  confirmed inherited cancellation race; full suite passes `1843`, skips `60`
+  confirmed inherited cancellation race; the final full suite passes `1844`, skips `60`
   and retains the same nine inherited failures; changed-file Ruff, strict Mypy,
   `git diff --check` and release Eval `10/10` pass;
-- real PostgreSQL consumer coverage is implemented in
-  `tests/worker/test_fenced_effect_consumer.py`. Run the host helper
-  `run-zebra-effect-consumer-postgres-tests.sh`; the sandbox cannot access the
-  Docker socket. Keep the card In Progress until that result is recorded.
+- real PostgreSQL consumer coverage in `tests/worker/test_fenced_effect_consumer.py`
+  passes `58/58` against the isolated Docker Compose PostgreSQL 17.5 service on
+  2026-07-29. The helper reported
+  `ZEBRA_EFFECT_CONSUMER_POSTGRES_TEST_RESULT=PASS`, then removed its dedicated
+  container, volume and network. The card is ready for Review; this evidence does
+  not select a cloud backend or waive dependency merge requirements.

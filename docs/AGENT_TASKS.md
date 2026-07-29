@@ -894,7 +894,7 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
 
 ### CLOUD-EFFECT-CONSUMER-01 - Worker Fenced Effect Consumer
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Depends on: locally reviewed `CLOUD-EFFECT-OUTBOX-01@69e34c0c` and explicit
   maintainer activation on 2026-07-28. This is a local stacked implementation
@@ -915,10 +915,12 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
 - Evidence: deterministic heartbeat, stale-fence, provider-success/terminal-commit
   crash, response-loss replay and no-auto-replay tests pass. Worker plus agent-tools
   regression is `227 passed` with only the confirmed inherited cancellation race;
-  the full suite is `1843 passed, 60 skipped` with the same nine inherited failures.
-  Ruff, strict Mypy, diff-check and release Eval `10/10` pass. Real PostgreSQL
-  consumer coverage is present but remains pending host Docker
-  execution; no cloud backend is runtime-selected by default.
+  the final full suite is `1844 passed, 60 skipped` with the same nine inherited
+  failures. Ruff, strict Mypy, diff-check and release Eval `10/10` pass. The
+  isolated Docker Compose PostgreSQL 17.5 consumer matrix passes `58/58` on
+  2026-07-29 and reports `ZEBRA_EFFECT_CONSUMER_POSTGRES_TEST_RESULT=PASS`; its
+  dedicated container, volume and network were removed after the run. No cloud
+  backend is runtime-selected by default.
 - Non-goals: Redis/Kafka, cloud backend selector, production rollout.
 
 ### CLOUD-LEASE-01 - Lease And Event/Effect Delivery Parent Gate
