@@ -7,11 +7,15 @@ from agent_core.application.approvals import (
 )
 from agent_core.application.mcp_prompt_attachments import build_mcp_prompt_attachment
 from agent_core.application.memory_candidate_promotions import (
+    MemoryCandidatePromotionPlan,
+    MemoryCandidatePromotionPlanner,
     MemoryCandidatePromotionResult,
     MemoryCandidatePromotionService,
 )
 from agent_core.application.memory_candidates import (
     MemoryCandidateExtractionCommand,
+    MemoryCandidateExtractionPlan,
+    MemoryCandidateExtractionPlanner,
     MemoryCandidateExtractionResult,
     MemoryCandidateExtractionService,
 )
@@ -50,8 +54,12 @@ __all__ = [
     "build_mcp_prompt_attachment",
     "BootstrappedSession",
     "MemoryCandidateExtractionCommand",
+    "MemoryCandidateExtractionPlan",
+    "MemoryCandidateExtractionPlanner",
     "MemoryCandidateExtractionResult",
     "MemoryCandidateExtractionService",
+    "MemoryCandidatePromotionPlan",
+    "MemoryCandidatePromotionPlanner",
     "MemoryCandidatePromotionResult",
     "MemoryCandidatePromotionService",
     "serialize_memory_inventory",

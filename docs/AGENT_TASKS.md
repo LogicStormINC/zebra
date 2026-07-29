@@ -606,14 +606,16 @@ by the Spike, with no Mem0 type escaping the integration package.
 
 ### CLOUD-MEMORY-CON-01 - Governed Memory Mutation Contract
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Branch: `codex/cloud-memory-con-01`
 - Depends on: reviewed `CLOUD-MEMORY-PG-PLAN-01`
-- Owned paths: `packages/agent-core/src/agent_core/domain/governed_memories.py`
-  (new), `packages/agent-core/src/agent_core/ports/governed_memory_store.py` (new),
+- Owned paths: `packages/agent-core/src/agent_core/domain/governed_memories.py`,
+  `governed_memory_operations.py` and `governed_memory_receipts.py` (new),
+  `packages/agent-core/src/agent_core/ports/governed_memory_store.py` (new),
   focused pure planning seams in `memory_{candidates,candidate_promotions,reviews}.py`,
-  their public exports, focused Core tests, and this task's governance records
+  their public exports, focused Core tests, focused clarifications in the governed
+  Memory PostgreSQL contract, and this task's governance records
 - Goal: replace unversioned cloud writes with typed creation idempotency, record
   revision CAS, Worker candidate and administrative review aggregate requests.
 - Acceptance: stale/missing authority cannot form a valid mutation; Worker and
@@ -623,6 +625,14 @@ by the Spike, with no Mem0 type escaping the integration package.
   remain behavior-compatible.
 - Non-goals: no SQL, SQLite behavior change, Mem0, API/Worker composition, backend
   selector or generic Unit of Work.
+- Evidence: Worker/Admin requests bind namespace, Session and stream CAS while the
+  Worker retry digest excludes LeaseFence and regenerated identifiers/timestamps;
+  canonical creation evidence and no-text tombstones fail closed. Pure planners
+  retain the SQLite wrapper's per-refresh-target `limit=100` behavior. Core tests
+  pass `320/320`, API/Worker pass `411` with `14` gated skips, strict Core Mypy and
+  changed-path Ruff pass, release Eval is `10/10`, and `git diff --check` passes.
+  Full tests are `1971 passed, 145 skipped, 1 inherited Desktop file-size failure`;
+  the same 561/500 violation reproduces on untouched `zebra-cloud-trench`.
 
 ### CLOUD-MEMORY-PG-01 - PostgreSQL Governed Memory Authority
 

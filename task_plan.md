@@ -2,13 +2,13 @@
 
 ## CLOUD-MEMORY-CON-01 - Governed Memory Mutation Contract
 
-1. `in_progress` - Freeze the smallest validated authority, revision, operation,
+1. `completed` - Freeze the smallest validated authority, revision, operation,
    tombstone and aggregate request/result types.
-2. `pending` - Extract deterministic candidate/promotion/review planning from current
+2. `completed` - Extract deterministic candidate/promotion/review planning from current
    services while retaining behavior-compatible local wrappers.
-3. `pending` - Prove invalid authority, stale shapes, no-text tombstones, pure plans,
+3. `completed` - Prove invalid authority, stale shapes, no-text tombstones, pure plans,
    canonical digests and local Memory regressions.
-4. `pending` - Run Core static/test/eval gates, review the slice and integrate it into
+4. `completed` - Run Core static/test/eval gates, review the slice and integrate it into
    `zebra-cloud-trench` without SQL or runtime wiring.
 
 ### Decisions

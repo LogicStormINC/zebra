@@ -78,6 +78,31 @@ from agent_core.domain.effect_dispatch import (
     EffectScheduleRequest,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.governed_memories import (
+    GovernedMemoryConflictError,
+    GovernedMemoryCreate,
+    GovernedMemoryEntry,
+    GovernedMemoryLifecycleMutation,
+    GovernedMemoryManagementContext,
+    GovernedMemoryStateError,
+    GovernedMemoryTombstone,
+    canonical_governed_memory_content_hash,
+    canonical_governed_memory_creation_key,
+)
+from agent_core.domain.governed_memory_operations import (
+    AdministrativeMemoryReviewRequest,
+    GovernedMemoryOperationKind,
+    GovernedMemoryReviewAction,
+    WorkerMemoryMutationPlan,
+    canonical_administrative_memory_review_hash,
+    canonical_worker_memory_mutation_hash,
+)
+from agent_core.domain.governed_memory_receipts import (
+    GovernedMemoryCommitResult,
+    GovernedMemoryOperationReceipt,
+    GovernedMemoryRevision,
+    canonical_governed_memory_result_hash,
+)
 from agent_core.domain.leases import (
     DEFAULT_MAX_LEASE_TTL,
     LeaseCheckpointRegressionError,
@@ -165,6 +190,25 @@ __all__ = [
     "CloudArtifactPayloadStateError",
     "EventActor",
     "EventType",
+    "AdministrativeMemoryReviewRequest",
+    "GovernedMemoryCommitResult",
+    "GovernedMemoryConflictError",
+    "GovernedMemoryCreate",
+    "GovernedMemoryEntry",
+    "GovernedMemoryLifecycleMutation",
+    "GovernedMemoryManagementContext",
+    "GovernedMemoryOperationKind",
+    "GovernedMemoryOperationReceipt",
+    "GovernedMemoryReviewAction",
+    "GovernedMemoryRevision",
+    "GovernedMemoryStateError",
+    "GovernedMemoryTombstone",
+    "WorkerMemoryMutationPlan",
+    "canonical_administrative_memory_review_hash",
+    "canonical_governed_memory_content_hash",
+    "canonical_governed_memory_creation_key",
+    "canonical_governed_memory_result_hash",
+    "canonical_worker_memory_mutation_hash",
     "EffectClaim",
     "EffectDispatch",
     "EffectDispatchConflictError",

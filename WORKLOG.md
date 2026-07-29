@@ -1,5 +1,21 @@
 # Progress Log
 
+## 2026-07-29 CLOUD-MEMORY-CON-01 completion
+
+- added governed Memory entry/tombstone, creation/revision transition, Worker/Admin
+  operation and content-free replay receipt contracts behind a namespace-bound Port
+- extracted no-I/O candidate, promotion and review planning while preserving local
+  wrapper ordering and per-refresh-target bounded reads
+- closed review findings for Session CAS binding, canonical-evidence tamper resistance
+  and regenerated-ID/time retry stability without adding LeaseFence to the digest
+- validation: Core `320 passed`; API/Worker `411 passed, 14 skipped`; strict Core Mypy,
+  changed-path Ruff and diff check pass; release Eval `10/10`
+- full tests: `1971 passed, 145 skipped, 1 failed`; the sole failure is the inherited
+  Desktop `CodexConversationPane.styles.ts` 561/500 size gate and reproduces on the
+  untouched `zebra-cloud-trench`
+- kept PostgreSQL v10, Mem0 v11, runtime selector, SQLite feature work and Desktop out
+  of scope
+
 ## 2026-07-29 CLOUD-MEMORY-CON-01 activation
 
 - fast-forwarded reviewed governed-memory plan `2c43af0f` into

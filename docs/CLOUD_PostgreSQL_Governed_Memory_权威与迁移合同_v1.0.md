@@ -88,6 +88,10 @@ PostgreSQL governed_memory_records  <- authoritative lifecycle and content
 - 主键：`(deployment_namespace, memory_id)`；
 - 每条记录持有 `revision BIGINT >= 1`，每次事实变化严格加一；
 - 创建请求携带稳定 `creation_key`，在 namespace 内唯一；
+- creation/content/request digest 只覆盖稳定语义和 provenance；重试时重新生成的
+  Memory/Event ID、Event sequence/时间、Memory lifecycle 业务时间和 Admin request 时间
+  不改变 digest，首次提交的 receipt/Event 冻结实际 canonical 结果；Worker LeaseFence
+  只决定本次执行权限，不属于 durable idempotency identity；
 - update/review/delete 请求携带 `expected_revision`；影响多条 Memory 时逐行锁定并
   验证全部预期 revision，任一失败则零写入；
 - source Session/Event 引用必须在同一 namespace；
@@ -100,6 +104,9 @@ PostgreSQL governed_memory_records  <- authoritative lifecycle and content
 云端 authority Port 还必须提供 management-only、cursor-based confirmed scan，供
 v11 对一个精确 namespace/scope 做完整 rebuild。现有 `MemoryStorePort.list(limit<=500)`
 不是遍历合同，不能被循环猜测成全量扫描。
+首次 scan 必须建立一个逻辑快照；后续页只接受 Store 签发的 opaque snapshot token 与
+position token，不能以可变 `updated_at` 充当跨页快照。scan scope 按 visibility 恰好
+包含一个对应 repo/user/tenant identity，并拒绝额外 scope、text 或 source-session filter。
 
 ### 3.3 状态不变量
 

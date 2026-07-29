@@ -64,6 +64,24 @@ class MemoryReviewService:
         command: MemoryReviewCommand,
         existing_records: tuple[MemoryRecord, ...] = (),
     ) -> MemoryReviewResult:
+        """SQLite-compatible wrapper around the pure review planner."""
+        return self.plan(
+            session=session,
+            record=record,
+            next_sequence=next_sequence,
+            command=command,
+            existing_records=existing_records,
+        )
+
+    def plan(
+        self,
+        *,
+        session: Session,
+        record: MemoryRecord,
+        next_sequence: int,
+        command: MemoryReviewCommand,
+        existing_records: tuple[MemoryRecord, ...] = (),
+    ) -> MemoryReviewResult:
         if record.source_session_id != session.session_id:
             raise ValueError("memory review requires the source session to match")
         if record.status is not MemoryStatus.CANDIDATE:

@@ -52,6 +52,12 @@ from agent_core.ports.effect_ledger import (
     EffectReservation,
 )
 from agent_core.ports.event_store import EventStorePort
+from agent_core.ports.governed_memory_store import (
+    GovernedMemoryScanCursor,
+    GovernedMemoryScanPage,
+    GovernedMemoryScanQuery,
+    GovernedMemoryStorePort,
+)
 from agent_core.ports.handoff_dispatch_store import (
     HandoffDispatch,
     HandoffDispatchStorePort,
@@ -138,6 +144,10 @@ __all__ = [
     "HandoffDispatch",
     "HandoffDispatchStorePort",
     "HandoffSourceFacts",
+    "GovernedMemoryStorePort",
+    "GovernedMemoryScanCursor",
+    "GovernedMemoryScanPage",
+    "GovernedMemoryScanQuery",
     "IdempotencyRecord",
     "IdempotencyStorePort",
     "LeaseStorePort",

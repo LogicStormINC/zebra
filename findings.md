@@ -1,5 +1,22 @@
 # Findings
 
+## CLOUD-MEMORY-CON-01 - 2026-07-29
+
+- Cloud mutation requests now freeze namespace, Session identity and expected stream
+  revision. Worker LeaseFence remains execution authority and intentionally does not
+  alter the durable operation digest.
+- Creation and content hashes describe semantic Memory/provenance, so a response-loss
+  retry may regenerate public Memory/Event IDs and event bookkeeping while changed
+  content, scope or lifecycle intent still conflicts.
+- Pydantic `model_copy(update=...)` does not rerun validators; aggregate
+  `validate_for()` therefore rechecks canonical creation evidence and the full request
+  digest at the Port boundary.
+- The compatibility extraction wrapper must issue one bounded legacy query per refresh
+  target before deduplicating by Memory ID. Combining targets under one `limit=100`
+  changes existing SQLite behavior and loses eligible records.
+- The Core Port deliberately has no SQL or runtime composition. PostgreSQL v10 remains
+  the next authority slice; Mem0 delivery stays locked behind it.
+
 ## CLOUD-MEMORY-PG-PLAN-01 preflight - 2026-07-29
 
 - `MemoryStorePort` is injected across API and Worker, but only

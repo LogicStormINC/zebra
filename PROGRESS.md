@@ -198,10 +198,17 @@
   implementation. The reviewed plan assigns v10 to governed facts/operation receipts,
   then v11 to Mem0 delivery; final review found no open P0/P1. Session History remains
   Locked on trusted Host scope.
-- Active governed-memory Core slice `CLOUD-MEMORY-CON-01` starts from integrated plan
-  `2c43af0f`. It owns provider-neutral revision/CAS, operation receipt, tombstone and
-  pure candidate/promotion/review planning contracts only; PostgreSQL v10, Mem0 v11,
-  runtime selection, SQLite behavior and Desktop remain outside this task.
+- Completed governed-memory Core slice `CLOUD-MEMORY-CON-01` starts from integrated
+  plan `2c43af0f`. It adds provider-neutral revision/CAS, content-free operation
+  receipts and tombstones, plus pure candidate/promotion/review planning while
+  preserving local wrapper behavior. Worker/Admin requests bind Session CAS and
+  canonical payloads without coupling retry identity to LeaseFence or regenerated
+  IDs/timestamps. Core tests pass `320/320`, API/Worker pass `411` with `14` gated
+  skips, strict Core Mypy and changed-path Ruff pass, and release Eval is `10/10`.
+  Full tests are `1971 passed, 145 skipped` with the sole inherited 561/500 Desktop
+  file-size violation reproduced on the untouched cloud mainline.
+  PostgreSQL v10, Mem0 v11, runtime selection, SQLite feature work and Desktop remain
+  outside this task.
 - Completed Artifact contract slice: `CLOUD-ART-LIFECYCLE-CON-01` separates the
   provider-neutral cloud lifecycle Port/domain from the unchanged local
   `ArtifactPayloadStorePort`. It can proceed in Core without touching Handoff v8,
