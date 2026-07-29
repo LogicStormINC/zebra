@@ -50,7 +50,11 @@ def compact_message_history(
             compacted=True,
             within_budget=True,
             provenance=PROVENANCE,
-            capsule=build_context_capsule(messages, user_goal=user_goal, created_at=created_at),
+            capsule=build_context_capsule(
+                active_messages,
+                user_goal=user_goal,
+                created_at=created_at,
+            ),
             recovery_messages=recovery_messages,
         )
     if before <= max_tokens:
@@ -68,7 +72,11 @@ def compact_message_history(
             recovery_messages=recovery_messages,
         )
     protected = active_messages[:prefix_end] + active_messages[tail_start:]
-    capsule = build_context_capsule(messages, user_goal=user_goal, created_at=created_at)
+    capsule = build_context_capsule(
+        active_messages,
+        user_goal=user_goal,
+        created_at=created_at,
+    )
     summary = _summary_message(
         middle,
         capsule=capsule,
@@ -137,6 +145,7 @@ def _recover_projection_messages(
     *,
     max_tokens: int,
 ) -> tuple[SessionMessage, ...]:
+    rehydration_budget = max_tokens + estimate_message_tokens(projection.messages)
     contents = {
         tombstone.artifact_uri: result.content
         for exchange in projection.folded_exchanges
@@ -150,7 +159,7 @@ def _recover_projection_messages(
             projection = rehydrate_projection(
                 projection,
                 call_id=next(iter(exchange.call_ids)),
-                max_tokens=max_tokens,
+                max_tokens=rehydration_budget,
                 load_artifact=contents.__getitem__,
                 policy_allows=lambda tombstone: tombstone.status == "succeeded",
                 allowed_provenance=frozenset({"tool_trace"}),

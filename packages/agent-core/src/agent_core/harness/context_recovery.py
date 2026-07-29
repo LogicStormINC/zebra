@@ -1,17 +1,120 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from agent_core.domain.messages import SessionMessage
+from agent_core.domain.identifiers import new_message_id
+from agent_core.domain.messages import (
+    MessageRole,
+    SessionMessage,
+    without_superseded_operation_failures,
+)
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.hooks import CompactionHook
 from agent_core.harness.model_request import build_context_plan, context_window
+from agent_core.harness.models import HarnessContext, HarnessEventDraft
+from agent_core.harness.orchestration_events import context_compacted_event
 from agent_core.ports.conversation_compactor import (
     ConversationCompactionResult,
     ConversationCompactorPort,
 )
 from agent_core.ports.model_gateway import ModelGatewayPort
+
+if TYPE_CHECKING:
+    from agent_core.harness.model_step import HarnessModelStep
+
+
+def merge_recovery_messages(
+    recovery_messages: tuple[SessionMessage, ...],
+    messages: tuple[SessionMessage, ...],
+    model_gateway: ModelGatewayPort,
+) -> tuple[SessionMessage, ...] | None:
+    known = {str(message.message_id) for message in recovery_messages}
+    candidate = without_superseded_operation_failures(
+        recovery_messages
+        + tuple(message for message in messages if str(message.message_id) not in known)
+    )
+    if not candidate or not build_context_plan(
+        candidate, (), context_window(model_gateway), model_gateway
+    ).within_budget:
+        return None
+    return candidate
+
+
+def append_final_answer_instruction(
+    messages: list[SessionMessage],
+    *,
+    created_at: datetime,
+) -> None:
+    messages.append(
+        SessionMessage(
+            message_id=new_message_id(),
+            role=MessageRole.USER,
+            content=(
+                "The tool budget is complete. Answer the original request using "
+                "the available tool results. Do not request or invoke another tool."
+            ),
+            created_at=created_at,
+        )
+    )
+
+
+def prepare_terminal_conversation(
+    messages: list[SessionMessage],
+    model_gateway: ModelGatewayPort,
+    model_step: HarnessModelStep,
+    user_goal: str,
+    created_at: datetime,
+) -> ConversationCompactionResult | None:
+    compaction = model_step.prepare_conversation(
+        messages,
+        model_gateway,
+        allow_tools=False,
+        user_goal=user_goal,
+        created_at=created_at,
+    )
+    model_step.recover_conversation(messages, model_gateway)
+    append_final_answer_instruction(messages, created_at=created_at)
+    if build_context_plan(
+        tuple(messages), (), context_window(model_gateway), model_gateway
+    ).within_budget:
+        return compaction
+    return model_step.prepare_conversation(
+        messages,
+        model_gateway,
+        allow_tools=False,
+        user_goal=user_goal,
+        created_at=created_at,
+    )
+
+
+def record_compaction(
+    compaction: ConversationCompactionResult | None,
+    *,
+    model_step: HarnessModelStep,
+    model_gateway: ModelGatewayPort,
+    context: HarnessContext,
+    emitted_events: list[HarnessEventDraft],
+    metadata: dict[str, object],
+) -> dict[str, object]:
+    if compaction is None or not compaction.compacted:
+        return metadata
+    emitted_events.append(
+        context_compacted_event(compaction, attempt_number=context.attempt.number)
+    )
+    previous_count = metadata.get("conversation_compaction_count", 0)
+    compaction_count = (
+        previous_count
+        if isinstance(previous_count, int) and not isinstance(previous_count, bool)
+        else 0
+    )
+    model_step.prepare_provider_continuation(model_gateway, compaction)
+    return {
+        **metadata,
+        "conversation_compaction_count": compaction_count + 1,
+        "conversation_tokens_after_compaction": compaction.after_tokens,
+    }
 
 
 def prepare_bounded_conversation(

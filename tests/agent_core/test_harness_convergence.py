@@ -117,11 +117,11 @@ def test_semantic_argument_variants_force_one_tool_disabled_synthesis() -> None:
     )
     assert "complete, self-contained final answer" in terminal_instruction
     assert "not merely refer to earlier or intermediate output" in terminal_instruction
-    assert not any(
+    assert sum(
         message.content.startswith("The tool budget is complete.")
         for message in model.requests[-1]
         if message.role is MessageRole.USER
-    )
+    ) == 1
 
 
 def test_terminal_synthesis_suspends_when_model_still_requests_tools() -> None:

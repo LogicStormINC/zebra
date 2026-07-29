@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.events import EventType
-from agent_core.domain.identifiers import new_message_id
+from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
@@ -14,6 +14,7 @@ from agent_core.domain.modeling import (
     ModelTextDelta,
     ModelToolDefinition,
 )
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import HarnessModelStep, HarnessTask
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
@@ -221,6 +222,34 @@ def test_active_projection_compilation_keeps_the_model_request_hard_gate(
             ),
             SmallGateway(),
         )
+
+
+def test_tool_result_message_keeps_structured_status_and_operation_key() -> None:
+    tool_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="mcp.minimax.understand_image",
+        arguments={"image_source": "receipts/statement.png", "prompt": "Read totals."},
+        created_at=datetime(2026, 7, 29, 12, 0, tzinfo=UTC),
+        provider_call_id="image-call",
+    )
+    messages: list[SessionMessage] = []
+
+    HarnessModelStep.append_tool_result(
+        messages,
+        tool_call=tool_call,
+        tool_result=ToolResult(
+            tool_call_id=tool_call.tool_call_id,
+            status=ToolCallStatus.FAILED,
+            output="timeout",
+            metadata={"operation_key": "opaque-image-operation"},
+        ),
+        created_at=tool_call.created_at,
+    )
+
+    assert messages[-1].metadata == {
+        "operation_key": "opaque-image-operation",
+        "tool_result_status": "failed",
+    }
 
 
 def test_harness_model_step_repairs_rejected_model_response_once() -> None:

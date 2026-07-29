@@ -1,13 +1,14 @@
 import json
 import sqlite3
 from datetime import UTC, datetime
+from hashlib import sha256
 from pathlib import Path
 from uuid import UUID
 
 import pytest
 import zebra_agent_api.app as api_app_module
 import zebra_agent_worker.execution as worker_execution_module
-from agent_context import LocalContextCompiler
+from agent_context import TOMBSTONE_MARKER, LocalContextCompiler, ToolResultTombstone
 from agent_context.capsule import build_context_capsule
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.session_projection import apply_event, rebuild_session
@@ -209,6 +210,152 @@ def test_terminal_recovery_cache_stays_within_the_provider_hard_limit() -> None:
         model_step._recovery_messages, (), gateway.context_window
     ).within_budget
     assert plan_context_window(gateway.requests[-1], (), gateway.context_window).within_budget
+
+
+def test_fresh_approval_terminal_rehydrates_complete_inline_tombstone() -> None:
+    operation_key = "opaque-operation"
+    output = "evidence " * 1_000 + "SUCCESS-RECOVERED-EVIDENCE"
+    checksum = sha256(output.encode()).hexdigest()
+    artifact_uri = "artifact://task/opaque-operation"
+    succeeded = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="mcp.fixture.lookup",
+        arguments={"resource": "second"},
+        created_at=NOW,
+        provider_call_id="success-call",
+    )
+    pending = _call("variant-0")
+    conversation = (
+        _message(MessageRole.USER, "Use the completed evidence."),
+        SessionMessage(
+            message_id=new_message_id(),
+            role=MessageRole.ASSISTANT,
+            content="Completed evidence request.",
+            created_at=NOW,
+            tool_calls=(succeeded,),
+        ),
+        SessionMessage(
+            message_id=new_message_id(),
+            role=MessageRole.TOOL,
+            content=ToolResultTombstone(
+                tool_name=succeeded.name,
+                call_id="success-call",
+                status="succeeded",
+                artifact_uri=artifact_uri,
+                checksum=checksum,
+                original_characters=len(output),
+            ).render(),
+            created_at=NOW,
+            tool_call_id="success-call",
+            metadata={
+                "operation_key": operation_key,
+                "tool_result_status": "succeeded",
+                "artifact_uri": artifact_uri,
+                "output_sha256": checksum,
+                "output_size_bytes": len(output.encode()),
+                "output_truncated": False,
+                "output_envelope": {
+                    "artifact_uri": artifact_uri,
+                    "checksum": checksum,
+                    "digest": f"sha256:{checksum}",
+                    "original_bytes": len(output.encode()),
+                    "retained_bytes": len(output.encode()),
+                    "preview_head": output,
+                    "preview_tail": "",
+                    "provenance": {
+                        "tool_name": succeeded.name,
+                        "tool_call_id": str(succeeded.tool_call_id),
+                    },
+                    "truncated": False,
+                },
+            },
+        ),
+        SessionMessage(
+            message_id=new_message_id(),
+            role=MessageRole.ASSISTANT,
+            content="Run the approved final read.",
+            created_at=NOW,
+            tool_calls=(pending,),
+        ),
+    )
+
+    class ConditionalTerminalGateway:
+        def __init__(self) -> None:
+            self.requests: list[tuple[SessionMessage, ...]] = []
+            self.tool_requests: list[tuple[ModelToolDefinition, ...]] = []
+
+        def complete(
+            self,
+            messages: list[SessionMessage],
+            *,
+            tools: tuple[ModelToolDefinition, ...] = (),
+        ) -> ModelCompletion:
+            self.requests.append(tuple(messages))
+            self.tool_requests.append(tools)
+            rendered = "\n".join(message.content for message in messages)
+            if (
+                not tools
+                and output in rendered
+                and TOMBSTONE_MARKER not in rendered
+                and "OLD-TIMEOUT" not in rendered
+                and messages[-1].role is MessageRole.USER
+                and messages[-1].content.startswith("The tool budget is complete.")
+                and sum(
+                    message.content.startswith("The tool budget is complete.")
+                    for message in messages
+                )
+                == 1
+            ):
+                return _completion("CORRECT-FINAL-FROM-RECOVERED-EVIDENCE")
+            return _completion(
+                "<｜｜DSML｜｜tool_calls>\n"
+                "<｜｜DSML｜｜invoke name=\"web__search\">\n"
+                "</｜｜DSML｜｜invoke>\n"
+                "</｜｜DSML｜｜tool_calls>"
+            )
+
+    gateway = ConditionalTerminalGateway()
+    model_step = HarnessModelStep(
+        available_tools=TOOLS,
+        conversation_compactor=LocalContextCompiler(),
+        conversation_token_budget=600,
+    )
+    orchestrator = SingleAttemptOrchestrator(
+        gateway,
+        AllowAllPolicy(),
+        SyntheticEvidenceTools(padding_repetitions=4),
+        model_step=model_step,
+        synthesize_tool_results=True,
+    )
+    context = HarnessContext(
+        task=HarnessTask(
+            title="Fresh approved terminal",
+            user_input="Use the completed evidence.",
+            max_model_calls=2,
+            max_tool_calls=1,
+        ),
+        session=Session.create(title="Fresh approved terminal", created_at=NOW),
+        attempt=HarnessAttempt(number=1, started_at=NOW),
+    )
+
+    assert model_step._recovery_messages == ()
+    result = orchestrator.continue_approved_tool_call(
+        context,
+        initial_completion=_completion("Run the approved final read.", pending),
+        tool_call=pending,
+        conversation=conversation,
+        model_calls_used=1,
+        tool_calls_executed=0,
+    )
+
+    final_context = "\n".join(message.content for message in gateway.requests[-1])
+    assert result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert result.metadata["assistant_message"] == "CORRECT-FINAL-FROM-RECOVERED-EVIDENCE"
+    assert gateway.tool_requests == [()]
+    assert output in final_context
+    assert TOMBSTONE_MARKER not in final_context
+    assert "OLD-TIMEOUT" not in final_context
+    assert output in "\n".join(message.content for message in model_step._recovery_messages)
 
 
 def test_sync_execute_persists_the_same_validated_active_capsule_boundary(

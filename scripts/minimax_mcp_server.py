@@ -153,6 +153,12 @@ class MiniMaxMcpServer:
                             },
                             "required": ["prompt", "image_source"],
                         },
+                        "_meta": {
+                            "zebra_operation_key": {
+                                "arguments": ["image_source"],
+                                "path_arguments": ["image_source"],
+                            }
+                        },
                     },
                 ]
             },

@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import json
+import posixpath
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from hashlib import sha256
 
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_tools import McpProxyRequest, McpProxyResponse
+from agent_tools.mcp_proxy import JsonValue
 
 from agent_runtime.mcp_protocol import McpProtocolError, McpServerSpec, StdioMcpSession
 
@@ -26,6 +29,8 @@ class DiscoveredMcpTool:
     server_name: str
     remote_name: str
     definition: ModelToolDefinition
+    operation_key_arguments: tuple[str, ...] = ()
+    operation_key_path_arguments: frozenset[str] = frozenset()
 
 
 class LocalStdioMcpTransport:
@@ -93,14 +98,18 @@ class LocalStdioMcpTransport:
             result,
             max_output_bytes=self._max_output_bytes,
         )
-        return McpProxyResponse(
-            output=output,
-            metadata={
-                "mcp_is_error": result.get("isError") is True,
-                "transport": "stdio",
-                "untrusted_output": True,
-            },
-        )
+        metadata: dict[str, JsonValue] = {
+            "mcp_is_error": result.get("isError") is True,
+            "transport": "stdio",
+            "untrusted_output": True,
+        }
+        if operation_key := self.operation_key_for(request):
+            metadata["operation_key"] = operation_key
+        return McpProxyResponse(output=output, metadata=metadata)
+
+    def operation_key_for(self, request: McpProxyRequest) -> str | None:
+        tool = self._tools.get((request.target.server_name, request.target.tool_name))
+        return None if tool is None else _operation_key_for(tool, request.arguments)
 
 
 def _discover_server(server: McpServerSpec) -> list[DiscoveredMcpTool]:
@@ -162,6 +171,12 @@ def _parse_tool(server_name: str, value: object) -> DiscoveredMcpTool:
     if not isinstance(description, str) or not description.strip():
         description = f"Call configured MCP tool {server_name}.{remote_name}."
     description = description.strip()[:512]
+    operation_key_arguments, operation_key_path_arguments = _operation_key_fields(
+        server_name,
+        remote_name,
+        value.get("_meta"),
+        properties,
+    )
     return DiscoveredMcpTool(
         server_name=server_name,
         remote_name=remote_name,
@@ -170,7 +185,76 @@ def _parse_tool(server_name: str, value: object) -> DiscoveredMcpTool:
             description=f"Untrusted external MCP capability. {description}",
             parameters=schema,
         ),
+        operation_key_arguments=operation_key_arguments,
+        operation_key_path_arguments=operation_key_path_arguments,
     )
+
+
+def _operation_key_fields(
+    server_name: str,
+    tool_name: str,
+    metadata: object,
+    properties: Mapping[str, object],
+) -> tuple[tuple[str, ...], frozenset[str]]:
+    if not isinstance(metadata, Mapping):
+        return (), frozenset()
+    declaration = metadata.get("zebra_operation_key")
+    if declaration is None:
+        return (), frozenset()
+    if not isinstance(declaration, Mapping):
+        raise McpProtocolError(
+            f"MCP tool {server_name}.{tool_name} has an invalid operation key declaration"
+        )
+    if set(declaration) - {"arguments", "path_arguments"}:
+        raise McpProtocolError(
+            f"MCP tool {server_name}.{tool_name} has an invalid operation key declaration"
+        )
+    arguments = declaration.get("arguments")
+    path_arguments = declaration.get("path_arguments", [])
+    if (
+        not isinstance(arguments, list)
+        or not arguments
+        or any(not isinstance(name, str) or name not in properties for name in arguments)
+        or len(set(arguments)) != len(arguments)
+        or not isinstance(path_arguments, list)
+        or any(
+            not isinstance(name, str) or name not in arguments for name in path_arguments
+        )
+        or len(set(path_arguments)) != len(path_arguments)
+    ):
+        raise McpProtocolError(
+            f"MCP tool {server_name}.{tool_name} has an invalid operation key declaration"
+        )
+    return tuple(arguments), frozenset(path_arguments)
+
+
+def _operation_key_for(
+    tool: DiscoveredMcpTool,
+    arguments: Mapping[str, object],
+) -> str | None:
+    if not tool.operation_key_arguments:
+        return None
+    selected: dict[str, object] = {}
+    for name in tool.operation_key_arguments:
+        value = arguments.get(name)
+        if value is None:
+            return None
+        if name in tool.operation_key_path_arguments:
+            if not isinstance(value, str) or not value.strip():
+                return None
+            value = posixpath.normpath(value.strip().replace("\\", "/"))
+        selected[name] = value
+    encoded = json.dumps(
+        {
+            "arguments": selected,
+            "server": tool.server_name,
+            "tool": tool.remote_name,
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode()
+    return f"mcp-operation:{sha256(encoded).hexdigest()}"
 
 
 def _normalize_tool_result(

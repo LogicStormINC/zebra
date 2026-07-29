@@ -92,6 +92,13 @@ class McpSessionPool:
         self.release(success=True)
         return response
 
+    def operation_key_for(self, request: McpProxyRequest) -> str | None:
+        provider = getattr(self.transport, "operation_key_for", None)
+        if not callable(provider):
+            return None
+        value = provider(request)
+        return value if isinstance(value, str) and value else None
+
     def close(self) -> None:
         close = getattr(self.transport, "close", None)
         if callable(close):

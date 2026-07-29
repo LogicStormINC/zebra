@@ -20,6 +20,7 @@ from agent_runtime import (
     McpProtocolError,
     run_local_harness,
 )
+from agent_runtime.mcp_stdio import _operation_key_for, _parse_tool
 from agent_security import parse_network_profile
 from agent_tools import McpProxyRequest, parse_mcp_tool_name
 from agent_tools.mcp_disclosure import (
@@ -212,6 +213,52 @@ def test_stdio_bridge_rejects_unknown_target_without_starting_call() -> None:
                 target=parse_mcp_tool_name("mcp.fixture.missing"),
             )
         )
+
+
+def test_manifest_operation_key_uses_canonical_image_source_not_prompt() -> None:
+    tool = _parse_tool(
+        "minimax",
+        {
+            "name": "understand_image",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "image_source": {"type": "string"},
+                    "prompt": {"type": "string"},
+                },
+                "required": ["image_source", "prompt"],
+            },
+            "_meta": {
+                "zebra_operation_key": {
+                    "arguments": ["image_source"],
+                    "path_arguments": ["image_source"],
+                }
+            },
+        },
+    )
+    first = McpProxyRequest(
+        tool_call_id="call-1",
+        target=parse_mcp_tool_name("mcp.fixture.understand_image"),
+        arguments={
+            "image_source": "./receipts/../receipts/statement.png",
+            "prompt": "Read totals.",
+        },
+    )
+    retry = McpProxyRequest(
+        tool_call_id="call-2",
+        target=parse_mcp_tool_name("mcp.fixture.understand_image"),
+        arguments={"image_source": "receipts/statement.png", "prompt": "Read every row."},
+    )
+    different_image = McpProxyRequest(
+        tool_call_id="call-3",
+        target=parse_mcp_tool_name("mcp.fixture.understand_image"),
+        arguments={"image_source": "receipts/other.png", "prompt": "Read totals."},
+    )
+
+    assert _operation_key_for(tool, first.arguments) == _operation_key_for(tool, retry.arguments)
+    assert _operation_key_for(tool, first.arguments) != _operation_key_for(
+        tool, different_image.arguments
+    )
 
 
 def test_harness_requires_approval_before_mcp_tool_call(tmp_path: Path) -> None:

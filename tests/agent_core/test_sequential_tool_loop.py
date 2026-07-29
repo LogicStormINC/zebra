@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+from agent_context import LocalContextCompiler
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
@@ -53,6 +54,57 @@ class SequenceToolGateway:
         )
 
 
+class FinalInstructionAwareGateway:
+    def __init__(self, responses: tuple[ModelCompletion, ...]) -> None:
+        self._responses = responses
+        self._cursor = 0
+        self.requests: list[tuple[SessionMessage, ...]] = []
+        self.tool_requests: list[tuple[ModelToolDefinition, ...]] = []
+
+    def complete(
+        self,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...] = (),
+    ) -> ModelCompletion:
+        self.requests.append(tuple(messages))
+        self.tool_requests.append(tools)
+        if tools:
+            response = self._responses[self._cursor]
+            self._cursor += 1
+            return response
+        if (
+            messages[-1].role is MessageRole.USER
+            and messages[-1].content.startswith("The tool budget is complete.")
+            and "Do not request or invoke another tool." in messages[-1].content
+        ):
+            assert any("SUCCESS-OCR-LONG-TAIL" in message.content for message in messages)
+            return _completion("CORRECT-FINAL-FROM-SUCCESS-OCR-LONG-TAIL")
+        return _completion(
+            "<｜｜DSML｜｜tool_calls>\n"
+            "<｜｜DSML｜｜invoke name=\"web__search\">\n"
+            "</｜｜DSML｜｜invoke>\n"
+            "</｜｜DSML｜｜tool_calls>"
+        )
+
+
+class RecoveryFirstModelStep(HarnessModelStep):
+    def __init__(self, *, recover: bool) -> None:
+        super().__init__(available_tools=TOOLS)
+        self._recover = recover
+        self.calls: list[str] = []
+
+    def recover_conversation(self, messages, model_gateway):
+        del messages, model_gateway
+        self.calls.append("recover")
+        return self._recover
+
+    def prepare_conversation(self, messages, model_gateway, *, allow_tools, user_goal, created_at):
+        del messages, model_gateway, user_goal, created_at
+        self.calls.append(f"prepare:{allow_tools}")
+        return None
+
+
 def test_bounded_loop_executes_two_tools_before_final_answer() -> None:
     first = _tool_call("files.read", {"path": "input.txt"}, "call_read")
     second = _tool_call("tests.run", {"preset": "test"}, "call_test")
@@ -93,6 +145,219 @@ def test_bounded_loop_executes_two_tools_before_final_answer() -> None:
         MessageRole.TOOL,
         MessageRole.USER,
     ]
+
+
+def test_tool_disabled_budget_final_compiles_before_recovering() -> None:
+    tool_call = _tool_call("files.read", {"path": "input.txt"}, "call_read")
+    gateway = _gateway(
+        _completion("Read the input.", tool_call),
+        _completion("Final answer from recovered evidence."),
+    )
+    model_step = RecoveryFirstModelStep(recover=True)
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Budget terminal task",
+            user_input="Read the input.",
+            max_model_calls=2,
+            max_tool_calls=1,
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            SequenceToolGateway(),
+            model_step=model_step,
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert model_step.calls == ["prepare:True", "prepare:False", "recover"]
+
+
+def test_tool_result_final_uses_the_same_compile_then_recover_entrypoint() -> None:
+    tool_call = _tool_call("files.read", {"path": "input.txt"}, "call_read")
+    model_step = RecoveryFirstModelStep(recover=False)
+
+    completion = model_step.request_tool_result_completion(
+        HarnessTask(title="Single result", user_input="Read the input."),
+        _gateway(_completion("Final answer from the result.")),
+        initial_completion=_completion("Read the input.", tool_call),
+        tool_call=tool_call,
+        tool_result=ToolResult(
+            tool_call_id=tool_call.tool_call_id,
+            status=ToolCallStatus.EXECUTED,
+            output="evidence",
+        ),
+        created_at=NOW,
+    )
+
+    assert completion.assistant_message.content == "Final answer from the result."
+    assert model_step.calls == ["prepare:False", "recover"]
+
+
+def test_budget_final_recovers_the_latest_successful_operation_evidence() -> None:
+    operation_key = "opaque-image-operation"
+    timeout = _tool_call(
+        "mcp.minimax.understand_image",
+        {"image_source": "receipts/statement.png", "prompt": "Read totals."},
+        "image-timeout",
+    )
+    success = _tool_call(
+        "mcp.minimax.understand_image",
+        {"image_source": "receipts/statement.png", "prompt": "Read every row."},
+        "image-success",
+    )
+    others = tuple(
+        _tool_call("files.read", {"path": f"other-{index}.txt"}, f"other-{index}")
+        for index in range(4)
+    )
+
+    class RetriedEvidenceTools:
+        def execute(self, tool_call: ToolCall) -> ToolResult:
+            if tool_call.provider_call_id == "image-timeout":
+                return ToolResult(
+                    tool_call_id=tool_call.tool_call_id,
+                    status=ToolCallStatus.FAILED,
+                    output="OLD-TIMEOUT-WITHOUT-ERROR-MARKERS",
+                    metadata={"operation_key": operation_key},
+                )
+            if tool_call.provider_call_id == "image-success":
+                return ToolResult(
+                    tool_call_id=tool_call.tool_call_id,
+                    status=ToolCallStatus.EXECUTED,
+                    output="SUCCESS-OCR-LONG-TAIL " + "evidence " * 400,
+                    metadata={"operation_key": operation_key},
+                )
+            return ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.EXECUTED,
+                output="other evidence " * 400,
+            )
+
+    gateway = _gateway(
+        _completion("Read the image.", timeout),
+        _completion("Retry with a fuller prompt.", success),
+        *(_completion("Read other evidence.", call) for call in others),
+        _completion("Final answer from SUCCESS-OCR-LONG-TAIL."),
+    )
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Compacted retry",
+            user_input="Read the image and summarize it.",
+            max_model_calls=7,
+            max_tool_calls=6,
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            RetriedEvidenceTools(),
+            model_step=HarnessModelStep(
+                available_tools=TOOLS,
+                conversation_compactor=LocalContextCompiler(),
+                conversation_token_budget=600,
+            ),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    final_context = "\n".join(message.content for message in gateway.requests[-1])
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert gateway.tool_requests[-1] == ()
+    assert "SUCCESS-OCR-LONG-TAIL" in final_context
+    assert "OLD-TIMEOUT" not in final_context
+    assert sum(
+        event.event_type is EventType.CONTEXT_COMPACTED for event in result.events
+    ) >= 2
+
+
+def test_voluntary_tool_loop_final_is_replaced_by_one_recovered_final() -> None:
+    operation_key = "opaque-operation"
+    timeout = _tool_call("mcp.fixture.lookup", {"resource": "first"}, "old-call")
+    success = _tool_call("mcp.fixture.lookup", {"resource": "second"}, "success-call")
+    others = tuple(
+        _tool_call("files.read", {"path": f"other-{index}.txt"}, f"other-{index}")
+        for index in range(4)
+    )
+
+    class RetriedEvidenceTools:
+        def execute(self, tool_call: ToolCall) -> ToolResult:
+            if tool_call.provider_call_id == "old-call":
+                return ToolResult(
+                    tool_call_id=tool_call.tool_call_id,
+                    status=ToolCallStatus.FAILED,
+                    output="OLD-TIMEOUT",
+                    metadata={"operation_key": operation_key},
+                )
+            if tool_call.provider_call_id == "success-call":
+                return ToolResult(
+                    tool_call_id=tool_call.tool_call_id,
+                    status=ToolCallStatus.EXECUTED,
+                    output="SUCCESS-OCR-LONG-TAIL " + "evidence " * 400,
+                    metadata={"operation_key": operation_key},
+                )
+            return ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.EXECUTED,
+                output=f"other evidence {tool_call.provider_call_id} " * 400,
+            )
+
+    gateway = FinalInstructionAwareGateway(
+        (
+            _completion("Read the first result.", timeout),
+            _completion("Retry the result.", success),
+            *(_completion("Read supporting evidence.", call) for call in others),
+            _completion("WRONG-PROVISIONAL-FINAL"),
+        )
+    )
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Recover a voluntary final",
+            user_input="Use the completed evidence.",
+            max_model_calls=8,
+            max_tool_calls=7,
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            RetriedEvidenceTools(),
+            model_step=HarnessModelStep(
+                available_tools=TOOLS,
+                conversation_compactor=LocalContextCompiler(),
+                conversation_token_budget=600,
+            ),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    final_context = "\n".join(message.content for message in gateway.requests[-1])
+    model_events = [
+        event
+        for event in result.events
+        if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+    ]
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert result.attempt_result.metadata["assistant_message"] == (
+        "CORRECT-FINAL-FROM-SUCCESS-OCR-LONG-TAIL"
+    )
+    assert result.run_result.model_calls_used == 8
+    assert gateway.tool_requests[-1] == ()
+    assert gateway.tool_requests.count(()) == 1
+    assert "SUCCESS-OCR-LONG-TAIL" in final_context
+    assert "OLD-TIMEOUT" not in final_context
+    assert sum(
+        message.content.startswith("The tool budget is complete.")
+        for message in gateway.requests[-1]
+    ) == 1
+    assert model_events[-2].payload["response_stage"] == "tool_loop"
+    assert model_events[-1].payload["response_stage"] == "final"
+    assert not any(
+        message.metadata.get("tool_loop_no_progress") is True
+        for message in gateway.requests[-1]
+    )
 
 
 def test_failed_research_returns_to_model_and_uses_web_fallback() -> None:

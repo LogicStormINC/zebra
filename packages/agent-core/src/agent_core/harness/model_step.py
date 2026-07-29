@@ -6,14 +6,21 @@ from datetime import UTC, datetime
 from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import new_correlation_id, new_message_id
-from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.messages import (
+    MessageRole,
+    SessionMessage,
+)
 from agent_core.domain.modeling import (
     ModelCompletion,
     ModelTextDelta,
     ModelToolDefinition,
 )
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
-from agent_core.harness.context_recovery import prepare_bounded_conversation
+from agent_core.harness.context_recovery import (
+    merge_recovery_messages,
+    prepare_bounded_conversation,
+    prepare_terminal_conversation,
+)
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.hooks import CompactionHook
 from agent_core.harness.model_request import (
@@ -62,6 +69,10 @@ def _tool_result_content(tool_result: ToolResult) -> str:
         if isinstance(value, str | int | float | bool):
             observation[key] = value
     return json.dumps(observation, ensure_ascii=False, sort_keys=True)
+
+
+def _tool_result_status(tool_result: ToolResult) -> str:
+    return "succeeded" if tool_result.status is ToolCallStatus.EXECUTED else "failed"
 
 
 class HarnessModelStep:
@@ -115,7 +126,13 @@ class HarnessModelStep:
             created_at=created_at,
         )
         if result is not None and result.recovery_messages is not None:
-            self._remember_recovery(result.recovery_messages, model_gateway)
+            recovery = merge_recovery_messages(
+                self._recovery_messages,
+                result.recovery_messages,
+                model_gateway,
+            )
+            if recovery is not None:
+                self._recovery_messages = recovery
         return result
 
     def recover_conversation(
@@ -123,8 +140,14 @@ class HarnessModelStep:
         messages: list[SessionMessage],
         model_gateway: ModelGatewayPort,
     ) -> bool:
-        if not self._remember_recovery(tuple(messages), model_gateway):
+        recovery = merge_recovery_messages(
+            self._recovery_messages,
+            tuple(messages),
+            model_gateway,
+        )
+        if recovery is None:
             return False
+        self._recovery_messages = recovery
         self._provider_continuation = None
         messages[:] = self._recovery_messages
         return True
@@ -350,7 +373,10 @@ class HarnessModelStep:
                 content=_tool_result_content(tool_result),
                 created_at=created_at,
                 tool_call_id=tool_call.provider_call_id or str(tool_call.tool_call_id),
-                metadata=dict(tool_result.metadata),
+                metadata={
+                    **tool_result.metadata,
+                    "tool_result_status": _tool_result_status(tool_result),
+                },
             )
         )
 
@@ -373,33 +399,8 @@ class HarnessModelStep:
             tool_result=tool_result,
             created_at=now,
         )
-        self.append_final_answer_instruction(messages, created_at=now)
-        self.prepare_conversation(
-            messages,
-            model_gateway,
-            allow_tools=False,
-            user_goal=task.user_input,
-            created_at=now,
-        )
+        prepare_terminal_conversation(messages, model_gateway, self, task.user_input, now)
         return self.request_completion(messages, model_gateway, allow_tools=False)
-
-    @staticmethod
-    def append_final_answer_instruction(
-        messages: list[SessionMessage],
-        *,
-        created_at: datetime,
-    ) -> None:
-        messages.append(
-            SessionMessage(
-                message_id=new_message_id(),
-                role=MessageRole.USER,
-                content=(
-                    "The tool budget is complete. Answer the original request using "
-                    "the available tool results. Do not request or invoke another tool."
-                ),
-                created_at=created_at,
-            )
-        )
 
     def build_initial_messages(
         self, task: HarnessTask, *, created_at: datetime,
@@ -481,19 +482,3 @@ class HarnessModelStep:
             )
         )
         return messages
-
-    def _remember_recovery(
-        self,
-        messages: tuple[SessionMessage, ...],
-        model_gateway: ModelGatewayPort,
-    ) -> bool:
-        known = {str(message.message_id) for message in self._recovery_messages}
-        candidate = self._recovery_messages + tuple(
-            message for message in messages if str(message.message_id) not in known
-        )
-        if not candidate or not build_context_plan(
-            candidate, (), context_window(model_gateway), model_gateway
-        ).within_budget:
-            return False
-        self._recovery_messages = candidate
-        return True

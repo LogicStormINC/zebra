@@ -71,6 +71,22 @@ def test_understand_image_rejects_bad_magic_and_oversize_before_egress(
     assert calls == []
 
 
+def test_image_manifest_declares_a_prompt_independent_operation_key(monkeypatch) -> None:
+    module = _module()
+    results: list[object] = []
+    server = module.MiniMaxMcpServer("key", "https://api.minimaxi.com")
+    monkeypatch.setattr(module, "_send_result", lambda _id, result: results.append(result))
+
+    server._handle_tools_list(1)
+
+    tools = results[0]["tools"]
+    image = next(tool for tool in tools if tool["name"] == "understand_image")
+    assert image["_meta"]["zebra_operation_key"] == {
+        "arguments": ["image_source"],
+        "path_arguments": ["image_source"],
+    }
+
+
 def _module():
     path = Path(__file__).parents[1] / "scripts" / "minimax_mcp_server.py"
     spec = importlib.util.spec_from_file_location("test_minimax_mcp_server_module", path)

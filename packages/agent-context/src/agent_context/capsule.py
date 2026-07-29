@@ -15,7 +15,7 @@ from agent_core.domain.context_capsule import (
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.messages import MessageRole, SessionMessage
 
-from agent_context.projection import build_protected_instruction_ledger
+from agent_context.projection import build_protected_instruction_ledger, tool_result_status
 from agent_context.projection_models import ProtectedInstructionKind
 
 _TRAILING_PUNCT = "\"'),;>.]}"
@@ -72,9 +72,6 @@ def build_context_capsule(
         for message in messages
         for call in message.tool_calls
     }
-    tool_outputs = tuple(
-        message.content for message in messages if message.role is MessageRole.TOOL
-    )
     tests = tuple(
         message.content[:1_000]
         for message in messages
@@ -82,9 +79,9 @@ def build_context_capsule(
         and tool_names.get(message.tool_call_id or "") == "tests.run"
     )[-5:]
     errors = tuple(
-        output[:1_000]
-        for output in tool_outputs
-        if any(marker in output.lower() for marker in ("error", "failed", "traceback"))
+        message.content[:1_000]
+        for message in messages
+        if message.role is MessageRole.TOOL and _is_failed_tool_result(message)
     )[-5:]
     assistant_decisions = tuple(
         message.content[:1_000]
@@ -152,6 +149,10 @@ def _message_artifact_refs(message: SessionMessage) -> tuple[str, ...]:
         if normalized:
             return (normalized,)
     return ()
+
+
+def _is_failed_tool_result(message: SessionMessage) -> bool:
+    return tool_result_status(message) == "failed"
 
 
 def durable_context_capsule(
