@@ -13,11 +13,12 @@ from agent_runtime import normalize_mcp_resource_ids
 from agent_security import NetworkProfileError, PolicyProfile, parse_network_profile
 
 from zebra_agent_api.responses import ApiResponse, bad_request
-from zebra_agent_api.session_attachment_inputs import parse_attachment_inputs
+from zebra_agent_api.session_attachment_inputs import ImageAttachmentInput, parse_attachment_inputs
 
 
 class CreateSessionPayload(TypedDict):
     prompt: str
+    public_content: str | None
     title: str
     workspace: str
     execute: bool
@@ -33,6 +34,7 @@ class CreateSessionPayload(TypedDict):
     mcp_prompt_arguments: dict[str, str]
     history_session_ids: tuple[str, ...] | None
     attachments: tuple[TextAttachmentInput, ...]
+    image_attachments: tuple[ImageAttachmentInput, ...]
 
 
 CREATE_SESSION_FIELDS = frozenset(CreateSessionPayload.__annotations__)
@@ -53,8 +55,10 @@ class CancelSessionPayload(TypedDict):
 
 class AppendSessionMessagePayload(TypedDict):
     content: str
+    public_content: str | None
     clarification_id: str | None
     attachments: tuple[TextAttachmentInput, ...]
+    image_attachments: tuple[ImageAttachmentInput, ...]
 
 
 class ApprovalDecisionPayload(TypedDict):
@@ -103,6 +107,13 @@ def parse_create_session_payload(
     prompt = payload.get("prompt")
     if not isinstance(prompt, str) or not prompt.strip():
         return bad_request("prompt must be a non-blank string")
+    public_content = payload.get("public_content")
+    if public_content is not None and (
+        not isinstance(public_content, str) or not public_content.strip()
+    ):
+        return bad_request("public_content must be a non-blank string when provided")
+    if isinstance(public_content, str) and len(public_content.strip()) > 64_000:
+        return bad_request("public_content must not exceed 64000 characters")
 
     title = payload.get("title", "Untitled task")
     if not isinstance(title, str) or not title.strip():
@@ -139,13 +150,9 @@ def parse_create_session_payload(
         ("max_tool_calls", max_tool_calls, 64),
     ):
         if value is not None and (
-            not isinstance(value, int)
-            or isinstance(value, bool)
-            or not 1 <= value <= maximum
+            not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= maximum
         ):
-            return bad_request(
-                f"{field} must be an integer from 1 to {maximum} when provided"
-            )
+            return bad_request(f"{field} must be an integer from 1 to {maximum} when provided")
     assert max_model_calls is None or isinstance(max_model_calls, int)
     assert max_tool_calls is None or isinstance(max_tool_calls, int)
     network_profile = payload.get("network_profile", "none")
@@ -161,7 +168,7 @@ def parse_create_session_payload(
     except NetworkProfileError as exc:
         return bad_request(str(exc))
     try:
-        attachments = parse_attachment_inputs(payload.get("attachments"))
+        parsed_attachments = parse_attachment_inputs(payload.get("attachments"))
     except ValueError as exc:
         return bad_request(str(exc))
     raw_history_session_ids = payload.get("history_session_ids")
@@ -218,6 +225,9 @@ def parse_create_session_payload(
 
     return {
         "prompt": prompt.strip(),
+        "public_content": (
+            public_content.strip() if isinstance(public_content, str) else None
+        ),
         "title": title.strip(),
         "workspace": workspace.strip(),
         "execute": execute,
@@ -232,7 +242,16 @@ def parse_create_session_payload(
         "mcp_prompt_id": normalized_prompt_id,
         "mcp_prompt_arguments": dict(raw_prompt_arguments),
         "history_session_ids": history_session_ids,
-        "attachments": attachments,
+        "attachments": tuple(
+            attachment
+            for attachment in parsed_attachments
+            if isinstance(attachment, TextAttachmentInput)
+        ),
+        "image_attachments": tuple(
+            attachment
+            for attachment in parsed_attachments
+            if isinstance(attachment, ImageAttachmentInput)
+        ),
     }
 
 
@@ -277,21 +296,42 @@ def parse_append_session_message_payload(
     content = payload.get("content")
     if not isinstance(content, str) or not content.strip():
         return bad_request("content must be a non-blank string")
+    public_content = payload.get("public_content")
+    if public_content is not None and (
+        not isinstance(public_content, str) or not public_content.strip()
+    ):
+        return bad_request("public_content must be a non-blank string when provided")
+    if isinstance(public_content, str) and len(public_content.strip()) > 64_000:
+        return bad_request("public_content must not exceed 64000 characters")
     clarification_id = payload.get("clarification_id")
     if clarification_id is not None and (
         not isinstance(clarification_id, str) or not clarification_id.strip()
     ):
         return bad_request("clarification_id must be a non-blank string when provided")
+    if clarification_id is not None and public_content is not None:
+        return bad_request("clarification responses do not accept public_content")
     try:
-        attachments = parse_attachment_inputs(payload.get("attachments"))
+        parsed_attachments = parse_attachment_inputs(payload.get("attachments"))
     except ValueError as exc:
         return bad_request(str(exc))
-    if clarification_id is not None and attachments:
+    if clarification_id is not None and parsed_attachments:
         return bad_request("clarification responses do not accept attachments")
     return {
         "content": content.strip(),
+        "public_content": (
+            public_content.strip() if isinstance(public_content, str) else None
+        ),
         "clarification_id": clarification_id.strip() if clarification_id else None,
-        "attachments": attachments,
+        "attachments": tuple(
+            attachment
+            for attachment in parsed_attachments
+            if isinstance(attachment, TextAttachmentInput)
+        ),
+        "image_attachments": tuple(
+            attachment
+            for attachment in parsed_attachments
+            if isinstance(attachment, ImageAttachmentInput)
+        ),
     }
 
 

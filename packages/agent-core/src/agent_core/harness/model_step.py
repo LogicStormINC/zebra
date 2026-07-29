@@ -6,18 +6,30 @@ from datetime import UTC, datetime
 from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import new_correlation_id, new_message_id
-from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.messages import (
+    MessageRole,
+    SessionMessage,
+)
 from agent_core.domain.modeling import (
     ModelCompletion,
-    ModelContextWindow,
     ModelTextDelta,
     ModelToolDefinition,
 )
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.harness.context_recovery import (
+    merge_recovery_messages,
+    prepare_bounded_conversation,
+    prepare_terminal_conversation,
+)
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.hooks import CompactionHook
-from agent_core.harness.model_request import allowed_response_repairs, build_context_plan, complete_model
-from agent_core.harness.model_request import context_window, with_context_plan
+from agent_core.harness.model_request import (
+    allowed_response_repairs,
+    build_context_plan,
+    complete_model,
+    context_window,
+    with_context_plan,
+)
 from agent_core.harness.models import HarnessEventDraft, HarnessTask
 from agent_core.harness.protocol_invariants import validate_tool_call_pairing
 from agent_core.harness.provider_continuation import (
@@ -59,6 +71,10 @@ def _tool_result_content(tool_result: ToolResult) -> str:
     return json.dumps(observation, ensure_ascii=False, sort_keys=True)
 
 
+def _tool_result_status(tool_result: ToolResult) -> str:
+    return "succeeded" if tool_result.status is ToolCallStatus.EXECUTED else "failed"
+
+
 class HarnessModelStep:
     def __init__(
         self,
@@ -68,9 +84,7 @@ class HarnessModelStep:
         conversation_compactor: ConversationCompactorPort | None = None,
         conversation_token_budget: int | None = None,
         event_sink: Callable[[HarnessEventDraft], None] | None = None,
-        continuation_sink: Callable[
-            [ProviderContinuationRef, bytes | None, int | None], str | None
-        ]
+        continuation_sink: Callable[[ProviderContinuationRef, bytes | None, int | None], str | None]
         | None = None,
         provider_continuation: ProviderContinuationRef | None = None,
         compaction_hook: CompactionHook | None = None,
@@ -89,6 +103,7 @@ class HarnessModelStep:
         self._attempt_number = attempt_number
         self._provider_continuation = provider_continuation
         self._compaction_hook = compaction_hook
+        self._recovery_messages: tuple[SessionMessage, ...] = ()
 
     def prepare_conversation(
         self,
@@ -99,48 +114,43 @@ class HarnessModelStep:
         user_goal: str,
         created_at: datetime,
     ) -> ConversationCompactionResult | None:
-        tools = self._available_tools if allow_tools else ()
-        window = context_window(model_gateway)
-        budget = min(
-            self._conversation_token_budget or window.compact_at,
-            window.compact_at,
-        )
-        result = None
-        if self._conversation_compactor is not None:
-            if self._compaction_hook is not None:
-                self._compaction_hook.pre_compact(tuple(messages), max_tokens=budget)
-            result = self._conversation_compactor.compact_conversation(
-                tuple(messages),
-                user_goal=user_goal,
-                max_tokens=budget,
-                created_at=created_at,
-            )
-            messages[:] = result.messages
-            if self._compaction_hook is not None:
-                self._compaction_hook.post_compact(result)
-        attempted = (result.provenance,) if result is not None and result.compacted else ()
-        plan = build_context_plan(
-            tuple(messages), tools, window, model_gateway, attempted_strategies=attempted
-        )
-        if not plan.within_budget:
-            raise ContextWindowExceededError(plan)
-        return result
-
-    def compact_conversation(
-        self,
-        messages: list[SessionMessage],
-        *,
-        user_goal: str,
-        created_at: datetime,
-    ) -> ConversationCompactionResult | None:
-        if self._conversation_compactor is None:
-            return None
-        return self._conversation_compactor.compact_conversation(
-            tuple(messages),
+        result = prepare_bounded_conversation(
+            messages,
+            model_gateway,
+            allow_tools=allow_tools,
+            available_tools=self._available_tools,
+            conversation_compactor=self._conversation_compactor,
+            conversation_token_budget=self._conversation_token_budget,
+            compaction_hook=self._compaction_hook,
             user_goal=user_goal,
-            max_tokens=self._conversation_token_budget or ModelContextWindow().input_token_limit,
             created_at=created_at,
         )
+        if result is not None and result.recovery_messages is not None:
+            recovery = merge_recovery_messages(
+                self._recovery_messages,
+                result.recovery_messages,
+                model_gateway,
+            )
+            if recovery is not None:
+                self._recovery_messages = recovery
+        return result
+
+    def recover_conversation(
+        self,
+        messages: list[SessionMessage],
+        model_gateway: ModelGatewayPort,
+    ) -> bool:
+        recovery = merge_recovery_messages(
+            self._recovery_messages,
+            tuple(messages),
+            model_gateway,
+        )
+        if recovery is None:
+            return False
+        self._recovery_messages = recovery
+        self._provider_continuation = None
+        messages[:] = self._recovery_messages
+        return True
 
     def request_initial_completion(
         self,
@@ -150,7 +160,7 @@ class HarnessModelStep:
         created_at: datetime | None = None,
     ) -> ModelCompletion:
         now = created_at or datetime.now(UTC)
-        messages = self.build_initial_messages(task, created_at=now)
+        messages = self.build_initial_messages(task, created_at=now, model_gateway=model_gateway)
         self.prepare_conversation(
             messages,
             model_gateway,
@@ -159,7 +169,9 @@ class HarnessModelStep:
             created_at=now,
         )
         repair_limit = allowed_response_repairs(task.max_model_calls, 0)
-        return self.request_completion(messages, model_gateway, allow_tools=True, response_repair_limit=repair_limit)
+        return self.request_completion(
+            messages, model_gateway, allow_tools=True, response_repair_limit=repair_limit
+        )
 
     def request_completion(
         self,
@@ -293,14 +305,10 @@ class HarnessModelStep:
         self._provider_continuation = selection.reference
         self._emit_continuation_selection(selection)
 
-    def _emit_continuation_selection(
-        self, selection: PreparedProviderContinuation
-    ) -> None:
+    def _emit_continuation_selection(self, selection: PreparedProviderContinuation) -> None:
         if self._event_sink is None:
             return
-        self._event_sink(
-            continuation_event(selection, attempt_number=self._attempt_number)
-        )
+        self._event_sink(continuation_event(selection, attempt_number=self._attempt_number))
 
     def _emit_text_delta(self, model_call_id: str, delta: ModelTextDelta) -> None:
         if self._event_sink is None:
@@ -365,9 +373,13 @@ class HarnessModelStep:
                 content=_tool_result_content(tool_result),
                 created_at=created_at,
                 tool_call_id=tool_call.provider_call_id or str(tool_call.tool_call_id),
-                metadata=dict(tool_result.metadata),
+                metadata={
+                    **tool_result.metadata,
+                    "tool_result_status": _tool_result_status(tool_result),
+                },
             )
         )
+
     def request_tool_result_completion(
         self,
         task: HarnessTask,
@@ -379,7 +391,7 @@ class HarnessModelStep:
         created_at: datetime | None = None,
     ) -> ModelCompletion:
         now = created_at or datetime.now(UTC)
-        messages = self.build_initial_messages(task, created_at=now)
+        messages = self.build_initial_messages(task, created_at=now, model_gateway=model_gateway)
         self.append_tool_exchange(
             messages,
             completion=initial_completion,
@@ -387,59 +399,37 @@ class HarnessModelStep:
             tool_result=tool_result,
             created_at=now,
         )
-        self.append_final_answer_instruction(messages, created_at=now)
-        self.prepare_conversation(
-            messages,
-            model_gateway,
-            allow_tools=False,
-            user_goal=task.user_input,
-            created_at=now,
-        )
+        prepare_terminal_conversation(messages, model_gateway, self, task.user_input, now)
         return self.request_completion(messages, model_gateway, allow_tools=False)
 
-    @staticmethod
-    def append_final_answer_instruction(
-        messages: list[SessionMessage],
-        *,
-        created_at: datetime,
-    ) -> None:
-        messages.append(
-            SessionMessage(
-                message_id=new_message_id(),
-                role=MessageRole.USER,
-                content=(
-                    "The tool budget is complete. Answer the original request using "
-                    "the available tool results. Do not request or invoke another tool."
-                ),
-                created_at=created_at,
-            )
-        )
-
     def build_initial_messages(
-        self,
-        task: HarnessTask,
-        *,
-        created_at: datetime,
+        self, task: HarnessTask, *, created_at: datetime,
+        model_gateway: ModelGatewayPort | None = None,
     ) -> list[SessionMessage]:
+        self._recovery_messages = ()
         messages: list[SessionMessage] = []
         if self._context_compiler is not None and task.workspace_root is not None:
-            if task.attachments:
-                system_prompt = self._context_compiler.build_system_prompt(
-                    task_input=task.user_input,
-                    workspace_root=task.workspace_root,
-                    max_tokens=task.context_token_budget,
-                    runtime_evidence=task.runtime_evidence,
-                    confirmed_memories=task.confirmed_memories,
-                    attachments=task.attachments,
+            active_projection = any(
+                evidence.kind == "session_handoff"
+                and (evidence.metadata or {}).get("handoff_source") == "active_projection"
+                for evidence in task.runtime_evidence
+            )
+            context_budget = (
+                max(
+                    task.context_token_budget,
+                    context_window(model_gateway).compaction_reserve_tokens,
                 )
-            else:
-                system_prompt = self._context_compiler.build_system_prompt(
-                    task_input=task.user_input,
-                    workspace_root=task.workspace_root,
-                    max_tokens=task.context_token_budget,
-                    runtime_evidence=task.runtime_evidence,
-                    confirmed_memories=task.confirmed_memories,
-                )
+                if model_gateway is not None and active_projection
+                else task.context_token_budget
+            )
+            system_prompt = self._context_compiler.build_system_prompt(
+                task_input=task.user_input,
+                workspace_root=task.workspace_root,
+                max_tokens=context_budget,
+                runtime_evidence=task.runtime_evidence,
+                confirmed_memories=task.confirmed_memories,
+                **({"attachments": task.attachments} if task.attachments else {}),
+            )
             if system_prompt is not None:
                 messages.append(
                     SessionMessage(
@@ -453,10 +443,7 @@ class HarnessModelStep:
             if messages:
                 messages[-1] = messages[-1].model_copy(
                     update={
-                        "content": (
-                            f"{messages[-1].content}\n\n"
-                            f"{MODEL_NATIVE_DELEGATION_GUIDANCE}"
-                        )
+                        "content": (f"{messages[-1].content}\n\n{MODEL_NATIVE_DELEGATION_GUIDANCE}")
                     }
                 )
             else:
@@ -469,9 +456,7 @@ class HarnessModelStep:
                     )
                 )
         active_steps = tuple(
-            step
-            for step in task.task_plan.steps
-            if step.status.value in {"pending", "in_progress"}
+            step for step in task.task_plan.steps if step.status.value in {"pending", "in_progress"}
         )
         if active_steps:
             messages.append(

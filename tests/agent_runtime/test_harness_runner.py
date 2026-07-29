@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 import pytest
+from agent_context import TOMBSTONE_MARKER
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
@@ -142,20 +143,44 @@ def test_run_local_harness_has_no_implicit_tool_budget(tmp_path) -> None:
         )
         for path in paths
     ]
-    responses.append(ScriptedModelResponse(completion=_completion("All four files read.")))
+    responses.extend(
+        (
+            ScriptedModelResponse(completion=_completion("All four files read.")),
+            ScriptedModelResponse(
+                completion=_completion("Recovered final from all four proof files.")
+            ),
+        )
+    )
 
+    gateway = ScriptedModelGateway(responses=tuple(responses))
     result = run_local_harness(
         prompt="Read every proof file.",
         title="Unlimited local harness budget",
         workspace_root=tmp_path.resolve(),
-        model_gateway=ScriptedModelGateway(responses=tuple(responses)),
+        model_gateway=gateway,
     )
 
     assert result.session.status is SessionStatus.COMPLETED
-    assert result.run_result.model_calls_used == 5
+    assert result.attempt_result.metadata["assistant_message"] == (
+        "Recovered final from all four proof files."
+    )
+    assert result.run_result.model_calls_used == 6
     assert result.run_result.tool_calls_used == 4
     assert result.run_result.max_model_calls is None
     assert result.run_result.max_tool_calls is None
+    assert len(gateway.tool_requests) == 6
+    assert all(gateway.tool_requests[:5])
+    assert gateway.tool_requests[-1] == ()
+    assert TOMBSTONE_MARKER not in "\n".join(
+        message.content for message in gateway.requests[-1]
+    )
+    assert all(
+        any(
+            message.role is MessageRole.TOOL and message.content == path
+            for message in gateway.requests[-1]
+        )
+        for path in paths
+    )
 
 
 def test_run_local_harness_searches_then_reads_workspace_evidence(tmp_path) -> None:

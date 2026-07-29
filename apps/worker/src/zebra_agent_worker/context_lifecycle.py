@@ -1,13 +1,9 @@
 from __future__ import annotations
 
-from pathlib import Path
-from urllib.parse import unquote, urlparse
-
+from agent_context.capsule import durable_context_capsule, durable_context_validation_context
 from agent_core.domain.context_capsule import (
     ContextCapsule,
-    ContextCapsuleValidationContext,
     ContextCapsuleValidationError,
-    ContextSourceEventRange,
 )
 from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType, SessionEvent
@@ -43,13 +39,8 @@ def persist_context_compaction(
         recorder.append_draft(draft)
         return
     events = event_store.list_for_session(recorder.session.session_id)
-    capsule = _durable_capsule(ContextCapsule.model_validate(raw_capsule), events)
+    capsule = durable_context_capsule(ContextCapsule.model_validate(raw_capsule), events)
     active = lifecycle_store.get_active_capsule(recorder.session.session_id)
-    readable_refs = frozenset(
-        ref
-        for ref in (*capsule.artifact_refs, *capsule.recent_exact_tail_refs)
-        if not ref.startswith("file://") or _is_readable(ref)
-    )
     compaction_event = SessionEvent.create(
         session_id=recorder.session.session_id,
         sequence=recorder.next_sequence,
@@ -63,16 +54,7 @@ def persist_context_compaction(
         stored = lifecycle_store.persist_capsule_and_advance(
             session_id=recorder.session.session_id,
             capsule=capsule,
-            validation_context=ContextCapsuleValidationContext(
-                expected_source_hash=capsule.source_hash,
-                expected_source_event_range=capsule.source_event_range,
-                unresolved_tool_call_ids=frozenset(
-                    tool.call_id for tool in capsule.pending_tools
-                ),
-                protected_user_constraints=frozenset(capsule.protected_user_constraints),
-                approval_and_policy_state=frozenset(capsule.approvals_and_policy_state),
-                readable_artifact_refs=readable_refs,
-            ),
+            validation_context=durable_context_validation_context(capsule),
             sequence=recorder.next_sequence,
             expected_active_capsule_id=active.capsule.capsule_id if active else None,
             compaction_event=compaction_event,
@@ -137,46 +119,6 @@ def recover_provider_continuation(
         )
         return loaded.artifact.reference if loaded is not None else None
     return None
-
-
-def _durable_capsule(
-    capsule: ContextCapsule,
-    events: list[SessionEvent],
-) -> ContextCapsule:
-    event_range = ContextSourceEventRange(
-        start_sequence=events[0].sequence,
-        end_sequence=events[-1].sequence,
-    )
-    approvals = tuple(
-        _approval_state(event)
-        for event in events
-        if event.event_type
-        in {
-            EventType.POLICY_DECISION_MADE,
-            EventType.APPROVAL_REQUESTED,
-            EventType.APPROVAL_GRANTED,
-            EventType.APPROVAL_REJECTED,
-        }
-    )
-    return capsule.model_copy(
-        update={
-            "source_event_range": event_range,
-            "protected_user_constraints": capsule.constraints,
-            "approvals_and_policy_state": approvals,
-        }
-    )
-
-
-def _is_readable(uri: str) -> bool:
-    parsed = urlparse(uri)
-    if parsed.scheme != "file":
-        return False
-    return Path(unquote(parsed.path)).is_file()
-
-
-def _approval_state(event: SessionEvent) -> str:
-    detail = event.payload.get("decision", event.payload.get("reason", "recorded"))
-    return f"{event.event_type.value}:{detail}"
 
 
 def _payload_text(payload: dict[str, object], key: str) -> str | None:

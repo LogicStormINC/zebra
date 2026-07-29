@@ -6,6 +6,10 @@ from agent_core.application.approvals import (
     ApprovalDecisionService,
 )
 from agent_core.application.mcp_prompt_attachments import build_mcp_prompt_attachment
+from agent_core.application.memory_candidate_promotions import (
+    MemoryCandidatePromotionResult,
+    MemoryCandidatePromotionService,
+)
 from agent_core.application.memory_candidates import (
     MemoryCandidateExtractionCommand,
     MemoryCandidateExtractionResult,
@@ -25,6 +29,7 @@ from agent_core.application.memory_reviews import (
 from agent_core.application.session_attachments import (
     attach_refs_to_user_event,
     attachment_refs_from_event,
+    task_workspace_image_prompt_suffix,
 )
 from agent_core.application.session_bootstrap import (
     BootstrappedSession,
@@ -43,11 +48,14 @@ __all__ = [
     "ApprovalDecisionService",
     "attach_refs_to_user_event",
     "attachment_refs_from_event",
+    "task_workspace_image_prompt_suffix",
     "build_mcp_prompt_attachment",
     "BootstrappedSession",
     "MemoryCandidateExtractionCommand",
     "MemoryCandidateExtractionResult",
     "MemoryCandidateExtractionService",
+    "MemoryCandidatePromotionResult",
+    "MemoryCandidatePromotionService",
     "serialize_memory_inventory",
     "serialize_scoped_memory_inventory",
     "MemoryReviewAction",

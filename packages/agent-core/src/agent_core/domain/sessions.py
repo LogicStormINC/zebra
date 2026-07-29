@@ -115,10 +115,16 @@ class Session(BaseModel):
     task_plan: SessionPlan = Field(default_factory=SessionPlan)
 
     @classmethod
-    def create(cls, *, title: str, created_at: datetime | None = None) -> "Session":
+    def create(
+        cls,
+        *,
+        title: str,
+        created_at: datetime | None = None,
+        session_id: SessionId | None = None,
+    ) -> "Session":
         now = created_at or datetime.now(UTC)
         return cls(
-            session_id=new_session_id(),
+            session_id=session_id or new_session_id(),
             title=title,
             status=SessionStatus.CREATED,
             created_at=now,

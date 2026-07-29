@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 import pytest
-from zebra_agent_config.settings import (
+from zebra_agent_config.mcp_settings import (
     MAX_MCP_SERVERS,
     McpHttpServerSettings,
     _read_mcp_servers,

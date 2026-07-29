@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 from uuid import UUID
 
@@ -33,8 +34,16 @@ def test_api_health_returns_service_status(tmp_path: Path) -> None:
             "profile": "local",
             "runtime_class": "trusted-local",
             "fallback_allowed": False,
+            "build_commit": "unknown",
+            "task_image_attachments": True,
         },
     }
+
+
+def test_api_health_reports_the_configured_build_commit(tmp_path: Path) -> None:
+    settings = replace(_settings(tmp_path / "sessions.sqlite"), build_commit="37708b4")
+
+    assert create_app(settings=settings).health().body["runtime"]["build_commit"] == "37708b4"
 
 
 def test_api_create_app_uses_settings_database_by_default(tmp_path: Path) -> None:
@@ -54,9 +63,7 @@ def test_api_create_app_database_path_overrides_settings(tmp_path: Path) -> None
 
 def test_api_get_session_returns_projection(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
-    session = SQLiteProjectionStore(database_path).save_session(
-        Session.create(title="API session")
-    )
+    session = SQLiteProjectionStore(database_path).save_session(Session.create(title="API session"))
 
     response = create_app(database_path).get_session(str(session.session_id))
 
@@ -133,9 +140,7 @@ def test_api_get_session_returns_not_found(tmp_path: Path) -> None:
 
 
 def test_api_get_session_rejects_invalid_session_id(tmp_path: Path) -> None:
-    response = create_app(tmp_path / "sessions.sqlite").get_session(
-        "not-a-valid-uuid"
-    )
+    response = create_app(tmp_path / "sessions.sqlite").get_session("not-a-valid-uuid")
 
     assert response.status_code == 400
     assert response.body == {
@@ -232,9 +237,9 @@ def test_api_get_session_stream_returns_persisted_events(tmp_path: Path) -> None
                 "user_input": "stream me",
                 "workspace_root": None,
                 "policy_profile": None,
-                    "tool_profile": None,
-                    "network_profile": None,
-                    "network_allowlist": None,
+                "tool_profile": None,
+                "network_profile": None,
+                "network_allowlist": None,
                 "max_attempts": None,
                 "max_model_calls": None,
                 "max_tool_calls": None,
@@ -256,9 +261,7 @@ def test_api_get_session_stream_returns_not_found(tmp_path: Path) -> None:
 
 
 def test_api_get_session_stream_rejects_invalid_session_id(tmp_path: Path) -> None:
-    response = create_app(tmp_path / "sessions.sqlite").get_session_stream(
-        "not-a-valid-uuid"
-    )
+    response = create_app(tmp_path / "sessions.sqlite").get_session_stream("not-a-valid-uuid")
 
     assert response.status_code == 400
     assert response.body == {
@@ -581,9 +584,9 @@ def test_api_create_session_rejects_invalid_request(tmp_path: Path) -> None:
         "reason": "prompt must be a non-blank string",
     }
 
-    invalid_profile = create_app(
-        database_path, settings=_settings(database_path)
-    ).create_session({"prompt": "Continue", "tool_profile": "unknown"})
+    invalid_profile = create_app(database_path, settings=_settings(database_path)).create_session(
+        {"prompt": "Continue", "tool_profile": "unknown"}
+    )
 
     assert invalid_profile.status_code == 400
     assert invalid_profile.body == {
@@ -591,21 +594,19 @@ def test_api_create_session_rejects_invalid_request(tmp_path: Path) -> None:
         "reason": "tool_profile is not supported",
     }
 
-    invalid_network = create_app(
-        database_path, settings=_settings(database_path)
-    ).create_session({"prompt": "Continue", "network_profile": "domain-allowlist"})
+    invalid_network = create_app(database_path, settings=_settings(database_path)).create_session(
+        {"prompt": "Continue", "network_profile": "domain-allowlist"}
+    )
 
     assert invalid_network.status_code == 400
     assert "requires at least one allowed domain" in str(invalid_network.body["reason"])
 
-    invalid_history = create_app(
-        database_path, settings=_settings(database_path)
-    ).create_session({"prompt": "Continue", "history_session_ids": ["not-a-uuid"]})
+    invalid_history = create_app(database_path, settings=_settings(database_path)).create_session(
+        {"prompt": "Continue", "history_session_ids": ["not-a-uuid"]}
+    )
 
     assert invalid_history.status_code == 400
-    assert invalid_history.body["reason"] == (
-        "history_session_ids must contain UUID strings"
-    )
+    assert invalid_history.body["reason"] == ("history_session_ids must contain UUID strings")
 
 
 def test_api_create_session_execute_reports_missing_api_key(

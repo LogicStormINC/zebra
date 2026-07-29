@@ -47,7 +47,7 @@ def test_attachment_parser_accepts_bounded_utf8_text() -> None:
         ),
         (
             {"file_name": "image.png", "media_type": "image/png", "content_base64": "QQ=="},
-            "media_type is not supported",
+            "magic bytes are invalid",
         ),
         (
             {"file_name": "bad.txt", "media_type": "text/plain", "content_base64": "not base64"},
@@ -110,9 +110,10 @@ def test_queued_session_persists_attachment_without_exposing_payload(tmp_path: P
     assert refs[0].to_mapping() == attachment
     assert "content_base64" not in user_event.payload
     assert "ATTACHMENT-QUEUE-131" not in str(user_event.payload)
-    assert SQLiteArtifactPayloadStore(database_path).read_payload_bytes(
-        refs[0].attachment_id
-    ) == b"ATTACHMENT-QUEUE-131"
+    assert (
+        SQLiteArtifactPayloadStore(database_path).read_payload_bytes(refs[0].attachment_id)
+        == b"ATTACHMENT-QUEUE-131"
+    )
 
     restarted = create_app(database_path, settings=_settings(database_path))
     detail = restarted.get_session(str(session_id))
@@ -279,6 +280,20 @@ def test_clarification_response_rejects_attachments(tmp_path: Path) -> None:
 
     assert response.status_code == 400
     assert response.body["reason"] == "clarification responses do not accept attachments"
+
+
+def test_clarification_response_rejects_public_content(tmp_path: Path) -> None:
+    response = create_app(tmp_path / "sessions.sqlite").append_session_message(
+        "00000000-0000-0000-0000-000000000001",
+        {
+            "content": "A",
+            "clarification_id": "clarify-1",
+            "public_content": "must not become a public turn",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.body["reason"] == "clarification responses do not accept public_content"
 
 
 def _attachment(file_name: str, content: str) -> dict[str, str]:

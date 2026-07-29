@@ -18,6 +18,7 @@ class _Server:
     name: str
     command: str
     args: tuple[str, ...]
+    env: dict[str, str] | None = None
 
 
 def test_resource_inventory_is_safe_and_does_not_read(tmp_path: Path) -> None:

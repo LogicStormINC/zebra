@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from base64 import b64decode
 from binascii import Error as Base64Error
+from dataclasses import dataclass, field
 from hashlib import sha256
 
 from agent_core.domain.attachments import TextAttachmentInput
+from agent_core.domain.identifiers import ArtifactId, new_artifact_id
 
 from zebra_agent_api.session_document_inputs import extract_docx_text, extract_pdf_text
 from zebra_agent_api.session_presentation_inputs import extract_pptx_text
@@ -18,6 +20,7 @@ MAX_DOCX_BYTES = 4_194_304
 MAX_XLSX_BYTES = 4_194_304
 MAX_PPTX_BYTES = 4_194_304
 MAX_DOCUMENT_TOTAL_BYTES = 8_388_608
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_FILE_NAME_LENGTH = 255
 SUPPORTED_TEXT_MEDIA_TYPES = frozenset(
     {
@@ -37,6 +40,20 @@ _FIELDS = frozenset({"file_name", "media_type", "content_base64"})
 DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 PPTX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+IMAGE_MEDIA_TYPES = frozenset({"image/jpeg", "image/png"})
+_IMAGE_EXTENSIONS = {
+    "image/jpeg": frozenset({".jpg", ".jpeg"}),
+    "image/png": frozenset({".png"}),
+}
+
+
+@dataclass(frozen=True)
+class ImageAttachmentInput:
+    file_name: str
+    media_type: str
+    payload: bytes
+    attachment_id: ArtifactId = field(default_factory=new_artifact_id)
+
 
 # Compatibility aliases retained for callers and focused limit tests.
 _extract_pdf_text = extract_pdf_text
@@ -45,14 +62,16 @@ _extract_xlsx_text = extract_xlsx_text
 _extract_pptx_text = extract_pptx_text
 
 
-def parse_attachment_inputs(value: object) -> tuple[TextAttachmentInput, ...]:
+def parse_attachment_inputs(
+    value: object,
+) -> tuple[TextAttachmentInput | ImageAttachmentInput, ...]:
     if value is None:
         return ()
     if not isinstance(value, list):
         raise ValueError("attachments must be a list when provided")
     if len(value) > MAX_ATTACHMENT_COUNT:
         raise ValueError(f"attachments accepts at most {MAX_ATTACHMENT_COUNT} files")
-    attachments: list[TextAttachmentInput] = []
+    attachments: list[TextAttachmentInput | ImageAttachmentInput] = []
     total_stored_bytes = 0
     total_document_bytes = 0
     for item in value:
@@ -63,7 +82,9 @@ def parse_attachment_inputs(value: object) -> tuple[TextAttachmentInput, ...]:
         file_name = _safe_file_name(item.get("file_name"))
         media_type = _media_type(item.get("media_type"))
         max_bytes = (
-            MAX_PDF_BYTES
+            MAX_IMAGE_BYTES
+            if media_type in IMAGE_MEDIA_TYPES
+            else MAX_PDF_BYTES
             if media_type == "application/pdf"
             else MAX_DOCX_BYTES
             if media_type == DOCX_MEDIA_TYPE
@@ -74,7 +95,19 @@ def parse_attachment_inputs(value: object) -> tuple[TextAttachmentInput, ...]:
             else MAX_ATTACHMENT_BYTES
         )
         raw_payload = _decode_payload(item.get("content_base64"), max_bytes=max_bytes)
-        if media_type in {
+        attachment: TextAttachmentInput | ImageAttachmentInput
+        if media_type in IMAGE_MEDIA_TYPES:
+            if not any(
+                file_name.lower().endswith(suffix) for suffix in _IMAGE_EXTENSIONS[media_type]
+            ):
+                raise ValueError(f"{media_type} attachment file_name has an inconsistent extension")
+            _validate_image_magic(media_type, raw_payload)
+            attachment = ImageAttachmentInput(
+                file_name=file_name,
+                media_type=media_type,
+                payload=raw_payload,
+            )
+        elif media_type in {
             "application/pdf",
             DOCX_MEDIA_TYPE,
             XLSX_MEDIA_TYPE,
@@ -130,11 +163,12 @@ def parse_attachment_inputs(value: object) -> tuple[TextAttachmentInput, ...]:
                 media_type=media_type,
                 payload=payload,
             )
-        total_stored_bytes += len(payload)
-        if total_stored_bytes > MAX_ATTACHMENT_TOTAL_BYTES:
-            raise ValueError(
-                f"attachments exceed the {MAX_ATTACHMENT_TOTAL_BYTES}-byte aggregate limit"
-            )
+        if isinstance(attachment, TextAttachmentInput):
+            total_stored_bytes += len(attachment.payload)
+            if total_stored_bytes > MAX_ATTACHMENT_TOTAL_BYTES:
+                raise ValueError(
+                    f"attachments exceed the {MAX_ATTACHMENT_TOTAL_BYTES}-byte aggregate limit"
+                )
         attachments.append(attachment)
     return tuple(attachments)
 
@@ -158,6 +192,8 @@ def _media_type(value: object) -> str:
     if not isinstance(value, str):
         raise ValueError("attachment media_type must be a string")
     media_type = value.strip().lower()
+    if media_type in IMAGE_MEDIA_TYPES:
+        return media_type
     if media_type == "application/pdf":
         return media_type
     if media_type == DOCX_MEDIA_TYPE:
@@ -169,6 +205,16 @@ def _media_type(value: object) -> str:
     if media_type not in SUPPORTED_TEXT_MEDIA_TYPES:
         raise ValueError("attachment media_type is not supported")
     return media_type
+
+
+def _validate_image_magic(media_type: str, payload: bytes) -> None:
+    valid = (
+        payload.startswith(b"\xff\xd8\xff")
+        if media_type == "image/jpeg"
+        else payload.startswith(b"\x89PNG\r\n\x1a\n")
+    )
+    if not valid:
+        raise ValueError(f"{media_type} attachment magic bytes are invalid")
 
 
 def _decode_payload(value: object, *, max_bytes: int) -> bytes:

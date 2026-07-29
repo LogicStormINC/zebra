@@ -119,6 +119,30 @@ class _AlwaysCompact:
         )
 
 
+class _StrictRetryCompactor:
+    def __init__(self) -> None:
+        self.calls: list[tuple[tuple[SessionMessage, ...], int]] = []
+
+    def compact_conversation(self, messages, *, user_goal, max_tokens, created_at):
+        original = tuple(messages)
+        self.calls.append((original, max_tokens))
+        compacted_messages = (
+            original
+            if len(self.calls) == 1
+            else (_message(MessageRole.USER, "strict compacted context"),)
+        )
+        return ConversationCompactionResult(
+            messages=compacted_messages,
+            before_tokens=600,
+            after_tokens=600 if len(self.calls) == 1 else 20,
+            removed_message_count=0 if len(self.calls) == 1 else len(original) - 1,
+            retained_message_count=len(compacted_messages),
+            compacted=len(self.calls) > 1,
+            within_budget=len(self.calls) > 1,
+            provenance=f"retry-{len(self.calls)}",
+        )
+
+
 def test_request_completion_hard_gate_prevents_provider_call() -> None:
     gateway = _BoundedGateway(
         ModelContextWindow(
@@ -126,6 +150,7 @@ def test_request_completion_hard_gate_prevents_provider_call() -> None:
             max_output_tokens=100,
             compaction_reserve_tokens=50,
             protocol_reserve_tokens=50,
+            compaction_trigger_reserve_tokens=50,
         )
     )
 
@@ -159,6 +184,37 @@ def test_prepare_conversation_rejects_uncompressible_protected_input() -> None:
             created_at=NOW,
         )
 
+    assert gateway.call_count == 0
+
+
+def test_prepare_conversation_retries_once_from_original_history() -> None:
+    gateway = _BoundedGateway(
+        ModelContextWindow(
+            context_tokens=500,
+            max_output_tokens=100,
+            compaction_reserve_tokens=50,
+            protocol_reserve_tokens=50,
+            compaction_trigger_reserve_tokens=50,
+        )
+    )
+    original = [_message(MessageRole.USER, "x" * 2_000)]
+    messages = list(original)
+    compactor = _StrictRetryCompactor()
+
+    result = HarnessModelStep(conversation_compactor=compactor).prepare_conversation(
+        messages,
+        gateway,
+        allow_tools=False,
+        user_goal="Keep the original request.",
+        created_at=NOW,
+    )
+
+    assert result is not None
+    assert len(compactor.calls) == 2
+    assert compactor.calls[0][0] == tuple(original)
+    assert compactor.calls[1][0] == tuple(original)
+    assert compactor.calls[1][1] < compactor.calls[0][1]
+    assert messages == list(result.messages)
     assert gateway.call_count == 0
 
 

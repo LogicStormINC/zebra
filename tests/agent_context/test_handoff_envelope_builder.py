@@ -39,6 +39,13 @@ def test_builder_checksums_public_facts_and_runtime_evidence_is_bounded() -> Non
     assert envelope.checksum == envelope.expected_checksum()
     assert evidence.metadata["trust"] == "untrusted_handoff_evidence"
     assert evidence.metadata["checksum"] == envelope.checksum
+    assert evidence.metadata["handoff_source"] == "checkpoint"
+    assert evidence.metadata["handoff_reason"] == HandoffReason.USER_PHASE_BOUNDARY.value
+    assert evidence.details == (
+        "Completed: contracts merged",
+        "Pending: worker gate",
+        "Immediate next: run focused tests",
+    )
     serialized = envelope.model_dump_json() + repr(evidence)
     assert "reasoning_content" not in serialized
     assert "provider_continuation" not in serialized

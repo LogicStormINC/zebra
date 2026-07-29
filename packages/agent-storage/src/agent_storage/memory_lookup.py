@@ -3,7 +3,13 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
-from agent_core.domain.memories import MemoryQuery, MemoryStatus, MemoryType, MemoryVisibility
+from agent_core.domain.memories import (
+    MemoryQuery,
+    MemoryRecord,
+    MemoryStatus,
+    MemoryType,
+    MemoryVisibility,
+)
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 
 from agent_storage.memories import SQLiteMemoryStore
@@ -23,35 +29,58 @@ def list_confirmed_repo_memories(
     *,
     repo_id: str,
     limit: int = 8,
+    query_text: str | None = None,
+    max_tokens: int = 1_200,
     as_of: datetime | None = None,
 ) -> tuple[ConfirmedMemoryInput, ...]:
+    if max_tokens <= 0:
+        raise ValueError("memory max_tokens must be positive")
     effective_as_of = as_of or datetime.now(UTC)
-    records = SQLiteMemoryStore(database_path).list(
-        MemoryQuery(
-            repo_id=repo_id,
-            visibility=MemoryVisibility.REPO,
-            statuses=(MemoryStatus.CONFIRMED,),
-            limit=500,
+    store = SQLiteMemoryStore(database_path)
+    if query_text is None or not query_text.strip():
+        records = store.list(
+            MemoryQuery(
+                repo_id=repo_id,
+                visibility=MemoryVisibility.REPO,
+                statuses=(MemoryStatus.CONFIRMED,),
+                limit=500,
+            )
         )
-    )
-    ranked = sorted(
-        records,
-        key=lambda record: (
-            _TYPE_PRIORITY.get(record.memory_type, len(_TYPE_PRIORITY)),
-            -record.updated_at.timestamp(),
-            -record.created_at.timestamp(),
-            str(record.memory_id),
-        ),
-    )
+        ranked = _rank(records)
+    else:
+        stable = store.list(
+            MemoryQuery(
+                repo_id=repo_id,
+                visibility=MemoryVisibility.REPO,
+                statuses=(MemoryStatus.CONFIRMED,),
+                memory_types=(MemoryType.PROJECT_RULE, MemoryType.PREFERENCE),
+                limit=50,
+            )
+        )
+        relevant = store.list(
+            MemoryQuery(
+                repo_id=repo_id,
+                visibility=MemoryVisibility.REPO,
+                statuses=(MemoryStatus.CONFIRMED,),
+                text_query=query_text,
+                limit=100,
+            )
+        )
+        ranked = [*_rank(stable)[:2], *relevant]
     unique: list[ConfirmedMemoryInput] = []
     seen: set[tuple[MemoryType, str]] = set()
+    used_tokens = 0
     for record in ranked:
         if record.expires_at is not None and record.expires_at <= effective_as_of:
             continue
         key = (record.memory_type, _normalize_memory_text(record.text))
         if key in seen:
             continue
+        token_cost = _estimate_tokens(record.text)
+        if used_tokens + token_cost > max_tokens:
+            continue
         seen.add(key)
+        used_tokens += token_cost
         unique.append(
             ConfirmedMemoryInput(
                 memory_type=record.memory_type,
@@ -63,11 +92,29 @@ def list_confirmed_repo_memories(
     return tuple(unique)
 
 
+def _rank(records: list[MemoryRecord]) -> list[MemoryRecord]:
+    return sorted(
+        records,
+        key=lambda record: (
+            _TYPE_PRIORITY.get(record.memory_type, len(_TYPE_PRIORITY)),
+            -record.updated_at.timestamp(),
+            -record.created_at.timestamp(),
+            str(record.memory_id),
+        ),
+    )
+
+
+def _estimate_tokens(text: str) -> int:
+    return max(1, (len(text) + 3) // 4)
+
+
 def list_confirmed_repo_memory_texts(
     database_path: str | Path,
     *,
     repo_id: str,
     limit: int = 8,
+    query_text: str | None = None,
+    max_tokens: int = 1_200,
     as_of: datetime | None = None,
 ) -> tuple[str, ...]:
     return tuple(
@@ -76,6 +123,8 @@ def list_confirmed_repo_memory_texts(
             database_path,
             repo_id=repo_id,
             limit=limit,
+            query_text=query_text,
+            max_tokens=max_tokens,
             as_of=as_of,
         )
     )

@@ -4,7 +4,12 @@ import sys
 from pathlib import Path
 
 import pytest
-from zebra_agent_config import load_settings, trusted_local_mode_enabled
+from zebra_agent_config import (
+    McpServerSettings,
+    load_settings,
+    trusted_local_mode_enabled,
+    with_task_workspace_root,
+)
 
 
 def test_load_settings_reads_default_profile() -> None:
@@ -114,6 +119,54 @@ def test_load_settings_parses_bounded_stdio_mcp_servers(tmp_path: Path) -> None:
     assert settings.mcp_servers[0].name == "local"
     assert settings.mcp_servers[0].command == str(Path(sys.executable).resolve())
     assert settings.mcp_servers[0].args == (str(script),)
+
+
+def test_mcp_server_env_contains_only_explicit_values(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("UNRELATED_SECRET_SENTINEL", "must-not-reach-stdio")
+    settings = load_settings(
+        {
+            "MINIMAX_API_KEY": "configured-key",
+            "ZEBRA_MCP_SERVERS": json.dumps(
+                {
+                    "minimax": {
+                        "command": sys.executable,
+                        "env": {
+                            "MINIMAX_API_KEY": "$MINIMAX_API_KEY",
+                            "MINIMAX_API_HOST": "https://api.minimaxi.com",
+                        },
+                    }
+                }
+            ),
+        }
+    )
+
+    [server] = settings.mcp_servers
+    assert server.env == {
+        "MINIMAX_API_KEY": "configured-key",
+        "MINIMAX_API_HOST": "https://api.minimaxi.com",
+    }
+
+
+def test_task_workspace_overlay_is_minimax_only_and_does_not_mutate_settings(
+    tmp_path: Path,
+) -> None:
+    minimax = McpServerSettings(
+        name="minimax",
+        command="/usr/bin/python3",
+        env={"MINIMAX_API_KEY": "configured-key"},
+    )
+    other = McpServerSettings(name="other", command="/usr/bin/python3")
+
+    overlaid = with_task_workspace_root((minimax, other), tmp_path / "task")
+
+    assert minimax.env == {"MINIMAX_API_KEY": "configured-key"}
+    assert overlaid[0].env == {
+        "MINIMAX_API_KEY": "configured-key",
+        "ZEBRA_WORKSPACE_ROOT": str(tmp_path / "task"),
+    }
+    assert overlaid[1] is other
 
 
 @pytest.mark.parametrize(

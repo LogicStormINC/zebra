@@ -4,7 +4,11 @@ import json
 from collections.abc import Callable
 from hashlib import sha256
 
-from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.messages import (
+    MessageRole,
+    SessionMessage,
+    without_superseded_operation_failures,
+)
 from agent_core.domain.tools import ToolCall
 
 from agent_context.projection_models import (
@@ -29,6 +33,8 @@ _UNRESOLVED_MARKERS = (
     '"status": "error"',
     "traceback (most recent call last)",
 )
+_SUCCEEDED = "succeeded"
+_FAILED = "failed"
 
 
 def build_protected_instruction_ledger(
@@ -77,8 +83,11 @@ def build_active_context_projection(
 ) -> ActiveContextProjection:
     if not 2 <= recent_exact_exchanges <= 4:
         raise ValueError("recent_exact_exchanges must be between 2 and 4")
-    ledger = build_protected_instruction_ledger(messages)
-    exchanges = _completed_tool_exchanges(messages)
+    active_messages = without_superseded_operation_failures(
+        _rehydrate_complete_operation_tombstones(messages)
+    )
+    ledger = build_protected_instruction_ledger(active_messages)
+    exchanges = _completed_tool_exchanges(active_messages)
     exact = set(range(max(0, len(exchanges) - recent_exact_exchanges), len(exchanges)))
     latest_versions: dict[str, tuple[int, str]] = {}
     for exchange_index, (_, assistant, results) in enumerate(exchanges):
@@ -104,7 +113,7 @@ def build_active_context_projection(
         consumed.update(range(start, start + 1 + len(results)))
 
     projected_messages: list[SessionMessage] = []
-    for index, message in enumerate(messages):
+    for index, message in enumerate(active_messages):
         replacement = replacements.get(index)
         if replacement is not None:
             projected_messages.extend(replacement)
@@ -140,6 +149,8 @@ def rehydrate_projection(
     for result, tombstone in zip(exchange.results, exchange.tombstones, strict=True):
         if tombstone.provenance_source not in allowed_provenance:
             raise PermissionError("tombstone provenance is not allowed")
+        if tombstone.status != _SUCCEEDED:
+            raise PermissionError("only succeeded tool results may be rehydrated")
         if not policy_allows(tombstone):
             raise PermissionError("rehydration denied by policy")
         content = load_artifact(tombstone.artifact_uri)
@@ -170,6 +181,17 @@ def _completed_tool_exchanges(
     messages: tuple[SessionMessage, ...],
 ) -> list[tuple[int, SessionMessage, tuple[SessionMessage, ...]]]:
     exchanges = []
+    for index, message, results in _tool_exchanges(messages):
+        if any(_must_remain_exact(result) for result in results):
+            continue
+        exchanges.append((index, message, results))
+    return exchanges
+
+
+def _tool_exchanges(
+    messages: tuple[SessionMessage, ...],
+) -> list[tuple[int, SessionMessage, tuple[SessionMessage, ...]]]:
+    exchanges = []
     for index, message in enumerate(messages):
         if message.role is not MessageRole.ASSISTANT or not message.tool_calls:
             continue
@@ -180,7 +202,7 @@ def _completed_tool_exchanges(
             cursor += 1
         expected = {call.provider_call_id or str(call.tool_call_id) for call in message.tool_calls}
         actual = {result.tool_call_id for result in results}
-        if expected != actual or any(_must_remain_exact(result) for result in results):
+        if expected != actual:
             continue
         exchanges.append((index, message, tuple(results)))
     return exchanges
@@ -203,7 +225,7 @@ def _fold_exchange(
         ToolResultTombstone(
             tool_name=call.name,
             call_id=result.tool_call_id or "",
-            status="succeeded",
+            status=tool_result_status(result),
             artifact_uri=_result_artifact_uri(result)
             or f"event-sha256://{_digest(result.content)}",
             checksum=_result_checksum(result),
@@ -243,10 +265,93 @@ def _replace_projected_exchange(
 def _must_remain_exact(message: SessionMessage) -> bool:
     if ToolResultTombstone.parse(message.content) is not None:
         return True
+    return tool_result_status(message) != _SUCCEEDED
+
+
+def _rehydrate_complete_operation_tombstones(
+    messages: tuple[SessionMessage, ...],
+) -> tuple[SessionMessage, ...]:
+    calls = {
+        call.provider_call_id or str(call.tool_call_id): call
+        for message in messages
+        for call in message.tool_calls
+    }
+    restored: list[SessionMessage] = []
+    for message in messages:
+        call = calls.get(message.tool_call_id or "")
+        content = _complete_inline_operation_output(message, call)
+        restored.append(
+            message if content is None else message.model_copy(update={"content": content})
+        )
+    return tuple(restored)
+
+
+def _complete_inline_operation_output(
+    message: SessionMessage,
+    call: ToolCall | None,
+) -> str | None:
+    operation_key = message.metadata.get("operation_key")
+    if (
+        call is None
+        or message.role is not MessageRole.TOOL
+        or not isinstance(operation_key, str)
+        or not operation_key.strip()
+        or tool_result_status(message) != _SUCCEEDED
+    ):
+        return None
+    tombstone = ToolResultTombstone.parse(message.content)
+    envelope = message.metadata.get("output_envelope")
+    if tombstone is None or not isinstance(envelope, dict):
+        return None
+    preview = envelope.get("preview_head")
+    provenance = envelope.get("provenance")
+    if (
+        tombstone.status != _SUCCEEDED
+        or tombstone.provenance_source != "tool_trace"
+        or tombstone.tool_name != call.name
+        or tombstone.call_id != message.tool_call_id
+        or envelope.get("truncated") is not False
+        or envelope.get("preview_tail") != ""
+        or not isinstance(preview, str)
+        or not isinstance(provenance, dict)
+    ):
+        return None
+    checksum = _metadata_text(envelope, "checksum")
+    artifact_uri = _metadata_text(envelope, "artifact_uri")
+    if (
+        checksum is None
+        or artifact_uri is None
+        or checksum != tombstone.checksum
+        or checksum != _metadata_text(message.metadata, "output_sha256")
+        or artifact_uri != tombstone.artifact_uri
+        or artifact_uri != _metadata_text(message.metadata, "artifact_uri")
+        or envelope.get("digest") != f"sha256:{checksum}"
+        or envelope.get("original_bytes") != len(preview.encode())
+        or envelope.get("retained_bytes") != len(preview.encode())
+        or message.metadata.get("output_size_bytes") != len(preview.encode())
+        or message.metadata.get("output_truncated") is not False
+        or tombstone.original_characters != len(preview)
+        or provenance.get("tool_name") != call.name
+        or provenance.get("tool_call_id") != str(call.tool_call_id)
+        or _digest(preview) != checksum
+    ):
+        return None
+    return preview
+
+
+def _metadata_text(metadata: dict[str, object], key: str) -> str | None:
+    value = metadata.get(key)
+    return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def tool_result_status(message: SessionMessage) -> str:
+    value = message.metadata.get("tool_result_status")
+    if value in {_SUCCEEDED, _FAILED}:
+        return value
+    # ponytail: old Event Store history lacks structured result status; retain
+    # suspicious results until it is rewritten through the current harness.
     normalized = message.content.casefold()
-    # ponytail: SessionMessage lacks structured result status; keep suspicious results
-    # exact until core exposes ToolCallStatus on conversation messages.
-    return any(marker in normalized for marker in _UNRESOLVED_MARKERS)
+    return _FAILED if any(marker in normalized for marker in _UNRESOLVED_MARKERS) else _SUCCEEDED
 
 
 def _content_locator(tool_name: str, arguments: dict[str, object]) -> str | None:

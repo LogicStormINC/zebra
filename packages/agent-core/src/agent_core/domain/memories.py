@@ -95,6 +95,7 @@ class MemoryQuery(BaseModel):
     tenant_id: str | None = None
     user_id: str | None = None
     repo_id: str | None = None
+    text_query: str | None = None
     source_session_id: SessionId | None = None
     memory_types: tuple[MemoryType, ...] = ()
     statuses: tuple[MemoryStatus, ...] = (MemoryStatus.CONFIRMED,)
@@ -106,6 +107,7 @@ class MemoryQuery(BaseModel):
         object.__setattr__(self, "tenant_id", _normalize_optional_text(self.tenant_id))
         object.__setattr__(self, "user_id", _normalize_optional_text(self.user_id))
         object.__setattr__(self, "repo_id", _normalize_optional_text(self.repo_id))
+        object.__setattr__(self, "text_query", _normalize_optional_text(self.text_query))
         if self.tenant_id is None and self.user_id is None and self.repo_id is None:
             raise ValueError("memory query requires at least one scope")
         if self.visibility is MemoryVisibility.REPO and self.repo_id is None:

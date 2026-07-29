@@ -4,8 +4,11 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from agent_core.application import attachment_refs_from_event
-from agent_core.domain.attachments import AttachmentContextInput
+from agent_core.application import (
+    attachment_refs_from_event,
+    task_workspace_image_prompt_suffix,
+)
+from agent_core.domain.attachments import AttachmentContextInput, SessionAttachmentRef
 from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.session_history import normalize_history_session_ids
@@ -40,6 +43,7 @@ def recover_task(
     workspace: WorkspaceProjection,
     fallback_title: str,
     attachment_store: SQLiteArtifactPayloadStore,
+    task_image_refs: tuple[SessionAttachmentRef, ...] = (),
     active_capsule: ContextCapsule | None = None,
     handoff_evidence: RuntimeEvidenceInput | None = None,
 ) -> RecoveredTask:
@@ -56,6 +60,7 @@ def recover_task(
             task_payload = event.payload
     if user_input is None or user_event is None or task_payload is None:
         raise ValueError("queued session is missing bootstrap task input")
+    user_input = _with_task_image_context(user_input, task_image_refs)
     title = task_payload.get("title")
     resolved_title = title.strip() if isinstance(title, str) and title.strip() else fallback_title
     policy_profile = workspace.policy_profile or PolicyProfile.WORKSPACE_WRITE.value
@@ -88,6 +93,20 @@ def recover_task(
             *((handoff_evidence,) if handoff_evidence is not None else ()),
         ),
     )
+
+
+def _with_task_image_context(
+    user_input: str,
+    attachments: tuple[SessionAttachmentRef, ...],
+) -> str:
+    paths = tuple(
+        (attachment.workspace_path, attachment.media_type)
+        for attachment in attachments
+        if attachment.storage_kind == "task_workspace"
+        and attachment.workspace_path is not None
+        and attachment.workspace_path not in user_input
+    )
+    return user_input + task_workspace_image_prompt_suffix(paths)
 
 
 def _history_session_ids(value: object) -> tuple[str, ...] | None:

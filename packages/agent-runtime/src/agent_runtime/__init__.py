@@ -15,6 +15,7 @@ from agent_runtime.adapters.local import LocalRuntime
 from agent_runtime.adapters.oci import OciRuntime
 from agent_runtime.adapters.os_sandbox import OsSandboxRuntime
 from agent_runtime.adapters.os_sandbox_platform import os_sandbox_engine
+from agent_runtime.finos_journal_provider import FinosJournalProvider, FinosJournalTransport
 from agent_runtime.git_commit import (
     WorkspaceCommitCommand,
     WorkspaceCommitError,
@@ -109,6 +110,8 @@ __all__ = [
     "RuntimeClass",
     "RuntimeLimits",
     "EffectiveRuntimeAuthority",
+    "FinosJournalProvider",
+    "FinosJournalTransport",
     "RuntimeHandle",
     "RuntimeSnapshot",
     "SandboxSpec",

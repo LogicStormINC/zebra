@@ -73,3 +73,39 @@ class SessionMessage(BaseModel):
                 "provider_reasoning_content is only valid for assistant tool-call messages"
             )
         return self
+
+
+def without_superseded_operation_failures(
+    messages: tuple[SessionMessage, ...],
+) -> tuple[SessionMessage, ...]:
+    succeeded: set[str] = set()
+    superseded: set[str] = set()
+    for message in reversed(messages):
+        if message.role is not MessageRole.TOOL:
+            continue
+        operation_key = message.metadata.get("operation_key")
+        status = message.metadata.get("tool_result_status")
+        if not isinstance(operation_key, str) or not operation_key:
+            continue
+        if status == "succeeded":
+            succeeded.add(operation_key)
+        elif status == "failed" and operation_key in succeeded and message.tool_call_id:
+            superseded.add(message.tool_call_id)
+    if not superseded:
+        return messages
+    active: list[SessionMessage] = []
+    for message in messages:
+        if message.role is MessageRole.TOOL and message.tool_call_id in superseded:
+            continue
+        if message.role is MessageRole.ASSISTANT and message.tool_calls:
+            calls = tuple(
+                call
+                for call in message.tool_calls
+                if (call.provider_call_id or str(call.tool_call_id)) not in superseded
+            )
+            if not calls:
+                continue
+            if calls != message.tool_calls:
+                message = message.model_copy(update={"tool_calls": calls})
+        active.append(message)
+    return tuple(active)

@@ -1,5 +1,6 @@
 from zebra_agent_config.settings import (
     ApiSettings,
+    FinosJournalProviderSettings,
     McpHttpServerSettings,
     McpServerSettings,
     ModelSettings,
@@ -11,9 +12,11 @@ from zebra_agent_config.settings import (
     trusted_local_mode_enabled,
 )
 from zebra_agent_config.setup_settings import SetupDependencySettings, SetupSettings
+from zebra_agent_config.task_workspace import task_workspace_root, with_task_workspace_root
 
 __all__ = [
     "ApiSettings",
+    "FinosJournalProviderSettings",
     "McpHttpServerSettings",
     "McpServerSettings",
     "ModelSettings",
@@ -24,5 +27,7 @@ __all__ = [
     "SetupSettings",
     "ZebraAgentSettings",
     "load_settings",
+    "task_workspace_root",
     "trusted_local_mode_enabled",
+    "with_task_workspace_root",
 ]

@@ -19,6 +19,8 @@ class ApiStatusMixin:
                     "profile": self.settings.profile,
                     "runtime_class": self.settings.runtime.runtime_class,
                     "fallback_allowed": False,
+                    "build_commit": self.settings.build_commit,
+                    "task_image_attachments": True,
                 },
             },
         )

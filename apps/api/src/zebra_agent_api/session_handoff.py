@@ -33,6 +33,7 @@ from agent_storage import (
     SQLiteEventStore,
     SQLiteProjectionStore,
     SQLiteSessionHandoffStore,
+    StoredContextCapsule,
 )
 
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict
@@ -162,10 +163,23 @@ class SessionHandoffApi:
                 body["idempotent_replay"] = True
                 return ApiResponse(200, body)
         events = self._events.list_for_session(source_id)
-        capsule = SQLiteContextLifecycleStore(self._database_path).get_active_capsule(source_id)
+        capsule = _active_capsule_or_none(self._database_path, source_id)
+        uses_active_projection = (
+            actor_kind is HandoffActorKind.AUTOMATION
+            and request.reason is HandoffReason.INTERNAL_TERMINAL_FOLLOW_UP
+            and capsule is not None
+        )
         completed_work = parsed["completed_work"]
-        if actor_kind is HandoffActorKind.AUTOMATION and not completed_work:
+        if (
+            actor_kind is HandoffActorKind.AUTOMATION
+            and not completed_work
+            and not uses_active_projection
+        ):
             completed_work = _conversation_checkpoint(events)
+        objective = parsed["objective"]
+        if uses_active_projection:
+            assert capsule is not None
+            objective = capsule.capsule.objective
         envelope = build_handoff_envelope(
             HandoffEnvelopeBuildInput(
                 handoff_id=handoff_id,
@@ -175,7 +189,7 @@ class SessionHandoffApi:
                 source_stage_index=lineage.stage_index,
                 reason=request.reason,
                 focus=request.focus,
-                objective=parsed["objective"],
+                objective=objective,
                 completed_work=completed_work,
                 pending_work=parsed["pending_work"],
                 immediate_next=request.stage_prompt,
@@ -188,6 +202,14 @@ class SessionHandoffApi:
                 capsule=None if capsule is None else capsule.capsule,
                 known_omissions=(
                     "provider-private continuation, reasoning, credentials and raw tool outputs",
+                    *(
+                        ("active projection unavailable; bounded checkpoint fallback",)
+                        if (
+                            request.reason is HandoffReason.INTERNAL_TERMINAL_FOLLOW_UP
+                            and capsule is None
+                        )
+                        else ()
+                    ),
                 ),
             )
         )
@@ -324,6 +346,16 @@ def _source_lineage(items: tuple[SessionLineage, ...], source_id: SessionId) -> 
         (item for item in items if item.session_id == source_id),
         SessionLineage(session_id=source_id, root_session_id=source_id, stage_index=0),
     )
+
+
+def _active_capsule_or_none(
+    database_path: Path,
+    source_id: SessionId,
+) -> StoredContextCapsule | None:
+    try:
+        return SQLiteContextLifecycleStore(database_path).get_active_capsule(source_id)
+    except ValueError:
+        return None
 
 
 def _event_hash(events: list[SessionEvent]) -> str:

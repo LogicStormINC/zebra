@@ -19,3 +19,4 @@ class PolicyDecision(BaseModel):
     target: str | None = None
     network_profile: str | None = None
     scope: tuple[str, ...] = ()
+    recoverable: bool = False

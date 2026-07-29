@@ -2,8 +2,10 @@ from collections.abc import Callable, Mapping
 from dataclasses import replace
 
 from agent_core.domain.events import EventActor, EventType
-from agent_core.domain.messages import SessionMessage
+from agent_core.domain.identifiers import new_message_id
+from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.session_handoff import HandoffReason
 from agent_core.domain.tools import ToolCall
 from agent_core.harness.hooks import (
     NoopPlanner,
@@ -11,8 +13,8 @@ from agent_core.harness.hooks import (
     PlannerHook,
     VerifierHook,
 )
-from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.model_request import allowed_response_repairs
+from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import (
     HarnessAttemptResult,
     HarnessContext,
@@ -32,6 +34,13 @@ from agent_core.harness.tool_resolution import ToolCallResolver
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.tool_gateway import ToolGatewayPort
+
+ACTIVE_PROJECTION_FOLLOW_UP_GUIDANCE = (
+    "Terminal follow-up continuity: Apply the latest user follow-up before planning or "
+    "requesting tools. If it resolves an open question or decision in recovered context, do "
+    "not ask it again; use the recovered evidence to continue toward a self-contained answer. "
+    "Tools remain available for genuinely new information required to complete the follow-up."
+)
 
 
 class SingleAttemptOrchestrator:
@@ -76,7 +85,24 @@ class SingleAttemptOrchestrator:
         messages = self._model_step.build_initial_messages(
             task,
             created_at=context.attempt.started_at,
+            model_gateway=self._model_gateway,
         )
+        if any(
+            evidence.kind == "session_handoff"
+            and (evidence.metadata or {}).get("handoff_source") == "active_projection"
+            and (evidence.metadata or {}).get("handoff_reason")
+            == HandoffReason.INTERNAL_TERMINAL_FOLLOW_UP.value
+            for evidence in task.runtime_evidence
+        ):
+            messages.insert(
+                -1,
+                SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.SYSTEM,
+                    content=ACTIVE_PROJECTION_FOLLOW_UP_GUIDANCE,
+                    created_at=context.attempt.started_at,
+                ),
+            )
         emitted_events = HarnessEventBuffer(self._event_sink)
         compaction = self._model_step.prepare_conversation(
             messages,

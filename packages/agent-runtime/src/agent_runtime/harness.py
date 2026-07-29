@@ -52,6 +52,7 @@ from agent_tools.errors import ToolRegistryError
 from agent_tools.skills_catalog import LocalSkillCatalog, ScopedSkillRoot, SkillEnablementState
 
 from agent_runtime.adapters.local import LocalRuntime
+from agent_runtime.finos_journal_provider import FinosJournalProvider
 from agent_runtime.mcp_protocol import McpAnyServerSpec
 from agent_runtime.mcp_routing import build_mcp_transport
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
@@ -72,6 +73,7 @@ DEFAULT_RESEARCH_CHILD_LIMIT = 3
 def run_local_harness(
     *,
     prompt: str,
+    public_content: str | None = None,
     title: str,
     workspace_root: Path,
     model_gateway: ModelGatewayPort,
@@ -90,6 +92,7 @@ def run_local_harness(
     max_model_calls: int | None = None,
     max_tool_calls: int | None = None,
     web_pipeline_v2: bool = False,
+    session_id: SessionId | None = None,
 ) -> HarnessLoopResult:
     tool_gateway = LocalToolGateway(
         workspace_root,
@@ -115,6 +118,7 @@ def run_local_harness(
             HarnessTask(
                 title=title,
                 user_input=prompt,
+                public_content=public_content,
                 max_attempts=1,
                 max_model_calls=max_model_calls,
                 max_tool_calls=max_tool_calls,
@@ -149,6 +153,7 @@ def run_local_harness(
                 max_parallel_tool_calls=3,
                 tool_call_resolver=tool_gateway.resolve_model_tool_calls,
             ).run,
+            session_id=session_id,
         )
     finally:
         tool_gateway.close()
@@ -174,6 +179,7 @@ class LocalToolGateway(ToolGatewayPort):
         runtime: RuntimePort | None = None,
         runtime_handle: RuntimeHandle | None = None,
         artifact_payload_store: ArtifactPayloadStorePort | None = None,
+        finos_journal_provider: FinosJournalProvider | None = None,
         trusted_local: bool = False,
         web_pipeline_v2: bool = False,
     ) -> None:
@@ -234,12 +240,12 @@ class LocalToolGateway(ToolGatewayPort):
             output_projector=output_projector,
             web_pipeline_v2=web_pipeline_v2,
         )
+        if finos_journal_provider is not None:
+            finos_journal_provider.register(registry)
         self._skill_component_names: tuple[str, ...] = ()
         if skill_roots:
             catalog = LocalSkillCatalog(skill_roots, skills_state=skills_state)
-            self._skill_component_names = tuple(
-                metadata.name for metadata in catalog.list()[0]
-            )
+            self._skill_component_names = tuple(metadata.name for metadata in catalog.list()[0])
             for skill_tool in (SkillsListTool(catalog), SkillsReadTool(catalog)):
                 if skill_tool.contract.name in enabled_names:
                     registry.register(skill_tool.contract, skill_tool.handle)

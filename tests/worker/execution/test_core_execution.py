@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Event, Thread
 
@@ -14,8 +15,11 @@ from agent_core.ports.runtime import EffectiveRuntimeAuthority, RuntimeClass
 from agent_runtime import LocalRuntime
 from agent_security import LocalPolicyEngine, NetworkProfile
 from agent_storage import (
+    FinosJournalGrant,
+    SQLiteAgentTaskStore,
     SQLiteArtifactPayloadStore,
     SQLiteEventStore,
+    SQLiteFinosJournalGrantStore,
     SQLiteLeaseStore,
     SQLiteModelCallStore,
     SQLiteToolRunStore,
@@ -28,8 +32,10 @@ from worker_execution_support import (
     _created_at,
     _seed_ready_session,
     _seed_ready_session_with_input,
+    _settings,
     _tool_gateway,
 )
+from zebra_agent_config import FinosJournalProviderSettings
 from zebra_agent_worker.control import SessionControlService
 
 
@@ -254,10 +260,18 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
     )
     captured: list[NetworkProfile] = []
 
-    def build_policy(*, profile, network_profile, web_search_endpoint, trusted_local):
+    def build_policy(
+        *,
+        profile,
+        network_profile,
+        web_search_endpoint,
+        trusted_local,
+        allow_finos_account_changes_proposal,
+    ):
         captured.append(network_profile)
         assert web_search_endpoint is None
         assert trusted_local is False
+        assert allow_finos_account_changes_proposal is False
         return LocalPolicyEngine(profile=profile, network_profile=network_profile)
 
     monkeypatch.setattr(
@@ -274,6 +288,61 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
 
     assert captured[0].name.value == "domain-allowlist"
     assert captured[0].domain_allowlist == ("docs.example.com",)
+
+
+def test_worker_scopes_account_change_proposal_gate_to_the_v2_task_binding(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    captured: list[bool] = []
+
+    def build_policy(
+        *,
+        profile,
+        network_profile,
+        web_search_endpoint,
+        trusted_local,
+        allow_finos_account_changes_proposal,
+    ):
+        assert web_search_endpoint is None
+        assert trusted_local is False
+        captured.append(allow_finos_account_changes_proposal)
+        return LocalPolicyEngine(profile=profile, network_profile=network_profile)
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _assistant_only_gateway(settings=settings),
+    )
+    monkeypatch.setattr("zebra_agent_worker.execution.LocalPolicyEngine", build_policy)
+
+    for index, (contract_version, expected_gate) in enumerate(
+        (("finos.journals.v1", False), ("finos.journals.v2", True))
+    ):
+        database_path = tmp_path / f"worker-{index}.db"
+        session_id = _seed_ready_session(database_path, tmp_path / f"workspace-{index}")
+        task = SQLiteAgentTaskStore(database_path).ensure_for_session(session_id)
+        SQLiteFinosJournalGrantStore(database_path).bind(
+            FinosJournalGrant(
+                task_id=task.task_id,
+                contract_version=contract_version,
+                grant=f"private-grant-{index}",
+                expires_at=datetime.now(UTC) + timedelta(hours=1),
+            )
+        )
+        settings = replace(
+            _settings(database_path),
+            finos_journal_provider=FinosJournalProviderSettings(
+                base_url="https://finos.internal"
+            ),
+        )
+
+        _build_execution_service(database_path, settings=settings).execute_session(
+            session_id,
+            worker_id=f"worker-provider-{index}",
+            executed_at=_created_at(),
+        )
+
+        assert captured[-1] is expected_gate
 
 
 def test_worker_execution_service_indexes_tool_run(tmp_path: Path, monkeypatch) -> None:

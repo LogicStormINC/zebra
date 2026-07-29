@@ -30,6 +30,7 @@ class HarnessStopReason(StrEnum):
     RETRY_EXHAUSTED = "retry_exhausted"
     RETRY_ALLOWED = "retry_allowed"
     TOOL_CALL_BUDGET_EXHAUSTED = "tool_call_budget_exhausted"
+    TOOL_LOOP_NO_PROGRESS = "tool_loop_no_progress"
     APPROVAL_REQUIRED = "approval_required"
     CLARIFICATION_REQUIRED = "clarification_required"
 
@@ -52,6 +53,7 @@ class HarnessTask:
     runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = ()
     attachments: tuple[AttachmentContextInput, ...] = ()
+    public_content: str | None = None
     task_plan: SessionPlan = field(default_factory=SessionPlan)
 
     def __post_init__(self) -> None:
@@ -59,6 +61,13 @@ class HarnessTask:
             raise ValueError("harness task title must not be blank")
         if not self.user_input.strip():
             raise ValueError("harness task user_input must not be blank")
+        if self.public_content is not None:
+            normalized_public_content = self.public_content.strip()
+            if not normalized_public_content:
+                raise ValueError("harness task public_content must not be blank")
+            if len(normalized_public_content) > 64_000:
+                raise ValueError("harness task public_content must not exceed 64000 characters")
+            object.__setattr__(self, "public_content", normalized_public_content)
         if self.max_attempts <= 0:
             raise ValueError("harness task max_attempts must be positive")
         if self.max_model_calls is not None and self.max_model_calls <= 0:

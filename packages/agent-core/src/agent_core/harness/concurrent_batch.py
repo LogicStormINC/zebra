@@ -8,7 +8,11 @@ from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.policies import PolicyDecisionType
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
-from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
+from agent_core.harness.attempt_result import (
+    action_fingerprint,
+    build_attempt_result,
+    update_batch_observation_progress,
+)
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import (
@@ -18,7 +22,11 @@ from agent_core.harness.models import (
     HarnessEventDraft,
 )
 from agent_core.harness.orchestration_events import policy_decision_payload
-from agent_core.harness.policy_step import policy_stop_result
+from agent_core.harness.policy_step import (
+    policy_recovery_metadata,
+    policy_stop_result,
+    recoverable_policy_deny_observation,
+)
 from agent_core.harness.selection import ToolCallSelection
 from agent_core.harness.subagent_metadata import aggregate_subagent_metadata
 from agent_core.harness.tool_execution import record_tool_result
@@ -97,6 +105,7 @@ class ConcurrentToolBatchExecutor:
         metadata: dict[str, object],
         first_selection: ToolCallSelection | None,
     ) -> ToolBatchResult:
+        batch_event_start = len(emitted_events)
         exceeded = self._exceeded_batch_limit(tool_calls)
         if exceeded is not None:
             tool_name, limit = exceeded
@@ -118,6 +127,7 @@ class ConcurrentToolBatchExecutor:
         loop_guard_counts = _loop_guard_counts(metadata)
         metadata = {**metadata, "loop_guard_counts": dict(loop_guard_counts)}
         duplicate_indices: set[int] = set()
+        observations: list[tuple[ToolCall, ToolResult]] = []
         for index, tool_call in enumerate(tool_calls):
             summary, selection_metadata = selection_evidence(
                 index=index,
@@ -143,24 +153,6 @@ class ConcurrentToolBatchExecutor:
                 loop_guard_counts[fingerprint] = (
                     loop_guard_counts.get(fingerprint, 0) + 1
                 )
-                if loop_guard_counts[fingerprint] >= self._repeat_hard_stop_threshold:
-                    return self._terminal(
-                        summary=(
-                            f"loop guard exhausted: {tool_call.name} repeated "
-                            f"{loop_guard_counts[fingerprint]} times"
-                        ),
-                        completion=completion,
-                        emitted_events=emitted_events,
-                        model_calls_used=model_calls_used,
-                        tool_calls_executed=tool_calls_executed,
-                        metadata={
-                            **metadata,
-                            "stop_reason": "loop_guard_exhausted",
-                            "loop_guard_tool_name": tool_call.name,
-                            "loop_guard_repeat_count": loop_guard_counts[fingerprint],
-                            "remaining_tool_call_count": len(tool_calls),
-                        },
-                    )
                 duplicate_indices.add(index)
             seen.add(fingerprint)
             decision = self._policy_engine.evaluate_tool_call(tool_call)
@@ -176,6 +168,29 @@ class ConcurrentToolBatchExecutor:
                 )
             )
             if decision.decision is not PolicyDecisionType.ALLOW:
+                if decision.decision is PolicyDecisionType.DENY and decision.recoverable:
+                    observation = recoverable_policy_deny_observation(
+                        context,
+                        messages=messages,
+                        tool_call=tool_call,
+                        decision=decision,
+                        retained_tool_calls=(tool_call,),
+                        model_step=self._model_step,
+                        verifier=self._verifier,
+                        emitted_events=emitted_events,
+                    )
+                    observations.append((tool_call, observation.result))
+                    metadata = policy_recovery_metadata({**metadata, **observation.metadata})
+                    return ToolBatchResult(
+                        None,
+                        tool_calls_executed,
+                        update_batch_observation_progress(
+                            metadata,
+                            observations,
+                            emitted_events[batch_event_start:],
+                            threshold=self._repeat_hard_stop_threshold,
+                        ),
+                    )
                 terminal = policy_stop_result(
                     context,
                     messages=messages,
@@ -191,6 +206,7 @@ class ConcurrentToolBatchExecutor:
                 return ToolBatchResult(terminal, tool_calls_executed, metadata)
         batch_metadata = {
             **metadata,
+            "loop_guard_counts": loop_guard_counts,
             "parallel_batch_size": len(tool_calls),
             "parallelism_limit": self._max_parallel_tool_calls,
         }
@@ -212,6 +228,7 @@ class ConcurrentToolBatchExecutor:
             )
             tool_calls_executed += 1
             fingerprints.add(action_fingerprint(tool_call))
+            observations.append((tool_call, tool_result))
             self._model_step.append_tool_result(
                 messages,
                 tool_call=tool_call,
@@ -225,6 +242,12 @@ class ConcurrentToolBatchExecutor:
                 batch_metadata,
                 tool_result,
             )
+        batch_metadata = update_batch_observation_progress(
+            batch_metadata,
+            observations,
+            emitted_events[batch_event_start:],
+            threshold=self._repeat_hard_stop_threshold,
+        )
         if failed_names:
             prior_failures = batch_metadata.get("recoverable_tool_failure_count", 0)
             failure_count = (

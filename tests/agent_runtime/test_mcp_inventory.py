@@ -13,6 +13,7 @@ class _Server:
     name: str
     command: str
     args: tuple[str, ...]
+    env: dict[str, str] | None = None
 
 
 def test_unconfigured_inventory_does_not_start_transport(monkeypatch) -> None:

@@ -12,6 +12,8 @@ from zebra_agent_api.task_api import (
     rollover_task,
     route_active_task,
 )
+from zebra_agent_api.task_conversation import TaskConversationReadApi
+from zebra_agent_api.task_finos_journal_provider import bind_finos_journal_provider
 
 
 class TaskRouteRequest(Protocol):
@@ -34,7 +36,10 @@ class TaskRouteRequest(Protocol):
 def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiResponse | None:
     method = request.method.upper()
     if method == "GET" and request.path == "/tasks":
-        return TaskReadApi(app.database_path).list(request.query or {})
+        return TaskReadApi(app.database_path).list(
+            request.query or {},
+            hide_workspace_paths=True,
+        )
     if method == "POST" and request.path == "/tasks":
         return create_task(app, request.body or {}, idempotency_key=_idempotency_key(request))
     if request.path.startswith("/internal/tasks/"):
@@ -52,6 +57,24 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
     if not request.path.startswith("/tasks/"):
         return None
     parts = _parts(request.path, "/tasks/")
+    if (
+        method == "PUT"
+        and len(parts) == 3
+        and parts[1:] == ("business-providers", "finos-journals")
+    ):
+        if app.settings.finos_journal_provider.base_url is None:
+            return ApiResponse(
+                503,
+                {
+                    "status": "provider_unavailable",
+                    "reason": "FinOS Journal provider is not configured",
+                },
+            )
+        return bind_finos_journal_provider(
+            app.database_path,
+            parts[0],
+            request.body or {},
+        )
     if method == "POST" and len(parts) == 2 and parts[1] == "messages":
         return append_task_message(
             app,
@@ -72,6 +95,8 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
         return mutate_task(app, parts[0], parts[1], request.body or {})
     if method == "GET" and len(parts) == 1:
         return TaskReadApi(app.database_path).get(parts[0])
+    if method == "GET" and len(parts) == 2 and parts[1] == "conversation":
+        return TaskConversationReadApi(app.database_path).get(parts[0], request.query or {})
     if method == "GET" and len(parts) == 2 and parts[1] == "stream":
         return TaskReadApi(app.database_path).stream(parts[0])
     if method == "GET" and len(parts) == 2 and parts[1] == "diff":

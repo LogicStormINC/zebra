@@ -5,7 +5,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_context import LocalContextCompiler
-from agent_core.application import MemoryCandidateExtractionService, SessionTitleService
+from agent_core.application import (
+    MemoryCandidateExtractionService,
+    MemoryCandidatePromotionService,
+    SessionTitleService,
+    attachment_refs_from_event,
+)
 from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
@@ -29,6 +34,7 @@ from agent_security import (
     resolve_effective_network_profile,
 )
 from agent_storage import (
+    SQLiteAgentTaskStore,
     SQLiteArtifactPayloadStore,
     SQLiteContextLifecycleStore,
     SQLiteEventStore,
@@ -46,7 +52,9 @@ from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import (
     ZebraAgentSettings,
     load_settings,
+    task_workspace_root,
     trusted_local_mode_enabled,
+    with_task_workspace_root,
 )
 
 import zebra_agent_worker.session_handoff as handoff
@@ -71,6 +79,10 @@ from zebra_agent_worker.control import SessionControlError, SessionControlServic
 from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import finalize_execution
+from zebra_agent_worker.finos_journal_provider import (
+    FINOS_JOURNAL_V2_CONTRACT,
+    build_finos_journal_provider,
+)
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
@@ -127,9 +139,9 @@ class SessionExecutionService:
             SQLiteToolRunStore(database_path),
             self._artifact_payload_store,
         )
-        self._memory_extraction_service = MemoryCandidateExtractionService(
-            SQLiteMemoryStore(database_path)
-        )
+        memory_store = SQLiteMemoryStore(database_path)
+        self._memory_extraction_service = MemoryCandidateExtractionService(memory_store)
+        self._memory_promotion_service = MemoryCandidatePromotionService(memory_store)
         self._handoff_gate = handoff.SessionHandoffRecoveryGate(str(database_path))
 
     def execute_session(
@@ -169,6 +181,14 @@ class SessionExecutionService:
             release=lambda: self._claim_service.release_claim(claimed),
         )
         session_events = self._event_store.list_for_session(session_id)
+        task_store = SQLiteAgentTaskStore(self._database_path)
+        task_record = task_store.ensure_for_session(session_id)
+        task_image_refs = tuple(
+            attachment
+            for task_event in task_store.read_events(task_record.task_id, -1)
+            for attachment in attachment_refs_from_event(task_event.event)
+            if attachment.storage_kind == "task_workspace"
+        )
         active_context = self._context_lifecycle_store.get_active_capsule(session_id)
         provider_continuation = recover_provider_continuation(
             session_events, self._provider_continuation_store
@@ -179,6 +199,7 @@ class SessionExecutionService:
                 workspace=claimed.recovery.workspace,
                 fallback_title=claimed.recovery.session.title,
                 attachment_store=self._artifact_payload_store,
+                task_image_refs=task_image_refs,
                 active_capsule=active_context.capsule if active_context else None,
                 handoff_evidence=(
                     None if recovered_handoff is None else recovered_handoff.runtime_evidence
@@ -187,6 +208,10 @@ class SessionExecutionService:
         except (FileNotFoundError, ValueError) as exc:
             self._claim_service.release_claim(claimed)
             raise WorkerExecutionError(str(exc)) from exc
+        task_workspace = task_workspace_root(
+            self._settings,
+            str(task_record.task_id),
+        )
         trusted_local = trusted_local_mode_enabled(self._settings)
         effective_network_profile = resolve_effective_network_profile(
             task.network_profile,
@@ -229,6 +254,11 @@ class SessionExecutionService:
                     recovery=self._recovery_service.recover_session(session_id),
                     lease=claimed.lease,
                 )
+            finos_journal_provider = build_finos_journal_provider(
+                settings=self._settings,
+                database_path=self._database_path,
+                session_id=session_id,
+            )
             local_tool_gateway = LocalToolGateway(
                 task.workspace_root,
                 model_gateway=model_gateway,
@@ -250,7 +280,7 @@ class SessionExecutionService:
                     )
                     else None
                 ),
-                mcp_servers=self._settings.mcp_servers,
+                mcp_servers=with_task_workspace_root(self._settings.mcp_servers, task_workspace),
                 mcp_allowlist=task.mcp_allowlist,
                 session_history=SQLiteSessionHistory(
                     self._database_path, allowed_session_ids=task.history_session_ids
@@ -259,6 +289,7 @@ class SessionExecutionService:
                 runtime=runtime,
                 runtime_handle=runtime_handle,
                 artifact_payload_store=self._artifact_payload_store,
+                finos_journal_provider=finos_journal_provider,
                 trusted_local=trusted_local,
                 web_pipeline_v2=self._settings.web_pipeline_v2,
             )
@@ -300,6 +331,7 @@ class SessionExecutionService:
                 confirmed_memories=list_confirmed_repo_memories(
                     self._database_path,
                     repo_id=str(task.workspace_root.resolve()),
+                    query_text=task.user_input,
                 ),
                 attachments=task.attachments,
                 runtime_evidence=task.runtime_evidence,
@@ -411,6 +443,10 @@ class SessionExecutionService:
                 network_profile=effective_network_profile,
                 web_search_endpoint=self._settings.web_search_endpoint,
                 trusted_local=trusted_local,
+                allow_finos_account_changes_proposal=(
+                    finos_journal_provider is not None
+                    and finos_journal_provider.contract_version == FINOS_JOURNAL_V2_CONTRACT
+                ),
             ),
             tool_gateway,
             model_step=model_step,
@@ -456,6 +492,7 @@ class SessionExecutionService:
             recorder=recorder,
             attempt_result=attempt_result,
             memory_extraction_service=self._memory_extraction_service,
+            memory_promotion_service=self._memory_promotion_service,
             title_service=SessionTitleService(model_gateway),
             event_store=self._event_store,
             started_at=started_at,
