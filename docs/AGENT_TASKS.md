@@ -1048,7 +1048,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-FENCE-CON-01 - Worker Mutation Fencing Contract
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Branch: `codex/cloud-agg-fence-con-01`
 - Depends on: approved and integrated `CLOUD-AGG-FENCE-PLAN-01`
@@ -1059,6 +1059,13 @@ cloud mainline and is not built or changed by these cards.
   explicit without implementing an infrastructure adapter.
 - Acceptance: missing or stale Worker authority is not expressible as a valid
   mutation request; API CAS and Worker fenced writes are distinct typed paths.
+- Evidence: `WorkerMutationAuthority` reuses the complete frozen `LeaseFence` and
+  requires canonical namespace, Session and expected stream revision;
+  `AdministrativeMutationCAS` is a separate strict type that rejects a fence.
+  Focused tests pass `19/19`, all Core tests pass `270/270`, changed-file Ruff and
+  strict Mypy over `121` Core files pass, and release Eval passes `10/10`.
+  Repository-wide execution through the older root virtualenv cannot collect the
+  cloud tree because that environment lacks `psycopg`; this card imports no storage.
 
 ### CLOUD-AGG-WORKSPACE-PG-01 - Fenced Workspace Projection
 

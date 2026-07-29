@@ -6326,3 +6326,11 @@ actual byte access.
   `zebra-cloud-trench`, created `codex/cloud-agg-fence-con-01`, and claimed the only
   Ready implementation prerequisite. Scope is Core authority contract plus focused
   tests and governance; database adapters and Desktop remain excluded.
+- implemented the minimal Core authority contract without changing any existing
+  Store Port: complete `WorkerMutationAuthority` and fence-free
+  `AdministrativeMutationCAS`, both strict, frozen and namespace/stream-CAS aware.
+  Focused tests pass `19/19`; all Core tests pass `270/270`; changed-file Ruff and
+  strict Mypy over `121` Core files pass; Eval passes `10/10`. Full Core Ruff still
+  reports three inherited import-order findings outside owned paths. The older root
+  virtualenv lacks `psycopg`, so repository-wide collection through that fallback
+  environment is invalid and is not reported as a code regression.

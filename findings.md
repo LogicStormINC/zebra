@@ -592,3 +592,17 @@
 - `postgres/migrations.py` and Store composition are coordination hotspots. Cards
   that otherwise own separate aggregate modules must integrate migrations in DAG
   order instead of editing those shared files concurrently.
+
+## CLOUD-AGG-FENCE-CON-01 - 2026-07-29
+
+- Reuse `LeaseFence` rather than `WorkerLease`: checkpoint and timestamps are
+  observations, while epoch/token/owner are the identity the transaction must
+  revalidate against database time.
+- Worker authority and API administrative CAS are distinct frozen types. A nullable
+  fence would allow a Worker write without authority and blur the security boundary.
+- Expected stream revision allows `-1` for an empty stream. Capsule pointer,
+  Workspace binding and other aggregate-specific revisions stay in their focused
+  command types rather than a universal union.
+- A generic Unit of Work in Core would leak infrastructure mechanics and add no
+  safety. The proven Effect pattern remains the target: a coarse-grained Adapter
+  validates authority and performs all writes on one connection transaction.

@@ -17,6 +17,10 @@ from agent_core.ports.agent_memory_gateway import (
     MemoryGatewayStatus,
 )
 from agent_core.ports.agent_tasks import AgentTaskPort, TaskEvent
+from agent_core.ports.aggregate_mutation import (
+    AdministrativeMutationCAS,
+    WorkerMutationAuthority,
+)
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.artifact_store import ArtifactStorePort
 from agent_core.ports.clock import ClockPort
@@ -91,6 +95,7 @@ from agent_core.ports.workspace_projection_store import WorkspaceProjectionStore
 
 __all__ = [
     "AgentMemoryGatewayPort",
+    "AdministrativeMutationCAS",
     "ArtifactPayloadStorePort",
     "AgentTaskPort",
     "ArtifactStorePort",
@@ -161,4 +166,5 @@ __all__ = [
     "TaskEvent",
     "WorkspaceProjectionStorePort",
     "WorkspacePort",
+    "WorkerMutationAuthority",
 ]

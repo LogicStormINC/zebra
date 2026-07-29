@@ -39,6 +39,13 @@ LeaseFence。
 - real PostgreSQL 测试覆盖 current、stale epoch、stale token、stale owner、并发、
   namespace 与故障注入。
 
+Core contract 使用 `WorkerMutationAuthority` 表示 Worker transaction 输入，字段为
+deployment namespace、Session、完整 `LeaseFence` 与 expected stream revision。
+`AdministrativeMutationCAS` 使用相同的 namespace/Session/stream CAS，但类型上禁止
+LeaseFence。空 Event stream 的 expected revision 是 `-1`；低于 `-1` 非法。聚合专用
+revision（如 active capsule id 或 Workspace binding revision）继续留在各聚合 request，
+不建立 `str | int | None` 的万能 revision 类型。
+
 ## 3. 权威路径清单
 
 | 聚合族 | 当前 Port / 实现 | 权威性 | 当前事务与缺口 | 目标边界 |
@@ -114,9 +121,10 @@ all adapters ──> CLOUD-CONTROL-PLANE-PG-01 ──> CLOUD-AGG-FENCE-01
 
 ### CLOUD-AGG-FENCE-CON-01
 
-冻结 Worker mutation context、administrative CAS 与 connection-scoped transaction
-接口。类型测试必须使缺少 namespace/fence 的 Worker write 不可表达。此卡不实现
-PostgreSQL adapter。
+冻结 Worker mutation authority 与 administrative CAS。类型测试必须使缺少
+namespace/fence 的 Worker write 不可表达。此卡不实现通用 Unit of Work、修改现有
+Store Ports 或实现 PostgreSQL adapter；每个后续 coarse-grained aggregate Port 在其
+Adapter transaction 内消费该 authority。
 
 ### CLOUD-AGG-WORKSPACE-PG-01
 
