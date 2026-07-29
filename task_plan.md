@@ -1,5 +1,37 @@
 # Task Plan
 
+## CLOUD-ART-OBJ-CON-01 - Artifact Object And Metadata Authority Contract
+
+1. `completed` - Audit the existing local Artifact authority, MinIO baseline and
+   cloud aggregate dependency gaps.
+2. `in_progress` - Write ADR-017 with the provider-neutral identity, lifecycle,
+   compensation, fencing, reconciliation and non-goal decisions.
+3. `pending` - Link the architecture, aggregate inventory and Trench task plan to
+   the ADR without duplicating its protocol.
+4. `pending` - Validate links and terminology, record evidence and move to Review.
+
+### Decisions
+
+- PostgreSQL metadata and object bytes jointly form Artifact payload authority;
+  neither Event-derived projections nor temporary signed URLs are facts.
+- `artifact://` is stable identity; provider locator and credentials stay internal.
+- Freeze the failure protocol before choosing an SDK, adapter or migration.
+
+## CLOUD-AGG-HANDOFF-CON-01 - Fenced Handoff Dispatch Contract
+
+1. `completed` - Trace actual Worker claim/ACK callers and reject unrelated Port cleanup.
+2. `in_progress` - Add claim token and full LeaseFence receipt semantics to the
+   portable dispatch Port, SQLite migration and Worker recovery path.
+3. `pending` - Prove legacy-claim requeue, token rotation, stale fence/expiry ACK
+   rejection and local/API compatibility.
+4. `pending` - Run Core/Storage/Worker gates, record evidence and move to Review.
+
+### Decisions
+
+- Preserve unused legacy `SessionHandoffPort` batch wrappers for compatibility;
+  only the independently injected dispatch Store becomes the strict Worker path.
+- Use a standard-library random token and do not touch PostgreSQL migrations.
+
 ## CLOUD-AGG-TASK-PG-01 - PostgreSQL Task And Segment Index
 
 1. `completed` - Trace the SQLite Task/Segment projection, explicit rebuild and

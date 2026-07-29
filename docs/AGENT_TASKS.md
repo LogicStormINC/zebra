@@ -1148,14 +1148,36 @@ cloud mainline and is not built or changed by these cards.
 
 - Status: `Locked`
 - Owner: `UNASSIGNED`
-- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01` and
-  `CLOUD-AGG-TASK-PG-01`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01`,
+  `CLOUD-AGG-TASK-PG-01`, and `CLOUD-AGG-HANDOFF-CON-01`
 - Owned paths: focused PostgreSQL Handoff/dispatch modules, current migration
   hotspot, API/Worker Handoff wiring and real PostgreSQL tests
 - Goal: preserve the existing all-or-nothing Handoff boundary and add fenced,
   multi-Worker dispatch claim/ack.
 - Acceptance: stale source facts cause zero writes, concurrent successor is unique,
   all Handoff rows roll back together, and old claims cannot acknowledge new work.
+
+### CLOUD-AGG-HANDOFF-CON-01 - Fenced Handoff Dispatch Contract
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Branch: `codex/cloud-agg-handoff-con-01`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-LEASE-CON-01`, and the existing
+  `CTX-HO-01A`, `CTX-HO-01B`, `CTX-HO-01C` Handoff contracts
+- Owned paths: `packages/agent-core/src/agent_core/ports/handoff_dispatch_store.py`,
+  `packages/agent-storage/src/agent_storage/{session_handoff_dispatch,session_handoff_rows,session_handoffs}.py`,
+  `apps/worker/src/zebra_agent_worker/session_handoff.py`,
+  `tests/agent_storage/test_session_handoffs.py`,
+  `tests/api/test_api_storage_composition.py`, and
+  `tests/worker/test_session_handoff_dispatch.py`
+- Goal: make each dispatch claim an unforgeable Lease-fenced receipt so an expired
+  or superseded Worker cannot acknowledge a reclaimed child delivery.
+- Acceptance: fresh and migrated SQLite stores persist a random claim token and
+  full LeaseFence; incomplete legacy claims are safely requeued; reclaim rotates
+  the token; stale token/fence/expiry ACK attempts fail; existing local/API behavior
+  and the legacy `SessionHandoffPort` batch wrappers remain compatible.
+- Non-goals: no PostgreSQL migration, Handoff aggregate implementation, generic
+  authority abstraction, API route change, or removal of compatibility wrappers.
 
 ### CLOUD-MODEL-TOOL-PG-01 - PostgreSQL Model And Tool Projections
 
@@ -1188,12 +1210,32 @@ cloud mainline and is not built or changed by these cards.
 
 - Status: `Locked`
 - Owner: `UNASSIGNED`
-- Depends on: `CLOUD-AGG-FENCE-CON-01` and approved object-storage contract
+- Depends on: `CLOUD-AGG-FENCE-CON-01` and `CLOUD-ART-OBJ-CON-01`
 - Owned paths: Artifact payload Port/domain if required, PostgreSQL metadata and
   object-storage adapters, migration/composition, Docker contract docs and tests
 - Goal: replace local filesystem payload authority with cross-Worker storage.
 - Acceptance: idempotency/conflict, SHA, stale fence, cross-process read, object/
   metadata fault compensation, prune/sweep concurrency and namespace tests pass.
+
+### CLOUD-ART-OBJ-CON-01 - Artifact Object And Metadata Authority Contract
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Branch: `codex/cloud-art-obj-con-01`
+- Depends on: `CLOUD-AGG-FENCE-CON-01` and the reviewed
+  `CLOUD-COMPOSE-INFRA-01` MinIO dependency baseline
+- Owned paths: `docs/ADR-017_Artifact对象存储与元数据权威边界.md`,
+  `docs/Zebra Embedded 生产级目标架构.md`,
+  `docs/CLOUD_Worker_Aggregate_Fencing_路径盘点_v1.0.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `task_plan.md`, `findings.md`, and `WORKLOG.md`
+- Goal: freeze the provider-neutral authority, identity, lifecycle, compensation,
+  fencing and reconciliation contract before implementing shared Artifact payloads.
+- Acceptance: the ADR distinguishes PostgreSQL metadata, object bytes,
+  `artifact://` identity, temporary access URLs and opaque external references;
+  defines staged/finalized/pruning/pruned recovery and typed idempotency conflicts;
+  and links the dependency DAG without selecting an SDK, provider, key encoding,
+  API route, migration version or runtime profile.
 
 ### CLOUD-EFFECT-PAYLOAD-ATOMIC-01 - Effect Payload And Intent Linkage
 

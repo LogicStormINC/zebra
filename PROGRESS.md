@@ -117,6 +117,15 @@
   `32/32`; the card is in Review and unlocks only `CLOUD-MODEL-TOOL-PG-01` for the
   next serialized migration. Context and Handoff continue planning in separate
   sidebar tasks without writing the migration hotspot.
+- Integrated Model/Tool and Context aggregate tasks: `CLOUD-MODEL-TOOL-PG-01`
+  adds replayable PostgreSQL v6 Event-derived projections, while
+  `CLOUD-AGG-CTX-PG-01` adds the fenced v7 two-Event Context transaction with
+  immutable capsule and active-pointer composite constraints. Their isolated host
+  PostgreSQL matrices pass `8/8` and `14/14`; neither selects the cloud runtime.
+- Active contract tasks: `CLOUD-ART-OBJ-CON-01` freezes provider-neutral Artifact
+  object/metadata authority before any SDK or adapter, and
+  `CLOUD-AGG-HANDOFF-CON-01` adds a tokenized Lease-fenced SQLite dispatch receipt
+  before the PostgreSQL Handoff aggregate. The latter does not reserve a migration.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
   on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
   path-bounded microservice cards own provider expectations, SCM credential
