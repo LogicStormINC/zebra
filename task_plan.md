@@ -36,6 +36,7 @@
 - The existing `ArtifactPayloadStorePort` and SQLite file store remain local-only.
 - Tool output must obtain its stable URI before Event append; the post-Event
   `ToolRunIndexer` fallback cannot be the cloud payload authority path.
+
 - Use a synchronous low-level botocore client. Do not add boto3, s3transfer, MinIO
   SDK, an async AWS SDK or hand-written SigV4.
 - MinIO bucket versioning is part of the v9 test/dependency contract so finalize,
@@ -66,6 +67,26 @@
   inside a PostgreSQL transaction.
 - Effect linkage, API read composition, runtime profile selection and Desktop stay
   in their dedicated successor cards.
+
+## CLOUD-EFFECT-PAYLOAD-ATOMIC-01 - Effect Payload And Intent Linkage
+
+1. `in_progress` - Audit the current EffectGuard, fenced outbox and Artifact v9
+   transaction seams; freeze lock order, idempotency and failure outcomes.
+2. `pending` - Stage and verify the immutable Effect request object under the current
+   Worker fence without extending the local SQLite payload Port.
+3. `pending` - Commit intent Event, Effect outbox row and Artifact finalization in one
+   PostgreSQL transaction, then remove the guarded cloud composition rejection.
+4. `pending` - Prove cross-Worker read, stale-fence rollback, schedule failure,
+   response-loss recovery and provider/database fault windows with PostgreSQL+MinIO.
+
+### Decisions
+
+- PostgreSQL remains the only transactional authority; S3-compatible object I/O is
+  verified before the database aggregate commit and is never held inside its lock.
+- Unknown outcomes preserve staged evidence for reconciliation and never authorize
+  automatic Effect replay or inline object deletion.
+- No migration is claimed until the seam audit proves the v9 and Effect tables cannot
+  express the required binding.
 
 ## CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
 

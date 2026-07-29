@@ -6614,3 +6614,13 @@ actual byte access.
   untouched Desktop stylesheet violation.
 - The task moved to Review. SQLite and Desktop remain unchanged; fenced Effect payload
   linkage and generic Artifact read composition remain explicit successor tasks.
+
+## 2026-07-29 - CLOUD-EFFECT-PAYLOAD-ATOMIC-01 activation
+
+- Fast-forwarded the reviewed Artifact v9 slice into `zebra-cloud-trench@b87760b6`,
+  removed its clean merged task worktree/branch and created this focused successor.
+- Verified both dependencies are integrated: Effect outbox `69e34c0c` and Artifact
+  payload `b87760b6`. Claimed one owner, branch and explicit owned-path boundary.
+- The task will bind a verified immutable Effect request object to the intent Event and
+  outbox row in one PostgreSQL transaction. It does not add SQLite/Desktop behavior,
+  runtime selection, a broker, signed delivery or a generic Unit of Work.

@@ -1386,14 +1386,26 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-EFFECT-PAYLOAD-ATOMIC-01 - Effect Payload And Intent Linkage
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
-- Depends on: `CLOUD-ART-PAYLOAD-PG-01` and `CLOUD-EFFECT-OUTBOX-01`
-- Owned paths: `packages/agent-tools/src/agent_tools/effect_guard.py`, focused
-  PostgreSQL outbox coordination, and effect payload fault/integration tests
+- Status: `In Progress`
+- Owner: `lukeding`
+- Branch: `codex/cloud-effect-payload-atomic-01`
+- Depends on: `CLOUD-ART-PAYLOAD-PG-01` integrated at `b87760b6` and
+  `CLOUD-EFFECT-OUTBOX-01` integrated at `69e34c0c`.
+- Owned paths: focused Effect/Artifact aggregate contracts under `agent-core` only if
+  the existing Ports cannot express the transaction, `packages/agent-tools/src/agent_tools/effect_guard.py`,
+  focused PostgreSQL outbox/Artifact transaction coordination under `agent-storage`,
+  narrow Worker composition changes required to remove the current fail-fast guard,
+  isolated PostgreSQL/MinIO runner and effect-payload fault/integration tests, plus
+  this task's governance records
 - Goal: prevent durable Effect intents from referencing unavailable local payloads.
 - Acceptance: another Worker can claim/read, stale fence creates no payload/intent,
   schedule failure leaves no permanent orphan and response-loss recovery is safe.
+  The object provider must not be enlisted in a PostgreSQL transaction; reserve and
+  verified object receipt precede one database transaction that commits the intent
+  Event, outbox row and Artifact finalization. Unknown provider or database outcomes
+  remain recoverable without automatic Effect replay or unsafe object deletion.
+- Non-goals: no new SQLite behavior, Desktop, runtime backend selector, signed delivery,
+  broker, generic Unit of Work, multipart upload or production credential policy.
 
 ### CLOUD-SESSION-HISTORY-PG-01 - PostgreSQL Session History Read Model
 
