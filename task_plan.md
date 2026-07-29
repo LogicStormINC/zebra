@@ -88,6 +88,25 @@
 - No v10 migration is required: v9 metadata, the existing Effect outbox and their
   deferred Event bindings express the aggregate without a duplicate Artifact FK.
 
+## CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
+
+1. `in_progress` - Audit the existing API/SQLite read contract and the PostgreSQL
+   Model/Tool plus payload lifecycle query seams.
+2. `pending` - Implement namespace-scoped PostgreSQL Model/Tool reads and reuse the
+   existing Artifact projection sanitizer and ordering logic.
+3. `pending` - Compose cloud payload lifecycle/object reads into the existing API
+   contract without adding an Artifact authority table or migration.
+4. `pending` - Prove SQLite/PostgreSQL parity, namespace isolation, redaction,
+   lifecycle states and Event-rebuild recovery with isolated PostgreSQL/MinIO tests.
+
+### Decisions
+
+- Model/Tool projections remain rebuildable indexes derived from canonical Events;
+  payload metadata plus immutable object evidence remain the only payload authority.
+- Reuse `SessionArtifactReadPort` and the existing API serialization/access policy;
+  do not fork cloud routes or duplicate redaction rules.
+- This task does not choose the complete cloud control-plane runtime backend.
+
 ## CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
 
 1. `completed` - Freeze the smallest cloud-only domain and Port surface while

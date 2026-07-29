@@ -6645,3 +6645,11 @@ actual byte access.
   stale-fence wording gaps. Effect identity now survives a new ToolCall ID; tests prove
   initial stale zero-write, mid-flight takeover as management-visible `STAGED`, durable
   response-loss replay and terminal rollback without unsafe object deletion.
+
+## 2026-07-29 - CLOUD-ART-READ-COMP-01 activation
+
+- Created `codex/cloud-art-read-comp-01` from `zebra-cloud-trench@4480ca66` and
+  claimed one owner with focused Storage/API/test paths.
+- Verified PostgreSQL Model/Tool v6 and Artifact payload v9 are integrated ancestors.
+  The task reuses their existing tables and the current API read contract; it owns no
+  migration, SQLite feature work, Desktop path or complete runtime selection.

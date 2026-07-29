@@ -736,6 +736,18 @@
   the receipt remains `STAGED`, absent from Event/outbox, and visible to management
   reconcile. Unknown commit outcomes follow the same replay/reconcile rule.
 
+## CLOUD-ART-READ-COMP-01 preflight - 2026-07-29
+
+- The existing API already reads through `ControlPlaneStores.artifacts` and applies
+  one shared access, redaction, ordering and lifecycle serialization path. A separate
+  cloud route would duplicate policy and is unnecessary.
+- PostgreSQL v6 already stores every field required by the current Model/Tool read
+  Ports, but its adapter exposes only fenced indexing and management replay. Adding
+  namespace-scoped read methods is sufficient; no schema migration is required.
+- Artifact payload v9 deliberately uses a cloud-only lifecycle Port. API composition
+  must adapt its finalized/pruned metadata plus verified object bytes to read concerns
+  without weakening the local payload Port or inventing a second Artifact authority.
+
 ## CLOUD-ART-LIFECYCLE-CON-01 - 2026-07-29
 
 - A separate cloud contract is required because the local payload Port cannot express

@@ -1428,14 +1428,21 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `lukeding`
+- Branch: `codex/cloud-art-read-comp-01`
 - Depends on: `CLOUD-MODEL-TOOL-PG-01` and `CLOUD-ART-PAYLOAD-PG-01`
-- Owned paths: Artifact read composition, API composition and contract tests
+- Owned paths: focused read-only Artifact Port/domain under `agent-core`, PostgreSQL
+  Model/Tool and payload read composition under `agent-storage`, cloud API store
+  composition seam, focused API/Storage contract tests, and this task's governance
+  records
 - Goal: compose Artifact reads from Model/Tool projections and payload lifecycle
   without creating another Artifact authority table.
 - Acceptance: SQLite/PG list, order, redaction and lifecycle semantics match and
   missing indexes can be rebuilt from Events.
+- Non-goals: no new Artifact authority table or migration, SQLite feature work,
+  Desktop, signed-URL delivery, runtime backend selector, lifecycle mutation or
+  production credential policy.
 
 ### CLOUD-DELIVERY-TXN-PG-01 - PostgreSQL Delivery Command Transaction
 
