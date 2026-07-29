@@ -51,6 +51,8 @@ class SQLiteHandoffDispatchStore(HandoffDispatchStorePort):
             ).fetchone()
             if row is None:
                 return None
+            if not self._has_current_lease(connection, child_session_id, fence, at=claimed_at):
+                raise HandoffStorageConflictError("dispatch claim fence is not the current lease")
             connection.execute(
                 """
                 UPDATE handoff_dispatch_outbox
@@ -83,6 +85,7 @@ class SQLiteHandoffDispatchStore(HandoffDispatchStorePort):
         if checked_at.tzinfo is None:
             raise ValueError("dispatch acknowledgment requires aware time")
         with self._database.connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
             if self._acknowledge(connection, claim, checked_at=checked_at) != 1:
                 raise HandoffStorageConflictError("dispatch claim is not owned by worker")
 
@@ -122,6 +125,16 @@ class SQLiteHandoffDispatchStore(HandoffDispatchStorePort):
             WHERE delivery_id = ? AND child_session_id = ? AND status = 'claimed'
               AND claim_token = ? AND claim_epoch = ? AND claim_fencing_token = ?
               AND claim_owner_instance_id = ? AND claim_expires_at > ?
+              AND EXISTS (
+                  SELECT 1 FROM worker_leases
+                  WHERE session_id = ? AND control_plane_epoch = ?
+                    AND control_plane_epoch = (
+                        SELECT epoch FROM control_plane_epochs
+                        WHERE deployment_namespace = 'local'
+                    )
+                    AND fencing_token = ? AND worker_id = ? AND released_at IS NULL
+                    AND julianday(expires_at) > julianday(?)
+              )
             """,
             (
                 claim.delivery_id,
@@ -131,6 +144,39 @@ class SQLiteHandoffDispatchStore(HandoffDispatchStorePort):
                 fence.fencing_token,
                 fence.owner_instance_id,
                 checked_at.isoformat(),
+                str(claim.child_session_id),
+                str(fence.control_plane_epoch),
+                fence.fencing_token,
+                fence.owner_instance_id,
+                checked_at.isoformat(),
             ),
         )
         return cursor.rowcount
+
+    @staticmethod
+    def _has_current_lease(
+        connection: sqlite3.Connection,
+        child_session_id: SessionId,
+        fence: LeaseFence,
+        *,
+        at: datetime,
+    ) -> bool:
+        row = connection.execute(
+            """
+            SELECT 1 FROM worker_leases
+            WHERE session_id = ? AND control_plane_epoch = ?
+              AND control_plane_epoch = (
+                  SELECT epoch FROM control_plane_epochs WHERE deployment_namespace = 'local'
+              )
+              AND fencing_token = ? AND worker_id = ? AND released_at IS NULL
+              AND julianday(expires_at) > julianday(?)
+            """,
+            (
+                str(child_session_id),
+                str(fence.control_plane_epoch),
+                fence.fencing_token,
+                fence.owner_instance_id,
+                at.isoformat(),
+            ),
+        ).fetchone()
+        return row is not None

@@ -9,6 +9,7 @@ from agent_core.domain.leases import LeaseFence
 from agent_storage import (
     HandoffStorageConflictError,
     SQLiteHandoffDispatchStore,
+    SQLiteLeaseStore,
     SQLiteSessionHandoffStore,
 )
 
@@ -21,26 +22,45 @@ def test_worker_dispatch_reclaim_rotates_receipt_and_rejects_stale_ack(tmp_path:
     child_session_id = SessionId(uuid4())
     _insert_pending_dispatch(database_path, child_session_id)
     dispatches = SQLiteHandoffDispatchStore(database_path)
+    current = [NOW]
+    leases = SQLiteLeaseStore(database_path, clock=lambda: current[0])
+    first_lease = leases.acquire(
+        child_session_id, owner_instance_id="worker-1", ttl=timedelta(minutes=2)
+    )
+
+    with pytest.raises(HandoffStorageConflictError, match="current lease"):
+        dispatches.claim_for_child(
+            child_session_id,
+            fence=_fence("arbitrary-worker", 1),
+            claimed_at=NOW,
+        )
+    assert _dispatch_status(database_path) == "pending"
 
     first = dispatches.claim_for_child(
         child_session_id,
-        fence=_fence("worker-1", 1),
+        fence=first_lease.fence,
         claimed_at=NOW,
         lease_seconds=10,
     )
     assert first is not None and first.claim_token is not None
+    leases.release(child_session_id, fence=first_lease.fence)
+    current_lease = leases.acquire(
+        child_session_id, owner_instance_id="worker-1", ttl=timedelta(minutes=2)
+    )
+
+    with pytest.raises(HandoffStorageConflictError, match="not owned"):
+        dispatches.acknowledge(first, checked_at=NOW)
+    assert _dispatch_status(database_path) == "claimed"
+
+    current[0] += timedelta(seconds=11)
     reclaimed = dispatches.claim_for_child(
         child_session_id,
-        fence=_fence("worker-2", 2),
-        claimed_at=NOW + timedelta(seconds=11),
+        fence=current_lease.fence,
+        claimed_at=current[0],
     )
     assert reclaimed is not None
     assert reclaimed.claim_token != first.claim_token
-
-    with pytest.raises(HandoffStorageConflictError, match="not owned"):
-        dispatches.acknowledge(first, checked_at=NOW + timedelta(seconds=11))
-
-    dispatches.acknowledge(reclaimed, checked_at=NOW + timedelta(seconds=11))
+    dispatches.acknowledge(reclaimed, checked_at=current[0])
 
 
 def test_legacy_claimed_dispatch_is_requeued_during_incremental_migration(tmp_path: Path) -> None:
@@ -99,3 +119,10 @@ def _insert_pending_dispatch(database_path: Path, child_session_id: SessionId) -
             """,
             (str(uuid4()), str(child_session_id), str(uuid4()), NOW.isoformat()),
         )
+
+
+def _dispatch_status(database_path: Path) -> str:
+    with sqlite3.connect(database_path) as connection:
+        row = connection.execute("SELECT status FROM handoff_dispatch_outbox").fetchone()
+    assert row is not None
+    return str(row[0])
