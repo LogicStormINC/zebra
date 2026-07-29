@@ -94,9 +94,19 @@
   focused `19/19`, Core `270/270`, Ruff, strict Mypy and Eval `10/10` gates pass;
   it does not implement PostgreSQL, change Store selection or touch Desktop. Its
   local acceptance unlocks only `CLOUD-AGG-WORKSPACE-PG-01`.
-- Active Workspace adapter task: `CLOUD-AGG-WORKSPACE-PG-01` owns the additive
-  PostgreSQL projection schema, fenced monotonic write adapter and real-database
-  tests only. It does not select PostgreSQL in API/Worker composition.
+- Completed Workspace adapter task: `CLOUD-AGG-WORKSPACE-PG-01` adds the additive
+  PostgreSQL v4 projection schema and an injected Worker transaction that validates
+  current Lease authority and Event-derived Session/Workspace content before
+  committing all three primary records atomically. Replay remains monotonic and
+  namespace-scoped; Model Call/Tool Run indexes remain replayable follow-up views.
+  Lost-response retries now adopt the canonical stored Event and projections
+  rather than the regenerated request envelope. Focused Ruff, Core/Storage strict
+  Mypy, microservice file-size over `907` tracked and new files, `467 passed, 64
+  skipped` backend regressions and Eval `10/10` pass. The final host PostgreSQL
+  17.5 matrix passes `80/80`, including stale authority, rollback, semantic
+  derivation and canonical lost-response retry paths. The card is in Review and
+  unlocks only `CLOUD-AGG-TASK-PG-01`; `CLOUD-CONTROL-PLANE-PG-01`, not this card,
+  owns the cloud Worker composition root and runtime backend selection.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
   on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
   path-bounded microservice cards own provider expectations, SCM credential

@@ -1069,21 +1069,35 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-WORKSPACE-PG-01 - Fenced Workspace Projection
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Branch: `codex/cloud-agg-workspace-pg-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`
-- Owned paths: `packages/agent-storage/src/agent_storage/postgres/workspaces.py`,
-  the current migration hotspot, focused Worker transaction wiring and real
-  PostgreSQL Workspace tests
+- Owned paths: `packages/agent-core/src/agent_core/ports/workspace_projection_store.py`,
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `packages/agent-storage/src/agent_storage/postgres/{workspaces,projections,migrations,leases,__init__}.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`, focused PostgreSQL
+  Workspace/migration tests,
+  `apps/worker/src/zebra_agent_worker/{execution_events,execution,loop,worker_projection}.py`,
+  focused Worker injection tests, the host Compose runner, and governance records
 - Goal: persist Workspace as an Event-derived fenced projection, never as a second
   fact source.
 - Acceptance: stale epoch/token/owner and old sequence writes change zero rows;
   Event/Session/Workspace failure and replay matrices pass on PostgreSQL.
+- Current evidence: the initial host Compose matrix passed `71/71`; after adding
+  strict Event-derived content validation and the Worker injection
+  factory and canonical lost-response retry handling, local Core/Storage/Worker
+  regressions pass `467` with `64` PostgreSQL
+  skips, strict Core/Storage Mypy passes `163` files, the microservice file-size
+  gate passes `907` tracked and new files and Eval passes `10/10`. The final
+  PostgreSQL 17.5 host Compose matrix passes `80/80`, and its dedicated container
+  and volume are removed after the run.
+- Runtime selection is intentionally deferred to `CLOUD-CONTROL-PLANE-PG-01`;
+  this card proves an injectable Worker seam, not an enabled cloud composition root.
 
 ### CLOUD-AGG-TASK-PG-01 - PostgreSQL Task And Segment Index
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `UNASSIGNED`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`
 - Owned paths: `packages/agent-storage/src/agent_storage/postgres/agent_tasks.py`,

@@ -606,3 +606,24 @@
 - A generic Unit of Work in Core would leak infrastructure mechanics and add no
   safety. The proven Effect pattern remains the target: a coarse-grained Adapter
   validates authority and performs all writes on one connection transaction.
+
+## CLOUD-AGG-WORKSPACE-PG-01 - 2026-07-29
+
+- Workspace remains an Event-derived read model. Fenced Worker commits therefore
+  compare the supplied Session and Workspace with projections computed from the
+  currently stored rows plus the Event; matching sequence numbers alone are not
+  sufficient authority.
+- The smallest safe primary transaction is Event + Session + Workspace. Model Call
+  and Tool Run indexes can be reconstructed from Events and remain outside this
+  card's transaction until their focused PostgreSQL adapter card.
+- An idempotent retry may regenerate Event ID, sequence metadata and timestamp.
+  Storage must return the first canonical Event plus its canonical projections;
+  otherwise a lost response can make Recorder memory diverge from PostgreSQL even
+  though the business operation is idempotent.
+- Lease epoch, token, owner, expiry, namespace and expected stream revision are
+  validated inside the same PostgreSQL transaction. Trigger-injected faults after
+  Event insertion prove rollback leaves all three primary records unchanged.
+- The Worker keeps the legacy Store write path unless both the transaction Port and
+  deployment namespace are injected. This card exposes the injection seam but
+  deliberately does not select a backend or modify Desktop/local-agent composition;
+  the complete cloud composition root belongs to `CLOUD-CONTROL-PLANE-PG-01`.

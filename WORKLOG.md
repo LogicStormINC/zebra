@@ -6341,3 +6341,28 @@ actual byte access.
   `codex/cloud-agg-workspace-pg-01`, and claimed the only Ready adapter card. Owned
   implementation is limited to Workspace PostgreSQL schema/adapter, focused Worker
   transaction seam, real PostgreSQL tests and governance.
+- implemented PostgreSQL migration v4 and the namespace-scoped Workspace projection
+  adapter. Worker authority is revalidated transaction-locally before Event,
+  Session and Workspace commit; the adapter independently rejects supplied
+  projections whose content is not derived from the Event.
+- added the optional Worker transaction seam through loop composition,
+  `SessionExecutionService` and the durable recorder while preserving the default
+  SQLite Store path. The transaction result returns the canonical stored Event,
+  Session and Workspace so regenerated lost-response retries cannot fork Recorder
+  memory from PostgreSQL. A focused recorder factory keeps `execution.py` below the
+  source hard limit; no runtime backend selector or Desktop build was added.
+- local validation passes focused Ruff, strict Core/Storage Mypy over `163` files,
+  microservice file-size over `907` tracked and new files, Core/Storage/Worker `467 passed, 64
+  skipped`, release Eval `10/10` and eval tests `3/3`. The repository-wide size
+  command still reports the known out-of-scope Desktop stylesheet at `561` lines.
+  Initial host Compose evidence passed `71/71`; final host rerun remains required
+  after the semantic-validation and factory refactor.
+- the first expanded host rerun passed `79/80`; its only failure was a test fixture
+  fixed at `2026-07-29 09:00 UTC` while the run occurred at `04:23 UTC`, correctly
+  violating `prepared_at <= updated_at` when the Recorder used the real clock.
+  Moved the fixture to a stable historical timestamp without weakening the schema
+  constraint. The repeated host PostgreSQL 17.5 matrix then passed `80/80` in
+  `6.30s`; its dedicated container and volume were removed. The pre-existing
+  shared-network ownership warning is informational and no unknown network was
+  deleted. `CLOUD-AGG-WORKSPACE-PG-01` is accepted for Review and unlocks only
+  `CLOUD-AGG-TASK-PG-01`.
