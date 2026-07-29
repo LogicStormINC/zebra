@@ -1048,7 +1048,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-FENCE-CON-01 - Worker Mutation Fencing Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Branch: `codex/cloud-agg-fence-con-01`
 - Depends on: approved and integrated `CLOUD-AGG-FENCE-PLAN-01`
@@ -1069,7 +1069,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-WORKSPACE-PG-01 - Fenced Workspace Projection
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `UNASSIGNED`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`
 - Owned paths: `packages/agent-storage/src/agent_storage/postgres/workspaces.py`,

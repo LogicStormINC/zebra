@@ -6334,3 +6334,6 @@ actual byte access.
   reports three inherited import-order findings outside owned paths. The older root
   virtualenv lacks `psycopg`, so repository-wide collection through that fallback
   environment is invalid and is not reported as a code regression.
+- accepted the Core authority contract for isolated local mainline integration.
+  Only the fenced Workspace projection becomes Ready; all later aggregate adapters
+  and the complete fencing gate remain Locked.

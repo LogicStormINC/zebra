@@ -87,12 +87,13 @@
   It keeps Event-derived/read-only models out of the authority layer and API
   commands outside Worker Lease fencing. It is documentation-only and unlocks only
   `CLOUD-AGG-FENCE-CON-01`; the parent gate and adapter cards remain Locked.
-- Review authority-contract task: `CLOUD-AGG-FENCE-CON-01` adds strict
+- Completed authority-contract task: `CLOUD-AGG-FENCE-CON-01` adds strict
   `WorkerMutationAuthority` and `AdministrativeMutationCAS` types. It reuses the
   existing LeaseFence, permits the empty-stream revision `-1`, rejects noncanonical
   namespaces and keeps aggregate-specific revisions out of the shared type. Its
   focused `19/19`, Core `270/270`, Ruff, strict Mypy and Eval `10/10` gates pass;
-  it does not implement PostgreSQL, change Store selection or touch Desktop.
+  it does not implement PostgreSQL, change Store selection or touch Desktop. Its
+  local acceptance unlocks only `CLOUD-AGG-WORKSPACE-PG-01`.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
   on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
   path-bounded microservice cards own provider expectations, SCM credential
