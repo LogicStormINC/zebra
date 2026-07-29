@@ -23,7 +23,7 @@ from agent_runtime.git_commit import (
     WorkspaceCommitService,
 )
 from agent_runtime.git_diff import WorkspaceDiffError, WorkspaceDiffResult, WorkspaceDiffService
-from agent_runtime.harness import LocalToolGateway, run_local_harness
+from agent_runtime.harness import LocalToolGateway, bind_native_media_inputs, run_local_harness
 from agent_runtime.mcp_elicitation import (
     McpElicitationBridge,
     McpElicitationDisabledError,
@@ -142,6 +142,7 @@ __all__ = [
     "WorkspaceQuotaError",
     "WorkspaceQuotaEvidence",
     "build_mcp_capability_inventory",
+    "bind_native_media_inputs",
     "discover_mcp_resources",
     "discover_mcp_prompts",
     "normalize_mcp_resource_ids",

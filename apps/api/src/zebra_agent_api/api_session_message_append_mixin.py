@@ -22,7 +22,6 @@ from zebra_agent_api.session_payloads import parse_append_session_message_payloa
 from zebra_agent_api.task_image_attachments import (
     cleanup_staged_task_images,
     stage_task_images,
-    task_image_prompt_suffix,
 )
 
 
@@ -63,9 +62,7 @@ class ApiSessionMessageAppendMixin:
                 session=session,
                 next_sequence=session.current_sequence + 1,
                 command=SessionMessageAppendCommand(
-                    content=parsed["content"] + task_image_prompt_suffix(staged_images)
-                    if staged_images is not None
-                    else parsed["content"],
+                    content=parsed["content"],
                     clarification_id=parsed["clarification_id"],
                     public_content=parsed["public_content"],
                 ),
@@ -83,8 +80,9 @@ class ApiSessionMessageAppendMixin:
                 ),
             )
         try:
+            attachment_store = SQLiteArtifactPayloadStore(self.database_path)
             attachment_refs = store_text_attachments(
-                SQLiteArtifactPayloadStore(self.database_path),
+                attachment_store,
                 session_id=session_key,
                 message_event=event,
                 attachments=parsed["attachments"],
@@ -92,6 +90,11 @@ class ApiSessionMessageAppendMixin:
             )
             event = attach_refs_to_user_event(event, attachment_refs)
             if staged_images is not None:
+                staged_images.persist_payloads(
+                    attachment_store,
+                    session_id=session_key,
+                    created_at=event.created_at,
+                )
                 image_refs = staged_images.refs_for(event.event_id)
                 event = attach_refs_to_user_event(event, image_refs)
                 attachment_refs = (*attachment_refs, *image_refs)

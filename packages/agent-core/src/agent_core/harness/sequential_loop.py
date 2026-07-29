@@ -290,11 +290,24 @@ class SequentialToolLoop:
                 allow_tools=True,
                 user_goal=context.task.user_input,
                 created_at=context.attempt.started_at,
+                **(
+                    {"media_inputs": context.task.media_inputs}
+                    if context.task.media_inputs
+                    else {}
+                ),
             )
             if allow_tools
             else context_recovery.prepare_terminal_conversation(
-                messages, self._model_gateway, self._model_step,
-                context.task.user_input, context.attempt.started_at,
+                messages,
+                self._model_gateway,
+                self._model_step,
+                context.task.user_input,
+                context.attempt.started_at,
+                **(
+                    {"media_inputs": context.task.media_inputs}
+                    if context.task.media_inputs
+                    else {}
+                ),
             )
         )
         metadata = context_recovery.record_compaction(
@@ -309,6 +322,7 @@ class SequentialToolLoop:
             messages,
             self._model_gateway,
             allow_tools=allow_tools,
+            media_inputs=context.task.media_inputs,
             response_repair_limit=allowed_response_repairs(
                 model_limit,
                 model_calls_used,
@@ -405,8 +419,16 @@ class SequentialToolLoop:
                 created_at=context.attempt.started_at,
             )
         compaction = context_recovery.prepare_terminal_conversation(
-            messages, self._model_gateway, self._model_step,
-            context.task.user_input, context.attempt.started_at,
+            messages,
+            self._model_gateway,
+            self._model_step,
+            context.task.user_input,
+            context.attempt.started_at,
+            **(
+                {"media_inputs": context.task.media_inputs}
+                if context.task.media_inputs
+                else {}
+            ),
         )
         metadata = context_recovery.record_compaction(
             compaction,
@@ -420,6 +442,7 @@ class SequentialToolLoop:
             messages,
             self._model_gateway,
             allow_tools=False,
+            media_inputs=context.task.media_inputs,
             response_repair_limit=allowed_response_repairs(model_limit, model_calls_used),
         )
         model_calls_used += 1 + completion.call_metadata.response_repair_count

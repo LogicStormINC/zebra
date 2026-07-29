@@ -1,19 +1,83 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from hashlib import sha256
 
 from agent_core.application.session_attachments import attach_refs_to_user_event
-from agent_core.domain.artifact_payloads import ArtifactPayloadWrite
+from agent_core.domain.artifact_payloads import ArtifactPayloadStatus, ArtifactPayloadWrite
 from agent_core.domain.attachments import (
     AttachmentContextInput,
     SessionAttachmentRef,
     TextAttachmentInput,
 )
 from agent_core.domain.events import EventType, SessionEvent
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import ArtifactId, SessionId
+from agent_core.domain.model_media import ModelMediaInput
+from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 
 from agent_storage.artifact_payloads import SQLiteArtifactPayloadStore
+
+
+@dataclass(frozen=True)
+class RegisteredTaskMedia:
+    attachment: SessionAttachmentRef
+    source_session_id: SessionId
+
+
+class TaskAttachmentMediaResolver:
+    def __init__(
+        self,
+        store: ArtifactPayloadStorePort,
+        registered_media: tuple[RegisteredTaskMedia, ...],
+    ) -> None:
+        self._store = store
+        expected: dict[ArtifactId, tuple[ModelMediaInput, SessionId]] = {}
+        for ordinal, registered in enumerate(registered_media):
+            attachment = registered.attachment
+            if not attachment.media_type.startswith("image/"):
+                continue
+            media = ModelMediaInput(
+                artifact_id=attachment.attachment_id,
+                media_type=attachment.media_type,
+                sha256=attachment.sha256,
+                size_bytes=attachment.size_bytes,
+                display_name=attachment.file_name,
+                ordinal=ordinal,
+                source_message_id=attachment.message_event_id,
+            )
+            if media.artifact_id in expected:
+                raise ValueError("task media artifact reference is duplicated")
+            expected[media.artifact_id] = (media, registered.source_session_id)
+        self._expected = expected
+
+    @property
+    def media_inputs(self) -> tuple[ModelMediaInput, ...]:
+        return tuple(media for media, _session_id in self._expected.values())
+
+    def resolve_media(self, media_input: ModelMediaInput) -> bytes:
+        try:
+            expected, source_session_id = self._expected[media_input.artifact_id]
+        except KeyError as exc:
+            raise ValueError("model media artifact is not registered for this task") from exc
+        if media_input != expected:
+            raise ValueError("model media reference does not match task registration")
+        inspection = self._store.inspect_payload(media_input.artifact_id)
+        if inspection is None or inspection.status is not ArtifactPayloadStatus.AVAILABLE:
+            raise ValueError("model media payload is unavailable")
+        payload = inspection.payload
+        if payload.session_id != source_session_id:
+            raise ValueError("model media artifact is not authorized for its source session")
+        if (
+            payload.mime_type != expected.media_type
+            or payload.size_bytes != expected.size_bytes
+            or payload.sha256 != expected.sha256
+        ):
+            raise ValueError("model media payload metadata does not match task registration")
+        content = self._store.read_payload_bytes(media_input.artifact_id)
+        if len(content) != expected.size_bytes or sha256(content).hexdigest() != expected.sha256:
+            raise ValueError("model media payload content does not match task registration")
+        return content
 
 
 def store_text_attachments(

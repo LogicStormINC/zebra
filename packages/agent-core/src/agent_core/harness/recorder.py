@@ -3,6 +3,7 @@ from datetime import datetime
 
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import EventId
 from agent_core.domain.sessions import Session
 from agent_core.harness.models import HarnessEventDraft
 from agent_core.ports.clock import ClockPort
@@ -20,6 +21,7 @@ class HarnessEventRecorder:
         event_type: EventType,
         actor: EventActor,
         payload: dict[str, object],
+        event_id: EventId | None = None,
         created_at: datetime | None = None,
     ) -> SessionEvent:
         event = SessionEvent.create(
@@ -28,6 +30,7 @@ class HarnessEventRecorder:
             event_type=event_type,
             actor=actor,
             payload=payload,
+            event_id=event_id,
             created_at=created_at or self.clock.now(),
         )
         self.events.append(event)

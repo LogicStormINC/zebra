@@ -92,6 +92,22 @@ def test_load_settings_allows_env_override(tmp_path: Path) -> None:
     )
 
 
+def test_load_settings_selects_dashscope_key_for_qwen_native_media() -> None:
+    settings = load_settings(
+        {
+            "ZEBRA_MODEL_PROVIDER": "qwen",
+            "ZEBRA_MODEL_API_KEY_ENV": "QWEN_API_KEY",
+            "DASHSCOPE_BASE_URL": "https://qwen.example.test/compatible-mode/v1",
+            "DASHSCOPE_MODEL": "qwen3.7-flash-2026-07-15",
+        }
+    )
+
+    assert settings.model.provider == "qwen"
+    assert settings.model.api_key_env == "DASHSCOPE_API_KEY"
+    assert settings.model.base_url == "https://qwen.example.test/compatible-mode/v1"
+    assert settings.model.model == "qwen3.7-flash-2026-07-15"
+
+
 def test_load_settings_rejects_missing_or_duplicate_skill_roots(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="missing path"):
         load_settings({"ZEBRA_SKILL_ROOTS": str(tmp_path / "missing")})

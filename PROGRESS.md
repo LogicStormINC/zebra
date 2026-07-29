@@ -6,6 +6,16 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-07-29`
+- Active unmerged slice: `MM-NATIVE-QWEN-PHASE1` is a docs-first generic
+  model-media contract on `codex/qwen-native-multimodal` from
+  `c3cc79c3a54f8a0be3a933bbcc43628bf82210ba`. It is limited to provider-neutral
+  artifact references, fail-closed capability gates, Qwen's OpenAI-compatible
+  adapter/configuration, and always-replay continuity. Deterministic validation
+  is at the known baseline (`1870 passed, 9 inherited failures, 9 skipped`);
+  the one authorized live Qwen smoke reached the configured private endpoint
+  but returned normalized `authentication_failed`, so neither real-provider nor
+  FinOS E2E acceptance is claimed. Legacy MiniMax remains available only when
+  native media is not selected.
 - Review stacked task: `HAR-CONV-01` is implemented on
   `codex/runtime-convergence-phase1`, based on PR `#198` plus current
   `origin/main`. It extends exact action repetition checks with stable evidence

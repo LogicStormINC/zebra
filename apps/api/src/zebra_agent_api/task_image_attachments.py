@@ -3,12 +3,15 @@ from __future__ import annotations
 import os
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from hashlib import sha256
 from pathlib import Path
 
 from agent_core.application import task_workspace_image_prompt_suffix
+from agent_core.domain.artifact_payloads import ArtifactPayloadStatus, ArtifactPayloadWrite
 from agent_core.domain.attachments import SessionAttachmentRef
-from agent_core.domain.identifiers import ArtifactId, EventId
+from agent_core.domain.identifiers import ArtifactId, EventId, SessionId
+from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from zebra_agent_config import ZebraAgentSettings, task_workspace_root
 
 from zebra_agent_api.session_attachment_inputs import ImageAttachmentInput
@@ -44,6 +47,47 @@ class StagedTaskImages:
             )
             for image in self.images
         )
+
+    def persist_payloads(
+        self,
+        store: ArtifactPayloadStorePort,
+        *,
+        session_id: SessionId,
+        created_at: datetime,
+    ) -> tuple[ArtifactId, ...]:
+        stored_ids: list[ArtifactId] = []
+        for image in self.images:
+            payload = image.path.read_bytes()
+            if len(payload) != image.size_bytes or sha256(payload).hexdigest() != image.sha256:
+                raise ValueError("staged task image does not match its durable metadata")
+            inspection = store.inspect_payload(image.attachment_id)
+            if inspection is not None:
+                stored = inspection.payload
+                if (
+                    inspection.status is not ArtifactPayloadStatus.AVAILABLE
+                    or stored.session_id != session_id
+                    or stored.kind != "user_attachment"
+                    or stored.mime_type != image.media_type
+                    or stored.size_bytes != image.size_bytes
+                    or stored.sha256 != image.sha256
+                ):
+                    raise ValueError(
+                        "task image payload registration does not match its attachment"
+                    )
+                continue
+            store.store_payload(
+                ArtifactPayloadWrite(
+                    session_id=session_id,
+                    kind="user_attachment",
+                    mime_type=image.media_type,
+                    payload=payload,
+                    file_name=image.file_name,
+                    created_at=created_at,
+                ),
+                artifact_id=image.attachment_id,
+            )
+            stored_ids.append(image.attachment_id)
+        return tuple(stored_ids)
 
 
 def stage_task_images(

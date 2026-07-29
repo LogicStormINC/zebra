@@ -15645,3 +15645,85 @@ isolation completing in private cloud.
 
 - public open marketplace before private-cloud GA
 - bypassing the install/enable/grant/approve five-layer state machine
+
+## Native Multimodal Phase 1 Task Board
+
+### MM-NATIVE-QWEN-PHASE1 - Generic Native Image Input With Qwen
+
+- Status: `In Progress`
+- Owner: `vinson / Codex coordinated`
+- Suggested role: `CTX / CORE / INTEGRATIONS / QA`
+- Depends on: explicit user authorization; baseline
+  `c3cc79c3a54f8a0be3a933bbcc43628bf82210ba`
+- Branch: `codex/qwen-native-multimodal`
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/model_media.py`,
+  `packages/agent-core/src/agent_core/domain/events.py`,
+  `packages/agent-core/src/agent_core/application/mock_model.py`,
+  `packages/agent-core/src/agent_core/ports/model_gateway.py`,
+  `packages/agent-core/src/agent_core/harness/context_recovery.py`,
+  `packages/agent-core/src/agent_core/harness/context_window.py`,
+  `packages/agent-core/src/agent_core/harness/loop.py`,
+  `packages/agent-core/src/agent_core/harness/model_request.py`,
+  `packages/agent-core/src/agent_core/harness/model_step.py`,
+  `packages/agent-core/src/agent_core/harness/models.py`,
+  `packages/agent-core/src/agent_core/harness/orchestrator.py`,
+  `packages/agent-core/src/agent_core/harness/recorder.py`,
+  `packages/agent-core/src/agent_core/harness/sequential_loop.py`,
+  `packages/agent-integrations/src/agent_integrations/openai_compatible.py`,
+  `packages/agent-storage/src/agent_storage/session_attachments.py`,
+  `apps/config/src/zebra_agent_config/settings.py`, `configs/default.env`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/api_session_message_append_mixin.py`,
+  `apps/api/src/zebra_agent_api/session_attachment_persistence.py`,
+  `apps/api/src/zebra_agent_api/task_image_attachments.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `packages/agent-runtime/src/agent_runtime/__init__.py`,
+  `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `tests/agent_core/test_model_media_contract.py`,
+  `tests/agent_integrations/test_qwen_native_media.py`,
+  `tests/agent_integrations/test_qwen_provider_smoke.py`,
+  `tests/agent_storage/test_task_media_resolution.py`,
+  `tests/agent_runtime/test_harness_runner.py`,
+  `tests/api/test_native_media_inline_execution.py`,
+  `tests/api/test_task_image_attachment_durability.py`,
+  `tests/config/test_settings.py`,
+  `docs/Generic_Multimodal_Model_Input_Contract_Phase1.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add the smallest provider-neutral native image input path: durable artifact
+references only, fail-closed model capabilities, in-memory authorized data-URL
+construction for Qwen, and always-replayed references without bypassing Zebra
+typed-tool Policy, Approval, or Audit.
+
+#### Acceptance
+
+- [x] `ModelMediaInput` contains only controlled artifact reference metadata;
+  no durable base64, bytes, local path, provider request ID, or API key exists.
+- [x] Text-only profiles fail closed on media; supported profiles declare media,
+  tools-with-media, streaming-with-media, count/byte boundaries, and media-token
+  estimation before transport.
+- [x] Qwen `qwen3.7-flash-2026-07-15` with `thinking=false` serializes any
+  bounded number of ordered images through the existing OpenAI-compatible infrastructure and
+  `DASHSCOPE_API_KEY` configuration reference only.
+- [x] Resolver authorization, digest/media-type/size validation, and hard token
+  gate fail closed before HTTP; no silent compression or text fallback occurs.
+- [x] Each replayed media reference maps to exactly one internal semantic USER
+  source-event declaration; missing or ambiguous mappings fail before byte
+  resolution, including child-Segment replay.
+- [x] Initial/tool/compaction/terminal-synthesis and reachable terminal
+  follow-up/recovery requests replay the same refs or fail closed.
+- [x] Focused deterministic tests cover ordering, tools, compaction, security
+  failures, log leakage, and text-provider compatibility; changed-source Ruff,
+  Mypy has only four inherited errors, and `git diff --check` passes.
+
+#### Explicit Non-Goals
+
+- modifying `SessionMessage.content`, Artifact/Payload storage schema, MiniMax
+  MCP, FinOS, OCR, built-in provider web/code tools, UI upload controls, a
+  provider factory/state machine, real-Qwen payment/API acceptance after the
+  normalized `authentication_failed` smoke result, deployment,
+  merge, push, or commit

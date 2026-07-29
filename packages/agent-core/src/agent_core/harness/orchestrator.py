@@ -110,6 +110,7 @@ class SingleAttemptOrchestrator:
             allow_tools=True,
             user_goal=task.user_input,
             created_at=context.attempt.started_at,
+            **({"media_inputs": task.media_inputs} if task.media_inputs else {}),
         )
         if compaction is not None and compaction.compacted:
             emitted_events.append(
@@ -122,6 +123,7 @@ class SingleAttemptOrchestrator:
             messages,
             self._model_gateway,
             allow_tools=True,
+            media_inputs=task.media_inputs,
             response_repair_limit=allowed_response_repairs(task.max_model_calls, 0),
         )
         emitted_events.append(

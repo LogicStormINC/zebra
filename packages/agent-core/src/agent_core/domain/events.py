@@ -102,6 +102,7 @@ class SessionEvent(BaseModel):
         idempotency_key: str | None = None,
         policy_version: str | None = None,
         model_profile: str | None = None,
+        event_id: EventId | None = None,
         created_at: datetime | None = None,
     ) -> "SessionEvent":
         normalized_payload = payload or {}
@@ -112,7 +113,7 @@ class SessionEvent(BaseModel):
         except KeyError:
             pass
         return cls(
-            event_id=new_event_id(),
+            event_id=event_id or new_event_id(),
             session_id=session_id,
             sequence=sequence,
             event_type=event_type,

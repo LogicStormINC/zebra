@@ -1,9 +1,14 @@
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime
+from typing import cast
 
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.model_media import (
+    ModelMediaInput,
+    ModelMediaUnsupportedError,
+)
 from agent_core.domain.modeling import (
     ModelCompletion,
     ModelContextWindow,
@@ -14,6 +19,8 @@ from agent_core.harness.context_window import ContextWindowPlan, plan_context_wi
 from agent_core.ports.model_gateway import (
     ModelContextWindowPort,
     ModelGatewayPort,
+    ModelMediaCapabilityPort,
+    ModelMediaTokenCounterPort,
     ModelResponseRejectedError,
     ModelTokenCounterPort,
     StreamingModelGatewayPort,
@@ -45,14 +52,17 @@ def build_context_plan(
     window: ModelContextWindow,
     gateway: ModelGatewayPort,
     *,
+    media_inputs: tuple[ModelMediaInput, ...] = (),
     attempted_strategies: tuple[str, ...] = (),
 ) -> ContextWindowPlan:
     counter = gateway.count_input_tokens if isinstance(gateway, ModelTokenCounterPort) else None
+    media_tokens = _media_tokens(gateway, media_inputs, tools=tools)
     return plan_context_window(
         messages,
         tools,
         window,
         token_counter=counter,
+        media_tokens=media_tokens,
         attempted_strategies=attempted_strategies,
     )
 
@@ -77,6 +87,7 @@ def complete_model(
     messages: list[SessionMessage],
     tools: tuple[ModelToolDefinition, ...],
     *,
+    media_inputs: tuple[ModelMediaInput, ...] = (),
     model_call_id: str,
     on_delta: Callable[[str, ModelTextDelta], None],
     response_repair_limit: int = _MODEL_RESPONSE_REPAIR_LIMIT,
@@ -105,14 +116,28 @@ def complete_model(
     while True:
         attempt_deltas.clear()
         try:
+            streaming = isinstance(gateway, StreamingModelGatewayPort)
+            _validate_media_request(
+                gateway,
+                media_inputs,
+                tools=tools,
+                streaming=streaming,
+            )
             completion = (
-                gateway.complete_stream(
+                _complete_stream(
+                    cast(StreamingModelGatewayPort, gateway),
                     request_messages,
                     tools=tools,
+                    media_inputs=media_inputs,
                     on_text_delta=capture,
                 )
-                if isinstance(gateway, StreamingModelGatewayPort)
-                else gateway.complete(request_messages, tools=tools)
+                if streaming
+                else _complete(
+                    gateway,
+                    request_messages,
+                    tools=tools,
+                    media_inputs=media_inputs,
+                )
             )
         except ModelResponseRejectedError as error:
             public_output_committed = bool(attempt_deltas) and not tools
@@ -146,6 +171,71 @@ def complete_model(
                 normalized_error=rejected.reason,
             ),
         )
+
+
+def _media_tokens(
+    gateway: ModelGatewayPort,
+    media_inputs: tuple[ModelMediaInput, ...],
+    *,
+    tools: tuple[ModelToolDefinition, ...],
+) -> int:
+    if not media_inputs:
+        return 0
+    _validate_media_request(gateway, media_inputs, tools=tools, streaming=False)
+    if not isinstance(gateway, ModelMediaTokenCounterPort):
+        raise ModelMediaUnsupportedError("model profile does not provide a media token estimate")
+    tokens = gateway.estimate_media_tokens(media_inputs)
+    if tokens < 0:
+        raise ValueError("model media token estimate must not be negative")
+    return tokens
+
+
+def _validate_media_request(
+    gateway: ModelGatewayPort,
+    media_inputs: tuple[ModelMediaInput, ...],
+    *,
+    tools: tuple[ModelToolDefinition, ...],
+    streaming: bool,
+) -> None:
+    if not media_inputs:
+        return
+    if not isinstance(gateway, ModelMediaCapabilityPort):
+        raise ModelMediaUnsupportedError("model profile does not support image input")
+    gateway.media_capabilities.validate_request(
+        media_inputs,
+        has_tools=bool(tools),
+        streaming=streaming,
+    )
+
+
+def _complete(
+    gateway: ModelGatewayPort,
+    messages: list[SessionMessage],
+    *,
+    tools: tuple[ModelToolDefinition, ...],
+    media_inputs: tuple[ModelMediaInput, ...],
+) -> ModelCompletion:
+    if media_inputs:
+        return gateway.complete(messages, tools=tools, media_inputs=media_inputs)
+    return gateway.complete(messages, tools=tools)
+
+
+def _complete_stream(
+    gateway: StreamingModelGatewayPort,
+    messages: list[SessionMessage],
+    *,
+    tools: tuple[ModelToolDefinition, ...],
+    media_inputs: tuple[ModelMediaInput, ...],
+    on_text_delta: Callable[[ModelTextDelta], None],
+) -> ModelCompletion:
+    if media_inputs:
+        return gateway.complete_stream(
+            messages,
+            tools=tools,
+            media_inputs=media_inputs,
+            on_text_delta=on_text_delta,
+        )
+    return gateway.complete_stream(messages, tools=tools, on_text_delta=on_text_delta)
 
 
 def _model_response_repair_message(

@@ -8,11 +8,12 @@ from uuid import UUID
 import pytest
 import zebra_agent_api.api_session_message_append_mixin as append_mixin_module
 import zebra_agent_api.app as api_app_module
+from agent_core.domain.artifact_payloads import ArtifactPayloadStatus
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
-from agent_storage import SQLiteEventStore
+from agent_storage import SQLiteArtifactPayloadStore, SQLiteEventStore
 from zebra_agent_api import RouteAdapter, RouteRequest, create_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
@@ -82,6 +83,11 @@ def test_inline_create_removes_images_when_harness_raises_unexpectedly(
         adapter.handle(RouteRequest("POST", "/tasks", body=_task_payload(execute=True)))
 
     assert captured[0].images[0].path.exists() is False
+    inspection = SQLiteArtifactPayloadStore(tmp_path / "tasks.sqlite").inspect_payload(
+        captured[0].images[0].attachment_id
+    )
+    assert inspection is not None
+    assert inspection.status is ArtifactPayloadStatus.PRUNED
 
 
 def test_append_retains_durable_image_when_projection_save_fails(

@@ -6093,3 +6093,40 @@ actual byte access.
   import drafts, journal artifacts and notes were exactly identical before and after
 - ChatGPT Pro final verdict: `DECISION: PASS`, `BUSINESS GATE: PASS`,
   `RUNTIME GATE: PASS`, `FILES.LIST VERDICT: non-blocking`, `P1: none`
+
+# 2026-07-30 MM-NATIVE-QWEN-PHASE1 Docs-First Claim
+
+- Coordinator Owner authorized `vinson / Codex coordinated` to claim the
+  generic native-model-media Phase 1 slice on
+  `codex/qwen-native-multimodal@c3cc79c3a54f8a0be3a933bbcc43628bf82210ba`.
+- The contract is documented before code: durable state retains only controlled
+  artifact metadata, adapters resolve bytes in memory under authorization, and
+  `media_replay_policy=always` remains fail closed across compaction, terminal
+  synthesis, and reachable child recovery.
+- No real Qwen request, FinOS E2E, MiniMax replacement, deployment, merge,
+  push, or commit is asserted by this in-progress claim.
+
+# 2026-07-30 MM-NATIVE-QWEN-PHASE1 Implementation And Validation
+
+- Implemented the generic `ModelMediaInput` / capability / resolver contract;
+  durable media carries only an authorized artifact reference, MIME, size,
+  digest, ordinal, and source event identity. The existing payload store is
+  reused without a schema or second-store addition.
+- API direct execution and Worker recovery use the same capability-selected,
+  task-scoped resolver. Legacy MiniMax image guidance is only added when native
+  media is not active; native execution disables the legacy MCP image tool.
+- Focused regressions and changed-source Ruff pass. Full deterministic pytest
+  is `1870 passed, 9 inherited failures, 9 skipped`; the inherited failures are
+  the existing DeepSeek, GitHub credential, file-size, and cancellation cases.
+- One Owner-authorized live smoke first confirmed only that a non-default
+  endpoint was configured, then stopped on normalized `authentication_failed`.
+  No credential, request header, private endpoint value, image data URL, or
+  real-provider acceptance is recorded here.
+- Post-review, source event IDs are declared only on the current semantic USER
+  message, then matched exactly by the shared OpenAI-compatible serializer;
+  missing or ambiguous mappings fail before byte resolution. This preserves
+  always-replay across child Segments without reconstructing historical user
+  prose. The Qwen profile gate now explicitly enables native media only for
+  `qwen3.7-flash-2026-07-15`; a Qwen text model fails closed. `81` related
+  deterministic tests and changed-path Ruff pass; Mypy has only the four
+  inherited findings in `agent_tools` and `agent_security`.

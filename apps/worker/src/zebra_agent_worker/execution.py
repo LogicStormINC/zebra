@@ -27,7 +27,7 @@ from agent_core.harness.models import (
     HarnessEventDraft,
 )
 from agent_integrations import build_model_gateway
-from agent_runtime import LocalToolGateway
+from agent_runtime import LocalToolGateway, bind_native_media_inputs
 from agent_security import (
     LocalPolicyEngine,
     PolicyProfile,
@@ -48,6 +48,7 @@ from agent_storage import (
     SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
 )
+from agent_storage.session_attachments import RegisteredTaskMedia
 from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import (
     ZebraAgentSettings,
@@ -183,11 +184,21 @@ class SessionExecutionService:
         session_events = self._event_store.list_for_session(session_id)
         task_store = SQLiteAgentTaskStore(self._database_path)
         task_record = task_store.ensure_for_session(session_id)
+        task_events = task_store.read_events(task_record.task_id, -1)
         task_image_refs = tuple(
             attachment
-            for task_event in task_store.read_events(task_record.task_id, -1)
+            for task_event in task_events
             for attachment in attachment_refs_from_event(task_event.event)
             if attachment.storage_kind == "task_workspace"
+        )
+        registered_task_media = tuple(
+            RegisteredTaskMedia(
+                attachment=attachment,
+                source_session_id=task_event.segment_id,
+            )
+            for task_event in task_events
+            for attachment in attachment_refs_from_event(task_event.event)
+            if attachment.media_type.startswith("image/")
         )
         active_context = self._context_lifecycle_store.get_active_capsule(session_id)
         provider_continuation = recover_provider_continuation(
@@ -200,6 +211,7 @@ class SessionExecutionService:
                 fallback_title=claimed.recovery.session.title,
                 attachment_store=self._artifact_payload_store,
                 task_image_refs=task_image_refs,
+                registered_task_media=registered_task_media,
                 active_capsule=active_context.capsule if active_context else None,
                 handoff_evidence=(
                     None if recovered_handoff is None else recovered_handoff.runtime_evidence
@@ -222,6 +234,18 @@ class SessionExecutionService:
         except ValueError:
             self._claim_service.release_claim(claimed)
             raise
+        try:
+            native_media_inputs = bind_native_media_inputs(
+                model_gateway,
+                task.media_inputs,
+                task.media_resolver,
+            )
+        except ValueError as exc:
+            self._claim_service.release_claim(claimed)
+            raise WorkerExecutionError(str(exc)) from exc
+        task_user_input = task.user_input + (
+            "" if native_media_inputs else task.legacy_image_prompt_suffix
+        )
         runtime_handle = None
         try:
             runtime, prepared_runtime = build_prepared_runtime(
@@ -282,6 +306,9 @@ class SessionExecutionService:
                 ),
                 mcp_servers=with_task_workspace_root(self._settings.mcp_servers, task_workspace),
                 mcp_allowlist=task.mcp_allowlist,
+                disabled_mcp_tools=(
+                    ("mcp.minimax.understand_image",) if native_media_inputs else ()
+                ),
                 session_history=SQLiteSessionHistory(
                     self._database_path, allowed_session_ids=task.history_session_ids
                 ),
@@ -317,7 +344,7 @@ class SessionExecutionService:
         context = HarnessContext(
             task=HarnessTask(
                 title=task.title,
-                user_input=task.user_input,
+                user_input=task_user_input,
                 max_attempts=task.max_attempts,
                 max_model_calls=task.max_model_calls,
                 max_tool_calls=task.max_tool_calls,
@@ -331,9 +358,10 @@ class SessionExecutionService:
                 confirmed_memories=list_confirmed_repo_memories(
                     self._database_path,
                     repo_id=str(task.workspace_root.resolve()),
-                    query_text=task.user_input,
+                    query_text=task_user_input,
                 ),
                 attachments=task.attachments,
+                media_inputs=native_media_inputs,
                 runtime_evidence=task.runtime_evidence,
             ),
             session=claimed.recovery.session,
