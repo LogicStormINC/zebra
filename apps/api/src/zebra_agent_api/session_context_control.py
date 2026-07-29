@@ -17,20 +17,29 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_storage import (
     ControlPlaneStores,
+    PostgresContextLifecycleStore,
     sqlite_control_plane_stores,
 )
 
-from zebra_agent_api.responses import ApiResponse, bad_request, conflict
+from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.session_context_inspection import (
     context_occupancy as _context_occupancy,
 )
 from zebra_agent_api.session_context_inspection import estimate_tokens as _estimate_tokens
+from zebra_agent_api.session_context_postgres_recovery import commit_postgres_context_recovery
 from zebra_agent_api.session_identity_read import _parse_session_id
 
 
 class SessionContextControlApi:
-    def __init__(self, database_path: Path, stores: ControlPlaneStores | None = None) -> None:
+    def __init__(
+        self,
+        database_path: Path,
+        stores: ControlPlaneStores | None = None,
+        *,
+        administrative_namespace: str | None = None,
+    ) -> None:
         self._stores = stores or sqlite_control_plane_stores(database_path)
+        self._administrative_namespace = administrative_namespace
 
     def inspect(self, session_id: str) -> ApiResponse:
         resolved = self._resolve(session_id)
@@ -98,6 +107,11 @@ class SessionContextControlApi:
                 session_id=session_id,
                 status="context_busy",
                 reason="manual compaction requires a non-running session boundary",
+            )
+        if isinstance(self._stores.context_lifecycle, PostgresContextLifecycleStore):
+            return service_unavailable(
+                status="context_manual_compaction_unavailable",
+                reason="PostgreSQL manual Context compaction is not enabled",
             )
         options = body or {}
         focus = _optional_focus(options.get("focus"))
@@ -252,13 +266,38 @@ class SessionContextControlApi:
             created_at=datetime.now(UTC),
         )
         active = lifecycle.get_active_capsule(session.session_id)
-        lifecycle.activate_capsule(
-            session_id=session.session_id,
-            capsule_id=capsule.capsule_id,
-            expected_active_capsule_id=active.capsule.capsule_id if active else None,
-            event=event,
-        )
-        self._stores.sessions.save_session(apply_event(session, event))
+        if isinstance(lifecycle, PostgresContextLifecycleStore):
+            if self._administrative_namespace is None:
+                return service_unavailable(
+                    status="context_postgres_recovery_unavailable",
+                    reason="PostgreSQL Context recovery requires a composition namespace",
+                )
+            committed = commit_postgres_context_recovery(
+                stores=self._stores,
+                lifecycle=lifecycle,
+                deployment_namespace=self._administrative_namespace,
+                session_id=session_id,
+                session=session,
+                active=active,
+                capsule_id=capsule.capsule_id,
+                event=event,
+            )
+            if isinstance(committed, ApiResponse):
+                return committed
+            event = committed.compaction_event
+        else:
+            if self._administrative_namespace is not None:
+                return service_unavailable(
+                    status="context_postgres_recovery_unavailable",
+                    reason="PostgreSQL Context recovery requires its PostgreSQL store",
+                )
+            lifecycle.activate_capsule(
+                session_id=session.session_id,
+                capsule_id=capsule.capsule_id,
+                expected_active_capsule_id=active.capsule.capsule_id if active else None,
+                event=event,
+            )
+            self._stores.sessions.save_session(apply_event(session, event))
         return ApiResponse(
             status_code=200,
             body={

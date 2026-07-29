@@ -15,6 +15,7 @@ from zebra_agent_api.session_read import SessionReadApi
 class ApiSessionReadMixin:
     database_path: Path
     stores: ControlPlaneStores
+    context_administrative_namespace: str | None
 
     def get_session(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_session(session_id)
@@ -35,17 +36,27 @@ class ApiSessionReadMixin:
         return SessionReadApi(self.database_path, self.stores).get_session_diff(session_id)
 
     def get_session_context(self, session_id: str) -> ApiResponse:
-        return SessionContextControlApi(self.database_path, self.stores).inspect(session_id)
+        return SessionContextControlApi(
+            self.database_path,
+            self.stores,
+            administrative_namespace=self.context_administrative_namespace,
+        ).inspect(session_id)
 
     def compact_session_context(
         self, session_id: str, body: Mapping[str, object] | None = None
     ) -> ApiResponse:
-        return SessionContextControlApi(self.database_path, self.stores).compact(
-            session_id, body or {}
-        )
+        return SessionContextControlApi(
+            self.database_path,
+            self.stores,
+            administrative_namespace=self.context_administrative_namespace,
+        ).compact(session_id, body or {})
 
     def recover_session_context(self, session_id: str, body: Mapping[str, object]) -> ApiResponse:
-        return SessionContextControlApi(self.database_path, self.stores).recover(session_id, body)
+        return SessionContextControlApi(
+            self.database_path,
+            self.stores,
+            administrative_namespace=self.context_administrative_namespace,
+        ).recover(session_id, body)
 
     def get_session_memory(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_session_memory(session_id)

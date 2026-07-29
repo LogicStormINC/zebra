@@ -95,6 +95,7 @@ class ZebraAgentApi(
     database_path: Path
     settings: ZebraAgentSettings
     _stores: ControlPlaneStores | None = None
+    context_administrative_namespace: str | None = None
     credential_broker: CredentialBroker | None = None
     github_transport: GitHubPullRequestTransport | None = None
 
@@ -476,6 +477,7 @@ def create_app(
     *,
     settings: ZebraAgentSettings | None = None,
     stores: ControlPlaneStores | None = None,
+    context_administrative_namespace: str | None = None,
     credential_broker: CredentialBroker | None = None,
     credential_env: Mapping[str, str] | None = None,
     github_transport: GitHubPullRequestTransport | None = None,
@@ -489,6 +491,7 @@ def create_app(
         database_path=active_database_path,
         settings=active_settings,
         _stores=stores,
+        context_administrative_namespace=context_administrative_namespace,
         credential_broker=active_broker,
         github_transport=github_transport,
     )

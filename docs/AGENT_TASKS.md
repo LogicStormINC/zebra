@@ -1164,7 +1164,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-CTX-ADMIN-PG-01 - PostgreSQL Administrative Context Recovery
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Branch: `codex/cloud-agg-ctx-admin-pg-01`
 - Depends on: `CLOUD-AGG-CTX-PG-01` and `CLOUD-AGG-WORKSPACE-PG-01`
@@ -1179,6 +1179,12 @@ cloud mainline and is not built or changed by these cards.
   facts fail closed; the existing HTTP request/response remains compatible.
 - Non-goals: PostgreSQL manual compact, new capsule creation, migration, backend
   selector, full PostgreSQL Store bundle, environment configuration or Desktop.
+- Evidence: real PostgreSQL API recovery matrix passes `7/7`, covering canonical
+  Event/Session/Workspace advancement, stale revision and pointer CAS, namespace
+  mismatch, missing pointer/Workspace facts, rollback on Workspace fault, and
+  manual compact fail-closed. Focused API, migration, and Context PostgreSQL
+  regressions pass `27/27`; changed-scope Ruff, strict Mypy, `git diff --check`,
+  and source/test file limits pass.
 
 ### CLOUD-AGG-HANDOFF-CON-01 - Fenced Handoff Dispatch Contract
 
