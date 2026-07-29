@@ -14,12 +14,16 @@
   propagate `tool_loop_no_progress`, and reject raw DSML tool requests as final
   answers. `70` focused regressions and touched-file Ruff/Mypy pass; full tests
   are `1763 passed, 9 inherited failures, 8 skipped`. A provider-neutral live
-  replay now typed-suspends instead of looping or falsely completing. FinOS
-  image/MiniMax acceptance is separate. The branch awaits external review and
-  is not authorized to merge directly to `main`.
-- Locked follow-up: `CTX-REHYDRATE-02` may start only after PR `#198` and
-  `HAR-CONV-01` merge. It will reuse existing Event/Capsule/Artifact projection
-  and `rehydrate_projection()` rather than create a full Memory 2.0 subsystem.
+  replay now typed-suspends instead of looping or falsely completing, but it did
+  not output the required transaction log; the Runtime guard passed while the A
+  line business gate failed. FinOS image/MiniMax acceptance is separate. The
+  branch is not authorized to merge directly to `main`.
+- Active stacked task: `CTX-REHYDRATE-02` is brought forward as the Phase 1.5
+  completion slice on `codex/context-rehydrate-phase1-5`. It must reuse existing
+  Capsule/ledger/projection/rehydration paths through the Core Port boundary,
+  perform at most one recovered tool-disabled synthesis, and make the fixed text
+  A line produce the complete log. Full Memory 2.0, Worker/Storage changes and
+  direct merge to `main` remain out of scope.
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with
   an exact three-user-turn tail, complete tool groups, one strict retry from
   original history, recoverable context suspension, evidence-gated memory

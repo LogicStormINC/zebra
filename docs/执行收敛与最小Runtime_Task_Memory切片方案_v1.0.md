@@ -2,20 +2,25 @@
 
 | 字段 | 值 |
 |---|---|
-| 状态 | Phase 1 已激活；Phase 2 锁定 |
-| 日期 | 2026-07-28 |
-| 当前任务 | `HAR-CONV-01` |
+| 状态 | Phase 1 Runtime guard 已完成；Phase 1.5 完成切片已激活；完整 Phase 2 锁定 |
+| 日期 | 2026-07-29 |
+| 当前任务 | `CTX-REHYDRATE-02`（Phase 1.5） |
 | 依赖 | `CTX-MEM-01` / PR `#198` |
 | 上位约束 | Event Store 唯一执行真相；Harness 无默认次数上限；业务语义留在调用方 |
 | 关联文档 | `自适应Agent循环与预算治理方案_v1.0.md`、`上下文连续性与治理记忆改进方案_v1.1.md`、`Zebra Agent Runtime Upgrade Proposal v2.0.md` |
 
 ## 1. 决策
 
-本次不提前建设完整 Memory 2.0。当前故障先按两个可独立审查的阶段修复：
+本次不提前建设完整 Memory 2.0。当前故障按三个可独立审查的边界修复：
 
 1. `HAR-CONV-01`：在 Harness 内补齐进展判断、无进展循环阻断和终态收敛；
-2. `CTX-REHYDRATE-02`：Phase 1 合并后，复用现有 Event、Capsule、Artifact 和
-   `rehydrate_projection()`，补齐压缩后的收敛状态恢复与按需重水合。
+2. `CTX-REHYDRATE-02` 最小切片：作为 A 线必需的 Phase 1.5，复用现有
+   `ContextCapsule`、`ProtectedInstructionLedger`、`ActiveContextProjection` 和
+   `rehydrate_projection()`，让一次有界、禁用工具的终态综合消费恢复后的状态；
+3. 完整 Phase 2：Worker 重启后的广义按需重水合和长期 Memory 路线继续锁定。
+
+`HAR-CONV-01` 的 typed `SUSPENDED` 是安全失败，不是业务成功。A 线只有在固定输入
+最终产生符合原始请求的完整结果时才通过；“不再无限循环”不能替代结果验收。
 
 这里所称的 Runtime / Task Memory 只是现有事件投影中的最小工作状态，不是新的
 Memory 数据库，也不包含 Agent Memory、Knowledge Memory、学习策略或长期偏好。
@@ -28,6 +33,7 @@ Memory 数据库，也不包含 Agent Memory、Knowledge Memory、学习策略�
 |---|---|
 | 当前 Zebra 集成任务 | 13 次模型调用、20 次工具调用、9 次压缩；同一图片证据被重复读取，仍未形成终答 |
 | Zebra `main` 文本等价任务 | 取消前已发生 11 次模型调用、13 次抓取、7 次压缩，仍处于无进展路径 |
+| `HAR-CONV-01@efbb8a3` 文本等价任务 | 一次有效澄清后，11 次模型调用、12 次抓取、7 次压缩；安全结束为 `tool_loop_no_progress`，但没有输出交易日志 |
 | 普通 Chat 模型对照 | 约 2 分钟内完成一次图片读取、13 个公开来源查询、一次计算和一个最终回答 |
 
 这些证据说明：
@@ -38,6 +44,8 @@ Memory 数据库，也不包含 Agent Memory、Knowledge Memory、学习策略�
   即使得到同一批证据，也会被当成新动作；
 - 压缩可以保持窗口可用，但不会自行判断任务是否已经获得足够证据，也不会强制
   从“继续找资料”切换到“形成最终回答”。
+- 当前终态综合路径只追加通用停止指令，没有消费已经存在的 Capsule、protected
+  ledger 和 projection recovery；因此恢复基础设施存在，但最后一次综合没有接线。
 
 因此根因是执行阶段缺少“新证据、无进展、终态”之间的闭环，而不是缺少更大的
 `max_tool_calls`。
@@ -52,6 +60,8 @@ Memory 数据库，也不包含 Agent Memory、Knowledge Memory、学习策略�
 5. “未找到”“不可用”“权限不足”是可记录的证据状态；是否足以完成任务由用户目标和
    Skill 合约决定，不由 Runtime 猜测业务完整性。
 6. FinOS 或其它调用方不复制循环、预算、压缩或终态状态机。
+7. `SUSPENDED`、raw tool protocol 文本或“已尝试综合”都不等于业务完成；调用方和
+   验收记录必须以实际最终输出为准。
 
 ## 4. Phase 1：进展感知与终态收敛
 
@@ -99,18 +109,23 @@ Phase 1 只修改 `agent-core` Harness 的共享路径及其回归测试。不�
 正在维护的 `model_step.py`、Context、Storage、Worker、MCP/provider 或 FinOS 代码。
 如果根因追踪证明必须越界，停止实现并记录具体调用链和最小 owned-path 变更建议。
 
-## 5. Phase 2：投影恢复与按需重水合
+## 5. Phase 1.5：终态投影恢复与有界综合
 
-`CTX-REHYDRATE-02` 在 PR `#198` 和 `HAR-CONV-01` 合并前保持 `Locked`。它只补：
+`CTX-REHYDRATE-02` 的最小切片提前激活，作为 A 线业务闭环的必要条件。它只补：
 
-1. 压缩前后的目标、验收条件、进展状态和证据引用可从 Event/Capsule 重建；
-2. Active Projection 缺少完成判断所需的已引用证据时，调用现有
-   `rehydrate_projection()` 按需恢复；
-3. 重水合受 token budget、Policy、checksum 和 provenance 校验；
-4. Worker 重启或强制压缩后不重复已经完成的只读工具调用。
+1. 使用现有 `ContextCapsule` 字段稳定承载 objective、显式完成条件、后续真实用户
+   决策、计划和 Artifact 引用；不新增 `RuntimeTaskState` 或第二状态源；
+2. 终态综合前通过现有 Context Port 边界构造恢复投影；`agent-core` 不得反向依赖
+   `agent-context`；
+3. Active Projection 含有完成所需的折叠证据时，复用 `rehydrate_projection()`，并
+   保持 token budget、Policy、checksum 和 provenance 校验；
+4. 最多执行一次 `allow_tools=False` 的 recovery-synthesis。成功必须返回可用最终
+   文本；再次请求工具或没有可用答案仍 typed suspend，但该 A 线验收记为失败；
+5. 不自动创建第二 Attempt，不修改 Worker、Storage 或 Event schema，除非红灯测试
+   证明当前 Port 无法完成同一 Attempt 内的恢复。
 
-Phase 2 不增加 Agent Memory、Knowledge Memory、Memory Controller、向量库、TTL
-平台或跨任务学习。这些仍属于 v2.0 长期路线，必须另行激活。
+Phase 1.5 不增加 Agent Memory、Knowledge Memory、Memory Controller、向量库、TTL
+平台或跨任务学习。Worker 重启后的完整按需重水合仍属于后续 Phase 2。
 
 ## 6. 分支与合并路线
 
@@ -119,21 +134,21 @@ origin/main @ a6b47c3
           + PR #198 / codex/issue-197-context-memory-continuity
                            |
                            v
-          codex/runtime-convergence-phase1
-          (先提交本文档，再实现 HAR-CONV-01)
-                           |
-                   人工审查，禁止直接合并
-                           |
-        PR #198 与 Phase 1 分别合并到 main 后
+          codex/runtime-convergence-phase1 @ efbb8a3
+          (Runtime guard；A 线业务结果尚未通过)
                            |
                            v
-          codex/context-rehydrate-phase2
-          (再激活 CTX-REHYDRATE-02)
+          codex/context-rehydrate-phase1-5
+          (先提交本文档，再实现最小完成切片)
+                           |
+                   A 线完整日志人工验收
+                           |
+                   人工审查，禁止直接合并
 ```
 
-当前 Phase 1 是叠加分支：同时包含 `origin/main` 的 v2.0 提案和 PR `#198` 的上下文
-连续性实现。提交 PR 前应在 PR `#198` 合并后重放到更新后的 `main`，不得把代码直接
-写到或推送到 `main`。
+Phase 1.5 从 `efbb8a3` 及本次文档基线创建独立叠加分支，继续包含 PR `#198` 的
+上下文连续性实现。提交 PR 前应在 PR `#198` 合并后重放到更新后的 `main`，不得把
+代码直接写到或推送到 `main`。
 
 ## 7. 验收基线
 
@@ -149,21 +164,26 @@ origin/main @ a6b47c3
 ### 7.2 Provider-neutral A/B 验收
 
 HAR-CONV-01 使用同一份 Skill 指令和同一份人工识别文字，对未修改的 `main`
-与 Phase 1 做只读 A/B；不加载图片附件、MiniMax MCP 或 FinOS provider：
+与 Phase 1.5 做只读 A/B；不加载图片附件、MiniMax MCP 或 FinOS provider：
 
 - 输入、模型、允许的公开数据源和“不得写入真实业务数据”约束一致；
-- Zebra 在无默认调用次数上限下形成最终回答或明确 typed suspend；
+- Zebra 在无默认调用次数上限下必须形成完整交易日志；typed suspend 只证明安全
+  收敛，不计为 A 线业务成功；
 - 参数或 URL 变化但没有新证据时必须收敛，不能把原始工具协议文本误报为完成；
 - 记录模型调用、工具调用、压缩、重复 evidence、终态和总耗时；
 - 真实图片只作为人工识别文字的离线来源，不进入 fixture、commit、日志正文或 PR；
 - FinOS 项目分支的图片附件、MiniMax MCP 和镜像验收独立进行，不作为 Zebra
   `main` 收敛修复的前置条件。
 
-### 7.3 Phase 2 门禁
+### 7.3 Phase 1.5 门禁
 
-- 强制多次压缩后，目标、验收条件和证据引用零丢失；
-- Worker 重启后从 Event/Capsule 恢复收敛状态；
-- 缺失投影证据可以按引用重水合，checksum 或 Policy 不通过时 fail closed；
+- 强制多次压缩后，目标、显式完成条件、用户澄清决定和证据引用零丢失；
+- 同一份 14,118 字 Skill + 人工识别文字允许必要澄清，但确认后必须输出完整日志；
+- 终态 recovery-synthesis 只有一次且始终 `allow_tools=False`；
+- 缺失投影证据仅按现有引用重水合，checksum、Policy、provenance 或 token budget
+  不通过时 fail closed；
+- 正常产生 evidence/state delta 的长任务不被误杀；
+- FinOS 核心业务表前后全行哈希一致；
 - 无第二状态源、无业务语义、无跨任务隐式长期记忆。
 
 ## 8. 明确延期

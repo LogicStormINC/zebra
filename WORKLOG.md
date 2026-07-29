@@ -5918,3 +5918,22 @@ actual byte access.
   container and remote acceptance files were removed after verification
 - Phase 2 `CTX-REHYDRATE-02` remains `Locked`; this branch stays `Review` until
   external review and maintainer merge authorization
+
+# 2026-07-29 A-Line Completion Gate And Phase 1.5 Activation
+
+- user acceptance supersedes the prior handoff: typed `SUSPENDED` proves the
+  Runtime no longer loops, but does not pass the A line unless the fixed Skill +
+  14,118-character text input produces the complete transaction log
+- ChatGPT Pro and local source tracing agree that the existing recovery slice is
+  present but bypassed by `_request_terminal_synthesis()`; the previous proposal
+  to add another Runtime state model was rejected
+- activated `CTX-REHYDRATE-02` as a narrow Phase 1.5 task stacked on
+  `HAR-CONV-01@efbb8a3`, with a separate branch/worktree and no direct `main` merge
+- implementation must reuse `ContextCapsule`, `ProtectedInstructionLedger`,
+  `ActiveContextProjection` and `rehydrate_projection()` through the existing
+  Core Port boundary; `agent-core` must not import `agent-context`
+- the slice allows at most one recovered `allow_tools=False` synthesis and does
+  not add a second Attempt, Memory 2.0, finance/Skill/provider heuristics,
+  Worker/Storage changes or FinOS orchestration without new red-test evidence
+- hard live gate: complete log after any necessary clarification, no continued
+  tool loop or false completion, and identical FinOS core-table full-row hashes

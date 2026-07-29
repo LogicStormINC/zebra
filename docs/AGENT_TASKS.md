@@ -21,14 +21,14 @@
 ## Current Board
 
 - `HAR-CONV-01` is `Review` on `codex/runtime-convergence-phase1`. Its
-  deterministic checks and provider-neutral text A/B pass: the reproduced
-  `main` loop now ends in a typed `tool_loop_no_progress` suspension instead of
-  continuing or falsely completing on raw DSML. The branch is stacked on PR
-  `#198`, includes current `origin/main`, and awaits external review; it must not
-  be merged or pushed to `main` directly. FinOS image attachment and MiniMax MCP
-  acceptance are a separate project-branch concern.
-- `CTX-REHYDRATE-02` remains `Locked` until PR `#198` and `HAR-CONV-01` are
-  merged and the maintainer explicitly activates Phase 2.
+  deterministic Runtime-safety checks pass, but its provider-neutral text A/B
+  ended in typed `tool_loop_no_progress` without the required transaction log.
+  Typed suspension is not business completion. The branch is stacked on PR
+  `#198`, includes current `origin/main`, and must not be merged or pushed to
+  `main` directly. FinOS image attachment and MiniMax MCP acceptance are separate.
+- `CTX-REHYDRATE-02` is `In Progress` as the required Phase 1.5 completion slice
+  on `codex/context-rehydrate-phase1-5`. It remains stacked on PR `#198` and
+  `HAR-CONV-01`; direct merge to `main` is forbidden.
 - `CTX-MEM-01` is `Review` in PR `#198` on
   `codex/issue-197-context-memory-continuity`. It closes GitHub issue `#197`
   without depending on the stacked semantic-memory gateway: same-Task recovery
@@ -177,10 +177,11 @@ new evidence and long legitimate tool chains remain unbounded by default.
   effect deduplication remain unchanged.
 - [x] Focused tests, target Ruff/Mypy, `make test`, and `make check` ran; inherited
   blockers are recorded separately.
-- [x] A provider-neutral A/B uses the same Skill plus manually transcribed image
-  evidence on `main` and Phase 1, with no image attachment, MCP allowlist or
-  FinOS provider. Phase 1 must complete or typed-suspend without a raw DSML
-  false completion; FinOS image/MiniMax acceptance is tracked separately.
+- [ ] A provider-neutral A/B uses the same Skill plus manually transcribed image
+  evidence on `main` and Phase 1.5, with no image attachment, MCP allowlist or
+  FinOS provider. After any necessary clarification it must output the complete
+  transaction log; typed suspend, raw DSML or loop termination without the log
+  is a failed business acceptance. FinOS image/MiniMax acceptance is separate.
 
 #### Explicit Non-Goals
 
@@ -192,36 +193,59 @@ new evidence and long legitimate tool chains remain unbounded by default.
 
 ### CTX-REHYDRATE-02 - Convergence Projection And On-Demand Rehydration
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `In Progress`
+- Owner: `Vinson`
+- Coding task: `ctx_rehydrate_phase1_5` (`gpt-5.6-terra`, max)
 - Suggested role: `CTX / CORE / WORKER / QA`
-- Depends on: merged PR `#198`, merged `HAR-CONV-01`, and explicit maintainer activation
-- Branch: `TBD (suggested: codex/context-rehydrate-phase2)`
-- Owned paths: to be narrowed after both dependencies merge; expected candidates
-  are existing Context projection/Capsule/rehydration paths, Harness model request
-  composition, Worker context lifecycle, focused tests, and the governing docs
+- Depends on: PR `#198` implementation baseline and `HAR-CONV-01@efbb8a3` as a
+  stacked development baseline; both dependencies must still merge before this
+  task can merge to `main`
+- Branch: `codex/context-rehydrate-phase1-5`
+- Worktree: `../zebra-context-rehydrate`
+- Owned paths:
+  `packages/agent-context/src/agent_context/capsule.py`,
+  `packages/agent-context/src/agent_context/conversation.py`,
+  `packages/agent-context/src/agent_context/projection.py`,
+  `packages/agent-core/src/agent_core/ports/conversation_compactor.py`,
+  `packages/agent-core/src/agent_core/harness/model_step.py`,
+  `packages/agent-core/src/agent_core/harness/sequential_loop.py`,
+  focused tests under `tests/agent_context/`, `tests/agent_core/` and
+  `tests/integration/`, plus this task card, the governing design, `PROGRESS.md`
+  and `WORKLOG.md`
 
 #### Goal
 
-Preserve the minimal convergence projection across compaction and Worker recovery,
-and invoke the existing `rehydrate_projection()` only when completion reasoning
-needs referenced evidence that is no longer active.
+Complete the existing same-Attempt terminal synthesis path from a recovered
+Context projection. Reuse `ContextCapsule`, `ProtectedInstructionLedger`,
+`ActiveContextProjection` and `rehydrate_projection()` through the existing Core
+Port boundary; do not create another Runtime state model or automatic second Attempt.
 
 #### Acceptance
 
-- [ ] Protected objective, acceptance criteria, convergence state and evidence
-  references survive forced repeated compaction and Worker restart.
-- [ ] Missing referenced evidence rehydrates from existing Event/Artifact sources
+- [ ] Red tests first prove that repeated compaction currently loses the completion
+  contract/evidence needed by terminal synthesis.
+- [ ] Existing Capsule fields preserve the protected objective, explicit completion
+  requirement, later real-user decisions and Artifact references without finance,
+  Skill or provider heuristics.
+- [ ] The terminal path performs at most one recovered `allow_tools=False`
+  synthesis; it never executes a second tool batch or starts a second Attempt.
+- [ ] Missing referenced evidence uses the existing projection/rehydration path
   under token, Policy, checksum and provenance checks.
-- [ ] Recovery does not replay completed read-only tools or depend on provider-private
-  continuation state.
+- [ ] The fixed Skill + 14,118-character text case produces the complete transaction
+  log after clarification; `SUSPENDED` is a failed A-line acceptance.
+- [ ] New evidence and auditable state changes still allow legitimate long tasks;
+  exact side-effect deduplication and existing safety contracts remain unchanged.
+- [ ] FinOS core business-table full-row hashes are unchanged before/after the live
+  replay.
 - [ ] Event Store remains the only durable authority; no second database, business
   semantics or implicit cross-Task long-term memory is introduced.
 
 #### Explicit Non-Goals
 
 - Agent Memory, Knowledge Memory, Memory Controller, embeddings, learning, TTL
-  platform, provider-specific compaction or automatic child Session creation
+  platform, provider-specific compaction, automatic child Session creation,
+  Worker/Storage changes or automatic retry Attempts unless a red test proves the
+  existing same-Attempt Port boundary cannot satisfy the acceptance contract
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.
