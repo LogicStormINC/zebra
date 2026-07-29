@@ -1118,14 +1118,30 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-CTX-PG-01 - Fenced Context Lifecycle Aggregate
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
-- Depends on: `CLOUD-AGG-FENCE-CON-01`
-- Owned paths: `packages/agent-storage/src/agent_storage/postgres/context_lifecycle.py`,
-  the current migration hotspot, focused Worker/API context wiring and PostgreSQL tests
-- Goal: commit capsule, lifecycle Events and active pointer under one authority boundary.
+- Status: `Review`
+- Owner: `lukeding`
+- Branch: `codex/cloud-agg-ctx-pg-01`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01`,
+  `CLOUD-AGG-TASK-PG-01`, and merged `CLOUD-MODEL-TOOL-PG-01` migration v6.
+- Owned paths: `packages/agent-core/src/agent_core/ports/context_lifecycle_store.py`,
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `packages/agent-storage/src/agent_storage/{__init__,composition,context_lifecycle}.py`,
+  `packages/agent-storage/src/agent_storage/postgres/{__init__,context_lifecycle,migrations}.py`,
+  `apps/worker/src/zebra_agent_worker/context_lifecycle.py`,
+  `apps/api/src/zebra_agent_api/session_context_control.py`,
+  `apps/worker/src/zebra_agent_worker/{execution,execution_events}.py`,
+  focused Context lifecycle PostgreSQL/API/Worker tests, and this task's governance records.
+- Migration: v7 `fenced_context_lifecycle`; v1-v6 and their checksums are immutable.
+- Goal: commit immutable capsule content, `CONTEXT_COMPACTED`,
+  `CONTEXT_CAPSULE_CREATED`, active pointer, and their Event-derived Session/Workspace
+  projection revisions under one Context-specific authority boundary.
 - Acceptance: content/idempotency, pointer CAS, stale fence, duplicate sequence,
-  administrative CAS and rollback matrices pass on real PostgreSQL.
+  administrative CAS, two-Event projection revision, and rollback matrices pass on
+  real PostgreSQL; no Task/Segment index write or generic Worker transaction expansion.
+- Evidence: isolated PostgreSQL 17.5 matrix passes `5/5` for canonical retry,
+  stale fence, pointer CAS, administrative CAS, and injected Workspace projection
+  rollback. Focused SQLite/Worker regressions pass `6/6`; changed-scope Ruff,
+  strict Mypy, and `git diff --check` pass.
 
 ### CLOUD-AGG-HANDOFF-PG-01 - PostgreSQL Handoff And Dispatch Aggregate
 

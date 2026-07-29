@@ -14,7 +14,14 @@ from agent_core.domain.context_capsule import (
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import ArtifactId, SessionId, new_artifact_id
+from agent_core.domain.sessions import Session
+from agent_core.domain.workspaces import WorkspaceProjection
+from agent_core.ports.aggregate_mutation import (
+    AdministrativeMutationCAS,
+    WorkerMutationAuthority,
+)
 from agent_core.ports.context_lifecycle_store import (
+    ContextLifecycleCommitResult,
     ContextLifecycleStorePort,
     StoredContextCapsule,
 )
@@ -37,6 +44,31 @@ class SQLiteContextLifecycleStore(ContextLifecycleStorePort):
     def __init__(self, database_path: str | Path) -> None:
         self._database = SQLiteDatabase(database_path)
         self._initialize()
+
+    def commit_worker_compaction(
+        self,
+        *,
+        authority: WorkerMutationAuthority,
+        session: Session,
+        workspace: WorkspaceProjection,
+        capsule: ContextCapsule,
+        validation_context: ContextCapsuleValidationContext,
+        expected_active_capsule_id: str | None,
+        compaction_event: SessionEvent,
+    ) -> ContextLifecycleCommitResult:
+        raise NotImplementedError("SQLite does not use fenced Context aggregation")
+
+    def commit_administrative_activation(
+        self,
+        *,
+        authority: AdministrativeMutationCAS,
+        session: Session,
+        workspace: WorkspaceProjection,
+        capsule_id: str,
+        expected_active_capsule_id: str | None,
+        event: SessionEvent,
+    ) -> ContextLifecycleCommitResult:
+        raise NotImplementedError("SQLite does not use administrative Context CAS")
 
     def persist_capsule_and_advance(
         self,

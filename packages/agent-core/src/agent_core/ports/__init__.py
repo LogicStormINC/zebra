@@ -26,6 +26,7 @@ from agent_core.ports.artifact_store import ArtifactStorePort
 from agent_core.ports.clock import ClockPort
 from agent_core.ports.context_compiler import ContextCompilerPort, RuntimeEvidenceInput
 from agent_core.ports.context_lifecycle_store import (
+    ContextLifecycleCommitResult,
     ContextLifecycleStorePort,
     StoredContextCapsule,
 )
@@ -105,6 +106,7 @@ __all__ = [
     "ArtifactStorePort",
     "ClockPort",
     "ContextCompilerPort",
+    "ContextLifecycleCommitResult",
     "ContextLifecycleStorePort",
     "ConversationCompactionResult",
     "ConversationCompactorPort",

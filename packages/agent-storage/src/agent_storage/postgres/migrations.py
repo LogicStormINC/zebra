@@ -391,6 +391,46 @@ MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=7,
+        name="fenced_context_lifecycle",
+        statements=(
+            """
+            CREATE TABLE context_capsule_artifacts (
+                deployment_namespace TEXT NOT NULL,
+                capsule_id TEXT NOT NULL CHECK (length(btrim(capsule_id)) > 0),
+                artifact_id UUID NOT NULL,
+                session_id UUID NOT NULL,
+                payload JSONB NOT NULL,
+                payload_sha256 TEXT NOT NULL CHECK (length(payload_sha256) = 64),
+                source_hash TEXT NOT NULL CHECK (length(source_hash) = 64),
+                compaction_event_id UUID NOT NULL,
+                capsule_event_id UUID NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL,
+                PRIMARY KEY (deployment_namespace, capsule_id),
+                UNIQUE (deployment_namespace, artifact_id),
+                UNIQUE (deployment_namespace, compaction_event_id),
+                UNIQUE (deployment_namespace, capsule_event_id),
+                FOREIGN KEY (deployment_namespace, session_id)
+                    REFERENCES session_streams (deployment_namespace, session_id)
+            )
+            """,
+            """
+            CREATE TABLE active_context_projections (
+                deployment_namespace TEXT NOT NULL,
+                session_id UUID NOT NULL,
+                capsule_id TEXT NOT NULL,
+                artifact_id UUID NOT NULL,
+                source_hash TEXT NOT NULL CHECK (length(source_hash) = 64),
+                event_sequence BIGINT NOT NULL CHECK (event_sequence >= 0),
+                updated_at TIMESTAMPTZ NOT NULL,
+                PRIMARY KEY (deployment_namespace, session_id),
+                FOREIGN KEY (deployment_namespace, capsule_id)
+                    REFERENCES context_capsule_artifacts (deployment_namespace, capsule_id)
+            )
+            """,
+        ),
+    ),
 )
 
 _MIGRATION_LOCK_ID = 9_187_330_641

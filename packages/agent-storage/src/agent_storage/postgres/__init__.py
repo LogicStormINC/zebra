@@ -6,6 +6,10 @@ from agent_storage.postgres.agent_tasks import (
     attach_segment_in_transaction,
     rebuild_task_in_transaction,
 )
+from agent_storage.postgres.context_lifecycle import (
+    PostgresContextLifecycleConflictError,
+    PostgresContextLifecycleStore,
+)
 from agent_storage.postgres.epoch import (
     PostgresControlPlaneEpochError,
     bootstrap_control_plane_epoch,
@@ -38,6 +42,8 @@ __all__ = [
     "PostgresEventStore",
     "PostgresEffectDispatchStore",
     "PostgresControlPlaneEpochError",
+    "PostgresContextLifecycleConflictError",
+    "PostgresContextLifecycleStore",
     "PostgresLeaseStore",
     "PostgresModelToolProjectionConflictError",
     "PostgresModelToolProjectionStore",

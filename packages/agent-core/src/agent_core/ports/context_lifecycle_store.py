@@ -8,6 +8,12 @@ from agent_core.domain.context_capsule import (
 )
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import ArtifactId, SessionId
+from agent_core.domain.sessions import Session
+from agent_core.domain.workspaces import WorkspaceProjection
+from agent_core.ports.aggregate_mutation import (
+    AdministrativeMutationCAS,
+    WorkerMutationAuthority,
+)
 
 
 @dataclass(frozen=True)
@@ -20,7 +26,40 @@ class StoredContextCapsule:
     compaction_event: SessionEvent | None = None
 
 
+@dataclass(frozen=True)
+class ContextLifecycleCommitResult:
+    """Canonical two-Event Context aggregate commit."""
+
+    stored_capsule: StoredContextCapsule
+    compaction_event: SessionEvent
+    session: Session
+    workspace: WorkspaceProjection
+
+
 class ContextLifecycleStorePort(Protocol):
+    def commit_worker_compaction(
+        self,
+        *,
+        authority: WorkerMutationAuthority,
+        session: Session,
+        workspace: WorkspaceProjection,
+        capsule: ContextCapsule,
+        validation_context: ContextCapsuleValidationContext,
+        expected_active_capsule_id: str | None,
+        compaction_event: SessionEvent,
+    ) -> ContextLifecycleCommitResult: ...
+
+    def commit_administrative_activation(
+        self,
+        *,
+        authority: AdministrativeMutationCAS,
+        session: Session,
+        workspace: WorkspaceProjection,
+        capsule_id: str,
+        expected_active_capsule_id: str | None,
+        event: SessionEvent,
+    ) -> ContextLifecycleCommitResult: ...
+
     def persist_capsule_and_advance(
         self,
         *,

@@ -76,10 +76,37 @@ def persist_context_compaction(
         event_type=draft.event_type,
         actor=draft.actor,
         payload=draft.payload,
+        idempotency_key=f"context-compaction:{capsule.capsule_id}",
     )
     if capsule.source_event_range is None:
         raise ValueError("durable capsule source event range is required")
     try:
+        authority = recorder.worker_mutation_authority
+        if authority is not None:
+            committed = lifecycle_store.commit_worker_compaction(
+                authority=authority,
+                session=recorder.session,
+                workspace=recorder.workspace,
+                capsule=capsule,
+                validation_context=ContextCapsuleValidationContext(
+                    expected_source_hash=capsule.source_hash,
+                    expected_source_event_range=capsule.source_event_range,
+                    unresolved_tool_call_ids=frozenset(
+                        tool.call_id for tool in capsule.pending_tools
+                    ),
+                    protected_user_constraints=frozenset(capsule.protected_user_constraints),
+                    approval_and_policy_state=frozenset(capsule.approvals_and_policy_state),
+                    readable_artifact_refs=readable_refs,
+                ),
+                expected_active_capsule_id=active.capsule.capsule_id if active else None,
+                compaction_event=compaction_event,
+            )
+            recorder.accept_committed_events(
+                (committed.compaction_event, committed.stored_capsule.event),
+                session=committed.session,
+                workspace=committed.workspace,
+            )
+            return
         stored = lifecycle_store.persist_capsule_and_advance(
             session_id=recorder.session.session_id,
             capsule=capsule,

@@ -76,6 +76,10 @@ class DurableHarnessEventRecorder:
         return self._workspace
 
     @property
+    def worker_mutation_authority(self) -> WorkerMutationAuthority | None:
+        return self._worker_mutation_authority
+
+    @property
     def next_sequence(self) -> int:
         return self._session.current_sequence + 1
 
@@ -180,6 +184,26 @@ class DurableHarnessEventRecorder:
         self._advance_authority(event)
         self._events.append(event)
         return event
+
+    def accept_committed_events(
+        self,
+        events: tuple[SessionEvent, ...],
+        *,
+        session: Session,
+        workspace: WorkspaceProjection,
+    ) -> None:
+        """Accept Events whose primary projections committed in the same transaction."""
+        for event in events:
+            if event.session_id != self._session.session_id or event.sequence != self.next_sequence:
+                raise ValueError("committed Context Event sequence does not match recorder")
+            self._model_call_indexer.index_event(event)
+            self._tool_run_indexer.index_event(event)
+            self._advance_authority(event)
+            self._events.append(event)
+            self._session = apply_event(self._session, event)
+            self._workspace = apply_workspace_event(self._workspace, event)
+        if self._session != session or self._workspace != workspace:
+            raise ValueError("committed Context projections do not match Event replay")
 
     def _refresh_external_events(self) -> None:
         for event in self._event_store.read_since(

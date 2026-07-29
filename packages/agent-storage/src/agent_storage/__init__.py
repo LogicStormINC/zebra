@@ -59,6 +59,8 @@ from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.postgres import (
     PostgresAgentTaskConflictError,
     PostgresAgentTaskStore,
+    PostgresContextLifecycleConflictError,
+    PostgresContextLifecycleStore,
     PostgresControlPlaneEpochError,
     PostgresEffectDispatchStore,
     PostgresEventStore,
@@ -127,6 +129,8 @@ __all__ = [
     "PostgresEventStore",
     "PostgresEffectDispatchStore",
     "PostgresControlPlaneEpochError",
+    "PostgresContextLifecycleConflictError",
+    "PostgresContextLifecycleStore",
     "PostgresLeaseStore",
     "PostgresModelToolProjectionConflictError",
     "PostgresModelToolProjectionStore",
