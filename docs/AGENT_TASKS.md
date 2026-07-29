@@ -63,8 +63,8 @@
   dependency order. Full aggregate fencing remains `Locked`.
 - Exact replay on `zebra-cloud-trench@375dca92` proves all nine remaining suite
   failures are business-baseline defects. `BASE-MDL-EXPECT-01` and
-  `BASE-SCM-CRED-01` are `Review`, `BASE-WKR-CANCEL-01` is `In Progress`, and the
-  two disjoint Desktop and Core repair cards are `Ready`.
+  `BASE-SCM-CRED-01`, and `BASE-WKR-CANCEL-01` are `Review`, `BASE-UI-SIZE-01`
+  is `In Progress`, and the Core repair card is `Ready`.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -971,7 +971,7 @@ cloud architecture scope.
 
 ### BASE-WKR-CANCEL-01 - Durable Cancellation Finalization Race
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Branch: `codex/baseline-worker-cancel-01`
 - Depends on: none; execute after `BASE-SCM-CRED-01` in the local repair stack
@@ -981,14 +981,18 @@ cloud architecture scope.
   `tests/worker/execution/test_core_execution.py`, and governance records
 - Goal: converge an external durable terminal state that wins during finalization
   without leaking `ExecutionInterrupted` or overwriting cancellation as failure.
-- Acceptance: cancellation wins at append and append-event boundaries; lease loss
-  and unrelated persistence errors still fail closed.
+- Acceptance: cancellation that wins at the durable append boundary converges at
+  finalization; lease loss and unrelated persistence errors still fail closed.
+- Evidence: focused finalization/cancellation tests pass `3/3`, the Worker suite
+  passes `77` with one expected platform skip, Ruff and strict Mypy pass, and the
+  full suite improves to `1853 passed, 60 skipped, 1 failed` with only the
+  repository file-size gate remaining.
 
 ### BASE-UI-SIZE-01 - Conversation Idle Style Extraction
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
-- Suggested branch: `codex/baseline-ui-size-01`
+- Status: `In Progress`
+- Owner: `Codex`
+- Branch: `codex/baseline-ui-size-01`
 - Depends on: none; execute after `BASE-WKR-CANCEL-01` in the local repair stack
 - Owned paths: `UI/desktop/src/components/CodexConversationPane.styles.ts`,
   `UI/desktop/src/components/conversation/WorkspaceIdle.styles.ts` (new),

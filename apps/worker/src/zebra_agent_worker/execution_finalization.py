@@ -13,7 +13,10 @@ from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports import EventStorePort
 
-from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
+from zebra_agent_worker.execution_events import (
+    DurableHarnessEventRecorder,
+    ExecutionInterrupted,
+)
 
 
 class WorkerExecutionError(ValueError): ...
@@ -27,6 +30,30 @@ class ExecutedSession:
 
 
 def finalize_execution(
+    *,
+    recorder: DurableHarnessEventRecorder,
+    attempt_result: HarnessAttemptResult,
+    memory_extraction_service: MemoryCandidateExtractionService,
+    memory_promotion_service: MemoryCandidatePromotionService,
+    title_service: SessionTitleService,
+    event_store: EventStorePort,
+    started_at: datetime,
+) -> tuple[SessionEvent, ...]:
+    try:
+        return _finalize_execution(
+            recorder=recorder,
+            attempt_result=attempt_result,
+            memory_extraction_service=memory_extraction_service,
+            memory_promotion_service=memory_promotion_service,
+            title_service=title_service,
+            event_store=event_store,
+            started_at=started_at,
+        )
+    except ExecutionInterrupted:
+        return recorder.events
+
+
+def _finalize_execution(
     *,
     recorder: DurableHarnessEventRecorder,
     attempt_result: HarnessAttemptResult,

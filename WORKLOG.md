@@ -6271,3 +6271,9 @@ actual byte access.
   Pull-request tests pass `25/25`, SCM/broker regressions pass `40/40`, Ruff passes,
   and the full suite improves to `1851 passed, 60 skipped, 2 failed`. Activated
   `BASE-WKR-CANCEL-01` next.
+- `BASE-WKR-CANCEL-01` now treats only typed `ExecutionInterrupted` at the unique
+  finalization boundary as an externally won durable terminal race. A broader
+  append-event guard was tested and removed because it blocked legitimate
+  post-completion memory/title events. Focused tests pass `3/3`, Worker passes
+  `77` with one skip, Ruff/Mypy pass, and the full suite improves to `1853 passed,
+  60 skipped, 1 failed`. Activated `BASE-UI-SIZE-01` next.

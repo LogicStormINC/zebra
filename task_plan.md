@@ -1,14 +1,13 @@
 # Task Plan
 
-## BASE-WKR-CANCEL-01 - Durable Cancellation Finalization Race
+## BASE-UI-SIZE-01 - Conversation Idle Style Extraction
 
-1. `completed` - Reproduce the deterministic cancellation race and trace the stale
-   recorder status through the unique finalization convergence boundary.
-2. `in_progress` - Treat only typed durable interruption as an externally won
-   terminal race and align append-event preflight/CAS recovery with append.
-3. `pending` - Add finalization regressions, then run focused Worker, Ruff, Mypy
-   and complete repository tests.
-4. `pending` - Move the card to Review and activate `BASE-UI-SIZE-01` on a new
+1. `completed` - Map WorkspaceIdle-only classes and confirm its single component
+   consumer plus the existing Desktop validation commands.
+2. `in_progress` - Move only idle/recent/action classes to a component-owned style
+   module and update the component hook import.
+3. `pending` - Run Desktop build, composer layout and file-size gates.
+4. `pending` - Move the card to Review and activate `BASE-EVT-SIZE-01` on a new
    path-bounded branch.
 
 ### Decisions
@@ -33,6 +32,14 @@
 3. `completed` - Pass pull-request `25/25`, SCM/broker `40/40`, Ruff and full-suite
    reduction to `2 failed, 1851 passed, 60 skipped`.
 4. `completed` - Move the card to Review and activate the Worker race card.
+
+## BASE-WKR-CANCEL-01 - Durable Cancellation Finalization Race
+
+1. `completed` - Reproduce and trace stale finalization state.
+2. `completed` - Converge only typed durable interruption at finalization.
+3. `completed` - Pass focused `3/3`, Worker `77 passed, 1 skipped`, Ruff, Mypy and
+   full-suite reduction to `1 failed, 1853 passed, 60 skipped`.
+4. `completed` - Move the card to Review and activate the UI size card.
 
 ## CLOUD-EFFECT-CONSUMER-01 - Worker Fenced Effect Consumer
 
