@@ -1428,7 +1428,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Branch: `codex/cloud-art-read-comp-01`
 - Depends on: `CLOUD-MODEL-TOOL-PG-01` and `CLOUD-ART-PAYLOAD-PG-01`
