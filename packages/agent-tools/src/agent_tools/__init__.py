@@ -14,7 +14,11 @@ if TYPE_CHECKING:
     from agent_tools.builtin.search import WorkspaceSearchTool, files_search_contract
     from agent_tools.builtin.tests import TestsRunTool, tests_run_contract
     from agent_tools.contracts import RegisteredTool, ToolContract
-    from agent_tools.effect_guard import EffectGuardedToolGateway, effect_identity
+    from agent_tools.effect_guard import (
+        EffectGuardedToolGateway,
+        FencedEffectToolGateway,
+        effect_identity,
+    )
     from agent_tools.executor import ToolExecutor
     from agent_tools.mcp_disclosure import (
         AuthorizedMcpToolCatalog,
@@ -63,6 +67,7 @@ if TYPE_CHECKING:
 __all__ = [
     "CommandRunTool",
     "EffectGuardedToolGateway",
+    "FencedEffectToolGateway",
     "ClarifyTool",
     "FileReadTool",
     "GitStatusTool",
@@ -122,6 +127,10 @@ _EXPORTS = {
     "EffectGuardedToolGateway": (
         "agent_tools.effect_guard",
         "EffectGuardedToolGateway",
+    ),
+    "FencedEffectToolGateway": (
+        "agent_tools.effect_guard",
+        "FencedEffectToolGateway",
     ),
     "AuthorizedMcpToolCatalog": (
         "agent_tools.mcp_disclosure",

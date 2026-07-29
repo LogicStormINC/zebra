@@ -1,5 +1,28 @@
 # Task Plan
 
+## CLOUD-EFFECT-CONSUMER-01 - Worker Fenced Effect Consumer
+
+1. `completed` - Trace Worker recovery, Lease lifecycle, tool execution and
+   fenced Effect dispatch boundaries; freeze the minimum integration seam.
+2. `completed` - Add background Lease heartbeat and loss propagation around the
+   existing Worker execution lifecycle with fenced release on every exit.
+3. `completed` - Guard external Effect execution with durable claim/terminalization
+   and explicit uncertain reconciliation without automatic replay.
+4. `completed` - Add deterministic crash, stale-fence and lifecycle regressions.
+5. `in_progress` - Run focused/full validation, record evidence and preserve the
+   stacked result for review without claiming production cutover.
+
+### Decisions
+
+- Work is stacked on locally reviewed `CLOUD-EFFECT-OUTBOX-01@69e34c0c`; the
+  original dirty `main` worktree remains untouched.
+- The user's continuation activates this local implementation slice only. It
+  does not mark any dependency merged or authorize push, rollout or Store selection.
+- Reuse the existing Lease and Effect dispatch contracts. Do not add a broker,
+  Redis, generic Unit of Work, new dependency or cloud backend selector.
+- The sandbox matrix passes; the host Docker PostgreSQL consumer matrix is the
+  remaining acceptance item and has a dedicated one-command script.
+
 ## CLOUD-EFFECT-OUTBOX-01 - Fenced Effect Dispatch Aggregate
 
 1. `completed` - Reconcile the frozen Lease/Effect contract with existing

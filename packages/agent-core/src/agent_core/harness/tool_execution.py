@@ -22,7 +22,8 @@ def execute_tool_call(
     emitted_events: list[HarnessEventDraft],
     emit_execution_started: bool = True,
 ) -> ToolExecutionStep:
-    if emit_execution_started:
+    manages_effect = _manages_durable_effect(tool_gateway, tool_call)
+    if emit_execution_started and not manages_effect:
         emitted_events.append(
             HarnessEventDraft(
                 event_type=EventType.TOOL_EXECUTION_STARTED,
@@ -41,6 +42,7 @@ def execute_tool_call(
         tool_result,
         verifier=verifier,
         emitted_events=emitted_events,
+        emit_tool_terminal=not manages_effect,
     )
 
 
@@ -51,6 +53,7 @@ def record_tool_result(
     *,
     verifier: VerifierHook,
     emitted_events: list[HarnessEventDraft],
+    emit_tool_terminal: bool = True,
 ) -> ToolExecutionStep:
     emitted_events.extend(
         _subagent_lifecycle_events(
@@ -59,24 +62,25 @@ def record_tool_result(
             tool_result=tool_result,
         )
     )
-    emitted_events.append(
-        HarnessEventDraft(
-            event_type=(
-                EventType.TOOL_EXECUTION_COMPLETED
-                if tool_result.status is ToolCallStatus.EXECUTED
-                else EventType.TOOL_EXECUTION_FAILED
-            ),
-            actor=EventActor.TOOL,
-            payload={
-                "attempt_number": context.attempt.number,
-                "tool_name": tool_call.name,
-                "tool_call_id": str(tool_call.tool_call_id),
-                "status": tool_result.status.value,
-                "output": tool_result.output,
-                "metadata": tool_result.metadata,
-            },
+    if emit_tool_terminal:
+        emitted_events.append(
+            HarnessEventDraft(
+                event_type=(
+                    EventType.TOOL_EXECUTION_COMPLETED
+                    if tool_result.status is ToolCallStatus.EXECUTED
+                    else EventType.TOOL_EXECUTION_FAILED
+                ),
+                actor=EventActor.TOOL,
+                payload={
+                    "attempt_number": context.attempt.number,
+                    "tool_name": tool_call.name,
+                    "tool_call_id": str(tool_call.tool_call_id),
+                    "status": tool_result.status.value,
+                    "output": tool_result.output,
+                    "metadata": tool_result.metadata,
+                },
+            )
         )
-    )
     verification = verifier.verify(
         context,
         tool_result.status.value,
@@ -106,6 +110,11 @@ def record_tool_result(
             "verification_metadata": verification.metadata,
         },
     )
+
+
+def _manages_durable_effect(tool_gateway: ToolGatewayPort, tool_call: ToolCall) -> bool:
+    check = getattr(tool_gateway, "manages_durable_effect", None)
+    return bool(callable(check) and check(tool_call))
 
 
 def _subagent_lifecycle_events(

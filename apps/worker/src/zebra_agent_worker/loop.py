@@ -5,6 +5,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from agent_core.ports import EffectDispatchPort
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_storage import (
     ControlPlaneStores,
@@ -144,6 +145,7 @@ def build_worker_loop_service(
     settings: ZebraAgentSettings,
     sleep: Callable[[float], None] = time.sleep,
     stores: ControlPlaneStores | None = None,
+    effect_dispatch: EffectDispatchPort | None = None,
 ) -> WorkerLoopService:
     active_stores = stores or sqlite_control_plane_stores(database_path)
     claim_service = SessionClaimService(
@@ -160,6 +162,7 @@ def build_worker_loop_service(
         resume_service=SessionResumeService(claim_service),
         settings=settings,
         stores=active_stores,
+        effect_dispatch=effect_dispatch,
     )
     return WorkerLoopService(
         projection_store=active_stores.sessions,

@@ -894,14 +894,17 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
 
 ### CLOUD-EFFECT-CONSUMER-01 - Worker Fenced Effect Consumer
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
-- Depends on: merged `CLOUD-EFFECT-OUTBOX-01` and explicit activation
+- Status: `In Progress`
+- Owner: `Codex`
+- Depends on: locally reviewed `CLOUD-EFFECT-OUTBOX-01@69e34c0c` and explicit
+  maintainer activation on 2026-07-28. This is a local stacked implementation
+  waiver, not a merge, push, cutover or release waiver.
 - Branch: `codex/cloud-effect-consumer-01`
+- Worktree: cloud-mainline writable integration clone
 - Owned paths: `apps/worker/src/zebra_agent_worker/{loop,claims,resume,execution,execution_events,continuation_lifecycle,context_lifecycle,execution_finalization,runtime_authority,session_handoff}.py`,
   `apps/worker/src/zebra_agent_worker/lease_heartbeat.py` (new),
   `packages/agent-core/src/agent_core/harness/tool_execution.py`,
-  `packages/agent-tools/src/agent_tools/effect_guard.py`,
+  `packages/agent-tools/src/agent_tools/{__init__,effect_guard}.py`,
   `tests/agent_tools/test_effect_guard.py`, `tests/worker/{test_loop,test_claims,test_resume}.py`,
   `tests/worker/test_fenced_effect_consumer.py` (new), and governance records
 - Goal: acquire before recovery, maintain background heartbeat, bind Event/Effect
@@ -909,6 +912,13 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
   current fence and reconcile uncertain external Effects without auto-replay.
 - Acceptance: lease loss stops new model/Event/Effect work; every exit attempts
   fenced release; provider-success crash and terminal-response crash tests pass.
+- Evidence: deterministic heartbeat, stale-fence, provider-success/terminal-commit
+  crash, response-loss replay and no-auto-replay tests pass. Worker plus agent-tools
+  regression is `227 passed` with only the confirmed inherited cancellation race;
+  the full suite is `1843 passed, 60 skipped` with the same nine inherited failures.
+  Ruff, strict Mypy, diff-check and release Eval `10/10` pass. Real PostgreSQL
+  consumer coverage is present but remains pending host Docker
+  execution; no cloud backend is runtime-selected by default.
 - Non-goals: Redis/Kafka, cloud backend selector, production rollout.
 
 ### CLOUD-LEASE-01 - Lease And Event/Effect Delivery Parent Gate

@@ -11,6 +11,7 @@ from agent_core.domain.context_capsule import (
 )
 from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import SessionId
 from agent_core.harness.models import HarnessEventDraft
 from agent_core.ports import (
     ContextLifecycleStorePort,
@@ -19,6 +20,25 @@ from agent_core.ports import (
 )
 
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
+
+
+def persist_provider_continuation(
+    store: ProviderContinuationStorePort,
+    session_id: SessionId,
+    reference: ProviderContinuationRef,
+    payload: bytes | None,
+    maximum_ttl_seconds: int | None,
+) -> str | None:
+    if payload is None:
+        return None
+    artifact = store.store(
+        tenant_id="local",
+        session_id=str(session_id),
+        reference=reference,
+        opaque_payload=payload,
+        maximum_ttl_seconds=maximum_ttl_seconds,
+    )
+    return artifact.artifact_id
 
 
 def persist_context_compaction(

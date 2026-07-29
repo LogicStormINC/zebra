@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -11,14 +11,15 @@ from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import apply_event as apply_workspace_event
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import HandoffId, SessionId
+from agent_core.domain.leases import LeaseFence
 from agent_core.domain.session_handoff import SessionHandoffEnvelope
-from agent_core.ports import EffectLedgerPort
+from agent_core.ports import ArtifactPayloadStorePort, EffectDispatchPort, EffectLedgerPort
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
 from agent_storage import (
     ControlPlaneStores,
     sqlite_control_plane_stores,
 )
-from agent_tools import EffectGuardedToolGateway
+from agent_tools import EffectGuardedToolGateway, FencedEffectToolGateway
 
 
 class HandoffWorkspaceDriftError(ValueError):
@@ -141,13 +142,55 @@ def guard_effectful_tools(
     session_id: SessionId,
     recovered_handoff: RecoveredHandoff | None,
     authority_scope: str,
-) -> EffectGuardedToolGateway:
+    dispatch: EffectDispatchPort | None = None,
+    artifacts: ArtifactPayloadStorePort | None = None,
+    fence: LeaseFence | None = None,
+    claim_ttl: timedelta | None = None,
+    next_event: Callable[[EventType, EventActor, dict[str, object]], SessionEvent] | None = None,
+    accept_event: Callable[[SessionEvent], object] | None = None,
+    ownership_check: Callable[[], None] | None = None,
+) -> EffectGuardedToolGateway | FencedEffectToolGateway:
+    root_session_id = (
+        session_id if recovered_handoff is None else recovered_handoff.envelope.root_session_id
+    )
+    if dispatch is not None:
+        if any(
+            value is None
+            for value in (
+                artifacts,
+                fence,
+                claim_ttl,
+                next_event,
+                accept_event,
+                ownership_check,
+            )
+        ):
+            raise ValueError("fenced Effect dispatch requires its complete runtime context")
+        assert artifacts is not None
+        assert fence is not None
+        assert claim_ttl is not None
+        assert next_event is not None
+        assert accept_event is not None
+        assert ownership_check is not None
+        guarded = FencedEffectToolGateway(
+            gateway,
+            dispatch=dispatch,
+            artifacts=artifacts,
+            execution_session_id=session_id,
+            root_session_id=root_session_id,
+            fence=fence,
+            claim_ttl=claim_ttl,
+            authority_scope=authority_scope,
+            next_event=next_event,
+            accept_event=accept_event,
+            ownership_check=ownership_check,
+        )
+        guarded.reconcile_expired()
+        return guarded
     return EffectGuardedToolGateway(
         gateway,
         ledger=ledger,
-        root_session_id=(
-            session_id if recovered_handoff is None else recovered_handoff.envelope.root_session_id
-        ),
+        root_session_id=root_session_id,
         authority_scope=authority_scope,
     )
 

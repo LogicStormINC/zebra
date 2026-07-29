@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -44,6 +45,7 @@ class DurableHarnessEventRecorder:
         workspace_store: WorkspaceProjectionStorePort,
         model_call_indexer: ModelCallIndexer,
         tool_run_indexer: ToolRunIndexer,
+        ownership_check: Callable[[], None] | None = None,
     ) -> None:
         self._session = session
         self._workspace = workspace
@@ -52,6 +54,7 @@ class DurableHarnessEventRecorder:
         self._workspace_store = workspace_store
         self._model_call_indexer = model_call_indexer
         self._tool_run_indexer = tool_run_indexer
+        self._ownership_check = ownership_check or (lambda: None)
         self._events: list[SessionEvent] = []
 
     @property
@@ -85,6 +88,23 @@ class DurableHarnessEventRecorder:
         *,
         created_at: datetime | None = None,
     ) -> SessionEvent:
+        event = self.prepare(event_type, actor, payload, created_at=created_at)
+        try:
+            return self.append_event(event)
+        except ValueError:
+            self._refresh_external_events()
+            self._raise_if_interrupted()
+            raise
+
+    def prepare(
+        self,
+        event_type: EventType,
+        actor: EventActor,
+        payload: dict[str, object],
+        *,
+        created_at: datetime | None = None,
+    ) -> SessionEvent:
+        self._ownership_check()
         self._refresh_external_events()
         self._raise_if_interrupted()
         model_call_id = payload.get("model_call_id")
@@ -98,14 +118,10 @@ class DurableHarnessEventRecorder:
             correlation_id=correlation_id,
             created_at=created_at or datetime.now(UTC),
         )
-        try:
-            return self.append_event(event)
-        except ValueError:
-            self._refresh_external_events()
-            self._raise_if_interrupted()
-            raise
+        return event
 
     def append_event(self, event: SessionEvent) -> SessionEvent:
+        self._ownership_check()
         if event.session_id != self._session.session_id:
             raise ValueError("execution event session_id does not match recorder")
         if event.sequence != self.next_sequence:
@@ -122,6 +138,7 @@ class DurableHarnessEventRecorder:
 
     def accept_persisted_event(self, event: SessionEvent) -> SessionEvent:
         """Advance projections for an event committed by another atomic store."""
+        self._ownership_check()
         if event.session_id != self._session.session_id:
             raise ValueError("execution event session_id does not match recorder")
         if event.sequence != self.next_sequence:

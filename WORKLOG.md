@@ -6222,3 +6222,28 @@ actual byte access.
   the sandbox; Ruff and Mypy pass, direct Eval passes `10/10`, and `git diff --check`
   passes. `make eval` itself cannot initialize `~/.cache/uv` under Seatbelt, so the
   already-synced virtual environment ran the identical release-check script directly.
+
+## 2026-07-28 CLOUD-EFFECT-CONSUMER-01 Worker Fenced Effect Consumer
+
+- activated a local stacked implementation branch from
+  `CLOUD-EFFECT-OUTBOX-01@69e34c0c`; this is not a merge, push or rollout waiver;
+- split acquire from recovery so a dedicated background heartbeat thread starts
+  before recovery, records the first ownership/database failure and stops before
+  one fenced release on every exit;
+- added ownership checks to durable Worker Event boundaries and restricted
+  parallel tool execution to read-only tools under the fenced consumer;
+- retained the SQLite Effect ledger as the default path; an explicitly injected
+  `EffectDispatchPort` now persists governed ToolCall artifacts, atomically
+  schedules/claims/terminalizes Effects and reconciles expired claims to
+  `uncertain` without automatic replay;
+- deterministic regressions cover heartbeat loss, stale ownership after schedule,
+  provider-success/terminal-commit crash, response loss after terminal commit,
+  failed-result uncertainty and legacy helper compatibility;
+- Worker plus agent-tools regression passes `227` tests and retains only the
+  confirmed inherited cancellation race; full suite passes `1843`, skips `60`
+  and retains the same nine inherited failures; changed-file Ruff, strict Mypy,
+  `git diff --check` and release Eval `10/10` pass;
+- real PostgreSQL consumer coverage is implemented in
+  `tests/worker/test_fenced_effect_consumer.py`. Run the host helper
+  `run-zebra-effect-consumer-postgres-tests.sh`; the sandbox cannot access the
+  Docker socket. Keep the card In Progress until that result is recorded.

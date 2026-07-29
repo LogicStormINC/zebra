@@ -36,20 +36,16 @@ class SessionClaimService:
         claimed_at: datetime,
         lease_ttl_seconds: int,
     ) -> ClaimedSession:
-        self._require_aware(claimed_at)
-        ttl = self._ttl(lease_ttl_seconds)
-        lease = self._lease_store.acquire(
+        lease = self.acquire_lease(
             session_id,
-            owner_instance_id=worker_id,
-            ttl=ttl,
+            worker_id=worker_id,
+            claimed_at=claimed_at,
+            lease_ttl_seconds=lease_ttl_seconds,
         )
         try:
-            recovery = self._recovery_service.recover_session(session_id)
-            lease = self._lease_store.heartbeat(
-                session_id,
-                fence=lease.fence,
-                ttl=ttl,
-                checkpoint=recovery.last_sequence,
+            return self.recover_lease(
+                lease,
+                lease_ttl_seconds=lease_ttl_seconds,
             )
         except BaseException as error:
             try:
@@ -57,7 +53,35 @@ class SessionClaimService:
             except Exception as release_error:
                 error.add_note(f"lease cleanup failed: {release_error}")
             raise
-        return ClaimedSession(recovery=recovery, lease=lease)
+
+    def acquire_lease(
+        self,
+        session_id: SessionId,
+        *,
+        worker_id: str,
+        claimed_at: datetime,
+        lease_ttl_seconds: int,
+    ) -> WorkerLease:
+        self._require_aware(claimed_at)
+        return self._lease_store.acquire(
+            session_id,
+            owner_instance_id=worker_id,
+            ttl=self._ttl(lease_ttl_seconds),
+        )
+
+    def recover_lease(
+        self,
+        lease: WorkerLease,
+        *,
+        lease_ttl_seconds: int,
+    ) -> ClaimedSession:
+        recovery = self._recovery_service.recover_session(lease.session_id)
+        renewed = self.heartbeat_lease(
+            lease,
+            lease_ttl_seconds=lease_ttl_seconds,
+            checkpoint=recovery.last_sequence,
+        )
+        return ClaimedSession(recovery=recovery, lease=renewed)
 
     def heartbeat_claim(
         self,
@@ -68,21 +92,33 @@ class SessionClaimService:
         checkpoint: int | None = None,
     ) -> ClaimedSession:
         self._require_aware(heartbeat_at)
-        ttl = self._ttl(lease_ttl_seconds)
-        next_checkpoint = claimed.lease.checkpoint if checkpoint is None else checkpoint
-        lease = self._lease_store.heartbeat(
-            claimed.lease.session_id,
-            fence=claimed.lease.fence,
-            ttl=ttl,
-            checkpoint=next_checkpoint,
+        lease = self.heartbeat_lease(
+            claimed.lease,
+            lease_ttl_seconds=lease_ttl_seconds,
+            checkpoint=checkpoint,
         )
         return ClaimedSession(recovery=claimed.recovery, lease=lease)
 
-    def release_claim(self, claimed: ClaimedSession) -> None:
-        self._lease_store.release(
-            claimed.lease.session_id,
-            fence=claimed.lease.fence,
+    def heartbeat_lease(
+        self,
+        lease: WorkerLease,
+        *,
+        lease_ttl_seconds: int,
+        checkpoint: int | None = None,
+    ) -> WorkerLease:
+        ttl = self._ttl(lease_ttl_seconds)
+        return self._lease_store.heartbeat(
+            lease.session_id,
+            fence=lease.fence,
+            ttl=ttl,
+            checkpoint=lease.checkpoint if checkpoint is None else checkpoint,
         )
+
+    def release_claim(self, claimed: ClaimedSession) -> None:
+        self.release_lease(claimed.lease)
+
+    def release_lease(self, lease: WorkerLease) -> None:
+        self._lease_store.release(lease.session_id, fence=lease.fence)
 
     @staticmethod
     def _require_aware(value: datetime) -> None:

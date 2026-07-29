@@ -65,6 +65,15 @@
   Docker Compose PostgreSQL 17.5 matrix passes `49/49`, including fault rollback,
   concurrency, restore epoch, namespace and response-loss cases. It is not runtime-
   selected; Worker integration and any cloud-readiness claim remain locked.
+- Active Effect consumer task: `CLOUD-EFFECT-CONSUMER-01` runs Lease heartbeat
+  on a background thread before recovery, checks ownership at Event and external
+  Effect boundaries, and releases through one fenced lifecycle exit. Explicitly
+  injected cloud runtimes can now schedule, claim and terminalize durable Effect
+  intents; expired claims become `uncertain` for reconciliation and never auto-
+  replay. The local SQLite profile still uses its existing ledger, and no backend
+  selector or production cutover is included. Deterministic and full-suite gates
+  retain only the confirmed inherited failures; real PostgreSQL consumer evidence
+  is implemented but still awaits the host Docker run.
 - Agent Definition architecture task in Review: `AGENT-DEF-ADR-01` records accepted
   Definition control-plane decisions and updates the final architecture. It
   separates Task-level Definition configuration from Attempt-level execution

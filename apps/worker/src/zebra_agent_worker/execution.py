@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -10,10 +10,8 @@ from agent_core.application import (
     MemoryCandidatePromotionService,
     SessionTitleService,
 )
-from agent_core.domain.context_continuation import ProviderContinuationRef
-from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.sessions import Session
 from agent_core.harness import (
     HarnessAttempt,
     HarnessContext,
@@ -21,10 +19,8 @@ from agent_core.harness import (
     HarnessTask,
     SingleAttemptOrchestrator,
 )
-from agent_core.harness.models import (
-    HarnessAttemptResult,
-    HarnessEventDraft,
-)
+from agent_core.harness.models import HarnessEventDraft
+from agent_core.ports import EffectDispatchPort
 from agent_integrations import build_model_gateway
 from agent_runtime import LocalToolGateway
 from agent_security import (
@@ -45,6 +41,7 @@ from zebra_agent_config import (
     trusted_local_mode_enabled,
 )
 
+import zebra_agent_worker.runtime_setup as runtime_setup
 import zebra_agent_worker.session_handoff as handoff
 from zebra_agent_worker.approved_continuation import (
     ApprovedContinuationError,
@@ -57,6 +54,7 @@ from zebra_agent_worker.clarification_continuation import (
 )
 from zebra_agent_worker.context_lifecycle import (
     persist_context_compaction,
+    persist_provider_continuation,
     recover_provider_continuation,
 )
 from zebra_agent_worker.continuation_lifecycle import (
@@ -66,7 +64,12 @@ from zebra_agent_worker.continuation_lifecycle import (
 from zebra_agent_worker.control import SessionControlError, SessionControlService
 from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
-from zebra_agent_worker.execution_finalization import finalize_execution
+from zebra_agent_worker.execution_finalization import (
+    ExecutedSession,
+    WorkerExecutionError,
+    finalize_execution,
+)
+from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
@@ -75,22 +78,8 @@ from zebra_agent_worker.runtime_authority import (
     persist_runtime_authority,
     runtime_cleanup_failure_result,
 )
-from zebra_agent_worker.runtime_setup import (
-    build_prepared_runtime,
-    require_matching_runtime_authority,
-)
 from zebra_agent_worker.task_recovery import recover_task
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
-
-
-class WorkerExecutionError(ValueError): ...
-
-
-@dataclass(frozen=True)
-class ExecutedSession:
-    session: Session
-    events: tuple[SessionEvent, ...]
-    attempt_result: HarnessAttemptResult
 
 
 class SessionExecutionService:
@@ -102,6 +91,7 @@ class SessionExecutionService:
         resume_service: SessionResumeService,
         settings: ZebraAgentSettings | None = None,
         stores: ControlPlaneStores | None = None,
+        effect_dispatch: EffectDispatchPort | None = None,
     ) -> None:
         self._database_path = database_path
         self._claim_service = claim_service
@@ -133,6 +123,7 @@ class SessionExecutionService:
         self._memory_extraction_service = MemoryCandidateExtractionService(self._memory_store)
         self._memory_promotion_service = MemoryCandidatePromotionService(self._memory_store)
         self._effect_ledger = active_stores.effects
+        self._effect_dispatch = effect_dispatch
         self._session_history = active_stores.session_history
         self._handoff_gate = handoff.SessionHandoffRecoveryGate(
             str(database_path), stores=active_stores
@@ -147,20 +138,48 @@ class SessionExecutionService:
         lease_ttl_seconds: int = 30,
     ) -> ExecutedSession:
         started_at = executed_at or datetime.now(UTC)
-        resumed = self._resume_service.resume_session(
+        lease = self._claim_service.acquire_lease(
             session_id,
             worker_id=worker_id,
-            resumed_at=started_at,
+            claimed_at=started_at,
             lease_ttl_seconds=lease_ttl_seconds,
         )
-        claimed = resumed.claimed
+        with LeaseHeartbeat(
+            self._claim_service,
+            lease,
+            lease_ttl_seconds=lease_ttl_seconds,
+        ) as heartbeat:
+            claimed = self._claim_service.recover_lease(
+                lease,
+                lease_ttl_seconds=lease_ttl_seconds,
+            )
+            resumed = self._resume_service.require_resumable(
+                claimed,
+                release_on_failure=False,
+            )
+            heartbeat.require_owned()
+            return self._execute_claimed_session(
+                resumed.claimed,
+                worker_id=worker_id,
+                started_at=started_at,
+                ownership_check=heartbeat.require_owned,
+            )
+
+    def _execute_claimed_session(
+        self,
+        claimed: ClaimedSession,
+        *,
+        worker_id: str,
+        started_at: datetime,
+        ownership_check: Callable[[], None],
+    ) -> ExecutedSession:
+        session_id = claimed.lease.session_id
         try:
             restored = self._control_service.restore_suspended_workspace(
                 session_id,
                 resumed_at=started_at,
             )
         except SessionControlError as exc:
-            self._claim_service.release_claim(claimed)
             raise WorkerExecutionError(str(exc)) from exc
         if restored is not None:
             claimed = ClaimedSession(
@@ -172,7 +191,7 @@ class SessionExecutionService:
             session_id,
             worker_id=worker_id,
             recovered_at=started_at,
-            release=lambda: self._claim_service.release_claim(claimed),
+            release=lambda: None,
         )
         session_events = self._event_store.list_for_session(session_id)
         active_context = self._context_lifecycle_store.get_active_capsule(session_id)
@@ -191,7 +210,6 @@ class SessionExecutionService:
                 ),
             )
         except (FileNotFoundError, ValueError) as exc:
-            self._claim_service.release_claim(claimed)
             raise WorkerExecutionError(str(exc)) from exc
         trusted_local = trusted_local_mode_enabled(self._settings)
         effective_network_profile = resolve_effective_network_profile(
@@ -201,11 +219,11 @@ class SessionExecutionService:
         try:
             model_gateway = build_model_gateway(self._settings)
         except ValueError:
-            self._claim_service.release_claim(claimed)
             raise
         runtime_handle = None
+        effect_recorder: list[DurableHarnessEventRecorder] = []
         try:
-            runtime, prepared_runtime = build_prepared_runtime(
+            runtime, prepared_runtime = runtime_setup.build_prepared_runtime(
                 self._settings,
                 self._database_path,
                 workspace_root=task.workspace_root,
@@ -217,7 +235,7 @@ class SessionExecutionService:
             )
             runtime_handle = prepared_runtime.handle
             authority = runtime_handle.authority
-            require_matching_runtime_authority(
+            runtime_setup.require_matching_runtime_authority(
                 runtime_handle,
                 None if trusted_local else claimed.recovery.workspace.runtime_spec_digest,
             )
@@ -229,6 +247,7 @@ class SessionExecutionService:
                 workspace_store=self._workspace_store,
                 model_call_indexer=self._model_call_indexer,
                 tool_run_indexer=self._tool_run_indexer,
+                ownership_check=ownership_check,
             )
             if persist_runtime_authority(authority_recorder, authority, created_at=started_at):
                 claimed = ClaimedSession(
@@ -271,7 +290,19 @@ class SessionExecutionService:
                 ledger=self._effect_ledger,
                 session_id=session_id,
                 recovered_handoff=recovered_handoff,
-                authority_scope=f"{task.workspace_root.resolve()}|{task.policy_profile}|{effective_network_profile.name.value}",
+                authority_scope=(
+                    f"{task.workspace_root.resolve()}|{task.policy_profile}|"
+                    f"{effective_network_profile.name.value}"
+                ),
+                dispatch=self._effect_dispatch,
+                artifacts=self._artifact_payload_store,
+                fence=claimed.lease.fence,
+                claim_ttl=claimed.lease.expires_at - claimed.lease.heartbeat_at,
+                next_event=lambda event_type, actor, payload: effect_recorder[-1].prepare(
+                    event_type, actor, payload
+                ),
+                accept_event=lambda event: effect_recorder[-1].accept_persisted_event(event),
+                ownership_check=ownership_check,
             )
         except Exception as exc:
             cleanup_error = None
@@ -280,7 +311,6 @@ class SessionExecutionService:
                     runtime.destroy(runtime_handle)
                 except Exception as error:
                     cleanup_error = error
-            self._claim_service.release_claim(claimed)
             if cleanup_error is not None:
                 raise WorkerExecutionError(
                     f"{exc}; runtime cleanup failed: {cleanup_error}"
@@ -323,7 +353,6 @@ class SessionExecutionService:
             WorkerExecutionError,
         ) as exc:
             cleanup_error = close_tool_gateway(tool_gateway)
-            self._claim_service.release_claim(claimed)
             if cleanup_error is not None:
                 raise WorkerExecutionError(
                     f"{exc}; runtime cleanup failed: {cleanup_error}"
@@ -359,7 +388,9 @@ class SessionExecutionService:
             workspace_store=self._workspace_store,
             model_call_indexer=self._model_call_indexer,
             tool_run_indexer=self._tool_run_indexer,
+            ownership_check=ownership_check,
         )
+        effect_recorder.append(recorder)
         if continuation is None and clarification is None:
             recorder.append(
                 EventType.HARNESS_ATTEMPT_STARTED,
@@ -384,28 +415,14 @@ class SessionExecutionService:
             else:
                 recorder.append_draft(draft)
 
-        def persist_continuation(
-            reference: ProviderContinuationRef,
-            payload: bytes | None,
-            maximum_ttl_seconds: int | None,
-        ) -> str | None:
-            if payload is None:
-                return None
-            artifact = self._provider_continuation_store.store(
-                tenant_id="local",
-                session_id=str(session_id),
-                reference=reference,
-                opaque_payload=payload,
-                maximum_ttl_seconds=maximum_ttl_seconds,
-            )
-            return artifact.artifact_id
-
         model_step = HarnessModelStep(
             context_compiler=context_compiler,
             available_tools=tool_gateway.model_tools,
             conversation_compactor=context_compiler,
             event_sink=persist_event,
-            continuation_sink=persist_continuation,
+            continuation_sink=lambda reference, payload, ttl: persist_provider_continuation(
+                self._provider_continuation_store, session_id, reference, payload, ttl
+            ),
             provider_continuation=provider_continuation,
             attempt_number=1,
         )
@@ -469,7 +486,6 @@ class SessionExecutionService:
         final_session = self._projection_store.get_session(session_id)
         if final_session is None:
             raise WorkerExecutionError("session projection missing after worker execution")
-        self._claim_service.release_claim(claimed)
         return ExecutedSession(
             session=final_session,
             events=emitted_events,

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -8,11 +9,21 @@ from agent_core.application import (
     SessionTitleService,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.sessions import SessionStatus
+from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports import EventStorePort
 
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
+
+
+class WorkerExecutionError(ValueError): ...
+
+
+@dataclass(frozen=True)
+class ExecutedSession:
+    session: Session
+    events: tuple[SessionEvent, ...]
+    attempt_result: HarnessAttemptResult
 
 
 def finalize_execution(
