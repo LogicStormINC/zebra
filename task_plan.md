@@ -2,13 +2,13 @@
 
 ## CLOUD-MEMORY-PG-PLAN-01 - PostgreSQL Governed Memory Authority Plan
 
-1. `in_progress` - Inventory the current SQLite Memory fact source, all mutation/read
+1. `completed` - Inventory the current SQLite Memory fact source, all mutation/read
    callers, Event coupling, scope semantics and Mem0 delivery boundary.
-2. `pending` - Freeze PostgreSQL identity, revision/CAS, atomic review, namespace,
+2. `completed` - Freeze PostgreSQL identity, revision/CAS, atomic review, namespace,
    query/search, migration, rebuild and recovery contracts.
-3. `pending` - Split Core contract, PostgreSQL adapter and Mem0 delivery successors
+3. `completed` - Split Core contract, PostgreSQL adapter and Mem0 delivery successors
    with non-overlapping owned paths and dependency gates.
-4. `pending` - Review the plan against current code and architecture, record evidence
+4. `completed` - Review the plan against current code and architecture, record evidence
    and move the docs-only card to Review.
 
 ### Decisions

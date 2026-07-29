@@ -14,6 +14,10 @@
 - The next implementation must preserve the rich repo/user/tenant inventory/query
   surface while distinguishing opaque deployment namespace isolation from business
   visibility labels. Zebra does not become a tenant directory.
+- Review exposed and closed six implementation blockers: Gateway certainty owned
+  paths, durable multi-row replay receipt, no-text tombstones, pure pre-write mutation
+  plans, deleted SQL/FTS constraints and canonical replay independent of later record
+  revisions. Final review found no remaining P0/P1.
 
 
 ## MEM-MEM0-ADP-01 - 2026-07-28

@@ -581,7 +581,7 @@ by the Spike, with no Mem0 type escaping the integration package.
 
 ### CLOUD-MEMORY-PG-PLAN-01 - PostgreSQL Governed Memory Authority Plan
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Branch: `codex/cloud-memory-pg-plan-01`
 - Depends on: integrated PostgreSQL v1-v9 foundation, `CLOUD-STO-AUTH-01`,
@@ -597,18 +597,63 @@ by the Spike, with no Mem0 type escaping the integration package.
   split into dependency-ordered path-bounded cards.
 - Non-goals: no Python/SQL implementation, SQLite behavior change, Mem0 call,
   backend selector, Desktop, Host tenant directory or production cutover claim.
+- Evidence: the 344-line contract inventories the SQLite-only fact source and
+  freezes v10 authority/operation receipts, pure mutation plans, Worker/Admin
+  aggregate boundaries, tombstones, namespace/search/import gates and the v11
+  Mem0 delivery certainty/rebuild protocol. Two preflight audits and two review
+  rounds closed six P1 gaps; final review found no open P0/P1. `git diff --check`,
+  cross-document task references and release Eval `10/10` pass.
+
+### CLOUD-MEMORY-CON-01 - Governed Memory Mutation Contract
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: reviewed `CLOUD-MEMORY-PG-PLAN-01`
+- Owned paths: focused governed Memory authority domain/request/result modules and
+  Port under `packages/agent-core`, pure planning seams in the existing Memory
+  candidate/promotion/review application modules, compatibility wrappers, their
+  public exports, focused Core tests, and this task's governance records
+- Goal: replace unversioned cloud writes with typed creation idempotency, record
+  revision CAS, Worker candidate and administrative review aggregate requests.
+- Acceptance: stale/missing authority cannot form a valid mutation; Worker and
+  administrative authority are not interchangeable; deleted content cannot enter
+  results/audit; tombstones are representable without a `MemoryRecord`; candidate,
+  promotion and review plans perform no I/O; the local `MemoryStorePort` wrappers
+  remain behavior-compatible.
+- Non-goals: no SQL, SQLite behavior change, Mem0, API/Worker composition, backend
+  selector or generic Unit of Work.
+
+### CLOUD-MEMORY-PG-01 - PostgreSQL Governed Memory Authority
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: `CLOUD-MEMORY-CON-01` and integrated PostgreSQL v1-v9
+- Owned paths: PostgreSQL governed Memory migration/adapter/aggregate/operation-receipt
+  modules,
+  narrow API/Worker injection seams, explicit SQLite import/rebuild tooling,
+  isolated PostgreSQL runner and focused tests, plus this task's governance records
+- Migration: v10 `governed_memory_authority`; v1-v9 remain immutable.
+- Goal: move Zebra governed Memory facts to namespace-scoped PostgreSQL before any
+  Mem0 delivery runtime is enabled.
+- Acceptance: query/search safety, revision CAS, concurrent review, candidate/Event/
+  Projection atomicity, stale-fence zero-write, response-loss replay, namespace
+  isolation and repeatable import pass against real PostgreSQL 17.5.
+- Non-goals: no Mem0 delivery, Desktop/SQLite feature work, complete backend selector,
+  Host tenant directory or production cutover.
 
 ### MEM-GW-DEL-01 - Memory Delivery And Deletion Ledger
 
 - Status: `Locked`
 - Owner: `UNASSIGNED`
 - Suggested role: `STORAGE / WORKER`
-- Depends on: merged `MEM-MEM0-ADP-01`, `CLOUD-LEASE-01`, and the reviewed
-  PostgreSQL governed-memory authority implementation split by
-  `CLOUD-MEMORY-PG-PLAN-01`
+- Depends on: integrated `MEM-MEM0-ADP-01`, reviewed Lease/Effect baseline and
+  `CLOUD-MEMORY-PG-01`
 - Branch: `TBD`
-- Candidate owned paths: focused memory delivery/outbox storage, worker adapter,
-  reconciliation and tests
+- Candidate owned paths: provider-neutral mutation certainty in
+  `agent-core/ports/agent_memory_gateway.py`, focused Memory delivery domain/Port,
+  PostgreSQL delivery/outbox storage, Mem0 Adapter certainty mapping, Worker consumer,
+  search revalidation, reconciliation/rebuild, their focused tests and governance
+  records
 
 #### Goal
 
@@ -621,6 +666,8 @@ authoritative and Mem0 fully rebuildable.
 - stale or deleted Mem0 hits are rejected by authoritative-store revalidation
 - delete evidence retains no deleted content and reconciliation has bounded retries
 - a documented rebuild path repopulates derived Mem0 data from confirmed Zebra memory
+- provider mutation outcomes distinguish applied, definite-no-effect and unknown;
+  unknown publish outcomes are never retried automatically
 
 ### MEM-GW-GATE-01 - Semantic Memory Fault And Drift Gate
 

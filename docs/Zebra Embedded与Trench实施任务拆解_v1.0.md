@@ -479,7 +479,7 @@ read-only。
 
 ### CLOUD-MEMORY-PG-PLAN-01 — PostgreSQL governed memory authority plan
 
-- Status: `In Progress`；docs-only；branch `codex/cloud-memory-pg-plan-01`。
+- Status: `Review`；docs-only；branch `codex/cloud-memory-pg-plan-01`。
 - Depends on: integrated PostgreSQL v1-v9、authoritative Store seam、Memory Gateway
   contract and Mem0 Adapter。
 - Deliverable: freeze governed Memory identity/revision, atomic review/Event boundary,
@@ -488,11 +488,30 @@ read-only。
 - Acceptance: Mem0 delivery cannot begin while governed facts remain SQLite-only；no
   implementation or production claim is added by this plan。
 
+### CLOUD-MEMORY-CON-01 — Governed Memory mutation contract
+
+- Status: `Locked`；depends on reviewed `CLOUD-MEMORY-PG-PLAN-01`。
+- Deliverable: creation idempotency、revision CAS、Worker candidate aggregate、
+  administrative review CAS、tombstone view、pure candidate/promotion/review plans
+  and typed replay/conflict results。
+- Acceptance: local `MemoryStorePort` compatibility remains unchanged；no SQL or
+  provider type enters Core。
+
+### CLOUD-MEMORY-PG-01 — PostgreSQL governed Memory authority
+
+- Status: `Locked`；depends on `CLOUD-MEMORY-CON-01`；migration v10。
+- Deliverable: namespace-scoped authority and operation-receipt rows、atomic
+  candidate/review transactions、native search index and explicit SQLite
+  import/rebuild path。
+- Acceptance: concurrent mutation, response loss, namespace, rollback and migration
+  matrices pass against PostgreSQL 17.5；no Mem0 delivery or backend selector。
+
 ### MEM-GW-DEL-01 — Memory delivery and deletion ledger
 
-- Status: `Locked`；depends on `MEM-MEM0-ADP-01`, `CLOUD-LEASE-01` and the
-  PostgreSQL governed-memory implementation split by `CLOUD-MEMORY-PG-PLAN-01`。
-- Candidate paths: delivery storage/worker adapter, delete audit and tests。
+- Status: `Locked`；depends on `MEM-MEM0-ADP-01`, reviewed Lease/Effect baseline and
+  `CLOUD-MEMORY-PG-01`；migration v11。
+- Candidate paths: Gateway mutation certainty、delivery storage/Worker consumer、
+  Mem0 certainty mapping、search revalidation、delete audit/rebuild and tests。
 - Deliverable: outbox/idempotency/reconciliation/retention/deletion evidence and rebuild path。
 - Acceptance: retry cannot duplicate governed memory；search hits are revalidated through
   `MemoryStorePort`；delete is traceable without retaining deleted content。

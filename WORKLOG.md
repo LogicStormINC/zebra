@@ -8,6 +8,10 @@
   governed `MemoryStorePort` still has only a SQLite implementation
 - created isolated `codex/cloud-memory-pg-plan-01` and claimed a docs-only planning
   boundary so PostgreSQL Memory authority precedes the Mem0 delivery ledger
+- froze the 344-line v10/v11 contract and split Core contract, PostgreSQL authority
+  and Mem0 delivery cards with non-overlapping dependencies and owned paths
+- two independent audit lanes and two review rounds closed six P1 contract gaps;
+  final review reports no open P0/P1; diff check and release Eval `10/10` pass
 
 
 ## 2026-07-28 CTX-MEM-01 Context Continuity And Governed Recall
