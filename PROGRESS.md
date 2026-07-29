@@ -122,12 +122,12 @@
   `CLOUD-AGG-CTX-PG-01` adds the fenced v7 two-Event Context transaction with
   immutable capsule and active-pointer composite constraints. Their isolated host
   PostgreSQL matrices pass `8/8` and `14/14`; neither selects the cloud runtime.
-- Active contract tasks: `CLOUD-ART-OBJ-CON-01` freezes provider-neutral Artifact
+- Completed Artifact contract task: `CLOUD-ART-OBJ-CON-01` freezes provider-neutral Artifact
   object/metadata authority before any SDK or adapter. ADR-017 separates stable
   `artifact://` identity from temporary access URLs and opaque external references,
   freezes staged/finalize/compensate recovery plus fenced Worker and management
   authority, and leaves provider, key encoding, API delivery and runtime selection
-  unchosen. It unlocks only `CLOUD-ART-PAYLOAD-PG-01`. Separately,
+  unchosen. It unlocks planning for `CLOUD-ART-PAYLOAD-PG-01`. The active
   `CLOUD-AGG-HANDOFF-CON-01` adds a tokenized Lease-fenced SQLite dispatch receipt
   before the PostgreSQL Handoff aggregate. The latter does not reserve a migration.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay

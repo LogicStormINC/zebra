@@ -1219,7 +1219,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-ART-OBJ-CON-01 - Artifact Object And Metadata Authority Contract
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Branch: `codex/cloud-art-obj-con-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01` and the reviewed
@@ -1236,6 +1236,10 @@ cloud mainline and is not built or changed by these cards.
   defines staged/finalized/pruning/pruned recovery and typed idempotency conflicts;
   and links the dependency DAG without selecting an SDK, provider, key encoding,
   API route, migration version or runtime profile.
+- Evidence: ADR-017 is the single cloud payload contract source and is linked from
+  the production architecture, aggregate inventory and Trench task breakdown.
+  Markdown links, `git diff --check`, terminology and scoped file-size checks pass;
+  no implementation dependency, migration or runtime profile was selected.
 
 ### CLOUD-EFFECT-PAYLOAD-ATOMIC-01 - Effect Payload And Intent Linkage
 
