@@ -1048,9 +1048,9 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-FENCE-CON-01 - Worker Mutation Fencing Contract
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
-- Branch: `codex/cloud-agg-fence-con-01` after inventory approval
+- Status: `In Progress`
+- Owner: `Codex`
+- Branch: `codex/cloud-agg-fence-con-01`
 - Depends on: approved and integrated `CLOUD-AGG-FENCE-PLAN-01`
 - Owned paths: focused aggregate Store Ports under
   `packages/agent-core/src/agent_core/ports/`, one focused transaction contract,

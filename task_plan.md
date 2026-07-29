@@ -1,5 +1,23 @@
 # Task Plan
 
+## CLOUD-AGG-FENCE-CON-01 - Worker Mutation Fencing Contract
+
+1. `in_progress` - Reuse the existing LeaseFence/domain vocabulary and trace the
+   smallest shared mutation context required by Worker-owned aggregate writes.
+2. `pending` - Add one infrastructure-neutral transaction contract plus focused
+   type/validation tests; do not modify existing Store Ports prematurely.
+3. `pending` - Prove current/stale authority representation, API administrative
+   CAS separation, Ruff, strict Mypy and focused Core tests.
+4. `pending` - Record the accepted contract, move the card to Review and unlock
+   only the first dependency-safe PostgreSQL adapter card.
+
+### Decisions
+
+- Prefer one shared value object over adding the same namespace/fence/revision
+  parameters independently to every Store Port.
+- This card defines authority input only. PostgreSQL transactions, migrations,
+  composition and runtime backend selection stay in their implementation cards.
+
 ## CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 
 1. `completed` - Trace every authoritative Worker-owned aggregate from Port to

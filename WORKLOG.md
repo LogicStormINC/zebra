@@ -6322,3 +6322,7 @@ actual byte access.
 - accepted the validated documentation-only inventory for local mainline
   integration. Only the prerequisite contract card becomes Ready; no PostgreSQL
   aggregate adapter or parent safety gate is unlocked by this acceptance.
+- fast-forwarded the accepted inventory onto the isolated local
+  `zebra-cloud-trench`, created `codex/cloud-agg-fence-con-01`, and claimed the only
+  Ready implementation prerequisite. Scope is Core authority contract plus focused
+  tests and governance; database adapters and Desktop remain excluded.
