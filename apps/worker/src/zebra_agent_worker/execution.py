@@ -20,7 +20,7 @@ from agent_core.harness import (
     SingleAttemptOrchestrator,
 )
 from agent_core.harness.models import HarnessEventDraft
-from agent_core.ports import EffectDispatchPort
+from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_integrations import build_model_gateway
 from agent_runtime import LocalToolGateway
 from agent_security import (
@@ -80,6 +80,7 @@ from zebra_agent_worker.runtime_authority import (
 )
 from zebra_agent_worker.task_recovery import recover_task
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
+from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
 
 
 class SessionExecutionService:
@@ -92,6 +93,8 @@ class SessionExecutionService:
         settings: ZebraAgentSettings | None = None,
         stores: ControlPlaneStores | None = None,
         effect_dispatch: EffectDispatchPort | None = None,
+        worker_projection_transaction: WorkerProjectionTransactionPort | None = None,
+        deployment_namespace: str | None = None,
     ) -> None:
         self._database_path = database_path
         self._claim_service = claim_service
@@ -111,13 +114,19 @@ class SessionExecutionService:
             settings=self._settings,
             stores=active_stores,
         )
-        self._model_call_indexer = ModelCallIndexer(active_stores.model_calls)
         self._artifact_payload_store = active_stores.artifact_payloads
         self._context_lifecycle_store = active_stores.context_lifecycle
         self._provider_continuation_store = active_stores.provider_continuations
+        self._model_call_indexer = ModelCallIndexer(active_stores.model_calls)
         self._tool_run_indexer = ToolRunIndexer(
-            active_stores.tool_runs,
-            self._artifact_payload_store,
+            active_stores.tool_runs, self._artifact_payload_store
+        )
+        self._projection_recorder_factory = WorkerProjectionRecorderFactory(
+            stores=active_stores,
+            model_call_indexer=self._model_call_indexer,
+            tool_run_indexer=self._tool_run_indexer,
+            transaction=worker_projection_transaction,
+            deployment_namespace=deployment_namespace,
         )
         self._memory_store = active_stores.memories
         self._memory_extraction_service = MemoryCandidateExtractionService(self._memory_store)
@@ -239,14 +248,10 @@ class SessionExecutionService:
                 runtime_handle,
                 None if trusted_local else claimed.recovery.workspace.runtime_spec_digest,
             )
-            authority_recorder = DurableHarnessEventRecorder(
+            authority_recorder = self._projection_recorder_factory.build(
                 session=claimed.recovery.session,
                 workspace=claimed.recovery.workspace,
-                event_store=self._event_store,
-                projection_store=self._projection_store,
-                workspace_store=self._workspace_store,
-                model_call_indexer=self._model_call_indexer,
-                tool_run_indexer=self._tool_run_indexer,
+                lease=claimed.lease,
                 ownership_check=ownership_check,
             )
             if persist_runtime_authority(authority_recorder, authority, created_at=started_at):
@@ -380,14 +385,10 @@ class SessionExecutionService:
             session=claimed.recovery.session,
             attempt=context.attempt,
         )
-        recorder = DurableHarnessEventRecorder(
+        recorder = self._projection_recorder_factory.build(
             session=claimed.recovery.session,
             workspace=claimed.recovery.workspace,
-            event_store=self._event_store,
-            projection_store=self._projection_store,
-            workspace_store=self._workspace_store,
-            model_call_indexer=self._model_call_indexer,
-            tool_run_indexer=self._tool_run_indexer,
+            lease=claimed.lease,
             ownership_check=ownership_check,
         )
         effect_recorder.append(recorder)

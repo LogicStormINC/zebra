@@ -22,59 +22,20 @@ class PostgresProjectionStore(ProjectionStorePort):
         )
 
     def save_session(self, session: Session) -> Session:
-        values = _session_values(self._database.deployment_namespace, session)
         with self._database.connect() as connection:
-            stream_row = connection.execute(
-                """
-                SELECT current_version
-                FROM session_streams
-                WHERE deployment_namespace = %s AND session_id = %s
-                """,
-                (self._database.deployment_namespace, session.session_id),
-            ).fetchone()
-            if stream_row is None or stream_row["current_version"] < session.current_sequence:
-                raise PostgresProjectionConflictError(
-                    "session projection is ahead of its authoritative event stream"
-                )
-            row = connection.execute(
-                """
-                INSERT INTO session_projections (
-                    deployment_namespace, session_id, title, status, created_at,
-                    updated_at, current_sequence, approval_context_json,
-                    clarification_context_json, task_plan_json
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (deployment_namespace, session_id) DO UPDATE SET
-                    title = EXCLUDED.title,
-                    status = EXCLUDED.status,
-                    created_at = EXCLUDED.created_at,
-                    updated_at = EXCLUDED.updated_at,
-                    current_sequence = EXCLUDED.current_sequence,
-                    approval_context_json = EXCLUDED.approval_context_json,
-                    clarification_context_json = EXCLUDED.clarification_context_json,
-                    task_plan_json = EXCLUDED.task_plan_json
-                WHERE session_projections.current_sequence < EXCLUDED.current_sequence
-                RETURNING session_id, title, status, created_at, updated_at,
-                          current_sequence, approval_context_json,
-                          clarification_context_json, task_plan_json
-                """,
-                values,
-            ).fetchone()
-            if row is not None:
-                return _session_from_row(row)
-            stored = self._get_session(connection, session.session_id)
-            if stored == session:
-                return stored
-            if stored is None:
-                raise PostgresProjectionConflictError("projection save produced no stored row")
-            if stored.current_sequence > session.current_sequence:
-                raise PostgresProjectionConflictError("stale session projection")
-            raise PostgresProjectionConflictError(
-                "session projection content conflicts at the same sequence"
+            return save_session_in_transaction(
+                connection,
+                self._database.deployment_namespace,
+                session,
             )
 
     def get_session(self, session_id: SessionId) -> Session | None:
         with self._database.connect() as connection:
-            return self._get_session(connection, session_id)
+            return get_session_in_transaction(
+                connection,
+                self._database.deployment_namespace,
+                session_id,
+            )
 
     def list_recent_sessions(self, *, limit: int) -> list[Session]:
         if limit <= 0:
@@ -98,13 +59,6 @@ class PostgresProjectionStore(ProjectionStorePort):
             (SessionStatus.WAITING_APPROVAL.value,),
         )
 
-    def _get_session(self, connection: Any, session_id: SessionId) -> Session | None:
-        row = connection.execute(
-            f"{_SELECT_SESSION} WHERE deployment_namespace = %s AND session_id = %s",
-            (self._database.deployment_namespace, session_id),
-        ).fetchone()
-        return _session_from_row(row) if row is not None else None
-
     def _list_sessions(self, clause: str, parameters: tuple[object, ...]) -> list[Session]:
         with self._database.connect() as connection:
             rows = connection.execute(
@@ -112,6 +66,73 @@ class PostgresProjectionStore(ProjectionStorePort):
                 (self._database.deployment_namespace, *parameters),
             ).fetchall()
         return [_session_from_row(row) for row in rows]
+
+
+def save_session_in_transaction(
+    connection: Any,
+    deployment_namespace: str,
+    session: Session,
+) -> Session:
+    """Save a Session projection using the caller's PostgreSQL transaction."""
+    stream_row = connection.execute(
+        """
+        SELECT current_version
+        FROM session_streams
+        WHERE deployment_namespace = %s AND session_id = %s
+        """,
+        (deployment_namespace, session.session_id),
+    ).fetchone()
+    if stream_row is None or stream_row["current_version"] < session.current_sequence:
+        raise PostgresProjectionConflictError(
+            "session projection is ahead of its authoritative event stream"
+        )
+    row = connection.execute(
+        """
+        INSERT INTO session_projections (
+            deployment_namespace, session_id, title, status, created_at,
+            updated_at, current_sequence, approval_context_json,
+            clarification_context_json, task_plan_json
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (deployment_namespace, session_id) DO UPDATE SET
+            title = EXCLUDED.title,
+            status = EXCLUDED.status,
+            created_at = EXCLUDED.created_at,
+            updated_at = EXCLUDED.updated_at,
+            current_sequence = EXCLUDED.current_sequence,
+            approval_context_json = EXCLUDED.approval_context_json,
+            clarification_context_json = EXCLUDED.clarification_context_json,
+            task_plan_json = EXCLUDED.task_plan_json
+        WHERE session_projections.current_sequence < EXCLUDED.current_sequence
+        RETURNING session_id, title, status, created_at, updated_at,
+                  current_sequence, approval_context_json,
+                  clarification_context_json, task_plan_json
+        """,
+        _session_values(deployment_namespace, session),
+    ).fetchone()
+    if row is not None:
+        return _session_from_row(row)
+    stored = get_session_in_transaction(connection, deployment_namespace, session.session_id)
+    if stored == session:
+        return stored
+    if stored is None:
+        raise PostgresProjectionConflictError("projection save produced no stored row")
+    if stored.current_sequence > session.current_sequence:
+        raise PostgresProjectionConflictError("stale session projection")
+    raise PostgresProjectionConflictError(
+        "session projection content conflicts at the same sequence"
+    )
+
+
+def get_session_in_transaction(
+    connection: Any,
+    deployment_namespace: str,
+    session_id: SessionId,
+) -> Session | None:
+    row = connection.execute(
+        f"{_SELECT_SESSION} WHERE deployment_namespace = %s AND session_id = %s",
+        (deployment_namespace, session_id),
+    ).fetchone()
+    return _session_from_row(row) if row is not None else None
 
 
 _SELECT_SESSION = """

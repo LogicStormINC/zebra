@@ -91,7 +91,11 @@ from agent_core.ports.subagents import SubagentPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_core.ports.tool_run_store import ToolRunStorePort
 from agent_core.ports.workspace import WorkspacePort
-from agent_core.ports.workspace_projection_store import WorkspaceProjectionStorePort
+from agent_core.ports.workspace_projection_store import (
+    WorkerProjectionCommitResult,
+    WorkerProjectionTransactionPort,
+    WorkspaceProjectionStorePort,
+)
 
 __all__ = [
     "AgentMemoryGatewayPort",
@@ -167,4 +171,6 @@ __all__ = [
     "WorkspaceProjectionStorePort",
     "WorkspacePort",
     "WorkerMutationAuthority",
+    "WorkerProjectionCommitResult",
+    "WorkerProjectionTransactionPort",
 ]

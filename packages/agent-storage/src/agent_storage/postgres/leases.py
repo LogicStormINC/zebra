@@ -307,7 +307,7 @@ def assert_current_lease_fence(
         (deployment_namespace,),
     ).fetchone()
     if authority is None or authority["epoch"] != fence.control_plane_epoch:
-        raise LeaseLostError("effect mutation rejected by the current lease fence")
+        raise LeaseLostError("mutation rejected by the current lease fence")
     row = connection.execute(
         """
         SELECT session_id FROM worker_leases
@@ -326,4 +326,4 @@ def assert_current_lease_fence(
         ),
     ).fetchone()
     if row is None:
-        raise LeaseLostError("effect mutation rejected by the current lease fence")
+        raise LeaseLostError("mutation rejected by the current lease fence")

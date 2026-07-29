@@ -12,6 +12,7 @@ from agent_core.domain.identifiers import new_session_id
 from agent_storage import (
     PostgresControlPlaneEpochError,
     PostgresLeaseStore,
+    PostgresWorkspaceProjectionStore,
     apply_postgres_migrations,
     bootstrap_control_plane_epoch,
     read_control_plane_epoch,
@@ -82,11 +83,19 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
             WHERE conrelid = 'effect_outbox'::regclass
             """
         ).fetchall()
+        workspace_columns = connection.execute(
+            """
+            SELECT column_name FROM information_schema.columns
+            WHERE table_schema = current_schema() AND table_name = 'workspace_projections'
+            ORDER BY ordinal_position
+            """
+        ).fetchall()
 
     assert migrations == [
         (1, "event_and_projection_storage", 64),
         (2, "control_plane_epoch_and_leases", 64),
         (3, "fenced_effect_dispatch_outbox", 64),
+        (4, "fenced_workspace_projections", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [
@@ -146,6 +155,30 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
             "result IS NOT NULL",
         )
     )
+    assert [row[0] for row in workspace_columns] == [
+        "deployment_namespace",
+        "session_id",
+        "workspace_root",
+        "prepared_at",
+        "updated_at",
+        "current_sequence",
+        "status",
+        "policy_profile",
+        "tool_profile",
+        "network_profile",
+        "network_allowlist",
+        "mcp_allowlist",
+        "skill_components",
+        "last_attempt_number",
+        "runtime_name",
+        "runtime_engine",
+        "runtime_image",
+        "runtime_spec_digest",
+        "runtime_network_enforcement",
+        "runtime_workspace_writable",
+        "snapshot_id",
+        "snapshot_path",
+    ]
 
 
 def test_postgres_lease_constructor_does_not_run_ddl(
@@ -158,6 +191,18 @@ def test_postgres_lease_constructor_does_not_run_ddl(
 
     with pytest.raises(errors.UndefinedTable):
         store.get(new_session_id())
+
+
+def test_postgres_workspace_constructor_does_not_run_ddl(
+    isolated_migration_dsn: str,
+) -> None:
+    store = PostgresWorkspaceProjectionStore(
+        isolated_migration_dsn,
+        deployment_namespace="constructor-no-ddl",
+    )
+
+    with pytest.raises(errors.UndefinedTable):
+        store.get_workspace(new_session_id())
 
 
 def test_epoch_bootstrap_read_and_restore_rotation_are_explicit(

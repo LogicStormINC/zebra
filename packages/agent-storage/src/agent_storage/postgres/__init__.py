@@ -17,6 +17,10 @@ from agent_storage.postgres.projections import (
     PostgresProjectionConflictError,
     PostgresProjectionStore,
 )
+from agent_storage.postgres.workspaces import (
+    PostgresWorkspaceProjectionConflictError,
+    PostgresWorkspaceProjectionStore,
+)
 
 __all__ = [
     "PostgresEventStore",
@@ -26,6 +30,8 @@ __all__ = [
     "PostgresMigrationError",
     "PostgresProjectionConflictError",
     "PostgresProjectionStore",
+    "PostgresWorkspaceProjectionConflictError",
+    "PostgresWorkspaceProjectionStore",
     "apply_postgres_migrations",
     "bootstrap_control_plane_epoch",
     "read_control_plane_epoch",

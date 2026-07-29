@@ -14,6 +14,8 @@ from agent_core.harness.models import HarnessEventDraft
 from agent_core.ports import (
     EventStorePort,
     ProjectionStorePort,
+    WorkerMutationAuthority,
+    WorkerProjectionTransactionPort,
     WorkspaceProjectionStorePort,
 )
 
@@ -46,7 +48,13 @@ class DurableHarnessEventRecorder:
         model_call_indexer: ModelCallIndexer,
         tool_run_indexer: ToolRunIndexer,
         ownership_check: Callable[[], None] | None = None,
+        worker_projection_transaction: WorkerProjectionTransactionPort | None = None,
+        worker_mutation_authority: WorkerMutationAuthority | None = None,
     ) -> None:
+        if (worker_projection_transaction is None) != (worker_mutation_authority is None):
+            raise ValueError(
+                "worker projection transaction and mutation authority must be configured together"
+            )
         self._session = session
         self._workspace = workspace
         self._event_store = event_store
@@ -55,6 +63,8 @@ class DurableHarnessEventRecorder:
         self._model_call_indexer = model_call_indexer
         self._tool_run_indexer = tool_run_indexer
         self._ownership_check = ownership_check or (lambda: None)
+        self._worker_projection_transaction = worker_projection_transaction
+        self._worker_mutation_authority = worker_mutation_authority
         self._events: list[SessionEvent] = []
 
     @property
@@ -126,13 +136,31 @@ class DurableHarnessEventRecorder:
             raise ValueError("execution event session_id does not match recorder")
         if event.sequence != self.next_sequence:
             raise ValueError("execution event sequence does not match recorder")
-        self._event_store.append(event)
-        self._model_call_indexer.index_event(event)
-        self._tool_run_indexer.index_event(event)
-        self._session = apply_event(self._session, event)
-        self._workspace = apply_workspace_event(self._workspace, event)
-        self._projection_store.save_session(self._session)
-        self._workspace_store.save_workspace(self._workspace)
+        next_session = apply_event(self._session, event)
+        next_workspace = apply_workspace_event(self._workspace, event)
+        if self._worker_projection_transaction is None:
+            self._event_store.append(event)
+            self._model_call_indexer.index_event(event)
+            self._tool_run_indexer.index_event(event)
+            self._session = next_session
+            self._workspace = next_workspace
+            self._projection_store.save_session(self._session)
+            self._workspace_store.save_workspace(self._workspace)
+        else:
+            authority = self._worker_mutation_authority
+            assert authority is not None
+            committed = self._worker_projection_transaction.commit_worker_event(
+                event,
+                next_session,
+                next_workspace,
+                authority=authority,
+            )
+            event = committed.event
+            self._model_call_indexer.index_event(event)
+            self._tool_run_indexer.index_event(event)
+            self._session = committed.session
+            self._workspace = committed.workspace
+        self._advance_authority(event)
         self._events.append(event)
         return event
 
@@ -149,6 +177,7 @@ class DurableHarnessEventRecorder:
         self._workspace = apply_workspace_event(self._workspace, event)
         self._projection_store.save_session(self._session)
         self._workspace_store.save_workspace(self._workspace)
+        self._advance_authority(event)
         self._events.append(event)
         return event
 
@@ -159,6 +188,13 @@ class DurableHarnessEventRecorder:
         ):
             self._session = apply_event(self._session, event)
             self._workspace = apply_workspace_event(self._workspace, event)
+            self._advance_authority(event)
+
+    def _advance_authority(self, event: SessionEvent) -> None:
+        if self._worker_mutation_authority is not None:
+            self._worker_mutation_authority = self._worker_mutation_authority.model_copy(
+                update={"expected_stream_revision": event.sequence}
+            )
 
     def _raise_if_interrupted(self) -> None:
         if self._session.status in _INTERRUPTED_STATUSES:

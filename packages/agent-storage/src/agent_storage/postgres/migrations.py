@@ -210,6 +210,53 @@ MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=4,
+        name="fenced_workspace_projections",
+        statements=(
+            """
+            CREATE TABLE workspace_projections (
+                deployment_namespace TEXT NOT NULL,
+                session_id UUID NOT NULL,
+                workspace_root TEXT NOT NULL CHECK (length(btrim(workspace_root)) > 0),
+                prepared_at TIMESTAMPTZ NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL,
+                current_sequence BIGINT NOT NULL CHECK (current_sequence >= 0),
+                status TEXT NOT NULL CHECK (status IN (
+                    'prepared', 'running', 'waiting_approval', 'suspended',
+                    'completed', 'failed', 'cancelled'
+                )),
+                policy_profile TEXT,
+                tool_profile TEXT NOT NULL CHECK (tool_profile IN ('general', 'coding')),
+                network_profile TEXT NOT NULL CHECK (network_profile IN (
+                    'none', 'setup-only', 'domain-allowlist', 'mcp-proxy-only',
+                    'git-proxy-only', 'full-trusted-local'
+                )),
+                network_allowlist JSONB NOT NULL DEFAULT '[]'::jsonb
+                    CHECK (jsonb_typeof(network_allowlist) = 'array'),
+                mcp_allowlist JSONB CHECK (
+                    mcp_allowlist IS NULL OR jsonb_typeof(mcp_allowlist) = 'array'
+                ),
+                skill_components JSONB CHECK (
+                    skill_components IS NULL OR jsonb_typeof(skill_components) = 'array'
+                ),
+                last_attempt_number INTEGER CHECK (last_attempt_number >= 1),
+                runtime_name TEXT,
+                runtime_engine TEXT,
+                runtime_image TEXT,
+                runtime_spec_digest TEXT,
+                runtime_network_enforcement TEXT,
+                runtime_workspace_writable BOOLEAN,
+                snapshot_id TEXT,
+                snapshot_path TEXT,
+                PRIMARY KEY (deployment_namespace, session_id),
+                FOREIGN KEY (deployment_namespace, session_id)
+                    REFERENCES session_streams (deployment_namespace, session_id),
+                CHECK (prepared_at <= updated_at)
+            )
+            """,
+        ),
+    ),
 )
 
 _MIGRATION_LOCK_ID = 9_187_330_641
