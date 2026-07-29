@@ -1097,8 +1097,9 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-TASK-PG-01 - PostgreSQL Task And Segment Index
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `Codex`
+- Branch: `codex/cloud-agg-task-pg-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`
 - Owned paths: `packages/agent-storage/src/agent_storage/postgres/agent_tasks.py`,
   the current migration hotspot, task composition and real PostgreSQL Task tests

@@ -1,5 +1,24 @@
 # Task Plan
 
+## CLOUD-AGG-TASK-PG-01 - PostgreSQL Task And Segment Index
+
+1. `in_progress` - Trace the SQLite Task/Segment projection, explicit rebuild and
+   Handoff connection-scoped rollover contracts; freeze the PostgreSQL boundary.
+2. `pending` - Add the next additive migration and namespace-scoped PostgreSQL
+   adapter without allowing reads to trigger writes.
+3. `pending` - Prove concurrent rollover CAS, unique Task event order, idempotent
+   rebuild, namespace isolation and transaction rollback on real PostgreSQL.
+4. `pending` - Run microservice gates, record host evidence, move the card to
+   Review and unlock only dependency-safe successors.
+
+### Decisions
+
+- AgentTask remains an Event/lineage-derived index, not a new command authority.
+- Preserve a connection-scoped rollover primitive so the later Handoff aggregate
+  can update Task state inside its own transaction.
+- Migration edits are serialized on this branch; other sessions may audit later
+  cards but must not modify the migration hotspot concurrently.
+
 ## CLOUD-AGG-WORKSPACE-PG-01 - Fenced Workspace Projection
 
 1. `completed` - Trace Workspace projection shape, replay semantics and existing
