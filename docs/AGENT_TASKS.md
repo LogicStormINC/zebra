@@ -1142,14 +1142,19 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-MODEL-TOOL-PG-01 - PostgreSQL Model And Tool Projections
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
+- Status: `Review`
+- Owner: `lukeding`
+- Branch: `codex/cloud-model-tool-pg-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01` and `CLOUD-AGG-WORKSPACE-PG-01`
 - Owned paths: focused PostgreSQL model/tool modules, current migration hotspot,
   Worker index/replay wiring and real PostgreSQL tests
 - Goal: maintain Model/Tool as replayable Event-derived projections.
 - Acceptance: same-event replay is idempotent, different content fails closed,
   stale Worker writes zero rows and partial projection failure is recoverable.
+- Evidence: migration v6 adds namespace-scoped Event-derived Model/Tool indexes;
+  Worker indexing validates the current full fence, while management replay reads
+  only committed Events and never writes Artifact payloads. Focused Worker tests
+  pass `7/7`; isolated PostgreSQL 17.5 migration/projection tests pass `7/7`.
 
 ### CLOUD-PROVIDER-CONT-PG-01 - Fenced Provider Continuation Payload
 

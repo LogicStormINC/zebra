@@ -18,6 +18,10 @@ from agent_storage.postgres.migrations import (
     PostgresMigrationError,
     apply_postgres_migrations,
 )
+from agent_storage.postgres.model_tool_projections import (
+    PostgresModelToolProjectionConflictError,
+    PostgresModelToolProjectionStore,
+)
 from agent_storage.postgres.outbox import PostgresEffectDispatchStore
 from agent_storage.postgres.projections import (
     PostgresProjectionConflictError,
@@ -35,6 +39,8 @@ __all__ = [
     "PostgresEffectDispatchStore",
     "PostgresControlPlaneEpochError",
     "PostgresLeaseStore",
+    "PostgresModelToolProjectionConflictError",
+    "PostgresModelToolProjectionStore",
     "PostgresMigrationError",
     "PostgresProjectionConflictError",
     "PostgresProjectionStore",

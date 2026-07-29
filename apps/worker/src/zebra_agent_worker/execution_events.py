@@ -156,8 +156,8 @@ class DurableHarnessEventRecorder:
                 authority=authority,
             )
             event = committed.event
-            self._model_call_indexer.index_event(event)
-            self._tool_run_indexer.index_event(event)
+            self._model_call_indexer.index_worker_event(event, authority=authority)
+            self._tool_run_indexer.index_worker_event(event, authority=authority)
             self._session = committed.session
             self._workspace = committed.workspace
         self._advance_authority(event)

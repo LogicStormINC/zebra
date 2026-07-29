@@ -341,6 +341,47 @@ MIGRATIONS = (
             """,
         ),
     ),
+    Migration(
+        version=6,
+        name="model_and_tool_event_projections",
+        statements=(
+            """
+            CREATE TABLE model_call_projections (
+                deployment_namespace TEXT NOT NULL,
+                session_id UUID NOT NULL,
+                sequence BIGINT NOT NULL CHECK (sequence >= 0),
+                event_id UUID NOT NULL,
+                provider TEXT,
+                model_name TEXT,
+                input_tokens BIGINT, estimated_input_tokens BIGINT,
+                input_token_limit BIGINT, input_token_estimate_error BIGINT,
+                output_tokens BIGINT, total_tokens BIGINT, latency_ms BIGINT,
+                cache_hit BOOLEAN, cost_usd DOUBLE PRECISION,
+                assistant_message TEXT NOT NULL, tool_call_count INTEGER NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL,
+                PRIMARY KEY (deployment_namespace, session_id, sequence),
+                UNIQUE (deployment_namespace, event_id),
+                FOREIGN KEY (deployment_namespace, event_id)
+                    REFERENCES session_events (deployment_namespace, event_id)
+            )
+            """,
+            """
+            CREATE TABLE tool_run_projections (
+                deployment_namespace TEXT NOT NULL,
+                session_id UUID NOT NULL,
+                sequence BIGINT NOT NULL CHECK (sequence >= 0),
+                event_id UUID NOT NULL,
+                tool_name TEXT NOT NULL, status TEXT NOT NULL,
+                idempotency_key TEXT, output TEXT NOT NULL, artifact_uri TEXT,
+                created_at TIMESTAMPTZ NOT NULL,
+                PRIMARY KEY (deployment_namespace, session_id, sequence),
+                UNIQUE (deployment_namespace, event_id),
+                FOREIGN KEY (deployment_namespace, event_id)
+                    REFERENCES session_events (deployment_namespace, event_id)
+            )
+            """,
+        ),
+    ),
 )
 
 _MIGRATION_LOCK_ID = 9_187_330_641
