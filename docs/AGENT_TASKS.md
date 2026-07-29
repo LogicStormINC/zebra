@@ -1025,12 +1025,29 @@ cloud mainline and is not built or changed by these cards.
   `34/34`, Outbox `49/49`, combined PostgreSQL/consumer `58/58`, microservice
   backend `1851 passed, 60 skipped`, file-size `901` and Eval `10/10`.
 
+### CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Branch: `codex/cloud-agg-fence-plan-01`
+- Depends on: reviewed `CLOUD-LEASE-01` evidence and the integrated local
+  `zebra-cloud-trench@a0c6fcae` baseline
+- Owned paths: `docs/CLOUD_Worker_Aggregate_Fencing_路径盘点_v1.0.md` (new),
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`, `findings.md`, and
+  `WORKLOG.md`
+- Goal: inventory every authoritative Worker-owned aggregate, its current Store
+  Port and adapter, all mutation call sites and transaction boundaries, then split
+  `CLOUD-AGG-FENCE-01` into dependency-ordered path-bounded implementation cards.
+- Acceptance: every aggregate named by `CLOUD-AGG-FENCE-01` has an explicit source
+  of truth, PostgreSQL-adapter status, fencing gap, owned paths, dependency and
+  real-PostgreSQL acceptance matrix; no production code changes in this task.
+
 ### CLOUD-AGG-FENCE-01 - Full Worker Aggregate Fencing Gate
 
 - Status: `Locked`
 - Owner: `UNASSIGNED`
 - Depends on: PostgreSQL Adapters for every authoritative Worker-owned aggregate,
-  merged `CLOUD-LEASE-01`, and a path inventory approved before activation
+  merged `CLOUD-LEASE-01`, and approved `CLOUD-AGG-FENCE-PLAN-01` inventory
 - Branch: `TBD after prerequisite inventory`
 - Owned paths: none while Locked; this gate must be split into path-bounded
   aggregate conformance cards before any implementation starts

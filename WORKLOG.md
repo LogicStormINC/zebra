@@ -6306,3 +6306,7 @@ actual byte access.
   excluding Desktop, exactly-once claims, runtime backend selection, full aggregate
   fencing and production cutover. Parent card moved to Review; `CLOUD-AGG-FENCE-01`
   remains Locked.
+- activated documentation-only `CLOUD-AGG-FENCE-PLAN-01` on
+  `codex/cloud-agg-fence-plan-01` from the clean integrated cloud baseline. The
+  task owns only the aggregate path inventory and governance records; production
+  adapters, runtime selection and Desktop remain out of scope.

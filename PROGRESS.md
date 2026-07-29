@@ -5,7 +5,7 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-07-28`
+- Snapshot date: `2026-07-29`
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with
   an exact three-user-turn tail, complete tool groups, one strict retry from
   original history, recoverable context suspension, evidence-gated memory
@@ -81,6 +81,10 @@
   `zebra-cloud-trench@2759345c`. `CLOUD-LEASE-01` is in Review with a combined
   evidence record; it does not select PostgreSQL at runtime or claim full
   aggregate fencing, production cutover or exactly-once external execution.
+- Active aggregate-fencing inventory: `CLOUD-AGG-FENCE-PLAN-01` traces the
+  authoritative Context, Handoff, Workspace/Task, Model/Tool, provider-history,
+  Artifact and delivery-audit write paths before any PostgreSQL implementation is
+  activated. It is documentation-only; `CLOUD-AGG-FENCE-01` remains Locked.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
   on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
   path-bounded microservice cards own provider expectations, SCM credential

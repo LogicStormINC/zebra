@@ -1,5 +1,23 @@
 # Task Plan
 
+## CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
+
+1. `in_progress` - Trace every authoritative Worker-owned aggregate from Port to
+   adapter and mutation caller, including its current transaction boundary.
+2. `pending` - Classify PostgreSQL adapter and Lease-fence coverage gaps without
+   changing production code.
+3. `pending` - Write the approved path inventory and split implementation into
+   dependency-ordered, non-overlapping task cards with real PostgreSQL tests.
+4. `pending` - Validate documentation consistency, move the planning card to
+   Review and leave the parent gate Locked until its prerequisites are merged.
+
+### Decisions
+
+- This task is documentation-only. It cannot select a runtime backend, implement
+  an adapter, claim multi-Worker safety or change Desktop/local-agent code.
+- The smallest coherent implementation card owns one aggregate family and its
+  PostgreSQL tests; shared composition is deferred to a final integration card.
+
 ## CLOUD-LEASE-01 - Lease And Event/Effect Delivery Parent Gate
 
 1. `completed` - Fast-forward the reviewed cloud and microservice repair stack onto
