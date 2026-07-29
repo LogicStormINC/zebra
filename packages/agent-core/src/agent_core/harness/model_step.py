@@ -9,7 +9,6 @@ from agent_core.domain.identifiers import new_correlation_id, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
     ModelCompletion,
-    ModelContextWindow,
     ModelTextDelta,
     ModelToolDefinition,
 )
@@ -93,6 +92,7 @@ class HarnessModelStep:
         self._attempt_number = attempt_number
         self._provider_continuation = provider_continuation
         self._compaction_hook = compaction_hook
+        self._recovery_messages: tuple[SessionMessage, ...] = ()
 
     def prepare_conversation(
         self,
@@ -103,7 +103,7 @@ class HarnessModelStep:
         user_goal: str,
         created_at: datetime,
     ) -> ConversationCompactionResult | None:
-        return prepare_bounded_conversation(
+        result = prepare_bounded_conversation(
             messages,
             model_gateway,
             allow_tools=allow_tools,
@@ -114,22 +114,20 @@ class HarnessModelStep:
             user_goal=user_goal,
             created_at=created_at,
         )
+        if result is not None and result.recovery_messages is not None:
+            self._remember_recovery(result.recovery_messages, model_gateway)
+        return result
 
-    def compact_conversation(
+    def recover_conversation(
         self,
         messages: list[SessionMessage],
-        *,
-        user_goal: str,
-        created_at: datetime,
-    ) -> ConversationCompactionResult | None:
-        if self._conversation_compactor is None:
-            return None
-        return self._conversation_compactor.compact_conversation(
-            tuple(messages),
-            user_goal=user_goal,
-            max_tokens=self._conversation_token_budget or ModelContextWindow().input_token_limit,
-            created_at=created_at,
-        )
+        model_gateway: ModelGatewayPort,
+    ) -> bool:
+        if not self._remember_recovery(tuple(messages), model_gateway):
+            return False
+        self._provider_continuation = None
+        messages[:] = self._recovery_messages
+        return True
 
     def request_initial_completion(
         self,
@@ -139,7 +137,7 @@ class HarnessModelStep:
         created_at: datetime | None = None,
     ) -> ModelCompletion:
         now = created_at or datetime.now(UTC)
-        messages = self.build_initial_messages(task, created_at=now)
+        messages = self.build_initial_messages(task, created_at=now, model_gateway=model_gateway)
         self.prepare_conversation(
             messages,
             model_gateway,
@@ -367,7 +365,7 @@ class HarnessModelStep:
         created_at: datetime | None = None,
     ) -> ModelCompletion:
         now = created_at or datetime.now(UTC)
-        messages = self.build_initial_messages(task, created_at=now)
+        messages = self.build_initial_messages(task, created_at=now, model_gateway=model_gateway)
         self.append_tool_exchange(
             messages,
             completion=initial_completion,
@@ -404,30 +402,33 @@ class HarnessModelStep:
         )
 
     def build_initial_messages(
-        self,
-        task: HarnessTask,
-        *,
-        created_at: datetime,
+        self, task: HarnessTask, *, created_at: datetime,
+        model_gateway: ModelGatewayPort | None = None,
     ) -> list[SessionMessage]:
+        self._recovery_messages = ()
         messages: list[SessionMessage] = []
         if self._context_compiler is not None and task.workspace_root is not None:
-            if task.attachments:
-                system_prompt = self._context_compiler.build_system_prompt(
-                    task_input=task.user_input,
-                    workspace_root=task.workspace_root,
-                    max_tokens=task.context_token_budget,
-                    runtime_evidence=task.runtime_evidence,
-                    confirmed_memories=task.confirmed_memories,
-                    attachments=task.attachments,
+            active_projection = any(
+                evidence.kind == "session_handoff"
+                and (evidence.metadata or {}).get("handoff_source") == "active_projection"
+                for evidence in task.runtime_evidence
+            )
+            context_budget = (
+                max(
+                    task.context_token_budget,
+                    context_window(model_gateway).compaction_reserve_tokens,
                 )
-            else:
-                system_prompt = self._context_compiler.build_system_prompt(
-                    task_input=task.user_input,
-                    workspace_root=task.workspace_root,
-                    max_tokens=task.context_token_budget,
-                    runtime_evidence=task.runtime_evidence,
-                    confirmed_memories=task.confirmed_memories,
-                )
+                if model_gateway is not None and active_projection
+                else task.context_token_budget
+            )
+            system_prompt = self._context_compiler.build_system_prompt(
+                task_input=task.user_input,
+                workspace_root=task.workspace_root,
+                max_tokens=context_budget,
+                runtime_evidence=task.runtime_evidence,
+                confirmed_memories=task.confirmed_memories,
+                **({"attachments": task.attachments} if task.attachments else {}),
+            )
             if system_prompt is not None:
                 messages.append(
                     SessionMessage(
@@ -480,3 +481,19 @@ class HarnessModelStep:
             )
         )
         return messages
+
+    def _remember_recovery(
+        self,
+        messages: tuple[SessionMessage, ...],
+        model_gateway: ModelGatewayPort,
+    ) -> bool:
+        known = {str(message.message_id) for message in self._recovery_messages}
+        candidate = self._recovery_messages + tuple(
+            message for message in messages if str(message.message_id) not in known
+        )
+        if not candidate or not build_context_plan(
+            candidate, (), context_window(model_gateway), model_gateway
+        ).within_budget:
+            return False
+        self._recovery_messages = candidate
+        return True

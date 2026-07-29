@@ -136,6 +136,8 @@ def append_no_progress_observation(
                 sort_keys=True,
             )
             + "\nUse the available tool results to answer the original request. "
+            "Return a complete, self-contained final answer body. Do not merely refer to "
+            "earlier or intermediate output, or only say that the work is complete. "
             "Do not request or invoke another tool.",
             created_at=created_at,
             metadata={"tool_loop_no_progress": True},

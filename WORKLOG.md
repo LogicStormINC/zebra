@@ -5985,3 +5985,84 @@ actual byte access.
 - no new Memory, table, Event schema, provider/private continuation, raw tool output,
   finance/Skill special case or FinOS change is authorized; coding waits for this
   docs increment to be committed and reviewed
+
+# 2026-07-29 A-Line Continuity Budget And Terminal Contract Review
+
+- the first terminal-follow-up implementation passed its synthetic tests but failed
+  the fixed live A line: the valid active Capsule retained a 14,118-character
+  objective, while the child handoff compiled only 427 characters and omitted every
+  required transaction fact after character 12,000
+- the test was falsely green because its goal/completion markers were placed in the
+  objective prefix that survived the 60-character adapter limit; the replacement red
+  test must place required evidence after 12K and inspect the actual child compiled
+  messages
+- the same isolated replay produced a 7,571-character intermediate log but exposed
+  only a 387-character non-self-contained completion notice as FINAL; after the user
+  confirmation and rollover, the child returned a 311-character prefixed raw DSML
+  tool request and was incorrectly marked `COMPLETED`
+- PostgreSQL counts and full-row hashes for accounts, snapshots, transactions,
+  import drafts, journal artifacts and notes were identical before and after; the
+  temporary acceptance container/image/directories were removed and official FinOS
+  services remained healthy
+- ChatGPT Pro locked route A without Conversation Message Replay: for
+  `active_projection`, `HarnessModelStep` computes
+  `max(task.context_token_budget, ModelContextWindow.compaction_reserve_tokens)` and
+  passes it to the existing Context Compiler; adapter-level 60/128/85/65 character
+  limits and `capsule.plan`-as-visible-conversation are forbidden
+- terminal completion uses a stronger self-contained synthesis instruction and the
+  existing typed suspension path for any unfenced DSML `tool_calls` + `invoke`
+  grammar, even with ordinary explanatory text before it; business-log completeness
+  remains the fixed live A-line Eval, not a finance/language/length validator in Harness
+- A-line input is the already recognized Skill + 14,118-character OCR text. Zebra
+  `main` does not gain image recognition, MiniMax MCP, FinOS provider or image fixtures
+  from this repair; Memory 2.0, new Task/Storage/Event schema and direct `main` changes
+  remain forbidden
+
+# 2026-07-29 A-Line Follow-up Resolution Contract P1
+
+- the continuity-budget / FINAL / DSML repair passes `43` core and `36` API/Worker
+  focused regressions, Ruff, Mypy over 19 changed source files and `git diff --check`;
+  the full suite is `1783 passed, 9 inherited failures, 8 skipped`
+- the isolated pure A-line replay used the same recognized Skill + 14,118-character
+  OCR text with MiniMax, MCP and image input disabled; its initial Segment completed
+  in one Attempt with a 7,757-character structured log containing the known sell facts
+- the source active Capsule and child compiled system both preserved the full objective;
+  the sell name was after character 12,000 and its price after character 14,000, proving
+  that this failure is no longer context truncation
+- after `确认存在这笔卖出，纳入今日日志`, terminal rollover succeeded, but the child
+  called `files.list`, observed an empty workspace, then repeated the same
+  `agent.clarify` and entered `waiting_input` instead of producing the final log
+- all six FinOS PostgreSQL business-table counts and full-row hashes were byte-for-byte
+  unchanged before and after the failed replay
+- ChatGPT Pro selected route A: the latest follow-up must first resolve a matching
+  recovered pending clarification before new planning/tool exploration; normal tool
+  access remains available for genuinely new follow-up work
+- no finance/Skill/language/length/provider heuristic, Conversation Replay, Memory 2.0,
+  new Runtime state/schema, FinOS, MCP or direct `main` change is authorized
+
+# 2026-07-29 A-Line Route A Final Acceptance
+
+- route A adds a generic continuation contract only when runtime evidence is both
+  `active_projection` and `internal_terminal_follow_up`; the existing handoff reason
+  is carried as metadata, without a new schema or state model
+- non-terminal active handoffs do not receive the terminal guidance, while genuinely
+  new terminal follow-ups retain normal `allow_tools=true` capability
+- local validation is `80` related regressions, touched-file Ruff, Mypy over 19 source
+  files and `git diff --check`; the full suite is `1784 passed, 9 inherited failures,
+  8 skipped`, matching the inherited nine-failure baseline
+- the fixed 14,118-character pure Zebra input first entered structured clarification;
+  the exact confirmation resumed the same Segment and produced an 8,536-character
+  complete structured transaction log
+- after completion, the exact same confirmation triggered terminal rollover; the child
+  restored the complete objective with the sell name after character 12,000 and price
+  after character 14,000, then completed in two model calls with a 6,686-character,
+  261-line self-contained log
+- the final includes account overview, the confirmed sell, all 18 visible holdings,
+  costs, risk notes and `review_ready_data`; it has no repeated `agent.clarify`,
+  `waiting_input`, raw DSML, completion-only notice, suspension or failure
+- one empty, read-only `files.list` preceded the final answer but caused no loop or
+  state change; ChatGPT Pro classified it as non-blocking and optional P2 optimization
+- FinOS PostgreSQL counts and full-row hashes for accounts, snapshots, transactions,
+  import drafts, journal artifacts and notes were exactly identical before and after
+- ChatGPT Pro final verdict: `DECISION: PASS`, `BUSINESS GATE: PASS`,
+  `RUNTIME GATE: PASS`, `FILES.LIST VERDICT: non-blocking`, `P1: none`

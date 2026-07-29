@@ -22,7 +22,11 @@ from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessContext, HarnessEventDraft
 from agent_core.harness.orchestration_events import policy_decision_payload
 from agent_core.harness.plan_step import execute_plan_call
-from agent_core.harness.policy_step import policy_stop_result
+from agent_core.harness.policy_step import (
+    policy_recovery_metadata,
+    policy_stop_result,
+    recoverable_policy_deny_observation,
+)
 from agent_core.harness.selection import ToolCallSelection
 from agent_core.harness.tool_execution import execute_tool_call, record_tool_result
 from agent_core.ports.policy_engine import PolicyEnginePort
@@ -220,6 +224,29 @@ class ToolBatchExecutor:
                     )
                 )
                 if decision.decision is not PolicyDecisionType.ALLOW:
+                    if decision.decision is PolicyDecisionType.DENY and decision.recoverable:
+                        observation = recoverable_policy_deny_observation(
+                            context,
+                            messages=messages,
+                            tool_call=tool_call,
+                            decision=decision,
+                            retained_tool_calls=tool_calls[: index + 1],
+                            model_step=self._model_step,
+                            verifier=self._verifier,
+                            emitted_events=emitted_events,
+                        )
+                        observations.append((tool_call, observation.result))
+                        metadata = policy_recovery_metadata({**metadata, **observation.metadata})
+                        return ToolBatchResult(
+                            None,
+                            tool_calls_executed,
+                            update_batch_observation_progress(
+                                metadata,
+                                observations,
+                                emitted_events[batch_event_start:],
+                                threshold=self._repeat_hard_stop_threshold,
+                            ),
+                        )
                     terminal = policy_stop_result(
                         context,
                         messages=messages,

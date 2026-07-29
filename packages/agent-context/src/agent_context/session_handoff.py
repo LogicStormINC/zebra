@@ -58,7 +58,7 @@ def build_handoff_envelope(request: HandoffEnvelopeBuildInput) -> SessionHandoff
         validation_results=() if capsule is None else capsule.tests,
         known_failures=() if capsule is None else capsule.errors,
         open_questions=() if capsule is None else capsule.open_questions,
-        artifact_refs=() if capsule is None else capsule.artifact_refs,
+        artifact_refs=() if capsule is None else capsule.referenced_artifact_refs,
         source_context_capsule_id=None if capsule is None else capsule.capsule_id,
         source_event_range=request.source_event_range,
         source_event_hash=request.source_event_hash,
@@ -74,26 +74,79 @@ def build_handoff_envelope(request: HandoffEnvelopeBuildInput) -> SessionHandoff
     return draft.model_copy(update={"checksum": draft.expected_checksum()})
 
 
-def handoff_runtime_evidence(envelope: SessionHandoffEnvelope) -> RuntimeEvidenceInput:
-    details = (
-        *(f"Constraint: {item}" for item in envelope.protected_user_constraints),
-        *(f"Decision: {item}" for item in envelope.decisions_and_rationale),
-        *(f"Completed: {item}" for item in envelope.completed_work),
-        *(f"Pending: {item}" for item in envelope.pending_work),
-        f"Immediate next: {envelope.immediate_next}",
+def handoff_runtime_evidence(
+    envelope: SessionHandoffEnvelope,
+    *,
+    source_capsule: ContextCapsule | None = None,
+) -> RuntimeEvidenceInput:
+    if (
+        source_capsule is not None
+        and source_capsule.capsule_id != envelope.source_context_capsule_id
+    ):
+        raise ValueError("handoff source capsule does not match the envelope")
+    handoff_source = (
+        "active_projection" if envelope.source_context_capsule_id is not None else "checkpoint"
     )
+    metadata: dict[str, object] = {
+        "trust": "untrusted_handoff_evidence",
+        "handoff_id": str(envelope.handoff_id),
+        "source_session_id": str(envelope.source_session_id),
+        "root_session_id": str(envelope.root_session_id),
+        "stage_index": envelope.target_stage_index,
+        "checksum": envelope.checksum,
+        "handoff_source": handoff_source,
+        "handoff_reason": envelope.reason.value,
+        "known_omissions": list(envelope.known_omissions),
+    }
+    if handoff_source == "active_projection":
+        capsule = source_capsule
+        acceptance_criteria = (
+            envelope.acceptance_criteria if capsule is None else capsule.acceptance_criteria
+        )
+        protected_user_constraints = (
+            envelope.protected_user_constraints
+            if capsule is None
+            else capsule.protected_user_constraints
+        )
+        decisions_and_rationale = (
+            envelope.decisions_and_rationale
+            if capsule is None
+            else capsule.decisions_and_rationale or capsule.decisions
+        )
+        artifact_refs = (
+            envelope.artifact_refs if capsule is None else capsule.referenced_artifact_refs
+        )
+        summary = envelope.objective if capsule is None else capsule.objective
+        details = (
+            *(f"Acceptance: {item}" for item in acceptance_criteria),
+            *(f"Constraint: {item}" for item in protected_user_constraints),
+            *(f"Decision: {item}" for item in decisions_and_rationale),
+            *(f"Evidence reference: {item}" for item in artifact_refs),
+        )
+        metadata.update(
+            {
+                "source_context_capsule_id": envelope.source_context_capsule_id,
+                "source_event_range": envelope.source_event_range.model_dump(mode="json"),
+                "source_event_hash": envelope.source_event_hash,
+                "acceptance_criteria": list(acceptance_criteria),
+                "protected_user_constraints": list(protected_user_constraints),
+                "decisions_and_rationale": list(decisions_and_rationale),
+                "artifact_refs": list(artifact_refs),
+            }
+        )
+    else:
+        summary = envelope.objective
+        details = (
+            *(f"Constraint: {item}" for item in envelope.protected_user_constraints),
+            *(f"Decision: {item}" for item in envelope.decisions_and_rationale),
+            *(f"Completed: {item}" for item in envelope.completed_work),
+            *(f"Pending: {item}" for item in envelope.pending_work),
+            f"Immediate next: {envelope.immediate_next}",
+        )
+        metadata["artifact_refs"] = list(envelope.artifact_refs)
     return RuntimeEvidenceInput(
         kind="session_handoff",
-        summary=envelope.objective,
+        summary=summary,
         details=tuple(details),
-        metadata={
-            "trust": "untrusted_handoff_evidence",
-            "handoff_id": str(envelope.handoff_id),
-            "source_session_id": str(envelope.source_session_id),
-            "root_session_id": str(envelope.root_session_id),
-            "stage_index": envelope.target_stage_index,
-            "checksum": envelope.checksum,
-            "artifact_refs": list(envelope.artifact_refs),
-            "known_omissions": list(envelope.known_omissions),
-        },
+        metadata=metadata,
     )

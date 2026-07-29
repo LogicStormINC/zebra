@@ -1,23 +1,29 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
+from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.events import EventType
 from agent_core.domain.modeling import (
     ModelCallMetadata,
     ModelCompletion,
+    ModelContextWindow,
     ModelTextDelta,
     ModelToolDefinition,
 )
 from agent_core.harness import HarnessModelStep, HarnessTask
+from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 from agent_core.ports.model_gateway import ModelResponseRejectedError
 
 
 class StaticContextCompiler:
+    def __init__(self) -> None:
+        self.budgets: list[int] = []
+
     def build_system_prompt(
         self,
         *,
@@ -27,6 +33,7 @@ class StaticContextCompiler:
         runtime_evidence: tuple[RuntimeEvidenceInput, ...] = (),
         confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
     ) -> str | None:
+        self.budgets.append(max_tokens)
         return (
             f"workspace={workspace_root.name};"
             f" task={task_input};"
@@ -105,6 +112,115 @@ def test_harness_model_step_injects_compiled_context_as_system_message(
     assert "evidence=0" in gateway.requests[0][0].content
     assert "memories=1" in gateway.requests[0][0].content
     assert gateway.requests[0][1].role is MessageRole.USER
+
+
+def test_active_projection_uses_the_compaction_reserve_without_changing_other_tasks(
+    tmp_path: Path,
+) -> None:
+    class ReserveGateway:
+        context_window = ModelContextWindow(compaction_reserve_tokens=640)
+
+        def complete(
+            self,
+            messages: list[SessionMessage],
+            *,
+            tools: tuple[ModelToolDefinition, ...] = (),
+        ) -> ModelCompletion:
+            del messages, tools
+            return ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content="captured",
+                    created_at=datetime(2026, 7, 29, 12, 0, tzinfo=UTC),
+                )
+            )
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    compiler = StaticContextCompiler()
+    step = HarnessModelStep(context_compiler=compiler)
+    gateway = ReserveGateway()
+    active_projection = RuntimeEvidenceInput(
+        kind="session_handoff",
+        summary="Continue the validated source objective.",
+        metadata={"handoff_source": "active_projection"},
+    )
+
+    step.request_initial_completion(
+        HarnessTask(
+            title="Projected child",
+            user_input="Continue the child task.",
+            workspace_root=workspace.resolve(),
+            context_token_budget=200,
+            runtime_evidence=(active_projection,),
+        ),
+        gateway,
+    )
+    step.request_initial_completion(
+        HarnessTask(
+            title="Ordinary task",
+            user_input="Continue the ordinary task.",
+            workspace_root=workspace.resolve(),
+            context_token_budget=200,
+        ),
+        gateway,
+    )
+
+    assert compiler.budgets == [640, 200]
+
+
+def test_active_projection_compilation_keeps_the_model_request_hard_gate(
+    tmp_path: Path,
+) -> None:
+    class SizedContextCompiler:
+        def build_system_prompt(
+            self,
+            *,
+            task_input: str,
+            workspace_root: Path,
+            max_tokens: int,
+            runtime_evidence: tuple[RuntimeEvidenceInput, ...] = (),
+            confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
+        ) -> str | None:
+            del task_input, workspace_root, runtime_evidence, confirmed_memories
+            return "x" * (max_tokens * 4)
+
+    class SmallGateway:
+        context_window = ModelContextWindow(
+            context_tokens=1_000,
+            max_output_tokens=100,
+            compaction_reserve_tokens=500,
+            protocol_reserve_tokens=100,
+        )
+
+        def complete(
+            self,
+            messages: list[SessionMessage],
+            *,
+            tools: tuple[ModelToolDefinition, ...] = (),
+        ) -> ModelCompletion:
+            raise AssertionError("the hard gate must run before the model call")
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    with pytest.raises(ContextWindowExceededError):
+        HarnessModelStep(context_compiler=SizedContextCompiler()).request_initial_completion(
+            HarnessTask(
+                title="Projected child",
+                user_input="Continue the child task.",
+                workspace_root=workspace.resolve(),
+                context_token_budget=200,
+                runtime_evidence=(
+                    RuntimeEvidenceInput(
+                        kind="session_handoff",
+                        summary="Continue the validated source objective.",
+                        metadata={"handoff_source": "active_projection"},
+                    ),
+                ),
+            ),
+            SmallGateway(),
+        )
 
 
 def test_harness_model_step_repairs_rejected_model_response_once() -> None:

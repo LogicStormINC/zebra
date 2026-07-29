@@ -81,6 +81,7 @@ class SequentialToolLoop:
         messages = list(conversation) or self._model_step.build_initial_messages(
             context.task,
             created_at=context.attempt.started_at,
+            model_gateway=self._model_gateway,
         )
         calls = (tool_call, *remaining_tool_calls)
         if not conversation:
@@ -107,7 +108,7 @@ class SequentialToolLoop:
         )
         if batch.terminal_result is not None:
             return batch.terminal_result
-        if batch.metadata.get("tool_loop_no_progress") is True:
+        if _needs_terminal_synthesis(batch.metadata):
             return self._request_terminal_synthesis(
                 context,
                 messages=messages,
@@ -234,7 +235,7 @@ class SequentialToolLoop:
         )
         if batch.terminal_result is not None:
             return batch.terminal_result
-        if batch.metadata.get("tool_loop_no_progress") is True:
+        if _needs_terminal_synthesis(batch.metadata):
             return self._request_terminal_synthesis(
                 context,
                 messages=messages,
@@ -388,13 +389,16 @@ class SequentialToolLoop:
             metadata=metadata,
             created_at=context.attempt.started_at,
         )
-        compaction = self._model_step.prepare_conversation(
-            messages,
-            self._model_gateway,
-            allow_tools=False,
-            user_goal=context.task.user_input,
-            created_at=context.attempt.started_at,
-        )
+        if self._model_step.recover_conversation(messages, self._model_gateway):
+            compaction = None
+        else:
+            compaction = self._model_step.prepare_conversation(
+                messages,
+                self._model_gateway,
+                allow_tools=False,
+                user_goal=context.task.user_input,
+                created_at=context.attempt.started_at,
+            )
         if compaction is not None and compaction.compacted:
             emitted_events.append(
                 context_compacted_event(compaction, attempt_number=context.attempt.number)
@@ -468,13 +472,27 @@ def _tool_limit(context: HarnessContext) -> int | None:
     return context.task.max_tool_calls
 
 
+def _needs_terminal_synthesis(metadata: Mapping[str, object]) -> bool:
+    return metadata.get("tool_loop_no_progress") is True or (
+        metadata.get("policy_recovery_terminal_synthesis") is True
+    )
+
+
 def _is_raw_dsml_tool_request(content: str) -> bool:
     marker = "<｜｜DSML｜｜tool_calls>"
-    marker_index = content.find(marker)
-    if marker_index < 0 or _is_inside_fenced_code_block(content, marker_index):
-        return False
-    prefix = content[:marker_index].strip()
-    return prefix in {"", "Tool calls proposed."} and "invoke name=" in content[marker_index:]
+    marker_index = 0
+    while True:
+        marker_index = content.find(marker, marker_index)
+        if marker_index < 0:
+            return False
+        invoke_index = content.find("invoke name=", marker_index + len(marker))
+        if (
+            not _is_inside_fenced_code_block(content, marker_index)
+            and invoke_index >= 0
+            and not _is_inside_fenced_code_block(content, invoke_index)
+        ):
+            return True
+        marker_index += len(marker)
 
 
 def _is_inside_fenced_code_block(content: str, position: int) -> bool:

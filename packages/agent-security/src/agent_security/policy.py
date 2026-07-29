@@ -1,8 +1,18 @@
 from dataclasses import dataclass
 from enum import StrEnum
+from ipaddress import ip_address
+from urllib.parse import urlsplit
 
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.tools import ToolCall
+from agent_core.domain.web import WebTargetError, parse_web_target
+from agent_core.domain.web_search import (
+    WebSearchInputError,
+)
+from agent_core.domain.web_search import (
+    parse_web_search_input as parse_legacy_web_search_input,
+)
+from agent_tools.search_pipeline import SearchInputError, parse_search_query
 
 from agent_security.external_policy import (
     blocked_route_reason,
@@ -15,7 +25,11 @@ from agent_security.mcp_proxy_policy import (
     ToolEgressRoute,
     classify_tool_egress,
 )
-from agent_security.network_profile import DEFAULT_NETWORK_PROFILE, NetworkProfile
+from agent_security.network_profile import (
+    DEFAULT_NETWORK_PROFILE,
+    NetworkProfile,
+    NetworkProfileName,
+)
 
 
 class PolicyProfile(StrEnum):
@@ -107,7 +121,17 @@ class LocalPolicyEngine:
             web_pipeline_v2=self.web_pipeline_v2,
         )
         if egress.route is ToolEgressRoute.BLOCKED:
-            return _deny(self.profile, blocked_route_reason(egress))
+            recoverable = _is_recoverable_read_only_input_deny(
+                tool_call,
+                network_profile=self.network_profile,
+                web_search_endpoint=self.web_search_endpoint,
+                web_pipeline_v2=self.web_pipeline_v2,
+            )
+            return _deny(
+                self.profile,
+                egress.reason if recoverable else blocked_route_reason(egress),
+                recoverable=recoverable,
+            )
         if egress.route is ToolEgressRoute.WEB_GATEWAY:
             return external_read_allow_decision(
                 policy_profile=self.profile.value,
@@ -333,9 +357,107 @@ def _approval(profile: PolicyProfile, reason: str) -> PolicyDecision:
     )
 
 
-def _deny(profile: PolicyProfile, reason: str) -> PolicyDecision:
+def _deny(
+    profile: PolicyProfile,
+    reason: str,
+    *,
+    recoverable: bool = False,
+) -> PolicyDecision:
     return PolicyDecision(
         decision=PolicyDecisionType.DENY,
         reason=reason,
         policy_profile=profile.value,
+        recoverable=recoverable,
     )
+
+
+def _is_recoverable_read_only_input_deny(
+    tool_call: ToolCall,
+    *,
+    network_profile: NetworkProfile,
+    web_search_endpoint: str | None,
+    web_pipeline_v2: bool,
+) -> bool:
+    if tool_call.name == "web.fetch":
+        return _is_recoverable_web_fetch_input(
+            tool_call.arguments.get("url"),
+            network_profile,
+        )
+    if tool_call.name != "web.search":
+        return False
+    try:
+        if web_pipeline_v2:
+            parse_search_query(tool_call.arguments)
+        else:
+            parse_legacy_web_search_input(tool_call.arguments)
+    except (SearchInputError, WebSearchInputError):
+        return _has_allowed_web_search_endpoint(web_search_endpoint, network_profile)
+    return False
+
+
+def _is_recoverable_web_fetch_input(
+    value: object,
+    network_profile: NetworkProfile,
+) -> bool:
+    try:
+        parse_web_target(value)
+    except WebTargetError:
+        return not _has_sensitive_web_target_boundary(value) and _has_allowed_web_fetch_authority(
+            value,
+            network_profile,
+        )
+    return False
+
+
+def _has_sensitive_web_target_boundary(value: object) -> bool:
+    if not isinstance(value, str) or not value.strip():
+        return False
+    try:
+        target = urlsplit(value.strip())
+        port = target.port
+    except ValueError:
+        return True
+    if target.username is not None or target.password is not None or port is not None:
+        return True
+    hostname = target.hostname
+    if hostname is None:
+        return False
+    normalized = hostname.lower()
+    if normalized == "localhost" or normalized.endswith(".localhost"):
+        return True
+    try:
+        ip_address(normalized)
+    except ValueError:
+        return False
+    return True
+
+
+def _has_allowed_web_search_endpoint(
+    endpoint: str | None,
+    network_profile: NetworkProfile,
+) -> bool:
+    try:
+        target = parse_web_target(endpoint)
+    except WebTargetError:
+        return False
+    return network_profile.name is NetworkProfileName.FULL_TRUSTED_LOCAL or (
+        network_profile.name is NetworkProfileName.DOMAIN_ALLOWLIST
+        and target.hostname in network_profile.domain_allowlist
+    )
+
+
+def _has_allowed_web_fetch_authority(
+    value: object,
+    network_profile: NetworkProfile,
+) -> bool:
+    if network_profile.name is NetworkProfileName.FULL_TRUSTED_LOCAL:
+        return True
+    if network_profile.name is not NetworkProfileName.DOMAIN_ALLOWLIST:
+        return False
+    if not isinstance(value, str) or not value.strip():
+        return False
+    try:
+        hostname = urlsplit(value.strip()).hostname
+    except ValueError:
+        return False
+    return hostname is not None and hostname.lower() in network_profile.domain_allowlist

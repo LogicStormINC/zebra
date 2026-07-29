@@ -86,6 +86,30 @@ def test_local_context_compiler_renders_untrusted_session_handoff_evidence(
     assert "parent provider call completed" in prompt
 
 
+def test_local_context_compiler_keeps_checkpoint_handoffs_bounded(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    checkpoint_tail = "CHECKPOINT-TAIL-MUST-NOT-REACH-THE-MODEL"
+
+    prompt = LocalContextCompiler().build_system_prompt(
+        task_input="continue the checkpoint handoff",
+        workspace_root=workspace.resolve(),
+        max_tokens=800,
+        runtime_evidence=(
+            RuntimeEvidenceInput(
+                kind="session_handoff",
+                summary="Continue the prior checkpoint.",
+                details=("Completed: " + "x" * 2_100 + checkpoint_tail,),
+                metadata={"handoff_source": "checkpoint"},
+            ),
+        ),
+    )
+
+    assert prompt is not None
+    assert "Completed:" in prompt
+    assert checkpoint_tail not in prompt
+
+
 def test_local_context_compiler_renders_confirmed_memory_in_stable_section(
     tmp_path: Path,
 ) -> None:

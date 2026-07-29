@@ -18,7 +18,7 @@
   not output the required transaction log; the Runtime guard passed while the A
   line business gate failed. FinOS image/MiniMax acceptance is separate. The
   branch is not authorized to merge directly to `main`.
-- Active stacked task: `CTX-REHYDRATE-02` is brought forward as the Phase 1.5
+- Review stacked task: `CTX-REHYDRATE-02` is the completed Phase 1.5
   completion slice on `codex/context-rehydrate-phase1-5`. It must reuse existing
   Capsule/ledger/projection/rehydration paths through the Core Port boundary,
   perform at most one recovered tool-disabled synthesis, and make the fixed text
@@ -34,8 +34,35 @@
   `CTX-SEG-02-FOLLOWUP-REHYDRATE` P1: rollover succeeded, while the child received
   only the truncated checkpoint and returned 167 characters asking again for known
   trade details. Sync API/Worker active-Capsule parity and projection-first handoff
-  are active on this same branch. Full Memory 2.0, Policy relaxation, new Worker
-  architecture/Storage schema and direct merge to `main` remain out of scope.
+  were implemented locally, but the next isolated acceptance proved the content path
+  still incomplete: the active 14,118-character Capsule compiled to only 427
+  characters, with every required fact after character 12,000 absent. The source
+  final was a non-self-contained 387-character completion notice, and the child
+  falsely completed with a 311-character prefixed raw DSML tool request. The locked
+  repair uses `max(task.context_token_budget,
+  ModelContextWindow.compaction_reserve_tokens)` for active-projection continuity,
+  removes fixed character limits and `plan`-as-conversation, strengthens the
+  self-contained synthesis instruction, and rejects any unfenced DSML tool grammar.
+  That repair passes `43` core and `36` API/Worker focused regressions, touched-file
+  Ruff and Mypy, with the full suite at `1783 passed, 9 inherited failures, 8 skipped`.
+  The next isolated live replay produced a 7,757-character initial structured log and
+  proved the child compiled the complete 14,118-character active projection, including
+  facts after character 12,000. After the exact user confirmation, however, the child
+  still called `files.list`, repeated the already answered `agent.clarify`, and entered
+  `waiting_input`. Pro therefore locked route A for the remaining P1: latest user
+  follow-up must resolve the matching recovered pending clarification before new
+  planning/tool exploration; ordinary follow-ups keep normal tool capability.
+  Route A is now implemented only for active-projection terminal follow-ups and
+  passes the final live gate: the clarification continuation produced an 8,536-character
+  log, then the completed Task rolled over and its child produced a 6,686-character,
+  261-line self-contained log in two model calls with no repeated clarification,
+  waiting state, DSML or business write. Current validation is `80` related tests,
+  touched-file Ruff, Mypy over `19` source files and `git diff --check`; the full suite
+  is `1784 passed, 9 inherited failures, 8 skipped`. ChatGPT Pro marked Business and
+  Runtime gates PASS. One harmless read-only `files.list` is optional P2 optimization.
+  The A-line fixture is already recognized OCR text; Zebra image recognition remains
+  outside this lane. Full Memory 2.0, Policy relaxation, new Worker architecture /
+  Storage schema and direct merge to `main` remain out of scope.
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with
   an exact three-user-turn tail, complete tool groups, one strict retry from
   original history, recoverable context suspension, evidence-gated memory

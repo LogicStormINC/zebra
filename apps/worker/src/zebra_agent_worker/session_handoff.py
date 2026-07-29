@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -10,11 +12,14 @@ from uuid import UUID
 from agent_context import handoff_runtime_evidence
 from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import apply_event as apply_workspace_event
+from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import HandoffId, SessionId
 from agent_core.domain.session_handoff import SessionHandoffEnvelope
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
+from agent_core.ports.session_handoff import SessionHandoffResult
 from agent_storage import (
+    SQLiteContextLifecycleStore,
     SQLiteEffectLedger,
     SQLiteEventStore,
     SQLiteHandoffDispatchStore,
@@ -37,6 +42,7 @@ class HandoffRecoveryRejectedError(ValueError):
 class RecoveredHandoff:
     envelope: SessionHandoffEnvelope
     runtime_evidence: RuntimeEvidenceInput
+    source_capsule: ContextCapsule | None
 
 
 class SessionHandoffRecoveryGate:
@@ -44,6 +50,7 @@ class SessionHandoffRecoveryGate:
         self._handoffs = SQLiteSessionHandoffStore(database_path)
         self._dispatch = SQLiteHandoffDispatchStore(database_path)
         self._events = SQLiteEventStore(database_path)
+        self._contexts = SQLiteContextLifecycleStore(database_path)
         self._sessions = SQLiteProjectionStore(database_path)
         self._workspaces = SQLiteWorkspaceProjectionStore(database_path)
 
@@ -74,7 +81,15 @@ class SessionHandoffRecoveryGate:
         envelope = self._handoffs.get_envelope(result.handoff_id)
         if envelope is None:
             raise ValueError("handoff child references a missing committed envelope")
-        recovered = RecoveredHandoff(envelope, handoff_runtime_evidence(envelope))
+        self._validate_envelope_provenance(result, envelope, session_id)
+        if envelope.source_context_capsule_id is not None:
+            self._validate_source_events(envelope)
+        source_capsule = self._recover_source_capsule(envelope)
+        recovered = RecoveredHandoff(
+            envelope,
+            handoff_runtime_evidence(envelope, source_capsule=source_capsule),
+            source_capsule,
+        )
         if any(event.event_type is EventType.HARNESS_ATTEMPT_STARTED for event in events):
             # ponytail: the inherited revision is checked before the first attempt;
             # later continuations validate current runtime authority through normal setup.
@@ -102,6 +117,58 @@ class SessionHandoffRecoveryGate:
             )
             raise HandoffWorkspaceDriftError("handoff workspace revision drift detected")
         return recovered
+
+    def _recover_source_capsule(
+        self,
+        envelope: SessionHandoffEnvelope,
+    ) -> ContextCapsule | None:
+        capsule_id = envelope.source_context_capsule_id
+        if capsule_id is None:
+            return None
+        stored = self._contexts.get_capsule(capsule_id)
+        if stored is None or stored.session_id != envelope.source_session_id:
+            raise ValueError("handoff source capsule is unavailable")
+        active = self._contexts.get_active_capsule(envelope.source_session_id)
+        if active is None or active.capsule.capsule_id != capsule_id:
+            raise ValueError("handoff source capsule is no longer active")
+        if stored.capsule.source_event_range is None:
+            raise ValueError("handoff source capsule has no source event range")
+        capsule_range = stored.capsule.source_event_range
+        envelope_range = envelope.source_event_range
+        if (
+            capsule_range.start_sequence < envelope_range.start_sequence
+            or capsule_range.end_sequence > envelope_range.end_sequence
+        ):
+            raise ValueError("handoff source capsule range is outside the envelope range")
+        return stored.capsule
+
+    def _validate_envelope_provenance(
+        self,
+        result: SessionHandoffResult,
+        envelope: SessionHandoffEnvelope,
+        session_id: SessionId,
+    ) -> None:
+        if (
+            envelope.checksum != envelope.expected_checksum()
+            or result.checksum != envelope.checksum
+            or result.child_session_id != session_id
+            or result.source_session_id != envelope.source_session_id
+            or envelope.target_session_id != session_id
+        ):
+            raise ValueError("handoff envelope provenance or checksum is invalid")
+
+    def _validate_source_events(self, envelope: SessionHandoffEnvelope) -> None:
+        event_range = envelope.source_event_range
+        events = [
+            event
+            for event in self._events.list_for_session(envelope.source_session_id)
+            if event_range.start_sequence <= event.sequence <= event_range.end_sequence
+        ]
+        expected_sequences = tuple(range(event_range.start_sequence, event_range.end_sequence + 1))
+        if tuple(event.sequence for event in events) != expected_sequences:
+            raise ValueError("handoff source event range is incomplete")
+        if _event_hash(events) != envelope.source_event_hash:
+            raise ValueError("handoff source event hash does not match")
 
     def _suspend_for_drift(
         self,
@@ -163,3 +230,13 @@ def recover_worker_handoff(
     except (HandoffWorkspaceDriftError, ValueError) as exc:
         release()
         raise HandoffRecoveryRejectedError(str(exc)) from exc
+
+
+def _event_hash(events: list[SessionEvent]) -> str:
+    encoded = json.dumps(
+        [event.model_dump(mode="json") for event in events],
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+    return sha256(encoded.encode()).hexdigest()

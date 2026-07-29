@@ -17,6 +17,7 @@ class ConversationCompactionResult:
     within_budget: bool
     provenance: str
     capsule: ContextCapsule | None = None
+    recovery_messages: tuple[SessionMessage, ...] | None = None
 
     def __post_init__(self) -> None:
         if self.before_tokens < 0 or self.after_tokens < 0:

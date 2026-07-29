@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |---|---|
-| 状态 | Phase 1 Runtime guard 已完成；Phase 1.5、Policy Recovery P1 本地实现已验证但未提交；Terminal Follow-up P1 已激活；完整 Phase 2 锁定 |
+| 状态 | Phase 1 Runtime guard、Phase 1.5 / Policy Recovery、Terminal Follow-up 内容连续性、确认项推进与 FINAL 合同均已通过本地及真实 A 线验收，等待分支 Review；完整 Phase 2 锁定 |
 | 日期 | 2026-07-29 |
 | 当前任务 | `CTX-REHYDRATE-02`（Phase 1.5） |
 | 依赖 | `CTX-MEM-01` / PR `#198` |
@@ -21,7 +21,9 @@
    明确标记为可纠正的只读工具输入拒绝转换成一次结构化失败 observation；
 4. `CTX-SEG-02-FOLLOWUP-REHYDRATE`：修复同一 Task 的 terminal follow-up 长上下文
    回归，使同步 API 与 Worker 复用同一 Capsule/Projection 持久化与恢复合同；
-5. 完整 Phase 2：Worker 重启后的广义按需重水合和长期 Memory 路线继续锁定。
+5. `CTX-SEG-02-FOLLOWUP-RESOLVE`：让最新用户 follow-up 在规划或工具探索前优先
+   解决恢复上下文中的待确认项，禁止再次询问已经回答的同一问题；
+6. 完整 Phase 2：Worker 重启后的广义按需重水合和长期 Memory 路线继续锁定。
 
 `HAR-CONV-01` 的 typed `SUSPENDED` 是安全失败，不是业务成功。A 线只有在固定输入
 最终产生符合原始请求的完整结果时才通过；“不再无限循环”不能替代结果验收。
@@ -40,6 +42,9 @@ Memory 数据库，也不包含 Agent Memory、Knowledge Memory、学习策略�
 | `HAR-CONV-01@efbb8a3` 文本等价任务 | 一次有效澄清后，11 次模型调用、12 次抓取、7 次压缩；安全结束为 `tool_loop_no_progress`，但没有输出交易日志 |
 | Phase 1.5 纯 A 线首次真实回放 | 完整 A 线源码、不含 FinOS/MiniMax/MCP；5 次模型调用、6 次工具调用后，模型提交带 fragment 的只读 `web.fetch` URL，Policy 正确拒绝，但 Harness 直接将唯一 Attempt 标为 `FAILED/retry_exhausted`，仍无交易日志 |
 | Phase 1.5 + Policy Recovery 纯 A 线回放 | 单 Segment 已 `COMPLETED` 并输出 8,655 字结构化日志，但保留交易澄清；同一 Task 提交确认后正常 rollover，child Segment 仅输出 167 字并重新索要交易详情，未形成确认后的最终日志 |
+| Terminal Follow-up 首轮实现验收 | source 已有 14,118 字 active Capsule，但 handoff adapter 把完整 objective 固定压到约 60 字，child 实际 continuity context 仅 427 字，12K 以后的交易事实全部丢失；首段最终仅输出 387 字“已完成”说明，child 则把带解释前缀的 raw DSML 工具请求误报为 `COMPLETED` |
+| Continuity budget / FINAL / DSML 修复后回放 | initial Segment 一次 Attempt 输出 7,757 字结构化日志；source active Capsule 与 child compiled context 均保留完整 14,118 字 objective 和 12K 后交易事实。用户明确确认后 child 仍先执行无关 `files.list`，再调用 `agent.clarify` 重复询问同一确认项并进入 `waiting_input`；内容连续性已通过，剩余根因是 follow-up resolution contract 缺失 |
+| Route A 最终真实验收 | 同一 14,118 字输入先经结构化澄清续跑生成 8,536 字日志；完成态再次提交同一句确认后，terminal rollover child 在 2 次模型调用内生成 6,686 字 / 261 行自包含日志，包含 12K 后卖出事实、18 只持仓、成本、风险和 `review_ready_data`，无重复 `agent.clarify`、`waiting_input`、DSML 或业务写入。一次只读空 `files.list` 被 Pro 判定为 non-blocking P2 优化，Business / Runtime Gate 均 PASS |
 | 普通 Chat 模型对照 | 约 2 分钟内完成一次图片读取、13 个公开来源查询、一次计算和一个最终回答 |
 
 这些证据说明：
@@ -57,6 +62,8 @@ Memory 数据库，也不包含 Agent Memory、Knowledge Memory、学习策略�
 - `CTX-SEG-02` 的文本 checkpoint 能覆盖短跟进，但同步 `execute=true` 路径没有像
   Worker 一样推进 active Capsule；terminal handoff 随后又把两条各约 2,000 字的
   checkpoint 合并后整体截为约 2,000 字，长任务的目标、完成条件和结果证据未进入 child。
+- 完整 continuity 接通后，child 已同时看到恢复后的原目标、12K 后证据和最新用户确认，
+  但仍把确认当作普通新消息，未先关闭恢复上下文中的待确认项，因而重复澄清。
 
 因此根因是执行阶段缺少“新证据、无进展、终态”之间的闭环，而不是缺少更大的
 `max_tool_calls`。
@@ -76,6 +83,12 @@ Memory 数据库，也不包含 Agent Memory、Knowledge Memory、学习策略�
    验收记录必须以实际最终输出为准。
 8. 同一 Task 的 terminal follow-up 是正常多轮能力。若 source 有可验证的 Capsule /
    Projection，child 必须优先消费它；文本 checkpoint 只能在投影不存在时作有界兜底。
+9. A 线的固定输入是已经完成图片识别的 Skill + 14,118 字 OCR 文本。
+   Zebra `main` / A 线不负责图片识别，Vision、MiniMax MCP 和 FinOS 附件能力
+   不是该验收的前置条件。
+10. Runtime 只校验协议与结构安全，不在 Harness 中用金融词表、中英文
+    短语或长度比例伪造业务完整性验证；结构化日志是否完整由固定 A 线
+    live Eval 判定。
 
 ## 4. Phase 1：进展感知与终态收敛
 
@@ -110,8 +123,11 @@ provider call id、时间戳、展示顺序等易变字段不得制造“新证�
 1. 不再执行该批工具；
 2. 向 conversation 写入结构化、可见给模型的无进展 observation；
 3. 仅允许一次禁用工具的最终综合调用；
-4. 模型返回非空最终文本则正常 `COMPLETED`；
-5. 模型仍请求工具或没有形成可用终答，则返回带 typed `stop_reason` 的
+4. 终态指令要求输出自包含的最终正文，不得只引用 intermediate response
+   或只说明“已完成”；非空且协议合法的文本可进入 `COMPLETED`，业务
+   完整性仍由 Eval 硬门判定；
+5. 模型仍请求工具、返回任何未 fenced 的 DSML tool-call grammar，或没有
+   形成可用终答，则返回带 typed `stop_reason` 的
    `SUSPENDED`，不得伪造成功，也不得继续循环。
 
 新证据出现时必须恢复普通工具循环。该机制按 batch 而不是全局调用次数工作，保证
@@ -184,6 +200,27 @@ A 线完成门的必要补完，不是 Memory 2.0。最小合同为：
    校验；不得带入 provider-private continuation、reasoning、凭据或 raw tool output；
 7. 投影缺失、损坏或超预算时 fail closed，并留下可诊断状态；不得伪造“已恢复”或
    拼接业务 prompt 以绕过同一 Task 多轮合同。
+8. `active_projection` continuity 不得由 adapter 用 60/128/85/65 等字符数
+   手工裁剪。`HarnessModelStep` 在构建 initial messages 前使用已有的
+   provider-neutral `ModelContextWindow.compaction_reserve_tokens`，计算
+   `max(task.context_token_budget, compaction_reserve_tokens)` 作为该轮有效 Context
+   budget；不新增 token 常量、Task 字段或 provider 分支。
+9. handoff adapter 只输出经验证的 objective、acceptance criteria、protected
+   constraints、decisions 和 Artifact/evidence references，并交给现有 Context
+   Compiler 按 priority 和 token count 选择。`capsule.plan` 不是用户可见对话，
+   不得映射成 `visible_conversation`。
+10. 最终模型请求继续通过现有 `plan_context_window` 硬门；本轮不新增
+    Conversation Message Replay、FinalAnswerValidator 或任何业务/语言启发式。
+11. 最新 user follow-up 是恢复上下文之后的当前权威输入。若它已回答或解决已有
+    pending clarification，Runtime 必须先推进该状态，再进入规划或工具探索；不得再次
+    请求同一澄清，也不得以空工作区等与已有 evidence 无关的探索替代结果生成。
+12. terminal follow-up 保留正常工具能力；不得把所有 child 首轮强制为
+    `allow_tools=false`。只有新的、完成任务不可绕过的关键缺口仍可请求澄清；该判断不得
+    依赖金融、Skill、语言、长度或 provider 特判，也不得新增状态 schema。
+
+真实验收中的一次无副作用 `files.list` 没有造成循环、重复澄清或错误结果，按 Pro
+结论不阻塞 Phase 1.5。减少“恢复 evidence 已充分仍探索空 workspace”可作为独立 P2，
+不得反向扩大本阶段或改成全局禁用工具。
 
 允许为复用共享 persistence/rehydration Port 扩大 API、Context、Core 和执行入口的
 owned paths；不授权新 Worker 架构、Storage schema、FinOS/provider 或业务特判。
@@ -224,7 +261,7 @@ Phase 1.5 从 `efbb8a3` 及本次文档基线创建独立叠加分支，继续�
 
 ### 7.2 Provider-neutral A/B 验收
 
-HAR-CONV-01 使用同一份 Skill 指令和同一份人工识别文字，对未修改的 `main`
+HAR-CONV-01 使用同一份 Skill 指令和同一份已识别的 14,118 字 OCR 文本，对未修改的 `main`
 与 Phase 1.5 做只读 A/B；不加载图片附件、MiniMax MCP 或 FinOS provider：
 
 - 输入、模型、允许的公开数据源和“不得写入真实业务数据”约束一致；
@@ -232,7 +269,8 @@ HAR-CONV-01 使用同一份 Skill 指令和同一份人工识别文字，对未�
   收敛，不计为 A 线业务成功；
 - 参数或 URL 变化但没有新证据时必须收敛，不能把原始工具协议文本误报为完成；
 - 记录模型调用、工具调用、压缩、重复 evidence、终态和总耗时；
-- 真实图片只作为人工识别文字的离线来源，不进入 fixture、commit、日志正文或 PR；
+- 真实图片只作为已识别文字的离线来源；A 线本身没有也不验收图片
+  识别能力，图片不进入 fixture、commit、日志正文或 PR；
 - FinOS 项目分支的图片附件、MiniMax MCP 和镜像验收独立进行，不作为 Zebra
   `main` 收敛修复的前置条件。
 
@@ -251,10 +289,20 @@ HAR-CONV-01 使用同一份 Skill 指令和同一份人工识别文字，对未�
   recoverable observation；
 - 同一 `/tasks/{id}` 先输出待确认日志，再提交确认并发生 terminal rollover；child
   必须恢复 source Capsule/Projection，输出确认后的完整日志，不得重新索要已给数据；
+- 14,118 字 fixture 必须把任务必需的交易 sentinel 放在 12K 以后，并直接
+  断言 child compiled messages 包含该尾部事实；仅校验前 60 字或
+  `handoff_source=active_projection` 元数据不算通过；
+- active projection 使用现有 model compaction reserve 动态扩展 continuity budget，
+  不使用字符级截断、新常量或 `capsule.plan` 伪造对话；
 - 同步 API 与 Worker 对同一 compaction 产生等价的 active Capsule；handoff 在有
   Capsule 时不得只使用固定 2,000 字 checkpoint；
 - child 只恢复用户可见对话、Capsule 状态和经验证的 evidence；provider-private、
   reasoning、凭据及 raw tool output 仍不可跨 Segment；
+- terminal synthesis 指令必须要求自包含的 FINAL 日志正文；“以上已完成”等
+  非自包含说明不通过 A 线 live Eval，但 Harness 不新增金融/语言词表
+  validator；
+- `allow_tools=False` 终态输出中，任何带普通解释前缀的未 fenced DSML
+  `tool_calls` + `invoke` grammar 也必须 typed `SUSPENDED`，不得 `COMPLETED`；
 - FinOS 核心业务表前后全行哈希一致；
 - 无第二状态源、无业务语义、无跨任务隐式长期记忆。
 

@@ -110,6 +110,13 @@ def test_semantic_argument_variants_force_one_tool_disabled_synthesis() -> None:
         for message in model.requests[-1]
         if message.role is MessageRole.SYSTEM
     )
+    terminal_instruction = next(
+        message.content
+        for message in model.requests[-1]
+        if message.metadata.get("tool_loop_no_progress") is True
+    )
+    assert "complete, self-contained final answer" in terminal_instruction
+    assert "not merely refer to earlier or intermediate output" in terminal_instruction
     assert not any(
         message.content.startswith("The tool budget is complete.")
         for message in model.requests[-1]
@@ -135,8 +142,8 @@ def test_terminal_synthesis_suspends_when_model_still_requests_tools() -> None:
 
 @pytest.mark.parametrize(
     "boilerplate",
-    ("", "Tool calls proposed.\n\n"),
-    ids=("bare", "provider-boilerplate"),
+    ("", "Tool calls proposed.\n\n", "说明：我还需要一次查询。\n\n"),
+    ids=("bare", "provider-boilerplate", "ordinary-explanation"),
 )
 def test_terminal_synthesis_suspends_for_raw_dsml_tool_request(boilerplate: str) -> None:
     calls = tuple(_call(f"variant-{index}") for index in range(4))
@@ -164,6 +171,32 @@ def test_terminal_synthesis_suspends_for_raw_dsml_tool_request(boilerplate: str)
     assert len(tools.calls) == 4
     assert model.tool_requests.count(()) == 1
     assert model.tool_requests[-1] == ()
+
+
+def test_terminal_synthesis_suspends_for_unfenced_dsml_after_a_fenced_example() -> None:
+    calls = tuple(_call(f"variant-{index}") for index in range(4))
+    raw_dsml = (
+        "```xml\n"
+        "<｜｜DSML｜｜tool_calls>\n"
+        "<｜｜DSML｜｜invoke name=\"web__fetch\">\n"
+        "```\n"
+        "说明：上面只是示例；下面仍要调用工具。\n"
+        "<｜｜DSML｜｜tool_calls>\n"
+        "<｜｜DSML｜｜invoke name=\"web__fetch\">\n"
+        "<｜｜DSML｜｜parameter name=\"url\" string=\"https://example.test\" />\n"
+        "</｜｜DSML｜｜invoke>\n"
+        "</｜｜DSML｜｜tool_calls>"
+    )
+    model = _gateway(
+        *(_completion("Collect more.", call) for call in calls),
+        _completion(raw_dsml),
+    )
+    tools = StableEvidenceGateway({str(call.arguments["query"]): "same" for call in calls})
+
+    result = _run(model, tools)
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.attempt_result.metadata["stop_reason"] == "tool_loop_no_progress"
 
 
 def test_terminal_synthesis_keeps_regular_text_that_mentions_dsml() -> None:
