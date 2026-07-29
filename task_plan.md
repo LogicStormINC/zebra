@@ -1,14 +1,13 @@
 # Task Plan
 
-## BASE-UI-SIZE-01 - Conversation Idle Style Extraction
+## BASE-EVT-SIZE-01 - Context Event Contract Extraction
 
-1. `completed` - Map WorkspaceIdle-only classes and confirm its single component
-   consumer plus the existing Desktop validation commands.
-2. `in_progress` - Move only idle/recent/action classes to a component-owned style
-   module and update the component hook import.
-3. `pending` - Run Desktop build, composer layout and file-size gates.
-4. `pending` - Move the card to Review and activate `BASE-EVT-SIZE-01` on a new
-   path-bounded branch.
+1. `completed` - Confirm `ContextCapsuleCreatedPayload` is the smallest cohesive
+   move and the existing context-events module is its natural owner.
+2. `in_progress` - Move the payload model and preserve registry/public imports.
+3. `pending` - Run context contract tests, file-size gate, Ruff, strict Mypy,
+   complete repository tests and release Eval.
+4. `pending` - Move the card to Review and re-evaluate the cloud integration gate.
 
 ### Decisions
 
@@ -40,6 +39,14 @@
 3. `completed` - Pass focused `3/3`, Worker `77 passed, 1 skipped`, Ruff, Mypy and
    full-suite reduction to `1 failed, 1853 passed, 60 skipped`.
 4. `completed` - Move the card to Review and activate the UI size card.
+
+## BASE-UI-SIZE-01 - Conversation Idle Style Extraction
+
+1. `completed` - Map the WorkspaceIdle-only style set.
+2. `completed` - Move the set to a component-owned style module.
+3. `completed` - Pass Desktop build and composer layout; reduce files to `443`
+   and `122` lines with only the Core size violation remaining.
+4. `completed` - Move the card to Review and activate the Core event-size card.
 
 ## CLOUD-EFFECT-CONSUMER-01 - Worker Fenced Effect Consumer
 

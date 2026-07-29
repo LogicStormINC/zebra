@@ -3,8 +3,8 @@ import { sessionStatusLabel, sessionWorkspaceLabel } from "../../_utils/session-
 import type { ConversationSeed } from "../../lib/chat-surface";
 import type { TaskLaunchConfig } from "../../lib/task-launch-config";
 import type { SessionSummary } from "../../types";
-import { useConversationPaneStyle } from "../CodexConversationPane.styles";
 import { ExecutionEnvironmentCard } from "./ExecutionEnvironmentCard";
+import { useWorkspaceIdleStyle } from "./WorkspaceIdle.styles";
 
 const suggestedActions = [
   { label: locale.hintDocs, prompt: "阅读当前工作空间中的资料，并总结关键结论。" },
@@ -37,7 +37,7 @@ export function WorkspaceIdle({
   onSelectConversation,
   sessionSummaries,
 }: WorkspaceIdleProps) {
-  const { styles } = useConversationPaneStyle();
+  const { styles } = useWorkspaceIdleStyle();
   const recentThreads = conversations.filter((item) => item.key !== currentConversation).slice(0, 5);
   const threadMeta = (item: ConversationSeed) => {
     const dayLabel = item.group === locale.pinned ? locale.todayGroup : item.group;

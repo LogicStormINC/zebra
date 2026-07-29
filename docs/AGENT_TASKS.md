@@ -63,8 +63,8 @@
   dependency order. Full aggregate fencing remains `Locked`.
 - Exact replay on `zebra-cloud-trench@375dca92` proves all nine remaining suite
   failures are business-baseline defects. `BASE-MDL-EXPECT-01` and
-  `BASE-SCM-CRED-01`, and `BASE-WKR-CANCEL-01` are `Review`, `BASE-UI-SIZE-01`
-  is `In Progress`, and the Core repair card is `Ready`.
+  `BASE-SCM-CRED-01`, `BASE-WKR-CANCEL-01`, and `BASE-UI-SIZE-01` are `Review`;
+  `BASE-EVT-SIZE-01` is the only `In Progress` repair card.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -990,7 +990,7 @@ cloud architecture scope.
 
 ### BASE-UI-SIZE-01 - Conversation Idle Style Extraction
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Branch: `codex/baseline-ui-size-01`
 - Depends on: none; execute after `BASE-WKR-CANCEL-01` in the local repair stack
@@ -1001,12 +1001,15 @@ cloud architecture scope.
   without changing layout, class hooks or visible behavior.
 - Acceptance: both files remain below the repository limit and Desktop build plus
   composer layout checks pass.
+- Evidence: Desktop TypeScript/Vite build and compact composer layout pass under
+  Node 24; the shared style file is `443` lines and the component-owned file is
+  `122` lines. The repository gate now reports only the Core Event contract.
 
 ### BASE-EVT-SIZE-01 - Context Event Contract Extraction
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
-- Suggested branch: `codex/baseline-event-contract-size-01`
+- Status: `In Progress`
+- Owner: `Codex`
+- Branch: `codex/baseline-event-contract-size-01`
 - Depends on: none; execute after `BASE-UI-SIZE-01` in the local repair stack
 - Owned paths: `packages/agent-core/src/agent_core/contracts/events.py`,
   `packages/agent-core/src/agent_core/contracts/context_events.py`,

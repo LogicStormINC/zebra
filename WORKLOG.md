@@ -6277,3 +6277,8 @@ actual byte access.
   post-completion memory/title events. Focused tests pass `3/3`, Worker passes
   `77` with one skip, Ruff/Mypy pass, and the full suite improves to `1853 passed,
   60 skipped, 1 failed`. Activated `BASE-UI-SIZE-01` next.
+- `BASE-UI-SIZE-01` moves only WorkspaceIdle-owned classes into its own 122-line
+  style module; the shared conversation style drops from 561 to 443 lines. Desktop
+  TypeScript/Vite build and composer layout pass with bundled Node 24 and the
+  already-installed dependency tree. The size gate now reports only the 505-line
+  Core Event contract. Activated `BASE-EVT-SIZE-01` next.
