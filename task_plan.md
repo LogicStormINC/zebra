@@ -40,14 +40,6 @@
    full-suite reduction to `1 failed, 1853 passed, 60 skipped`.
 4. `completed` - Move the card to Review and activate the UI size card.
 
-## BASE-UI-SIZE-01 - Conversation Idle Style Extraction
-
-1. `completed` - Map the WorkspaceIdle-only style set.
-2. `completed` - Move the set to a component-owned style module.
-3. `completed` - Pass Desktop build and composer layout; reduce files to `443`
-   and `122` lines with only the Core size violation remaining.
-4. `completed` - Move the card to Review and activate the Core event-size card.
-
 ## CLOUD-EFFECT-CONSUMER-01 - Worker Fenced Effect Consumer
 
 1. `completed` - Trace Worker recovery, Lease lifecycle, tool execution and

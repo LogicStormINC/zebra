@@ -63,7 +63,7 @@
   dependency order. Full aggregate fencing remains `Locked`.
 - Exact replay on `zebra-cloud-trench@375dca92` proves all nine remaining suite
   failures are business-baseline defects. `BASE-MDL-EXPECT-01` and
-  `BASE-SCM-CRED-01`, `BASE-WKR-CANCEL-01`, and `BASE-UI-SIZE-01` are `Review`;
+  `BASE-SCM-CRED-01` and `BASE-WKR-CANCEL-01` are `Review`;
   `BASE-EVT-SIZE-01` is the only `In Progress` repair card.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
@@ -933,9 +933,9 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
 
 ## Zebra Cloud Business-Baseline Recovery Board
 
-These cards restore the exact `zebra-cloud-trench@375dca92` quality baseline
-before any reviewed cloud stack is merged. They do not weaken tests or expand the
-cloud architecture scope.
+These cards restore the Core/API/Worker quality baseline needed by the new Zebra
+microservices before any reviewed cloud stack is merged. Desktop is outside this
+cloud mainline and is not built or changed by these cards.
 
 ### BASE-MDL-EXPECT-01 - Provider Rejection Contract Expectations
 
@@ -988,42 +988,25 @@ cloud architecture scope.
   full suite improves to `1853 passed, 60 skipped, 1 failed` with only the
   repository file-size gate remaining.
 
-### BASE-UI-SIZE-01 - Conversation Idle Style Extraction
-
-- Status: `Review`
-- Owner: `Codex`
-- Branch: `codex/baseline-ui-size-01`
-- Depends on: none; execute after `BASE-WKR-CANCEL-01` in the local repair stack
-- Owned paths: `UI/desktop/src/components/CodexConversationPane.styles.ts`,
-  `UI/desktop/src/components/conversation/WorkspaceIdle.styles.ts` (new),
-  `UI/desktop/src/components/conversation/WorkspaceIdle.tsx`, and governance records
-- Goal: move WorkspaceIdle-only classes into its component-owned style module
-  without changing layout, class hooks or visible behavior.
-- Acceptance: both files remain below the repository limit and Desktop build plus
-  composer layout checks pass.
-- Evidence: Desktop TypeScript/Vite build and compact composer layout pass under
-  Node 24; the shared style file is `443` lines and the component-owned file is
-  `122` lines. The repository gate now reports only the Core Event contract.
-
 ### BASE-EVT-SIZE-01 - Context Event Contract Extraction
 
 - Status: `In Progress`
 - Owner: `Codex`
 - Branch: `codex/baseline-event-contract-size-01`
-- Depends on: none; execute after `BASE-UI-SIZE-01` in the local repair stack
+- Depends on: none; execute after `BASE-WKR-CANCEL-01` in the local repair stack
 - Owned paths: `packages/agent-core/src/agent_core/contracts/events.py`,
   `packages/agent-core/src/agent_core/contracts/context_events.py`,
   `tests/agent_core/test_context_capsule_validation.py`, and governance records
 - Goal: move the context-capsule payload contract into the existing focused module
   while preserving registry and public import compatibility.
 - Acceptance: event schema lookup is unchanged, no circular import is introduced,
-  both files remain below the limit, and Core contract tests plus strict Mypy pass.
+  Core source files remain below the limit, and contract tests plus strict Mypy pass.
 
 ### CLOUD-LEASE-01 - Lease And Event/Effect Delivery Parent Gate
 
 - Status: `Locked`
 - Owner: `UNASSIGNED`
-- Depends on: all four Lease/Effect implementation cards Done/merged, all five
+- Depends on: all four Lease/Effect implementation cards Done/merged, all four
   business-baseline repair cards Done/merged, and combined real PostgreSQL evidence
   approved
 - Goal: close Session Lease plus Event/Effect execution ownership and delivery;

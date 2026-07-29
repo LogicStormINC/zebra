@@ -6282,3 +6282,9 @@ actual byte access.
   TypeScript/Vite build and composer layout pass with bundled Node 24 and the
   already-installed dependency tree. The size gate now reports only the 505-line
   Core Event contract. Activated `BASE-EVT-SIZE-01` next.
+- maintainer clarified that this branch is the new Zebra microservice mainline and
+  Desktop/local-agent content is out of scope. The preceding Desktop style change
+  was therefore restored exactly, its task card removed, and Desktop build removed
+  from subsequent acceptance. Core/API/Worker/storage/cloud-service validation
+  remains active; `BASE-EVT-SIZE-01` continues because `agent-core` is shared by
+  the microservices.

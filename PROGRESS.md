@@ -77,15 +77,14 @@
   network were removed after the run. Deterministic and full-suite gates retain
   only the confirmed inherited failures.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
-  on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Five
-  path-bounded cards own provider expectations, SCM credential fixtures, Worker
-  cancellation convergence, Desktop style extraction and Core Event contract
+  on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
+  path-bounded microservice cards own provider expectations, SCM credential
+  fixtures, Worker cancellation convergence and Core Event contract
   extraction. `BASE-MDL-EXPECT-01` is in Review after reducing the full suite from
   nine to seven failures. `BASE-SCM-CRED-01` is also in Review after removing all
   five expired-fixture failures. `BASE-WKR-CANCEL-01` is in Review after closing
-  the durable cancellation race. `BASE-UI-SIZE-01` is in Review after its Desktop
-  build and layout checks pass; `BASE-EVT-SIZE-01` is the only active card and the
-  file-size gate now has one Core violation.
+  the durable cancellation race; `BASE-EVT-SIZE-01` is the only active card.
+  Desktop is explicitly outside the new Zebra microservice mainline.
 - Agent Definition architecture task in Review: `AGENT-DEF-ADR-01` records accepted
   Definition control-plane decisions and updates the final architecture. It
   separates Task-level Definition configuration from Attempt-level execution
