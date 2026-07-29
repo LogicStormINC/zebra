@@ -1146,14 +1146,17 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-HANDOFF-PG-01 - PostgreSQL Handoff And Dispatch Aggregate
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Branch: `codex/cloud-agg-handoff-pg-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01`,
   `CLOUD-AGG-TASK-PG-01`, and `CLOUD-AGG-HANDOFF-CON-01`
-- Owned paths: `packages/agent-storage/src/agent_storage/postgres/{session_handoffs,session_handoff_dispatch,session_handoff_facts,handoff_migration,migration_runner,migration_types,migrations,__init__}.py`,
-  `packages/agent-storage/src/agent_storage/__init__.py`, focused API/Worker
-  PostgreSQL Handoff wiring, real PostgreSQL Handoff/dispatch tests, the host
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/{session_handoffs,session_handoff_transactions,session_handoff_dispatch,session_handoff_facts,handoff_migration,migration_runner,migration_types,migrations,leases,task_lineage,__init__}.py`,
+  `packages/agent-storage/src/agent_storage/{session_handoff_events,__init__}.py`,
+  `packages/agent-core/src/agent_core/ports/session_handoff.py`,
+  `apps/api/src/zebra_agent_api/session_handoff.py`,
+  `apps/worker/src/zebra_agent_worker/{execution,session_handoff}.py`, focused Core,
+  storage and Worker Handoff tests, real PostgreSQL Handoff/dispatch tests, the host
   Compose runner, and this task's governance records
 - Migration: v8; split the current migration catalog before adding v8 so source
   files return below the repository's 500-line hard limit.
@@ -1161,11 +1164,17 @@ cloud mainline and is not built or changed by these cards.
   multi-Worker dispatch claim/ack.
 - Acceptance: stale source facts cause zero writes, concurrent successor is unique,
   all Handoff rows roll back together, and old claims cannot acknowledge new work.
-- Current evidence: isolated PostgreSQL v1-v8 migration and dispatch matrix passes
-  `13/13`; claim/reclaim uses database time, `FOR UPDATE SKIP LOCKED`, a rotated random
-  token and the complete current LeaseFence. Same-owner lease reacquisition rejects
-  the prior generation's ACK, Workspace is locked through revision CAS plus ACK, and
-  drift leaves delivery claimed.
+- Evidence: isolated PostgreSQL v1-v8 aggregate/dispatch matrix passes `20/20`.
+  One transaction commits parent/child Events, Session/Workspace projections, v5 Task
+  rollover, immutable Envelope, dispatch and operation state; injected late failure
+  rolls every row back, stale facts write nothing, concurrent successors have one
+  winner, and lost-response replay validates the canonical request identity. Claim and
+  ACK use database time, `FOR UPDATE SKIP LOCKED`, random token rotation and the complete
+  LeaseFence. Worker recovery threads its acquired fence without owner rediscovery and
+  uses the existing fenced projection transaction for cloud drift suspension. Core,
+  Storage, API and Worker suites pass `822/822` with `102` environment-gated skips;
+  scoped Ruff and `git diff --check` pass. Full Mypy retains six inherited errors in
+  untouched web-crawl, MCP policy and Worker export files.
 
 ### CLOUD-AGG-CTX-ADMIN-PG-01 - PostgreSQL Administrative Context Recovery
 

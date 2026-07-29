@@ -69,6 +69,10 @@ HANDOFF_MIGRATION = Migration(
             envelope JSONB NOT NULL CHECK (jsonb_typeof(envelope) = 'object'),
             checksum TEXT NOT NULL CHECK (checksum ~ '^[0-9a-f]{64}$'),
             created_at TIMESTAMPTZ NOT NULL,
+            CHECK (envelope ->> 'handoff_id' = handoff_id::text),
+            CHECK (envelope ->> 'source_session_id' = source_session_id::text),
+            CHECK (envelope ->> 'target_session_id' = target_session_id::text),
+            CHECK (envelope ->> 'checksum' = checksum),
             PRIMARY KEY (deployment_namespace, handoff_id),
             UNIQUE (deployment_namespace, artifact_id),
             UNIQUE (deployment_namespace, handoff_id, target_session_id),
@@ -86,6 +90,25 @@ HANDOFF_MIGRATION = Migration(
                 REFERENCES session_streams (deployment_namespace, session_id)
                 DEFERRABLE INITIALLY DEFERRED
         )
+        """,
+        """
+        CREATE FUNCTION reject_session_handoff_envelope_mutation()
+        RETURNS trigger AS $$
+        BEGIN
+            IF TG_OP = 'DELETE'
+               AND current_setting('zebra.allow_handoff_envelope_delete', true) = 'on'
+            THEN
+                RETURN OLD;
+            END IF;
+            RAISE EXCEPTION 'session Handoff Envelopes are immutable'
+                USING ERRCODE = '55000';
+        END;
+        $$ LANGUAGE plpgsql
+        """,
+        """
+        CREATE TRIGGER session_handoff_envelopes_immutable
+        BEFORE UPDATE OR DELETE ON session_handoff_envelopes
+        FOR EACH ROW EXECUTE FUNCTION reject_session_handoff_envelope_mutation()
         """,
         """
         CREATE TABLE handoff_dispatch_outbox (

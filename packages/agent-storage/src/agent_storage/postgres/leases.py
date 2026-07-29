@@ -44,6 +44,11 @@ class PostgresLeaseStore(LeaseStorePort):
         owner = self._owner_instance_id(owner_instance_id)
         requested_checkpoint = None if checkpoint is None else self._checkpoint(checkpoint)
         with self._database.connect() as connection:
+            lock_session_lease_boundary(
+                connection,
+                self._database.deployment_namespace,
+                session_id,
+            )
             row = connection.execute(
                 """
                 WITH authority AS MATERIALIZED (
@@ -327,3 +332,15 @@ def assert_current_lease_fence(
     ).fetchone()
     if row is None:
         raise LeaseLostError("mutation rejected by the current lease fence")
+
+
+def lock_session_lease_boundary(
+    connection: Any,
+    deployment_namespace: str,
+    session_id: SessionId,
+) -> None:
+    """Serialize Lease acquisition with terminal aggregate transitions."""
+    connection.execute(
+        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+        (f"{deployment_namespace}:{session_id}",),
+    )

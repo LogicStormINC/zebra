@@ -135,7 +135,10 @@ class SessionExecutionService:
         self._effect_dispatch = effect_dispatch
         self._session_history = active_stores.session_history
         self._handoff_gate = handoff.SessionHandoffRecoveryGate(
-            str(database_path), stores=active_stores
+            str(database_path),
+            stores=active_stores,
+            worker_projection_transaction=worker_projection_transaction,
+            deployment_namespace=deployment_namespace,
         )
 
     def execute_session(
@@ -169,7 +172,6 @@ class SessionExecutionService:
             heartbeat.require_owned()
             return self._execute_claimed_session(
                 resumed.claimed,
-                worker_id=worker_id,
                 started_at=started_at,
                 ownership_check=heartbeat.require_owned,
             )
@@ -178,7 +180,6 @@ class SessionExecutionService:
         self,
         claimed: ClaimedSession,
         *,
-        worker_id: str,
         started_at: datetime,
         ownership_check: Callable[[], None],
     ) -> ExecutedSession:
@@ -198,7 +199,7 @@ class SessionExecutionService:
         recovered_handoff = handoff.recover_worker_handoff(
             self._handoff_gate,
             session_id,
-            worker_id=worker_id,
+            fence=claimed.lease.fence,
             recovered_at=started_at,
             release=lambda: None,
         )

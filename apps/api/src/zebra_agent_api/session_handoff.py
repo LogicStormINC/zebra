@@ -24,6 +24,7 @@ from agent_core.ports.session_handoff import (
     HandoffOperation,
     SessionHandoffCommitRequest,
     SessionHandoffCreateRequest,
+    canonical_handoff_request_hash,
 )
 from agent_storage import (
     ControlPlaneStores,
@@ -115,17 +116,11 @@ class SessionHandoffApi:
             principal_identity_hash=principal_identity_hash,
             actor_kind=actor_kind,
         )
-        request_hash = _hash_json(
-            {
-                "source_session_id": source_session_id,
-                "title": request.title,
-                "reason": request.reason.value,
-                "stage_prompt": request.stage_prompt,
-                "focus": request.focus,
-                "objective": parsed["objective"],
-                "completed_work": parsed["completed_work"],
-                "pending_work": parsed["pending_work"],
-            }
+        request_hash = canonical_handoff_request_hash(
+            request,
+            objective=parsed["objective"],
+            completed_work=parsed["completed_work"],
+            pending_work=parsed["pending_work"],
         )
         if not preview:
             try:

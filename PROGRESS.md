@@ -135,15 +135,19 @@
 - Active Context follow-up: `CLOUD-AGG-CTX-ADMIN-PG-01` reuses the v7
   administrative CAS only for historical capsule recovery in an explicitly injected
   PostgreSQL store. It does not add PostgreSQL manual compact or select a backend.
-- Active Handoff v8 implementation preserves the exact v1-v7 migration names and
+- Completed Handoff v8 review slice preserves the exact v1-v7 migration names and
   checksums while splitting migration types, execution and the v8 catalog into focused
   files. The real PostgreSQL 17.5 migration matrix passes `6/6`; v8 adds only
-  namespace-scoped operation, immutable envelope and fenced dispatch tables, reusing
-  the v5 Task/Segment index instead of creating a second lineage authority. Aggregate
-  transaction remains in progress. The dispatch adapter now uses database-time claim
-  expiry, `FOR UPDATE SKIP LOCKED`, rotated random tokens and complete current-fence
-  ACK validation; Workspace is row-locked across revision CAS and ACK. The isolated
-  migration/dispatch matrix passes `13/13`.
+  namespace-scoped operation, database-guarded immutable envelope and fenced dispatch
+  tables, reusing
+  the v5 Task/Segment index instead of creating a second lineage authority. A canonical
+  request digest binds reserve, fresh commit and lost-response replay; the atomic
+  transaction covers parent/child Events, projections, Task rollover, Envelope,
+  dispatch and operation state. Child Workspace state remains fully Event-rebuildable.
+  Dispatch uses database-time expiry, `FOR UPDATE SKIP LOCKED`, rotated tokens and exact
+  full-fence ACK; Worker recovery now threads the acquired fence and cloud drift writes
+  use the existing fenced projection transaction. The isolated PostgreSQL aggregate
+  matrix passes `20/20`; Core/Storage/API/Worker pass `822/822` with `102` skips.
 - Artifact v9 is implementation-ready but remains correctly Locked behind active
   Handoff migration v8. The preflight audit found no installed S3-compatible SDK and
   confirmed that the local `ArtifactPayloadStorePort` lacks namespace/fence/staged

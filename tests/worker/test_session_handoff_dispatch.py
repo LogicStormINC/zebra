@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
@@ -12,8 +13,32 @@ from agent_storage import (
     SQLiteLeaseStore,
     SQLiteSessionHandoffStore,
 )
+from zebra_agent_worker.session_handoff import (
+    SessionHandoffRecoveryGate,
+    recover_worker_handoff,
+)
 
 NOW = datetime(2026, 7, 18, 0, 0, tzinfo=UTC)
+
+
+def test_worker_recovery_threads_the_acquired_fence_without_rediscovery() -> None:
+    gate = Mock(spec=SessionHandoffRecoveryGate)
+    session_id = SessionId(uuid4())
+    fence = _fence("worker-1", 7)
+
+    recover_worker_handoff(
+        gate,
+        session_id,
+        fence=fence,
+        recovered_at=NOW,
+        release=lambda: None,
+    )
+
+    gate.recover.assert_called_once_with(
+        session_id,
+        fence=fence,
+        recovered_at=NOW,
+    )
 
 
 def test_worker_dispatch_reclaim_rotates_receipt_and_rejects_stale_ack(tmp_path: Path) -> None:
@@ -102,9 +127,7 @@ def test_legacy_claimed_dispatch_is_requeued_during_incremental_migration(tmp_pa
 
 
 def _fence(worker_id: str, token: int) -> LeaseFence:
-    return LeaseFence(
-        control_plane_epoch=uuid4(), fencing_token=token, owner_instance_id=worker_id
-    )
+    return LeaseFence(control_plane_epoch=uuid4(), fencing_token=token, owner_instance_id=worker_id)
 
 
 def _insert_pending_dispatch(database_path: Path, child_session_id: SessionId) -> None:

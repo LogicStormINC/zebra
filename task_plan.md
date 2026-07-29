@@ -117,12 +117,12 @@
 
 1. `completed` - Rebase the frozen Handoff aggregate boundary on v1-v7 and split
    the oversized migration catalog without changing historical checksums.
-2. `in_progress` - Add v8 PostgreSQL Handoff operation/envelope/dispatch schema
+2. `completed` - Add v8 PostgreSQL Handoff operation/envelope/dispatch schema
    and one connection-scoped atomic commit using existing Event, Lease, Workspace
    and Task primitives.
-3. `in_progress` - Implement database-time fenced dispatch claim/reclaim/ACK and prove
+3. `completed` - Implement database-time fenced dispatch claim/reclaim/ACK and prove
    concurrency, stale authority, rollback, lost-response and recovery behavior.
-4. `pending` - Run real PostgreSQL and microservice gates, record host evidence and
+4. `completed` - Run real PostgreSQL and microservice gates, record host evidence and
    move to Review without selecting the runtime backend.
 
 ### Decisions
@@ -131,6 +131,8 @@
 - Reuse v5 Task rollover and existing Event/Workspace/Lease transaction primitives;
   do not duplicate their rules inside the Handoff adapter.
 - v8 is serialized on this task; Artifact payload cannot edit migrations concurrently.
+- Bind reserve and commit through one canonical request hash, keep child Workspace
+  projection Event-rebuildable, and thread the acquired LeaseFence into Worker recovery.
 
 ## CLOUD-AGG-CTX-ADMIN-PG-01 - PostgreSQL Administrative Context Recovery
 

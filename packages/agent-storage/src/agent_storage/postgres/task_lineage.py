@@ -99,7 +99,9 @@ def derive_lineage(
         *(
             {
                 **row,
-                "rollover_reason": _rollover_reason(row["handoff_reason"]).value,
+                "rollover_reason": rollover_reason_for_handoff(
+                    row["handoff_reason"]
+                ).value,
             }
             for row in children
         ),
@@ -146,7 +148,7 @@ def _validate_lineage(root_session_id: SessionId, rows: list[dict[str, Any]]) ->
         previous = SessionId(row["session_id"])
 
 
-def _rollover_reason(raw: str | None) -> RolloverReason:
+def rollover_reason_for_handoff(raw: str | None) -> RolloverReason:
     return {
         "internal_recovery": RolloverReason.RECOVERY,
         "internal_terminal_follow_up": RolloverReason.TERMINAL_FOLLOW_UP,

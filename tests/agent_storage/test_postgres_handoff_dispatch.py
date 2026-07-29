@@ -352,6 +352,7 @@ def _workspace_row() -> dict[str, object]:
 
 def _delete_namespace(dsn: str, namespace: str) -> None:
     with psycopg.connect(dsn) as connection:
+        connection.execute("SET LOCAL zebra.allow_handoff_envelope_delete = 'on'")
         for table in (
             "handoff_dispatch_outbox",
             "session_handoff_envelopes",

@@ -1,3 +1,5 @@
+import hashlib
+import json
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol
@@ -38,6 +40,35 @@ class SessionHandoffCreateRequest:
     actor_kind: HandoffActorKind
     focus: str | None = None
     requested_authority: frozenset[str] = frozenset()
+
+
+def canonical_handoff_request_hash(
+    request: SessionHandoffCreateRequest,
+    *,
+    objective: str,
+    completed_work: tuple[str, ...],
+    pending_work: tuple[str, ...],
+) -> str:
+    """Bind reservation idempotency to every input later persisted by commit."""
+    encoded = json.dumps(
+        {
+            "source_session_id": str(request.source_session_id),
+            "title": request.title,
+            "reason": request.reason.value,
+            "stage_prompt": request.stage_prompt,
+            "focus": request.focus,
+            "principal_identity_hash": request.principal_identity_hash,
+            "actor_kind": request.actor_kind.value,
+            "requested_authority": sorted(request.requested_authority),
+            "objective": objective,
+            "completed_work": completed_work,
+            "pending_work": pending_work,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 @dataclass(frozen=True, slots=True)

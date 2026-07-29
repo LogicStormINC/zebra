@@ -105,7 +105,11 @@ def test_child_recovery_revalidates_workspace_even_after_dispatch_ack(tmp_path: 
         operation.target_session_id, owner_instance_id="worker-1", ttl=timedelta(minutes=1)
     )
 
-    recovered = gate.recover(operation.target_session_id, worker_id="worker-1", recovered_at=NOW)
+    recovered = gate.recover(
+        operation.target_session_id,
+        fence=first_lease.fence,
+        recovered_at=NOW,
+    )
     assert recovered is not None
     metadata = recovered.runtime_evidence.metadata
     assert metadata is not None
@@ -118,14 +122,14 @@ def test_child_recovery_revalidates_workspace_even_after_dispatch_ack(tmp_path: 
         workspace.model_copy(update={"workspace_root": str(tmp_path / "drifted")})
     )
     leases.release(operation.target_session_id, fence=first_lease.fence)
-    leases.acquire(
+    second_lease = leases.acquire(
         operation.target_session_id, owner_instance_id="worker-2", ttl=timedelta(minutes=1)
     )
 
     with pytest.raises(HandoffWorkspaceDriftError):
         gate.recover(
             operation.target_session_id,
-            worker_id="worker-2",
+            fence=second_lease.fence,
             recovered_at=NOW + timedelta(seconds=1),
         )
 
@@ -148,7 +152,11 @@ def test_child_continuation_does_not_reapply_the_initial_workspace_revision(
         operation.target_session_id, owner_instance_id="worker-1", ttl=timedelta(minutes=1)
     )
 
-    first = gate.recover(operation.target_session_id, worker_id="worker-1", recovered_at=NOW)
+    first = gate.recover(
+        operation.target_session_id,
+        fence=first_lease.fence,
+        recovered_at=NOW,
+    )
     assert first is not None
     session_store = SQLiteProjectionStore(database_path)
     session = session_store.get_session(operation.target_session_id)
@@ -169,17 +177,44 @@ def test_child_continuation_does_not_reapply_the_initial_workspace_revision(
     assert workspace is not None
     workspaces.save_workspace(workspace.model_copy(update={"runtime_name": "os-sandbox"}))
     leases.release(operation.target_session_id, fence=first_lease.fence)
-    leases.acquire(
+    second_lease = leases.acquire(
         operation.target_session_id, owner_instance_id="worker-2", ttl=timedelta(minutes=1)
     )
 
     resumed = gate.recover(
         operation.target_session_id,
-        worker_id="worker-2",
+        fence=second_lease.fence,
         recovered_at=NOW + timedelta(seconds=1),
     )
 
     assert resumed == first
+
+
+def test_child_recovery_rejects_stale_same_owner_lease_generation(tmp_path: Path) -> None:
+    database_path = tmp_path / "handoff.db"
+    source = _seed_completed_source(database_path, tmp_path)
+    handoffs = SQLiteSessionHandoffStore(database_path)
+    operation, request = _prepared_commit(handoffs, source)
+    handoffs.commit(request)
+    gate, leases = _recovery_gate(database_path)
+    stale = leases.acquire(
+        operation.target_session_id,
+        owner_instance_id="worker-1",
+        ttl=timedelta(minutes=1),
+    )
+    leases.release(operation.target_session_id, fence=stale.fence)
+    leases.acquire(
+        operation.target_session_id,
+        owner_instance_id="worker-1",
+        ttl=timedelta(minutes=1),
+    )
+
+    with pytest.raises(HandoffStorageConflictError, match="current lease"):
+        gate.recover(
+            operation.target_session_id,
+            fence=stale.fence,
+            recovered_at=NOW,
+        )
 
 
 def test_reservation_and_commit_retries_return_one_operation_and_child(tmp_path: Path) -> None:

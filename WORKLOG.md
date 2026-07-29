@@ -6499,3 +6499,23 @@ actual byte access.
   committed operation/envelope by composite FK; active Lease checks use database time;
   Workspace rows stay share-locked across revision comparison and ACK. Real tests
   cover future caller time, artifact mismatch and concurrent Workspace update blocking.
+
+## 2026-07-29 - CLOUD-AGG-HANDOFF-PG-01 atomic aggregate closeout
+
+- Added the PostgreSQL SessionHandoffPort facade and one-connection aggregate commit
+  across parent/child Events, Session and Workspace projections, v5 Task rollover,
+  Envelope, dispatch and operation status.
+- Added a shared canonical request digest so reserve, fresh commit and committed replay
+  bind title, reason, prompt, principal, actor, requested authority and Envelope work
+  content. Replays compare immutable reservation identity rather than mutable status.
+- Added database JSON/column identity checks and an UPDATE/DELETE rejection trigger for
+  committed Envelopes; explicit maintenance cleanup requires a session-local opt-in.
+- Serialized Lease acquisition and terminal commit with one advisory boundary. Worker
+  recovery now receives the exact acquired LeaseFence, rejecting stale same-owner
+  generations, and cloud drift suspension uses WorkerProjectionTransactionPort.
+- Kept child Workspace state Event-rebuildable by removing runtime/snapshot side writes.
+- Real PostgreSQL 17.5 aggregate/dispatch/migration tests pass `20/20`, including stale
+  facts, concurrent successor, injected late rollback, immutable Envelope and lost-
+  response replay. Core/Storage/API/Worker suites pass `822/822` with `102` skips;
+  scoped Ruff and `git diff --check` pass. Full Mypy retains the same six inherited
+  errors in untouched web-crawl, MCP policy and Worker export files.

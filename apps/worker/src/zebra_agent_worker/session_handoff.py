@@ -11,9 +11,15 @@ from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import apply_event as apply_workspace_event
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import HandoffId, SessionId
-from agent_core.domain.leases import LeaseFence
+from agent_core.domain.leases import LeaseFence, LeaseLostError
 from agent_core.domain.session_handoff import SessionHandoffEnvelope
-from agent_core.ports import ArtifactPayloadStorePort, EffectDispatchPort, EffectLedgerPort
+from agent_core.ports import (
+    ArtifactPayloadStorePort,
+    EffectDispatchPort,
+    EffectLedgerPort,
+    WorkerMutationAuthority,
+    WorkerProjectionTransactionPort,
+)
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
 from agent_storage import (
     ControlPlaneStores,
@@ -42,20 +48,27 @@ class SessionHandoffRecoveryGate:
         database_path: str,
         *,
         stores: ControlPlaneStores | None = None,
+        worker_projection_transaction: WorkerProjectionTransactionPort | None = None,
+        deployment_namespace: str | None = None,
     ) -> None:
+        if (worker_projection_transaction is None) != (deployment_namespace is None):
+            raise ValueError(
+                "worker projection transaction and deployment namespace must be configured together"
+            )
         active_stores = stores or sqlite_control_plane_stores(database_path)
         self._handoffs = active_stores.handoffs
         self._dispatch = active_stores.handoff_dispatch
         self._events = active_stores.events
-        self._leases = active_stores.leases
         self._sessions = active_stores.sessions
         self._workspaces = active_stores.workspaces
+        self._worker_projection_transaction = worker_projection_transaction
+        self._deployment_namespace = deployment_namespace
 
     def recover(
         self,
         session_id: SessionId,
         *,
-        worker_id: str,
+        fence: LeaseFence,
         recovered_at: datetime,
     ) -> RecoveredHandoff | None:
         events = self._events.list_for_session(session_id)
@@ -83,12 +96,7 @@ class SessionHandoffRecoveryGate:
             # ponytail: the inherited revision is checked before the first attempt;
             # later continuations validate current runtime authority through normal setup.
             return recovered
-        lease = self._leases.get(session_id)
-        if lease is None or lease.owner_instance_id != worker_id:
-            raise ValueError("handoff child is not leased by the recovering worker")
-        dispatch = self._dispatch.claim_for_child(
-            session_id, fence=lease.fence, claimed_at=recovered_at
-        )
+        dispatch = self._dispatch.claim_for_child(session_id, fence=fence, claimed_at=recovered_at)
         current_revision = (
             self._handoffs.inspect_source_facts(session_id, at=recovered_at).workspace_revision
             if dispatch is None
@@ -104,6 +112,7 @@ class SessionHandoffRecoveryGate:
                 envelope,
                 current_revision.revision_hash,
                 recovered_at,
+                fence,
             )
             raise HandoffWorkspaceDriftError("handoff workspace revision drift detected")
         return recovered
@@ -114,6 +123,7 @@ class SessionHandoffRecoveryGate:
         envelope: SessionHandoffEnvelope,
         actual_revision: str,
         created_at: datetime,
+        fence: LeaseFence,
     ) -> None:
         session = self._sessions.get_session(session_id)
         workspace = self._workspaces.get_workspace(session_id)
@@ -132,9 +142,25 @@ class SessionHandoffRecoveryGate:
                 "actual_revision_hash": actual_revision,
             },
         )
-        persisted = self._events.append(event)
-        self._sessions.save_session(apply_event(session, persisted))
-        self._workspaces.save_workspace(apply_workspace_event(workspace, persisted))
+        next_session = apply_event(session, event)
+        next_workspace = apply_workspace_event(workspace, event)
+        if self._worker_projection_transaction is None:
+            persisted = self._events.append(event)
+            self._sessions.save_session(apply_event(session, persisted))
+            self._workspaces.save_workspace(apply_workspace_event(workspace, persisted))
+            return
+        assert self._deployment_namespace is not None
+        self._worker_projection_transaction.commit_worker_event(
+            event,
+            next_session,
+            next_workspace,
+            authority=WorkerMutationAuthority(
+                deployment_namespace=self._deployment_namespace,
+                session_id=session_id,
+                lease_fence=fence,
+                expected_stream_revision=session.current_sequence,
+            ),
+        )
 
 
 def guard_effectful_tools(
@@ -201,12 +227,12 @@ def recover_worker_handoff(
     gate: SessionHandoffRecoveryGate,
     session_id: SessionId,
     *,
-    worker_id: str,
+    fence: LeaseFence,
     recovered_at: datetime,
     release: Callable[[], None],
 ) -> RecoveredHandoff | None:
     try:
-        return gate.recover(session_id, worker_id=worker_id, recovered_at=recovered_at)
-    except (HandoffWorkspaceDriftError, ValueError) as exc:
+        return gate.recover(session_id, fence=fence, recovered_at=recovered_at)
+    except (HandoffWorkspaceDriftError, LeaseLostError, ValueError) as exc:
         release()
         raise HandoffRecoveryRejectedError(str(exc)) from exc

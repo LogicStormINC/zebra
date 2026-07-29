@@ -4,11 +4,15 @@ import hashlib
 import json
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import HandoffId, SessionId
 from agent_core.domain.leases import LeaseFence
-from agent_core.domain.session_handoff import WorkspaceBindingRevision
-from agent_core.ports.session_handoff import HandoffSourceFacts
+from agent_core.domain.session_handoff import (
+    HandoffOperationStatus,
+    WorkspaceBindingRevision,
+)
+from agent_core.ports.session_handoff import HandoffOperation, HandoffSourceFacts
 
 
 def read_source_facts_in_transaction(
@@ -94,6 +98,41 @@ def workspace_revision_from_row(workspace: dict[str, Any]) -> WorkspaceBindingRe
         ),
         runtime_snapshot_id=workspace["snapshot_id"],
     )
+
+
+def operation_from_row(row: dict[str, Any]) -> HandoffOperation:
+    lease_fence = None
+    if row["source_lease_epoch"] is not None:
+        lease_fence = LeaseFence(
+            control_plane_epoch=UUID(str(row["source_lease_epoch"])),
+            fencing_token=row["source_lease_fencing_token"],
+            owner_instance_id=row["source_lease_owner_instance_id"],
+        )
+    return HandoffOperation(
+        operation_id=str(row["operation_id"]),
+        status=HandoffOperationStatus(row["status"]),
+        source_session_id=SessionId(row["source_session_id"]),
+        target_session_id=SessionId(row["target_session_id"]),
+        handoff_id=HandoffId(row["handoff_id"]),
+        idempotency_key_hash=row["idempotency_key_hash"],
+        request_hash=row["request_hash"],
+        expected_source_stream_version=row["expected_source_stream_version"],
+        source_lease_fence=lease_fence,
+        authority_revision=row["authority_revision"],
+        workspace_revision=WorkspaceBindingRevision.model_validate(
+            row["workspace_revision"]
+        ),
+        task_profile_revision=row["task_profile_revision"],
+        effective_depth_limit=row["effective_depth_limit"],
+        artifact_id=row["artifact_id"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+        abort_code=row["abort_code"],
+    )
+
+
+def sha256_text(value: str) -> str:
+    return hashlib.sha256(value.encode()).hexdigest()
 
 
 def _hash(value: object) -> str:
