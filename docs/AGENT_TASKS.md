@@ -919,8 +919,11 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
   failures. Ruff, strict Mypy, diff-check and release Eval `10/10` pass. The
   isolated Docker Compose PostgreSQL 17.5 consumer matrix passes `58/58` on
   2026-07-29 and reports `ZEBRA_EFFECT_CONSUMER_POSTGRES_TEST_RESULT=PASS`; its
-  dedicated container, volume and network were removed after the run. No cloud
-  backend is runtime-selected by default.
+  dedicated container, volume and network were removed after the run. All nine
+  remaining full-suite failures reproduce `9/9` on the exact business baseline
+  `zebra-cloud-trench@375dca92`; this confirms no cloud-stack regression but does
+  not waive the red-suite merge gate. No cloud backend is runtime-selected by
+  default.
 - Non-goals: Redis/Kafka, cloud backend selector, production rollout.
 
 ### CLOUD-LEASE-01 - Lease And Event/Effect Delivery Parent Gate

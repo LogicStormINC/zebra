@@ -6249,3 +6249,10 @@ actual byte access.
   `ZEBRA_EFFECT_CONSUMER_POSTGRES_TEST_RESULT=PASS`, then removed its dedicated
   container, volume and network. The card is ready for Review; this evidence does
   not select a cloud backend or waive dependency merge requirements.
+- fetched the exact business baseline `zebra-cloud-trench@375dca92` into the
+  isolated clone and replayed the nine remaining full-suite failures in a detached
+  temporary worktree. All `9/9` reproduce on that baseline, including provider
+  contract expectations, expired SCM test credentials, two file-size violations
+  and the Worker cancellation race. The temporary worktree was removed afterward.
+  This proves the cloud stack adds no failure to that set, but it does not waive the
+  repository rule that prevents merge while the complete suite is red.
