@@ -140,7 +140,10 @@
   files. The real PostgreSQL 17.5 migration matrix passes `6/6`; v8 adds only
   namespace-scoped operation, immutable envelope and fenced dispatch tables, reusing
   the v5 Task/Segment index instead of creating a second lineage authority. Aggregate
-  transaction and dispatch adapters remain in progress.
+  transaction remains in progress. The dispatch adapter now uses database-time claim
+  expiry, `FOR UPDATE SKIP LOCKED`, rotated random tokens and complete current-fence
+  ACK validation; Workspace is row-locked across revision CAS and ACK. The isolated
+  migration/dispatch matrix passes `13/13`.
 - Artifact v9 is implementation-ready but remains correctly Locked behind active
   Handoff migration v8. The preflight audit found no installed S3-compatible SDK and
   confirmed that the local `ArtifactPayloadStorePort` lacks namespace/fence/staged

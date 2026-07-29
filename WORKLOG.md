@@ -6482,3 +6482,20 @@ actual byte access.
 - Validation: scoped Ruff and strict Mypy pass; isolated PostgreSQL 17.5 applies v1-v8
   concurrently and repeatably with `6/6` migration tests, then removes the container,
   network and volume.
+
+## 2026-07-29 - CLOUD-AGG-HANDOFF-PG-01 fenced dispatch
+
+- Added namespace-scoped source-fact hashing with retained Lease generation evidence
+  and the same Workspace/authority/task revision inputs as the local compatibility
+  path.
+- Added child-specific PostgreSQL claim/reclaim with database time,
+  `FOR UPDATE SKIP LOCKED`, random token rotation and exact full-fence receipts.
+- ACK verifies the exact token, child, expiry and complete current LeaseFence in one
+  transaction. Workspace revision drift returns current facts without acknowledging.
+- Validation: isolated PostgreSQL migration/dispatch matrix `13/13`; all storage tests
+  `130` passed with `94` environment-gated skips; strict storage Mypy `54` files,
+  scoped Ruff and `git diff --check` pass.
+- Review fixes: Artifact refs remain API-compatible non-UUID text and are bound across
+  committed operation/envelope by composite FK; active Lease checks use database time;
+  Workspace rows stay share-locked across revision comparison and ACK. Real tests
+  cover future caller time, artifact mismatch and concurrent Workspace update blocking.

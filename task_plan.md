@@ -120,7 +120,7 @@
 2. `in_progress` - Add v8 PostgreSQL Handoff operation/envelope/dispatch schema
    and one connection-scoped atomic commit using existing Event, Lease, Workspace
    and Task primitives.
-3. `pending` - Implement database-time fenced dispatch claim/reclaim/ACK and prove
+3. `in_progress` - Implement database-time fenced dispatch claim/reclaim/ACK and prove
    concurrency, stale authority, rollback, lost-response and recovery behavior.
 4. `pending` - Run real PostgreSQL and microservice gates, record host evidence and
    move to Review without selecting the runtime backend.

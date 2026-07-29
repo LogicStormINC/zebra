@@ -29,6 +29,7 @@ from agent_storage.postgres.projections import (
     PostgresProjectionConflictError,
     PostgresProjectionStore,
 )
+from agent_storage.postgres.session_handoff_dispatch import PostgresHandoffDispatchStore
 from agent_storage.postgres.workspaces import (
     PostgresWorkspaceProjectionConflictError,
     PostgresWorkspaceProjectionStore,
@@ -38,6 +39,7 @@ __all__ = [
     "PostgresAgentTaskConflictError",
     "PostgresAgentTaskStore",
     "PostgresEventStore",
+    "PostgresHandoffDispatchStore",
     "PostgresEffectDispatchStore",
     "PostgresControlPlaneEpochError",
     "PostgresContextLifecycleConflictError",

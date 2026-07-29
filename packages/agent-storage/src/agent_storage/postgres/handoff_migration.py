@@ -28,7 +28,9 @@ HANDOFF_MIGRATION = Migration(
                 CHECK (length(btrim(task_profile_revision)) > 0),
             effective_depth_limit INTEGER NOT NULL
                 CHECK (effective_depth_limit BETWEEN 1 AND 128),
-            artifact_id UUID,
+            artifact_id TEXT CHECK (
+                artifact_id IS NULL OR length(btrim(artifact_id)) > 0
+            ),
             abort_code TEXT,
             created_at TIMESTAMPTZ NOT NULL,
             updated_at TIMESTAMPTZ NOT NULL,
@@ -37,7 +39,8 @@ HANDOFF_MIGRATION = Migration(
             UNIQUE (deployment_namespace, target_session_id),
             UNIQUE (deployment_namespace, handoff_id),
             UNIQUE (
-                deployment_namespace, handoff_id, source_session_id, target_session_id
+                deployment_namespace, handoff_id, source_session_id,
+                target_session_id, artifact_id
             ),
             FOREIGN KEY (deployment_namespace, source_session_id)
                 REFERENCES session_streams (deployment_namespace, session_id),
@@ -62,7 +65,7 @@ HANDOFF_MIGRATION = Migration(
             handoff_id UUID NOT NULL,
             source_session_id UUID NOT NULL,
             target_session_id UUID NOT NULL,
-            artifact_id UUID NOT NULL,
+            artifact_id TEXT NOT NULL CHECK (length(btrim(artifact_id)) > 0),
             envelope JSONB NOT NULL CHECK (jsonb_typeof(envelope) = 'object'),
             checksum TEXT NOT NULL CHECK (checksum ~ '^[0-9a-f]{64}$'),
             created_at TIMESTAMPTZ NOT NULL,
@@ -70,9 +73,11 @@ HANDOFF_MIGRATION = Migration(
             UNIQUE (deployment_namespace, artifact_id),
             UNIQUE (deployment_namespace, handoff_id, target_session_id),
             FOREIGN KEY (
-                deployment_namespace, handoff_id, source_session_id, target_session_id
+                deployment_namespace, handoff_id, source_session_id,
+                target_session_id, artifact_id
             ) REFERENCES handoff_operations (
-                deployment_namespace, handoff_id, source_session_id, target_session_id
+                deployment_namespace, handoff_id, source_session_id,
+                target_session_id, artifact_id
             ) DEFERRABLE INITIALLY DEFERRED,
             FOREIGN KEY (deployment_namespace, source_session_id)
                 REFERENCES session_streams (deployment_namespace, session_id)

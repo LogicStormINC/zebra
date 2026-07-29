@@ -1161,6 +1161,11 @@ cloud mainline and is not built or changed by these cards.
   multi-Worker dispatch claim/ack.
 - Acceptance: stale source facts cause zero writes, concurrent successor is unique,
   all Handoff rows roll back together, and old claims cannot acknowledge new work.
+- Current evidence: isolated PostgreSQL v1-v8 migration and dispatch matrix passes
+  `13/13`; claim/reclaim uses database time, `FOR UPDATE SKIP LOCKED`, a rotated random
+  token and the complete current LeaseFence. Same-owner lease reacquisition rejects
+  the prior generation's ACK, Workspace is locked through revision CAS plus ACK, and
+  drift leaves delivery claimed.
 
 ### CLOUD-AGG-CTX-ADMIN-PG-01 - PostgreSQL Administrative Context Recovery
 

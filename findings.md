@@ -739,3 +739,8 @@
 - The legacy batch claim/ACK methods cannot prove token and full fence. Cloud Worker
   recovery must use `HandoffDispatchStorePort` and pass the fence acquired for the
   current execution instead of rediscovering authority by owner name.
+- PostgreSQL claim/ACK must use `transaction_timestamp()` for expiry decisions even
+  though the compatibility Port carries caller timestamps. Caller time is validated
+  for shape only and never becomes cloud lease authority.
+- Reusing an owner name is not authority: release plus reacquire increments the Lease
+  generation, and an ACK carrying the earlier token/fence must affect zero rows.
