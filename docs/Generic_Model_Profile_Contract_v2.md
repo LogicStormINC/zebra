@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-`MDL-PROFILE-02` is an in-progress, docs-first follow-up to
+`MDL-PROFILE-02` is a review-stage, docs-first follow-up to
 `MM-NATIVE-QWEN-PHASE1`. Its branch is
 `vinson1101/zebra:codex/generic-model-profile-v2`, based on
 `codex/qwen-native-multimodal@4533cf4`.
@@ -10,6 +10,11 @@
 This document replaces model-name capability inference with an explicit model
 profile contract. It does not authorize a merge to `main`, a provider switch,
 or a FinOS deployment.
+
+Implementation `cf0dff9` removes the exact model-name gate and passes `46`
+focused tests plus changed-source Ruff/Mypy. Full pytest remains at the inherited
+baseline: `1900 passed, 9 skipped, 9 failures`; no new failure is attributed to
+this slice.
 
 ## Problem
 

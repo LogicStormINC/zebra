@@ -16,12 +16,14 @@
   but returned normalized `authentication_failed`, so neither real-provider nor
   FinOS E2E acceptance is claimed. Legacy MiniMax remains available only when
   native media is not selected.
-- Active stacked design slice: `MDL-PROFILE-02` is claimed on
+- Review stacked slice: `MDL-PROFILE-02` is implemented on
   `vinson1101/zebra:codex/generic-model-profile-v2` at `4533cf4`. It replaces
   the Phase 1 exact Qwen Flash model-name gate with an explicit verified profile
-  selection while reusing the existing Core `ModelMediaCapabilities`. It does
-  not add a provider factory, automatic routing/fallback, UI, or FinOS behavior;
-  implementation and acceptance remain pending.
+  selection while reusing the existing Core `ModelMediaCapabilities`.
+  Implementation `cf0dff9` passes `46` focused tests and changed-source
+  Ruff/Mypy; full pytest is `1900 passed, 9 skipped, 9 inherited failures`.
+  It does not add a provider factory, automatic routing/fallback, UI, FinOS
+  behavior, deployment, upstream push, or PR.
 - Review stacked task: `HAR-CONV-01` is implemented on
   `codex/runtime-convergence-phase1`, based on PR `#198` plus current
   `origin/main`. It extends exact action repetition checks with stable evidence

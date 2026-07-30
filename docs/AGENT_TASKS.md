@@ -75,11 +75,13 @@
   13 Ruff, four Mypy, and eight functional failures plus the file-size test
   remain. CI jobs did not run because of the billing/spending limit; container
   release gates remain open.
-- `MDL-PROFILE-02` is `In Progress` on
+- `MDL-PROFILE-02` is `Review` on
   `vinson1101/zebra:codex/generic-model-profile-v2`. It is stacked on
   `MM-NATIVE-QWEN-PHASE1` and replaces exact model-name capability inference
   with explicit verified profile selection. It may not alter FinOS, provider
-  routing, fallback, Policy authority, or upstream `main`.
+  routing, fallback, Policy authority, or upstream `main`. Its implementation
+  commit is `cf0dff9`: `46` focused tests and changed-source Ruff/Mypy pass;
+  full pytest is `1900 passed, 9 skipped, 9 inherited failures`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
 - No additional card is `Ready`, `In Progress`, `Review`, or `Blocked`.
@@ -15747,7 +15749,7 @@ typed-tool Policy, Approval, or Audit.
 
 ### MDL-PROFILE-02 - Explicit Verified Model Profiles
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Vinson / Codex coordinated`
 - Suggested role: `CTX / INTEGRATIONS / QA`
 - Depends on: `MM-NATIVE-QWEN-PHASE1@4533cf4`
@@ -15755,6 +15757,8 @@ typed-tool Policy, Approval, or Audit.
 - Repository: `vinson1101/zebra`; PR target after acceptance:
   `hellolukeding/zebra`
 - Worktree: `/Users/vinson/.codex/worktrees/zebra-generic-model-profile-v2`
+- Implementation: `cf0dff9`; local review complete, fork push pending this
+  evidence update, no PR
 - Owned paths:
   `packages/agent-integrations/src/agent_integrations/openai_compatible.py`,
   one focused profile module under
@@ -15777,20 +15781,20 @@ resolved capabilities into the existing OpenAI-compatible gateway.
 
 #### Acceptance
 
-- [ ] A red regression proves Phase 1 currently derives native image capability
+- [x] A red regression proves Phase 1 currently derives native image capability
   from exact model-name equality.
-- [ ] The adapter contains no Qwen model-name capability condition; absent,
+- [x] The adapter contains no Qwen model-name capability condition; absent,
   unknown, provider-mismatched, and model-mismatched profiles fail closed as
   documented.
-- [ ] Flash native, Plus image-only, and Max text-only profiles match the
+- [x] Flash native, Plus image-only, and Max text-only profiles match the
   documented verification state without family/regex inference.
-- [ ] An arbitrary fixture model works with an explicit image-capable profile,
+- [x] An arbitrary fixture model works with an explicit image-capable profile,
   proving capability is profile data rather than model-name logic.
-- [ ] Media limits, tools-with-media, streaming-with-media, Policy, Audit, and
+- [x] Media limits, tools-with-media, streaming-with-media, Policy, Audit, and
   text-only behavior retain existing gates.
-- [ ] Focused tests, changed-source Ruff/Mypy, full deterministic pytest, and
+- [x] Focused tests, changed-source Ruff/Mypy, full deterministic pytest, and
   `git diff --check` run; inherited blockers are recorded separately.
-- [ ] Commits push only to `vinson1101/zebra`; no direct upstream branch or
+- [x] Commits push only to `vinson1101/zebra`; no direct upstream branch or
   `main` update occurs.
 
 #### Explicit Non-Goals

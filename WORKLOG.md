@@ -6111,6 +6111,21 @@ actual byte access.
   verification dates, disabled state, a Registry service and package exports
   are outside this slice.
 
+# 2026-07-30 MDL-PROFILE-02 Implementation Review
+
+- Red test first proved that the exact Flash model name received image
+  capability with no configured profile.
+- `cf0dff9` replaces that condition with one immutable mapping, one pure
+  resolver and `ZEBRA_MODEL_PROFILE_ID`; no Core, Context, FinOS, MiniMax,
+  DeepSeek router, provider routing or fallback change was made.
+- Root review reran `46` focused tests, changed-source Ruff/Mypy and
+  `git diff --check`; all pass. Full pytest is `1900 passed, 9 skipped,
+  9 inherited failures`, comprising two existing provider-contract tests, five
+  existing SCM credential tests, the existing file-size gate and one existing
+  cancellation test.
+- Delivery remains fork-only. No upstream branch, `main`, deployment or PR is
+  part of this review state.
+
 # 2026-07-30 MM-NATIVE-QWEN-PHASE1 Docs-First Claim
 
 - Coordinator Owner authorized `vinson / Codex coordinated` to claim the
