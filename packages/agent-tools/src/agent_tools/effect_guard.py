@@ -57,7 +57,6 @@ READ_ONLY_TOOLS = frozenset(
         "agent.research",
         "agent.plan",
         "agent.clarify",
-        "finos.trade_log_quality.validate",
     }
 )
 
@@ -107,7 +106,10 @@ class EffectGuardedToolGateway:
         self._gateway.close()
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
-        if tool_call.name in READ_ONLY_TOOLS:
+        if (
+            tool_call.name in READ_ONLY_TOOLS
+            or tool_call.name in self._gateway.validator_tools
+        ):
             return self._gateway.execute(tool_call)
         reservation = self._ledger.reserve(
             self._root_session_id, effect_identity(tool_call, self._authority_scope)

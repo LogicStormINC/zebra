@@ -13,8 +13,9 @@ class _Gateway:
     parallel_safe_tools = frozenset()
     parallel_batch_limits = {}
 
-    def __init__(self) -> None:
+    def __init__(self, *, validator_tools: frozenset[str] = frozenset()) -> None:
         self.calls = 0
+        self.validator_tools = validator_tools
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
         self.calls += 1
@@ -56,3 +57,21 @@ def test_effectful_duplicate_reuses_result_but_read_only_calls_execute(tmp_path)
 
     assert replay.output == first.output
     assert gateway.calls == 3
+
+
+def test_dynamic_validator_bypasses_effect_ledger(tmp_path) -> None:
+    gateway = _Gateway(validator_tools=frozenset({"quality.validate"}))
+    ledger = SQLiteEffectLedger(tmp_path / "ledger.db")
+    root_session_id = new_session_id()
+    guarded = EffectGuardedToolGateway(
+        gateway,
+        ledger=ledger,
+        root_session_id=root_session_id,
+        authority_scope="workspace-write",
+    )
+
+    guarded.execute(_call("quality.validate"))
+    guarded.execute(_call("quality.validate"))
+
+    assert gateway.calls == 2
+    assert ledger.terminal_keys(root_session_id) == frozenset()
