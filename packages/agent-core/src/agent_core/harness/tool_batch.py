@@ -44,6 +44,7 @@ class ToolBatchExecutor:
         parallel_safe_tools: frozenset[str],
         parallel_batch_limits: Mapping[str, int] | None,
         max_parallel_tool_calls: int,
+        validator_tool_names: frozenset[str] = frozenset(),
         repeat_hard_stop_threshold: int = DEFAULT_REPEAT_HARD_STOP_THRESHOLD,
     ) -> None:
         if repeat_hard_stop_threshold <= 0:
@@ -52,6 +53,7 @@ class ToolBatchExecutor:
         self._tool_gateway = tool_gateway
         self._model_step = model_step
         self._verifier = verifier
+        self._validator_tool_names = validator_tool_names
         self._repeat_hard_stop_threshold = repeat_hard_stop_threshold
         self._concurrent = ConcurrentToolBatchExecutor(
             policy_engine=policy_engine,
@@ -102,6 +104,31 @@ class ToolBatchExecutor:
                     "remaining_tool_budget": tool_call_limit - tool_calls_executed,
                     "remaining_tool_call_count": len(tool_calls),
                 },
+            )
+        validator_calls = tuple(
+            call for call in tool_calls if call.name in self._validator_tool_names
+        )
+        if len(validator_calls) > 1 or (
+            validator_calls and _validator_execution_count(metadata) >= 1
+        ):
+            return self._terminal(
+                outcome=HarnessAttemptOutcome.SUSPENDED,
+                summary="validator call limit reached",
+                completion=completion,
+                emitted_events=emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                metadata={**metadata, "stop_reason": "validator_call_limit"},
+            )
+        if validator_calls and len(tool_calls) != 1:
+            return self._terminal(
+                outcome=HarnessAttemptOutcome.FAILED,
+                summary="validator must be the only tool call in a model response",
+                completion=completion,
+                emitted_events=emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                metadata={**metadata, "stop_reason": "invalid_validator_batch"},
             )
         clarification_calls = tuple(call for call in tool_calls if call.name == "agent.clarify")
         if clarification_calls and len(tool_calls) != 1:
@@ -323,6 +350,11 @@ class ToolBatchExecutor:
             fingerprints.add(action_fingerprint(tool_call))
             observations.append((tool_call, execution.result))
             metadata = {**metadata, **execution.metadata}
+            if tool_call.name in self._validator_tool_names:
+                metadata = {
+                    **metadata,
+                    "validator_execution_count": _validator_execution_count(metadata) + 1,
+                }
             self._model_step.append_tool_result(
                 messages,
                 tool_call=tool_call,
@@ -332,6 +364,39 @@ class ToolBatchExecutor:
             if execution.result.status is not ToolCallStatus.EXECUTED:
                 metadata = _accumulate_failure(metadata, tool_call.name)
                 continue
+            if tool_call.name in self._validator_tool_names:
+                passed = _validator_passed(execution.result.metadata)
+                if passed is None:
+                    return self._terminal(
+                        outcome=HarnessAttemptOutcome.FAILED,
+                        summary="validator returned an incompatible result",
+                        completion=completion,
+                        emitted_events=emitted_events,
+                        model_calls_used=model_calls_used,
+                        tool_calls_executed=tool_calls_executed,
+                        metadata={
+                            **metadata,
+                            "stop_reason": "invalid_validator_result",
+                        },
+                    )
+                metadata = {
+                    **metadata,
+                    "validator_passed": passed,
+                }
+                if not passed:
+                    return ToolBatchResult(
+                        None,
+                        tool_calls_executed,
+                        update_batch_observation_progress(
+                            {
+                                **metadata,
+                                "validator_correction_required": True,
+                            },
+                            observations,
+                            emitted_events[batch_event_start:],
+                            threshold=self._repeat_hard_stop_threshold,
+                        ),
+                    )
             if not execute_all:
                 metadata = update_batch_observation_progress(
                     metadata,
@@ -481,6 +546,19 @@ def _loop_guard_counts(metadata: Mapping[str, object]) -> dict[str, int]:
     if isinstance(raw, dict):
         return {str(k): v for k, v in raw.items() if isinstance(v, int) and not isinstance(v, bool)}
     return {}
+
+
+def _validator_execution_count(metadata: Mapping[str, object]) -> int:
+    value = metadata.get("validator_execution_count", 0)
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
+
+
+def _validator_passed(metadata: Mapping[str, object]) -> bool | None:
+    result = metadata.get("validator_result")
+    if not isinstance(result, Mapping):
+        return None
+    passed = result.get("passed")
+    return passed if isinstance(passed, bool) else None
 
 
 def _accumulate_failure(

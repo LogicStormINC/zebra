@@ -18,7 +18,10 @@ from zebra_agent_config import (
 from zebra_agent_worker.finos_journal_provider import build_finos_journal_provider
 
 
-@pytest.mark.parametrize("contract_version", ("finos.journals.v1", "finos.journals.v2"))
+@pytest.mark.parametrize(
+    "contract_version",
+    ("finos.journals.v1", "finos.journals.v2", "finos.journals.v3"),
+)
 def test_worker_builds_provider_only_for_active_task_binding(
     tmp_path: Path,
     contract_version: str,

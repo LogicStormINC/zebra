@@ -67,6 +67,26 @@ def append_final_answer_instruction(
     )
 
 
+def append_validator_correction_instruction(
+    messages: list[SessionMessage],
+    *,
+    created_at: datetime,
+) -> None:
+    messages.append(
+        SessionMessage(
+            message_id=new_message_id(),
+            role=MessageRole.SYSTEM,
+            content=(
+                "A structured validator rejected the candidate. Correct the answer using "
+                "the validator result already in this conversation. This is the one bounded "
+                "correction pass; do not request or invoke another tool."
+            ),
+            created_at=created_at,
+            metadata={"validator_correction": True},
+        )
+    )
+
+
 def prepare_terminal_conversation(
     messages: list[SessionMessage],
     model_gateway: ModelGatewayPort,

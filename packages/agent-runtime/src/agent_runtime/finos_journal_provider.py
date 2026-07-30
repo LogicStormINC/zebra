@@ -14,8 +14,9 @@ from agent_tools import ToolContract, ToolRegistry
 MAX_RESPONSE_BYTES = 524_288
 FINOS_JOURNAL_V1_CONTRACT = "finos.journals.v1"
 FINOS_JOURNAL_V2_CONTRACT = "finos.journals.v2"
+FINOS_JOURNAL_V3_CONTRACT = "finos.journals.v3"
 SUPPORTED_FINOS_JOURNAL_CONTRACTS = frozenset(
-    {FINOS_JOURNAL_V1_CONTRACT, FINOS_JOURNAL_V2_CONTRACT}
+    {FINOS_JOURNAL_V1_CONTRACT, FINOS_JOURNAL_V2_CONTRACT, FINOS_JOURNAL_V3_CONTRACT}
 )
 
 
@@ -24,6 +25,7 @@ class _FinosTool:
     contract: ToolContract
     suffix: str
     side_effect: str = "read_only"
+    tags: tuple[str, ...] = ()
 
 
 JOURNALS_LIST_CONTRACT = ToolContract(
@@ -129,6 +131,16 @@ ACCOUNT_CHANGES_PROPOSE_CONTRACT = ToolContract(
         "missing_evidence": {"type": "array", "items": {"type": "string"}},
     },
 )
+TRADE_LOG_QUALITY_VALIDATE_CONTRACT = ToolContract(
+    name="finos.trade_log_quality.validate",
+    description=(
+        "Validate one opaque structured candidate with the FinOS domain validator. "
+        "The validator is read-only and returns a standard passed/issues result."
+    ),
+    capability_version="finos.trade_log_quality.validate.v1",
+    required_arguments=("report",),
+    argument_properties={"report": {"type": "object"}},
+)
 
 FINOS_TOOL_SPECS = (
     _FinosTool(JOURNALS_LIST_CONTRACT, "journals:list"),
@@ -146,6 +158,14 @@ FINOS_V2_TOOL_SPECS = (
         ACCOUNT_CHANGES_PROPOSE_CONTRACT,
         "account-changes:propose",
         side_effect="proposal",
+    ),
+)
+FINOS_V3_TOOL_SPECS = (
+    *FINOS_V2_TOOL_SPECS,
+    _FinosTool(
+        TRADE_LOG_QUALITY_VALIDATE_CONTRACT,
+        "trade-log-quality:validate",
+        tags=("validator",),
     ),
 )
 
@@ -199,13 +219,13 @@ class FinosJournalProvider:
         object.__setattr__(self, "contract_version", contract_version)
 
     def register(self, registry: ToolRegistry) -> None:
-        specs = (
-            FINOS_V2_TOOL_SPECS
-            if self.contract_version == FINOS_JOURNAL_V2_CONTRACT
-            else FINOS_TOOL_SPECS
-        )
+        specs = {
+            FINOS_JOURNAL_V1_CONTRACT: FINOS_TOOL_SPECS,
+            FINOS_JOURNAL_V2_CONTRACT: FINOS_V2_TOOL_SPECS,
+            FINOS_JOURNAL_V3_CONTRACT: FINOS_V3_TOOL_SPECS,
+        }[self.contract_version]
         for spec in specs:
-            registry.register(spec.contract, self._handler(spec))
+            registry.register(spec.contract, self._handler(spec), tags=spec.tags)
 
     def _handler(self, spec: _FinosTool) -> Callable[[ToolCall], ToolResult]:
         def handler(call: ToolCall) -> ToolResult:
@@ -241,11 +261,20 @@ class FinosJournalProvider:
             return _failed(call, "FinOS provider returned an invalid response")
         if len(output.encode()) > MAX_RESPONSE_BYTES:
             return _failed(call, "FinOS provider response exceeds the size limit")
+        metadata: dict[str, object] = {
+            "schema_version": response_schema,
+            "side_effect": spec.side_effect,
+        }
+        if "validator" in spec.tags:
+            validator_result = _validator_result(response)
+            if validator_result is None:
+                return _failed(call, "FinOS provider returned an invalid validator result")
+            metadata["validator_result"] = validator_result
         return ToolResult(
             tool_call_id=call.tool_call_id,
             status=ToolCallStatus.EXECUTED,
             output=output,
-            metadata={"schema_version": response_schema, "side_effect": spec.side_effect},
+            metadata=metadata,
         )
 
 
@@ -294,3 +323,16 @@ def _failed(call: ToolCall, detail: str) -> ToolResult:
         status=ToolCallStatus.FAILED,
         metadata={"reason": "finos_journal_provider_error", "detail": detail[:1000]},
     )
+
+
+def _validator_result(response: dict[str, object]) -> dict[str, object] | None:
+    value = response.get("validator_result")
+    if not isinstance(value, dict):
+        return None
+    if value.get("schema_version") != "zebra.validator-result.v1":
+        return None
+    passed = value.get("passed")
+    issues = value.get("issues")
+    if not isinstance(passed, bool) or not isinstance(issues, list):
+        return None
+    return {"passed": passed, "issue_count": len(issues)}

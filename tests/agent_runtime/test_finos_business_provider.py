@@ -220,13 +220,56 @@ def test_v2_business_catalog_adds_only_typed_account_change_proposal(
     }
 
 
+def test_v3_catalog_exposes_a_generic_read_only_validator_result_contract(
+    tmp_path: Path,
+) -> None:
+    class ValidatorTransport(RecordingTransport):
+        def post_json(self, url, *, headers, payload, timeout_seconds):  # type: ignore[no-untyped-def]
+            self.calls.append((url, headers, payload, timeout_seconds))
+            return {
+                "schema_version": "finos.trade_log_quality.validate.v1",
+                "validator_result": {
+                    "schema_version": "zebra.validator-result.v1",
+                    "passed": False,
+                    "issues": [{"code": "fixture_mismatch"}],
+                },
+            }
+
+    transport = ValidatorTransport()
+    provider = FinosJournalProvider(
+        base_url="https://finos.internal",
+        task_id="11111111-1111-4111-8111-111111111111",
+        grant="opaque-task-grant",
+        contract_version="finos.journals.v3",
+        transport=transport,
+    )
+    gateway = LocalToolGateway(tmp_path, finos_journal_provider=provider)
+    tool_name = "finos.trade_log_quality.validate"
+
+    result = gateway.execute(_call(tool_name, {"report": {"trade_date": "2026-07-29"}}))
+
+    assert tool_name in {item.name for item in gateway.model_tools}
+    assert gateway.validator_tools == frozenset({tool_name})
+    assert result.status is ToolCallStatus.EXECUTED
+    assert result.metadata == {
+        "schema_version": "finos.trade_log_quality.validate.v1",
+        "side_effect": "read_only",
+        "validator_result": {"passed": False, "issue_count": 1},
+    }
+    assert transport.calls[-1][0].endswith("/trade-log-quality:validate")
+    assert transport.calls[-1][2] == {
+        "schema_version": "finos.trade_log_quality.validate.request.v1",
+        "report": {"trade_date": "2026-07-29"},
+    }
+
+
 def test_business_provider_rejects_unsupported_contract_version(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="contract_version"):
         FinosJournalProvider(
             base_url="https://finos.internal",
             task_id="11111111-1111-4111-8111-111111111111",
             grant="private-grant",
-            contract_version="finos.journals.v3",
+            contract_version="finos.journals.v4",
             transport=RecordingTransport(),
         )
 

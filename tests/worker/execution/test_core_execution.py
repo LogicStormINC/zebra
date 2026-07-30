@@ -340,7 +340,7 @@ def test_worker_keeps_preapproved_readonly_mcp_scope_out_of_trusted_local(
     assert captured[0]["preapproved_readonly_tools"] == ("mcp.fixture.echo",)
 
 
-def test_worker_scopes_account_change_proposal_gate_to_the_v2_task_binding(
+def test_worker_scopes_account_change_proposal_gate_to_the_v2_or_v3_task_binding(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -366,7 +366,11 @@ def test_worker_scopes_account_change_proposal_gate_to_the_v2_task_binding(
     monkeypatch.setattr("zebra_agent_worker.execution.LocalPolicyEngine", build_policy)
 
     for index, (contract_version, expected_gate) in enumerate(
-        (("finos.journals.v1", False), ("finos.journals.v2", True))
+        (
+            ("finos.journals.v1", False),
+            ("finos.journals.v2", True),
+            ("finos.journals.v3", True),
+        )
     ):
         database_path = tmp_path / f"worker-{index}.db"
         session_id = _seed_ready_session(database_path, tmp_path / f"workspace-{index}")

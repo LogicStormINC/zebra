@@ -47,6 +47,7 @@ class SequentialToolLoop:
         parallel_batch_limits: Mapping[str, int] | None,
         max_parallel_tool_calls: int,
         tool_call_resolver: ToolCallResolver | None,
+        validator_tool_names: frozenset[str],
         event_sink: Callable[[HarnessEventDraft], None] | None = None,
     ) -> None:
         self._model_gateway = model_gateway
@@ -63,6 +64,7 @@ class SequentialToolLoop:
             parallel_safe_tools=parallel_safe_tools,
             parallel_batch_limits=parallel_batch_limits,
             max_parallel_tool_calls=max_parallel_tool_calls,
+            validator_tool_names=validator_tool_names,
         )
 
     def continue_approved(
@@ -412,6 +414,12 @@ class SequentialToolLoop:
                 metadata={**metadata, "stop_reason": "model_call_budget_exhausted"},
         )
         metadata = {**metadata, "terminal_synthesis_attempted": True}
+        if metadata.get("validator_correction_required") is True:
+            metadata = {**metadata, "validator_correction_attempted": True}
+            context_recovery.append_validator_correction_instruction(
+                messages,
+                created_at=context.attempt.started_at,
+            )
         if include_no_progress_observation:
             append_no_progress_observation(
                 messages,
@@ -489,7 +497,9 @@ def _executed_action_fingerprints(messages: list[SessionMessage]) -> set[str]:
     }
 
 def _needs_terminal_synthesis(metadata: Mapping[str, object]) -> bool:
-    return metadata.get("tool_loop_no_progress") is True or (
+    return metadata.get("validator_correction_required") is True or metadata.get(
+        "tool_loop_no_progress"
+    ) is True or (
         metadata.get("policy_recovery_terminal_synthesis") is True
     )
 

@@ -91,6 +91,7 @@ READ_ONLY_TOOLS = frozenset(
         "finos.securities.resolve",
         "finos.snapshots.get",
         "finos.snapshots.list",
+        "finos.trade_log_quality.validate",
         "finos.transactions.list",
         "git.status",
         "skills.list",

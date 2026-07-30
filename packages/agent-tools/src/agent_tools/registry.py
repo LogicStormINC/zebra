@@ -34,6 +34,9 @@ class ToolRegistry:
     def parallel_safe_names(self) -> frozenset[str]:
         return frozenset(name for name, tool in self._tools.items() if tool.contract.parallel_safe)
 
+    def names_with_tag(self, tag: str) -> frozenset[str]:
+        return frozenset(name for name, tool in self._tools.items() if tag in tool.tags)
+
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
         definitions: list[ModelToolDefinition] = []
         for name in self.names():

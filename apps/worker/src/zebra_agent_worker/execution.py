@@ -483,6 +483,7 @@ class SessionExecutionService:
             parallel_batch_limits=tool_gateway.parallel_batch_limits,
             max_parallel_tool_calls=3,
             tool_call_resolver=tool_gateway.resolve_model_tool_calls,
+            validator_tool_names=tool_gateway.validator_tools,
             event_sink=persist_event,
         )
         try:

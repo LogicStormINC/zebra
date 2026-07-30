@@ -59,6 +59,7 @@ class SingleAttemptOrchestrator:
         parallel_batch_limits: Mapping[str, int] | None = None,
         max_parallel_tool_calls: int = 1,
         tool_call_resolver: ToolCallResolver | None = None,
+        validator_tool_names: frozenset[str] = frozenset(),
         event_sink: Callable[[HarnessEventDraft], None] | None = None,
     ) -> None:
         self._model_gateway = model_gateway
@@ -76,6 +77,7 @@ class SingleAttemptOrchestrator:
             parallel_batch_limits=parallel_batch_limits,
             max_parallel_tool_calls=max_parallel_tool_calls,
             tool_call_resolver=tool_call_resolver,
+            validator_tool_names=validator_tool_names,
             event_sink=event_sink,
         )
         self._event_sink = event_sink

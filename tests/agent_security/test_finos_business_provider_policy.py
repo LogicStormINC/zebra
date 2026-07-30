@@ -20,6 +20,7 @@ from agent_security import LocalPolicyEngine, PolicyProfile
         "finos.notes.list",
         "finos.notes.get",
         "finos.securities.resolve",
+        "finos.trade_log_quality.validate",
     ],
 )
 def test_finos_business_tools_are_explicit_read_only_policy_allowances(tool_name: str) -> None:

@@ -31,6 +31,7 @@ class ToolGatewayLike(Protocol):
     effective_mcp_tools: tuple[ModelToolDefinition, ...]
     effective_skill_components: tuple[str, ...]
     parallel_safe_tools: frozenset[str]
+    validator_tools: frozenset[str]
     parallel_batch_limits: dict[str, int]
 
     def execute(self, tool_call: ToolCall) -> ToolResult: ...
@@ -56,6 +57,7 @@ READ_ONLY_TOOLS = frozenset(
         "agent.research",
         "agent.plan",
         "agent.clarify",
+        "finos.trade_log_quality.validate",
     }
 )
 
@@ -89,6 +91,10 @@ class EffectGuardedToolGateway:
     @property
     def parallel_safe_tools(self) -> frozenset[str]:
         return self._gateway.parallel_safe_tools
+
+    @property
+    def validator_tools(self) -> frozenset[str]:
+        return self._gateway.validator_tools
 
     @property
     def parallel_batch_limits(self) -> dict[str, int]:

@@ -9,13 +9,17 @@ from zebra_agent_config import ZebraAgentSettings
 
 FINOS_JOURNAL_V1_CONTRACT = "finos.journals.v1"
 FINOS_JOURNAL_V2_CONTRACT = "finos.journals.v2"
+FINOS_JOURNAL_V3_CONTRACT = "finos.journals.v3"
 SUPPORTED_FINOS_JOURNAL_CONTRACTS = frozenset(
-    {FINOS_JOURNAL_V1_CONTRACT, FINOS_JOURNAL_V2_CONTRACT}
+    {FINOS_JOURNAL_V1_CONTRACT, FINOS_JOURNAL_V2_CONTRACT, FINOS_JOURNAL_V3_CONTRACT}
 )
 
 
 def allows_finos_account_changes_proposal(provider: FinosJournalProvider | None) -> bool:
-    return provider is not None and provider.contract_version == FINOS_JOURNAL_V2_CONTRACT
+    return provider is not None and provider.contract_version in {
+        FINOS_JOURNAL_V2_CONTRACT,
+        FINOS_JOURNAL_V3_CONTRACT,
+    }
 
 
 def build_finos_journal_provider(
