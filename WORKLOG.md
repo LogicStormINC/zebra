@@ -6094,6 +6094,18 @@ actual byte access.
 - ChatGPT Pro final verdict: `DECISION: PASS`, `BUSINESS GATE: PASS`,
   `RUNTIME GATE: PASS`, `FILES.LIST VERDICT: non-blocking`, `P1: none`
 
+# 2026-07-30 MDL-PROFILE-02 Docs-First Claim
+
+- Owner confirmed that Zebra work must be developed in `vinson1101/zebra`
+  before a PR is submitted to `hellolukeding/zebra`.
+- `codex/generic-model-profile-v2` is based on the accepted Phase 1 media branch
+  and is isolated from the deployed FinOS acceptance line.
+- The design removes exact model-name capability inference. It reuses
+  `ModelMediaCapabilities`, adds one explicit verified profile selection at the
+  integration boundary, and keeps absent profiles text-only and fail closed.
+- No provider factory, automatic model/provider routing, fallback state machine,
+  FinOS behavior, deployment, upstream push, or `main` mutation is authorized.
+
 # 2026-07-30 MM-NATIVE-QWEN-PHASE1 Docs-First Claim
 
 - Coordinator Owner authorized `vinson / Codex coordinated` to claim the

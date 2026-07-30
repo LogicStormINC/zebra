@@ -75,9 +75,14 @@
   13 Ruff, four Mypy, and eight functional failures plus the file-size test
   remain. CI jobs did not run because of the billing/spending limit; container
   release gates remain open.
+- `MDL-PROFILE-02` is `In Progress` on
+  `vinson1101/zebra:codex/generic-model-profile-v2`. It is stacked on
+  `MM-NATIVE-QWEN-PHASE1` and replaces exact model-name capability inference
+  with explicit verified profile selection. It may not alter FinOS, provider
+  routing, fallback, Policy authority, or upstream `main`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
-- No other card is `Ready`, `In Progress`, `Review`, or `Blocked`.
+- No additional card is `Ready`, `In Progress`, `Review`, or `Blocked`.
 
 ## Context Continuity And Governed Memory Board
 
@@ -15739,3 +15744,57 @@ typed-tool Policy, Approval, or Audit.
   normalized `authentication_failed` smoke result, deployment, or merge to
   `main`. The current explicitly authorized maintenance pass may commit and
   push only this task branch.
+
+### MDL-PROFILE-02 - Explicit Verified Model Profiles
+
+- Status: `In Progress`
+- Owner: `Vinson / Codex coordinated`
+- Suggested role: `CTX / INTEGRATIONS / QA`
+- Depends on: `MM-NATIVE-QWEN-PHASE1@4533cf4`
+- Branch: `codex/generic-model-profile-v2`
+- Repository: `vinson1101/zebra`; PR target after acceptance:
+  `hellolukeding/zebra`
+- Worktree: `/Users/vinson/.codex/worktrees/zebra-generic-model-profile-v2`
+- Owned paths:
+  `packages/agent-integrations/src/agent_integrations/openai_compatible.py`,
+  one focused profile module under
+  `packages/agent-integrations/src/agent_integrations/`,
+  `packages/agent-integrations/src/agent_integrations/__init__.py`,
+  `apps/config/src/zebra_agent_config/settings.py`,
+  `tests/agent_integrations/test_qwen_native_media.py`,
+  one focused model-profile test module under `tests/agent_integrations/`,
+  `tests/config/test_settings.py`,
+  `docs/Generic_Model_Profile_Contract_v2.md`,
+  `docs/Generic_Multimodal_Model_Input_Contract_Phase1.md`,
+  `docs/README.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Remove the exact Qwen Flash model-name capability gate. Resolve one explicit,
+versioned profile ID into provider/model identity and the existing
+`ModelMediaCapabilities`, validate configured identity before HTTP, and pass the
+resolved capabilities into the existing OpenAI-compatible gateway.
+
+#### Acceptance
+
+- [ ] A red regression proves Phase 1 currently derives native image capability
+  from exact model-name equality.
+- [ ] The adapter contains no Qwen model-name capability condition; absent,
+  unknown, disabled, provider-mismatched, and model-mismatched profiles fail
+  closed as documented.
+- [ ] Flash native, Plus image-only, and Max text-only profiles match the
+  documented verification state without family/regex inference.
+- [ ] An arbitrary fixture model works with an explicit image-capable profile,
+  proving capability is profile data rather than model-name logic.
+- [ ] Media limits, tools-with-media, streaming-with-media, Policy, Audit, and
+  text-only behavior retain existing gates.
+- [ ] Focused tests, changed-source Ruff/Mypy, full deterministic pytest, and
+  `git diff --check` run; inherited blockers are recorded separately.
+- [ ] Commits push only to `vinson1101/zebra`; no direct upstream branch or
+  `main` update occurs.
+
+#### Explicit Non-Goals
+
+- provider factory, automatic provider/model routing, capability discovery,
+  model-family inference, automatic fallback, database/UI changes, FinOS
+  business behavior, MiniMax MCP changes, or upstream merge

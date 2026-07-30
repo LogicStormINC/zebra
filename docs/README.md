@@ -21,6 +21,10 @@ Use these files for implementation, task claiming, collaboration, and phase prog
 - `AGENT_TASKS.md`: current executable task registry
 - `DeepSeek_V4_模型适配与专项优化方案_v1.0.md`: implemented `DS-OPT-01`
   provider-profile, protocol-safety, routing, caching, observability, and Eval baseline
+- `Generic_Multimodal_Model_Input_Contract_Phase1.md`: provider-neutral native
+  image-reference and replay contract
+- `Generic_Model_Profile_Contract_v2.md`: active docs-first removal of
+  model-name capability inference through explicit verified profiles
 - `上下文生命周期与混合压缩架构方案_v1.0.md`: implemented `CTX-LC-01`
   context-window planning, progressive compaction, durable Capsule, provider
   continuation, recovery, and operator-control baseline

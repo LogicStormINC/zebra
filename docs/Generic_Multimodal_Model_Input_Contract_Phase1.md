@@ -25,6 +25,12 @@ Phase 1 adds provider-neutral image references to model requests. It does not
 change durable `SessionMessage.content: str`, create a second payload store,
 add OCR or financial behavior, or alter MiniMax MCP.
 
+The exact Qwen Flash model-name gate in this Phase 1 slice is a temporary
+fail-closed acceptance guard. The docs-first Phase 2 authority is
+[`Generic_Model_Profile_Contract_v2.md`](./Generic_Model_Profile_Contract_v2.md):
+capabilities must be selected by an explicit verified profile, and the adapter
+must not infer them from a model name.
+
 ## Generic model-media contract
 
 Core carries only a `ModelMediaInput` reference with:
@@ -98,8 +104,9 @@ the existing OpenAI-compatible chat-completions adapter, accepts text plus any
 positive bounded number of images, supports Zebra typed tools and streaming
 only when explicitly declared, and reads the secret only through the
 `DASHSCOPE_API_KEY` configuration reference. No secret is hardcoded or emitted.
-Other Qwen model names remain text-only unless their selected profile explicitly
-passes image capabilities at the provider boundary.
+Other Qwen model names remain text-only unless their selected verified profile
+explicitly passes image capabilities at the provider boundary. Phase 2 removes
+the exact model-name comparison; it does not widen capability by model family.
 
 ## Acceptance gate
 
