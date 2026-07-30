@@ -25,6 +25,7 @@ class ModelSettings:
     api_key_env: str
     base_url: str
     model: str
+    profile_id: str | None = None
     executor_profile: str | None = None
     planner_profile: str | None = None
     reviewer_profile: str | None = None
@@ -181,6 +182,7 @@ def load_settings(
                     else "deepseek-v4-flash"
                 ),
             ),
+            profile_id=_read_optional(values, "ZEBRA_MODEL_PROFILE_ID"),
             executor_profile=_read_optional(values, "ZEBRA_DEEPSEEK_EXECUTOR_PROFILE"),
             planner_profile=_read_optional(values, "ZEBRA_DEEPSEEK_PLANNER_PROFILE"),
             reviewer_profile=_read_optional(values, "ZEBRA_DEEPSEEK_REVIEWER_PROFILE"),

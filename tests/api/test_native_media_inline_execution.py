@@ -10,7 +10,7 @@ import zebra_agent_worker.execution as worker_execution_module
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId
 from agent_integrations import OpenAICompatibleModelGateway
-from agent_integrations.openai_compatible import QWEN_NATIVE_MEDIA_CAPABILITIES
+from agent_integrations.openai_model_profiles import resolve_model_profile
 from agent_storage import SQLiteArtifactPayloadStore, SQLiteEventStore
 from zebra_agent_api import RouteAdapter, RouteRequest, create_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
@@ -42,7 +42,11 @@ def test_inline_native_media_uses_one_user_event_id_and_no_legacy_image_tool(
         base_url="https://qwen.example.test/compatible-mode/v1",
         api_key="test-only-secret",
         model_name="qwen3.7-flash-2026-07-15",
-        media_capabilities=QWEN_NATIVE_MEDIA_CAPABILITIES,
+        media_capabilities=resolve_model_profile(
+            "qwen-flash-native-v1",
+            provider="qwen",
+            model="qwen3.7-flash-2026-07-15",
+        ),
         client=httpx.Client(transport=httpx.MockTransport(handle)),
     )
     original_run_local_harness = api_app_module.run_local_harness
@@ -137,7 +141,11 @@ def test_worker_replays_native_media_after_terminal_follow_up(
             base_url="https://qwen.example.test/compatible-mode/v1",
             api_key="test-only-secret",
             model_name="qwen3.7-flash-2026-07-15",
-            media_capabilities=QWEN_NATIVE_MEDIA_CAPABILITIES,
+            media_capabilities=resolve_model_profile(
+                "qwen-flash-native-v1",
+                provider="qwen",
+                model="qwen3.7-flash-2026-07-15",
+            ),
             client=httpx.Client(transport=httpx.MockTransport(handle)),
         )
 
@@ -201,5 +209,6 @@ def _settings(database_path: Path) -> ZebraAgentSettings:
             api_key_env="DASHSCOPE_API_KEY",
             base_url="https://qwen.example.test/compatible-mode/v1",
             model="qwen3.7-flash-2026-07-15",
+            profile_id="qwen-flash-native-v1",
         ),
     )

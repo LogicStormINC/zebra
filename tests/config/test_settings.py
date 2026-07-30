@@ -23,6 +23,7 @@ def test_load_settings_reads_default_profile() -> None:
     assert settings.model.api_key_env == "DEEPSEEK_API_KEY"
     assert settings.model.base_url == "https://api.deepseek.com"
     assert settings.model.model == "deepseek-v4-flash"
+    assert settings.model.profile_id is None
     assert settings.model.executor_profile == "deepseek-v4-flash-executor-v1"
     assert settings.model.planner_profile == "deepseek-v4-pro-planner-v1"
     assert settings.model.reviewer_profile == "deepseek-v4-pro-reviewer-v1"
@@ -56,6 +57,7 @@ def test_load_settings_allows_env_override(tmp_path: Path) -> None:
             "ZEBRA_MODEL_API_KEY_ENV": "TEST_API_KEY",
             "ZEBRA_MODEL_BASE_URL": "https://example.test",
             "ZEBRA_MODEL_NAME": "test-model",
+            "ZEBRA_MODEL_PROFILE_ID": "test-model-v1",
             "ZEBRA_MODEL_MAX_RETRIES": "0",
             "ZEBRA_SCM_PROVIDER": "github",
             "ZEBRA_GITHUB_OWNER": "octo-org",
@@ -78,6 +80,7 @@ def test_load_settings_allows_env_override(tmp_path: Path) -> None:
     assert settings.model.api_key_env == "TEST_API_KEY"
     assert settings.model.base_url == "https://example.test"
     assert settings.model.model == "test-model"
+    assert settings.model.profile_id == "test-model-v1"
     assert settings.model.max_retries == 0
     assert settings.scm.provider == "github"
     assert settings.scm.github_owner == "octo-org"
@@ -92,7 +95,7 @@ def test_load_settings_allows_env_override(tmp_path: Path) -> None:
     )
 
 
-def test_load_settings_selects_dashscope_key_for_qwen_native_media() -> None:
+def test_load_settings_selects_dashscope_key_without_an_implicit_qwen_profile() -> None:
     settings = load_settings(
         {
             "ZEBRA_MODEL_PROVIDER": "qwen",
@@ -106,6 +109,7 @@ def test_load_settings_selects_dashscope_key_for_qwen_native_media() -> None:
     assert settings.model.api_key_env == "DASHSCOPE_API_KEY"
     assert settings.model.base_url == "https://qwen.example.test/compatible-mode/v1"
     assert settings.model.model == "qwen3.7-flash-2026-07-15"
+    assert settings.model.profile_id is None
 
 
 def test_load_settings_rejects_missing_or_duplicate_skill_roots(tmp_path: Path) -> None:

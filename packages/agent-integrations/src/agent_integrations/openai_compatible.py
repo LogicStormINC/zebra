@@ -12,7 +12,6 @@ import httpx
 from agent_core.domain.identifiers import EventId
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.model_media import (
-    ModelInputModality,
     ModelMediaCapabilities,
     ModelMediaInput,
     ModelMediaUnsupportedError,
@@ -37,6 +36,7 @@ from agent_integrations.deepseek_profiles import (
 )
 from agent_integrations.deepseek_schema import validate_strict_tools
 from agent_integrations.model_errors import ModelProviderError, normalize_provider_error
+from agent_integrations.openai_model_profiles import resolve_model_profile
 from agent_integrations.openai_payloads import (
     internal_tool_names,
     parse_completion,
@@ -51,16 +51,6 @@ from agent_integrations.request_metadata import (
 )
 
 CHAT_COMPLETIONS_PATH = "/chat/completions"
-QWEN_NATIVE_MEDIA_MODEL = "qwen3.7-flash-2026-07-15"
-QWEN_NATIVE_MEDIA_CAPABILITIES = ModelMediaCapabilities(
-    input_modalities=frozenset({ModelInputModality.TEXT, ModelInputModality.IMAGE}),
-    supports_tools_with_media=True,
-    supports_streaming_with_media=True,
-    max_image_count=4,
-    max_image_bytes=5 * 1024 * 1024,
-    max_total_image_bytes=20 * 1024 * 1024,
-    image_media_types=frozenset({"image/jpeg", "image/png"}),
-)
 
 
 class OpenAICompatibleModelGateway:
@@ -462,6 +452,11 @@ def build_model_gateway(
     media_resolver: ModelMediaResolverPort | None = None,
     client: httpx.Client | None = None,
 ) -> OpenAICompatibleModelGateway:
+    media_capabilities = resolve_model_profile(
+        settings.model.profile_id,
+        provider=settings.model.provider,
+        model=settings.model.model,
+    )
     values = dict(env or {})
     if env is None:
         values.update(_read_defaults(Path(".env")))
@@ -499,14 +494,7 @@ def build_model_gateway(
         model_name=settings.model.model,
         max_retries=settings.model.max_retries,
         deepseek_router=router,
-        media_capabilities=(
-            QWEN_NATIVE_MEDIA_CAPABILITIES
-            if (
-                settings.model.provider.lower() == "qwen"
-                and settings.model.model == QWEN_NATIVE_MEDIA_MODEL
-            )
-            else None
-        ),
+        media_capabilities=media_capabilities,
         media_resolver=media_resolver,
         client=client,
     )

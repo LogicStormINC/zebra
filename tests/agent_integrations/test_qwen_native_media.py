@@ -312,7 +312,7 @@ def test_text_only_provider_rejects_media_before_transport() -> None:
         )
 
 
-def test_qwen_profile_reads_only_dashscope_api_key() -> None:
+def test_qwen_flash_profile_reads_only_dashscope_api_key() -> None:
     settings = ZebraAgentSettings(
         profile="test",
         database_url=":memory:",
@@ -322,6 +322,7 @@ def test_qwen_profile_reads_only_dashscope_api_key() -> None:
             api_key_env="DASHSCOPE_API_KEY",
             base_url="https://qwen.example.test/compatible-mode/v1",
             model="qwen3.7-flash-2026-07-15",
+            profile_id="qwen-flash-native-v1",
         ),
     )
 
