@@ -15762,6 +15762,7 @@ typed-tool Policy, Approval, or Audit.
   `apps/config/src/zebra_agent_config/settings.py`,
   `tests/agent_integrations/test_qwen_native_media.py`,
   one focused model-profile test module under `tests/agent_integrations/`,
+  `tests/api/test_native_media_inline_execution.py`,
   `tests/config/test_settings.py`,
   `docs/Generic_Model_Profile_Contract_v2.md`,
   `docs/Generic_Multimodal_Model_Input_Contract_Phase1.md`,
