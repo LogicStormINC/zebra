@@ -15656,6 +15656,17 @@ isolation completing in private cloud.
 - Depends on: explicit user authorization; baseline
   `c3cc79c3a54f8a0be3a933bbcc43628bf82210ba`
 - Branch: `codex/qwen-native-multimodal`
+- Acceptance state (2026-07-30): authorized text and repository-logo Qwen
+  preflights reached HTTP 200. The real smoke now uses a deterministic,
+  non-sensitive 16x16 inline PNG rather than the provider-rejected 1x1 image.
+  With retries disabled, live single-image, three-image, typed-tool, stream,
+  and source-event replay probes returned HTTP 200; local Task follow-up sent
+  an image-bearing stream on both turns. The two additional no-image calls are
+  independent best-effort title generation, not a replay omission. Focused
+  deterministic coverage passed; clean-config full pytest is `1888 passed,
+  9 skipped, 9 inherited failures`, while all-repo Ruff has seven unrelated
+  errors and Mypy has four documented inherited errors. Status remains
+  `In Progress`: this is not merge-ready or FinOS E2E acceptance.
 - Owned paths:
   `packages/agent-core/src/agent_core/domain/model_media.py`,
   `packages/agent-core/src/agent_core/domain/events.py`,
@@ -15725,5 +15736,6 @@ typed-tool Policy, Approval, or Audit.
 - modifying `SessionMessage.content`, Artifact/Payload storage schema, MiniMax
   MCP, FinOS, OCR, built-in provider web/code tools, UI upload controls, a
   provider factory/state machine, real-Qwen payment/API acceptance after the
-  normalized `authentication_failed` smoke result, deployment,
-  merge, push, or commit
+  normalized `authentication_failed` smoke result, deployment, or merge to
+  `main`. The current explicitly authorized maintenance pass may commit and
+  push only this task branch.

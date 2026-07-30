@@ -5,7 +5,21 @@
 `MM-NATIVE-QWEN-PHASE1` is an in-progress, unmerged implementation slice on
 `codex/qwen-native-multimodal`, based on
 `c3cc79c3a54f8a0be3a933bbcc43628bf82210ba`. This document is the implementation
-contract, not real-provider or FinOS E2E evidence.
+contract, not FinOS E2E evidence.
+
+As of 2026-07-30, the authorized preflight has reached HTTP 200 for a text
+request and for a request carrying the repository's non-sensitive
+`assets/logo.png`. The real smoke fixture is now an inline, deterministic,
+non-sensitive 16x16 PNG, which exceeds the provider's greater-than-10-pixel
+minimum in both dimensions. With retries disabled, the controlled acceptance
+run recorded HTTP 200 for three ordered images, media plus a Zebra typed-tool
+definition, streaming media, and an initial/follow-up media replay. A local
+Task terminal-follow-up run recorded two image-bearing stream requests (one
+for each Task turn); its two additional text-only calls are the independent
+best-effort `SessionTitleService`, not media replay or terminal synthesis.
+The card remains `In Progress` because repository-wide deterministic and Ruff
+baselines remain red on unrelated paths; it is not merge-ready or
+FinOS-accepted.
 
 Phase 1 adds provider-neutral image references to model requests. It does not
 change durable `SessionMessage.content: str`, create a second payload store,
@@ -101,11 +115,16 @@ Before this card can be marked Done, deterministic tests must cover:
 - unchanged text-only provider behavior.
 
 Focused Core/provider/context regressions, changed-source Ruff and Mypy, and
-`git diff --check` are required. Deterministic pytest currently matches the
-known repository baseline (`1870 passed, 9 inherited failures, 9 skipped`).
-One controlled real Qwen smoke was attempted only after a non-default endpoint
-gate passed; it returned normalized `authentication_failed`. It does not count
-as real-provider acceptance, and FinOS E2E remains unrun and unclaimed.
+`git diff --check` are required. The 2026-07-30 focused run passed 50 tests
+with one opt-in smoke skipped. Its five recorded real gateway requests all
+returned HTTP 200 with aggregate usage of 819 input, 18 output, and 837 total
+tokens; the final local Task probe recorded four more HTTP 200 calls without
+recording response content. A clean-config full deterministic run was
+`1888 passed, 9 skipped, 9 inherited failures`; full Ruff has seven unrelated
+existing errors and Mypy has four documented inherited errors. Provider errors
+remain normalized and visible when a declared combination is unsupported; this
+Phase 1 profile must not add model-name special cases to hide them. FinOS E2E
+remains unrun and unclaimed.
 
 ## Owned paths and completion boundary
 
