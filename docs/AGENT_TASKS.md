@@ -15759,7 +15759,6 @@ typed-tool Policy, Approval, or Audit.
   `packages/agent-integrations/src/agent_integrations/openai_compatible.py`,
   one focused profile module under
   `packages/agent-integrations/src/agent_integrations/`,
-  `packages/agent-integrations/src/agent_integrations/__init__.py`,
   `apps/config/src/zebra_agent_config/settings.py`,
   `tests/agent_integrations/test_qwen_native_media.py`,
   one focused model-profile test module under `tests/agent_integrations/`,
@@ -15780,8 +15779,8 @@ resolved capabilities into the existing OpenAI-compatible gateway.
 - [ ] A red regression proves Phase 1 currently derives native image capability
   from exact model-name equality.
 - [ ] The adapter contains no Qwen model-name capability condition; absent,
-  unknown, disabled, provider-mismatched, and model-mismatched profiles fail
-  closed as documented.
+  unknown, provider-mismatched, and model-mismatched profiles fail closed as
+  documented.
 - [ ] Flash native, Plus image-only, and Max text-only profiles match the
   documented verification state without family/regex inference.
 - [ ] An arbitrary fixture model works with an explicit image-capable profile,
@@ -15795,6 +15794,8 @@ resolved capabilities into the existing OpenAI-compatible gateway.
 
 #### Explicit Non-Goals
 
-- provider factory, automatic provider/model routing, capability discovery,
-  model-family inference, automatic fallback, database/UI changes, FinOS
-  business behavior, MiniMax MCP changes, or upstream merge
+- Registry service/class hierarchy, duplicate capability/request-default
+  wrapper, profile lifecycle state, provider factory, automatic provider/model
+  routing, capability discovery, model-family inference, automatic fallback,
+  database/UI changes, FinOS business behavior, MiniMax MCP changes, or
+  upstream merge

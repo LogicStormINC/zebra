@@ -6105,6 +6105,11 @@ actual byte access.
   integration boundary, and keeps absent profiles text-only and fail closed.
 - No provider factory, automatic model/provider routing, fallback state machine,
   FinOS behavior, deployment, upstream push, or `main` mutation is authorized.
+- ChatGPT repository review accepted the direction and removed remaining
+  over-design: the runtime record is only expected provider/model plus existing
+  media capabilities, keyed by versioned profile ID. Request defaults,
+  verification dates, disabled state, a Registry service and package exports
+  are outside this slice.
 
 # 2026-07-30 MM-NATIVE-QWEN-PHASE1 Docs-First Claim
 

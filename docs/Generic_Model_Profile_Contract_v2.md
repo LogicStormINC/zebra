@@ -27,19 +27,19 @@ identifier. That is a temporary acceptance guard, not the final architecture:
 ## Minimal contract
 
 The existing provider-neutral `ModelMediaCapabilities` remains the Core
-authority for media validation. Phase 2 adds one immutable, versioned
-OpenAI-compatible profile record at the integration boundary with:
+authority for media validation. Phase 2 adds one immutable module-level mapping
+at the integration boundary. Its key is `profile_id`, distinct from the provider
+model identifier, and its value contains only:
 
-- `profile_id`, distinct from the provider model identifier;
-- `provider` and exact `model` identity;
-- request capabilities required by the existing gateway, including tools and
-  `ModelMediaCapabilities`;
-- provider request defaults already supported by the adapter;
-- verification revision and verification date.
+- expected provider identity;
+- expected exact model identity;
+- the existing `ModelMediaCapabilities` value.
 
-The profile registry is the single source of truth for these records. A new
-model becomes usable only after an explicit profile entry and its contract
-tests land. Runtime code must not guess capabilities from a model name.
+The profile mapping and one pure resolver function are the single source of
+truth. A new model becomes usable only after an explicit profile entry and its
+contract tests land. Runtime code must not guess capabilities from a model name.
+The versioned profile ID carries the runtime revision; verification dates and
+evidence remain in docs and tests, not runtime fields.
 
 The selected profile ID comes from generic configuration. Existing provider,
 model, endpoint, and API-key references remain configuration values. The
@@ -65,8 +65,9 @@ existing Core preflight + Policy + transport
 
 - An absent profile preserves legacy text behavior and is text-only for native
   media. It must not recover the old model-name special case.
-- An unknown, disabled, provider-mismatched, or model-mismatched profile fails
-  before HTTP.
+- An unknown, provider-mismatched, or model-mismatched profile fails before
+  HTTP. Removing the configured profile ID disables native media; no separate
+  profile lifecycle state is added.
 - A profile declaring image input while the endpoint rejects it produces the
   existing normalized provider failure. Zebra must not silently switch model,
   provider, or MiniMax MCP.
@@ -94,16 +95,17 @@ name alone never changes capability.
 The smallest coherent change is:
 
 1. reuse `ModelMediaCapabilities` without adding another Core capability type;
-2. add one small profile registry/resolver beside the OpenAI-compatible
-   integration;
+2. add one immutable mapping and one pure resolver beside the
+   OpenAI-compatible integration;
 3. add one optional generic profile ID to `ModelSettings`;
 4. have `build_model_gateway()` resolve and validate the selected profile, then
    pass its capabilities to the existing gateway;
 5. remove `QWEN_NATIVE_MEDIA_MODEL` and the exact model equality gate.
 
-This slice does not add a provider factory, automatic router, capability
-discovery call, model-family matching, marketplace, database table, UI, or
-dynamic fallback state machine.
+This slice does not add a Registry service/class hierarchy, provider factory,
+automatic router, request-default wrapper, verification/lifecycle state,
+capability discovery call, model-family matching, marketplace, database table,
+UI, or dynamic fallback state machine.
 
 ## Acceptance
 
