@@ -147,6 +147,15 @@
   runtime, and production authentication/TLS gates remain open. This is a Draft
   candidate, not a mainline or release claim. See
   `docs/FinOS_Runtime_Integration_Status_2026-07-27.md`.
+- In-progress follow-up `FINOS-RT-04-READONLY-AUTH` on
+  `codex/readonly-tool-authorization` narrows FinOS opt-in base-tool authority
+  to an exact durable Task grant. It reuses the Task MCP allowlist plus a
+  preapproved-readonly subset; Zebra Policy only auto-allows a name when the
+  Task is read-only, uses MCP-proxy-only egress, and the classified route
+  matches. The Policy is provider-neutral: no MiniMax/Qwen name is hard-coded.
+  All other MCP and all write, Core, Shell, Git/PR, delete and publish paths
+  retain existing approval/deny behavior. This branch is not authorized to
+  merge directly to `main`.
 
 ## Current Capability
 

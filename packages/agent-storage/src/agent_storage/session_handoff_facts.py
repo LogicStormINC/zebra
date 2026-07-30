@@ -49,6 +49,11 @@ def read_source_facts(
         "mcp_allowlist": (
             None if workspace["mcp_allowlist"] is None else json.loads(workspace["mcp_allowlist"])
         ),
+        "preapproved_readonly_tools": (
+            None
+            if workspace["preapproved_readonly_tools"] is None
+            else json.loads(workspace["preapproved_readonly_tools"])
+        ),
         "skill_components": (
             None
             if workspace["skill_components"] is None

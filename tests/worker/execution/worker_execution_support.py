@@ -62,17 +62,23 @@ def _seed_ready_session_with_input(
     workspace_root: Path,
     *,
     user_input: str,
+    policy_profile: str | None = None,
     network_profile: str = "none",
     network_allowlist: tuple[str, ...] = (),
+    mcp_allowlist: tuple[str, ...] = (),
+    preapproved_readonly_tools: tuple[str, ...] = (),
 ) -> SessionId:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title="Queued worker task",
             user_input=user_input,
             workspace_root=workspace_root.resolve(),
+            policy_profile=policy_profile,
             tool_profile=ToolProfile.CODING,
             network_profile=network_profile,
             network_allowlist=network_allowlist,
+            mcp_allowlist=mcp_allowlist,
+            preapproved_readonly_tools=preapproved_readonly_tools,
         )
     )
     event_store = SQLiteEventStore(database_path)

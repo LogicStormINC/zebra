@@ -43,6 +43,27 @@ def external_trusted_local_allow_decision(
     )
 
 
+def external_preapproved_read_allow_decision(
+    *,
+    policy_profile: str,
+    tool_call: ToolCall,
+    egress: ToolEgressMetadata,
+) -> PolicyDecision:
+    target = egress.target or egress.tool_name
+    return PolicyDecision(
+        decision=PolicyDecisionType.ALLOW,
+        reason=(
+            f"{egress.tool_name} is allowed by its exact preapproved read-only "
+            f"Task grant for MCP proxy route to {target}"
+        ),
+        policy_profile=policy_profile,
+        route=egress.route.value,
+        target=egress.target,
+        network_profile=egress.network_profile,
+        scope=(*_external_scope(tool_call, egress), "grant_scope:read_only"),
+    )
+
+
 def external_approval_decision(
     *,
     policy_profile: str,

@@ -10980,6 +10980,41 @@ financial write authority.
 - a new streaming, attachment or large-input framework outside Zebra native contracts
 - FinOS backtesting, TradingView, Trench or product-page implementation
 
+### FINOS-RT-04-READONLY-AUTH - FinOS Scoped Read-Only Tool Authorization
+
+- Status: `In Progress`
+- Owner: `vinson1101`
+- Suggested role: `RUNTIME / SECURITY / INTEGRATION`
+- Depends on: `FINOS-RT-04`
+- Branch: `codex/readonly-tool-authorization`
+- Owned paths: `apps/api/`, `apps/worker/`, `packages/agent-core/`,
+  `packages/agent-security/`, `packages/agent-storage/`, `tests/`,
+  `docs/AGENT_TASKS.md`, `docs/FinOS_Runtime_Integration_Status_2026-07-27.md`,
+  `PROGRESS.md`
+
+#### Goal
+
+Accept a FinOS Task's exact preapproved read-only tool grant without creating a
+global trusted-MCP path. Zebra validates the durable Task authority and remains
+the sole policy/approval state machine.
+
+#### Acceptance
+
+- [ ] Task payload and workspace projection persist exact MCP visibility and
+  preapproved-readonly names.
+- [ ] Auto allow requires `read_only`, `mcp-proxy-only`, an MCP route, and an
+  exact persisted grant; ungranted MCP still requests approval.
+- [ ] No Zebra provider name is hard-coded in Policy.
+- [ ] `trusted-local` does not widen this restricted FinOS authority.
+- [ ] FinOS write/Core/Shell/Git/PR/delete/publish paths remain approval-gated
+  or denied, with focused policy and zero-Core-write regression evidence.
+
+#### Explicit Non-Goals
+
+- a general trusted-MCP setting or wildcard grant
+- a second approval state machine in FinOS
+- changing provider credentials, deployment, Core persistence or a model vendor
+
 ### FINOS-HAR-03 - Recoverable Bounded Material Reads
 
 - Status: `Review`

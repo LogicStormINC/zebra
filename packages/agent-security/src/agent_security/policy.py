@@ -3,6 +3,7 @@ from enum import StrEnum
 from ipaddress import ip_address
 from urllib.parse import urlsplit
 
+from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.tools import ToolCall
 from agent_core.domain.web import WebTargetError, parse_web_target
@@ -17,6 +18,7 @@ from agent_tools.search_pipeline import SearchInputError, parse_search_query
 from agent_security.external_policy import (
     blocked_route_reason,
     external_approval_decision,
+    external_preapproved_read_allow_decision,
     external_read_allow_decision,
     external_trusted_local_allow_decision,
 )
@@ -115,9 +117,21 @@ class LocalPolicyEngine:
     profile: PolicyProfile = PolicyProfile.READ_ONLY
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE
     web_search_endpoint: str | None = None
+    mcp_allowlist: tuple[str, ...] = ()
+    preapproved_readonly_tools: tuple[str, ...] = ()
     trusted_local: bool = False
     web_pipeline_v2: bool = False
     allow_finos_account_changes_proposal: bool = False
+
+    def __post_init__(self) -> None:
+        mcp_allowlist = normalize_mcp_allowlist(self.mcp_allowlist)
+        preapproved_readonly_tools = normalize_mcp_allowlist(
+            self.preapproved_readonly_tools
+        )
+        if not set(preapproved_readonly_tools) <= set(mcp_allowlist):
+            raise ValueError("preapproved read-only tools must be in the MCP allowlist")
+        object.__setattr__(self, "mcp_allowlist", mcp_allowlist)
+        object.__setattr__(self, "preapproved_readonly_tools", preapproved_readonly_tools)
 
     def evaluate_tool_call(self, tool_call: ToolCall) -> PolicyDecision:
         tool_name = tool_call.name
@@ -149,6 +163,12 @@ class LocalPolicyEngine:
                 egress=egress,
             )
         if egress.route is ToolEgressRoute.MCP_PROXY:
+            if self._is_preapproved_readonly_mcp(tool_name):
+                return external_preapproved_read_allow_decision(
+                    policy_profile=self.profile.value,
+                    tool_call=tool_call,
+                    egress=egress,
+                )
             if self.trusted_local:
                 return external_trusted_local_allow_decision(
                     policy_profile=self.profile.value,
@@ -187,6 +207,14 @@ class LocalPolicyEngine:
                 scope=decision.scope,
             )
         return decision
+
+    def _is_preapproved_readonly_mcp(self, tool_name: str) -> bool:
+        return (
+            self.profile is PolicyProfile.READ_ONLY
+            and self.network_profile.name is NetworkProfileName.MCP_PROXY_ONLY
+            and tool_name in self.mcp_allowlist
+            and tool_name in self.preapproved_readonly_tools
+        )
 
 
 def policy_profile() -> str:

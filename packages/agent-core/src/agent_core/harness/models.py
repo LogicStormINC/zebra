@@ -48,6 +48,7 @@ class HarnessTask:
     network_profile: str = "none"
     network_allowlist: tuple[str, ...] = ()
     mcp_allowlist: tuple[str, ...] = ()
+    preapproved_readonly_tools: tuple[str, ...] = ()
     skill_components: tuple[str, ...] = ()
     context_token_budget: int = 200
     runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
@@ -79,6 +80,18 @@ class HarnessTask:
         if self.context_token_budget <= 0:
             raise ValueError("harness task context_token_budget must be positive")
         object.__setattr__(self, "mcp_allowlist", normalize_mcp_allowlist(self.mcp_allowlist))
+        preapproved_readonly_tools = normalize_mcp_allowlist(
+            self.preapproved_readonly_tools
+        )
+        if preapproved_readonly_tools and (
+            self.policy_profile != "read_only"
+            or self.network_profile != "mcp-proxy-only"
+            or not set(preapproved_readonly_tools) <= set(self.mcp_allowlist)
+        ):
+            raise ValueError("preapproved read-only tools require scoped Task authority")
+        object.__setattr__(
+            self, "preapproved_readonly_tools", preapproved_readonly_tools
+        )
         object.__setattr__(
             self, "skill_components", normalize_skill_components(self.skill_components)
         )

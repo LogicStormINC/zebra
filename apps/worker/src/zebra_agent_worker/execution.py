@@ -212,7 +212,13 @@ class SessionExecutionService:
             self._settings,
             str(task_record.task_id),
         )
-        trusted_local = trusted_local_mode_enabled(self._settings)
+        restricted_readonly_task = (
+            task.policy_profile == PolicyProfile.READ_ONLY.value
+            and task.network_profile.name.value == "mcp-proxy-only"
+        )
+        trusted_local = (
+            trusted_local_mode_enabled(self._settings) and not restricted_readonly_task
+        )
         effective_network_profile = resolve_effective_network_profile(
             task.network_profile,
             trusted_local=trusted_local,
@@ -327,6 +333,7 @@ class SessionExecutionService:
                 network_profile=effective_network_profile.name.value,
                 network_allowlist=effective_network_profile.domain_allowlist,
                 mcp_allowlist=tuple(tool.name for tool in tool_gateway.effective_mcp_tools),
+                preapproved_readonly_tools=task.preapproved_readonly_tools or (),
                 skill_components=tool_gateway.effective_skill_components,
                 confirmed_memories=list_confirmed_repo_memories(
                     self._database_path,
@@ -436,9 +443,21 @@ class SessionExecutionService:
             provider_continuation=provider_continuation,
             attempt_number=1,
         )
-        orchestrator = SingleAttemptOrchestrator(
-            model_gateway,
-            LocalPolicyEngine(
+        if task.preapproved_readonly_tools:
+            policy_engine = LocalPolicyEngine(
+                profile=PolicyProfile(task.policy_profile),
+                network_profile=effective_network_profile,
+                web_search_endpoint=self._settings.web_search_endpoint,
+                mcp_allowlist=tuple(tool.name for tool in tool_gateway.effective_mcp_tools),
+                preapproved_readonly_tools=task.preapproved_readonly_tools,
+                trusted_local=trusted_local,
+                allow_finos_account_changes_proposal=(
+                    finos_journal_provider is not None
+                    and finos_journal_provider.contract_version == FINOS_JOURNAL_V2_CONTRACT
+                ),
+            )
+        else:
+            policy_engine = LocalPolicyEngine(
                 profile=PolicyProfile(task.policy_profile),
                 network_profile=effective_network_profile,
                 web_search_endpoint=self._settings.web_search_endpoint,
@@ -447,7 +466,10 @@ class SessionExecutionService:
                     finos_journal_provider is not None
                     and finos_journal_provider.contract_version == FINOS_JOURNAL_V2_CONTRACT
                 ),
-            ),
+            )
+        orchestrator = SingleAttemptOrchestrator(
+            model_gateway,
+            policy_engine,
             tool_gateway,
             model_step=model_step,
             synthesize_tool_results=True,

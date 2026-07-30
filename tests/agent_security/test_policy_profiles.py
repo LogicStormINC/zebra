@@ -246,6 +246,44 @@ def test_mcp_tool_requires_approval_when_proxy_route_is_enabled() -> None:
     )
 
 
+def test_exact_preapproved_readonly_mcp_grant_is_provider_neutral() -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.READ_ONLY,
+        network_profile=parse_network_profile("mcp-proxy-only"),
+        mcp_allowlist=("mcp.catalog.search_public",),
+        preapproved_readonly_tools=("mcp.catalog.search_public",),
+    )
+
+    allowed = engine.evaluate_tool_call(
+        _tool_call("mcp.catalog.search_public", {"query": "FinOS"})
+    )
+    ungranted = engine.evaluate_tool_call(
+        _tool_call("mcp.catalog.publish_report", {"body": "draft"})
+    )
+
+    assert allowed.decision is PolicyDecisionType.ALLOW
+    assert allowed.route == ToolEgressRoute.MCP_PROXY
+    assert allowed.network_profile == "mcp-proxy-only"
+    assert "preapproved read-only" in allowed.reason
+    assert ungranted.decision is PolicyDecisionType.REQUIRE_APPROVAL
+
+
+def test_preapproved_readonly_mcp_grant_never_overrides_its_scope() -> None:
+    tool_call = _tool_call("mcp.catalog.search_public", {"query": "FinOS"})
+    for profile, network_profile in (
+        (PolicyProfile.WORKSPACE_WRITE, parse_network_profile("mcp-proxy-only")),
+        (PolicyProfile.READ_ONLY, parse_network_profile("full-trusted-local")),
+    ):
+        decision = LocalPolicyEngine(
+            profile=profile,
+            network_profile=network_profile,
+            mcp_allowlist=("mcp.catalog.search_public",),
+            preapproved_readonly_tools=("mcp.catalog.search_public",),
+        ).evaluate_tool_call(tool_call)
+
+        assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+
+
 def test_trusted_local_mode_auto_allows_mcp_and_command_approval_boundaries() -> None:
     engine = LocalPolicyEngine(
         profile=PolicyProfile.WORKSPACE_WRITE,

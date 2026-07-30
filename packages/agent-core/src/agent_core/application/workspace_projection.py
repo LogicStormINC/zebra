@@ -33,6 +33,7 @@ def rebuild_workspace(events: list[SessionEvent]) -> WorkspaceProjection:
         ),
         network_allowlist=_network_allowlist_from_event(prepared_event),
         mcp_allowlist=_mcp_allowlist_from_event(prepared_event),
+        preapproved_readonly_tools=_preapproved_readonly_tools_from_event(prepared_event),
         skill_components=_skill_components_from_event(prepared_event),
     )
     for event in events:
@@ -71,6 +72,7 @@ def apply_event(
         )
         updates["network_allowlist"] = _network_allowlist_from_event(event)
         updates["mcp_allowlist"] = _mcp_allowlist_from_event(event)
+        updates["preapproved_readonly_tools"] = _preapproved_readonly_tools_from_event(event)
         updates["skill_components"] = _skill_components_from_event(event)
     if event.event_type is EventType.RUNTIME_PROVISIONED:
         updates["runtime_name"] = _required_payload_string(event, "runtime_class")
@@ -169,6 +171,26 @@ def _mcp_allowlist_from_event(event: SessionEvent) -> tuple[str, ...] | None:
         return normalize_mcp_allowlist(value)
     except ValueError as exc:
         raise WorkspaceProjectionError("task_prepared contains invalid mcp_allowlist") from exc
+
+
+def _preapproved_readonly_tools_from_event(
+    event: SessionEvent,
+) -> tuple[str, ...] | None:
+    if "preapproved_readonly_tools" not in event.payload:
+        return None
+    value = event.payload["preapproved_readonly_tools"]
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise WorkspaceProjectionError(
+            "task_prepared contains invalid preapproved_readonly_tools"
+        )
+    try:
+        return normalize_mcp_allowlist(value)
+    except ValueError as exc:
+        raise WorkspaceProjectionError(
+            "task_prepared contains invalid preapproved_readonly_tools"
+        ) from exc
 
 
 def _skill_components_from_event(event: SessionEvent) -> tuple[str, ...] | None:

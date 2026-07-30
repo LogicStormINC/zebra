@@ -34,6 +34,7 @@ class WorkspaceProjection(BaseModel):
     network_profile: NetworkProfileName = NetworkProfileName.NONE
     network_allowlist: tuple[str, ...] = ()
     mcp_allowlist: tuple[str, ...] | None = None
+    preapproved_readonly_tools: tuple[str, ...] | None = None
     skill_components: tuple[str, ...] | None = None
     last_attempt_number: int | None = None
     runtime_name: str | None = None
@@ -72,7 +73,7 @@ class WorkspaceProjection(BaseModel):
             raise ValueError("optional text field must not be blank when provided")
         return stripped
 
-    @field_validator("mcp_allowlist")
+    @field_validator("mcp_allowlist", "preapproved_readonly_tools")
     @classmethod
     def ensure_valid_mcp_allowlist(
         cls,

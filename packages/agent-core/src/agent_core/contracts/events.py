@@ -87,6 +87,10 @@ class TaskPreparedPayload(BaseModel):
         default=None,
         exclude_if=lambda value: value is None,
     )
+    preapproved_readonly_tools: list[str] | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     skill_components: list[str] | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
@@ -117,7 +121,7 @@ class TaskPreparedPayload(BaseModel):
             raise ValueError("field must not be blank when provided")
         return stripped
 
-    @field_validator("mcp_allowlist")
+    @field_validator("mcp_allowlist", "preapproved_readonly_tools")
     @classmethod
     def ensure_valid_mcp_allowlist(cls, value: list[str] | None) -> list[str] | None:
         return None if value is None else list(normalize_mcp_allowlist(value))

@@ -31,6 +31,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     network_profile,
                     network_allowlist,
                     mcp_allowlist,
+                    preapproved_readonly_tools,
                     skill_components,
                     last_attempt_number,
                     runtime_name,
@@ -41,7 +42,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     runtime_workspace_writable,
                     snapshot_id,
                     snapshot_path
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_id) DO UPDATE SET
                     workspace_root = excluded.workspace_root,
                     prepared_at = excluded.prepared_at,
@@ -53,6 +54,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     network_profile = excluded.network_profile,
                     network_allowlist = excluded.network_allowlist,
                     mcp_allowlist = excluded.mcp_allowlist,
+                    preapproved_readonly_tools = excluded.preapproved_readonly_tools,
                     skill_components = excluded.skill_components,
                     last_attempt_number = excluded.last_attempt_number,
                     runtime_name = excluded.runtime_name,
@@ -79,6 +81,11 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                         None
                         if workspace.mcp_allowlist is None
                         else json.dumps(workspace.mcp_allowlist)
+                    ),
+                    (
+                        None
+                        if workspace.preapproved_readonly_tools is None
+                        else json.dumps(workspace.preapproved_readonly_tools)
                     ),
                     (
                         None
@@ -114,6 +121,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     network_profile,
                     network_allowlist,
                     mcp_allowlist,
+                    preapproved_readonly_tools,
                     skill_components,
                     last_attempt_number,
                     runtime_name,
@@ -147,6 +155,11 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     None
                     if row["mcp_allowlist"] is None
                     else tuple(json.loads(row["mcp_allowlist"]))
+                ),
+                "preapproved_readonly_tools": (
+                    None
+                    if row["preapproved_readonly_tools"] is None
+                    else tuple(json.loads(row["preapproved_readonly_tools"]))
                 ),
                 "skill_components": (
                     None
@@ -185,6 +198,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     network_profile TEXT NOT NULL DEFAULT 'none',
                     network_allowlist TEXT NOT NULL DEFAULT '[]',
                     mcp_allowlist TEXT,
+                    preapproved_readonly_tools TEXT,
                     skill_components TEXT,
                     last_attempt_number INTEGER,
                     runtime_name TEXT,
@@ -226,6 +240,12 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                 "TEXT NOT NULL DEFAULT '[]'",
             )
             ensure_column(connection, "workspace_projections", "mcp_allowlist", "TEXT")
+            ensure_column(
+                connection,
+                "workspace_projections",
+                "preapproved_readonly_tools",
+                "TEXT",
+            )
             ensure_column(connection, "workspace_projections", "skill_components", "TEXT")
             ensure_column(connection, "workspace_projections", "snapshot_id", "TEXT")
             ensure_column(connection, "workspace_projections", "snapshot_path", "TEXT")

@@ -121,7 +121,7 @@ class ZebraAgentApi(
         parsed = parse_create_session_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
-        if trusted_local_mode_enabled(self.settings):
+        if trusted_local_mode_enabled(self.settings) and not _is_restricted_readonly_task(parsed):
             parsed["network_profile"] = "full-trusted-local"
             parsed["network_allowlist"] = []
         try:
@@ -286,6 +286,7 @@ class ZebraAgentApi(
                     network_profile=str(parsed["network_profile"]),
                     network_allowlist=tuple(parsed["network_allowlist"]),
                     mcp_allowlist=tuple(parsed["mcp_allowlist"]),
+                    preapproved_readonly_tools=tuple(parsed["preapproved_readonly_tools"]),
                     history_session_ids=parsed["history_session_ids"],
                     max_model_calls=parsed["max_model_calls"],
                     max_tool_calls=parsed["max_tool_calls"],
@@ -325,6 +326,7 @@ class ZebraAgentApi(
                 "network_profile": str(parsed["network_profile"]),
                 "network_allowlist": parsed["network_allowlist"],
                 "mcp_allowlist": parsed["mcp_allowlist"],
+                "preapproved_readonly_tools": parsed["preapproved_readonly_tools"],
                 "mcp_resource_ids": parsed["mcp_resource_ids"],
                 **(
                     {"history_session_ids": list(parsed["history_session_ids"])}
@@ -376,7 +378,10 @@ class ZebraAgentApi(
             repo_id=str(workspace_root),
         )
         try:
-            trusted_local = trusted_local_mode_enabled(self.settings)
+            trusted_local = (
+                trusted_local_mode_enabled(self.settings)
+                and not _is_restricted_readonly_task(parsed)
+            )
             network_profile = resolve_effective_network_profile(
                 parse_network_profile(
                     str(parsed["network_profile"]),
@@ -404,6 +409,7 @@ class ZebraAgentApi(
                     else self.settings.mcp_servers
                 ),
                 mcp_allowlist=parsed["mcp_allowlist"],
+                preapproved_readonly_tools=parsed["preapproved_readonly_tools"],
                 trusted_local=trusted_local,
                 max_model_calls=parsed["max_model_calls"],
                 max_tool_calls=parsed["max_tool_calls"],
@@ -466,6 +472,7 @@ class ZebraAgentApi(
                 "network_profile": str(parsed["network_profile"]),
                 "network_allowlist": parsed["network_allowlist"],
                 "mcp_allowlist": parsed["mcp_allowlist"],
+                "preapproved_readonly_tools": parsed["preapproved_readonly_tools"],
                 "mcp_resource_ids": parsed["mcp_resource_ids"],
                 **(
                     {"mcp_prompt_id": parsed["mcp_prompt_id"]}
@@ -476,6 +483,14 @@ class ZebraAgentApi(
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
+
+
+def _is_restricted_readonly_task(payload: CreateSessionPayload) -> bool:
+    return (
+        payload["policy_profile"] == PolicyProfile.READ_ONLY.value
+        and payload["network_profile"] == "mcp-proxy-only"
+    )
+
 
 def create_app(
     database_path: str | Path | None = None,
