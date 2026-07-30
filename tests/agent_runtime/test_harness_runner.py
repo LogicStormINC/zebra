@@ -1,3 +1,4 @@
+import sys
 from datetime import UTC, datetime
 
 import pytest
@@ -21,7 +22,9 @@ from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_runtime import LocalToolGateway, run_local_harness
 from agent_runtime.web_gateway import LocalWebGatewayTransport
 from agent_runtime.web_search import LocalWebSearchTransport
+from agent_security import LocalPolicyEngine, PolicyProfile, parse_network_profile
 from agent_storage import SQLiteArtifactPayloadStore
+from zebra_agent_config import McpServerSettings
 
 
 class EmptyHistory:
@@ -569,6 +572,70 @@ def test_local_tool_gateway_can_disable_one_mcp_tool_without_affecting_web_searc
     assert disabled.execute(disabled_call).status is ToolCallStatus.FAILED
     with pytest.raises(ValueError, match="unavailable"):
         disabled.resolve_model_tool_calls((disabled_call,))
+
+
+def test_run_local_harness_narrows_preapproval_to_effective_mcp_tools(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    image_tool = "mcp.minimax.understand_image"
+    search_tool = "mcp.minimax.web_search"
+
+    class FakeMcpTransport:
+        model_tools = (
+            ModelToolDefinition(
+                name=image_tool,
+                description="Legacy image understanding.",
+                parameters={"type": "object", "properties": {}},
+            ),
+            ModelToolDefinition(
+                name=search_tool,
+                description="Search the web.",
+                parameters={"type": "object", "properties": {}},
+            ),
+        )
+
+    captured: list[dict[str, object]] = []
+
+    def build_policy(**kwargs):
+        captured.append(kwargs)
+        return LocalPolicyEngine(**kwargs)
+
+    monkeypatch.setattr(
+        "agent_runtime.harness.build_mcp_transport",
+        lambda *_args, **_kwargs: FakeMcpTransport(),
+    )
+    monkeypatch.setattr("agent_runtime.harness.LocalPolicyEngine", build_policy)
+
+    result = run_local_harness(
+        prompt="Review the image and search for context.",
+        title="Native media authority",
+        workspace_root=tmp_path.resolve(),
+        model_gateway=ScriptedModelGateway(
+            responses=(
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content="Review complete.",
+                            created_at=_created_at(),
+                        )
+                    )
+                ),
+            )
+        ),
+        policy_profile=PolicyProfile.READ_ONLY,
+        network_profile=parse_network_profile("mcp-proxy-only"),
+        mcp_servers=(McpServerSettings(name="minimax", command=sys.executable),),
+        mcp_allowlist=(image_tool, search_tool),
+        disabled_mcp_tools=(image_tool,),
+        preapproved_readonly_tools=(image_tool, search_tool),
+    )
+
+    assert result.session.status is SessionStatus.COMPLETED
+    assert captured[0]["mcp_allowlist"] == (search_tool,)
+    assert captured[0]["preapproved_readonly_tools"] == (search_tool,)
 
 
 def test_local_tool_gateway_registers_skills_only_with_configured_roots(tmp_path) -> None:

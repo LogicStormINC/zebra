@@ -136,10 +136,13 @@ def run_local_harness(
         trusted_local=trusted_local,
         web_pipeline_v2=web_pipeline_v2,
     )
-    resolved_mcp_allowlist = (
-        tuple(tool.name for tool in tool_gateway.effective_mcp_tools)
-        if mcp_allowlist is None
-        else tuple(mcp_allowlist)
+    effective_mcp_allowlist = tuple(
+        tool.name for tool in tool_gateway.effective_mcp_tools
+    )
+    effective_preapproved_readonly_tools = tuple(
+        tool_name
+        for tool_name in preapproved_readonly_tools
+        if tool_name in effective_mcp_allowlist
     )
     context_compiler = LocalContextCompiler()
     try:
@@ -156,8 +159,8 @@ def run_local_harness(
                 tool_profile=tool_profile,
                 network_profile=network_profile.name.value,
                 network_allowlist=network_profile.domain_allowlist,
-                mcp_allowlist=resolved_mcp_allowlist,
-                preapproved_readonly_tools=tuple(preapproved_readonly_tools),
+                mcp_allowlist=effective_mcp_allowlist,
+                preapproved_readonly_tools=effective_preapproved_readonly_tools,
                 skill_components=tool_gateway.effective_skill_components,
                 confirmed_memories=confirmed_memories,
                 attachments=attachments,
@@ -169,8 +172,8 @@ def run_local_harness(
                     profile=policy_profile,
                     network_profile=network_profile,
                     web_search_endpoint=web_search_endpoint,
-                    mcp_allowlist=resolved_mcp_allowlist,
-                    preapproved_readonly_tools=tuple(preapproved_readonly_tools),
+                    mcp_allowlist=effective_mcp_allowlist,
+                    preapproved_readonly_tools=effective_preapproved_readonly_tools,
                     trusted_local=trusted_local,
                     web_pipeline_v2=web_pipeline_v2,
                 ),

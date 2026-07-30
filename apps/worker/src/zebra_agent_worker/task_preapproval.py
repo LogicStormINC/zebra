@@ -25,9 +25,14 @@ def harness_authority(
     task: RecoveredTask,
     mcp_tools: tuple[ModelToolDefinition, ...],
 ) -> HarnessAuthority:
+    mcp_allowlist = tuple(tool.name for tool in mcp_tools)
     return {
-        "mcp_allowlist": tuple(tool.name for tool in mcp_tools),
-        "preapproved_readonly_tools": task.preapproved_readonly_tools or (),
+        "mcp_allowlist": mcp_allowlist,
+        "preapproved_readonly_tools": tuple(
+            name
+            for name in task.preapproved_readonly_tools or ()
+            if name in mcp_allowlist
+        ),
     }
 
 
@@ -41,12 +46,13 @@ def build_policy_engine(
     allow_finos_account_changes_proposal: bool,
 ) -> LocalPolicyEngine:
     profile = PolicyProfile(task.policy_profile)
-    if task.preapproved_readonly_tools:
+    authority = harness_authority(task, mcp_tools)
+    if authority["preapproved_readonly_tools"]:
         return factory(
             profile=profile,
             network_profile=network_profile,
             web_search_endpoint=settings.web_search_endpoint,
-            **harness_authority(task, mcp_tools),
+            **authority,
             trusted_local=trusted_local,
             allow_finos_account_changes_proposal=allow_finos_account_changes_proposal,
         )

@@ -5,10 +5,16 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Event, Thread
 
+import zebra_agent_worker.execution as worker_execution_module
 from agent_core.domain.events import EventType
-from agent_core.domain.identifiers import new_message_id
+from agent_core.domain.identifiers import new_artifact_id, new_event_id, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.model_calls import ModelCallRecord
+from agent_core.domain.model_media import (
+    ModelInputModality,
+    ModelMediaCapabilities,
+    ModelMediaInput,
+)
 from agent_core.domain.modeling import ModelCompletion, ModelTextDelta, ModelToolDefinition
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tool_runs import ToolRunRecord
@@ -338,6 +344,112 @@ def test_worker_keeps_preapproved_readonly_mcp_scope_out_of_trusted_local(
     assert captured[0]["trusted_local"] is False
     assert captured[0]["mcp_allowlist"] == ("mcp.fixture.echo",)
     assert captured[0]["preapproved_readonly_tools"] == ("mcp.fixture.echo",)
+
+
+def test_worker_narrows_preapproved_mcp_scope_after_native_media_disables_tool(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    image_tool = "mcp.minimax.understand_image"
+    search_tool = "mcp.minimax.web_search"
+    session_id = _seed_ready_session_with_input(
+        database_path,
+        tmp_path,
+        user_input="Review the native image and search for context.",
+        policy_profile="read_only",
+        network_profile="mcp-proxy-only",
+        mcp_allowlist=(image_tool, search_tool),
+        preapproved_readonly_tools=(image_tool, search_tool),
+    )
+    settings = replace(
+        _settings(database_path),
+        mcp_servers=(McpServerSettings(name="minimax", command=sys.executable),),
+    )
+    media_input = ModelMediaInput(
+        artifact_id=new_artifact_id(),
+        media_type="image/png",
+        sha256="a" * 64,
+        size_bytes=32,
+        display_name="review.png",
+        ordinal=0,
+        source_message_id=new_event_id(),
+    )
+    original_recover_task = worker_execution_module.recover_task
+
+    def recover_task_with_native_media(*args, **kwargs):
+        return replace(
+            original_recover_task(*args, **kwargs),
+            media_inputs=(media_input,),
+        )
+
+    class NativeMediaGateway:
+        media_capabilities = ModelMediaCapabilities(
+            input_modalities=frozenset({ModelInputModality.TEXT, ModelInputModality.IMAGE}),
+            supports_tools_with_media=True,
+            max_image_count=3,
+            max_image_bytes=1_024,
+            max_total_image_bytes=3_072,
+            image_media_types=frozenset({"image/png"}),
+        )
+
+        def __init__(self) -> None:
+            self._delegate = _assistant_only_gateway(settings=settings)
+
+        def bind_media_resolver(self, _media_resolver) -> None:
+            pass
+
+        def estimate_media_tokens(self, media_inputs) -> int:
+            return len(media_inputs)
+
+        def complete(self, messages, *, tools=(), media_inputs=()) -> ModelCompletion:
+            return self._delegate.complete(
+                messages,
+                tools=tools,
+                media_inputs=media_inputs,
+            )
+
+    class FakeMcpTransport:
+        model_tools = (
+            ModelToolDefinition(
+                name=image_tool,
+                description="Legacy image understanding.",
+                parameters={"type": "object", "properties": {}},
+            ),
+            ModelToolDefinition(
+                name=search_tool,
+                description="Search the web.",
+                parameters={"type": "object", "properties": {}},
+            ),
+        )
+
+    captured: list[dict[str, object]] = []
+
+    def build_policy(**kwargs):
+        captured.append(kwargs)
+        return LocalPolicyEngine(**kwargs)
+
+    monkeypatch.setattr(worker_execution_module, "recover_task", recover_task_with_native_media)
+    monkeypatch.setattr(
+        worker_execution_module,
+        "build_model_gateway",
+        lambda _settings: NativeMediaGateway(),
+    )
+    monkeypatch.setattr(
+        "agent_runtime.harness.build_mcp_transport",
+        lambda *_args, **_kwargs: FakeMcpTransport(),
+    )
+    monkeypatch.setattr(worker_execution_module, "LocalPolicyEngine", build_policy)
+
+    result = _build_execution_service(database_path, settings=settings).execute_session(
+        session_id,
+        worker_id="worker-native-media-preapproval",
+        executed_at=_created_at(),
+    )
+
+    assert result.session.status is SessionStatus.COMPLETED
+    assert captured[0]["mcp_allowlist"] == (search_tool,)
+    assert captured[0]["preapproved_readonly_tools"] == (search_tool,)
 
 
 def test_worker_scopes_account_change_proposal_gate_to_the_v2_or_v3_task_binding(
