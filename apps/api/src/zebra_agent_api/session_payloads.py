@@ -29,6 +29,7 @@ class CreateSessionPayload(TypedDict):
     network_profile: str
     network_allowlist: list[str]
     mcp_allowlist: list[str]
+    preapproved_readonly_tools: list[str]
     mcp_resource_ids: list[str]
     mcp_prompt_id: str | None
     mcp_prompt_arguments: dict[str, str]
@@ -194,6 +195,21 @@ def parse_create_session_payload(
         normalized_mcp = normalize_mcp_allowlist(mcp_allowlist)
     except ValueError as exc:
         return bad_request(str(exc))
+    preapproved_readonly_tools = payload.get("preapproved_readonly_tools", [])
+    if not isinstance(preapproved_readonly_tools, list) or not all(
+        isinstance(item, str) for item in preapproved_readonly_tools
+    ):
+        return bad_request("preapproved_readonly_tools must be a list of strings when provided")
+    try:
+        normalized_preapproved = normalize_mcp_allowlist(preapproved_readonly_tools)
+    except ValueError as exc:
+        return bad_request(str(exc))
+    if normalized_preapproved and (
+        policy_profile != PolicyProfile.READ_ONLY.value
+        or network.name is not NetworkProfileName.MCP_PROXY_ONLY
+        or not set(normalized_preapproved) <= set(normalized_mcp)
+    ):
+        return bad_request("preapproved read-only tools require scoped Task authority")
     mcp_resource_ids = payload.get("mcp_resource_ids", [])
     if not isinstance(mcp_resource_ids, list) or not all(
         isinstance(item, str) for item in mcp_resource_ids
@@ -238,6 +254,7 @@ def parse_create_session_payload(
         "network_profile": network.name.value,
         "network_allowlist": list(network.domain_allowlist),
         "mcp_allowlist": list(normalized_mcp),
+        "preapproved_readonly_tools": list(normalized_preapproved),
         "mcp_resource_ids": list(normalized_resources),
         "mcp_prompt_id": normalized_prompt_id,
         "mcp_prompt_arguments": dict(raw_prompt_arguments),

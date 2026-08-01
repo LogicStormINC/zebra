@@ -1,3 +1,4 @@
+import sys
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
@@ -35,7 +36,7 @@ from worker_execution_support import (
     _settings,
     _tool_gateway,
 )
-from zebra_agent_config import FinosJournalProviderSettings
+from zebra_agent_config import FinosJournalProviderSettings, McpServerSettings
 from zebra_agent_worker.control import SessionControlService
 
 
@@ -288,6 +289,55 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
 
     assert captured[0].name.value == "domain-allowlist"
     assert captured[0].domain_allowlist == ("docs.example.com",)
+
+
+def test_worker_keeps_preapproved_readonly_mcp_scope_out_of_trusted_local(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session_with_input(
+        database_path,
+        tmp_path,
+        user_input="Search the public catalog.",
+        policy_profile="read_only",
+        network_profile="mcp-proxy-only",
+        mcp_allowlist=("mcp.fixture.echo",),
+        preapproved_readonly_tools=("mcp.fixture.echo",),
+    )
+    server_script = Path(__file__).parents[2] / "fixtures" / "mcp_stdio_server.py"
+    settings = replace(
+        _settings(database_path),
+        profile="local",
+        mcp_servers=(
+            McpServerSettings(
+                name="fixture",
+                command=sys.executable,
+                args=(str(server_script), "normal"),
+            ),
+        ),
+    )
+    captured: list[dict[str, object]] = []
+
+    def build_policy(**kwargs):
+        captured.append(kwargs)
+        return LocalPolicyEngine(**kwargs)
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _assistant_only_gateway(settings=settings),
+    )
+    monkeypatch.setattr("zebra_agent_worker.execution.LocalPolicyEngine", build_policy)
+
+    _build_execution_service(database_path, settings=settings).execute_session(
+        session_id,
+        worker_id="worker-preapproved-readonly",
+        executed_at=_created_at(),
+    )
+
+    assert captured[0]["trusted_local"] is False
+    assert captured[0]["mcp_allowlist"] == ("mcp.fixture.echo",)
+    assert captured[0]["preapproved_readonly_tools"] == ("mcp.fixture.echo",)
 
 
 def test_worker_scopes_account_change_proposal_gate_to_the_v2_task_binding(

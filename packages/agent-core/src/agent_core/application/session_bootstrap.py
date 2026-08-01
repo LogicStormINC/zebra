@@ -24,6 +24,7 @@ class SessionBootstrapCommand:
     network_profile: str = "none"
     network_allowlist: tuple[str, ...] = ()
     mcp_allowlist: tuple[str, ...] = ()
+    preapproved_readonly_tools: tuple[str, ...] = ()
     skill_components: tuple[str, ...] = ()
     history_session_ids: tuple[str, ...] | None = None
     max_attempts: int = 1
@@ -42,6 +43,15 @@ class BootstrappedSession:
 class SessionBootstrapService:
     def build(self, command: SessionBootstrapCommand) -> BootstrappedSession:
         mcp_allowlist = normalize_mcp_allowlist(command.mcp_allowlist)
+        preapproved_readonly_tools = normalize_mcp_allowlist(
+            command.preapproved_readonly_tools
+        )
+        if preapproved_readonly_tools and (
+            command.policy_profile != "read_only"
+            or command.network_profile != "mcp-proxy-only"
+            or not set(preapproved_readonly_tools) <= set(mcp_allowlist)
+        ):
+            raise ValueError("preapproved read-only tools require scoped Task authority")
         history_session_ids = (
             None
             if command.history_session_ids is None
@@ -90,6 +100,7 @@ class SessionBootstrapService:
                     "network_profile": command.network_profile,
                     "network_allowlist": list(command.network_allowlist),
                     "mcp_allowlist": list(mcp_allowlist),
+                    "preapproved_readonly_tools": list(preapproved_readonly_tools),
                     "skill_components": list(command.skill_components),
                     **(
                         {"history_session_ids": list(history_session_ids)}

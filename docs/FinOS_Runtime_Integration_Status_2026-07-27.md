@@ -76,6 +76,27 @@ stream, bootstrap, message, clarification, harness, and runtime tests pass
 cursor order, and FinOS consumed that projection without a local conversation
 fallback. This does not replace FinOS's authorization boundary.
 
+## Read-only automatic authorization follow-up (design)
+
+The `FINOS-RT-04-READONLY-AUTH` follow-up adds no global MCP trust mode. FinOS
+persists each owner's setting choice and emits a Task-scoped grant containing
+an exact MCP allowlist plus an exact `preapproved_readonly_tools` subset. Zebra
+persists both lists in the durable workspace authority.
+
+Zebra's Policy remains the only decision state machine. It may automatically
+allow a name only when it is in both lists, the Task declares `read_only`, the
+network profile is `mcp-proxy-only`, and the classified route is the MCP proxy.
+The grant's field is the read-only scope; Zebra does not hard-code a provider,
+search tool, image model, or provider-specific hostname. A missing or mismatched
+grant keeps the current approval path.
+
+This preserves the `trusted-local` operator default for ordinary tasks while
+protecting the restricted FinOS Task from that broad override. Write tools,
+Core/Draft operations, Shell, Git/PR, deletion, publication and every unnamed
+MCP remain outside the grant and retain their existing approval or deny result.
+Image input is cataloged by FinOS as a user-selected model capability; it is
+not rendered as a normal tool approval card.
+
 ## Not complete / release blockers
 
 - This branch's attributable static regressions are closed: `task_api.py` and
