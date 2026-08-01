@@ -14,6 +14,10 @@ SUPPORTED_FINOS_JOURNAL_CONTRACTS = frozenset(
 )
 
 
+def allows_finos_account_changes_proposal(provider: FinosJournalProvider | None) -> bool:
+    return provider is not None and provider.contract_version == FINOS_JOURNAL_V2_CONTRACT
+
+
 def build_finos_journal_provider(
     *,
     settings: ZebraAgentSettings,

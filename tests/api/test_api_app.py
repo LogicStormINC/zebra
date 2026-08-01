@@ -360,41 +360,6 @@ def test_api_create_session_persists_domain_allowlist(tmp_path: Path) -> None:
     assert detail.body["workspace"]["network_allowlist"] == ["docs.example.com"]
 
 
-def test_api_persists_exact_preapproved_readonly_mcp_grant_without_trusted_override(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    database_path = tmp_path / "sessions.sqlite"
-    monkeypatch.setattr(
-        api_app_module,
-        "validate_mcp_capability_selection",
-        lambda _servers, selected: tuple(selected),
-    )
-    settings = replace(_settings(database_path), profile="local")
-
-    response = create_app(database_path, settings=settings).create_session(
-        {
-            "prompt": "Search public sources",
-            "policy_profile": "read_only",
-            "network_profile": "mcp-proxy-only",
-            "mcp_allowlist": ["mcp.catalog.search_public"],
-            "preapproved_readonly_tools": ["mcp.catalog.search_public"],
-        }
-    )
-
-    assert response.status_code == 201
-    assert response.body["network_profile"] == "mcp-proxy-only"
-    assert response.body["preapproved_readonly_tools"] == [
-        "mcp.catalog.search_public"
-    ]
-    detail = create_app(database_path, settings=settings).get_session(
-        response.body["session_id"]
-    )
-    assert detail.body["workspace"]["preapproved_readonly_tools"] == [
-        "mcp.catalog.search_public"
-    ]
-
-
 def test_api_create_session_execute_persists_harness_events(
     tmp_path: Path,
     monkeypatch,

@@ -30,7 +30,6 @@ from agent_integrations import build_model_gateway
 from agent_runtime import LocalToolGateway
 from agent_security import (
     LocalPolicyEngine,
-    PolicyProfile,
     resolve_effective_network_profile,
 )
 from agent_storage import (
@@ -58,6 +57,7 @@ from zebra_agent_config import (
 )
 
 import zebra_agent_worker.session_handoff as handoff
+import zebra_agent_worker.task_preapproval as auth
 from zebra_agent_worker.approved_continuation import (
     ApprovedContinuationError,
     recover_approved_continuation,
@@ -80,7 +80,7 @@ from zebra_agent_worker.execution_errors import error_metadata, exception_attemp
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import finalize_execution
 from zebra_agent_worker.finos_journal_provider import (
-    FINOS_JOURNAL_V2_CONTRACT,
+    allows_finos_account_changes_proposal,
     build_finos_journal_provider,
 )
 from zebra_agent_worker.model_call_index import ModelCallIndexer
@@ -212,13 +212,7 @@ class SessionExecutionService:
             self._settings,
             str(task_record.task_id),
         )
-        restricted_readonly_task = (
-            task.policy_profile == PolicyProfile.READ_ONLY.value
-            and task.network_profile.name.value == "mcp-proxy-only"
-        )
-        trusted_local = (
-            trusted_local_mode_enabled(self._settings) and not restricted_readonly_task
-        )
+        trusted_local = auth.is_trusted_local(trusted_local_mode_enabled(self._settings), task)
         effective_network_profile = resolve_effective_network_profile(
             task.network_profile,
             trusted_local=trusted_local,
@@ -332,8 +326,7 @@ class SessionExecutionService:
                 tool_profile=task.tool_profile,
                 network_profile=effective_network_profile.name.value,
                 network_allowlist=effective_network_profile.domain_allowlist,
-                mcp_allowlist=tuple(tool.name for tool in tool_gateway.effective_mcp_tools),
-                preapproved_readonly_tools=task.preapproved_readonly_tools or (),
+                **auth.harness_authority(task, tool_gateway.effective_mcp_tools),
                 skill_components=tool_gateway.effective_skill_components,
                 confirmed_memories=list_confirmed_repo_memories(
                     self._database_path,
@@ -443,30 +436,15 @@ class SessionExecutionService:
             provider_continuation=provider_continuation,
             attempt_number=1,
         )
-        if task.preapproved_readonly_tools:
-            policy_engine = LocalPolicyEngine(
-                profile=PolicyProfile(task.policy_profile),
-                network_profile=effective_network_profile,
-                web_search_endpoint=self._settings.web_search_endpoint,
-                mcp_allowlist=tuple(tool.name for tool in tool_gateway.effective_mcp_tools),
-                preapproved_readonly_tools=task.preapproved_readonly_tools,
-                trusted_local=trusted_local,
-                allow_finos_account_changes_proposal=(
-                    finos_journal_provider is not None
-                    and finos_journal_provider.contract_version == FINOS_JOURNAL_V2_CONTRACT
-                ),
-            )
-        else:
-            policy_engine = LocalPolicyEngine(
-                profile=PolicyProfile(task.policy_profile),
-                network_profile=effective_network_profile,
-                web_search_endpoint=self._settings.web_search_endpoint,
-                trusted_local=trusted_local,
-                allow_finos_account_changes_proposal=(
-                    finos_journal_provider is not None
-                    and finos_journal_provider.contract_version == FINOS_JOURNAL_V2_CONTRACT
-                ),
-            )
+        policy_engine = auth.build_policy_engine(
+            LocalPolicyEngine,
+            task,
+            effective_network_profile,
+            self._settings,
+            tool_gateway.effective_mcp_tools,
+            trusted_local,
+            allows_finos_account_changes_proposal(finos_journal_provider),
+        )
         orchestrator = SingleAttemptOrchestrator(
             model_gateway,
             policy_engine,

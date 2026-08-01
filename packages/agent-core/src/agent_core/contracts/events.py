@@ -44,6 +44,8 @@ from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.skills import normalize_skill_components
 from agent_core.domain.tool_profiles import ToolProfile
 
+_OPTIONAL_LIST = Field(default=None, exclude_if=lambda value: value is None)
+
 
 class SessionCreatedPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -83,22 +85,10 @@ class TaskPreparedPayload(BaseModel):
     tool_profile: ToolProfile | None = None
     network_profile: NetworkProfileName | None = None
     network_allowlist: list[str] | None = None
-    mcp_allowlist: list[str] | None = Field(
-        default=None,
-        exclude_if=lambda value: value is None,
-    )
-    preapproved_readonly_tools: list[str] | None = Field(
-        default=None,
-        exclude_if=lambda value: value is None,
-    )
-    skill_components: list[str] | None = Field(
-        default=None,
-        exclude_if=lambda value: value is None,
-    )
-    history_session_ids: list[str] | None = Field(
-        default=None,
-        exclude_if=lambda value: value is None,
-    )
+    mcp_allowlist: list[str] | None = _OPTIONAL_LIST
+    preapproved_readonly_tools: list[str] | None = _OPTIONAL_LIST
+    skill_components: list[str] | None = _OPTIONAL_LIST
+    history_session_ids: list[str] | None = _OPTIONAL_LIST
     max_attempts: int | None = None
     max_model_calls: int | None = None
     max_tool_calls: int | None = None

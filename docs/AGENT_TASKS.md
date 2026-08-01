@@ -10982,11 +10982,11 @@ financial write authority.
 
 ### FINOS-RT-04-READONLY-AUTH - FinOS Scoped Read-Only Tool Authorization
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `vinson1101`
 - Suggested role: `RUNTIME / SECURITY / INTEGRATION`
 - Depends on: `FINOS-RT-04`
-- Branch: `codex/readonly-tool-authorization`
+- Branch: `codex/finos-runtime-alignment`
 - Owned paths: `apps/api/`, `apps/worker/`, `packages/agent-core/`,
   `packages/agent-security/`, `packages/agent-storage/`, `tests/`,
   `docs/AGENT_TASKS.md`, `docs/FinOS_Runtime_Integration_Status_2026-07-27.md`,

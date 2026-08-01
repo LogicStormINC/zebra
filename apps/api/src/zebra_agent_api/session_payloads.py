@@ -4,7 +4,6 @@ from datetime import UTC, datetime
 from typing import TypedDict
 
 from agent_core.domain.attachments import TextAttachmentInput
-from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.session_history import normalize_history_session_ids
@@ -12,6 +11,7 @@ from agent_core.domain.tool_profiles import ToolProfile
 from agent_runtime import normalize_mcp_resource_ids
 from agent_security import NetworkProfileError, PolicyProfile, parse_network_profile
 
+from zebra_agent_api.preapproved_tools import parse_mcp_authority
 from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.session_attachment_inputs import ImageAttachmentInput, parse_attachment_inputs
 
@@ -186,30 +186,14 @@ def parse_create_session_payload(
         )
     except ValueError as exc:
         return bad_request(str(exc))
-    mcp_allowlist = payload.get("mcp_allowlist", [])
-    if not isinstance(mcp_allowlist, list) or not all(
-        isinstance(item, str) for item in mcp_allowlist
-    ):
-        return bad_request("mcp_allowlist must be a list of strings when provided")
     try:
-        normalized_mcp = normalize_mcp_allowlist(mcp_allowlist)
+        normalized_mcp, normalized_preapproved = parse_mcp_authority(
+            payload,
+            policy_profile=policy_profile,
+            network_profile=network.name,
+        )
     except ValueError as exc:
         return bad_request(str(exc))
-    preapproved_readonly_tools = payload.get("preapproved_readonly_tools", [])
-    if not isinstance(preapproved_readonly_tools, list) or not all(
-        isinstance(item, str) for item in preapproved_readonly_tools
-    ):
-        return bad_request("preapproved_readonly_tools must be a list of strings when provided")
-    try:
-        normalized_preapproved = normalize_mcp_allowlist(preapproved_readonly_tools)
-    except ValueError as exc:
-        return bad_request(str(exc))
-    if normalized_preapproved and (
-        policy_profile != PolicyProfile.READ_ONLY.value
-        or network.name is not NetworkProfileName.MCP_PROXY_ONLY
-        or not set(normalized_preapproved) <= set(normalized_mcp)
-    ):
-        return bad_request("preapproved read-only tools require scoped Task authority")
     mcp_resource_ids = payload.get("mcp_resource_ids", [])
     if not isinstance(mcp_resource_ids, list) or not all(
         isinstance(item, str) for item in mcp_resource_ids

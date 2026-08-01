@@ -9,7 +9,31 @@ from agent_core.domain.tools import ToolCall
 from agent_security import LocalPolicyEngine, PolicyProfile, parse_network_profile
 from fastapi.testclient import TestClient
 from zebra_agent_api import create_http_app
+from zebra_agent_api.app import create_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
+
+
+def test_api_persists_exact_preapproved_readonly_mcp_grant_without_trusted_override(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    _allow_mcp_selection(monkeypatch)
+    settings = replace(_settings(database_path), profile="local")
+
+    response = create_app(database_path, settings=settings).create_session(_payload())
+
+    assert response.status_code == 201
+    assert response.body["network_profile"] == "mcp-proxy-only"
+    assert response.body["preapproved_readonly_tools"] == [
+        "mcp.catalog.search_public"
+    ]
+    detail = create_app(database_path, settings=settings).get_session(
+        response.body["session_id"]
+    )
+    assert detail.body["workspace"]["preapproved_readonly_tools"] == [
+        "mcp.catalog.search_public"
+    ]
 
 
 def test_create_session_preapproved_readonly_tools_contract(
@@ -17,19 +41,9 @@ def test_create_session_preapproved_readonly_tools_contract(
     monkeypatch,
 ) -> None:
     database_path = tmp_path / "sessions.sqlite"
-    monkeypatch.setattr(
-        api_app_module,
-        "validate_mcp_capability_selection",
-        lambda _servers, selected: tuple(selected),
-    )
+    _allow_mcp_selection(monkeypatch)
     settings = replace(_settings(database_path), profile="local")
-    payload = {
-        "prompt": "Search public sources",
-        "policy_profile": "read_only",
-        "network_profile": "mcp-proxy-only",
-        "mcp_allowlist": ["mcp.catalog.search_public"],
-        "preapproved_readonly_tools": ["mcp.catalog.search_public"],
-    }
+    payload = _payload()
 
     client = TestClient(create_http_app(database_path, settings=settings))
     response = client.post("/tasks", json=payload)
@@ -78,6 +92,24 @@ def _settings(database_path: Path) -> ZebraAgentSettings:
             base_url="https://example.test",
             model="test-model",
         ),
+    )
+
+
+def _payload() -> dict[str, object]:
+    return {
+        "prompt": "Search public sources",
+        "policy_profile": "read_only",
+        "network_profile": "mcp-proxy-only",
+        "mcp_allowlist": ["mcp.catalog.search_public"],
+        "preapproved_readonly_tools": ["mcp.catalog.search_public"],
+    }
+
+
+def _allow_mcp_selection(monkeypatch) -> None:
+    monkeypatch.setattr(
+        api_app_module,
+        "validate_mcp_capability_selection",
+        lambda _servers, selected: tuple(selected),
     )
 
 
