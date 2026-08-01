@@ -7,7 +7,8 @@ from agent_core.domain.identifiers import new_tool_call_id
 from agent_core.domain.policies import PolicyDecisionType
 from agent_core.domain.tools import ToolCall
 from agent_security import LocalPolicyEngine, PolicyProfile, parse_network_profile
-from zebra_agent_api.app import create_app
+from fastapi.testclient import TestClient
+from zebra_agent_api import create_http_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
 
@@ -30,29 +31,29 @@ def test_create_session_preapproved_readonly_tools_contract(
         "preapproved_readonly_tools": ["mcp.catalog.search_public"],
     }
 
-    app = create_app(database_path, settings=settings)
-    response = app.create_session(payload)
+    client = TestClient(create_http_app(database_path, settings=settings))
+    response = client.post("/tasks", json=payload)
 
     assert response.status_code == 201
-    assert response.body["network_profile"] == "mcp-proxy-only"
-    assert response.body["preapproved_readonly_tools"] == [
+    assert response.json()["network_profile"] == "mcp-proxy-only"
+    assert response.json()["preapproved_readonly_tools"] == [
         "mcp.catalog.search_public"
     ]
-    detail = app.get_session(response.body["session_id"])
-    assert detail.body["workspace"]["preapproved_readonly_tools"] == [
+    detail = client.get(f"/tasks/{response.json()['task_id']}")
+    assert detail.json()["workspace"]["preapproved_readonly_tools"] == [
         "mcp.catalog.search_public"
     ]
 
-    unknown = app.create_session({**payload, "not_a_create_session_field": True})
+    unknown = client.post("/tasks", json={**payload, "not_a_create_session_field": True})
     assert unknown.status_code == 400
-    assert unknown.body["reason"] == "unknown create-session fields: not_a_create_session_field"
+    assert unknown.json()["reason"] == "unknown create-session fields: not_a_create_session_field"
 
     legacy_payload = {
         key: value for key, value in payload.items() if key != "preapproved_readonly_tools"
     }
-    legacy = app.create_session(legacy_payload)
+    legacy = client.post("/tasks", json=legacy_payload)
     assert legacy.status_code == 201
-    assert legacy.body["preapproved_readonly_tools"] == []
+    assert legacy.json()["preapproved_readonly_tools"] == []
 
     engine = LocalPolicyEngine(
         profile=PolicyProfile.READ_ONLY,
