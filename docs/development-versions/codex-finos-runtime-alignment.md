@@ -12,9 +12,11 @@
   `d7ec9158efe034cdee5ee98898c87b9235e4702d`
 - Model-profile source branch / commit: `fork/codex/generic-model-profile-v2` /
   `ea52d552e8761ab5f0f2e08b43ce1d7b6219ac84`
+- Journal-v3 source branch / commits: `fork/codex/recover-invalid-plan-20260730` /
+  `ae6ac94`, `1318375`, `023246e`
 - Read-only merge commit: `98faf507165e73bfddc88491d3c154f3512e2a05`
 - Qwen/profile integration commit: `1d72e9ff21137eae5364902964fdccc0adf0fa9b`
-- Current implementation head: `1d72e9ff21137eae5364902964fdccc0adf0fa9b`
+- Current implementation head: `d8158105afaed85692bde8d70f62009553198182`
 - Status: `Validated staging candidate / not yet deployed`
 
 The source commit has `1d2c140...` as its direct parent. The source branch is
@@ -45,6 +47,12 @@ staging route uses `qwen-flash-native-v1` for Qwen image + tool + streaming
 acceptance. MiniMax remains an independent Policy-bound fallback; its stdio
 server now fails closed unless `MINIMAX_API_HOST` is passed explicitly.
 
+The FinOS Journal provider additionally supports `finos.journals.v3`, including
+the typed `finos.trade_log_quality.validate` gate required by Skill v6. The
+validator remains task-scoped and does not bypass Core confirmation. Native Qwen
+media also narrows preapproved MCP authority to the effective tool catalog, so
+the disabled MiniMax image tool is not silently retained as primary authority.
+
 ## Commit and validation evidence
 
 - `cc06e28`: red contract reproducing the baseline `400`;
@@ -69,6 +77,10 @@ Validation:
   names match the documented inherited baseline categories below;
 - private-endpoint Qwen native-image smoke with
   `qwen-flash-native-v1`: `1 passed` (no credential or image payload logged).
+- Journal-v3/Qwen/preapproval focused validation: `76 passed`, plus the single
+  inherited cancellation failure;
+- final merged full suite: `1,916 passed, 9 failed, 9 skipped`, with the same
+  nine inherited failure categories.
 
 The nine full-suite failures have the same names on the isolated baseline and
 cover existing model-response, credential/transport, file-size, and durable
