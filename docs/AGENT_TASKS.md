@@ -11000,13 +11000,13 @@ the sole policy/approval state machine.
 
 #### Acceptance
 
-- [ ] Task payload and workspace projection persist exact MCP visibility and
+- [x] Task payload and workspace projection persist exact MCP visibility and
   preapproved-readonly names.
-- [ ] Auto allow requires `read_only`, `mcp-proxy-only`, an MCP route, and an
+- [x] Auto allow requires `read_only`, `mcp-proxy-only`, an MCP route, and an
   exact persisted grant; ungranted MCP still requests approval.
-- [ ] No Zebra provider name is hard-coded in Policy.
-- [ ] `trusted-local` does not widen this restricted FinOS authority.
-- [ ] FinOS write/Core/Shell/Git/PR/delete/publish paths remain approval-gated
+- [x] No Zebra provider name is hard-coded in Policy.
+- [x] `trusted-local` does not widen this restricted FinOS authority.
+- [x] FinOS write/Core/Shell/Git/PR/delete/publish paths remain approval-gated
   or denied, with focused policy and zero-Core-write regression evidence.
 
 #### Explicit Non-Goals
