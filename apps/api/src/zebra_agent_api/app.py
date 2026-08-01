@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -12,10 +13,12 @@ from agent_core.application import (
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.events import EventType
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import ArtifactId, SessionId, new_event_id
+from agent_core.domain.model_media import ModelMediaInput
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_integrations import GitHubPullRequestTransport, build_model_gateway
 from agent_runtime import (
+    bind_native_media_inputs,
     read_mcp_resource_attachments,
     run_local_harness,
     validate_mcp_capability_selection,
@@ -28,6 +31,7 @@ from agent_security import (
 )
 from agent_storage import (
     LeaseConflictError,
+    SQLiteArtifactPayloadStore,
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
@@ -35,6 +39,7 @@ from agent_storage import (
     SQLiteWorkspaceProjectionStore,
     list_confirmed_repo_memories,
 )
+from agent_storage.session_attachments import RegisteredTaskMedia, TaskAttachmentMediaResolver
 from zebra_agent_config import (
     ZebraAgentSettings,
     load_settings,
@@ -76,6 +81,7 @@ from zebra_agent_api.skills_admin import (
     scoped_skill_roots,
 )
 from zebra_agent_api.task_image_attachments import (
+    StagedTaskImages,
     cleanup_staged_task_images,
     stage_task_images,
     task_image_prompt_suffix,
@@ -271,8 +277,7 @@ class ZebraAgentApi(
             bootstrap = SessionBootstrapService().build(
                 SessionBootstrapCommand(
                     title=str(parsed["title"]),
-                    user_input=str(parsed["prompt"])
-                    + (task_image_prompt_suffix(staged_images) if staged_images else ""),
+                    user_input=str(parsed["prompt"]),
                     public_content=parsed["public_content"], workspace_root=(
                         staged_images.workspace_root
                         if staged_images is not None
@@ -363,6 +368,49 @@ class ZebraAgentApi(
         except ValueError as error:
             return bad_request(str(error))
         images_durable = False
+        image_payload_store: SQLiteArtifactPayloadStore | None = None
+        staged_payload_ids: tuple[ArtifactId, ...] = ()
+        initial_user_event_id = new_event_id() if staged_images is not None else None
+        native_media_inputs: tuple[ModelMediaInput, ...] = ()
+        if staged_images is not None:
+            if session_id is None or initial_user_event_id is None:
+                cleanup_staged_task_images(staged_images)
+                raise RuntimeError("inline task image session identity was not allocated")
+            image_payload_store = SQLiteArtifactPayloadStore(self.database_path)
+            try:
+                staged_payload_ids = staged_images.persist_payloads(
+                    image_payload_store,
+                    session_id=session_id,
+                    created_at=datetime.now(UTC),
+                )
+                image_refs = staged_images.refs_for(initial_user_event_id)
+                media_resolver = TaskAttachmentMediaResolver(
+                    image_payload_store,
+                    tuple(
+                        RegisteredTaskMedia(
+                            attachment=image_ref,
+                            source_session_id=session_id,
+                        )
+                        for image_ref in image_refs
+                    ),
+                )
+                native_media_inputs = bind_native_media_inputs(
+                    model_gateway,
+                    media_resolver.media_inputs,
+                    media_resolver,
+                )
+            except Exception as error:
+                _cleanup_uncommitted_staged_images(
+                    staged_images,
+                    image_payload_store,
+                    staged_payload_ids,
+                )
+                if not isinstance(error, ValueError):
+                    raise
+                return service_unavailable(
+                    status="model_gateway_unavailable",
+                    reason=str(error),
+                )
         workspace_root = (
             staged_images.workspace_root
             if staged_images is not None
@@ -383,7 +431,11 @@ class ZebraAgentApi(
             )
             result = run_local_harness(
                 prompt=str(parsed["prompt"])
-                + (task_image_prompt_suffix(staged_images) if staged_images else ""),
+                + (
+                    task_image_prompt_suffix(staged_images)
+                    if staged_images is not None and not native_media_inputs
+                    else ""
+                ),
                 public_content=parsed["public_content"], title=str(parsed["title"]),
                 workspace_root=workspace_root,
                 model_gateway=model_gateway,
@@ -417,11 +469,20 @@ class ZebraAgentApi(
                     )
                     for attachment in parsed["attachments"]
                 ),
+                media_inputs=native_media_inputs,
+                disabled_mcp_tools=(
+                    ("mcp.minimax.understand_image",) if native_media_inputs else ()
+                ),
                 session_id=session_id,
+                initial_user_event_id=initial_user_event_id,
             )
         except Exception as error:
             if staged_images is not None and not images_durable:
-                cleanup_staged_task_images(staged_images)
+                _cleanup_uncommitted_staged_images(
+                    staged_images,
+                    image_payload_store,
+                    staged_payload_ids,
+                )
             if not isinstance(error, ValueError):
                 raise
             return service_unavailable(
@@ -436,6 +497,7 @@ class ZebraAgentApi(
                 staged_images=staged_images,
             )
             session = persist_execution_events(self.database_path, events)
+            images_durable = staged_images is not None
         except Exception:
             if staged_images is not None and not images_durable:
                 if not any(
@@ -444,7 +506,11 @@ class ZebraAgentApi(
                         result.session.session_id
                     )
                 ):
-                    cleanup_staged_task_images(staged_images)
+                    _cleanup_uncommitted_staged_images(
+                        staged_images,
+                        image_payload_store,
+                        staged_payload_ids,
+                    )
             raise
         return ApiResponse(
             status_code=201,
@@ -473,6 +539,19 @@ class ZebraAgentApi(
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
+
+
+def _cleanup_uncommitted_staged_images(
+    staged_images: StagedTaskImages,
+    payload_store: SQLiteArtifactPayloadStore | None,
+    payload_ids: tuple[ArtifactId, ...],
+) -> None:
+    cleanup_staged_task_images(staged_images)
+    if payload_store is None:
+        return
+    for artifact_id in payload_ids:
+        payload_store.prune_payload(artifact_id)
+
 
 def create_app(
     database_path: str | Path | None = None,

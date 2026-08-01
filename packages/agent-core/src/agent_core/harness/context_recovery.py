@@ -9,6 +9,7 @@ from agent_core.domain.messages import (
     SessionMessage,
     without_superseded_operation_failures,
 )
+from agent_core.domain.model_media import ModelMediaInput
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.hooks import CompactionHook
@@ -29,6 +30,8 @@ def merge_recovery_messages(
     recovery_messages: tuple[SessionMessage, ...],
     messages: tuple[SessionMessage, ...],
     model_gateway: ModelGatewayPort,
+    *,
+    media_inputs: tuple[ModelMediaInput, ...] = (),
 ) -> tuple[SessionMessage, ...] | None:
     known = {str(message.message_id) for message in recovery_messages}
     candidate = without_superseded_operation_failures(
@@ -36,7 +39,11 @@ def merge_recovery_messages(
         + tuple(message for message in messages if str(message.message_id) not in known)
     )
     if not candidate or not build_context_plan(
-        candidate, (), context_window(model_gateway), model_gateway
+        candidate,
+        (),
+        context_window(model_gateway),
+        model_gateway,
+        media_inputs=media_inputs,
     ).within_budget:
         return None
     return candidate
@@ -66,6 +73,8 @@ def prepare_terminal_conversation(
     model_step: HarnessModelStep,
     user_goal: str,
     created_at: datetime,
+    *,
+    media_inputs: tuple[ModelMediaInput, ...] = (),
 ) -> ConversationCompactionResult | None:
     compaction = model_step.prepare_conversation(
         messages,
@@ -73,11 +82,20 @@ def prepare_terminal_conversation(
         allow_tools=False,
         user_goal=user_goal,
         created_at=created_at,
+        **({"media_inputs": media_inputs} if media_inputs else {}),
     )
-    model_step.recover_conversation(messages, model_gateway)
+    model_step.recover_conversation(
+        messages,
+        model_gateway,
+        **({"media_inputs": media_inputs} if media_inputs else {}),
+    )
     append_final_answer_instruction(messages, created_at=created_at)
     if build_context_plan(
-        tuple(messages), (), context_window(model_gateway), model_gateway
+        tuple(messages),
+        (),
+        context_window(model_gateway),
+        model_gateway,
+        media_inputs=media_inputs,
     ).within_budget:
         return compaction
     return model_step.prepare_conversation(
@@ -86,6 +104,7 @@ def prepare_terminal_conversation(
         allow_tools=False,
         user_goal=user_goal,
         created_at=created_at,
+        **({"media_inputs": media_inputs} if media_inputs else {}),
     )
 
 
@@ -128,6 +147,7 @@ def prepare_bounded_conversation(
     compaction_hook: CompactionHook | None,
     user_goal: str,
     created_at: datetime,
+    media_inputs: tuple[ModelMediaInput, ...] = (),
 ) -> ConversationCompactionResult | None:
     tools = available_tools if allow_tools else ()
     window = context_window(model_gateway)
@@ -149,6 +169,7 @@ def prepare_bounded_conversation(
         tools,
         window,
         model_gateway,
+        media_inputs=media_inputs,
         attempted_strategies=attempted,
     )
     if not plan.within_budget and conversation_compactor is not None:
@@ -171,6 +192,7 @@ def prepare_bounded_conversation(
             tools,
             window,
             model_gateway,
+            media_inputs=media_inputs,
             attempted_strategies=(*attempted, "strict_original_history_retry", result.provenance),
         )
     if not plan.within_budget:

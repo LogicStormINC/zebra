@@ -16,8 +16,9 @@ def persist_initial_attachments(
     attachments: tuple[TextAttachmentInput, ...],
     staged_images: StagedTaskImages | None = None,
 ) -> tuple[tuple[SessionEvent, ...], tuple[SessionAttachmentRef, ...]]:
+    store = SQLiteArtifactPayloadStore(database_path)
     persisted_events, refs = store_initial_text_attachments(
-        SQLiteArtifactPayloadStore(database_path),
+        store,
         events,
         attachments=attachments,
     )
@@ -25,6 +26,11 @@ def persist_initial_attachments(
         return persisted_events, refs
     user_event = next(
         event for event in persisted_events if event.event_type is EventType.USER_MESSAGE_RECEIVED
+    )
+    staged_images.persist_payloads(
+        store,
+        session_id=user_event.session_id,
+        created_at=user_event.created_at,
     )
     image_refs = staged_images.refs_for(user_event.event_id)
     attached_event = attach_refs_to_user_event(user_event, image_refs)

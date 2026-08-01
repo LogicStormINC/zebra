@@ -3,7 +3,22 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 PNG = b"\x89PNG\r\n\x1a\nZEBRA-MINIMAX"
+
+
+def test_server_requires_an_explicit_api_host(monkeypatch) -> None:
+    module = _module()
+    errors: list[str] = []
+    monkeypatch.setenv("MINIMAX_API_KEY", "key")
+    monkeypatch.delenv("MINIMAX_API_HOST", raising=False)
+    monkeypatch.setattr(module, "_send_error", lambda _id, _code, message: errors.append(message))
+
+    with pytest.raises(SystemExit):
+        module.main()
+
+    assert errors == ["MINIMAX_API_HOST environment variable is required"]
 
 
 def test_understand_image_requires_an_injected_task_root(monkeypatch) -> None:

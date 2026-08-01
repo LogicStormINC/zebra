@@ -2,6 +2,7 @@ from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 
 from agent_core.domain.messages import SessionMessage
+from agent_core.domain.model_media import ModelMediaCapabilities, ModelMediaInput
 from agent_core.domain.modeling import (
     ModelCompletion,
     ModelContextWindow,
@@ -101,12 +102,33 @@ class ModelTokenCounterPort(Protocol):
     ) -> int: ...
 
 
+@runtime_checkable
+class ModelMediaCapabilityPort(Protocol):
+    @property
+    def media_capabilities(self) -> ModelMediaCapabilities: ...
+
+
+@runtime_checkable
+class ModelMediaTokenCounterPort(Protocol):
+    def estimate_media_tokens(self, media_inputs: tuple[ModelMediaInput, ...]) -> int: ...
+
+
+class ModelMediaResolverPort(Protocol):
+    def resolve_media(self, media_input: ModelMediaInput) -> bytes: ...
+
+
+@runtime_checkable
+class ModelMediaResolverBinderPort(Protocol):
+    def bind_media_resolver(self, media_resolver: ModelMediaResolverPort) -> None: ...
+
+
 class ModelGatewayPort(Protocol):
     def complete(
         self,
         messages: list[SessionMessage],
         *,
         tools: tuple[ModelToolDefinition, ...] = (),
+        media_inputs: tuple[ModelMediaInput, ...] = (),
     ) -> ModelCompletion: ...
 
 
@@ -117,5 +139,6 @@ class StreamingModelGatewayPort(Protocol):
         messages: list[SessionMessage],
         *,
         tools: tuple[ModelToolDefinition, ...] = (),
+        media_inputs: tuple[ModelMediaInput, ...] = (),
         on_text_delta: Callable[[ModelTextDelta], None],
     ) -> ModelCompletion: ...

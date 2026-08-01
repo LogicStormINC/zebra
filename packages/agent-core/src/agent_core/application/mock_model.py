@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from agent_core.domain.messages import SessionMessage
+from agent_core.domain.model_media import ModelMediaInput
 from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
 from agent_core.ports.model_gateway import ModelGatewayPort
 
@@ -32,7 +33,9 @@ class ScriptedModelGateway(ModelGatewayPort):
         messages: list[SessionMessage],
         *,
         tools: tuple[ModelToolDefinition, ...] = (),
+        media_inputs: tuple[ModelMediaInput, ...] = (),
     ) -> ModelCompletion:
+        del media_inputs
         if self._cursor >= len(self._responses):
             raise RuntimeError("scripted model gateway has no remaining responses")
         self._requests.append(tuple(messages))

@@ -10,6 +10,10 @@ from agent_core.domain.messages import (
     MessageRole,
     SessionMessage,
 )
+from agent_core.domain.model_media import (
+    ModelMediaInput,
+    model_media_source_event_ids_metadata,
+)
 from agent_core.domain.modeling import (
     ModelCompletion,
     ModelTextDelta,
@@ -113,6 +117,7 @@ class HarnessModelStep:
         allow_tools: bool,
         user_goal: str,
         created_at: datetime,
+        media_inputs: tuple[ModelMediaInput, ...] = (),
     ) -> ConversationCompactionResult | None:
         result = prepare_bounded_conversation(
             messages,
@@ -124,12 +129,14 @@ class HarnessModelStep:
             compaction_hook=self._compaction_hook,
             user_goal=user_goal,
             created_at=created_at,
+            media_inputs=media_inputs,
         )
         if result is not None and result.recovery_messages is not None:
             recovery = merge_recovery_messages(
                 self._recovery_messages,
                 result.recovery_messages,
                 model_gateway,
+                media_inputs=media_inputs,
             )
             if recovery is not None:
                 self._recovery_messages = recovery
@@ -139,11 +146,14 @@ class HarnessModelStep:
         self,
         messages: list[SessionMessage],
         model_gateway: ModelGatewayPort,
+        *,
+        media_inputs: tuple[ModelMediaInput, ...] = (),
     ) -> bool:
         recovery = merge_recovery_messages(
             self._recovery_messages,
             tuple(messages),
             model_gateway,
+            media_inputs=media_inputs,
         )
         if recovery is None:
             return False
@@ -167,10 +177,15 @@ class HarnessModelStep:
             allow_tools=True,
             user_goal=task.user_input,
             created_at=now,
+            **({"media_inputs": task.media_inputs} if task.media_inputs else {}),
         )
         repair_limit = allowed_response_repairs(task.max_model_calls, 0)
         return self.request_completion(
-            messages, model_gateway, allow_tools=True, response_repair_limit=repair_limit
+            messages,
+            model_gateway,
+            allow_tools=True,
+            media_inputs=task.media_inputs,
+            response_repair_limit=repair_limit,
         )
 
     def request_completion(
@@ -179,16 +194,23 @@ class HarnessModelStep:
         model_gateway: ModelGatewayPort,
         *,
         allow_tools: bool,
+        media_inputs: tuple[ModelMediaInput, ...] = (),
         response_repair_limit: int = 1,
     ) -> ModelCompletion:
         tools = self._available_tools if allow_tools else ()
         window = context_window(model_gateway)
-        plan = build_context_plan(tuple(messages), tools, window, model_gateway)
+        plan = build_context_plan(
+            tuple(messages),
+            tools,
+            window,
+            model_gateway,
+            media_inputs=media_inputs,
+        )
         if not plan.within_budget:
             raise ContextWindowExceededError(plan)
         validate_tool_call_pairing(messages)
         if self._event_sink is None:
-            if self._provider_continuation is not None and isinstance(
+            if not media_inputs and self._provider_continuation is not None and isinstance(
                 model_gateway, ProviderContinuationCompletionPort
             ):
                 try:
@@ -205,6 +227,7 @@ class HarnessModelStep:
                         model_gateway,
                         messages,
                         tools,
+                        media_inputs=media_inputs,
                         model_call_id="untracked",
                         on_delta=lambda _model_call_id, _delta: None,
                         response_repair_limit=response_repair_limit,
@@ -216,6 +239,7 @@ class HarnessModelStep:
                     model_gateway,
                     messages,
                     tools,
+                    media_inputs=media_inputs,
                     model_call_id="untracked",
                     on_delta=lambda _model_call_id, _delta: None,
                     response_repair_limit=response_repair_limit,
@@ -243,7 +267,7 @@ class HarnessModelStep:
                 },
             )
         )
-        if self._provider_continuation is not None and isinstance(
+        if not media_inputs and self._provider_continuation is not None and isinstance(
             model_gateway, ProviderContinuationCompletionPort
         ):
             try:
@@ -268,6 +292,7 @@ class HarnessModelStep:
                     model_gateway,
                     messages,
                     tools,
+                    media_inputs=media_inputs,
                     model_call_id=model_call_id,
                     on_delta=self._emit_text_delta,
                     response_repair_limit=response_repair_limit,
@@ -279,6 +304,7 @@ class HarnessModelStep:
                 model_gateway,
                 messages,
                 tools,
+                media_inputs=media_inputs,
                 model_call_id=model_call_id,
                 on_delta=self._emit_text_delta,
                 response_repair_limit=response_repair_limit,
@@ -399,8 +425,20 @@ class HarnessModelStep:
             tool_result=tool_result,
             created_at=now,
         )
-        prepare_terminal_conversation(messages, model_gateway, self, task.user_input, now)
-        return self.request_completion(messages, model_gateway, allow_tools=False)
+        prepare_terminal_conversation(
+            messages,
+            model_gateway,
+            self,
+            task.user_input,
+            now,
+            media_inputs=task.media_inputs,
+        )
+        return self.request_completion(
+            messages,
+            model_gateway,
+            allow_tools=False,
+            media_inputs=task.media_inputs,
+        )
 
     def build_initial_messages(
         self, task: HarnessTask, *, created_at: datetime,
@@ -479,6 +517,9 @@ class HarnessModelStep:
                 role=MessageRole.USER,
                 content=task.user_input,
                 created_at=created_at,
+                metadata=model_media_source_event_ids_metadata(
+                    media.source_message_id for media in task.media_inputs
+                ),
             )
         )
         return messages

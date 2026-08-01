@@ -75,9 +75,16 @@
   13 Ruff, four Mypy, and eight functional failures plus the file-size test
   remain. CI jobs did not run because of the billing/spending limit; container
   release gates remain open.
+- `MDL-PROFILE-02` is `Review` on
+  `vinson1101/zebra:codex/generic-model-profile-v2`. It is stacked on
+  `MM-NATIVE-QWEN-PHASE1` and replaces exact model-name capability inference
+  with explicit verified profile selection. It may not alter FinOS, provider
+  routing, fallback, Policy authority, or upstream `main`. Its implementation
+  commit is `cf0dff9`: `46` focused tests and changed-source Ruff/Mypy pass;
+  full pytest is `1900 passed, 9 skipped, 9 inherited failures`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
-- No other card is `Ready`, `In Progress`, `Review`, or `Blocked`.
+- No additional card is `Ready`, `In Progress`, `Review`, or `Blocked`.
 
 ## Context Continuity And Governed Memory Board
 
@@ -15680,3 +15687,155 @@ isolation completing in private cloud.
 
 - public open marketplace before private-cloud GA
 - bypassing the install/enable/grant/approve five-layer state machine
+
+## Native Multimodal Phase 1 Task Board
+
+### MM-NATIVE-QWEN-PHASE1 - Generic Native Image Input With Qwen
+
+- Status: `In Progress`
+- Owner: `vinson / Codex coordinated`
+- Suggested role: `CTX / CORE / INTEGRATIONS / QA`
+- Depends on: explicit user authorization; baseline
+  `c3cc79c3a54f8a0be3a933bbcc43628bf82210ba`
+- Branch: `codex/qwen-native-multimodal`
+- Acceptance state (2026-07-30): authorized text and repository-logo Qwen
+  preflights reached HTTP 200. The real smoke now uses a deterministic,
+  non-sensitive 16x16 inline PNG rather than the provider-rejected 1x1 image.
+  With retries disabled, live single-image, three-image, typed-tool, stream,
+  and source-event replay probes returned HTTP 200; local Task follow-up sent
+  an image-bearing stream on both turns. The two additional no-image calls are
+  independent best-effort title generation, not a replay omission. Focused
+  deterministic coverage passed; clean-config full pytest is `1888 passed,
+  9 skipped, 9 inherited failures`, while all-repo Ruff has seven unrelated
+  errors and Mypy has four documented inherited errors. Status remains
+  `In Progress`: this is not merge-ready or FinOS E2E acceptance.
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/model_media.py`,
+  `packages/agent-core/src/agent_core/domain/events.py`,
+  `packages/agent-core/src/agent_core/application/mock_model.py`,
+  `packages/agent-core/src/agent_core/ports/model_gateway.py`,
+  `packages/agent-core/src/agent_core/harness/context_recovery.py`,
+  `packages/agent-core/src/agent_core/harness/context_window.py`,
+  `packages/agent-core/src/agent_core/harness/loop.py`,
+  `packages/agent-core/src/agent_core/harness/model_request.py`,
+  `packages/agent-core/src/agent_core/harness/model_step.py`,
+  `packages/agent-core/src/agent_core/harness/models.py`,
+  `packages/agent-core/src/agent_core/harness/orchestrator.py`,
+  `packages/agent-core/src/agent_core/harness/recorder.py`,
+  `packages/agent-core/src/agent_core/harness/sequential_loop.py`,
+  `packages/agent-integrations/src/agent_integrations/openai_compatible.py`,
+  `packages/agent-storage/src/agent_storage/session_attachments.py`,
+  `apps/config/src/zebra_agent_config/settings.py`, `configs/default.env`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/api_session_message_append_mixin.py`,
+  `apps/api/src/zebra_agent_api/session_attachment_persistence.py`,
+  `apps/api/src/zebra_agent_api/task_image_attachments.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `packages/agent-runtime/src/agent_runtime/__init__.py`,
+  `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `tests/agent_core/test_model_media_contract.py`,
+  `tests/agent_integrations/test_qwen_native_media.py`,
+  `tests/agent_integrations/test_qwen_provider_smoke.py`,
+  `tests/agent_storage/test_task_media_resolution.py`,
+  `tests/agent_runtime/test_harness_runner.py`,
+  `tests/api/test_native_media_inline_execution.py`,
+  `tests/api/test_task_image_attachment_durability.py`,
+  `tests/config/test_settings.py`,
+  `docs/Generic_Multimodal_Model_Input_Contract_Phase1.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Add the smallest provider-neutral native image input path: durable artifact
+references only, fail-closed model capabilities, in-memory authorized data-URL
+construction for Qwen, and always-replayed references without bypassing Zebra
+typed-tool Policy, Approval, or Audit.
+
+#### Acceptance
+
+- [x] `ModelMediaInput` contains only controlled artifact reference metadata;
+  no durable base64, bytes, local path, provider request ID, or API key exists.
+- [x] Text-only profiles fail closed on media; supported profiles declare media,
+  tools-with-media, streaming-with-media, count/byte boundaries, and media-token
+  estimation before transport.
+- [x] Qwen `qwen3.7-flash-2026-07-15` with `thinking=false` serializes any
+  bounded number of ordered images through the existing OpenAI-compatible infrastructure and
+  `DASHSCOPE_API_KEY` configuration reference only.
+- [x] Resolver authorization, digest/media-type/size validation, and hard token
+  gate fail closed before HTTP; no silent compression or text fallback occurs.
+- [x] Each replayed media reference maps to exactly one internal semantic USER
+  source-event declaration; missing or ambiguous mappings fail before byte
+  resolution, including child-Segment replay.
+- [x] Initial/tool/compaction/terminal-synthesis and reachable terminal
+  follow-up/recovery requests replay the same refs or fail closed.
+- [x] Focused deterministic tests cover ordering, tools, compaction, security
+  failures, log leakage, and text-provider compatibility; changed-source Ruff,
+  Mypy has only four inherited errors, and `git diff --check` passes.
+
+#### Explicit Non-Goals
+
+- modifying `SessionMessage.content`, Artifact/Payload storage schema, MiniMax
+  MCP, FinOS, OCR, built-in provider web/code tools, UI upload controls, a
+  provider factory/state machine, real-Qwen payment/API acceptance after the
+  normalized `authentication_failed` smoke result, deployment, or merge to
+  `main`. The current explicitly authorized maintenance pass may commit and
+  push only this task branch.
+
+### MDL-PROFILE-02 - Explicit Verified Model Profiles
+
+- Status: `Review`
+- Owner: `Vinson / Codex coordinated`
+- Suggested role: `CTX / INTEGRATIONS / QA`
+- Depends on: `MM-NATIVE-QWEN-PHASE1@4533cf4`
+- Branch: `codex/generic-model-profile-v2`
+- Repository: `vinson1101/zebra`; PR target after acceptance:
+  `hellolukeding/zebra`
+- Worktree: `/Users/vinson/.codex/worktrees/zebra-generic-model-profile-v2`
+- Implementation: `cf0dff9`; local review complete, fork push pending this
+  evidence update, no PR
+- Owned paths:
+  `packages/agent-integrations/src/agent_integrations/openai_compatible.py`,
+  one focused profile module under
+  `packages/agent-integrations/src/agent_integrations/`,
+  `apps/config/src/zebra_agent_config/settings.py`,
+  `tests/agent_integrations/test_qwen_native_media.py`,
+  one focused model-profile test module under `tests/agent_integrations/`,
+  `tests/api/test_native_media_inline_execution.py`,
+  `tests/config/test_settings.py`,
+  `docs/Generic_Model_Profile_Contract_v2.md`,
+  `docs/Generic_Multimodal_Model_Input_Contract_Phase1.md`,
+  `docs/README.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Remove the exact Qwen Flash model-name capability gate. Resolve one explicit,
+versioned profile ID into provider/model identity and the existing
+`ModelMediaCapabilities`, validate configured identity before HTTP, and pass the
+resolved capabilities into the existing OpenAI-compatible gateway.
+
+#### Acceptance
+
+- [x] A red regression proves Phase 1 currently derives native image capability
+  from exact model-name equality.
+- [x] The adapter contains no Qwen model-name capability condition; absent,
+  unknown, provider-mismatched, and model-mismatched profiles fail closed as
+  documented.
+- [x] Flash native, Plus image-only, and Max text-only profiles match the
+  documented verification state without family/regex inference.
+- [x] An arbitrary fixture model works with an explicit image-capable profile,
+  proving capability is profile data rather than model-name logic.
+- [x] Media limits, tools-with-media, streaming-with-media, Policy, Audit, and
+  text-only behavior retain existing gates.
+- [x] Focused tests, changed-source Ruff/Mypy, full deterministic pytest, and
+  `git diff --check` run; inherited blockers are recorded separately.
+- [x] Commits push only to `vinson1101/zebra`; no direct upstream branch or
+  `main` update occurs.
+
+#### Explicit Non-Goals
+
+- Registry service/class hierarchy, duplicate capability/request-default
+  wrapper, profile lifecycle state, provider factory, automatic provider/model
+  routing, capability discovery, model-family inference, automatic fallback,
+  database/UI changes, FinOS business behavior, MiniMax MCP changes, or
+  upstream merge

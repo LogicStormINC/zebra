@@ -11,12 +11,14 @@ from agent_core.application import (
 from agent_core.domain.attachments import AttachmentContextInput, SessionAttachmentRef
 from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.model_media import ModelMediaInput
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
 from agent_security import NetworkProfile, PolicyProfile, parse_network_profile
 from agent_storage import SQLiteArtifactPayloadStore, load_attachment_contexts
+from agent_storage.session_attachments import RegisteredTaskMedia, TaskAttachmentMediaResolver
 
 
 @dataclass(frozen=True)
@@ -35,6 +37,9 @@ class RecoveredTask:
     max_model_calls: int | None
     max_tool_calls: int | None
     attachments: tuple[AttachmentContextInput, ...]
+    legacy_image_prompt_suffix: str
+    media_inputs: tuple[ModelMediaInput, ...]
+    media_resolver: TaskAttachmentMediaResolver
     runtime_evidence: tuple[RuntimeEvidenceInput, ...]
 
 
@@ -45,6 +50,7 @@ def recover_task(
     fallback_title: str,
     attachment_store: SQLiteArtifactPayloadStore,
     task_image_refs: tuple[SessionAttachmentRef, ...] = (),
+    registered_task_media: tuple[RegisteredTaskMedia, ...] = (),
     active_capsule: ContextCapsule | None = None,
     handoff_evidence: RuntimeEvidenceInput | None = None,
 ) -> RecoveredTask:
@@ -61,7 +67,7 @@ def recover_task(
             task_payload = event.payload
     if user_input is None or user_event is None or task_payload is None:
         raise ValueError("queued session is missing bootstrap task input")
-    user_input = _with_task_image_context(user_input, task_image_refs)
+    legacy_image_prompt_suffix = _task_image_context_suffix(user_input, task_image_refs)
     title = task_payload.get("title")
     resolved_title = title.strip() if isinstance(title, str) and title.strip() else fallback_title
     policy_profile = workspace.policy_profile or PolicyProfile.WORKSPACE_WRITE.value
@@ -72,6 +78,7 @@ def recover_task(
         )
     except (FileNotFoundError, ValueError) as exc:
         raise ValueError(f"queued session attachment recovery failed: {exc}") from exc
+    media_resolver = TaskAttachmentMediaResolver(attachment_store, registered_task_media)
     return RecoveredTask(
         title=resolved_title,
         user_input=user_input,
@@ -90,6 +97,9 @@ def recover_task(
         max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
         max_tool_calls=_optional_positive_int(task_payload.get("max_tool_calls")),
         attachments=attachments,
+        legacy_image_prompt_suffix=legacy_image_prompt_suffix,
+        media_inputs=media_resolver.media_inputs,
+        media_resolver=media_resolver,
         runtime_evidence=(
             *_context_capsule_evidence(events, active_capsule=active_capsule),
             *((handoff_evidence,) if handoff_evidence is not None else ()),
@@ -97,7 +107,7 @@ def recover_task(
     )
 
 
-def _with_task_image_context(
+def _task_image_context_suffix(
     user_input: str,
     attachments: tuple[SessionAttachmentRef, ...],
 ) -> str:
@@ -108,7 +118,7 @@ def _with_task_image_context(
         and attachment.workspace_path is not None
         and attachment.workspace_path not in user_input
     )
-    return user_input + task_workspace_image_prompt_suffix(paths)
+    return task_workspace_image_prompt_suffix(paths)
 
 
 def _history_session_ids(value: object) -> tuple[str, ...] | None:

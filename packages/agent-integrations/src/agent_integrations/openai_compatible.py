@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 from collections.abc import Callable, Mapping
@@ -8,7 +9,15 @@ from time import perf_counter
 from typing import Any
 
 import httpx
+from agent_core.domain.identifiers import EventId
 from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.model_media import (
+    ModelMediaCapabilities,
+    ModelMediaInput,
+    ModelMediaUnsupportedError,
+    model_media_source_event_ids,
+    ordered_media_inputs,
+)
 from agent_core.domain.modeling import (
     ModelCompletion,
     ModelContextWindow,
@@ -18,7 +27,7 @@ from agent_core.domain.modeling import (
     ModelThinkingMode,
     ModelToolDefinition,
 )
-from agent_core.ports.model_gateway import ModelResponseRejectedError
+from agent_core.ports.model_gateway import ModelMediaResolverPort, ModelResponseRejectedError
 from zebra_agent_config import ZebraAgentSettings
 
 from agent_integrations.deepseek_profiles import (
@@ -27,6 +36,7 @@ from agent_integrations.deepseek_profiles import (
 )
 from agent_integrations.deepseek_schema import validate_strict_tools
 from agent_integrations.model_errors import ModelProviderError, normalize_provider_error
+from agent_integrations.openai_model_profiles import resolve_model_profile
 from agent_integrations.openai_payloads import (
     internal_tool_names,
     parse_completion,
@@ -54,6 +64,8 @@ class OpenAICompatibleModelGateway:
         timeout_s: float = 30.0,
         max_retries: int = 1,
         deepseek_router: DeepSeekProfileRouter | None = None,
+        media_capabilities: ModelMediaCapabilities | None = None,
+        media_resolver: ModelMediaResolverPort | None = None,
         client: httpx.Client | None = None,
     ) -> None:
         self._provider_name = provider_name
@@ -63,6 +75,8 @@ class OpenAICompatibleModelGateway:
         self._timeout_s = timeout_s
         self._max_retries = max_retries
         self._deepseek_router = deepseek_router
+        self._media_capabilities = media_capabilities or ModelMediaCapabilities()
+        self._media_resolver = media_resolver
         if provider_name.lower() == "deepseek" and deepseek_router is None:
             self._deepseek_router = DeepSeekProfileRouter(
                 legacy_executor_model=model_name,
@@ -78,11 +92,28 @@ class OpenAICompatibleModelGateway:
             has_tools=False,
         ).profile.context_window
 
+    @property
+    def media_capabilities(self) -> ModelMediaCapabilities:
+        return self._media_capabilities
+
+    def estimate_media_tokens(self, media_inputs: tuple[ModelMediaInput, ...]) -> int:
+        self._media_capabilities.validate_request(
+            media_inputs,
+            has_tools=False,
+            streaming=False,
+        )
+        # ponytail: byte-based Qwen image estimate; replace with provider usage data if needed.
+        return sum(max(256, (media.size_bytes + 511) // 512) for media in media_inputs)
+
+    def bind_media_resolver(self, media_resolver: ModelMediaResolverPort) -> None:
+        self._media_resolver = media_resolver
+
     def complete(
         self,
         messages: list[SessionMessage],
         *,
         tools: tuple[ModelToolDefinition, ...] = (),
+        media_inputs: tuple[ModelMediaInput, ...] = (),
         invocation_policy: ModelInvocationPolicy | None = None,
         strict_tools: bool = False,
     ) -> ModelCompletion:
@@ -92,6 +123,7 @@ class OpenAICompatibleModelGateway:
         request_body, request_metadata = self._request_body(
             messages,
             tools=tools,
+            media_inputs=media_inputs,
             tool_names=tool_names,
             stream=False,
             resolved=resolved,
@@ -128,7 +160,7 @@ class OpenAICompatibleModelGateway:
                         error.normalized_error,
                         retryable=error.retryable,
                         retry_count=retry_count,
-                    ) from exc
+                    ) from None
                 retry_count += 1
 
     def complete_stream(
@@ -136,6 +168,7 @@ class OpenAICompatibleModelGateway:
         messages: list[SessionMessage],
         *,
         tools: tuple[ModelToolDefinition, ...] = (),
+        media_inputs: tuple[ModelMediaInput, ...] = (),
         on_text_delta: Callable[[ModelTextDelta], None],
         invocation_policy: ModelInvocationPolicy | None = None,
         strict_tools: bool = False,
@@ -146,6 +179,7 @@ class OpenAICompatibleModelGateway:
         request_body, request_metadata = self._request_body(
             messages,
             tools=tools,
+            media_inputs=media_inputs,
             tool_names=tool_names,
             stream=True,
             resolved=resolved,
@@ -198,7 +232,7 @@ class OpenAICompatibleModelGateway:
                             error.normalized_error,
                             retryable=error.retryable,
                             retry_count=retry_count,
-                        ) from exc
+                        ) from None
                     retry_count += 1
         finally:
             if should_close:
@@ -222,14 +256,23 @@ class OpenAICompatibleModelGateway:
         messages: list[SessionMessage],
         *,
         tools: tuple[ModelToolDefinition, ...],
+        media_inputs: tuple[ModelMediaInput, ...],
         tool_names: tuple[str, ...],
         stream: bool,
         resolved: ResolvedDeepSeekInvocation | None,
         strict_tools: bool,
     ) -> tuple[dict[str, Any], ModelRequestMetadata | None]:
+        self._media_capabilities.validate_request(
+            media_inputs,
+            has_tools=bool(tools),
+            streaming=stream,
+        )
+        serialized_messages = [serialize_message(message) for message in messages]
+        if media_inputs:
+            self._add_media_parts(messages, serialized_messages, media_inputs)
         body: dict[str, Any] = {
             "model": resolved.profile.model if resolved else self._model_name,
-            "messages": [serialize_message(message) for message in messages],
+            "messages": serialized_messages,
             "stream": stream,
         }
         if tools:
@@ -253,8 +296,76 @@ class OpenAICompatibleModelGateway:
                 body["reasoning_effort"] = resolved.reasoning_effort.value
             if stream:
                 body["stream_options"] = {"include_usage": True}
+        elif self._provider_name.lower() == "qwen":
+            body.update(
+                {
+                    "enable_thinking": False,
+                    "enable_search": False,
+                    "enable_code_interpreter": False,
+                }
+            )
+            if stream:
+                body["stream_options"] = {"include_usage": True}
         metadata = build_request_metadata(body, resolved) if resolved else None
         return body, metadata
+
+    def _add_media_parts(
+        self,
+        messages: list[SessionMessage],
+        serialized_messages: list[dict[str, object]],
+        media_inputs: tuple[ModelMediaInput, ...],
+    ) -> None:
+        if self._media_resolver is None:
+            raise ModelMediaUnsupportedError("model media resolver is unavailable")
+        if len(messages) != len(serialized_messages):
+            raise ModelMediaUnsupportedError("model media message serialization is inconsistent")
+        source_user_indexes: dict[EventId, int] = {}
+        for index, message in enumerate(messages):
+            if message.role is not MessageRole.USER:
+                continue
+            for source_message_id in model_media_source_event_ids(message.metadata):
+                if source_message_id in source_user_indexes:
+                    raise ModelMediaUnsupportedError(
+                        "model media source user message is ambiguous"
+                    )
+                source_user_indexes[source_message_id] = index
+        media_by_user_index: dict[int, list[ModelMediaInput]] = {}
+        for media in ordered_media_inputs(media_inputs):
+            try:
+                user_index = source_user_indexes[media.source_message_id]
+            except KeyError as exc:
+                raise ModelMediaUnsupportedError(
+                    "model media source user message is missing from the request"
+                ) from exc
+            media_by_user_index.setdefault(user_index, []).append(media)
+        for user_index, user_media in media_by_user_index.items():
+            user_message = serialized_messages[user_index]
+            content = user_message.get("content")
+            if not isinstance(content, str):
+                raise ModelMediaUnsupportedError("model media request user content is invalid")
+            parts: list[dict[str, object]] = [{"type": "text", "text": content}]
+            for media in user_media:
+                payload = self._media_resolver.resolve_media(media)
+                if len(payload) != media.size_bytes:
+                    raise ModelMediaUnsupportedError(
+                        "model media payload size does not match reference"
+                    )
+                if hashlib.sha256(payload).hexdigest() != media.sha256:
+                    raise ModelMediaUnsupportedError(
+                        "model media payload digest does not match reference"
+                    )
+                parts.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": (
+                                f"data:{media.media_type};base64,"
+                                f"{base64.b64encode(payload).decode('ascii')}"
+                            )
+                        },
+                    }
+                )
+            user_message["content"] = parts
 
     def _validate_strict_mode(
         self,
@@ -338,8 +449,14 @@ def build_model_gateway(
     settings: ZebraAgentSettings,
     *,
     env: Mapping[str, str] | None = None,
+    media_resolver: ModelMediaResolverPort | None = None,
     client: httpx.Client | None = None,
 ) -> OpenAICompatibleModelGateway:
+    media_capabilities = resolve_model_profile(
+        settings.model.profile_id,
+        provider=settings.model.provider,
+        model=settings.model.model,
+    )
     values = dict(env or {})
     if env is None:
         values.update(_read_defaults(Path(".env")))
@@ -377,6 +494,8 @@ def build_model_gateway(
         model_name=settings.model.model,
         max_retries=settings.model.max_retries,
         deepseek_router=router,
+        media_capabilities=media_capabilities,
+        media_resolver=media_resolver,
         client=client,
     )
 

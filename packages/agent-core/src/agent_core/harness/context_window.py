@@ -39,8 +39,11 @@ def plan_context_window(
     *,
     token_counter: Callable[[tuple[SessionMessage, ...], tuple[ModelToolDefinition, ...]], int]
     | None = None,
+    media_tokens: int = 0,
     attempted_strategies: tuple[str, ...] = (),
 ) -> ContextWindowPlan:
+    if media_tokens < 0:
+        raise ValueError("model media token estimate must not be negative")
     message_payloads = [message.model_dump(mode="json") for message in messages]
     tool_payloads = [
         {"name": tool.name, "description": tool.description, "parameters": dict(tool.parameters)}
@@ -50,12 +53,13 @@ def plan_context_window(
         "system": _estimate([value for value in message_payloads if value["role"] == "system"]),
         "messages": _estimate([value for value in message_payloads if value["role"] != "system"]),
         "tools": _estimate(tool_payloads) if tool_payloads else 0,
+        "media": media_tokens,
     }
     estimated = (
         token_counter(messages, tools)
         if token_counter is not None
         else _estimate({"messages": message_payloads, "tools": tool_payloads})
-    )
+    ) + media_tokens
     if estimated < 0:
         raise ValueError("provider token count must not be negative")
     return ContextWindowPlan(
@@ -64,7 +68,15 @@ def plan_context_window(
         within_budget=estimated <= window.input_token_limit,
         compact_at=window.compact_at,
         profile_name=window.profile_name,
-        estimate_method="provider" if token_counter is not None else "chars_div_4",
+        estimate_method=(
+            "provider+media"
+            if token_counter is not None and media_tokens
+            else "chars_div_4+media"
+            if media_tokens
+            else "provider"
+            if token_counter is not None
+            else "chars_div_4"
+        ),
         token_breakdown=breakdown,
         attempted_strategies=attempted_strategies,
     )

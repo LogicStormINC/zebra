@@ -25,6 +25,7 @@ class ModelSettings:
     api_key_env: str
     base_url: str
     model: str
+    profile_id: str | None = None
     executor_profile: str | None = None
     planner_profile: str | None = None
     reviewer_profile: str | None = None
@@ -130,6 +131,18 @@ def load_settings(
         deepseek_model = _read_optional(values, "DEEPSEEK_MODEL")
         if deepseek_model:
             values["ZEBRA_MODEL_NAME"] = deepseek_model
+    elif provider == "qwen":
+        dashscope_base_url = _read_optional(values, "DASHSCOPE_BASE_URL")
+        if dashscope_base_url:
+            values["ZEBRA_MODEL_BASE_URL"] = dashscope_base_url
+        elif values.get("ZEBRA_MODEL_BASE_URL") == "https://api.deepseek.com":
+            values["ZEBRA_MODEL_BASE_URL"] = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        dashscope_model = _read_optional(values, "DASHSCOPE_MODEL")
+        if dashscope_model:
+            values["ZEBRA_MODEL_NAME"] = dashscope_model
+        elif values.get("ZEBRA_MODEL_NAME") == "deepseek-v4-flash":
+            values["ZEBRA_MODEL_NAME"] = "qwen3.7-flash-2026-07-15"
+        values["ZEBRA_MODEL_API_KEY_ENV"] = "DASHSCOPE_API_KEY"
     profile = _read(values, "ZEBRA_PROFILE", default="local")
     return ZebraAgentSettings(
         profile=profile,
@@ -151,8 +164,25 @@ def load_settings(
                 "ZEBRA_MODEL_API_KEY_ENV",
                 default=f"{provider.upper()}_API_KEY",
             ),
-            base_url=_read(values, "ZEBRA_MODEL_BASE_URL", default="https://api.deepseek.com"),
-            model=_read(values, "ZEBRA_MODEL_NAME", default="deepseek-v4-flash"),
+            base_url=_read(
+                values,
+                "ZEBRA_MODEL_BASE_URL",
+                default=(
+                    "https://dashscope.aliyuncs.com/compatible-mode/v1"
+                    if provider == "qwen"
+                    else "https://api.deepseek.com"
+                ),
+            ),
+            model=_read(
+                values,
+                "ZEBRA_MODEL_NAME",
+                default=(
+                    "qwen3.7-flash-2026-07-15"
+                    if provider == "qwen"
+                    else "deepseek-v4-flash"
+                ),
+            ),
+            profile_id=_read_optional(values, "ZEBRA_MODEL_PROFILE_ID"),
             executor_profile=_read_optional(values, "ZEBRA_DEEPSEEK_EXECUTOR_PROFILE"),
             planner_profile=_read_optional(values, "ZEBRA_DEEPSEEK_PLANNER_PROFILE"),
             reviewer_profile=_read_optional(values, "ZEBRA_DEEPSEEK_REVIEWER_PROFILE"),

@@ -9,7 +9,8 @@ from uuid import UUID
 from agent_context import LocalContextCompiler
 from agent_core.domain.artifact_payloads import ArtifactPayloadWrite
 from agent_core.domain.attachments import AttachmentContextInput
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import EventId, SessionId
+from agent_core.domain.model_media import ModelInputModality, ModelMediaInput
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
@@ -18,7 +19,12 @@ from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, Singl
 from agent_core.harness.models import HarnessLoopResult
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
-from agent_core.ports.model_gateway import ModelGatewayPort
+from agent_core.ports.model_gateway import (
+    ModelGatewayPort,
+    ModelMediaCapabilityPort,
+    ModelMediaResolverBinderPort,
+    ModelMediaResolverPort,
+)
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
 from agent_core.ports.session_history import SessionHistoryPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
@@ -70,6 +76,24 @@ DEFAULT_TEST_PRESETS = {
 DEFAULT_RESEARCH_CHILD_LIMIT = 3
 
 
+def bind_native_media_inputs(
+    model_gateway: ModelGatewayPort,
+    media_inputs: tuple[ModelMediaInput, ...],
+    media_resolver: ModelMediaResolverPort,
+) -> tuple[ModelMediaInput, ...]:
+    """Bind task-scoped media only when the selected gateway advertises it."""
+    if not media_inputs:
+        return ()
+    if not isinstance(model_gateway, ModelMediaCapabilityPort):
+        return ()
+    if ModelInputModality.IMAGE not in model_gateway.media_capabilities.input_modalities:
+        return ()
+    if not isinstance(model_gateway, ModelMediaResolverBinderPort):
+        raise ValueError("native media gateway cannot bind its task resolver")
+    model_gateway.bind_media_resolver(media_resolver)
+    return media_inputs
+
+
 def run_local_harness(
     *,
     prompt: str,
@@ -86,14 +110,17 @@ def run_local_harness(
     session_history: SessionHistoryPort | None = None,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
     attachments: tuple[AttachmentContextInput, ...] = (),
+    media_inputs: tuple[ModelMediaInput, ...] = (),
     mcp_servers: Sequence[McpAnyServerSpec] = (),
     mcp_allowlist: Sequence[str] | None = None,
     preapproved_readonly_tools: Sequence[str] = (),
+    disabled_mcp_tools: Sequence[str] = (),
     trusted_local: bool = False,
     max_model_calls: int | None = None,
     max_tool_calls: int | None = None,
     web_pipeline_v2: bool = False,
     session_id: SessionId | None = None,
+    initial_user_event_id: EventId | None = None,
 ) -> HarnessLoopResult:
     tool_gateway = LocalToolGateway(
         workspace_root,
@@ -105,6 +132,7 @@ def run_local_harness(
         session_history=session_history,
         mcp_servers=mcp_servers,
         mcp_allowlist=mcp_allowlist,
+        disabled_mcp_tools=disabled_mcp_tools,
         trusted_local=trusted_local,
         web_pipeline_v2=web_pipeline_v2,
     )
@@ -133,6 +161,7 @@ def run_local_harness(
                 skill_components=tool_gateway.effective_skill_components,
                 confirmed_memories=confirmed_memories,
                 attachments=attachments,
+                media_inputs=media_inputs,
             ),
             SingleAttemptOrchestrator(
                 model_gateway,
@@ -158,6 +187,7 @@ def run_local_harness(
                 tool_call_resolver=tool_gateway.resolve_model_tool_calls,
             ).run,
             session_id=session_id,
+            initial_user_event_id=initial_user_event_id,
         )
     finally:
         tool_gateway.close()
@@ -180,6 +210,7 @@ class LocalToolGateway(ToolGatewayPort):
         current_session_id: str | None = None,
         mcp_servers: Sequence[McpAnyServerSpec] = (),
         mcp_allowlist: Sequence[str] | None = None,
+        disabled_mcp_tools: Sequence[str] = (),
         runtime: RuntimePort | None = None,
         runtime_handle: RuntimeHandle | None = None,
         artifact_payload_store: ArtifactPayloadStorePort | None = None,
@@ -195,6 +226,9 @@ class LocalToolGateway(ToolGatewayPort):
             raise ValueError(
                 f"selected MCP tools are unavailable: {', '.join(sorted(mcp_allowlist))}"
             )
+        self._disabled_mcp_tools = frozenset(name.strip() for name in disabled_mcp_tools)
+        if any(not name for name in self._disabled_mcp_tools):
+            raise ValueError("disabled MCP tool names must not be blank")
         self._workspace = LocalWorkspace(workspace_root)
         self._workspace.ensure()
         self._runtime = runtime or LocalRuntime()
@@ -262,7 +296,11 @@ class LocalToolGateway(ToolGatewayPort):
             max_output_bytes=None if output_projector is not None else 32_768,
         )
         self._mcp_catalog = AuthorizedMcpToolCatalog(
-            mcp_transport.model_tools if mcp_transport is not None else ()
+            tuple(
+                tool
+                for tool in (mcp_transport.model_tools if mcp_transport is not None else ())
+                if tool.name not in self._disabled_mcp_tools
+            )
         )
         if self._mcp_catalog.activated:
             for catalog_tool in (
@@ -363,6 +401,13 @@ class LocalToolGateway(ToolGatewayPort):
         return dict(self._parallel_batch_limits)
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
+        if tool_call.name in self._disabled_mcp_tools:
+            return ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.FAILED,
+                output="",
+                metadata={"reason": "mcp_tool_unavailable"},
+            )
         try:
             result = self._executor.execute(tool_call)
             return self._project_tool_output(tool_call, result)
@@ -422,7 +467,10 @@ class LocalToolGateway(ToolGatewayPort):
         self,
         tool_calls: tuple[ToolCall, ...],
     ) -> tuple[ToolCall, ...]:
-        return tuple(self._mcp_catalog.resolve(tool_call) for tool_call in tool_calls)
+        resolved = tuple(self._mcp_catalog.resolve(tool_call) for tool_call in tool_calls)
+        if any(tool_call.name in self._disabled_mcp_tools for tool_call in resolved):
+            raise ValueError("MCP tool is unavailable for this task")
+        return resolved
 
     def close(self) -> None:
         try:

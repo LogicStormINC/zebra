@@ -6093,3 +6093,72 @@ actual byte access.
   import drafts, journal artifacts and notes were exactly identical before and after
 - ChatGPT Pro final verdict: `DECISION: PASS`, `BUSINESS GATE: PASS`,
   `RUNTIME GATE: PASS`, `FILES.LIST VERDICT: non-blocking`, `P1: none`
+
+# 2026-07-30 MDL-PROFILE-02 Docs-First Claim
+
+- Owner confirmed that Zebra work must be developed in `vinson1101/zebra`
+  before a PR is submitted to `hellolukeding/zebra`.
+- `codex/generic-model-profile-v2` is based on the accepted Phase 1 media branch
+  and is isolated from the deployed FinOS acceptance line.
+- The design removes exact model-name capability inference. It reuses
+  `ModelMediaCapabilities`, adds one explicit verified profile selection at the
+  integration boundary, and keeps absent profiles text-only and fail closed.
+- No provider factory, automatic model/provider routing, fallback state machine,
+  FinOS behavior, deployment, upstream push, or `main` mutation is authorized.
+- ChatGPT repository review accepted the direction and removed remaining
+  over-design: the runtime record is only expected provider/model plus existing
+  media capabilities, keyed by versioned profile ID. Request defaults,
+  verification dates, disabled state, a Registry service and package exports
+  are outside this slice.
+
+# 2026-07-30 MDL-PROFILE-02 Implementation Review
+
+- Red test first proved that the exact Flash model name received image
+  capability with no configured profile.
+- `cf0dff9` replaces that condition with one immutable mapping, one pure
+  resolver and `ZEBRA_MODEL_PROFILE_ID`; no Core, Context, FinOS, MiniMax,
+  DeepSeek router, provider routing or fallback change was made.
+- Root review reran `46` focused tests, changed-source Ruff/Mypy and
+  `git diff --check`; all pass. Full pytest is `1900 passed, 9 skipped,
+  9 inherited failures`, comprising two existing provider-contract tests, five
+  existing SCM credential tests, the existing file-size gate and one existing
+  cancellation test.
+- Delivery remains fork-only. No upstream branch, `main`, deployment or PR is
+  part of this review state.
+
+# 2026-07-30 MM-NATIVE-QWEN-PHASE1 Docs-First Claim
+
+- Coordinator Owner authorized `vinson / Codex coordinated` to claim the
+  generic native-model-media Phase 1 slice on
+  `codex/qwen-native-multimodal@c3cc79c3a54f8a0be3a933bbcc43628bf82210ba`.
+- The contract is documented before code: durable state retains only controlled
+  artifact metadata, adapters resolve bytes in memory under authorization, and
+  `media_replay_policy=always` remains fail closed across compaction, terminal
+  synthesis, and reachable child recovery.
+- No real Qwen request, FinOS E2E, MiniMax replacement, deployment, merge,
+  push, or commit is asserted by this in-progress claim.
+
+# 2026-07-30 MM-NATIVE-QWEN-PHASE1 Implementation And Validation
+
+- Implemented the generic `ModelMediaInput` / capability / resolver contract;
+  durable media carries only an authorized artifact reference, MIME, size,
+  digest, ordinal, and source event identity. The existing payload store is
+  reused without a schema or second-store addition.
+- API direct execution and Worker recovery use the same capability-selected,
+  task-scoped resolver. Legacy MiniMax image guidance is only added when native
+  media is not active; native execution disables the legacy MCP image tool.
+- Focused regressions and changed-source Ruff pass. Full deterministic pytest
+  is `1870 passed, 9 inherited failures, 9 skipped`; the inherited failures are
+  the existing DeepSeek, GitHub credential, file-size, and cancellation cases.
+- One Owner-authorized live smoke first confirmed only that a non-default
+  endpoint was configured, then stopped on normalized `authentication_failed`.
+  No credential, request header, private endpoint value, image data URL, or
+  real-provider acceptance is recorded here.
+- Post-review, source event IDs are declared only on the current semantic USER
+  message, then matched exactly by the shared OpenAI-compatible serializer;
+  missing or ambiguous mappings fail before byte resolution. This preserves
+  always-replay across child Segments without reconstructing historical user
+  prose. The Qwen profile gate now explicitly enables native media only for
+  `qwen3.7-flash-2026-07-15`; a Qwen text model fails closed. `81` related
+  deterministic tests and changed-path Ruff pass; Mypy has only the four
+  inherited findings in `agent_tools` and `agent_security`.

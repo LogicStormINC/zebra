@@ -8,6 +8,7 @@ from typing import Any
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.mcp import normalize_mcp_allowlist
+from agent_core.domain.model_media import ModelMediaInput, ordered_media_inputs
 from agent_core.domain.plans import SessionPlan
 from agent_core.domain.sessions import Session
 from agent_core.domain.skills import normalize_skill_components
@@ -54,6 +55,7 @@ class HarnessTask:
     runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = ()
     attachments: tuple[AttachmentContextInput, ...] = ()
+    media_inputs: tuple[ModelMediaInput, ...] = ()
     public_content: str | None = None
     task_plan: SessionPlan = field(default_factory=SessionPlan)
 
@@ -107,6 +109,10 @@ class HarnessTask:
                 raise ValueError(
                     "harness task attachments must contain AttachmentContextInput values"
                 )
+        for media_input in self.media_inputs:
+            if not isinstance(media_input, ModelMediaInput):
+                raise ValueError("harness task media_inputs must contain ModelMediaInput values")
+        object.__setattr__(self, "media_inputs", ordered_media_inputs(self.media_inputs))
 
 
 @dataclass(frozen=True)

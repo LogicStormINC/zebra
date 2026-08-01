@@ -7,7 +7,7 @@ from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
 from agent_core.domain.session_history import (
     SessionHistoryMode,
     SessionHistoryRequest,
@@ -16,7 +16,7 @@ from agent_core.domain.session_history import (
 )
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tool_profiles import ToolProfile
-from agent_core.domain.tools import ToolCall
+from agent_core.domain.tools import ToolCall, ToolCallStatus
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_runtime import LocalToolGateway, run_local_harness
 from agent_runtime.web_gateway import LocalWebGatewayTransport
@@ -518,6 +518,57 @@ def test_local_tool_gateway_registers_search_only_with_valid_configuration(tmp_p
     assert "web.search" not in {tool.name for tool in unavailable.model_tools}
     assert "web.search" not in {tool.name for tool in malformed.model_tools}
     assert "web.search" in {tool.name for tool in configured.model_tools}
+
+
+def test_local_tool_gateway_can_disable_one_mcp_tool_without_affecting_web_search(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeMcpTransport:
+        model_tools = (
+            ModelToolDefinition(
+                name="mcp.minimax.understand_image",
+                description="Legacy image understanding.",
+                parameters={"type": "object", "properties": {}},
+            ),
+            ModelToolDefinition(
+                name="mcp.fixture.echo",
+                description="Echo input.",
+                parameters={"type": "object", "properties": {}},
+            ),
+        )
+
+    transport = FakeMcpTransport()
+    monkeypatch.setattr(
+        "agent_runtime.harness.build_mcp_transport",
+        lambda *_args, **_kwargs: transport,
+    )
+    default = LocalToolGateway(
+        tmp_path / "default",
+        web_search_endpoint="https://search.example.com/search",
+    )
+    disabled = LocalToolGateway(
+        tmp_path / "disabled",
+        web_search_endpoint="https://search.example.com/search",
+        disabled_mcp_tools=("mcp.minimax.understand_image",),
+    )
+    disabled_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="mcp.minimax.understand_image",
+        arguments={},
+        created_at=_created_at(),
+    )
+
+    assert "mcp.minimax.understand_image" in {
+        tool.name for tool in default.effective_mcp_tools
+    }
+    assert "mcp.minimax.understand_image" not in {
+        tool.name for tool in disabled.effective_mcp_tools
+    }
+    assert "web.search" in {tool.name for tool in disabled.model_tools}
+    assert disabled.execute(disabled_call).status is ToolCallStatus.FAILED
+    with pytest.raises(ValueError, match="unavailable"):
+        disabled.resolve_model_tool_calls((disabled_call,))
 
 
 def test_local_tool_gateway_registers_skills_only_with_configured_roots(tmp_path) -> None:

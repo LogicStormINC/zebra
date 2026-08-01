@@ -7,14 +7,18 @@ over the standard MCP stdio transport (JSON-RPC 2.0, newline-delimited).
 Standard library only — no external dependencies needed by the subprocess.
 
 Usage:
-  MINIMAX_API_KEY=sk-xxx python3 scripts/minimax_mcp_server.py
+  MINIMAX_API_KEY=sk-xxx MINIMAX_API_HOST=https://api.minimax.io \
+    python3 scripts/minimax_mcp_server.py
 
 ZEBRA_MCP_SERVERS example:
   {
     "minimax": {
       "command": "/abs/path/to/scripts/minimax_mcp_server.py",
       "args": [],
-      "env": {"MINIMAX_API_KEY": "$MINIMAX_API_KEY"}
+      "env": {
+        "MINIMAX_API_KEY": "$MINIMAX_API_KEY",
+        "MINIMAX_API_HOST": "$MINIMAX_API_HOST"
+      }
     }
   }
 """
@@ -51,7 +55,10 @@ def main() -> None:
         _send_error(None, -32000, "MINIMAX_API_KEY environment variable is required")
         sys.exit(1)
 
-    api_host = os.environ.get("MINIMAX_API_HOST", "https://api.minimaxi.com").strip()
+    api_host = os.environ.get("MINIMAX_API_HOST", "").strip()
+    if not api_host:
+        _send_error(None, -32000, "MINIMAX_API_HOST environment variable is required")
+        sys.exit(1)
     try:
         api_host = _validated_api_host(api_host)
     except ValueError as exc:
