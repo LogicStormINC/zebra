@@ -220,6 +220,75 @@ def test_v2_business_catalog_adds_only_typed_account_change_proposal(
     }
 
 
+def test_v2_account_change_schema_exposes_finos_nested_typed_contract(
+    tmp_path: Path,
+) -> None:
+    provider = FinosJournalProvider(
+        base_url="https://finos.internal",
+        task_id="11111111-1111-4111-8111-111111111111",
+        grant="opaque-task-grant",
+        contract_version="finos.journals.v2",
+        transport=RecordingTransport(),
+    )
+    gateway = LocalToolGateway(tmp_path, finos_journal_provider=provider)
+    definition = next(
+        item.parameters
+        for item in gateway.model_tools
+        if item.name == "finos.account_changes.propose"
+    )
+
+    account = definition["properties"]["accounts"]["items"]
+    assert account["required"] == ["account_ref", "transactions"]
+    assert set(account["properties"]) == {"account_ref", "transactions", "snapshot"}
+
+    transaction = account["properties"]["transactions"]["items"]
+    assert transaction["required"] == ["kind", "occurred_at", "source_type", "source_ref"]
+    assert set(transaction["properties"]) == {
+        "kind",
+        "occurred_at",
+        "source_type",
+        "source_ref",
+        "symbol",
+        "display_name",
+        "quantity",
+        "price",
+        "fee",
+        "tax",
+        "cash_amount",
+    }
+
+    snapshot = account["properties"]["snapshot"]
+    assert snapshot["required"] == [
+        "captured_at",
+        "total_assets",
+        "cash",
+        "market_value",
+        "source_type",
+        "source_ref",
+    ]
+    assert set(snapshot["properties"]) == {
+        "captured_at",
+        "total_assets",
+        "cash",
+        "market_value",
+        "source_type",
+        "source_ref",
+        "holdings",
+    }
+
+    holding = snapshot["properties"]["holdings"]["items"]
+    assert set(holding["properties"]) == {
+        "symbol",
+        "display_name",
+        "quantity",
+        "average_cost",
+        "snapshot_price",
+        "market_value",
+        "unrealized_pnl",
+        "unrealized_pnl_pct",
+    }
+
+
 def test_v3_catalog_exposes_a_generic_read_only_validator_result_contract(
     tmp_path: Path,
 ) -> None:

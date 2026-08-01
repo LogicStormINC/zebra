@@ -125,7 +125,89 @@ ACCOUNT_CHANGES_PROPOSE_CONTRACT = ToolContract(
         "accounts": {
             "type": "array",
             "minItems": 1,
-            "items": {"type": "object"},
+            "items": {
+                "type": "object",
+                "properties": {
+                    "account_ref": {"type": "string", "minLength": 1},
+                    "transactions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "kind": {"type": "string", "minLength": 1},
+                                "occurred_at": {"type": "string", "minLength": 1},
+                                "source_type": {"type": "string", "minLength": 1},
+                                "source_ref": {"type": "string", "minLength": 1},
+                                "symbol": {"type": "string", "minLength": 1},
+                                "display_name": {"type": "string", "minLength": 1},
+                                "quantity": {"type": "string", "minLength": 1},
+                                "price": {"type": "string", "minLength": 1},
+                                "fee": {"type": "string", "minLength": 1},
+                                "tax": {"type": "string", "minLength": 1},
+                                "cash_amount": {"type": "string", "minLength": 1},
+                            },
+                            "required": [
+                                "kind",
+                                "occurred_at",
+                                "source_type",
+                                "source_ref",
+                            ],
+                            "additionalProperties": False,
+                        },
+                    },
+                    "snapshot": {
+                        "type": "object",
+                        "properties": {
+                            "captured_at": {"type": "string", "minLength": 1},
+                            "total_assets": {"type": "string", "minLength": 1},
+                            "cash": {"type": "string", "minLength": 1},
+                            "market_value": {"type": "string", "minLength": 1},
+                            "source_type": {"type": "string", "minLength": 1},
+                            "source_ref": {"type": "string", "minLength": 1},
+                            "holdings": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "symbol": {"type": "string", "minLength": 1},
+                                        "display_name": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                        },
+                                        "quantity": {"type": "string", "minLength": 1},
+                                        "average_cost": {"type": "string", "minLength": 1},
+                                        "snapshot_price": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                        },
+                                        "market_value": {"type": "string", "minLength": 1},
+                                        "unrealized_pnl": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                        },
+                                        "unrealized_pnl_pct": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                        },
+                                    },
+                                    "additionalProperties": False,
+                                },
+                            },
+                        },
+                        "required": [
+                            "captured_at",
+                            "total_assets",
+                            "cash",
+                            "market_value",
+                            "source_type",
+                            "source_ref",
+                        ],
+                        "additionalProperties": False,
+                    },
+                },
+                "required": ["account_ref", "transactions"],
+                "additionalProperties": False,
+            },
         },
         "evidence_coverage": {"type": "array", "items": {"type": "object"}},
         "missing_evidence": {"type": "array", "items": {"type": "string"}},
