@@ -53,7 +53,7 @@
 3. `completed` - Split Core contract, PostgreSQL adapter and Mem0 delivery successors
    with non-overlapping owned paths and dependency gates.
 4. `completed` - Review the plan against current code and architecture, record evidence
-   and move the docs-only card to Review.
+   and close the docs-only card as Done.
 
 ### Decisions
 
@@ -63,6 +63,16 @@
   `MemoryStorePort`, so governed-memory migration precedes `MEM-GW-DEL-01`.
 - Do not preserve blind last-writer-wins `upsert` as the cloud mutation contract;
   review, supersession, Event and Session Projection require an explicit aggregate.
+
+### Closeout
+
+- Review accepted the integrated docs-only contract `2c43af0f`; PostgreSQL
+  governed Memory is the cloud fact source and Mem0 remains a rebuildable
+  derived index.
+- The current contract is `366` lines and its reference, diff and Eval `10/10`
+  evidence is accepted. No implementation or runtime selection was added.
+- `CLOUD-MEMORY-PG-PLAN-01` is `Done`; the Core and PostgreSQL authority cards
+  remain the next implementation gates.
 
 ## CLOUD-ART-OBJ-CON-01 - Artifact Object And Metadata Authority Contract
 

@@ -232,7 +232,8 @@
 - Completed governed-memory planning slice `CLOUD-MEMORY-PG-PLAN-01` starts from
   `zebra-cloud-trench@f9568e34`. Audit confirmed the cloud branch still has only a
   SQLite `MemoryStorePort`; Mem0 is correctly derived but its future delivery ledger
-  would otherwise depend on a local fact source. This docs-only card freezes the
+  would otherwise depend on a local fact source. This docs-only card is formally
+  `Done` and freezes the
   PostgreSQL Memory authority and atomic review boundary before migration or delivery
   implementation. The reviewed plan assigns v10 to governed facts/operation receipts,
   then v11 to Mem0 delivery; final review found no open P0/P1. Session History remains

@@ -670,7 +670,7 @@ by the Spike, with no Mem0 type escaping the integration package.
 
 ### CLOUD-MEMORY-PG-PLAN-01 - PostgreSQL Governed Memory Authority Plan
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Branch: `codex/cloud-memory-pg-plan-01`
 - Depends on: integrated PostgreSQL v1-v9 foundation, `CLOUD-STO-AUTH-01`,
@@ -686,12 +686,23 @@ by the Spike, with no Mem0 type escaping the integration package.
   split into dependency-ordered path-bounded cards.
 - Non-goals: no Python/SQL implementation, SQLite behavior change, Mem0 call,
   backend selector, Desktop, Host tenant directory or production cutover claim.
-- Evidence: the 344-line contract inventories the SQLite-only fact source and
+- Evidence: the 366-line contract inventories the SQLite-only fact source and
   freezes v10 authority/operation receipts, pure mutation plans, Worker/Admin
   aggregate boundaries, tombstones, namespace/search/import gates and the v11
   Mem0 delivery certainty/rebuild protocol. Two preflight audits and two review
   rounds closed six P1 gaps; final review found no open P0/P1. `git diff --check`,
   cross-document task references and release Eval `10/10` pass.
+
+#### Closeout
+
+- Formal review accepted the integrated docs-only contract from `2c43af0f`;
+  PostgreSQL governed Memory is the cloud fact source, while Mem0 remains a
+  rebuildable derived index with no lifecycle or content authority.
+- The current contract is `366` lines and passes cross-document references,
+  terminology/diff checks and release Eval `10/10`. No Python/SQL, migration,
+  Mem0 call, selector, Desktop or production cutover was added.
+- Closed `CLOUD-MEMORY-PG-PLAN-01` from `Review` to `Done`; Core mutation,
+  PostgreSQL authority and delivery cards retain their own gates.
 
 ### CLOUD-MEMORY-CON-01 - Governed Memory Mutation Contract
 

@@ -7308,3 +7308,14 @@ actual byte access.
   changed.
 - Closed `MEM-MEM0-RESET-ALT-01` from `Review` to `Done` as validation only;
   Mem0 consumer, parent ledger and Runtime remain locked.
+
+## 2026-08-02 - CLOUD-MEMORY-PG-PLAN-01 formal review closeout
+
+- Reviewed integrated contract `2c43af0f`; PostgreSQL governed Memory is the
+  cloud fact source and Mem0 remains a rebuildable derived index without
+  lifecycle/content authority.
+- Accepted the current 366-line contract, cross-document reference/diff checks
+  and release Eval `10/10`. No Python/SQL, migration, Mem0 call, selector,
+  Desktop or production cutover was added.
+- Closed `CLOUD-MEMORY-PG-PLAN-01` from `Review` to `Done`; Core mutation,
+  PostgreSQL authority and delivery cards retain independent gates.
