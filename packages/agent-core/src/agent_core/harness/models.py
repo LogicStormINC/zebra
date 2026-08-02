@@ -55,6 +55,7 @@ class HarnessTask:
     agent_definition: AgentDefinition | None = None
     agent_context: AgentDefinitionContext | None = None
     model_capabilities: tuple[str, ...] = ()
+    model_id: str | None = None
     context_token_budget: int = 200
     runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = ()
@@ -85,6 +86,8 @@ class HarnessTask:
             raise ValueError("harness task workspace_root must be absolute when set")
         if self.context_token_budget <= 0:
             raise ValueError("harness task context_token_budget must be positive")
+        if self.model_id is not None and not self.model_id.strip():
+            raise ValueError("harness task model_id must not be blank when set")
         object.__setattr__(self, "mcp_allowlist", normalize_mcp_allowlist(self.mcp_allowlist))
         preapproved_readonly_tools = normalize_mcp_allowlist(
             self.preapproved_readonly_tools

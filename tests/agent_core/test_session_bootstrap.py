@@ -54,3 +54,16 @@ def test_session_bootstrap_persists_explicit_history_scope() -> None:
     )
 
     assert result.events[2].payload["history_session_ids"] == [session_id]
+
+
+def test_session_bootstrap_persists_explicit_model_catalog_id() -> None:
+    result = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Selected model",
+            user_input="Use the selected runtime model",
+            workspace_root=Path("/tmp/bootstrap"),
+            model_id="qwen-native",
+        )
+    )
+
+    assert result.events[2].payload["model_id"] == "qwen-native"

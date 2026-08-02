@@ -119,6 +119,7 @@ def run_local_harness(
     preapproved_readonly_tools: Sequence[str] = (),
     disabled_mcp_tools: Sequence[str] = (),
     agent_definition: AgentDefinition | None = None,
+    model_id: str | None = None,
     trusted_local: bool = False,
     max_model_calls: int | None = None,
     max_tool_calls: int | None = None,
@@ -168,6 +169,7 @@ def run_local_harness(
                 preapproved_readonly_tools=effective_preapproved_readonly_tools,
                 skill_components=tool_gateway.effective_skill_components,
                 agent_definition=agent_definition,
+                model_id=model_id,
                 agent_context=agent_context,
                 model_capabilities=declared_model_capabilities(
                     model_gateway, bool(tool_gateway.model_tools)

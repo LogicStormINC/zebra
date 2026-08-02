@@ -16,6 +16,7 @@ from zebra_agent_config.mcp_settings import (
 from zebra_agent_config.mcp_settings import (
     _read_mcp_servers,
 )
+from zebra_agent_config.model_catalog import ModelCatalog, load_model_catalog
 from zebra_agent_config.setup_settings import SetupSettings, load_setup_settings
 
 
@@ -83,6 +84,7 @@ class ZebraAgentSettings:
     database_url: str
     api: ApiSettings
     model: ModelSettings
+    model_catalog: ModelCatalog | None = None
     build_commit: str = "unknown"
     task_workspace_root: Path = Path(".zebra-agent/task-workspaces")
     finos_journal_provider: FinosJournalProviderSettings = field(
@@ -144,6 +146,48 @@ def load_settings(
             values["ZEBRA_MODEL_NAME"] = "qwen3.7-flash-2026-07-15"
         values["ZEBRA_MODEL_API_KEY_ENV"] = "DASHSCOPE_API_KEY"
     profile = _read(values, "ZEBRA_PROFILE", default="local")
+    model = ModelSettings(
+        provider=provider,
+        api_key_env=_read(
+            values,
+            "ZEBRA_MODEL_API_KEY_ENV",
+            default=f"{provider.upper()}_API_KEY",
+        ),
+        base_url=_read(
+            values,
+            "ZEBRA_MODEL_BASE_URL",
+            default=(
+                "https://dashscope.aliyuncs.com/compatible-mode/v1"
+                if provider == "qwen"
+                else "https://api.deepseek.com"
+            ),
+        ),
+        model=_read(
+            values,
+            "ZEBRA_MODEL_NAME",
+            default=(
+                "qwen3.7-flash-2026-07-15" if provider == "qwen" else "deepseek-v4-flash"
+            ),
+        ),
+        profile_id=_read_optional(values, "ZEBRA_MODEL_PROFILE_ID"),
+        executor_profile=_read_optional(values, "ZEBRA_DEEPSEEK_EXECUTOR_PROFILE"),
+        planner_profile=_read_optional(values, "ZEBRA_DEEPSEEK_PLANNER_PROFILE"),
+        reviewer_profile=_read_optional(values, "ZEBRA_DEEPSEEK_REVIEWER_PROFILE"),
+        summarizer_profile=_read_optional(values, "ZEBRA_DEEPSEEK_SUMMARIZER_PROFILE"),
+        analyst_profile=_read_optional(values, "ZEBRA_DEEPSEEK_ANALYST_PROFILE"),
+        classifier_profile=_read_optional(values, "ZEBRA_DEEPSEEK_CLASSIFIER_PROFILE"),
+        max_retries=_read_non_negative_int(
+            values,
+            "ZEBRA_MODEL_MAX_RETRIES",
+            default=1,
+        ),
+        deepseek_beta_enabled=_read_bool(
+            values,
+            "ZEBRA_DEEPSEEK_BETA_ENABLED",
+            default=False,
+        ),
+        deepseek_beta_base_url=_read_optional(values, "ZEBRA_DEEPSEEK_BETA_BASE_URL"),
+    )
     return ZebraAgentSettings(
         profile=profile,
         database_url=_read(
@@ -157,49 +201,10 @@ def load_settings(
         api=ApiSettings(
             auth_token=_read_optional(values, "ZEBRA_API_AUTH_TOKEN"),
         ),
-        model=ModelSettings(
-            provider=provider,
-            api_key_env=_read(
-                values,
-                "ZEBRA_MODEL_API_KEY_ENV",
-                default=f"{provider.upper()}_API_KEY",
-            ),
-            base_url=_read(
-                values,
-                "ZEBRA_MODEL_BASE_URL",
-                default=(
-                    "https://dashscope.aliyuncs.com/compatible-mode/v1"
-                    if provider == "qwen"
-                    else "https://api.deepseek.com"
-                ),
-            ),
-            model=_read(
-                values,
-                "ZEBRA_MODEL_NAME",
-                default=(
-                    "qwen3.7-flash-2026-07-15"
-                    if provider == "qwen"
-                    else "deepseek-v4-flash"
-                ),
-            ),
-            profile_id=_read_optional(values, "ZEBRA_MODEL_PROFILE_ID"),
-            executor_profile=_read_optional(values, "ZEBRA_DEEPSEEK_EXECUTOR_PROFILE"),
-            planner_profile=_read_optional(values, "ZEBRA_DEEPSEEK_PLANNER_PROFILE"),
-            reviewer_profile=_read_optional(values, "ZEBRA_DEEPSEEK_REVIEWER_PROFILE"),
-            summarizer_profile=_read_optional(values, "ZEBRA_DEEPSEEK_SUMMARIZER_PROFILE"),
-            analyst_profile=_read_optional(values, "ZEBRA_DEEPSEEK_ANALYST_PROFILE"),
-            classifier_profile=_read_optional(values, "ZEBRA_DEEPSEEK_CLASSIFIER_PROFILE"),
-            max_retries=_read_non_negative_int(
-                values,
-                "ZEBRA_MODEL_MAX_RETRIES",
-                default=1,
-            ),
-            deepseek_beta_enabled=_read_bool(
-                values,
-                "ZEBRA_DEEPSEEK_BETA_ENABLED",
-                default=False,
-            ),
-            deepseek_beta_base_url=_read_optional(values, "ZEBRA_DEEPSEEK_BETA_BASE_URL"),
+        model=model,
+        model_catalog=load_model_catalog(
+            _read_optional(values, "ZEBRA_MODEL_CATALOG_JSON"),
+            model,
         ),
         finos_journal_provider=_load_finos_journal_provider_settings(values),
         build_commit=_read(values, "ZEBRA_BUILD_COMMIT", default="unknown"),

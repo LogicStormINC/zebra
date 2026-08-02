@@ -33,6 +33,8 @@ class RouteAdapter:
             return self.app.health()
         if method == "GET" and request.path == "/capabilities/mcp":
             return self.app.get_mcp_capabilities()
+        if method == "GET" and request.path == "/capabilities/models":
+            return self.app.get_model_capabilities()
         if method == "GET" and request.path == "/capabilities/mcp/prompts":
             return self.app.get_mcp_prompts()
         if method == "GET" and request.path == "/sessions":

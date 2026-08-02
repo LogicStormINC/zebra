@@ -41,8 +41,11 @@ from agent_storage import (
 )
 from agent_storage.session_attachments import RegisteredTaskMedia, TaskAttachmentMediaResolver
 from zebra_agent_config import (
+    ModelCatalogEntry,
     ZebraAgentSettings,
     load_settings,
+    select_model_catalog_entry,
+    settings_for_model,
     trusted_local_mode_enabled,
     with_task_workspace_root,
 )
@@ -126,6 +129,10 @@ class ZebraAgentApi(
         if isinstance(parsed, ApiResponse):
             return parsed
         try:
+            model_entry = select_model_catalog_entry(self.settings, parsed["model"])
+        except ValueError as error:
+            return bad_request(str(error))
+        try:
             parsed["agent_definition"] = bind_server_resolved_agent_definition(
                 parsed["agent_definition"],
                 self.settings,
@@ -160,9 +167,17 @@ class ZebraAgentApi(
         parsed["attachments"] = (*parsed["attachments"], *resource_attachments, *prompt_attachments)
         session_id = session_id or (SessionId(uuid4()) if parsed["image_attachments"] else None)
         response = (
-            self._create_and_execute_session(parsed, session_id=session_id)
+            self._create_and_execute_session(
+                parsed,
+                model_entry=model_entry,
+                session_id=session_id,
+            )
             if parsed["execute"]
-            else self._create_queued_session(parsed, session_id=session_id)
+            else self._create_queued_session(
+                parsed,
+                model_entry=model_entry,
+                session_id=session_id,
+            )
         )
         if idempotency_key is None or response.status_code != 201:
             return response
@@ -266,6 +281,7 @@ class ZebraAgentApi(
         self,
         parsed: payloads.CreateSessionPayload,
         *,
+        model_entry: ModelCatalogEntry,
         session_id: SessionId | None,
     ) -> ApiResponse:
         try:
@@ -300,6 +316,7 @@ class ZebraAgentApi(
                     max_model_calls=parsed["max_model_calls"],
                     max_tool_calls=parsed["max_tool_calls"],
                     agent_definition=parsed["agent_definition"],
+                    model_id=model_entry.id,
                     session_id=session_id,
                 )
             )
@@ -329,6 +346,7 @@ class ZebraAgentApi(
                 "prompt": str(parsed["prompt"]),
                 "workspace": str(parsed["workspace"]),
                 "executed": False,
+                "model": model_entry.id,
                 "status": bootstrap.session.status.value,
                 "tool_profile": str(parsed["tool_profile"]),
                 "max_model_calls": parsed["max_model_calls"],
@@ -356,10 +374,13 @@ class ZebraAgentApi(
         self,
         parsed: payloads.CreateSessionPayload,
         *,
+        model_entry: ModelCatalogEntry,
         session_id: SessionId | None,
     ) -> ApiResponse:
         try:
-            model_gateway = build_model_gateway(self.settings)
+            model_gateway = build_model_gateway(
+                settings_for_model(self.settings, model_entry.id)
+            )
         except ValueError as error:
             return service_unavailable(
                 status="model_gateway_unavailable",
@@ -467,6 +488,7 @@ class ZebraAgentApi(
                 max_model_calls=parsed["max_model_calls"],
                 max_tool_calls=parsed["max_tool_calls"],
                 agent_definition=parsed["agent_definition"],
+                model_id=model_entry.id,
                 session_history=SQLiteSessionHistory(
                     self.database_path, allowed_session_ids=parsed["history_session_ids"]
                 ),
@@ -531,6 +553,7 @@ class ZebraAgentApi(
                 "prompt": str(parsed["prompt"]),
                 "workspace": str(parsed["workspace"]),
                 "executed": True,
+                "model": model_entry.id,
                 "status": session.status.value,
                 "assistant_message": result.attempt_result.metadata.get("assistant_message"),
                 "stop_reason": result.run_result.stop_reason.value,

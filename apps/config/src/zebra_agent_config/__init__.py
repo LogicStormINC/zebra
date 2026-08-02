@@ -1,3 +1,11 @@
+from zebra_agent_config.model_catalog import (
+    MODEL_CATALOG_SCHEMA,
+    ModelCatalog,
+    ModelCatalogEntry,
+    catalog_for_settings,
+    select_model_catalog_entry,
+    settings_for_model,
+)
 from zebra_agent_config.settings import (
     ApiSettings,
     FinosJournalProviderSettings,
@@ -16,10 +24,13 @@ from zebra_agent_config.task_workspace import task_workspace_root, with_task_wor
 
 __all__ = [
     "ApiSettings",
+    "MODEL_CATALOG_SCHEMA",
     "FinosJournalProviderSettings",
     "McpHttpServerSettings",
     "McpServerSettings",
     "ModelSettings",
+    "ModelCatalog",
+    "ModelCatalogEntry",
     "RuntimeSettings",
     "ScmSettings",
     "SessionHandoffSettings",
@@ -27,6 +38,9 @@ __all__ = [
     "SetupSettings",
     "ZebraAgentSettings",
     "load_settings",
+    "catalog_for_settings",
+    "select_model_catalog_entry",
+    "settings_for_model",
     "task_workspace_root",
     "trusted_local_mode_enabled",
     "with_task_workspace_root",

@@ -34,6 +34,7 @@ class SessionBootstrapCommand:
     max_tool_calls: int | None = None
     created_at: datetime | None = None
     session_id: SessionId | None = None
+    model_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -117,6 +118,11 @@ class SessionBootstrapService:
                     "max_attempts": command.max_attempts,
                     "max_model_calls": command.max_model_calls,
                     "max_tool_calls": command.max_tool_calls,
+                    **(
+                        {"model_id": command.model_id}
+                        if command.model_id is not None
+                        else {}
+                    ),
                 },
                 created_at=session.created_at,
             ),

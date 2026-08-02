@@ -19,6 +19,7 @@ from zebra_agent_api.session_attachment_inputs import ImageAttachmentInput, pars
 
 class CreateSessionPayload(TypedDict):
     prompt: str
+    model: str | None
     public_content: str | None
     title: str
     workspace: str
@@ -105,9 +106,11 @@ def parse_create_session_payload(payload: dict[str, object]) -> CreateSessionPay
     unknown_fields = sorted(payload.keys() - CREATE_SESSION_FIELDS)
     if unknown_fields:
         return bad_request(f"unknown create-session fields: {', '.join(unknown_fields)}")
-    prompt = payload.get("prompt")
+    prompt, model = payload.get("prompt"), payload.get("model")
     if not isinstance(prompt, str) or not prompt.strip():
         return bad_request("prompt must be a non-blank string")
+    if model is not None and (not isinstance(model, str) or not model.strip()):
+        return bad_request("model must be a non-blank catalog id when provided")
     public_content = payload.get("public_content")
     if public_content is not None and (
         not isinstance(public_content, str) or not public_content.strip()
@@ -115,15 +118,12 @@ def parse_create_session_payload(payload: dict[str, object]) -> CreateSessionPay
         return bad_request("public_content must be a non-blank string when provided")
     if isinstance(public_content, str) and len(public_content.strip()) > 64_000:
         return bad_request("public_content must not exceed 64000 characters")
-
     title = payload.get("title", "Untitled task")
     if not isinstance(title, str) or not title.strip():
         return bad_request("title must be a non-blank string when provided")
-
     workspace = payload.get("workspace", ".")
     if not isinstance(workspace, str) or not workspace.strip():
         return bad_request("workspace must be a non-blank string when provided")
-
     execute = payload.get("execute", False)
     if not isinstance(execute, bool):
         return bad_request("execute must be a boolean when provided")
@@ -228,7 +228,7 @@ def parse_create_session_payload(payload: dict[str, object]) -> CreateSessionPay
         return bad_request("MCP selections require an MCP-capable network profile")
 
     return {
-        "prompt": prompt.strip(),
+        "prompt": prompt.strip(), "model": model.strip() if isinstance(model, str) else None,
         "public_content": (
             public_content.strip() if isinstance(public_content, str) else None
         ),

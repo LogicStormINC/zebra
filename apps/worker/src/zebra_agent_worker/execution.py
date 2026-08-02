@@ -55,6 +55,7 @@ from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import (
     ZebraAgentSettings,
     load_settings,
+    settings_for_model,
     task_workspace_root,
     trusted_local_mode_enabled,
     with_task_workspace_root,
@@ -99,7 +100,7 @@ from zebra_agent_worker.runtime_setup import (
     build_prepared_runtime,
     require_matching_runtime_authority,
 )
-from zebra_agent_worker.task_recovery import recover_task
+from zebra_agent_worker.task_recovery import persisted_task_model_id, recover_task
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 
 
@@ -208,6 +209,7 @@ class SessionExecutionService:
             session_events, self._provider_continuation_store
         )
         try:
+            task_model_id = persisted_task_model_id([item.event for item in task_events])
             task = recover_task(
                 session_events,
                 workspace=claimed.recovery.workspace,
@@ -219,6 +221,7 @@ class SessionExecutionService:
                 handoff_evidence=(
                     None if recovered_handoff is None else recovered_handoff.runtime_evidence
                 ),
+                task_model_id=task_model_id,
             )
         except (FileNotFoundError, ValueError) as exc:
             self._claim_service.release_claim(claimed)
@@ -233,7 +236,9 @@ class SessionExecutionService:
             trusted_local=trusted_local,
         )
         try:
-            model_gateway = build_model_gateway(self._settings)
+            model_gateway = build_model_gateway(
+                settings_for_model(self._settings, task.model_id)
+            )
         except ValueError:
             self._claim_service.release_claim(claimed)
             raise
@@ -363,6 +368,7 @@ class SessionExecutionService:
                 skill_components=tool_gateway.effective_skill_components,
                 agent_definition=task.agent_definition,
                 agent_context=agent_context,
+                model_id=task.model_id,
                 model_capabilities=declared_model_capabilities(
                     model_gateway,
                     has_tools=bool(tool_gateway.model_tools),

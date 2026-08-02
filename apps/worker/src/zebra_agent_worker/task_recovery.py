@@ -38,6 +38,7 @@ class RecoveredTask:
     max_attempts: int
     max_model_calls: int | None
     max_tool_calls: int | None
+    model_id: str | None
     attachments: tuple[AttachmentContextInput, ...]
     legacy_image_prompt_suffix: str
     media_inputs: tuple[ModelMediaInput, ...]
@@ -55,6 +56,7 @@ def recover_task(
     registered_task_media: tuple[RegisteredTaskMedia, ...] = (),
     active_capsule: ContextCapsule | None = None,
     handoff_evidence: RuntimeEvidenceInput | None = None,
+    task_model_id: str | None = None,
 ) -> RecoveredTask:
     user_input: str | None = None
     task_payload: dict[str, object] | None = None
@@ -69,6 +71,11 @@ def recover_task(
             task_payload = event.payload
     if user_input is None or user_event is None or task_payload is None:
         raise ValueError("queued session is missing bootstrap task input")
+    model_id = _model_id(task_payload.get("model_id"))
+    root_model_id = _model_id(task_model_id)
+    if model_id is not None and root_model_id is not None and model_id != root_model_id:
+        raise ValueError("queued session model selection drift detected")
+    model_id = model_id or root_model_id
     agent_definition = _agent_definition_from_payload(task_payload.get("agent_definition"))
     if agent_definition != workspace.agent_definition:
         raise ValueError("queued session agent_definition drift detected")
@@ -102,6 +109,7 @@ def recover_task(
         max_attempts=_optional_positive_int(task_payload.get("max_attempts")) or 1,
         max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
         max_tool_calls=_optional_positive_int(task_payload.get("max_tool_calls")),
+        model_id=model_id,
         attachments=attachments,
         legacy_image_prompt_suffix=legacy_image_prompt_suffix,
         media_inputs=media_resolver.media_inputs,
@@ -111,6 +119,20 @@ def recover_task(
             *((handoff_evidence,) if handoff_evidence is not None else ()),
         ),
     )
+
+
+def persisted_task_model_id(events: list[SessionEvent]) -> str | None:
+    selected: str | None = None
+    for event in events:
+        if event.event_type is not EventType.TASK_PREPARED:
+            continue
+        model_id = _model_id(event.payload.get("model_id"))
+        if model_id is None:
+            continue
+        if selected is not None and selected != model_id:
+            raise ValueError("task model selection drift detected")
+        selected = model_id
+    return selected
 
 
 def _task_image_context_suffix(
@@ -204,6 +226,14 @@ def _optional_positive_int(value: object) -> int | None:
     if not isinstance(value, int) or isinstance(value, bool):
         return None
     return value if value > 0 else None
+
+
+def _model_id(value: object) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("queued session contains invalid model selection")
+    return value.strip()
 
 
 def _agent_definition_from_payload(value: object) -> AgentDefinition | None:

@@ -94,6 +94,7 @@ class TaskPreparedPayload(BaseModel):
     max_attempts: int | None = None
     max_model_calls: int | None = None
     max_tool_calls: int | None = None
+    model_id: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @field_validator("title", "user_input")
     @classmethod
@@ -103,7 +104,7 @@ class TaskPreparedPayload(BaseModel):
             raise ValueError("field must not be blank")
         return stripped
 
-    @field_validator("workspace_root", "policy_profile")
+    @field_validator("workspace_root", "policy_profile", "model_id")
     @classmethod
     def ensure_optional_text_not_blank(cls, value: str | None) -> str | None:
         if value is None:

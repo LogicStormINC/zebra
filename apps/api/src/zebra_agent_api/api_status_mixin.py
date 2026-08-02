@@ -3,7 +3,11 @@ from __future__ import annotations
 from agent_core.domain.model_media import ModelInputModality
 from agent_integrations.openai_model_profiles import resolve_model_profile
 from agent_runtime import build_mcp_capability_inventory, discover_mcp_prompts
-from zebra_agent_config import ZebraAgentSettings
+from zebra_agent_config import (
+    MODEL_CATALOG_SCHEMA,
+    ZebraAgentSettings,
+    catalog_for_settings,
+)
 
 from zebra_agent_api.responses import ApiResponse
 
@@ -54,6 +58,17 @@ class ApiStatusMixin:
                 },
             )
         return ApiResponse(status_code=200, body=inventory.to_mapping())
+
+    def get_model_capabilities(self) -> ApiResponse:
+        catalog = catalog_for_settings(self.settings)
+        return ApiResponse(
+            status_code=200,
+            body={
+                "schema": MODEL_CATALOG_SCHEMA,
+                "default_id": catalog.default_id,
+                "models": [entry.to_public_mapping() for entry in catalog.entries],
+            },
+        )
 
     def get_mcp_prompts(self) -> ApiResponse:
         if not self.settings.mcp_servers:
