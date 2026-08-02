@@ -536,16 +536,14 @@ including a real thinking tool round trip.
   isolation, unknown and in-flight quarantine, and batch search admission. The
   parent ledger and runtime wiring remain locked by the scoped-reset gate.
 
-`MEM-MEM0-RESET-ALT-01` is now `Review` on `codex/mem0-reset-alt-01`,
-following the sidebar ChatGPT plan. It is a zero-production-code validation of
-whether v11 `scope/generation` plus confirmed provider mappings can replace
-provider-wide enumeration for logical reset. The existing reset Spike remains
-`Blocked`; this card does not activate Worker, Provider HTTP, Desktop or local
-SQLite composition. Its isolated runner passes `2` tests with verdict `B/PARTIAL`:
-logical reset and known mapping deletion are bounded, but unknown provider
-orphans remain unrecoverable from the ledger. The focused delivery runner remains
-`24 passed`, and the full storage matrix remains `295 passed, 1 skipped`; the
-partial verdict does not unlock the runtime consumer.
+`MEM-MEM0-RESET-ALT-01` is formally `Done` as a zero-production-code validation
+of whether v11 `scope/generation` plus confirmed provider mappings can replace
+provider-wide enumeration for logical reset. Its isolated runner passes `2`
+tests with verdict `B/PARTIAL`: logical reset and known mapping deletion are
+bounded, but unknown provider orphans remain unrecoverable from the ledger. The
+existing reset Spike remains `Blocked`; the partial verdict does not unlock the
+runtime consumer. The focused delivery runner remains `24 passed`, and the full
+storage matrix remains `295 passed, 1 skipped`.
 
 `MEM-PROVIDER-DEL-COMPLIANCE-01` is now `Done` on
 `codex/mem-provider-del-compliance-01`. This docs/specification-only slice adds

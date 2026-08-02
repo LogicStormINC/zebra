@@ -7296,3 +7296,15 @@ actual byte access.
   local SQLite composition was changed.
 - Closed `MEM-GW-DEL-PG-01` from `Review` to `Done`; the parent ledger and Mem0
   consumer remain locked by the scoped-reset enumeration block.
+
+## 2026-08-02 - MEM-MEM0-RESET-ALT-01 formal review closeout
+
+- Accepted the explicit `B/PARTIAL` result: generation fencing and known mapping
+  deletion are bounded, but the lost-response provider orphan remains
+  unrecoverable from the ledger.
+- Recorded host Compose evidence is `2 passed` with
+  `ZEBRA_MEM0_RESET_ALT_VERDICT=B`; the current sandbox reports `2 skipped`
+  without PostgreSQL. No production, Worker, Provider HTTP or SQLite path was
+  changed.
+- Closed `MEM-MEM0-RESET-ALT-01` from `Review` to `Done` as validation only;
+  Mem0 consumer, parent ledger and Runtime remain locked.

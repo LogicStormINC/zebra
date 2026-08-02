@@ -908,7 +908,7 @@ reset.
 
 ### MEM-MEM0-RESET-ALT-01 - Scoped Reset Alternative Validation
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `INTEGRATIONS / STORAGE / SRE`
 - Depends on: integrated `MEM-GW-DEL-PG-01` at `3cd0b98`; independent of the
@@ -955,6 +955,18 @@ provider mappings can make logical reset safe without provider enumeration.
   `tests/agent_storage` matrix remains `295 passed, 1 skipped`. The parent,
   original reset Spike and runtime consumer remain locked pending a separate
   deletion-compliance decision.
+
+#### Closeout
+
+- Formal review accepted the recorded `B/PARTIAL` result: logical reset and
+  known mapping deletion are bounded, while an unknown provider orphan remains
+  unrecoverable from the ledger.
+- Current-head validation without PostgreSQL reports `2 skipped`; the recorded
+  host Compose result is `2 passed` with
+  `ZEBRA_MEM0_RESET_ALT_VERDICT=B` and deterministic cleanup.
+- Closed `MEM-MEM0-RESET-ALT-01` from `Review` to `Done` as a validation-only
+  result. `MEM-MEM0-RESET-SPIKE-01`, `MEM-GW-DEL-RUN-01` and the parent remain
+  locked; Mem0 is not admitted to the runtime.
 
 ### MEM-PROVIDER-DEL-COMPLIANCE-01 - Provider Deletion Compliance Contract
 

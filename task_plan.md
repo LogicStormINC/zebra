@@ -840,6 +840,17 @@
    existing delivery/storage regression matrices before moving the card to
    `Review`; do not unlock `MEM-GW-DEL-RUN-01` on a partial result.
 
+### Closeout
+
+- Review accepted the explicit `B/PARTIAL` verdict: logical generation reset
+  and known mapping deletion work, but an unknown provider orphan remains
+  unrecoverable from the ledger.
+- The host Compose result is `2 passed` with
+  `ZEBRA_MEM0_RESET_ALT_VERDICT=B`; the current sandbox has no PostgreSQL
+  service and reports `2 skipped`.
+- `MEM-MEM0-RESET-ALT-01` is `Done` as validation only. Mem0 consumer, parent
+  ledger and Runtime remain locked.
+
 ## MEM-PROVIDER-DEL-COMPLIANCE-01 - Provider Deletion Compliance Contract
 
 1. `completed` - Ask the sidebar ChatGPT planning session to select the only

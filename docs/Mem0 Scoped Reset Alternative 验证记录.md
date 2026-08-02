@@ -1,6 +1,6 @@
 # Mem0 Scoped Reset Alternative 验证记录
 
-状态：`Review`（`MEM-MEM0-RESET-ALT-01`）
+状态：`Done`（`MEM-MEM0-RESET-ALT-01`）
 日期：2026-08-02
 
 ## 1. 目的与边界
@@ -55,3 +55,5 @@ PostgreSQL Compose 依赖，并用 deterministic in-memory provider stand-in 模
 保持 `MEM-MEM0-RESET-SPIKE-01 = Blocked`、`MEM-GW-DEL-RUN-01 = Locked`
 和父任务状态不变。`B` 结果要求另行评审 deletion-compliance gate；当前不
 能宣称 Mem0 已具备完整 physical reset/rebuild 能力。
+
+本记录的 `Done` 仅表示验证边界已审计并固化，不表示 Mem0 通过运行时准入。
