@@ -447,9 +447,8 @@ class HarnessModelStep:
         self._recovery_messages = ()
         messages: list[SessionMessage] = []
         if self._context_compiler is not None and task.workspace_root is not None:
-            active_projection = any(
+            has_session_handoff = any(
                 evidence.kind == "session_handoff"
-                and (evidence.metadata or {}).get("handoff_source") == "active_projection"
                 for evidence in task.runtime_evidence
             )
             context_budget = (
@@ -457,7 +456,7 @@ class HarnessModelStep:
                     task.context_token_budget,
                     context_window(model_gateway).compaction_reserve_tokens,
                 )
-                if model_gateway is not None and active_projection
+                if model_gateway is not None and has_session_handoff
                 else task.context_token_budget
             )
             system_prompt = self._context_compiler.build_system_prompt(

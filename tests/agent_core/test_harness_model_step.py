@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+from agent_context import LocalContextCompiler
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
@@ -169,6 +170,62 @@ def test_active_projection_uses_the_compaction_reserve_without_changing_other_ta
     )
 
     assert compiler.budgets == [640, 200]
+
+
+def test_checkpoint_handoff_uses_compaction_reserve_and_keeps_latest_user_last(
+    tmp_path: Path,
+) -> None:
+    class CapturingGateway:
+        context_window = ModelContextWindow(compaction_reserve_tokens=640)
+
+        def __init__(self) -> None:
+            self.requests: list[list[SessionMessage]] = []
+
+        def complete(
+            self,
+            messages: list[SessionMessage],
+            *,
+            tools: tuple[ModelToolDefinition, ...] = (),
+        ) -> ModelCompletion:
+            del tools
+            self.requests.append(list(messages))
+            return ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content="Ready to continue.",
+                    created_at=datetime(2026, 8, 2, 12, 0, tzinfo=UTC),
+                )
+            )
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    marker = "CHECKPOINT-CONTINUITY-MUST-REACH-MODEL"
+    gateway = CapturingGateway()
+
+    HarnessModelStep(context_compiler=LocalContextCompiler()).request_initial_completion(
+        HarnessTask(
+            title="Checkpoint continuation",
+            user_input="FOLLOW-UP-USER-LAST",
+            workspace_root=workspace.resolve(),
+            context_token_budget=200,
+            runtime_evidence=(
+                RuntimeEvidenceInput(
+                    kind="session_handoff",
+                    summary=marker,
+                    details=("Skill continuity: " + "checkpoint evidence " * 120,),
+                    metadata={"handoff_source": "checkpoint"},
+                ),
+            ),
+        ),
+        gateway,
+    )
+
+    request = gateway.requests[0]
+    assert marker in request[0].content
+    assert request[-1].role is MessageRole.USER
+    assert request[-1].content == "FOLLOW-UP-USER-LAST"
+    assert all(message.role is not MessageRole.TOOL for message in request)
 
 
 def test_active_projection_compilation_keeps_the_model_request_hard_gate(
