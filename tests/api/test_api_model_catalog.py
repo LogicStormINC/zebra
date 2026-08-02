@@ -14,10 +14,10 @@ from zebra_agent_api import RouteAdapter, RouteRequest, create_app
 from zebra_agent_config import load_settings
 
 
-def _catalog_json() -> str:
+def _catalog_json(*, default_id: str = "qwen-native", deepseek_available: bool = False) -> str:
     return json.dumps(
         {
-            "default_id": "qwen-native",
+            "default_id": default_id,
             "models": [
                 {
                     "id": "qwen-native",
@@ -34,7 +34,7 @@ def _catalog_json() -> str:
                 {
                     "id": "deepseek-text",
                     "label": "DeepSeek text with MCP",
-                    "available": False,
+                    "available": deepseek_available,
                     "settings": {
                         "provider": "deepseek",
                         "api_key_env": "DEEPSEEK_API_KEY",
@@ -45,6 +45,37 @@ def _catalog_json() -> str:
             ],
         }
     )
+
+
+def test_health_projects_native_image_capability_from_catalog_default(tmp_path: Path) -> None:
+    database = tmp_path / "health-qwen.sqlite"
+    settings = load_settings(
+        {
+            "ZEBRA_DATABASE_URL": str(database),
+            "ZEBRA_MODEL_CATALOG_JSON": _catalog_json(),
+        }
+    )
+
+    runtime = create_app(database, settings=settings).health().body["runtime"]
+
+    assert runtime["native_image_understanding"] is True
+
+
+def test_health_projects_text_capability_from_catalog_default(tmp_path: Path) -> None:
+    database = tmp_path / "health-deepseek.sqlite"
+    settings = load_settings(
+        {
+            "ZEBRA_DATABASE_URL": str(database),
+            "ZEBRA_MODEL_CATALOG_JSON": _catalog_json(
+                default_id="deepseek-text",
+                deepseek_available=True,
+            ),
+        }
+    )
+
+    runtime = create_app(database, settings=settings).health().body["runtime"]
+
+    assert runtime["native_image_understanding"] is False
 
 
 def _adapter(database: Path) -> RouteAdapter:
@@ -64,7 +95,7 @@ def test_model_capabilities_expose_only_safe_catalog_fields(tmp_path: Path) -> N
 
     assert response.status_code == 200
     assert response.body == {
-        "schema": "zebra.model-catalog.v1",
+        "schema_version": "zebra.model-catalog.v1",
         "default_id": "qwen-native",
         "models": [
             {"id": "qwen-native", "label": "Qwen native media", "available": True},
@@ -75,6 +106,7 @@ def test_model_capabilities_expose_only_safe_catalog_fields(tmp_path: Path) -> N
     assert "base_url" not in serialized
     assert "api_key_env" not in serialized
     assert "DASHSCOPE_API_KEY" not in serialized
+    assert "schema" not in response.body
 
 
 def test_task_model_selection_is_persisted_in_task_prepared_event(tmp_path: Path) -> None:

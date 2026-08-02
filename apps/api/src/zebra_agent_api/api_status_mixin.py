@@ -17,10 +17,11 @@ class ApiStatusMixin:
 
     def health(self) -> ApiResponse:
         try:
+            default_model = catalog_for_settings(self.settings).select().settings
             native_image_understanding = ModelInputModality.IMAGE in resolve_model_profile(
-                self.settings.model.profile_id,
-                provider=self.settings.model.provider,
-                model=self.settings.model.model,
+                default_model.profile_id,
+                provider=default_model.provider,
+                model=default_model.model,
             ).input_modalities
         except ValueError:
             native_image_understanding = False
@@ -64,7 +65,7 @@ class ApiStatusMixin:
         return ApiResponse(
             status_code=200,
             body={
-                "schema": MODEL_CATALOG_SCHEMA,
+                "schema_version": MODEL_CATALOG_SCHEMA,
                 "default_id": catalog.default_id,
                 "models": [entry.to_public_mapping() for entry in catalog.entries],
             },

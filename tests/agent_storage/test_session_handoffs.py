@@ -426,6 +426,7 @@ def _seed_completed_source(
     workspace_root: Path,
     *,
     agent_definition: AgentDefinition | None = None,
+    model_id: str | None = None,
 ) -> SessionId:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -434,6 +435,7 @@ def _seed_completed_source(
             workspace_root=workspace_root,
             policy_profile="local-safe",
             agent_definition=agent_definition,
+            model_id=model_id,
             created_at=NOW,
         )
     )

@@ -30,6 +30,7 @@ from agent_storage.leases import SQLiteLeaseStore
 from agent_storage.projections import SQLiteProjectionStore
 from agent_storage.session_handoff_events import build_handoff_events, insert_child_projections
 from agent_storage.session_handoff_facts import HandoffSourceFacts, read_source_facts
+from agent_storage.session_handoff_model_selection import persisted_task_model_id
 from agent_storage.session_handoff_rows import (
     SCHEMA,
     HandoffDispatch,
@@ -383,7 +384,8 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
                 envelope.checksum,
             ),
         )
-        events = build_handoff_events(operation, request, workspace)
+        model_id = persisted_task_model_id(connection, operation.source_session_id)
+        events = build_handoff_events(operation, request, workspace, model_id=model_id)
         for event in events:
             insert_event(connection, event)
         parent_sequence = operation.expected_source_stream_version + 1

@@ -10,6 +10,8 @@ def build_handoff_events(
     operation: HandoffOperation,
     request: SessionHandoffCommitRequest,
     workspace: sqlite3.Row,
+    *,
+    model_id: str | None = None,
 ) -> tuple[SessionEvent, ...]:
     envelope = request.envelope
     parent = SessionEvent.create(
@@ -88,6 +90,7 @@ def build_handoff_events(
                     if workspace["agent_definition"] is None
                     else json.loads(workspace["agent_definition"])
                 ),
+                **({"model_id": model_id} if model_id is not None else {}),
             },
         ),
     )
