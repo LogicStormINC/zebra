@@ -8,6 +8,7 @@ from agent_core.application import (
     attachment_refs_from_event,
     task_workspace_image_prompt_suffix,
 )
+from agent_core.domain.agent_definitions import AgentDefinition
 from agent_core.domain.attachments import AttachmentContextInput, SessionAttachmentRef
 from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.events import EventType, SessionEvent
@@ -32,6 +33,7 @@ class RecoveredTask:
     mcp_allowlist: tuple[str, ...] | None
     preapproved_readonly_tools: tuple[str, ...] | None
     skill_components: tuple[str, ...] | None
+    agent_definition: AgentDefinition | None
     history_session_ids: tuple[str, ...] | None
     max_attempts: int
     max_model_calls: int | None
@@ -67,6 +69,9 @@ def recover_task(
             task_payload = event.payload
     if user_input is None or user_event is None or task_payload is None:
         raise ValueError("queued session is missing bootstrap task input")
+    agent_definition = _agent_definition_from_payload(task_payload.get("agent_definition"))
+    if agent_definition != workspace.agent_definition:
+        raise ValueError("queued session agent_definition drift detected")
     legacy_image_prompt_suffix = _task_image_context_suffix(user_input, task_image_refs)
     title = task_payload.get("title")
     resolved_title = title.strip() if isinstance(title, str) and title.strip() else fallback_title
@@ -92,6 +97,7 @@ def recover_task(
         mcp_allowlist=workspace.mcp_allowlist,
         preapproved_readonly_tools=workspace.preapproved_readonly_tools,
         skill_components=workspace.skill_components,
+        agent_definition=agent_definition,
         history_session_ids=_history_session_ids(task_payload.get("history_session_ids")),
         max_attempts=_optional_positive_int(task_payload.get("max_attempts")) or 1,
         max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
@@ -198,3 +204,14 @@ def _optional_positive_int(value: object) -> int | None:
     if not isinstance(value, int) or isinstance(value, bool):
         return None
     return value if value > 0 else None
+
+
+def _agent_definition_from_payload(value: object) -> AgentDefinition | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("queued session contains invalid agent_definition")
+    try:
+        return AgentDefinition.model_validate(value)
+    except ValueError as exc:
+        raise ValueError("queued session contains invalid agent_definition") from exc

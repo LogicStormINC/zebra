@@ -6,6 +6,14 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-07-29`
+- Active local slice: `AOR-DEF-01` is implemented on
+  `codex/agent-definition-completion-contract-20260802` from exact base
+  `c5b814500bbeebea0d4a0307f9a58c903bd5320f`. It adds a versioned,
+  provider-neutral AgentDefinition and typed completion-evidence gate, with
+  trusted local context resolution and durable handoff propagation. Focused
+  and relevant regressions pass; the exact-base full-suite failures and static
+  gates remain recorded in its development-version record. No deployment or
+  upstream synchronization was performed.
 - Active unmerged slice: `MM-NATIVE-QWEN-PHASE1` is a docs-first generic
   model-media contract on `codex/qwen-native-multimodal` from
   `c3cc79c3a54f8a0be3a933bbcc43628bf82210ba`. It is limited to provider-neutral

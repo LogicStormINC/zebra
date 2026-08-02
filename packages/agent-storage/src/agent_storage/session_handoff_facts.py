@@ -68,7 +68,14 @@ def read_source_facts(
         "runtime_spec_digest": workspace["runtime_spec_digest"],
         "snapshot_id": workspace["snapshot_id"],
     }
-    task_payload = {"tool_profile": workspace["tool_profile"]}
+    task_payload = {
+        "tool_profile": workspace["tool_profile"],
+        "agent_definition": (
+            None
+            if workspace["agent_definition"] is None
+            else json.loads(workspace["agent_definition"])
+        ),
+    }
     return HandoffSourceFacts(
         stream_version=stream_version,
         lease_fencing_token=None if lease is None else lease["checkpoint"],

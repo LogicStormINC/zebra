@@ -10,6 +10,10 @@ from agent_core.harness.attempt_result import (
     build_attempt_result,
 )
 from agent_core.harness.clarification_step import clarification_tool_result
+from agent_core.harness.completion_evidence import (
+    append_missing_evidence_observation,
+    evaluate_completion_evidence,
+)
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_request import allowed_response_repairs
 from agent_core.harness.model_step import HarnessModelStep
@@ -108,6 +112,11 @@ class SequentialToolLoop:
         )
         if batch.terminal_result is not None:
             return batch.terminal_result
+        batch_metadata = self._completion_evidence_metadata(
+            context,
+            emitted_events,
+            batch.metadata,
+        )
         if _needs_terminal_synthesis(batch.metadata):
             return self._request_terminal_synthesis(
                 context,
@@ -115,7 +124,7 @@ class SequentialToolLoop:
                 emitted_events=emitted_events,
                 model_calls_used=model_calls_used,
                 tool_calls_executed=batch.tool_calls_executed,
-                metadata=batch.metadata,
+                metadata=batch_metadata,
                 fallback_message=completion.assistant_message.content,
             )
         return self._request_next_completion(
@@ -125,7 +134,7 @@ class SequentialToolLoop:
             model_calls_used=model_calls_used,
             tool_calls_executed=batch.tool_calls_executed,
             fingerprints=fingerprints,
-            metadata=batch.metadata,
+            metadata=batch_metadata,
             fallback_message=completion.assistant_message.content,
         )
 
@@ -199,18 +208,14 @@ class SequentialToolLoop:
                 },
             )
         if not completion.tool_calls:
-            return build_attempt_result(
-                outcome=HarnessAttemptOutcome.COMPLETED,
-                summary=(
-                    "model completed without tool calls"
-                    if tool_calls_executed == 0
-                    else "tool sequence completed with final answer"
-                ),
-                assistant_message=completion.assistant_message.content,
+            return self._complete_without_tools(
+                context,
+                messages=messages,
+                emitted_events=emitted_events,
                 model_calls_used=model_calls_used,
                 tool_calls_executed=tool_calls_executed,
-                emitted_events=emitted_events,
                 metadata=metadata,
+                assistant_message=completion.assistant_message.content,
             )
         selection = self._tool_selector.select(completion.tool_calls)
         calls = completion.tool_calls if self._synthesize_tool_results else (selection.tool_call,)
@@ -235,6 +240,11 @@ class SequentialToolLoop:
         )
         if batch.terminal_result is not None:
             return batch.terminal_result
+        batch_metadata = self._completion_evidence_metadata(
+            context,
+            emitted_events,
+            batch.metadata,
+        )
         if _needs_terminal_synthesis(batch.metadata):
             return self._request_terminal_synthesis(
                 context,
@@ -242,7 +252,7 @@ class SequentialToolLoop:
                 emitted_events=emitted_events,
                 model_calls_used=model_calls_used,
                 tool_calls_executed=batch.tool_calls_executed,
-                metadata=batch.metadata,
+                metadata=batch_metadata,
                 fallback_message=completion.assistant_message.content,
             )
         return self._request_next_completion(
@@ -252,9 +262,91 @@ class SequentialToolLoop:
             model_calls_used=model_calls_used,
             tool_calls_executed=batch.tool_calls_executed,
             fingerprints=fingerprints,
-            metadata=batch.metadata,
+            metadata=batch_metadata,
             fallback_message=completion.assistant_message.content,
         )
+
+    def _complete_without_tools(
+        self,
+        context: HarnessContext,
+        *,
+        messages: list[SessionMessage],
+        emitted_events: list[HarnessEventDraft],
+        model_calls_used: int,
+        tool_calls_executed: int,
+        metadata: dict[str, object],
+        assistant_message: str,
+    ) -> HarnessAttemptResult:
+        status = evaluate_completion_evidence(context.task.agent_definition, emitted_events)
+        observation_count = _non_negative_int(
+            metadata.get("completion_evidence_observation_count")
+        )
+        metadata = {
+            **metadata,
+            "completion_evidence_satisfied": status.satisfied,
+            "completion_evidence_missing": list(status.missing),
+            "completion_evidence_fingerprint": status.fingerprint,
+        }
+        if status.satisfied:
+            return build_attempt_result(
+                outcome=HarnessAttemptOutcome.COMPLETED,
+                summary=(
+                    "model completed without tool calls"
+                    if tool_calls_executed == 0
+                    else "tool sequence completed with final answer"
+                ),
+                assistant_message=assistant_message,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                emitted_events=emitted_events,
+                metadata=metadata,
+            )
+        if observation_count >= 1:
+            return build_attempt_result(
+                outcome=HarnessAttemptOutcome.SUSPENDED,
+                summary="completion evidence contract is not satisfied",
+                assistant_message=assistant_message,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                emitted_events=emitted_events,
+                metadata={
+                    **metadata,
+                    "completion_evidence_observation_count": observation_count,
+                    "stop_reason": "completion_evidence_missing",
+                },
+            )
+        append_missing_evidence_observation(
+            messages,
+            missing=status.missing,
+            created_at=context.attempt.started_at,
+        )
+        return self._request_next_completion(
+            context,
+            messages=messages,
+            emitted_events=emitted_events,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            fingerprints=_executed_action_fingerprints(messages),
+            metadata={
+                **metadata,
+                "completion_evidence_observation_count": observation_count + 1,
+            },
+            fallback_message=assistant_message,
+        )
+
+    @staticmethod
+    def _completion_evidence_metadata(
+        context: HarnessContext,
+        emitted_events: list[HarnessEventDraft],
+        metadata: dict[str, object],
+    ) -> dict[str, object]:
+        status = evaluate_completion_evidence(context.task.agent_definition, emitted_events)
+        return {
+            **metadata,
+            "completion_evidence_satisfied": status.satisfied,
+            "completion_evidence_missing": list(status.missing),
+            "completion_evidence_fingerprint": status.fingerprint,
+        }
 
     def _request_next_completion(
         self,
@@ -332,9 +424,19 @@ class SequentialToolLoop:
         )
         model_calls_used += 1 + completion.call_metadata.response_repair_count
         compaction_count = metadata.get("conversation_compaction_count")
+        completion_evidence_missing = not evaluate_completion_evidence(
+            context.task.agent_definition,
+            emitted_events,
+        ).satisfied
+        completion_evidence_required = bool(
+            context.task.agent_definition is not None
+            and context.task.agent_definition.completion_contract.required_evidence
+        )
         provisional_final = (
             not completion.tool_calls
             and allow_tools
+            and not completion_evidence_missing
+            and not completion_evidence_required
             and (
                 tool_calls_executed > 0
                 or (compaction is not None and compaction.compacted)
@@ -413,7 +515,48 @@ class SequentialToolLoop:
                 tool_calls_executed=tool_calls_executed,
                 emitted_events=emitted_events,
                 metadata={**metadata, "stop_reason": "model_call_budget_exhausted"},
+            )
+        evidence_status = evaluate_completion_evidence(
+            context.task.agent_definition,
+            emitted_events,
         )
+        if not evidence_status.satisfied:
+            observation_count = _non_negative_int(
+                metadata.get("completion_evidence_observation_count")
+            )
+            if observation_count >= 1:
+                return build_attempt_result(
+                    outcome=HarnessAttemptOutcome.SUSPENDED,
+                    summary="completion evidence contract is not satisfied",
+                    assistant_message=fallback_message,
+                    model_calls_used=model_calls_used,
+                    tool_calls_executed=tool_calls_executed,
+                    emitted_events=emitted_events,
+                    metadata={
+                        **metadata,
+                        "completion_evidence_satisfied": False,
+                        "completion_evidence_missing": list(evidence_status.missing),
+                        "stop_reason": "completion_evidence_missing",
+                    },
+                )
+            append_missing_evidence_observation(
+                messages,
+                missing=evidence_status.missing,
+                created_at=context.attempt.started_at,
+            )
+            return self._request_next_completion(
+                context,
+                messages=messages,
+                emitted_events=emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                fingerprints=_executed_action_fingerprints(messages),
+                metadata={
+                    **metadata,
+                    "completion_evidence_observation_count": observation_count + 1,
+                },
+                fallback_message=fallback_message,
+            )
         metadata = {**metadata, "terminal_synthesis_attempted": True}
         if metadata.get("validator_correction_required") is True:
             metadata = {**metadata, "validator_correction_attempted": True}
@@ -476,6 +619,25 @@ class SequentialToolLoop:
                 emitted_events=emitted_events,
                 metadata={**metadata, "stop_reason": "tool_loop_no_progress"},
             )
+        evidence_status = evaluate_completion_evidence(
+            context.task.agent_definition,
+            emitted_events,
+        )
+        if not evidence_status.satisfied:
+            return build_attempt_result(
+                outcome=HarnessAttemptOutcome.SUSPENDED,
+                summary="completion evidence contract is not satisfied",
+                assistant_message=completion.assistant_message.content,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                emitted_events=emitted_events,
+                metadata={
+                    **metadata,
+                    "completion_evidence_satisfied": False,
+                    "completion_evidence_missing": list(evidence_status.missing),
+                    "stop_reason": "completion_evidence_missing",
+                },
+            )
         return build_attempt_result(
             outcome=HarnessAttemptOutcome.COMPLETED,
             summary="tool loop converged with a final answer",
@@ -485,6 +647,7 @@ class SequentialToolLoop:
             emitted_events=emitted_events,
             metadata=metadata,
         )
+
 
 def _executed_action_fingerprints(messages: list[SessionMessage]) -> set[str]:
     completed_ids = {
@@ -503,6 +666,10 @@ def _needs_terminal_synthesis(metadata: Mapping[str, object]) -> bool:
     ) is True or (
         metadata.get("policy_recovery_terminal_synthesis") is True
     )
+
+
+def _non_negative_int(value: object) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
 
 
 def _is_raw_dsml_tool_request(content: str) -> bool:

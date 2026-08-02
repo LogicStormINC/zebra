@@ -5,6 +5,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
+from agent_core.domain.agent_definitions import AgentDefinition, AgentDefinitionContext
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.mcp import normalize_mcp_allowlist
@@ -51,6 +52,9 @@ class HarnessTask:
     mcp_allowlist: tuple[str, ...] = ()
     preapproved_readonly_tools: tuple[str, ...] = ()
     skill_components: tuple[str, ...] = ()
+    agent_definition: AgentDefinition | None = None
+    agent_context: AgentDefinitionContext | None = None
+    model_capabilities: tuple[str, ...] = ()
     context_token_budget: int = 200
     runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = ()
@@ -97,6 +101,22 @@ class HarnessTask:
         object.__setattr__(
             self, "skill_components", normalize_skill_components(self.skill_components)
         )
+        model_capabilities: list[str] = []
+        for capability in self.model_capabilities:
+            if not isinstance(capability, str) or not capability.strip():
+                raise ValueError("harness task model_capabilities must be non-blank strings")
+            normalized = capability.strip()
+            if normalized not in model_capabilities:
+                model_capabilities.append(normalized)
+        object.__setattr__(self, "model_capabilities", tuple(model_capabilities))
+        if self.agent_context is not None:
+            if self.agent_definition is None:
+                raise ValueError("harness task agent_context requires an agent_definition")
+            if (
+                self.agent_context.agent_id != self.agent_definition.agent_id
+                or self.agent_context.version != self.agent_definition.version
+            ):
+                raise ValueError("harness task agent_context does not match its definition")
         for memory in self.confirmed_memories:
             if not isinstance(memory, ConfirmedMemoryInput):
                 raise ValueError(

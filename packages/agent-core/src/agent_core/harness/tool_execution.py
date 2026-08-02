@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from agent_core.domain.events import EventActor, EventType
@@ -20,6 +21,7 @@ def execute_tool_call(
     tool_gateway: ToolGatewayPort,
     verifier: VerifierHook,
     emitted_events: list[HarnessEventDraft],
+    tool_tags: tuple[str, ...] = (),
     emit_execution_started: bool = True,
 ) -> ToolExecutionStep:
     if emit_execution_started:
@@ -41,6 +43,7 @@ def execute_tool_call(
         tool_result,
         verifier=verifier,
         emitted_events=emitted_events,
+        tool_tags=tool_tags,
     )
 
 
@@ -51,7 +54,17 @@ def record_tool_result(
     *,
     verifier: VerifierHook,
     emitted_events: list[HarnessEventDraft],
+    tool_tags: tuple[str, ...] = (),
 ) -> ToolExecutionStep:
+    effective_tool_tags = tool_tags
+    if not effective_tool_tags:
+        raw_tags = tool_result.metadata.get("tool_tags")
+        if isinstance(raw_tags, list | tuple):
+            effective_tool_tags = tuple(tag for tag in raw_tags if isinstance(tag, str))
+    event_metadata = {
+        **tool_result.metadata,
+        **({"tool_tags": list(effective_tool_tags)} if effective_tool_tags else {}),
+    }
     emitted_events.extend(
         _subagent_lifecycle_events(
             context,
@@ -73,7 +86,7 @@ def record_tool_result(
                 "tool_call_id": str(tool_call.tool_call_id),
                 "status": tool_result.status.value,
                 "output": tool_result.output,
-                "metadata": tool_result.metadata,
+                "metadata": event_metadata,
             },
         )
     )
@@ -82,6 +95,20 @@ def record_tool_result(
         tool_result.status.value,
         tool_result.output,
     )
+    verification_metadata = dict(verification.metadata)
+    if "validator" in effective_tool_tags:
+        validator_result = tool_result.metadata.get("validator_result")
+        validator_passed = (
+            validator_result.get("passed")
+            if isinstance(validator_result, Mapping)
+            else None
+        )
+        if not isinstance(validator_passed, bool):
+            validator_passed = verification.passed
+        verification_metadata.setdefault(
+            "validator_outcome",
+            "passed" if validator_passed else "failed",
+        )
     emitted_events.append(
         HarnessEventDraft(
             event_type=EventType.TESTS_COMPLETED,
@@ -90,7 +117,12 @@ def record_tool_result(
                 "attempt_number": context.attempt.number,
                 "summary": verification.summary,
                 "passed": verification.passed,
-                "metadata": verification.metadata,
+                "metadata": verification_metadata,
+                **(
+                    {"tool_name": tool_call.name, "tool_tags": list(effective_tool_tags)}
+                    if effective_tool_tags
+                    else {}
+                ),
             },
         )
     )
@@ -103,7 +135,7 @@ def record_tool_result(
             "tool_metadata": tool_result.metadata,
             "verification_summary": verification.summary,
             "verification_passed": verification.passed,
-            "verification_metadata": verification.metadata,
+            "verification_metadata": verification_metadata,
         },
     )
 

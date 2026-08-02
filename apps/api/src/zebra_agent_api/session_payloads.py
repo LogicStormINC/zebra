@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TypedDict
 
+from agent_core.domain.agent_definitions import AgentDefinition, parse_agent_definition
 from agent_core.domain.attachments import TextAttachmentInput
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.networking import NetworkProfileName
@@ -36,6 +37,7 @@ class CreateSessionPayload(TypedDict):
     history_session_ids: tuple[str, ...] | None
     attachments: tuple[TextAttachmentInput, ...]
     image_attachments: tuple[ImageAttachmentInput, ...]
+    agent_definition: AgentDefinition | None
 
 
 CREATE_SESSION_FIELDS = frozenset(CreateSessionPayload.__annotations__)
@@ -99,9 +101,7 @@ class QueueSweepPreviewPayload(TypedDict):
     memory_type: str | None
 
 
-def parse_create_session_payload(
-    payload: dict[str, object],
-) -> CreateSessionPayload | ApiResponse:
+def parse_create_session_payload(payload: dict[str, object]) -> CreateSessionPayload | ApiResponse:
     unknown_fields = sorted(payload.keys() - CREATE_SESSION_FIELDS)
     if unknown_fields:
         return bad_request(f"unknown create-session fields: {', '.join(unknown_fields)}")
@@ -170,6 +170,10 @@ def parse_create_session_payload(
         return bad_request(str(exc))
     try:
         parsed_attachments = parse_attachment_inputs(payload.get("attachments"))
+    except ValueError as exc:
+        return bad_request(str(exc))
+    try:
+        agent_definition = parse_agent_definition(payload.get("agent_definition"))
     except ValueError as exc:
         return bad_request(str(exc))
     raw_history_session_ids = payload.get("history_session_ids")
@@ -253,6 +257,7 @@ def parse_create_session_payload(
             for attachment in parsed_attachments
             if isinstance(attachment, ImageAttachmentInput)
         ),
+        "agent_definition": agent_definition,
     }
 
 

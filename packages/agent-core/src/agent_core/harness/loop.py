@@ -80,6 +80,11 @@ class HarnessLoop:
                 "mcp_allowlist": list(task.mcp_allowlist),
                 "preapproved_readonly_tools": list(task.preapproved_readonly_tools),
                 "skill_components": list(task.skill_components),
+                **(
+                    {"agent_definition": task.agent_definition.model_dump(mode="json")}
+                    if task.agent_definition is not None
+                    else {}
+                ),
                 "max_attempts": task.max_attempts,
                 "max_model_calls": task.max_model_calls,
                 "max_tool_calls": task.max_tool_calls,

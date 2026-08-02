@@ -24,6 +24,8 @@ def serialize_workspace_projection(
         body["preapproved_readonly_tools"] = list(workspace.preapproved_readonly_tools)
     if workspace.skill_components is not None:
         body["skill_components"] = list(workspace.skill_components)
+    if workspace.agent_definition is not None:
+        body["agent_definition"] = workspace.agent_definition.model_dump(mode="json")
     if workspace.policy_profile is not None:
         body["policy_profile"] = workspace.policy_profile
     if workspace.last_attempt_number is not None:

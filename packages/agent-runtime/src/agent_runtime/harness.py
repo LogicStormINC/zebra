@@ -7,6 +7,7 @@ from pathlib import Path
 from uuid import UUID
 
 from agent_context import LocalContextCompiler
+from agent_core.domain.agent_definitions import AgentDefinition
 from agent_core.domain.artifact_payloads import ArtifactPayloadWrite
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.identifiers import EventId, SessionId
@@ -53,6 +54,7 @@ from agent_tools import (
     WebSearchTransport,
     WorkspaceListTool,
     WorkspaceSearchTool,
+    resolve_agent_definition_context,
 )
 from agent_tools.errors import ToolRegistryError
 from agent_tools.skills_catalog import LocalSkillCatalog, ScopedSkillRoot, SkillEnablementState
@@ -115,6 +117,7 @@ def run_local_harness(
     mcp_allowlist: Sequence[str] | None = None,
     preapproved_readonly_tools: Sequence[str] = (),
     disabled_mcp_tools: Sequence[str] = (),
+    agent_definition: AgentDefinition | None = None,
     trusted_local: bool = False,
     max_model_calls: int | None = None,
     max_tool_calls: int | None = None,
@@ -144,6 +147,12 @@ def run_local_harness(
         for tool_name in preapproved_readonly_tools
         if tool_name in effective_mcp_allowlist
     )
+    agent_context = resolve_agent_definition_context(agent_definition, skill_roots)
+    model_capabilities = ["text"]
+    if tool_gateway.model_tools:
+        model_capabilities.append("tools")
+    if media_inputs:
+        model_capabilities.append("image")
     context_compiler = LocalContextCompiler()
     try:
         return HarnessLoop().run(
@@ -162,6 +171,9 @@ def run_local_harness(
                 mcp_allowlist=effective_mcp_allowlist,
                 preapproved_readonly_tools=effective_preapproved_readonly_tools,
                 skill_components=tool_gateway.effective_skill_components,
+                agent_definition=agent_definition,
+                agent_context=agent_context,
+                model_capabilities=tuple(model_capabilities),
                 confirmed_memories=confirmed_memories,
                 attachments=attachments,
                 media_inputs=media_inputs,

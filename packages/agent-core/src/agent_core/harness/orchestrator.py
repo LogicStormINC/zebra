@@ -7,6 +7,7 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.session_handoff import HandoffReason
 from agent_core.domain.tools import ToolCall
+from agent_core.harness.attempt_result import build_attempt_result
 from agent_core.harness.hooks import (
     NoopPlanner,
     NoopVerifier,
@@ -16,6 +17,7 @@ from agent_core.harness.hooks import (
 from agent_core.harness.model_request import allowed_response_repairs
 from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import (
+    HarnessAttemptOutcome,
     HarnessAttemptResult,
     HarnessContext,
     HarnessEventBuffer,
@@ -83,6 +85,23 @@ class SingleAttemptOrchestrator:
         self._event_sink = event_sink
 
     def run(self, context: HarnessContext) -> HarnessAttemptResult:
+        if context.task.agent_definition is not None:
+            missing_capabilities = context.task.agent_definition.missing_model_capabilities(
+                context.task.model_capabilities
+            )
+            if missing_capabilities:
+                return build_attempt_result(
+                    outcome=HarnessAttemptOutcome.FAILED,
+                    summary="agent definition requires unavailable model capabilities",
+                    assistant_message="",
+                    model_calls_used=0,
+                    tool_calls_executed=0,
+                    emitted_events=[],
+                    metadata={
+                        "stop_reason": "agent_definition_model_capability_missing",
+                        "missing_model_capabilities": list(missing_capabilities),
+                    },
+                )
         task = replace(context.task, task_plan=context.session.task_plan)
         messages = self._model_step.build_initial_messages(
             task,

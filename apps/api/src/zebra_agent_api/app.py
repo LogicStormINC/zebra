@@ -40,6 +40,7 @@ from agent_storage import (
     list_confirmed_repo_memories,
 )
 from agent_storage.session_attachments import RegisteredTaskMedia, TaskAttachmentMediaResolver
+from agent_tools import resolve_agent_definition_context
 from zebra_agent_config import (
     ZebraAgentSettings,
     load_settings,
@@ -124,6 +125,13 @@ class ZebraAgentApi(
         parsed = payloads.parse_create_session_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
+        try:
+            resolve_agent_definition_context(
+                parsed["agent_definition"],
+                scoped_skill_roots(self.settings),
+            )
+        except ValueError as error:
+            return bad_request(str(error))
         if trusted_local_mode_enabled(self.settings) and not auth.is_scoped(parsed):
             parsed["network_profile"] = "full-trusted-local"
             parsed["network_allowlist"] = []
@@ -291,6 +299,7 @@ class ZebraAgentApi(
                     history_session_ids=parsed["history_session_ids"],
                     max_model_calls=parsed["max_model_calls"],
                     max_tool_calls=parsed["max_tool_calls"],
+                    agent_definition=parsed["agent_definition"],
                     session_id=session_id,
                 )
             )
@@ -339,6 +348,7 @@ class ZebraAgentApi(
                     else {}
                 ),
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
+                **_agent_definition_response(parsed),
             },
         )
 
@@ -456,6 +466,7 @@ class ZebraAgentApi(
                 trusted_local=trusted_local,
                 max_model_calls=parsed["max_model_calls"],
                 max_tool_calls=parsed["max_tool_calls"],
+                agent_definition=parsed["agent_definition"],
                 session_history=SQLiteSessionHistory(
                     self.database_path, allowed_session_ids=parsed["history_session_ids"]
                 ),
@@ -537,6 +548,7 @@ class ZebraAgentApi(
                 ),
                 "trace": serialize_trace_events(tuple(result.events)),
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
+                **_agent_definition_response(parsed),
             },
         )
 
@@ -551,6 +563,13 @@ def _cleanup_uncommitted_staged_images(
         return
     for artifact_id in payload_ids:
         payload_store.prune_payload(artifact_id)
+
+
+def _agent_definition_response(
+    parsed: payloads.CreateSessionPayload,
+) -> dict[str, object]:
+    definition = parsed["agent_definition"]
+    return {} if definition is None else {"agent_definition": definition.model_dump(mode="json")}
 
 
 def create_app(

@@ -1,5 +1,11 @@
 """Domain models for Zebra Agent."""
 
+from agent_core.domain.agent_definitions import (
+    AgentDefinition,
+    AgentDefinitionContext,
+    CompletionEvidenceContract,
+    CompletionEvidenceRequirement,
+)
 from agent_core.domain.agent_tasks import (
     AgentTask,
     ContextLifecycleController,
@@ -68,6 +74,8 @@ from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 __all__ = [
     "ArtifactRetentionPolicy",
     "ArtifactRetentionProfile",
+    "AgentDefinition",
+    "AgentDefinitionContext",
     "ArtifactAccessClass",
     "ArtifactAccessDescriptor",
     "ArtifactPayloadInspection",
@@ -79,6 +87,8 @@ __all__ = [
     "AttachmentContextInput",
     "DeliveryAuditRecord",
     "ClarificationContext",
+    "CompletionEvidenceContract",
+    "CompletionEvidenceRequirement",
     "ContextLifecycleController",
     "ContextLifecycleDecision",
     "ContextLifecycleSignals",

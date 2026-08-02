@@ -9,6 +9,11 @@ from agent_core.application.session_bootstrap import (
 )
 from agent_core.application.session_projection import apply_event, rebuild_session
 from agent_core.application.workspace_projection import rebuild_workspace
+from agent_core.domain.agent_definitions import (
+    AgentDefinition,
+    CompletionEvidenceContract,
+    CompletionEvidenceRequirement,
+)
 from agent_core.domain.context_capsule import ContextSourceEventRange
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
@@ -348,13 +353,57 @@ def test_handoff_threads_skill_components_into_child_task_and_authority(
     assert child_workspace.skill_components == ("Review", "evidence")
 
 
-def _seed_completed_source(database_path: Path, workspace_root: Path) -> SessionId:
+def test_handoff_threads_agent_definition_into_child_task_and_workspace(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "definition-handoff.db"
+    definition = AgentDefinition(
+        agent_id="agent-neutral",
+        version="1.0.0",
+        completion_contract=CompletionEvidenceContract(
+            required_evidence=(
+                CompletionEvidenceRequirement(
+                    evidence_id="lookup",
+                    typed_evidence=("lookup.ready",),
+                ),
+            )
+        ),
+    )
+    source = _seed_completed_source(
+        database_path,
+        tmp_path,
+        agent_definition=definition,
+    )
+    handoffs = SQLiteSessionHandoffStore(database_path)
+    operation, request = _prepared_commit(handoffs, source)
+    handoffs.commit(request)
+
+    child_events = SQLiteEventStore(database_path).list_for_session(operation.target_session_id)
+    prepared = next(event for event in child_events if event.event_type is EventType.TASK_PREPARED)
+    assert prepared.payload["agent_definition"]["agent_id"] == "agent-neutral"
+    assert prepared.payload["agent_definition"]["version"] == "1.0.0"
+    assert prepared.payload["agent_definition"]["completion_contract"]["required_evidence"]
+
+    child_workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(
+        operation.target_session_id
+    )
+    assert child_workspace is not None
+    assert child_workspace.agent_definition == definition
+
+
+def _seed_completed_source(
+    database_path: Path,
+    workspace_root: Path,
+    *,
+    agent_definition: AgentDefinition | None = None,
+) -> SessionId:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title="Source stage",
             user_input="Complete source",
             workspace_root=workspace_root,
             policy_profile="local-safe",
+            agent_definition=agent_definition,
             created_at=NOW,
         )
     )

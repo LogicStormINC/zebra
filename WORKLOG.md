@@ -1,5 +1,25 @@
 # Progress Log
 
+## 2026-08-02 AOR-DEF-01 AgentDefinition And Completion Evidence Contract
+
+- claimed the narrow provider-neutral slice from exact base
+  `c5b814500bbeebea0d4a0307f9a58c903bd5320f` on
+  `codex/agent-definition-completion-contract-20260802`; no deployment,
+  upstream synchronization, provider configuration, or real-data changes
+- added versioned AgentDefinition identity/context/capability/policy metadata,
+  typed evidence matching, one bounded missing-evidence observation, and
+  suspend-on-repeat/budget behavior while preserving legacy no-definition flow
+- propagated the definition through API, TaskPrepared, workspace SQLite,
+  recovery, rollover/handoff, and trusted skill-catalog resolution; malformed,
+  unknown, out-of-scope, or incompatible inputs fail closed
+- red first failed on the missing core definition module; after `make sync`,
+  focused contract/persistence/context/API/handoff tests are `24 passed`,
+  relevant regressions are `59 passed`, and full eval is `10/10`
+- exact-base full pytest is `1937 passed, 10 failed, 9 skipped`; development
+  full pytest is `1951 passed, 10 failed, 9 skipped` with the same ten failures;
+  inherited Ruff/mypy/file-size findings are recorded in the development
+  version document
+
 ## 2026-07-28 CTX-MEM-01 Context Continuity And Governed Recall
 
 - audited GitHub issue `#197` against the runtime path and found three real gaps:

@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 from agent_core.application.session_projection import apply_event
+from agent_core.domain.agent_definitions import AgentDefinition
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.mcp import normalize_mcp_allowlist
@@ -26,6 +27,7 @@ class SessionBootstrapCommand:
     mcp_allowlist: tuple[str, ...] = ()
     preapproved_readonly_tools: tuple[str, ...] = ()
     skill_components: tuple[str, ...] = ()
+    agent_definition: AgentDefinition | None = None
     history_session_ids: tuple[str, ...] | None = None
     max_attempts: int = 1
     max_model_calls: int | None = None
@@ -102,6 +104,11 @@ class SessionBootstrapService:
                     "mcp_allowlist": list(mcp_allowlist),
                     "preapproved_readonly_tools": list(preapproved_readonly_tools),
                     "skill_components": list(command.skill_components),
+                    **(
+                        {"agent_definition": command.agent_definition.model_dump(mode="json")}
+                        if command.agent_definition is not None
+                        else {}
+                    ),
                     **(
                         {"history_session_ids": list(history_session_ids)}
                         if history_session_ids is not None

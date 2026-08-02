@@ -4,6 +4,7 @@ from importlib import import_module
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from agent_tools.agent_definitions import resolve_agent_definition_context
     from agent_tools.builtin.clarify import ClarifyTool, clarify_contract
     from agent_tools.builtin.command import CommandRunTool, command_run_contract
     from agent_tools.builtin.files import FileReadTool, file_read_contract
@@ -99,6 +100,7 @@ __all__ = [
     "WebSearchResult",
     "WebSearchTool",
     "WebSearchTransport",
+    "resolve_agent_definition_context",
     "build_mcp_proxy_request",
     "command_run_contract",
     "effect_identity",
@@ -183,6 +185,10 @@ _EXPORTS = {
     "tests_run_contract": ("agent_tools.builtin.tests", "tests_run_contract"),
     "web_fetch_contract": ("agent_tools.web_gateway", "web_fetch_contract"),
     "web_search_contract": ("agent_tools.web_search", "web_search_contract"),
+    "resolve_agent_definition_context": (
+        "agent_tools.agent_definitions",
+        "resolve_agent_definition_context",
+    ),
 }
 
 

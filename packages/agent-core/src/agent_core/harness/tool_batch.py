@@ -228,6 +228,7 @@ class ToolBatchExecutor:
                         result,
                         verifier=self._verifier,
                         emitted_events=emitted_events,
+                        tool_tags=self._tool_tags(tool_call),
                     )
                     observations.append((tool_call, result))
                     self._model_step.append_tool_result(
@@ -329,6 +330,7 @@ class ToolBatchExecutor:
                         tool_gateway=self._tool_gateway,
                         verifier=self._verifier,
                         emitted_events=emitted_events,
+                        tool_tags=self._tool_tags(tool_call),
                         emit_execution_started=not (index == 0 and first_execution_started),
                     )
                 )
@@ -478,6 +480,7 @@ class ToolBatchExecutor:
                 result,
                 verifier=self._verifier,
                 emitted_events=emitted_events,
+                tool_tags=self._tool_tags(tool_call),
             )
             observations.append((tool_call, result))
             self._model_step.append_tool_result(
@@ -498,6 +501,9 @@ class ToolBatchExecutor:
             tool_calls_executed,
             {**recovered_metadata, "repeated_read_recovery_count": 1},
         )
+
+    def _tool_tags(self, tool_call: ToolCall) -> tuple[str, ...]:
+        return ("validator",) if tool_call.name in self._validator_tool_names else ()
 
     @staticmethod
     def _terminal(

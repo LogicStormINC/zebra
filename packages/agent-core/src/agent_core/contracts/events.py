@@ -29,6 +29,7 @@ from agent_core.contracts.session_control_events import (
     SessionResumedPayload,
     SessionSuspendedPayload,
 )
+from agent_core.domain.agent_definitions import AgentDefinition
 from agent_core.domain.clarifications import (
     MAX_CLARIFICATION_CHOICE_CHARS,
     MAX_CLARIFICATION_CHOICES,
@@ -88,6 +89,7 @@ class TaskPreparedPayload(BaseModel):
     mcp_allowlist: list[str] | None = _OPTIONAL_LIST
     preapproved_readonly_tools: list[str] | None = _OPTIONAL_LIST
     skill_components: list[str] | None = _OPTIONAL_LIST
+    agent_definition: AgentDefinition | None = _OPTIONAL_LIST
     history_session_ids: list[str] | None = _OPTIONAL_LIST
     max_attempts: int | None = None
     max_model_calls: int | None = None
@@ -123,9 +125,7 @@ class TaskPreparedPayload(BaseModel):
 
     @field_validator("history_session_ids")
     @classmethod
-    def ensure_valid_history_session_ids(
-        cls, value: list[str] | None
-    ) -> list[str] | None:
+    def ensure_valid_history_session_ids(cls, value: list[str] | None) -> list[str] | None:
         return None if value is None else list(normalize_history_session_ids(value))
 
     @field_validator("max_attempts", "max_model_calls", "max_tool_calls")

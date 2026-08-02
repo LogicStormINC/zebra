@@ -476,6 +476,20 @@ class HarnessModelStep:
                         created_at=created_at,
                     )
                 )
+        if task.agent_context is not None:
+            messages.insert(
+                0,
+                SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.SYSTEM,
+                    content=task.agent_context.render(),
+                    created_at=created_at,
+                    metadata={
+                        "agent_definition_id": task.agent_context.agent_id,
+                        "agent_definition_version": task.agent_context.version,
+                    },
+                ),
+            )
         if any(tool.name == "agent.research" for tool in self._available_tools):
             if messages:
                 messages[-1] = messages[-1].model_copy(

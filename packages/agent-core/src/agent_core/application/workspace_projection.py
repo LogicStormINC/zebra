@@ -1,3 +1,4 @@
+from agent_core.domain.agent_definitions import AgentDefinition
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
@@ -35,6 +36,7 @@ def rebuild_workspace(events: list[SessionEvent]) -> WorkspaceProjection:
         mcp_allowlist=_mcp_allowlist_from_event(prepared_event),
         preapproved_readonly_tools=_preapproved_readonly_tools_from_event(prepared_event),
         skill_components=_skill_components_from_event(prepared_event),
+        agent_definition=_agent_definition_from_event(prepared_event),
     )
     for event in events:
         if event.sequence < prepared_event.sequence:
@@ -74,6 +76,7 @@ def apply_event(
         updates["mcp_allowlist"] = _mcp_allowlist_from_event(event)
         updates["preapproved_readonly_tools"] = _preapproved_readonly_tools_from_event(event)
         updates["skill_components"] = _skill_components_from_event(event)
+        updates["agent_definition"] = _agent_definition_from_event(event)
     if event.event_type is EventType.RUNTIME_PROVISIONED:
         updates["runtime_name"] = _required_payload_string(event, "runtime_class")
         updates["runtime_engine"] = _required_payload_string(event, "engine")
@@ -205,6 +208,20 @@ def _skill_components_from_event(event: SessionEvent) -> tuple[str, ...] | None:
         return normalize_skill_components(value)
     except ValueError as exc:
         raise WorkspaceProjectionError("task_prepared contains invalid skill_components") from exc
+
+
+def _agent_definition_from_event(event: SessionEvent) -> AgentDefinition | None:
+    if "agent_definition" not in event.payload:
+        return None
+    value = event.payload["agent_definition"]
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise WorkspaceProjectionError("task_prepared contains invalid agent_definition")
+    try:
+        return AgentDefinition.model_validate(value)
+    except ValueError as exc:
+        raise WorkspaceProjectionError("task_prepared contains invalid agent_definition") from exc
 
 
 def _optional_attempt_number(event: SessionEvent) -> int | None:

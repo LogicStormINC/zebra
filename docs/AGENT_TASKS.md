@@ -82,9 +82,69 @@
   routing, fallback, Policy authority, or upstream `main`. Its implementation
   commit is `cf0dff9`: `46` focused tests and changed-source Ruff/Mypy pass;
   full pytest is `1900 passed, 9 skipped, 9 inherited failures`.
+- `AOR-DEF-01` is `Review` on
+  `codex/agent-definition-completion-contract-20260802`, based on the exact
+  fork deployment branch HEAD `c5b814500bbeebea0d4a0307f9a58c903bd5320f`.
+  It owns the provider-neutral versioned AgentDefinition and completion
+  evidence contract slice described in its development-version record. It must
+  not modify FinOS, provider configuration, real data, or deployment state.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
-- No additional card is `Ready`, `In Progress`, `Review`, or `Blocked`.
+
+### AOR-DEF-01 - Versioned AgentDefinition And Completion Evidence Contract
+
+- Status: `Review`
+- Owner: `Vinson`
+- Coding task: `019f9d5b-6811-78f3-a774-cd03bd38dfa4`
+- Suggested role: `CORE / CTX / APP / RUNTIME / QA`
+- Depends on: exact fork deployment branch HEAD
+  `c5b814500bbeebea0d4a0307f9a58c903bd5320f`
+- Branch: `codex/agent-definition-completion-contract-20260802`
+- Worktree: `/Users/vinson/.codex/worktrees/8bf3/zebra`
+- Target fixed deployment branch: `codex/finos-runtime-alignment`
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/agent_definitions.py`,
+  `packages/agent-core/src/agent_core/__init__.py`,
+  `packages/agent-core/src/agent_core/domain/__init__.py`,
+  `packages/agent-core/src/agent_core/domain/workspaces.py`,
+  `packages/agent-core/src/agent_core/application/session_bootstrap.py`,
+  `packages/agent-core/src/agent_core/application/workspace_projection.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/harness/`,
+  `packages/agent-tools/src/agent_tools/agent_definitions.py`,
+  `packages/agent-tools/src/agent_tools/__init__.py`,
+  `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `packages/agent-storage/src/agent_storage/workspaces.py`,
+  `packages/agent-storage/src/agent_storage/session_handoff_events.py`,
+  `packages/agent-storage/src/agent_storage/session_handoff_facts.py`,
+  `apps/api/src/zebra_agent_api/session_payloads.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/workspace_read.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  focused tests under `tests/agent_core/`, `tests/agent_tools/`,
+  `tests/agent_storage/`, `tests/api/`, and `tests/worker/`,
+  `docs/development-versions/codex-agent-definition-completion-contract-20260802.md`,
+  `PROGRESS.md`, `WORKLOG.md`, and this task card.
+
+#### Goal
+
+Add the smallest reusable AgentDefinition and typed completion-evidence gate.
+The definition retains identity/version, trusted context references, capability
+and policy metadata, and the completion contract across API creation, durable
+TaskPrepared/workspace projections, worker recovery, rollover, and handoff.
+When a definition has required evidence, a no-tool model response is
+provisional until the typed contract is satisfied; one bounded missing-evidence
+observation is allowed, then the existing recovery/budget path suspends on
+repeated no progress.
+
+#### Explicit Non-Goals
+
+- no Registry, Marketplace, online editor, provider/model-name routing, or
+  business-specific completion heuristic;
+- no final-natural-language parsing, fixed tool order, forced tool choice, or
+  real data/provider/configuration changes;
+- no changes to FinOS or deployment branches.
 
 ## Context Continuity And Governed Memory Board
 

@@ -33,6 +33,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     mcp_allowlist,
                     preapproved_readonly_tools,
                     skill_components,
+                    agent_definition,
                     last_attempt_number,
                     runtime_name,
                     runtime_engine,
@@ -42,7 +43,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     runtime_workspace_writable,
                     snapshot_id,
                     snapshot_path
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_id) DO UPDATE SET
                     workspace_root = excluded.workspace_root,
                     prepared_at = excluded.prepared_at,
@@ -56,6 +57,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     mcp_allowlist = excluded.mcp_allowlist,
                     preapproved_readonly_tools = excluded.preapproved_readonly_tools,
                     skill_components = excluded.skill_components,
+                    agent_definition = excluded.agent_definition,
                     last_attempt_number = excluded.last_attempt_number,
                     runtime_name = excluded.runtime_name,
                     runtime_engine = excluded.runtime_engine,
@@ -92,6 +94,11 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                         if workspace.skill_components is None
                         else json.dumps(workspace.skill_components)
                     ),
+                    (
+                        None
+                        if workspace.agent_definition is None
+                        else json.dumps(workspace.agent_definition.model_dump(mode="json"))
+                    ),
                     workspace.last_attempt_number,
                     workspace.runtime_name,
                     workspace.runtime_engine,
@@ -123,6 +130,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     mcp_allowlist,
                     preapproved_readonly_tools,
                     skill_components,
+                    agent_definition,
                     last_attempt_number,
                     runtime_name,
                     runtime_engine,
@@ -166,6 +174,11 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     if row["skill_components"] is None
                     else tuple(json.loads(row["skill_components"]))
                 ),
+                "agent_definition": (
+                    None
+                    if row["agent_definition"] is None
+                    else json.loads(row["agent_definition"])
+                ),
                 "last_attempt_number": row["last_attempt_number"],
                 "runtime_name": row["runtime_name"],
                 "runtime_engine": row["runtime_engine"],
@@ -200,6 +213,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     mcp_allowlist TEXT,
                     preapproved_readonly_tools TEXT,
                     skill_components TEXT,
+                    agent_definition TEXT,
                     last_attempt_number INTEGER,
                     runtime_name TEXT,
                     runtime_engine TEXT,
@@ -247,5 +261,6 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                 "TEXT",
             )
             ensure_column(connection, "workspace_projections", "skill_components", "TEXT")
+            ensure_column(connection, "workspace_projections", "agent_definition", "TEXT")
             ensure_column(connection, "workspace_projections", "snapshot_id", "TEXT")
             ensure_column(connection, "workspace_projections", "snapshot_path", "TEXT")

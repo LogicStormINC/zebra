@@ -1,5 +1,11 @@
 """Core package for Zebra Agent."""
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
+from agent_core.domain.agent_definitions import (
+    AgentDefinition,
+    AgentDefinitionContext,
+    CompletionEvidenceContract,
+    CompletionEvidenceRequirement,
+)
 from agent_core.domain.leases import WorkerLease
 from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.modeling import (
@@ -45,6 +51,8 @@ from agent_core.harness import (
 
 __all__ = [
     "FirstToolCallSelectionStrategy",
+    "AgentDefinition",
+    "AgentDefinitionContext",
     "HarnessAttempt",
     "HarnessAttemptOutcome",
     "HarnessAttemptResult",
@@ -75,6 +83,8 @@ __all__ = [
     "ToolCallSelection",
     "ToolCallSelectionStrategy",
     "ToolRunRecord",
+    "CompletionEvidenceContract",
+    "CompletionEvidenceRequirement",
     "VerifierHook",
     "VerifierResult",
     "build_retry_plan_hint",
