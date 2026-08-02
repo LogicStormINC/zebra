@@ -2081,7 +2081,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Branch: `codex/cloud-art-lifecycle-con-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01` and `CLOUD-ART-OBJ-CON-01`
@@ -2112,6 +2112,22 @@ cloud mainline and is not built or changed by these cards.
   tests pass `290/290`; strict Core Mypy passes `126` files, changed-scope Ruff and
   `git diff --check` pass. The repository size gate retains only the two inherited
   Desktop `561/500` and active migration `508/500` violations.
+
+#### Closeout
+
+- Formal review targeted integrated Core contract implementation `0444c5d9`; its
+  aggregate-fencing and Artifact authority dependencies are both `Done`.
+- The cloud-only lifecycle Port/domain, authority-separated Protocol methods,
+  typed failures and focused contract tests remain the complete scope. The local
+  `ArtifactPayloadStorePort` and SQLite behavior remain unchanged; no PostgreSQL,
+  S3 SDK, MinIO, Worker orchestration, Effect linkage, API route or Runtime was added.
+- Existing evidence is accepted: focused contract/authority/SQLite compatibility
+  `45/45`, all Core `290/290`, strict Mypy, Ruff, diff and documented size-gate
+  baseline; current-HEAD focused contract tests pass `21/21`. No Compose run or
+  production edit was needed for this closeout.
+- Closing this card records the provider-neutral Artifact lifecycle contract only;
+  object adapter, payload authority, Effect linkage, reads and Runtime retain
+  separate gates.
 
 ### CLOUD-ART-OBJECT-S3-01 - S3-Compatible Immutable Artifact Object Adapter
 

@@ -196,6 +196,8 @@
    local compatibility with focused Core tests.
 4. `completed` - Run Core Ruff/Mypy/tests/file-size gates, record evidence and integrate
    the focused branch into `zebra-cloud-trench` without touching v8.
+5. `completed` - Formally audit the integrated Core contract and dependencies, then
+   close the card as Done without adding an adapter or migration.
 
 ### Decisions
 
@@ -204,6 +206,17 @@
 - Add focused cloud-only modules instead of optional cloud fields on the local Port.
 - Keep orchestration, storage error mapping and lifecycle transition enforcement in
   later adapters/services; Core only makes invalid requests unrepresentable.
+
+### Closeout
+
+- Review covered integrated Core implementation `0444c5d9`; aggregate fencing and
+  Artifact authority dependencies are `Done`.
+- The cloud-only lifecycle Port/domain and authority-separated Protocol methods
+  remain provider-neutral. Recorded `45/45`, `290/290` and static/size evidence,
+  plus current-HEAD focused `21/21`, are accepted; no Compose or production edit
+  was made.
+- Object storage, PostgreSQL metadata, Worker orchestration, Effect linkage, read
+  composition and Runtime remain separately gated.
 
 ## CLOUD-ART-OBJECT-S3-01 - S3-Compatible Immutable Artifact Object Adapter
 

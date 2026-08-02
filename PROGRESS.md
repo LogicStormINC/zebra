@@ -247,14 +247,15 @@
   active-set and mixed-store recovery gaps; it remains gated on one coherent cloud
   composition. Mem0 delivery, Desktop/SQLite feature work and production cutover remain
   excluded.
-- Completed Artifact contract slice: `CLOUD-ART-LIFECYCLE-CON-01` separates the
+- Completed and formally closed Artifact contract slice: `CLOUD-ART-LIFECYCLE-CON-01` separates the
   provider-neutral cloud lifecycle Port/domain from the unchanged local
   `ArtifactPayloadStorePort`. It can proceed in Core without touching Handoff v8,
   PostgreSQL, MinIO, SQLite, Worker composition or Desktop, and becomes the explicit
   contract dependency for Artifact v9. The Core contract now freezes exact
   Event/object evidence, Worker versus management authority, safe cleanup evidence
   and staged/finalized/compensated/pruning/pruned shapes without changing local
-  behavior.
+  behavior. Its provider-neutral contract gate is `Done`; object, payload, Effect,
+  read-composition and Runtime cards remain separate.
 - Completed object adapter slice: `CLOUD-ART-OBJECT-S3-01` implements the immutable
   S3-compatible bytes boundary and MinIO versioning against the reviewed Core Port.
   Conditional put, canonical retry, digest/size verification, exact-version read and

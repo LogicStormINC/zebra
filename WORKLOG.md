@@ -7145,3 +7145,16 @@ actual byte access.
   Desktop or production edit was made by this review.
 - Closed `CLOUD-ART-OBJ-CON-01` from `Review` to `Done`; lifecycle, object,
   payload, Effect linkage and read-composition cards retain separate gates.
+
+## 2026-08-02 - CLOUD-ART-LIFECYCLE-CON-01 formal review closeout
+
+- Reviewed integrated Core contract implementation `0444c5d9`; aggregate fencing
+  and Artifact authority dependencies are `Done`.
+- Audited the cloud-only lifecycle Port/domain, authority-separated Protocol
+  methods, typed failures and local compatibility boundary. No PostgreSQL, S3 SDK,
+  MinIO, Worker orchestration, Effect linkage, API route or Runtime was added.
+- Accepted recorded focused compatibility `45/45`, Core `290/290`, strict Mypy,
+  Ruff, diff and documented size evidence; current-HEAD focused contract tests
+  passed `21/21`. No Compose run or production edit was made by this review.
+- Closed `CLOUD-ART-LIFECYCLE-CON-01` from `Review` to `Done`; object, payload,
+  Effect, read-composition and Runtime cards retain their own gates.
