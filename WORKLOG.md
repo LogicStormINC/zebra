@@ -7058,3 +7058,20 @@ actual byte access.
 - Closed `CLOUD-AGG-HANDOFF-PG-01` from `Review` to `Done`. Artifact, Context
   administrative recovery, Control Plane and runtime/provider paths remain
   separately in Review or locked.
+
+## 2026-08-02 - CLOUD-AGG-CTX-ADMIN-PG-01 formal review closeout
+
+- Reviewed integrated implementation `ac9801c2` and activation record `d11cf9e9`;
+  the Context lifecycle and Workspace dependencies are both `Done`. The card's
+  Owned paths were reconciled to explicitly name the integrated
+  `session_context_recovery.py` adapter and `test_session_context_recovery_postgres.py`
+  matrix already used by the implementation.
+- Audited the API composition namespace seam, PostgreSQL administrative CAS call,
+  canonical aggregate result handling and focused recovery tests. No manual
+  compact, migration, selector, full Store bundle, Runtime, Provider HTTP,
+  Desktop, SQLite feature work, Redis or Mem0 composition was added.
+- Accepted the recorded PostgreSQL `19/19`, API/Storage `323/323` with `14`
+  skips, Ruff, strict Mypy and diff checks. No Compose run or production edit was
+  made by this review.
+- Closed `CLOUD-AGG-CTX-ADMIN-PG-01` from `Review` to `Done`; runtime, provider,
+  Desktop and application Compose selection remain separately in Review or locked.

@@ -1823,13 +1823,13 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-CTX-ADMIN-PG-01 - PostgreSQL Administrative Context Recovery
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Branch: `codex/cloud-agg-ctx-admin-pg-01`
 - Depends on: `CLOUD-AGG-CTX-PG-01` and `CLOUD-AGG-WORKSPACE-PG-01`
 - Worktree: `../zebra-cloud-ctx-admin-pg-01`
 - Owned paths: `apps/api/src/zebra_agent_api/{app,api_session_read_mixin,http,session_context_control,session_context_recovery}.py`,
-  `tests/api/{test_session_context_control,test_api_storage_composition}.py`, focused
+  `tests/api/{test_session_context_control,test_api_storage_composition,test_session_context_recovery_postgres}.py`, focused
   PostgreSQL Context recovery tests and runner,
   `packages/agent-storage/src/agent_storage/postgres/{context_lifecycle,context_authority}.py`,
   and this task's governance records
@@ -1849,6 +1849,26 @@ cloud mainline and is not built or changed by these cards.
   API/Storage regressions pass `323/323` with `14` environment skips, focused Ruff,
   strict Mypy and `git diff --check` pass. Full tests are `1977 passed, 167 skipped`
   with only the inherited Desktop stylesheet 561/500 size-gate failure.
+
+#### Closeout
+
+- Formal review targeted the integrated implementation at `ac9801c2` and its
+  activation record `d11cf9e9`; the direct Context lifecycle and Workspace
+  dependencies are `Done`. Review reconciled the card's Owned paths to name the
+  integrated `session_context_recovery.py` adapter and
+  `test_session_context_recovery_postgres.py` matrix explicitly.
+- The resulting diff is confined to the declared API composition/recovery seam,
+  PostgreSQL Context CAS adapter and focused recovery tests. It does not add
+  manual compact, a new capsule transaction, migration, backend selector, full
+  Store bundle, Runtime, Provider HTTP, Desktop, SQLite feature work, Redis or
+  Mem0 composition.
+- Existing evidence is accepted: isolated PostgreSQL `19/19`, API/Storage
+  regressions `323/323` with `14` skips, focused Ruff, strict Mypy and
+  `git diff --check`. No new Compose execution or production edit was needed
+  for this closeout.
+- Closing this card records only administrative historical recovery. Handoff,
+  Artifact, Control Plane, Runtime, Worker startup, Provider HTTP and application
+  Compose selection remain separately in Review or locked.
 
 ### CLOUD-AGG-HANDOFF-CON-01 - Fenced Handoff Dispatch Contract
 

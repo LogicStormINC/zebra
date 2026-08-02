@@ -147,13 +147,15 @@
   stops at this compatibility contract. `CLOUD-AGG-HANDOFF-PG-01` remains the
   next v8 migration Review gate, while Artifact payload implementation remains
   locked.
-- Completed Context follow-up: `CLOUD-AGG-CTX-ADMIN-PG-01` reuses the v7
+- Completed and formally closed Context follow-up: `CLOUD-AGG-CTX-ADMIN-PG-01` reuses the v7
   administrative CAS only for historical capsule recovery in an explicitly injected
   PostgreSQL store. API recovery consumes the canonical Event/Session/Workspace result
   without a second projection write; the transaction rejects missing or changed
   projections and updates the active pointer with recovery Event time. Its isolated
   PostgreSQL 17.5 matrix passes `19/19`. It does not add PostgreSQL manual compact,
-  Desktop behavior or runtime backend selection.
+  Desktop behavior or runtime backend selection. Formal dependency/path review
+  closed the card as `Done`; the dedicated PostgreSQL recovery adapter and matrix
+  test are now explicitly recorded in its Owned paths.
 - Completed and formally closed Handoff v8 aggregate slice preserves the exact v1-v7 migration names and
   checksums while splitting migration types, execution and the v8 catalog into focused
   files. The real PostgreSQL 17.5 migration matrix passes `6/6`; v8 adds only

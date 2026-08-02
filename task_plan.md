@@ -315,6 +315,8 @@
 3. `completed` - Prove stale revision, missing/stale pointer, namespace isolation,
    projection atomicity and HTTP compatibility on real PostgreSQL.
 4. `completed` - Run API/storage gates, record evidence and move to Review.
+5. `completed` - Reconcile the dedicated recovery adapter/test paths during formal
+   review and close the card as Done without adding a selector or migration.
 
 ### Decisions
 
@@ -323,6 +325,19 @@
 - Administrative recovery locks the Session stream and requires the current database
   Session/Workspace projections to exactly match the caller's CAS facts before append.
 - Runtime profile selection remains owned by `CLOUD-CONTROL-PLANE-PG-01`.
+
+### Closeout
+
+- Review covered integrated implementation `ac9801c2` and activation record
+  `d11cf9e9`; Context lifecycle and Workspace dependencies are both `Done`. The
+  governance card now explicitly names the PostgreSQL recovery adapter and
+  focused matrix test used by the implementation.
+- The recorded PostgreSQL `19/19`, API/Storage `323/323` with `14` skips, Ruff,
+  strict Mypy and diff checks are accepted. No Compose execution or production
+  edit was made by this review slice.
+- This closeout leaves manual compact, backend selection, Runtime, Provider HTTP,
+  Desktop and application Compose selection out of scope and separately locked or
+  in Review.
 
 ## CLOUD-AGG-TASK-PG-01 - PostgreSQL Task And Segment Index
 
