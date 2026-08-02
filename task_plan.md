@@ -1387,8 +1387,8 @@
 - Architecture, ADR-015, Trench breakdown, task registry and progress records
   are synchronized. The repository's two unrelated size-gate violations remain
   documented; no implementation or Compose work was activated.
-- `EMB-AGUI-SPIKE-01` remains a separately activated Review card; cloud storage,
-  Runtime and provider cards retain their own dependency gates.
+- `EMB-AGUI-SPIKE-01` is separately closed as a test-only `Done` card; cloud
+  storage, Runtime and provider cards retain their own dependency gates.
 
 ### Decisions
 

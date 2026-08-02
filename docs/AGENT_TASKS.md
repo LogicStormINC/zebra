@@ -20,34 +20,27 @@
 
 ## Current Board
 
-- `EMB-PLAN-01` is `Review` on `zebra-cloud-trench`; it consolidates the
-  Zebra Embedded target architecture and registers the dependency-ordered
+- `EMB-PLAN-01` is `Done` on `zebra-cloud-trench`; it consolidates the Zebra
+  Embedded target architecture and registers the dependency-ordered
   CopilotKit/AG-UI, cloud, Trench, analysis, writeback, memory, and GA roadmap.
-- `EMB-AGUI-SPIKE-01` is `Review` on `codex/emb-agui-spike-01`, explicitly
-  activated by the maintainer on 2026-07-23. It is stacked on the local
-  `zebra-cloud-trench` architecture commit and must not merge before that
-  dependency reaches `main`.
+- `EMB-AGUI-SPIKE-01` is `Done` on `codex/emb-agui-spike-01`; its development-only
+  official Python protocol compatibility matrix is integrated. Production AG-UI,
+  CopilotKit/Trench and React SDK work remain separately gated.
 - `CTX-MEM-01` is `Review` in PR `#198` on
   `codex/issue-197-context-memory-continuity`. It closes GitHub issue `#197`
   without depending on the stacked semantic-memory gateway: same-Task recovery
   remains Event/Capsule-backed, while confirmed local memories gain governed
   promotion and query-aware SQLite recall.
-- `CLOUD-STO-SEAM-01` is `Review` on `codex/cloud-sto-seam-01`. The
-  maintainer reprioritized Zebra durable storage and memory foundations ahead of
-  further Trench work. This local task is stacked on `EMB-PLAN-01`, adds no cloud
-  database dependency, and must not merge before the architecture baseline.
-- `CLOUD-STO-AUTH-01` is `Review` on `codex/cloud-sto-auth-01`. The local
-  implementation is based directly on `CLOUD-STO-SEAM-01` and cannot be pushed,
-  opened as a PR, or merged before `EMB-PLAN-01 -> CLOUD-STO-SEAM-01` lands in
-  that order.
+- `CLOUD-STO-SEAM-01` is `Done` on `codex/cloud-sto-seam-01`; it preserves the
+  local SQLite profile and adds no cloud backend.
+- `CLOUD-STO-AUTH-01` is `Done` on `codex/cloud-sto-auth-01`; it completes the
+  authoritative local Store bundle without selecting a cloud backend.
 - `MEM-GW-CON-01` is `Done` on `codex/mem-gw-con-01`. Its provider-neutral
   contract is integrated; Mem0, PostgreSQL delivery, Worker and Runtime remain
   separate gates and no provider is runtime-selected.
-- `CLOUD-COMPOSE-INFRA-01` is `Review` on
-  `codex/cloud-compose-infra-01`, explicitly activated by the maintainer on
-  2026-07-24. It defines only the Docker Compose dependency stack and is stacked
-  behind `CLOUD-STO-SEAM-01`; Zebra application containers remain a separate
-  locked task.
+- `CLOUD-COMPOSE-INFRA-01` is `Done` on `codex/cloud-compose-infra-01`; it
+  defines only the dependency Compose stack. Zebra application containers remain
+  a separate locked task.
 - `MEM-MEM0-SPIKE-01` is `Done` on `codex/mem0-contract-spike-01`. The pinned
   OSS REST/Compose contract is recorded and its deterministic provider evidence
   is accepted; real-provider compatibility remains a separate credential gate.
@@ -72,11 +65,12 @@
   `codex/mem-gw-pg-native-01`. It owns only the PostgreSQL-native storage
   gateway, migration and isolated storage tests; Runtime, Worker, Provider HTTP,
   Desktop, SQLite and Redis composition remain locked.
-- `CLOUD-PG-PLAN-01` and `CLOUD-PG-01` are `Review` on their dedicated branches;
-  the docs-only migration/restore decisions precede the real PostgreSQL Event/Projection Adapter.
+- `CLOUD-PG-PLAN-01` and `CLOUD-PG-01` are `Done` on their dedicated branches;
+  PostgreSQL Event/Projection remains gated by complete cloud composition.
 - `CLOUD-LEASE-CON-01`, `CLOUD-LEASE-PG-01`, `CLOUD-EFFECT-OUTBOX-01`, and
   `CLOUD-EFFECT-CONSUMER-01` are `Done` on the isolated local business branch.
-  Their parent `CLOUD-LEASE-01` is `Review`; full aggregate fencing remains `Locked`.
+  Their parent `CLOUD-LEASE-01` is also `Done`; full aggregate fencing remains
+  `Locked`.
 - Exact replay on `zebra-cloud-trench@375dca92` proves all nine remaining suite
   failures are business-baseline defects. `BASE-MDL-EXPECT-01`,
   `BASE-SCM-CRED-01`, `BASE-WKR-CANCEL-01`, and `BASE-EVT-SIZE-01` are `Done`.

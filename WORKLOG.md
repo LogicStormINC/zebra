@@ -7409,3 +7409,14 @@ actual byte access.
   `10/10` and diff checks pass; no failure is in the Owned paths.
 - Closed `EMB-AGUI-SPIKE-01` from `Review` to `Done`; `EMB-AGUI-CON-01` and
   Trench CopilotKit Runtime/BFF remain separate future gates.
+
+## 2026-08-03 - cloud board status reconciliation
+
+- Corrected stale Current Board and architecture-plan wording so the registered
+  statuses match the formal closeouts: Embedded architecture/AG-UI, local Store
+  composition, Compose dependencies, PostgreSQL plan/adapter, Lease parent and
+  Memory prerequisite slices are Done where their cards are Done.
+- Preserved the actual gates: production AG-UI/Trench, complete cloud backend
+  selection, full aggregate fencing, Memory parent/consumer and Mem0 Runtime
+  remain locked; `CTX-MEM-01` remains Review.
+- No production code, Docker service, migration or runtime selector changed.

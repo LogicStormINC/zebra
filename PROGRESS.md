@@ -512,7 +512,9 @@ including a real thinking tool round trip.
 - `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
-  `CLOUD-STO-AUTH-01`,
+  `CLOUD-STO-AUTH-01` are formally Done for their architecture, protocol and
+  local Store-composition slices. Production AG-UI, Trench and cloud backend
+  selection remain separately gated.
   `MEM-MEM0-ADP-01` is formally Done as a disabled-safe integration contract;
   it is not runtime-selected. `MEM-MEM0-SPIKE-01` is formally Done for its
   pinned OSS contract evidence; the provider-neutral
