@@ -19,9 +19,11 @@
   `3d13e47a39324ff5a4bd1c2e0e297e218dc543e5`
 - Canonical-final source branch / head: `codex/canonical-tool-final-20260802` /
   `04032028213a63b1b28c906f92cbd307199862a4`
+- Handoff checkpoint-budget source branch / head:
+  `codex/handoff-checkpoint-budget-20260802` / `5e17f5e`
 - Read-only merge commit: `98faf507165e73bfddc88491d3c154f3512e2a05`
 - Qwen/profile integration commit: `1d72e9ff21137eae5364902964fdccc0adf0fa9b`
-- Current implementation head: `9229367`
+- Current code integration head: `1b0832f`
 - Status: `Validated staging candidate / not yet deployed`
 
 The source commit has `1d2c140...` as its direct parent. The source branch is
@@ -65,6 +67,11 @@ claim success after a failed or malformed tool attempt: once any tool has run,
 a no-tool response is provisional and Zebra performs one tools-disabled terminal
 synthesis from the durable tool results.
 
+Terminal follow-up checkpoint evidence now receives the same provider
+compaction-reserve floor as active Context Capsule projections. Bounded prior
+context is therefore retained without replaying full history, raw tool output,
+or private reasoning; the latest user message remains the final user turn.
+
 ## Commit and validation evidence
 
 - `cc06e28`: red contract reproducing the baseline `400`;
@@ -98,6 +105,8 @@ Validation:
   names reproduce the current branch baseline and none touch the two changed
   contracts;
 - changed-file Ruff, compileall, and `git diff --check`: passed.
+- handoff checkpoint/terminal rehydration verification: `17 passed` after the
+  fixed-branch integration; the source branch's wider related run is `46 passed`.
 
 The current full-suite failures cover existing model-response,
 credential/transport, health-fixture, file-size, and durable-cancellation gates.

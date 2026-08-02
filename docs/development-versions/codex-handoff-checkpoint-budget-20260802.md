@@ -9,7 +9,7 @@
 - Worktree: `/Users/vinson/.codex/worktrees/zebra-handoff-checkpoint-budget`
 - Implementation branch: `codex/handoff-checkpoint-budget-20260802`
 - Merge target: `codex/finos-runtime-alignment`
-- Status: `Review`; no push, merge, or deployment
+- Status: `Integrated into fixed deployment branch`; live replay pending
 
 ## Evidence and hypothesis
 
@@ -66,4 +66,5 @@ agent-context production, or task-registry change is in scope.
   passed.
 - Unverified: live terminal replay and provider token accounting after this
   local change.
-- Implementation commit: pending local commit.
+- Source implementation commit: `5e17f5e`.
+- Fixed-branch integration commit: `1b0832f`.
