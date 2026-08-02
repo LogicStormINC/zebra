@@ -1043,6 +1043,8 @@
    measurable pre-production gates.
 5. `completed` - Reader-test the decision document, update governance evidence and
    commit the local stacked review slice.
+6. `completed` - Formally audit the decision document and Store dependency, then
+   close the card as Done without implementing PostgreSQL.
 
 ### Decisions
 
@@ -1051,6 +1053,17 @@
 - Do not invent production RPO/RTO. The document defines required measurements
   and an approval field before production traffic.
 - This task writes no Adapter, migration executable or cloud dependency.
+
+### Closeout
+
+- Review covered integrated docs-only implementation `e1e71139`; authoritative
+  Store composition is `Done`, with the CI-billing waiver explicitly limited to
+  local evidence.
+- The migration/recovery contract and its reader/link/terminology evidence are
+  accepted. No Compose run, production edit, Adapter, migration executable or
+  backend selector was added.
+- `CLOUD-PG-01` is the next implementation Review gate; Lease, Runtime, Provider
+  HTTP, Desktop and application backend selection remain gated.
 
 ## CLOUD-STO-AUTH-01 - Complete Authoritative Store Composition
 

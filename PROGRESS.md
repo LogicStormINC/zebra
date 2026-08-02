@@ -507,7 +507,7 @@ including a real thinking tool round trip.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
   `CLOUD-STO-AUTH-01`, `MEM-GW-CON-01`,
-  `MEM-MEM0-SPIKE-01`, `MEM-MEM0-ADP-01`, `CLOUD-PG-PLAN-01`, `CLOUD-PG-01`,
+  `MEM-MEM0-SPIKE-01`, `MEM-MEM0-ADP-01`, `CLOUD-PG-01`,
   `CLOUD-LEASE-PLAN-01`, `CLOUD-LEASE-CON-01`, and `CLOUD-LEASE-PG-01` are in
   Review. Mem0 remains a derived, degraded-safe index; PostgreSQL Event/Projection
   and epoch/Lease Adapters have real-service restore and concurrency evidence.
@@ -575,12 +575,12 @@ Desktop, SQLite or Redis composition.
 
 ## Known Follow-Ups
 
-1. Review and merge `EMB-PLAN-01`; keep the completed AG-UI and Trench Spikes
-   parked while the storage branches follow their recorded merge order.
+1. Keep the completed Embedded architecture and AG-UI/Trench Spikes parked while
+   the storage branches follow their recorded merge order.
 2. Keep DeepSeek thinking mode opt-in and preserve its private continuation
    fail-closed boundary.
 3. Preserve merge order from `CLOUD-STO-SEAM-01` through `CLOUD-STO-AUTH-01`,
-   `CLOUD-PG-PLAN-01`, `CLOUD-PG-01`, and the Lease contract/Adapter chain; do not
+   `CLOUD-PG-PLAN-01` (now `Done`), `CLOUD-PG-01`, and the Lease contract/Adapter chain; do not
    select PostgreSQL until every authoritative Store can move as one profile.
 4. Split or lazy-load the Desktop main bundle based on a repeatable bundle report.
 5. For private cloud, plan PostgreSQL, object storage, multi-Worker coordination,

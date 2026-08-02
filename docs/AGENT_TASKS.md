@@ -1282,7 +1282,7 @@ the real dependency adapters. Agent Memory remains optional and must not gate Ru
 
 ### CLOUD-PG-PLAN-01 - PostgreSQL Migration And Recovery Model Review
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `STORAGE / SRE / SECURITY`
 - Depends on: locally reviewed `CLOUD-STO-AUTH-01` and maintainer direction on
@@ -1310,6 +1310,20 @@ before a PostgreSQL control-plane Adapter may be implemented.
   requirements are concrete without inventing unapproved RPO/RTO numbers
 - `CLOUD-PG-01` receives exact implementation and test gates; no Adapter,
   migration executable, cloud dependency or production claim is added
+
+#### Closeout
+
+- Formal review targeted the integrated docs-only migration/recovery model at
+  `e1e71139`; `CLOUD-STO-AUTH-01` is now `Done`, and the maintainer's
+  CI-billing waiver/direction is recorded as local-evidence-only.
+- The document freezes one authoritative backend profile, abort versus rollback,
+  backup/PITR, restore validation, fencing reset, Artifact consistency and outbox
+  reconciliation without adding an Adapter, migration executable, cloud service,
+  dual-write or production RPO/RTO claim.
+- Existing document reader, link, terminology, line-limit and diff evidence is
+  accepted. No Compose run or production edit was needed for this closeout.
+- Closing this card hands the exact implementation gates to `CLOUD-PG-01`; Lease,
+  Runtime, Provider HTTP, Desktop and application backend selection remain gated.
 
 ### CLOUD-PG-01 - PostgreSQL Event And Projection Storage
 
