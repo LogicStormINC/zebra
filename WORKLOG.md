@@ -7007,3 +7007,19 @@ actual byte access.
 - Closed `CLOUD-MODEL-TOOL-PG-01` from `Review` to `Done`. Context remains a
   separate Review card; Runtime, Worker startup, Provider HTTP and the
   application Compose profile remain locked.
+
+## 2026-08-02 - CLOUD-AGG-CTX-PG-01 formal review closeout
+
+- Reviewed the integrated Context implementation at `0c170c5d`, canonical-link
+  fixes at `2e2a5276` and v7 migration registry coverage at `6d541f79`. All direct
+  dependencies—Fence Contract, Workspace, Task and Model/Tool v6—are `Done`.
+- Audited the declared Core Port, PostgreSQL v7 adapter/migration, Worker/API
+  seam and focused test paths. The card does not add Task/Segment writes,
+  generic transactions, Handoff/Artifact authority, Control Plane selection,
+  Runtime, Provider HTTP, Desktop, SQLite, Redis or Mem0 composition.
+- Accepted the recorded isolated PostgreSQL `17.5` matrix `14/14`, focused
+  SQLite/Worker regressions `11/11`, changed-scope Ruff, strict Mypy and diff
+  checks. No new Compose execution or production edit was made by this review.
+- Closed `CLOUD-AGG-CTX-PG-01` from `Review` to `Done`. Administrative Context
+  recovery remains a separate Review card; Handoff, Artifact, Control Plane and
+  runtime/provider paths remain locked or separately in Review.

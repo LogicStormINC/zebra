@@ -1725,7 +1725,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-CTX-PG-01 - Fenced Context Lifecycle Aggregate
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Branch: `codex/cloud-agg-ctx-pg-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01`,
@@ -1750,6 +1750,24 @@ cloud mainline and is not built or changed by these cards.
   stale fence, pointer CAS, administrative CAS, and injected Workspace projection
   rollback. Focused SQLite/Worker regressions pass `11/11`; changed-scope Ruff,
   strict Mypy, and `git diff --check` pass.
+
+#### Closeout
+
+- Formal review targeted the integrated Context implementation at `0c170c5d`,
+  canonical-link fixes at `2e2a5276` and v7 registry coverage at `6d541f79`.
+  All direct dependencies—Fence Contract, Workspace, Task and Model/Tool v6—are
+  `Done`.
+- The implementation diff is confined to the declared Context Core Port,
+  PostgreSQL v7 adapter/migration, Worker/API seam and focused tests. It does not
+  add Task/Segment writes, a generic transaction, Handoff/Artifact authority,
+  Control Plane selection, Runtime, Provider HTTP, Desktop, SQLite, Redis or
+  Mem0 composition.
+- Existing evidence is accepted: isolated PostgreSQL `17.5` matrix `14/14`,
+  focused SQLite/Worker regressions `11/11`, changed-scope Ruff, strict Mypy and
+  `git diff --check`. No Compose run was needed for this closeout.
+- Closing this card only records the Context lifecycle gate. Handoff, Artifact,
+  Control Plane, Runtime, Worker startup, Provider HTTP and the application
+  Compose profile remain locked or separately in Review.
 
 ### CLOUD-AGG-HANDOFF-PG-01 - PostgreSQL Handoff And Dispatch Aggregate
 

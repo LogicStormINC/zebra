@@ -248,6 +248,36 @@
 - Bind reserve and commit through one canonical request hash, keep child Workspace
   projection Event-rebuildable, and thread the acquired LeaseFence into Worker recovery.
 
+## CLOUD-AGG-CTX-PG-01 - Fenced Context Lifecycle Aggregate
+
+1. `completed` - Trace capsule, active-pointer and Event-derived projection
+   boundaries; freeze the Context-specific authority transaction.
+2. `completed` - Add PostgreSQL v7 lifecycle state, pointer CAS and full-fence
+   Worker/API seams while preserving v1-v6 migration checksums.
+3. `completed` - Prove canonical retries, stale fence, administrative CAS,
+   pointer/content constraints and rollback with real PostgreSQL tests.
+4. `completed` - Formally audit the integrated diff and dependencies, then close
+   the card as Done without changing composition or runtime selection.
+
+### Decisions
+
+- Capsule content, Context Events, active pointer and required Session/Workspace
+  projections commit within the Context-specific fenced transaction.
+- Do not write Task/Segment indexes or introduce a generic transaction abstraction;
+  manual compact remains outside this card.
+- Migration v7 is additive and preserves v1-v6 names/checksums; runtime selection
+  remains owned by the Control Plane card.
+
+### Closeout
+
+- Review covered `0c170c5d`, `2e2a5276` and `6d541f79`; all direct dependencies
+  Fence Contract, Workspace, Task and Model/Tool v6 are `Done`.
+- Recorded evidence is sufficient: isolated PostgreSQL `14/14`, focused
+  SQLite/Worker `11/11`, changed-scope Ruff, strict Mypy and diff checks. No new
+  Compose execution or production edit was made by this review slice.
+- Handoff, Artifact, Control Plane and all runtime/provider paths remain locked or
+  separately in Review.
+
 ## CLOUD-AGG-CTX-ADMIN-PG-01 - PostgreSQL Administrative Context Recovery
 
 1. `completed` - Trace manual compact and historical recovery API paths and retain
