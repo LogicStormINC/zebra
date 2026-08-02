@@ -74,6 +74,8 @@
    the ADR without duplicating its protocol.
 4. `completed` - Validate links and terminology, record evidence and prepare the
    Review handoff.
+5. `completed` - Formally audit the integrated ADR and dependency baseline, then
+   close the card as Done without selecting an Artifact adapter.
 
 ### Decisions
 
@@ -81,6 +83,16 @@
   neither Event-derived projections nor temporary signed URLs are facts.
 - `artifact://` is stable identity; provider locator and credentials stay internal.
 - Freeze the failure protocol before choosing an SDK, adapter or migration.
+
+### Closeout
+
+- Review covered integrated ADR-017 commit `486fd884`; aggregate fencing and the
+  Compose/MinIO dependency baseline are `Done`.
+- ADR-017 is linked from the production architecture, aggregate inventory and
+  Trench breakdown; its terminology/link/size/diff evidence is accepted. No code,
+  migration, Compose service, API route or runtime selection changed.
+- Artifact lifecycle, object adapter, payload authority, Effect linkage and read
+  composition remain separately gated.
 
 ## CLOUD-ART-PAYLOAD-PG-01 - Shared Artifact Payload Authority
 

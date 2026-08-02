@@ -7131,3 +7131,17 @@ actual byte access.
   edit was made by this review; container health is not production evidence.
 - Closed `CLOUD-COMPOSE-INFRA-01` from `Review` to `Done`; Mem0 contract/adapter,
   PostgreSQL adapter, application-image and Runtime cards retain separate gates.
+
+## 2026-08-02 - CLOUD-ART-OBJ-CON-01 formal review closeout
+
+- Reviewed integrated ADR-017 contract commit `486fd884`; aggregate fencing and
+  the Compose/MinIO dependency baseline are `Done`.
+- Confirmed ADR-017 remains the single provider-neutral Artifact payload authority,
+  separating PostgreSQL metadata, object bytes, stable `artifact://` identity,
+  temporary access URLs and opaque external references without choosing an SDK or
+  provider.
+- Accepted existing Markdown link, terminology, scoped line-limit and diff checks.
+  No implementation dependency, migration, Compose service, API route, Runtime,
+  Desktop or production edit was made by this review.
+- Closed `CLOUD-ART-OBJ-CON-01` from `Review` to `Done`; lifecycle, object,
+  payload, Effect linkage and read-composition cards retain separate gates.

@@ -2140,7 +2140,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-ART-OBJ-CON-01 - Artifact Object And Metadata Authority Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Branch: `codex/cloud-art-obj-con-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01` and the reviewed
@@ -2161,6 +2161,21 @@ cloud mainline and is not built or changed by these cards.
   the production architecture, aggregate inventory and Trench task breakdown.
   Markdown links, `git diff --check`, terminology and scoped file-size checks pass;
   no implementation dependency, migration or runtime profile was selected.
+
+#### Closeout
+
+- Formal review targeted integrated ADR-017 contract commit `486fd884`; aggregate
+  fencing and the reviewed Compose/MinIO dependency baseline are both `Done`.
+- ADR-017 remains the single provider-neutral Artifact payload authority: it
+  separates PostgreSQL metadata, object bytes, stable `artifact://` identity,
+  temporary access URLs and opaque external references, and freezes lifecycle,
+  compensation, fencing and reconciliation without choosing an SDK or provider.
+- Existing Markdown link, terminology, scoped line-limit and `git diff --check`
+  evidence is accepted. No implementation dependency, migration, Compose service,
+  API route, Runtime, Desktop or production edit was added by this closeout.
+- Closing this card unlocks only the already planned Artifact lifecycle contract;
+  payload adapters, object SDK choice, Effect linkage, Artifact reads and Runtime
+  selection retain separate gates.
 
 ### CLOUD-EFFECT-PAYLOAD-ATOMIC-01 - Effect Payload And Intent Linkage
 

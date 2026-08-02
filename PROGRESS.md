@@ -140,12 +140,13 @@
   after its recorded isolated PostgreSQL `14/14` and SQLite/Worker `11/11`
   evidence; Context administrative recovery remains a separate Review card and
   neither selects the cloud runtime.
-- Completed Artifact contract task: `CLOUD-ART-OBJ-CON-01` freezes provider-neutral Artifact
+- Completed and formally closed Artifact contract task: `CLOUD-ART-OBJ-CON-01` freezes provider-neutral Artifact
   object/metadata authority before any SDK or adapter. ADR-017 separates stable
   `artifact://` identity from temporary access URLs and opaque external references,
   freezes staged/finalize/compensate recovery plus fenced Worker and management
   authority, and leaves provider, key encoding, API delivery and runtime selection
-  unchosen. It unlocks planning for `CLOUD-ART-PAYLOAD-PG-01`. `CLOUD-AGG-HANDOFF-CON-01`
+  unchosen. It unlocks planning for `CLOUD-ART-PAYLOAD-PG-01`; Artifact lifecycle,
+  object and payload adapters remain separately gated. `CLOUD-AGG-HANDOFF-CON-01`
   is now formally closed as `Done`: it adds a tokenized Lease-fenced SQLite
   dispatch receipt before the PostgreSQL Handoff aggregate, with `290` recorded
   related tests and a current-HEAD focused `22/22` regression check. SQLite work
