@@ -213,7 +213,7 @@
   PostgreSQL+MinIO tests pass `53/53`; Tools/Worker/Runtime pass `418/418` and Storage
   passes `131/131`. Formal dependency/path review closed it as `Done`; it excludes
   SQLite, Desktop, runtime selection and delivery APIs.
-- Completed Artifact read-composition review slice `CLOUD-ART-READ-COMP-01` starts from
+- Completed and formally closed Artifact read-composition review slice `CLOUD-ART-READ-COMP-01` starts from
   `zebra-cloud-trench@4480ca66` after both PostgreSQL Model/Tool v6 and Artifact
   payload v9 dependencies were integrated. It adds one-snapshot namespace-scoped
   reads over those existing facts and injects a separate required payload-read
@@ -222,6 +222,8 @@
   required; cloud composition disables legacy prune. The real PostgreSQL+MinIO matrix
   passes `39/39`, full tests pass `1943` with `145` gated skips, and no Artifact table
   or migration, SQLite feature, Desktop path or runtime backend selector was added.
+  Formal dependency/path review closed it as `Done`; delivery APIs and complete
+  Control Plane remain separate gates.
 - Completed governed-memory planning slice `CLOUD-MEMORY-PG-PLAN-01` starts from
   `zebra-cloud-trench@f9568e34`. Audit confirmed the cloud branch still has only a
   SQLite `MemoryStorePort`; Mem0 is correctly derived but its future delivery ledger

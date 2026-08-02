@@ -2288,7 +2288,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Branch: `codex/cloud-art-read-comp-01`
 - Depends on: `CLOUD-MODEL-TOOL-PG-01` and `CLOUD-ART-PAYLOAD-PG-01`
@@ -2312,6 +2312,22 @@ cloud mainline and is not built or changed by these cards.
   inherited Desktop stylesheet size failure. Changed Ruff, Core/Storage Mypy,
   `git diff --check` and Eval `10/10` pass; full Mypy retains four inherited errors in
   two untouched files.
+
+#### Closeout
+
+- Formal review targeted integrated read composition implementation `934de7b0`;
+  Model/Tool v6 and Artifact v9 payload dependencies are both `Done`.
+- The read path remains one namespace/Session-scoped snapshot over Event-derived
+  projections plus finalized v9 payload/object evidence. It reuses existing
+  sanitization/access policy and does not create an Artifact authority table,
+  mutation path, signed-URL route, SQLite feature, Desktop or Runtime selector.
+- Existing evidence is accepted: PostgreSQL+versioned MinIO `39/39`, full suite
+  `1943` with `145` skips, Ruff, Core/Storage Mypy, diff and Eval `10/10`; current
+  focused read tests pass `17/17` with one environment-gated skip. No new Compose
+  run or production edit was needed for this closeout.
+- Closing this card records read-only Artifact composition only. Delivery APIs,
+  Session History, complete Control Plane and Runtime/provider selection retain
+  separate gates.
 
 ### CLOUD-DELIVERY-TXN-PG-01 - PostgreSQL Delivery Command Transaction
 

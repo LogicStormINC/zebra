@@ -7200,3 +7200,17 @@ actual byte access.
   No Compose run or production edit was made by this review.
 - Closed `CLOUD-EFFECT-PAYLOAD-ATOMIC-01` from `Review` to `Done`; delivery APIs,
   read composition, provider selection and Runtime startup retain separate gates.
+
+## 2026-08-02 - CLOUD-ART-READ-COMP-01 formal review closeout
+
+- Reviewed integrated read composition implementation `934de7b0`; Model/Tool v6
+  and Artifact v9 payload dependencies are `Done`.
+- Audited the namespace/Session snapshot, Event-derived projection reads,
+  finalized payload/object evidence, existing sanitizer/access policy and disabled
+  legacy prune boundary. No Artifact mutation, new table/migration, signed route,
+  SQLite feature, Desktop or Runtime selector was added.
+- Accepted PostgreSQL+MinIO `39/39`, full `1943` with `145` skips, static/Eval
+  evidence and current focused read `17/17` with one skip. No Compose run or
+  production edit was made by this review.
+- Closed `CLOUD-ART-READ-COMP-01` from `Review` to `Done`; delivery APIs, Session
+  History, complete Control Plane and Runtime/provider cards retain separate gates.

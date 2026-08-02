@@ -199,6 +199,8 @@
    contract without adding an Artifact authority table or migration.
 4. `completed` - Prove SQLite/PostgreSQL parity, namespace isolation, redaction,
    lifecycle states and Event-rebuild recovery with isolated PostgreSQL/MinIO tests.
+5. `completed` - Formally audit the integrated read composition and dependency
+   evidence, then close the card as Done without adding a mutation path.
 
 ### Decisions
 
@@ -210,6 +212,16 @@
 - Cloud content additionally binds the v9 Event ID/sequence and exact object version;
   a canonical URI alone is not sufficient authority.
 - Legacy one-step prune is disabled whenever a non-local read capability is injected.
+
+### Closeout
+
+- Review covered integrated read composition implementation `934de7b0`; Model/Tool
+  v6 and Artifact v9 dependencies are `Done`.
+- Recorded PostgreSQL+MinIO `39/39`, full `1943` with `145` skips, static/Eval
+  evidence and current focused read `17/17` plus one skip are accepted. No Compose
+  run or production edit was made.
+- Delivery APIs, Session History, full Control Plane and Runtime/provider selection
+  remain separately gated.
 
 ## CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
 
