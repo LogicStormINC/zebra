@@ -6843,7 +6843,7 @@ actual byte access.
   store. Confirmed/purged lifecycle changes enqueue in the same v10 transaction;
   default store composition remains unchanged.
 - Host Compose runner result: `24 passed` for the focused migration/ledger/
-  authority matrix. A separate run of `tests/agent_storage` passed `294` with
+  authority matrix. A separate run of `tests/agent_storage` passed `295` with
   one pre-existing skip. No application container or provider HTTP request was
   started.
 

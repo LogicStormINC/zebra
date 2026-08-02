@@ -957,7 +957,7 @@
   passes `24` tests, including fresh/v1-v10 upgrade/checksum, migration rollback,
   replay, atomic enqueue, stale ACK, namespace isolation, unknown/in-flight quarantine and one-shot
   search admission. The full `tests/agent_storage` PostgreSQL matrix also passed
-  `294` tests with one pre-existing skip.
+  `295` tests with one pre-existing skip.
 
 ## MEM-GW-DEL-PG-01 review handoff (2026-08-02)
 
