@@ -105,7 +105,7 @@
 
 ### CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 
-- Status: `Done`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `CTX / CORE / STORAGE`
 - Depends on: merged `CTX-LC-01`; intentionally independent of the local stacked
@@ -599,7 +599,7 @@ service and from future Zebra API/Worker application containers.
 
 ### MEM-MEM0-SPIKE-01 - Mem0 OSS Contract And Operations Probe
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `INTEGRATIONS / STORAGE / SECURITY`
 - Depends on: locally reviewed `CLOUD-COMPOSE-INFRA-01`, `CLOUD-STO-AUTH-01`,
@@ -661,7 +661,7 @@ degraded-safe semantic index behind Zebra's governed memory lifecycle.
 
 ### MEM-MEM0-ADP-01 - Mem0 Gateway Adapter
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `INTEGRATIONS / SECURITY`
 - Depends on: completed `MEM-MEM0-SPIKE-01` and the explicit maintainer
@@ -871,7 +871,7 @@ authoritative and Mem0 fully rebuildable.
 
 ### MEM-GW-DEL-PLAN-01 - Memory Delivery Ledger v11 Plan And Task Split
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `ARCH / STORAGE / INTEGRATIONS`
 - Depends on: reviewed `CLOUD-MEMORY-PG-01`, `MEM-GW-CON-01`,
