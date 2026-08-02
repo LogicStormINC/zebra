@@ -249,7 +249,7 @@
   file-size violation reproduced on the untouched cloud mainline.
   PostgreSQL v10, Mem0 v11, runtime selection, SQLite feature work and Desktop remain
   outside this task.
-- Completed PostgreSQL governed-memory slice `CLOUD-MEMORY-PG-01` starts from integrated
+- Completed PostgreSQL governed-memory slice `CLOUD-MEMORY-PG-01` is formally `Done` and starts from integrated
   Core contract `4bda7f72`. It adds v10 authority/receipt storage, exact namespace reads,
   restart-safe content-free scans, Worker/Admin aggregate transactions and repeatable
   read-only SQLite import tooling. The isolated PostgreSQL 17.5 matrix passes `29/29`;

@@ -748,7 +748,7 @@ by the Spike, with no Mem0 type escaping the integration package.
 
 ### CLOUD-MEMORY-PG-01 - PostgreSQL Governed Memory Authority
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Branch: `codex/cloud-memory-pg-01`
 - Depends on: `CLOUD-MEMORY-CON-01` and integrated PostgreSQL v1-v9
@@ -771,6 +771,19 @@ by the Spike, with no Mem0 type escaping the integration package.
   final P0/P1 review pass. An attempted optional Worker seam was removed after review:
   terminal finalization, active-set validation and a verifiable unified cloud Store
   bundle must land atomically in the later runtime-composition task.
+
+#### Closeout
+
+- Formal review covered integrated v10 implementation `0d812451`; PostgreSQL is
+  the namespace-scoped governed Memory fact source with content-free receipts,
+  tombstones, revision CAS, aggregate transactions and explicit SQLite import.
+- Recorded isolated PostgreSQL `29/29`, full `1977` with `162` skips, strict
+  static checks, Eval `10/10` and final P0/P1 review evidence is accepted.
+  Current-head focused validation passes `6` with `18` PostgreSQL cases skipped
+  because no service is available in this sandbox.
+- Closed `CLOUD-MEMORY-PG-01` from `Review` to `Done`. No Mem0 delivery,
+  runtime selector, API/Worker composition, Desktop, SQLite feature change or
+  production cutover was added.
 
 ### MEM-GW-DEL-01 - Memory Delivery And Deletion Ledger
 

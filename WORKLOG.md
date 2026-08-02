@@ -7330,3 +7330,15 @@ actual byte access.
   `39/39`.
 - Closed `CLOUD-MEMORY-CON-01` from `Review` to `Done`; PostgreSQL v10,
   delivery, Mem0 and runtime selection remain separate gates.
+
+## 2026-08-02 - CLOUD-MEMORY-PG-01 formal review closeout
+
+- Reviewed integrated v10 authority implementation `0d812451`; PostgreSQL is
+  the namespace-scoped governed Memory fact source with receipts, tombstones,
+  revision CAS, aggregate transactions and explicit SQLite import.
+- Accepted recorded PostgreSQL `29/29`, full `1977` with `162` skips,
+  static/Eval `10/10` and P0/P1 evidence. Current focused validation passes `6`
+  with `18` PostgreSQL cases skipped without a service.
+- Closed `CLOUD-MEMORY-PG-01` from `Review` to `Done`; Mem0 delivery, runtime
+  selector, API/Worker composition, Desktop, SQLite feature work and cutover
+  remain gated.

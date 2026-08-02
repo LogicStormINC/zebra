@@ -10,7 +10,7 @@
    composition gated on a coherent cloud authority bundle.
 4. `completed` - Prove migration, namespace/query parity, CAS/concurrency, rollback,
    response-loss replay and snapshot scan against real PostgreSQL 17.5; review and
-   integrate into `zebra-cloud-trench`.
+   integrate into `zebra-cloud-trench`, then close the authority card as Done.
 
 ### Decisions
 
@@ -23,6 +23,16 @@
 - Do not land an optional Worker Memory seam before terminal finalization, authority
   active-set validation and the Event/Projection/Memory bundle share one recoverable
   cloud boundary; the reviewed prototype was removed rather than preserve split state.
+
+### Closeout
+
+- Review covered integrated v10 authority implementation `0d812451`; PostgreSQL
+  is the governed Memory fact source and Mem0 remains outside this card.
+- Recorded PostgreSQL `29/29`, full `1977` with `162` skips, static/Eval `10/10`
+  and P0/P1 review evidence is accepted; current focused validation is `6 passed,
+  18 skipped` without a PostgreSQL service.
+- `CLOUD-MEMORY-PG-01` is `Done`; delivery, Runtime, API/Worker composition and
+  production cutover remain separately gated.
 
 ## CLOUD-MEMORY-CON-01 - Governed Memory Mutation Contract
 
