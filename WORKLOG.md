@@ -7284,3 +7284,15 @@ actual byte access.
   no PostgreSQL service and report `18 skipped`.
 - Closed `MEM-GW-PG-NATIVE-01` from `Review` to `Done`; Runtime, Worker,
   Provider HTTP, Desktop, SQLite, Redis and Mem0 remain unselected.
+
+## 2026-08-02 - MEM-GW-DEL-PG-01 formal review closeout
+
+- Reviewed integrated implementation `a30c8b5e`; v11 metadata delivery ledger,
+  atomic v10 enqueue, independent claim/CAS, certainty mapping, quarantine and
+  batch authority revalidation are present.
+- Accepted host Compose PostgreSQL `24/24` evidence covering fresh/upgrade,
+  rollback, replay, stale ACK, namespace, unknown/in-flight quarantine and
+  search admission. No application container, provider HTTP, Worker default or
+  local SQLite composition was changed.
+- Closed `MEM-GW-DEL-PG-01` from `Review` to `Done`; the parent ledger and Mem0
+  consumer remain locked by the scoped-reset enumeration block.

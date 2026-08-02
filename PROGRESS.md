@@ -529,12 +529,12 @@ including a real thinking tool round trip.
   `Blocked` on `codex/mem0-reset-spike-01`: its isolated Compose run proved the
   pinned Mem0 list endpoint has no documented bounded pagination, so exact scoped
   enumeration cannot be accepted. `top_k` is not pagination. `MEM-GW-DEL-PG-01`
-  is now `Review` on `codex/mem-gw-del-pg-01` for the metadata-only v11
+  is formally `Done` on `codex/mem-gw-del-pg-01` for the metadata-only v11
   ledger, atomic v10 enqueue and PostgreSQL claim/revalidation slice. Its host
   Compose runner passes `24` real PostgreSQL tests covering fresh/v1-v10 upgrade,
   checksum, migration rollback, replay, atomic enqueue, stale ACK, namespace
-  isolation, unknown and in-flight quarantine, and batch search admission. The parent ledger and runtime
-  wiring remain locked.
+  isolation, unknown and in-flight quarantine, and batch search admission. The
+  parent ledger and runtime wiring remain locked by the scoped-reset gate.
 
 `MEM-MEM0-RESET-ALT-01` is now `Review` on `codex/mem0-reset-alt-01`,
 following the sidebar ChatGPT plan. It is a zero-production-code validation of

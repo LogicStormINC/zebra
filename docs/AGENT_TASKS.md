@@ -1174,7 +1174,7 @@ locked until the full cloud authority bundle is reviewed.
 
 ### MEM-GW-DEL-PG-01 - PostgreSQL v11 Delivery Ledger And Atomic Enqueue
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `STORAGE`
 - Depends on: completed `MEM-GW-DEL-CON-01`, integrated/reviewed
@@ -1224,6 +1224,18 @@ Worker or local SQLite composition.
   in-flight crash semantics.
 - Search revalidation is a single batch snapshot/join and never returns Memory text
   from the provider response.
+
+#### Closeout
+
+- Formal review covered integrated implementation `a30c8b5e`; v11 migration,
+  metadata-only delivery ledger, atomic v10 enqueue, claim/CAS, certainty mapping,
+  quarantine and batch authority revalidation are present.
+- Recorded host Compose PostgreSQL `24/24` evidence is accepted, covering fresh
+  and upgrade migrations, rollback, replay, stale ACK, namespace isolation,
+  unknown/in-flight quarantine and search admission. No application container,
+  provider HTTP, Worker default or SQLite composition was changed.
+- Closed `MEM-GW-DEL-PG-01` from `Review` to `Done`; the parent ledger and Mem0
+  consumer remain locked because scoped reset enumeration is still blocked.
 
 ### MEM-GW-DEL-RUN-01 - Mem0 Delivery Consumer And Management Rebuild
 
