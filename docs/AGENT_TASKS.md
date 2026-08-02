@@ -825,6 +825,56 @@ reset.
   `MEM-GW-DEL-01` and the runtime consumer remain locked. Do not reinterpret
   `top_k` as pagination or replace this gate with global `/reset`.
 
+### MEM-MEM0-RESET-ALT-01 - Scoped Reset Alternative Validation
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `INTEGRATIONS / STORAGE / SRE`
+- Depends on: integrated `MEM-GW-DEL-PG-01` at `3cd0b98`; independent of the
+  blocked provider enumeration Spike. This card does not unlock the runtime
+  consumer by itself.
+- Branch: `codex/mem0-reset-alt-01`
+- Worktree: `../zebra-mem0-reset-alt-01`
+- Owned paths: `docker/compose.mem0-reset-alt.test.yml`,
+  `tests/spikes/mem0_reset_alt/`, `docs/Mem0 Scoped Reset Alternative 验证记录.md`,
+  and this task's governance updates in `docs/AGENT_TASKS.md`, `task_plan.md`,
+  `PROGRESS.md`, `findings.md` and `WORKLOG.md`.
+- Non-goals: no production packages, Mem0 HTTP, Worker/Consumer, Desktop,
+  local SQLite composition, or changes to `MEM-MEM0-RESET-SPIKE-01`.
+
+#### Activation handoff
+
+The sidebar ChatGPT plan made this the single candidate `Ready` task after the
+v11 ledger merge. The owner claimed it on 2026-08-02 and narrowed the work to a
+test-only validation: determine whether `scope/generation` plus confirmed
+provider mappings can make logical reset safe without provider enumeration.
+
+#### Goal and acceptance
+
+- Prove old-generation search admission is fenced after a logical generation
+  switch, and known mappings can be deleted without a provider-wide scan.
+- Simulate an upstream-committed publish with a lost response; prove the
+  resulting unknown operation is quarantined and its provider orphan cannot be
+  recovered from the ledger. The result must be recorded as partial, not passed
+  off as a complete physical reset.
+- Run the isolated PostgreSQL Compose matrix with deterministic cleanup. Keep
+  the existing `24` focused delivery tests and `295 passed, 1 skipped` storage
+  matrix as regression baselines.
+
+#### Current implementation handoff
+
+- Added only the isolated PostgreSQL Compose profile, a deterministic in-memory
+  provider stand-in and two test cases. No production package, Provider HTTP,
+  Worker, Desktop or SQLite path changed.
+- The alternative runner passes `2` tests and emits
+  `ZEBRA_MEM0_RESET_ALT_VERDICT=B`: logical generation fencing and known mapping
+  deletion work, but a provider object committed before a lost response remains
+  an orphan that the ledger cannot recover.
+- Existing delivery focused runner remains `24 passed`; the full
+  `tests/agent_storage` matrix remains `295 passed, 1 skipped`. The parent,
+  original reset Spike and runtime consumer remain locked pending a separate
+  deletion-compliance decision.
+
 ### MEM-GW-DEL-PG-01 - PostgreSQL v11 Delivery Ledger And Atomic Enqueue
 
 - Status: `Review`

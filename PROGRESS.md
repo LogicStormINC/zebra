@@ -498,6 +498,17 @@ including a real thinking tool round trip.
   isolation, unknown and in-flight quarantine, and batch search admission. The parent ledger and runtime
   wiring remain locked.
 
+`MEM-MEM0-RESET-ALT-01` is now `Review` on `codex/mem0-reset-alt-01`,
+following the sidebar ChatGPT plan. It is a zero-production-code validation of
+whether v11 `scope/generation` plus confirmed provider mappings can replace
+provider-wide enumeration for logical reset. The existing reset Spike remains
+`Blocked`; this card does not activate Worker, Provider HTTP, Desktop or local
+SQLite composition. Its isolated runner passes `2` tests with verdict `B/PARTIAL`:
+logical reset and known mapping deletion are bounded, but unknown provider
+orphans remain unrecoverable from the ledger. The focused delivery runner remains
+`24 passed`, and the full storage matrix remains `295 passed, 1 skipped`; the
+partial verdict does not unlock the runtime consumer.
+
 ## Known Follow-Ups
 
 1. Review and merge `EMB-PLAN-01`; keep the completed AG-UI and Trench Spikes

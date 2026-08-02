@@ -6852,3 +6852,24 @@ actual byte access.
 - Moved the PostgreSQL child to `Review` after the focused Compose and full
   PostgreSQL storage matrices passed. The parent ledger and runtime consumer
   remain locked by the independent scoped reset block.
+
+## 2026-08-02 - MEM-MEM0-RESET-ALT-01 activation
+
+- The sidebar ChatGPT plan selected the single next candidate task:
+  `MEM-MEM0-RESET-ALT-01`. Claimed `codex/mem0-reset-alt-01` with owned paths
+  limited to the isolated Compose spike, validation record and governance.
+- The slice will distinguish logical generation reset from physical provider
+  deletion. It must make an unknown publish orphan explicit and cannot enable
+  the Worker, Mem0 HTTP, Desktop or local SQLite composition.
+
+## 2026-08-02 - MEM-MEM0-RESET-ALT-01 review handoff
+
+- Added `docker/compose.mem0-reset-alt.test.yml` and the host runner under
+  `tests/spikes/mem0_reset_alt/`; the profile starts only PostgreSQL 17.5 and
+  always removes its project, volume and network.
+- The runner passed `2` tests and emitted `B/PARTIAL`: known mappings can be
+  deleted and old generations are fenced, but a provider orphan created before
+  a lost response has no recoverable ledger mapping. The focused delivery runner
+  passed `24`; the full storage matrix passed `295` with one pre-existing skip.
+- Moved the card to `Review`. The original reset Spike stays `Blocked`, and the
+  parent/runtime consumer stay `Locked`; no production or provider code changed.

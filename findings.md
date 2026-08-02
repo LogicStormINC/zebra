@@ -964,3 +964,27 @@
 - The PostgreSQL child is moved to `Review` with its owned paths, focused tests,
   migration evidence and host Compose runner recorded above. The parent ledger
   remains `Locked` because the scoped reset/rebuild gate is still `Blocked`.
+
+## MEM-MEM0-RESET-ALT-01 activation (2026-08-02)
+
+- The sidebar ChatGPT planning result selected this as the single next task after
+  the v11 merge. It is intentionally a zero-production-code Spike: use the
+  PostgreSQL ledger and deterministic in-memory provider stand-in to test
+  generation fencing, mapping-only deletion and the unknown-publish orphan
+  boundary.
+- The task is independent of the blocked provider pagination result but cannot
+  unlock the runtime consumer by assumption. A complete physical reset must
+  still be proven, or the provider must be explicitly rejected from this path.
+
+## MEM-MEM0-RESET-ALT-01 implementation and review handoff (2026-08-02)
+
+- Added a dependency-only PostgreSQL Compose profile and two test-only cases:
+  known mapping deletion plus generation fencing, and an upstream-committed
+  unknown publish whose provider ref is intentionally absent from the ledger.
+- The isolated runner passed `2` tests with verdict `B/PARTIAL`. Logical reset is
+  safe for search admission and known mappings, but an unknown provider orphan
+  cannot be recovered or physically deleted from mapping-only evidence.
+- The existing delivery focused runner passed `24`; the full storage matrix passed
+  `295` with one pre-existing skip. No Provider HTTP, Worker, Desktop or local
+  SQLite composition started. The task is moved to `Review`; runtime remains
+  `Locked` pending a deletion-compliance decision.

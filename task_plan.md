@@ -606,6 +606,20 @@
    replay, stale ACK, namespace, unknown/in-flight quarantine and real PostgreSQL
    Compose matrices. No application container or provider HTTP path was started.
 
+## MEM-MEM0-RESET-ALT-01 - Scoped Reset Alternative Validation
+
+1. `completed` - Claim the sidebar-planned test-only task on
+   `codex/mem0-reset-alt-01`; keep production packages, Provider HTTP, Worker,
+   Desktop and local SQLite composition out of scope.
+2. `completed` - Add an isolated PostgreSQL Compose spike that validates
+   logical generation reset, mapping-based deletion and unknown-publish orphan
+   boundaries without provider enumeration.
+3. `completed` - Record the `B/PARTIAL` verdict and synchronize the task registry,
+   PROGRESS, findings, WORKLOG and the focused compatibility evidence document.
+4. `completed` - Run focused static checks, the new Compose runner, and the
+   existing delivery/storage regression matrices before moving the card to
+   `Review`; do not unlock `MEM-GW-DEL-RUN-01` on a partial result.
+
 ## MEM-GW-DEL-RUN-01 - Mem0 Delivery Consumer And Management Rebuild
 
 1. `pending` - Start only after the PG ledger and scoped reset Spike are reviewed,
