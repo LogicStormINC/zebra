@@ -990,6 +990,8 @@
    regressions that prove the unused database is not even created.
 5. `completed` - Run focused, full and quality validation, record inherited
    baseline failures, close the card to Review, and commit the local slice.
+6. `completed` - Formally audit the integrated diff and dependency order, then
+   close the card as Done without selecting a cloud backend.
 
 ### Decisions
 
@@ -1004,6 +1006,16 @@
   semantic-memory integration is a separate, derived, degraded-safe Gateway.
 - The branch is local and unpushed. Merge order remains
   `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-STO-AUTH-01`.
+
+### Closeout
+
+- Review covered integrated implementation `7be231e7`; Embedded architecture and
+  the local composition seam are both `Done`, with explicit maintainer activation.
+- The declared typed Ports, Storage bundle, API/Worker wiring and A/B tests remain
+  the complete scope. Recorded A/B `9 passed`, combined `365 passed`, Eval `10/10`
+  and quality evidence are accepted; current-HEAD focused regressions pass `11/11`.
+- No Compose execution or production edit was made. Mem0, PostgreSQL, Redis, S3,
+  backend selection and Runtime remain separate gates.
 ## CLOUD-COMPOSE-INFRA-01 - Docker Compose Dependency Baseline
 
 1. `completed` - Audit repository container assets, architecture sequencing and

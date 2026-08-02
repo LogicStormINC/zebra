@@ -357,7 +357,7 @@ inside request or execution logic.
 
 ### CLOUD-STO-AUTH-01 - Complete Authoritative Store Composition
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `STORAGE / CORE / API / WORKER`
 - Depends on: explicit maintainer activation for local stacked work on 2026-07-24.
@@ -429,6 +429,23 @@ own governed memory before any PostgreSQL backend is selectable.
   untouched baseline of 13 and 4 errors respectively.
 - Branch is local and unpushed. Required merge order remains
   `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-STO-AUTH-01`.
+
+#### Closeout
+
+- Formal review targeted integrated authoritative composition implementation
+  `7be231e7`; `EMB-PLAN-01` and `CLOUD-STO-SEAM-01` are now `Done`, and the
+  explicit maintainer activation was recorded before implementation.
+- The diff remains within the declared Core Ports, Storage bundle, API/Worker
+  composition and authoritative-composition tests. It removes legacy constructor
+  fallback without selecting PostgreSQL, Redis, S3/MinIO, Mem0, a backend switch,
+  Desktop or Runtime behavior.
+- Existing evidence is accepted: A/B composition `9 passed`, combined focused
+  coverage `365 passed`, recorded `make test`/quality results, Ruff, Mypy, Eval
+  `10/10` and `git diff --check`; current-HEAD composition regressions pass
+  `11/11`. No Compose execution or production edit was needed for this closeout.
+- Closing this card records the authoritative local Store bundle only. Memory
+  Gateway, Compose dependency, PostgreSQL migration and cloud backend cards retain
+  their own gates.
 
 ### MEM-GW-CON-01 - Provider-neutral Agent Memory Gateway Contract
 

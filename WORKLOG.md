@@ -7102,3 +7102,18 @@ actual byte access.
   edit was made by this review.
 - Closed `CLOUD-STO-SEAM-01` from `Review` to `Done`; `CLOUD-STO-AUTH-01` remains
   the next authoritative-store composition gate with its own merge-order rules.
+
+## 2026-08-02 - CLOUD-STO-AUTH-01 formal review closeout
+
+- Reviewed integrated authoritative composition implementation `7be231e7`;
+  `EMB-PLAN-01` and `CLOUD-STO-SEAM-01` are `Done`, and explicit maintainer
+  activation was recorded before implementation.
+- Audited the declared Core Ports, Storage bundle, API/Worker composition and
+  authoritative-composition tests. Legacy constructor fallback is removed, while
+  PostgreSQL, Redis, S3/MinIO, Mem0, backend selection, Desktop and Runtime stay
+  out of scope.
+- Accepted recorded A/B composition `9 passed`, combined focused `365 passed`,
+  Eval `10/10`, Ruff/Mypy/diff evidence and the current-HEAD focused regression
+  `11/11`. No Compose run or production edit was made by this review.
+- Closed `CLOUD-STO-AUTH-01` from `Review` to `Done`; Compose dependency,
+  PostgreSQL migration and Memory Gateway cards retain their own gates.

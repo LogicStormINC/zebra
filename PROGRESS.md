@@ -44,11 +44,12 @@
   Ports while preserving the local SQLite profile and adds no cloud dependency.
   Formal review closed it as `Done`; PostgreSQL, Redis, S3 and backend selection
   remain separate gates.
-- Authoritative storage task in Review: `CLOUD-STO-AUTH-01` on
+- Completed authoritative storage task: `CLOUD-STO-AUTH-01` on
   `codex/cloud-sto-auth-01` extends that same flat bundle across every durable
   API/Worker collaborator that advances Session state, gates effects or governs
   memory. A/B regressions prove the legacy path is not created; no cloud backend,
-  migration or Mem0 integration is selected by this task.
+  migration or Mem0 integration is selected by this task. Formal review closed
+  it as `Done`; Compose, PostgreSQL and Memory Gateway remain separate gates.
 - Memory contract task in Review: `MEM-GW-CON-01` on `codex/mem-gw-con-01` defines
   provider-neutral confirmed-memory publish, search and delete outcomes. Remote
   hits contain only a Zebra `MemoryId` for mandatory Store revalidation; no Mem0
