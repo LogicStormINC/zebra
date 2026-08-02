@@ -256,14 +256,15 @@
   and staged/finalized/compensated/pruning/pruned shapes without changing local
   behavior. Its provider-neutral contract gate is `Done`; object, payload, Effect,
   read-composition and Runtime cards remain separate.
-- Completed object adapter slice: `CLOUD-ART-OBJECT-S3-01` implements the immutable
+- Completed and formally closed object adapter slice: `CLOUD-ART-OBJECT-S3-01` implements the immutable
   S3-compatible bytes boundary and MinIO versioning against the reviewed Core Port.
   Conditional put, canonical retry, digest/size verification, exact-version read and
   delete, namespace-private keys and typed provider failures pass an isolated real
   MinIO cross-client matrix (`15/15`). All storage tests pass `130` with `87` gated
   skips and strict storage Mypy passes `49` files. PostgreSQL metadata, lifecycle
   orchestration, runtime selection, signed delivery, SQLite and Desktop remain
-  untouched.
+  untouched. Its object boundary is `Done`; PostgreSQL metadata, lifecycle
+  orchestration, Effect linkage, reads and Runtime remain separate gates.
 - Business-baseline recovery is active before cloud-stack integration. Exact replay
   on `zebra-cloud-trench@375dca92` reproduces all `9/9` remaining failures. Four
   path-bounded microservice cards own provider expectations, SCM credential

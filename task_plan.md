@@ -228,6 +228,8 @@
    namespace isolation and cross-client behavior on isolated MinIO.
 4. `completed` - Run storage/compatibility/static gates, record evidence and integrate
    without touching PostgreSQL migrations or lifecycle orchestration.
+5. `completed` - Formally audit the integrated adapter and dependency order, then
+   close the card as Done without adding lifecycle or Worker orchestration.
 
 ### Decisions
 
@@ -236,6 +238,16 @@
   hand-written SigV4.
 - Internal keys are derived only from canonical namespace and Artifact ID; file names,
   provider locators, credentials and ETags never enter Core identity.
+
+### Closeout
+
+- Review covered integrated object adapter `ce22ae8d`; Artifact lifecycle,
+  authority and Compose/MinIO dependencies are `Done`.
+- Recorded MinIO `15/15`, storage `130` with `87` skips, strict Mypy/Ruff/diff
+  evidence and current-HEAD adapter `14/14` plus one MinIO-gated skip are accepted.
+  No Compose run or production edit was made.
+- PostgreSQL metadata, lifecycle orchestration, Effect linkage, read composition,
+  SQLite and Runtime remain out of scope.
 
 ## CLOUD-AGG-HANDOFF-CON-01 - Fenced Handoff Dispatch Contract
 

@@ -2131,7 +2131,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-ART-OBJECT-S3-01 - S3-Compatible Immutable Artifact Object Adapter
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Branch: `codex/cloud-art-object-s3-01`
 - Depends on: `CLOUD-ART-LIFECYCLE-CON-01`, `CLOUD-ART-OBJ-CON-01`, and reviewed
@@ -2153,6 +2153,22 @@ cloud mainline and is not built or changed by these cards.
 - Evidence: isolated MinIO bucket-versioning/cross-client matrix passes `15/15`;
   all storage tests pass `130` with `87` environment-gated skips; strict storage
   Mypy passes `49` source files; changed-scope Ruff and `git diff --check` pass.
+
+#### Closeout
+
+- Formal review targeted integrated object adapter implementation `ce22ae8d`;
+  Artifact lifecycle, Artifact authority and Compose/MinIO dependencies are now
+  all `Done`.
+- The adapter remains an object-only boundary using direct low-level botocore,
+  namespace-private keys, conditional put, verified head/read and exact-version
+  deletion. It does not add PostgreSQL metadata, lifecycle orchestration,
+  Worker/API wiring, signed delivery, Effect linkage, SQLite or Runtime selection.
+- Existing evidence is accepted: isolated real-MinIO `15/15`, storage `130` with
+  `87` skips, strict Mypy over `49` files, Ruff and `git diff --check`; current-HEAD
+  adapter tests pass `14/14` with the MinIO-gated test skipped. No new Compose run
+  or production edit was needed for this closeout.
+- Closing this card records only the immutable object adapter. Artifact payload
+  authority, Effect linkage, read composition and Runtime retain separate gates.
 
 ### CLOUD-ART-OBJ-CON-01 - Artifact Object And Metadata Authority Contract
 

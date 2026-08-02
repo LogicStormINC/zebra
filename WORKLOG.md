@@ -7158,3 +7158,17 @@ actual byte access.
   passed `21/21`. No Compose run or production edit was made by this review.
 - Closed `CLOUD-ART-LIFECYCLE-CON-01` from `Review` to `Done`; object, payload,
   Effect, read-composition and Runtime cards retain their own gates.
+
+## 2026-08-02 - CLOUD-ART-OBJECT-S3-01 formal review closeout
+
+- Reviewed integrated object adapter implementation `ce22ae8d`; Artifact
+  lifecycle, authority and Compose/MinIO dependencies are `Done`.
+- Audited direct botocore usage, namespace-private keys, conditional put, verified
+  head/read, exact-version deletion and provider-error mapping. No PostgreSQL
+  metadata, lifecycle orchestration, Worker/API wiring, Effect linkage, SQLite or
+  Runtime selection was added.
+- Accepted MinIO `15/15`, storage `130` with `87` skips, strict Mypy/Ruff/diff
+  evidence and current-HEAD adapter `14/14` with one MinIO-gated skip. No Compose
+  run or production edit was made by this review.
+- Closed `CLOUD-ART-OBJECT-S3-01` from `Review` to `Done`; payload authority,
+  Effect linkage, reads and Runtime cards retain separate gates.
