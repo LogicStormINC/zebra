@@ -56,6 +56,10 @@
 - `MEM-MEM0-ADP-01` is `Review` on `codex/mem0-adapter-01`. It implements the
   provider-neutral Gateway over the proven Mem0 REST subset and remains stacked
   behind the reviewed Mem0 Spike and its storage, Gateway, and Compose prerequisites.
+- `MEM-GW-DEL-PLAN-01` is `Review` on `codex/mem-gw-del-plan-01`. It
+  materializes the v11 delivery/deletion plan and splits the locked parent into
+  four path-bounded child cards. The parent remains locked until the Core
+  certainty contract and scoped Mem0 reset/rebuild gate are proven.
 - `CLOUD-PG-PLAN-01` and `CLOUD-PG-01` are `Review` on their dedicated branches;
   the docs-only migration/restore decisions precede the real PostgreSQL Event/Projection Adapter.
 - `CLOUD-LEASE-CON-01`, `CLOUD-LEASE-PG-01`, `CLOUD-EFFECT-OUTBOX-01`, and
@@ -665,14 +669,13 @@ by the Spike, with no Mem0 type escaping the integration package.
 - Status: `Locked`
 - Owner: `UNASSIGNED`
 - Suggested role: `STORAGE / WORKER`
-- Depends on: integrated `MEM-MEM0-ADP-01`, reviewed Lease/Effect baseline and
-  `CLOUD-MEMORY-PG-01`
+- Depends on: completed `MEM-GW-DEL-CON-01`, `MEM-MEM0-RESET-SPIKE-01`,
+  `MEM-GW-DEL-PG-01`, `MEM-GW-DEL-RUN-01`, integrated `MEM-MEM0-ADP-01`,
+  reviewed Lease/Effect baseline and `CLOUD-MEMORY-PG-01`
 - Branch: `TBD`
-- Candidate owned paths: provider-neutral mutation certainty in
-  `agent-core/ports/agent_memory_gateway.py`, focused Memory delivery domain/Port,
-  PostgreSQL delivery/outbox storage, Mem0 Adapter certainty mapping, Worker consumer,
-  search revalidation, reconciliation/rebuild, their focused tests and governance
-  records
+- Owned paths: none while `Locked`; implementation is split across the four
+  child cards registered below. Governance status and evidence are coordinated
+  by `MEM-GW-DEL-PLAN-01`.
 
 #### Goal
 
@@ -687,6 +690,162 @@ authoritative and Mem0 fully rebuildable.
 - a documented rebuild path repopulates derived Mem0 data from confirmed Zebra memory
 - provider mutation outcomes distinguish applied, definite-no-effect and unknown;
   unknown publish outcomes are never retried automatically
+
+#### Explicit unlock blockers
+
+- The v10 authority mutation and v11 operation enqueue must be owned by one
+  PostgreSQL transaction boundary.
+- The Core Gateway result must expose typed certainty; parsing `detail` strings is
+  forbidden.
+- A scoped, management-only provider namespace reset/rebuild must be proven. A
+  global or unbounded Mem0 reset does not satisfy this gate.
+- Search admission must batch-revalidate active mapping, scope/generation and the
+  current confirmed/unexpired PostgreSQL record before returning a hit.
+
+### MEM-GW-DEL-PLAN-01 - Memory Delivery Ledger v11 Plan And Task Split
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `ARCH / STORAGE / INTEGRATIONS`
+- Depends on: reviewed `CLOUD-MEMORY-PG-01`, `MEM-GW-CON-01`,
+  `MEM-MEM0-SPIKE-01` and `MEM-MEM0-ADP-01`
+- Branch: `codex/mem-gw-del-plan-01`
+- Worktree: `../zebra-mem-gw-del-plan-01`
+- Owned paths: `docs/Zebra Cloud Memory Delivery Ledger v11实施计划.md` (new),
+  `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md`, `findings.md`,
+  `WORKLOG.md`
+
+#### Goal
+
+Record the reviewed v11 design, keep `MEM-GW-DEL-01` locked, and register four
+path-bounded child cards with explicit dependencies, non-goals and Docker Compose
+acceptance evidence.
+
+#### Acceptance
+
+- [x] Parent remains `Locked` and has no broad cross-layer owned paths.
+- [x] Core certainty, PostgreSQL atomic enqueue, scoped reset Spike and runtime
+  consumer/rebuild are separate cards with non-overlapping implementation paths.
+- [x] The v11 three-table model, certainty state machine, unknown-result quarantine,
+  search revalidation and rebuild high-watermark gate are durable in `docs/`.
+- [x] Re-review the split after the docs-only validation and leave child cards
+  `Locked` until their dependencies are integrated and explicitly activated.
+
+#### Handoff
+
+This is a docs-only planning slice. It does not add SQL, HTTP calls, Worker wiring,
+provider reset endpoints or local SQLite changes. The four child cards below are
+the only allowed implementation entry points.
+
+### MEM-GW-DEL-CON-01 - Core Memory Delivery Certainty Contract
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE`
+- Depends on: integrated `MEM-GW-CON-01` and `CLOUD-MEMORY-CON-01`
+- Branch: `TBD`
+- Owned paths: `packages/agent-core/src/agent_core/ports/agent_memory_gateway.py`,
+  `packages/agent-core/src/agent_core/domain/memory_delivery.py` (new),
+  `packages/agent-core/src/agent_core/ports/memory_delivery.py` (new), Core
+  exports and focused Core tests. Governance updates remain owned by the plan card.
+
+#### Goal
+
+Freeze provider-neutral scope identity, operation/certainty values, CAS-safe state
+transitions and stable idempotency keys without importing SQL, HTTP, Mem0 or Redis.
+
+#### Acceptance
+
+- All illegal status/certainty combinations are rejected by typed Core values.
+- `unknown` has no automatic retry operation and cannot be downgraded to success.
+- Core tests prove the state machine and the package boundary remains provider-neutral.
+
+### MEM-MEM0-RESET-SPIKE-01 - Scoped Mem0 Namespace Reset And Rebuild Probe
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `INTEGRATIONS / SECURITY / SRE`
+- Depends on: merged `MEM-MEM0-SPIKE-01`, `CLOUD-COMPOSE-INFRA-01`,
+  `MEM-GW-CON-01` and `CLOUD-STO-AUTH-01`
+- Branch: `TBD`
+- Owned paths: `docker/compose.mem0.test.yml`, focused files under `docker/mem0/`,
+  `tests/spikes/mem0/`, and `docs/Mem0 OSS协议兼容性验证记录.md`. Governance
+  updates remain owned by the plan card.
+
+#### Goal
+
+Prove whether a provider namespace can be enumerated and purged by scope and
+generation under an explicit management gate, without exposing an unbounded global
+reset.
+
+#### Acceptance
+
+- Enumeration, pagination/limits, purge, restart, duplicate and unknown-object
+  behavior are recorded with a deterministic Compose test.
+- Cross-scope isolation and operator authorization are proven.
+- If safe scoped reset is unavailable, the card becomes `Blocked` and the parent
+  cannot unlock; a global `/reset` is never accepted as a substitute.
+
+### MEM-GW-DEL-PG-01 - PostgreSQL v11 Delivery Ledger And Atomic Enqueue
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `STORAGE`
+- Depends on: completed `MEM-GW-DEL-CON-01`, integrated/reviewed
+  `CLOUD-MEMORY-PG-01` and migration governance
+- Branch: `TBD`
+- Owned paths: new PostgreSQL delivery store/transaction modules under
+  `packages/agent-storage/src/agent_storage/postgres/`, `postgres/migrations.py`,
+  `governed_memory_transactions.py`, `governed_memory_transaction_support.py`,
+  focused PostgreSQL tests and a host-run Compose test script. Governance updates
+  remain owned by the plan card.
+
+#### Goal
+
+Implement migration v11, atomic enqueue with v10 authority mutations, independent
+claim/CAS, provider mappings and one-shot search revalidation without changing
+Worker or local SQLite composition.
+
+#### Acceptance
+
+- Fresh v1-v11 and v1-v10 upgrades pass migration/checksum/constraint checks.
+- Authority mutation plus operation enqueue is all-or-nothing; replay cannot create
+  a second delivery; stale ACKs perform zero writes.
+- Claims use `SKIP LOCKED`, random tokens, database time and separate claimed versus
+  in-flight crash semantics.
+- Search revalidation is a single batch snapshot/join and never returns Memory text
+  from the provider response.
+
+### MEM-GW-DEL-RUN-01 - Mem0 Delivery Consumer And Management Rebuild
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `WORKER / INTEGRATIONS`
+- Depends on: completed `MEM-GW-DEL-PG-01`, `MEM-MEM0-RESET-SPIKE-01`, and
+  integrated `MEM-MEM0-ADP-01`
+- Branch: `TBD`
+- Owned paths: `packages/agent-integrations/src/agent_integrations/mem0/gateway.py`
+  certainty mapping/tests, `apps/worker/src/zebra_agent_worker/memory_delivery_consumer.py`
+  (new), management reconciliation/rebuild coordinator and PostgreSQL+Mem0
+  integration tests. Default `apps/*/main.py` and local SQLite composition are
+  explicitly out of scope. Governance updates remain owned by the plan card.
+
+#### Goal
+
+Consume the v11 ledger with typed provider outcomes, quarantine unknown mutations,
+revalidate authority before publish/search/delete, and provide an operator-gated
+generation rebuild path.
+
+#### Acceptance
+
+- 2xx publish is `applied`; delete 2xx/404 converges; explicit rejection is
+  `definite_no_effect`; timeout, disconnect, 5xx and malformed success are `unknown`.
+- Unknown publish is never automatically retried and quarantines its scope.
+- Rebuild scans confirmed/unexpired v10 facts, drains a delivery high-watermark,
+  then atomically switches generation; old generation remains quarantined until a
+  safe scoped purge is confirmed.
+- Mem0, its PostgreSQL or the consumer can stop without changing Zebra Memory or
+  failing an Agent Run.
 
 ### MEM-GW-GATE-01 - Semantic Memory Fault And Drift Gate
 

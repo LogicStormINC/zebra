@@ -869,3 +869,26 @@
   backend or namespace from a concrete adapter would couple API code to infrastructure;
   adding it to the full Store bundle before cloud composition is complete would spread
   an unfinished runtime selector.
+
+## MEM-GW-DEL-PLAN-01 durable findings (2026-08-02)
+
+- The sidebar ChatGPT review confirmed that `MEM-GW-DEL-01` is a cross-layer gate,
+  not a safe single implementation card. Keep it `Locked` until Core certainty,
+  PostgreSQL atomic enqueue and provider reset/rebuild are separately proven.
+- Mem0 `POST` is not idempotent. A timeout, disconnect, 5xx or malformed success
+  response is `unknown`, must quarantine the scope generation and must never be
+  retried automatically. Parsing a free-form Gateway detail string is forbidden.
+- Delivery operations must be metadata-only. The v11 ledger stores Memory ID,
+  revision, content digest, scope/generation, provider ref and typed error codes;
+  Memory text, provider bodies and credentials remain outside the ledger.
+- Search admission is a batch authority check over active mapping, provider ref,
+  scope/generation and current confirmed/unexpired PostgreSQL state. A provider hit
+  is never authoritative and never carries Memory text into the prompt path.
+- Provider reset/rebuild is management-only: scan v10 confirmed facts, drain a
+  delivery high-watermark, atomically switch generation, then purge the old generation
+  only after a bounded scoped reset is proven. A global Mem0 `/reset` does not satisfy
+  the contract.
+- The cloud mainline clone had missing reachable Git objects because it was created
+  from a deleted temporary alternate. The missing objects were restored from the
+  local Zebra checkout before creating the planning worktree; this is repository
+  repair evidence, not an implementation dependency.

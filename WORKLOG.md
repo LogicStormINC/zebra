@@ -6752,3 +6752,23 @@ actual byte access.
   `323/323` with `14` skips; focused Ruff, strict Mypy and `git diff --check` pass.
   Full tests are `1977 passed, 167 skipped` with only the inherited Desktop stylesheet
   561/500 size-gate failure.
+
+## 2026-08-02 - MEM-GW-DEL-PLAN-01 planning slice
+
+- Confirmed the requested planning channel is the sidebar ChatGPT (`chatgpt.com`)
+  thread; the implementation session remains the only writer to the Zebra worktree.
+- The read-only review used the real `zebra-cloud-trench@ac9801c2` mainline and
+  concluded that `MEM-GW-DEL-01` must remain `Locked`. The v11 plan now separates
+  Core certainty, PostgreSQL atomic enqueue, scoped Mem0 reset/rebuild and runtime
+  consumer/reconciliation into four child cards.
+- Added `docs/Zebra Cloud Memory Delivery Ledger v11实施计划.md` and synchronized
+  `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md` and `findings.md`. No code,
+  SQL migration, provider call, Worker wiring or SQLite behavior changed.
+- `git diff --check` passes. `make check` stops at the inherited
+  `UI/desktop/src/components/CodexConversationPane.styles.ts` file-size violation
+  (`561/500`); no cloud planning file is implicated.
+- The mainline clone had a stale alternate pointing at a deleted temporary checkout.
+  Reachable objects were restored from the local Zebra checkout so the plan worktree
+  could be checked out; this repair is recorded as repository evidence only.
+- Next owner action: explicitly activate `MEM-GW-DEL-CON-01` and
+  `MEM-MEM0-RESET-SPIKE-01` only after their reviewed dependencies are integrated.

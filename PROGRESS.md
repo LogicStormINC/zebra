@@ -483,7 +483,10 @@ including a real thinking tool round trip.
   or production gates. The reviewed Effect and Artifact foundations are not runtime-
   selected; full aggregate fencing, Redis, production AG-UI, Trench, analysis,
   writeback, Memory delivery/runtime wiring and GA remain `Locked` pending explicit
-  gates.
+  gates. `MEM-GW-DEL-PLAN-01` is a docs-only planning slice in Review on
+  `codex/mem-gw-del-plan-01`; it keeps `MEM-GW-DEL-01` locked and registers the
+  Core certainty, scoped reset Spike, PostgreSQL v11 ledger and runtime/rebuild
+  child cards.
 
 ## Known Follow-Ups
 
@@ -507,6 +510,10 @@ including a real thinking tool round trip.
 8. Activate Object Storage, Redis live state, recovery and Memory delivery/runtime
    wiring one path-bounded card at a time; no production claim precedes complete
    composition, migration, restore and failover evidence.
+9. Complete the reviewed [Memory Delivery Ledger v11 plan](Zebra%20Cloud%20Memory%20Delivery%20Ledger%20v11%E5%AE%9E%E6%96%BD%E8%AE%A1%E5%88%92.md),
+   then explicitly activate only `MEM-GW-DEL-CON-01` and
+   `MEM-MEM0-RESET-SPIKE-01`. Keep the parent locked if scoped provider reset,
+   atomic v10 enqueue or Host namespace authority is not proven.
 
 ## Runtime Blueprint
 
@@ -547,7 +554,9 @@ real tool execution, failure visibility, API restart, and durable recovery.
 
 - Zebra AG-UI production adapter and HostSessionGrant verifier
 - Trench CopilotKit Runtime/BFF, read-only panel, frontend tools and writeback
-- Memory delivery ledger and runtime wiring (Mem0 contract, Spike and Adapter are in Review)
+- Memory delivery ledger and runtime wiring: `MEM-GW-DEL-01` and its four child
+  cards remain `Locked` until the v11 certainty, scoped reset, atomic PostgreSQL
+  enqueue and management rebuild gates in the plan are satisfied.
 - ACP entry adapter
 - optional code-intelligence adapter
 - Kubernetes/Kata/Firecracker and distributed Sandbox scheduling

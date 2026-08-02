@@ -539,6 +539,76 @@
   resolve `MemoryId` through the Store before prompt admission.
 - Mem0 is the first planned adapter, but no provider or transport type enters Core.
 
+## MEM-GW-DEL-PLAN-01 - Memory Delivery Ledger v11 Plan And Task Split
+
+1. `completed` - Ask the sidebar ChatGPT planning session to review the real
+   `zebra-cloud-trench@ac9801c2` baseline and the current Mem0/v10 contracts.
+2. `completed` - Confirm that the original `MEM-GW-DEL-01` card is not safe to
+   unlock: atomic enqueue, typed certainty and scoped reset/rebuild are missing.
+3. `completed` - Freeze the three-table v11 model, operation state machine,
+   unknown-result quarantine and batch search revalidation rules.
+4. `completed` - Register four path-bounded child cards and keep the parent
+   `MEM-GW-DEL-01` `Locked` until their dependency gates are satisfied.
+5. `completed` - Validate the docs-only split, record the Git object repair
+   observation and hand off the first activation decision. `git diff --check`
+   passes; `make check` remains blocked only by the inherited Desktop stylesheet
+   size violation (`561/500`).
+
+### Decisions
+
+- `memory_delivery_scopes`, `memory_delivery_operations` and
+  `memory_provider_mappings` contain metadata and digests only; never Memory text,
+  provider bodies or credentials.
+- `unknown` is a terminal quarantine decision for automatic delivery. It is not a
+  retryable error and must not be inferred from a free-form detail string.
+- `MEM-GW-DEL-CON-01` and `MEM-MEM0-RESET-SPIKE-01` are the first possible child
+  activations. `MEM-GW-DEL-PG-01` follows Core; `MEM-GW-DEL-RUN-01` follows both
+  the PG ledger and the reset/rebuild gate.
+- The default Worker/API composition and local SQLite profile stay unchanged until
+  a later cloud composition gate supplies one verifiable Store/Host namespace.
+
+## MEM-GW-DEL-CON-01 - Core Memory Delivery Certainty Contract
+
+1. `pending` - Wait for the reviewed Gateway and governed-memory Core tasks to be
+   integrated and explicitly activate this child card.
+2. `pending` - Add provider-neutral scope, operation, certainty and state-transition
+   values with focused Core tests.
+3. `pending` - Prove illegal status/certainty combinations and package boundaries;
+   do not add SQL, HTTP, Mem0 or Worker wiring.
+4. `pending` - Move the child to `Review` with exact evidence before PG work starts.
+
+## MEM-MEM0-RESET-SPIKE-01 - Scoped Mem0 Namespace Reset And Rebuild Probe
+
+1. `pending` - Wait for the reviewed Mem0 Spike/Compose chain and explicitly activate
+   the test-only reset probe.
+2. `pending` - Exercise scoped enumeration, pagination, purge, restart, duplicate,
+   unknown-object and cross-scope isolation behavior in Docker Compose.
+3. `pending` - Record operator authorization and failure/upper-bound semantics;
+   never substitute a global `/reset` endpoint.
+4. `pending` - Move to `Review` only if a bounded reset/rebuild contract is proven;
+   otherwise mark `Blocked` and preserve the parent lock.
+
+## MEM-GW-DEL-PG-01 - PostgreSQL v11 Delivery Ledger And Atomic Enqueue
+
+1. `pending` - Start only after `MEM-GW-DEL-CON-01` is integrated and v10 authority
+   transaction ownership is explicit.
+2. `pending` - Add v11 migrations and metadata-only delivery/mapping tables.
+3. `pending` - Attach publish/delete enqueue to the v10 authority mutation in the
+   same transaction; implement independent claim/CAS and batch hit revalidation.
+4. `pending` - Run fresh/upgrade/checksum, rollback, duplicate replay, stale ACK,
+   namespace and real PostgreSQL Compose matrices.
+
+## MEM-GW-DEL-RUN-01 - Mem0 Delivery Consumer And Management Rebuild
+
+1. `pending` - Start only after the PG ledger and scoped reset Spike are reviewed,
+   and the Adapter dependency is governance-integrated.
+2. `pending` - Map provider responses to typed certainty and consume operations with
+   independent claims; quarantine unknown publish outcomes.
+3. `pending` - Add management-only generation rebuild: complete v10 scan, delivery
+   high-watermark drain, atomic switch, then safe old-generation purge.
+4. `pending` - Run PostgreSQL+Mem0 fault, outage, delete, search and rebuild tests;
+   do not modify default local composition.
+
 ## CLOUD-LEASE-PG-01 - PostgreSQL Epoch And Lease Adapter
 
 1. `completed` - Audit the reviewed PostgreSQL migration/Adapter patterns and
