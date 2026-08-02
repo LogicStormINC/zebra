@@ -207,6 +207,31 @@ def test_terminal_follow_up_rejects_reverse_ambiguous_pending_alias(tmp_path: Pa
     assert response.json()["reason"] == "handoff_source_not_quiescent"
 
 
+def test_terminal_follow_up_rejects_cross_namespace_alias_swap(tmp_path: Path) -> None:
+    database = tmp_path / "cross-namespace-alias-swap.sqlite"
+    task_id = _seed_stale_terminal_task(
+        database,
+        tmp_path,
+        approval_pairs=(("id-a", "id-b"), ("id-b", "id-a")),
+        completed_internal_ids=("id-a",),
+    )
+    client = TestClient(
+        create_http_app(
+            database,
+            settings=load_settings({"ZEBRA_SESSION_HANDOFF_ENABLED": "true"}),
+        )
+    )
+
+    response = client.post(
+        f"/tasks/{task_id}/messages",
+        json={"content": "Do not continue with a cross-namespace alias swap."},
+        headers={"Idempotency-Key": "cross-namespace-alias-swap"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["reason"] == "handoff_source_not_quiescent"
+
+
 @pytest.mark.parametrize("tail_mode", ["different_call_id", "approval_only"])
 def test_terminal_follow_up_keeps_unclosed_capsule_pending(
     tmp_path: Path,
@@ -320,6 +345,7 @@ def _seed_stale_terminal_task(
     tail_mode: str = "same_call_id",
     pending_tool: bool = True,
     approval_pairs: tuple[tuple[str, str], ...] = ((INTERNAL_CALL_ID, PROVIDER_CALL_ID),),
+    completed_internal_ids: tuple[str, ...] | None = None,
 ) -> str:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -416,8 +442,16 @@ def _seed_stale_terminal_task(
     ]
     sequence += len(approval_pairs)
     if tail_mode != "approval_only":
-        for index, (internal_id, _) in enumerate(approval_pairs):
-            completed_call_id = "other-call" if tail_mode == "different_call_id" else internal_id
+        completed_call_ids = (
+            ("other-call",) * len(approval_pairs)
+            if tail_mode == "different_call_id"
+            else (
+                tuple(internal_id for internal_id, _ in approval_pairs)
+                if completed_internal_ids is None
+                else completed_internal_ids
+            )
+        )
+        for index, completed_call_id in enumerate(completed_call_ids):
             tail.extend(
                 (
                 _event(
@@ -447,7 +481,7 @@ def _seed_stale_terminal_task(
                 ),
                 )
             )
-        sequence += 2 * len(approval_pairs)
+        sequence += 2 * len(completed_call_ids)
     tail.extend(
         (
         _event(

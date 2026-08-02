@@ -70,7 +70,7 @@ Task `model_id`, and the stable Task public conversation remains ordered.
   handoffs using the internal reason remain HTTP `409 handoff_source_not_quiescent`.
 - Stale capsules with no pending tool remain `active_projection`.
 - `apps/api/src/zebra_agent_api/session_handoff.py` is 500 lines and
-  `tests/api/test_terminal_followup_quiescence.py` is 478 lines;
+  `tests/api/test_terminal_followup_quiescence.py` is 539 lines;
   the file-size scanner still reports only the 11 pre-existing violation
   paths, with no new violation from this task.
 - Changed-source Ruff, Python 3.12 compileall, and `git diff --check` passed.
@@ -95,13 +95,18 @@ Task `model_id`, and the stable Task public conversation remains ordered.
   use bounded checkpoint context, retain the capsule objective as continuity
   summary, and keep the newest user message as the final user turn.
 - Focused source, context, API, integration, storage, and recovery set:
-  `44 passed`. Full suite: `2011 passed, 10 failed, 9 skipped`; the 10 failures
+  `45 passed`. Full suite: `2011 passed, 10 failed, 9 skipped`; the 10 failures
   are the inherited fixed-base set. Ruff, Python 3.12 compileall, and
   `git diff --check` passed. The file-size checker reports the same 11
   inherited violation paths.
 - Reverse-alias review red: the new reverse-duplicate regression failed with
   HTTP `201` before the fix; after the bijection guard the API regression set
   is `9 passed`.
+- Cross-namespace swap review red: typed pairs `(id-a, id-b)` and
+  `(id-b, id-a)` with only terminal `id-a` initially returned HTTP `201`.
+  The helper now rejects any raw ID present in both internal and provider
+  domains before producing aliases; the API regression set is `10 passed` and
+  the related set is `45 passed`.
 
 ## Review handoff
 

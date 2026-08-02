@@ -22,21 +22,38 @@ def source_approval_call_aliases(
 ) -> dict[str, str]:
     if source_event_range is None:
         return {}
-    aliases: dict[str, str] = {}
-    for pending_id in pending_ids:
-        candidates = {
-            value.strip()
-            for event in events
-            if event.event_type is EventType.APPROVAL_REQUESTED
+    internal_ids: set[str] = set()
+    provider_ids: set[str] = set()
+    pairs: set[tuple[str, str]] = set()
+    for event in events:
+        if not (
+            event.event_type is EventType.APPROVAL_REQUESTED
             and source_event_range.start_sequence
             <= event.sequence
             <= source_event_range.end_sequence
-            for key in ("tool_call_id", "provider_call_id")
-            if event.payload.get(key) == pending_id
-            for paired_key in ("tool_call_id", "provider_call_id")
-            if paired_key != key
-            for value in (event.payload.get(paired_key),)
-            if isinstance(value, str) and value.strip()
+        ):
+            continue
+        internal_id = event.payload.get("tool_call_id")
+        provider_id = event.payload.get("provider_call_id")
+        if isinstance(internal_id, str) and internal_id.strip():
+            internal_ids.add(internal_id.strip())
+        if isinstance(provider_id, str) and provider_id.strip():
+            provider_ids.add(provider_id.strip())
+        if (
+            isinstance(internal_id, str)
+            and internal_id.strip()
+            and isinstance(provider_id, str)
+            and provider_id.strip()
+        ):
+            pairs.add((internal_id.strip(), provider_id.strip()))
+    if internal_ids & provider_ids:
+        return {}
+    aliases: dict[str, str] = {}
+    for pending_id in pending_ids:
+        candidates = {
+            provider_id if pending_id == internal_id else internal_id
+            for internal_id, provider_id in pairs
+            if pending_id in {internal_id, provider_id}
         }
         if len(candidates) == 1:
             aliases[pending_id] = candidates.pop()
