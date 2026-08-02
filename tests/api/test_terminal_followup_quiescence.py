@@ -4,8 +4,7 @@ from hashlib import sha256
 from pathlib import Path
 from uuid import UUID
 
-from fastapi.testclient import TestClient
-
+import pytest
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.session_projection import apply_event, rebuild_session
 from agent_core.application.workspace_projection import rebuild_workspace
@@ -17,13 +16,17 @@ from agent_core.domain.context_capsule import (
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.session_handoff import HandoffReason
 from agent_storage import (
     SQLiteAgentTaskStore,
     SQLiteContextLifecycleStore,
     SQLiteEventStore,
     SQLiteProjectionStore,
+    SQLiteSessionHandoffStore,
     SQLiteWorkspaceProjectionStore,
 )
+from fastapi.testclient import TestClient
+from zebra_agent_api import RouteAdapter, RouteRequest, create_app
 from zebra_agent_api.http import create_http_app
 from zebra_agent_config import load_settings
 
@@ -64,6 +67,14 @@ def test_http_terminal_follow_up_reconciles_stale_pending_capsule(tmp_path: Path
         SessionEvent.create(
             session_id=child_id,
             sequence=child.current_sequence + 1,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={"attempt_number": 1},
+            created_at=NOW,
+        ),
+        SessionEvent.create(
+            session_id=child_id,
+            sequence=child.current_sequence + 2,
             event_type=EventType.MODEL_RESPONSE_RECEIVED,
             actor=EventActor.HARNESS,
             payload={"assistant_message": "second final", "tool_call_count": 0},
@@ -71,7 +82,7 @@ def test_http_terminal_follow_up_reconciles_stale_pending_capsule(tmp_path: Path
         ),
         SessionEvent.create(
             session_id=child_id,
-            sequence=child.current_sequence + 2,
+            sequence=child.current_sequence + 3,
             event_type=EventType.SESSION_COMPLETED,
             actor=EventActor.HARNESS,
             payload={"summary": "done"},
@@ -96,7 +107,87 @@ def test_http_terminal_follow_up_reconciles_stale_pending_capsule(tmp_path: Path
     ]
 
 
-def _seed_stale_terminal_task(database: Path, workspace: Path) -> str:
+@pytest.mark.parametrize("tail_mode", ["different_call_id", "approval_only"])
+def test_terminal_follow_up_keeps_unclosed_capsule_pending(
+    tmp_path: Path,
+    tail_mode: str,
+) -> None:
+    database = tmp_path / f"unclosed-{tail_mode}.sqlite"
+    task_id = _seed_stale_terminal_task(database, tmp_path, tail_mode=tail_mode)
+    client = TestClient(
+        create_http_app(
+            database,
+            settings=load_settings({"ZEBRA_SESSION_HANDOFF_ENABLED": "true"}),
+        )
+    )
+
+    response = client.post(
+        f"/tasks/{task_id}/messages",
+        json={"content": "Continue only if the pending call is closed."},
+        headers={"Idempotency-Key": f"unclosed-{tail_mode}"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["reason"] == "handoff_source_not_quiescent"
+
+
+def test_user_handoff_cannot_reconcile_internal_terminal_capsule(tmp_path: Path) -> None:
+    database = tmp_path / "user-handoff.sqlite"
+    task_id = _seed_stale_terminal_task(database, tmp_path)
+    response = RouteAdapter(
+        create_app(database, settings=load_settings({"ZEBRA_SESSION_HANDOFF_ENABLED": "true"}))
+    ).handle(
+        RouteRequest(
+            "POST",
+            f"/sessions/{task_id}/handoff",
+            headers={"Idempotency-Key": "user-handoff"},
+            body={
+                "title": "User handoff",
+                "objective": "Continue safely",
+                "stage_prompt": "Continue safely",
+                "reason": HandoffReason.INTERNAL_TERMINAL_FOLLOW_UP.value,
+            },
+        )
+    )
+
+    assert response.status_code == 409
+    assert response.body["reason"] == "handoff_source_not_quiescent"
+
+
+def test_stale_quiescent_capsule_remains_active_projection(tmp_path: Path) -> None:
+    database = tmp_path / "quiescent-capsule.sqlite"
+    task_id = _seed_stale_terminal_task(database, tmp_path, pending_tool=False)
+    client = TestClient(
+        create_http_app(
+            database,
+            settings=load_settings({"ZEBRA_SESSION_HANDOFF_ENABLED": "true"}),
+        )
+    )
+
+    response = client.post(
+        f"/tasks/{task_id}/messages",
+        json={"content": "Continue with the active summary."},
+        headers={"Idempotency-Key": "quiescent-capsule"},
+    )
+
+    assert response.status_code == 201
+    segments = client.get(f"/internal/tasks/{task_id}/segments").json()["segments"]
+    child_id = SessionId(UUID(segments[-1]["session_id"]))
+    lineage = SQLiteSessionHandoffStore(database).get_lineage(child_id)
+    handoff_id = lineage[-1].inbound_handoff_id
+    assert handoff_id is not None
+    envelope = SQLiteSessionHandoffStore(database).get_envelope(handoff_id)
+    assert envelope is not None
+    assert envelope.source_context_capsule_id == "stale-terminal-capsule"
+
+
+def _seed_stale_terminal_task(
+    database: Path,
+    workspace: Path,
+    *,
+    tail_mode: str = "same_call_id",
+    pending_tool: bool = True,
+) -> str:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title="Stale capsule task",
@@ -140,7 +231,9 @@ def _seed_stale_terminal_task(database: Path, workspace: Path) -> str:
         objective="Preserve the first request evidence.",
         protected_user_constraints=("preserve evidence",),
         pending_tools=(
-            PendingToolState(call_id="call-stale", name="files.read"),
+            (PendingToolState(call_id="call-stale", name="files.read"),)
+            if pending_tool
+            else ()
         ),
         approvals_and_policy_state=("approval_requested:approval required",),
         immediate_next="Resume the approved read.",
@@ -155,7 +248,7 @@ def _seed_stale_terminal_task(database: Path, workspace: Path) -> str:
         validation_context=ContextCapsuleValidationContext(
             expected_source_hash=capsule.source_hash,
             expected_source_event_range=capsule.source_event_range,
-            unresolved_tool_call_ids=frozenset({"call-stale"}),
+            unresolved_tool_call_ids=(frozenset({"call-stale"}) if pending_tool else frozenset()),
             protected_user_constraints=frozenset(capsule.protected_user_constraints),
             approval_and_policy_state=frozenset(capsule.approvals_and_policy_state),
         ),
@@ -163,50 +256,71 @@ def _seed_stale_terminal_task(database: Path, workspace: Path) -> str:
         expected_active_capsule_id=None,
         created_at=NOW,
     )
+    sequence = 6
     tail = [
         _event(
             bootstrap.session.session_id,
-            6,
+            sequence,
             EventType.APPROVAL_GRANTED,
             EventActor.USER,
             {"tool_call_id": "call-stale"},
-        ),
+        )
+    ]
+    sequence += 1
+    if tail_mode != "approval_only":
+        completed_call_id = "other-call" if tail_mode == "different_call_id" else "call-stale"
+        tail.extend(
+            (
+                _event(
+                    bootstrap.session.session_id,
+                    sequence,
+                    EventType.TOOL_EXECUTION_STARTED,
+                    EventActor.HARNESS,
+                    {
+                        "attempt_number": 1,
+                        "tool_name": "files.read",
+                        "tool_call_id": completed_call_id,
+                    },
+                ),
+                _event(
+                    bootstrap.session.session_id,
+                    sequence + 1,
+                    EventType.TOOL_EXECUTION_COMPLETED,
+                    EventActor.TOOL,
+                    {
+                        "attempt_number": 1,
+                        "tool_name": "files.read",
+                        "tool_call_id": completed_call_id,
+                        "status": "executed",
+                        "output": "durable result",
+                        "metadata": {},
+                    },
+                ),
+            )
+        )
+        sequence += 2
+    tail.extend(
+        (
         _event(
             bootstrap.session.session_id,
-            7,
-            EventType.TOOL_EXECUTION_STARTED,
+            sequence,
+            EventType.MODEL_RESPONSE_RECEIVED,
             EventActor.HARNESS,
-            {"attempt_number": 1, "tool_name": "files.read", "tool_call_id": "call-stale"},
-        ),
-        _event(
-            bootstrap.session.session_id,
-            8,
-            EventType.TOOL_EXECUTION_COMPLETED,
-            EventActor.TOOL,
             {
-                "attempt_number": 1,
-                "tool_name": "files.read",
-                "tool_call_id": "call-stale",
-                "status": "executed",
-                "output": "durable result",
-                "metadata": {},
+                "assistant_message": "first final",
+                "tool_call_count": 1,
+                "response_stage": "final",
             },
         ),
         _event(
             bootstrap.session.session_id,
-            9,
-            EventType.MODEL_RESPONSE_RECEIVED,
-            EventActor.HARNESS,
-            {"assistant_message": "first final", "tool_call_count": 1},
-        ),
-        _event(
-            bootstrap.session.session_id,
-            10,
+            sequence + 1,
             EventType.SESSION_COMPLETED,
             EventActor.HARNESS,
             {"summary": "done"},
         ),
-    ]
+        )
+    )
     for event in tail:
         event_store.append(event)
     all_events = [*prefix, *event_store.list_for_session(bootstrap.session.session_id)[5:6], *tail]

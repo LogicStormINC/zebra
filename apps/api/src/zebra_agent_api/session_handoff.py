@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TypedDict
@@ -20,6 +21,7 @@ from agent_core.domain.session_handoff import (
     SessionLineage,
     validate_session_handoff,
 )
+from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.session_handoff import (
     HandoffOperation,
     SessionHandoffCommitRequest,
@@ -164,10 +166,18 @@ class SessionHandoffApi:
                 return ApiResponse(200, body)
         events = self._events.list_for_session(source_id)
         capsule = _active_capsule_or_none(self._database_path, source_id)
+        capsule, capsule_reconciled = _reconcile_terminal_capsule(
+            events,
+            capsule,
+            actor_kind=actor_kind,
+            source_status=source.status,
+            reason=request.reason,
+        )
         uses_active_projection = (
             actor_kind is HandoffActorKind.AUTOMATION
             and request.reason is HandoffReason.INTERNAL_TERMINAL_FOLLOW_UP
             and capsule is not None
+            and not capsule_reconciled
         )
         completed_work = parsed["completed_work"]
         if (
@@ -180,6 +190,13 @@ class SessionHandoffApi:
         if uses_active_projection:
             assert capsule is not None
             objective = capsule.capsule.objective
+        fallback_omission = (
+            "stale active projection closed by durable terminal tail; bounded checkpoint fallback"
+            if capsule_reconciled
+            else "active projection unavailable; bounded checkpoint fallback"
+            if request.reason is HandoffReason.INTERNAL_TERMINAL_FOLLOW_UP and capsule is None
+            else None
+        )
         envelope = build_handoff_envelope(
             HandoffEnvelopeBuildInput(
                 handoff_id=handoff_id,
@@ -202,17 +219,13 @@ class SessionHandoffApi:
                 capsule=None if capsule is None else capsule.capsule,
                 known_omissions=(
                     "provider-private continuation, reasoning, credentials and raw tool outputs",
-                    *(
-                        ("active projection unavailable; bounded checkpoint fallback",)
-                        if (
-                            request.reason is HandoffReason.INTERNAL_TERMINAL_FOLLOW_UP
-                            and capsule is None
-                        )
-                        else ()
-                    ),
+                    *((fallback_omission,) if fallback_omission else ()),
                 ),
             )
         )
+        if capsule_reconciled:
+            envelope = envelope.model_copy(update={"source_context_capsule_id": None})
+            envelope = envelope.model_copy(update={"checksum": envelope.expected_checksum()})
         validation = SessionHandoffValidationContext(
             source_status=source.status,
             expected_source_session_id=source_id,
@@ -356,6 +369,65 @@ def _active_capsule_or_none(
         return SQLiteContextLifecycleStore(database_path).get_active_capsule(source_id)
     except ValueError:
         return None
+
+
+def _reconcile_terminal_capsule(
+    events: list[SessionEvent],
+    capsule: StoredContextCapsule | None,
+    *,
+    actor_kind: HandoffActorKind,
+    source_status: SessionStatus,
+    reason: HandoffReason,
+) -> tuple[StoredContextCapsule | None, bool]:
+    if (
+        capsule is None
+        or actor_kind is not HandoffActorKind.AUTOMATION
+        or reason is not HandoffReason.INTERNAL_TERMINAL_FOLLOW_UP
+        or source_status
+        not in {SessionStatus.COMPLETED, SessionStatus.FAILED, SessionStatus.CANCELLED}
+        or not events
+        or capsule.event.sequence >= events[-1].sequence
+    ):
+        return capsule, False
+    tail = [event for event in events if event.sequence > capsule.event.sequence]
+    pending_ids = {tool.call_id for tool in capsule.capsule.pending_tools}
+    terminal_tail = any(
+        event.event_type
+        in {
+            EventType.APPROVAL_REJECTED,
+            EventType.SESSION_COMPLETED,
+            EventType.SESSION_FAILED,
+            EventType.SESSION_CANCELLED,
+        }
+        for event in tail
+    )
+    closed_ids = {
+        call_id
+        for event in tail
+        if event.event_type
+        in {
+            EventType.APPROVAL_REJECTED,
+            EventType.TOOL_EXECUTION_COMPLETED,
+            EventType.TOOL_EXECUTION_FAILED,
+        }
+        for call_id in [_event_tool_call_id(event)]
+        if call_id is not None
+    }
+    if not pending_ids or not terminal_tail or not pending_ids.issubset(closed_ids):
+        return capsule, False
+    reconciled = replace(
+        capsule,
+        capsule=capsule.capsule.model_copy(update={"pending_tools": ()}),
+    )
+    return reconciled, True
+
+
+def _event_tool_call_id(event: SessionEvent) -> str | None:
+    for key in ("tool_call_id", "provider_call_id"):
+        value = event.payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
 
 
 def _event_hash(events: list[SessionEvent]) -> str:

@@ -57,7 +57,22 @@ Task `model_id`, and the stable Task public conversation remains ordered.
 
 ### Green and inherited baseline
 
-- Pending implementation and focused/full validation.
+- Red regression commit: `055b596` (`test(api): reproduce stale terminal capsule rejection`).
+- Focused API/handoff/context/model/storage/integration set: `50 passed`.
+- The stale terminal tail now rolls over with HTTP `201`, keeps the stable Task
+  id, preserves the capsule summary/constraints in the checkpoint envelope,
+  carries the root `model_id`, and preserves public two-turn ordering.
+- Same-call unclosed tails, approval-granted-only tails, and user-created
+  handoffs using the internal reason remain HTTP `409 handoff_source_not_quiescent`.
+- Stale capsules with no pending tool remain `active_projection`.
+- `session_handoff.py` is 498 lines after the final structural compression;
+  the file-size scanner still reports only the 11 pre-existing violation
+  paths, with no new violation from this task.
+- Changed-source Ruff, Python 3.12 compileall, and `git diff --check` passed.
+- The bounded full-suite comparison before the final fail-closed assertions
+  found the same inherited failure names as the fixed-base baseline: the two
+  OpenAI response tests, the API health test, five pull-request credential or
+  transport tests, the repository file-size gate, and worker cancellation.
 
 ## Review handoff
 
