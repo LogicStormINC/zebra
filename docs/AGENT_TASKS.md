@@ -827,17 +827,40 @@ reset.
 
 ### MEM-GW-DEL-PG-01 - PostgreSQL v11 Delivery Ledger And Atomic Enqueue
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `Review`
+- Owner: `lukeding`
 - Suggested role: `STORAGE`
 - Depends on: completed `MEM-GW-DEL-CON-01`, integrated/reviewed
   `CLOUD-MEMORY-PG-01` and migration governance
-- Branch: `TBD`
+- Branch: `codex/mem-gw-del-pg-01`
+- Worktree: `../zebra-mem-gw-del-pg-01`
 - Owned paths: new PostgreSQL delivery store/transaction modules under
   `packages/agent-storage/src/agent_storage/postgres/`, `postgres/migrations.py`,
   `governed_memory_transactions.py`, `governed_memory_transaction_support.py`,
   focused PostgreSQL tests and a host-run Compose test script. Governance updates
   remain owned by the plan card.
+
+#### Activation handoff
+
+The maintainer activated this card on 2026-08-02 after the Core certainty
+contract was integrated. The scoped Mem0 reset Spike is `Blocked` on its
+documented pagination gate, but that management-only limitation does not block
+the PostgreSQL authority and delivery ledger slice. The parent ledger and
+runtime consumer remain `Locked`; this card must not change Worker defaults,
+Mem0 calls or local SQLite composition.
+
+#### Current implementation handoff
+
+- v11 migration and metadata-only `PostgresMemoryDeliveryLedger` are implemented
+  under the owned PostgreSQL paths. Claims use `SKIP LOCKED`, random tokens and
+  database time; `claimed` and `in_flight` have separate expiry semantics.
+- An explicit `delivery_scope` on `PostgresGovernedMemoryStore` attaches publish
+  and delete enqueue to the v10 authority transaction. The default constructor
+  remains unchanged, so no Worker or local SQLite profile is activated.
+- The host runner `tests/spikes/memory_delivery/run-postgres-tests.sh` passes
+  `24` real PostgreSQL tests, including fresh/v1-v10 upgrade/checksum, scope
+  isolation, replay, atomic enqueue, stale ACK, unknown quarantine and batch
+  search admission. The reset Spike remains independently `Blocked`.
 
 #### Goal
 

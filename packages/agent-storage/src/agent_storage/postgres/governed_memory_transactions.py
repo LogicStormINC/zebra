@@ -24,6 +24,7 @@ from agent_core.domain.governed_memory_receipts import (
 )
 from agent_core.domain.identifiers import MemoryId
 from agent_core.domain.memories import MemoryRecord
+from agent_core.domain.memory_delivery import MemoryDeliveryScope
 from agent_core.ports.aggregate_mutation import AdministrativeMutationCAS, WorkerMutationAuthority
 
 from agent_storage.postgres.governed_memory_rows import authority_from_row
@@ -31,6 +32,7 @@ from agent_storage.postgres.governed_memory_transaction_support import (
     _append_events,
     _apply_mutation,
     _create_or_get,
+    _enqueue_authority_delivery,
     _lock_mutations,
     _lock_operation,
     _lock_scopes,
@@ -59,6 +61,8 @@ def commit_worker(
     namespace: str,
     plan: WorkerMemoryMutationPlan,
     authority: WorkerMutationAuthority,
+    *,
+    delivery_scope: MemoryDeliveryScope | None = None,
 ) -> GovernedMemoryCommitResult:
     plan.validate_for(namespace, authority)
     _validate_worker_mapping(plan)
@@ -131,6 +135,12 @@ def commit_worker(
         plan.expected_stream_revision,
     )
     stored_session = _save_projections(connection, namespace, session, canonical_events)
+    _enqueue_authority_delivery(
+        connection,
+        namespace,
+        delivery_scope,
+        tuple([*canonical_entries, *mutated]),
+    )
     return _store_receipt(
         connection,
         namespace,
@@ -148,6 +158,8 @@ def commit_administrative(
     namespace: str,
     request: AdministrativeMemoryReviewRequest,
     authority: AdministrativeMutationCAS,
+    *,
+    delivery_scope: MemoryDeliveryScope | None = None,
 ) -> GovernedMemoryCommitResult:
     request.validate_for(namespace, authority)
     _lock_operation(connection, namespace, request.operation_id)
@@ -251,6 +263,7 @@ def commit_administrative(
         connection, namespace, (review.event,), request.expected_stream_revision
     )
     stored_session = _save_projections(connection, namespace, session, events)
+    _enqueue_authority_delivery(connection, namespace, delivery_scope, tuple(changed))
     return _store_receipt(
         connection,
         namespace,

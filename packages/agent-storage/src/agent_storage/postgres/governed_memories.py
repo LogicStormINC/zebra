@@ -22,6 +22,7 @@ from agent_core.domain.governed_memory_operations import (
 from agent_core.domain.governed_memory_receipts import GovernedMemoryCommitResult
 from agent_core.domain.identifiers import MemoryId
 from agent_core.domain.memories import MemoryQuery, MemoryRecord, MemoryVisibility
+from agent_core.domain.memory_delivery import MemoryDeliveryScope
 from agent_core.ports.aggregate_mutation import AdministrativeMutationCAS, WorkerMutationAuthority
 from agent_core.ports.governed_memory_store import (
     GovernedMemoryScanCursor,
@@ -52,10 +53,17 @@ class PostgresGovernedMemoryStore(GovernedMemoryStorePort):
         *,
         deployment_namespace: str,
         cursor_signing_key: bytes,
+        delivery_scope: MemoryDeliveryScope | None = None,
     ) -> None:
         if len(cursor_signing_key) < 32:
             raise ValueError("Memory scan cursor signing key must contain at least 32 bytes")
         self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+        if (
+            delivery_scope is not None
+            and delivery_scope.deployment_namespace != deployment_namespace
+        ):
+            raise ValueError("Memory delivery scope namespace must match governed Memory store")
+        self._delivery_scope = delivery_scope
         self._cursor_key = hmac.new(
             cursor_signing_key,
             f"governed-memory-scan\0{deployment_namespace}".encode(),
@@ -112,7 +120,13 @@ class PostgresGovernedMemoryStore(GovernedMemoryStorePort):
         self, plan: WorkerMemoryMutationPlan, *, authority: WorkerMutationAuthority
     ) -> GovernedMemoryCommitResult:
         with self._database.connect() as connection:
-            return commit_worker(connection, self._database.deployment_namespace, plan, authority)
+            return commit_worker(
+                connection,
+                self._database.deployment_namespace,
+                plan,
+                authority,
+                delivery_scope=self._delivery_scope,
+            )
 
     def commit_administrative_review(
         self,
@@ -122,7 +136,11 @@ class PostgresGovernedMemoryStore(GovernedMemoryStorePort):
     ) -> GovernedMemoryCommitResult:
         with self._database.connect() as connection:
             return commit_administrative(
-                connection, self._database.deployment_namespace, request, authority
+                connection,
+                self._database.deployment_namespace,
+                request,
+                authority,
+                delivery_scope=self._delivery_scope,
             )
 
     def scan_confirmed(

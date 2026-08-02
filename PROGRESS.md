@@ -490,8 +490,13 @@ including a real thinking tool round trip.
   provider-neutral Core implementation slice. `MEM-MEM0-RESET-SPIKE-01` is now
   `Blocked` on `codex/mem0-reset-spike-01`: its isolated Compose run proved the
   pinned Mem0 list endpoint has no documented bounded pagination, so exact scoped
-  enumeration cannot be accepted. `top_k` is not pagination, and the PG ledger and
-  runtime wiring remain locked.
+  enumeration cannot be accepted. `top_k` is not pagination. `MEM-GW-DEL-PG-01`
+  is now `Review` on `codex/mem-gw-del-pg-01` for the metadata-only v11
+  ledger, atomic v10 enqueue and PostgreSQL claim/revalidation slice. Its host
+  Compose runner passes `24` real PostgreSQL tests covering fresh/v1-v10 upgrade,
+  checksum, migration rollback, replay, atomic enqueue, stale ACK, namespace
+  isolation, unknown and in-flight quarantine, and batch search admission. The parent ledger and runtime
+  wiring remain locked.
 
 ## Known Follow-Ups
 
@@ -515,10 +520,11 @@ including a real thinking tool round trip.
 8. Activate Object Storage, Redis live state, recovery and Memory delivery/runtime
    wiring one path-bounded card at a time; no production claim precedes complete
    composition, migration, restore and failover evidence.
-9. Complete the reviewed [Memory Delivery Ledger v11 plan](Zebra%20Cloud%20Memory%20Delivery%20Ledger%20v11%E5%AE%9E%E6%96%BD%E8%AE%A1%E5%88%92.md),
-   then explicitly activate only `MEM-GW-DEL-CON-01` and
-   `MEM-MEM0-RESET-SPIKE-01`. Keep the parent locked if scoped provider reset,
-   atomic v10 enqueue or Host namespace authority is not proven.
+9. Complete the reviewed [Memory Delivery Ledger v11 plan](Zebra%20Cloud%20Memory%20Delivery%20Ledger%20v11%E5%AE%9E%E6%96%BD%E8%AE%A1%E5%88%92.md)
+   one path-bounded child at a time. The Core child is in Review, the scoped
+   reset child is Blocked on bounded enumeration, and the PostgreSQL child is
+   active; keep the parent locked until atomic enqueue, safe reset/rebuild and
+   runtime gates are all proven.
 
 ## Runtime Blueprint
 

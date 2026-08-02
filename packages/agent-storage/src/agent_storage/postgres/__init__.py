@@ -27,6 +27,14 @@ from agent_storage.postgres.governed_memory_import import (
     import_sqlite_governed_memories,
 )
 from agent_storage.postgres.leases import PostgresLeaseStore
+from agent_storage.postgres.memory_delivery import (
+    MemoryDeliveryClaim,
+    MemoryDeliveryConflictError,
+    MemoryDeliverySearchAdmission,
+    MemoryProviderMapping,
+    PostgresMemoryDeliveryLedger,
+    PostgresMemoryDeliveryStore,
+)
 from agent_storage.postgres.migration_runner import apply_postgres_migrations
 from agent_storage.postgres.migration_types import PostgresMigrationError
 from agent_storage.postgres.model_tool_projections import (
@@ -59,6 +67,12 @@ __all__ = [
     "PostgresContextLifecycleStore",
     "PostgresLeaseStore",
     "PostgresGovernedMemoryStore",
+    "PostgresMemoryDeliveryLedger",
+    "PostgresMemoryDeliveryStore",
+    "MemoryDeliveryClaim",
+    "MemoryDeliveryConflictError",
+    "MemoryDeliverySearchAdmission",
+    "MemoryProviderMapping",
     "GovernedMemoryImportError",
     "GovernedMemoryImportQuarantine",
     "GovernedMemoryImportReport",

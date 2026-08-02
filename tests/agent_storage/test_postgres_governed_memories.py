@@ -28,6 +28,7 @@ from agent_core.domain.memories import (
     MemoryType,
     MemoryVisibility,
 )
+from agent_core.domain.memory_delivery import MemoryDeliveryScope
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 from agent_storage import (
     PostgresEventStore,
@@ -166,9 +167,61 @@ def test_regenerated_creation_is_promoted_under_canonical_memory_id(
     ]
 
 
+def test_delivery_scope_enqueues_confirmed_authority_once_on_replay(
+    memory_environment: _MemoryEnvironment,
+) -> None:
+    delivery_scope = MemoryDeliveryScope(
+        deployment_namespace=memory_environment.namespace,
+        scope_digest="9" * 64,
+        generation=1,
+        revision=0,
+    )
+    store = PostgresGovernedMemoryStore(
+        memory_environment.dsn,
+        deployment_namespace=memory_environment.namespace,
+        cursor_signing_key=CURSOR_SIGNING_KEY,
+        delivery_scope=delivery_scope,
+    )
+    record = _candidate(memory_environment, text="atomically delivered fact")
+    plan = _plan(
+        memory_environment,
+        operation_id="memory:delivery-atomic",
+        expected_revision=1,
+        records=(record,),
+        confirmed=(record.memory_id,),
+    )
+
+    first = store.commit_worker_candidates(plan, authority=_authority(memory_environment, 1))
+    replay = store.commit_worker_candidates(plan, authority=_authority(memory_environment, 1))
+
+    assert not first.replayed
+    assert replay.replayed
+    with psycopg.connect(memory_environment.dsn) as connection:
+        row = connection.execute(
+            """
+            SELECT count(*), min(state), min(memory_revision)
+            FROM memory_delivery_operations
+            WHERE deployment_namespace = %s AND memory_id = %s
+            """,
+            (memory_environment.namespace, record.memory_id),
+        ).fetchone()
+    assert row == (1, "pending", 2)
+
+
 def test_delete_retains_content_free_tombstone_and_hides_compatibility_reads(
     memory_environment: _MemoryEnvironment,
 ) -> None:
+    store = PostgresGovernedMemoryStore(
+        memory_environment.dsn,
+        deployment_namespace=memory_environment.namespace,
+        cursor_signing_key=CURSOR_SIGNING_KEY,
+        delivery_scope=MemoryDeliveryScope(
+            deployment_namespace=memory_environment.namespace,
+            scope_digest="8" * 64,
+            generation=1,
+            revision=0,
+        ),
+    )
     record = _candidate(memory_environment, text="Delete this governed fact.")
     created = _plan(
         memory_environment,
@@ -177,7 +230,7 @@ def test_delete_retains_content_free_tombstone_and_hides_compatibility_reads(
         records=(record,),
         confirmed=(record.memory_id,),
     )
-    memory_environment.store.commit_worker_candidates(
+    store.commit_worker_candidates(
         created,
         authority=_authority(memory_environment, 1),
     )
@@ -205,22 +258,25 @@ def test_delete_retains_content_free_tombstone_and_hides_compatibility_reads(
         ),
     )
 
-    committed = memory_environment.store.commit_worker_candidates(
+    committed = store.commit_worker_candidates(
         plan,
         authority=_authority(memory_environment, 3),
     )
 
     assert committed.receipt.memories[0].status is MemoryStatus.DELETED
     assert committed.receipt.memories[0].revision == 3
-    assert memory_environment.store.get(record.memory_id) is None
-    assert memory_environment.store.list(
-        MemoryQuery(
-            repo_id="zebra-agent",
-            visibility=MemoryVisibility.REPO,
-            statuses=(),
+    assert store.get(record.memory_id) is None
+    assert (
+        store.list(
+            MemoryQuery(
+                repo_id="zebra-agent",
+                visibility=MemoryVisibility.REPO,
+                statuses=(),
+            )
         )
-    ) == []
-    authority = memory_environment.store.get_authority(
+        == []
+    )
+    authority = store.get_authority(
         record.memory_id,
         management=_management("memory:inspect-tombstone"),
     )
@@ -232,6 +288,15 @@ def test_delete_retains_content_free_tombstone_and_hides_compatibility_reads(
             WHERE deployment_namespace = %s AND memory_id = %s""",
             (memory_environment.namespace, record.memory_id),
         ).fetchone() == ("deleted", None, 3)
+        assert connection.execute(
+            """
+            SELECT operation, memory_revision, state
+            FROM memory_delivery_operations
+            WHERE deployment_namespace = %s AND memory_id = %s
+            ORDER BY memory_revision
+            """,
+            (memory_environment.namespace, record.memory_id),
+        ).fetchall() == [("publish", 2, "pending"), ("delete", 3, "pending")]
 
 
 @pytest.mark.parametrize("fault", ["fence", "stream"])
@@ -400,9 +465,7 @@ def test_namespace_and_query_contracts_use_postgres_authority(
             statuses=(),
         )
     )
-    assert {record.memory_id for record in repo_all} == {
-        record.memory_id for record in records[:3]
-    }
+    assert {record.memory_id for record in repo_all} == {record.memory_id for record in records[:3]}
     assert {
         record.memory_id
         for record in memory_environment.store.list(
@@ -413,12 +476,15 @@ def test_namespace_and_query_contracts_use_postgres_authority(
             )
         )
     } == {records[0].memory_id, records[1].memory_id}
-    assert memory_environment.store.list(
-        MemoryQuery(
-            user_id="user-a",
-            visibility=MemoryVisibility.USER,
-        )
-    )[0].memory_id == records[3].memory_id
+    assert (
+        memory_environment.store.list(
+            MemoryQuery(
+                user_id="user-a",
+                visibility=MemoryVisibility.USER,
+            )
+        )[0].memory_id
+        == records[3].memory_id
+    )
     worker_entries = memory_environment.store.list_for_worker(
         MemoryQuery(
             repo_id="zebra-agent",
@@ -456,6 +522,8 @@ def test_namespace_and_query_contracts_use_postgres_authority(
     )
     assert memory_environment.store.get(records[0].memory_id).text == "alpha zebra"  # type: ignore[union-attr]
     assert other.store.get(records[0].memory_id).text == "same ID in another namespace"  # type: ignore[union-attr]
+
+
 def _prepare_environment(dsn: str) -> _MemoryEnvironment:
     namespace = f"memory-{uuid4()}"
     bootstrap_control_plane_epoch(dsn, deployment_namespace=namespace)

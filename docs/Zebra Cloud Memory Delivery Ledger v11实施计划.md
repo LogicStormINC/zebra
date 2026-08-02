@@ -1,6 +1,8 @@
 # Zebra Cloud Memory Delivery Ledger v11 实施计划
 
-状态：方案已审查，父任务保持 `Locked`，等待四个窄任务按顺序解锁。
+状态：方案已审查；`MEM-GW-DEL-PG-01` 已进入 `Review`，父任务、
+Worker consumer 和 Mem0 runtime 仍保持 `Locked`。Reset Spike 因 provider
+缺少有界分页保持 `Blocked`，不阻断本 PostgreSQL 权威账本切片。
 
 基线：`zebra-cloud-trench@ac9801c2`。PostgreSQL governed Memory v10 和 Context recovery 已进入云端主线；Mem0 仍只是可丢失、可重建的派生索引，不能成为 Zebra 的事实源。
 
@@ -34,7 +36,9 @@
 
 保存派生 provider namespace 的生命周期：`deployment_namespace`、不可逆 `scope_digest`、单调 `generation`、`active|quarantined|rebuilding` 状态、当前 revision，以及无正文的 quarantine/rebuild reason、operator、时间和 CAS revision。
 
-同一 deployment scope 只允许一个 active generation。`unknown publish` 或 reset 期间必须先将 generation 标记为 `quarantined`，不得继续接受普通写入或搜索结果。
+同一 `scope_digest` 只允许一个 active generation；不同 opaque scope 可以在同一
+deployment namespace 中并行隔离。`unknown publish` 或 reset 期间必须先将
+generation 标记为 `quarantined`，不得继续接受普通写入或搜索结果。
 
 ### 3.2 `memory_delivery_operations`
 
@@ -88,10 +92,26 @@ pending 重试耗尽 -> dead_letter
 
 ### `MEM-GW-DEL-PG-01` — PostgreSQL v11 ledger and atomic enqueue
 
-- 状态：`Locked`，依赖 `MEM-GW-DEL-CON-01`、`CLOUD-MEMORY-PG-01` 和迁移治理合并。
+- 状态：`Review`，依赖 `MEM-GW-DEL-CON-01`、`CLOUD-MEMORY-PG-01` 和迁移治理合并。
 - Owned paths：`packages/agent-storage/src/agent_storage/postgres/memory_delivery.py`（新）、delivery transaction/support 模块（新）、`postgres/migrations.py`、`governed_memory_transactions.py`、`governed_memory_transaction_support.py`、对应 PostgreSQL tests 和宿主 Compose runner。
 - 实现 v11 migration、同事务 enqueue、`SKIP LOCKED` claim/CAS、mapping、批量 search revalidation 和无正文审计；不得修改 Worker 默认 composition。
 - 验收：v1-v11 fresh/upgrade/checksum、权威变更与 operation 原子回滚、重复 replay 不产生第二条 delivery、陈旧 ACK 零写入、批量 hit 一次性回查 authority。
+
+#### 当前实现证据（2026-08-02）
+
+- v11 migration 已加入三张 metadata-only 表：scope lifecycle、delivery
+  operations 和 provider mappings；没有 Memory 正文、provider body 或凭据列。
+- `PostgresMemoryDeliveryLedger` 使用 PostgreSQL `SKIP LOCKED`、随机 claim
+  token、DB transaction time 和 claimed/in-flight 分离的 CAS。publish 完成才
+  写 mapping；delete/404 收敛时按 revision 删除 mapping；unknown 会 quarantine
+  scope 且不再自动 claim。
+- `PostgresGovernedMemoryStore` 通过显式 `delivery_scope` composition 在 v10
+  authority transaction 内 enqueue confirmed/deleted/superseded/expired 变化；
+  默认构造仍不启用 delivery，也不改变 Worker 或本地 SQLite composition。
+- Host Compose runner `tests/spikes/memory_delivery/run-postgres-tests.sh`
+  已验证 fresh migration、scope isolation、replay、atomic enqueue、stale ACK、
+  unknown quarantine、in-flight expiry、migration rollback 和一次性 batch
+  revalidation：`24 passed`。
 
 ### `MEM-GW-DEL-RUN-01` — Mem0 delivery consumer and management rebuild
 

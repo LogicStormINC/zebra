@@ -20,12 +20,21 @@ from agent_core.domain.governed_memory_receipts import (
 )
 from agent_core.domain.identifiers import MemoryId, SessionId
 from agent_core.domain.memories import MemoryRecord, MemoryStatus, MemoryVisibility
+from agent_core.domain.memory_delivery import (
+    MemoryDeliveryOperation,
+    MemoryDeliveryOperationRecord,
+    MemoryDeliveryScope,
+)
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.governed_memory_rows import (
     authority_from_row,
     memory_values,
+)
+from agent_storage.postgres.memory_delivery_errors import MemoryDeliveryConflictError
+from agent_storage.postgres.memory_delivery_transaction_support import (
+    enqueue_in_transaction,
 )
 from agent_storage.postgres.projections import get_session_in_transaction
 
@@ -302,6 +311,62 @@ def _store_receipt(
         ),
     )
     return GovernedMemoryCommitResult(receipt=receipt)
+
+
+def _enqueue_authority_delivery(
+    connection: Any,
+    namespace: str,
+    scope: MemoryDeliveryScope | None,
+    records: tuple[GovernedMemoryEntry | GovernedMemoryTombstone, ...],
+) -> None:
+    """Enqueue derived-index lifecycle changes inside the authority transaction."""
+
+    if scope is None:
+        return
+    seen: set[tuple[MemoryId, int, MemoryDeliveryOperation]] = set()
+    for entry in records:
+        memory_id = _memory_id(entry)
+        status = _memory_status(entry)
+        operation = (
+            MemoryDeliveryOperation.PUBLISH
+            if status is MemoryStatus.CONFIRMED
+            else MemoryDeliveryOperation.DELETE
+            if status
+            in {
+                MemoryStatus.SUPERSEDED,
+                MemoryStatus.EXPIRED,
+                MemoryStatus.DELETED,
+            }
+            else None
+        )
+        if operation is None:
+            continue
+        identity = (memory_id, entry.revision, operation)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        digest_row = connection.execute(
+            """
+            SELECT content_digest FROM governed_memory_records
+            WHERE deployment_namespace = %s AND memory_id = %s
+            """,
+            (namespace, memory_id),
+        ).fetchone()
+        if digest_row is None:
+            raise MemoryDeliveryConflictError("delivery authority row disappeared")
+        operation_record = MemoryDeliveryOperationRecord(
+            memory_id=memory_id,
+            operation=operation,
+            scope_digest=scope.scope_digest,
+            generation=scope.generation,
+            memory_revision=entry.revision,
+            content_digest=digest_row["content_digest"],
+            idempotency_key=(
+                f"memory:{memory_id}:{scope.generation}:{entry.revision}:"
+                f"{operation.value}:{scope.scope_digest}"
+            ),
+        )
+        enqueue_in_transaction(connection, namespace, scope, operation_record)
 
 
 def _operation_replay(

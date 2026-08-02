@@ -594,13 +594,17 @@
 
 ## MEM-GW-DEL-PG-01 - PostgreSQL v11 Delivery Ledger And Atomic Enqueue
 
-1. `pending` - Start only after `MEM-GW-DEL-CON-01` is integrated and v10 authority
-   transaction ownership is explicit.
-2. `pending` - Add v11 migrations and metadata-only delivery/mapping tables.
-3. `pending` - Attach publish/delete enqueue to the v10 authority mutation in the
-   same transaction; implement independent claim/CAS and batch hit revalidation.
-4. `pending` - Run fresh/upgrade/checksum, rollback, duplicate replay, stale ACK,
-   namespace and real PostgreSQL Compose matrices.
+1. `completed` - Activate `codex/mem-gw-del-pg-01` after `MEM-GW-DEL-CON-01`
+   integration and explicit v10 authority transaction ownership. The blocked
+   scoped-reset Spike is an independent management gate; the parent and runtime
+   cards remain locked.
+2. `completed` - Add v11 migrations and metadata-only delivery/mapping tables.
+3. `completed` - Attach publish/delete enqueue to the v10 authority mutation in
+   the same transaction; implement independent claim/CAS and batch hit
+   revalidation.
+4. `completed` - Run fresh/v1-v10 upgrade/checksum, migration rollback, duplicate
+   replay, stale ACK, namespace, unknown/in-flight quarantine and real PostgreSQL
+   Compose matrices. No application container or provider HTTP path was started.
 
 ## MEM-GW-DEL-RUN-01 - Mem0 Delivery Consumer And Management Rebuild
 

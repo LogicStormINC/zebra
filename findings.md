@@ -924,3 +924,43 @@
   and `user_id`; `page/page_size` and `offset/limit` were absent. The child is
   therefore `Blocked`, `top_k` is not pagination, and no reset/rebuild success is
   claimed.
+
+## MEM-GW-DEL-PG-01 activation (2026-08-02)
+
+- The maintainer activated `codex/mem-gw-del-pg-01` after the Core certainty
+  contract was integrated. This child owns the metadata-only PostgreSQL v11
+  ledger, atomic v10 authority enqueue, independent claim/CAS and batch search
+  revalidation paths listed in `docs/AGENT_TASKS.md`.
+- The scoped Mem0 reset child is independently `Blocked` because its provider
+  list contract has no bounded pagination. That management-only result does not
+  block this PostgreSQL authority slice; the parent ledger, Worker consumer and
+  Mem0 runtime remain `Locked`.
+- No default Worker composition, provider HTTP call or local SQLite behavior is
+  authorized by this activation.
+
+## MEM-GW-DEL-PG-01 implementation (2026-08-02)
+
+- Added migration v11 with `memory_delivery_scopes`,
+  `memory_delivery_operations` and `memory_provider_mappings`. All three tables
+  are metadata-only; provider response bodies, Memory text, raw scope labels and
+  credentials are absent. Different opaque scope digests may coexist, while one
+  active generation is allowed per digest.
+- `PostgresMemoryDeliveryLedger` implements idempotent enqueue, `SKIP LOCKED`
+  claims, random tokens, DB-time expiry, distinct claimed/in-flight recovery,
+  typed certainty CAS, mapping updates and batch authority revalidation. An
+  unknown outcome quarantines its scope and therefore cannot be automatically
+  claimed again.
+- `PostgresGovernedMemoryStore(delivery_scope=...)` composes enqueue into the
+  same v10 authority transaction. Existing construction without that explicit
+  scope remains unchanged and does not activate Worker, Mem0 or SQLite paths.
+- The isolated host runner `tests/spikes/memory_delivery/run-postgres-tests.sh`
+  passes `24` tests, including fresh/v1-v10 upgrade/checksum, migration rollback,
+  replay, atomic enqueue, stale ACK, namespace isolation, unknown/in-flight quarantine and one-shot
+  search admission. The full `tests/agent_storage` PostgreSQL matrix also passed
+  `294` tests with one pre-existing skip.
+
+## MEM-GW-DEL-PG-01 review handoff (2026-08-02)
+
+- The PostgreSQL child is moved to `Review` with its owned paths, focused tests,
+  migration evidence and host Compose runner recorded above. The parent ledger
+  remains `Locked` because the scoped reset/rebuild gate is still `Blocked`.

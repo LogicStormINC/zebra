@@ -6822,3 +6822,33 @@ actual byte access.
   `Blocked` per the plan. The test never called global `/reset`, and its fixture
   removed the isolated containers, network and volumes. `MEM-GW-DEL-01`, the PG
   ledger and runtime consumer remain locked.
+
+## 2026-08-02 - MEM-GW-DEL-PG-01 activation
+
+- Activated `codex/mem-gw-del-pg-01` after the Core certainty contract was
+  integrated. The implementation is limited to PostgreSQL v11 migrations,
+  metadata-only delivery operations/mappings, atomic v10 enqueue, claim/CAS and
+  batch authority revalidation.
+- The reset Spike's bounded-enumeration block is independent and does not unlock
+  the parent or runtime consumer. No Worker defaults, Mem0 HTTP calls or local
+  SQLite composition are changed in this slice.
+
+## 2026-08-02 - MEM-GW-DEL-PG-01 implementation
+
+- Added PostgreSQL migration v11 and the metadata-only delivery scope,
+  operation and provider mapping tables. Added the independent
+  `PostgresMemoryDeliveryLedger` with idempotent enqueue, random `SKIP LOCKED`
+  claims, DB-time CAS, typed certainty, quarantine and batch search admission.
+- Added an explicit `delivery_scope` seam to the PostgreSQL governed Memory
+  store. Confirmed/purged lifecycle changes enqueue in the same v10 transaction;
+  default store composition remains unchanged.
+- Host Compose runner result: `24 passed` for the focused migration/ledger/
+  authority matrix. A separate run of `tests/agent_storage` passed `294` with
+  one pre-existing skip. No application container or provider HTTP request was
+  started.
+
+## 2026-08-02 - MEM-GW-DEL-PG-01 review handoff
+
+- Moved the PostgreSQL child to `Review` after the focused Compose and full
+  PostgreSQL storage matrices passed. The parent ledger and runtime consumer
+  remain locked by the independent scoped reset block.

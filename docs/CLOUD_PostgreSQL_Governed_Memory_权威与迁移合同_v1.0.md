@@ -349,6 +349,13 @@ Mem0 duplicate POST 会生成不同 UUID，且已验证版本不能按 metadata 
 - reset + rebuild emits only current confirmed, unexpired PostgreSQL facts；
 - Mem0/Redis loss does not change governed Memory counts or fail Run。
 
+当前 v11 PostgreSQL 子任务已在 `codex/mem-gw-del-pg-01` 实现并通过独立
+Compose 证据：migration v11、metadata-only delivery ledger、同事务 authority
+enqueue、claim/CAS、mapping 和 batch authority revalidation。它只在
+`PostgresGovernedMemoryStore` 显式传入可信 `delivery_scope` 时启用；默认
+Worker、本地 SQLite 和 Mem0 HTTP composition 不变。Reset/rebuild 与 runtime
+consumer 仍由后续任务负责，不能据此宣称 v11/Mem0 生产启用。
+
 ## 10. 明确非目标
 
 - 不把 Mem0、pgvector 或 Redis 变为 Memory fact source；

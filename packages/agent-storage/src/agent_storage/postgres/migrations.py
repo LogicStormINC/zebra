@@ -3,6 +3,7 @@
 from agent_storage.postgres.artifact_payload_migration import ARTIFACT_PAYLOAD_MIGRATION
 from agent_storage.postgres.governed_memory_migration import GOVERNED_MEMORY_MIGRATION
 from agent_storage.postgres.handoff_migration import HANDOFF_MIGRATION
+from agent_storage.postgres.memory_delivery_migration import MEMORY_DELIVERY_MIGRATION
 from agent_storage.postgres.migration_types import Migration
 
 MIGRATIONS = (
@@ -444,4 +445,5 @@ MIGRATIONS = (
     HANDOFF_MIGRATION,
     ARTIFACT_PAYLOAD_MIGRATION,
     GOVERNED_MEMORY_MIGRATION,
+    MEMORY_DELIVERY_MIGRATION,
 )
