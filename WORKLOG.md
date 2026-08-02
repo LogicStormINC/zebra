@@ -6772,3 +6772,27 @@ actual byte access.
   could be checked out; this repair is recorded as repository evidence only.
 - Next owner action: explicitly activate `MEM-GW-DEL-CON-01` and
   `MEM-MEM0-RESET-SPIKE-01` only after their reviewed dependencies are integrated.
+
+## 2026-08-02 - MEM-GW-DEL-CON-01 activation
+
+- The maintainer explicitly activated only the Core certainty child on
+  `codex/mem-gw-del-con-01`; reset Spike and all storage/runtime cards remain
+  `Locked`.
+- The claimed owned paths are provider-neutral Core domain/Port values, the
+  existing Gateway mutation result and focused Core tests. No SQL, HTTP, Mem0,
+  Worker or local SQLite composition changes are authorized in this slice.
+
+## 2026-08-02 - MEM-GW-DEL-CON-01 implementation
+
+- Added `MemoryDeliveryScope`, metadata-only operation records, typed certainty,
+  bounded state transitions and a provider-neutral `MemoryDeliveryLedgerPort`.
+- Extended `MemoryGatewayMutationResult` with typed certainty while keeping existing
+  adapters source-compatible through conservative defaults; `detail` is not a
+  retry/control signal.
+- Focused Core/Mem0 tests pass `361/361`; strict Mypy passes `133` Core files,
+  changed-path Ruff and `git diff --check` pass, and release Eval is `10/10`.
+- Full suite passes `1995`, skips `167`, with only the inherited
+  `UI/desktop/src/components/CodexConversationPane.styles.ts` size-gate failure
+  (`561/500`). Desktop remains out of scope.
+- Child moved to `Review`; PostgreSQL v11, scoped Mem0 reset and runtime consumer
+  remain locked successors and were not modified.

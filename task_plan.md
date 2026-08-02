@@ -569,13 +569,15 @@
 
 ## MEM-GW-DEL-CON-01 - Core Memory Delivery Certainty Contract
 
-1. `pending` - Wait for the reviewed Gateway and governed-memory Core tasks to be
-   integrated and explicitly activate this child card.
-2. `pending` - Add provider-neutral scope, operation, certainty and state-transition
+1. `completed` - Claim `codex/mem-gw-del-con-01` with exact Core/domain/Port/test
+   owned paths after the v11 plan review and explicit maintainer continuation.
+2. `completed` - Add provider-neutral scope, operation, certainty and state-transition
    values with focused Core tests.
-3. `pending` - Prove illegal status/certainty combinations and package boundaries;
+3. `completed` - Prove illegal status/certainty combinations and package boundaries;
    do not add SQL, HTTP, Mem0 or Worker wiring.
-4. `pending` - Move the child to `Review` with exact evidence before PG work starts.
+4. `completed` - Move the child to `Review` with exact evidence before PG work starts:
+   `361` Core/Mem0 tests, strict Core Mypy, Ruff, diff check and Eval `10/10` pass;
+   the full suite has only the inherited Desktop size-gate failure.
 
 ## MEM-MEM0-RESET-SPIKE-01 - Scoped Mem0 Namespace Reset And Rebuild Probe
 

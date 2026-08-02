@@ -60,6 +60,10 @@
   materializes the v11 delivery/deletion plan and splits the locked parent into
   four path-bounded child cards. The parent remains locked until the Core
   certainty contract and scoped Mem0 reset/rebuild gate are proven.
+- `MEM-GW-DEL-CON-01` is `Review` on `codex/mem-gw-del-con-01` after the
+  maintainer's 2026-08-02 continuation. It owns only provider-neutral Core
+  certainty/state values and focused tests; PostgreSQL, Mem0 reset and Worker
+  wiring remain locked successors.
 - `CLOUD-PG-PLAN-01` and `CLOUD-PG-01` are `Review` on their dedicated branches;
   the docs-only migration/restore decisions precede the real PostgreSQL Event/Projection Adapter.
 - `CLOUD-LEASE-CON-01`, `CLOUD-LEASE-PG-01`, `CLOUD-EFFECT-OUTBOX-01`, and
@@ -739,15 +743,19 @@ the only allowed implementation entry points.
 
 ### MEM-GW-DEL-CON-01 - Core Memory Delivery Certainty Contract
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `Review`
+- Owner: `lukeding`
 - Suggested role: `CORE`
-- Depends on: integrated `MEM-GW-CON-01` and `CLOUD-MEMORY-CON-01`
-- Branch: `TBD`
+- Depends on: reviewed `MEM-GW-CON-01` and `CLOUD-MEMORY-CON-01`; explicitly
+  activated by the maintainer on 2026-08-02 after the v11 plan review.
+- Branch: `codex/mem-gw-del-con-01`
+- Worktree: `../zebra-mem-gw-del-con-01`
 - Owned paths: `packages/agent-core/src/agent_core/ports/agent_memory_gateway.py`,
   `packages/agent-core/src/agent_core/domain/memory_delivery.py` (new),
   `packages/agent-core/src/agent_core/ports/memory_delivery.py` (new), Core
-  exports and focused Core tests. Governance updates remain owned by the plan card.
+  exports and focused Core tests. This activation handoff may update the task
+  registry, `task_plan.md`, `PROGRESS.md`, `findings.md` and `WORKLOG.md`; no
+  provider, storage or runtime paths are owned here.
 
 #### Goal
 
@@ -759,6 +767,18 @@ transitions and stable idempotency keys without importing SQL, HTTP, Mem0 or Red
 - All illegal status/certainty combinations are rejected by typed Core values.
 - `unknown` has no automatic retry operation and cannot be downgraded to success.
 - Core tests prove the state machine and the package boundary remains provider-neutral.
+
+#### Validation and handoff
+
+- Core and Mem0 focused tests pass `361/361`; the full suite passes `1995` with
+  `167` skips and one inherited Desktop file-size failure
+  (`UI/desktop/src/components/CodexConversationPane.styles.ts`, `561/500`).
+- Strict Mypy passes all `133` Core source files, changed-path Ruff and
+  `git diff --check` pass, and the release Eval is `10/10`.
+- The legacy Adapter remains source-compatible through conservative defaults:
+  `succeeded` maps to `applied`, degraded outcomes to `unknown`, and disabled or
+  not-found outcomes to `definite_no_effect`. The runtime child must emit explicit
+  certainty and must not use `detail` as a control signal.
 
 ### MEM-MEM0-RESET-SPIKE-01 - Scoped Mem0 Namespace Reset And Rebuild Probe
 

@@ -6,11 +6,13 @@ from agent_core.domain.leases import (
     LeaseFence,
     LeaseLostError,
 )
+from agent_core.domain.memory_delivery import MemoryDeliveryCertainty
 from agent_core.ports.agent_memory_gateway import (
     AgentMemoryGatewayPort,
     ConfirmedMemoryPublication,
     MemoryGatewayDeleteRequest,
     MemoryGatewayHit,
+    MemoryGatewayMutationCertainty,
     MemoryGatewayMutationResult,
     MemoryGatewaySearchRequest,
     MemoryGatewaySearchResult,
@@ -64,6 +66,7 @@ from agent_core.ports.handoff_dispatch_store import (
 )
 from agent_core.ports.idempotency_store import IdempotencyRecord, IdempotencyStorePort
 from agent_core.ports.lease_store import LeaseStorePort
+from agent_core.ports.memory_delivery import MemoryDeliveryLedgerPort
 from agent_core.ports.memory_store import MemoryStorePort
 from agent_core.ports.model_call_store import ModelCallStorePort
 from agent_core.ports.model_gateway import ModelGatewayPort
@@ -156,10 +159,13 @@ __all__ = [
     "LeaseFence",
     "LeaseLostError",
     "MemoryStorePort",
+    "MemoryDeliveryLedgerPort",
     "ConfirmedMemoryPublication",
     "MemoryGatewayDeleteRequest",
     "MemoryGatewayHit",
     "MemoryGatewayMutationResult",
+    "MemoryGatewayMutationCertainty",
+    "MemoryDeliveryCertainty",
     "MemoryGatewaySearchRequest",
     "MemoryGatewaySearchResult",
     "MemoryGatewayStatus",

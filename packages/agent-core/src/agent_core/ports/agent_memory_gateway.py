@@ -5,6 +5,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from agent_core.domain.identifiers import MemoryId
 from agent_core.domain.memories import MemoryStatus
+from agent_core.domain.memory_delivery import MemoryDeliveryCertainty
+
+MemoryGatewayMutationCertainty = MemoryDeliveryCertainty
 
 
 class MemoryGatewayStatus(StrEnum):
@@ -86,20 +89,44 @@ class MemoryGatewayHit(BaseModel):
 
 
 class MemoryGatewayMutationResult(BaseModel):
+    """Typed provider outcome; ``detail`` is diagnostic and never a control signal."""
+
     model_config = ConfigDict(frozen=True)
 
     status: MemoryGatewayStatus
     provider_ref: str | None = Field(default=None, max_length=512)
+    certainty: MemoryDeliveryCertainty | None = None
     detail: str | None = Field(default=None, max_length=1_024)
 
     @model_validator(mode="after")
     def validate_result(self) -> "MemoryGatewayMutationResult":
         object.__setattr__(self, "provider_ref", _optional_text(self.provider_ref))
         object.__setattr__(self, "detail", _optional_text(self.detail))
-        if self.status is MemoryGatewayStatus.SUCCEEDED and self.provider_ref is None:
+        certainty = self.certainty or _default_mutation_certainty(self.status)
+        object.__setattr__(self, "certainty", certainty)
+        if certainty is MemoryDeliveryCertainty.APPLIED and self.provider_ref is None:
             raise ValueError("successful mutation requires provider_ref")
-        if self.status is not MemoryGatewayStatus.SUCCEEDED and self.provider_ref is not None:
+        if certainty is not MemoryDeliveryCertainty.APPLIED and self.provider_ref is not None:
             raise ValueError("non-successful mutation cannot expose provider_ref")
+        if (
+            self.status is MemoryGatewayStatus.SUCCEEDED
+            and certainty is not MemoryDeliveryCertainty.APPLIED
+        ):
+            raise ValueError("successful mutation requires applied certainty")
+        if (
+            self.status is not MemoryGatewayStatus.SUCCEEDED
+            and certainty is MemoryDeliveryCertainty.APPLIED
+        ):
+            raise ValueError("non-successful mutation cannot be applied")
+        if (
+            self.status
+            in {
+                MemoryGatewayStatus.DISABLED,
+                MemoryGatewayStatus.NOT_FOUND,
+            }
+            and certainty is not MemoryDeliveryCertainty.DEFINITE_NO_EFFECT
+        ):
+            raise ValueError(f"{self.status} requires definite_no_effect certainty")
         return self
 
 
@@ -113,10 +140,14 @@ class MemoryGatewaySearchResult(BaseModel):
     @model_validator(mode="after")
     def validate_result(self) -> "MemoryGatewaySearchResult":
         object.__setattr__(self, "detail", _optional_text(self.detail))
-        if self.status not in {
-            MemoryGatewayStatus.SUCCEEDED,
-            MemoryGatewayStatus.PARTIAL,
-        } and self.hits:
+        if (
+            self.status
+            not in {
+                MemoryGatewayStatus.SUCCEEDED,
+                MemoryGatewayStatus.PARTIAL,
+            }
+            and self.hits
+        ):
             raise ValueError("unavailable search cannot expose hits")
         return self
 
@@ -137,3 +168,13 @@ def _optional_text(value: str | None) -> str | None:
         return None
     normalized = value.strip()
     return normalized or None
+
+
+def _default_mutation_certainty(status: MemoryGatewayStatus) -> MemoryDeliveryCertainty:
+    """Keep existing adapters source-compatible until they opt into certainty."""
+
+    if status is MemoryGatewayStatus.SUCCEEDED:
+        return MemoryDeliveryCertainty.APPLIED
+    if status is MemoryGatewayStatus.DEGRADED:
+        return MemoryDeliveryCertainty.UNKNOWN
+    return MemoryDeliveryCertainty.DEFINITE_NO_EFFECT

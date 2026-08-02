@@ -118,6 +118,16 @@ from agent_core.domain.memories import (
     MemoryType,
     MemoryVisibility,
 )
+from agent_core.domain.memory_delivery import (
+    MemoryDeliveryCertainty,
+    MemoryDeliveryOperation,
+    MemoryDeliveryOperationRecord,
+    MemoryDeliveryScope,
+    MemoryDeliveryScopeState,
+    MemoryDeliveryState,
+    MemoryDeliveryTransition,
+    validate_memory_delivery_transition,
+)
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.plans import PlanStep, PlanStepStatus, SessionPlan
@@ -230,6 +240,14 @@ __all__ = [
     "MemoryStatus",
     "MemoryType",
     "MemoryVisibility",
+    "MemoryDeliveryCertainty",
+    "MemoryDeliveryOperation",
+    "MemoryDeliveryOperationRecord",
+    "MemoryDeliveryScope",
+    "MemoryDeliveryScopeState",
+    "MemoryDeliveryState",
+    "MemoryDeliveryTransition",
+    "validate_memory_delivery_transition",
     "LeaseCheckpointRegressionError",
     "LeaseConflictError",
     "DEFAULT_MAX_LEASE_TTL",

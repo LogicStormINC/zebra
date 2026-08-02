@@ -892,3 +892,17 @@
   from a deleted temporary alternate. The missing objects were restored from the
   local Zebra checkout before creating the planning worktree; this is repository
   repair evidence, not an implementation dependency.
+- On 2026-08-02 the maintainer explicitly activated `MEM-GW-DEL-CON-01` only. Its
+  implementation is restricted to Core values, transitions, Ports and tests; the
+  reset Spike, PostgreSQL v11 ledger and runtime consumer remain locked successors.
+- The Core contract now keeps `MemoryDeliveryCertainty` independent from legacy
+  Gateway status strings. `MemoryGatewayMutationResult.detail` is explicitly
+  diagnostic; legacy Adapter calls receive conservative defaults until the runtime
+  child supplies explicit certainty.
+- `claimed` and `in_flight` are intentionally distinct: a claim can return to
+  `pending`, while an expired in-flight network request becomes `uncertain` and
+  cannot be automatically retried. Terminal `completed`, `uncertain` and
+  `dead_letter` states have no outgoing transition.
+- Core delivery records contain only Memory ID, revision, SHA-256 digests,
+  operation, scope/generation, idempotency key, attempt, state and certainty. No
+  provider body, Memory text, credential or storage type enters the contract.
