@@ -31,7 +31,10 @@ Task `model_id`, and the stable Task public conversation remains ordered.
 
 ## Owned paths
 
+- `apps/api/src/zebra_agent_api/approval_context.py`
 - `apps/api/src/zebra_agent_api/session_handoff.py`
+- `apps/worker/src/zebra_agent_worker/session_handoff.py`
+- `tests/agent_storage/test_session_handoffs.py`
 - `tests/api/test_terminal_followup_quiescence.py`
 - this development record
 
@@ -39,9 +42,10 @@ Task `model_id`, and the stable Task public conversation remains ordered.
 
 - No FinOS, finance, journal, transaction, stock, image, MiniMax, Qwen, or
   provider/model-name special cases.
-- No change to the quiescence validator, effect ledger, context budget,
-  model catalog, worker, storage schema, public-conversation projection, or
-  deployment configuration unless a focused contract test proves it is required.
+- No change to the quiescence validator, effect ledger, context budget, model
+  catalog, storage schema, public-conversation projection, or deployment
+  configuration. The worker change is limited to the required shared source
+  range/hash recovery gate.
 - The reported 1x1 PNG MiniMax protocol error is a separate follow-up.
 - No push, merge, or deployment.
 
@@ -65,7 +69,8 @@ Task `model_id`, and the stable Task public conversation remains ordered.
 - Same-call unclosed tails, approval-granted-only tails, and user-created
   handoffs using the internal reason remain HTTP `409 handoff_source_not_quiescent`.
 - Stale capsules with no pending tool remain `active_projection`.
-- `session_handoff.py` is 498 lines after the final structural compression;
+- `apps/api/src/zebra_agent_api/session_handoff.py` is 500 lines and
+  `tests/api/test_terminal_followup_quiescence.py` is 478 lines;
   the file-size scanner still reports only the 11 pre-existing violation
   paths, with no new violation from this task.
 - Changed-source Ruff, Python 3.12 compileall, and `git diff --check` passed.
@@ -73,6 +78,26 @@ Task `model_id`, and the stable Task public conversation remains ordered.
   found the same inherited failure names as the fixed-base baseline: the two
   OpenAI response tests, the API health test, five pull-request credential or
   transport tests, the repository file-size gate, and worker cancellation.
+
+### Review follow-up
+
+- Red regression commit: `98457d6` (`test(api): cover terminal handoff aliases and integrity`).
+  The real provider/internal ID mismatch returned `409 handoff_source_not_quiescent`,
+  and a tampered source event was initially accepted because checkpoint recovery
+  skipped the source hash check.
+- The alias is now derived only from an unambiguous `APPROVAL_REQUESTED` pair
+  inside the capsule source range; independent approval pairs close, while a
+  duplicate provider mapping remains fail-closed. Approval-granted alone and
+  an unrelated terminal call remain rejected.
+- Recovery validates every envelope source event range/hash before dispatch or
+  recovery, regardless of `source_context_capsule_id`. Reconciled handoffs still
+  use bounded checkpoint context, retain the capsule objective as continuity
+  summary, and keep the newest user message as the final user turn.
+- Focused source, context, API, integration, storage, and recovery set:
+  `43 passed`. Full suite: `2011 passed, 10 failed, 9 skipped`; the 10 failures
+  are the inherited fixed-base set. Ruff, Python 3.12 compileall, and
+  `git diff --check` passed. The file-size checker reports the same 11
+  inherited violation paths.
 
 ## Review handoff
 

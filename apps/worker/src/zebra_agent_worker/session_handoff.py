@@ -82,8 +82,7 @@ class SessionHandoffRecoveryGate:
         if envelope is None:
             raise ValueError("handoff child references a missing committed envelope")
         self._validate_envelope_provenance(result, envelope, session_id)
-        if envelope.source_context_capsule_id is not None:
-            self._validate_source_events(envelope)
+        self._validate_source_events(envelope)
         source_capsule = self._recover_source_capsule(envelope)
         recovered = RecoveredHandoff(
             envelope,

@@ -38,6 +38,7 @@ from agent_storage import (
     StoredContextCapsule,
 )
 
+from zebra_agent_api.approval_context import source_approval_call_aliases
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict
 from zebra_agent_api.session_identity_read import _parse_session_id
 
@@ -187,7 +188,7 @@ class SessionHandoffApi:
         ):
             completed_work = _conversation_checkpoint(events)
         objective = parsed["objective"]
-        if uses_active_projection:
+        if uses_active_projection or capsule_reconciled:
             assert capsule is not None
             objective = capsule.capsule.objective
         fallback_omission = (
@@ -356,8 +357,9 @@ def _string_tuple(value: object, name: str) -> tuple[str, ...] | ApiResponse:
 
 def _source_lineage(items: tuple[SessionLineage, ...], source_id: SessionId) -> SessionLineage:
     return next(
-        (item for item in items if item.session_id == source_id),
-        SessionLineage(session_id=source_id, root_session_id=source_id, stage_index=0),
+        (item for item in items if item.session_id == source_id), SessionLineage(
+            session_id=source_id, root_session_id=source_id, stage_index=0
+        )
     )
 
 
@@ -392,8 +394,7 @@ def _reconcile_terminal_capsule(
     tail = [event for event in events if event.sequence > capsule.event.sequence]
     pending_ids = {tool.call_id for tool in capsule.capsule.pending_tools}
     terminal_tail = any(
-        event.event_type
-        in {
+        event.event_type in {
             EventType.APPROVAL_REJECTED,
             EventType.SESSION_COMPLETED,
             EventType.SESSION_FAILED,
@@ -404,8 +405,7 @@ def _reconcile_terminal_capsule(
     closed_ids = {
         call_id
         for event in tail
-        if event.event_type
-        in {
+        if event.event_type in {
             EventType.APPROVAL_REJECTED,
             EventType.TOOL_EXECUTION_COMPLETED,
             EventType.TOOL_EXECUTION_FAILED,
@@ -413,6 +413,8 @@ def _reconcile_terminal_capsule(
         for call_id in [_event_tool_call_id(event)]
         if call_id is not None
     }
+    aliases = source_approval_call_aliases(events, capsule.capsule.source_event_range, pending_ids)
+    closed_ids.update(id for id, terminal in aliases.items() if terminal in closed_ids)
     if not pending_ids or not terminal_tail or not pending_ids.issubset(closed_ids):
         return capsule, False
     reconciled = replace(

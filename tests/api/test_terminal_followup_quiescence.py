@@ -125,6 +125,61 @@ def test_http_terminal_follow_up_reconciles_stale_pending_capsule(tmp_path: Path
     ]
 
 
+def test_terminal_follow_up_reconciles_two_independent_pending_aliases(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "two-pending-aliases.sqlite"
+    task_id = _seed_stale_terminal_task(
+        database,
+        tmp_path,
+        approval_pairs=(
+            ("internal-first", "provider-first"),
+            ("internal-second", "provider-second"),
+        ),
+    )
+    client = TestClient(
+        create_http_app(
+            database,
+            settings=load_settings({"ZEBRA_SESSION_HANDOFF_ENABLED": "true"}),
+        )
+    )
+
+    response = client.post(
+        f"/tasks/{task_id}/messages",
+        json={"content": "Continue after both completed tools."},
+        headers={"Idempotency-Key": "two-pending-aliases"},
+    )
+
+    assert response.status_code == 201, response.text
+
+
+def test_terminal_follow_up_rejects_ambiguous_pending_alias(tmp_path: Path) -> None:
+    database = tmp_path / "ambiguous-pending-alias.sqlite"
+    task_id = _seed_stale_terminal_task(
+        database,
+        tmp_path,
+        approval_pairs=(
+            ("internal-first", "provider-duplicate"),
+            ("internal-second", "provider-duplicate"),
+        ),
+    )
+    client = TestClient(
+        create_http_app(
+            database,
+            settings=load_settings({"ZEBRA_SESSION_HANDOFF_ENABLED": "true"}),
+        )
+    )
+
+    response = client.post(
+        f"/tasks/{task_id}/messages",
+        json={"content": "Do not continue with an ambiguous call."},
+        headers={"Idempotency-Key": "ambiguous-pending-alias"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["reason"] == "handoff_source_not_quiescent"
+
+
 @pytest.mark.parametrize("tail_mode", ["different_call_id", "approval_only"])
 def test_terminal_follow_up_keeps_unclosed_capsule_pending(
     tmp_path: Path,
@@ -237,6 +292,7 @@ def _seed_stale_terminal_task(
     *,
     tail_mode: str = "same_call_id",
     pending_tool: bool = True,
+    approval_pairs: tuple[tuple[str, str], ...] = ((INTERNAL_CALL_ID, PROVIDER_CALL_ID),),
 ) -> str:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -248,6 +304,22 @@ def _seed_stale_terminal_task(
             created_at=NOW,
         )
     )
+    approval_events = [
+        _event(
+            bootstrap.session.session_id,
+            4 + index,
+            EventType.APPROVAL_REQUESTED,
+            EventActor.POLICY,
+            {
+                "attempt_number": 1,
+                "tool_name": "files.read",
+                "tool_call_id": internal_id,
+                "provider_call_id": provider_id,
+                "reason": "approval required",
+            },
+        )
+        for index, (internal_id, provider_id) in enumerate(approval_pairs)
+    ]
     prefix = [
         *bootstrap.events,
         _event(
@@ -257,19 +329,7 @@ def _seed_stale_terminal_task(
             EventActor.HARNESS,
             {"attempt_number": 1},
         ),
-        _event(
-            bootstrap.session.session_id,
-            4,
-            EventType.APPROVAL_REQUESTED,
-            EventActor.POLICY,
-            {
-                "attempt_number": 1,
-                "tool_name": "files.read",
-                "tool_call_id": INTERNAL_CALL_ID,
-                "provider_call_id": PROVIDER_CALL_ID,
-                "reason": "approval required",
-            },
-        ),
+        *approval_events,
     ]
     event_store = SQLiteEventStore(database)
     for event in prefix:
@@ -282,13 +342,18 @@ def _seed_stale_terminal_task(
         objective="Preserve the first request evidence.",
         protected_user_constraints=("preserve evidence",),
         pending_tools=(
-            (PendingToolState(call_id=PROVIDER_CALL_ID, name="files.read"),)
+            tuple(
+                PendingToolState(call_id=provider_id, name="files.read")
+                for _, provider_id in approval_pairs
+            )
             if pending_tool
             else ()
         ),
         approvals_and_policy_state=("approval_requested:approval required",),
         immediate_next="Resume the approved read.",
-        source_event_range=ContextSourceEventRange(start_sequence=0, end_sequence=4),
+        source_event_range=ContextSourceEventRange(
+            start_sequence=0, end_sequence=3 + len(approval_pairs)
+        ),
         source_hash=_event_hash(prefix),
         confidence=1.0,
         created_at=NOW,
@@ -300,33 +365,37 @@ def _seed_stale_terminal_task(
             expected_source_hash=capsule.source_hash,
             expected_source_event_range=capsule.source_event_range,
             unresolved_tool_call_ids=(
-                frozenset({PROVIDER_CALL_ID}) if pending_tool else frozenset()
+                frozenset(provider_id for _, provider_id in approval_pairs)
+                if pending_tool
+                else frozenset()
             ),
             protected_user_constraints=frozenset(capsule.protected_user_constraints),
             approval_and_policy_state=frozenset(capsule.approvals_and_policy_state),
         ),
-        sequence=5,
+        sequence=4 + len(approval_pairs),
         expected_active_capsule_id=None,
         created_at=NOW,
     )
-    sequence = 6
+    sequence = 5 + len(approval_pairs)
     tail = [
         _event(
             bootstrap.session.session_id,
-            sequence,
+            sequence + index,
             EventType.APPROVAL_GRANTED,
             EventActor.USER,
-            {"tool_call_id": INTERNAL_CALL_ID},
+            {"tool_call_id": internal_id},
         )
+        for index, (internal_id, _) in enumerate(approval_pairs)
     ]
-    sequence += 1
+    sequence += len(approval_pairs)
     if tail_mode != "approval_only":
-        completed_call_id = "other-call" if tail_mode == "different_call_id" else INTERNAL_CALL_ID
-        tail.extend(
-            (
+        for index, (internal_id, _) in enumerate(approval_pairs):
+            completed_call_id = "other-call" if tail_mode == "different_call_id" else internal_id
+            tail.extend(
+                (
                 _event(
                     bootstrap.session.session_id,
-                    sequence,
+                    sequence + index * 2,
                     EventType.TOOL_EXECUTION_STARTED,
                     EventActor.HARNESS,
                     {
@@ -337,7 +406,7 @@ def _seed_stale_terminal_task(
                 ),
                 _event(
                     bootstrap.session.session_id,
-                    sequence + 1,
+                    sequence + index * 2 + 1,
                     EventType.TOOL_EXECUTION_COMPLETED,
                     EventActor.TOOL,
                     {
@@ -349,9 +418,9 @@ def _seed_stale_terminal_task(
                         "metadata": {},
                     },
                 ),
+                )
             )
-        )
-        sequence += 2
+        sequence += 2 * len(approval_pairs)
     tail.extend(
         (
         _event(
@@ -376,7 +445,7 @@ def _seed_stale_terminal_task(
     )
     for event in tail:
         event_store.append(event)
-    all_events = [*prefix, *event_store.list_for_session(bootstrap.session.session_id)[5:6], *tail]
+    all_events = event_store.list_for_session(bootstrap.session.session_id)
     SQLiteProjectionStore(database).save_session(rebuild_session(all_events))
     SQLiteAgentTaskStore(database).ensure_for_session(bootstrap.session.session_id)
     return str(bootstrap.session.session_id)

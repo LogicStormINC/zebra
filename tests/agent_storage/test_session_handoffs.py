@@ -1,5 +1,7 @@
+import json
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -220,7 +222,11 @@ def test_same_key_different_request_and_second_successor_fail_closed(tmp_path: P
         task_profile_revision=facts.task_profile_revision,
         effective_depth_limit=facts.effective_depth_limit,
     )
-    second_commit = _commit_for_operation(second_operation, second_request)
+    second_commit = _commit_for_operation(
+        second_operation,
+        second_request,
+        _event_hash(SQLiteEventStore(database_path).list_for_session(source_id)),
+    )
     with pytest.raises(HandoffStorageConflictError, match="successor"):
         store.commit(second_commit)
     assert (
@@ -493,12 +499,17 @@ def _prepared_commit(
         task_profile_revision=facts.task_profile_revision,
         effective_depth_limit=facts.effective_depth_limit,
     )
-    return operation, _commit_for_operation(operation, create_request)
+    return operation, _commit_for_operation(
+        operation,
+        create_request,
+        _event_hash(SQLiteEventStore(store._database.database_path).list_for_session(source_id)),
+    )
 
 
 def _commit_for_operation(
     operation: HandoffOperation,
     create_request: SessionHandoffCreateRequest,
+    source_event_hash: str,
 ) -> SessionHandoffCommitRequest:
     draft = SessionHandoffEnvelope(
         handoff_id=operation.handoff_id,
@@ -514,7 +525,7 @@ def _commit_for_operation(
         pending_work=("storage",),
         immediate_next=create_request.stage_prompt,
         source_event_range=ContextSourceEventRange(start_sequence=0, end_sequence=4),
-        source_event_hash="source-event-hash",
+        source_event_hash=source_event_hash,
         workspace_revision=operation.workspace_revision,
         created_at=NOW,
         checksum="0" * 64,
@@ -526,3 +537,13 @@ def _commit_for_operation(
         envelope=envelope,
         artifact_id=f"handoff-artifact-{operation.handoff_id}",
     )
+
+
+def _event_hash(events: list[SessionEvent]) -> str:
+    encoded = json.dumps(
+        [event.model_dump(mode="json") for event in events],
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode()
+    return sha256(encoded).hexdigest()
