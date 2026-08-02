@@ -39,6 +39,7 @@ def test_single_parent_tool_does_not_create_subagent(tmp_path) -> None:
                     _call("files.read", {"path": "answer.txt"}, "parent_read"),
                 ),
                 _completion("DIRECT-EVIDENCE"),
+                _completion("DIRECT-EVIDENCE"),
             )
         )
     )
@@ -73,6 +74,8 @@ def test_parent_uses_sourced_readonly_child_result_for_final_answer(tmp_path) ->
                 _completion("Reading evidence.", read_call),
                 _completion("The sourced evidence is RESEARCH-EVIDENCE."),
                 _completion("PARENT-ANSWER: RESEARCH-EVIDENCE"),
+                _completion("PARENT-ANSWER: RESEARCH-EVIDENCE"),
+                _completion("PARENT-ANSWER: RESEARCH-EVIDENCE"),
             )
         )
     )
@@ -87,7 +90,7 @@ def test_parent_uses_sourced_readonly_child_result_for_final_answer(tmp_path) ->
     assert result.attempt_result.metadata["assistant_message"] == (
         "PARENT-ANSWER: RESEARCH-EVIDENCE"
     )
-    assert result.run_result.model_calls_used == 2
+    assert result.run_result.model_calls_used == 3
     assert result.run_result.tool_calls_used == 1
     assert "agent.research" in {tool.name for tool in gateway.tool_requests[0]}
     assert tuple(tool.name for tool in gateway.tool_requests[1]) == (
@@ -100,15 +103,15 @@ def test_parent_uses_sourced_readonly_child_result_for_final_answer(tmp_path) ->
         "Subagent delegation:" in message.content for message in gateway.requests[0]
     )
     assert any(
-        "Subagent delegation:" in message.content for message in gateway.requests[3]
+        "Subagent delegation:" in message.content for message in gateway.requests[4]
     )
     assert all(
         "Subagent delegation:" not in message.content
-        for request in gateway.requests[1:3]
+        for request in gateway.requests[1:4]
         for message in request
     )
-    assert "evidence.txt" in gateway.requests[3][-1].content
-    assert "RESEARCH-EVIDENCE" in gateway.requests[3][-1].content
+    assert "evidence.txt" in gateway.requests[4][-1].content
+    assert "RESEARCH-EVIDENCE" in gateway.requests[4][-1].content
 
     started = next(
         event for event in result.events if event.event_type is EventType.SUBAGENT_STARTED
@@ -155,6 +158,7 @@ def test_research_child_searches_then_reads_within_fixed_budget(tmp_path) -> Non
                 ),
                 _completion("Child found CHILD-SEARCH-PROOF."),
                 _completion("Parent confirmed CHILD-SEARCH-PROOF."),
+                _completion("Parent confirmed CHILD-SEARCH-PROOF."),
             )
         )
     )
@@ -197,6 +201,7 @@ def test_parent_corrects_missing_delegation_reason_before_child_creation(tmp_pat
                 _completion("Delegating.", invalid_call),
                 _completion("Correcting the delegation contract.", corrected_call),
                 _completion("No workspace evidence was needed."),
+                _completion("Parent completed after the corrected delegation."),
                 _completion("Parent completed after the corrected delegation."),
             )
         )
@@ -245,7 +250,7 @@ def test_parent_fans_out_bounded_research_and_preserves_provider_order(tmp_path)
     assert result.attempt_result.metadata["assistant_message"] == "FANOUT-OK"
     assert result.attempt_result.metadata["parallel_batch_size"] == 2
     assert result.attempt_result.metadata["subagent_count"] == 2
-    assert result.attempt_result.metadata["subagent_model_calls_used"] == 4
+    assert result.attempt_result.metadata["subagent_model_calls_used"] == 6
     assert result.attempt_result.metadata["subagent_tool_calls_used"] == 2
     assert result.attempt_result.metadata["subagent_source_count"] == 2
     assert result.attempt_result.metadata["subagent_completed_count"] == 2

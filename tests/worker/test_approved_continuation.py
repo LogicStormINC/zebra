@@ -92,7 +92,7 @@ def test_granted_tool_call_resumes_exactly_once_without_reproposal(
         provider_call_id="call_approved",
     )
     initial_gateway = _gateway("Running approved command.", tool_call=tool_call)
-    final_gateway = _gateway("approved-output")
+    final_gateway = _gateway("approved-output", canonical="approved-output")
     gateways = iter((initial_gateway, final_gateway))
     monkeypatch.setattr(
         "zebra_agent_worker.execution.build_model_gateway",
@@ -128,7 +128,7 @@ def test_granted_tool_call_resumes_exactly_once_without_reproposal(
     assert completed.session.status is SessionStatus.COMPLETED
     assert completed.attempt_result.metadata["assistant_message"] == "approved-output"
     assert len(initial_gateway.requests) == 1
-    assert len(final_gateway.requests) == 1
+    assert len(final_gateway.requests) == 2
     assert final_gateway.tool_requests[0]
     assert [message.role for message in final_gateway.requests[0]][-3:] == [
         MessageRole.USER,
@@ -137,6 +137,11 @@ def test_granted_tool_call_resumes_exactly_once_without_reproposal(
     ]
     assert final_gateway.requests[0][-1].content.strip() == "approved-output"
     events = SQLiteEventStore(database_path).list_for_session(session_id)
+    assert [
+        event.payload["response_stage"]
+        for event in events
+        if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+    ] == [None, "tool_loop", "final"]
     assert sum(event.event_type is EventType.TOOL_EXECUTION_STARTED for event in events) == 1
     with pytest.raises(SessionResumeError, match="terminal session"):
         service.execute_session(session_id, worker_id="worker-a", executed_at=created_at)
@@ -159,6 +164,7 @@ def test_web_gateway_uses_durable_network_authority_and_executes_exactly_once(
         "Reading authorized Web content.",
         tool_call=tool_call,
         follow_up="authorized-web-output",
+        canonical="authorized-web-output",
     )
     transport = RecordingWebTransport()
     monkeypatch.setattr(
@@ -219,7 +225,7 @@ def test_mcp_stdio_waits_for_approval_then_recovers_exact_call(
     gateways = iter(
         (
             _gateway("Calling configured MCP tool.", tool_call=tool_call),
-            _gateway("approved-mcp-complete"),
+            _gateway("approved-mcp-complete", canonical="approved-mcp-complete"),
         )
     )
     monkeypatch.setattr(
@@ -289,7 +295,10 @@ def test_large_mcp_catalog_bridge_waits_for_approval_then_recovers_provider_view
         created_at=created_at,
         provider_call_id="call_mcp_bridge",
     )
-    final_gateway = _gateway("approved-mcp-bridge-complete")
+    final_gateway = _gateway(
+        "approved-mcp-bridge-complete",
+        canonical="approved-mcp-bridge-complete",
+    )
     gateways = iter(
         (
             _gateway("Calling selected MCP tool through bridge.", tool_call=tool_call),
@@ -409,6 +418,7 @@ def test_web_search_uses_durable_network_authority_and_executes_exactly_once(
         "Searching authorized sources.",
         tool_call=tool_call,
         follow_up="authorized-search-output",
+        canonical="authorized-search-output",
     )
     transport = RecordingSearchTransport()
     monkeypatch.setattr(
@@ -521,7 +531,10 @@ def test_later_approved_tool_resumes_with_prior_tool_history(
             ),
         )
     )
-    final_gateway = _gateway("prior-result and later-approved")
+    final_gateway = _gateway(
+        "prior-result and later-approved",
+        canonical="prior-result and later-approved",
+    )
     gateways = iter((initial_gateway, final_gateway))
     monkeypatch.setattr(
         "zebra_agent_worker.execution.build_model_gateway",
@@ -565,7 +578,7 @@ def test_later_approved_tool_resumes_with_prior_tool_history(
     assert completed.attempt_result.metadata["assistant_message"] == (
         "prior-result and later-approved"
     )
-    assert completed.attempt_result.metadata["model_calls_used"] == 3
+    assert completed.attempt_result.metadata["model_calls_used"] == 4
     assert completed.attempt_result.metadata["tool_calls_executed"] == 2
     final_messages = final_gateway.requests[0]
     assert [message.role for message in final_messages][-4:] == [
@@ -588,8 +601,11 @@ def _gateway(
     *,
     tool_call: ToolCall | None = None,
     follow_up: str | None = None,
+    canonical: str | None = None,
 ) -> ScriptedModelGateway:
-    contents = ((content, tool_call),) + (((follow_up, None),) if follow_up is not None else ())
+    contents = ((content, tool_call),) + tuple(
+        (item, None) for item in (follow_up, canonical) if item is not None
+    )
     return ScriptedModelGateway(
         responses=tuple(
             ScriptedModelResponse(

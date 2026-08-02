@@ -46,6 +46,7 @@ def test_web_fetch_v2_uses_durable_network_authority_and_executes_exactly_once(
         "Reading authorized Web content.",
         tool_call=tool_call,
         follow_up="authorized-web-output-v2",
+        canonical="authorized-web-output-v2",
     )
     provider = RecordingFetchProvider()
     monkeypatch.setattr(
@@ -103,6 +104,7 @@ def test_web_search_v2_uses_durable_network_authority_and_executes_exactly_once(
         "Searching authorized sources.",
         tool_call=tool_call,
         follow_up="authorized-search-output-v2",
+        canonical="authorized-search-output-v2",
     )
     provider = RecordingSearchProvider(endpoint="https://search.example.com/search")
     monkeypatch.setattr(

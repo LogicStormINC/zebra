@@ -167,6 +167,7 @@ def _tool_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGateway:
                 )
             ),
             _final_response("README content returned."),
+            _final_response("README content returned."),
         )
     )
 
@@ -197,6 +198,7 @@ def _agents_read_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGatewa
                     ),
                 )
             ),
+            _final_response("AGENTS instructions returned."),
             _final_response("AGENTS instructions returned."),
         )
     )
@@ -229,6 +231,7 @@ def _tests_run_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGateway:
                 )
             ),
             _final_response("Smoke validation completed."),
+            _final_response("Smoke validation completed."),
         )
     )
 
@@ -260,6 +263,7 @@ def _procedure_refresh_gateway(*, settings: ZebraAgentSettings) -> ScriptedModel
                 )
             ),
             _final_response("Repository procedure refreshed."),
+            _final_response("Repository procedure refreshed."),
         )
     )
 
@@ -290,6 +294,7 @@ def _failing_tests_run_gateway(*, settings: ZebraAgentSettings) -> ScriptedModel
                     ),
                 )
             ),
+            _final_response("Smoke validation failed."),
             _final_response("Smoke validation failed."),
         )
     )

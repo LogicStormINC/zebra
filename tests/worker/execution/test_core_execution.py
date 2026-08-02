@@ -529,6 +529,11 @@ def test_worker_execution_service_indexes_tool_run(tmp_path: Path, monkeypatch) 
 
     tool_runs = SQLiteToolRunStore(database_path).list_for_session(session_id)
     assert result.session.status is SessionStatus.COMPLETED
+    assert [
+        event.payload["response_stage"]
+        for event in result.events
+        if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+    ] == [None, "tool_loop", "final"]
     assert len(tool_runs) == 1
     assert isinstance(tool_runs[0], ToolRunRecord)
     assert tool_runs[0].tool_name == "files.read"

@@ -115,6 +115,16 @@ def test_run_local_harness_executes_builtin_file_read(tmp_path) -> None:
                         )
                     )
                 ),
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content="The README contains: runtime readme",
+                            created_at=_created_at(),
+                        )
+                    )
+                ),
             ),
         ),
     )
@@ -125,7 +135,7 @@ def test_run_local_harness_executes_builtin_file_read(tmp_path) -> None:
     assert result.attempt_result.metadata["assistant_message"] == (
         "The README contains: runtime readme"
     )
-    assert result.run_result.model_calls_used == 2
+    assert result.run_result.model_calls_used == 3
 
 
 def test_run_local_harness_has_no_implicit_tool_budget(tmp_path) -> None:
@@ -211,6 +221,7 @@ def test_run_local_harness_searches_then_reads_workspace_evidence(tmp_path) -> N
                     _completion("Searching.", search_call),
                     _completion("Reading.", read_call),
                     _completion("Found SEARCH-THEN-READ."),
+                    _completion("Found SEARCH-THEN-READ."),
                 )
             )
         ),
@@ -252,6 +263,7 @@ def test_run_local_harness_lists_then_reads_workspace_evidence(tmp_path) -> None
                 for completion in (
                     _completion("Listing.", list_call),
                     _completion("Reading.", read_call),
+                    _completion("Found LIST-THEN-READ."),
                     _completion("Found LIST-THEN-READ."),
                 )
             )
@@ -303,6 +315,7 @@ def test_run_local_harness_lists_then_reads_configured_skill(tmp_path) -> None:
                         ),
                     ),
                     _completion("Used SKILL-PROOF-127."),
+                    _completion("Used SKILL-PROOF-127."),
                 )
             )
         ),
@@ -331,6 +344,7 @@ def test_run_local_harness_recalls_prior_session_then_synthesizes_answer(tmp_pat
                         created_at=_created_at(),
                     ),
                 ),
+                _completion("Recovered HISTORY-RECALL-PROOF."),
                 _completion("Recovered HISTORY-RECALL-PROOF."),
             )
         )

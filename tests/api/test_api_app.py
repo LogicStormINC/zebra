@@ -471,6 +471,16 @@ def test_api_create_session_execute_persists_harness_events(
                         )
                     )
                 ),
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content="README content: api readme",
+                            created_at=_created_at(),
+                        )
+                    )
+                ),
             )
         )
 
@@ -537,6 +547,16 @@ def test_api_create_session_execute_runs_builtin_tool(
                                 created_at=_created_at(),
                             ),
                         ),
+                    )
+                ),
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content="README content: api readme",
+                            created_at=_created_at(),
+                        )
                     )
                 ),
                 ScriptedModelResponse(

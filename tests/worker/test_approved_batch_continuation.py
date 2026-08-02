@@ -46,7 +46,10 @@ def test_approved_batch_continues_tail_without_replaying_completed_call(
     initial_gateway = _gateway(
         _completion("Run the complete batch.", created_at, first, pending, tail)
     )
-    final_gateway = _gateway(_completion("FIRST|APPROVED|LAST", created_at))
+    final_gateway = _gateway(
+        _completion("FIRST|APPROVED|LAST", created_at),
+        _completion("FIRST|APPROVED|LAST", created_at),
+    )
     gateways = iter((initial_gateway, final_gateway))
     monkeypatch.setattr(
         "zebra_agent_worker.execution.build_model_gateway",
@@ -86,7 +89,7 @@ def test_approved_batch_continues_tail_without_replaying_completed_call(
 
     assert completed.session.status is SessionStatus.COMPLETED
     assert completed.attempt_result.metadata["assistant_message"] == ("FIRST|APPROVED|LAST")
-    assert completed.attempt_result.metadata["model_calls_used"] == 2
+    assert completed.attempt_result.metadata["model_calls_used"] == 3
     assert completed.attempt_result.metadata["tool_calls_executed"] == 3
     assert [
         draft.payload.get("tool_name")
@@ -100,6 +103,8 @@ def test_approved_batch_continues_tail_without_replaying_completed_call(
         if event.event_type is EventType.TOOL_EXECUTION_STARTED
     ] == ["files.read", "command.run", "files.read"]
     final_messages = final_gateway.requests[0]
+    assert len(final_gateway.requests) == 2
+    assert final_gateway.tool_requests[-1] == ()
     assistant = next(
         message for message in reversed(final_messages) if message.role is MessageRole.ASSISTANT
     )
@@ -140,8 +145,10 @@ def _completion(
     )
 
 
-def _gateway(completion: ModelCompletion) -> ScriptedModelGateway:
-    return ScriptedModelGateway(responses=(ScriptedModelResponse(completion=completion),))
+def _gateway(*completions: ModelCompletion) -> ScriptedModelGateway:
+    return ScriptedModelGateway(
+        responses=tuple(ScriptedModelResponse(completion=completion) for completion in completions)
+    )
 
 
 def _seed_session(database_path: Path, workspace_root: Path):
