@@ -87,17 +87,21 @@ Task `model_id`, and the stable Task public conversation remains ordered.
   skipped the source hash check.
 - The alias is now derived only from an unambiguous `APPROVAL_REQUESTED` pair
   inside the capsule source range; independent approval pairs close, while a
-  duplicate provider mapping remains fail-closed. Approval-granted alone and
-  an unrelated terminal call remain rejected.
+  duplicate provider mapping remains fail-closed. The returned aliases must
+  also be one-to-one: reverse duplicate internal IDs reject the whole mapping.
+  Approval-granted alone and an unrelated terminal call remain rejected.
 - Recovery validates every envelope source event range/hash before dispatch or
   recovery, regardless of `source_context_capsule_id`. Reconciled handoffs still
   use bounded checkpoint context, retain the capsule objective as continuity
   summary, and keep the newest user message as the final user turn.
 - Focused source, context, API, integration, storage, and recovery set:
-  `43 passed`. Full suite: `2011 passed, 10 failed, 9 skipped`; the 10 failures
+  `44 passed`. Full suite: `2011 passed, 10 failed, 9 skipped`; the 10 failures
   are the inherited fixed-base set. Ruff, Python 3.12 compileall, and
   `git diff --check` passed. The file-size checker reports the same 11
   inherited violation paths.
+- Reverse-alias review red: the new reverse-duplicate regression failed with
+  HTTP `201` before the fix; after the bijection guard the API regression set
+  is `9 passed`.
 
 ## Review handoff
 

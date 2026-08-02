@@ -40,6 +40,8 @@ def source_approval_call_aliases(
         }
         if len(candidates) == 1:
             aliases[pending_id] = candidates.pop()
+    if len(aliases) != len(set(aliases.values())):
+        return {}
     return aliases
 
 

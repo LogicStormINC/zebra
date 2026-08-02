@@ -180,6 +180,33 @@ def test_terminal_follow_up_rejects_ambiguous_pending_alias(tmp_path: Path) -> N
     assert response.json()["reason"] == "handoff_source_not_quiescent"
 
 
+def test_terminal_follow_up_rejects_reverse_ambiguous_pending_alias(tmp_path: Path) -> None:
+    database = tmp_path / "reverse-ambiguous-pending-alias.sqlite"
+    task_id = _seed_stale_terminal_task(
+        database,
+        tmp_path,
+        approval_pairs=(
+            ("internal-shared", "provider-first"),
+            ("internal-shared", "provider-second"),
+        ),
+    )
+    client = TestClient(
+        create_http_app(
+            database,
+            settings=load_settings({"ZEBRA_SESSION_HANDOFF_ENABLED": "true"}),
+        )
+    )
+
+    response = client.post(
+        f"/tasks/{task_id}/messages",
+        json={"content": "Do not continue with a reverse-ambiguous call."},
+        headers={"Idempotency-Key": "reverse-ambiguous-pending-alias"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["reason"] == "handoff_source_not_quiescent"
+
+
 @pytest.mark.parametrize("tail_mode", ["different_call_id", "approval_only"])
 def test_terminal_follow_up_keeps_unclosed_capsule_pending(
     tmp_path: Path,
