@@ -1015,3 +1015,37 @@
   Desktop stylesheet `561/500` and PostgreSQL storage test `765/700`.
 - Mem0 remains Experimental/Research only; no task status was changed for the
   blocked reset Spike or locked delivery consumer. No production code changed.
+
+## MEM-PROVIDER-DEL-COMPLIANCE-01 closeout (2026-08-02)
+
+- ADR-018 is accepted as the deletion/recovery admission boundary. The task is
+  `Done`; Mem0 is explicitly `Provider admission: DENIED` and
+  `Mainline candidate: DEFERRED`. Future re-entry requires new upstream
+  capability evidence and a new admission run.
+
+## MEM-PG-NATIVE-ADMISSION-SPIKE-01 implementation (2026-08-02)
+
+- The sidebar ChatGPT review selected this as the only legal Ready successor. It
+  is a test-only PostgreSQL-native admission slice on
+  `codex/mem-pg-native-admission-spike-01`; the blocked Mem0 reset/consumer cards
+  are not dependencies and remain locked/deferred.
+- Added a per-test PostgreSQL schema with namespace/scope generation authority,
+  deterministic operation identity, content-bearing retrieval projection and
+  content-free operation audit. No production migration or package changed.
+- Eight real PostgreSQL cases cover deterministic replay, response-loss recovery,
+  atomic projection/rollback, stale-generation write fencing, complete scoped
+  deletion, namespace isolation and minimum recall semantics. The isolated
+  Compose runner starts only PostgreSQL 17.5 and emits
+  `ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS`.
+
+## MEM-PG-NATIVE-ADMISSION-SPIKE-01 review handoff (2026-08-02)
+
+- ADR-019 is accepted with architecture verdict `PASS`. The focused runner passes
+  `8` cases on PostgreSQL `17.5-alpine3.21`; the full `tests/agent_storage` matrix
+  passes `303 passed, 1 skipped` (`295` predecessor cases plus `8` new cases).
+- Changed-path Ruff, format, Mypy, compilation and `git diff --check` pass.
+  `make check` remains blocked by the two untouched file-size baseline
+  violations (`561/500` Desktop stylesheet and `765/700` PostgreSQL test).
+- The result admits only the test-proven PostgreSQL-native architecture. It does
+  not unlock `MEM-GW-PG-NATIVE-01`, Runtime, Worker, Provider HTTP, Desktop,
+  SQLite or Redis. Mem0 remains denied/deferred.

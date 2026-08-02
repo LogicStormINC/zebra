@@ -5,7 +5,7 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-07-29`
+- Snapshot date: `2026-08-02`
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with
   an exact three-user-turn tail, complete tool groups, one strict retry from
   original history, recoverable context suspension, evidence-gated memory
@@ -509,19 +509,28 @@ orphans remain unrecoverable from the ledger. The focused delivery runner remain
 `24 passed`, and the full storage matrix remains `295 passed, 1 skipped`; the
 partial verdict does not unlock the runtime consumer.
 
-`MEM-PROVIDER-DEL-COMPLIANCE-01` is now `Review` on
+`MEM-PROVIDER-DEL-COMPLIANCE-01` is now `Done` on
 `codex/mem-provider-del-compliance-01`. This docs/specification-only slice adds
 ADR-018 and a test-only admission matrix for deterministic recovery, physical
 deletion and complete scoped coverage. The current Mem0 verdict is logical
 fencing `PASS`, ledger mapping deletion `PASS`, ambiguous-create recovery
 `FAIL/UNPROVEN`, complete scoped deletion `FAIL/UNPROVEN`, and Runtime admission
-`BLOCKED`. Mem0 is therefore Experimental/Research only; `MEM-GW-DEL-RUN-01`,
-the parent ledger and Runtime composition remain `Locked`. No production code,
-Provider HTTP, Worker, Desktop or SQLite composition is changed.
+`BLOCKED`. Mem0 is therefore `Provider admission: DENIED` and
+`Mainline candidate: DEFERRED`; `MEM-GW-DEL-RUN-01`, the parent ledger and
+Runtime composition remain `Locked`. No production code, Provider HTTP, Worker,
+Desktop or SQLite composition is changed.
 The focused contract suite passes `2`; changed-path Ruff, format, Mypy,
 compilation and `git diff --check` pass. `make check` remains blocked by two
 unrelated file-size violations: Desktop stylesheet `561/500` and PostgreSQL
 storage test `765/700`.
+
+`MEM-PG-NATIVE-ADMISSION-SPIKE-01` is now `Review` on
+`codex/mem-pg-native-admission-spike-01`. Its isolated PostgreSQL 17.5 profile
+proves the ADR-018-compatible native boundary with `8 passed` and emits
+`ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS`. The full `tests/agent_storage` matrix
+passes `303 passed, 1 skipped` (`295` predecessor cases plus `8` admission cases).
+The result admits only the candidate architecture; `MEM-GW-PG-NATIVE-01`, Worker,
+Provider HTTP, Desktop, SQLite, Redis and Runtime remain `Locked`.
 
 ## Known Follow-Ups
 
@@ -545,12 +554,12 @@ storage test `765/700`.
 8. Activate Object Storage, Redis live state, recovery and Memory delivery/runtime
    wiring one path-bounded card at a time; no production claim precedes complete
    composition, migration, restore and failover evidence.
-9. Complete the reviewed [Memory Delivery Ledger v11 plan](Zebra%20Cloud%20Memory%20Delivery%20Ledger%20v11%E5%AE%9E%E6%96%BD%E8%AE%A1%E5%88%92.md)
-   one path-bounded child at a time. The Core and PostgreSQL children are in
-   Review, the scoped reset child is `Blocked` on bounded enumeration, and the
-   Provider Deletion Compliance child is the only active successor; keep the
-   parent and Runtime locked until deletion compliance and all composition gates
-   are proven.
+9. Continue the memory lane one path-bounded child at a time. The Core and
+   PostgreSQL delivery children are in Review, the scoped reset child is
+   `Blocked` on bounded enumeration, Provider Deletion Compliance is `Done`,
+   and the PostgreSQL-native admission Spike is active. Keep the Mem0 consumer,
+   parent ledger, candidate implementation and Runtime locked until their own
+   explicit gates are reviewed.
 
 ## Runtime Blueprint
 

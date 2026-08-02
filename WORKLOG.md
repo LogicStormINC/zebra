@@ -6897,3 +6897,35 @@ actual byte access.
   `tests/agent_storage/test_postgres_governed_memories.py` (`765/700`).
 - Contract verdict is `PASS`; current Mem0 admission is `BLOCKED`, and the reset
   Spike, delivery consumer, parent ledger and Runtime composition stay locked.
+
+## 2026-08-02 - MEM-PROVIDER-DEL-COMPLIANCE-01 closeout
+
+- Accepted ADR-018 and moved the task to `Done`. Mem0 is now explicitly denied
+  from the current Memory mainline and deferred until new provider evidence.
+
+## 2026-08-02 - MEM-PG-NATIVE-ADMISSION-SPIKE-01 activation and implementation
+
+- Created and claimed `codex/mem-pg-native-admission-spike-01` from
+  `zebra-cloud-trench@a01f887`. The only active implementation is a test-only
+  PostgreSQL-native admission boundary; no production path is in scope.
+- Added `docs/ADR-019_PostgreSQL_Native_Memory_Backend_Admission.md`, a
+  PostgreSQL-only Compose profile and eight focused cases covering deterministic
+  identity/recovery, atomic authority/retrieval, generation fences, complete
+  deletion, namespace isolation and minimum recall.
+- Host Compose result: PostgreSQL `17.5-alpine3.21`, `8 passed`,
+  `ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS`; the container, volume and network
+  were removed by the runner. Runtime and all application containers remain
+  locked.
+
+## 2026-08-02 - MEM-PG-NATIVE-ADMISSION-SPIKE-01 review handoff
+
+- Full PostgreSQL storage regression ran in a separate isolated Compose project:
+  `303 passed, 1 skipped` (`295` predecessor cases plus the eight new admission
+  cases). The focused runner and full matrix both cleaned their containers,
+  volumes and networks.
+- ADR-019 is accepted with `PASS` for architecture admission only. The next
+  production candidate `MEM-GW-PG-NATIVE-01` remains `Locked`; Runtime and all
+  application/provider paths remain locked, and Mem0 remains denied/deferred.
+- Changed-path Ruff, format, Mypy, compilation and diff checks pass. The only
+  repository check blocker is the two inherited file-size violations recorded in
+  ADR-019.

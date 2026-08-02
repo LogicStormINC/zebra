@@ -636,9 +636,10 @@
 
 - The contract is a governance/specification boundary and does not implement a
   Provider HTTP client, Mem0 adapter, Worker, Desktop, SQLite or Runtime path.
-- Mem0 is currently `Experimental/Research` only: logical fencing and known
+- Mem0 is currently denied from the Memory mainline: logical fencing and known
   mapping deletion are proven, while ambiguous-create recovery and complete
-  scoped physical deletion remain `FAIL/UNPROVEN`.
+  scoped physical deletion remain `FAIL/UNPROVEN`. Future re-entry requires new
+  upstream capability evidence and a new admission run.
 - `MEM-MEM0-RESET-SPIKE-01` stays `Blocked`; `MEM-GW-DEL-RUN-01`, its parent and
   Runtime composition stay `Locked` until a provider passes this contract.
 
@@ -651,6 +652,44 @@
   paths (`561/500` Desktop stylesheet and `765/700` PostgreSQL test file).
 - Contract verdict is `PASS`; Mem0 admission and Runtime remain `BLOCKED`.
 
+## MEM-PG-NATIVE-ADMISSION-SPIKE-01 - PostgreSQL-Native Memory Admission
+
+1. `completed` - Ask the sidebar ChatGPT planning session for the only legal
+   successor after ADR-018; choose the PostgreSQL-native candidate and defer
+   Mem0 from the active critical path.
+2. `completed` - Add a test-only PostgreSQL authority/retrieval schema and
+   isolated dependency-only Compose profile; do not add production code.
+3. `completed` - Prove deterministic identity/recovery, atomic projection,
+   generation write fencing, complete scoped deletion, namespace isolation and
+   minimum recall with eight independent real-PostgreSQL cases.
+4. `completed` - Run the focused Compose matrix and changed-path static checks,
+   record `ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS`, and keep Runtime locked.
+
+### Decisions
+
+- The PostgreSQL-native architecture is admitted for the next implementation
+  gate only. `MEM-GW-PG-NATIVE-01` remains `Locked` until explicit activation.
+- The Spike's schema is test-only and per-schema; it is not a migration and does
+  not select PostgreSQL at any runtime composition root.
+- The focused runner starts only PostgreSQL 17.5 and passed `8` cases. Existing
+  delivery/storage results remain regression evidence (`24`; `295 passed, 1
+  skipped`).
+- `PASS` does not unlock Worker, Provider HTTP, Desktop, SQLite, Redis or
+  Runtime. Mem0 remains `Provider admission: DENIED` and `Mainline candidate:
+  DEFERRED`.
+
+### Review handoff
+
+- `tests/compose/postgres_native_memory_admission/run-postgres-tests.sh` emits
+  `ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS` and cleans its container, volume and
+  network. Eight tests pass in the isolated PostgreSQL 17.5 profile.
+- The full `tests/agent_storage` matrix passes `303 passed, 1 skipped` (`295`
+  predecessor cases plus `8` admission cases), so the new test does not regress
+  the PostgreSQL storage baseline.
+- Changed-path Ruff, format, Mypy and `git diff --check` pass. `make check`
+  remains blocked only by the two inherited file-size violations recorded in
+  ADR-019.
+
 ## MEM-GW-DEL-RUN-01 - Mem0 Delivery Consumer And Management Rebuild
 
 1. `pending` - Start only after the PG ledger and scoped reset Spike are reviewed,
@@ -661,6 +700,23 @@
    high-watermark drain, atomic switch, then safe old-generation purge.
 4. `pending` - Run PostgreSQL+Mem0 fault, outage, delete, search and rebuild tests;
    do not modify default local composition.
+
+### Decisions
+
+- This remains a Mem0-specific, deferred card with `Locked` admission. It is not
+  a successor to the PostgreSQL-native path and must not be activated by its
+  `PASS` result.
+
+## MEM-GW-PG-NATIVE-01 - PostgreSQL-Native Memory Backend Implementation
+
+1. `pending` - Activate only after `MEM-PG-NATIVE-ADMISSION-SPIKE-01` is reviewed
+   with `PASS` and the cloud PostgreSQL composition gate is explicit.
+2. `pending` - Freeze production migrations and a provider-neutral Store/API
+   boundary from ADR-019 without changing the local SQLite profile.
+3. `pending` - Implement the authority/retrieval transaction, deterministic
+   recovery and generation reset under the task's future Owned paths.
+4. `pending` - Prove production composition, migration/restore and API/Worker
+   integration in separate gates; this Spike alone never activates them.
 
 ## CLOUD-LEASE-PG-01 - PostgreSQL Epoch And Lease Adapter
 

@@ -53,9 +53,10 @@
   The maintainer explicitly continued the memory/Compose lane on 2026-07-28;
   this local branch combines the reviewed Store, Gateway and Compose prerequisites
   and remains blocked from merge until those predecessors land.
-- `MEM-MEM0-ADP-01` is `Review` on `codex/mem0-adapter-01`. It implements the
-  provider-neutral Gateway over the proven Mem0 REST subset and remains stacked
-  behind the reviewed Mem0 Spike and its storage, Gateway, and Compose prerequisites.
+- `MEM-MEM0-ADP-01` is `Review` on `codex/mem0-adapter-01`, but Mem0 is now
+  `Provider admission: DENIED` and `Mainline candidate: DEFERRED` under ADR-019.
+  Keep this historical adapter card out of the active critical path until a
+  future upstream capability review and admission run.
 - `MEM-GW-DEL-PLAN-01` is `Review` on `codex/mem-gw-del-plan-01`. It
   materializes the v11 delivery/deletion plan and splits the locked parent into
   four path-bounded child cards. The parent remains locked until the Core
@@ -64,11 +65,15 @@
   maintainer's 2026-08-02 continuation. It owns only provider-neutral Core
   certainty/state values and focused tests; PostgreSQL, Mem0 reset and Worker
   wiring remain locked successors.
-- `MEM-PROVIDER-DEL-COMPLIANCE-01` is `Review` on
+- `MEM-PROVIDER-DEL-COMPLIANCE-01` is `Done` on
   `codex/mem-provider-del-compliance-01`. It is the only Ready successor after
-  the `MEM-MEM0-RESET-ALT-01` `B/PARTIAL` result. This docs/specification-only
-  card defines deletion compliance and records Mem0 as not admitted to the
-  Runtime mainline until the missing provider capabilities are proven.
+  the `MEM-MEM0-RESET-ALT-01` `B/PARTIAL` result. ADR-018 defines the
+  provider-neutral gate and records Mem0 as not admitted to the Runtime mainline.
+- `MEM-PG-NATIVE-ADMISSION-SPIKE-01` is `Review` on
+  `codex/mem-pg-native-admission-spike-01`. It is the only active successor and
+  validates a PostgreSQL-native authority/retrieval design against ADR-018 with
+  a test-only, dependency-only Compose profile. Runtime remains locked even on
+  `PASS`.
 - `CLOUD-PG-PLAN-01` and `CLOUD-PG-01` are `Review` on their dedicated branches;
   the docs-only migration/restore decisions precede the real PostgreSQL Event/Projection Adapter.
 - `CLOUD-LEASE-CON-01`, `CLOUD-LEASE-PG-01`, `CLOUD-EFFECT-OUTBOX-01`, and
@@ -882,7 +887,7 @@ provider mappings can make logical reset safe without provider enumeration.
 
 ### MEM-PROVIDER-DEL-COMPLIANCE-01 - Provider Deletion Compliance Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `ARCHITECTURE / INTEGRATIONS / SECURITY`
 - Depends on: integrated Memory Delivery Ledger v11 (`284425f`) and
@@ -934,6 +939,87 @@ provider mappings can make logical reset safe without provider enumeration.
 - Verdict: `PASS` for the Provider Deletion Compliance Contract and `BLOCKED`
   for current Mem0 Runtime admission. This card does not unlock any consumer or
   Runtime task.
+
+#### Closeout
+
+- ADR-018 is accepted. Mem0 is `Provider admission: DENIED` and
+  `Mainline candidate: DEFERRED`; re-entry requires new upstream capability
+  evidence and a new admission run.
+- The next candidate is deliberately PostgreSQL-native and does not depend on
+  the blocked Mem0 enumeration or consumer cards.
+
+### MEM-PG-NATIVE-ADMISSION-SPIKE-01 - PostgreSQL-Native Memory Admission
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `STORAGE / ARCHITECTURE / SECURITY`
+- Depends on: `zebra-cloud-trench@a01f887`, completed
+  `MEM-PROVIDER-DEL-COMPLIANCE-01`, accepted ADR-018, `MEM-MEM0-RESET-ALT-01`
+  `B/PARTIAL`, PostgreSQL Memory Authority v10 and Memory Delivery Ledger v11.
+  It has no dependency on the blocked Mem0 reset Spike or its consumer.
+- Branch: `codex/mem-pg-native-admission-spike-01`
+- Worktree: `../zebra-mem-pg-native-admission-spike-01`
+- Owned paths: `docs/ADR-019_PostgreSQL_Native_Memory_Backend_Admission.md`,
+  `tests/agent_storage/test_postgres_native_memory_admission.py`,
+  `tests/compose/postgres_native_memory_admission/`, and governance updates in
+  `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md` and `WORKLOG.md`.
+- Non-goals: no production package, migration, API/Worker/Consumer, Mem0 HTTP,
+  Provider HTTP, Desktop, Redis, SQLite composition, Runtime composition or
+  existing Mem0 orphan cleanup.
+
+#### Goal and acceptance
+
+- Validate deterministic `memory_id`/`operation_id` identity and ambiguous-commit
+  recovery through one PostgreSQL authority boundary.
+- Prove authority and retrieval projection commit/rollback atomically, stale
+  generation writers are rejected, complete scoped deletion removes every
+  content-bearing row, and namespace isolation is preserved.
+- Prove the minimum recall contract: namespace/scope/current-generation/status
+  filtering, optional topic filtering, `top_k` result limiting and deterministic
+  tie-breaking. `top_k` is not a deletion primitive.
+- Produce exactly one explicit `ZEBRA_PG_NATIVE_ADMISSION_VERDICT` from the
+  capability matrix. `PASS` admits only the architecture and unlocks no Runtime.
+
+#### Implementation handoff
+
+- The test-only schema is created inside a per-test PostgreSQL schema and is not
+  a production migration. The isolated Compose profile starts PostgreSQL only.
+- `MEM-MEM0-RESET-SPIKE-01` stays `Blocked`; `MEM-GW-DEL-RUN-01`, its parent,
+  `MEM-GW-PG-NATIVE-01` and Runtime stay `Locked` until this card is reviewed.
+
+#### Review handoff
+
+- ADR-019 is `Accepted` with architecture verdict `PASS`. The focused isolated
+  runner passes `8` cases on PostgreSQL `17.5-alpine3.21` and emits
+  `ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS`.
+- The full `tests/agent_storage` matrix passes `303 passed, 1 skipped` (`295`
+  predecessor cases plus `8` admission cases). Changed-path Ruff, format, Mypy,
+  compilation and `git diff --check` pass.
+- `make check` remains blocked only by the two inherited file-size violations:
+  `UI/desktop/src/components/CodexConversationPane.styles.ts` (`561/500`) and
+  `tests/agent_storage/test_postgres_governed_memories.py` (`765/700`).
+- `PASS` admits only the PostgreSQL-native architecture. It does not unlock
+  `MEM-GW-PG-NATIVE-01`, Mem0, Worker, Provider HTTP, Desktop, SQLite, Redis or
+  Runtime; those require their own explicit activation and composition gates.
+
+### MEM-GW-PG-NATIVE-01 - PostgreSQL-Native Memory Backend Implementation
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `STORAGE / API / WORKER`
+- Depends on: reviewed `MEM-PG-NATIVE-ADMISSION-SPIKE-01` with `PASS`, the
+  PostgreSQL cloud composition gate and an explicit maintainer activation.
+- Branch: `TBD`
+- Owned paths: none while `Locked`; production paths are to be frozen only after
+  the admission Spike review. This card must not be inferred from a test result.
+- Non-goals while locked: no production code, migrations, runtime selector,
+  Worker, Provider HTTP, Desktop or SQLite changes.
+
+#### Gate
+
+Even after this card becomes `Ready`, it is the only successor unlocked by the
+PostgreSQL-native admission result. Mem0 remains denied/deferred and the Runtime
+composition remains locked until the full cloud authority bundle is reviewed.
 
 ### MEM-GW-DEL-PG-01 - PostgreSQL v11 Delivery Ledger And Atomic Enqueue
 
@@ -1001,6 +1087,10 @@ Worker or local SQLite composition.
   (new), management reconciliation/rebuild coordinator and PostgreSQL+Mem0
   integration tests. Default `apps/*/main.py` and local SQLite composition are
   explicitly out of scope. Governance updates remain owned by the plan card.
+- Admission note: this is a Mem0-specific consumer and is deferred from the
+  active critical path. Keep it `Locked` even if the PostgreSQL-native admission
+  Spike passes; Mem0 remains `Provider admission: DENIED` until a future
+  capability review.
 
 #### Goal
 
