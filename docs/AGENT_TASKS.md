@@ -184,7 +184,7 @@ confirmed repo memory by current-task relevance within a token budget.
 
 ### EMB-PLAN-01 - Embedded Architecture Consolidation
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `ARCH / DOC / PM`
 - Depends on: `ARCH-RT-BP-01`, `ARCH-SVC-BOUNDARY-01`, maintainer direction to
@@ -226,6 +226,21 @@ dependency-ordered task roadmap without activating implementation prematurely.
   Trench tools, analysis, writeback, or Agent Memory
 - changing existing local SQLite/Desktop behavior
 - claiming private-cloud or multi-tenant production readiness
+
+#### Closeout
+
+- Formal review covered the integrated architecture commit `8d1650bf`; its
+  prerequisites `ARCH-RT-BP-01` and `ARCH-SVC-BOUNDARY-01` are both `Done`, and
+  the CopilotKit-over-custom-SDK direction is the accepted maintainer decision.
+- The five task-plan steps are complete. The architecture, ADR-015, Trench
+  breakdown, registry and progress records are synchronized; no implementation
+  card was activated by this closeout.
+- Existing document link, terminology, line-limit and diff evidence is accepted;
+  the two unrelated repository size-gate violations remain documented. No code,
+  Compose service, PostgreSQL migration, Runtime or Desktop behavior changed.
+- Closing this card records the Embedded/Trench architecture baseline only.
+  `EMB-AGUI-SPIKE-01` remains separately activated in Review, while cloud
+  storage, Runtime and provider implementation cards keep their own gates.
 
 ### EMB-AGUI-SPIKE-01 - Zebra AG-UI Protocol Compatibility Spike
 

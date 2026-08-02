@@ -7075,3 +7075,16 @@ actual byte access.
   made by this review.
 - Closed `CLOUD-AGG-CTX-ADMIN-PG-01` from `Review` to `Done`; runtime, provider,
   Desktop and application Compose selection remain separately in Review or locked.
+
+## 2026-08-02 - EMB-PLAN-01 formal review closeout
+
+- Reviewed integrated architecture commit `8d1650bf`; Runtime Blueprint and
+  service-boundary prerequisites are `Done`, and the CopilotKit-over-custom-SDK
+  direction is the accepted maintainer decision.
+- Confirmed all five architecture-plan steps and synchronized ADR-015, the
+  Embedded target, Trench breakdown, task registry and progress records. The two
+  unrelated repository size-gate violations remain documented.
+- No implementation card, Compose service, PostgreSQL migration, Runtime or
+  Desktop behavior was activated by this review.
+- Closed `EMB-PLAN-01` from `Review` to `Done`; `EMB-AGUI-SPIKE-01` remains a
+  separately activated Review card and cloud/provider gates remain independent.

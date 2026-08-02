@@ -1089,6 +1089,17 @@
    activating implementation tasks prematurely.
 5. `completed` - Validate document consistency, file limits, and the final diff.
 
+### Closeout
+
+- Review covered integrated architecture commit `8d1650bf`; Runtime Blueprint
+  and service-boundary prerequisites are `Done`, and the CopilotKit direction is
+  the accepted maintainer decision.
+- Architecture, ADR-015, Trench breakdown, task registry and progress records
+  are synchronized. The repository's two unrelated size-gate violations remain
+  documented; no implementation or Compose work was activated.
+- `EMB-AGUI-SPIKE-01` remains a separately activated Review card; cloud storage,
+  Runtime and provider cards retain their own dependency gates.
+
 ### Decisions
 
 - `zebra-cloud-trench` owns this architecture and task-registry change only;

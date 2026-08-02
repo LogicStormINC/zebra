@@ -29,10 +29,11 @@
   stable Task boundary and backend-internal execution Segments.
 - Desktop browser task: `QA-DESKTOP-E2E-01` is Done via PR `#161`
 - Runtime blueprint: `ARCH-RT-BP-01` is complete on its local task branch
-- Review Embedded architecture task: `EMB-PLAN-01` on `zebra-cloud-trench`
+- Completed Embedded architecture task: `EMB-PLAN-01` on `zebra-cloud-trench`
   replaces the conflicting draft with one CopilotKit/AG-UI target, ADR-015, and
-  a dependency-ordered task roadmap. It is documentation-only and does not
-  activate Phase B or any Trench implementation card.
+  a dependency-ordered task roadmap. Formal review closed it as `Done`; it is
+  documentation-only and does not activate Phase B or any Trench implementation
+  card.
 - Compatibility task in Review: `EMB-AGUI-SPIKE-01` is explicitly activated on
   `codex/emb-agui-spike-01`. It is a test-only official Python SDK spike stacked
   on the architecture branch; it adds no production API/Worker wiring and cannot
