@@ -12,6 +12,9 @@
 - AOR-DEF-01 P0 validator evidence correction now uses only canonical,
   successful validator terminal evidence; focused P0/current regressions pass,
   with the same exact-base full-suite failures and static gates.
+- Governance review correction: the exact base-to-HEAD union is 42 tracked
+  paths (41 implementation/test/record paths plus the task-card path); the
+  task card now names the API binding and skill catalog paths explicitly.
 - Active local slice: `AOR-DEF-01` is implemented on
   `codex/agent-definition-completion-contract-20260802` from exact base
   `c5b814500bbeebea0d4a0307f9a58c903bd5320f`. It adds a versioned,

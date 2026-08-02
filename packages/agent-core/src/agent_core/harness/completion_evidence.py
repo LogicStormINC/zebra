@@ -13,13 +13,16 @@ from agent_core.domain.agent_definitions import (
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCallStatus
+from agent_core.harness.attempt_result import build_attempt_result
 from agent_core.harness.models import (
     HarnessAttemptOutcome,
     HarnessAttemptResult,
     HarnessContext,
     HarnessEventDraft,
 )
+from agent_core.harness.tool_batch import ToolBatchResult
 
 
 @dataclass(frozen=True)
@@ -136,10 +139,11 @@ def _trusted_validator_test(
 
 def gate_completed_terminal_result(
     terminal_result: HarnessAttemptResult,
-    complete_without_tools: Callable[..., HarnessAttemptResult],
+    request_next_completion: Callable[..., HarnessAttemptResult],
     context: HarnessContext,
     messages: list[SessionMessage],
     emitted_events: list[HarnessEventDraft],
+    fingerprints: set[str],
 ) -> HarnessAttemptResult:
     if terminal_result.outcome is not HarnessAttemptOutcome.COMPLETED:
         return terminal_result
@@ -153,7 +157,252 @@ def gate_completed_terminal_result(
         ),
         metadata=dict(terminal_result.metadata),
         assistant_message=str(terminal_result.metadata.get("assistant_message", "")),
+        fingerprints=fingerprints,
+        request_next_completion=request_next_completion,
     )
+
+
+def completion_evidence_metadata(
+    context: HarnessContext,
+    emitted_events: Iterable[HarnessEventDraft],
+    metadata: Mapping[str, object],
+) -> dict[str, object]:
+    status = evaluate_context_completion_evidence(context, emitted_events)
+    return {
+        **metadata,
+        "completion_evidence_satisfied": status.satisfied,
+        "completion_evidence_missing": list(status.missing),
+        "completion_evidence_fingerprint": status.fingerprint,
+    }
+
+
+def continue_after_tool_batch(
+    context: HarnessContext,
+    *,
+    messages: list[SessionMessage],
+    completion: ModelCompletion,
+    emitted_events: list[HarnessEventDraft],
+    batch: ToolBatchResult,
+    model_calls_used: int,
+    fingerprints: set[str],
+    request_terminal_synthesis: Callable[..., HarnessAttemptResult],
+    request_next_completion: Callable[..., HarnessAttemptResult],
+) -> HarnessAttemptResult:
+    if batch.terminal_result is not None:
+        return gate_completed_terminal_result(
+            batch.terminal_result,
+            request_next_completion,
+            context,
+            messages,
+            emitted_events,
+            fingerprints,
+        )
+    metadata = completion_evidence_metadata(context, emitted_events, batch.metadata)
+    if _needs_terminal_synthesis(batch.metadata):
+        return request_terminal_synthesis(
+            context,
+            messages=messages,
+            emitted_events=emitted_events,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=batch.tool_calls_executed,
+            metadata=metadata,
+            fallback_message=completion.assistant_message.content,
+        )
+    return request_next_completion(
+        context,
+        messages=messages,
+        emitted_events=emitted_events,
+        model_calls_used=model_calls_used,
+        tool_calls_executed=batch.tool_calls_executed,
+        fingerprints=fingerprints,
+        metadata=metadata,
+        fallback_message=completion.assistant_message.content,
+    )
+
+
+def should_use_provisional_final(
+    context: HarnessContext,
+    emitted_events: Iterable[HarnessEventDraft],
+    *,
+    allow_tools: bool,
+    has_tool_calls: bool,
+    tool_calls_executed: int,
+    compaction_happened: bool,
+    compaction_count: object,
+) -> bool:
+    definition = context.task.agent_definition
+    contract_required = bool(
+        definition is not None and definition.completion_contract.required_evidence
+    )
+    compacted_before = (
+        isinstance(compaction_count, int)
+        and not isinstance(compaction_count, bool)
+        and compaction_count > 0
+    )
+    return (
+        not has_tool_calls
+        and allow_tools
+        and not contract_required
+        and evaluate_context_completion_evidence(context, emitted_events).satisfied
+        and (tool_calls_executed > 0 or compaction_happened or compacted_before)
+    )
+
+
+def complete_without_tools(
+    context: HarnessContext,
+    *,
+    messages: list[SessionMessage],
+    emitted_events: list[HarnessEventDraft],
+    model_calls_used: int,
+    tool_calls_executed: int,
+    metadata: dict[str, object],
+    assistant_message: str,
+    fingerprints: set[str],
+    request_next_completion: Callable[..., HarnessAttemptResult],
+) -> HarnessAttemptResult:
+    status = evaluate_context_completion_evidence(context, emitted_events)
+    observation_count = _non_negative_int(
+        metadata.get("completion_evidence_observation_count")
+    )
+    metadata = {
+        **metadata,
+        "completion_evidence_satisfied": status.satisfied,
+        "completion_evidence_missing": list(status.missing),
+        "completion_evidence_fingerprint": status.fingerprint,
+    }
+    if status.satisfied:
+        return build_attempt_result(
+            outcome=HarnessAttemptOutcome.COMPLETED,
+            summary=(
+                "model completed without tool calls"
+                if tool_calls_executed == 0
+                else "tool sequence completed with final answer"
+            ),
+            assistant_message=assistant_message,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            emitted_events=emitted_events,
+            metadata=metadata,
+        )
+    if observation_count >= 1:
+        return build_attempt_result(
+            outcome=HarnessAttemptOutcome.SUSPENDED,
+            summary="completion evidence contract is not satisfied",
+            assistant_message=assistant_message,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            emitted_events=emitted_events,
+            metadata={
+                **metadata,
+                "completion_evidence_observation_count": observation_count,
+                "stop_reason": "completion_evidence_missing",
+            },
+        )
+    append_missing_evidence_observation(
+        messages,
+        missing=status.missing,
+        created_at=context.attempt.started_at,
+    )
+    return request_next_completion(
+        context,
+        messages=messages,
+        emitted_events=emitted_events,
+        model_calls_used=model_calls_used,
+        tool_calls_executed=tool_calls_executed,
+        fingerprints=fingerprints,
+        metadata={
+            **metadata,
+            "completion_evidence_observation_count": observation_count + 1,
+        },
+        fallback_message=assistant_message,
+    )
+
+
+def prepare_terminal_synthesis_evidence(
+    context: HarnessContext,
+    *,
+    messages: list[SessionMessage],
+    emitted_events: list[HarnessEventDraft],
+    model_calls_used: int,
+    tool_calls_executed: int,
+    metadata: dict[str, object],
+    fallback_message: str,
+    fingerprints: set[str],
+    request_next_completion: Callable[..., HarnessAttemptResult],
+) -> HarnessAttemptResult | None:
+    status = evaluate_context_completion_evidence(context, emitted_events)
+    if status.satisfied:
+        return None
+    observation_count = _non_negative_int(
+        metadata.get("completion_evidence_observation_count")
+    )
+    if observation_count >= 1:
+        return build_attempt_result(
+            outcome=HarnessAttemptOutcome.SUSPENDED,
+            summary="completion evidence contract is not satisfied",
+            assistant_message=fallback_message,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            emitted_events=emitted_events,
+            metadata={
+                **metadata,
+                "completion_evidence_satisfied": False,
+                "completion_evidence_missing": list(status.missing),
+                "stop_reason": "completion_evidence_missing",
+            },
+        )
+    append_missing_evidence_observation(
+        messages,
+        missing=status.missing,
+        created_at=context.attempt.started_at,
+    )
+    return request_next_completion(
+        context,
+        messages=messages,
+        emitted_events=emitted_events,
+        model_calls_used=model_calls_used,
+        tool_calls_executed=tool_calls_executed,
+        fingerprints=fingerprints,
+        metadata={
+            **metadata,
+            "completion_evidence_observation_count": observation_count + 1,
+        },
+        fallback_message=fallback_message,
+    )
+
+
+def terminal_synthesis_completion_evidence(
+    context: HarnessContext,
+    *,
+    emitted_events: list[HarnessEventDraft],
+    model_calls_used: int,
+    tool_calls_executed: int,
+    metadata: dict[str, object],
+    assistant_message: str,
+) -> HarnessAttemptResult | None:
+    status = evaluate_context_completion_evidence(context, emitted_events)
+    if status.satisfied:
+        return None
+    return build_attempt_result(
+        outcome=HarnessAttemptOutcome.SUSPENDED,
+        summary="completion evidence contract is not satisfied",
+        assistant_message=assistant_message,
+        model_calls_used=model_calls_used,
+        tool_calls_executed=tool_calls_executed,
+        emitted_events=emitted_events,
+        metadata={
+            **metadata,
+            "completion_evidence_satisfied": False,
+            "completion_evidence_missing": list(status.missing),
+            "stop_reason": "completion_evidence_missing",
+        },
+    )
+
+
+def _needs_terminal_synthesis(metadata: Mapping[str, object]) -> bool:
+    return metadata.get("validator_correction_required") is True or metadata.get(
+        "tool_loop_no_progress"
+    ) is True or metadata.get("policy_recovery_terminal_synthesis") is True
 
 
 def append_missing_evidence_observation(

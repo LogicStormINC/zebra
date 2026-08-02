@@ -1,5 +1,22 @@
 # Progress Log
 
+## 2026-08-02 AOR-DEF-01 governance P1 scope and size correction
+
+- task-card `Owned paths` now explicitly names
+  `apps/api/src/zebra_agent_api/agent_definition_binding.py` and
+  `packages/agent-tools/src/agent_tools/skills_catalog.py`
+- exact `base..HEAD` union is 42 tracked paths: 41 implementation/test/record
+  paths plus `docs/AGENT_TASKS.md`; the earlier 24-file figure was only the
+  `df6ac58` follow-up commit, not the cumulative union
+- moved completion-evidence continuation/gating helpers into the existing
+  `completion_evidence.py`; `sequential_loop.py` is now 521 lines versus 526
+  at exact base (no net growth), while preserving P0 canonical validator tests
+- post-split focused/API/worker/storage set: 87 passed; related set: 51 passed
+  with one inherited cancellation-streaming failure; full suite: 1985 passed,
+  10 failed, 9 skipped, with the same exact-base failure set
+- changed-path Ruff, compileall, and diff-check passed; file-size gate remains
+  11 inherited violations, including `sequential_loop.py` at 521/500
+
 ## 2026-08-02 AOR-DEF-01 P0 validator evidence trust correction
 
 - red reproduced the real `record_tool_result` conflict: one successful tool

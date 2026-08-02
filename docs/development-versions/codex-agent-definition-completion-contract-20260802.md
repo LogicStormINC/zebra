@@ -26,6 +26,21 @@
 - Durable API, TaskPrepared, workspace, recovery, rollover, and handoff
   propagation of the definition and completion contract.
 
+## Owned paths and diff accounting
+
+- The AOR-DEF-01 task card is authoritative for the owned paths. It now
+  explicitly includes `apps/api/src/zebra_agent_api/agent_definition_binding.py`
+  and `packages/agent-tools/src/agent_tools/skills_catalog.py`, both required
+  by the API binding and trusted enabled-skill resolution in this slice.
+- The exact `base..HEAD` union is `42` tracked paths: `41` implementation,
+  test, and development-record paths plus `docs/AGENT_TASKS.md` as the task-card
+  governance path. The earlier `24 files` figure was only the
+  `df6ac58` follow-up commit, not the cumulative base-to-HEAD diff; commit-local
+  counts are `35` (`957bf84`), `24` (`df6ac58`), and `6` (`8eb550c`) with
+  overlap.
+- The current implementation remains provider-neutral and within the task
+  card; no outside path was added for the size reduction.
+
 ## Follow-up review closure
 
 - Shared identity normalization now rejects control characters before
@@ -103,6 +118,9 @@ Planned before implementation:
 - Current focused/API/worker/storage set: 87 passed.
 - Related continuation/worker set: 51 passed; one inherited cancellation-
   streaming failure remains.
+- `sequential_loop.py` is `526` lines at the exact base and `521` lines now;
+  the completion-evidence additions are moved into the existing focused
+  evidence module, so this over-limit file has no net growth versus base.
 - Full development-worktree pytest: 1985 passed, 10 failed, 9 skipped; the
   same ten failures remain the exact-base/inherited set.
 - make sync, focused Ruff, compileall, and git diff --check: passed.
