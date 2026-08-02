@@ -167,6 +167,8 @@
    PostgreSQL transaction, then remove the guarded cloud composition rejection.
 4. `completed` - Prove cross-Worker read, stale-fence rollback, schedule failure,
    response-loss recovery and provider/database fault windows with PostgreSQL+MinIO.
+5. `completed` - Formally audit the integrated Effect/Artifact transaction and
+   dependencies, then close the card as Done without adding v10.
 
 ### Decisions
 
@@ -176,6 +178,16 @@
   automatic Effect replay or inline object deletion.
 - No v10 migration is required: v9 metadata, the existing Effect outbox and their
   deferred Event bindings express the aggregate without a duplicate Artifact FK.
+
+### Closeout
+
+- Review covered integrated binding implementation `4480ca66`; Artifact v9 and
+  Effect Outbox dependencies are `Done`.
+- Recorded PostgreSQL+MinIO `53/53`, Tools/Worker/Runtime `418/418`, Storage
+  `131/131` and current-HEAD focused `13/13` evidence is accepted. No Compose run
+  or production edit was made.
+- Delivery APIs, read composition, provider selection and Runtime startup remain
+  separately gated.
 
 ## CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
 

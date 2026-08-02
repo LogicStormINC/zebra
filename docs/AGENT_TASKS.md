@@ -2229,7 +2229,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-EFFECT-PAYLOAD-ATOMIC-01 - Effect Payload And Intent Linkage
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Branch: `codex/cloud-effect-payload-atomic-01`
 - Depends on: `CLOUD-ART-PAYLOAD-PG-01` integrated at `b87760b6` and
@@ -2258,6 +2258,23 @@ cloud mainline and is not built or changed by these cards.
   closed and different payload refs conflict on replay. Real PostgreSQL+MinIO tests pass
   `53/53`; Tools/Worker/Runtime pass `418/418` with `17` environment-gated skips and
   Storage passes `131/131` with `121` environment-gated skips. No v10 migration was added.
+
+#### Closeout
+
+- Formal review targeted integrated Effect/Artifact binding implementation
+  `4480ca66`; Artifact v9 payload authority and Effect Outbox dependencies are
+  both `Done`.
+- The transaction keeps provider I/O outside PostgreSQL locks, commits the intent
+  Event, outbox row and Artifact finalization atomically, and preserves staged
+  evidence for unknown outcomes. No new SQLite behavior, broker, generic Unit of
+  Work, v10 migration, signed delivery, Desktop or Runtime selector was added.
+- Existing evidence is accepted: PostgreSQL+MinIO `53/53`, Tools/Worker/Runtime
+  `418/418` with `17` skips, Storage `131/131` with `121` skips; current-HEAD
+  focused Effect/Worker regressions pass `13/13`. No new Compose run or production
+  edit was needed for this closeout.
+- Closing this card records Effect-to-Artifact transaction linkage only. Delivery
+  APIs, read composition, provider selection and Runtime startup retain separate
+  gates.
 
 ### CLOUD-SESSION-HISTORY-PG-01 - PostgreSQL Session History Read Model
 

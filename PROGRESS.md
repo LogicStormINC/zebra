@@ -205,13 +205,14 @@
   `114` environment-gated skips. Formal dependency/path review closed
   `CLOUD-ART-PAYLOAD-PG-01` as `Done`; Effect linkage, read composition and
   Runtime/provider selection remain separate gates.
-- Completed Effect/Artifact review slice `CLOUD-EFFECT-PAYLOAD-ATOMIC-01` starts from
+- Completed and formally closed Effect/Artifact review slice `CLOUD-EFFECT-PAYLOAD-ATOMIC-01` starts from
   `zebra-cloud-trench@b87760b6`. Its dependencies are integrated; it owns the narrow
   transaction that binds the verified Effect request Artifact to the intent Event and
   Effect outbox row. Stable request identity, finalized-only cross-Worker reads and
   terminal result Artifact binding are implemented without migration v10. Real
   PostgreSQL+MinIO tests pass `53/53`; Tools/Worker/Runtime pass `418/418` and Storage
-  passes `131/131`. It excludes SQLite, Desktop, runtime selection and delivery APIs.
+  passes `131/131`. Formal dependency/path review closed it as `Done`; it excludes
+  SQLite, Desktop, runtime selection and delivery APIs.
 - Completed Artifact read-composition review slice `CLOUD-ART-READ-COMP-01` starts from
   `zebra-cloud-trench@4480ca66` after both PostgreSQL Model/Tool v6 and Artifact
   payload v9 dependencies were integrated. It adds one-snapshot namespace-scoped

@@ -7187,3 +7187,16 @@ actual byte access.
   Compose run or production edit was made by this review.
 - Closed `CLOUD-ART-PAYLOAD-PG-01` from `Review` to `Done`; Effect linkage,
   read composition, delivery APIs and Runtime/provider cards retain separate gates.
+
+## 2026-08-02 - CLOUD-EFFECT-PAYLOAD-ATOMIC-01 formal review closeout
+
+- Reviewed integrated Effect/Artifact binding implementation `4480ca66`; Artifact
+  v9 payload authority and Effect Outbox dependencies are `Done`.
+- Audited provider-outside-lock ordering, atomic intent Event/outbox/finalization,
+  staged uncertainty evidence and the no-v10 boundary. No SQLite, broker, generic
+  Unit of Work, signed delivery, Desktop or Runtime selector was added.
+- Accepted PostgreSQL+MinIO `53/53`, Tools/Worker/Runtime `418/418` with `17`
+  skips, Storage `131/131` with `121` skips and current-HEAD focused `13/13`.
+  No Compose run or production edit was made by this review.
+- Closed `CLOUD-EFFECT-PAYLOAD-ATOMIC-01` from `Review` to `Done`; delivery APIs,
+  read composition, provider selection and Runtime startup retain separate gates.
