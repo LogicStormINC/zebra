@@ -871,7 +871,7 @@ the only allowed implementation entry points.
 
 ### MEM-GW-DEL-CON-01 - Core Memory Delivery Certainty Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `CORE`
 - Depends on: reviewed `MEM-GW-CON-01` and `CLOUD-MEMORY-CON-01`; explicitly
@@ -907,6 +907,17 @@ transitions and stable idempotency keys without importing SQL, HTTP, Mem0 or Red
   `succeeded` maps to `applied`, degraded outcomes to `unknown`, and disabled or
   not-found outcomes to `definite_no_effect`. The runtime child must emit explicit
   certainty and must not use `detail` as a control signal.
+
+#### Closeout
+
+- Formal review covered integrated Core certainty implementation `0db22a9f`;
+  provider-neutral scope identity, operation/CAS states, typed certainty and
+  terminal unknown quarantine are present without infrastructure imports.
+- Recorded Core/Mem0 `361/361`, strict Mypy over `133` Core files, Ruff, Eval
+  `10/10` and diff evidence is accepted. Current focused validation passes
+  `18/18`.
+- Closed `MEM-GW-DEL-CON-01` from `Review` to `Done`; SQL, HTTP, Mem0, Redis,
+  Worker and runtime wiring remain outside the card.
 
 ### MEM-MEM0-RESET-SPIKE-01 - Scoped Mem0 Namespace Reset And Rebuild Probe
 

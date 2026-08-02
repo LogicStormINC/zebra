@@ -7353,3 +7353,13 @@ actual byte access.
   or runtime wiring was added.
 - Closed `MEM-GW-CON-01` from `Review` to `Done`; Mem0 Spike/Adapter remain
   deferred and no provider is runtime-selected.
+
+## 2026-08-02 - MEM-GW-DEL-CON-01 formal review closeout
+
+- Reviewed integrated Core certainty implementation `0db22a9f`; provider-neutral
+  scope identity, operation/CAS states and terminal unknown quarantine are
+  explicit without infrastructure imports.
+- Accepted Core/Mem0 `361/361`, strict Mypy, Ruff, Eval `10/10` and diff evidence;
+  current focused validation passes `18/18`.
+- Closed `MEM-GW-DEL-CON-01` from `Review` to `Done`; PostgreSQL, Mem0 HTTP,
+  Worker and Runtime remain separate gates.

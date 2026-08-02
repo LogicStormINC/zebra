@@ -824,9 +824,18 @@
    values with focused Core tests.
 3. `completed` - Prove illegal status/certainty combinations and package boundaries;
    do not add SQL, HTTP, Mem0 or Worker wiring.
-4. `completed` - Move the child to `Review` with exact evidence before PG work starts:
+4. `completed` - Close the child as `Done` with exact evidence before PG work starts:
    `361` Core/Mem0 tests, strict Core Mypy, Ruff, diff check and Eval `10/10` pass;
    the full suite has only the inherited Desktop size-gate failure.
+
+### Closeout
+
+- Review covered integrated Core certainty implementation `0db22a9f`; typed scope,
+  operation/CAS and unknown quarantine states are accepted without infrastructure.
+- Recorded Core/Mem0 `361/361`, strict Mypy, Ruff and Eval `10/10` evidence is
+  accepted; current focused validation passes `18/18`.
+- `MEM-GW-DEL-CON-01` is `Done`; PostgreSQL, Mem0 HTTP, Worker and Runtime remain
+  separate gates.
 
 ## MEM-MEM0-RESET-SPIKE-01 - Scoped Mem0 Namespace Reset And Rebuild Probe
 

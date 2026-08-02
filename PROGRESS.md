@@ -525,7 +525,7 @@ including a real thinking tool round trip.
   gates. `MEM-GW-DEL-PLAN-01` is a docs-only planning slice in Review on
   `codex/mem-gw-del-plan-01`; it keeps `MEM-GW-DEL-01` locked and registers the
   Core certainty, scoped reset Spike, PostgreSQL v11 ledger and runtime/rebuild
-  child cards. `MEM-GW-DEL-CON-01` is now in Review after its explicitly activated,
+  child cards. `MEM-GW-DEL-CON-01` is formally `Done` after its explicitly activated,
   provider-neutral Core implementation slice. `MEM-MEM0-RESET-SPIKE-01` is now
   `Blocked` on `codex/mem0-reset-spike-01`: its isolated Compose run proved the
   pinned Mem0 list endpoint has no documented bounded pagination, so exact scoped
