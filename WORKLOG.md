@@ -6796,3 +6796,29 @@ actual byte access.
   (`561/500`). Desktop remains out of scope.
 - Child moved to `Review`; PostgreSQL v11, scoped Mem0 reset and runtime consumer
   remain locked successors and were not modified.
+
+## 2026-08-02 - MEM-MEM0-RESET-SPIKE-01 activation and implementation
+
+- Following the sidebar ChatGPT plan, activated `codex/mem0-reset-spike-01` with
+  exact Compose, response-proxy, Mem0 spike test and compatibility-doc boundaries.
+  Core, PostgreSQL delivery, Worker, Adapter and local SQLite paths remain locked.
+- Added a test-only proxy that proves an upstream-committed `POST /memories` can
+  produce an unknown client outcome, plus a reset-fault control used only by the
+  isolated test. Added the scoped A/g1 -> A/g2 -> A/g3 and B/g1 reset/rebuild probe.
+- The probe fails closed on undocumented/unbounded list behavior, duplicate page
+  objects, missing metadata, provider-row residue or cross-scope leakage. It uses
+  only read-only SQL for the PostgreSQL oracle and always tears down its isolated
+  project/volumes.
+- Static Ruff, Python compilation, Compose config and skipped/collection tests pass;
+  host Docker execution remains required before this child can enter Review.
+
+## 2026-08-02 - MEM-MEM0-RESET-SPIKE-01 bounded-enumeration result
+
+- The isolated host Compose run reached the Mem0 API and response-loss proxy, then
+  failed at the deliberate OpenAPI gate before any memory publish. The pinned
+  `GET /memories` parameters were `agent_id`, `run_id`, `show_expired`, `top_k` and
+  `user_id`; no `page/page_size` or `offset/limit` contract exists.
+- `top_k` cannot prove complete namespace enumeration, so the child is marked
+  `Blocked` per the plan. The test never called global `/reset`, and its fixture
+  removed the isolated containers, network and volumes. `MEM-GW-DEL-01`, the PG
+  ledger and runtime consumer remain locked.

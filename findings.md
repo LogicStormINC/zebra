@@ -906,3 +906,21 @@
 - Core delivery records contain only Memory ID, revision, SHA-256 digests,
   operation, scope/generation, idempotency key, attempt, state and certainty. No
   provider body, Memory text, credential or storage type enters the contract.
+
+## MEM-MEM0-RESET-SPIKE-01 activation and implementation (2026-08-02)
+
+- The sidebar ChatGPT review activated only the test-only reset probe. The exact
+  owned paths are `docker/compose.mem0.test.yml`, focused `docker/mem0/` helpers,
+  `tests/spikes/mem0/` and the Mem0 compatibility evidence doc; Core, PostgreSQL
+  delivery, Worker, Adapter and local SQLite composition remain out of scope.
+- The probe uses an isolated Compose project with a response-loss proxy that commits
+  the first `POST /memories` upstream and closes the client response. It enumerates
+  only documented pagination parameters, deletes each exact generation object, and
+  uses read-only PostgreSQL payload queries as an oracle. It never calls a global
+  `/reset`, mutates provider tables, or retries an unknown publish.
+- Static Ruff, Python compilation, Compose config validation and the gated test
+  collection pass. The real Compose run failed closed at the bounded-enumeration
+  gate: OpenAPI parameters were only `agent_id`, `run_id`, `show_expired`, `top_k`
+  and `user_id`; `page/page_size` and `offset/limit` were absent. The child is
+  therefore `Blocked`, `top_k` is not pagination, and no reset/rebuild success is
+  claimed.

@@ -581,14 +581,16 @@
 
 ## MEM-MEM0-RESET-SPIKE-01 - Scoped Mem0 Namespace Reset And Rebuild Probe
 
-1. `pending` - Wait for the reviewed Mem0 Spike/Compose chain and explicitly activate
-   the test-only reset probe.
-2. `pending` - Exercise scoped enumeration, pagination, purge, restart, duplicate,
-   unknown-object and cross-scope isolation behavior in Docker Compose.
-3. `pending` - Record operator authorization and failure/upper-bound semantics;
-   never substitute a global `/reset` endpoint.
-4. `pending` - Move to `Review` only if a bounded reset/rebuild contract is proven;
-   otherwise mark `Blocked` and preserve the parent lock.
+1. `completed` - Activate `codex/mem0-reset-spike-01` with exact Compose/proxy/test
+   owned paths after the sidebar ChatGPT review; keep Core, PG ledger and Worker
+   successors locked.
+2. `completed` - Run the isolated Compose probe; the pinned OpenAPI exposes no
+   documented bounded pagination (`page/page_size` or `offset/limit`), so the test
+   fails closed before any publish and cleans its project/volumes.
+3. `completed` - Record the operator authorization and upper-bound result; `top_k`
+   is not treated as pagination and no global `/reset` endpoint is substituted.
+4. `completed` - Mark the child `Blocked` because exact scoped enumeration cannot be
+   proven; preserve the parent lock and do not start the runtime consumer.
 
 ## MEM-GW-DEL-PG-01 - PostgreSQL v11 Delivery Ledger And Atomic Enqueue
 

@@ -150,3 +150,38 @@ ZEBRA_RUN_MEM0_SPIKE=1 uv run pytest -q \
 
 测试自动创建并销毁名为 `zebra-mem0-spike` 的独立 Compose project 及其 volumes，
 不会操作长期运行的 `zebra-dependencies` volumes。
+
+## 6. Scoped reset/rebuild Spike（`MEM-MEM0-RESET-SPIKE-01`）
+
+2026-08-02 按 sidebar ChatGPT 方案激活了独立的 test-only reset probe。它使用
+`zebra-mem0-reset-spike` Compose project、独立 PostgreSQL/API/proxy 端口和同一组
+固定 Mem0 镜像；结束时总是执行 `down --volumes --remove-orphans`。测试不会调用
+全局 `/reset`，不会直接写 provider 表，也不会把 Mem0 提升为 Zebra 事实源。
+
+测试矩阵固定为：
+
+- A/g1：重复、过期、分页枚举、response-loss unknown publish、重启和精确 scoped purge；
+- B/g1：与 A 的跨作用域隔离和保留验证；
+- A/g2：重建后再次发生 unknown publish 时保持 quarantined；
+- A/g3：只在下一代重建，验证 generation isolation；
+- PostgreSQL：仅通过 `SELECT` 读取固定 `zebra_memories.payload`，核对 provider 行数和
+  purge 后是否残留。
+
+故障代理先让 Mem0 完成上游 `POST /memories`，再关闭客户端响应，模拟调用方只能得到
+`unknown` 的情况；测试禁止重试，必须通过同一代的完整分页枚举发现对象。分页参数必须
+先出现在该 pinned server 的 OpenAPI 中；参数缺失、分页重复/截断、对象元数据缺失、跨
+scope 泄漏或 PostgreSQL 残留都会明确失败为 `Blocked`。代理的 `/__test__/reset-fault`
+只用于第二代测试故障复位，不是 Mem0 API。
+
+运行命令：
+
+```bash
+ZEBRA_RUN_MEM0_RESET_SPIKE=1 uv run pytest -q \
+  tests/spikes/mem0/test_mem0_namespace_reset.py
+```
+
+静态 Ruff、Python 编译、Compose config 和非 Docker 收集/跳过态测试均通过。真实
+Compose 运行已到达 API 健康检查，但在预期的 OpenAPI gate 失败：固定版本的
+`GET /memories` 只有 `agent_id`、`run_id`、`show_expired`、`top_k`、`user_id`，没有
+`page/page_size` 或 `offset/limit`。因此不能证明完整 scoped enumeration，任务按门禁
+标记为 `Blocked`；`top_k` 不得被解释为分页，父级 `MEM-GW-DEL-01` 继续保持 `Locked`。

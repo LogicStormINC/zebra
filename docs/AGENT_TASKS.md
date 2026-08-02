@@ -782,15 +782,19 @@ transitions and stable idempotency keys without importing SQL, HTTP, Mem0 or Red
 
 ### MEM-MEM0-RESET-SPIKE-01 - Scoped Mem0 Namespace Reset And Rebuild Probe
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `Blocked`
+- Owner: `lukeding`
 - Suggested role: `INTEGRATIONS / SECURITY / SRE`
 - Depends on: merged `MEM-MEM0-SPIKE-01`, `CLOUD-COMPOSE-INFRA-01`,
   `MEM-GW-CON-01` and `CLOUD-STO-AUTH-01`
-- Branch: `TBD`
+- Branch: `codex/mem0-reset-spike-01`
+- Worktree: `../zebra-mem0-reset-spike-01`
 - Owned paths: `docker/compose.mem0.test.yml`, focused files under `docker/mem0/`,
-  `tests/spikes/mem0/`, and `docs/Mem0 OSS协议兼容性验证记录.md`. Governance
-  updates remain owned by the plan card.
+  `tests/spikes/mem0/`, and `docs/Mem0 OSS协议兼容性验证记录.md`. The maintainer
+  activated this test-only slice on 2026-08-02 after the sidebar ChatGPT review;
+  this activation handoff may update the task registry, `task_plan.md`, `PROGRESS.md`,
+  `findings.md` and `WORKLOG.md`. No Core, PostgreSQL ledger, Worker, Adapter or
+  local SQLite paths are owned here.
 
 #### Goal
 
@@ -805,6 +809,21 @@ reset.
 - Cross-scope isolation and operator authorization are proven.
 - If safe scoped reset is unavailable, the card becomes `Blocked` and the parent
   cannot unlock; a global `/reset` is never accepted as a substitute.
+
+#### Current handoff
+
+- Compose config, a test-only response-loss proxy and the gated reset test are
+  implemented. Static Ruff, Python compilation, Compose config validation and the
+  non-Docker test collection pass.
+- Host Docker execution ran with the isolated project and failed closed at the
+  OpenAPI gate: pinned `GET /memories` exposes only `agent_id`, `run_id`,
+  `show_expired`, `top_k` and `user_id`, with no documented `page/page_size` or
+  `offset/limit`. The test command was `ZEBRA_RUN_MEM0_RESET_SPIKE=1 uv run pytest
+  -q tests/spikes/mem0/test_mem0_namespace_reset.py`; it returned one explicit
+  `Blocked` failure before publishing data, and the project/volumes were removed.
+- Because complete scoped enumeration cannot be proven, this child is `Blocked`;
+  `MEM-GW-DEL-01` and the runtime consumer remain locked. Do not reinterpret
+  `top_k` as pagination or replace this gate with global `/reset`.
 
 ### MEM-GW-DEL-PG-01 - PostgreSQL v11 Delivery Ledger And Atomic Enqueue
 
