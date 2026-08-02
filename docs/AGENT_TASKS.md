@@ -503,7 +503,7 @@ derived semantic-memory service without weakening Zebra's governed memory truth.
 
 ### CLOUD-COMPOSE-INFRA-01 - Docker Compose Dependency Baseline
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `SRE / RUNTIME`
 - Depends on: explicit maintainer activation on 2026-07-24. Development is
@@ -558,6 +558,24 @@ service and from future Zebra API/Worker application containers.
 - Zebra application images, migration jobs, Kubernetes, Helm, HA, PITR or GA claims
 - publishing a production Mem0 image or treating Mem0 as the durable Task/Event
   or governed-memory fact source
+
+#### Closeout
+
+- Formal review targeted the integrated dependency stack at `b23b8e762`; Embedded
+  architecture, local storage composition and authoritative Store composition are
+  all `Done`, with explicit maintainer activation recorded.
+- The stack keeps PostgreSQL, Redis, MinIO and Mem0 data dependencies in the
+  dependency Compose file, the optional Mem0 service in its overlay, and Zebra
+  API/Worker containers out of scope. Volumes, health checks, loopback bindings,
+  non-root boot-smoke hardening and the safe environment template remain within
+  the declared paths.
+- Existing validation is accepted: both Compose renders, 78-package hash lock,
+  base dependency health, Mem0 migration/API/auth checks and boot-only sentinel
+  evidence. No new Docker-socket operation or production edit was needed for
+  this closeout; container health is not promoted to production evidence.
+- Closing this card records the dependency-container baseline only. Mem0 contract
+  and adapter cards, PostgreSQL adapters, Zebra application images and Runtime
+  selection retain separate gates.
 
 ### MEM-MEM0-SPIKE-01 - Mem0 OSS Contract And Operations Probe
 

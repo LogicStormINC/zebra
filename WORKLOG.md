@@ -7117,3 +7117,17 @@ actual byte access.
   `11/11`. No Compose run or production edit was made by this review.
 - Closed `CLOUD-STO-AUTH-01` from `Review` to `Done`; Compose dependency,
   PostgreSQL migration and Memory Gateway cards retain their own gates.
+
+## 2026-08-02 - CLOUD-COMPOSE-INFRA-01 formal review closeout
+
+- Reviewed integrated dependency stack `b23b8e762`; Embedded architecture,
+  local storage composition and authoritative Store composition are `Done`, with
+  explicit maintainer activation recorded.
+- Audited the separated PostgreSQL/Redis/MinIO/Mem0 dependency services, optional
+  Mem0 overlay, named volumes, health checks, loopback bindings, non-root image and
+  safe environment template. Zebra API/Worker containers remain out of scope.
+- Accepted existing Compose render/hash, dependency health, Mem0 migration/API/
+  auth and boot-only sentinel evidence. No Docker-socket operation or production
+  edit was made by this review; container health is not production evidence.
+- Closed `CLOUD-COMPOSE-INFRA-01` from `Review` to `Done`; Mem0 contract/adapter,
+  PostgreSQL adapter, application-image and Runtime cards retain separate gates.

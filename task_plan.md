@@ -1029,6 +1029,8 @@
 5. `completed` - Update architecture/progress evidence, obtain independent review,
    run repository checks
    and commit the task without pushing or merging stacked dependencies.
+6. `completed` - Formally audit the separated dependency/application boundary and
+   existing host evidence, then close the card as Done without running Docker here.
 
 ### Decisions
 
@@ -1040,6 +1042,17 @@
   with `infer=false`; every retrieval is revalidated against `MemoryStorePort`.
 - The pinned Mem0 image and Compose overlay prove boot only. Real write/search,
   idempotency, deletion and namespace behavior remain a separate credentialed Spike.
+
+### Closeout
+
+- Review covered integrated Compose implementation `b23b8e762`; Embedded and
+  storage composition prerequisites are `Done`, with maintainer activation recorded.
+- The separated dependency stack, optional Mem0 overlay, pinned non-root image,
+  health checks, volumes and environment template remain within scope. Existing
+  render/hash, health, migration and auth evidence is accepted; no Docker-socket
+  operation or production edit was made by this review.
+- Mem0 semantics remain gated by its contract/adapter cards; Zebra application
+  images, PostgreSQL adapters and Runtime selection are not unlocked.
 
 ## CLOUD-STO-SEAM-01 - Control-Plane Storage Composition Seam
 

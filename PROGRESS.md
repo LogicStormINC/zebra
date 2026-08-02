@@ -54,12 +54,13 @@
   provider-neutral confirmed-memory publish, search and delete outcomes. Remote
   hits contain only a Zebra `MemoryId` for mandatory Store revalidation; no Mem0
   adapter, credential, Docker or runtime wiring is part of this slice.
-- Dependency-container task in Review: `CLOUD-COMPOSE-INFRA-01` on
+- Completed dependency-container task: `CLOUD-COMPOSE-INFRA-01` on
   `codex/cloud-compose-infra-01` creates the base Docker Compose dependency stack
   and a separate optional Mem0 boot-smoke overlay. Its pinned image, migrations,
   health and anonymous-request rejection are verified locally. Mem0 remains
   derived and replaceable; Zebra application containers stay locked until real
-  cloud adapters exist.
+  cloud adapters exist. Formal review closed the dependency baseline as `Done`;
+  no Docker-socket operation or runtime selection was made here.
 - PostgreSQL tasks in Review: `CLOUD-PG-01` implements isolated Event/Projection
   Adapters, while `CLOUD-LEASE-PG-01` implements epoch-scoped, database-clock
   Lease fencing. Both have real PostgreSQL evidence but neither is runtime-selected.
@@ -497,7 +498,7 @@ including a real thinking tool round trip.
 - `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
-  `CLOUD-STO-AUTH-01`, `CLOUD-COMPOSE-INFRA-01`, `MEM-GW-CON-01`,
+  `CLOUD-STO-AUTH-01`, `MEM-GW-CON-01`,
   `MEM-MEM0-SPIKE-01`, `MEM-MEM0-ADP-01`, `CLOUD-PG-PLAN-01`, `CLOUD-PG-01`,
   `CLOUD-LEASE-PLAN-01`, `CLOUD-LEASE-CON-01`, and `CLOUD-LEASE-PG-01` are in
   Review. Mem0 remains a derived, degraded-safe index; PostgreSQL Event/Projection
