@@ -7319,3 +7319,14 @@ actual byte access.
   Desktop or production cutover was added.
 - Closed `CLOUD-MEMORY-PG-PLAN-01` from `Review` to `Done`; Core mutation,
   PostgreSQL authority and delivery cards retain independent gates.
+
+## 2026-08-02 - CLOUD-MEMORY-CON-01 formal review closeout
+
+- Reviewed integrated Core implementation `4bda7f72`; typed revision/CAS,
+  content-free receipts/tombstones and pure candidate/promotion/review planners
+  are present without I/O.
+- Accepted recorded Core `320/320`, API/Worker `411` with `14` skips, strict
+  Mypy/Ruff, Eval `10/10` and diff evidence. Current focused validation passes
+  `39/39`.
+- Closed `CLOUD-MEMORY-CON-01` from `Review` to `Done`; PostgreSQL v10,
+  delivery, Mem0 and runtime selection remain separate gates.

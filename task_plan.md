@@ -44,6 +44,15 @@
 - Canonical replay results contain identifiers/revisions/Event references only, never
   Memory text or provider data.
 
+### Closeout
+
+- Review covered integrated Core implementation `4bda7f72`; revision/CAS,
+  content-free receipts/tombstones and pure planners are accepted.
+- Recorded Core `320/320`, API/Worker `411` with `14` skips, strict static checks
+  and Eval `10/10` evidence is accepted; current focused validation is `39/39`.
+- `CLOUD-MEMORY-CON-01` is `Done`; PostgreSQL, delivery, Mem0 and runtime remain
+  separate gates.
+
 ## CLOUD-MEMORY-PG-PLAN-01 - PostgreSQL Governed Memory Authority Plan
 
 1. `completed` - Inventory the current SQLite Memory fact source, all mutation/read

@@ -238,7 +238,7 @@
   implementation. The reviewed plan assigns v10 to governed facts/operation receipts,
   then v11 to Mem0 delivery; final review found no open P0/P1. Session History remains
   Locked on trusted Host scope.
-- Completed governed-memory Core slice `CLOUD-MEMORY-CON-01` starts from integrated
+- Completed governed-memory Core slice `CLOUD-MEMORY-CON-01` is formally `Done` and starts from integrated
   plan `2c43af0f`. It adds provider-neutral revision/CAS, content-free operation
   receipts and tombstones, plus pure candidate/promotion/review planning while
   preserving local wrapper behavior. Worker/Admin requests bind Session CAS and

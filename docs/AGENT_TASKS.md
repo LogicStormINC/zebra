@@ -706,7 +706,7 @@ by the Spike, with no Mem0 type escaping the integration package.
 
 ### CLOUD-MEMORY-CON-01 - Governed Memory Mutation Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Branch: `codex/cloud-memory-con-01`
 - Depends on: reviewed `CLOUD-MEMORY-PG-PLAN-01`
@@ -733,6 +733,18 @@ by the Spike, with no Mem0 type escaping the integration package.
   changed-path Ruff pass, release Eval is `10/10`, and `git diff --check` passes.
   Full tests are `1971 passed, 145 skipped, 1 inherited Desktop file-size failure`;
   the same 561/500 violation reproduces on untouched `zebra-cloud-trench`.
+
+#### Closeout
+
+- Formal review covered integrated Core implementation `4bda7f72`; typed
+  revision/CAS, content-free receipts/tombstones and pure candidate/promotion/
+  review planners are present without I/O.
+- Recorded Core `320/320`, API/Worker `411` with `14` skips, strict Mypy/Ruff,
+  Eval `10/10` and diff evidence is accepted. Current-head focused validation
+  passes `39/39`.
+- Closed `CLOUD-MEMORY-CON-01` from `Review` to `Done`. PostgreSQL v10,
+  delivery, Mem0, runtime selection, SQLite feature work and Desktop remain
+  separate gates.
 
 ### CLOUD-MEMORY-PG-01 - PostgreSQL Governed Memory Authority
 
