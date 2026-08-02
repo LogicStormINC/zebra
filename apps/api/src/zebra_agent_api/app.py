@@ -40,7 +40,6 @@ from agent_storage import (
     list_confirmed_repo_memories,
 )
 from agent_storage.session_attachments import RegisteredTaskMedia, TaskAttachmentMediaResolver
-from agent_tools import resolve_agent_definition_context
 from zebra_agent_config import (
     ZebraAgentSettings,
     load_settings,
@@ -59,6 +58,7 @@ from zebra_agent_worker import (
 
 import zebra_agent_api.preapproved_tools as auth
 import zebra_agent_api.session_payloads as payloads
+from zebra_agent_api.agent_definition_binding import bind_server_resolved_agent_definition
 from zebra_agent_api.api_approval_control_mixin import ApiApprovalControlMixin
 from zebra_agent_api.api_artifact_read_mixin import ApiArtifactReadMixin
 from zebra_agent_api.api_memory_control_mixin import ApiMemoryControlMixin
@@ -126,9 +126,9 @@ class ZebraAgentApi(
         if isinstance(parsed, ApiResponse):
             return parsed
         try:
-            resolve_agent_definition_context(
+            parsed["agent_definition"] = bind_server_resolved_agent_definition(
                 parsed["agent_definition"],
-                scoped_skill_roots(self.settings),
+                self.settings,
             )
         except ValueError as error:
             return bad_request(str(error))

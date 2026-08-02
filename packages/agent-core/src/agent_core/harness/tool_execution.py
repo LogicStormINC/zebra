@@ -96,7 +96,8 @@ def record_tool_result(
         tool_result.output,
     )
     verification_metadata = dict(verification.metadata)
-    if "validator" in effective_tool_tags:
+    validator_execution_succeeded = tool_result.status is ToolCallStatus.EXECUTED
+    if "validator" in effective_tool_tags and validator_execution_succeeded:
         validator_result = tool_result.metadata.get("validator_result")
         validator_passed = (
             validator_result.get("passed")
@@ -109,14 +110,20 @@ def record_tool_result(
             "validator_outcome",
             "passed" if validator_passed else "failed",
         )
+    elif "validator" in effective_tool_tags:
+        verification_metadata.pop("validator_outcome", None)
+    verification_passed = verification.passed
+    if "validator" in effective_tool_tags and not validator_execution_succeeded:
+        verification_passed = False
     emitted_events.append(
         HarnessEventDraft(
             event_type=EventType.TESTS_COMPLETED,
             actor=EventActor.HARNESS,
             payload={
                 "attempt_number": context.attempt.number,
+                "tool_call_id": str(tool_call.tool_call_id),
                 "summary": verification.summary,
-                "passed": verification.passed,
+                "passed": verification_passed,
                 "metadata": verification_metadata,
                 **(
                     {"tool_name": tool_call.name, "tool_tags": list(effective_tool_tags)}
@@ -134,7 +141,7 @@ def record_tool_result(
             "tool_output": tool_result.output,
             "tool_metadata": tool_result.metadata,
             "verification_summary": verification.summary,
-            "verification_passed": verification.passed,
+            "verification_passed": verification_passed,
             "verification_metadata": verification_metadata,
         },
     )

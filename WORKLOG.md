@@ -1,5 +1,19 @@
 # Progress Log
 
+## 2026-08-02 AOR-DEF-01 review follow-up
+
+- closed identity injection, failed-validator evidence, default completion
+  bypass, continuation evidence/capability bypass, trusted skill scope/state,
+  and mutable skill-content drift on the existing branch
+- bound continuation evaluation to durable successful events; API-generated
+  skill context digests are rechecked by worker recovery and handoff paths
+- focused follow-up tests: 70 passed; full suite: 1979 passed, 10 failed,
+  9 skipped, with the same inherited ten failures
+- API/worker/storage continuation set: 105 passed; one inherited worker
+  cancellation-streaming failure remains
+- make sync, focused Ruff, compileall, and diff-check passed; size gate remains
+  the same 11 inherited violations and make check stops there
+
 ## 2026-08-02 AOR-DEF-01 AgentDefinition And Completion Evidence Contract
 
 - claimed the narrow provider-neutral slice from exact base

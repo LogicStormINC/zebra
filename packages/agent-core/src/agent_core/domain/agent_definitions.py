@@ -1,16 +1,50 @@
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 _IDENTIFIER = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]{0,63}$")
+_VERSION = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$")
+_DIGEST = re.compile(r"^[a-f0-9]{64}$")
 _REFERENCE = re.compile(r"^(system|skill|eval)://([a-zA-Z][a-zA-Z0-9_-]{0,63})$")
 SUPPORTED_MODEL_CAPABILITIES = frozenset({"text", "tools", "image"})
 MAX_COMPLETION_REQUIREMENTS = 32
+
+
+def _normalize_identity(
+    value: str,
+    *,
+    field_name: str,
+    pattern: re.Pattern[str],
+) -> str:
+    if not isinstance(value, str) or any(not character.isprintable() for character in value):
+        raise ValueError(f"{field_name} must not contain control characters")
+    normalized = value.strip()
+    if pattern.fullmatch(normalized) is None:
+        raise ValueError(f"{field_name} must use a safe identifier")
+    return normalized
+
+
+def _normalize_reference(value: str, *, field_name: str, scheme: str) -> str:
+    if not isinstance(value, str) or any(not character.isprintable() for character in value):
+        raise ValueError(f"{field_name} must not contain control characters")
+    normalized = value.strip()
+    if not normalized.startswith(f"{scheme}://") or _REFERENCE.fullmatch(normalized) is None:
+        raise ValueError(f"{field_name} must use a supported {scheme}:// reference")
+    return normalized
 
 
 class CompletionEvidenceRequirement(BaseModel):
@@ -100,37 +134,43 @@ class AgentDefinition(BaseModel):
     memory_policy: dict[str, Any] = Field(default_factory=dict)
     trust_policy: dict[str, Any] = Field(default_factory=dict)
     eval_suite_ref: str | None = None
+    resolved_context_digest: str | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     completion_contract: CompletionEvidenceContract = Field(
         default_factory=CompletionEvidenceContract
     )
 
     @field_validator("agent_id", "version")
     @classmethod
-    def normalize_identity(cls, value: str) -> str:
-        normalized = value.strip()
-        if not normalized:
-            raise ValueError("agent definition identity fields must not be blank")
-        return normalized
+    def normalize_identity(cls, value: str, info: ValidationInfo) -> str:
+        return _normalize_identity(
+            value,
+            field_name=info.field_name,
+            pattern=_IDENTIFIER if info.field_name == "agent_id" else _VERSION,
+        )
 
     @field_validator("system_prompt_ref")
     @classmethod
     def validate_system_prompt_reference(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        normalized = value.strip()
-        if not normalized.startswith("system://") or _REFERENCE.fullmatch(normalized) is None:
-            raise ValueError("system_prompt_ref must use a supported system:// reference")
-        return normalized
+        return _normalize_reference(value, field_name="system_prompt_ref", scheme="system")
 
     @field_validator("eval_suite_ref")
     @classmethod
     def validate_eval_suite_reference(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        normalized = value.strip()
-        if not normalized.startswith("eval://") or _REFERENCE.fullmatch(normalized) is None:
-            raise ValueError("eval_suite_ref must use a supported eval:// reference")
-        return normalized
+        return _normalize_reference(value, field_name="eval_suite_ref", scheme="eval")
+
+    @field_validator("resolved_context_digest")
+    @classmethod
+    def validate_resolved_context_digest(cls, value: str | None) -> str | None:
+        if value is not None and _DIGEST.fullmatch(value.strip()) is None:
+            raise ValueError("resolved_context_digest must be a lowercase SHA-256 digest")
+        return value.strip() if value is not None else None
 
     @field_validator("skill_refs", mode="before")
     @classmethod
@@ -139,11 +179,11 @@ class AgentDefinition(BaseModel):
             raise ValueError("skill_refs must be a sequence")
         normalized: list[str] = []
         for item in value:
-            if not isinstance(item, str) or _REFERENCE.fullmatch(item.strip()) is None:
-                raise ValueError("skill_refs must use supported references")
-            reference = item.strip()
-            if not reference.startswith("skill://"):
-                raise ValueError("skill_refs must use skill:// references")
+            reference = _normalize_reference(
+                item,
+                field_name="skill_refs",
+                scheme="skill",
+            )
             if reference not in normalized:
                 normalized.append(reference)
         return tuple(normalized)
@@ -177,6 +217,8 @@ def parse_agent_definition(value: object) -> AgentDefinition | None:
         return None
     if not isinstance(value, dict):
         raise ValueError("agent_definition must be an object")
+    if "resolved_context_digest" in value:
+        raise ValueError("resolved_context_digest is server-generated")
     return AgentDefinition.model_validate(value)
 
 
@@ -186,6 +228,26 @@ class AgentDefinitionContext:
     version: str
     system_prompt: str | None = None
     skill_guidance: tuple[tuple[str, str], ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "agent_id",
+            _normalize_identity(
+                self.agent_id,
+                field_name="agent_id",
+                pattern=_IDENTIFIER,
+            ),
+        )
+        object.__setattr__(
+            self,
+            "version",
+            _normalize_identity(
+                self.version,
+                field_name="version",
+                pattern=_VERSION,
+            ),
+        )
 
     def render(self) -> str:
         blocks = [f"Agent definition context: {self.agent_id}@{self.version}"]
@@ -199,3 +261,23 @@ class AgentDefinitionContext:
                 )
             )
         return "\n\n".join(blocks)
+
+    @property
+    def resolved_context_digest(self) -> str:
+        payload = {
+            "agent_id": self.agent_id,
+            "version": self.version,
+            "system_prompt": self.system_prompt,
+            "skill_guidance": [
+                {"name": name, "content": content}
+                for name, content in self.skill_guidance
+            ],
+        }
+        return sha256(
+            json.dumps(
+                payload,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()

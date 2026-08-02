@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from hashlib import sha256
@@ -10,10 +10,16 @@ from agent_core.domain.agent_definitions import (
     AgentDefinition,
     CompletionEvidenceRequirement,
 )
-from agent_core.domain.events import EventType
+from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.harness.models import HarnessEventDraft
+from agent_core.domain.tools import ToolCallStatus
+from agent_core.harness.models import (
+    HarnessAttemptOutcome,
+    HarnessAttemptResult,
+    HarnessContext,
+    HarnessEventDraft,
+)
 
 
 @dataclass(frozen=True)
@@ -21,6 +27,29 @@ class CompletionEvidenceStatus:
     satisfied: bool
     missing: tuple[str, ...]
     fingerprint: str
+
+
+def evaluate_context_completion_evidence(
+    context: HarnessContext,
+    emitted_events: Iterable[HarnessEventDraft],
+) -> CompletionEvidenceStatus:
+    return evaluate_completion_evidence(
+        context.task.agent_definition,
+        (*context.completion_evidence_events, *emitted_events),
+    )
+
+
+def persisted_completion_evidence_events(
+    events: Iterable[SessionEvent],
+) -> tuple[HarnessEventDraft, ...]:
+    return tuple(
+        HarnessEventDraft(
+            event_type=event.event_type,
+            actor=event.actor,
+            payload=event.payload,
+        )
+        for event in events
+    )
 
 
 def evaluate_completion_evidence(
@@ -34,22 +63,26 @@ def evaluate_completion_evidence(
     tags: set[str] = set()
     validator_outcomes: set[str] = set()
     capability_results: set[str] = set()
+    successful_tool_call_ids: set[str] = set()
     for event in events:
         if event.event_type is EventType.TOOL_EXECUTION_COMPLETED:
+            if not _trusted_tool_execution(event):
+                continue
+            tool_call_id = event.payload.get("tool_call_id")
+            if isinstance(tool_call_id, str) and tool_call_id.strip():
+                successful_tool_call_ids.add(tool_call_id.strip())
             metadata = _mapping(event.payload.get("metadata"))
             typed.update(_values(metadata.get("typed_evidence")))
             tags.update(_values(metadata.get("tool_tags")))
             capability_results.update(_values(metadata.get("capability_result")))
-            _add_validator_outcome(metadata, tags, validator_outcomes)
+            _add_validator_outcome(metadata, validator_outcomes)
         elif event.event_type is EventType.TESTS_COMPLETED:
+            if not _trusted_validator_test(event, successful_tool_call_ids):
+                continue
             metadata = _mapping(event.payload.get("metadata"))
             explicit = metadata.get("validator_outcome")
             if isinstance(explicit, str) and explicit.strip():
                 validator_outcomes.add(explicit.strip())
-            if "validator" in _values(metadata.get("tool_tags")):
-                passed = event.payload.get("passed")
-                if isinstance(passed, bool):
-                    validator_outcomes.add("passed" if passed else "failed")
 
     missing: list[str] = []
     for requirement in definition.completion_contract.required_evidence:
@@ -74,6 +107,48 @@ def evaluate_completion_evidence(
         ).encode()
     ).hexdigest()
     return CompletionEvidenceStatus(not missing, tuple(missing), fingerprint)
+
+
+def _trusted_tool_execution(event: HarnessEventDraft) -> bool:
+    return (
+        event.actor is EventActor.TOOL
+        and event.payload.get("status") == ToolCallStatus.EXECUTED.value
+    )
+
+
+def _trusted_validator_test(
+    event: HarnessEventDraft,
+    successful_tool_call_ids: set[str],
+) -> bool:
+    if event.actor is not EventActor.HARNESS:
+        return False
+    tool_call_id = event.payload.get("tool_call_id")
+    if not isinstance(tool_call_id, str) or tool_call_id.strip() not in successful_tool_call_ids:
+        return False
+    tool_tags = _values(event.payload.get("tool_tags"))
+    return "validator" in tool_tags
+
+
+def gate_completed_terminal_result(
+    terminal_result: HarnessAttemptResult,
+    complete_without_tools: Callable[..., HarnessAttemptResult],
+    context: HarnessContext,
+    messages: list[SessionMessage],
+    emitted_events: list[HarnessEventDraft],
+) -> HarnessAttemptResult:
+    if terminal_result.outcome is not HarnessAttemptOutcome.COMPLETED:
+        return terminal_result
+    return complete_without_tools(
+        context,
+        messages=messages,
+        emitted_events=emitted_events,
+        model_calls_used=_non_negative_int(terminal_result.metadata.get("model_calls_used")),
+        tool_calls_executed=_non_negative_int(
+            terminal_result.metadata.get("tool_calls_executed")
+        ),
+        metadata=dict(terminal_result.metadata),
+        assistant_message=str(terminal_result.metadata.get("assistant_message", "")),
+    )
 
 
 def append_missing_evidence_observation(
@@ -129,14 +204,14 @@ def _requirement_satisfied(
 
 def _add_validator_outcome(
     metadata: Mapping[str, object],
-    tags: set[str],
     outcomes: set[str],
 ) -> None:
+    event_tags = _values(metadata.get("tool_tags"))
+    if "validator" not in event_tags:
+        return
     explicit = metadata.get("validator_outcome")
     if isinstance(explicit, str) and explicit.strip():
         outcomes.add(explicit.strip())
-    if "validator" not in tags:
-        return
     result = metadata.get("validator_result")
     if isinstance(result, Mapping) and isinstance(result.get("passed"), bool):
         outcomes.add("passed" if result["passed"] else "failed")
@@ -144,6 +219,10 @@ def _add_validator_outcome(
 
 def _mapping(value: object) -> Mapping[str, object]:
     return value if isinstance(value, Mapping) else {}
+
+
+def _non_negative_int(value: object) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
 
 
 def _values(value: object) -> set[str]:

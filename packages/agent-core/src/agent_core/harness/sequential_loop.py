@@ -12,7 +12,8 @@ from agent_core.harness.attempt_result import (
 from agent_core.harness.clarification_step import clarification_tool_result
 from agent_core.harness.completion_evidence import (
     append_missing_evidence_observation,
-    evaluate_completion_evidence,
+    evaluate_context_completion_evidence,
+    gate_completed_terminal_result,
 )
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_request import allowed_response_repairs
@@ -111,7 +112,9 @@ class SequentialToolLoop:
             first_execution_started=True,
         )
         if batch.terminal_result is not None:
-            return batch.terminal_result
+            return gate_completed_terminal_result(
+                batch.terminal_result, self._complete_without_tools, context, messages, emitted_events  # noqa: E501
+            )
         batch_metadata = self._completion_evidence_metadata(
             context,
             emitted_events,
@@ -239,7 +242,9 @@ class SequentialToolLoop:
             first_selection=(selection if selection.tool_call == calls[0] else None),
         )
         if batch.terminal_result is not None:
-            return batch.terminal_result
+            return gate_completed_terminal_result(
+                batch.terminal_result, self._complete_without_tools, context, messages, emitted_events  # noqa: E501
+            )
         batch_metadata = self._completion_evidence_metadata(
             context,
             emitted_events,
@@ -277,7 +282,7 @@ class SequentialToolLoop:
         metadata: dict[str, object],
         assistant_message: str,
     ) -> HarnessAttemptResult:
-        status = evaluate_completion_evidence(context.task.agent_definition, emitted_events)
+        status = evaluate_context_completion_evidence(context, emitted_events)
         observation_count = _non_negative_int(
             metadata.get("completion_evidence_observation_count")
         )
@@ -340,7 +345,7 @@ class SequentialToolLoop:
         emitted_events: list[HarnessEventDraft],
         metadata: dict[str, object],
     ) -> dict[str, object]:
-        status = evaluate_completion_evidence(context.task.agent_definition, emitted_events)
+        status = evaluate_context_completion_evidence(context, emitted_events)
         return {
             **metadata,
             "completion_evidence_satisfied": status.satisfied,
@@ -424,8 +429,8 @@ class SequentialToolLoop:
         )
         model_calls_used += 1 + completion.call_metadata.response_repair_count
         compaction_count = metadata.get("conversation_compaction_count")
-        completion_evidence_missing = not evaluate_completion_evidence(
-            context.task.agent_definition,
+        completion_evidence_missing = not evaluate_context_completion_evidence(
+            context,
             emitted_events,
         ).satisfied
         completion_evidence_required = bool(
@@ -516,10 +521,7 @@ class SequentialToolLoop:
                 emitted_events=emitted_events,
                 metadata={**metadata, "stop_reason": "model_call_budget_exhausted"},
             )
-        evidence_status = evaluate_completion_evidence(
-            context.task.agent_definition,
-            emitted_events,
-        )
+        evidence_status = evaluate_context_completion_evidence(context, emitted_events)
         if not evidence_status.satisfied:
             observation_count = _non_negative_int(
                 metadata.get("completion_evidence_observation_count")
@@ -619,10 +621,7 @@ class SequentialToolLoop:
                 emitted_events=emitted_events,
                 metadata={**metadata, "stop_reason": "tool_loop_no_progress"},
             )
-        evidence_status = evaluate_completion_evidence(
-            context.task.agent_definition,
-            emitted_events,
-        )
+        evidence_status = evaluate_context_completion_evidence(context, emitted_events)
         if not evidence_status.satisfied:
             return build_attempt_result(
                 outcome=HarnessAttemptOutcome.SUSPENDED,

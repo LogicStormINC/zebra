@@ -1,6 +1,7 @@
 from dataclasses import replace
 from pathlib import Path
 
+import pytest
 import zebra_agent_api.app as api_app_module
 import zebra_agent_worker.execution as worker_execution_module
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
@@ -32,6 +33,65 @@ def test_http_app_creates_session(tmp_path: Path) -> None:
     assert response.status_code == 201
     assert response.json()["executed"] is False
     assert response.json()["title"] == "HTTP create session"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("agent_id", "agent-neutral\nUNTRUSTED_SYSTEM_TEXT"),
+        ("version", "1.0.0\r\nUNTRUSTED_SYSTEM_TEXT"),
+    ),
+)
+def test_http_create_session_rejects_control_characters_in_definition_identity(
+    tmp_path: Path,
+    field: str,
+    value: str,
+) -> None:
+    definition = {
+        "agent_id": "agent-neutral",
+        "version": "1.0.0",
+    }
+    definition[field] = value
+    client = TestClient(create_http_app(tmp_path / f"{field}.sqlite"))
+
+    response = client.post(
+        "/sessions",
+        json={
+            "prompt": "Inspect the workspace",
+            "agent_definition": definition,
+        },
+    )
+
+    assert response.status_code == 400
+
+
+def test_http_create_session_accepts_existing_definition_identity(tmp_path: Path) -> None:
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite"))
+
+    response = client.post(
+        "/sessions",
+        json={
+            "prompt": "Inspect the workspace",
+            "agent_definition": {
+                "agent_id": "agent-neutral",
+                "version": "1.0.0",
+            },
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["agent_definition"] == {
+        "agent_id": "agent-neutral",
+        "version": "1.0.0",
+        "system_prompt_ref": None,
+        "skill_refs": [],
+        "required_model_capabilities": [],
+        "capability_policy": {},
+        "memory_policy": {},
+        "trust_policy": {},
+        "eval_suite_ref": None,
+        "completion_contract": {"version": "1", "required_evidence": []},
+    }
 
 
 def test_local_http_app_persists_trusted_network_for_new_tasks(tmp_path: Path) -> None:

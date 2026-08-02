@@ -6,6 +6,9 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-07-29`
+- AOR-DEF-01 follow-up review closes durable continuation evidence,
+  shared capability preflight, and trusted skill scope/state/content-digest
+  checks; focused follow-up tests are 70 passed and no deployment occurred.
 - Active local slice: `AOR-DEF-01` is implemented on
   `codex/agent-definition-completion-contract-20260802` from exact base
   `c5b814500bbeebea0d4a0307f9a58c903bd5320f`. It adds a versioned,

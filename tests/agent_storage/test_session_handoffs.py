@@ -36,6 +36,8 @@ from agent_storage import (
     SQLiteSessionHandoffStore,
     SQLiteWorkspaceProjectionStore,
 )
+from agent_tools.agent_definitions import resolve_agent_definition_context
+from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_worker.session_handoff import (
     HandoffWorkspaceDriftError,
     SessionHandoffRecoveryGate,
@@ -357,9 +359,19 @@ def test_handoff_threads_agent_definition_into_child_task_and_workspace(
     tmp_path: Path,
 ) -> None:
     database_path = tmp_path / "definition-handoff.db"
-    definition = AgentDefinition(
+    skills = tmp_path / "system-skills"
+    skill = skills / "evidence"
+    skill.mkdir(parents=True)
+    skill_file = skill / "SKILL.md"
+    skill_file.write_text(
+        "---\nname: evidence\ndescription: evidence guidance\n---\nOriginal.\n",
+        encoding="utf-8",
+    )
+    roots = build_scoped_skill_roots(system=[skills])
+    unbound = AgentDefinition(
         agent_id="agent-neutral",
         version="1.0.0",
+        skill_refs=("skill://evidence",),
         completion_contract=CompletionEvidenceContract(
             required_evidence=(
                 CompletionEvidenceRequirement(
@@ -368,6 +380,11 @@ def test_handoff_threads_agent_definition_into_child_task_and_workspace(
                 ),
             )
         ),
+    )
+    context = resolve_agent_definition_context(unbound, roots)
+    assert context is not None
+    definition = unbound.model_copy(
+        update={"resolved_context_digest": context.resolved_context_digest}
     )
     source = _seed_completed_source(
         database_path,
@@ -382,6 +399,9 @@ def test_handoff_threads_agent_definition_into_child_task_and_workspace(
     prepared = next(event for event in child_events if event.event_type is EventType.TASK_PREPARED)
     assert prepared.payload["agent_definition"]["agent_id"] == "agent-neutral"
     assert prepared.payload["agent_definition"]["version"] == "1.0.0"
+    assert prepared.payload["agent_definition"]["resolved_context_digest"] == (
+        context.resolved_context_digest
+    )
     assert prepared.payload["agent_definition"]["completion_contract"]["required_evidence"]
 
     child_workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(
@@ -389,6 +409,16 @@ def test_handoff_threads_agent_definition_into_child_task_and_workspace(
     )
     assert child_workspace is not None
     assert child_workspace.agent_definition == definition
+    skill_file.write_text(
+        skill_file.read_text(encoding="utf-8") + "Changed.\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="digest"):
+        resolve_agent_definition_context(
+            child_workspace.agent_definition,
+            roots,
+            require_digest=True,
+        )
 
 
 def _seed_completed_source(

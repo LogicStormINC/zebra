@@ -152,6 +152,7 @@ class HarnessContext:
     task: HarnessTask
     session: Session
     attempt: HarnessAttempt
+    completion_evidence_events: tuple["HarnessEventDraft", ...] = ()
 
 
 @dataclass(frozen=True)

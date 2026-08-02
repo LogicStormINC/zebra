@@ -85,23 +85,9 @@ class SingleAttemptOrchestrator:
         self._event_sink = event_sink
 
     def run(self, context: HarnessContext) -> HarnessAttemptResult:
-        if context.task.agent_definition is not None:
-            missing_capabilities = context.task.agent_definition.missing_model_capabilities(
-                context.task.model_capabilities
-            )
-            if missing_capabilities:
-                return build_attempt_result(
-                    outcome=HarnessAttemptOutcome.FAILED,
-                    summary="agent definition requires unavailable model capabilities",
-                    assistant_message="",
-                    model_calls_used=0,
-                    tool_calls_executed=0,
-                    emitted_events=[],
-                    metadata={
-                        "stop_reason": "agent_definition_model_capability_missing",
-                        "missing_model_capabilities": list(missing_capabilities),
-                    },
-                )
+        preflight = self._capability_preflight(context)
+        if preflight is not None:
+            return preflight
         task = replace(context.task, task_plan=context.session.task_plan)
         messages = self._model_step.build_initial_messages(
             task,
@@ -187,6 +173,9 @@ class SingleAttemptOrchestrator:
         model_calls_used: int = 1,
         tool_calls_executed: int = 0,
     ) -> HarnessAttemptResult:
+        preflight = self._capability_preflight(context)
+        if preflight is not None:
+            return preflight
         return self._tool_loop.continue_approved(
             context,
             completion=initial_completion,
@@ -208,6 +197,9 @@ class SingleAttemptOrchestrator:
         tool_calls_executed: int,
         assistant_message: str,
     ) -> HarnessAttemptResult:
+        preflight = self._capability_preflight(context)
+        if preflight is not None:
+            return preflight
         return self._tool_loop.continue_clarification(
             context,
             tool_call=tool_call,
@@ -216,4 +208,29 @@ class SingleAttemptOrchestrator:
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
             assistant_message=assistant_message,
+        )
+
+    @staticmethod
+    def _capability_preflight(
+        context: HarnessContext,
+    ) -> HarnessAttemptResult | None:
+        definition = context.task.agent_definition
+        if definition is None:
+            return None
+        missing_capabilities = definition.missing_model_capabilities(
+            context.task.model_capabilities
+        )
+        if not missing_capabilities:
+            return None
+        return build_attempt_result(
+            outcome=HarnessAttemptOutcome.FAILED,
+            summary="agent definition requires unavailable model capabilities",
+            assistant_message="",
+            model_calls_used=0,
+            tool_calls_executed=0,
+            emitted_events=[],
+            metadata={
+                "stop_reason": "agent_definition_model_capability_missing",
+                "missing_model_capabilities": list(missing_capabilities),
+            },
         )

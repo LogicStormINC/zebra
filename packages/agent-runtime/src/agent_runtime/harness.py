@@ -17,6 +17,7 @@ from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.domain.web import WebTarget, WebTargetError, parse_web_target
 from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
+from agent_core.harness.model_capabilities import declared_model_capabilities
 from agent_core.harness.models import HarnessLoopResult
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
@@ -147,12 +148,7 @@ def run_local_harness(
         for tool_name in preapproved_readonly_tools
         if tool_name in effective_mcp_allowlist
     )
-    agent_context = resolve_agent_definition_context(agent_definition, skill_roots)
-    model_capabilities = ["text"]
-    if tool_gateway.model_tools:
-        model_capabilities.append("tools")
-    if media_inputs:
-        model_capabilities.append("image")
+    agent_context = resolve_agent_definition_context(agent_definition, skill_roots, skills_state)
     context_compiler = LocalContextCompiler()
     try:
         return HarnessLoop().run(
@@ -173,7 +169,9 @@ def run_local_harness(
                 skill_components=tool_gateway.effective_skill_components,
                 agent_definition=agent_definition,
                 agent_context=agent_context,
-                model_capabilities=tuple(model_capabilities),
+                model_capabilities=declared_model_capabilities(
+                    model_gateway, bool(tool_gateway.model_tools)
+                ),
                 confirmed_memories=confirmed_memories,
                 attachments=attachments,
                 media_inputs=media_inputs,

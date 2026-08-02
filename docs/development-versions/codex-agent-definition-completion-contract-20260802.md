@@ -26,6 +26,26 @@
 - Durable API, TaskPrepared, workspace, recovery, rollover, and handoff
   propagation of the definition and completion contract.
 
+## Follow-up review closure
+
+- Shared identity normalization now rejects control characters before
+  rendering; direct context construction uses the same strict boundary.
+- Failed validator results cannot emit passed evidence; persisted completion
+  evidence is accepted only from successful tool execution and matching
+  validator test events. Approval and clarification continuations carry
+  durable evidence events instead of rebuilding it from text.
+- Initial, approval, and clarification paths share the model-capability
+  preflight. Image capability comes from the gateway declaration, independent
+  of whether the current request has attachments.
+- AgentDefinition skill refs resolve only from trusted enabled scopes
+  (system/admin). API creation binds a server-generated resolved-context
+  digest; worker resolution requires and rechecks it, so changed content,
+  disabled sources, or forged client digests fail closed.
+- New completion, media-capability, scope/state/digest, API, handoff, and
+  worker regressions are under the existing owned paths; no Registry,
+  marketplace, provider routing, business-specific heuristic, or deployment
+  change was added.
+
 ## Red-first evidence
 
 Planned before implementation:
@@ -57,6 +77,22 @@ Planned before implementation:
 - Release eval: `10/10` cases passed. `make check` stops at the inherited
   file-size gate before running its later checks.
 
+### Follow-up validation
+
+- Red-first review regressions reproduced identity injection, failed-validator
+  evidence, default tool-loop completion bypass, continuation evidence loss,
+  continuation capability bypass, untrusted/disabled skill resolution, and
+  mutable skill content drift.
+- Focused follow-up set: 70 passed.
+- API/worker/storage continuation set: 105 passed; one inherited worker
+  cancellation-streaming failure remains.
+- Full development-worktree pytest: 1979 passed, 10 failed, 9 skipped; the
+  same ten failures remain the exact-base/inherited set.
+- make sync, focused Ruff, compileall, and git diff --check: passed.
+- File-size gate: 11 inherited violations, unchanged in count; each
+  previously over-limit touched source/test file is at or below its exact
+  HEAD line count after moving new logic/tests into narrow modules.
+
 ## Unverified items and risks
 
 - Live model/provider behavior is not part of this local contract slice.
@@ -70,3 +106,5 @@ Planned before implementation:
   `mcp_proxy_policy.py`, and `agent_tools/executor.py`.
 - Skill content is re-resolved from configured trusted roots during execution;
   a changed or missing reference intentionally fails closed.
+- Worker requires a server-bound digest for definitions with trusted refs;
+  existing definitions without refs retain the compatibility path.

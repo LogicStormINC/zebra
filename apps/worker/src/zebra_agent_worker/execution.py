@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -22,6 +22,8 @@ from agent_core.harness import (
     HarnessTask,
     SingleAttemptOrchestrator,
 )
+from agent_core.harness.completion_evidence import persisted_completion_evidence_events
+from agent_core.harness.model_capabilities import declared_model_capabilities
 from agent_core.harness.models import (
     HarnessAttemptResult,
     HarnessEventDraft,
@@ -290,9 +292,16 @@ class SessionExecutionService:
                 user=self._settings.skill_roots,
                 repo=self._settings.skill_roots_repo,
             )
+            skills_state = (
+                SQLiteSkillsStateStore(self._settings.skills_state_path)
+                if skill_roots
+                else None
+            )
             agent_context = resolve_agent_definition_context(
                 task.agent_definition,
                 skill_roots,
+                skills_state=skills_state,
+                require_digest=True,
             )
             local_tool_gateway = LocalToolGateway(
                 task.workspace_root,
@@ -300,16 +309,7 @@ class SessionExecutionService:
                 tool_profile=task.tool_profile,
                 web_search_endpoint=self._settings.web_search_endpoint,
                 skill_roots=skill_roots,
-                skills_state=(
-                    SQLiteSkillsStateStore(self._settings.skills_state_path)
-                    if (
-                        self._settings.skill_roots
-                        or self._settings.skill_roots_system
-                        or self._settings.skill_roots_admin
-                        or self._settings.skill_roots_repo
-                    )
-                    else None
-                ),
+                skills_state=skills_state,
                 mcp_servers=with_task_workspace_root(self._settings.mcp_servers, task_workspace),
                 mcp_allowlist=task.mcp_allowlist,
                 disabled_mcp_tools=(
@@ -363,10 +363,9 @@ class SessionExecutionService:
                 skill_components=tool_gateway.effective_skill_components,
                 agent_definition=task.agent_definition,
                 agent_context=agent_context,
-                model_capabilities=(
-                    "text",
-                    *(("tools",) if tool_gateway.model_tools else ()),
-                    *(("image",) if native_media_inputs else ()),
+                model_capabilities=declared_model_capabilities(
+                    model_gateway,
+                    has_tools=bool(tool_gateway.model_tools),
                 ),
                 confirmed_memories=list_confirmed_repo_memories(
                     self._database_path,
@@ -379,6 +378,7 @@ class SessionExecutionService:
             ),
             session=claimed.recovery.session,
             attempt=HarnessAttempt(number=1, started_at=started_at),
+            completion_evidence_events=persisted_completion_evidence_events(session_events),
         )
         try:
             continuation = recover_approved_continuation(session_events)
@@ -414,11 +414,7 @@ class SessionExecutionService:
                 clarification_id=str(clarification.tool_call.tool_call_id),
                 started_at=started_at,
             )
-        context = HarnessContext(
-            task=context.task,
-            session=claimed.recovery.session,
-            attempt=context.attempt,
-        )
+        context = replace(context, session=claimed.recovery.session)
         recorder = DurableHarnessEventRecorder(
             session=claimed.recovery.session,
             workspace=claimed.recovery.workspace,
@@ -435,11 +431,7 @@ class SessionExecutionService:
                 {"attempt_number": 1},
                 created_at=started_at,
             )
-        context = HarnessContext(
-            task=context.task,
-            session=recorder.session,
-            attempt=context.attempt,
-        )
+        context = replace(context, session=recorder.session)
 
         def persist_event(draft: HarnessEventDraft) -> None:
             if draft.event_type is EventType.CONTEXT_COMPACTED:

@@ -154,6 +154,14 @@ class LocalSkillCatalog:
             raise SkillCatalogError(
                 SkillCatalogReason.SKILL_NOT_FOUND, "skill is not available"
             ) from exc
+        if self._skills_state is not None and (
+            entry.metadata.name,
+            entry.metadata.scope.value,
+        ) in self._skills_state.disabled_components():
+            raise SkillCatalogError(
+                SkillCatalogReason.SKILL_NOT_FOUND,
+                "skill is disabled",
+            )
         relative = _validated_support_path(file_path)
         candidate = entry.root / relative
         try:

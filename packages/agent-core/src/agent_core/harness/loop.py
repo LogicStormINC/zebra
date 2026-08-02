@@ -5,6 +5,7 @@ from datetime import datetime
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import EventId, SessionId
 from agent_core.domain.sessions import Session
+from agent_core.harness.completion_evidence import persisted_completion_evidence_events
 from agent_core.harness.models import (
     HarnessAttempt,
     HarnessAttemptOutcome,
@@ -107,7 +108,14 @@ class HarnessLoop:
             )
 
             attempt_result = attempt_runner(
-                HarnessContext(task=attempt_task, session=recorder.session, attempt=attempt)
+                HarnessContext(
+                    task=attempt_task,
+                    session=recorder.session,
+                    attempt=attempt,
+                    completion_evidence_events=persisted_completion_evidence_events(
+                        recorder.events
+                    ),
+                )
             )
             attempt_results.append(attempt_result)
             model_calls_used += int(attempt_result.metadata.get("model_calls_used", 1))
