@@ -988,3 +988,30 @@
   `295` with one pre-existing skip. No Provider HTTP, Worker, Desktop or local
   SQLite composition started. The task is moved to `Review`; runtime remains
   `Locked` pending a deletion-compliance decision.
+
+## MEM-PROVIDER-DEL-COMPLIANCE-01 activation (2026-08-02)
+
+- The sidebar ChatGPT review selected this as the only legal Ready successor after
+  the alternative reset returned `B/PARTIAL`. The task is docs/specification-only
+  on `codex/mem-provider-del-compliance-01`; no production path is activated.
+- ADR-018 defines three mandatory capabilities: deterministic recovery after a
+  lost response, deterministic physical deletion with a postcondition, and
+  complete scoped coverage by bounded enumeration, deterministic lookup or an
+  atomic namespace drop. Best effort and `top_k` are explicitly insufficient.
+- The current Mem0 admission is fail-closed: logical fencing `PASS`, ledger-only
+  known mapping deletion `PASS`, ambiguous-create recovery `FAIL/UNPROVEN`,
+  complete scoped physical deletion `FAIL/UNPROVEN`, Runtime `BLOCKED`.
+- `MEM-MEM0-RESET-SPIKE-01` remains `Blocked`; `MEM-GW-DEL-RUN-01`, the parent
+  ledger and Runtime composition remain `Locked` until a future provider version
+  supplies and proves the missing capabilities.
+
+## MEM-PROVIDER-DEL-COMPLIANCE-01 review handoff (2026-08-02)
+
+- ADR-018 is the provider-neutral deletion contract. Its specification matrix
+  passes `2` focused tests and records a contract `PASS` without implying Mem0
+  Runtime admission.
+- Changed-path Ruff, format, Mypy, Python compilation and `git diff --check` pass.
+  `make check` is blocked at the file-size gate by two untouched baseline files:
+  Desktop stylesheet `561/500` and PostgreSQL storage test `765/700`.
+- Mem0 remains Experimental/Research only; no task status was changed for the
+  blocked reset Spike or locked delivery consumer. No production code changed.

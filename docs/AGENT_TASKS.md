@@ -64,6 +64,11 @@
   maintainer's 2026-08-02 continuation. It owns only provider-neutral Core
   certainty/state values and focused tests; PostgreSQL, Mem0 reset and Worker
   wiring remain locked successors.
+- `MEM-PROVIDER-DEL-COMPLIANCE-01` is `Review` on
+  `codex/mem-provider-del-compliance-01`. It is the only Ready successor after
+  the `MEM-MEM0-RESET-ALT-01` `B/PARTIAL` result. This docs/specification-only
+  card defines deletion compliance and records Mem0 as not admitted to the
+  Runtime mainline until the missing provider capabilities are proven.
 - `CLOUD-PG-PLAN-01` and `CLOUD-PG-01` are `Review` on their dedicated branches;
   the docs-only migration/restore decisions precede the real PostgreSQL Event/Projection Adapter.
 - `CLOUD-LEASE-CON-01`, `CLOUD-LEASE-PG-01`, `CLOUD-EFFECT-OUTBOX-01`, and
@@ -874,6 +879,61 @@ provider mappings can make logical reset safe without provider enumeration.
   `tests/agent_storage` matrix remains `295 passed, 1 skipped`. The parent,
   original reset Spike and runtime consumer remain locked pending a separate
   deletion-compliance decision.
+
+### MEM-PROVIDER-DEL-COMPLIANCE-01 - Provider Deletion Compliance Contract
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `ARCHITECTURE / INTEGRATIONS / SECURITY`
+- Depends on: integrated Memory Delivery Ledger v11 (`284425f`) and
+  `MEM-MEM0-RESET-ALT-01` verdict `B/PARTIAL`; no other task dependency.
+- Branch: `codex/mem-provider-del-compliance-01`
+- Worktree: `../zebra-mem-provider-del-compliance-01`
+- Owned paths: `docs/ADR-018_Memory Provider Deletion Compliance Contract.md`,
+  `tests/specs/test_memory_provider_deletion_compliance.py`, and governance
+  updates in `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md`, `findings.md`
+  and `WORKLOG.md`.
+- Non-goals: no production packages, SQL/migrations, Provider HTTP, Mem0
+  enumeration, Worker/Consumer, Desktop, local SQLite composition or Runtime
+  selection.
+
+#### Goal and acceptance
+
+- Define a provider-neutral Deletion Compliance Contract with deterministic
+  recovery, deterministic physical deletion and complete scoped coverage.
+- Define the allowed coverage proof alternatives: complete enumeration,
+  deterministic lookup, or an atomic namespace drop. Best effort is not proof.
+- Define one capability matrix and one admission policy. A provider is admitted
+  to the Runtime Memory mainline only on `PASS`; otherwise it is Experimental or
+  Research and cannot unlock `MEM-GW-DEL-RUN-01`.
+- Record the current Mem0 result as logical fencing `PASS`, mapping deletion
+  `PASS`, ambiguous-create recovery `FAIL/UNPROVEN`, complete scoped deletion
+  `FAIL/UNPROVEN`, and Runtime admission `BLOCKED`.
+- Add specification tests that fail if the contract weakens these requirements
+  or accidentally admits Mem0. Preserve the existing `24` focused delivery
+  tests and `295 passed, 1 skipped` storage matrix as regression evidence.
+
+#### Implementation handoff
+
+- The contract is a governance and specification boundary, not a runtime API.
+- `MEM-MEM0-RESET-SPIKE-01` remains `Blocked`; `MEM-GW-DEL-RUN-01`, its parent,
+  and Runtime composition remain `Locked`.
+- The task may close `PASS` when the contract and admission policy are explicit;
+  that result does not unlock Runtime. Re-admission requires a future provider
+  capability change plus a fresh evidence run.
+
+#### Review handoff
+
+- ADR-018 and the test-only specification matrix are complete. The focused
+  contract suite passes `2`; changed-path Ruff, format, Mypy, compilation and
+  `git diff --check` pass.
+- `make check` reaches the repository file-size gate but remains blocked by two
+  unrelated baseline violations: `UI/desktop/src/components/CodexConversationPane.styles.ts`
+  (`561/500`) and `tests/agent_storage/test_postgres_governed_memories.py`
+  (`765/700`). No Owned path is implicated.
+- Verdict: `PASS` for the Provider Deletion Compliance Contract and `BLOCKED`
+  for current Mem0 Runtime admission. This card does not unlock any consumer or
+  Runtime task.
 
 ### MEM-GW-DEL-PG-01 - PostgreSQL v11 Delivery Ledger And Atomic Enqueue
 

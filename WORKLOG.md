@@ -6873,3 +6873,27 @@ actual byte access.
   passed `24`; the full storage matrix passed `295` with one pre-existing skip.
 - Moved the card to `Review`. The original reset Spike stays `Blocked`, and the
   parent/runtime consumer stay `Locked`; no production or provider code changed.
+
+## 2026-08-02 - MEM-PROVIDER-DEL-COMPLIANCE-01 activation
+
+- The sidebar ChatGPT plan selected `MEM-PROVIDER-DEL-COMPLIANCE-01` as the only
+  Ready successor after the alternative reset's `B/PARTIAL` result. Created the
+  isolated `codex/mem-provider-del-compliance-01` worktree and claimed the card.
+- Added the provider-neutral ADR-018 contract and a test-only specification
+  matrix. The contract requires deterministic recovery, deterministic physical
+  deletion and complete scoped coverage; it classifies Mem0 as
+  `Experimental/Research` and keeps Runtime admission `BLOCKED`.
+- No Provider HTTP, Worker/Consumer, Desktop, local SQLite composition, runtime
+  code or PostgreSQL schema was touched. Focused delivery (`24`) and full storage
+  (`295 passed, 1 skipped`) remain regression evidence from the predecessor task.
+
+## 2026-08-02 - MEM-PROVIDER-DEL-COMPLIANCE-01 review handoff
+
+- ADR-018 and `tests/specs/test_memory_provider_deletion_compliance.py` are
+  complete. The focused specification suite passes `2`; changed-path Ruff,
+  format, Mypy, compilation and `git diff --check` pass.
+- `make check` stops at two pre-existing file-size violations outside Owned paths:
+  `UI/desktop/src/components/CodexConversationPane.styles.ts` (`561/500`) and
+  `tests/agent_storage/test_postgres_governed_memories.py` (`765/700`).
+- Contract verdict is `PASS`; current Mem0 admission is `BLOCKED`, and the reset
+  Spike, delivery consumer, parent ledger and Runtime composition stay locked.

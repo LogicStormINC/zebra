@@ -620,6 +620,37 @@
    existing delivery/storage regression matrices before moving the card to
    `Review`; do not unlock `MEM-GW-DEL-RUN-01` on a partial result.
 
+## MEM-PROVIDER-DEL-COMPLIANCE-01 - Provider Deletion Compliance Contract
+
+1. `completed` - Ask the sidebar ChatGPT planning session to select the only
+   legal Ready successor after the reset alternative returned `B/PARTIAL`.
+2. `completed` - Define deterministic recovery, deterministic physical
+   deletion, complete scoped coverage and fail-closed provider admission in
+   `docs/ADR-018_Memory Provider Deletion Compliance Contract.md`.
+3. `completed` - Add provider-neutral specification tests for the mandatory
+   capabilities, Mem0 capability matrix and Runtime lock boundary.
+4. `completed` - Run focused specification, static, documentation and repository
+   checks; record the final admission verdict without changing production code.
+
+### Decisions
+
+- The contract is a governance/specification boundary and does not implement a
+  Provider HTTP client, Mem0 adapter, Worker, Desktop, SQLite or Runtime path.
+- Mem0 is currently `Experimental/Research` only: logical fencing and known
+  mapping deletion are proven, while ambiguous-create recovery and complete
+  scoped physical deletion remain `FAIL/UNPROVEN`.
+- `MEM-MEM0-RESET-SPIKE-01` stays `Blocked`; `MEM-GW-DEL-RUN-01`, its parent and
+  Runtime composition stay `Locked` until a provider passes this contract.
+
+### Review handoff
+
+- ADR-018 and the specification test are complete; the focused suite passes
+  `2`, and changed-path Ruff, format, Mypy, compilation and `git diff --check`
+  pass.
+- `make check` is blocked only by the inherited file-size gate in two untouched
+  paths (`561/500` Desktop stylesheet and `765/700` PostgreSQL test file).
+- Contract verdict is `PASS`; Mem0 admission and Runtime remain `BLOCKED`.
+
 ## MEM-GW-DEL-RUN-01 - Mem0 Delivery Consumer And Management Rebuild
 
 1. `pending` - Start only after the PG ledger and scoped reset Spike are reviewed,
