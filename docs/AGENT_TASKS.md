@@ -1639,7 +1639,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-WORKSPACE-PG-01 - Fenced Workspace Projection
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Branch: `codex/cloud-agg-workspace-pg-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`
@@ -1664,6 +1664,24 @@ cloud mainline and is not built or changed by these cards.
   and volume are removed after the run.
 - Runtime selection is intentionally deferred to `CLOUD-CONTROL-PLANE-PG-01`;
   this card proves an injectable Worker seam, not an enabled cloud composition root.
+
+#### Closeout
+
+- Formal review targeted the integrated implementation at `8b924d74` and the
+  acceptance/governance handoff at `eb021ff2`. Its sole direct dependency,
+  `CLOUD-AGG-FENCE-CON-01`, is `Done`; no Review, Locked, Blocked or Proposed
+  dependency was treated as complete.
+- The implementation diff is confined to the card's declared Core Port,
+  PostgreSQL adapter/migration, Worker injection, focused tests and Compose
+  evidence paths. It does not change the control-plane selector, application
+  profile, Provider transport, Desktop, SQLite, Redis or Mem0 composition.
+- Existing evidence is accepted: PostgreSQL `17.5` host matrix `80/80`, related
+  Core/Storage/Worker regressions `467` with `64` PostgreSQL skips, strict
+  Core/Storage Mypy over `163` files, microservice size gate `907`, and Eval
+  `10/10`. No Compose run was needed for this closeout.
+- Closing this card only makes the Task/Segment card the next dependency-ordered
+  review target. It does not activate `CLOUD-CONTROL-PLANE-PG-01` or unlock
+  Runtime, Worker startup, Provider HTTP or the application Compose profile.
 
 ### CLOUD-AGG-TASK-PG-01 - PostgreSQL Task And Segment Index
 

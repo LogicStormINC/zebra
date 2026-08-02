@@ -295,8 +295,10 @@
    transaction-local `WorkerMutationAuthority` validation and monotonic revision CAS.
 3. `completed` - Add deterministic contract/fault tests and the host Docker Compose
    real-PostgreSQL runner without selecting the adapter at runtime.
-4. `completed` - Run static/Core/storage gates, record final host evidence, move the card to
-   Review and unlock only the next migration-safe aggregate card.
+4. `completed` - Run static/Core/storage gates, record final host evidence and move the
+   card to Review.
+5. `completed` - Formally audit the integrated diff and dependency status, then close
+   the card as Done without changing composition or runtime selection.
 
 ### Decisions
 
@@ -307,6 +309,16 @@
 - The fenced transaction owns Event + Session + Workspace. Model Call and Tool Run
   indexes remain replayable follow-up projections for their dedicated card.
 - Desktop and local-agent composition remain out of scope.
+
+### Closeout
+
+- Review of `8b924d74` against the declared Owned paths found no boundary
+  violation; the sole dependency `CLOUD-AGG-FENCE-CON-01` is `Done`.
+- The recorded PostgreSQL `80/80`, regression, static and Eval evidence is
+  sufficient for closure. No new Compose execution or production edit was made
+  by the review slice.
+- `CLOUD-AGG-TASK-PG-01` remains the next dependency-ordered Review target;
+  Control Plane and all Runtime/Worker/Provider composition remain locked.
 
 ## CLOUD-AGG-FENCE-CON-01 - Worker Mutation Fencing Contract
 

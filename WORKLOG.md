@@ -6956,3 +6956,20 @@ actual byte access.
   memory test file-size violations already recorded in the predecessor handoff.
 - Moved `MEM-GW-PG-NATIVE-01` to `Review`. Runtime, Worker, Provider HTTP,
   Desktop, SQLite, Redis and Mem0 paths remain outside this card.
+
+## 2026-08-02 - CLOUD-AGG-WORKSPACE-PG-01 formal review closeout
+
+- Reviewed the integrated Workspace implementation at `8b924d74` and its
+  acceptance/governance handoff at `eb021ff2`. The sole direct dependency,
+  `CLOUD-AGG-FENCE-CON-01`, is `Done`; no unresolved dependency was consumed.
+- Audited the implementation diff against the task's declared Core, PostgreSQL,
+  Worker, test and Compose evidence paths. No control-plane selector, application
+  profile, Provider HTTP, Desktop, SQLite, Redis or Mem0 path is part of the
+  implementation.
+- Accepted the recorded evidence: PostgreSQL `17.5` host matrix `80/80`, related
+  regressions `467` with `64` PostgreSQL skips, strict Core/Storage Mypy over
+  `163` files, microservice size gate `907` and Eval `10/10`.
+- Closed `CLOUD-AGG-WORKSPACE-PG-01` from `Review` to `Done`. This review slice
+  made no production or Compose changes and did not unlock Runtime, Worker
+  startup, Provider HTTP or the application Compose profile; Task/Segment is the
+  next review target.

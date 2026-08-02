@@ -99,7 +99,8 @@
   focused `19/19`, Core `270/270`, Ruff, strict Mypy and Eval `10/10` gates pass;
   it does not implement PostgreSQL, change Store selection or touch Desktop. Its
   local acceptance unlocks only `CLOUD-AGG-WORKSPACE-PG-01`.
-- Completed Workspace adapter task: `CLOUD-AGG-WORKSPACE-PG-01` adds the additive
+- Completed and formally closed Workspace adapter task: `CLOUD-AGG-WORKSPACE-PG-01`
+  adds the additive
   PostgreSQL v4 projection schema and an injected Worker transaction that validates
   current Lease authority and Event-derived Session/Workspace content before
   committing all three primary records atomically. Replay remains monotonic and
@@ -109,9 +110,11 @@
   Mypy, microservice file-size over `907` tracked and new files, `467 passed, 64
   skipped` backend regressions and Eval `10/10` pass. The final host PostgreSQL
   17.5 matrix passes `80/80`, including stale authority, rollback, semantic
-  derivation and canonical lost-response retry paths. The card is in Review and
-  unlocks only `CLOUD-AGG-TASK-PG-01`; `CLOUD-CONTROL-PLANE-PG-01`, not this card,
-  owns the cloud Worker composition root and runtime backend selection.
+  derivation and canonical lost-response retry paths. Formal review of the
+  integrated implementation and its sole `Done` dependency closed the card as
+  `Done`; it unlocks only `CLOUD-AGG-TASK-PG-01`. `CLOUD-CONTROL-PLANE-PG-01`,
+  not this card, owns the cloud Worker composition root and runtime backend
+  selection.
 - Completed Task/Segment adapter task: `CLOUD-AGG-TASK-PG-01` adds PostgreSQL v5,
   a namespace-scoped Task read model, deterministic explicit rebuild and a
   connection-scoped rollover primitive. Reads never write; rebuild and rollover
