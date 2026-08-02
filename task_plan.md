@@ -252,6 +252,8 @@
    concurrency, stale authority, rollback, lost-response and recovery behavior.
 4. `completed` - Run real PostgreSQL and microservice gates, record host evidence and
    move to Review without selecting the runtime backend.
+5. `completed` - Formally audit the integrated v8 diff and dependencies, then close
+   the card as Done without changing runtime or provider composition.
 
 ### Decisions
 
@@ -261,6 +263,18 @@
 - v8 is serialized on this task; Artifact payload cannot edit migrations concurrently.
 - Bind reserve and commit through one canonical request hash, keep child Workspace
   projection Event-rebuildable, and thread the acquired LeaseFence into Worker recovery.
+
+### Closeout
+
+- Review covered `a678938b`, `d23d824c` and `cfe40713`; aggregate fencing,
+  Workspace, Task and portable Handoff dispatch dependencies are all `Done`.
+- The recorded PostgreSQL v1-v8 `20/20` and Core/Storage/API/Worker `822/822`
+  evidence is accepted, with scoped Ruff and diff checks; a current-HEAD
+  Core/Worker focused regression run passed `17/17`. No new Compose execution or
+  production edit was made by this review slice.
+- Handoff v8 is now a closed aggregate gate. Artifact, Context administrative
+  recovery, Control Plane and runtime/provider paths remain separately in Review
+  or locked.
 
 ## CLOUD-AGG-CTX-PG-01 - Fenced Context Lifecycle Aggregate
 

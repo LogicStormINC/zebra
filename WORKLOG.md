@@ -7041,3 +7041,20 @@ actual byte access.
 - Closed `CLOUD-AGG-HANDOFF-CON-01` from `Review` to `Done`. PostgreSQL Handoff
   v8 remains the next Review gate; Runtime, Worker startup, Provider HTTP and
   application Compose selection remain locked.
+
+## 2026-08-02 - CLOUD-AGG-HANDOFF-PG-01 formal review closeout
+
+- Reviewed migration foundation `a678938b`, fenced dispatch `d23d824c` and the
+  integrated Handoff aggregate `cfe40713`. Aggregate fencing, Workspace, Task and
+  portable Handoff dispatch dependencies are all `Done`.
+- Audited the declared v8 migration, PostgreSQL aggregate/dispatch adapters, Core
+  Port, API/Worker recovery seam and focused tests. No Artifact authority, generic
+  transaction, Control Plane selection, Runtime, Provider HTTP, Desktop, SQLite,
+  Redis or Mem0 composition is included.
+- Accepted the recorded PostgreSQL v1-v8 `20/20` and Core/Storage/API/Worker
+  `822/822` evidence with `102` skips, scoped Ruff and diff checks; the current-HEAD
+  Core/Worker focused regression run passed `17/17`. No Compose run or production
+  edit was made by this review.
+- Closed `CLOUD-AGG-HANDOFF-PG-01` from `Review` to `Done`. Artifact, Context
+  administrative recovery, Control Plane and runtime/provider paths remain
+  separately in Review or locked.

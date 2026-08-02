@@ -1771,7 +1771,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-HANDOFF-PG-01 - PostgreSQL Handoff And Dispatch Aggregate
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Branch: `codex/cloud-agg-handoff-pg-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01`,
@@ -1800,6 +1800,26 @@ cloud mainline and is not built or changed by these cards.
   Storage, API and Worker suites pass `822/822` with `102` environment-gated skips;
   scoped Ruff and `git diff --check` pass. Full Mypy retains six inherited errors in
   untouched web-crawl, MCP policy and Worker export files.
+
+#### Closeout
+
+- Formal review targeted migration foundation `a678938b`, fenced dispatch
+  `d23d824c` and the integrated aggregate `cfe40713`. Its direct dependencies—
+  aggregate fencing, Workspace, Task and portable Handoff dispatch—are all
+  `Done`; the implementation is already integrated on the cloud mainline.
+- The implementation remains within the declared v8 migration, PostgreSQL
+  aggregate/dispatch adapters, Core Handoff Port, API/Worker recovery seam and
+  focused tests. It does not add Artifact authority, a generic transaction,
+  Control Plane selection, Runtime, Provider HTTP, Desktop, SQLite, Redis or
+  Mem0 composition.
+- Existing evidence is accepted: isolated PostgreSQL v1-v8 `20/20`, recorded
+  Core/Storage/API/Worker `822/822` with `102` environment skips, scoped Ruff,
+  `git diff --check`, and the current-HEAD Core/Worker focused regression `17/17`.
+  No new Compose execution or production edit was needed for this closeout.
+- Closing this card records the Handoff v8 aggregate gate only. Artifact,
+  Context administrative recovery, Control Plane, Runtime, Worker startup,
+  Provider HTTP and application Compose selection remain separately in Review or
+  locked.
 
 ### CLOUD-AGG-CTX-ADMIN-PG-01 - PostgreSQL Administrative Context Recovery
 

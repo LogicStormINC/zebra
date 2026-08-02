@@ -154,7 +154,7 @@
   projections and updates the active pointer with recovery Event time. Its isolated
   PostgreSQL 17.5 matrix passes `19/19`. It does not add PostgreSQL manual compact,
   Desktop behavior or runtime backend selection.
-- Completed Handoff v8 review slice preserves the exact v1-v7 migration names and
+- Completed and formally closed Handoff v8 aggregate slice preserves the exact v1-v7 migration names and
   checksums while splitting migration types, execution and the v8 catalog into focused
   files. The real PostgreSQL 17.5 migration matrix passes `6/6`; v8 adds only
   namespace-scoped operation, database-guarded immutable envelope and fenced dispatch
@@ -167,6 +167,8 @@
   full-fence ACK; Worker recovery now threads the acquired fence and cloud drift writes
   use the existing fenced projection transaction. The isolated PostgreSQL aggregate
   matrix passes `20/20`; Core/Storage/API/Worker pass `822/822` with `102` skips.
+  Formal dependency/path review closed `CLOUD-AGG-HANDOFF-PG-01` as `Done`; no
+  runtime, provider, Desktop or application Compose selection was made.
 - Artifact v9 preflight confirmed that the local `ArtifactPayloadStorePort` lacks
   namespace/fence/staged lifecycle semantics. The v9 card requires the reviewed
   fenced cloud lifecycle Port and reserve -> object verification -> Event ->
