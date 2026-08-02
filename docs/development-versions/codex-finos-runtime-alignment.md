@@ -14,9 +14,14 @@
   `ea52d552e8761ab5f0f2e08b43ce1d7b6219ac84`
 - Journal-v3 source branch / commits: `fork/codex/recover-invalid-plan-20260730` /
   `ae6ac94`, `1318375`, `023246e`
+- Typed-tool validation source branch / head:
+  `codex/tool-contract-runtime-validation-20260802` /
+  `3d13e47a39324ff5a4bd1c2e0e297e218dc543e5`
+- Canonical-final source branch / head: `codex/canonical-tool-final-20260802` /
+  `04032028213a63b1b28c906f92cbd307199862a4`
 - Read-only merge commit: `98faf507165e73bfddc88491d3c154f3512e2a05`
 - Qwen/profile integration commit: `1d72e9ff21137eae5364902964fdccc0adf0fa9b`
-- Current implementation head: `d8158105afaed85692bde8d70f62009553198182`
+- Current implementation head: `9229367`
 - Status: `Validated staging candidate / not yet deployed`
 
 The source commit has `1d2c140...` as its direct parent. The source branch is
@@ -53,6 +58,13 @@ validator remains task-scoped and does not bypass Core confirmation. Native Qwen
 media also narrows preapproved MCP authority to the effective tool catalog, so
 the disabled MiniMax image tool is not silently retained as primary authority.
 
+The fixed branch now enforces declared tool argument schemas before handler
+execution. It performs one schema-guided decode when an array or object arrives
+as JSON text, then validates the normalized value recursively. A model cannot
+claim success after a failed or malformed tool attempt: once any tool has run,
+a no-tool response is provisional and Zebra performs one tools-disabled terminal
+synthesis from the durable tool results.
+
 ## Commit and validation evidence
 
 - `cc06e28`: red contract reproducing the baseline `400`;
@@ -81,11 +93,16 @@ Validation:
   inherited cancellation failure;
 - final merged full suite: `1,916 passed, 9 failed, 9 skipped`, with the same
   nine inherited failure categories.
+- typed-tool and canonical-final combined regression: `97 passed`;
+- current full suite: `1,936 passed, 10 failed, 9 skipped`; all ten failure
+  names reproduce the current branch baseline and none touch the two changed
+  contracts;
+- changed-file Ruff, compileall, and `git diff --check`: passed.
 
-The nine full-suite failures have the same names on the isolated baseline and
-cover existing model-response, credential/transport, file-size, and durable
-cancellation gates. This is a staging candidate with no new regression, not an
-upstream-main or release-ready claim.
+The current full-suite failures cover existing model-response,
+credential/transport, health-fixture, file-size, and durable-cancellation gates.
+This is a staging candidate with no new regression, not an upstream-main or
+release-ready claim.
 
 ## Next transition
 
