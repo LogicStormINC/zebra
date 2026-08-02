@@ -557,7 +557,7 @@
    Consumer/PostgreSQL `58/58` evidence against the frozen parent contract.
 3. `completed` - Write the combined acceptance record with guarantees, exclusions
    and the explicit no-exactly-once/no-production-cutover boundary.
-4. `completed` - Run document consistency checks, move the parent gate to Review and
+4. `completed` - Run document consistency checks, close the parent gate as Done and
    leave full aggregate fencing locked.
 
 ### Decisions
@@ -566,6 +566,16 @@
   Compose runner or broker is needed.
 - Desktop is outside this microservice gate. Core/API/Worker/storage/PostgreSQL,
   dependency Compose and release Eval remain in scope.
+
+### Closeout
+
+- Review accepted `docs/CLOUD_Lease_Effect_联合验收记录_v1.0.md` and the recorded
+  Lease `34/34`, Outbox `49/49`, consumer `58/58`, backend `1851 passed, 60
+  skipped`, file-size `901` and Eval `10/10` evidence.
+- The gate is limited to one-namespace fenced Lease plus Event/Effect delivery;
+  it does not claim exactly-once external execution, complete aggregate fencing,
+  runtime selection or production readiness.
+- `CLOUD-LEASE-01` is `Done`; `CLOUD-AGG-FENCE-01` remains `Locked`.
 
 ## BASE-EVT-SIZE-01 - Context Event Contract Extraction
 

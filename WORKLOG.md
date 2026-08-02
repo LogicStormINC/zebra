@@ -7251,3 +7251,14 @@ actual byte access.
   operation or production claim was added.
 - Closed `CLOUD-LEASE-PLAN-01` from `Review` to `Done`; Core Lease, PostgreSQL
   Lease, Effect Outbox and Worker consumer remain independently gated children.
+
+## 2026-08-02 - CLOUD-LEASE-01 formal review closeout
+
+- Reviewed `docs/CLOUD_Lease_Effect_联合验收记录_v1.0.md` and accepted the
+  combined Lease `34/34`, Outbox `49/49`, consumer `58/58`, backend `1851
+  passed, 60 skipped`, file-size `901` and Eval `10/10` evidence.
+- Confirmed the gate is one-namespace fenced Lease plus Event/Effect delivery;
+  it makes no exactly-once, complete aggregate-fencing, runtime-selection or
+  production-readiness claim.
+- Closed `CLOUD-LEASE-01` from `Review` to `Done`; `CLOUD-AGG-FENCE-01` remains
+  `Locked` for the next aggregate-authority phase.

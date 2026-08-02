@@ -1685,7 +1685,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-LEASE-01 - Lease And Event/Effect Delivery Parent Gate
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Branch: `zebra-cloud-trench`
 - Owned paths: `docs/CLOUD_Lease_Effect_联合验收记录_v1.0.md` (new) and governance
@@ -1700,6 +1700,19 @@ cloud mainline and is not built or changed by these cards.
 - Evidence: `docs/CLOUD_Lease_Effect_联合验收记录_v1.0.md` reconciles Lease
   `34/34`, Outbox `49/49`, combined PostgreSQL/consumer `58/58`, microservice
   backend `1851 passed, 60 skipped`, file-size `901` and Eval `10/10`.
+
+#### Closeout
+
+- Formal review accepted the combined acceptance record and its four child
+  boundaries: Lease `34/34`, Effect Outbox `49/49`, consumer `58/58`, backend
+  `1851 passed, 60 skipped`, file-size `901` and Eval `10/10`.
+- The record proves fenced Session Lease plus Event/Effect delivery within one
+  namespace, including restore, crash, duplicate-delivery and no-auto-replay
+  behavior. It explicitly does not claim exactly-once external execution,
+  complete aggregate fencing, runtime selection or production readiness.
+- Closed `CLOUD-LEASE-01` from `Review` to `Done`; `CLOUD-AGG-FENCE-01` remains
+  `Locked` until every Worker-owned aggregate receives its own authority and
+  PostgreSQL evidence.
 
 ### CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 

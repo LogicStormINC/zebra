@@ -94,9 +94,9 @@
   only the confirmed inherited failures.
 - Local microservice integration: the reviewed Lease contract, PostgreSQL Lease,
   Effect Outbox and Worker consumer cards are fast-forwarded onto the isolated
-  `zebra-cloud-trench@2759345c`. `CLOUD-LEASE-01` is in Review with a combined
-  evidence record; it does not select PostgreSQL at runtime or claim full
-  aggregate fencing, production cutover or exactly-once external execution.
+  `zebra-cloud-trench@2759345c`. `CLOUD-LEASE-01` is formally `Done` with its
+  combined evidence record; it does not select PostgreSQL at runtime or claim
+  full aggregate fencing, production cutover or exactly-once external execution.
 - Completed aggregate-fencing inventory: `CLOUD-AGG-FENCE-PLAN-01` traces the
   authoritative Context, Handoff, Workspace/Task, Model/Tool, provider-history,
   Artifact and delivery-audit paths and splits them into dependency-ordered cards.
