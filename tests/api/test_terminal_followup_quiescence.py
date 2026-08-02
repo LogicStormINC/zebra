@@ -1,4 +1,5 @@
 import json
+import sqlite3
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -29,8 +30,11 @@ from fastapi.testclient import TestClient
 from zebra_agent_api import RouteAdapter, RouteRequest, create_app
 from zebra_agent_api.http import create_http_app
 from zebra_agent_config import load_settings
+from zebra_agent_worker.session_handoff import SessionHandoffRecoveryGate
 
 NOW = datetime(2026, 8, 2, tzinfo=UTC)
+INTERNAL_CALL_ID = "internal-call-stale"
+PROVIDER_CALL_ID = "provider-call-stale"
 
 
 def test_http_terminal_follow_up_reconciles_stale_pending_capsule(tmp_path: Path) -> None:
@@ -59,6 +63,20 @@ def test_http_terminal_follow_up_reconciles_stale_pending_capsule(tmp_path: Path
     child_events = SQLiteEventStore(database).list_for_session(child_id)
     prepared = next(event for event in child_events if event.event_type is EventType.TASK_PREPARED)
     assert prepared.payload["model_id"] == "non-default-model"
+    lineage = SQLiteSessionHandoffStore(database).get_lineage(child_id)
+    handoff_id = lineage[-1].inbound_handoff_id
+    assert handoff_id is not None
+    envelope = SQLiteSessionHandoffStore(database).get_envelope(handoff_id)
+    assert envelope is not None
+    assert envelope.source_context_capsule_id is None
+    assert envelope.objective == "Preserve the first request evidence."
+    recovered = SessionHandoffRecoveryGate(str(database)).recover(
+        child_id,
+        worker_id="terminal-follow-up-test",
+        recovered_at=NOW,
+    )
+    assert recovered is not None
+    assert recovered.runtime_evidence.summary == "Preserve the first request evidence."
 
     child = SQLiteProjectionStore(database).get_session(child_id)
     assert child is not None
@@ -181,6 +199,38 @@ def test_stale_quiescent_capsule_remains_active_projection(tmp_path: Path) -> No
     assert envelope.source_context_capsule_id == "stale-terminal-capsule"
 
 
+def test_reconciled_checkpoint_rejects_tampered_source_events(tmp_path: Path) -> None:
+    database = tmp_path / "tampered-reconciled-source.sqlite"
+    task_id = _seed_stale_terminal_task(database, tmp_path)
+    client = TestClient(
+        create_http_app(
+            database,
+            settings=load_settings({"ZEBRA_SESSION_HANDOFF_ENABLED": "true"}),
+        )
+    )
+
+    response = client.post(
+        f"/tasks/{task_id}/messages",
+        json={"content": "Continue after the completed tool."},
+        headers={"Idempotency-Key": "tampered-reconciled-source"},
+    )
+    assert response.status_code == 201, response.text
+    segments = client.get(f"/internal/tasks/{task_id}/segments").json()["segments"]
+    child_id = SessionId(UUID(segments[-1]["session_id"]))
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "UPDATE session_events SET payload = ? WHERE session_id = ? AND sequence = 1",
+            (json.dumps({"tampered": True}), task_id),
+        )
+
+    with pytest.raises(ValueError, match="source event hash does not match"):
+        SessionHandoffRecoveryGate(str(database)).recover(
+            child_id,
+            worker_id="tampered-source-test",
+            recovered_at=NOW,
+        )
+
+
 def _seed_stale_terminal_task(
     database: Path,
     workspace: Path,
@@ -215,7 +265,8 @@ def _seed_stale_terminal_task(
             {
                 "attempt_number": 1,
                 "tool_name": "files.read",
-                "tool_call_id": "call-stale",
+                "tool_call_id": INTERNAL_CALL_ID,
+                "provider_call_id": PROVIDER_CALL_ID,
                 "reason": "approval required",
             },
         ),
@@ -231,7 +282,7 @@ def _seed_stale_terminal_task(
         objective="Preserve the first request evidence.",
         protected_user_constraints=("preserve evidence",),
         pending_tools=(
-            (PendingToolState(call_id="call-stale", name="files.read"),)
+            (PendingToolState(call_id=PROVIDER_CALL_ID, name="files.read"),)
             if pending_tool
             else ()
         ),
@@ -248,7 +299,9 @@ def _seed_stale_terminal_task(
         validation_context=ContextCapsuleValidationContext(
             expected_source_hash=capsule.source_hash,
             expected_source_event_range=capsule.source_event_range,
-            unresolved_tool_call_ids=(frozenset({"call-stale"}) if pending_tool else frozenset()),
+            unresolved_tool_call_ids=(
+                frozenset({PROVIDER_CALL_ID}) if pending_tool else frozenset()
+            ),
             protected_user_constraints=frozenset(capsule.protected_user_constraints),
             approval_and_policy_state=frozenset(capsule.approvals_and_policy_state),
         ),
@@ -263,12 +316,12 @@ def _seed_stale_terminal_task(
             sequence,
             EventType.APPROVAL_GRANTED,
             EventActor.USER,
-            {"tool_call_id": "call-stale"},
+            {"tool_call_id": INTERNAL_CALL_ID},
         )
     ]
     sequence += 1
     if tail_mode != "approval_only":
-        completed_call_id = "other-call" if tail_mode == "different_call_id" else "call-stale"
+        completed_call_id = "other-call" if tail_mode == "different_call_id" else INTERNAL_CALL_ID
         tail.extend(
             (
                 _event(
