@@ -2030,7 +2030,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-ART-PAYLOAD-PG-01 - Shared Artifact Payload Authority
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Depends on: `CLOUD-ART-LIFECYCLE-CON-01`, `CLOUD-ART-OBJECT-S3-01`, and completed
   `CLOUD-AGG-HANDOFF-PG-01`; all three dependencies are integrated in
@@ -2078,6 +2078,24 @@ cloud mainline and is not built or changed by these cards.
   finalize failure and concurrent retention prune retain recoverable evidence without
   unsafe Worker deletion. Real PostgreSQL+MinIO tests pass `30/30`; Worker/Runtime
   pass `260/260` and Storage passes `131/131`.
+
+#### Closeout
+
+- Formal review covered the integrated v9 chain `f0e714c8`, `3443da58`,
+  `9e26dc26`, `8fcc8995` and fault-matrix completion `b87760b6`. Lifecycle,
+  object, Artifact authority and Handoff v8 dependencies are all `Done`.
+- The implementation remains within the declared cloud lifecycle Port, PostgreSQL
+  v9 metadata/ledgers, S3-compatible adapter, Worker Event preparation seam and
+  focused PostgreSQL/MinIO tests. It does not change the local payload Port or
+  SQLite, add a v10 migration, select Runtime, expose signed URLs, link Effects,
+  add read composition or change Desktop behavior.
+- Existing evidence is accepted: isolated PostgreSQL migration/lifecycle `19/19`,
+  Core `17/17`, PostgreSQL+MinIO `30/30`, Worker/Runtime `260/260` with `16`
+  skips and Storage `131/131` with `114` skips. No new Compose run or production
+  edit was needed for this closeout.
+- Closing this card records Artifact v9 payload authority only. Effect linkage,
+  read composition, delivery APIs and Runtime/provider selection retain separate
+  gates.
 
 ### CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
 

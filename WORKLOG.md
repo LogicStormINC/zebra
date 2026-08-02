@@ -7172,3 +7172,18 @@ actual byte access.
   run or production edit was made by this review.
 - Closed `CLOUD-ART-OBJECT-S3-01` from `Review` to `Done`; payload authority,
   Effect linkage, reads and Runtime cards retain separate gates.
+
+## 2026-08-02 - CLOUD-ART-PAYLOAD-PG-01 formal review closeout
+
+- Reviewed integrated v9 chain `f0e714c8`, `3443da58`, `9e26dc26`, `8fcc8995`
+  and fault-matrix completion `b87760b6`; lifecycle, object, Artifact authority
+  and Handoff v8 dependencies are `Done`.
+- Audited the PostgreSQL v9 metadata/ledgers, provider-neutral lifecycle adapter,
+  S3-compatible object boundary and Worker Event preparation seam. Local payload
+  Port/SQLite, v10, signed URLs, Effect linkage, read composition, Desktop and
+  Runtime selection remain unchanged.
+- Accepted PostgreSQL `19/19`, Core `17/17`, PostgreSQL+MinIO `30/30`, Worker/
+  Runtime `260/260` with `16` skips and Storage `131/131` with `114` skips. No
+  Compose run or production edit was made by this review.
+- Closed `CLOUD-ART-PAYLOAD-PG-01` from `Review` to `Done`; Effect linkage,
+  read composition, delivery APIs and Runtime/provider cards retain separate gates.

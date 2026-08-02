@@ -105,6 +105,8 @@
    binding, finalize, compensation, prune and management reconcile as explicit steps.
 4. `completed` - Prove the PostgreSQL/MinIO fault matrix, concurrent idempotency,
    namespace isolation and cross-process reads with an isolated host runner.
+5. `completed` - Formally audit the integrated v9 chain and dependency evidence,
+   then close the card as Done without selecting Runtime or adding v10.
 
 ### Decisions
 
@@ -143,6 +145,17 @@
   inside a PostgreSQL transaction.
 - Effect linkage, API read composition, runtime profile selection and Desktop stay
   in their dedicated successor cards.
+
+### Closeout
+
+- Review covered v9 commits `f0e714c8`, `3443da58`, `9e26dc26`, `8fcc8995` and
+  `b87760b6`; lifecycle, object, Artifact authority and Handoff v8 dependencies
+  are `Done`.
+- Recorded PostgreSQL `19/19`, Core `17/17`, PostgreSQL+MinIO `30/30`, Worker/
+  Runtime `260/260` and Storage `131/131` evidence is accepted. No Compose run or
+  production edit was made by this review slice.
+- Effect linkage, read composition, delivery APIs and Runtime/provider selection
+  remain separately gated.
 
 ## CLOUD-EFFECT-PAYLOAD-ATOMIC-01 - Effect Payload And Intent Linkage
 

@@ -183,7 +183,7 @@
   finalize/compensate ordering; its object boundary is direct botocore with MinIO
   bucket versioning and exact object-version evidence. It explicitly excludes SQLite,
   Desktop, runtime selection, Effect linkage and API read composition.
-- Completed Artifact v9 review slice starts from integrated Handoff v8 at
+- Completed and formally closed Artifact v9 review slice starts from integrated Handoff v8 at
   `cfe40713`. `CLOUD-ART-PAYLOAD-PG-01` owns the PostgreSQL lifecycle metadata,
   provider-neutral object orchestration, Worker Event binding and isolated
   PostgreSQL/MinIO fault matrix; it does not select a runtime backend or add Desktop.
@@ -202,7 +202,9 @@
   PostgreSQL+MinIO matrix passes `30/30`, including lost put/Event acknowledgements,
   sequence drift, finalize failure and concurrent retention prune. Worker/Runtime
   pass `260/260` with `16` environment-gated skips; Storage passes `131/131` with
-  `114` environment-gated skips. The task is ready for review.
+  `114` environment-gated skips. Formal dependency/path review closed
+  `CLOUD-ART-PAYLOAD-PG-01` as `Done`; Effect linkage, read composition and
+  Runtime/provider selection remain separate gates.
 - Completed Effect/Artifact review slice `CLOUD-EFFECT-PAYLOAD-ATOMIC-01` starts from
   `zebra-cloud-trench@b87760b6`. Its dependencies are integrated; it owns the narrow
   transaction that binds the verified Effect request Artifact to the intent Event and
