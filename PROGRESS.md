@@ -140,11 +140,13 @@
   `artifact://` identity from temporary access URLs and opaque external references,
   freezes staged/finalize/compensate recovery plus fenced Worker and management
   authority, and leaves provider, key encoding, API delivery and runtime selection
-  unchosen. It unlocks planning for `CLOUD-ART-PAYLOAD-PG-01`. The active
-  `CLOUD-AGG-HANDOFF-CON-01` adds a tokenized Lease-fenced SQLite dispatch receipt
-  before the PostgreSQL Handoff aggregate. Its `290` related tests pass; SQLite
-  work stops at this compatibility contract. `CLOUD-AGG-HANDOFF-PG-01` is now the
-  active v8 migration owner, while Artifact payload implementation remains locked.
+  unchosen. It unlocks planning for `CLOUD-ART-PAYLOAD-PG-01`. `CLOUD-AGG-HANDOFF-CON-01`
+  is now formally closed as `Done`: it adds a tokenized Lease-fenced SQLite
+  dispatch receipt before the PostgreSQL Handoff aggregate, with `290` recorded
+  related tests and a current-HEAD focused `22/22` regression check. SQLite work
+  stops at this compatibility contract. `CLOUD-AGG-HANDOFF-PG-01` remains the
+  next v8 migration Review gate, while Artifact payload implementation remains
+  locked.
 - Completed Context follow-up: `CLOUD-AGG-CTX-ADMIN-PG-01` reuses the v7
   administrative CAS only for historical capsule recovery in an explicitly injected
   PostgreSQL store. API recovery consumes the canonical Event/Session/Workspace result

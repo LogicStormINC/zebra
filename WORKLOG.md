@@ -7023,3 +7023,21 @@ actual byte access.
 - Closed `CLOUD-AGG-CTX-PG-01` from `Review` to `Done`. Administrative Context
   recovery remains a separate Review card; Handoff, Artifact, Control Plane and
   runtime/provider paths remain locked or separately in Review.
+
+## 2026-08-02 - CLOUD-AGG-HANDOFF-CON-01 formal review closeout
+
+- Reviewed the integrated dispatch contract at `f7d73dd3` and lease-claim
+  correction at `4492f475`. Aggregate fencing, Lease fencing and staged Handoff
+  contract dependencies are all `Done`; the historical task branch is retained
+  only as a source reference because the corrected implementation is already on
+  the cloud mainline.
+- Audited the declared Core dispatch Port, SQLite compatibility storage, Worker
+  recovery seam and focused API/Worker/Storage tests. No PostgreSQL migration,
+  Handoff aggregate authority, generic transaction, API route, Runtime, Provider
+  HTTP, Desktop, Redis or Mem0 composition is included.
+- Accepted the recorded `290` related tests, changed-scope Ruff, strict Mypy and
+  diff checks; the current-HEAD focused regression run passed `22/22`. No Compose
+  run or production edit was made by this review.
+- Closed `CLOUD-AGG-HANDOFF-CON-01` from `Review` to `Done`. PostgreSQL Handoff
+  v8 remains the next Review gate; Runtime, Worker startup, Provider HTTP and
+  application Compose selection remain locked.

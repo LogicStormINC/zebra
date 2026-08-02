@@ -220,12 +220,26 @@
 3. `completed` - Prove legacy-claim requeue, token rotation, stale fence/expiry ACK
    rejection and local/API compatibility.
 4. `completed` - Run Core/Storage/Worker gates, record evidence and move to Review.
+5. `completed` - Formally audit the integrated diff and dependency status, then
+   close the card as Done without adding PostgreSQL or changing composition.
 
 ### Decisions
 
 - Preserve unused legacy `SessionHandoffPort` batch wrappers for compatibility;
   only the independently injected dispatch Store becomes the strict Worker path.
 - Use a standard-library random token and do not touch PostgreSQL migrations.
+
+### Closeout
+
+- Review covered `f7d73dd3` and `4492f475`; aggregate fencing, Lease fencing and
+  the staged Handoff contracts are all `Done`. The historical task branch is not
+  merged as a separate delta because the corrected implementation is already on
+  the cloud mainline.
+- The recorded `290` related tests, changed-scope Ruff, strict Mypy and diff
+  checks are accepted; a current-HEAD focused regression run passed `22/22`.
+  No Compose execution or production edit was made by this review slice.
+- This closeout leaves PostgreSQL Handoff v8 as a separate Review gate and does
+  not unlock Runtime, Worker startup, Provider HTTP or application Compose.
 
 ## CLOUD-AGG-HANDOFF-PG-01 - PostgreSQL Handoff And Dispatch Aggregate
 

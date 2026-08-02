@@ -1832,7 +1832,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-HANDOFF-CON-01 - Fenced Handoff Dispatch Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Branch: `codex/cloud-agg-handoff-con-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-LEASE-CON-01`, and the existing
@@ -1856,6 +1856,25 @@ cloud mainline and is not built or changed by these cards.
   library random token, incomplete legacy claims are requeued, and old receipts
   cannot ACK after release/takeover. Changed-scope Ruff and strict Mypy pass;
   `290` Core/Storage/Worker/API tests and `git diff --check` pass.
+
+#### Closeout
+
+- Formal review targeted the integrated dispatch contract at `f7d73dd3` and the
+  lease-claim correction at `4492f475`; the implementation is present on the
+  cloud mainline, while the historical task branch remains a source reference.
+  All direct dependencies—aggregate fencing, core Lease fencing and the staged
+  Handoff contracts—are `Done`.
+- The diff is confined to the declared Core dispatch Port, SQLite compatibility
+  storage, Worker recovery seam and focused API/Worker/Storage tests. It does not
+  add a PostgreSQL migration, Handoff aggregate authority, generic transaction,
+  API route, Runtime, Provider HTTP, Desktop, Redis or Mem0 composition.
+- Existing evidence is accepted: recorded `290` related Core/Storage/Worker/API
+  tests, changed-scope Ruff, strict Mypy and `git diff --check`; an additional
+  current-HEAD focused regression run passed `22/22`. No Compose run or
+  production edit was needed for this closeout.
+- Closing this card records only the portable Lease-fenced dispatch contract.
+  `CLOUD-AGG-HANDOFF-PG-01` remains the next v8 PostgreSQL Review gate; Runtime,
+  Worker startup, Provider HTTP and application Compose selection remain locked.
 
 ### CLOUD-MODEL-TOOL-PG-01 - PostgreSQL Model And Tool Projections
 
