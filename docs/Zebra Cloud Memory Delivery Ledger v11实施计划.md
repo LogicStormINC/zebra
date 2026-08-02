@@ -1,10 +1,14 @@
 # Zebra Cloud Memory Delivery Ledger v11 实施计划
 
-状态：方案已审查；`MEM-GW-DEL-PG-01` 已进入 `Review`，父任务、
+状态：docs-only 计划已正式 `Done`；Core certainty 与
+`MEM-GW-DEL-PG-01` PostgreSQL 权威账本切片均已完成隔离验收，父任务、
 Worker consumer 和 Mem0 runtime 仍保持 `Locked`。Reset Spike 因 provider
-缺少有界分页保持 `Blocked`，不阻断本 PostgreSQL 权威账本切片。
+缺少有界分页保持 `Blocked`，因此不解锁父任务或运行时。
 
-基线：`zebra-cloud-trench@ac9801c2`。PostgreSQL governed Memory v10 和 Context recovery 已进入云端主线；Mem0 仍只是可丢失、可重建的派生索引，不能成为 Zebra 的事实源。
+设计基线：`zebra-cloud-trench@ac9801c2`；当前收口证据以
+`zebra-cloud-trench@473cfab2` 为准。PostgreSQL governed Memory v10 和
+Context recovery 已进入云端主线；Mem0 仍只是可丢失、可重建的派生索引，
+不能成为 Zebra 的事实源。
 
 ## 1. 结论与边界
 
@@ -20,10 +24,10 @@ Worker consumer 和 Mem0 runtime 仍保持 `Locked`。Reset Spike 因 provider
 
 | 依赖 | 当前状态 | 对 v11 的结论 |
 | --- | --- | --- |
-| `CLOUD-MEMORY-CON-01` | 云端主线可见，治理状态 `Review` | 已有 v10 Core 基线，仍需按仓库治理完成合并 |
-| `CLOUD-MEMORY-PG-01` | v10 authority 在主线，治理状态 `Review` | 可提供权威 revision、digest、生命周期和批量扫描 |
-| `MEM-GW-CON-01` | Gateway Port 已存在，mutation 仍只有 status/detail | 必须先扩展 typed certainty 合同 |
-| `MEM-MEM0-SPIKE-01` | OSS REST/Compose 语义已验证，治理状态 `Review` | 可作为 reset Spike 的事实基线，不能把 boot-smoke 当生产证据 |
+| `CLOUD-MEMORY-CON-01` | `Done` | 提供 v10 Core revision/CAS、receipt 和治理状态基线 |
+| `CLOUD-MEMORY-PG-01` | `Done` | 提供权威 revision、digest、生命周期和批量扫描 |
+| `MEM-GW-CON-01` | `Done` | 提供 provider-neutral Gateway outcome 合同；没有运行时 provider 选择 |
+| `MEM-MEM0-SPIKE-01` | `Blocked` | pinned provider 缺少有界分页；不能把 boot-smoke 当生产证据 |
 | `MEM-MEM0-ADP-01` | Adapter 代码在主线可见，治理状态 `Review` | 仅作为 provider transport；mapping/ledger 不归 Adapter 私有持有 |
 | Lease/Effect | PostgreSQL claim/CAS/DB-time 已有验证 | 只复用模式；Memory consumer 不复用 Session `LeaseFence` |
 | Host namespace authority | 完整 cloud composition 尚未闭合 | 阻断生产启用，不阻断隔离的 Core/Storage 合同工作 |
@@ -75,7 +79,7 @@ pending 重试耗尽 -> dead_letter
 
 ### `MEM-GW-DEL-CON-01` — Core delivery certainty contract
 
-- 状态：`Locked`，依赖 `MEM-GW-CON-01`、`CLOUD-MEMORY-CON-01` 的治理合并。
+- 状态：`Done`；provider-neutral Core certainty/state 合同已完成隔离验收。
 - Owned paths：
   `packages/agent-core/src/agent_core/ports/agent_memory_gateway.py`、
   `packages/agent-core/src/agent_core/domain/memory_delivery.py`（新）、
@@ -85,14 +89,14 @@ pending 重试耗尽 -> dead_letter
 
 ### `MEM-MEM0-RESET-SPIKE-01` — Scoped namespace reset/rebuild probe
 
-- 状态：`Locked`，依赖 `MEM-MEM0-SPIKE-01` 与 Compose/Store/Gateway 前置合并。
+- 状态：`Blocked`；依赖 provider 有界 scoped enumeration，现有 Spike 已证明该能力缺失。
 - Owned paths：`docker/compose.mem0.test.yml`、`docker/mem0/` 下的测试辅助、`tests/spikes/mem0/`、`docs/Mem0 OSS协议兼容性验证记录.md` 的新增证据。
 - 只验证 scoped enumeration/purge、分页/上限、expired/duplicate/unknown 对象、跨 scope 隔离和重启行为；禁止暴露无边界全局 `/reset`。
 - 验收：能证明 reset 的范围、上限、失败语义和 operator 门禁；若 provider 无法提供安全 scoped reset，任务必须以 `Blocked` 结束，父卡不得解锁。
 
 ### `MEM-GW-DEL-PG-01` — PostgreSQL v11 ledger and atomic enqueue
 
-- 状态：`Review`，依赖 `MEM-GW-DEL-CON-01`、`CLOUD-MEMORY-PG-01` 和迁移治理合并。
+- 状态：`Done`；依赖已满足，metadata-only v11 ledger 与原子 enqueue 已完成隔离验收。
 - Owned paths：`packages/agent-storage/src/agent_storage/postgres/memory_delivery.py`（新）、delivery transaction/support 模块（新）、`postgres/migrations.py`、`governed_memory_transactions.py`、`governed_memory_transaction_support.py`、对应 PostgreSQL tests 和宿主 Compose runner。
 - 实现 v11 migration、同事务 enqueue、`SKIP LOCKED` claim/CAS、mapping、批量 search revalidation 和无正文审计；不得修改 Worker 默认 composition。
 - 验收：v1-v11 fresh/upgrade/checksum、权威变更与 operation 原子回滚、重复 replay 不产生第二条 delivery、陈旧 ACK 零写入、批量 hit 一次性回查 authority。
@@ -132,8 +136,8 @@ MEM-MEM0-RESET-SPIKE-01 ──────────────────�
 MEM-MEM0-ADP-01 ────────────────────────────┘
 ```
 
-1. 先分别激活 Core contract 和 reset Spike；任何一个失败都保持父卡 `Locked`。
-2. Core contract 合并后再激活 PG v11，确保 enqueue 与 v10 authority 同事务。
+1. Core contract 与 PG v11 ledger 已分别完成；其证据不代表运行时启用。
+2. Reset Spike 仍 `Blocked`，任何 scoped reset/rebuild 不确定性都保持父卡 `Locked`。
 3. 只有 PG 账本和 reset/rebuild 门禁都通过，才激活 Worker/Adapter runtime。
 4. 完整 cloud composition、Host namespace authority、统一 Store selector 和生产凭据仍是独立的 `MEM-GW-GATE-01`/cloud composition 门禁。
 

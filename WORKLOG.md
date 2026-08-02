@@ -7363,3 +7363,14 @@ actual byte access.
   current focused validation passes `18/18`.
 - Closed `MEM-GW-DEL-CON-01` from `Review` to `Done`; PostgreSQL, Mem0 HTTP,
   Worker and Runtime remain separate gates.
+
+## 2026-08-02 - MEM-GW-DEL-PLAN-01 formal review closeout
+
+- Re-reviewed the v11 docs-only plan against the current branch; provider-neutral
+  Gateway, Core certainty and PostgreSQL v11 ledger are Done, while the scoped
+  reset Spike remains Blocked on bounded enumeration.
+- Accepted the updated dependency/status matrix, preserved the PostgreSQL fact
+  source and kept the parent ledger, Worker and Mem0 Runtime locked.
+- Closed `MEM-GW-DEL-PLAN-01` from `Review` to `Done`; `make eval` and
+  `git diff --check` passed. No SQL, HTTP, Worker, Mem0 or SQLite runtime wiring
+  was added.

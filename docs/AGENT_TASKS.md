@@ -40,10 +40,9 @@
   implementation is based directly on `CLOUD-STO-SEAM-01` and cannot be pushed,
   opened as a PR, or merged before `EMB-PLAN-01 -> CLOUD-STO-SEAM-01` lands in
   that order.
-- `MEM-GW-CON-01` is `Review` on `codex/mem-gw-con-01`. The maintainer
-  explicitly continued the memory-first Zebra foundation on 2026-07-28. This
-  provider-neutral contract is stacked on local `CLOUD-STO-AUTH-01`; it must not
-  merge before the authoritative Store composition.
+- `MEM-GW-CON-01` is `Done` on `codex/mem-gw-con-01`. Its provider-neutral
+  contract is integrated; Mem0, PostgreSQL delivery, Worker and Runtime remain
+  separate gates and no provider is runtime-selected.
 - `CLOUD-COMPOSE-INFRA-01` is `Review` on
   `codex/cloud-compose-infra-01`, explicitly activated by the maintainer on
   2026-07-24. It defines only the Docker Compose dependency stack and is stacked
@@ -57,27 +56,22 @@
   `Provider admission: DENIED` and `Mainline candidate: DEFERRED` under ADR-019.
   Keep this historical adapter card out of the active critical path until a
   future upstream capability review and admission run.
-- `MEM-GW-DEL-PLAN-01` is `Review` on `codex/mem-gw-del-plan-01`. It
-  materializes the v11 delivery/deletion plan and splits the locked parent into
-  four path-bounded child cards. The parent remains locked until the Core
-  certainty contract and scoped Mem0 reset/rebuild gate are proven.
-- `MEM-GW-DEL-CON-01` is `Review` on `codex/mem-gw-del-con-01` after the
-  maintainer's 2026-08-02 continuation. It owns only provider-neutral Core
-  certainty/state values and focused tests; PostgreSQL, Mem0 reset and Worker
-  wiring remain locked successors.
+- `MEM-GW-DEL-PLAN-01` is `Done` on `codex/mem-gw-del-plan-closeout-01`. The
+  v11 delivery/deletion plan and four path-bounded child cards are durable; the
+  parent remains locked because the scoped reset/rebuild gate is blocked.
+- `MEM-GW-DEL-CON-01` is `Done` on `codex/mem-gw-del-con-closeout-01`. It owns
+  only provider-neutral Core certainty/state values and focused tests;
+  PostgreSQL, Mem0 reset and Worker wiring remain separate gates.
 - `MEM-PROVIDER-DEL-COMPLIANCE-01` is `Done` on
   `codex/mem-provider-del-compliance-01`. It completed the only Ready successor
   after the `MEM-MEM0-RESET-ALT-01` `B/PARTIAL` result. ADR-018 defines the
   provider-neutral gate and records Mem0 as not admitted to the Runtime mainline.
-- `MEM-PG-NATIVE-ADMISSION-SPIKE-01` is `Review` on
-  `codex/mem-pg-native-admission-spike-01`. It is the reviewed predecessor for
-  the activated implementation and validates a PostgreSQL-native
-  authority/retrieval design against ADR-018 with a test-only, dependency-only
-  Compose profile. Runtime remains locked even on `PASS`.
-- `MEM-GW-PG-NATIVE-01` is `Review` on
-  `codex/mem-gw-pg-native-01`. It is the sole activated production slice after
-  the reviewed native admission `PASS`; it owns only the PostgreSQL storage
-  gateway, migration and isolated storage tests. Runtime, Worker, Provider HTTP,
+- `MEM-PG-NATIVE-ADMISSION-SPIKE-01` is `Done` on
+  `codex/mem-pg-native-admission-spike-01`. Its isolated PostgreSQL profile
+  passed the admission matrix; Runtime remains locked even on `PASS`.
+- `MEM-GW-PG-NATIVE-01` is `Done` on
+  `codex/mem-gw-pg-native-01`. It owns only the PostgreSQL-native storage
+  gateway, migration and isolated storage tests; Runtime, Worker, Provider HTTP,
   Desktop, SQLite and Redis composition remain locked.
 - `CLOUD-PG-PLAN-01` and `CLOUD-PG-01` are `Review` on their dedicated branches;
   the docs-only migration/restore decisions precede the real PostgreSQL Event/Projection Adapter.

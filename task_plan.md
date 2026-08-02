@@ -799,9 +799,21 @@
 4. `completed` - Register four path-bounded child cards and keep the parent
    `MEM-GW-DEL-01` `Locked` until their dependency gates are satisfied.
 5. `completed` - Validate the docs-only split, record the Git object repair
-   observation and hand off the first activation decision. `git diff --check`
-   passes; `make check` remains blocked only by the inherited Desktop stylesheet
-   size violation (`561/500`).
+   observation and re-review the plan after the Core and PostgreSQL child outcomes.
+   `git diff --check` passes; `make check` remains blocked only by the inherited
+   Desktop stylesheet size violation (`561/500`).
+
+### Closeout
+
+- Re-reviewed the integrated v11 plan against the current branch. The
+  provider-neutral Gateway, Core certainty contract and PostgreSQL v11 ledger
+  are Done; the scoped reset Spike is Blocked on bounded enumeration.
+- Accepted the docs-only plan split with current dependency/status updates,
+  preserved the parent `MEM-GW-DEL-01` and Worker/Mem0 Runtime as `Locked`,
+  and retained the PostgreSQL fact-source boundary.
+- Closed `MEM-GW-DEL-PLAN-01` from `Review` to `Done` after
+  `git diff --check` and `make eval` passed. No SQL, HTTP, Worker,
+  Mem0 or SQLite runtime wiring was added.
 
 ### Decisions
 

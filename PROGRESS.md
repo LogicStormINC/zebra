@@ -513,19 +513,21 @@ including a real thinking tool round trip.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
   `CLOUD-STO-AUTH-01`,
-  `MEM-MEM0-SPIKE-01`, and `MEM-MEM0-ADP-01` are in Review. The Lease plan,
-  Core contract and PostgreSQL Lease adapter have separate local evidence and
-  remain unselected at runtime. Mem0 remains a derived, degraded-safe index;
+  `MEM-MEM0-SPIKE-01`, and `MEM-MEM0-ADP-01` are in Review. The provider-neutral
+  Memory Gateway contract, Core delivery-certainty contract, PostgreSQL-native
+  admission Spike, PostgreSQL-native storage gateway, and PostgreSQL v11
+  delivery ledger are formally Done with isolated evidence; none selects a
+  Runtime backend. Mem0 remains a derived, degraded-safe index;
   PostgreSQL Event/Projection and epoch/Lease Adapters have real-service
   restore and concurrency evidence.
   The local CI-billing waiver does not satisfy merge, runtime composition, release
   or production gates. The reviewed Effect and Artifact foundations are not runtime-
   selected; full aggregate fencing, Redis, production AG-UI, Trench, analysis,
   writeback, Memory delivery/runtime wiring and GA remain `Locked` pending explicit
-  gates. `MEM-GW-DEL-PLAN-01` is a docs-only planning slice in Review on
-  `codex/mem-gw-del-plan-01`; it keeps `MEM-GW-DEL-01` locked and registers the
-  Core certainty, scoped reset Spike, PostgreSQL v11 ledger and runtime/rebuild
-  child cards. `MEM-GW-DEL-CON-01` is formally `Done` after its explicitly activated,
+  gates. `MEM-GW-DEL-PLAN-01` is formally `Done` on
+  `codex/mem-gw-del-plan-closeout-01`; it keeps `MEM-GW-DEL-01` locked and
+  registers the Core certainty, scoped reset Spike, PostgreSQL v11 ledger and
+  runtime/rebuild child cards. `MEM-GW-DEL-CON-01` is formally `Done` after its explicitly activated,
   provider-neutral Core implementation slice. `MEM-MEM0-RESET-SPIKE-01` is now
   `Blocked` on `codex/mem0-reset-spike-01`: its isolated Compose run proved the
   pinned Mem0 list endpoint has no documented bounded pagination, so exact scoped
@@ -599,11 +601,10 @@ Redis composition.
    wiring one path-bounded card at a time; no production claim precedes complete
    composition, migration, restore and failover evidence.
 9. Continue the memory lane one path-bounded child at a time. The Core and
-   PostgreSQL delivery children are in Review, the scoped reset child is
-   `Blocked` on bounded enumeration, Provider Deletion Compliance is `Done`,
-   and the PostgreSQL-native admission Spike is in Review. The native storage
-   implementation is also in Review; keep the Mem0 consumer, parent ledger and
-   Runtime locked until their own explicit gates are reviewed.
+   PostgreSQL delivery children, provider-neutral gateway, PostgreSQL-native
+   admission and storage slices are Done. The scoped reset child is `Blocked`
+   on bounded enumeration; keep the Mem0 consumer, parent ledger and Runtime
+   locked until their own explicit gates are reviewed.
 
 ## Runtime Blueprint
 
@@ -644,9 +645,9 @@ real tool execution, failure visibility, API restart, and durable recovery.
 
 - Zebra AG-UI production adapter and HostSessionGrant verifier
 - Trench CopilotKit Runtime/BFF, read-only panel, frontend tools and writeback
-- Memory delivery ledger and runtime wiring: `MEM-GW-DEL-01` and its four child
-  cards remain `Locked` until the v11 certainty, scoped reset, atomic PostgreSQL
-  enqueue and management rebuild gates in the plan are satisfied.
+- Memory delivery runtime wiring: `MEM-GW-DEL-01` remains `Locked`; its Core
+  certainty and PostgreSQL ledger children are Done, while scoped reset/rebuild
+  is Blocked and the Mem0 consumer remains gated.
 - ACP entry adapter
 - optional code-intelligence adapter
 - Kubernetes/Kata/Firecracker and distributed Sandbox scheduling
