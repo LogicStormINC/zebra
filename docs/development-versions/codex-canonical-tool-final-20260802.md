@@ -51,6 +51,15 @@ Owned paths:
 - `tests/agent_core/test_single_attempt_orchestrator.py`
 - `tests/agent_core/test_tool_call_batches.py`
 - `tests/agent_core/test_tool_failure_recovery.py`
+- `tests/agent_runtime/test_harness_runner.py`
+- `tests/api/test_api_app.py`
+- `tests/integration/test_readonly_research_delegation.py`
+- `tests/worker/execution/test_core_execution.py`
+- `tests/worker/execution/test_memory_lifecycle.py`
+- `tests/worker/execution/worker_execution_support.py`
+- `tests/worker/test_approved_batch_continuation.py`
+- `tests/worker/test_approved_continuation.py`
+- `tests/worker/test_web_pipeline_v2_authority.py`
 - `docs/development-versions/codex-canonical-tool-final-20260802.md`
 
 No FinOS, ToolExecutor, model profile, MCP, workflow, API, Worker composition,
@@ -65,20 +74,33 @@ deployment, or public projection production code changes are permitted.
   emitted as `final` without a third, tools-disabled synthesis call.
 - Green focused tests: `14 passed`; related Harness/convergence/trace/public
   tests: `49 passed`; full `tests/agent_core`: `260 passed`.
+- The expanded consumer set covering the 27 new red tests is now `27 passed`.
+- The affected runtime/API/integration/worker files are `81 passed, 1 failed,
+  1 warning`; the only failure is the pre-existing durable-cancellation thread
+  race. Worker/API narrow is `64 passed, 1 failed, 1 warning`, with the same
+  cancellation failure.
 - The new success case has one provisional `tool_loop` followed by one
   canonical `final`; the failure case verifies the failed tool observation and
   final-answer instruction reach the tools-disabled request and the final does
   not claim success. Ordinary no-tool conversation remains one model call.
-- Worker/API narrow command: `55 passed, 10 failed, 1 warning`. The failures
-  are scripted gateways exhausted because their tests are outside the owned
-  `tests/agent_core` fixture boundary after the required extra canonical call,
-  plus the existing durable-cancellation thread race.
-- Full suite: `1898 passed, 37 failed, 9 skipped, 1 warning`. The additional
-  failures are the same unupdated scripted fixtures in agent-runtime/API/
-  integration/worker tests, plus pre-existing provider, HTTP, file-size, and
-  cancellation failures; no files in those areas were changed.
+- Full suite: `1925 passed, 10 failed, 9 skipped, 1 warning`, matching the
+  fixed-base inherited failure count. The remaining exact failures are:
+  - `tests/agent_integrations/test_deepseek_specialization.py::test_deepseek_thinking_tool_response_requires_valid_reasoning_content`
+  - `tests/agent_integrations/test_openai_compatible.py::test_openai_compatible_gateway_parses_tool_calls`
+  - `tests/api/http_app/test_session_reads.py::test_http_app_serves_health`
+  - `tests/api/session_pull_request/test_broker_credentials.py::test_api_pull_request_uses_broker_credential_for_github_execution`
+  - `tests/api/session_pull_request/test_execution_failures.py::test_api_pull_request_missing_broker_credential_records_audit`
+  - `tests/api/session_pull_request/test_execution_failures.py::test_api_pull_request_transport_failure_records_audit`
+  - `tests/api/session_pull_request/test_execution_failures.py::test_api_pull_request_uses_proxy_transport_for_github_execution`
+  - `tests/api/session_pull_request/test_execution_failures.py::test_api_pull_request_proxy_transport_failure_records_audit`
+  - `tests/test_file_size_limits.py::test_repository_file_size_gate_passes`
+  - `tests/worker/execution/test_core_execution.py::test_worker_streaming_stops_cleanly_after_durable_cancellation`
+- The canonical-final consumer failures are gone; no provider, HTTP, file-size,
+  or cancellation test was changed. `tests/worker/test_approved_continuation.py`
+  remains at the 700-line test limit.
 - Owned Ruff: passed. Python 3.12 compileall: passed. `git diff --check`:
   passed.
 - Implementation head: `93e422b` (`fix(harness): canonicalize post-tool final responses`).
+- Consumer test commit: `7a85405` (`test(harness): align consumers with canonical finals`).
 - Record closure: follow-up local documentation commit; no production deployment.
 - Merge commit: not applicable.
