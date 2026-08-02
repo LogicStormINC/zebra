@@ -139,6 +139,18 @@ def test_trace_projector_exposes_failed_tool_trace() -> None:
                     )
                 )
             ),
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content=(
+                            "The smoke checks failed; no validation evidence is available."
+                        ),
+                        created_at=created_at,
+                    )
+                )
+            ),
         )
     )
     tool_result = ToolResult(

@@ -113,3 +113,46 @@ def test_stable_task_keeps_each_public_user_and_final_turn_in_cursor_order() -> 
     assert "PRIVATE first reasoning" not in str(projection)
     assert "PRIVATE grant" not in str(projection)
     assert "PRIVATE raw tool output" not in str(projection)
+
+
+def test_public_projection_excludes_provisional_tool_loop_response() -> None:
+    task_id = TaskId(uuid4())
+    segment_id = SessionId(uuid4())
+    projection = project_public_conversation(
+        task_id,
+        (
+            _task_event(
+                task_id,
+                segment_id,
+                1,
+                EventType.USER_MESSAGE_RECEIVED,
+                {"public_content": "submit the candidate"},
+            ),
+            _task_event(
+                task_id,
+                segment_id,
+                10,
+                EventType.MODEL_RESPONSE_RECEIVED,
+                {
+                    "assistant_message": "The candidate was submitted successfully.",
+                    "response_stage": "tool_loop",
+                },
+            ),
+            _task_event(
+                task_id,
+                segment_id,
+                11,
+                EventType.MODEL_RESPONSE_RECEIVED,
+                {
+                    "assistant_message": "The tool failed; no candidate was submitted.",
+                    "response_stage": "final",
+                },
+            ),
+        ),
+    )
+
+    final_items = [item for item in projection.items if item.role == "final_response"]
+
+    assert [(item.cursor, item.content) for item in final_items] == [
+        (11, "The tool failed; no candidate was submitted.")
+    ]

@@ -104,6 +104,7 @@ def test_default_loop_allows_more_than_six_tool_calls() -> None:
     gateway = _gateway(
         _completion("Read all inputs.", *calls),
         _completion("All seven inputs were inspected."),
+        _completion("All seven inputs were inspected."),
     )
     tools = RecordingToolGateway()
 
@@ -141,7 +142,11 @@ def test_provider_batch_repeated_member_becomes_observation_and_tail_still_runs(
     repeated = _call("files.read", {"path": "same.txt"}, "call_b")
     tail = _call("tests.run", {"preset": "test"}, "call_c")
     final = _completion("Done after repeat recovery.")
-    gateway = _gateway(_completion("Repeat then test.", first, repeated, tail), final)
+    gateway = _gateway(
+        _completion("Repeat then test.", first, repeated, tail),
+        final,
+        final,
+    )
     tools = RecordingToolGateway()
 
     result = _run(gateway, tools, max_model_calls=3, max_tool_calls=3)

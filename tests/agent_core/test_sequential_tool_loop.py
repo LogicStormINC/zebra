@@ -88,6 +88,57 @@ class FinalInstructionAwareGateway:
         )
 
 
+class CanonicalFinalGateway:
+    def __init__(
+        self,
+        *,
+        tool_response: ModelCompletion,
+        provisional_response: ModelCompletion,
+        final_response: ModelCompletion,
+        tool_result_marker: str,
+    ) -> None:
+        self._responses = (tool_response, provisional_response)
+        self._final_response = final_response
+        self._tool_result_marker = tool_result_marker
+        self._cursor = 0
+        self.requests: list[tuple[SessionMessage, ...]] = []
+        self.tool_requests: list[tuple[ModelToolDefinition, ...]] = []
+
+    def complete(
+        self,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...] = (),
+    ) -> ModelCompletion:
+        self.requests.append(tuple(messages))
+        self.tool_requests.append(tools)
+        if tools:
+            response = self._responses[self._cursor]
+            self._cursor += 1
+            return response
+        instruction = messages[-1].content
+        assert "complete and self-contained" in instruction
+        assert "succeeded and failed" in instruction
+        assert "Do not request or invoke another tool." in instruction
+        assert any(self._tool_result_marker in message.content for message in messages)
+        return self._final_response
+
+
+class MarkedToolGateway:
+    def __init__(self, *, status: ToolCallStatus, output: str) -> None:
+        self.status = status
+        self.output = output
+        self.calls: list[ToolCall] = []
+
+    def execute(self, tool_call: ToolCall) -> ToolResult:
+        self.calls.append(tool_call)
+        return ToolResult(
+            tool_call_id=tool_call.tool_call_id,
+            status=self.status,
+            output=self.output,
+        )
+
+
 class RecoveryFirstModelStep(HarnessModelStep):
     def __init__(self, *, recover: bool) -> None:
         super().__init__(available_tools=TOOLS)
@@ -145,6 +196,106 @@ def test_bounded_loop_executes_two_tools_before_final_answer() -> None:
         MessageRole.TOOL,
         MessageRole.USER,
     ]
+
+
+def test_unlimited_tool_loop_canonicalizes_short_provisional_final() -> None:
+    tool_call = _tool_call("files.read", {"path": "portfolio.txt"}, "call_success")
+    gateway = CanonicalFinalGateway(
+        tool_response=_completion("Full structured report before reading.", tool_call),
+        provisional_response=_completion("The candidate was submitted successfully."),
+        final_response=_completion("Complete report with the successful evidence."),
+        tool_result_marker="SUCCESSFUL-TOOL-RESULT",
+    )
+    tools = MarkedToolGateway(
+        status=ToolCallStatus.EXECUTED,
+        output="SUCCESSFUL-TOOL-RESULT",
+    )
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Canonical final",
+            user_input="Read the portfolio and provide the complete report.",
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            tools,
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    model_events = [
+        event
+        for event in result.events
+        if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+    ]
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert result.attempt_result.metadata["assistant_message"] == (
+        "Complete report with the successful evidence."
+    )
+    assert result.run_result.model_calls_used == 3
+    assert tools.calls == [tool_call]
+    assert gateway.tool_requests == [TOOLS, TOOLS, ()]
+    assert model_events[-2].payload["response_stage"] == "tool_loop"
+    assert model_events[-1].payload["response_stage"] == "final"
+    assert sum(event.payload.get("response_stage") == "final" for event in model_events) == 1
+
+
+def test_failed_tool_canonical_final_reports_failure_without_claiming_success() -> None:
+    tool_call = _tool_call("files.read", {"path": "missing.txt"}, "call_failure")
+    gateway = CanonicalFinalGateway(
+        tool_response=_completion("I will inspect the requested file.", tool_call),
+        provisional_response=_completion("The candidate was submitted successfully."),
+        final_response=_completion("The tool failed, so no candidate was submitted."),
+        tool_result_marker="FAILED-TOOL-RESULT",
+    )
+    tools = MarkedToolGateway(
+        status=ToolCallStatus.FAILED,
+        output="FAILED-TOOL-RESULT",
+    )
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Failed canonical final",
+            user_input="Read the missing file and report the result.",
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            tools,
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    final_message = result.attempt_result.metadata["assistant_message"]
+    assert final_message == "The tool failed, so no candidate was submitted."
+    assert "submitted successfully" not in final_message
+    assert gateway.tool_requests == [TOOLS, TOOLS, ()]
+
+
+def test_no_tool_conversation_does_not_add_canonical_synthesis_call() -> None:
+    gateway = _gateway(_completion("Direct answer without tools."))
+
+    result = HarnessLoop().run(
+        HarnessTask(title="Direct answer", user_input="Say hello."),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            SequenceToolGateway(),
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert result.run_result.model_calls_used == 1
+    assert gateway.tool_requests == (TOOLS,)
 
 
 def test_tool_disabled_budget_final_compiles_before_recovering() -> None:
@@ -434,7 +585,7 @@ def test_bounded_loop_returns_one_repeated_read_to_model_without_reexecution() -
         HarnessTask(
             title="Repeated task",
             user_input="Inspect the file.",
-            max_model_calls=4,
+            max_model_calls=3,
             max_tool_calls=3,
         ),
         SingleAttemptOrchestrator(
@@ -470,7 +621,7 @@ def test_bounded_loop_keeps_observing_repeated_reads_until_threshold() -> None:
         HarnessTask(
             title="Repeated task",
             user_input="Inspect the file.",
-            max_model_calls=5,
+            max_model_calls=4,
             max_tool_calls=3,
         ),
         SingleAttemptOrchestrator(

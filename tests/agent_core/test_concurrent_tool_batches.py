@@ -262,6 +262,7 @@ def test_completed_read_batch_returns_one_repeat_to_model_without_reexecution() 
             ScriptedModelResponse(completion=_completion("Read inputs.", *first)),
             ScriptedModelResponse(completion=_completion("Read again.", *repeated)),
             ScriptedModelResponse(completion=_completion("Finished from prior evidence.")),
+            ScriptedModelResponse(completion=_completion("Finished from prior evidence.")),
         )
     )
     tools = RecordingGateway()
@@ -288,7 +289,7 @@ def test_completed_read_batch_returns_one_repeat_to_model_without_reexecution() 
     assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
     assert tools.calls == list(first)
     assert result.run_result.tool_calls_used == 2
-    assert result.run_result.model_calls_used == 3
+    assert result.run_result.model_calls_used == 4
     assert result.attempt_result.metadata["repeated_read_recovery_count"] == 1
     assert _event_names(result, EventType.TOOL_EXECUTION_FAILED) == [
         "files.read",

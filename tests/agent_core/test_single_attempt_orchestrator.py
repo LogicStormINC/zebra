@@ -246,6 +246,16 @@ def test_single_attempt_orchestrator_returns_failed_tool_to_model() -> None:
                     )
                 )
             ),
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="The smoke checks failed; reporting the result.",
+                        created_at=created_at,
+                    )
+                )
+            ),
         )
     )
     tool_result = ToolResult(

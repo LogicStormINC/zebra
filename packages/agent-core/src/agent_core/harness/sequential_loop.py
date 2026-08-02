@@ -336,7 +336,8 @@ class SequentialToolLoop:
             not completion.tool_calls
             and allow_tools
             and (
-                (compaction is not None and compaction.compacted)
+                tool_calls_executed > 0
+                or (compaction is not None and compaction.compacted)
                 or (
                     isinstance(compaction_count, int)
                     and not isinstance(compaction_count, bool)

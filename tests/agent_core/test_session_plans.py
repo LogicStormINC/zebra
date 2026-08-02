@@ -81,7 +81,11 @@ def test_agent_plan_updates_and_returns_full_plan_without_gateway_execution() ->
         provider_call_id="call_plan",
     )
     gateway = ScriptedModelGateway(
-        responses=(_response("I will make a plan.", plan_call), _response("Plan recorded."))
+        responses=(
+            _response("I will make a plan.", plan_call),
+            _response("Plan recorded."),
+            _response("Plan recorded."),
+        )
     )
     session = Session.create(title="Plan", created_at=NOW).model_copy(
         update={"status": SessionStatus.RUNNING}

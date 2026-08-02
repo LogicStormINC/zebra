@@ -173,6 +173,7 @@ def test_sequential_batch_continues_after_first_failure() -> None:
     gateway = _gateway(
         _completion("Run the batch.", first, failing, tail),
         _completion("Done after partial failure."),
+        _completion("Done after partial failure."),
     )
     tools = FailingToolGateway("tests.run")
 
@@ -191,6 +192,7 @@ def test_sequential_batch_all_failed_returns_to_model() -> None:
     second = _call("tests.run", {"preset": "b"}, "call_b")
     gateway = _gateway(
         _completion("Run the batch.", first, second),
+        _completion("Recovered from total failure."),
         _completion("Recovered from total failure."),
     )
     tools = FailingToolGateway("tests.run")
@@ -212,6 +214,7 @@ def test_http_404_returns_to_model_for_correction() -> None:
     gateway = _gateway(
         _completion("Fetch the README.", bad_url),
         _completion("Fetch the SKILL instead.", good_url),
+        _completion("Got the content."),
         _completion("Got the content."),
     )
     tools = FailingToolGateway("web.fetch")
@@ -237,6 +240,7 @@ def test_repeated_call_becomes_observation_not_terminal() -> None:
     gateway = _gateway(
         _completion("Read it.", first),
         _completion("Read it again.", repeated),
+        _completion("Done."),
         _completion("Done."),
     )
     tools = RecordingToolGateway()

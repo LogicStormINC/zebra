@@ -105,6 +105,7 @@ def test_fragment_deny_is_observed_then_corrected_without_gateway_call(
         _completion("Fetch the source.", fragment, sibling),
         _completion("Correct the URL.", corrected),
         _completion(FINAL_MARKER),
+        _completion(FINAL_MARKER),
     )
     tools = RecordingTools()
 
@@ -174,6 +175,7 @@ def test_concurrent_recovery_discards_unexecuted_siblings_before_correction() ->
     model = _gateway(
         _completion("Fetch the source.", sibling, fragment),
         _completion("Correct the URL.", corrected),
+        _completion(FINAL_MARKER),
         _completion(FINAL_MARKER),
     )
     tools = RecordingTools()

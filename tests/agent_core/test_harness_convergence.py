@@ -324,6 +324,7 @@ def test_concurrent_mixed_batch_executes_fresh_call_after_historical_repeat() ->
         _completion("Read it again.", repeated[2]),
         _completion("Run the mixed batch.", mixed_repeat, fresh),
         _completion("Fresh evidence was collected."),
+        _completion("Canonical final after the mixed batch."),
     )
     tools = StableEvidenceGateway({"same": "same", "reset": "reset", "fresh": "fresh"})
 
@@ -413,6 +414,7 @@ def test_new_evidence_resets_progress_counter_and_allows_long_chain() -> None:
     model = _gateway(
         *(_completion("Collect the next item.", call) for call in calls),
         _completion("Nine evidence items were considered."),
+        _completion("Canonical final after the evidence chain."),
     )
     tools = StableEvidenceGateway(evidence_by_query)
 
@@ -422,7 +424,7 @@ def test_new_evidence_resets_progress_counter_and_allows_long_chain() -> None:
     assert result.attempt_result.metadata["consecutive_no_progress_batches"] == 0
     assert result.run_result.tool_calls_used == 9
     assert len(tools.calls) == 9
-    assert model.tool_requests.count(()) == 0
+    assert model.tool_requests.count(()) == 1
 
 
 @pytest.mark.parametrize(

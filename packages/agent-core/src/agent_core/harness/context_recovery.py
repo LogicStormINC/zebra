@@ -60,7 +60,12 @@ def append_final_answer_instruction(
             role=MessageRole.USER,
             content=(
                 "The tool budget is complete. Answer the original request using "
-                "the available tool results. Do not request or invoke another tool."
+                "the available tool results. Your final answer must be complete and "
+                "self-contained, directly answer the original request, and not merely "
+                "say that the work is done or submitted or refer to earlier output. "
+                "Truthfully report visible tool results by distinguishing succeeded and "
+                "failed results; never claim a failed or missing operation succeeded. "
+                "Do not request or invoke another tool."
             ),
             created_at=created_at,
         )
