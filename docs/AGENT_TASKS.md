@@ -286,7 +286,7 @@ that the later `EMB-AGUI-CON-01` contract may safely adopt.
 
 ### CLOUD-STO-SEAM-01 - Control-Plane Storage Composition Seam
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `STORAGE / API / WORKER`
 - Depends on: locally reviewed `EMB-PLAN-01`, completed Runtime Phase A, and
@@ -338,6 +338,22 @@ inside request or execution logic.
 - replacing local `MemoryStorePort` with any derived semantic-memory provider
 - inventing Ports for legacy stores not needed by this first control-plane seam
 - changing CLI, Desktop, Domain Event, Task, Policy, runtime or user-visible behavior
+
+#### Closeout
+
+- Formal review targeted the integrated composition implementation at `c4c1f593`;
+  `EMB-PLAN-01` is now `Done`, Runtime Phase A is complete, and the maintainer
+  activation was recorded before implementation.
+- The diff remains confined to the declared API/Worker wiring, flat
+  `ControlPlaneStores`, local SQLite builder, projection Port and focused tests.
+  It does not add PostgreSQL, Redis, S3, migrations, cloud credentials, backend
+  selection, Memory Gateway replacement, Desktop or user-visible behavior.
+- Existing focused/full/quality evidence is accepted; the current-HEAD storage,
+  API and Worker composition regression run passed `20/20`. No Compose execution
+  or production edit was needed for this closeout.
+- Closing this card records only the local control-plane composition seam.
+  `CLOUD-STO-AUTH-01` remains the next authoritative-store composition gate and
+  retains its own activation and merge-order constraints.
 
 ### CLOUD-STO-AUTH-01 - Complete Authoritative Store Composition
 

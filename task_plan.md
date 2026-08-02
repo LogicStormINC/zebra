@@ -1040,6 +1040,8 @@
    same-path injection and reject partial split backends before any write.
 5. `completed` - Run focused, full and quality validation; record remaining Port
    gaps and the next PostgreSQL/memory task without adding a cloud dependency.
+6. `completed` - Formally audit the integrated diff and prerequisites, then close
+   the card as Done without selecting a cloud backend.
 
 ### Decisions
 
@@ -1053,6 +1055,16 @@
   bundle fails closed if its database differs from those legacy stores.
 - Because PR `#194` is still open, this local branch is stacked and cannot merge
   before `EMB-PLAN-01`; it will not push or merge as part of this local task.
+
+### Closeout
+
+- Review covered integrated implementation `c4c1f593`; `EMB-PLAN-01` is `Done`
+  and Runtime Phase A plus maintainer activation are recorded.
+- The declared API/Worker wiring, flat Store bundle, SQLite builder, projection
+  Port and focused tests remain the complete scope. Current-HEAD composition
+  regressions pass `20/20`; no Compose run or production edit was made.
+- `CLOUD-STO-AUTH-01` is the next authoritative composition gate; PostgreSQL,
+  Redis, S3 and runtime backend selection remain out of scope here.
 
 ## EMB-AGUI-SPIKE-01 - Official Python AG-UI Compatibility Spike
 

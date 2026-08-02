@@ -38,10 +38,12 @@
   `codex/emb-agui-spike-01`. It is a test-only official Python SDK spike stacked
   on the architecture branch; it adds no production API/Worker wiring and cannot
   merge before `EMB-PLAN-01` reaches `main`.
-- Storage task in Review: `CLOUD-STO-SEAM-01` on `codex/cloud-sto-seam-01` is the
+- Completed storage composition task: `CLOUD-STO-SEAM-01` on `codex/cloud-sto-seam-01` is the
   first Zebra-foundation task after the maintainer reprioritized durable storage
   and memory ahead of further Trench work. It injects existing control-plane Store
   Ports while preserving the local SQLite profile and adds no cloud dependency.
+  Formal review closed it as `Done`; PostgreSQL, Redis, S3 and backend selection
+  remain separate gates.
 - Authoritative storage task in Review: `CLOUD-STO-AUTH-01` on
   `codex/cloud-sto-auth-01` extends that same flat bundle across every durable
   API/Worker collaborator that advances Session state, gates effects or governs
