@@ -12,9 +12,10 @@ profile contract. It does not authorize a merge to `main`, a provider switch,
 or a FinOS deployment.
 
 Implementation `cf0dff9` removes the exact model-name gate and passes `46`
-focused tests plus changed-source Ruff/Mypy. Full pytest remains at the inherited
-baseline: `1900 passed, 9 skipped, 9 failures`; no new failure is attributed to
-this slice.
+focused tests plus changed-source Ruff/Mypy. This follow-up adds the explicitly
+verified `qwen3.7-flash` profile without changing the dated Flash profile or the
+generic resolver. Full pytest remains at the inherited baseline: `1900 passed,
+9 skipped, 9 failures`; no new failure is attributed to this slice.
 
 ## Problem
 
@@ -88,8 +89,16 @@ configured Qwen-compatible endpoint:
 | Profile | Provider model | Declared input | Tools with media | Streaming with media |
 |---|---|---|---|---|
 | `qwen-flash-native-v1` | `qwen3.7-flash-2026-07-15` | text + image | yes | yes |
+| `qwen-flash-alias-native-v1` | `qwen3.7-flash` | text + image | yes | yes |
 | `qwen-plus-native-v1` | `qwen3.7-plus` | text + image | no until independently verified | no until independently verified |
 | `qwen-max-text-v1` | `qwen3.7-max` | text only | n/a | n/a |
+
+The alias Flash profile is backed by the 2026-08-02 DashScope-compatible probe:
+text, native 16x16 PNG, image plus required function tool, and the same request
+with streaming all returned HTTP 200; the stream emitted a tool-call delta and
+`[DONE]`. A 1x1 image was rejected by the service's image-size lower bound and
+does not change the declared capability. The dated Flash profile remains bound
+to `qwen3.7-flash-2026-07-15`.
 
 The Plus profile may be promoted only by updating its profile revision after
 separate tools-with-media and streaming-with-media acceptance. Changing a model

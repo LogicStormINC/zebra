@@ -27,6 +27,19 @@ MODEL_PROFILES: Mapping[str, ModelProfile] = MappingProxyType(
                 image_media_types=frozenset({"image/jpeg", "image/png"}),
             ),
         ),
+        "qwen-flash-alias-native-v1": ModelProfile(
+            expected_provider="qwen",
+            expected_model="qwen3.7-flash",
+            media_capabilities=ModelMediaCapabilities(
+                input_modalities=frozenset({ModelInputModality.TEXT, ModelInputModality.IMAGE}),
+                supports_tools_with_media=True,
+                supports_streaming_with_media=True,
+                max_image_count=4,
+                max_image_bytes=5 * 1024 * 1024,
+                max_total_image_bytes=20 * 1024 * 1024,
+                image_media_types=frozenset({"image/jpeg", "image/png"}),
+            ),
+        ),
         "qwen-plus-native-v1": ModelProfile(
             expected_provider="qwen",
             expected_model="qwen3.7-plus",

@@ -112,6 +112,21 @@ def test_load_settings_selects_dashscope_key_without_an_implicit_qwen_profile() 
     assert settings.model.profile_id is None
 
 
+def test_load_settings_selects_explicit_qwen37_flash_profile() -> None:
+    settings = load_settings(
+        {
+            "ZEBRA_MODEL_PROVIDER": "qwen",
+            "DASHSCOPE_MODEL": "qwen3.7-flash",
+            "ZEBRA_MODEL_PROFILE_ID": "qwen-flash-alias-native-v1",
+        }
+    )
+
+    assert settings.model.provider == "qwen"
+    assert settings.model.model == "qwen3.7-flash"
+    assert settings.model.api_key_env == "DASHSCOPE_API_KEY"
+    assert settings.model.profile_id == "qwen-flash-alias-native-v1"
+
+
 def test_load_settings_rejects_missing_or_duplicate_skill_roots(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="missing path"):
         load_settings({"ZEBRA_SKILL_ROOTS": str(tmp_path / "missing")})

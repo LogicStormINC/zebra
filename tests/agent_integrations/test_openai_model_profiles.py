@@ -55,6 +55,31 @@ def test_initial_profiles_declare_only_verified_media_capabilities(
     assert capabilities.max_image_count == max_images
 
 
+def test_qwen37_flash_alias_profile_declares_verified_native_media() -> None:
+    capabilities = resolve_model_profile(
+        "qwen-flash-alias-native-v1",
+        provider="qwen",
+        model="qwen3.7-flash",
+    )
+
+    assert capabilities.input_modalities == frozenset(
+        {ModelInputModality.TEXT, ModelInputModality.IMAGE}
+    )
+    assert capabilities.supports_tools_with_media is True
+    assert capabilities.supports_streaming_with_media is True
+    assert capabilities.max_image_count == 4
+    assert capabilities.max_image_bytes == 5 * 1024 * 1024
+    assert capabilities.max_total_image_bytes == 20 * 1024 * 1024
+    assert capabilities.image_media_types == frozenset({"image/jpeg", "image/png"})
+
+    with pytest.raises(ValueError, match="model mismatch"):
+        resolve_model_profile(
+            "qwen-flash-native-v1",
+            provider="qwen",
+            model="qwen3.7-flash",
+        )
+
+
 @pytest.mark.parametrize(
     ("profile_id", "provider", "model", "message"),
     [
