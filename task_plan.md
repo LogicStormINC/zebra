@@ -1031,6 +1031,16 @@
   every key and predicate.
 - Do not add a pool, ORM, Alembic, testcontainers or partial cloud composition.
 
+### Closeout
+
+- Review covered integrated PostgreSQL Event/Projection implementation `15c386db`;
+  migration, Event CAS/idempotency, namespace isolation and replay-safe
+  Projection behavior are accepted.
+- Recorded real Compose PostgreSQL `14/14`, storage `113/113` and custom-format
+  dump/restore `14/14` evidence is accepted. Current-head local validation is
+  `8 passed, 14 skipped` without a PostgreSQL service.
+- `CLOUD-PG-01` is `Done`; the Lease contract plan is the next review gate.
+
 ## CLOUD-PG-PLAN-01 - PostgreSQL Migration And Recovery Model Review
 
 1. `completed` - Trace the authoritative Store composition, PostgreSQL phase

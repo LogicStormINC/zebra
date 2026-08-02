@@ -61,9 +61,11 @@
   derived and replaceable; Zebra application containers stay locked until real
   cloud adapters exist. Formal review closed the dependency baseline as `Done`;
   no Docker-socket operation or runtime selection was made here.
-- PostgreSQL tasks in Review: `CLOUD-PG-01` implements isolated Event/Projection
-  Adapters, while `CLOUD-LEASE-PG-01` implements epoch-scoped, database-clock
-  Lease fencing. Both have real PostgreSQL evidence but neither is runtime-selected.
+- PostgreSQL Event/Projection storage: `CLOUD-PG-01` is formally `Done` with
+  isolated adapters, migration checksums, CAS/idempotency, namespace isolation
+  and replay-safe projections. Recorded real PostgreSQL evidence is accepted;
+  it is not runtime-selected. `CLOUD-LEASE-PG-01` separately covers
+  epoch-scoped, database-clock Lease fencing.
 - Memory storage implementation in Review: `MEM-GW-PG-NATIVE-01` owns the
   PostgreSQL-native Memory Gateway, production migration and isolated storage
   tests on `codex/mem-gw-pg-native-01`. The reviewed native admission is `PASS`,
@@ -507,7 +509,7 @@ including a real thinking tool round trip.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
   `CLOUD-STO-AUTH-01`, `MEM-GW-CON-01`,
-  `MEM-MEM0-SPIKE-01`, `MEM-MEM0-ADP-01`, `CLOUD-PG-01`,
+  `MEM-MEM0-SPIKE-01`, `MEM-MEM0-ADP-01`,
   `CLOUD-LEASE-PLAN-01`, `CLOUD-LEASE-CON-01`, and `CLOUD-LEASE-PG-01` are in
   Review. Mem0 remains a derived, degraded-safe index; PostgreSQL Event/Projection
   and epoch/Lease Adapters have real-service restore and concurrency evidence.

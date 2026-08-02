@@ -1327,7 +1327,7 @@ before a PostgreSQL control-plane Adapter may be implemented.
 
 ### CLOUD-PG-01 - PostgreSQL Event And Projection Storage
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `STORAGE`
 - Depends on: locally reviewed `CLOUD-STO-AUTH-01` and `CLOUD-PG-PLAN-01`;
@@ -1380,6 +1380,19 @@ single-namespace isolation, monotonic Event CAS and replay-safe Projection write
 - Independent final review found no P0-P2 issue. Branch is local and unpushed;
   cloud composition remains Locked until every authoritative Store has a
   PostgreSQL Adapter and the dependency stack is merged in order.
+
+#### Closeout
+
+- Formal review covered integrated implementation `15c386db`; the migration
+  runner, Event/Projection adapters and SQLite semantic guard are present on
+  `zebra-cloud-trench`.
+- Recorded real Compose PostgreSQL `14/14`, storage `113/113` and custom-format
+  dump/restore `14/14` evidence is accepted. Current-head local validation adds
+  `8 passed, 14 skipped` without a PostgreSQL service; the skipped cases remain
+  gated on the user-host Compose runner.
+- No selector, API/Worker wiring, pool, ORM, Alembic, testcontainers, online
+  migration or production claim was added. Lease, Runtime, Provider HTTP,
+  Desktop and application backend selection remain separately gated.
 
 ### CLOUD-LEASE-PLAN-01 - Lease, Fencing And Effect Dispatch Contract
 

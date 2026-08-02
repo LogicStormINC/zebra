@@ -7227,3 +7227,16 @@ actual byte access.
   Compose run or production edit was made by this review.
 - Closed `CLOUD-PG-PLAN-01` from `Review` to `Done`; `CLOUD-PG-01` is the next
   implementation Review gate and Lease/Runtime/provider paths remain gated.
+
+## 2026-08-02 - CLOUD-PG-01 formal review closeout
+
+- Reviewed integrated PostgreSQL Event/Projection implementation `15c386db`;
+  migration checksums, advisory-lock serialization, Event CAS/idempotency,
+  namespace isolation and replay-safe Projection writes are present.
+- Accepted recorded Compose PostgreSQL `14/14`, storage `113/113` and
+  custom-format dump/restore `14/14` evidence. Current-head local validation
+  passes `8` SQLite/storage cases with `14` PostgreSQL cases skipped because no
+  service was available in this sandbox.
+- Confirmed no selector, API/Worker wiring, pool, ORM, Alembic, testcontainers,
+  online migration or production claim was added. Closed `CLOUD-PG-01` from
+  `Review` to `Done`; the Lease contract plan is the next gate.
