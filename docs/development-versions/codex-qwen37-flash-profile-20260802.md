@@ -86,3 +86,45 @@ no secret or endpoint-dependent smoke is added to the deterministic tests.
   `files.read` tool call; this task does not modify that path.
 - Implementation head: pending local commit
 - Merge commit: not applicable
+
+## Follow-up: health capability projection
+
+### Deployment discovery and consumer contract
+
+After deployment of `qwen3.7-flash` with `qwen-flash-alias-native-v1`, the live
+image was observed at build `b2f67a6`. Its `/health` response exposed the prior
+runtime fields but did not expose `runtime.native_image_understanding`.
+
+FinOS consumes only `health.runtime.native_image_understanding` for this
+decision. When that field is absent, FinOS exposes the MiniMax
+`understand_image` path as fallback, which conflicts with the contract that
+Qwen native multimodal is primary and MiniMax is used only when native image
+capability is unavailable. FinOS must not infer this from a profile ID or model
+name.
+
+### Follow-up change and owned paths
+
+`ApiStatusMixin.health` now reuses
+`agent_integrations.openai_model_profiles.resolve_model_profile` with the
+configured provider, model, and profile ID. It reports `True` only when the
+resolved capability contains `ModelInputModality.IMAGE`; absent profiles,
+text-only profiles, unknown profiles, and provider/model mismatches report
+`False`. Existing health fields and endpoint behavior remain unchanged.
+
+Additional follow-up owned paths:
+
+- `apps/api/src/zebra_agent_api/api_status_mixin.py`
+- `tests/api/test_api_app.py`
+
+The follow-up remains local-only and does not deploy build `b2f67a6` or modify
+FinOS, provider/router/MCP code, or the proposal-contract worktree.
+
+### Follow-up validation record
+
+- Red health baseline: `uv run pytest -q tests/api/test_api_app.py -k health` —
+  `4 failed, 1 passed, 20 deselected`; failures were the missing health field
+  and missing native capability value.
+- Green health test: `5 passed, 20 deselected`.
+- API app plus profile tests: `38 passed`.
+- Follow-up Ruff and `git diff --check`: passed.
+- Follow-up implementation head: pending local commit.

@@ -36,8 +36,88 @@ def test_api_health_returns_service_status(tmp_path: Path) -> None:
             "fallback_allowed": False,
             "build_commit": "unknown",
             "task_image_attachments": True,
+            "native_image_understanding": False,
         },
     }
+
+
+def test_api_health_reports_native_image_capability_from_explicit_profile(
+    tmp_path: Path,
+) -> None:
+    settings = _settings(tmp_path / "sessions.sqlite")
+    settings = replace(
+        settings,
+        model=replace(
+            settings.model,
+            provider="qwen",
+            model="qwen3.7-flash",
+            profile_id="qwen-flash-alias-native-v1",
+        ),
+    )
+
+    runtime = create_app(settings=settings).health().body["runtime"]
+
+    assert runtime["native_image_understanding"] is True
+    assert runtime["profile"] == "test"
+    assert runtime["runtime_class"] == "trusted-local"
+    assert runtime["fallback_allowed"] is False
+    assert runtime["build_commit"] == "unknown"
+    assert runtime["task_image_attachments"] is True
+
+
+def test_api_health_does_not_infer_native_image_capability_without_valid_profile(
+    tmp_path: Path,
+) -> None:
+    settings = _settings(tmp_path / "sessions.sqlite")
+    no_profile = replace(
+        settings,
+        model=replace(settings.model, provider="qwen", model="qwen3.7-flash"),
+    )
+    text_only = replace(
+        settings,
+        model=replace(
+            settings.model,
+            provider="qwen",
+            model="qwen3.7-max",
+            profile_id="qwen-max-text-v1",
+        ),
+    )
+
+    assert create_app(settings=no_profile).health().body["runtime"][
+        "native_image_understanding"
+    ] is False
+    assert create_app(settings=text_only).health().body["runtime"][
+        "native_image_understanding"
+    ] is False
+
+
+def test_api_health_fails_closed_for_invalid_model_profile(tmp_path: Path) -> None:
+    settings = _settings(tmp_path / "sessions.sqlite")
+    unknown = replace(
+        settings,
+        model=replace(
+            settings.model,
+            provider="qwen",
+            model="qwen3.7-flash",
+            profile_id="unknown-profile",
+        ),
+    )
+    mismatch = replace(
+        settings,
+        model=replace(
+            settings.model,
+            provider="qwen",
+            model="qwen3.7-flash-2026-07-15",
+            profile_id="qwen-flash-alias-native-v1",
+        ),
+    )
+
+    assert create_app(settings=unknown).health().body["runtime"][
+        "native_image_understanding"
+    ] is False
+    assert create_app(settings=mismatch).health().body["runtime"][
+        "native_image_understanding"
+    ] is False
 
 
 def test_api_health_reports_the_configured_build_commit(tmp_path: Path) -> None:

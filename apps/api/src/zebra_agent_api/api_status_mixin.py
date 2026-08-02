@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from agent_core.domain.model_media import ModelInputModality
+from agent_integrations.openai_model_profiles import resolve_model_profile
 from agent_runtime import build_mcp_capability_inventory, discover_mcp_prompts
 from zebra_agent_config import ZebraAgentSettings
 
@@ -10,6 +12,14 @@ class ApiStatusMixin:
     settings: ZebraAgentSettings
 
     def health(self) -> ApiResponse:
+        try:
+            native_image_understanding = ModelInputModality.IMAGE in resolve_model_profile(
+                self.settings.model.profile_id,
+                provider=self.settings.model.provider,
+                model=self.settings.model.model,
+            ).input_modalities
+        except ValueError:
+            native_image_understanding = False
         return ApiResponse(
             status_code=200,
             body={
@@ -21,6 +31,7 @@ class ApiStatusMixin:
                     "fallback_allowed": False,
                     "build_commit": self.settings.build_commit,
                     "task_image_attachments": True,
+                    "native_image_understanding": native_image_understanding,
                 },
             },
         )
