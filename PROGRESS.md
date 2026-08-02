@@ -70,11 +70,10 @@
   freezes epoch ownership, database-time TTL, fenced aggregate boundaries and
   uncertain external-effect recovery, while its implementation children retain
   independent gates and no runtime selection.
-- Memory storage implementation in Review: `MEM-GW-PG-NATIVE-01` owns the
-  PostgreSQL-native Memory Gateway, production migration and isolated storage
-  tests on `codex/mem-gw-pg-native-01`. The reviewed native admission is `PASS`,
-  while Mem0 remains denied/deferred and all Runtime/Worker/provider paths stay
-  locked.
+- Memory storage implementation: `MEM-GW-PG-NATIVE-01` is formally `Done` as a
+  PostgreSQL-native, storage-only Memory Gateway with migration v12 and accepted
+  isolated evidence. The native admission is `PASS`; Mem0 remains
+  denied/deferred and all Runtime/Worker/provider paths stay locked.
 - Effect Outbox task in Review: `CLOUD-EFFECT-OUTBOX-01` now has typed Core
   dispatch states and a PostgreSQL aggregate for fenced schedule, `SKIP LOCKED`
   claim, terminal commit, uncertain reconciliation and explicit retry. Its isolated
@@ -571,12 +570,12 @@ The result admitted the candidate architecture, after which
 `MEM-GW-PG-NATIVE-01` was explicitly activated for storage-only work. Worker,
 Provider HTTP, Desktop, SQLite, Redis and Runtime remain `Locked`.
 
-`MEM-GW-PG-NATIVE-01` is now `Review` on `codex/mem-gw-pg-native-01`. Production
-PostgreSQL migration v12 and the provider-neutral `PostgresNativeMemoryGateway`
-are covered by `10` focused Compose cases; the full `tests/agent_storage` matrix
-passes `313 passed, 1 skipped`, and the existing delivery runner remains `24
-passed`. The card does not select a Runtime backend or add Provider HTTP, Worker,
-Desktop, SQLite or Redis composition.
+`MEM-GW-PG-NATIVE-01` is formally `Done`. Production PostgreSQL migration v12
+and the provider-neutral `PostgresNativeMemoryGateway` are covered by `10`
+focused Compose cases; the full `tests/agent_storage` matrix passes `313 passed,
+1 skipped`, and the existing delivery runner remains `24 passed`. The card does
+not select a Runtime backend or add Provider HTTP, Worker, Desktop, SQLite or
+Redis composition.
 
 ## Known Follow-Ups
 

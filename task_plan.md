@@ -962,6 +962,17 @@
 - This card is ready for review/merge. Runtime composition remains a separate
   locked gate and Mem0 remains denied/deferred.
 
+### Closeout
+
+- Review covered integrated storage implementation `91fd5964`, migration v12,
+  atomic authority/retrieval projection, operation recovery, generation CAS,
+  complete scoped deletion and deterministic native recall.
+- Recorded Compose PostgreSQL `10/10`, full storage `313 passed, 1 skipped` and
+  delivery `24 passed` evidence is accepted. Current-head validation without a
+  PostgreSQL service reports `18 skipped`.
+- `MEM-GW-PG-NATIVE-01` is `Done`; it remains storage-only. Runtime, Worker,
+  Provider HTTP, Desktop, SQLite, Redis and Mem0 are not selected.
+
 ## CLOUD-LEASE-PG-01 - PostgreSQL Epoch And Lease Adapter
 
 1. `completed` - Audit the reviewed PostgreSQL migration/Adapter patterns and

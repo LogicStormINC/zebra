@@ -7273,3 +7273,14 @@ actual byte access.
   storage implementation. Mem0 remains denied/deferred and Worker, Provider
   HTTP, Desktop, SQLite, Redis and Runtime remain gated.
 - Closed `MEM-PG-NATIVE-ADMISSION-SPIKE-01` from `Review` to `Done`.
+
+## 2026-08-02 - MEM-GW-PG-NATIVE-01 formal review closeout
+
+- Reviewed integrated implementation `91fd5964`; v12 migration, atomic
+  authority/retrieval projection, operation recovery, generation fencing,
+  complete scoped deletion and deterministic native recall are storage-only.
+- Accepted recorded Compose PostgreSQL `10/10`, full storage `313 passed, 1
+  skipped` and delivery `24 passed` evidence. Current-head focused tests have
+  no PostgreSQL service and report `18 skipped`.
+- Closed `MEM-GW-PG-NATIVE-01` from `Review` to `Done`; Runtime, Worker,
+  Provider HTTP, Desktop, SQLite, Redis and Mem0 remain unselected.

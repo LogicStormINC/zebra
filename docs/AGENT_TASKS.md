@@ -1086,7 +1086,7 @@ provider mappings can make logical reset safe without provider enumeration.
 
 ### MEM-GW-PG-NATIVE-01 - PostgreSQL-Native Memory Backend Implementation
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `STORAGE`
 - Depends on: reviewed `MEM-PG-NATIVE-ADMISSION-SPIKE-01` with `PASS`, accepted
@@ -1157,6 +1157,20 @@ provider mappings can make logical reset safe without provider enumeration.
 This card is the only activated successor unlocked by the PostgreSQL-native
 admission result. Mem0 remains denied/deferred and the Runtime composition stays
 locked until the full cloud authority bundle is reviewed.
+
+#### Closeout
+
+- Formal review covered integrated implementation `91fd5964`; migration v12,
+  authority/retrieval atomicity, deterministic operation recovery, generation
+  fencing, complete scoped deletion and native recall are present under
+  `agent-storage` only.
+- Recorded real Compose PostgreSQL `10/10`, full storage `313 passed, 1
+  skipped` and delivery `24 passed` evidence is accepted. Current-head focused
+  validation without PostgreSQL reports `18 skipped` and does not replace the
+  host evidence.
+- Closed `MEM-GW-PG-NATIVE-01` from `Review` to `Done`. No Runtime, Worker,
+  Provider HTTP, Desktop, SQLite, Redis, Mem0 or backend selector was added;
+  Mem0 remains denied/deferred.
 
 ### MEM-GW-DEL-PG-01 - PostgreSQL v11 Delivery Ledger And Atomic Enqueue
 
