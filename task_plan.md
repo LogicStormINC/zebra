@@ -900,6 +900,16 @@
   remains blocked only by the two inherited file-size violations recorded in
   ADR-019.
 
+### Closeout
+
+- Review accepted ADR-019, its test-only per-schema boundary and the recorded
+  real PostgreSQL `8/8` admission matrix with explicit `PASS` verdict.
+- Current-head validation has no PostgreSQL service and therefore reports
+  `8 skipped`; it does not supersede the host Compose evidence.
+- `MEM-PG-NATIVE-ADMISSION-SPIKE-01` is `Done`; only the separately activated
+  PostgreSQL-native storage implementation proceeds. Mem0 and Runtime remain
+  denied/deferred or locked.
+
 ## MEM-GW-DEL-RUN-01 - Mem0 Delivery Consumer And Management Rebuild
 
 1. `pending` - Start only after the PG ledger and scoped reset Spike are reviewed,

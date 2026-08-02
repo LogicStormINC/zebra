@@ -7262,3 +7262,14 @@ actual byte access.
   production-readiness claim.
 - Closed `CLOUD-LEASE-01` from `Review` to `Done`; `CLOUD-AGG-FENCE-01` remains
   `Locked` for the next aggregate-authority phase.
+
+## 2026-08-02 - MEM-PG-NATIVE-ADMISSION-SPIKE-01 formal review closeout
+
+- Accepted ADR-019 and its test-only per-schema PostgreSQL boundary. Recorded
+  host Compose evidence is `8/8` with
+  `ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS`; the current sandbox has no PG
+  service, so its rerun reports `8 skipped`.
+- Confirmed the admission unlocks only the separately activated PostgreSQL-native
+  storage implementation. Mem0 remains denied/deferred and Worker, Provider
+  HTTP, Desktop, SQLite, Redis and Runtime remain gated.
+- Closed `MEM-PG-NATIVE-ADMISSION-SPIKE-01` from `Review` to `Done`.

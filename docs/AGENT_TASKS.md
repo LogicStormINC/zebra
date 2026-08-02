@@ -1021,7 +1021,7 @@ provider mappings can make logical reset safe without provider enumeration.
 
 ### MEM-PG-NATIVE-ADMISSION-SPIKE-01 - PostgreSQL-Native Memory Admission
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `STORAGE / ARCHITECTURE / SECURITY`
 - Depends on: `zebra-cloud-trench@a01f887`, completed
@@ -1072,6 +1072,17 @@ provider mappings can make logical reset safe without provider enumeration.
 - `PASS` admitted only the PostgreSQL-native architecture. It unlocked the
   separately activated storage implementation; Mem0, Worker, Provider HTTP,
   Desktop, SQLite, Redis and Runtime still require their own explicit gates.
+
+#### Closeout
+
+- Formal review accepted ADR-019 and the isolated test-only admission boundary;
+  the real PostgreSQL `8/8` matrix and explicit
+  `ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS` are the architecture evidence.
+- Current-head validation without a PostgreSQL service collects all eight cases
+  as skipped; this does not replace the recorded host Compose evidence.
+- Closed `MEM-PG-NATIVE-ADMISSION-SPIKE-01` from `Review` to `Done`. Only the
+  separately activated storage implementation is unlocked; Mem0, Worker,
+  Provider HTTP, Desktop, SQLite, Redis and Runtime remain gated.
 
 ### MEM-GW-PG-NATIVE-01 - PostgreSQL-Native Memory Backend Implementation
 

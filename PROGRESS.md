@@ -563,15 +563,13 @@ compilation and `git diff --check` pass. `make check` remains blocked by two
 unrelated file-size violations: Desktop stylesheet `561/500` and PostgreSQL
 storage test `765/700`.
 
-`MEM-PG-NATIVE-ADMISSION-SPIKE-01` is now `Review` on
-`codex/mem-pg-native-admission-spike-01`. Its isolated PostgreSQL 17.5 profile
-proves the ADR-018-compatible native boundary with `8 passed` and emits
-`ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS`. The full `tests/agent_storage` matrix
-passes `303 passed, 1 skipped` (`295` predecessor cases plus `8` admission cases).
+`MEM-PG-NATIVE-ADMISSION-SPIKE-01` is formally `Done`. Its isolated PostgreSQL
+17.5 profile proves the ADR-018-compatible native boundary with `8 passed` and
+emits `ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS`; the full storage matrix passed
+`303 passed, 1 skipped` (`295` predecessor cases plus `8` admission cases).
 The result admitted the candidate architecture, after which
-`MEM-GW-PG-NATIVE-01` was explicitly activated and completed its storage-only
-implementation. Worker, Provider HTTP, Desktop, SQLite, Redis and Runtime remain
-`Locked`.
+`MEM-GW-PG-NATIVE-01` was explicitly activated for storage-only work. Worker,
+Provider HTTP, Desktop, SQLite, Redis and Runtime remain `Locked`.
 
 `MEM-GW-PG-NATIVE-01` is now `Review` on `codex/mem-gw-pg-native-01`. Production
 PostgreSQL migration v12 and the provider-neutral `PostgresNativeMemoryGateway`
