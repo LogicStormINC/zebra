@@ -59,6 +59,11 @@
 - PostgreSQL tasks in Review: `CLOUD-PG-01` implements isolated Event/Projection
   Adapters, while `CLOUD-LEASE-PG-01` implements epoch-scoped, database-clock
   Lease fencing. Both have real PostgreSQL evidence but neither is runtime-selected.
+- Memory storage implementation in Review: `MEM-GW-PG-NATIVE-01` owns the
+  PostgreSQL-native Memory Gateway, production migration and isolated storage
+  tests on `codex/mem-gw-pg-native-01`. The reviewed native admission is `PASS`,
+  while Mem0 remains denied/deferred and all Runtime/Worker/provider paths stay
+  locked.
 - Effect Outbox task in Review: `CLOUD-EFFECT-OUTBOX-01` now has typed Core
   dispatch states and a PostgreSQL aggregate for fenced schedule, `SKIP LOCKED`
   claim, terminal commit, uncertain reconciliation and explicit retry. Its isolated
@@ -529,8 +534,17 @@ storage test `765/700`.
 proves the ADR-018-compatible native boundary with `8 passed` and emits
 `ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS`. The full `tests/agent_storage` matrix
 passes `303 passed, 1 skipped` (`295` predecessor cases plus `8` admission cases).
-The result admits only the candidate architecture; `MEM-GW-PG-NATIVE-01`, Worker,
-Provider HTTP, Desktop, SQLite, Redis and Runtime remain `Locked`.
+The result admitted the candidate architecture, after which
+`MEM-GW-PG-NATIVE-01` was explicitly activated and completed its storage-only
+implementation. Worker, Provider HTTP, Desktop, SQLite, Redis and Runtime remain
+`Locked`.
+
+`MEM-GW-PG-NATIVE-01` is now `Review` on `codex/mem-gw-pg-native-01`. Production
+PostgreSQL migration v12 and the provider-neutral `PostgresNativeMemoryGateway`
+are covered by `10` focused Compose cases; the full `tests/agent_storage` matrix
+passes `313 passed, 1 skipped`, and the existing delivery runner remains `24
+passed`. The card does not select a Runtime backend or add Provider HTTP, Worker,
+Desktop, SQLite or Redis composition.
 
 ## Known Follow-Ups
 
@@ -557,9 +571,9 @@ Provider HTTP, Desktop, SQLite, Redis and Runtime remain `Locked`.
 9. Continue the memory lane one path-bounded child at a time. The Core and
    PostgreSQL delivery children are in Review, the scoped reset child is
    `Blocked` on bounded enumeration, Provider Deletion Compliance is `Done`,
-   and the PostgreSQL-native admission Spike is active. Keep the Mem0 consumer,
-   parent ledger, candidate implementation and Runtime locked until their own
-   explicit gates are reviewed.
+   and the PostgreSQL-native admission Spike is in Review. The native storage
+   implementation is also in Review; keep the Mem0 consumer, parent ledger and
+   Runtime locked until their own explicit gates are reviewed.
 
 ## Runtime Blueprint
 

@@ -41,6 +41,17 @@ from agent_storage.postgres.model_tool_projections import (
     PostgresModelToolProjectionConflictError,
     PostgresModelToolProjectionStore,
 )
+from agent_storage.postgres.native_memory import (
+    NativeMemoryConflictError,
+    NativeMemoryError,
+    NativeMemoryMutation,
+    NativeMemoryNamespaceError,
+    NativeMemoryOperation,
+    NativeMemoryRecallHit,
+    NativeMemoryReset,
+    NativeMemoryStaleGenerationError,
+    PostgresNativeMemoryGateway,
+)
 from agent_storage.postgres.outbox import PostgresEffectDispatchStore
 from agent_storage.postgres.projections import (
     PostgresProjectionConflictError,
@@ -69,6 +80,15 @@ __all__ = [
     "PostgresGovernedMemoryStore",
     "PostgresMemoryDeliveryLedger",
     "PostgresMemoryDeliveryStore",
+    "NativeMemoryConflictError",
+    "NativeMemoryError",
+    "NativeMemoryMutation",
+    "NativeMemoryNamespaceError",
+    "NativeMemoryOperation",
+    "NativeMemoryRecallHit",
+    "NativeMemoryReset",
+    "NativeMemoryStaleGenerationError",
+    "PostgresNativeMemoryGateway",
     "MemoryDeliveryClaim",
     "MemoryDeliveryConflictError",
     "MemoryDeliverySearchAdmission",

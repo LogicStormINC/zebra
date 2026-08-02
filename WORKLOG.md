@@ -6929,3 +6929,30 @@ actual byte access.
 - Changed-path Ruff, format, Mypy, compilation and diff checks pass. The only
   repository check blocker is the two inherited file-size violations recorded in
   ADR-019.
+
+## 2026-08-02 - MEM-GW-PG-NATIVE-01 activation
+
+- Activated the sole PostgreSQL-native production successor after the reviewed
+  admission `PASS`; claimed `codex/mem-gw-pg-native-01` with storage-only Owned
+  paths.
+- The implementation boundary is the `agent-storage` PostgreSQL migration and
+  gateway plus real PostgreSQL Compose tests. Runtime, Worker, Provider HTTP,
+  Desktop, Redis, SQLite composition and Mem0 reset/enumeration remain locked.
+- Next step is to inspect the v10/v11 migration and transaction contracts before
+  adding the smallest production schema/API slice.
+
+## 2026-08-02 - MEM-GW-PG-NATIVE-01 review handoff
+
+- Added PostgreSQL migration v12 and the storage-only native Gateway. The
+  authority row, retrieval projection and operation result share one transaction;
+  generation CAS and scoped physical reset/delete are explicit APIs, while the
+  existing provider-neutral Gateway Port remains unchanged.
+- The focused isolated PostgreSQL 17.5 runner passes `10`; the full
+  `tests/agent_storage` matrix passes `313 passed, 1 skipped`; and the existing
+  v11 delivery runner passes `24`. All Compose resources were removed by their
+  runners after validation.
+- Changed-path Ruff, format, strict Mypy, compilation and `git diff --check` pass.
+  `make check` is blocked only by the inherited Desktop stylesheet and governed
+  memory test file-size violations already recorded in the predecessor handoff.
+- Moved `MEM-GW-PG-NATIVE-01` to `Review`. Runtime, Worker, Provider HTTP,
+  Desktop, SQLite, Redis and Mem0 paths remain outside this card.

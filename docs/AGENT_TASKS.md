@@ -66,14 +66,19 @@
   certainty/state values and focused tests; PostgreSQL, Mem0 reset and Worker
   wiring remain locked successors.
 - `MEM-PROVIDER-DEL-COMPLIANCE-01` is `Done` on
-  `codex/mem-provider-del-compliance-01`. It is the only Ready successor after
-  the `MEM-MEM0-RESET-ALT-01` `B/PARTIAL` result. ADR-018 defines the
+  `codex/mem-provider-del-compliance-01`. It completed the only Ready successor
+  after the `MEM-MEM0-RESET-ALT-01` `B/PARTIAL` result. ADR-018 defines the
   provider-neutral gate and records Mem0 as not admitted to the Runtime mainline.
 - `MEM-PG-NATIVE-ADMISSION-SPIKE-01` is `Review` on
-  `codex/mem-pg-native-admission-spike-01`. It is the only active successor and
-  validates a PostgreSQL-native authority/retrieval design against ADR-018 with
-  a test-only, dependency-only Compose profile. Runtime remains locked even on
-  `PASS`.
+  `codex/mem-pg-native-admission-spike-01`. It is the reviewed predecessor for
+  the activated implementation and validates a PostgreSQL-native
+  authority/retrieval design against ADR-018 with a test-only, dependency-only
+  Compose profile. Runtime remains locked even on `PASS`.
+- `MEM-GW-PG-NATIVE-01` is `Review` on
+  `codex/mem-gw-pg-native-01`. It is the sole activated production slice after
+  the reviewed native admission `PASS`; it owns only the PostgreSQL storage
+  gateway, migration and isolated storage tests. Runtime, Worker, Provider HTTP,
+  Desktop, SQLite and Redis composition remain locked.
 - `CLOUD-PG-PLAN-01` and `CLOUD-PG-01` are `Review` on their dedicated branches;
   the docs-only migration/restore decisions precede the real PostgreSQL Event/Projection Adapter.
 - `CLOUD-LEASE-CON-01`, `CLOUD-LEASE-PG-01`, `CLOUD-EFFECT-OUTBOX-01`, and
@@ -985,7 +990,7 @@ provider mappings can make logical reset safe without provider enumeration.
 - The test-only schema is created inside a per-test PostgreSQL schema and is not
   a production migration. The isolated Compose profile starts PostgreSQL only.
 - `MEM-MEM0-RESET-SPIKE-01` stays `Blocked`; `MEM-GW-DEL-RUN-01`, its parent,
-  `MEM-GW-PG-NATIVE-01` and Runtime stay `Locked` until this card is reviewed.
+  and Runtime stay `Locked`; `MEM-GW-PG-NATIVE-01` is now activated separately.
 
 #### Review handoff
 
@@ -998,28 +1003,83 @@ provider mappings can make logical reset safe without provider enumeration.
 - `make check` remains blocked only by the two inherited file-size violations:
   `UI/desktop/src/components/CodexConversationPane.styles.ts` (`561/500`) and
   `tests/agent_storage/test_postgres_governed_memories.py` (`765/700`).
-- `PASS` admits only the PostgreSQL-native architecture. It does not unlock
-  `MEM-GW-PG-NATIVE-01`, Mem0, Worker, Provider HTTP, Desktop, SQLite, Redis or
-  Runtime; those require their own explicit activation and composition gates.
+- `PASS` admitted only the PostgreSQL-native architecture. It unlocked the
+  separately activated storage implementation; Mem0, Worker, Provider HTTP,
+  Desktop, SQLite, Redis and Runtime still require their own explicit gates.
 
 ### MEM-GW-PG-NATIVE-01 - PostgreSQL-Native Memory Backend Implementation
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
-- Suggested role: `STORAGE / API / WORKER`
-- Depends on: reviewed `MEM-PG-NATIVE-ADMISSION-SPIKE-01` with `PASS`, the
-  PostgreSQL cloud composition gate and an explicit maintainer activation.
-- Branch: `TBD`
-- Owned paths: none while `Locked`; production paths are to be frozen only after
-  the admission Spike review. This card must not be inferred from a test result.
-- Non-goals while locked: no production code, migrations, runtime selector,
-  Worker, Provider HTTP, Desktop or SQLite changes.
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `STORAGE`
+- Depends on: reviewed `MEM-PG-NATIVE-ADMISSION-SPIKE-01` with `PASS`, accepted
+  ADR-018 and ADR-019, PostgreSQL Memory Authority v10, Memory Delivery Ledger
+  v11, and explicit maintainer activation on 2026-08-02.
+- Branch: `codex/mem-gw-pg-native-01`
+- Worktree: `../zebra-mem-gw-pg-native-01`
+- Owned paths: `packages/agent-storage/**`, the PostgreSQL migration directory
+  and migration registry, `tests/agent_storage/**`,
+  `tests/compose/postgres_native/**`, and governance updates in
+  `PROGRESS.md`, `docs/AGENT_TASKS.md`, `task_plan.md` and `WORKLOG.md`.
+
+#### Production scope
+
+- Implement a PostgreSQL-native Memory Gateway inside `agent-storage` that
+  satisfies the existing provider-neutral memory semantics without selecting a
+  runtime composition.
+- Commit authority and retrieval projection in one transaction, with
+  deterministic `namespace_id`, `scope_id`, `generation`, `operation_id` and
+  `memory_id` identity. A retry after an ambiguous commit must recover the
+  original result by `operation_id`.
+- Enforce expected-generation CAS, complete scoped physical deletion, and
+  namespace/scope/current-generation/status/topic/top-k deterministic recall.
+- Add production migration coverage for fresh bootstrap and upgrade from the
+  current v11 schema; do not use constructor DDL.
+
+#### Explicit non-goals
+
+- No changes under `packages/agent-runtime/**`, `apps/api/**`,
+  `apps/worker/**` or `apps/desktop/**`.
+- No Provider HTTP, Mem0 enumeration/reset/rebuild, Worker consumer, Redis,
+  SQLite composition, embedding/semantic ranking, external data migration or
+  production backend selector.
+- The Runtime remains `Locked`; this card delivers storage only and does not
+  imply a cloud cutover.
+
+#### Activation and acceptance
+
+- Activation is limited to this branch and these Owned paths. Any dependency on
+  an application composition root must become a separate successor card.
+- Focused real-PostgreSQL Compose tests must cover CRUD, deterministic retry and
+  response-loss recovery, atomic authority/retrieval projection, generation
+  fencing, reset/delete completeness, namespace isolation and recall ordering.
+- Fresh and v11-upgrade migrations must pass, and the existing delivery ledger
+  and governed-memory storage suites must remain green with no new skips.
+
+#### Review handoff
+
+- Added production migration v12 (`native_memory_gateway`) and the
+  `PostgresNativeMemoryGateway` storage implementation. Authority, retrieval
+  projection and operation audit commit in one PostgreSQL transaction; reset
+  physically removes scoped content while retaining operation audit rows.
+- The isolated PostgreSQL 17.5 Compose runner passes `10` focused cases, including
+  fresh/v11-upgrade migration, CRUD/replay, response-loss recovery, atomic
+  projection visibility, generation CAS/reset, complete delete, namespace/scope
+  isolation and deterministic recall. It emits
+  `ZEBRA_PG_NATIVE_GATEWAY_TEST_RESULT=PASS` and cleans its resources.
+- The full `tests/agent_storage` matrix passes `313 passed, 1 skipped`; the
+  existing delivery runner remains `24 passed`. Changed-path Ruff, format,
+  Mypy, compilation and `git diff --check` pass.
+- `make check` remains blocked only by the two inherited size violations in
+  `UI/desktop/src/components/CodexConversationPane.styles.ts` (`561/500`) and
+  `tests/agent_storage/test_postgres_governed_memories.py` (`765/700`). No new
+  violation or Runtime/Worker/Provider/SQLite/Redis composition was introduced.
 
 #### Gate
 
-Even after this card becomes `Ready`, it is the only successor unlocked by the
-PostgreSQL-native admission result. Mem0 remains denied/deferred and the Runtime
-composition remains locked until the full cloud authority bundle is reviewed.
+This card is the only activated successor unlocked by the PostgreSQL-native
+admission result. Mem0 remains denied/deferred and the Runtime composition stays
+locked until the full cloud authority bundle is reviewed.
 
 ### MEM-GW-DEL-PG-01 - PostgreSQL v11 Delivery Ledger And Atomic Enqueue
 

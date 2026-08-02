@@ -667,8 +667,8 @@
 
 ### Decisions
 
-- The PostgreSQL-native architecture is admitted for the next implementation
-  gate only. `MEM-GW-PG-NATIVE-01` remains `Locked` until explicit activation.
+- The PostgreSQL-native architecture was admitted by the reviewed Spike, and
+  `MEM-GW-PG-NATIVE-01` is now explicitly activated for the storage-only slice.
 - The Spike's schema is test-only and per-schema; it is not a migration and does
   not select PostgreSQL at any runtime composition root.
 - The focused runner starts only PostgreSQL 17.5 and passed `8` cases. Existing
@@ -709,14 +709,38 @@
 
 ## MEM-GW-PG-NATIVE-01 - PostgreSQL-Native Memory Backend Implementation
 
-1. `pending` - Activate only after `MEM-PG-NATIVE-ADMISSION-SPIKE-01` is reviewed
-   with `PASS` and the cloud PostgreSQL composition gate is explicit.
-2. `pending` - Freeze production migrations and a provider-neutral Store/API
-   boundary from ADR-019 without changing the local SQLite profile.
-3. `pending` - Implement the authority/retrieval transaction, deterministic
-   recovery and generation reset under the task's future Owned paths.
-4. `pending` - Prove production composition, migration/restore and API/Worker
-   integration in separate gates; this Spike alone never activates them.
+1. `completed` - Activate the sole storage successor after the reviewed native
+   admission `PASS`; claim `codex/mem-gw-pg-native-01` with frozen Owned paths.
+2. `completed` - Freeze a production PostgreSQL migration and provider-neutral
+   storage API from ADR-018/019 without changing local SQLite composition.
+3. `completed` - Implement authority/retrieval atomic commit, deterministic
+   operation recovery, generation CAS/reset, complete scoped delete and native
+   recall under `packages/agent-storage`.
+4. `completed` - Run fresh/v11-upgrade migration checks and the isolated real
+   PostgreSQL storage matrix; keep Runtime, Worker, Provider HTTP, Desktop,
+   Redis and SQLite composition as separate locked gates.
+
+### Activation boundary
+
+- The maintainer explicitly activated this card on 2026-08-02. Its production
+  scope is storage only; an application or Runtime integration requires a new
+  task card after this implementation is reviewed.
+- The test-only admission schema is a design input, not a production migration.
+  Production tables must use the repository migration registry and transaction
+  conventions, with no constructor DDL or provider calls.
+- Mem0 remains denied/deferred under ADR-018/019. No reset, enumeration or
+  orphan-recovery work is a prerequisite or hidden part of this card.
+
+### Review handoff
+
+- Production v12 and the storage-only `PostgresNativeMemoryGateway` are
+  complete. The focused isolated PostgreSQL 17.5 runner passes `10` cases and
+  the full `tests/agent_storage` matrix passes `313 passed, 1 skipped`.
+- The existing v11 delivery runner passes `24`; changed-path Ruff, format,
+  strict Mypy, compilation and diff checks pass. `make check` reaches only the
+  two inherited file-size violations recorded in `WORKLOG.md`.
+- This card is ready for review/merge. Runtime composition remains a separate
+  locked gate and Mem0 remains denied/deferred.
 
 ## CLOUD-LEASE-PG-01 - PostgreSQL Epoch And Lease Adapter
 
