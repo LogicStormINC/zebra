@@ -7240,3 +7240,14 @@ actual byte access.
 - Confirmed no selector, API/Worker wiring, pool, ORM, Alembic, testcontainers,
   online migration or production claim was added. Closed `CLOUD-PG-01` from
   `Review` to `Done`; the Lease contract plan is the next gate.
+
+## 2026-08-02 - CLOUD-LEASE-PLAN-01 formal review closeout
+
+- Reviewed integrated contract `e373786b`; epoch ownership, database-time TTL,
+  fenced aggregate transaction boundaries and the uncertain external-effect
+  crash matrix are explicit and internally consistent.
+- Accepted `make eval` `10/10`, 449-line contract and clean diff evidence. No
+  Python implementation, migration, runtime selector, Redis, broker, Compose
+  operation or production claim was added.
+- Closed `CLOUD-LEASE-PLAN-01` from `Review` to `Done`; Core Lease, PostgreSQL
+  Lease, Effect Outbox and Worker consumer remain independently gated children.

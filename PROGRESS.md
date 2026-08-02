@@ -66,6 +66,10 @@
   and replay-safe projections. Recorded real PostgreSQL evidence is accepted;
   it is not runtime-selected. `CLOUD-LEASE-PG-01` separately covers
   epoch-scoped, database-clock Lease fencing.
+- Lease/fencing contract plan: `CLOUD-LEASE-PLAN-01` is formally `Done`; it
+  freezes epoch ownership, database-time TTL, fenced aggregate boundaries and
+  uncertain external-effect recovery, while its implementation children retain
+  independent gates and no runtime selection.
 - Memory storage implementation in Review: `MEM-GW-PG-NATIVE-01` owns the
   PostgreSQL-native Memory Gateway, production migration and isolated storage
   tests on `codex/mem-gw-pg-native-01`. The reviewed native admission is `PASS`,
@@ -509,10 +513,11 @@ including a real thinking tool round trip.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
   `CLOUD-STO-AUTH-01`, `MEM-GW-CON-01`,
-  `MEM-MEM0-SPIKE-01`, `MEM-MEM0-ADP-01`,
-  `CLOUD-LEASE-PLAN-01`, `CLOUD-LEASE-CON-01`, and `CLOUD-LEASE-PG-01` are in
-  Review. Mem0 remains a derived, degraded-safe index; PostgreSQL Event/Projection
-  and epoch/Lease Adapters have real-service restore and concurrency evidence.
+  `MEM-MEM0-SPIKE-01`, and `MEM-MEM0-ADP-01` are in Review. The Lease plan,
+  Core contract and PostgreSQL Lease adapter have separate local evidence and
+  remain unselected at runtime. Mem0 remains a derived, degraded-safe index;
+  PostgreSQL Event/Projection and epoch/Lease Adapters have real-service
+  restore and concurrency evidence.
   The local CI-billing waiver does not satisfy merge, runtime composition, release
   or production gates. The reviewed Effect and Artifact foundations are not runtime-
   selected; full aggregate fencing, Redis, production AG-UI, Trench, analysis,

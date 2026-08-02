@@ -1396,7 +1396,7 @@ single-namespace isolation, monotonic Event CAS and replay-safe Projection write
 
 ### CLOUD-LEASE-PLAN-01 - Lease, Fencing And Effect Dispatch Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / STORAGE / WORKER / SECURITY`
 - Depends on: locally reviewed `CLOUD-PG-01` and maintainer direction to continue
@@ -1444,6 +1444,19 @@ reviewable, dependency-ordered implementation cards with bounded owned paths.
   violations (`561/500`, `505/500`); no implementation or test file changed.
 - Branch is local and unpushed. Every implementation child remains `Locked` and
   requires merged prerequisites plus explicit activation.
+
+#### Closeout
+
+- Formal review covered the integrated contract `e373786b`; the control-plane
+  epoch, database-time Lease fencing, aggregate transaction boundaries and
+  uncertain external-effect recovery matrix are accepted.
+- The parent remains implementation-locked by design. Core Lease, PostgreSQL
+  Lease, Effect Outbox and Worker consumer follow-up cards retain their own
+  owned paths and evidence gates; no generic inbox, Redis, broker, runtime
+  selector or production claim was introduced.
+- `make eval` passes `10/10`, the contract is `449` lines and `git diff --check`
+  passes. This closeout is documentation-only and uses no Compose or production
+  operation.
 
 ### CLOUD-LEASE-CON-01 - Core Lease And Fencing Contract
 

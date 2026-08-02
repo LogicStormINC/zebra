@@ -1009,6 +1009,16 @@
   mutations use a focused fenced aggregate Port.
 - Do not introduce a generic inbox before an external broker or consumer exists.
 
+### Closeout
+
+- Review covered the integrated Lease/fencing and Effect dispatch contract
+  `e373786b`; epoch, database-time fencing, aggregate boundaries and the
+  at-least-once/uncertain-effect crash matrix are accepted.
+- `make eval` passes `10/10`, the contract remains `449` lines and no runtime,
+  migration, selector, Redis, broker or production claim was added.
+- `CLOUD-LEASE-PLAN-01` is `Done`; its Core, PostgreSQL Lease, Effect Outbox
+  and Worker consumer children remain independently gated.
+
 ## CLOUD-PG-01 - PostgreSQL Event And Projection Storage
 
 1. `completed` - Review the approved migration/recovery model, authoritative
