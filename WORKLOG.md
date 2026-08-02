@@ -6973,3 +6973,20 @@ actual byte access.
   made no production or Compose changes and did not unlock Runtime, Worker
   startup, Provider HTTP or the application Compose profile; Task/Segment is the
   next review target.
+
+## 2026-08-02 - CLOUD-AGG-TASK-PG-01 formal review closeout
+
+- Reviewed the integrated Task/Segment implementation at `2675c56a` and its
+  acceptance/governance handoff at `4ba6e332`. The direct authority dependency,
+  `CLOUD-AGG-FENCE-CON-01`, is `Done`; Workspace is already `Done`.
+- Audited the implementation diff against the declared PostgreSQL adapter,
+  migration, focused-test and governance paths. No Context, Handoff, Model/Tool,
+  Control Plane, Runtime, Worker startup, Provider HTTP, Desktop, SQLite, Redis
+  or Mem0 composition is part of this card.
+- Accepted the recorded evidence: PostgreSQL `17.5` host matrix `32/32`, related
+  regressions `473` with `77` PostgreSQL skips, strict Mypy over `166` files,
+  microservice size gate `911` and Eval `10/10`.
+- Closed `CLOUD-AGG-TASK-PG-01` from `Review` to `Done`. This review slice made
+  no production or Compose changes and did not unlock Runtime, Worker startup,
+  Provider HTTP or the application Compose profile; Model/Tool is the next
+  dependency-ordered review target.

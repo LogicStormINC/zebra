@@ -274,8 +274,10 @@
    adapter without allowing reads to trigger writes.
 3. `completed` - Prove concurrent rollover CAS, unique Task event order, idempotent
    rebuild, namespace isolation and transaction rollback on real PostgreSQL.
-4. `completed` - Run microservice gates, record host evidence, move the card to
-   Review and unlock only dependency-safe successors.
+4. `completed` - Run microservice gates, record host evidence and move the card to
+   Review.
+5. `completed` - Formally audit the integrated diff and dependency status, then close
+   the card as Done without changing composition or runtime selection.
 
 ### Decisions
 
@@ -286,6 +288,16 @@
   validates paired Handoff Events and deterministically replaces derived rows.
 - Migration edits are serialized on this branch; other sessions may audit later
   cards but must not modify the migration hotspot concurrently.
+
+### Closeout
+
+- Review of `2675c56a` against the declared Owned paths found no boundary
+  violation; its direct authority dependency `CLOUD-AGG-FENCE-CON-01` is `Done`.
+- The recorded PostgreSQL `32/32`, regression, static and Eval evidence is
+  sufficient for closure. No new Compose execution or production edit was made
+  by the review slice.
+- `CLOUD-MODEL-TOOL-PG-01` remains the next dependency-ordered Review target;
+  Control Plane and all Runtime/Worker/Provider composition remain locked.
 
 ## CLOUD-AGG-WORKSPACE-PG-01 - Fenced Workspace Projection
 

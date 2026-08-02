@@ -115,16 +115,18 @@
   `Done`; it unlocks only `CLOUD-AGG-TASK-PG-01`. `CLOUD-CONTROL-PLANE-PG-01`,
   not this card, owns the cloud Worker composition root and runtime backend
   selection.
-- Completed Task/Segment adapter task: `CLOUD-AGG-TASK-PG-01` adds PostgreSQL v5,
+- Completed and formally closed Task/Segment adapter task:
+  `CLOUD-AGG-TASK-PG-01` adds PostgreSQL v5,
   a namespace-scoped Task read model, deterministic explicit rebuild and a
   connection-scoped rollover primitive. Reads never write; rebuild and rollover
   share a Task advisory lock, Handoff Event pairs are validated by common identity,
   and composite foreign keys prevent cross-Task ownership. Ruff, strict Mypy over
   `166` files, the `911`-file microservice size gate, `473 passed, 77 skipped`
   related regressions and Eval `10/10` pass. The real PostgreSQL 17.5 matrix passes
-  `32/32`; the card is in Review and unlocks only `CLOUD-MODEL-TOOL-PG-01` for the
-  next serialized migration. Context and Handoff continue planning in separate
-  sidebar tasks without writing the migration hotspot.
+  `32/32`; formal review of the integrated implementation and its `Done` authority
+  dependency closed the card as `Done` and unlocks only
+  `CLOUD-MODEL-TOOL-PG-01` for the next serialized migration. Context and Handoff
+  continue planning in separate sidebar tasks without writing the migration hotspot.
 - Integrated Model/Tool and Context aggregate tasks: `CLOUD-MODEL-TOOL-PG-01`
   adds replayable PostgreSQL v6 Event-derived projections, while
   `CLOUD-AGG-CTX-PG-01` adds the fenced v7 two-Event Context transaction with

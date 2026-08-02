@@ -1685,7 +1685,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-AGG-TASK-PG-01 - PostgreSQL Task And Segment Index
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Branch: `codex/cloud-agg-task-pg-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`
@@ -1703,6 +1703,25 @@ cloud mainline and is not built or changed by these cards.
   strict Mypy over `166` files, the `911`-file microservice size gate, `473 passed,
   77 skipped` related regressions and Eval `10/10` pass. The isolated PostgreSQL
   17.5 host Compose matrix passes `32/32`, then removes its container and volume.
+
+#### Closeout
+
+- Formal review targeted the integrated implementation at `2675c56a` and the
+  acceptance/governance handoff at `4ba6e332`. Its sole direct dependency,
+  `CLOUD-AGG-FENCE-CON-01`, is `Done`; Workspace is also `Done` and is not used
+  as an implicit substitute for any other Review card.
+- The implementation diff is confined to the declared PostgreSQL Task/Segment
+  adapter, migration registry, focused tests and governance paths. It does not
+  alter Context, Handoff, Model/Tool, Control Plane, Runtime, Worker startup,
+  Provider HTTP, Desktop, SQLite, Redis or Mem0 composition.
+- Existing evidence is accepted: PostgreSQL `17.5` host matrix `32/32`, related
+  regressions `473` with `77` PostgreSQL skips, strict Mypy over `166` files,
+  microservice size gate `911`, and Eval `10/10`. No Compose run was needed for
+  this closeout.
+- Closing this card only makes `CLOUD-MODEL-TOOL-PG-01` the next
+  dependency-ordered Review target. It does not activate
+  `CLOUD-CONTROL-PLANE-PG-01` or unlock Runtime, Worker startup, Provider HTTP
+  or the application Compose profile.
 
 ### CLOUD-AGG-CTX-PG-01 - Fenced Context Lifecycle Aggregate
 
