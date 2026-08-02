@@ -232,20 +232,22 @@ dependency-ordered task roadmap without activating implementation prematurely.
   the two unrelated repository size-gate violations remain documented. No code,
   Compose service, PostgreSQL migration, Runtime or Desktop behavior changed.
 - Closing this card records the Embedded/Trench architecture baseline only.
-  `EMB-AGUI-SPIKE-01` remains separately activated in Review, while cloud
-  storage, Runtime and provider implementation cards keep their own gates.
+  `EMB-AGUI-SPIKE-01` is separately closed as a test-only compatibility slice;
+  cloud storage, Runtime and provider implementation cards keep their own gates.
 
 ### EMB-AGUI-SPIKE-01 - Zebra AG-UI Protocol Compatibility Spike
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `INTEGRATIONS / QA / DOC`
-- Depends on: `EMB-PLAN-01`; explicitly activated as a stacked local branch by
-  maintainer direction on 2026-07-23 and cannot merge before `EMB-PLAN-01`
+- Depends on completed `EMB-PLAN-01`; explicitly activated as a stacked local
+  branch by maintainer direction on 2026-07-23. The test-only slice is now
+  integrated without production AG-UI wiring.
 - Branch: `codex/emb-agui-spike-01`
 - Owned paths: `pyproject.toml`, `uv.lock`, `tests/spikes/ag_ui/` (new),
   `docs/AG-UI协议兼容性验证记录.md` (new), `docs/AGENT_TASKS.md`,
-  `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `task_plan.md`, `findings.md`, `WORKLOG.md`
 
 #### Goal
 
@@ -276,6 +278,20 @@ that the later `EMB-AGUI-CON-01` contract may safely adopt.
   HostSessionGrant, CopilotKit/Trench code, or UI changes
 - changing Zebra Domain Event, Task, Segment, Approval, or Worker behavior
 - treating a Spike fixture as the final `EMB-AGUI-CON-01` contract
+
+#### Closeout
+
+- Accepted `ag-ui-protocol==0.1.19` as a development-only dependency. The
+  canonical event stream, bounded independent SSE decoder, interrupt/resume
+  fixtures and explicit CUSTOM/RAW/unknown-event behavior pass in isolation.
+- Focused protocol validation passes `11/11`; the current full suite is
+  `2008 passed, 197 skipped, 1 failed`, with the single failure asserting the
+  two inherited file-size violations (`561/500` and `765/700`). Ruff, format,
+  `uv lock --check`, release Eval `10/10` and `git diff --check` pass; no failure
+  is in this task's Owned paths.
+- Closed `EMB-AGUI-SPIKE-01` from `Review` to `Done`. No API/Worker route,
+  Event Store mapping, CopilotKit/Trench code, React SDK or UI behavior was added;
+  `EMB-AGUI-CON-01` remains a separate future contract gate.
 
 ### CLOUD-STO-SEAM-01 - Control-Plane Storage Composition Seam
 

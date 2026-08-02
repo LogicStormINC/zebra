@@ -241,6 +241,9 @@
   one compatibility record, and governance files. Production imports and wiring
   are forbidden by task scope.
 
+- Formal closeout accepts `ag-ui-protocol==0.1.19` with `11/11` focused tests;
+  this does not activate production AG-UI, CopilotKit/Trench, React SDK or UI.
+
 ## EMB-PLAN-01 - 2026-07-23
 
 - `docs/Zebra Embedded 生产级目标架构.md` concatenates two incompatible target

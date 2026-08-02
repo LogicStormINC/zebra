@@ -7397,3 +7397,15 @@ actual byte access.
 - Closed `MEM-MEM0-ADP-01` from `Review` to `Done` as an implementation contract
   only. v11 mapping/idempotency, scoped reset and Runtime admission remain gated;
   Mem0 is still denied/deferred and not runtime-selected.
+
+## 2026-08-03 - EMB-AGUI-SPIKE-01 formal review closeout
+
+- Integrated the test-only official Python AG-UI compatibility slice with
+  development-only `ag-ui-protocol==0.1.19`; no production route, Worker,
+  CopilotKit/Trench, React SDK or UI code was added.
+- Focused protocol tests pass `11/11`; the current full suite is
+  `2008 passed, 197 skipped, 1 failed` solely on the two inherited file-size
+  violations (`561/500`, `765/700`). Ruff, format, `uv lock --check`, Eval
+  `10/10` and diff checks pass; no failure is in the Owned paths.
+- Closed `EMB-AGUI-SPIKE-01` from `Review` to `Done`; `EMB-AGUI-CON-01` and
+  Trench CopilotKit Runtime/BFF remain separate future gates.

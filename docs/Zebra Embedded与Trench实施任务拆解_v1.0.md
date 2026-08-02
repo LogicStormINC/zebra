@@ -5,7 +5,7 @@
 | 日期 | 2026-07-24 |
 | 架构基线 | `Zebra Embedded 生产级目标架构.md`、ADR-015 |
 | 当前可执行任务 | 无；等待已完成任务按依赖顺序评审、合并与重新激活 |
-| Review 任务 | `EMB-PLAN-01`、`EMB-AGUI-SPIKE-01`、`CLOUD-STO-SEAM-01`、`CLOUD-STO-AUTH-01`；Trench Spike 保持本地待处理 |
+| Review 任务 | `EMB-PLAN-01`、`CLOUD-STO-SEAM-01`、`CLOUD-STO-AUTH-01`；Trench Spike 保持本地待处理 |
 | 其他任务 | `Locked`，等待依赖和 maintainer 逐卡激活 |
 | 第一业务验收 | Trench Event Detail 的生产只读链路 |
 
@@ -60,8 +60,9 @@ read-only。
 
 ### EMB-AGUI-SPIKE-01 — Zebra AG-UI protocol spike
 
-- Status: `In Progress`；branch `codex/emb-agui-spike-01`；Zebra repo。
-- Depends on: `EMB-PLAN-01`；maintainer 已明确激活 stacked local branch，合并仍等待依赖进入 `main`。
+- Status: `Done`；branch `codex/emb-agui-spike-01`；Zebra repo。
+- Depends on: completed `EMB-PLAN-01`；test-only compatibility slice 已收口，
+  不代表生产 AG-UI/Trench/CopilotKit Runtime 已启用。
 - Owned paths: `pyproject.toml`, `uv.lock`, `tests/spikes/ag_ui/`, focused compatibility note and governance records。
 - Deliverable: pin `ag-ui-protocol`；验证 encoding、SSE、interrupt/resume、unknown event。
 - Acceptance: golden stream 可被官方 Python client decode；不接入 API/Worker production wiring。

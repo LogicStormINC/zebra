@@ -1336,16 +1336,15 @@
 
 ## EMB-AGUI-SPIKE-01 - Official Python AG-UI Compatibility Spike
 
-1. `in_progress` - Commit the reviewed Embedded architecture baseline without
-   the user's unrelated `AGENTS.md` timestamp change, then create the isolated
-   stacked worktree and task branch.
-2. `pending` - Pin and inspect the official Python AG-UI protocol SDK and encoder.
-3. `pending` - Add canonical stream, SSE round-trip, interrupt/resume, and
+1. `completed` - Commit the reviewed Embedded architecture baseline and create
+   the isolated stacked worktree/task branch.
+2. `completed` - Pin and inspect the official Python AG-UI protocol SDK and encoder.
+3. `completed` - Add canonical stream, SSE round-trip, interrupt/resume, and
    unknown-event compatibility fixtures under the task-owned test path.
-4. `pending` - Run focused, full, and quality validation; distinguish any
-   unrelated baseline failures from task regressions.
-5. `pending` - Record the version matrix, observed boundaries, follow-up contract
-   decisions, and final branch handoff.
+4. `completed` - Run focused, full, and quality validation; distinguish unrelated
+   baseline failures from task regressions.
+5. `completed` - Record the version matrix, observed boundaries, follow-up
+   contract decisions and final branch handoff.
 
 ### Decisions
 
@@ -1356,6 +1355,17 @@
   and must not merge first.
 - The generic worktree skill required by `executing-plans` is not installed;
   use Git's native worktree commands with the same isolation guarantees.
+
+### Closeout
+
+- Accepted `ag-ui-protocol==0.1.19` development-only pin and the 11-case
+  compatibility matrix. Focused tests pass `11/11`; the current full suite is
+  `2008 passed, 197 skipped, 1 failed` solely on inherited file-size violations;
+  Ruff, format, lock, Eval `10/10` and diff checks pass.
+- Repository-wide baseline failures remain unrelated; no production AG-UI,
+  CopilotKit/Trench, React SDK, API, Worker or UI behavior changed.
+- Closed `EMB-AGUI-SPIKE-01` from `Review` to `Done`; the next
+  `EMB-AGUI-CON-01` contract and Trench CopilotKit integration remain gated.
 
 ## EMB-PLAN-01 - Zebra Embedded Architecture Consolidation
 
