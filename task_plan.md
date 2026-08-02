@@ -760,6 +760,18 @@
 - The Spike remains isolated from the long-running dependency volumes and never
   changes Zebra's governed `MemoryStorePort` authority.
 
+### Closeout
+
+- Accepted the pinned OSS REST/Compose contract and its deterministic-provider
+  evidence. Host isolated Compose coverage is `2/2`; current focused validation
+  is `24 passed, 2 skipped` without Docker, with Eval `10/10` and diff checks
+  passing.
+- Real-provider compatibility remains a separate credential gate. Mem0 stays a
+  rebuildable derived index; the scoped reset Spike is `Blocked`, so this result
+  does not unlock delivery Runtime.
+- Closed `MEM-MEM0-SPIKE-01` from `Review` to `Done` without adding production
+  composition or changing Zebra's governed Memory authority.
+
 ## MEM-GW-CON-01 - Provider-neutral Agent Memory Gateway Contract
 
 1. `completed` - Audit the governed `MemoryStorePort`, authoritative Store

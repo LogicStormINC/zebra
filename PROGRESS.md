@@ -513,7 +513,8 @@ including a real thinking tool round trip.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
   `CLOUD-STO-AUTH-01`,
-  `MEM-MEM0-SPIKE-01`, and `MEM-MEM0-ADP-01` are in Review. The provider-neutral
+  `MEM-MEM0-ADP-01` remains in Review. `MEM-MEM0-SPIKE-01` is formally Done for
+  its pinned OSS contract evidence; the provider-neutral
   Memory Gateway contract, Core delivery-certainty contract, PostgreSQL-native
   admission Spike, PostgreSQL-native storage gateway, and PostgreSQL v11
   delivery ledger are formally Done with isolated evidence; none selects a

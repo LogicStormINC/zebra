@@ -27,7 +27,7 @@ Context recovery 已进入云端主线；Mem0 仍只是可丢失、可重建的�
 | `CLOUD-MEMORY-CON-01` | `Done` | 提供 v10 Core revision/CAS、receipt 和治理状态基线 |
 | `CLOUD-MEMORY-PG-01` | `Done` | 提供权威 revision、digest、生命周期和批量扫描 |
 | `MEM-GW-CON-01` | `Done` | 提供 provider-neutral Gateway outcome 合同；没有运行时 provider 选择 |
-| `MEM-MEM0-SPIKE-01` | `Blocked` | pinned provider 缺少有界分页；不能把 boot-smoke 当生产证据 |
+| `MEM-MEM0-SPIKE-01` | `Done` | pinned OSS/Compose contract 已验证；真实 provider 仍需独立 credential gate |
 | `MEM-MEM0-ADP-01` | Adapter 代码在主线可见，治理状态 `Review` | 仅作为 provider transport；mapping/ledger 不归 Adapter 私有持有 |
 | Lease/Effect | PostgreSQL claim/CAS/DB-time 已有验证 | 只复用模式；Memory consumer 不复用 Session `LeaseFence` |
 | Host namespace authority | 完整 cloud composition 尚未闭合 | 阻断生产启用，不阻断隔离的 Core/Storage 合同工作 |

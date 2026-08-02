@@ -7374,3 +7374,14 @@ actual byte access.
 - Closed `MEM-GW-DEL-PLAN-01` from `Review` to `Done`; `make eval` and
   `git diff --check` passed. No SQL, HTTP, Worker, Mem0 or SQLite runtime wiring
   was added.
+
+## 2026-08-02 - MEM-MEM0-SPIKE-01 formal review closeout
+
+- Accepted the pinned Mem0 OSS REST/Compose contract and deterministic-provider
+  evidence: host isolated Compose `2/2`, current focused `24 passed, 2 skipped`
+  without Docker, Eval `10/10` and diff checks pass.
+- Kept real-provider compatibility as a separate credential gate and Mem0 as a
+  rebuildable derived index; the scoped reset Spike remains Blocked and Runtime
+  admission remains denied/deferred.
+- Closed `MEM-MEM0-SPIKE-01` from `Review` to `Done` without changing the
+  governed Memory authority or production composition.

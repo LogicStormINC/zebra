@@ -1,5 +1,10 @@
 # Mem0 OSS 协议兼容性验证记录
 
+> 审查收口（2026-08-02）：`MEM-MEM0-SPIKE-01` 已 `Done`。本记录证明
+> pinned OSS/Compose 语义和确定性 provider 行为，不证明真实 provider 兼容性，
+> 也不改变 Zebra PostgreSQL governed Memory 的事实源边界。Scoped reset Spike
+> 仍 `Blocked`，Mem0 Runtime admission 仍 denied/deferred。
+
 | 项目 | 结果 |
 |---|---|
 | Zebra 任务 | `MEM-MEM0-SPIKE-01` |

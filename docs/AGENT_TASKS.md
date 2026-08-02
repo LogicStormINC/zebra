@@ -48,10 +48,9 @@
   2026-07-24. It defines only the Docker Compose dependency stack and is stacked
   behind `CLOUD-STO-SEAM-01`; Zebra application containers remain a separate
   locked task.
-- `MEM-MEM0-SPIKE-01` is `Review` on `codex/mem0-contract-spike-01`.
-  The maintainer explicitly continued the memory/Compose lane on 2026-07-28;
-  this local branch combines the reviewed Store, Gateway and Compose prerequisites
-  and remains blocked from merge until those predecessors land.
+- `MEM-MEM0-SPIKE-01` is `Done` on `codex/mem0-contract-spike-01`. The pinned
+  OSS REST/Compose contract is recorded and its deterministic provider evidence
+  is accepted; real-provider compatibility remains a separate credential gate.
 - `MEM-MEM0-ADP-01` is `Review` on `codex/mem0-adapter-01`, but Mem0 is now
   `Provider admission: DENIED` and `Mainline candidate: DEFERRED` under ADR-019.
   Keep this historical adapter card out of the active critical path until a
@@ -106,7 +105,7 @@
 
 ### CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CTX / CORE / STORAGE`
 - Depends on: merged `CTX-LC-01`; intentionally independent of the local stacked
@@ -628,8 +627,21 @@ degraded-safe semantic index behind Zebra's governed memory lifecycle.
   generic `502/unknown`
 - next Adapter must own a delivery mapping/ledger, hash Zebra namespaces, impose
   a caller deadline and revalidate every hit through `MemoryStorePort`
-- this stacked local branch cannot merge until its Store, Gateway and Compose
-  predecessors land; real-provider compatibility remains a separate gate
+- the implementation is integrated after its Store, Gateway and Compose
+  predecessors; real-provider compatibility remains a separate gate and this
+  contract result does not admit Mem0 to Runtime
+
+#### Closeout
+
+- Accepted the pinned Mem0 OSS contract, namespace and degraded-failure evidence;
+  duplicate delivery, expired-search behavior, provider failures and caller
+  deadline boundaries are explicit.
+- Host isolated Compose evidence is `2/2`; current focused validation passes
+  `24` with `2` Docker-dependent cases skipped in the sandbox. Release Eval is
+  `10/10` and `git diff --check` passes.
+- Closed `MEM-MEM0-SPIKE-01` from `Review` to `Done`. Mem0 remains a derived,
+  rebuildable index; the reset Spike is `Blocked`, Runtime admission remains
+  denied/deferred, and no production composition changed.
 
 ### MEM-MEM0-ADP-01 - Mem0 Gateway Adapter
 
