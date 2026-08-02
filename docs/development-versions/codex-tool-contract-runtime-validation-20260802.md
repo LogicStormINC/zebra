@@ -76,4 +76,5 @@ provider parser changes are permitted.
   Python `3.12.13`.
 - `git diff --check`: passed.
 - Merge commit: not applicable.
-- Implementation head: `5c37bd1a4076b4b5387d6f7849c0e15dba443af1`.
+- Implementation head: `392d1fd37e6560e7205a8024cbf7091d584dc810` (code commit;
+  this record is finalized by the following doc-only commit).
