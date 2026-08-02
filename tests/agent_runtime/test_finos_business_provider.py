@@ -288,6 +288,48 @@ def test_v2_account_change_schema_exposes_finos_nested_typed_contract(
         "unrealized_pnl_pct",
     }
 
+    evidence = definition["properties"]["evidence_coverage"]["items"]
+    assert evidence["required"] == ["evidence_ref"]
+    assert evidence["properties"] == {
+        "evidence_ref": {"type": "string", "minLength": 1},
+        "account": {"type": "string", "minLength": 1},
+        "captured_at": {"type": "string", "minLength": 1},
+        "covered_fields": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "read_status": {"type": "string", "minLength": 1},
+    }
+    assert evidence["additionalProperties"] is False
+
+
+def test_v2_account_change_proposal_rejects_wrong_evidence_items_before_transport(
+    tmp_path: Path,
+) -> None:
+    transport = RecordingTransport()
+    provider = FinosJournalProvider(
+        base_url="https://finos.internal",
+        task_id="11111111-1111-4111-8111-111111111111",
+        grant="opaque-task-grant",
+        contract_version="finos.journals.v2",
+        transport=transport,
+    )
+    gateway = LocalToolGateway(tmp_path, finos_journal_provider=provider)
+
+    result = gateway.execute(
+        _call(
+            "finos.account_changes.propose",
+            {
+                "accounts": [{"account_ref": "portfolio-main", "transactions": []}],
+                "evidence_coverage": ["sensitive-evidence-text"],
+                "missing_evidence": [],
+            },
+        )
+    )
+
+    assert result.status is ToolCallStatus.FAILED
+    assert result.metadata["reason"] == "tool_validation_error"
+    assert "evidence_coverage[0]" in str(result.metadata["detail"])
+    assert "sensitive-evidence-text" not in str(result.metadata["detail"])
+    assert transport.calls == []
+
 
 def test_v3_catalog_exposes_a_generic_read_only_validator_result_contract(
     tmp_path: Path,

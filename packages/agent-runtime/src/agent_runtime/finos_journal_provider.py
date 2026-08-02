@@ -209,7 +209,24 @@ ACCOUNT_CHANGES_PROPOSE_CONTRACT = ToolContract(
                 "additionalProperties": False,
             },
         },
-        "evidence_coverage": {"type": "array", "items": {"type": "object"}},
+        "evidence_coverage": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "evidence_ref": {"type": "string", "minLength": 1},
+                    "account": {"type": "string", "minLength": 1},
+                    "captured_at": {"type": "string", "minLength": 1},
+                    "covered_fields": {
+                        "type": "array",
+                        "items": {"type": "string", "minLength": 1},
+                    },
+                    "read_status": {"type": "string", "minLength": 1},
+                },
+                "required": ["evidence_ref"],
+                "additionalProperties": False,
+            },
+        },
         "missing_evidence": {"type": "array", "items": {"type": "string"}},
     },
 )

@@ -61,6 +61,277 @@ def test_tool_executor_rejects_missing_required_arguments() -> None:
         executor.execute(_tool_call("files.read", {}))
 
 
+def test_tool_executor_decodes_compound_json_and_preserves_tool_call_identity() -> None:
+    received: list[ToolCall] = []
+    registry = ToolRegistry()
+    registry.register(
+        ToolContract(
+            name="proposal.submit",
+            required_arguments=("accounts",),
+            argument_properties={
+                "accounts": {"type": "array", "items": {"type": "object"}},
+            },
+        ),
+        lambda call: (
+            received.append(call)
+            or ToolResult(
+                tool_call_id=call.tool_call_id,
+                status=ToolCallStatus.EXECUTED,
+            )
+        ),
+    )
+    executor = ToolExecutor(registry)
+    original = _tool_call("proposal.submit", {"accounts": '[{"account_ref":"main"}]'})
+
+    result = executor.execute(original)
+
+    assert result.status is ToolCallStatus.EXECUTED
+    assert len(received) == 1
+    normalized = received[0]
+    assert normalized.arguments == {"accounts": [{"account_ref": "main"}]}
+    assert normalized.tool_call_id == original.tool_call_id
+    assert normalized.name == original.name
+    assert normalized.created_at == original.created_at
+    assert original.arguments == {"accounts": '[{"account_ref":"main"}]'}
+
+
+def test_tool_executor_decodes_declared_object_json() -> None:
+    received: list[ToolCall] = []
+    registry = ToolRegistry()
+    registry.register(
+        ToolContract(
+            name="object.submit",
+            required_arguments=("payload",),
+            argument_properties={
+                "payload": {
+                    "type": "object",
+                    "properties": {"name": {"type": "string"}},
+                    "required": ["name"],
+                    "additionalProperties": False,
+                }
+            },
+        ),
+        lambda call: (
+            received.append(call)
+            or ToolResult(
+                tool_call_id=call.tool_call_id,
+                status=ToolCallStatus.EXECUTED,
+            )
+        ),
+    )
+
+    result = ToolExecutor(registry).execute(
+        _tool_call("object.submit", {"payload": '{"name":"main"}'})
+    )
+
+    assert result.status is ToolCallStatus.EXECUTED
+    assert received[0].arguments == {"payload": {"name": "main"}}
+
+
+def test_tool_executor_does_not_coerce_declared_scalar_strings() -> None:
+    received: list[ToolCall] = []
+    registry = ToolRegistry()
+    registry.register(
+        ToolContract(
+            name="scalar.submit",
+            required_arguments=("label", "count"),
+            argument_properties={
+                "label": {"type": "string"},
+                "count": {"type": "integer"},
+            },
+        ),
+        lambda call: (
+            received.append(call)
+            or ToolResult(
+                tool_call_id=call.tool_call_id,
+                status=ToolCallStatus.EXECUTED,
+            )
+        ),
+    )
+    executor = ToolExecutor(registry)
+
+    result = executor.execute(
+        _tool_call("scalar.submit", {"label": '["literal"]', "count": 1})
+    )
+    assert result.status is ToolCallStatus.EXECUTED
+    assert received[0].arguments["label"] == '["literal"]'
+
+    with pytest.raises(ToolArgumentError, match="arguments.count.*integer") as error:
+        executor.execute(_tool_call("scalar.submit", {"label": "literal", "count": "1"}))
+    assert '"1"' not in str(error.value)
+
+
+def test_tool_executor_rejects_wrong_nested_item_type_without_echoing_value() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        ToolContract(
+            name="proposal.submit",
+            required_arguments=("evidence_coverage",),
+            argument_properties={
+                "evidence_coverage": {
+                    "type": "array",
+                    "items": {"type": "object"},
+                }
+            },
+        ),
+        lambda call: ToolResult(
+            tool_call_id=call.tool_call_id,
+            status=ToolCallStatus.EXECUTED,
+        ),
+    )
+
+    with pytest.raises(ToolArgumentError) as error:
+        ToolExecutor(registry).execute(
+            _tool_call(
+                "proposal.submit",
+                {"evidence_coverage": ["sensitive-evidence-text"]},
+            )
+        )
+
+    assert "arguments.evidence_coverage[0]" in str(error.value)
+    assert "sensitive-evidence-text" not in str(error.value)
+
+
+def test_tool_executor_accepts_correct_nested_object_array() -> None:
+    received: list[ToolCall] = []
+    registry = ToolRegistry()
+    registry.register(
+        ToolContract(
+            name="proposal.submit",
+            required_arguments=("evidence_coverage",),
+            argument_properties={
+                "evidence_coverage": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {"evidence_ref": {"type": "string"}},
+                        "required": ["evidence_ref"],
+                        "additionalProperties": False,
+                    },
+                }
+            },
+        ),
+        lambda call: (
+            received.append(call)
+            or ToolResult(
+                tool_call_id=call.tool_call_id,
+                status=ToolCallStatus.EXECUTED,
+            )
+        ),
+    )
+
+    result = ToolExecutor(registry).execute(
+        _tool_call("proposal.submit", {"evidence_coverage": [{"evidence_ref": "e-1"}]})
+    )
+
+    assert result.status is ToolCallStatus.EXECUTED
+    assert received[0].arguments == {"evidence_coverage": [{"evidence_ref": "e-1"}]}
+
+
+@pytest.mark.parametrize(
+    ("accounts", "expected_type"),
+    [
+        ("not-json", "array"),
+        ('{"account_ref":"main"}', "array"),
+    ],
+)
+def test_tool_executor_rejects_invalid_or_mismatched_compound_json(
+    accounts: str,
+    expected_type: str,
+) -> None:
+    registry = ToolRegistry()
+    registry.register(
+        ToolContract(
+            name="proposal.submit",
+            required_arguments=("accounts",),
+            argument_properties={"accounts": {"type": "array"}},
+        ),
+        lambda call: ToolResult(
+            tool_call_id=call.tool_call_id,
+            status=ToolCallStatus.EXECUTED,
+        ),
+    )
+
+    with pytest.raises(ToolArgumentError) as error:
+        ToolExecutor(registry).execute(_tool_call("proposal.submit", {"accounts": accounts}))
+
+    assert "arguments.accounts" in str(error.value)
+    assert expected_type in str(error.value)
+    assert accounts not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected_detail"),
+    [
+        ({"items": [{}]}, "missing required property"),
+        ({"items": [{"name": "ok", "secret": "do-not-echo"}]}, "additionalProperties=false"),
+    ],
+)
+def test_tool_executor_validates_nested_required_and_additional_properties(
+    payload: dict[str, object],
+    expected_detail: str,
+) -> None:
+    registry = ToolRegistry()
+    registry.register(
+        ToolContract(
+            name="nested.submit",
+            required_arguments=("payload",),
+            argument_properties={
+                "payload": {
+                    "type": "object",
+                    "properties": {
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {"name": {"type": "string"}},
+                                "required": ["name"],
+                                "additionalProperties": False,
+                            },
+                        }
+                    },
+                    "required": ["items"],
+                    "additionalProperties": False,
+                }
+            },
+        ),
+        lambda call: ToolResult(
+            tool_call_id=call.tool_call_id,
+            status=ToolCallStatus.EXECUTED,
+        ),
+    )
+
+    with pytest.raises(ToolArgumentError) as error:
+        ToolExecutor(registry).execute(_tool_call("nested.submit", {"payload": payload}))
+
+    assert "arguments.payload.items[0]" in str(error.value)
+    assert expected_detail in str(error.value)
+    assert "do-not-echo" not in str(error.value)
+
+
+def test_tool_executor_rejects_boolean_for_integer_and_accepts_integer_boundary() -> None:
+    registry = ToolRegistry()
+    registry.register(
+        ToolContract(
+            name="bounded.submit",
+            required_arguments=("count",),
+            argument_properties={"count": {"type": "integer", "minimum": 1}},
+        ),
+        lambda call: ToolResult(
+            tool_call_id=call.tool_call_id,
+            status=ToolCallStatus.EXECUTED,
+        ),
+    )
+    executor = ToolExecutor(registry)
+
+    assert (
+        executor.execute(_tool_call("bounded.submit", {"count": 1})).status
+        is ToolCallStatus.EXECUTED
+    )
+    with pytest.raises(ToolArgumentError, match="expected integer"):
+        executor.execute(_tool_call("bounded.submit", {"count": True}))
+
+
 def test_tool_registry_rejects_duplicate_tool_registration() -> None:
     registry = ToolRegistry()
     contract = ToolContract(name="files.read")
