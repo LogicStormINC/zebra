@@ -7385,3 +7385,15 @@ actual byte access.
   admission remains denied/deferred.
 - Closed `MEM-MEM0-SPIKE-01` from `Review` to `Done` without changing the
   governed Memory authority or production composition.
+
+## 2026-08-02 - MEM-MEM0-ADP-01 formal review closeout
+
+- Accepted the disabled-safe Mem0 Gateway boundary: confirmed-only publish,
+  `infer=false`, opaque namespace, bounded response parsing, typed degraded
+  outcomes and canonical provider UUID validation.
+- Recorded host evidence is focused Core/Adapter `36/36` and pinned Compose
+  lifecycle `3/3`; current Adapter validation passes `23/23`, Eval `10/10` and
+  diff checks pass.
+- Closed `MEM-MEM0-ADP-01` from `Review` to `Done` as an implementation contract
+  only. v11 mapping/idempotency, scoped reset and Runtime admission remain gated;
+  Mem0 is still denied/deferred and not runtime-selected.

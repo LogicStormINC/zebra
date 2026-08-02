@@ -740,6 +740,18 @@
 - Disabled and failed Mem0 paths return typed Gateway outcomes and never alter
   authoritative `MemoryStorePort` state.
 
+### Closeout
+
+- Accepted the disabled-safe integration boundary with confirmed-only publish,
+  `infer=false`, opaque namespaces, canonical provider refs, bounded responses,
+  typed degraded outcomes and no hidden mapping state.
+- Recorded host evidence is focused Core/Adapter `36/36` and pinned Compose
+  lifecycle `3/3`; current Adapter validation passes `23/23`, Eval `10/10` and
+  diff checks pass.
+- Closed `MEM-MEM0-ADP-01` from `Review` to `Done` as an implementation contract
+  only. v11 delivery mapping/idempotency, scoped reset and Runtime admission
+  remain separate gates; Mem0 remains denied/deferred.
+
 ## MEM-MEM0-SPIKE-01 - Mem0 OSS Contract And Operations Probe
 
 1. `completed` - Inspect the pinned running Mem0 OpenAPI/source without reading

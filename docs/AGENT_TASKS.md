@@ -51,10 +51,10 @@
 - `MEM-MEM0-SPIKE-01` is `Done` on `codex/mem0-contract-spike-01`. The pinned
   OSS REST/Compose contract is recorded and its deterministic provider evidence
   is accepted; real-provider compatibility remains a separate credential gate.
-- `MEM-MEM0-ADP-01` is `Review` on `codex/mem0-adapter-01`, but Mem0 is now
-  `Provider admission: DENIED` and `Mainline candidate: DEFERRED` under ADR-019.
-  Keep this historical adapter card out of the active critical path until a
-  future upstream capability review and admission run.
+- `MEM-MEM0-ADP-01` is `Done` on `codex/mem0-adapter-01` as a disabled-safe,
+  provider-neutral integration implementation. Mem0 is still `Provider
+  admission: DENIED` and `Mainline candidate: DEFERRED` under ADR-019; the
+  adapter is not runtime-selected and remains outside the active consumer path.
 - `MEM-GW-DEL-PLAN-01` is `Done` on `codex/mem-gw-del-plan-closeout-01`. The
   v11 delivery/deletion plan and four path-bounded child cards are durable; the
   parent remains locked because the scoped reset/rebuild gate is blocked.
@@ -237,7 +237,7 @@ dependency-ordered task roadmap without activating implementation prematurely.
 
 ### EMB-AGUI-SPIKE-01 - Zebra AG-UI Protocol Compatibility Spike
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `INTEGRATIONS / QA / DOC`
 - Depends on: `EMB-PLAN-01`; explicitly activated as a stacked local branch by
@@ -648,9 +648,9 @@ degraded-safe semantic index behind Zebra's governed memory lifecycle.
 - Status: `Review`
 - Owner: `Codex`
 - Suggested role: `INTEGRATIONS / SECURITY`
-- Depends on: locally reviewed `MEM-MEM0-SPIKE-01` and explicit maintainer
-  continuation on 2026-07-28. This stacked implementation cannot merge until the
-  Spike and all of its predecessors land.
+- Depends on: completed `MEM-MEM0-SPIKE-01` and the explicit maintainer
+  continuation on 2026-07-28. The implementation is integrated; delivery-ledger
+  persistence and Runtime admission remain separate gates.
 - Branch: `codex/mem0-adapter-01`
 - Worktree: `../zebra-agent-mem0-adapter-01`
 - Owned paths: `packages/agent-integrations/src/agent_integrations/mem0/` (new),
@@ -684,6 +684,19 @@ by the Spike, with no Mem0 type escaping the integration package.
   failing lookup degrades, lookup miss is not-found, and no in-memory map is added
 - focused contract tests and the pinned real Compose Mem0 lifecycle pass; no
   runtime wiring or automatic write retry is included before `MEM-GW-DEL-01`
+
+#### Closeout
+
+- Accepted the disabled-safe Mem0 Gateway implementation: confirmed-only
+  publication, fixed `infer=false`, opaque namespace hashing, bounded responses,
+  typed degraded outcomes, canonical UUID validation and a single half-open
+  circuit probe are covered without provider types escaping the integration layer.
+- Recorded host evidence is focused Core/Adapter `36/36` and pinned Compose
+  lifecycle `3/3`; current Adapter validation passes `23/23`, with no Docker
+  socket dependency in the sandbox. Eval `10/10` and `git diff --check` pass.
+- Closed `MEM-MEM0-ADP-01` from `Review` to `Done` as an implementation
+  contract only. The future v11 ledger still owns provider mapping/idempotency,
+  the reset Spike is `Blocked`, and Mem0 Runtime admission remains denied/deferred.
 
 ### CLOUD-MEMORY-PG-PLAN-01 - PostgreSQL Governed Memory Authority Plan
 
