@@ -75,13 +75,18 @@ def evaluate_completion_evidence(
             typed.update(_values(metadata.get("typed_evidence")))
             tags.update(_values(metadata.get("tool_tags")))
             capability_results.update(_values(metadata.get("capability_result")))
-            _add_validator_outcome(metadata, validator_outcomes)
         elif event.event_type is EventType.TESTS_COMPLETED:
             if not _trusted_validator_test(event, successful_tool_call_ids):
                 continue
             metadata = _mapping(event.payload.get("metadata"))
             explicit = metadata.get("validator_outcome")
-            if isinstance(explicit, str) and explicit.strip():
+            passed = event.payload.get("passed")
+            if (
+                isinstance(explicit, str)
+                and explicit.strip()
+                and isinstance(passed, bool)
+                and (explicit.strip() == "passed") is passed
+            ):
                 validator_outcomes.add(explicit.strip())
 
     missing: list[str] = []
@@ -200,21 +205,6 @@ def _requirement_satisfied(
             and requirement.capability_result in capability_results
         )
     )
-
-
-def _add_validator_outcome(
-    metadata: Mapping[str, object],
-    outcomes: set[str],
-) -> None:
-    event_tags = _values(metadata.get("tool_tags"))
-    if "validator" not in event_tags:
-        return
-    explicit = metadata.get("validator_outcome")
-    if isinstance(explicit, str) and explicit.strip():
-        outcomes.add(explicit.strip())
-    result = metadata.get("validator_result")
-    if isinstance(result, Mapping) and isinstance(result.get("passed"), bool):
-        outcomes.add("passed" if result["passed"] else "failed")
 
 
 def _mapping(value: object) -> Mapping[str, object]:

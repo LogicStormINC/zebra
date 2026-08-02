@@ -46,6 +46,20 @@
   marketplace, provider routing, business-specific heuristic, or deployment
   change was added.
 
+## P0 validator evidence trust correction
+
+- `record_tool_result` now derives validator evidence from the successful
+  typed validator result before emitting `TESTS_COMPLETED`; contradictory
+  `validator_outcome` metadata produces no passed evidence and a false
+  terminal `passed` flag.
+- Completion evaluation no longer treats raw validator fields on
+  `TOOL_EXECUTION_COMPLETED` as evidence. It accepts only the linked,
+  successful, harness-emitted canonical validator event, with consistent
+  passed/failed fields; failed, rejected, cancelled, and untrusted sources
+  fail closed.
+- The existing neutral validator passed/failed flows remain compatible; no
+  tool, business, or provider name is used by the fix.
+
 ## Red-first evidence
 
 Planned before implementation:
@@ -83,10 +97,13 @@ Planned before implementation:
   evidence, default tool-loop completion bypass, continuation evidence loss,
   continuation capability bypass, untrusted/disabled skill resolution, and
   mutable skill content drift.
-- Focused follow-up set: 70 passed.
-- API/worker/storage continuation set: 105 passed; one inherited worker
-  cancellation-streaming failure remains.
-- Full development-worktree pytest: 1979 passed, 10 failed, 9 skipped; the
+- Previous P1 focused follow-up set: 70 passed.
+- P0 validator trust red/green set: 6 passed after reproducing the conflicting
+  successful emission path and the failed/rejected/cancelled/untrusted matrix.
+- Current focused/API/worker/storage set: 87 passed.
+- Related continuation/worker set: 51 passed; one inherited cancellation-
+  streaming failure remains.
+- Full development-worktree pytest: 1985 passed, 10 failed, 9 skipped; the
   same ten failures remain the exact-base/inherited set.
 - make sync, focused Ruff, compileall, and git diff --check: passed.
 - File-size gate: 11 inherited violations, unchanged in count; each

@@ -96,25 +96,19 @@ def record_tool_result(
         tool_result.output,
     )
     verification_metadata = dict(verification.metadata)
-    validator_execution_succeeded = tool_result.status is ToolCallStatus.EXECUTED
-    if "validator" in effective_tool_tags and validator_execution_succeeded:
-        validator_result = tool_result.metadata.get("validator_result")
-        validator_passed = (
-            validator_result.get("passed")
-            if isinstance(validator_result, Mapping)
-            else None
-        )
-        if not isinstance(validator_passed, bool):
-            validator_passed = verification.passed
-        verification_metadata.setdefault(
-            "validator_outcome",
-            "passed" if validator_passed else "failed",
-        )
-    elif "validator" in effective_tool_tags:
-        verification_metadata.pop("validator_outcome", None)
+    canonical_validator_outcome = _canonical_validator_outcome(
+        tool_result,
+        verification.passed,
+        effective_tool_tags,
+    )
+    if "validator" in effective_tool_tags:
+        if canonical_validator_outcome is None:
+            verification_metadata.pop("validator_outcome", None)
+        else:
+            verification_metadata["validator_outcome"] = canonical_validator_outcome
     verification_passed = verification.passed
-    if "validator" in effective_tool_tags and not validator_execution_succeeded:
-        verification_passed = False
+    if "validator" in effective_tool_tags:
+        verification_passed = canonical_validator_outcome == "passed"
     emitted_events.append(
         HarnessEventDraft(
             event_type=EventType.TESTS_COMPLETED,
@@ -145,6 +139,25 @@ def record_tool_result(
             "verification_metadata": verification_metadata,
         },
     )
+
+
+def _canonical_validator_outcome(
+    tool_result: ToolResult,
+    verifier_passed: bool,
+    effective_tool_tags: tuple[str, ...],
+) -> str | None:
+    if "validator" not in effective_tool_tags or tool_result.status is not ToolCallStatus.EXECUTED:
+        return None
+    validator_result = tool_result.metadata.get("validator_result")
+    declared = tool_result.metadata.get("validator_outcome")
+    if isinstance(validator_result, Mapping) and isinstance(validator_result.get("passed"), bool):
+        canonical = "passed" if validator_result["passed"] else "failed"
+        if isinstance(declared, str) and declared.strip() and declared.strip() != canonical:
+            return None
+        return canonical
+    if isinstance(declared, str) and declared.strip():
+        return declared.strip()
+    return "passed" if verifier_passed else "failed"
 
 
 def _subagent_lifecycle_events(

@@ -1,5 +1,20 @@
 # Progress Log
 
+## 2026-08-02 AOR-DEF-01 P0 validator evidence trust correction
+
+- red reproduced the real `record_tool_result` conflict: one successful tool
+  event carried `validator_result.passed=false` and `validator_outcome=passed`,
+  incorrectly satisfying the completion contract
+- canonicalized validator outcome at successful emission; evaluator now reads
+  only linked harness `TESTS_COMPLETED` evidence with consistent passed/failed
+  fields, while failed/rejected/cancelled/untrusted sources fail closed
+- P0 trust set: 6 passed; current focused/API/worker/storage set: 87 passed;
+  related set: 51 passed with one inherited cancellation-streaming failure
+- full suite: 1985 passed, 10 failed, 9 skipped; same exact-base failure set;
+  make sync, focused Ruff, compileall, and diff-check passed
+- full Ruff retains 7 inherited findings; make check retains 11 inherited
+  file-size violations; no push, merge, deploy, or configuration change
+
 ## 2026-08-02 AOR-DEF-01 review follow-up
 
 - closed identity injection, failed-validator evidence, default completion
