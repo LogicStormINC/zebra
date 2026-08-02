@@ -299,6 +299,35 @@
 - `CLOUD-MODEL-TOOL-PG-01` remains the next dependency-ordered Review target;
   Control Plane and all Runtime/Worker/Provider composition remain locked.
 
+## CLOUD-MODEL-TOOL-PG-01 - PostgreSQL Model And Tool Projections
+
+1. `completed` - Trace Model/Tool Event-derived projection and Worker index/replay
+   boundaries; keep Artifact payloads out of management replay.
+2. `completed` - Add namespace-scoped PostgreSQL v6 projections with full-fence
+   validation and deterministic same-event replay.
+3. `completed` - Prove stale writes, content conflicts, partial projection recovery
+   and migration behavior with focused Worker and PostgreSQL tests.
+4. `completed` - Formally audit the integrated diff and dependencies, then close
+   the card as Done without changing composition or runtime selection.
+
+### Decisions
+
+- Model Call and Tool Run remain Event-derived indexes, never a second authority.
+- Management replay reads committed Events and does not write Artifact payloads;
+  Worker indexing validates the complete current Lease fence.
+- The v6 migration and projection adapter remain separate from Context, Handoff,
+  Control Plane and runtime backend selection.
+
+### Closeout
+
+- Review covered `4acd8ae8`, `5e44c0b7` and `d6e3f5c2`; both direct dependencies
+  `CLOUD-AGG-FENCE-CON-01` and `CLOUD-AGG-WORKSPACE-PG-01` are `Done`.
+- Recorded evidence is sufficient: focused Worker `7/7` and isolated PostgreSQL
+  v6 migration/projection `7/7`; no new Compose execution or production edit was
+  made by this review slice.
+- `CLOUD-AGG-CTX-PG-01` remains a separate Review card, and all runtime,
+  application-profile and provider paths remain locked.
+
 ## CLOUD-AGG-WORKSPACE-PG-01 - Fenced Workspace Projection
 
 1. `completed` - Trace Workspace projection shape, replay semantics and existing

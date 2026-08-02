@@ -6990,3 +6990,20 @@ actual byte access.
   no production or Compose changes and did not unlock Runtime, Worker startup,
   Provider HTTP or the application Compose profile; Model/Tool is the next
   dependency-ordered review target.
+
+## 2026-08-02 - CLOUD-MODEL-TOOL-PG-01 formal review closeout
+
+- Reviewed the integrated Model/Tool implementation at `4acd8ae8`, stale
+  projection fixes at `5e44c0b7` and `d6e3f5c2`, and the v6 acceptance evidence.
+  Both direct dependencies, `CLOUD-AGG-FENCE-CON-01` and
+  `CLOUD-AGG-WORKSPACE-PG-01`, are `Done`.
+- Audited the declared projection, migration, Worker index/replay and focused
+  test paths. The card keeps Model/Tool Event-derived and does not add authority,
+  Context/Handoff writes, Control Plane selection, Runtime, Provider HTTP,
+  Desktop, SQLite, Redis or Mem0 composition.
+- Accepted the recorded focused Worker `7/7` and isolated PostgreSQL `17.5`
+  migration/projection `7/7` evidence. No new Compose execution or production
+  edit was made by the review slice.
+- Closed `CLOUD-MODEL-TOOL-PG-01` from `Review` to `Done`. Context remains a
+  separate Review card; Runtime, Worker startup, Provider HTTP and the
+  application Compose profile remain locked.

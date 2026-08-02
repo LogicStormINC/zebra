@@ -1841,7 +1841,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-MODEL-TOOL-PG-01 - PostgreSQL Model And Tool Projections
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Branch: `codex/cloud-model-tool-pg-01`
 - Depends on: `CLOUD-AGG-FENCE-CON-01` and `CLOUD-AGG-WORKSPACE-PG-01`
@@ -1854,6 +1854,25 @@ cloud mainline and is not built or changed by these cards.
   Worker indexing validates the current full fence, while management replay reads
   only committed Events and never writes Artifact payloads. Focused Worker tests
   pass `7/7`; isolated PostgreSQL 17.5 migration/projection tests pass `7/7`.
+
+#### Closeout
+
+- Formal review targeted the integrated implementation at `4acd8ae8`, stale
+  projection fixes at `5e44c0b7` and `d6e3f5c2`, and the recorded v6 acceptance
+  evidence. Direct dependencies `CLOUD-AGG-FENCE-CON-01` and
+  `CLOUD-AGG-WORKSPACE-PG-01` are both `Done`.
+- The implementation remains an Event-derived read projection. Its diff is
+  limited to Model/Tool projection storage, Worker index/replay wiring, the v6
+  migration and focused tests; it does not introduce a second authority or
+  touch Context, Handoff, Control Plane, Runtime, Provider HTTP, Desktop,
+  SQLite, Redis or Mem0 composition.
+- Existing evidence is accepted: focused Worker tests `7/7`, isolated
+  PostgreSQL `17.5` migration/projection tests `7/7`, and the task's recorded
+  static/replay checks. No Compose run was needed for this closeout.
+- Closing this card only records the Model/Tool projection gate. It does not
+  activate `CLOUD-CONTROL-PLANE-PG-01` or unlock Runtime, Worker startup,
+  Provider HTTP or the application Compose profile; Context remains a separate
+  Review card.
 
 ### CLOUD-PROVIDER-CONT-PG-01 - Fenced Provider Continuation Payload
 

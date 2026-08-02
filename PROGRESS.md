@@ -127,11 +127,12 @@
   dependency closed the card as `Done` and unlocks only
   `CLOUD-MODEL-TOOL-PG-01` for the next serialized migration. Context and Handoff
   continue planning in separate sidebar tasks without writing the migration hotspot.
-- Integrated Model/Tool and Context aggregate tasks: `CLOUD-MODEL-TOOL-PG-01`
-  adds replayable PostgreSQL v6 Event-derived projections, while
-  `CLOUD-AGG-CTX-PG-01` adds the fenced v7 two-Event Context transaction with
-  immutable capsule and active-pointer composite constraints. Their isolated host
-  PostgreSQL matrices pass `8/8` and `14/14`; neither selects the cloud runtime.
+- Completed and formally closed Model/Tool projection task:
+  `CLOUD-MODEL-TOOL-PG-01` adds replayable PostgreSQL v6 Event-derived
+  projections. Its focused Worker tests pass `7/7` and its isolated PostgreSQL
+  migration/projection matrix passes `7/7`; the card is `Done` after dependency
+  and path review. `CLOUD-AGG-CTX-PG-01` remains a separate Review card with its
+  recorded `14/14` matrix; neither selects the cloud runtime.
 - Completed Artifact contract task: `CLOUD-ART-OBJ-CON-01` freezes provider-neutral Artifact
   object/metadata authority before any SDK or adapter. ADR-017 separates stable
   `artifact://` identity from temporary access URLs and opaque external references,
