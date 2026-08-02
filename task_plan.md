@@ -778,6 +778,16 @@
   resolve `MemoryId` through the Store before prompt admission.
 - Mem0 is the first planned adapter, but no provider or transport type enters Core.
 
+### Closeout
+
+- Review covered integrated provider-neutral Core contract `8c61ad66`; confirmed
+  publication, opaque namespace, revalidatable hits and typed degraded outcomes
+  are accepted.
+- Recorded contract `13/13`, agent-core `221/221`, strict static checks and Eval
+  `10/10` evidence is accepted; no provider or runtime wiring was added.
+- `MEM-GW-CON-01` is `Done`; Mem0 Spike/Adapter and delivery remain separate
+  deferred/gated paths.
+
 ## MEM-GW-DEL-PLAN-01 - Memory Delivery Ledger v11 Plan And Task Split
 
 1. `completed` - Ask the sidebar ChatGPT planning session to review the real

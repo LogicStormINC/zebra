@@ -50,7 +50,7 @@
   memory. A/B regressions prove the legacy path is not created; no cloud backend,
   migration or Mem0 integration is selected by this task. Formal review closed
   it as `Done`; Compose, PostgreSQL and Memory Gateway remain separate gates.
-- Memory contract task in Review: `MEM-GW-CON-01` on `codex/mem-gw-con-01` defines
+- Memory contract task `MEM-GW-CON-01` is formally `Done` on `codex/mem-gw-con-01`; it defines
   provider-neutral confirmed-memory publish, search and delete outcomes. Remote
   hits contain only a Zebra `MemoryId` for mandatory Store revalidation; no Mem0
   adapter, credential, Docker or runtime wiring is part of this slice.
@@ -512,7 +512,7 @@ including a real thinking tool round trip.
 - `UI-COMPOSER-01` is `Done` via PR `#174`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` until explicitly activated.
 - `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, `CLOUD-STO-SEAM-01`, and
-  `CLOUD-STO-AUTH-01`, `MEM-GW-CON-01`,
+  `CLOUD-STO-AUTH-01`,
   `MEM-MEM0-SPIKE-01`, and `MEM-MEM0-ADP-01` are in Review. The Lease plan,
   Core contract and PostgreSQL Lease adapter have separate local evidence and
   remain unselected at runtime. Mem0 remains a derived, degraded-safe index;

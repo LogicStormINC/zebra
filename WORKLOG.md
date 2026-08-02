@@ -7342,3 +7342,14 @@ actual byte access.
 - Closed `CLOUD-MEMORY-PG-01` from `Review` to `Done`; Mem0 delivery, runtime
   selector, API/Worker composition, Desktop, SQLite feature work and cutover
   remain gated.
+
+## 2026-08-02 - MEM-GW-CON-01 formal review closeout
+
+- Reviewed integrated provider-neutral Core contract `8c61ad66`; confirmed-only
+  publication, opaque namespace, Zebra `MemoryId` revalidation and typed
+  degraded/disabled outcomes are present without provider types in Core.
+- Accepted contract `13/13`, agent-core `221/221`, strict Mypy/Ruff, Eval `10/10`
+  and diff evidence. No Mem0 SDK/REST, credentials, Docker, delivery, API/Worker
+  or runtime wiring was added.
+- Closed `MEM-GW-CON-01` from `Review` to `Done`; Mem0 Spike/Adapter remain
+  deferred and no provider is runtime-selected.

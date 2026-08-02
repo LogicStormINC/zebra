@@ -449,7 +449,7 @@ own governed memory before any PostgreSQL backend is selectable.
 
 ### MEM-GW-CON-01 - Provider-neutral Agent Memory Gateway Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / INTEGRATIONS`
 - Depends on: local reviewed `CLOUD-STO-AUTH-01` and explicit maintainer
@@ -500,6 +500,17 @@ derived semantic-memory service without weakening Zebra's governed memory truth.
 - `make check` stops at the two untouched file-size violations (`561/500`,
   `505/500`). The branch remains local and stacked; Mem0 adapter work is still
   locked behind the Compose baseline, this contract and a credentialed Spike.
+
+#### Closeout
+
+- Formal review covered integrated Core contract `8c61ad66`; confirmed-only
+  publication, opaque namespace, Zebra `MemoryId` revalidation and typed
+  degraded/disabled outcomes are present without provider types in Core.
+- Recorded contract `13/13`, agent-core `221/221`, strict Mypy/Ruff, Eval `10/10`
+  and diff evidence is accepted. No Mem0 SDK/REST, credentials, Docker,
+  delivery, API/Worker or runtime wiring was added.
+- Closed `MEM-GW-CON-01` from `Review` to `Done`; the Mem0 Spike/Adapter remain
+  separately deferred and no provider is runtime-selected.
 
 ### CLOUD-COMPOSE-INFRA-01 - Docker Compose Dependency Baseline
 
