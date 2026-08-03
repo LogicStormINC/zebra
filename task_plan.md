@@ -648,16 +648,16 @@
 
 ## CLOUD-CONTEXT-CON-01 - Context Materialization Boundary Contract
 
-1. `pending` - Trace the existing Session History, Context lifecycle and
+1. `completed` - Trace the existing Session History, Context lifecycle and
    governed Memory read contracts and freeze their non-overlapping assembly
    boundary.
-2. `pending` - Add Core request/result types and a read-only Port carrying
+2. `completed` - Add Core request/result types and a read-only Port carrying
    namespace scope, Session revision, active Capsule expectation and Memory
    visibility query.
-3. `pending` - Prove stale expectations, deny-all scope, invalid limits,
+3. `completed` - Prove stale expectations, deny-all scope, invalid limits,
    duplicate revisions, expired/candidate Memory and deterministic generation
    rules with focused Core tests.
-4. `pending` - Write ADR-020, update governance records and close the contract
+4. `completed` - Write ADR-020, update governance records and close the contract
    slice without adding a PostgreSQL adapter or runtime composition.
 
 ### Decisions
@@ -673,6 +673,22 @@
   maps an external namespace to storage.
 - PostgreSQL read composition is a locked successor. Runtime, Worker, API,
   Desktop, SQLite, Redis and Mem0 remain outside this contract.
+
+### Handoff
+
+- Added the Core-only materialization request/result types, generation identity,
+  read Port and focused invariants in ADR-020. The contract has no SQL, migration,
+  write path or composition selector.
+- Validation is `350/350` Core tests, `16/16` related scope/Capsule tests,
+  changed Ruff/format/strict Mypy, `git diff --check` and Eval `10/10`.
+- The PostgreSQL implementation is intentionally not included here; activate
+  `CLOUD-CONTEXT-PG-01` only after reviewing the exact Owned paths and one-read
+  generation boundary.
+
+### Closeout
+
+- `CLOUD-CONTEXT-CON-01` is `Done`; ADR-020 is the durable source for the
+  materialization boundary. No runtime or provider path was unlocked.
 
 ## CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 

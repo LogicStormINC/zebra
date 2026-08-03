@@ -1,5 +1,20 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-CONTEXT-CON-01 formal closeout
+
+- Registered, claimed and completed the Core-only Context Materialization
+  contract after Session History host PostgreSQL `3/3` passed.
+- Added ADR-020 plus `ContextMaterializationRequest`,
+  `ContextMaterialization`, revisioned generation identity and the read-only
+  `ContextMaterializationPort`. The contract composes Session History, active
+  Context Capsule and confirmed governed Memory without adding a database table,
+  migration, write path or runtime selector.
+- Validation is `3/3` focused, `16/16` related scope/Capsule, `350/350` full
+  Core, changed Ruff/format/strict Mypy, diff check and Eval `10/10`. The size
+  gate still reports only the two inherited violations outside this card.
+- Closed `CLOUD-CONTEXT-CON-01` as `Done`; only `CLOUD-CONTEXT-PG-01` is the
+  next explicit successor and remains `Locked` until activated.
+
 ## 2026-08-03 - CLOUD-SESSION-HISTORY-PG-01 formal closeout
 
 - The corrected host rerun used

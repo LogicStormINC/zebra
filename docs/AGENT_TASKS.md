@@ -94,9 +94,9 @@
 - Cloud aggregate and Artifact task state is maintained in the cloud board below;
   `CLOUD-SCOPE-CON-01` is `Done`, and the explicitly activated
   `CLOUD-SESSION-HISTORY-PG-01` is now `Done` after its host PostgreSQL
-  evidence passed. `CLOUD-CONTEXT-CON-01` is now the next `Ready` contract
-  slice; its PostgreSQL successor, Provider Continuation and all other
-  successor adapters remain `Locked`.
+  evidence passed. `CLOUD-CONTEXT-CON-01` is now `Done` on its claimed branch;
+  its PostgreSQL successor, Provider Continuation and all other successor
+  adapters remain `Locked`.
 
 ## Context Continuity And Governed Memory Board
 
@@ -2595,12 +2595,13 @@ external membership.
 
 ### CLOUD-CONTEXT-CON-01 - Context Materialization Boundary Contract
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
+- Status: `Done`
+- Owner: `Codex`
 - Depends on: `CLOUD-SCOPE-CON-01`, `CLOUD-SESSION-HISTORY-PG-01`,
   `CLOUD-MEMORY-CON-01`, `CLOUD-MEMORY-PG-01`, `CLOUD-AGG-CTX-PG-01` and
   `CLOUD-AGG-CTX-ADMIN-PG-01`
-- Branch: `TBD after claim`
+- Branch: `codex/cloud-context-con-01`
+- Worktree: `../zebra-agent-context-contract`
 - Owned paths: `docs/ADR-020_Context_Materialization_Boundary.md`,
   `packages/agent-core/src/agent_core/domain/context_materialization.py` (new),
   `packages/agent-core/src/agent_core/ports/context_materialization.py` (new),
@@ -2617,6 +2618,31 @@ external membership.
 - Explicit non-goals: no PostgreSQL adapter or migration, no Event/Session/
   Context/Memory write, no `ControlPlaneStores` selector, no Worker/API/runtime
   wiring, no Desktop, SQLite, Redis or Mem0 path.
+
+#### Validation And Handoff
+
+- [x] Core request/result/Port types enforce opaque Session scope, exact Session
+  revision and active Capsule expectation, bounded ordered History, explicit
+  confirmed-only Memory query, visibility matching, expiry and revisioned
+  generation identity.
+- [x] Focused contract tests pass `3/3`; related scope/Capsule Core tests pass
+  `16/16`; the full Core suite passes `350/350`.
+- [x] Changed-path Ruff, format and strict Mypy pass; release Eval passes
+  `10/10`; `git diff --check` passes. The repository size gate retains only the
+  two inherited violations in the untouched Desktop stylesheet and governed
+  Memory test.
+- [x] ADR-020 records create/continue/recovery, snapshot/expiry/rebuild and the
+  no-write boundary. No PostgreSQL service was needed because this slice owns
+  only the Core contract.
+
+#### Closeout
+
+- Formal review accepted ADR-020 and the Core contract at the current branch
+  commit. The materialization envelope is ephemeral and does not replace Event,
+  Context Capsule or governed Memory authority.
+- Closing this card unlocks only `CLOUD-CONTEXT-PG-01` for explicit activation.
+  Runtime, Worker/API composition, Provider HTTP, Desktop, SQLite, Redis, Mem0
+  and `ControlPlaneStores` remain locked or unselected.
 
 ### CLOUD-CONTEXT-PG-01 - PostgreSQL Context Materialization Read Composition
 

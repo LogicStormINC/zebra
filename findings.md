@@ -1,5 +1,22 @@
 # Findings
 
+## CLOUD-CONTEXT-CON-01 - 2026-08-03
+
+- Context Materialization is an ephemeral read envelope, not a fourth source of
+  truth. Session History answers what happened, the active Context Capsule holds
+  resumable state, and PostgreSQL governed Memory supplies only confirmed,
+  unexpired facts.
+- The Core request pins the opaque deployment read scope, exact Session revision,
+  expected active Capsule ID, explicit Memory visibility query and read timestamp.
+  A result fails closed on stale revisions, deny-all scope, unordered History,
+  duplicate Memory IDs, expiry or non-confirmed Memory.
+- Generation identity is deterministic: Session revision plus active Capsule ID
+  plus sorted `(MemoryId, revision)` entries. Rebuild must reread authority; the
+  envelope is never a new Event, Capsule, Memory or database revision.
+- ADR-020 and `ContextMaterializationPort` deliberately stop before PostgreSQL
+  composition. `CLOUD-CONTEXT-PG-01` remains a locked successor; Runtime,
+  Worker/API selection, Desktop, SQLite, Redis and Mem0 stay outside scope.
+
 ## CLOUD-MEMORY-CON-01 - 2026-07-29
 
 - Cloud mutation requests now freeze namespace, Session identity and expected stream
