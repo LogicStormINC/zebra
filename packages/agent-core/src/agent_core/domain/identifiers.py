@@ -11,6 +11,10 @@ CorrelationId = NewType("CorrelationId", UUID)
 MemoryId = NewType("MemoryId", UUID)
 SubagentId = NewType("SubagentId", UUID)
 HandoffId = NewType("HandoffId", UUID)
+AgentDefinitionId = NewType("AgentDefinitionId", UUID)
+AgentDefinitionVersionId = NewType("AgentDefinitionVersionId", UUID)
+AgentVersionId = AgentDefinitionVersionId
+AgentReleaseId = NewType("AgentReleaseId", UUID)
 
 
 def new_session_id() -> SessionId:
@@ -51,3 +55,15 @@ def new_subagent_id() -> SubagentId:
 
 def new_handoff_id() -> HandoffId:
     return HandoffId(uuid4())
+
+
+def new_agent_definition_id() -> AgentDefinitionId:
+    return AgentDefinitionId(uuid4())
+
+
+def new_agent_definition_version_id() -> AgentDefinitionVersionId:
+    return AgentDefinitionVersionId(uuid4())
+
+
+def new_agent_release_id() -> AgentReleaseId:
+    return AgentReleaseId(uuid4())

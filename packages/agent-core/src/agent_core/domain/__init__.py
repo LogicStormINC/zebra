@@ -1,5 +1,14 @@
 """Domain models for Zebra Agent."""
 
+from agent_core.domain.agent_definitions import (
+    AgentDefinition,
+    AgentDefinitionScope,
+    AgentDefinitionVersion,
+    AgentRelease,
+    AgentReleaseStatus,
+    AgentReleaseTransitionError,
+    canonical_agent_definition_digest,
+)
 from agent_core.domain.agent_tasks import (
     AgentTask,
     ContextLifecycleController,
@@ -68,12 +77,12 @@ from agent_core.domain.cloud_artifact_requests import (
 )
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.context_materialization import (
+    MAX_CONTEXT_HISTORY_MESSAGES,
+    MAX_CONTEXT_MEMORY_ENTRIES,
     ContextMaterialization,
     ContextMaterializationGeneration,
     ContextMaterializationMode,
     ContextMaterializationRequest,
-    MAX_CONTEXT_HISTORY_MESSAGES,
-    MAX_CONTEXT_MEMORY_ENTRIES,
 )
 from agent_core.domain.delivery_audit import DeliveryAuditRecord
 from agent_core.domain.effect_dispatch import (
@@ -203,6 +212,13 @@ __all__ = [
     "MAX_CONTEXT_HISTORY_MESSAGES",
     "MAX_CONTEXT_MEMORY_ENTRIES",
     "AgentTask",
+    "AgentDefinition",
+    "AgentDefinitionScope",
+    "AgentDefinitionVersion",
+    "AgentRelease",
+    "AgentReleaseStatus",
+    "AgentReleaseTransitionError",
+    "canonical_agent_definition_digest",
     "AttachmentContextInput",
     "DeliveryAuditRecord",
     "ClarificationContext",
