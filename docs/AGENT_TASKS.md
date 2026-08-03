@@ -97,7 +97,7 @@
 - `AGENT-DEF-ADR-01` is `Done`; its accepted ADR-016 is merged into the cloud
   mainline and has unlocked the Core contract and its authority-snapshot successor.
 - `AGENT-DEF-CON-01` is `Done`: its provider-neutral Core Definition/Version/Release
-  models and Registry Port are merged into the cloud mainline. The next Ready task
+  models and Registry Port are merged into the cloud mainline. The active follow-up
   is the cloud-neutral Attempt authority snapshot contract; local SQLite Registry,
   PostgreSQL adapters and runtime wiring remain deferred or locked.
 - Cloud aggregate and Artifact task state is maintained in the cloud board below;
@@ -18312,13 +18312,14 @@ without adding release mutation, a marketplace or business user/tenant model.
 
 ### AGENT-AUTH-SNAPSHOT-01 - Durable Attempt Authority Snapshot Contract
 
-- Status: `Ready`
+- Status: `Review`
 - Owner: `Codex`
 - Branch: `codex/agent-authority-snapshot-01`
 - Worktree: `../zebra-agent-agent-authority-snapshot-01`
 - Depends on: `AGENT-DEF-CON-01` merged to `main`
 - Owned paths:
   `packages/agent-core/src/agent_core/domain/execution_authority.py`,
+  `packages/agent-core/src/agent_core/domain/execution_authority_support.py`,
   `packages/agent-core/src/agent_core/domain/events.py`,
   `packages/agent-core/src/agent_core/ports/execution_authority.py`,
   `packages/agent-core/src/agent_core/contracts/execution_authority.py`,
@@ -18327,7 +18328,7 @@ without adding release mutation, a marketplace or business user/tenant model.
   `apps/worker/src/zebra_agent_worker/runtime_authority.py`,
   `tests/test_execution_authority_snapshot_contract_matrix.py`,
   `tests/worker/test_execution_authority_snapshot.py`,
-  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
@@ -18339,6 +18340,9 @@ or effect scope hash is an external authority snapshot.
 
 - a schema-validated authority event is durable before model/tool execution
 - same-Attempt resume/failover revalidates expiry/revocation without expansion
+- every accepted revalidation carries a recoverable effective snapshot and later
+  revalidation starts from the latest durable effective snapshot; missing evidence
+  fails closed
 - a distinct new Attempt resolves a new snapshot and applies Zebra narrowing
 - tokens, Credentials and replayable secrets are never persisted
 - local trusted resolution has an explicit issuer/scope; external signed authority

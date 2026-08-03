@@ -1648,6 +1648,22 @@
   is the cloud-neutral durable Attempt authority snapshot contract; PostgreSQL
   Registry and runtime composition remain separate gates.
 
+## AGENT-AUTH-SNAPSHOT-01 - Durable Attempt Authority Snapshot Contract
+
+1. `completed` - Claim the authority snapshot card after the Core contract merge;
+   map existing Attempt start/resume paths and keep external verification behind a
+   resolver Port.
+2. `completed` - Add immutable authority/grant/limits schemas, canonical snapshot
+   digest and typed resolver/revalidation contracts without persisting credentials.
+3. `completed` - Add the schema-validated `EXECUTION_AUTHORITY_RESOLVED` event and
+   inject it before `HARNESS_ATTEMPT_STARTED` when a resolver is explicitly wired;
+   add recoverable latest-snapshot revalidation and preserve legacy local callers
+   until cloud composition supplies the resolver.
+4. `in_progress` - Focused Core/Worker contract matrices, static and regression
+   checks are green except for two inherited repository file-size violations;
+   prepare Review and merge closeout with the external-verifier fail-closed
+   boundary.
+
 ## ARCH-RUNTIME-V2-PLAN-01 - Runtime V2 Proposal Current-State Alignment
 
 1. `completed` - Compare every proposal lane with current docs, code and task evidence.

@@ -16,6 +16,10 @@ from agent_core.contracts.context_events import (
     ContextCompactedPayload,
     ContextContinuationSelectedPayload,
 )
+from agent_core.contracts.execution_authority import (
+    ExecutionAuthorityResolvedPayload,
+    ExecutionAuthorityRevalidatedPayload,
+)
 from agent_core.contracts.handoff_events import (
     SessionHandoffCommittedPayload,
     SessionHandoffReceivedPayload,
@@ -131,9 +135,7 @@ class TaskPreparedPayload(BaseModel):
 
     @field_validator("history_session_ids")
     @classmethod
-    def ensure_valid_history_session_ids(
-        cls, value: list[str] | None
-    ) -> list[str] | None:
+    def ensure_valid_history_session_ids(cls, value: list[str] | None) -> list[str] | None:
         return None if value is None else list(normalize_history_session_ids(value))
 
     @field_validator("max_attempts", "max_model_calls", "max_tool_calls")
@@ -360,9 +362,7 @@ class ClarificationRequestedPayload(BaseModel):
     response_schema: dict[str, Any] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
-    elicitation_source: str | None = Field(
-        default=None, exclude_if=lambda value: value is None
-    )
+    elicitation_source: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @field_validator("attempt_number")
     @classmethod
@@ -445,6 +445,8 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SUBAGENT_COMPLETED: SubagentLifecyclePayload,
     EventType.SUBAGENT_FAILED: SubagentLifecyclePayload,
     EventType.SUBAGENT_CANCELLED: SubagentLifecyclePayload,
+    EventType.EXECUTION_AUTHORITY_RESOLVED: ExecutionAuthorityResolvedPayload,
+    EventType.EXECUTION_AUTHORITY_REVALIDATED: ExecutionAuthorityRevalidatedPayload,
     EventType.MEMORY_CANDIDATE_EXTRACTED: MemoryCandidateExtractedPayload,
     EventType.MEMORY_REVIEW_RECORDED: MemoryReviewRecordedPayload,
 }

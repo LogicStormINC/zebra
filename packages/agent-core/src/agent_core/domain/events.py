@@ -35,6 +35,8 @@ class EventType(StrEnum):
     SUBAGENT_COMPLETED = "subagent_completed"
     SUBAGENT_FAILED = "subagent_failed"
     SUBAGENT_CANCELLED = "subagent_cancelled"
+    EXECUTION_AUTHORITY_RESOLVED = "execution_authority_resolved"
+    EXECUTION_AUTHORITY_REVALIDATED = "execution_authority_revalidated"
     HARNESS_ATTEMPT_STARTED = "harness_attempt_started"
     TOOL_CALL_PROPOSED = "tool_call_proposed"
     POLICY_DECISION_MADE = "policy_decision_made"

@@ -10,6 +10,7 @@ from agent_core.application import (
     MemoryCandidatePromotionService,
     SessionTitleService,
 )
+from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
 from agent_core.harness import (
@@ -20,6 +21,7 @@ from agent_core.harness import (
 )
 from agent_core.harness.models import HarnessEventDraft
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
+from agent_core.ports.execution_authority import ExecutionAuthorityResolverPort
 from agent_integrations import build_model_gateway
 from agent_security import (
     LocalPolicyEngine,
@@ -72,6 +74,7 @@ from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
 from zebra_agent_worker.runtime_authority import (
     close_tool_gateway,
+    persist_attempt_authority,
     persist_runtime_authority,
     runtime_cleanup_failure_result,
 )
@@ -94,7 +97,13 @@ class SessionExecutionService:
         worker_projection_transaction: WorkerProjectionTransactionPort | None = None,
         deployment_namespace: str | None = None,
         cloud_artifact_factory: artifact_runtime.CloudArtifactCoordinatorFactory | None = None,
+        execution_authority_resolver: ExecutionAuthorityResolverPort | None = None,
+        execution_authority_scope: OpaqueAuthorityScope | None = None,
     ) -> None:
+        if execution_authority_resolver is not None and execution_authority_scope is None:
+            raise ValueError(
+                "execution_authority_scope is required when an authority resolver is configured"
+            )
         cloud_artifact_factory = artifact_runtime.validate_cloud_artifact_factory(
             cloud_artifact_factory,
             worker_projection_transaction,
@@ -146,6 +155,8 @@ class SessionExecutionService:
             deployment_namespace=deployment_namespace,
         )
         self._cloud_artifact_factory = cloud_artifact_factory
+        self._execution_authority_resolver = execution_authority_resolver
+        self._execution_authority_scope = execution_authority_scope
 
     def execute_session(
         self,
@@ -191,9 +202,7 @@ class SessionExecutionService:
     ) -> ExecutedSession:
         session_id = claimed.lease.session_id
         cloud_artifacts = (
-            self._cloud_artifact_factory(session_id)
-            if self._cloud_artifact_factory
-            else None
+            self._cloud_artifact_factory(session_id) if self._cloud_artifact_factory else None
         )
         try:
             restored = self._control_service.restore_suspended_workspace(
@@ -243,6 +252,29 @@ class SessionExecutionService:
             raise
         runtime_handle = None
         effect_recorder: list[DurableHarnessEventRecorder] = []
+        authority_recorder = self._projection_recorder_factory.build(
+            session=claimed.recovery.session,
+            workspace=claimed.recovery.workspace,
+            lease=claimed.lease,
+            ownership_check=ownership_check,
+        )
+        try:
+            if persist_attempt_authority(
+                authority_recorder,
+                self._execution_authority_resolver,
+                self._execution_authority_scope,
+                session_id=session_id,
+                existing_events=session_events,
+                attempt_number=1,
+                created_at=started_at,
+            ):
+                claimed = ClaimedSession(
+                    recovery=self._recovery_service.recover_session(session_id),
+                    lease=claimed.lease,
+                )
+                session_events = self._event_store.list_for_session(session_id)
+        except ValueError as exc:
+            raise WorkerExecutionError(str(exc)) from exc
         try:
             runtime, prepared_runtime = runtime_setup.build_prepared_runtime(
                 self._settings,

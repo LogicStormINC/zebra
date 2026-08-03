@@ -323,7 +323,11 @@
   `355/355` focused Core tests and changed static checks passing. The next Ready
   task is the cloud-neutral `AGENT-AUTH-SNAPSHOT-01`; local SQLite Registry work is
   intentionally deferred on this cloud microservice mainline, while storage,
-  API and runtime wiring remain locked. The implementation order is
+  API and runtime wiring remain locked. `AGENT-AUTH-SNAPSHOT-01` is now the
+  active cloud-neutral follow-up and owns only the schema, resolver Port, durable
+  pre-Attempt event and narrowly injected Worker seam. Its implementation and
+  recoverable latest-snapshot revalidation are complete in the isolated worktree;
+  review/merge evidence is pending. The implementation order is
   `CON -> AUTH`, then `{DRAFT,AUTH} -> BIND -> MEM -> TRUST -> EVAL -> PUB`;
   PostgreSQL Registry remains a separately gated adapter.
 - Web Intelligence planning: `WEB-INT-PLAN-01` is a documentation-only review

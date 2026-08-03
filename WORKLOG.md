@@ -1,5 +1,20 @@
 # Progress Log
 
+## 2026-08-03 - AGENT-AUTH-SNAPSHOT-01 implementation
+
+- Continued the registered cloud-neutral authority task after the sidebar
+  decision review confirmed it is the only legal active mainline action.
+- Added immutable Attempt authority resolution/revalidation contracts, durable
+  resolved/revalidated events and an explicit Worker seam. External authority
+  verification remains fail-closed unless a resolver is configured.
+- Kept Runtime, PostgreSQL Registry, Worker composition, Provider HTTP, Desktop,
+  SQLite, Redis and Mem0 consumer selection locked.
+- Focused authority tests pass `6/6`; Worker suite passes `93 passed, 13 skipped`;
+  Core suite passes `355/355`; excluded-baseline Mypy passes `501` source files,
+  changed Ruff/format and Eval `10/10` pass. The full suite is `2031 passed,
+  211 skipped, 1 failed` only because of the two pre-existing file-size violations
+  outside this task.
+
 ## 2026-08-03 - CLOUD-CONTEXT-PG-01 formal closeout
 
 - The host rerun of
