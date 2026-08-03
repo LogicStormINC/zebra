@@ -603,14 +603,14 @@
 
 ## CLOUD-SESSION-HISTORY-PG-01 - PostgreSQL Session History Read Model
 
-1. `in_progress` - Implement a PostgreSQL read-only adapter over the existing Event
+1. `completed` - Implement a PostgreSQL read-only adapter over the existing Event
    and Session Projection tables, requiring an injected deployment namespace and
    `OpaqueAuthorityScope`.
-2. `pending` - Preserve SQLite browse/search/read ordering, safe event filtering,
+2. `completed` - Preserve SQLite browse/search/read ordering, safe event filtering,
    pagination bounds, snippets and explicit allow-list/deny-all behavior.
-3. `pending` - Add a real PostgreSQL Compose runner and parity/isolation tests;
+3. `completed` - Add a real PostgreSQL Compose runner and parity/isolation tests;
    do not add a write aggregate, Lease fence or Store backend selector.
-4. `pending` - Review and close the card only after focused local evidence and
+4. `in_progress` - Review and close the card only after focused local evidence and
    host PostgreSQL evidence are recorded; leave Provider Continuation locked.
 
 ### Decisions
@@ -622,6 +622,19 @@
   derives it from the DSN or a database query.
 - Lease fencing is not applicable to this read-only path; namespace and explicit
   session scope are the isolation boundary.
+
+### Handoff
+
+- The adapter, row decoder, exports, focused tests and isolated Compose runner are
+  ready for review. Local focused validation is `13 passed, 3 skipped`; changed
+  Ruff/format/strict Mypy, shell syntax, diff and Eval `10/10` pass.
+- The only remaining acceptance gate is host execution of
+  `tests/compose/session_history/run-postgres-tests.sh` with the
+  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS` marker. The sandbox cannot
+  access the host Docker socket, so no PostgreSQL service was started here.
+- No `ControlPlaneStores`, API/Worker composition, Runtime/Desktop path,
+  PostgreSQL migration, Redis/Mem0 integration or Provider Continuation work was
+  changed. Keep the card in `Review` until the host result is returned.
 
 ## CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 

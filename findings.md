@@ -670,6 +670,27 @@
   successors locked. The scope contract is a prerequisite, not a backend
   selection or a claim that external Host authority verification is complete.
 
+## CLOUD-SESSION-HISTORY-PG-01 - 2026-08-03
+
+- Session History is a read composition over the existing namespace-scoped
+  `session_projections` and `session_events` tables. It does not create a second
+  authority table, write aggregate, migration or recovery source.
+- Every query carries the injected `deployment_namespace`; the opaque Core scope
+  supplies the optional canonical UUID allow-list. `None` is trusted full-scope,
+  while an empty tuple is an explicit deny-all. External membership and namespace
+  mapping remain trusted composition responsibilities.
+- PostgreSQL JSONB rows are decoded through one small row helper. Only user and
+  model message event types are exposed; tool and arbitrary payload fields stay
+  out of snippets and message content. Browse/search/read order, bounds and
+  pagination mirror the existing SQLite behavior.
+- Local focused validation passes `13 passed, 3 skipped`; changed Ruff/format,
+  strict Mypy for the new adapter/row modules, shell syntax, diff and Eval `10/10`
+  pass. The three PostgreSQL tests are skipped without a DSN.
+- The card remains in `Review` until the host runs
+  `tests/compose/session_history/run-postgres-tests.sh` and returns
+  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS`. No ControlPlaneStores,
+  API/Worker, Runtime/Desktop, Redis, Mem0 or Provider Continuation path changed.
+
 ## CLOUD-AGG-WORKSPACE-PG-01 - 2026-07-29
 
 - Workspace remains an Event-derived read model. Fenced Worker commits therefore

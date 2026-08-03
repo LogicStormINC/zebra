@@ -92,9 +92,10 @@
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
 - Cloud aggregate and Artifact task state is maintained in the cloud board below;
-  `CLOUD-SCOPE-CON-01` is now the sole scope-boundary card in `Review`. All
-  successor adapters remain `Locked` until this contract is accepted and the
-  maintainer explicitly activates one path-bounded adapter.
+  `CLOUD-SCOPE-CON-01` is `Done`, and the explicitly activated
+  `CLOUD-SESSION-HISTORY-PG-01` is the current read-only adapter in `Review`
+  pending host PostgreSQL evidence. Provider Continuation and all other
+  successor adapters remain `Locked`.
 
 ## Context Continuity And Governed Memory Board
 
@@ -2536,7 +2537,7 @@ external membership.
 
 ### CLOUD-SESSION-HISTORY-PG-01 - PostgreSQL Session History Read Model
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Depends on: PostgreSQL Event/Session Projection and completed
   `CLOUD-SCOPE-CON-01`; the trusted composition supplies the approved
@@ -2551,6 +2552,28 @@ external membership.
 - Acceptance: SQLite/PG behavior, pagination, safety filters, stable ordering and
   allowed-session isolation match; Lease fencing is explicitly not applicable;
   no `ControlPlaneStores` backend selector is changed.
+
+#### Validation And Handoff
+
+- [x] The adapter and JSONB row decoding remain read-only and under the repository
+  file-size target; no migration, write aggregate, Lease fence, Store selector,
+  Runtime, Desktop, Redis or Mem0 path changed.
+- [x] Local focused coverage passes `13 passed, 3 skipped`: PostgreSQL tests are
+  environment-gated without `ZEBRA_TEST_POSTGRES_DSN`, while SQLite parity and
+  the shared scope contract run locally.
+- [x] Changed-path Ruff, format, strict Mypy for the new adapter/row modules,
+  shell syntax and `git diff --check` pass; release Eval passes `10/10`.
+- [ ] Host verification must run
+  `tests/compose/session_history/run-postgres-tests.sh` and return the named
+  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS` marker before closeout.
+
+#### Review Boundary
+
+- The adapter consumes the trusted deployment namespace plus
+  `OpaqueAuthorityScope`; it never derives external membership or a business
+  Tenant from the DSN or database.
+- This card does not select PostgreSQL in `ControlPlaneStores`, wire API/Worker
+  startup, or unlock Provider Continuation. Those remain separately gated.
 
 ### CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
 

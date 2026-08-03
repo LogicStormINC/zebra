@@ -1,5 +1,15 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-SESSION-HISTORY-PG-01 implementation handoff
+
+- Added the namespace-scoped PostgreSQL Session History adapter, JSONB row
+  decoding, public exports, parity/isolation tests and an isolated Compose runner.
+- Local validation is `13 passed, 3 skipped`; changed static checks, shell syntax,
+  diff check and Eval `10/10` pass. The card moved to `Review` pending host
+  Compose evidence.
+- Kept `ControlPlaneStores`, API/Worker composition, Runtime, Provider
+  Continuation, Desktop, Redis, Mem0 and Host verifier unchanged.
+
 ## 2026-08-03 - CLOUD-SESSION-HISTORY-PG-01 activation
 
 - Activated the next low-risk cloud slice after `CLOUD-SCOPE-CON-01` closed:
