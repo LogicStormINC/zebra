@@ -320,7 +320,7 @@
   authority and preserves ADR-012's opaque external namespace. Code audit also
   confirmed that external Attempt authority snapshots and immutable Skill content
   snapshots are not yet implemented; dedicated follow-up tasks own those gaps.
-  `AGENT-DEF-CON-01` is the only Ready follow-up and owns the provider-neutral
+  `AGENT-DEF-CON-01` is the active follow-up and owns the provider-neutral
   Core Definition/Version/Release contract; storage and runtime remain locked.
   The implementation order is `CON -> STO -> {PG,DRAFT}`, `CON -> AUTH`, then
   `{DRAFT,AUTH} -> BIND -> MEM -> TRUST -> EVAL -> PUB`.

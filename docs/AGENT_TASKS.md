@@ -94,7 +94,7 @@
   maintainer activation.
 - `AGENT-DEF-ADR-01` is `Done`; its accepted ADR-016 is merged into the cloud
   mainline and unlocks only the Core contract task below.
-- `AGENT-DEF-CON-01` is the current `Ready` task for the provider-neutral Core
+- `AGENT-DEF-CON-01` is the current `In Progress` task for the provider-neutral Core
   Definition/Version/Release models and Registry Port. No storage or runtime
   implementation is activated by this card.
 - Cloud aggregate and Artifact task state is maintained in the cloud board below;
@@ -18187,7 +18187,7 @@ Task/Attempt snapshot split before implementation begins.
 
 ### AGENT-DEF-CON-01 - Core Definition And Registry Contracts
 
-- Status: `Ready`
+- Status: `In Progress`
 - Owner: `Codex`
 - Branch: `codex/agent-def-con-01`
 - Worktree: `../zebra-agent-agent-def-con-01`
