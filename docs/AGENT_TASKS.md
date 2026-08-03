@@ -93,9 +93,9 @@
   maintainer activation.
 - Cloud aggregate and Artifact task state is maintained in the cloud board below;
   `CLOUD-SCOPE-CON-01` is `Done`, and the explicitly activated
-  `CLOUD-SESSION-HISTORY-PG-01` is the current read-only adapter in `Review`
-  pending host PostgreSQL evidence. Provider Continuation and all other
-  successor adapters remain `Locked`.
+  `CLOUD-SESSION-HISTORY-PG-01` is now `Done` after its host PostgreSQL
+  evidence passed. Provider Continuation and all other successor adapters
+  remain `Locked`.
 
 ## Context Continuity And Governed Memory Board
 
@@ -2537,7 +2537,7 @@ external membership.
 
 ### CLOUD-SESSION-HISTORY-PG-01 - PostgreSQL Session History Read Model
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Depends on: PostgreSQL Event/Session Projection and completed
   `CLOUD-SCOPE-CON-01`; the trusted composition supplies the approved
@@ -2563,12 +2563,13 @@ external membership.
   the shared scope contract run locally.
 - [x] Changed-path Ruff, format, strict Mypy for the new adapter/row modules,
   shell syntax and `git diff --check` pass; release Eval passes `10/10`.
-- [ ] Host verification must run
-  `tests/compose/session_history/run-postgres-tests.sh` and return the named
-  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS` marker before closeout.
+- [x] Host verification ran through
+  `tests/compose/session_history/run-postgres-tests.sh` and returned
+  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS` with `3 passed`; the
+  Compose container, volume and network were removed by the runner.
 - The first host attempt reached PostgreSQL but stopped in the test fixture
   because `TOOL_EXECUTION_COMPLETED` lacked required payload fields; the fixture
-  is corrected in the Review follow-up and requires a clean rerun.
+  was corrected in the Review follow-up before the passing rerun.
 
 #### Review Boundary
 
@@ -2577,6 +2578,19 @@ external membership.
   Tenant from the DSN or database.
 - This card does not select PostgreSQL in `ControlPlaneStores`, wire API/Worker
   startup, or unlock Provider Continuation. Those remain separately gated.
+
+#### Closeout
+
+- Formal review accepted the read-only adapter and fixture correction at
+  `90e27497` and `da53b476`. The adapter keeps every Event/Projection query
+  namespace-scoped and consumes only the trusted `OpaqueAuthorityScope`.
+- Accepted evidence: local focused `13 passed, 3 skipped`, host PostgreSQL
+  Compose `3 passed`, changed Ruff/format/strict Mypy, shell syntax, diff check
+  and Eval `10/10`. `make check` retains only the two inherited file-size
+  violations outside this card.
+- No migration, write aggregate, Lease fence, Store selector, Runtime, Worker,
+  Provider HTTP, Desktop, Redis or Mem0 composition changed. The next adapter
+  still requires an explicit activation.
 
 ### CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
 

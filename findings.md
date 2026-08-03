@@ -689,11 +689,13 @@
 - The first host Compose run failed in the test fixture before adapter assertions:
   `TOOL_EXECUTION_COMPLETED` was missing required contract fields. The fixture
   now supplies the existing valid payload shape; no production or adapter code
-  changed. A clean host rerun is still required.
-- The card remains in `Review` until the host runs
-  `tests/compose/session_history/run-postgres-tests.sh` and returns
-  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS`. No ControlPlaneStores,
-  API/Worker, Runtime/Desktop, Redis, Mem0 or Provider Continuation path changed.
+  changed. The clean host rerun passed `3/3` and returned
+  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS`; the runner removed its
+  container, volume and network.
+- Formal review accepted the card as `Done` with local focused `13 passed,
+  3 skipped`, host `3 passed`, changed static checks and Eval `10/10`. No
+  ControlPlaneStores, API/Worker, Runtime/Desktop, Redis, Mem0 or Provider
+  Continuation path changed.
 
 ## CLOUD-AGG-WORKSPACE-PG-01 - 2026-07-29
 

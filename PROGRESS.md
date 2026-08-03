@@ -123,15 +123,13 @@
   regressions `32/32` and Eval `10/10` pass; only the two inherited file-size
   violations keep `make check` red. Provider Continuation and Session History
   remain independently locked pending explicit adapter activation.
-- `CLOUD-SESSION-HISTORY-PG-01` is the explicitly activated cloud slice now in
-  `Review`. It adds only a namespace-scoped PostgreSQL read adapter, JSONB row
-  decoding, parity/isolation tests and an isolated Compose runner. Local focused
-  validation is `13 passed, 3 skipped`, changed static checks and Eval `10/10`
-  pass. The first host run reached PostgreSQL but exposed an incomplete test
-  Event payload before adapter assertions; the fixture is corrected and host
-  Compose remains the sole closeout gate. Provider Continuation, complete Store
-  composition, Runtime selection and external Host verification remain out of
-  scope.
+- `CLOUD-SESSION-HISTORY-PG-01` is now `Done`. It adds only a namespace-scoped
+  PostgreSQL read adapter, JSONB row decoding, parity/isolation tests and an
+  isolated Compose runner. Local focused validation is `13 passed, 3 skipped`,
+  host PostgreSQL Compose validation is `3 passed` with
+  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS`, changed static checks and
+  Eval `10/10` pass. Provider Continuation, complete Store composition, Runtime
+  selection and external Host verification remain out of scope.
 - Completed and formally closed Workspace adapter task: `CLOUD-AGG-WORKSPACE-PG-01`
   adds the additive
   PostgreSQL v4 projection schema and an injected Worker transaction that validates

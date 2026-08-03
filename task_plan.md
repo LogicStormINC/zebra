@@ -610,7 +610,7 @@
    pagination bounds, snippets and explicit allow-list/deny-all behavior.
 3. `completed` - Add a real PostgreSQL Compose runner and parity/isolation tests;
    do not add a write aggregate, Lease fence or Store backend selector.
-4. `in_progress` - Review and close the card only after focused local evidence and
+4. `completed` - Review and close the card only after focused local evidence and
    host PostgreSQL evidence are recorded; leave Provider Continuation locked.
 
 ### Decisions
@@ -628,15 +628,23 @@
 - The adapter, row decoder, exports, focused tests and isolated Compose runner are
   ready for review. Local focused validation is `13 passed, 3 skipped`; changed
   Ruff/format/strict Mypy, shell syntax, diff and Eval `10/10` pass.
-- The only remaining acceptance gate is host execution of
-  `tests/compose/session_history/run-postgres-tests.sh` with the
-  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS` marker. The first host run
-  reached PostgreSQL but failed in the test fixture because its tool Event
-  payload omitted required contract fields; the fixture is corrected. The
-  sandbox cannot access the host Docker socket, so no rerun was started here.
+- The first host run reached PostgreSQL but failed in the test fixture because
+  its tool Event payload omitted required contract fields. The fixture was
+  corrected in `da53b476`, then the host rerun passed `3/3` and emitted
+  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS`; Compose cleanup removed its
+  container, volume and network.
 - No `ControlPlaneStores`, API/Worker composition, Runtime/Desktop path,
   PostgreSQL migration, Redis/Mem0 integration or Provider Continuation work was
-  changed. Keep the card in `Review` until the host result is returned.
+  changed. The card is closed as `Done`; Provider Continuation remains locked.
+
+### Closeout
+
+- Review accepted the adapter implementation at `90e27497` and the valid Event
+  fixture correction at `da53b476`. The card's local and host evidence is now
+  complete.
+- This closeout records read-only Session History readiness only. It does not
+  select PostgreSQL in `ControlPlaneStores` or unlock Runtime, Worker, Provider
+  HTTP, Desktop, Redis, Mem0 or any other successor adapter.
 
 ## CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 

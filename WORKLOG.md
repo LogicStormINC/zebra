@@ -1,5 +1,19 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-SESSION-HISTORY-PG-01 formal closeout
+
+- The corrected host rerun used
+  `tests/compose/session_history/run-postgres-tests.sh` against the isolated
+  PostgreSQL 17.5 profile and passed `3/3`, emitting
+  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS`.
+- The runner removed the test container, volume and network. Local focused
+  validation remains `13 passed, 3 skipped`; Eval is `10/10` and changed static
+  checks remain green.
+- Accepted the adapter implementation and the test-fixture correction, then
+  moved `CLOUD-SESSION-HISTORY-PG-01` from `Review` to `Done`. Runtime, Worker,
+  Provider HTTP, Desktop, SQLite, Redis, Mem0 and Provider Continuation remain
+  locked or unselected.
+
 ## 2026-08-03 - CLOUD-SESSION-HISTORY-PG-01 host failure triage
 
 - The first host Compose run reached PostgreSQL and executed the focused suite,
