@@ -1,5 +1,37 @@
 # Task Plan
 
+## CLOUD-PROFILE-COMPOSITION-CON-01 - Explicit Cloud/Local Profile Composition Contract (Done)
+
+1. `completed` - Trace the API and Worker composition roots and confirm that both
+   still call `sqlite_control_plane_stores(...)` when no stores bundle is injected.
+2. `completed` - Map the existing `PostgresControlPlaneStores` requirements and the
+   `model_calls`/`tool_runs` versus `model_tool_projections` compatibility seam.
+3. `completed` - Ask the sidebar ChatGPT to adjudicate profile semantics, fail-closed
+   behavior and the exact implementation boundary.
+4. `completed` - Record the sidebar `ACTIVATE-BLOCKED` result and register this
+   governance-only prerequisite; mark `CLOUD-COMPOSE-APP-01` blocked until its
+   dependencies are repaired.
+5. `completed` - Complete contract review; remove the unrelated missing
+   `CLOUD-LIVE-01` dependency and record that a separately authorized
+   implementation slice is still required before production code changes.
+
+### Boundary
+
+- Writable paths for this planning slice were limited to `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`, `task_plan.md` and `docs/Zebra Cloud 主线当前状态与后续工作.md`.
+- No API/Worker code, config loader, storage adapter, migration, test, Compose,
+  Runtime, Redis, Mem0, Provider HTTP or Trench integration is authorized.
+- The existing local SQLite profile remains unchanged; cloud selection must never
+  silently fall back to SQLite.
+
+### Review decision
+
+- `CONTRACT-ACCEPTED`: sidebar approved `Review -> Done` for the governance
+  contract and removed the unrelated `CLOUD-LIVE-01` dependency.
+- `implementation_authorized: false`; no parent aggregate or runtime gate is
+  unlocked. `CLOUD-COMPOSE-APP-01` remains implementation-blocked until a
+  separately authorized profile-composition successor is activated.
+
 ## CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01 - Handoff And Dispatch Mutation Authority Conformance Audit (Review)
 
 1. `completed` - Claim the governance-only audit on

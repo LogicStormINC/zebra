@@ -1423,16 +1423,70 @@ deletion and index rebuilds before production activation.
 - Mem0 or its PostgreSQL loss never fails a Run or changes authoritative memory state
 - no second Zebra fact source or Graphiti fallback is introduced
 
+### CLOUD-PROFILE-COMPOSITION-CON-01 - Explicit Cloud/Local Profile Composition Contract
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE / APP / STORAGE / SRE`
+- Depends on: merged `CLOUD-CONTROL-PLANE-PG-01` and the existing storage
+  composition seam
+- Branch: `TBD`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`,
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`
+
+#### Goal
+
+Freeze the smallest contract that lets API and Worker select one coherent cloud
+or local storage profile. The contract must make `ZEBRA_PROFILE=cloud` explicit,
+preserve the local SQLite default, reject an incomplete cloud bundle, and define
+the compatibility seam that exposes PostgreSQL's event-derived model/tool
+projection to callers that currently use `model_calls` and `tool_runs`.
+
+#### Acceptance
+
+- `ZEBRA_PROFILE=cloud` requires a valid PostgreSQL DSN, deployment namespace,
+  memory cursor signing key, object-store reader and bounded history/continuation
+  scopes; missing or invalid cloud configuration fails closed without SQLite fallback
+- an unset profile or `ZEBRA_PROFILE=local` continues to use the existing
+  `sqlite_control_plane_stores(database_path)` behavior with no local schema or
+  default change
+- API and Worker share one explicit stores-injection contract; no constructor
+  silently creates a second backend or dual-writes
+- the compatibility seam maps `model_calls` and `tool_runs` to the existing
+  PostgreSQL `model_tool_projections` adapter without duplicating an authority store
+- migration/DDL ownership, Redis live fan-out, Provider HTTP, Trench integration,
+  application Compose and production cutover remain outside this contract
+- this card is governance-only until a new sidebar review authorizes its successor;
+  no production code, tests or runtime selector changes are allowed here
+
+#### Closeout
+
+- Sidebar ChatGPT returned `CONTRACT-ACCEPTED` and approved `Review -> Done`.
+- `CLOUD-LIVE-01` is removed from this governance card's dependencies because the
+  contract does not cover live runtime or deployment. Any future live runtime task
+  must register its own dependency card before activation.
+- `implementation_authorized` and `successor_activation_authorized` remain `false`;
+  `CLOUD-COMPOSE-APP-01` stays `Blocked` and no aggregate or runtime gate changes.
+
 ### CLOUD-COMPOSE-APP-01 - Zebra Application Container Overlay
 
-- Status: `Locked`
+- Status: `Blocked`
 - Owner: `UNASSIGNED`
 - Suggested role: `SRE / APP / CORE`
 - Depends on: merged `CLOUD-COMPOSE-INFRA-01`, `CLOUD-PG-01`,
-  `CLOUD-LEASE-01`, `CLOUD-ART-01` and `CLOUD-LIVE-01`
+  `CLOUD-LEASE-01`, `CLOUD-ART-01`, `CLOUD-PROFILE-COMPOSITION-CON-01` and
+  `CLOUD-LIVE-01` (currently not registered)
 - Branch: `TBD`
 - Candidate owned paths: `docker/compose.application.yml`, one multi-target Zebra
   Dockerfile, container smoke tests, required config composition and governance records
+
+#### Block reason
+
+The profile contract is now `Done`, so that prerequisite is cleared. The card is
+still implementation-blocked: it needs a separately authorized implementation
+slice, and any future live runtime dependency must be registered before activation.
+It must not be used as an implicit authorization to change API/Worker startup or
+to unlock any aggregate fencing gate.
 
 #### Goal
 

@@ -74,6 +74,14 @@ API/Worker 微服务组合。当前状态是“云端事实存储和聚合能力
 当前 API/Worker 仍会回退到 `sqlite_control_plane_stores(database_path)`。因此
 PostgreSQL Adapter 已存在，不代表云端运行时已经选用 PostgreSQL。
 
+本次复核确认该问题是真实缺口，但侧边栏返回 `ACTIVATE-BLOCKED`：在 API/Worker
+接线前必须先完成治理型 `CLOUD-PROFILE-COMPOSITION-CON-01`，冻结
+`ZEBRA_PROFILE=cloud` 的显式选择、local SQLite 默认、缺失配置时的 fail-closed
+规则，以及 `model_calls`/`tool_runs` 到 PostgreSQL `model_tool_projections` 的
+兼容接缝。该 contract 已由侧边栏接受并关闭为 `Done`；`CLOUD-LIVE-01` 已从
+contract 依赖中移除，因为本卡不涉及 live runtime。现有
+`CLOUD-COMPOSE-APP-01` 仍为实现 `Blocked`，不能被隐式激活。
+
 最近完成的云端主线任务是
 `CLOUD-DELIVERY-TXN-PG-01`。其实施边界见
 [`Cloud Delivery Transaction PostgreSQL Plan`](./architecture/cloud-delivery-txn-pg-plan.md)。
@@ -82,23 +90,26 @@ PostgreSQL Adapter 已存在，不代表云端运行时已经选用 PostgreSQL�
 
 当前主线后续任务：
 
-1. `CLOUD-CONTROL-PLANE-PG-01`：已由侧边栏批准并完成 `Done`，交付
+1. `CLOUD-PROFILE-COMPOSITION-CON-01`：已由侧边栏接受并关闭为 `Done`，仅登记显式
+   cloud/local profile contract、API/Worker stores 注入边界和 model/tool
+   compatibility seam；sidebar 未授权任何生产代码或运行时选择。
+2. `CLOUD-CONTROL-PLANE-PG-01`：已由侧边栏批准并完成 `Done`，交付
    cloud-only `CloudControlPlane`、`PostgresControlPlaneStores` 存储组合、迁移和
    聚焦验证；现有本地 `ControlPlaneStores` 不变，API/Worker 接线与 Runtime 选择
    仍是后续门禁。
-2. `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01`：Context lifecycle 的治理/审计型
+3. `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01`：Context lifecycle 的治理/审计型
    fencing conformance card，已由侧边栏批准关闭为 `Done`。
-3. `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`：修复行政 Context activation 的
+4. `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`：修复行政 Context activation 的
    Event type 与 capsule binding Store-level 缺口，已由侧边栏批准关闭为
    `Done`；Store guard、三类零写入回归和真实 PostgreSQL `18/18` 矩阵均已
    完成。
-4. `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01`：当前唯一进行中的治理型
+5. `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01`：当前唯一进行中的治理型
    子任务，审计 Handoff/dispatch 的 WorkerMutationAuthority、LeaseFence、
    身份绑定、零写入、并发、重放、命名空间隔离和事务发布边界。该卡当前为
    `Review`，审计结果为 `BLOCK-GAP`；实现代码、测试、迁移、Compose 和运行时
    选择均不在授权范围内。
 
-5. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
+6. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
    在所有子聚合 conformance card 完成前继续保持 `Locked`。
 
 当前 `CLOUD-CONTROL-PLANE-PG-01` 与 `CLOUD-DELIVERY-TXN-PG-01` 均为 `Done`；
@@ -106,11 +117,15 @@ Context conformance 审计及其 semantic successor 均为 `Done`，
 `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 已进入 `Review`，审计结果为
 `BLOCK-GAP`；父 fencing gate 仍为 `Locked`，因为其他 aggregate fencing cards
 尚未闭合。Handoff/dispatch 实现 successor 仍为 `Locked`，不能顺带激活
-API/Worker、Runtime selector 或应用 Compose。
+API/Worker、Runtime selector 或应用 Compose。API/Worker 运行时切换还受
+`CLOUD-PROFILE-COMPOSITION-CON-01` 已完成，但 `CLOUD-COMPOSE-APP-01` 当前仍为
+实现 `Blocked`，等待单独授权的 API/Worker composition slice；本次 contract
+关闭不改变任何 runtime gate。
 
 ### Docker 应用层与在线事件
 
-- `docker/compose.application.yml` 目前不存在。
+- `docker/compose.application.yml` 目前不存在；其登记卡
+  `CLOUD-COMPOSE-APP-01` 当前为 `Blocked`，不能作为 API/Worker 接线授权。
 - Zebra migration、API、Worker 三类主容器尚未建立。
 - Redis 目前只有依赖容器，没有 replay-plus-tail 的 live fan-out Adapter。
 - PostgreSQL/MinIO/Redis 的备份、PITR、恢复、回滚、RPO/RTO 和多 Worker 故障演练
@@ -186,21 +201,24 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 2. [x] 实施并关闭已激活的 `CLOUD-PROVIDER-CONT-PG-01`（迁移 v13、PostgreSQL
    adapter、云端 Worker aggregate seam 和真实 Compose 证据）。实现提交为
    `39bbe444`，复核修复为 `abd7a7f0`，sidebar closeout 已接受。
-3. 完成 cloud-only `CloudControlPlane` / `PostgresControlPlaneStores` 存储组合；
+3. [x] 完成并关闭 `CLOUD-PROFILE-COMPOSITION-CON-01`，冻结 explicit
+   cloud/local profile、fail-closed 和 model/tool compatibility seam；不授权
+   API/Worker 实现或 runtime activation。
+4. 完成 cloud-only `CloudControlPlane` / `PostgresControlPlaneStores` 存储组合；
    再由独立 API/Worker 任务实现 SQLite/Cloud profile 选择。
-4. 完成 `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` 审计，并由
+5. 完成 `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` 审计，并由
    `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` 修复已确认的 Store 语义缺口；两张卡
    均已由侧边栏 closeout 为 `Done`。
-5. [review] 完成 `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 治理审计；sidebar
+6. [review] 完成 `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 治理审计；sidebar
    已批准 `Planning -> Review`，但结果为 `BLOCK-GAP`。reserve/abort authority、
    dispatch revision/replay/race/namespace zero-write 及可复现 PostgreSQL
    runner 仍是后续门禁，不自动激活实现。
-6. 完成其余 aggregate fencing conformance 与真实 PostgreSQL 证据，再评估
+7. 完成其余 aggregate fencing conformance 与真实 PostgreSQL 证据，再评估
    `CLOUD-AGG-FENCE-01` 激活。
-7. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
-8. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
-9. 再激活 Host/AG-UI/Trench read-only vertical slice。
-10. 之后才进入 Frontend、Analysis、Writeback 和 GA。
+8. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
+9. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
+10. 再激活 Host/AG-UI/Trench read-only vertical slice。
+11. 之后才进入 Frontend、Analysis、Writeback 和 GA。
 
 ## 当前治理门
 

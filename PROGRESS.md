@@ -16,6 +16,15 @@
   mapping remains a later gate. `CLOUD-DELIVERY-TXN-PG-01` is also merged to the
   cloud mainline at `9ec52b16` and recorded as `Done`; its API/Worker wiring,
   runtime selection and external execution remain out of scope.
+- Sidebar review of the requested API/Worker PostgreSQL switch returned
+  `ACTIVATE-BLOCKED`: the defect is confirmed, but implementation is not authorized
+  while the explicit profile contract and dependency registry are incomplete.
+  The follow-up contract review returned `CONTRACT-ACCEPTED` and closed
+  `CLOUD-PROFILE-COMPOSITION-CON-01` as `Done`; its `CLOUD-LIVE-01` dependency was
+  removed because the contract has no live-runtime scope. `CLOUD-COMPOSE-APP-01`
+  remains implementation-`Blocked` pending a separately authorized slice. Local
+  SQLite remains the default and cloud must fail closed rather than fall back to
+  SQLite.
 - Context fencing conformance child `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` is
   now `Done` on its governance worktree. Its Store-level semantic gap was closed
   by `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`, which is also `Done` after sidebar
