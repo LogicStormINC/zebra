@@ -2086,8 +2086,8 @@ cloud mainline and is not built or changed by these cards.
 - Branch: `codex/cloud-agg-ctx-admin-pg-01`
 - Depends on: `CLOUD-AGG-CTX-PG-01` and `CLOUD-AGG-WORKSPACE-PG-01`
 - Worktree: `../zebra-cloud-ctx-admin-pg-01`
-- Owned paths: `apps/api/src/zebra_agent_api/{app,api_session_read_mixin,http,session_context_control,session_context_recovery}.py`,
-  `tests/api/{test_session_context_control,test_api_storage_composition,test_session_context_recovery_postgres}.py`, focused
+- Owned paths: `apps/api/src/zebra_agent_api/{app,api_session_read_mixin,http,session_context_control,session_context_recovery,session_context_postgres_recovery}.py`,
+  `tests/api/{test_session_context_control,test_api_storage_composition,test_session_context_recovery_postgres,test_postgres_context_recovery}.py`, focused
   PostgreSQL Context recovery tests and runner,
   `packages/agent-storage/src/agent_storage/postgres/{context_lifecycle,context_authority}.py`,
   and this task's governance records

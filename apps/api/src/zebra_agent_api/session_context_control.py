@@ -17,14 +17,16 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_storage import (
     ControlPlaneStores,
+    PostgresContextLifecycleStore,
     sqlite_control_plane_stores,
 )
 
-from zebra_agent_api.responses import ApiResponse, bad_request, conflict
+from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.session_context_inspection import (
     context_occupancy as _context_occupancy,
 )
 from zebra_agent_api.session_context_inspection import estimate_tokens as _estimate_tokens
+from zebra_agent_api.session_context_postgres_recovery import commit_postgres_context_recovery
 from zebra_agent_api.session_context_recovery import commit_administrative_recovery
 from zebra_agent_api.session_identity_read import _parse_session_id
 
@@ -106,6 +108,11 @@ class SessionContextControlApi:
                 session_id=session_id,
                 status="context_busy",
                 reason="manual compaction requires a non-running session boundary",
+            )
+        if isinstance(self._stores.context_lifecycle, PostgresContextLifecycleStore):
+            return service_unavailable(
+                status="context_manual_compaction_unavailable",
+                reason="PostgreSQL manual Context compaction is not enabled",
             )
         options = body or {}
         focus = _optional_focus(options.get("focus"))
@@ -252,35 +259,56 @@ class SessionContextControlApi:
             idempotency_key=f"context-recover:{capsule.capsule_id}:{session.current_sequence + 1}",
             created_at=datetime.now(UTC),
         )
-        if self._administrative_context_namespace is None:
-            active = lifecycle.get_active_capsule(session.session_id)
-            lifecycle.activate_capsule(
-                session_id=session.session_id,
+        active = lifecycle.get_active_capsule(session.session_id)
+        if isinstance(lifecycle, PostgresContextLifecycleStore):
+            if self._administrative_context_namespace is None:
+                return service_unavailable(
+                    status="context_postgres_recovery_unavailable",
+                    reason="PostgreSQL Context recovery requires a composition namespace",
+                )
+            committed = commit_postgres_context_recovery(
+                stores=self._stores,
+                lifecycle=lifecycle,
+                deployment_namespace=self._administrative_context_namespace,
+                session_id=session_id,
+                session=session,
+                active=active,
                 capsule_id=capsule.capsule_id,
-                expected_active_capsule_id=active.capsule.capsule_id if active else None,
                 event=event,
             )
-            self._stores.sessions.save_session(apply_event(session, event))
-            canonical_event = event
-        else:
-            try:
-                committed = commit_administrative_recovery(
-                    stores=self._stores,
-                    deployment_namespace=self._administrative_context_namespace,
-                    session=session,
-                    capsule_id=capsule.capsule_id,
-                    event=event,
-                )
-            except KeyError:
-                return _capsule_not_found(session_id, capsule_id.strip())
-            except ValueError as exc:
-                return conflict(
-                    session_id=session_id,
-                    status="context_projection_conflict",
-                    reason=str(exc),
-                )
+            if isinstance(committed, ApiResponse):
+                return committed
             capsule = committed.stored_capsule.capsule
             canonical_event = committed.compaction_event
+        else:
+            if self._administrative_context_namespace is None:
+                lifecycle.activate_capsule(
+                    session_id=session.session_id,
+                    capsule_id=capsule.capsule_id,
+                    expected_active_capsule_id=active.capsule.capsule_id if active else None,
+                    event=event,
+                )
+                self._stores.sessions.save_session(apply_event(session, event))
+                canonical_event = event
+            else:
+                try:
+                    committed = commit_administrative_recovery(
+                        stores=self._stores,
+                        deployment_namespace=self._administrative_context_namespace,
+                        session=session,
+                        capsule_id=capsule.capsule_id,
+                        event=event,
+                    )
+                except KeyError:
+                    return _capsule_not_found(session_id, capsule_id.strip())
+                except ValueError as exc:
+                    return conflict(
+                        session_id=session_id,
+                        status="context_projection_conflict",
+                        reason=str(exc),
+                    )
+                capsule = committed.stored_capsule.capsule
+                canonical_event = committed.compaction_event
         return ApiResponse(
             status_code=200,
             body={

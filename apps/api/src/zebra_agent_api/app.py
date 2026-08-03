@@ -478,6 +478,7 @@ def create_app(
     settings: ZebraAgentSettings | None = None,
     stores: ControlPlaneStores | None = None,
     administrative_context_namespace: str | None = None,
+    context_administrative_namespace: str | None = None,
     credential_broker: CredentialBroker | None = None,
     credential_env: Mapping[str, str] | None = None,
     github_transport: GitHubPullRequestTransport | None = None,
@@ -487,11 +488,22 @@ def create_app(
     active_broker = credential_broker
     if active_broker is None:
         active_broker = build_default_credential_broker(active_settings.scm, env=credential_env)
+    if (
+        administrative_context_namespace is not None
+        and context_administrative_namespace is not None
+        and administrative_context_namespace != context_administrative_namespace
+    ):
+        raise ValueError("Context administrative namespace aliases must match")
+    resolved_context_namespace = (
+        administrative_context_namespace
+        if administrative_context_namespace is not None
+        else context_administrative_namespace
+    )
     return ZebraAgentApi(
         database_path=active_database_path,
         settings=active_settings,
         _stores=stores,
-        administrative_context_namespace=administrative_context_namespace,
+        administrative_context_namespace=resolved_context_namespace,
         credential_broker=active_broker,
         github_transport=github_transport,
     )
