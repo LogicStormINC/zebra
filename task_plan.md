@@ -594,6 +594,13 @@
   and `CLOUD-SESSION-HISTORY-PG-01` remain `Locked` until the maintainer
   explicitly activates one of them.
 
+### Formal closeout
+
+- Review accepted `4006a0ba` and the recorded `9/9`, `347/347`, `32/32` and
+  Eval `10/10` evidence. The card is `Done`.
+- The next implementation choice is intentionally left to the maintainer:
+  activate one path-bounded PostgreSQL adapter successor, not both at once.
+
 ## CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 
 1. `completed` - Trace every authoritative Worker-owned aggregate from Port to

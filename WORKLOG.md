@@ -22,6 +22,16 @@
 - Moved `CLOUD-SCOPE-CON-01` to `Review`; Provider Continuation and Session
   History adapter cards remain Locked and no backend/runtime selection changed.
 
+## 2026-08-03 - CLOUD-SCOPE-CON-01 formal review closeout
+
+- Closed `CLOUD-SCOPE-CON-01` from `Review` to `Done` after reviewing the
+  integrated implementation `4006a0ba`, owned-path diff and focused evidence.
+- Accepted Core `9/9`, full Core `347/347`, relevant regressions `32/32`, static
+  checks, diff check and Eval `10/10`. The repository size gate still reports
+  only the two inherited violations outside this task.
+- Kept `CLOUD-PROVIDER-CONT-PG-01` and `CLOUD-SESSION-HISTORY-PG-01` locked;
+  the next adapter requires one explicit maintainer activation.
+
 ## 2026-07-30 CLOUD-MEMORY-PG-01 implementation and review
 
 - added PostgreSQL v10 governed Memory authority, revision CAS, Worker/Admin aggregate

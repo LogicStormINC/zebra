@@ -666,6 +666,9 @@
   canonicalizes UUIDs through the existing history bound, and exposes explicit
   full-scope/deny-all predicates. Core `347/347` and focused `9/9` pass; no
   storage or runtime path consumes it yet.
+- Formal review on 2026-08-03 accepted the implementation and left both adapter
+  successors locked. The scope contract is a prerequisite, not a backend
+  selection or a claim that external Host authority verification is complete.
 
 ## CLOUD-AGG-WORKSPACE-PG-01 - 2026-07-29
 

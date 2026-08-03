@@ -2209,7 +2209,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-SCOPE-CON-01 - Opaque Authority Namespace Read Scope Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / API / STORAGE / SECURITY`
 - Depends on: accepted `ADR-012`, `CLOUD-AGG-FENCE-CON-01` and the existing
@@ -2251,6 +2251,21 @@ external membership.
 - No PostgreSQL migration, adapter, Runtime selector, Host verifier, Desktop,
   Redis or Mem0 behavior changed. The two successor adapter cards remain
   `Locked` pending explicit activation.
+
+#### Closeout
+
+- Formal review accepted the contract implementation at `4006a0ba` and the
+  registration/claim records `a898ce09`/`258c0c40`.
+- The Core value object is the only authority introduced: it preserves the
+  accepted opaque identity, rejects malformed or over-broad read scopes, and
+  never derives the internal deployment namespace. No storage or runtime
+  behavior changed.
+- Focused Core `9/9`, complete Core `347/347`, relevant regression `32/32`,
+  strict Mypy/Ruff/format/diff and Eval `10/10` evidence is accepted. The two
+  inherited file-size violations remain outside this card.
+- Closing this card does not activate either PostgreSQL adapter. The maintainer
+  must explicitly choose `CLOUD-PROVIDER-CONT-PG-01` or
+  `CLOUD-SESSION-HISTORY-PG-01` next.
 
 #### Explicit Non-Goals
 
