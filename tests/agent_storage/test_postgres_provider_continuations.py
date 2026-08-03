@@ -329,7 +329,7 @@ def test_scoped_sweep_is_audited_and_idempotent(
         operation_id=operation_id,
         operator_id="retention-worker",
         reason="provider continuation TTL elapsed",
-        as_of=_at(3),
+        as_of=None,
     )
 
     assert receipt.expired_continuation_ids == ("continuation-expired",)
@@ -339,7 +339,7 @@ def test_scoped_sweep_is_audited_and_idempotent(
         operation_id=operation_id,
         operator_id="retention-worker",
         reason="provider continuation TTL elapsed",
-        as_of=_at(3),
+        as_of=None,
     )
     assert replay == receipt
     assert _count(postgres_dsn, provider_namespace, "provider_continuation_management_audit") == 1

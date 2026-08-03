@@ -220,7 +220,7 @@ def sweep_hash(
     operator_id: str,
     reason: str,
     limit: int,
-    as_of: datetime,
+    as_of: datetime | None,
 ) -> str:
     return digest(
         {
@@ -229,7 +229,7 @@ def sweep_hash(
             "operator_id": operator_id,
             "reason": reason,
             "limit": limit,
-            "as_of": as_of.isoformat(),
+            "as_of": as_of.isoformat() if as_of is not None else None,
         }
     )
 

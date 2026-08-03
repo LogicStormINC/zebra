@@ -383,7 +383,7 @@ class PostgresProviderContinuationStore(CloudProviderContinuationStorePort):
             raise ValueError("continuation sweep limit must be between 1 and 1000")
         effective_as_of = (as_of or datetime.now(UTC)).astimezone(UTC)
         request_digest = sweep_hash(
-            scope, operation_id, operator_id, reason, limit, effective_as_of
+            scope, operation_id, operator_id, reason, limit, as_of
         )
         namespace = self._database.deployment_namespace
         with self._database.connect() as connection:

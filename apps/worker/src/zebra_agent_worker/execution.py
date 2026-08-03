@@ -106,9 +106,9 @@ class SessionExecutionService:
             deployment_namespace,
             effect_dispatch,
         )
-        validate = provider_runtime.validate_factory
-        validate(
-            cloud_provider_continuation_factory, worker_projection_transaction, deployment_namespace
+        provider_runtime.validate_factory(
+            cloud_provider_continuation_factory, worker_projection_transaction,
+            deployment_namespace, stores,
         )
         self._database_path = database_path
         self._claim_service = claim_service

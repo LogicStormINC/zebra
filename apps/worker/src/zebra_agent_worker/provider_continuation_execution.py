@@ -12,6 +12,7 @@ from agent_core.ports import (
     ProviderContinuationStorePort,
     WorkerProjectionTransactionPort,
 )
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_worker.context_lifecycle import (
     persist_provider_continuation,
@@ -31,10 +32,15 @@ def validate_factory(
     factory: CloudProviderContinuationFactory | None,
     transaction: WorkerProjectionTransactionPort | None,
     deployment_namespace: str | None,
+    stores: ControlPlaneStores | None,
 ) -> CloudProviderContinuationFactory | None:
     if factory is not None and (transaction is None or deployment_namespace is None):
         raise ValueError(
             "cloud Provider Continuation requires the fenced Worker projection transaction"
+        )
+    if factory is not None and stores is None:
+        raise ValueError(
+            "cloud Provider Continuation requires an explicitly composed ControlPlaneStores profile"
         )
     return factory
 

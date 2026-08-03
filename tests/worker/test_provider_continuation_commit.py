@@ -31,6 +31,7 @@ from agent_core.ports import (
 from agent_core.ports.provider_continuation_cloud import (
     CloudProviderContinuationStorePort,
 )
+from zebra_agent_worker.execution import SessionExecutionService
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.provider_continuation_commit import (
     CloudProviderContinuationCoordinator,
@@ -211,6 +212,18 @@ def test_cloud_coordinator_stages_then_commits_one_fenced_aggregate() -> None:
         coordinator.append_draft(
             _selection_draft(reference, continuation_id),
             cast(DurableHarnessEventRecorder, recorder),
+        )
+
+
+def test_cloud_provider_factory_rejects_implicit_sqlite_fallback(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="explicitly composed ControlPlaneStores"):
+        SessionExecutionService(
+            database_path=tmp_path / "sessions.sqlite",
+            claim_service=cast(Any, object()),
+            resume_service=cast(Any, object()),
+            worker_projection_transaction=cast(Any, object()),
+            deployment_namespace="cloud-prod",
+            cloud_provider_continuation_factory=cast(Any, lambda _session_id: object()),
         )
 
 

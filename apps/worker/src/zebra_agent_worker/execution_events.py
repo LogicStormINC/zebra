@@ -199,6 +199,10 @@ class DurableHarnessEventRecorder:
             raise ValueError("cloud aggregate acceptance requires Worker mutation authority")
         if event.session_id != self._session.session_id or event.sequence != self.next_sequence:
             raise ValueError("cloud aggregate Event sequence does not match recorder")
+        expected_session = apply_event(self._session, event)
+        expected_workspace = apply_workspace_event(self._workspace, event)
+        if session != expected_session or workspace != expected_workspace:
+            raise ValueError("cloud aggregate projections do not match Event replay")
         self._model_call_indexer.index_worker_event(event, authority=authority)
         self._tool_run_indexer.index_worker_event(event, authority=authority)
         self._session = session

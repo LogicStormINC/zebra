@@ -146,6 +146,55 @@ def test_recorder_adopts_canonical_event_after_lost_ack_retry() -> None:
     assert recorder.workspace == apply_workspace_event(workspace, canonical)
 
 
+def test_recorder_rejects_cloud_projections_not_derived_from_event() -> None:
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Invalid cloud aggregate projection",
+            user_input="continue",
+            workspace_root=Path("/tmp/invalid-cloud-aggregate"),
+        )
+    )
+    workspace = rebuild_workspace(list(bootstrap.events))
+    event = SessionEvent.create(
+        session_id=bootstrap.session.session_id,
+        sequence=bootstrap.session.current_sequence + 1,
+        event_type=EventType.HARNESS_ATTEMPT_STARTED,
+        actor=EventActor.HARNESS,
+        payload={"attempt_number": 1},
+        created_at=datetime(2026, 7, 29, 10, 0, tzinfo=UTC),
+    )
+    authority = WorkerMutationAuthority(
+        deployment_namespace="cloud-a",
+        session_id=bootstrap.session.session_id,
+        lease_fence=LeaseFence(
+            control_plane_epoch=uuid4(),
+            fencing_token=7,
+            owner_instance_id="worker-a",
+        ),
+        expected_stream_revision=bootstrap.session.current_sequence,
+    )
+    recorder = DurableHarnessEventRecorder(
+        session=bootstrap.session,
+        workspace=workspace,
+        event_store=Mock(),
+        projection_store=Mock(),
+        workspace_store=Mock(),
+        model_call_indexer=ModelCallIndexer(Mock()),
+        tool_run_indexer=ToolRunIndexer(Mock(), Mock()),
+        worker_projection_transaction=Mock(),
+        worker_mutation_authority=authority,
+    )
+    expected_workspace = apply_workspace_event(workspace, event)
+    tampered_workspace = expected_workspace.model_copy(update={"workspace_root": "/tmp/tampered"})
+
+    with pytest.raises(ValueError, match="projections do not match Event replay"):
+        recorder.accept_committed_aggregate(
+            event,
+            session=apply_session_event(bootstrap.session, event),
+            workspace=tampered_workspace,
+        )
+
+
 @pytest.mark.parametrize("missing", ["transaction", "authority"])
 def test_recorder_rejects_partial_projection_transaction_configuration(
     missing: str,
