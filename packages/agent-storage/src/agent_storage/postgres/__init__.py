@@ -12,6 +12,10 @@ from agent_storage.postgres.context_lifecycle import (
     PostgresContextLifecycleConflictError,
     PostgresContextLifecycleStore,
 )
+from agent_storage.postgres.context_materialization import (
+    PostgresContextMaterializationConflictError,
+    PostgresContextMaterializationStore,
+)
 from agent_storage.postgres.epoch import (
     PostgresControlPlaneEpochError,
     bootstrap_control_plane_epoch,
@@ -78,6 +82,8 @@ __all__ = [
     "PostgresControlPlaneEpochError",
     "PostgresContextLifecycleConflictError",
     "PostgresContextLifecycleStore",
+    "PostgresContextMaterializationConflictError",
+    "PostgresContextMaterializationStore",
     "PostgresLeaseStore",
     "PostgresGovernedMemoryStore",
     "PostgresMemoryDeliveryLedger",

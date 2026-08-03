@@ -1,5 +1,22 @@
 # Findings
 
+## CLOUD-CONTEXT-PG-01 - 2026-08-03
+
+- The PostgreSQL materialization adapter keeps one `READ ONLY` transaction for
+  Session projection revision, safe Session History, active Capsule pointer and
+  confirmed governed Memory. Calling the existing adapters separately would
+  create independent snapshots and is intentionally avoided.
+- Session and active Capsule expectations are exact: a missing/changed
+  projection raises a typed conflict rather than returning a partial envelope.
+  Memory rows are decoded as revisioned `GovernedMemoryEntry` values and the SQL
+  path excludes deleted, candidate and expired records before Core validation.
+- Existing governed-Memory query ordering was preserved through a shared row
+  helper; the new expiry predicate is additive and transaction-local. No
+  migration, write, cache authority, Store selector or runtime path changed.
+- Local validation is `149 passed, 172 skipped` Storage, `350/350` Core, changed
+  Ruff/format/strict Mypy and Eval `10/10`. Host Compose verification remains
+  the only open Review gate.
+
 ## CLOUD-CONTEXT-CON-01 - 2026-08-03
 
 - Context Materialization is an ephemeral read envelope, not a fourth source of
@@ -14,8 +31,9 @@
   plus sorted `(MemoryId, revision)` entries. Rebuild must reread authority; the
   envelope is never a new Event, Capsule, Memory or database revision.
 - ADR-020 and `ContextMaterializationPort` deliberately stop before PostgreSQL
-  composition. `CLOUD-CONTEXT-PG-01` remains a locked successor; Runtime,
-  Worker/API selection, Desktop, SQLite, Redis and Mem0 stay outside scope.
+  composition; the successor was activated only after the contract closed.
+  Runtime, Worker/API selection, Desktop, SQLite, Redis and Mem0 stay outside
+  scope.
 
 ## CLOUD-MEMORY-CON-01 - 2026-07-29
 

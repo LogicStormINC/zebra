@@ -135,9 +135,10 @@
   Session History, the active Context Capsule and confirmed governed Memory.
   Focused contract coverage is `3/3`, related scope/Capsule coverage is `16/16`,
   full Core is `350/350`, changed static checks and Eval `10/10` pass. The
-  PostgreSQL materialization successor `CLOUD-CONTEXT-PG-01` is now `Ready` for
-  one explicit adapter activation; no runtime, Worker, API, Desktop, SQLite,
-  Redis or Mem0 path is unlocked.
+  `CLOUD-CONTEXT-PG-01` is now in `Review`: its read-only PostgreSQL adapter and
+  isolated Compose runner are implemented, with local Storage `149 passed, 172
+  skipped`, Core `350/350` and Eval `10/10`; host verification is still pending.
+  No runtime, Worker, API, Desktop, SQLite, Redis or Mem0 path is unlocked.
 - Completed and formally closed Workspace adapter task: `CLOUD-AGG-WORKSPACE-PG-01`
   adds the additive
   PostgreSQL v4 projection schema and an injected Worker transaction that validates

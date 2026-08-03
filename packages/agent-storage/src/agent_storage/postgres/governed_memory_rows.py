@@ -2,7 +2,8 @@
 
 import hashlib
 import json
-from typing import Any
+from datetime import datetime
+from typing import Any, cast
 
 from agent_core.domain.governed_memories import (
     GovernedMemoryEntry,
@@ -116,8 +117,43 @@ def record_from_row(row: dict[str, Any]) -> MemoryRecord:
 
 
 def query_records(connection: Any, namespace: str, query: MemoryQuery) -> list[MemoryRecord]:
+    return [record_from_row(row) for row in _query_rows(connection, namespace, query)]
+
+
+def query_authority_entries(
+    connection: Any,
+    namespace: str,
+    query: MemoryQuery,
+    *,
+    as_of: datetime,
+) -> list[GovernedMemoryEntry]:
+    """Read confirmed, currently eligible authority rows in the caller's transaction."""
+
+    rows = _query_rows(
+        connection,
+        namespace,
+        query,
+        extra_clauses=("(expires_at IS NULL OR expires_at > %s)",),
+        extra_parameters=(as_of,),
+    )
+    entries: list[GovernedMemoryEntry] = []
+    for row in rows:
+        authority = authority_from_row(row)
+        if isinstance(authority, GovernedMemoryEntry):
+            entries.append(authority)
+    return entries
+
+
+def _query_rows(
+    connection: Any,
+    namespace: str,
+    query: MemoryQuery,
+    *,
+    extra_clauses: tuple[str, ...] = (),
+    extra_parameters: tuple[object, ...] = (),
+) -> list[dict[str, Any]]:
     clauses = ["deployment_namespace = %s", "status != 'deleted'"]
-    parameters: list[object] = [namespace]
+    where_parameters: list[object] = [namespace]
     for column, value in (
         ("tenant_id", query.tenant_id),
         ("user_id", query.user_id),
@@ -126,30 +162,32 @@ def query_records(connection: Any, namespace: str, query: MemoryQuery) -> list[M
     ):
         if value is not None:
             clauses.append(f"{column} = %s")
-            parameters.append(value)
+            where_parameters.append(value)
     if query.visibility is not None:
         clauses.append("visibility = %s")
-        parameters.append(query.visibility.value)
+        where_parameters.append(query.visibility.value)
     if query.memory_types:
         clauses.append("memory_type = ANY(%s)")
-        parameters.append([item.value for item in query.memory_types])
+        where_parameters.append([item.value for item in query.memory_types])
     if query.statuses:
         clauses.append("status = ANY(%s)")
-        parameters.append([item.value for item in query.statuses])
+        where_parameters.append([item.value for item in query.statuses])
+    clauses.extend(extra_clauses)
+    where_parameters.extend(extra_parameters)
     rank = ""
+    rank_parameters: list[object] = []
     order = "updated_at DESC, created_at DESC, memory_id ASC"
     if query.text_query is not None:
         clauses.append("search_vector @@ websearch_to_tsquery('simple', %s)")
-        parameters.append(query.text_query)
+        where_parameters.append(query.text_query)
         rank = ", ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank"
-        parameters.insert(0, query.text_query)
+        rank_parameters.append(query.text_query)
         order = "rank DESC, updated_at DESC, created_at DESC, memory_id ASC"
-    parameters.append(query.limit)
     rows = connection.execute(
         f"""
         SELECT * {rank} FROM governed_memory_records
         WHERE {" AND ".join(clauses)} ORDER BY {order} LIMIT %s
         """,
-        parameters,
+        [*rank_parameters, *where_parameters, query.limit],
     ).fetchall()
-    return [record_from_row(row) for row in rows]
+    return cast(list[dict[str, Any]], rows)

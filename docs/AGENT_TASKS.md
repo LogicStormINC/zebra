@@ -2646,8 +2646,10 @@ external membership.
 
 ### CLOUD-CONTEXT-PG-01 - PostgreSQL Context Materialization Read Composition
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
+- Status: `Review`
+- Owner: `Codex`
+- Branch: `codex/cloud-context-pg-01`
+- Worktree: `../zebra-agent-context-pg`
 - Depends on: `CLOUD-CONTEXT-CON-01`, `CLOUD-SESSION-HISTORY-PG-01`,
   `CLOUD-MEMORY-PG-01`, `CLOUD-AGG-CTX-PG-01` and
   `CLOUD-AGG-CTX-ADMIN-PG-01`
@@ -2663,6 +2665,31 @@ external membership.
   cross-visibility reads fail closed; host PostgreSQL matrix passes.
 - Non-goals: no runtime selection, Worker startup, provider HTTP,
   `ControlPlaneStores`, application Compose, Desktop, SQLite, Redis or Mem0.
+
+#### Validation And Handoff
+
+- [x] The adapter uses one `SET TRANSACTION READ ONLY` PostgreSQL transaction
+  for Session revision, safe History, active Capsule and eligible governed
+  Memory; it does not call the three source Stores through separate connections.
+- [x] The Memory row helper preserves existing query ordering and adds a
+  transaction-local authority-entry path with confirmed/expiry filtering.
+- [x] Local adapter tests are environment-gated (`4 skipped` without a DSN);
+  related PostgreSQL/read regressions pass `5 passed, 16 skipped`, full Storage
+  passes `149 passed, 172 skipped`, and full Core passes `350/350`.
+- [x] Changed-path Ruff, format, strict Mypy, shell syntax, diff check and Eval
+  `10/10` pass. The repository size gate retains only the two inherited
+  violations in the untouched Desktop stylesheet and governed Memory test.
+- [ ] Host verification remains pending through
+  `tests/compose/context_materialization/run-postgres-tests.sh`.
+
+#### Review Boundary
+
+- The constructor receives the internal deployment namespace from trusted
+  composition; the request separately carries opaque external scope and
+  business Memory visibility. No namespace or Tenant mapping is derived here.
+- This adapter is read-only and is not selected in `ControlPlaneStores`; Runtime,
+  Worker/API startup, Provider HTTP, Desktop, SQLite, Redis and Mem0 remain out
+  of scope.
 
 ### CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
 

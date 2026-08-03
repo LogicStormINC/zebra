@@ -1,5 +1,20 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-CONTEXT-PG-01 implementation handoff
+
+- Activated the PostgreSQL successor after `CLOUD-CONTEXT-CON-01` closed. Added
+  `PostgresContextMaterializationStore` plus a bounded row helper that combines
+  Session History, active Context Capsule and governed Memory in one read-only
+  transaction.
+- Added isolated PostgreSQL tests and
+  `tests/compose/context_materialization/run-postgres-tests.sh`. Local adapter
+  tests are `4 skipped` without a DSN; related Storage is `5 passed, 16 skipped`,
+  full Storage is `149 passed, 172 skipped`, Core is `350/350`, and Eval is
+  `10/10`.
+- Kept `ControlPlaneStores`, API/Worker startup, Runtime, Provider HTTP,
+  Desktop, SQLite, Redis and Mem0 unchanged. The card is in `Review` pending
+  host Compose evidence.
+
 ## 2026-08-03 - CLOUD-CONTEXT-CON-01 formal closeout
 
 - Registered, claimed and completed the Core-only Context Materialization
