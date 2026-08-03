@@ -1,5 +1,27 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-01 review findings fixed
+
+- Closed the two P1 risks from implementation review: a cloud Provider
+  Continuation factory now requires an explicitly composed `ControlPlaneStores`
+  profile, preventing the Worker constructor from silently falling back to
+  SQLite; and expiration sweep idempotency now hashes the caller's optional
+  `as_of` input, so a lost-response retry with omitted `as_of` replays the same
+  management operation.
+- Added the P2 replay guard at the cloud Worker acceptance boundary: returned
+  Session/Workspace projections must equal deterministic Event replay before
+  indexers or local state advance.
+- Added regression coverage for all three findings. Focused deterministic
+  Worker/storage tests pass `7/7` when PostgreSQL fixtures are not configured;
+  the isolated PostgreSQL Compose matrix passes `4/4` with
+  `ZEBRA_PROVIDER_CONTINUATION_POSTGRES_TEST_RESULT=PASS`. Changed Ruff and
+  strict Mypy (9 source files) pass; the repository size check still reports
+  only its two inherited violations outside this task. Follow-up commit:
+  `abd7a7f0`.
+- The card remains `In Progress` pending the separately required sidebar
+  closeout review; no Runtime, API, Desktop, SQLite, Redis, Mem0 or application
+  Docker behavior was selected.
+
 ## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-01 implementation slice
 
 - Implemented the cloud-only Core continuation artifact/Port and extended the

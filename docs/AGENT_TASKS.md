@@ -2367,10 +2367,12 @@ external membership.
   excluded.
 - Goal: make opaque continuation payload shared, authority-scoped and validated
   by the existing Worker Lease fence without creating a Zebra Tenant model.
-- Implementation commit: `0942f256` contains the registered Core, PostgreSQL,
-  Worker, focused-test, Compose and governance slice. The card remains
-  `In Progress` until the separately required sidebar closeout review confirms
-  the evidence; only that review may move it to `Done`.
+- Implementation commit: `39bbe444` contains the registered Core, PostgreSQL,
+  Worker, focused-test, Compose and governance slice. Follow-up `abd7a7f0`
+  closes the two P1 review risks (implicit SQLite fallback and omitted-`as_of`
+  sweep retry hashing) and the P2 Event-replay projection guard. The card
+  remains `In Progress` until the separately required sidebar closeout review
+  confirms the evidence; only that review may move it to `Done`.
 - Acceptance: stale authority and cross-namespace access fail, TTL/SHA/delete
   semantics match SQLite, Event references are committed atomically and remain
   resolvable, lost-response retries return the canonical receipt, and sweep is

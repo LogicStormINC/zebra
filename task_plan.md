@@ -45,10 +45,10 @@
    fence validation, idempotency, lifecycle and scoped management sweep.
 4. `completed` - Wire the explicit cloud Worker aggregate commit seam so the
    continuation row and canonical selection Event share one PostgreSQL transaction.
-5. `completed` - Record implementation evidence and commit the isolated branch
-   as `0942f256`; the card remains `In Progress` pending the separately required
-   sidebar review, and must not be marked Done until that review confirms the
-   closeout.
+5. `completed` - Record implementation evidence in `39bbe444`, then close the
+   two P1 risks and one P2 replay concern in follow-up `abd7a7f0`; the card
+   remains `In Progress` pending the separately required sidebar review, and
+   must not be marked Done until that review confirms the closeout.
 
 ### Implementation decisions
 
@@ -59,6 +59,11 @@
 - Serialize migration `v13` after the immutable v1-v12 catalog.
 - Leave local SQLite, Runtime selector, API/Provider HTTP, Desktop, Redis,
   Mem0 and Docker application behavior unchanged.
+- Require an explicitly composed cloud `ControlPlaneStores` profile at the
+  Worker seam; the cloud factory must not inherit the constructor's SQLite
+  fallback. Hash management sweep idempotency by the caller's optional
+  `as_of`, and verify cloud projections by deterministic Event replay before
+  accepting them.
 
 ## CLOUD-MEMORY-PG-01 - PostgreSQL Governed Memory Authority
 
