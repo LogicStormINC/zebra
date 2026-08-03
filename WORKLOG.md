@@ -1,5 +1,13 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-SESSION-HISTORY-PG-01 activation
+
+- Activated the next low-risk cloud slice after `CLOUD-SCOPE-CON-01` closed:
+  PostgreSQL Session History read composition only.
+- Claimed only the new adapter, exports, parity tests and isolated Compose
+  runner. No write aggregate, Lease fence, backend selector, Runtime, Desktop,
+  Redis, Mem0 or Host verifier is in scope.
+
 ## 2026-08-03 - CLOUD-SCOPE-CON-01 task registration
 
 - Registered the sole current cloud `Ready` card after the previous audit found

@@ -603,7 +603,7 @@
 
 ## CLOUD-SESSION-HISTORY-PG-01 - PostgreSQL Session History Read Model
 
-1. `pending` - Implement a PostgreSQL read-only adapter over the existing Event
+1. `in_progress` - Implement a PostgreSQL read-only adapter over the existing Event
    and Session Projection tables, requiring an injected deployment namespace and
    `OpaqueAuthorityScope`.
 2. `pending` - Preserve SQLite browse/search/read ordering, safe event filtering,

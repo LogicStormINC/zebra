@@ -2536,8 +2536,8 @@ external membership.
 
 ### CLOUD-SESSION-HISTORY-PG-01 - PostgreSQL Session History Read Model
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `Codex`
 - Depends on: PostgreSQL Event/Session Projection and completed
   `CLOUD-SCOPE-CON-01`; the trusted composition supplies the approved
   external-to-deployment namespace mapping
