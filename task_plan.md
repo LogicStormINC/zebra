@@ -1,6 +1,6 @@
 # Task Plan
 
-## CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition (Review)
+## CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition (Done)
 
 1. `completed` - Confirm the accepted cloud/local profile contract and isolate the
    implementation from application Compose, Redis live and other runtime gates.
@@ -13,9 +13,10 @@
 ### Review handoff
 
 - Sidebar ChatGPT returned `CLOSEOUT-OK` for `In Progress -> Review`.
+- Independent Review returned `MERGE-OK` for `d9fd0419`; the commit was
+  fast-forward merged into `zebra-cloud-trench`.
 - Implementation authorization is closed; no successor activation or aggregate
-  gate unlock is authorized. An independent review is still required before
-  marking this task `Done`.
+  gate unlock is authorized.
 
 ### Boundary
 

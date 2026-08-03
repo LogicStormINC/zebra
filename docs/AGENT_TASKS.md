@@ -1490,7 +1490,7 @@ to unlock any aggregate fencing gate.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / APP / STORAGE`
 - Depends on: `CLOUD-CONTROL-PLANE-PG-01` and
@@ -1532,6 +1532,9 @@ SQLite store in the cloud profile.
 - Sidebar ChatGPT returned `CLOSEOUT-OK` for `In Progress -> Review` after the
   focused and PostgreSQL-backed evidence below. This is a review handoff only;
   implementation and successor activation remain unauthorized.
+- Independent Review returned `MERGE-OK` for commit `d9fd0419`; the commit was
+  fast-forward merged into `zebra-cloud-trench`. The task is now closed as
+  `Done`; no successor activation or aggregate gate unlock was granted.
 - `CLOUD-AGG-FENCE-01` remains `Locked` and `CLOUD-COMPOSE-APP-01` remains
   `Blocked`; this slice cannot activate either gate or any successor.
 

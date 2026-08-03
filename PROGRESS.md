@@ -26,8 +26,9 @@
   SQLite remains the default and cloud must fail closed rather than fall back to
   SQLite.
 - `CLOUD-API-WORKER-PG-01` completed its authorized implementation slice and is
-  now in `Review` (`In Progress -> Review`). Focused API/HTTP/Worker and real
-  PostgreSQL Compose evidence is green. It owns only shared profile selection,
+  now `Done` after independent Review and fast-forward merge of `d9fd0419` into
+  `zebra-cloud-trench`. Focused API/HTTP/Worker and real PostgreSQL Compose
+  evidence is green. It owns only shared profile selection,
   PostgreSQL stores injection and the model/tool projection compatibility seam;
   it does not activate application Compose, Redis live, `CLOUD-LIVE-01`, or any
   aggregate gate.
