@@ -16,9 +16,9 @@
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core
   contract, PostgreSQL v13 adapter/migration, cloud Worker aggregate seam,
   focused tests, Compose evidence and review fixes committed as `39bbe444` and
-  `abd7a7f0`. The sidebar closeout accepted the evidence; no registered Ready
-  successor is currently available and `CLOUD-CONTROL-PLANE-PG-01` remains
-  `Locked`. Runtime,
+  `abd7a7f0`. The sidebar closeout accepted the evidence, and the next storage
+  composition card `CLOUD-CONTROL-PLANE-PG-01` is now `In Progress` on its
+  isolated implementation branch. Runtime,
   API/Provider HTTP, Desktop, local SQLite, Redis, Mem0 and application Docker
   remain excluded.
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with

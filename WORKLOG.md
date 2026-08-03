@@ -1,5 +1,16 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-CONTROL-PLANE-PG-01 activation
+
+- Sidebar ChatGPT approved `CLOUD-CONTROL-PLANE-PG-01` after all aggregate
+  PostgreSQL adapter/read-composition dependencies reached `Done`.
+- Claimed `codex/cloud-control-plane-pg-01` in the isolated worktree
+  `/Users/lukeding/.codex/worktrees/cloud-control-plane-pg-01/zebra-agent`.
+- Narrowed Owned paths to Core control-plane contracts, Storage PostgreSQL
+  composition/adapters/migrations/focused tests and governance. API, Worker,
+  Runtime, Provider HTTP, Desktop, SQLite, Redis, Mem0 and application Compose
+  remain explicitly out of scope.
+
 ## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-01 formal closeout
 
 - Sidebar ChatGPT accepted the implementation and the follow-up P1/P2 fixes:

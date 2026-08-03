@@ -2,7 +2,7 @@
 
 > 快照日期：2026-08-03
 > 分支：`zebra-cloud-trench`
-> 规划基线：`03efa4f5`
+> 规划基线：`00705d98`
 
 ## 结论
 
@@ -74,17 +74,17 @@ PostgreSQL Adapter 已存在，不代表云端运行时已经选用 PostgreSQL�
 规划卡 `CLOUD-PROVIDER-CONT-PG-PLAN-01` 已由侧边栏架构评审接受并关闭为
 `Done`；实现卡已在隔离工作树完成并通过 closeout，迁移目标为 v13。
 
-仍锁定的关键任务：
+当前主线后续任务：
 
-1. `CLOUD-CONTROL-PLANE-PG-01`：完整 PostgreSQL `ControlPlaneStores` 组合、配置
-   选择和 API/Worker 接线。
+1. `CLOUD-CONTROL-PLANE-PG-01`：已由侧边栏批准并进入 `In Progress`，当前只做
+   PostgreSQL `ControlPlaneStores` 存储组合、迁移和聚焦验证；API/Worker 接线与
+   Runtime 选择仍是后续门禁。
 2. `CLOUD-DELIVERY-TXN-PG-01`：Delivery Audit/Idempotency 命令事务。
 3. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁。
 
-当前没有已注册的 Ready implementation card；上述后续卡仍保持 `Locked`，其中
-`CLOUD-CONTROL-PLANE-PG-01` 依赖所有 aggregate PostgreSQL adapter/read-composition
-卡闭合。当前实现只能修改注册的 Owned paths，不能顺带激活完整 Control Plane、
-Runtime selector 或应用 Compose。
+当前只有 `CLOUD-CONTROL-PLANE-PG-01` 处于 `In Progress`；Delivery 和 fencing
+仍为 `Locked`。本任务只能修改注册的 Core/Storage/governance Owned paths，不能
+顺带激活 API/Worker、Runtime selector 或应用 Compose。
 
 ### Docker 应用层与在线事件
 
@@ -173,7 +173,7 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 
 `CLOUD-PROVIDER-CONT-PG-01` 已完成独立实施与 closeout：Owner、Branch、Worktree、
 Owned paths 和 v13 迁移所有权均已登记。当前没有已注册的 Ready successor；
-`CLOUD-CONTROL-PLANE-PG-01` 仍为 `Locked`，不得通过临时修改状态绕过 aggregate
-PostgreSQL adapter/read-composition 依赖。SQLite Registry、Runtime backend
-selection、Provider HTTP、Desktop、Redis live、Mem0 consumer 和应用 Compose
-仍保持隔离。
+`CLOUD-CONTROL-PLANE-PG-01` 已在所有 aggregate PostgreSQL adapter/read-composition
+依赖闭合后由侧边栏批准激活，当前分支和隔离工作树已登记在任务注册表。其余
+SQLite Registry、Runtime backend selection、Provider HTTP、Desktop、Redis live、
+Mem0 consumer 和应用 Compose 仍保持隔离。

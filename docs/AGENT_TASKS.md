@@ -2858,15 +2858,28 @@ external membership.
 
 ### CLOUD-CONTROL-PLANE-PG-01 - Complete PostgreSQL Store Composition
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `codex`
 - Depends on: all aggregate PostgreSQL adapter and read-composition cards above
-- Owned paths: storage/API/Worker composition, runtime backend selection, config,
-  Compose application profile and integration tests
-- Goal: select a complete PostgreSQL `ControlPlaneStores` profile explicitly while
-  retaining SQLite for the local profile.
-- Acceptance: cloud startup fails on any missing adapter, never silently mixes
-  backends, and the combined multi-Worker restore/fault matrix passes.
+- Branch: `codex/cloud-control-plane-pg-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-control-plane-pg-01/zebra-agent`
+- Owned paths: `packages/agent-core/` control-plane command/query contracts and
+  related Ports; `packages/agent-storage/` PostgreSQL composition, adapters,
+  migrations and focused tests; governance records in this registry,
+  `PROGRESS.md`, `task_plan.md` and `WORKLOG.md`
+- Goal: provide an explicit, all-PostgreSQL `ControlPlaneStores` storage profile
+  while retaining the existing SQLite local profile and rejecting incomplete or
+  mixed backend bundles.
+- Acceptance: the profile validates every Store field against PostgreSQL,
+  missing required dependencies fail before a bundle is returned, migration
+  checksums remain immutable, and a real PostgreSQL Compose matrix proves
+  namespace isolation, read/write parity and restore-safe composition.
+- Activation: sidebar ChatGPT approved activation after every aggregate adapter
+  and read-composition dependency reached `Done`; Owner `codex`, branch and
+  isolated worktree above are authoritative for this slice.
+- Explicit non-goals: no `apps/api/`, `apps/worker/`, `packages/agent-runtime/`,
+  Provider HTTP, Desktop, local SQLite changes, Redis, Mem0, application Compose,
+  runtime backend selection or production cutover. Those remain separate gates.
 
 ### CLOUD-AGG-FENCE-01 - Full Worker Aggregate Fencing Gate
 

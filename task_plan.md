@@ -1,5 +1,31 @@
 # Task Plan
 
+## CLOUD-CONTROL-PLANE-PG-01 - PostgreSQL Control Plane Storage Profile (In Progress)
+
+1. `in_progress` - Claim the card on `codex/cloud-control-plane-pg-01`, preserve
+   the exact Core/Storage/governance Owned paths and audit every `ControlPlaneStores`
+   field against an existing PostgreSQL adapter or an explicitly scoped adapter.
+2. `pending` - Freeze the control-plane profile contract and add the smallest
+   serialized PostgreSQL migration needed for missing shared persistence records;
+   do not alter existing aggregate tables or local SQLite behavior.
+3. `pending` - Compose one namespace-bound PostgreSQL bundle, fail closed on
+   missing object-store/signing-key dependencies, and expose read/index facades
+   without creating a second Event-derived authority.
+4. `pending` - Run focused deterministic and host PostgreSQL Compose tests for
+   completeness, namespace isolation, migration checksums and restore-safe reads.
+5. `pending` - Record evidence, request sidebar closeout and hand off API/Worker
+   wiring and runtime selection as separate successor gates.
+
+### Activation decisions
+
+- Sidebar ChatGPT approved activation with all registered aggregate PostgreSQL
+  adapter/read-composition dependencies satisfied.
+- This implementation slice is storage-only. It must not touch `apps/api/`,
+  `apps/worker/`, `packages/agent-runtime/`, Provider HTTP, Desktop, SQLite,
+  Redis, Mem0 or application Compose.
+- The cloud profile is explicit and namespace-bound; a partial or mixed bundle is
+  rejected before use. The existing SQLite profile remains the local default.
+
 ## CLOUD-PROVIDER-CONT-PG-PLAN-01 - Provider Continuation PostgreSQL Authority Plan (Done)
 
 1. `completed` - Audit the status snapshot, registered dependency chain, current
