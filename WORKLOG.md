@@ -1,5 +1,18 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-CONTEXT-PG-01 formal closeout
+
+- The host rerun of
+  `tests/compose/context_materialization/run-postgres-tests.sh` passed `4/4`
+  and emitted `ZEBRA_CONTEXT_MATERIALIZATION_POSTGRES_TEST_RESULT=PASS`.
+  Container, network and volume cleanup completed successfully.
+- The first host attempt failed before materialization because the expired test
+  row collided with the existing confirmed repo/type singleton index. Commit
+  `e4caf730` corrected only that fixture by using a distinct Memory type; no
+  production schema or authority rule was weakened.
+- Accepted `CLOUD-CONTEXT-PG-01` as `Done`. The adapter remains unselected by
+  Runtime/Worker/API composition and `ControlPlaneStores`.
+
 ## 2026-08-03 - CLOUD-CONTEXT-PG-01 implementation handoff
 
 - Activated the PostgreSQL successor after `CLOUD-CONTEXT-CON-01` closed. Added

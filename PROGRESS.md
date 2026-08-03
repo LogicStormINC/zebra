@@ -5,7 +5,7 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-08-02`
+- Snapshot date: `2026-08-03`
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with
   an exact three-user-turn tail, complete tool groups, one strict retry from
   original history, recoverable context suspension, evidence-gated memory
@@ -135,10 +135,11 @@
   Session History, the active Context Capsule and confirmed governed Memory.
   Focused contract coverage is `3/3`, related scope/Capsule coverage is `16/16`,
   full Core is `350/350`, changed static checks and Eval `10/10` pass. The
-  `CLOUD-CONTEXT-PG-01` is now in `Review`: its read-only PostgreSQL adapter and
+  `CLOUD-CONTEXT-PG-01` is now `Done`: its read-only PostgreSQL adapter and
   isolated Compose runner are implemented, with local Storage `149 passed, 172
-  skipped`, Core `350/350` and Eval `10/10`; host verification is still pending.
-  No runtime, Worker, API, Desktop, SQLite, Redis or Mem0 path is unlocked.
+  skipped`, Core `350/350`, Eval `10/10`, and host Compose `4 passed` with
+  `ZEBRA_CONTEXT_MATERIALIZATION_POSTGRES_TEST_RESULT=PASS`. No Runtime,
+  Worker, API, Desktop, SQLite, Redis or Mem0 path is unlocked.
 - Completed and formally closed Workspace adapter task: `CLOUD-AGG-WORKSPACE-PG-01`
   adds the additive
   PostgreSQL v4 projection schema and an injected Worker transaction that validates

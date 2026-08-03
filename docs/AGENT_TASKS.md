@@ -2646,7 +2646,7 @@ external membership.
 
 ### CLOUD-CONTEXT-PG-01 - PostgreSQL Context Materialization Read Composition
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Branch: `codex/cloud-context-pg-01`
 - Worktree: `../zebra-agent-context-pg`
@@ -2679,8 +2679,11 @@ external membership.
 - [x] Changed-path Ruff, format, strict Mypy, shell syntax, diff check and Eval
   `10/10` pass. The repository size gate retains only the two inherited
   violations in the untouched Desktop stylesheet and governed Memory test.
-- [ ] Host verification remains pending through
-  `tests/compose/context_materialization/run-postgres-tests.sh`.
+- [x] Host verification passed through
+  `tests/compose/context_materialization/run-postgres-tests.sh`: the isolated
+  PostgreSQL 17.5 matrix reported `4 passed` and
+  `ZEBRA_CONTEXT_MATERIALIZATION_POSTGRES_TEST_RESULT=PASS`; the runner removed
+  its container, network and volume.
 
 #### Review Boundary
 
@@ -2690,6 +2693,15 @@ external membership.
 - This adapter is read-only and is not selected in `ControlPlaneStores`; Runtime,
   Worker/API startup, Provider HTTP, Desktop, SQLite, Redis and Mem0 remain out
   of scope.
+
+#### Closeout
+
+- Formal review accepted implementation commit `b739ab5a` and the follow-up
+  fixture correction `e4caf730`. Local Storage/Core/Eval and changed-path static
+  evidence remain green, and the host PostgreSQL acceptance gate is complete.
+- Closing this card records PostgreSQL Context materialization only. Runtime,
+  Worker/API composition, Provider HTTP, Desktop, SQLite, Redis, Mem0 and
+  `ControlPlaneStores` selection remain separate gates.
 
 ### CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
 

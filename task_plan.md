@@ -700,7 +700,7 @@
 3. `completed` - Prove consistent Session/Capsule/Memory generations, stale CAS,
    scope isolation, candidate/expiry filtering, deterministic rebuild and
    read-only behavior with real PostgreSQL tests.
-4. `in_progress` - Run the host Compose matrix, record evidence and close the adapter
+4. `completed` - Run the host Compose matrix, record evidence and close the adapter
    without selecting it in `ControlPlaneStores` or wiring Runtime/Worker/API.
 
 ### Decisions
@@ -722,7 +722,9 @@
   changed static checks and Eval `10/10`. The four adapter tests are skipped only
   when `ZEBRA_TEST_POSTGRES_DSN` is absent.
 - Run `tests/compose/context_materialization/run-postgres-tests.sh` on the host.
-  The card remains in Review until its result and cleanup evidence are recorded.
+  Host evidence is complete: `4 passed`,
+  `ZEBRA_CONTEXT_MATERIALIZATION_POSTGRES_TEST_RESULT=PASS`, and the runner
+  cleaned its container, network and volume. The card is `Done`.
 
 ## CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 

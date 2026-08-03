@@ -14,8 +14,12 @@
   helper; the new expiry predicate is additive and transaction-local. No
   migration, write, cache authority, Store selector or runtime path changed.
 - Local validation is `149 passed, 172 skipped` Storage, `350/350` Core, changed
-  Ruff/format/strict Mypy and Eval `10/10`. Host Compose verification remains
-  the only open Review gate.
+  Ruff/format/strict Mypy and Eval `10/10`. Host Compose verification passed
+  `4/4` with `ZEBRA_CONTEXT_MATERIALIZATION_POSTGRES_TEST_RESULT=PASS`; the
+  isolated runner cleaned its container, network and volume.
+- The first host attempt exposed a fixture-only conflict with the existing
+  confirmed repo/type singleton index. The expired record now uses a distinct
+  Memory type, preserving real expiry filtering without weakening the schema.
 
 ## CLOUD-CONTEXT-CON-01 - 2026-08-03
 
