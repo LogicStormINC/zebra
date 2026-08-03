@@ -6,6 +6,11 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-08-03`
+- Cloud mainline status is recorded in
+  [Zebra Cloud 主线当前状态与后续工作](./docs/Zebra%20Cloud%20主线当前状态与后续工作.md):
+  PostgreSQL adapters and isolated Compose evidence are substantially complete, but
+  API/Worker PostgreSQL composition, application Compose, Redis live fan-out and the
+  CopilotKit/Trench production slice remain gated.
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with
   an exact three-user-turn tail, complete tool groups, one strict retry from
   original history, recoverable context suspension, evidence-gated memory
