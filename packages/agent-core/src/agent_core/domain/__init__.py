@@ -85,6 +85,16 @@ from agent_core.domain.context_materialization import (
     ContextMaterializationRequest,
 )
 from agent_core.domain.delivery_audit import DeliveryAuditRecord
+from agent_core.domain.delivery_transaction import (
+    DeliveryTransactionConflictError,
+    DeliveryTransactionInvariantError,
+    DeliveryTransactionNotFoundError,
+    DeliveryTransactionOwnershipError,
+    DeliveryTransactionRecord,
+    DeliveryTransactionState,
+    DeliveryTransactionStateError,
+    validate_delivery_transaction_transition,
+)
 from agent_core.domain.effect_dispatch import (
     EffectClaim,
     EffectDispatch,
@@ -221,6 +231,14 @@ __all__ = [
     "canonical_agent_definition_digest",
     "AttachmentContextInput",
     "DeliveryAuditRecord",
+    "DeliveryTransactionConflictError",
+    "DeliveryTransactionInvariantError",
+    "DeliveryTransactionNotFoundError",
+    "DeliveryTransactionOwnershipError",
+    "DeliveryTransactionRecord",
+    "DeliveryTransactionState",
+    "DeliveryTransactionStateError",
+    "validate_delivery_transaction_transition",
     "ClarificationContext",
     "ContextLifecycleController",
     "ContextLifecycleDecision",

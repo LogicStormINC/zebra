@@ -187,6 +187,7 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         (12, "native_memory_gateway", 64),
         (13, "fenced_provider_continuation_authority", 64),
         (14, "cloud_control_plane_shared_records", 64),
+        (15, "cloud_delivery_transactions", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [

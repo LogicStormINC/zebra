@@ -122,7 +122,7 @@ does not authorize production code, migrations or activation of its successor.
 
 ### CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CTX / CORE / STORAGE`
 - Depends on: merged `CTX-LC-01`; intentionally independent of the local stacked
@@ -2846,15 +2846,31 @@ external membership.
 
 ### CLOUD-DELIVERY-TXN-PG-01 - PostgreSQL Delivery Command Transaction
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
-- Depends on: cloud Effect dispatch and PostgreSQL control-plane composition
-- Owned paths: delivery-audit/idempotency Ports if required, focused PostgreSQL
-  adapters/migration, API commit/PR command wiring and concurrency/fault tests
-- Goal: claim API commands durably and commit response receipt plus audit without
-  conflating API authority with Worker Lease fencing.
+- Status: `Review`
+- Owner: `codex`
+- Depends on: cloud Effect dispatch and merged `CLOUD-CONTROL-PLANE-PG-01`
+- Branch: `codex/cloud-delivery-txn-pg-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-delivery-txn-pg-01/zebra-agent`
+- Owned paths: `packages/agent-core/` delivery transaction contract, state model
+  and persistence Ports; `packages/agent-storage/` PostgreSQL delivery transaction
+  adapter, migration and focused tests; `docs/architecture/cloud-delivery-txn-pg-plan.md`
+  and governance records in this registry, `PROGRESS.md`, `task_plan.md` and
+  `WORKLOG.md`
+- Goal: define and persist a cloud-only delivery transaction receipt/audit boundary
+  without conflating API authority with Worker Lease fencing. API/Worker wiring is
+  a later seam and is not part of this card.
 - Acceptance: concurrent same key has one owner, request mismatch conflicts,
-  crash recovery does not repeat external actions and receipt/audit has no half-state.
+  crash recovery does not repeat external actions, and receipt/audit has no
+  half-state; all focused verification runs against real PostgreSQL. Implemented
+  v15 transaction authority and focused evidence are recorded in the task plan;
+  API/Worker wiring remains a successor seam.
+- Activation: sidebar ChatGPT approved activation after the control-plane
+  fast-forward merge; Owner, branch and isolated worktree above are authoritative.
+- Explicit non-goals: no `apps/api/`, `apps/worker/`, `packages/agent-runtime/`,
+  Provider HTTP, Desktop, local SQLite changes, Redis, Mem0, CopilotKit/Trench,
+  application Compose, runtime selection or production cutover.
+- Closeout: sidebar ChatGPT approved `Review` -> `Done` after Core, delivery
+  transaction Compose PostgreSQL and Control Plane regression evidence.
 
 ### CLOUD-CONTROL-PLANE-PG-01 - Complete PostgreSQL Store Composition
 

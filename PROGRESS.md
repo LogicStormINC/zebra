@@ -13,7 +13,11 @@
   CopilotKit/Trench production slice remain gated. `CLOUD-CONTROL-PLANE-PG-01`
   implementation and focused validation are complete on the isolated branch;
   sidebar closeout is approved and the task is recorded as `Done`; its API/Worker
-  mapping remains a later gate.
+  mapping remains a later gate. `CLOUD-DELIVERY-TXN-PG-01` is now the active
+  storage-only successor on an isolated worktree; its Core/v15 PostgreSQL
+  implementation and focused Compose evidence are now complete; sidebar closeout
+  approved the task as Done.
+  API/Worker wiring remains out of scope.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core

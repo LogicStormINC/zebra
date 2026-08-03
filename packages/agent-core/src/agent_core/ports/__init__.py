@@ -50,6 +50,15 @@ from agent_core.ports.conversation_compactor import (
     ConversationCompactorPort,
 )
 from agent_core.ports.delivery_audit_store import DeliveryAuditStorePort
+from agent_core.ports.delivery_transaction import (
+    DeliveryClaimResult,
+    DeliveryClaimResultType,
+    DeliveryCommitResult,
+    DeliveryCommitResultType,
+    DeliveryReplayResult,
+    DeliveryReplayResultType,
+    DeliveryTransactionPort,
+)
 from agent_core.ports.effect_dispatch import EffectDispatchPort
 from agent_core.ports.effect_ledger import (
     EffectLedgerPort,
@@ -151,6 +160,13 @@ __all__ = [
     "ConversationCompactionResult",
     "ConversationCompactorPort",
     "DeliveryAuditStorePort",
+    "DeliveryClaimResult",
+    "DeliveryClaimResultType",
+    "DeliveryCommitResult",
+    "DeliveryCommitResultType",
+    "DeliveryReplayResult",
+    "DeliveryReplayResultType",
+    "DeliveryTransactionPort",
     "EffectDispatchPort",
     "EffectLedgerPort",
     "EffectLedgerStatus",

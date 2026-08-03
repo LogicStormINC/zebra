@@ -17,6 +17,7 @@ from agent_storage.postgres.context_materialization import (
     PostgresContextMaterializationStore,
 )
 from agent_storage.postgres.delivery_audit import PostgresDeliveryAuditStore
+from agent_storage.postgres.delivery_transaction import PostgresDeliveryTransactionStore
 from agent_storage.postgres.epoch import (
     PostgresControlPlaneEpochError,
     bootstrap_control_plane_epoch,
@@ -91,6 +92,7 @@ __all__ = [
     "PostgresContextMaterializationConflictError",
     "PostgresContextMaterializationStore",
     "PostgresDeliveryAuditStore",
+    "PostgresDeliveryTransactionStore",
     "PostgresLeaseStore",
     "PostgresGovernedMemoryStore",
     "PostgresIdempotencyStore",

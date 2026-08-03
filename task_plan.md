@@ -1,5 +1,31 @@
 # Task Plan
 
+## CLOUD-DELIVERY-TXN-PG-01 - PostgreSQL Delivery Command Transaction (Done)
+
+1. `completed` - Activate the merged task on
+   `codex/cloud-delivery-txn-pg-01`, record the isolated worktree and narrow
+   Owned paths to Core/Storage/governance only.
+2. `completed` - Audit existing Idempotency/Delivery Audit contracts, the v14
+   PostgreSQL adapters and API command transaction requirements; freeze the
+   smallest cloud-only transaction boundary without touching API/Worker wiring.
+3. `completed` - Add or refine the Core delivery transaction state/Port and the
+   PostgreSQL atomic receipt/audit persistence needed for concurrency, mismatch,
+   crash-recovery and no-half-state semantics.
+4. `completed` - Run focused deterministic, PostgreSQL Compose, migration and
+   existing control-plane regression tests.
+5. `completed` - Request sidebar closeout, record evidence and hand off API/Worker
+   command wiring as a separate successor seam.
+
+### Activation decisions
+
+- Sidebar ChatGPT approved this storage-only activation after the control-plane
+  fast-forward merge into `zebra-cloud-trench`.
+- The existing local SQLite contracts and `ControlPlaneStores` remain unchanged.
+- API/Worker, Runtime, Provider HTTP, Desktop, SQLite, Redis, Mem0 and
+  CopilotKit/Trench application paths are explicit non-goals.
+- Sidebar ChatGPT reviewed the implementation and evidence and approved closing
+  this storage-only task as `Done`; API/Worker wiring remains a successor seam.
+
 ## CLOUD-CONTROL-PLANE-PG-01 - PostgreSQL Control Plane Storage Profile (Done)
 
 1. `completed` - Claim the card on `codex/cloud-control-plane-pg-01`, preserve

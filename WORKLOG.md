@@ -1,5 +1,16 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-DELIVERY-TXN-PG-01 activation
+
+- Sidebar ChatGPT approved fast-forwarding `codex/cloud-control-plane-pg-01` into
+  `zebra-cloud-trench` and selecting `CLOUD-DELIVERY-TXN-PG-01` as the next task.
+- Claimed `codex/cloud-delivery-txn-pg-01` in the isolated worktree
+  `/Users/lukeding/.codex/worktrees/cloud-delivery-txn-pg-01/zebra-agent`.
+- Narrowed this slice to Core delivery transaction contracts/Ports, PostgreSQL
+  adapters/migrations/focused tests and governance. API, Worker, Runtime, Provider
+  HTTP, Desktop, SQLite, Redis, Mem0, CopilotKit/Trench and application Compose
+  remain explicitly out of scope.
+
 ## 2026-08-03 - CLOUD-CONTROL-PLANE-PG-01 activation
 
 - Sidebar ChatGPT approved `CLOUD-CONTROL-PLANE-PG-01` after all aggregate
@@ -7703,3 +7714,18 @@ actual byte access.
   selection, full aggregate fencing, Memory parent/consumer and Mem0 Runtime
   remain locked; `CTX-MEM-01` remains Review.
 - No production code, Docker service, migration or runtime selector changed.
+
+## 2026-08-03 - CLOUD-DELIVERY-TXN-PG-01 implementation review
+
+- Added the provider-neutral Core delivery transaction state machine and Port,
+  including claim, processing, UNKNOWN/FAILED quarantine, atomic commit and replay
+  result contracts. Existing receipt and audit records remain the payload boundary.
+- Added PostgreSQL v15 `delivery_transactions` and a namespace-bound adapter that
+  uses one connection transaction for receipt + audit + COMMITTED state. No API,
+  Worker, Runtime, Provider HTTP, SQLite, Redis, Mem0 or Trench path was changed.
+- Focused Core tests pass `2/2` (`tests/agent_core` is `359/359`); delivery
+  transaction Compose PostgreSQL tests pass `12/12`; existing Control Plane
+  Compose regression passes `11/11`; changed-file Ruff/Mypy and diff checks pass.
+- Sidebar ChatGPT reviewed the implementation and evidence and approved closing
+  `CLOUD-DELIVERY-TXN-PG-01` from `Review` to `Done`; API/Worker wiring remains
+  a separate successor seam.
