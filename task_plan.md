@@ -1,5 +1,32 @@
 # Task Plan
 
+## CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 - Context Lifecycle Fencing Conformance Audit (In Progress)
+
+1. `completed` - Claim the governance-only card on an isolated worktree and
+   freeze the Context production/test paths as read-only audit targets.
+2. `completed` - Trace Worker compaction, administrative recovery, legacy
+   fail-closed methods, Context Materialization reads, migration v7 constraints
+   and the existing PostgreSQL evidence.
+3. `completed` - Record the method-by-method authority, identity, fence/CAS,
+   PostgreSQL lock/predicate and stale-write matrix.
+4. `completed` - Ask the sidebar ChatGPT to adjudicate the only uncovered
+   semantic boundary: administrative Event type and capsule binding validation.
+5. `in_progress` - Keep the card `BLOCK-GAP`, register the minimal successor
+   `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`, and do not activate the parent fencing gate.
+
+### Audit conclusion
+
+- Worker compaction, namespace-bound reads, pointer CAS, atomic Event/Session/
+  Workspace writes and PostgreSQL fail-closed legacy methods are accounted for.
+- Sidebar ChatGPT returned `BLOCK-GAP`: `commit_administrative_activation`
+  must validate `CONTEXT_COMPACTED` and bind the recovery payload to the target
+  `capsule_id` inside the persistence boundary, not only in the current API
+  caller.
+- No production code, test, Schema or Migration is changed by this card. The
+  successor owns only the adapter semantic guard and focused regression matrix.
+- `CLOUD-AGG-FENCE-01` remains `Locked` until this and the other aggregate cards
+  have zero unexplained fencing gaps.
+
 ## CLOUD-DELIVERY-TXN-PG-01 - PostgreSQL Delivery Command Transaction (Done)
 
 1. `completed` - Activate the merged task on

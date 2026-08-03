@@ -1,5 +1,22 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 audit
+
+- Activated the sidebar-approved governance-only Context lifecycle conformance
+  card on `codex/cloud-agg-fence-ctx-lifecycle-con-01`; Context Core/Storage and
+  focused test paths were read-only audit targets.
+- Recorded the method matrix for Worker compaction, administrative recovery,
+  cloud fail-closed legacy methods and read-only Context Materialization. Existing
+  Context lifecycle `14/14`, administrative recovery `19/19` and Context
+  Materialization `4/4` evidence were reconciled with the v7 schema and task
+  Owned-path records.
+- Sidebar ChatGPT returned `BLOCK-GAP`: `commit_administrative_activation` does
+  not validate `CONTEXT_COMPACTED` or recovery `capsule_id` binding inside the
+  Store boundary. The audit remains `In Progress`; no production code, test,
+  migration or Schema changed.
+- Registered the minimal Ready successor `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`
+  with adapter/test-only Owned paths. `CLOUD-AGG-FENCE-01` remains Locked.
+
 ## 2026-08-03 - CLOUD-DELIVERY-TXN-PG-01 activation
 
 - Sidebar ChatGPT approved fast-forwarding `codex/cloud-control-plane-pg-01` into

@@ -13,11 +13,17 @@
   CopilotKit/Trench production slice remain gated. `CLOUD-CONTROL-PLANE-PG-01`
   implementation and focused validation are complete on the isolated branch;
   sidebar closeout is approved and the task is recorded as `Done`; its API/Worker
-  mapping remains a later gate. `CLOUD-DELIVERY-TXN-PG-01` is now the active
-  storage-only successor on an isolated worktree; its Core/v15 PostgreSQL
-  implementation and focused Compose evidence are now complete; sidebar closeout
-  approved the task as Done.
-  API/Worker wiring remains out of scope.
+  mapping remains a later gate. `CLOUD-DELIVERY-TXN-PG-01` is also merged to the
+  cloud mainline at `9ec52b16` and recorded as `Done`; its API/Worker wiring,
+  runtime selection and external execution remain out of scope.
+- Active fencing audit: `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` is a governance-only
+  path-bounded audit on `codex/cloud-agg-fence-ctx-lifecycle-con-01`. It confirms
+  the Worker Context fence, pointer CAS, atomic projections and read-only
+  composition, but sidebar review found one Store-level semantic gap in
+  administrative activation: `commit_administrative_activation` does not itself
+  validate `CONTEXT_COMPACTED` and recovery `capsule_id` binding. The card remains
+  `In Progress / BLOCK-GAP`; `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` is the minimal
+  Ready successor. The parent `CLOUD-AGG-FENCE-01` remains `Locked`.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core
@@ -124,6 +130,13 @@
   It keeps Event-derived/read-only models out of the authority layer and API
   commands outside Worker Lease fencing. It is documentation-only and unlocks only
   `CLOUD-AGG-FENCE-CON-01`; the parent gate and adapter cards remain Locked.
+- Context fencing conformance is now explicitly split into a governance audit and
+  a minimal semantic successor. The audit matrix covers Worker compaction,
+  administrative recovery, v7 constraints, fail-closed legacy methods and
+  read-only Context Materialization. It records accepted stale-fence, namespace,
+  pointer and rollback evidence, but keeps the card open because the administrative
+  Store boundary does not validate Event type and capsule binding. No production
+  path or migration is changed by the audit.
 - Completed authority-contract task: `CLOUD-AGG-FENCE-CON-01` adds strict
   `WorkerMutationAuthority` and `AdministrativeMutationCAS` types. It reuses the
   existing LeaseFence, permits the empty-stream revision `-1`, rejects noncanonical

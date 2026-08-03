@@ -2846,7 +2846,7 @@ external membership.
 
 ### CLOUD-DELIVERY-TXN-PG-01 - PostgreSQL Delivery Command Transaction
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `codex`
 - Depends on: cloud Effect dispatch and merged `CLOUD-CONTROL-PLANE-PG-01`
 - Branch: `codex/cloud-delivery-txn-pg-01`
@@ -2871,6 +2871,57 @@ external membership.
   application Compose, runtime selection or production cutover.
 - Closeout: sidebar ChatGPT approved `Review` -> `Done` after Core, delivery
   transaction Compose PostgreSQL and Control Plane regression evidence.
+
+### CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 - Context Lifecycle Fencing Conformance Audit
+
+- Status: `In Progress`
+- Owner: `codex`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-CTX-PG-01`,
+  `CLOUD-AGG-CTX-ADMIN-PG-01`, `CLOUD-CONTEXT-PG-01` and merged
+  `CLOUD-DELIVERY-TXN-PG-01`
+- Branch: `codex/cloud-agg-fence-ctx-lifecycle-con-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-ctx-lifecycle-con-01/zebra-agent`
+- Owned paths: `docs/AGENT_TASKS.md`,
+  `docs/architecture/cloud-agg-fence-ctx-lifecycle-conformance-01.md`, the
+  existing Zebra Cloud status/gate/closeout governance documents,
+  `PROGRESS.md`, `task_plan.md`, `findings.md` and `WORKLOG.md`. The Context
+  Core contracts, PostgreSQL adapter/read composition, focused tests and
+  related commits are read-only audit targets; they are not writable paths.
+- Goal: build a method-by-method matrix proving namespace, aggregate identity,
+  Worker LeaseFence or administrative CAS, PostgreSQL predicates/locks, stale
+  owner rejection and read-only composition for every Context lifecycle path.
+  Do not add production code, tests, Schema or Migration in this card.
+- Acceptance: every Context mutation is either proven fenced/CAS or has an
+  explicit, path-bounded gap; direct adapter bypass, old token/owner,
+  namespace drift, stale pointer and read-composition writes are accounted for.
+  Any unexplained fence or stale-write gap keeps this card In Progress and the
+  parent gate Locked.
+- Evidence: the audit records `PASS` for Worker compaction, fail-closed legacy
+  cloud methods and read composition, but `BLOCK-GAP` for
+  `commit_administrative_activation` because the Store does not validate
+  `CONTEXT_COMPACTED` event type or recovery `capsule_id` binding.
+- Closeout boundary: sidebar ChatGPT explicitly required this governance-only
+  card before activating `CLOUD-AGG-FENCE-01`; the identified gap is registered
+  as the minimal successor `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`.
+
+### CLOUD-AGG-FENCE-CTX-SEMANTIC-01 - Administrative Context Event Semantics
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Depends on: the `BLOCK-GAP` recorded by
+  `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01`
+- Branch: `TBD after activation`
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/context_lifecycle.py`,
+  focused `tests/agent_storage/` and `tests/api/` Context recovery tests, and
+  this task's governance records. No API/Worker startup, Runtime selector,
+  Provider HTTP, SQLite, Redis, Mem0, CopilotKit/Trench or application Compose.
+- Goal: make the PostgreSQL administrative Context activation boundary reject
+  a non-`CONTEXT_COMPACTED` Event and require recovery payload identity to bind
+  to the requested `capsule_id`, without changing the existing HTTP contract or
+  adding a migration.
+- Acceptance: wrong Event type, missing/wrong capsule binding, wrong namespace,
+  stale stream revision and stale active pointer all produce zero writes;
+  correct recovery remains atomic and the real PostgreSQL focused matrix passes.
 
 ### CLOUD-CONTROL-PLANE-PG-01 - Complete PostgreSQL Store Composition
 
@@ -2922,6 +2973,9 @@ external membership.
   validate the current Lease fence in their own PostgreSQL transaction.
 - Acceptance: stale epoch/token/owner tests pass per aggregate on real PostgreSQL;
   only then may the project claim complete multi-Worker safety.
+- Current child gate: `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` is the first
+  governance-only conformance card. It remains `In Progress / BLOCK-GAP` until
+  `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` closes the Store-level Event semantic gap.
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.

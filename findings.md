@@ -1,5 +1,26 @@
 # Findings
 
+## CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 - 2026-08-03
+
+- The Context Worker path is fenced at the PostgreSQL transaction boundary:
+  `WorkerMutationAuthority` carries the complete `LeaseFence`, the store checks
+  namespace/session/revision, and `assert_current_lease_fence` runs before any
+  Event, Capsule, pointer or projection write. Pointer and stream CAS plus
+  transaction rollback are covered by the recorded focused PostgreSQL matrix.
+- Administrative Context recovery is a separate `AdministrativeMutationCAS`
+  path. It locks the Session stream and active pointer, compares the current
+  Session/Workspace projections, and returns the canonical aggregate result
+  without a second projection save. Context Materialization remains read-only and
+  must not be used as mutation authority.
+- A Store-level semantic gap remains: `commit_administrative_activation` does not
+  reject a non-`CONTEXT_COMPACTED` Event or verify that the recovery payload's
+  `capsule_id` equals the requested capsule. The current API caller supplies both
+  correctly, but direct composition/Port use can bypass that caller contract.
+- Sidebar decision: `BLOCK-GAP`; keep the conformance audit `In Progress`, keep
+  `CLOUD-AGG-FENCE-01` `Locked`, and register the minimal adapter/test successor
+  `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`. No production code or migration belongs in
+  the audit card.
+
 ## CLOUD-CONTEXT-PG-01 - 2026-08-03
 
 - The PostgreSQL materialization adapter keeps one `READ ONLY` transaction for

@@ -2,7 +2,7 @@
 
 > 快照日期：2026-08-03
 > 分支：`zebra-cloud-trench`
-> 规划基线：`00705d98`
+> 规划基线：`9ec52b16`
 
 ## 结论
 
@@ -26,10 +26,10 @@ API/Worker 微服务组合。当前状态是“云端事实存储和聚合能力
 
 ### PostgreSQL 云端基础
 
-- PostgreSQL 迁移目录已覆盖 v1-v14：Event/Projection、Epoch/Lease、Effect
+- PostgreSQL 迁移目录已覆盖 v1-v15：Event/Projection、Epoch/Lease、Effect
   Outbox、Workspace、Task/Segment、Model/Tool、Context、Handoff、Artifact、
-  Governed Memory、Memory Delivery、Native Memory Gateway、Provider Continuation
-  和 cloud control-plane shared records。
+  Governed Memory、Memory Delivery、Native Memory Gateway、Provider Continuation、
+  cloud control-plane shared records 和 Delivery Transaction。
 - 已完成并有独立测试证据的主要 Adapter 包括：Event/Projection、Lease、Effect
   Outbox/Consumer、Workspace、Task、Context、Handoff、Model/Tool、Artifact、
   Session History 和 Governed Memory。
@@ -39,6 +39,10 @@ API/Worker 微服务组合。当前状态是“云端事实存储和聚合能力
 - 已记录的宿主 PostgreSQL Compose 矩阵包括 Session History `3/3`、Context
   Materialization `4/4`、Task `32/32`、Workspace `80/80`、Effect Outbox `49/49`
   和 Effect Consumer `58/58`。
+- `CLOUD-DELIVERY-TXN-PG-01` 已 fast-forward 合并到当前云端主线
+  `9ec52b16`，并由侧边栏批准关闭为 `Done`。v15 Delivery transaction store
+  将 receipt、audit 和 `COMMITTED` 状态放在同一 PostgreSQL transaction；API/
+  Worker wiring、Runtime selector 和外部动作仍未接线。
 
 ### Memory
 
@@ -71,10 +75,10 @@ API/Worker 微服务组合。当前状态是“云端事实存储和聚合能力
 PostgreSQL Adapter 已存在，不代表云端运行时已经选用 PostgreSQL。
 
 最近完成的云端主线任务是
-`CLOUD-PROVIDER-CONT-PG-01`。其实施边界见
-[`Cloud Provider Continuation PostgreSQL Plan`](./architecture/cloud-provider-continuation-pg-plan.md)。
-规划卡 `CLOUD-PROVIDER-CONT-PG-PLAN-01` 已由侧边栏架构评审接受并关闭为
-`Done`；实现卡已在隔离工作树完成并通过 closeout，迁移目标为 v13。
+`CLOUD-DELIVERY-TXN-PG-01`。其实施边界见
+[`Cloud Delivery Transaction PostgreSQL Plan`](./architecture/cloud-delivery-txn-pg-plan.md)。
+`CLOUD-PROVIDER-CONT-PG-PLAN-01` 和实现卡均已由侧边栏接受并关闭为
+`Done`；Delivery 迁移目标为 v15，API/Worker 接线仍是后续门禁。
 
 当前主线后续任务：
 
@@ -82,12 +86,17 @@ PostgreSQL Adapter 已存在，不代表云端运行时已经选用 PostgreSQL�
    cloud-only `CloudControlPlane`、`PostgresControlPlaneStores` 存储组合、迁移和
    聚焦验证；现有本地 `ControlPlaneStores` 不变，API/Worker 接线与 Runtime 选择
    仍是后续门禁。
-2. `CLOUD-DELIVERY-TXN-PG-01`：Delivery Audit/Idempotency 命令事务。
-3. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁。
+2. `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01`：Context lifecycle 的治理/审计型
+   fencing conformance card，当前为 `In Progress / BLOCK-GAP`。
+3. `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`：修复行政 Context activation 的
+   Event type 与 capsule binding Store-level 缺口，当前为 `Ready`。
+4. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁。
 
-当前 `CLOUD-CONTROL-PLANE-PG-01` 已为 `Done`；Delivery 和 fencing 仍为
-`Locked`。本任务只能修改注册的 Core/Storage/governance Owned paths，不能
-顺带激活 API/Worker、Runtime selector 或应用 Compose。
+当前 `CLOUD-CONTROL-PLANE-PG-01` 与 `CLOUD-DELIVERY-TXN-PG-01` 均为 `Done`；
+Context conformance 审计保持 `In Progress / BLOCK-GAP`，父 fencing gate 仍为
+`Locked`。当前卡只能修改注册的 governance Owned paths，生产 Context Core/
+Storage 与 tests 仅供只读审计；不能顺带激活 API/Worker、Runtime selector 或
+应用 Compose。
 
 ### Docker 应用层与在线事件
 
@@ -158,7 +167,8 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 
 ## 后续实施顺序
 
-以下顺序沿用现有任务注册表；前三项已完成，下一项仍受依赖门禁约束：
+以下顺序沿用现有任务注册表；Delivery 已完成，Context conformance 先审计再
+修复语义缺口，父门禁仍受依赖约束：
 
 1. [x] 关闭 `CLOUD-PROVIDER-CONT-PG-PLAN-01`，冻结 authority identity、
    `WorkerMutationAuthority`、PostgreSQL 事务和生命周期合同。
@@ -167,16 +177,22 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
    `39bbe444`，复核修复为 `abd7a7f0`，sidebar closeout 已接受。
 3. 完成 cloud-only `CloudControlPlane` / `PostgresControlPlaneStores` 存储组合；
    再由独立 API/Worker 任务实现 SQLite/Cloud profile 选择。
-4. 完成 Delivery transaction 和所有 aggregate fencing 证据。
-5. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
-6. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
-7. 再激活 Host/AG-UI/Trench read-only vertical slice。
-8. 之后才进入 Frontend、Analysis、Writeback 和 GA。
+4. 完成 `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` 审计，并由
+   `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` 修复已确认的 Store 语义缺口。
+5. 完成其余 aggregate fencing conformance 与真实 PostgreSQL 证据，再评估
+   `CLOUD-AGG-FENCE-01` 激活。
+6. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
+7. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
+8. 再激活 Host/AG-UI/Trench read-only vertical slice。
+9. 之后才进入 Frontend、Analysis、Writeback 和 GA。
 
 ## 当前治理门
 
-`CLOUD-PROVIDER-CONT-PG-01` 已完成独立实施与 closeout：Owner、Branch、Worktree、
-Owned paths 和 v13 迁移所有权均已登记。当前没有已注册的 Ready successor；
+`CLOUD-PROVIDER-CONT-PG-01` 与 `CLOUD-DELIVERY-TXN-PG-01` 已完成独立实施与
+closeout：Owner、Branch、Worktree、Owned paths 和 v13/v15 迁移所有权均已登记。
+当前 `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` 正在进行治理审计；
+`CLOUD-AGG-FENCE-CTX-SEMANTIC-01` 是其唯一最小 Ready successor，
+`CLOUD-AGG-FENCE-01` 仍保持 Locked。
 `CLOUD-CONTROL-PLANE-PG-01` 已在所有 aggregate PostgreSQL adapter/read-composition
 依赖闭合后由侧边栏批准激活，并在实现、Compose 验证和 closeout 后登记为 `Done`；
 其 v14 shared records 与 cloud-only composition 已交付。其余
