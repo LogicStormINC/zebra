@@ -22,6 +22,14 @@
   `CLOSEOUT-OK`, three zero-write regressions and a real PostgreSQL `18/18`
   focused matrix. The parent `CLOUD-AGG-FENCE-01` remains `Locked` because other
   aggregate fencing cards are still pending.
+- The current cloud governance slice is
+  `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01`, now in `Review` on its isolated
+  worktree at base `765ede43`. Sidebar ChatGPT returned `CLOSEOUT-OK` for
+  `Planning -> Review` with audit result `BLOCK-GAP`: reserve/abort authority,
+  dispatch revision/replay/race/namespace evidence and a reproducible Handoff
+  PostgreSQL runner remain missing. No production code, tests, migrations,
+  Compose runner or runtime selection is authorized; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core

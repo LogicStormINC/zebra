@@ -1,5 +1,43 @@
 # Task Plan
 
+## CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01 - Handoff And Dispatch Mutation Authority Conformance Audit (Review)
+
+1. `completed` - Claim the governance-only audit on
+   `codex/cloud-agg-fence-handoff-dispatch-con-01` at
+   `zebra-cloud-trench@765ede43`; preserve the root `AGENTS.md` change and keep
+   all Handoff/dispatch implementation paths read-only.
+2. `completed` - Trace every Handoff creation, successor publication, dispatch
+   claim/ack/reclaim, pointer or projection mutation and delivery-audit write
+   through its actual Core Port, PostgreSQL transaction and Worker caller.
+3. `completed` - Populate the HD-01..HD-12 matrix with authority identity,
+   aggregate binding, stale rejection, pointer/revision fencing, zero-write,
+   concurrency, replay, namespace and transaction-boundary evidence.
+4. `completed` - Run only existing focused PostgreSQL Compose runners, unchanged,
+   where they cover the matrix; record PostgreSQL version, exact command,
+   sentinel, row counts, cleanup and tested SHA. Missing real evidence is a
+   `BLOCK-GAP`, not an implementation invitation.
+5. `completed` - Validate the governance diff and request sidebar review. Sidebar
+   ChatGPT returned `CLOSEOUT-OK` for `Planning -> Review` with audit result
+   `BLOCK-GAP`; `CLOUD-AGG-FENCE-01` remains `Locked`.
+
+### Boundary
+
+- Writable paths are limited to `docs/AGENT_TASKS.md`, `PROGRESS.md`,
+  `task_plan.md`, `docs/Zebra Cloud 主线当前状态与后续工作.md` and this audit
+  document.
+- No production code, tests, migrations, Compose runner, Runtime, API/Worker
+  composition, SQLite, Redis, Mem0, CopilotKit/Trench or application Docker
+  changes are authorized.
+
+### Review decision
+
+- `CLOSEOUT-OK`: the planning audit is complete and moves to `Review`.
+- `BLOCK-GAP`: reserve/abort authority, dispatch stream/pointer/replay/race/
+  namespace zero-write evidence and a reproducible PostgreSQL runner remain
+  follow-up gates.
+- Two scoped successors are recorded as `Locked` only; neither is activated,
+  and the parent aggregate fencing gate stays `Locked`.
+
 ## CLOUD-AGG-FENCE-CTX-SEMANTIC-01 - Administrative Context Event Semantics (Done)
 
 1. `completed` - Activate the bounded successor on

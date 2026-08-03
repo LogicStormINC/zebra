@@ -5,9 +5,10 @@
 > Current execution range: local Beta and single-host production foundations are
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
 > `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
-> accepted and closed. `CLOUD-PROVIDER-CONT-PG-01` is the active cloud-mainline
-> implementation card; its planning predecessor is closed as `Done`. Local
-> SQLite Registry work remains deferred. ACP and optional code intelligence
+> accepted and closed. The active cloud-mainline slice is the governance-only
+> `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` audit; its implementation
+> predecessors are closed as `Done`, while the aggregate parent remains locked.
+> Local SQLite Registry work remains deferred. ACP and optional code intelligence
 > remain locked.
 
 ## Global Rules
@@ -117,6 +118,13 @@ does not authorize production code, migrations or activation of its successor.
   evidence passed. `CLOUD-CONTEXT-CON-01` is now `Done` on its claimed branch;
   its PostgreSQL successor, Provider Continuation and all other successor
   adapters remain `Locked`.
+- `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` is `Review` on the isolated
+  `codex/cloud-agg-fence-handoff-dispatch-con-01` worktree. It is a governance-only
+  audit of Handoff and dispatch mutation authority. Sidebar ChatGPT returned
+  `CLOSEOUT-OK` for `Planning -> Review` with audit result `BLOCK-GAP`; production
+  code, tests, migrations, Compose and runtime selection remain forbidden. The
+  parent `CLOUD-AGG-FENCE-01` remains `Locked`, and its two scoped successors
+  remain unactivated until their own authority/evidence gates are approved.
 
 ## Context Continuity And Governed Memory Board
 
@@ -2930,6 +2938,104 @@ external membership.
 - Closeout: sidebar ChatGPT returned `CLOSEOUT-OK`, approved `Review -> Done`,
   allowed the parent Context audit's `BLOCK-GAP` to close, and explicitly kept
   `CLOUD-AGG-FENCE-01` `Locked` because other aggregate cards remain pending.
+
+### CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01 - Handoff And Dispatch Mutation Authority Conformance Audit
+
+- Status: `Review`
+- Owner: `governance/planning`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-HANDOFF-PG-01`,
+  `CLOUD-AGG-HANDOFF-CON-01`, `CLOUD-LEASE-PG-01`, and the accepted Context
+  conformance closeout. This card does not unlock the parent aggregate gate.
+- Branch: `codex/cloud-agg-fence-handoff-dispatch-con-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-handoff-dispatch-con-01/zebra-agent`
+- Base: `zebra-cloud-trench@765ede43`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`,
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`, and
+  `docs/CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01.md`
+- Read-only audit targets: Handoff/dispatch Core contracts and Ports,
+  `packages/agent-context/src/agent_context/session_handoff.py`, all matching
+  PostgreSQL Handoff/dispatch/lease/Event/delivery-audit adapters and migrations,
+  Worker Handoff/claim/finalization seams, focused Handoff/dispatch/delivery
+  tests and existing PostgreSQL Compose runners, plus the `CLOUD-AGG-HANDOFF-PG-01`
+  and delivery-audit closeout evidence.
+- Goal: prove that every Handoff and durable dispatch mutation carries the
+  canonical `WorkerMutationAuthority`/`LeaseFence`, binds Session/Task/Handoff/
+  destination/namespace identity at the persistence boundary, rejects stale or
+  cross-namespace authority before writes, and publishes work only inside the
+  same PostgreSQL transaction as its durable authority record.
+- Acceptance: the audit records an HD-01..HD-12 method matrix, exact existing
+  PostgreSQL commands and row-count assertions, and one of `PASS` or
+  `BLOCK-GAP`. Missing enforcement or real evidence is a blocker; no production
+  successor is activated automatically. A `PASS` moves this audit to `Review`
+  for separate sidebar closeout; a `BLOCK-GAP` may remain in `Review` for that
+  closeout but cannot move to `Done`, with only the explicitly scoped,
+  separately locked successors recorded below.
+- Audit result: `BLOCK-GAP`. Sidebar ChatGPT returned `CLOSEOUT-OK` and approved
+  `Planning -> Review`, while keeping implementation and successor activation
+  unauthorized. The missing authority/CAS, dispatch revision/replay/race/
+  namespace evidence and reproducible PostgreSQL runner are recorded in the
+  audit document.
+- Required follow-up cards, both `Locked` and not activated: a minimal
+  Handoff reserve/abort authority card and a separate dispatch stream/pointer/
+  replay fencing card. Neither may unlock the parent gate or select a runtime
+  profile without a new sidebar activation decision.
+- Explicit non-goals: no changes to `packages/agent-core/`,
+  `packages/agent-context/`, `packages/agent-storage/`, `apps/worker/`,
+  `apps/api/`, `tests/`, `evals/`, migrations, Compose runners, Runtime,
+  Provider HTTP, SQLite, Redis, Mem0, CopilotKit/Trench, application Docker or
+  the dirty root `AGENTS.md`.
+- Validation boundary: use only existing focused PostgreSQL Compose runners,
+  unchanged; record PostgreSQL `17.5-alpine3.21`, tested SHA `765ede43`, exact
+  commands, per-case sentinels/counts, cleanup and `git diff --check`. No API or
+  Worker process is started by this governance card.
+
+### CLOUD-AGG-FENCE-HANDOFF-AUTH-01 - Handoff Reserve And Abort Authority
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` `Review` closeout,
+  `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-HANDOFF-PG-01` and a new sidebar
+  activation decision. This card is registered only; it is not activated.
+- Branch: `TBD after explicit activation`
+- Worktree: `TBD after explicit activation`
+- Owned paths after activation: the Core Session Handoff authority/Port seam;
+  PostgreSQL Handoff reservation, commit precondition and abort adapter seams;
+  focused Handoff PostgreSQL tests and its dedicated Compose runner; governance
+  records. Existing local SQLite behavior and unrelated aggregate adapters are
+  out of scope.
+- Goal: bind reserve and abort to the canonical WorkerMutationAuthority or an
+  explicitly approved AdministrativeMutationCAS, current source LeaseFence,
+  source stream/workspace/request identity and zero-write CAS semantics.
+- Acceptance: wrong namespace, owner, epoch, token, expiry, stream, workspace,
+  request identity and stale CAS all fail before writes; authorized retry is
+  idempotent; real PostgreSQL evidence records row counts and cleanup.
+- Explicit non-goals: no dispatch Port redesign, Runtime/API/Worker profile
+  selection, SQLite, Redis, Mem0, Provider HTTP, CopilotKit/Trench or parent-gate
+  unlock.
+
+### CLOUD-AGG-FENCE-DISPATCH-01 - Dispatch Stream Pointer And Replay Fencing
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` `Review` closeout,
+  `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-HANDOFF-PG-01` and a new sidebar
+  activation decision. This card is registered only; it is not activated.
+- Branch: `TBD after explicit activation`
+- Worktree: `TBD after explicit activation`
+- Owned paths after activation: the Core Handoff dispatch Port/receipt seam;
+  PostgreSQL dispatch claim/ACK adapter and only the required schema-compatible
+  support; focused dispatch PostgreSQL tests and its dedicated Compose runner;
+  governance records. Handoff reservation authority remains owned by
+  `CLOUD-AGG-FENCE-HANDOFF-AUTH-01`.
+- Goal: bind claim and ACK to Handoff operation identity, expected stream and
+  active-pointer revision, full LeaseFence and claim token, with replay-safe and
+  namespace-safe zero-write behavior.
+- Acceptance: two-worker race has one winner; stale fence/token/expiry/stream/
+  pointer and cross-namespace attempts write zero rows; authorized replay returns
+  an equivalent result; PostgreSQL evidence includes exact commands and counts.
+- Explicit non-goals: no reserve/abort authority redesign, Runtime/API/Worker
+  profile selection, SQLite, Redis, Mem0, Provider HTTP, CopilotKit/Trench or
+  parent-gate unlock.
 
 ### CLOUD-CONTROL-PLANE-PG-01 - Complete PostgreSQL Store Composition
 

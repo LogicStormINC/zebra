@@ -2,7 +2,7 @@
 
 > 快照日期：2026-08-03
 > 分支：`zebra-cloud-trench`
-> 规划基线：`9ec52b16`
+> 规划基线：`765ede43`
 
 ## 结论
 
@@ -92,13 +92,21 @@ PostgreSQL Adapter 已存在，不代表云端运行时已经选用 PostgreSQL�
    Event type 与 capsule binding Store-level 缺口，已由侧边栏批准关闭为
    `Done`；Store guard、三类零写入回归和真实 PostgreSQL `18/18` 矩阵均已
    完成。
-4. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁。
+4. `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01`：当前唯一进行中的治理型
+   子任务，审计 Handoff/dispatch 的 WorkerMutationAuthority、LeaseFence、
+   身份绑定、零写入、并发、重放、命名空间隔离和事务发布边界。该卡当前为
+   `Review`，审计结果为 `BLOCK-GAP`；实现代码、测试、迁移、Compose 和运行时
+   选择均不在授权范围内。
+
+5. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
+   在所有子聚合 conformance card 完成前继续保持 `Locked`。
 
 当前 `CLOUD-CONTROL-PLANE-PG-01` 与 `CLOUD-DELIVERY-TXN-PG-01` 均为 `Done`；
-Context conformance 审计及其 semantic successor 均为 `Done`，父 fencing gate
-仍为 `Locked`，因为其他 aggregate fencing cards 尚未闭合。已完成的 Store
-semantic slice 只修改注册的 adapter、focused tests、独立 PostgreSQL Compose
-runner 和治理记录；不能顺带激活 API/Worker、Runtime selector 或应用 Compose。
+Context conformance 审计及其 semantic successor 均为 `Done`，
+`CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 已进入 `Review`，审计结果为
+`BLOCK-GAP`；父 fencing gate 仍为 `Locked`，因为其他 aggregate fencing cards
+尚未闭合。Handoff/dispatch 实现 successor 仍为 `Locked`，不能顺带激活
+API/Worker、Runtime selector 或应用 Compose。
 
 ### Docker 应用层与在线事件
 
@@ -170,7 +178,8 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 ## 后续实施顺序
 
 以下顺序沿用现有任务注册表；Delivery 已完成，Context conformance 审计与
-语义缺口修复均已完成，父门禁仍受依赖约束：
+语义缺口修复均已完成，当前先进行 Handoff/dispatch conformance 审计，父门禁
+仍受依赖约束：
 
 1. [x] 关闭 `CLOUD-PROVIDER-CONT-PG-PLAN-01`，冻结 authority identity、
    `WorkerMutationAuthority`、PostgreSQL 事务和生命周期合同。
@@ -182,12 +191,16 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 4. 完成 `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` 审计，并由
    `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` 修复已确认的 Store 语义缺口；两张卡
    均已由侧边栏 closeout 为 `Done`。
-5. 完成其余 aggregate fencing conformance 与真实 PostgreSQL 证据，再评估
+5. [review] 完成 `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 治理审计；sidebar
+   已批准 `Planning -> Review`，但结果为 `BLOCK-GAP`。reserve/abort authority、
+   dispatch revision/replay/race/namespace zero-write 及可复现 PostgreSQL
+   runner 仍是后续门禁，不自动激活实现。
+6. 完成其余 aggregate fencing conformance 与真实 PostgreSQL 证据，再评估
    `CLOUD-AGG-FENCE-01` 激活。
-6. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
-7. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
-8. 再激活 Host/AG-UI/Trench read-only vertical slice。
-9. 之后才进入 Frontend、Analysis、Writeback 和 GA。
+7. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
+8. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
+9. 再激活 Host/AG-UI/Trench read-only vertical slice。
+10. 之后才进入 Frontend、Analysis、Writeback 和 GA。
 
 ## 当前治理门
 
