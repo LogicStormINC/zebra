@@ -23,7 +23,7 @@
 - Sidebar ChatGPT reviewed the implementation and approved `CLOUD-CONTROL-PLANE-PG-01`
   for `Done`. API/Worker profile selection, Delivery transaction, aggregate fencing,
   Runtime, Redis and application Compose remain separate gates.
-- Implementation committed as `1611fb5e` (`feat(storage): add cloud postgres control
+- Implementation committed as `b84d464d` (`feat(storage): add cloud postgres control
   plane composition`) on the isolated branch.
 
 ## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-01 formal closeout

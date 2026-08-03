@@ -2887,7 +2887,7 @@ external membership.
   `git diff --check` and release Eval `10/10` pass. Full `make test` reports
   `2037 passed, 217 skipped, 1` known inherited file-size failure; no new size
   violation was introduced.
-- Implementation commit: `1611fb5e` on the isolated worktree above.
+- Implementation commit: `b84d464d` on the isolated worktree above.
 - Closeout: sidebar ChatGPT approved Option B implementation and authorized this
   card to move from `In Progress` to `Done`. API/Worker profile selection,
   Delivery transaction and aggregate fencing remain independent future gates.

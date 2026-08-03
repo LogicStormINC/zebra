@@ -5,7 +5,7 @@
 - 任务：`CLOUD-CONTROL-PLANE-PG-01`
 - 状态：`Done`
 - 目标分支：`codex/cloud-control-plane-pg-01`
-- 实现提交：`1611fb5e`
+- 实现提交：`b84d464d`
 - 决策来源：侧边栏 ChatGPT 技术评审已选择方案 B
 
 ## 决策
