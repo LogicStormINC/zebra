@@ -1615,12 +1615,38 @@
 - The proposal direction and ADR-016 are accepted and merged into the cloud
   mainline; they remain architecture-only and do not select an implementation
   backend.
-- `AGENT-DEF-CON-01` is the only active follow-up; all SQLite/PostgreSQL/API/
-  runtime and publication work remains `Locked`.
+- `AGENT-DEF-CON-01` is complete. `AGENT-AUTH-SNAPSHOT-01` is the next Ready
+  cloud-neutral follow-up; local SQLite/PostgreSQL/API/runtime and publication
+  work remains deferred or `Locked` on the cloud microservice mainline.
 - Task identity and Definition configuration remain stable across Segments, while
   external execution authority is revalidated for every Attempt.
 - Zebra stores only opaque `(authority_issuer, namespace_id)` isolation keys and
   does not create a Tenant/User/Organization domain.
+
+## AGENT-DEF-CON-01 - Core Definition And Registry Contracts
+
+1. `completed` - Claim the Core contract card after ADR-016 and keep its Owned
+   paths limited to `agent-core`, focused tests and governance evidence.
+2. `completed` - Add immutable Definition/Version/Release models with scope,
+   deterministic digest, pinned reference validation and append-only lifecycle
+   transitions.
+3. `completed` - Add the narrow provider-neutral `AgentRegistryPort`, identifier
+   types and focused negative/positive contract tests without infrastructure
+   dependencies.
+4. `completed` - Run Ruff/format, Core tests (`355/355`), Core Mypy (`138` files),
+   file-size and diff checks; close the card and unlock only the authority snapshot
+   successor.
+
+### Decisions
+
+- Core stores opaque `(authority_issuer, namespace_id)` scope and never derives a
+  business Tenant/User/Organization model.
+- Version content is immutable and digest-addressed; component references must be
+  stable and pinned, and release transitions are append-only with monotonic
+  revisions.
+- No SQLite adapter is added to this cloud mainline. The next implementation slice
+  is the cloud-neutral durable Attempt authority snapshot contract; PostgreSQL
+  Registry and runtime composition remain separate gates.
 
 ## ARCH-RUNTIME-V2-PLAN-01 - Runtime V2 Proposal Current-State Alignment
 

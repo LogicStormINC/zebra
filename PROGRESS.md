@@ -317,13 +317,15 @@
 - Agent Definition architecture task `AGENT-DEF-ADR-01` is Done: ADR-016 records
   accepted Definition control-plane decisions and updates the final architecture.
   It separates Task-level Definition configuration from Attempt-level execution
-  authority and preserves ADR-012's opaque external namespace. Code audit also
-  confirmed that external Attempt authority snapshots and immutable Skill content
-  snapshots are not yet implemented; dedicated follow-up tasks own those gaps.
-  `AGENT-DEF-CON-01` is the active follow-up and owns the provider-neutral
-  Core Definition/Version/Release contract; storage and runtime remain locked.
-  The implementation order is `CON -> STO -> {PG,DRAFT}`, `CON -> AUTH`, then
-  `{DRAFT,AUTH} -> BIND -> MEM -> TRUST -> EVAL -> PUB`.
+  authority and preserves ADR-012's opaque external namespace. `AGENT-DEF-CON-01`
+  is now Done: its frozen provider-neutral Definition/Version/Release models,
+  deterministic digest/reference validation and Registry Port are merged, with
+  `355/355` focused Core tests and changed static checks passing. The next Ready
+  task is the cloud-neutral `AGENT-AUTH-SNAPSHOT-01`; local SQLite Registry work is
+  intentionally deferred on this cloud microservice mainline, while storage,
+  API and runtime wiring remain locked. The implementation order is
+  `CON -> AUTH`, then `{DRAFT,AUTH} -> BIND -> MEM -> TRUST -> EVAL -> PUB`;
+  PostgreSQL Registry remains a separately gated adapter.
 - Web Intelligence planning: `WEB-INT-PLAN-01` is a documentation-only review
   slice defining a provider-neutral native `web.*` surface over a replaceable
   wigolo Provider, Zebra-owned orchestration/security, and durable Watch. Its

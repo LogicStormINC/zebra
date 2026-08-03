@@ -4,8 +4,10 @@
 > Status, owner, branch, and evidence must be maintained by humans.
 > Current execution range: local Beta and single-host production foundations are
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
-> `AGENT-DEF-ADR-01` is accepted and closed; `AGENT-DEF-CON-01` is the current
-> Core contract task. ACP and optional code intelligence remain locked.
+> `AGENT-DEF-ADR-01` and `AGENT-DEF-CON-01` are accepted and closed. The next
+> cloud-neutral contract is `AGENT-AUTH-SNAPSHOT-01`; local SQLite Registry work
+> remains deferred on the cloud microservice mainline. ACP and optional code
+> intelligence remain locked.
 
 ## Global Rules
 
@@ -93,10 +95,11 @@
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
 - `AGENT-DEF-ADR-01` is `Done`; its accepted ADR-016 is merged into the cloud
-  mainline and unlocks only the Core contract task below.
-- `AGENT-DEF-CON-01` is the current `In Progress` task for the provider-neutral Core
-  Definition/Version/Release models and Registry Port. No storage or runtime
-  implementation is activated by this card.
+  mainline and has unlocked the Core contract and its authority-snapshot successor.
+- `AGENT-DEF-CON-01` is `Done`: its provider-neutral Core Definition/Version/Release
+  models and Registry Port are merged into the cloud mainline. The next Ready task
+  is the cloud-neutral Attempt authority snapshot contract; local SQLite Registry,
+  PostgreSQL adapters and runtime wiring remain deferred or locked.
 - Cloud aggregate and Artifact task state is maintained in the cloud board below;
   `CLOUD-SCOPE-CON-01` is `Done`, and the explicitly activated
   `CLOUD-SESSION-HISTORY-PG-01` is now `Done` after its host PostgreSQL
@@ -18118,9 +18121,11 @@ turning it into executable architecture before the focused ADR is approved.
 Direction source: `docs/Zebra Agent Runtime Upgrade Proposal v2.0.md`.
 Decision source: `docs/ADR-016_Agent_Definition控制面与版本发布边界.md`.
 
-Execution rule: only `AGENT-DEF-CON-01` may be active. Every later task remains
-`Locked` until its dependencies are merged to `main`; a locked card's paths must
-be rechecked and narrowed against ADR-016 before it is claimed.
+Execution rule: only `AGENT-AUTH-SNAPSHOT-01` may be active. Local SQLite Registry
+work is intentionally deferred on the cloud microservice mainline; every other
+later task remains `Locked` until its dependencies are merged to `main`, and a
+locked card's paths must be rechecked and narrowed against ADR-016 before it is
+claimed.
 
 ### AGENT-DEF-ADR-01 - Definition Authority And Snapshot ADR
 
@@ -18187,7 +18192,7 @@ Task/Attempt snapshot split before implementation begins.
 
 ### AGENT-DEF-CON-01 - Core Definition And Registry Contracts
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Branch: `codex/agent-def-con-01`
 - Worktree: `../zebra-agent-agent-def-con-01`
@@ -18210,6 +18215,22 @@ Registry Port in `agent-core`, with no infrastructure dependency.
 - published content cannot be mutated in place
 - references contain no secrets, executable code or unversioned capabilities
 - negative tests cover namespace mismatch, digest drift and invalid transitions
+
+#### Validation And Handoff
+
+- Frozen Core models cover Definition, immutable Version, append-only Release and
+  the narrow Registry Port; stable component references are pinned and digests are
+  deterministic.
+- Focused Core tests pass `355/355`; changed-path Ruff/format, Mypy over the Core
+  package (`138` files) and `git diff --check` pass.
+- No SQLite/PostgreSQL adapter, API, Worker or Runtime wiring is included. The
+  cloud-neutral successor is `AGENT-AUTH-SNAPSHOT-01`; local SQLite Registry work
+  remains deferred for this cloud branch.
+
+#### Closeout
+
+- The contract is merged into `zebra-cloud-trench`; its dependency is satisfied for
+  the authority snapshot task while storage and publication remain separately gated.
 
 ### AGENT-DEF-STO-01 - Local SQLite Registry Authority
 
@@ -18291,9 +18312,10 @@ without adding release mutation, a marketplace or business user/tenant model.
 
 ### AGENT-AUTH-SNAPSHOT-01 - Durable Attempt Authority Snapshot Contract
 
-- Status: `Locked`
-- Owner: `Unassigned`
-- Suggested branch: `codex/agent-authority-snapshot-01`
+- Status: `Ready`
+- Owner: `Codex`
+- Branch: `codex/agent-authority-snapshot-01`
+- Worktree: `../zebra-agent-agent-authority-snapshot-01`
 - Depends on: `AGENT-DEF-CON-01` merged to `main`
 - Owned paths:
   `packages/agent-core/src/agent_core/domain/execution_authority.py`,
