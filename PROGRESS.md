@@ -324,7 +324,13 @@
   the registered dependency DAG and explicit task activation.
   The implementation order is `CON -> STO -> {PG,DRAFT}`, `CON -> AUTH`, then
   `{DRAFT,AUTH} -> BIND -> MEM -> TRUST -> EVAL -> PUB`.
-- Locked architecture tasks: ACP entry and optional code intelligence
+- Web Intelligence planning: `WEB-INT-PLAN-01` is a documentation-only review
+  slice defining a provider-neutral native `web.*` surface over a replaceable
+  wigolo Provider, Zebra-owned orchestration/security, and durable Watch. Its
+  implementation cards remain Locked; no wigolo runtime or new native Tool is
+  delivered.
+- Locked architecture tasks: Web Intelligence implementation, ACP entry and
+  optional code intelligence
 - Open product issue: none; `#148` closed with PR `#156`
 - Review task: `WEB-UX-01` makes explicit `local + trusted-local` execution
   non-interactive across Desktop/API/CLI/Worker, including existing Tasks, while
@@ -644,6 +650,9 @@ Redis composition.
    admission and storage slices are Done. The scoped reset child is `Blocked`
    on bounded enumeration; keep the Mem0 consumer, parent ledger and Runtime
    locked until their own explicit gates are reviewed.
+10. Keep `WEB-INT-PLAN-01` in review until its document evidence is accepted;
+    do not activate Web Intelligence contracts, Provider, security, tools,
+    orchestration or Watch cards out of dependency order.
 
 ## Runtime Blueprint
 

@@ -31,6 +31,9 @@ Use these files for implementation, task claiming, collaboration, and phase prog
   boundary and explicit production prerequisites
 - `主线架构工程完成度审计与收口计划_v1.0.md`: current evidence-backed
   completion assessment and remaining platform boundary
+- `Wigolo_Web_Intelligence原生化架构与实施计划_v1.0.md`: planned, not yet
+  implemented provider-neutral `web.*` contracts, wigolo Provider boundary,
+  Zebra-owned research/security, durable Watch, task order, and acceptance gates
 - `operator_runbook.md`: current local operator workflow for CLI, API, and stream replay
 - `TASK_CARD_TEMPLATE.md`: template for adding or splitting tasks
 - `CODEOWNERS.template`: ownership template for GitHub
