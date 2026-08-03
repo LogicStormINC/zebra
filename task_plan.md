@@ -1,6 +1,6 @@
 # Task Plan
 
-## CLOUD-PROVIDER-CONT-PG-PLAN-01 - Provider Continuation PostgreSQL Authority Plan
+## CLOUD-PROVIDER-CONT-PG-PLAN-01 - Provider Continuation PostgreSQL Authority Plan (Done)
 
 1. `completed` - Audit the status snapshot, registered dependency chain, current
    Provider Continuation Port/SQLite adapter and every Worker persistence/recovery
@@ -11,11 +11,12 @@
 3. `completed` - Write the focused plan and register its owner, branch, worktree,
    owned paths, implementation unlock gate, acceptance matrix and explicit non-goals.
 4. `completed` - Validate documentation links, terminology, file limits and diff;
-   prepare the planning card for review without unlocking implementation.
+   close the plan after sidebar acceptance and activate its implementation successor.
 
 ### Decisions
 
-- Keep `CLOUD-PROVIDER-CONT-PG-01` `Locked`; planning is a separate docs-only card.
+- `CLOUD-PROVIDER-CONT-PG-01` is activated separately; the planning card owns no
+  production code or migration.
 - External permission identity is `(authority_issuer, namespace_id)`, while trusted
   composition maps it to the internal `deployment_namespace`. PostgreSQL uses
   `(deployment_namespace, continuation_id)` as the physical resource key and
@@ -33,6 +34,31 @@
 - No Runtime/backend selection, API/Worker composition or Provider HTTP.
 - No Desktop, SQLite behavior, Redis, Mem0, Docker application or deployment work.
 - No broader Control Plane, Delivery transaction or Trench/CopilotKit planning.
+
+## CLOUD-PROVIDER-CONT-PG-01 - Fenced Provider Continuation Payload (Implementation Slice Ready)
+
+1. `completed` - Register the activated owner, branch, worktree, v13 migration
+   and exact Owned paths; audit the v12 migration and PostgreSQL aggregate seams.
+2. `completed` - Add the focused Core cloud continuation contract while preserving
+   the local SQLite Port and domain compatibility surface.
+3. `completed` - Implement PostgreSQL v13 continuation metadata/payload authority,
+   fence validation, idempotency, lifecycle and scoped management sweep.
+4. `completed` - Wire the explicit cloud Worker aggregate commit seam so the
+   continuation row and canonical selection Event share one PostgreSQL transaction.
+5. `completed` - Record implementation evidence and commit the isolated branch
+   as `0942f256`; the card remains `In Progress` pending the separately required
+   sidebar review, and must not be marked Done until that review confirms the
+   closeout.
+
+### Implementation decisions
+
+- Use external `(authority_issuer, namespace_id)` with trusted mapping to
+  `deployment_namespace`; no Tenant model or inferred membership.
+- Reuse complete `WorkerMutationAuthority` and `LeaseFence`; no second
+  continuation-specific fencing token.
+- Serialize migration `v13` after the immutable v1-v12 catalog.
+- Leave local SQLite, Runtime selector, API/Provider HTTP, Desktop, Redis,
+  Mem0 and Docker application behavior unchanged.
 
 ## CLOUD-MEMORY-PG-01 - PostgreSQL Governed Memory Authority
 

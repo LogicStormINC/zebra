@@ -61,6 +61,10 @@ from agent_storage.postgres.projections import (
     PostgresProjectionConflictError,
     PostgresProjectionStore,
 )
+from agent_storage.postgres.provider_continuations import (
+    PostgresProviderContinuationConflictError,
+    PostgresProviderContinuationStore,
+)
 from agent_storage.postgres.session_handoff_dispatch import PostgresHandoffDispatchStore
 from agent_storage.postgres.session_handoffs import PostgresSessionHandoffStore
 from agent_storage.postgres.session_history import PostgresSessionHistory
@@ -112,6 +116,8 @@ __all__ = [
     "PostgresProjectionStore",
     "PostgresWorkspaceProjectionConflictError",
     "PostgresWorkspaceProjectionStore",
+    "PostgresProviderContinuationConflictError",
+    "PostgresProviderContinuationStore",
     "apply_postgres_migrations",
     "attach_segment_in_transaction",
     "bootstrap_control_plane_epoch",

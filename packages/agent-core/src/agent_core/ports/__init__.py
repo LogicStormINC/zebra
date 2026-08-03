@@ -75,6 +75,12 @@ from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_core.ports.provider_continuation import ProviderContinuationPort
+from agent_core.ports.provider_continuation_cloud import (
+    CloudProviderContinuationCommitResult,
+    CloudProviderContinuationStorePort,
+    LoadedCloudProviderContinuation,
+    ProviderContinuationSweepReceipt,
+)
 from agent_core.ports.provider_continuation_store import (
     LoadedProviderContinuation,
     ProviderContinuationStorePort,
@@ -178,6 +184,10 @@ __all__ = [
     "LoadedProviderContinuation",
     "PreviewState",
     "ProviderContinuationPort",
+    "CloudProviderContinuationCommitResult",
+    "CloudProviderContinuationStorePort",
+    "LoadedCloudProviderContinuation",
+    "ProviderContinuationSweepReceipt",
     "ProviderContinuationStorePort",
     "PolicyEnginePort",
     "ProjectionStorePort",

@@ -185,6 +185,28 @@ class DurableHarnessEventRecorder:
         self._events.append(event)
         return event
 
+    def accept_committed_aggregate(
+        self,
+        event: SessionEvent,
+        *,
+        session: Session,
+        workspace: WorkspaceProjection,
+    ) -> SessionEvent:
+        """Accept a cloud aggregate result without a second projection save."""
+        self._ownership_check()
+        authority = self._worker_mutation_authority
+        if authority is None or self._worker_projection_transaction is None:
+            raise ValueError("cloud aggregate acceptance requires Worker mutation authority")
+        if event.session_id != self._session.session_id or event.sequence != self.next_sequence:
+            raise ValueError("cloud aggregate Event sequence does not match recorder")
+        self._model_call_indexer.index_worker_event(event, authority=authority)
+        self._tool_run_indexer.index_worker_event(event, authority=authority)
+        self._session = session
+        self._workspace = workspace
+        self._advance_authority(event)
+        self._events.append(event)
+        return event
+
     def accept_committed_events(
         self,
         events: tuple[SessionEvent, ...],

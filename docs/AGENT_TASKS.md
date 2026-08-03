@@ -5,10 +5,10 @@
 > Current execution range: local Beta and single-host production foundations are
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
 > `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
-> accepted and closed. `CLOUD-PROVIDER-CONT-PG-PLAN-01` is the sole active
-> docs-only cloud-mainline planning card; no implementation successor is
-> activated. Local SQLite Registry work remains deferred. ACP and optional code
-> intelligence remain locked.
+> accepted and closed. `CLOUD-PROVIDER-CONT-PG-01` is the active cloud-mainline
+> implementation card; its planning predecessor is closed as `Done`. Local
+> SQLite Registry work remains deferred. ACP and optional code intelligence
+> remain locked.
 
 ## Global Rules
 
@@ -27,11 +27,12 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
-- `CLOUD-PROVIDER-CONT-PG-PLAN-01` is `Planning` on
+- `CLOUD-PROVIDER-CONT-PG-PLAN-01` is `Done` on
   `docs/cloud-provider-cont-pg-plan`. It freezes Provider Continuation external
   authority, internal namespace, existing Lease fence, atomic Event binding,
-  lifecycle and scoped management rules. `CLOUD-PROVIDER-CONT-PG-01` remains
-  `Locked`; no production code or migration is authorized.
+  lifecycle and scoped management rules. `CLOUD-PROVIDER-CONT-PG-01` is
+  `In Progress` on `codex/cloud-provider-cont-pg-01`; only its registered Owned
+  paths and migration v13 are authorized.
 
 - `EMB-PLAN-01` is `Done` on `zebra-cloud-trench`; it consolidates the Zebra
   Embedded target architecture and registers the dependency-ordered
@@ -2297,7 +2298,7 @@ external membership.
 
 ### CLOUD-PROVIDER-CONT-PG-PLAN-01 - Provider Continuation PostgreSQL Authority Plan
 
-- Status: `Planning`
+- Status: `Done`
 - Type: Architecture / Governance / Docs-only
 - Owner: `lukeding (Cloud Architecture Maintainer)`
 - Branch: `docs/cloud-provider-cont-pg-plan`
@@ -2328,24 +2329,52 @@ external membership.
 
 #### Closeout Rule
 
-- Review may move this card to `Done` and then permit the maintainer to activate
-  `CLOUD-PROVIDER-CONT-PG-01` separately. It must not set the implementation card
-  to `Ready` or reserve a migration by itself.
+- The maintainer accepted this plan in the sidebar architecture review and
+  separately activated `CLOUD-PROVIDER-CONT-PG-01`. This card does not own
+  implementation code or migration v13.
 
 ### CLOUD-PROVIDER-CONT-PG-01 - Fenced Provider Continuation Payload
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `lukeding (Cloud Architecture Maintainer)`
+- Branch: `codex/cloud-provider-cont-pg-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-provider-cont-pg-01/zebra-agent`
+- Baseline: `f6c8a926f83498fbb578aa61f96efe1b87ef3bd6`
+- Migration: `v13`, serialized after the immutable v1-v12 catalog
 - Depends on: completed `CLOUD-PROVIDER-CONT-PG-PLAN-01`,
   `CLOUD-AGG-FENCE-CON-01`, completed `CLOUD-SCOPE-CON-01` and an approved
   authority/namespace boundary
-- Owned paths: Provider continuation Port/domain if required, focused PostgreSQL
-  adapter and migration, Worker continuation wiring and real PostgreSQL tests
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/context_continuation.py`,
+  `packages/agent-core/src/agent_core/contracts/context_events.py`,
+  `packages/agent-core/src/agent_core/ports/provider_continuation_store.py`,
+  `packages/agent-core/src/agent_core/ports/provider_continuation_cloud.py`,
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `packages/agent-storage/src/agent_storage/postgres/provider_continuations.py`,
+  `packages/agent-storage/src/agent_storage/postgres/provider_continuation_migration.py`,
+  `packages/agent-storage/src/agent_storage/postgres/migrations.py`,
+  `apps/worker/src/zebra_agent_worker/execution_events.py`,
+  `apps/worker/src/zebra_agent_worker/provider_continuation_commit.py`,
+  `apps/worker/src/zebra_agent_worker/provider_continuation_execution.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/loop.py`, and focused
+  `tests/agent_core/test_provider_continuation_cloud.py`,
+  `tests/agent_storage/test_postgres_provider_continuations.py`,
+  `tests/worker/test_provider_continuation_commit.py`, and
+  `tests/compose/provider_continuation/`. Governance records for this card are
+  also owned. Existing local SQLite continuation behavior, Runtime selector,
+  API/Provider HTTP, Desktop, Redis, Mem0 and Docker application files are
+  excluded.
 - Goal: make opaque continuation payload shared, authority-scoped and validated
   by the existing Worker Lease fence without creating a Zebra Tenant model.
+- Implementation commit: `0942f256` contains the registered Core, PostgreSQL,
+  Worker, focused-test, Compose and governance slice. The card remains
+  `In Progress` until the separately required sidebar closeout review confirms
+  the evidence; only that review may move it to `Done`.
 - Acceptance: stale authority and cross-namespace access fail, TTL/SHA/delete
   semantics match SQLite, Event references are committed atomically and remain
-  resolvable, and sweep is explicitly management-scoped.
+  resolvable, lost-response retries return the canonical receipt, and sweep is
+  explicitly management-scoped with real PostgreSQL Compose evidence.
 
 ### CLOUD-ART-PAYLOAD-PG-01 - Shared Artifact Payload Authority
 

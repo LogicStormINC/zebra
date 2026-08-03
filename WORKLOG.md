@@ -1,5 +1,40 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-01 implementation slice
+
+- Implemented the cloud-only Core continuation artifact/Port and extended the
+  selection Event contract with external authority and payload SHA evidence;
+  the existing local SQLite continuation Port and behavior remain unchanged.
+- Added PostgreSQL migration v13 and a fenced aggregate adapter. Payload bytes,
+  metadata, canonical selection Event, Session/Workspace projections and Event
+  binding share one transaction; retries use the request digest, reads enforce
+  scope/session/provider/model/capability/TTL/SHA/size, deletion is fenced and
+  soft, and expiration sweep is full-namespace, administrative-CAS, audited and
+  idempotent.
+- Added the explicit cloud Worker seam, including cloud recovery, aggregate
+  acceptance without a second projection save, and a separate composition helper
+  to keep `execution.py` at the repository's 500-line hard limit.
+- Validation: focused deterministic Worker/Core suites `10 passed`; full suite
+  `2034 passed, 215 skipped, 1 failed` only on the two inherited repository file
+  size violations; changed-source Mypy `9` files clean; changed Ruff/format clean;
+  release Eval `10/10`; real PostgreSQL Compose `4/4` with
+  `ZEBRA_PROVIDER_CONTINUATION_POSTGRES_TEST_RESULT=PASS`.
+- Committed the isolated implementation branch as `0942f256` without touching
+  the root worktree's dirty `AGENTS.md`. The implementation card remains
+  `In Progress` until a separate sidebar closeout review is available; that
+  review is the only remaining closeout gate.
+
+## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-01 activation
+
+- Sidebar ChatGPT returned `ACCEPTED`: `CLOUD-PROVIDER-CONT-PG-PLAN-01` is
+  `Done`, and `CLOUD-PROVIDER-CONT-PG-01` is `In Progress`.
+- Created isolated worktree `/Users/lukeding/.codex/worktrees/cloud-provider-cont-pg-01/zebra-agent`
+  on `codex/cloud-provider-cont-pg-01`, based on `f6c8a926`.
+- Reserved PostgreSQL migration v13 and registered the exact Core, Storage,
+  Worker, focused-test and governance Owned paths. Local SQLite, Runtime/API,
+  Desktop, Redis, Mem0 and Docker application paths remain excluded.
+- Next: audit v12 and existing aggregate transaction helpers before editing code.
+
 ## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-PLAN-01 planning
 
 - The maintainer requested the next plan under the current Zebra Cloud status

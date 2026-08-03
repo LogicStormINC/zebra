@@ -17,9 +17,7 @@ class ContextCompactedPayload(BaseModel):
     recovered_from_capsule_id: str | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
-    through_sequence: int | None = Field(
-        default=None, ge=0, exclude_if=lambda value: value is None
-    )
+    through_sequence: int | None = Field(default=None, ge=0, exclude_if=lambda value: value is None)
     capsule: ContextCapsule | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
@@ -98,6 +96,9 @@ class ContextContinuationSelectedPayload(BaseModel):
     capability_version: str | None = None
     source_hash: str | None = None
     artifact_id: str | None = None
+    authority_issuer: str | None = None
+    namespace_id: str | None = None
+    payload_sha256: str | None = None
 
     @field_validator(
         "mode",
@@ -108,6 +109,9 @@ class ContextContinuationSelectedPayload(BaseModel):
         "capability_version",
         "source_hash",
         "artifact_id",
+        "authority_issuer",
+        "namespace_id",
+        "payload_sha256",
     )
     @classmethod
     def ensure_text_not_blank(cls, value: str | None) -> str | None:

@@ -5,6 +5,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from agent_core.domain.identifiers import SessionId
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_storage import (
@@ -16,6 +17,9 @@ from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.execution import SessionExecutionService
+from zebra_agent_worker.provider_continuation_commit import (
+    CloudProviderContinuationCoordinator,
+)
 from zebra_agent_worker.recovery import SessionRecoveryError, SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeError, SessionResumeService
 
@@ -148,6 +152,8 @@ def build_worker_loop_service(
     effect_dispatch: EffectDispatchPort | None = None,
     worker_projection_transaction: WorkerProjectionTransactionPort | None = None,
     deployment_namespace: str | None = None,
+    cloud_provider_continuation_factory: Callable[[SessionId], CloudProviderContinuationCoordinator]
+    | None = None,
 ) -> WorkerLoopService:
     active_stores = stores or sqlite_control_plane_stores(database_path)
     claim_service = SessionClaimService(
@@ -167,6 +173,7 @@ def build_worker_loop_service(
         effect_dispatch=effect_dispatch,
         worker_projection_transaction=worker_projection_transaction,
         deployment_namespace=deployment_namespace,
+        cloud_provider_continuation_factory=cloud_provider_continuation_factory,
     )
     return WorkerLoopService(
         projection_store=active_stores.sessions,

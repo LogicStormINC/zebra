@@ -1,7 +1,7 @@
 # Cloud Provider Continuation PostgreSQL Plan
 
 > Task: `CLOUD-PROVIDER-CONT-PG-PLAN-01`
-> Status: `Planning`
+> Status: `Done`
 > Owner: `lukeding (Cloud Architecture Maintainer)`
 > Branch: `docs/cloud-provider-cont-pg-plan`
 > Baseline: `zebra-cloud-trench@03efa4f5`
@@ -9,10 +9,9 @@
 
 ## 1. Decision
 
-Create a docs-only planning gate before activating
-`CLOUD-PROVIDER-CONT-PG-01`. The implementation card remains `Locked` until
-this plan is reviewed and all authority, transaction, lifecycle and management
-semantics below are accepted.
+This planning gate is complete. The maintainer reviewed and accepted the
+authority, transaction, lifecycle and management semantics below, then
+explicitly activated `CLOUD-PROVIDER-CONT-PG-01` for implementation.
 
 This is the next cloud-mainline action because Provider Continuation is the
 remaining authority gap before complete PostgreSQL `ControlPlaneStores`
@@ -219,8 +218,7 @@ policy decisions. This card freezes only expiration and soft-delete management.
 
 ## 11. Implementation Split And Owned Paths
 
-After this plan is `Done`, `CLOUD-PROVIDER-CONT-PG-01` may be activated with
-these implementation lanes:
+`CLOUD-PROVIDER-CONT-PG-01` is now active with these implementation lanes:
 
 1. Core cloud mutation/read contract: add a focused cloud Port that requires
    authority; keep the local `ProviderContinuationStorePort` and SQLite adapter
@@ -228,17 +226,20 @@ these implementation lanes:
 2. PostgreSQL adapter and the next serialized migration: implement the physical
    key, constraints, transaction, idempotency and management audit contract.
 3. Worker seam: replace store-before-Event with one injected aggregate commit
-   path when the cloud profile is explicitly composed.
+   path when the cloud profile is explicitly composed. The Worker composition
+   helper stays separate from the execution service so the existing service
+   file remains within its repository size boundary.
 4. Real PostgreSQL tests: prove migration immutability, fence rejection,
    namespace isolation, atomic Event binding, lost-response retry, TTL/SHA,
    soft-delete and scoped sweep.
 
-The implementation task must declare exact files and reserve the next migration
-number only when it is activated. This planning card does not reserve a migration.
+The implementation task declares its exact paths and reserves migration v13.
+This plan remains the authority boundary; it does not authorize changes outside
+the implementation card's Owned paths.
 
 ## 12. Unlock And Acceptance Gates
 
-`CLOUD-PROVIDER-CONT-PG-01` remains `Locked` until all are true:
+`CLOUD-PROVIDER-CONT-PG-01` was `Locked` until all of the following were true:
 
 - this plan is reviewed and marked `Done`;
 - the authority identity, physical key, fence, transaction and lifecycle rules
@@ -251,7 +252,7 @@ number only when it is activated. This planning card does not reserve a migratio
 - the expected Event type/payload change and local SQLite compatibility boundary
   are named before code changes.
 
-Implementation acceptance must include:
+Implementation acceptance for the active successor must include:
 
 - stale/expired/wrong-Session/wrong-namespace authority rejection;
 - atomic rollback and no dangling Event references;

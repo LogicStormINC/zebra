@@ -3,6 +3,10 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from agent_core.domain.cloud_scope import OpaqueAuthorityScope
+from agent_core.domain.identifiers import EventId, SessionId
+from agent_core.domain.leases import LeaseFence
+
 
 class ProviderContinuationMode(StrEnum):
     NONE = "none"
@@ -103,4 +107,99 @@ class ProviderContinuationArtifact(BaseModel):
             and self.reference.model_name == model_name
             and self.reference.capability_version == capability_version
             and (self.reference.expires_at is None or self.reference.expires_at > as_of)
+        )
+
+
+class CloudProviderContinuationArtifact(BaseModel):
+    """Authority-scoped cloud continuation metadata and audit evidence.
+
+    This model is deliberately separate from ``ProviderContinuationArtifact``:
+    the latter is the local SQLite compatibility surface and keeps its historic
+    ``tenant_id`` contract. Cloud storage records the opaque external authority
+    and the internal deployment partition explicitly instead of deriving either
+    from provider state.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    continuation_id: str
+    scope: OpaqueAuthorityScope
+    deployment_namespace: str
+    session_id: SessionId
+    reference: ProviderContinuationRef
+    payload_sha256: str
+    size_bytes: int = Field(ge=0)
+    lifecycle_revision: int = Field(ge=0)
+    selection_event_id: EventId
+    selection_event_sequence: int = Field(ge=0)
+    idempotency_key: str
+    accepted_lease: LeaseFence
+    deleted_at: datetime | None = None
+
+    @field_validator(
+        "continuation_id",
+        "deployment_namespace",
+        "payload_sha256",
+        "idempotency_key",
+    )
+    @classmethod
+    def ensure_cloud_text(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("cloud provider continuation fields must not be blank")
+        return normalized
+
+    @field_validator("payload_sha256")
+    @classmethod
+    def ensure_sha256(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if len(normalized) != 64 or any(char not in "0123456789abcdef" for char in normalized):
+            raise ValueError("cloud provider continuation payload_sha256 must be lowercase SHA-256")
+        return normalized
+
+    @field_validator("deleted_at")
+    @classmethod
+    def ensure_deleted_at_aware(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("cloud provider continuation deleted_at must be timezone-aware")
+        return value.astimezone(UTC) if value is not None else None
+
+    @model_validator(mode="after")
+    def ensure_scope_and_identity(self) -> "CloudProviderContinuationArtifact":
+        if self.deployment_namespace != self.deployment_namespace.strip():
+            raise ValueError("deployment namespace must be trimmed")
+        if self.reference.expires_at is None:
+            raise ValueError("cloud provider continuation requires an expiry")
+        if self.deleted_at is not None and self.deleted_at < self.reference.created_at:
+            raise ValueError("cloud provider continuation deletion precedes creation")
+        return self
+
+    @property
+    def artifact_id(self) -> str:
+        """Compatibility name used by the local continuation Event contract."""
+
+        return self.continuation_id
+
+    def is_compatible(
+        self,
+        *,
+        scope: OpaqueAuthorityScope,
+        session_id: SessionId,
+        provider: str,
+        model_name: str,
+        capability_version: str,
+        as_of: datetime,
+    ) -> bool:
+        if as_of.tzinfo is None:
+            raise ValueError("compatibility timestamp must be timezone-aware")
+        return (
+            self.scope.scope_key == scope.scope_key
+            and scope.allows_session(session_id)
+            and self.session_id == session_id
+            and self.deleted_at is None
+            and self.reference.provider == provider
+            and self.reference.model_name == model_name
+            and self.reference.capability_version == capability_version
+            and self.reference.expires_at is not None
+            and self.reference.expires_at > as_of
         )

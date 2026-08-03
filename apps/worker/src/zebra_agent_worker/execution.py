@@ -19,7 +19,6 @@ from agent_core.harness import (
     HarnessModelStep,
     SingleAttemptOrchestrator,
 )
-from agent_core.harness.models import HarnessEventDraft
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_core.ports.execution_authority import ExecutionAuthorityResolverPort
 from agent_integrations import build_model_gateway
@@ -38,6 +37,7 @@ from zebra_agent_config import (
     trusted_local_mode_enabled,
 )
 
+import zebra_agent_worker.provider_continuation_execution as provider_runtime
 import zebra_agent_worker.runtime_setup as runtime_setup
 import zebra_agent_worker.session_handoff as handoff
 import zebra_agent_worker.tool_output_artifact_runtime as artifact_runtime
@@ -49,10 +49,6 @@ from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 from zebra_agent_worker.clarification_continuation import (
     ClarificationContinuationError,
     recover_clarification_continuation,
-)
-from zebra_agent_worker.context_lifecycle import (
-    persist_provider_continuation,
-    recover_provider_continuation,
 )
 from zebra_agent_worker.continuation_lifecycle import (
     mark_approved_continuation_started,
@@ -70,6 +66,7 @@ from zebra_agent_worker.execution_finalization import (
 )
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
 from zebra_agent_worker.model_call_index import ModelCallIndexer
+from zebra_agent_worker.provider_continuation_execution import CloudProviderContinuationFactory
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
 from zebra_agent_worker.runtime_authority import (
@@ -97,18 +94,21 @@ class SessionExecutionService:
         worker_projection_transaction: WorkerProjectionTransactionPort | None = None,
         deployment_namespace: str | None = None,
         cloud_artifact_factory: artifact_runtime.CloudArtifactCoordinatorFactory | None = None,
+        cloud_provider_continuation_factory: CloudProviderContinuationFactory | None = None,
         execution_authority_resolver: ExecutionAuthorityResolverPort | None = None,
         execution_authority_scope: OpaqueAuthorityScope | None = None,
     ) -> None:
         if execution_authority_resolver is not None and execution_authority_scope is None:
-            raise ValueError(
-                "execution_authority_scope is required when an authority resolver is configured"
-            )
+            raise ValueError("execution_authority_scope is required for an authority resolver")
         cloud_artifact_factory = artifact_runtime.validate_cloud_artifact_factory(
             cloud_artifact_factory,
             worker_projection_transaction,
             deployment_namespace,
             effect_dispatch,
+        )
+        validate = provider_runtime.validate_factory
+        validate(
+            cloud_provider_continuation_factory, worker_projection_transaction, deployment_namespace
         )
         self._database_path = database_path
         self._claim_service = claim_service
@@ -155,6 +155,7 @@ class SessionExecutionService:
             deployment_namespace=deployment_namespace,
         )
         self._cloud_artifact_factory = cloud_artifact_factory
+        self._cloud_provider_continuation_factory = cloud_provider_continuation_factory
         self._execution_authority_resolver = execution_authority_resolver
         self._execution_authority_scope = execution_authority_scope
 
@@ -201,8 +202,9 @@ class SessionExecutionService:
         ownership_check: Callable[[], None],
     ) -> ExecutedSession:
         session_id = claimed.lease.session_id
-        cloud_artifacts = (
-            self._cloud_artifact_factory(session_id) if self._cloud_artifact_factory else None
+        cloud_artifacts = provider_runtime.artifact_for(self._cloud_artifact_factory, session_id)
+        cloud_continuation = provider_runtime.cloud_for_session(
+            self._cloud_provider_continuation_factory, session_id
         )
         try:
             restored = self._control_service.restore_suspended_workspace(
@@ -225,8 +227,10 @@ class SessionExecutionService:
         )
         session_events = self._event_store.list_for_session(session_id)
         active_context = self._context_lifecycle_store.get_active_capsule(session_id)
-        provider_continuation = recover_provider_continuation(
-            session_events, self._provider_continuation_store
+        provider_continuation = provider_runtime.resolve_provider_continuation(
+            cloud_continuation,
+            session_events,
+            self._provider_continuation_store,
         )
         try:
             task = recover_task(
@@ -411,24 +415,21 @@ class SessionExecutionService:
             session=recorder.session,
             attempt=context.attempt,
         )
-
-        def persist_event(draft: HarnessEventDraft) -> None:
-            artifact_runtime.persist_worker_event(
-                draft,
-                recorder=recorder,
-                event_store=self._event_store,
-                lifecycle_store=self._context_lifecycle_store,
-                cloud_artifacts=cloud_artifacts,
-            )
-
+        persist_event, prepare_continuation = provider_runtime.build_worker_context_sinks(
+            cloud_continuation,
+            recorder=recorder,
+            event_store=self._event_store,
+            lifecycle_store=self._context_lifecycle_store,
+            cloud_artifacts=cloud_artifacts,
+            local_store=self._provider_continuation_store,
+            session_id=session_id,
+        )
         model_step = HarnessModelStep(
             context_compiler=context_compiler,
             available_tools=tool_gateway.model_tools,
             conversation_compactor=context_compiler,
             event_sink=persist_event,
-            continuation_sink=lambda reference, payload, ttl: persist_provider_continuation(
-                self._provider_continuation_store, session_id, reference, payload, ttl
-            ),
+            continuation_sink=prepare_continuation,
             provider_continuation=provider_continuation,
             attempt_number=1,
         )

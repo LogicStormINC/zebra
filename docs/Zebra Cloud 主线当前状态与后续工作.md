@@ -68,11 +68,11 @@ API/Worker 微服务组合。当前状态是“云端事实存储和聚合能力
 当前 API/Worker 仍会回退到 `sqlite_control_plane_stores(database_path)`。因此
 PostgreSQL Adapter 已存在，不代表云端运行时已经选用 PostgreSQL。
 
-当前唯一活动的云端主线任务是 docs-only
-`CLOUD-PROVIDER-CONT-PG-PLAN-01`。其详细方案见
+当前活动的云端主线任务是
+`CLOUD-PROVIDER-CONT-PG-01`。其实施边界见
 [`Cloud Provider Continuation PostgreSQL Plan`](./architecture/cloud-provider-continuation-pg-plan.md)。
-该卡只冻结外部 authority、内部 namespace、现有 Lease fence、Event 原子绑定、
-生命周期与 management sweep，不授权生产代码或 migration。
+规划卡 `CLOUD-PROVIDER-CONT-PG-PLAN-01` 已由侧边栏架构评审接受并关闭为
+`Done`；实现卡已在隔离工作树激活，迁移目标为 v13。
 
 仍锁定的关键任务：
 
@@ -82,8 +82,9 @@ PostgreSQL Adapter 已存在，不代表云端运行时已经选用 PostgreSQL�
 3. `CLOUD-DELIVERY-TXN-PG-01`：Delivery Audit/Idempotency 命令事务。
 4. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁。
 
-这些实现卡均保持 `Locked`，不能在没有规划卡关闭、maintainer 激活、Owner、
-Branch、Worktree 和 Owned paths 复核的情况下直接编码。
+除当前 `CLOUD-PROVIDER-CONT-PG-01` 外，这些实现卡仍保持 `Locked`。当前实现只
+能修改注册的 Owned paths，不能顺带激活完整 Control Plane、Runtime selector 或
+应用 Compose。
 
 ### Docker 应用层与在线事件
 
@@ -154,11 +155,13 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 
 ## 后续实施顺序
 
-以下顺序沿用现有任务注册表，不代表自动激活：
+以下顺序沿用现有任务注册表；第一项已完成，第二项实现切片已完成但仍待收口：
 
-1. 关闭 `CLOUD-PROVIDER-CONT-PG-PLAN-01`，冻结 authority identity、
+1. [x] 关闭 `CLOUD-PROVIDER-CONT-PG-PLAN-01`，冻结 authority identity、
    `WorkerMutationAuthority`、PostgreSQL 事务和生命周期合同。
-2. 由维护者单独激活并完成 `CLOUD-PROVIDER-CONT-PG-01`。
+2. [x] 实施已激活的 `CLOUD-PROVIDER-CONT-PG-01`（迁移 v13、PostgreSQL
+   adapter、云端 Worker aggregate seam 和真实 Compose 证据）。实现切片已完成并
+   提交为 `0942f256`，仍待独立 sidebar closeout review 后才将任务卡标为 `Done`。
 3. 完成完整 PostgreSQL `ControlPlaneStores` 组合和 SQLite/Cloud 双 profile 选择。
 4. 完成 Delivery transaction 和所有 aggregate fencing 证据。
 5. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
@@ -168,8 +171,7 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 
 ## 当前治理门
 
-当前没有活动实现任务，只有一张明确注册的 docs-only `Planning` 卡。规划评审关闭后，
-维护者仍须在 `docs/AGENT_TASKS.md` 中单独激活 Provider Continuation 实现卡，才允许
-创建实现 Branch/Worktree 和生产代码变更。SQLite Registry、Runtime backend
-selection、Provider HTTP、Desktop、Redis live、Mem0 consumer 和应用 Compose 均不得
-通过临时修改 `Locked` 状态绕过依赖。
+`CLOUD-PROVIDER-CONT-PG-01` 已完成独立激活：Owner、Branch、Worktree、Owned
+paths 和 v13 迁移所有权均已登记。其余 SQLite Registry、Runtime backend
+selection、Provider HTTP、Desktop、Redis live、Mem0 consumer 和应用 Compose
+仍不得通过临时修改 `Locked` 状态绕过依赖。
