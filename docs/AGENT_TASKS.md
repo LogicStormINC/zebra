@@ -2209,8 +2209,8 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-SCOPE-CON-01 - Opaque Authority Namespace Read Scope Contract
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `Codex`
 - Suggested role: `CORE / API / STORAGE / SECURITY`
 - Depends on: accepted `ADR-012`, `CLOUD-AGG-FENCE-CON-01` and the existing
   `SessionHistoryPort` allow-list boundary

@@ -562,10 +562,10 @@
 
 ## CLOUD-SCOPE-CON-01 - Opaque Authority Namespace Read Scope Contract
 
-1. `pending` - Freeze the accepted `(authority_issuer, namespace_id)` identity
+1. `completed` - Freeze the accepted `(authority_issuer, namespace_id)` identity
    and bounded `allowed_session_ids` semantics without introducing a Zebra
    Tenant/User/Organization domain.
-2. `pending` - Implement one immutable Core scope value object and focused
+2. `in_progress` - Implement one immutable Core scope value object and focused
    normalization/deny-all tests.
 3. `pending` - Record that external-to-deployment namespace mapping belongs to
    trusted composition; never infer it from a DSN or database row.
