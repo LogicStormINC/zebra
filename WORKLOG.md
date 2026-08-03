@@ -1,5 +1,19 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-01 formal closeout
+
+- Sidebar ChatGPT accepted the implementation and the follow-up P1/P2 fixes:
+  `CLOUD-PROVIDER-CONT-PG-01` moves from `In Progress` to `Done` with baseline
+  `abd7a7f0`, PostgreSQL Compose `4/4 PASS`, prior governance commit
+  `54ce86a7` and this closeout governance commit.
+- The registry contains no `CLOUD-PROVIDER-CONT-PG-02`. The only registered
+  successor, `CLOUD-CONTROL-PLANE-PG-01`, remains `Locked` because its
+  aggregate PostgreSQL adapter/read-composition dependencies are not all
+  closed. No new implementation card is activated in this turn.
+- Runtime, Worker scheduling, Provider HTTP, Desktop, local SQLite, Redis,
+  Mem0, application Compose and CopilotKit/Trench paths remain locked or out of
+  scope.
+
 ## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-01 review findings fixed
 
 - Closed the two P1 risks from implementation review: a cloud Provider
@@ -18,9 +32,8 @@
   strict Mypy (9 source files) pass; the repository size check still reports
   only its two inherited violations outside this task. Follow-up commit:
   `abd7a7f0`.
-- The card remains `In Progress` pending the separately required sidebar
-  closeout review; no Runtime, API, Desktop, SQLite, Redis, Mem0 or application
-  Docker behavior was selected.
+- Sidebar closeout is now accepted and the card is `Done`; no Runtime, API,
+  Desktop, SQLite, Redis, Mem0 or application Docker behavior was selected.
 
 ## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-01 implementation slice
 

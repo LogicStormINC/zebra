@@ -12,13 +12,13 @@
   API/Worker PostgreSQL composition, application Compose, Redis live fan-out and the
   CopilotKit/Trench production slice remain gated.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
-  architecture review. `CLOUD-PROVIDER-CONT-PG-01` is `In Progress` on the
-  isolated `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, and
-  has its Core contract, PostgreSQL v13 adapter/migration, cloud Worker
-  aggregate seam, focused tests and Compose evidence implemented. The isolated
-  implementation is committed as `39bbe444`; review findings are fixed in
-  follow-up `abd7a7f0`. The card remains `In Progress` pending the separately
-  required sidebar closeout review. Runtime,
+  architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
+  `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core
+  contract, PostgreSQL v13 adapter/migration, cloud Worker aggregate seam,
+  focused tests, Compose evidence and review fixes committed as `39bbe444` and
+  `abd7a7f0`. The sidebar closeout accepted the evidence; no registered Ready
+  successor is currently available and `CLOUD-CONTROL-PLANE-PG-01` remains
+  `Locked`. Runtime,
   API/Provider HTTP, Desktop, local SQLite, Redis, Mem0 and application Docker
   remain excluded.
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with

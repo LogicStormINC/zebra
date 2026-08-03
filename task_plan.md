@@ -45,10 +45,10 @@
    fence validation, idempotency, lifecycle and scoped management sweep.
 4. `completed` - Wire the explicit cloud Worker aggregate commit seam so the
    continuation row and canonical selection Event share one PostgreSQL transaction.
-5. `completed` - Record implementation evidence in `39bbe444`, then close the
-   two P1 risks and one P2 replay concern in follow-up `abd7a7f0`; the card
-   remains `In Progress` pending the separately required sidebar review, and
-   must not be marked Done until that review confirms the closeout.
+5. `completed` - Record implementation evidence in `39bbe444`, close the two
+   P1 risks and one P2 replay concern in `abd7a7f0`, and accept the sidebar
+   closeout. `CLOUD-PROVIDER-CONT-PG-01` is `Done`; no registered successor is
+   Ready for activation.
 
 ### Implementation decisions
 

@@ -2335,7 +2335,7 @@ external membership.
 
 ### CLOUD-PROVIDER-CONT-PG-01 - Fenced Provider Continuation Payload
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `lukeding (Cloud Architecture Maintainer)`
 - Branch: `codex/cloud-provider-cont-pg-01`
 - Worktree: `/Users/lukeding/.codex/worktrees/cloud-provider-cont-pg-01/zebra-agent`
@@ -2370,13 +2370,21 @@ external membership.
 - Implementation commit: `39bbe444` contains the registered Core, PostgreSQL,
   Worker, focused-test, Compose and governance slice. Follow-up `abd7a7f0`
   closes the two P1 review risks (implicit SQLite fallback and omitted-`as_of`
-  sweep retry hashing) and the P2 Event-replay projection guard. The card
-  remains `In Progress` until the separately required sidebar closeout review
-  confirms the evidence; only that review may move it to `Done`.
+  sweep retry hashing) and the P2 Event-replay projection guard.
 - Acceptance: stale authority and cross-namespace access fail, TTL/SHA/delete
   semantics match SQLite, Event references are committed atomically and remain
   resolvable, lost-response retries return the canonical receipt, and sweep is
   explicitly management-scoped with real PostgreSQL Compose evidence.
+
+#### Closeout
+
+- Sidebar closeout accepted the implementation, owned-path boundary, review
+  fixes, governance synchronization and PostgreSQL Compose evidence. The card
+  is `Done` on `abd7a7f0` plus this governance closeout commit.
+- The registry has no `CLOUD-PROVIDER-CONT-PG-02`. The registered
+  `CLOUD-CONTROL-PLANE-PG-01` successor remains `Locked` until every aggregate
+  PostgreSQL adapter/read-composition dependency is closed; no next card is
+  activated by this closeout.
 
 ### CLOUD-ART-PAYLOAD-PG-01 - Shared Artifact Payload Authority
 
