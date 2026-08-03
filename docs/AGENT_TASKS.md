@@ -17548,6 +17548,48 @@ treat caller-supplied hard-budget exhaustion as a recoverable suspension.
 - removing explicit caller budgets or repeated-action stopping conditions
 - hard-coded finance, stock, or intent-specific routing heuristics
 
+## Extension Architecture Planning
+
+### EXT-PLAN-01 - Skill, MCP, And Plugin Architecture Upgrade Plan
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / SECURITY / PRODUCT`
+- Depends on: existing EXT-0, Skill and MCP delivery cards; no production code
+- Branch: `codex/ext-plan-01-skill-mcp-plugin-docs`
+- Owned paths: `docs/Skill_MCP_Plugin扩展体系优化升级方案_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record a durable, evidence-based upgrade plan for Zebra's Skill, MCP, and
+Plugin extension system. Preserve the existing typed Gateway, deterministic
+Policy, task-scoped authority, durable Event/Artifact, recovery, and local-first
+boundaries while defining the smallest safe path toward standard Skill
+governance, remote MCP, declarative Plugins, Hooks, and a later marketplace.
+
+#### Acceptance
+
+- [x] Current implemented Skill and MCP capabilities are separated from actual
+  gaps; delivered progressive disclosure, task allowlists, Resources, Prompts,
+  Policy, approval, events, and recovery are not planned again.
+- [x] Availability, installation, enablement, task grant, and per-call approval
+  are separate authority states; no earlier state implies a later one.
+- [x] Skill v2, remote MCP/OAuth, declarative Plugin, Hook, Registry,
+  supply-chain, observability, and Eval boundaries have explicit gates.
+- [x] Local-first sequencing is preserved and public marketplace work remains
+  locked behind private-cloud GA and security prerequisites.
+- [x] `PROGRESS.md` records the planning state without activating capability.
+
+#### Explicit Non-Goals
+
+- product-code, configuration, dependency, database, API, CLI, Worker, Desktop,
+  runtime, Policy, or schema changes
+- activating Skill Registry, MCP Marketplace, remote MCP, OAuth, Plugin, Hook,
+  or connector implementation tasks
+- importing another agent runtime's authority or permission semantics without a
+  separate Zebra security review
+
 ## Extension System (EXT) Task Board
 
 Extension control-plane for Skill, MCP, Plugin, Hook, and Marketplace. Authority

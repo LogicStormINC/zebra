@@ -351,6 +351,10 @@
   Phase A scope** (EXT-0 + SKILL-01..05 + MCP-01/02/06).
   Plugin/Hook/Marketplace remain `Locked` pending private-cloud GA. Elicitation
   is reconciled to durable HITL; sampling stays a hard non-goal.
+- Completed documentation task: `EXT-PLAN-01` records the Skill, MCP, and Plugin
+  extension upgrade architecture, authority boundaries, phased task map, and
+  acceptance gates. It changes no product capability and does not activate the
+  deferred marketplace or remote MCP work.
 - Active harness task: `HAR-TOOL-RECOVERY-01` enforces the durable contract
   that a single `ToolCallStatus.FAILED` (HTTP 4xx, missing file, timeout) must
   surface as a structured observation for model-selected correction rather than
