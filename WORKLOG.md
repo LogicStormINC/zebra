@@ -7746,3 +7746,27 @@ actual byte access.
 - Sidebar ChatGPT reviewed the implementation and evidence and approved closing
   `CLOUD-DELIVERY-TXN-PG-01` from `Review` to `Done`; API/Worker wiring remains
   a separate successor seam.
+
+## 2026-08-03 - CLOUD-AGG-FENCE-CTX-SEMANTIC-01 implementation review handoff
+
+- Activated the path-bounded successor on
+  `codex/cloud-agg-fence-ctx-semantic-01` after the Context lifecycle audit
+  identified a Store-level administrative Event semantic gap.
+- Added Store validation for `CONTEXT_COMPACTED`, nested capsule identity and
+  `recovered_from_capsule_id`, plus three zero-write PostgreSQL regressions and
+  an isolated `tests/compose/context_lifecycle/` runner. No migration, API/Worker
+  wiring, Runtime selection or provider path changed.
+- Changed-file Ruff/Mypy, `uv lock --check`, `bash -n`, Compose config and
+  `git diff --check` pass. The host PostgreSQL matrix passes `18/18` and cleans
+  its container, volume and network. The card is handed to sidebar review;
+  parent Context conformance and aggregate fencing remain gated.
+
+## 2026-08-03 - CLOUD-AGG-FENCE-CTX-SEMANTIC-01 sidebar closeout
+
+- Sidebar ChatGPT returned a structured `CLOSEOUT-OK`: the Store-level Event
+  type, nested capsule binding and recovery binding checks satisfy the registered
+  acceptance, and the `18/18` PostgreSQL evidence is accepted.
+- Moved `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` from `Review` to `Done` and closed the
+  parent audit `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` `BLOCK-GAP` as `Done`.
+  `CLOUD-AGG-FENCE-01` remains `Locked`; no API/Worker/runtime or provider scope
+  was unlocked.

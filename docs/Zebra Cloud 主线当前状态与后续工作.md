@@ -87,16 +87,18 @@ PostgreSQL Adapter 已存在，不代表云端运行时已经选用 PostgreSQL�
    聚焦验证；现有本地 `ControlPlaneStores` 不变，API/Worker 接线与 Runtime 选择
    仍是后续门禁。
 2. `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01`：Context lifecycle 的治理/审计型
-   fencing conformance card，当前为 `In Progress / BLOCK-GAP`。
+   fencing conformance card，已由侧边栏批准关闭为 `Done`。
 3. `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`：修复行政 Context activation 的
-   Event type 与 capsule binding Store-level 缺口，当前为 `Ready`。
+   Event type 与 capsule binding Store-level 缺口，已由侧边栏批准关闭为
+   `Done`；Store guard、三类零写入回归和真实 PostgreSQL `18/18` 矩阵均已
+   完成。
 4. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁。
 
 当前 `CLOUD-CONTROL-PLANE-PG-01` 与 `CLOUD-DELIVERY-TXN-PG-01` 均为 `Done`；
-Context conformance 审计保持 `In Progress / BLOCK-GAP`，父 fencing gate 仍为
-`Locked`。当前卡只能修改注册的 governance Owned paths，生产 Context Core/
-Storage 与 tests 仅供只读审计；不能顺带激活 API/Worker、Runtime selector 或
-应用 Compose。
+Context conformance 审计及其 semantic successor 均为 `Done`，父 fencing gate
+仍为 `Locked`，因为其他 aggregate fencing cards 尚未闭合。已完成的 Store
+semantic slice 只修改注册的 adapter、focused tests、独立 PostgreSQL Compose
+runner 和治理记录；不能顺带激活 API/Worker、Runtime selector 或应用 Compose。
 
 ### Docker 应用层与在线事件
 
@@ -167,8 +169,8 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 
 ## 后续实施顺序
 
-以下顺序沿用现有任务注册表；Delivery 已完成，Context conformance 先审计再
-修复语义缺口，父门禁仍受依赖约束：
+以下顺序沿用现有任务注册表；Delivery 已完成，Context conformance 审计与
+语义缺口修复均已完成，父门禁仍受依赖约束：
 
 1. [x] 关闭 `CLOUD-PROVIDER-CONT-PG-PLAN-01`，冻结 authority identity、
    `WorkerMutationAuthority`、PostgreSQL 事务和生命周期合同。
@@ -178,7 +180,8 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 3. 完成 cloud-only `CloudControlPlane` / `PostgresControlPlaneStores` 存储组合；
    再由独立 API/Worker 任务实现 SQLite/Cloud profile 选择。
 4. 完成 `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` 审计，并由
-   `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` 修复已确认的 Store 语义缺口。
+   `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` 修复已确认的 Store 语义缺口；两张卡
+   均已由侧边栏 closeout 为 `Done`。
 5. 完成其余 aggregate fencing conformance 与真实 PostgreSQL 证据，再评估
    `CLOUD-AGG-FENCE-01` 激活。
 6. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
@@ -190,8 +193,8 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 
 `CLOUD-PROVIDER-CONT-PG-01` 与 `CLOUD-DELIVERY-TXN-PG-01` 已完成独立实施与
 closeout：Owner、Branch、Worktree、Owned paths 和 v13/v15 迁移所有权均已登记。
-当前 `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` 正在进行治理审计；
-`CLOUD-AGG-FENCE-CTX-SEMANTIC-01` 是其唯一最小 Ready successor，
+当前 `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` 与
+`CLOUD-AGG-FENCE-CTX-SEMANTIC-01` 均已完成；
 `CLOUD-AGG-FENCE-01` 仍保持 Locked。
 `CLOUD-CONTROL-PLANE-PG-01` 已在所有 aggregate PostgreSQL adapter/read-composition
 依赖闭合后由侧边栏批准激活，并在实现、Compose 验证和 closeout 后登记为 `Done`；

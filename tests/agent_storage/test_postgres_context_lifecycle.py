@@ -324,6 +324,73 @@ def test_administrative_context_cas_advances_primary_projections(
     assert result.session.current_sequence == result.workspace.current_sequence
 
 
+@pytest.mark.parametrize(
+    "invalid_kind", ["event_type", "capsule_binding", "recovery_binding"]
+)
+def test_administrative_context_rejects_semantically_invalid_event(
+    postgres_dsn: str,
+    namespace: str,
+    invalid_kind: str,
+) -> None:
+    session, workspace, lease = _prepared(postgres_dsn, namespace)
+    store = PostgresContextLifecycleStore(postgres_dsn, deployment_namespace=namespace)
+    capsule = _capsule(f"capsule-admin-{invalid_kind}")
+    committed = store.commit_worker_compaction(
+        authority=_authority(namespace, lease, session.current_sequence),
+        session=session,
+        workspace=workspace,
+        capsule=capsule,
+        validation_context=_validation(capsule),
+        expected_active_capsule_id=None,
+        compaction_event=_compaction(session, capsule),
+    )
+    if invalid_kind == "event_type":
+        event = SessionEvent.create(
+            session_id=committed.session.session_id,
+            sequence=committed.session.current_sequence + 1,
+            event_type=EventType.SESSION_SUSPENDED,
+            actor=EventActor.SYSTEM,
+            payload={"reason": "wrong Context activation event"},
+            idempotency_key="context-admin-wrong-event-type",
+        )
+    else:
+        base_event = _compaction(committed.session, capsule)
+        payload = dict(base_event.payload)
+        if invalid_kind == "capsule_binding":
+            payload["capsule"] = _capsule("different-capsule").model_dump(mode="json")
+            idempotency_key = "context-admin-wrong-capsule-binding"
+        else:
+            payload["recovered_from_capsule_id"] = "different-capsule"
+            idempotency_key = "context-admin-wrong-recovery-binding"
+        event = base_event.model_copy(
+            update={"idempotency_key": idempotency_key, "payload": payload}
+        )
+
+    with pytest.raises(
+        PostgresContextLifecycleConflictError,
+        match="administrative Context",
+    ):
+        store.commit_administrative_activation(
+            authority=AdministrativeMutationCAS(
+                deployment_namespace=namespace,
+                session_id=committed.session.session_id,
+                expected_stream_revision=committed.session.current_sequence,
+            ),
+            session=committed.session,
+            workspace=committed.workspace,
+            capsule_id=capsule.capsule_id,
+            expected_active_capsule_id=capsule.capsule_id,
+            event=event,
+        )
+
+    assert len(
+        PostgresEventStore(postgres_dsn, deployment_namespace=namespace).list_for_session(
+            session.session_id
+        )
+    ) == 4
+    assert store.get_active_capsule(session.session_id) == committed.stored_capsule
+
+
 def test_administrative_context_missing_pointer_rolls_back_event(
     postgres_dsn: str, namespace: str
 ) -> None:

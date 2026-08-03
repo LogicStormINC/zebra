@@ -2874,7 +2874,7 @@ external membership.
 
 ### CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 - Context Lifecycle Fencing Conformance Audit
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `codex`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-CTX-PG-01`,
   `CLOUD-AGG-CTX-ADMIN-PG-01`, `CLOUD-CONTEXT-PG-01` and merged
@@ -2894,27 +2894,27 @@ external membership.
 - Acceptance: every Context mutation is either proven fenced/CAS or has an
   explicit, path-bounded gap; direct adapter bypass, old token/owner,
   namespace drift, stale pointer and read-composition writes are accounted for.
-  Any unexplained fence or stale-write gap keeps this card In Progress and the
-  parent gate Locked.
-- Evidence: the audit records `PASS` for Worker compaction, fail-closed legacy
-  cloud methods and read composition, but `BLOCK-GAP` for
-  `commit_administrative_activation` because the Store does not validate
-  `CONTEXT_COMPACTED` event type or recovery `capsule_id` binding.
+- Evidence: Worker compaction, administrative recovery, fail-closed legacy cloud
+  methods and read composition are now all `PASS`. The former Store semantic gap
+  is closed by `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`; its real PostgreSQL matrix is
+  `18/18` with zero-write regressions for invalid Event type and capsule bindings.
 - Closeout boundary: sidebar ChatGPT explicitly required this governance-only
-  card before activating `CLOUD-AGG-FENCE-01`; the identified gap is registered
-  as the minimal successor `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`.
+  card before activating `CLOUD-AGG-FENCE-01`; sidebar ChatGPT returned
+  `CLOSEOUT-OK` for the successor and allowed this audit's `BLOCK-GAP` to close.
 
 ### CLOUD-AGG-FENCE-CTX-SEMANTIC-01 - Administrative Context Event Semantics
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
+- Status: `Done`
+- Owner: `codex`
 - Depends on: the `BLOCK-GAP` recorded by
   `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01`
-- Branch: `TBD after activation`
+- Branch: `codex/cloud-agg-fence-ctx-semantic-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-ctx-semantic-01/zebra-agent`
 - Owned paths: `packages/agent-storage/src/agent_storage/postgres/context_lifecycle.py`,
-  focused `tests/agent_storage/` and `tests/api/` Context recovery tests, and
-  this task's governance records. No API/Worker startup, Runtime selector,
-  Provider HTTP, SQLite, Redis, Mem0, CopilotKit/Trench or application Compose.
+  focused `tests/agent_storage/` and `tests/api/` Context recovery tests,
+  `tests/compose/context_lifecycle/`, and this task's governance records. No
+  API/Worker startup, Runtime selector, Provider HTTP, SQLite, Redis, Mem0,
+  CopilotKit/Trench or application Compose.
 - Goal: make the PostgreSQL administrative Context activation boundary reject
   a non-`CONTEXT_COMPACTED` Event and require recovery payload identity to bind
   to the requested `capsule_id`, without changing the existing HTTP contract or
@@ -2922,6 +2922,14 @@ external membership.
 - Acceptance: wrong Event type, missing/wrong capsule binding, wrong namespace,
   stale stream revision and stale active pointer all produce zero writes;
   correct recovery remains atomic and the real PostgreSQL focused matrix passes.
+- Evidence: the Store guard and three zero-write regression cases are complete;
+  `tests/compose/context_lifecycle/run-postgres-tests.sh` passes `18/18` on
+  PostgreSQL `17.5-alpine3.21`. Changed-file Ruff, strict Mypy, `bash -n`,
+  Compose config and `git diff --check` pass. Sidebar ChatGPT approved closeout;
+  no migration or runtime composition changed.
+- Closeout: sidebar ChatGPT returned `CLOSEOUT-OK`, approved `Review -> Done`,
+  allowed the parent Context audit's `BLOCK-GAP` to close, and explicitly kept
+  `CLOUD-AGG-FENCE-01` `Locked` because other aggregate cards remain pending.
 
 ### CLOUD-CONTROL-PLANE-PG-01 - Complete PostgreSQL Store Composition
 
@@ -2974,8 +2982,9 @@ external membership.
 - Acceptance: stale epoch/token/owner tests pass per aggregate on real PostgreSQL;
   only then may the project claim complete multi-Worker safety.
 - Current child gate: `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` is the first
-  governance-only conformance card. It remains `In Progress / BLOCK-GAP` until
-  `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` closes the Store-level Event semantic gap.
+  governance-only conformance card and is now `Done`; its semantic successor
+  closed the Store-level Event semantic gap. Other aggregate cards still keep
+  this parent gate `Locked`.
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.

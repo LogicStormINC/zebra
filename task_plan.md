@@ -1,6 +1,31 @@
 # Task Plan
 
-## CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 - Context Lifecycle Fencing Conformance Audit (In Progress)
+## CLOUD-AGG-FENCE-CTX-SEMANTIC-01 - Administrative Context Event Semantics (Done)
+
+1. `completed` - Activate the bounded successor on
+   `codex/cloud-agg-fence-ctx-semantic-01`, preserve its adapter/test/Compose
+   Owned paths and keep API/Worker/runtime composition out of scope.
+2. `completed` - Add the Store-level semantic guard using the existing strict
+   `ContextCompactedPayload` contract: require `CONTEXT_COMPACTED`, bind the
+   nested capsule to the requested id, and bind `recovered_from_capsule_id`.
+3. `completed` - Add deterministic zero-write regressions for wrong Event type,
+   nested capsule binding and recovery binding; add the focused PostgreSQL
+   Compose runner without changing migrations.
+4. `completed` - Run changed-file Ruff/Mypy, `uv lock --check`, script/config
+   checks and the real PostgreSQL matrix (`18/18` passed).
+5. `completed` - Sidebar ChatGPT returned `CLOSEOUT-OK`, approved `Review -> Done`
+   and allowed the parent audit `BLOCK-GAP` to close while keeping the aggregate
+   fencing gate `Locked`.
+
+### Implementation boundary
+
+- The persistence boundary now rejects semantically invalid administrative
+  Context Events before any Event, pointer or projection write.
+- The existing HTTP contract and v1-v15 migration catalog are unchanged.
+- API/Worker startup, Runtime selection, Provider HTTP, SQLite, Redis, Mem0,
+  CopilotKit/Trench and application Compose remain explicit non-goals.
+
+## CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 - Context Lifecycle Fencing Conformance Audit (Done)
 
 1. `completed` - Claim the governance-only card on an isolated worktree and
    freeze the Context production/test paths as read-only audit targets.
@@ -11,21 +36,21 @@
    PostgreSQL lock/predicate and stale-write matrix.
 4. `completed` - Ask the sidebar ChatGPT to adjudicate the only uncovered
    semantic boundary: administrative Event type and capsule binding validation.
-5. `in_progress` - Keep the card `BLOCK-GAP`, register the minimal successor
-   `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`, and do not activate the parent fencing gate.
+5. `completed` - Register and implement the minimal semantic successor; sidebar
+   closeout accepted its `18/18` PostgreSQL evidence and closed this audit's
+   `BLOCK-GAP` without unlocking the parent aggregate fencing gate.
 
 ### Audit conclusion
 
 - Worker compaction, namespace-bound reads, pointer CAS, atomic Event/Session/
   Workspace writes and PostgreSQL fail-closed legacy methods are accounted for.
-- Sidebar ChatGPT returned `BLOCK-GAP`: `commit_administrative_activation`
-  must validate `CONTEXT_COMPACTED` and bind the recovery payload to the target
-  `capsule_id` inside the persistence boundary, not only in the current API
-  caller.
-- No production code, test, Schema or Migration is changed by this card. The
-  successor owns only the adapter semantic guard and focused regression matrix.
-- `CLOUD-AGG-FENCE-01` remains `Locked` until this and the other aggregate cards
-  have zero unexplained fencing gaps.
+- Sidebar ChatGPT returned `BLOCK-GAP` during audit, then `CLOSEOUT-OK` after the
+  successor validated `CONTEXT_COMPACTED`, capsule identity and recovery binding
+  inside the persistence boundary.
+- This governance card changed no production code, test, Schema or Migration;
+  the successor owns the adapter guard and focused regression matrix.
+- `CLOUD-AGG-FENCE-01` remains `Locked` because other aggregate fencing cards
+  still have to close.
 
 ## CLOUD-DELIVERY-TXN-PG-01 - PostgreSQL Delivery Command Transaction (Done)
 

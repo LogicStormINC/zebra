@@ -16,14 +16,12 @@
   mapping remains a later gate. `CLOUD-DELIVERY-TXN-PG-01` is also merged to the
   cloud mainline at `9ec52b16` and recorded as `Done`; its API/Worker wiring,
   runtime selection and external execution remain out of scope.
-- Active fencing audit: `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` is a governance-only
-  path-bounded audit on `codex/cloud-agg-fence-ctx-lifecycle-con-01`. It confirms
-  the Worker Context fence, pointer CAS, atomic projections and read-only
-  composition, but sidebar review found one Store-level semantic gap in
-  administrative activation: `commit_administrative_activation` does not itself
-  validate `CONTEXT_COMPACTED` and recovery `capsule_id` binding. The card remains
-  `In Progress / BLOCK-GAP`; `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` is the minimal
-  Ready successor. The parent `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Context fencing conformance child `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` is
+  now `Done` on its governance worktree. Its Store-level semantic gap was closed
+  by `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`, which is also `Done` after sidebar
+  `CLOSEOUT-OK`, three zero-write regressions and a real PostgreSQL `18/18`
+  focused matrix. The parent `CLOUD-AGG-FENCE-01` remains `Locked` because other
+  aggregate fencing cards are still pending.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core
@@ -134,9 +132,10 @@
   a minimal semantic successor. The audit matrix covers Worker compaction,
   administrative recovery, v7 constraints, fail-closed legacy methods and
   read-only Context Materialization. It records accepted stale-fence, namespace,
-  pointer and rollback evidence, but keeps the card open because the administrative
-  Store boundary does not validate Event type and capsule binding. No production
-  path or migration is changed by the audit.
+  pointer and rollback evidence, but keeps the audit card open until the semantic
+  successor's review closes the former Event type and capsule binding gap. The
+  successor adds only Store validation, focused tests and a PostgreSQL Compose
+  runner; no migration or runtime composition is changed.
 - Completed authority-contract task: `CLOUD-AGG-FENCE-CON-01` adds strict
   `WorkerMutationAuthority` and `AdministrativeMutationCAS` types. It reuses the
   existing LeaseFence, permits the empty-stream revision `-1`, rejects noncanonical

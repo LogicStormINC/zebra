@@ -1180,3 +1180,20 @@
 - The result admits only the test-proven PostgreSQL-native architecture. It does
   not unlock `MEM-GW-PG-NATIVE-01`, Runtime, Worker, Provider HTTP, Desktop,
   SQLite or Redis. Mem0 remains denied/deferred.
+
+## CLOUD-AGG-FENCE-CTX-SEMANTIC-01 implementation (2026-08-03)
+
+- The PostgreSQL `commit_administrative_activation` boundary now validates the
+  existing strict `ContextCompactedPayload` contract before opening any write
+  path: the Event must be `CONTEXT_COMPACTED`, its nested capsule must match the
+  requested `capsule_id`, and `recovered_from_capsule_id` must be absent or match
+  that same capsule. Invalid input raises the existing conflict type and leaves
+  the Event stream and active pointer unchanged.
+- Three focused regressions cover wrong Event type, nested capsule mismatch and
+  recovery binding mismatch. The isolated PostgreSQL Compose runner passes
+  `18/18` (Context lifecycle plus API recovery) on PostgreSQL
+  `17.5-alpine3.21`; no migration, API contract or runtime composition changed.
+- Sidebar ChatGPT returned `CLOSEOUT-OK`, moved the implementation card from
+  `Review` to `Done`, and allowed the parent Context conformance audit's
+  `BLOCK-GAP` to close. The aggregate fencing gate remains `Locked` because
+  other aggregate cards are still pending.

@@ -7,6 +7,7 @@ from uuid import UUID
 
 from agent_core.application.session_projection import apply_event as apply_session_event
 from agent_core.application.workspace_projection import apply_event as apply_workspace_event
+from agent_core.contracts.context_events import ContextCompactedPayload
 from agent_core.contracts.events import ContextCapsuleCreatedPayload
 from agent_core.domain.context_capsule import (
     ContextCapsule,
@@ -124,6 +125,7 @@ class PostgresContextLifecycleStore(ContextLifecycleStorePort):
         event: SessionEvent,
     ) -> ContextLifecycleCommitResult:
         self._validate_administrator(authority, session, workspace, event)
+        self._validate_administrative_event(event, capsule_id)
         if expected_active_capsule_id is None:
             raise PostgresContextLifecycleConflictError(
                 "administrative Context activation requires an existing active pointer"
@@ -223,6 +225,27 @@ class PostgresContextLifecycleStore(ContextLifecycleStorePort):
         ):
             raise PostgresContextLifecycleConflictError(
                 "administrative Context projection revision changed"
+            )
+
+    @staticmethod
+    def _validate_administrative_event(event: SessionEvent, capsule_id: str) -> None:
+        if event.event_type is not EventType.CONTEXT_COMPACTED:
+            raise PostgresContextLifecycleConflictError(
+                "administrative Context activation requires context_compacted"
+            )
+        try:
+            payload = ContextCompactedPayload.model_validate(event.payload)
+        except ValueError as exc:
+            raise PostgresContextLifecycleConflictError(
+                "administrative Context Event payload is invalid"
+            ) from exc
+        if payload.capsule is None or payload.capsule.capsule_id != capsule_id:
+            raise PostgresContextLifecycleConflictError(
+                "administrative Context Event capsule binding changed"
+            )
+        if payload.recovered_from_capsule_id not in (None, capsule_id):
+            raise PostgresContextLifecycleConflictError(
+                "administrative Context recovery capsule binding changed"
             )
 
     def _capsule_event(
