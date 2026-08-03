@@ -37,6 +37,7 @@ from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.artifact_store import ArtifactStorePort
 from agent_core.ports.clock import ClockPort
 from agent_core.ports.cloud_artifact_payload_store import CloudArtifactPayloadStorePort
+from agent_core.ports.cloud_control_plane import CloudControlPlane
 from agent_core.ports.context_compiler import ContextCompilerPort, RuntimeEvidenceInput
 from agent_core.ports.context_lifecycle_store import (
     ContextLifecycleCommitResult,
@@ -72,6 +73,7 @@ from agent_core.ports.memory_delivery import MemoryDeliveryLedgerPort
 from agent_core.ports.memory_store import MemoryStorePort
 from agent_core.ports.model_call_store import ModelCallStorePort
 from agent_core.ports.model_gateway import ModelGatewayPort
+from agent_core.ports.model_tool_projection import ModelToolProjectionPort
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_core.ports.provider_continuation import ProviderContinuationPort
@@ -143,6 +145,7 @@ __all__ = [
     "CloudArtifactPayloadStorePort",
     "ContextCompilerPort",
     "ContextMaterializationPort",
+    "CloudControlPlane",
     "ContextLifecycleCommitResult",
     "ContextLifecycleStorePort",
     "ConversationCompactionResult",
@@ -180,6 +183,7 @@ __all__ = [
     "MemoryGatewaySearchResult",
     "MemoryGatewayStatus",
     "ModelCallStorePort",
+    "ModelToolProjectionPort",
     "ModelGatewayPort",
     "LoadedProviderContinuation",
     "PreviewState",

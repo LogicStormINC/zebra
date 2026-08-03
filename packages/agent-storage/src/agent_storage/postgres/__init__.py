@@ -1,4 +1,4 @@
-"""PostgreSQL control-plane adapters that remain inactive until full composition."""
+"""PostgreSQL adapters used by the explicit cloud control-plane composition."""
 
 from agent_storage.postgres.agent_tasks import (
     PostgresAgentTaskConflictError,
@@ -16,6 +16,7 @@ from agent_storage.postgres.context_materialization import (
     PostgresContextMaterializationConflictError,
     PostgresContextMaterializationStore,
 )
+from agent_storage.postgres.delivery_audit import PostgresDeliveryAuditStore
 from agent_storage.postgres.epoch import (
     PostgresControlPlaneEpochError,
     bootstrap_control_plane_epoch,
@@ -30,6 +31,7 @@ from agent_storage.postgres.governed_memory_import import (
     GovernedMemoryImportReport,
     import_sqlite_governed_memories,
 )
+from agent_storage.postgres.idempotency import PostgresIdempotencyStore
 from agent_storage.postgres.leases import PostgresLeaseStore
 from agent_storage.postgres.memory_delivery import (
     MemoryDeliveryClaim,
@@ -88,8 +90,10 @@ __all__ = [
     "PostgresContextLifecycleStore",
     "PostgresContextMaterializationConflictError",
     "PostgresContextMaterializationStore",
+    "PostgresDeliveryAuditStore",
     "PostgresLeaseStore",
     "PostgresGovernedMemoryStore",
+    "PostgresIdempotencyStore",
     "PostgresMemoryDeliveryLedger",
     "PostgresMemoryDeliveryStore",
     "NativeMemoryConflictError",

@@ -86,10 +86,12 @@ from agent_storage.postgres import (
     PostgresContextMaterializationConflictError,
     PostgresContextMaterializationStore,
     PostgresControlPlaneEpochError,
+    PostgresDeliveryAuditStore,
     PostgresEffectDispatchStore,
     PostgresEventStore,
     PostgresGovernedMemoryStore,
     PostgresHandoffDispatchStore,
+    PostgresIdempotencyStore,
     PostgresLeaseStore,
     PostgresMemoryDeliveryLedger,
     PostgresMemoryDeliveryStore,
@@ -113,6 +115,10 @@ from agent_storage.postgres import (
     read_control_plane_epoch,
     rebuild_task_in_transaction,
     rotate_control_plane_epoch,
+)
+from agent_storage.postgres_composition import (
+    PostgresControlPlaneStores,
+    postgres_control_plane_stores,
 )
 from agent_storage.projections import SQLiteProjectionStore
 from agent_storage.provider_continuations import SQLiteProviderContinuationStore
@@ -138,6 +144,7 @@ __all__ = [
     "CloudArtifactPayloadReader",
     "S3ArtifactObjectStore",
     "ControlPlaneStores",
+    "PostgresControlPlaneStores",
     "EffectLedgerStatus",
     "EffectReplayRejectedError",
     "EffectReservation",
@@ -168,6 +175,7 @@ __all__ = [
     "PostgresCloudArtifactPayloadStore",
     "PostgresEventStore",
     "PostgresHandoffDispatchStore",
+    "PostgresIdempotencyStore",
     "PostgresGovernedMemoryStore",
     "GovernedMemoryImportError",
     "GovernedMemoryImportQuarantine",
@@ -181,6 +189,7 @@ __all__ = [
     "PostgresContextLifecycleStore",
     "PostgresContextMaterializationConflictError",
     "PostgresContextMaterializationStore",
+    "PostgresDeliveryAuditStore",
     "PostgresLeaseStore",
     "PostgresMemoryDeliveryLedger",
     "PostgresMemoryDeliveryStore",
@@ -212,6 +221,7 @@ __all__ = [
     "serialize_session_artifact_projection",
     "compose_session_artifacts",
     "sqlite_control_plane_stores",
+    "postgres_control_plane_stores",
     "apply_postgres_migrations",
     "attach_segment_in_transaction",
     "bootstrap_control_plane_epoch",

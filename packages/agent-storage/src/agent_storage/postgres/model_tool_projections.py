@@ -3,10 +3,12 @@
 from typing import Any
 
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseLostError
 from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.tool_runs import ToolRunRecord
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
+from agent_core.ports.model_tool_projection import ModelToolProjectionPort
 
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.events import read_event_in_transaction
@@ -17,7 +19,7 @@ class PostgresModelToolProjectionConflictError(ValueError):
     """A projection key was reused for different canonical Event content."""
 
 
-class PostgresModelToolProjectionStore:
+class PostgresModelToolProjectionStore(ModelToolProjectionPort):
     """Indexes committed canonical Events; it never stores Artifact payload bytes."""
 
     def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
@@ -38,7 +40,7 @@ class PostgresModelToolProjectionStore:
                 connection, self._database.deployment_namespace, event
             )
 
-    def replay_session(self, session_id: object) -> int:
+    def replay_session(self, session_id: SessionId) -> int:
         """Management-only repair from committed Events; no lease or payload I/O."""
         with self._database.connect() as connection:
             rows = connection.execute(
@@ -57,6 +59,37 @@ class PostgresModelToolProjectionStore:
                 is not None
                 for row in rows
             )
+
+    def list_model_calls(self, session_id: SessionId) -> list[ModelCallRecord]:
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT session_id, sequence, provider, model_name, input_tokens,
+                       estimated_input_tokens, input_token_limit,
+                       input_token_estimate_error, output_tokens, total_tokens,
+                       latency_ms, cache_hit, cost_usd, assistant_message,
+                       tool_call_count, created_at
+                FROM model_call_projections
+                WHERE deployment_namespace = %s AND session_id = %s
+                ORDER BY sequence ASC
+                """,
+                (self._database.deployment_namespace, session_id),
+            ).fetchall()
+        return [ModelCallRecord.model_validate(row) for row in rows]
+
+    def list_tool_runs(self, session_id: SessionId) -> list[ToolRunRecord]:
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT session_id, sequence, tool_name, status, idempotency_key,
+                       output, artifact_uri, created_at
+                FROM tool_run_projections
+                WHERE deployment_namespace = %s AND session_id = %s
+                ORDER BY sequence ASC
+                """,
+                (self._database.deployment_namespace, session_id),
+            ).fetchall()
+        return [ToolRunRecord.model_validate(row) for row in rows]
 
     def _validate_authority(self, event: SessionEvent, authority: WorkerMutationAuthority) -> None:
         if authority.deployment_namespace != self._database.deployment_namespace:

@@ -10,15 +10,18 @@
   [Zebra Cloud 主线当前状态与后续工作](./docs/Zebra%20Cloud%20主线当前状态与后续工作.md):
   PostgreSQL adapters and isolated Compose evidence are substantially complete, but
   API/Worker PostgreSQL composition, application Compose, Redis live fan-out and the
-  CopilotKit/Trench production slice remain gated.
+  CopilotKit/Trench production slice remain gated. `CLOUD-CONTROL-PLANE-PG-01`
+  implementation and focused validation are complete on the isolated branch;
+  sidebar closeout is approved and the task is recorded as `Done`; its API/Worker
+  mapping remains a later gate.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core
   contract, PostgreSQL v13 adapter/migration, cloud Worker aggregate seam,
   focused tests, Compose evidence and review fixes committed as `39bbe444` and
   `abd7a7f0`. The sidebar closeout accepted the evidence, and the next storage
-  composition card `CLOUD-CONTROL-PLANE-PG-01` is now `In Progress` on its
-  isolated implementation branch. Runtime,
+  composition card `CLOUD-CONTROL-PLANE-PG-01` is now `Done` after sidebar
+  closeout on its isolated implementation branch. Runtime,
   API/Provider HTTP, Desktop, local SQLite, Redis, Mem0 and application Docker
   remain excluded.
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with

@@ -10,6 +10,21 @@
   composition/adapters/migrations/focused tests and governance. API, Worker,
   Runtime, Provider HTTP, Desktop, SQLite, Redis, Mem0 and application Compose
   remain explicitly out of scope.
+- The implementation choice is the sidebar-approved cloud-only `CloudControlPlane`
+  plus `PostgresControlPlaneStores`; the existing local `ControlPlaneStores` stays
+  unchanged until a later API/Worker mapping task.
+- Implemented Core cloud contract and Event-derived Model/Tool projection Port,
+  PostgreSQL v14 idempotency/audit schema and adapters, namespace-bound
+  `PostgresControlPlaneStores`, and the focused Compose runner. Changed-path Ruff,
+  Mypy and Eval `10/10` pass; the Compose matrix reports `11 passed` and
+  `ZEBRA_CONTROL_PLANE_POSTGRES_TEST_RESULT=PASS`. Full `make test` reports
+  `2037 passed, 217 skipped, 1 failed`; the only failure is the two known inherited
+  file-size violations in the Desktop stylesheet and governed-memory test.
+- Sidebar ChatGPT reviewed the implementation and approved `CLOUD-CONTROL-PLANE-PG-01`
+  for `Done`. API/Worker profile selection, Delivery transaction, aggregate fencing,
+  Runtime, Redis and application Compose remain separate gates.
+- Implementation committed as `1611fb5e` (`feat(storage): add cloud postgres control
+  plane composition`) on the isolated branch.
 
 ## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-01 formal closeout
 

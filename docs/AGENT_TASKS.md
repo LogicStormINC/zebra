@@ -2858,28 +2858,39 @@ external membership.
 
 ### CLOUD-CONTROL-PLANE-PG-01 - Complete PostgreSQL Store Composition
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `codex`
 - Depends on: all aggregate PostgreSQL adapter and read-composition cards above
 - Branch: `codex/cloud-control-plane-pg-01`
 - Worktree: `/Users/lukeding/.codex/worktrees/cloud-control-plane-pg-01/zebra-agent`
 - Owned paths: `packages/agent-core/` control-plane command/query contracts and
   related Ports; `packages/agent-storage/` PostgreSQL composition, adapters,
-  migrations and focused tests; governance records in this registry,
-  `PROGRESS.md`, `task_plan.md` and `WORKLOG.md`
-- Goal: provide an explicit, all-PostgreSQL `ControlPlaneStores` storage profile
-  while retaining the existing SQLite local profile and rejecting incomplete or
-  mixed backend bundles.
-- Acceptance: the profile validates every Store field against PostgreSQL,
-  missing required dependencies fail before a bundle is returned, migration
-  checksums remain immutable, and a real PostgreSQL Compose matrix proves
-  namespace isolation, read/write parity and restore-safe composition.
+  migrations and focused tests; `docs/architecture/cloud-control-plane-pg-plan.md`,
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`; governance records in this
+  registry, `PROGRESS.md`, `task_plan.md` and `WORKLOG.md`
+- Goal: add a cloud-only `CloudControlPlane` contract and
+  `PostgresControlPlaneStores` composition while retaining the existing local
+  `ControlPlaneStores` contract unchanged.
+- Acceptance: the cloud contract expresses every completed PostgreSQL adapter
+  without local-only write Ports, required dependencies fail before a bundle is
+  returned, migration checksums remain immutable, and a real PostgreSQL Compose
+  matrix proves namespace isolation, projection reads and restore-safe
+  composition.
 - Activation: sidebar ChatGPT approved activation after every aggregate adapter
   and read-composition dependency reached `Done`; Owner `codex`, branch and
   isolated worktree above are authoritative for this slice.
 - Explicit non-goals: no `apps/api/`, `apps/worker/`, `packages/agent-runtime/`,
   Provider HTTP, Desktop, local SQLite changes, Redis, Mem0, application Compose,
   runtime backend selection or production cutover. Those remain separate gates.
+- Validation: the focused PostgreSQL Compose runner reports `11 passed` and
+  `ZEBRA_CONTROL_PLANE_POSTGRES_TEST_RESULT=PASS`; changed-path Ruff/Mypy,
+  `git diff --check` and release Eval `10/10` pass. Full `make test` reports
+  `2037 passed, 217 skipped, 1` known inherited file-size failure; no new size
+  violation was introduced.
+- Implementation commit: `1611fb5e` on the isolated worktree above.
+- Closeout: sidebar ChatGPT approved Option B implementation and authorized this
+  card to move from `In Progress` to `Done`. API/Worker profile selection,
+  Delivery transaction and aggregate fencing remain independent future gates.
 
 ### CLOUD-AGG-FENCE-01 - Full Worker Aggregate Fencing Gate
 

@@ -1,19 +1,19 @@
 # Task Plan
 
-## CLOUD-CONTROL-PLANE-PG-01 - PostgreSQL Control Plane Storage Profile (In Progress)
+## CLOUD-CONTROL-PLANE-PG-01 - PostgreSQL Control Plane Storage Profile (Done)
 
-1. `in_progress` - Claim the card on `codex/cloud-control-plane-pg-01`, preserve
+1. `completed` - Claim the card on `codex/cloud-control-plane-pg-01`, preserve
    the exact Core/Storage/governance Owned paths and audit every `ControlPlaneStores`
    field against an existing PostgreSQL adapter or an explicitly scoped adapter.
-2. `pending` - Freeze the control-plane profile contract and add the smallest
-   serialized PostgreSQL migration needed for missing shared persistence records;
-   do not alter existing aggregate tables or local SQLite behavior.
-3. `pending` - Compose one namespace-bound PostgreSQL bundle, fail closed on
-   missing object-store/signing-key dependencies, and expose read/index facades
-   without creating a second Event-derived authority.
-4. `pending` - Run focused deterministic and host PostgreSQL Compose tests for
+2. `completed` - Add the Core `CloudControlPlane` contract without changing local
+   `ControlPlaneStores`; add the smallest serialized PostgreSQL migration needed
+   only for shared control-plane records that have no existing schema.
+3. `completed` - Compose `PostgresControlPlaneStores` with namespace-bound
+   PostgreSQL adapters, fail closed on missing object-store/signing-key
+   dependencies, and expose read/index facades without a second Event authority.
+4. `completed` - Run focused deterministic and host PostgreSQL Compose tests for
    completeness, namespace isolation, migration checksums and restore-safe reads.
-5. `pending` - Record evidence, request sidebar closeout and hand off API/Worker
+5. `completed` - Record evidence, request sidebar closeout and hand off API/Worker
    wiring and runtime selection as separate successor gates.
 
 ### Activation decisions
@@ -24,7 +24,8 @@
   `apps/worker/`, `packages/agent-runtime/`, Provider HTTP, Desktop, SQLite,
   Redis, Mem0 or application Compose.
 - The cloud profile is explicit and namespace-bound; a partial or mixed bundle is
-  rejected before use. The existing SQLite profile remains the local default.
+  rejected before use. The existing SQLite `ControlPlaneStores` profile remains
+  unchanged and is mapped by a later API/Worker seam.
 
 ## CLOUD-PROVIDER-CONT-PG-PLAN-01 - Provider Continuation PostgreSQL Authority Plan (Done)
 

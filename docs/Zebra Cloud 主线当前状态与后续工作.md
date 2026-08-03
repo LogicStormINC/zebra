@@ -26,14 +26,16 @@ API/Worker 微服务组合。当前状态是“云端事实存储和聚合能力
 
 ### PostgreSQL 云端基础
 
-- PostgreSQL 迁移目录已覆盖 v1-v12：Event/Projection、Epoch/Lease、Effect
+- PostgreSQL 迁移目录已覆盖 v1-v14：Event/Projection、Epoch/Lease、Effect
   Outbox、Workspace、Task/Segment、Model/Tool、Context、Handoff、Artifact、
-  Governed Memory、Memory Delivery 和 Native Memory Gateway。
+  Governed Memory、Memory Delivery、Native Memory Gateway、Provider Continuation
+  和 cloud control-plane shared records。
 - 已完成并有独立测试证据的主要 Adapter 包括：Event/Projection、Lease、Effect
   Outbox/Consumer、Workspace、Task、Context、Handoff、Model/Tool、Artifact、
   Session History 和 Governed Memory。
 - Handoff v8、Artifact v9、Governed Memory v10、Memory Delivery v11 和 Native
-  Memory v12 均已进入当前分支的实现记录。
+  Memory v12、Provider Continuation v13 和 cloud control-plane v14 均已进入当前
+  分支的实现记录。
 - 已记录的宿主 PostgreSQL Compose 矩阵包括 Session History `3/3`、Context
   Materialization `4/4`、Task `32/32`、Workspace `80/80`、Effect Outbox `49/49`
   和 Effect Consumer `58/58`。
@@ -76,14 +78,15 @@ PostgreSQL Adapter 已存在，不代表云端运行时已经选用 PostgreSQL�
 
 当前主线后续任务：
 
-1. `CLOUD-CONTROL-PLANE-PG-01`：已由侧边栏批准并进入 `In Progress`，当前只做
-   PostgreSQL `ControlPlaneStores` 存储组合、迁移和聚焦验证；API/Worker 接线与
-   Runtime 选择仍是后续门禁。
+1. `CLOUD-CONTROL-PLANE-PG-01`：已由侧边栏批准并完成 `Done`，交付
+   cloud-only `CloudControlPlane`、`PostgresControlPlaneStores` 存储组合、迁移和
+   聚焦验证；现有本地 `ControlPlaneStores` 不变，API/Worker 接线与 Runtime 选择
+   仍是后续门禁。
 2. `CLOUD-DELIVERY-TXN-PG-01`：Delivery Audit/Idempotency 命令事务。
 3. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁。
 
-当前只有 `CLOUD-CONTROL-PLANE-PG-01` 处于 `In Progress`；Delivery 和 fencing
-仍为 `Locked`。本任务只能修改注册的 Core/Storage/governance Owned paths，不能
+当前 `CLOUD-CONTROL-PLANE-PG-01` 已为 `Done`；Delivery 和 fencing 仍为
+`Locked`。本任务只能修改注册的 Core/Storage/governance Owned paths，不能
 顺带激活 API/Worker、Runtime selector 或应用 Compose。
 
 ### Docker 应用层与在线事件
@@ -135,12 +138,12 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 
 ## 当前质量状态
 
-当前 HEAD 的 `make test` 结果：
+当前实现分支的 `make test` 结果：
 
 ```text
-2243 collected
-2033 passed
-209 skipped
+2255 collected
+2037 passed
+217 skipped
 1 failed
 ```
 
@@ -155,14 +158,15 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 
 ## 后续实施顺序
 
-以下顺序沿用现有任务注册表；前两项已完成，下一项仍受依赖门禁约束：
+以下顺序沿用现有任务注册表；前三项已完成，下一项仍受依赖门禁约束：
 
 1. [x] 关闭 `CLOUD-PROVIDER-CONT-PG-PLAN-01`，冻结 authority identity、
    `WorkerMutationAuthority`、PostgreSQL 事务和生命周期合同。
 2. [x] 实施并关闭已激活的 `CLOUD-PROVIDER-CONT-PG-01`（迁移 v13、PostgreSQL
    adapter、云端 Worker aggregate seam 和真实 Compose 证据）。实现提交为
    `39bbe444`，复核修复为 `abd7a7f0`，sidebar closeout 已接受。
-3. 完成完整 PostgreSQL `ControlPlaneStores` 组合和 SQLite/Cloud 双 profile 选择。
+3. 完成 cloud-only `CloudControlPlane` / `PostgresControlPlaneStores` 存储组合；
+   再由独立 API/Worker 任务实现 SQLite/Cloud profile 选择。
 4. 完成 Delivery transaction 和所有 aggregate fencing 证据。
 5. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
 6. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
@@ -174,6 +178,7 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 `CLOUD-PROVIDER-CONT-PG-01` 已完成独立实施与 closeout：Owner、Branch、Worktree、
 Owned paths 和 v13 迁移所有权均已登记。当前没有已注册的 Ready successor；
 `CLOUD-CONTROL-PLANE-PG-01` 已在所有 aggregate PostgreSQL adapter/read-composition
-依赖闭合后由侧边栏批准激活，当前分支和隔离工作树已登记在任务注册表。其余
+依赖闭合后由侧边栏批准激活，并在实现、Compose 验证和 closeout 后登记为 `Done`；
+其 v14 shared records 与 cloud-only composition 已交付。其余
 SQLite Registry、Runtime backend selection、Provider HTTP、Desktop、Redis live、
 Mem0 consumer 和应用 Compose 仍保持隔离。
