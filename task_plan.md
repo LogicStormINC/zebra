@@ -601,6 +601,28 @@
 - The next implementation choice is intentionally left to the maintainer:
   activate one path-bounded PostgreSQL adapter successor, not both at once.
 
+## CLOUD-SESSION-HISTORY-PG-01 - PostgreSQL Session History Read Model
+
+1. `pending` - Implement a PostgreSQL read-only adapter over the existing Event
+   and Session Projection tables, requiring an injected deployment namespace and
+   `OpaqueAuthorityScope`.
+2. `pending` - Preserve SQLite browse/search/read ordering, safe event filtering,
+   pagination bounds, snippets and explicit allow-list/deny-all behavior.
+3. `pending` - Add a real PostgreSQL Compose runner and parity/isolation tests;
+   do not add a write aggregate, Lease fence or Store backend selector.
+4. `pending` - Review and close the card only after focused local evidence and
+   host PostgreSQL evidence are recorded; leave Provider Continuation locked.
+
+### Decisions
+
+- Session History is a read composition over Event + Session Projection, never a
+  second authority table or recovery source.
+- External `(authority_issuer, namespace_id)` to internal
+  `deployment_namespace` mapping is trusted composition input. The adapter never
+  derives it from the DSN or a database query.
+- Lease fencing is not applicable to this read-only path; namespace and explicit
+  session scope are the isolation boundary.
+
 ## CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 
 1. `completed` - Trace every authoritative Worker-owned aggregate from Port to

@@ -2536,14 +2536,21 @@ external membership.
 
 ### CLOUD-SESSION-HISTORY-PG-01 - PostgreSQL Session History Read Model
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `UNASSIGNED`
-- Depends on: PostgreSQL Event/Session Projection, completed
-  `CLOUD-SCOPE-CON-01` and approved tenant/session scope
-- Owned paths: PostgreSQL Session History adapter, read composition and parity tests
+- Depends on: PostgreSQL Event/Session Projection and completed
+  `CLOUD-SCOPE-CON-01`; the trusted composition supplies the approved
+  external-to-deployment namespace mapping
+- Branch: `codex/cloud-session-history-pg-01`
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/session_history.py`
+  (new), `packages/agent-storage/src/agent_storage/postgres/__init__.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `tests/agent_storage/test_postgres_session_history.py` (new),
+  `tests/compose/session_history/` (new), focused governance records
 - Goal: provide namespace-scoped consistent history reads without adding a write aggregate.
 - Acceptance: SQLite/PG behavior, pagination, safety filters, stable ordering and
-  allowed-session isolation match; Lease fencing is explicitly not applicable.
+  allowed-session isolation match; Lease fencing is explicitly not applicable;
+  no `ControlPlaneStores` backend selector is changed.
 
 ### CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
 

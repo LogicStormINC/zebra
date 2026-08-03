@@ -123,6 +123,10 @@
   regressions `32/32` and Eval `10/10` pass; only the two inherited file-size
   violations keep `make check` red. Provider Continuation and Session History
   remain independently locked pending explicit adapter activation.
+- `CLOUD-SESSION-HISTORY-PG-01` is the next explicitly activated cloud slice.
+  It will add only a PostgreSQL read adapter and Compose-backed parity tests;
+  Provider Continuation, complete Store composition, Runtime selection and
+  external Host verification remain out of scope.
 - Completed and formally closed Workspace adapter task: `CLOUD-AGG-WORKSPACE-PG-01`
   adds the additive
   PostgreSQL v4 projection schema and an injected Worker transaction that validates
