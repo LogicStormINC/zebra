@@ -63,6 +63,7 @@ from zebra_agent_api.idempotency import replay_idempotent_response, save_idempot
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
+from zebra_agent_api.session_context_namespace import resolve_context_namespace
 from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
@@ -484,26 +485,16 @@ def create_app(
     github_transport: GitHubPullRequestTransport | None = None,
 ) -> ZebraAgentApi:
     active_settings = settings or load_settings()
-    active_database_path = Path(database_path or active_settings.database_url)
     active_broker = credential_broker
     if active_broker is None:
         active_broker = build_default_credential_broker(active_settings.scm, env=credential_env)
-    if (
-        administrative_context_namespace is not None
-        and context_administrative_namespace is not None
-        and administrative_context_namespace != context_administrative_namespace
-    ):
-        raise ValueError("Context administrative namespace aliases must match")
-    resolved_context_namespace = (
-        administrative_context_namespace
-        if administrative_context_namespace is not None
-        else context_administrative_namespace
-    )
     return ZebraAgentApi(
-        database_path=active_database_path,
+        database_path=Path(database_path or active_settings.database_url),
         settings=active_settings,
         _stores=stores,
-        administrative_context_namespace=resolved_context_namespace,
+        administrative_context_namespace=resolve_context_namespace(
+            administrative_context_namespace, context_administrative_namespace
+        ),
         credential_broker=active_broker,
         github_transport=github_transport,
     )
