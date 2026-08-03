@@ -690,6 +690,29 @@
 - `CLOUD-CONTEXT-CON-01` is `Done`; ADR-020 is the durable source for the
   materialization boundary. No runtime or provider path was unlocked.
 
+## CLOUD-CONTEXT-PG-01 - PostgreSQL Context Materialization Read Composition
+
+1. `pending` - Freeze the PostgreSQL read transaction and row-decoding boundary
+   on top of the existing Session History, Context lifecycle and governed Memory
+   tables; do not add a migration.
+2. `pending` - Implement one namespace-scoped `ContextMaterializationPort`
+   adapter with explicit external scope and business Memory query inputs.
+3. `pending` - Prove consistent Session/Capsule/Memory generations, stale CAS,
+   scope isolation, candidate/expiry filtering, deterministic rebuild and
+   read-only behavior with real PostgreSQL tests.
+4. `pending` - Run the host Compose matrix, record evidence and close the adapter
+   without selecting it in `ControlPlaneStores` or wiring Runtime/Worker/API.
+
+### Decisions
+
+- A single PostgreSQL read transaction is the consistency boundary; adapters
+  must not call the three source Stores through separate connections.
+- Session revision and active Capsule identity are exact read expectations. A
+  missing or changed pointer is a typed conflict, not a partial result.
+- Governed Memory rows are revalidated as `GovernedMemoryEntry` in the same
+  transaction. Mem0/Redis are not read fallbacks.
+- The adapter owns no writes, migration, cache authority or runtime selection.
+
 ## CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 
 1. `completed` - Trace every authoritative Worker-owned aggregate from Port to

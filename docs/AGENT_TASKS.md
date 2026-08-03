@@ -2646,7 +2646,7 @@ external membership.
 
 ### CLOUD-CONTEXT-PG-01 - PostgreSQL Context Materialization Read Composition
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `UNASSIGNED`
 - Depends on: `CLOUD-CONTEXT-CON-01`, `CLOUD-SESSION-HISTORY-PG-01`,
   `CLOUD-MEMORY-PG-01`, `CLOUD-AGG-CTX-PG-01` and
