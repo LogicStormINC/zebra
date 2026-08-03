@@ -112,7 +112,7 @@ def test_materialization_filters_expired_and_candidate_memory_without_cross_name
     _insert_memory(
         postgres_dsn,
         deployment_namespace,
-        _memory(3, expires_at=_at(0)),
+        _memory(3, expires_at=_at(0), memory_type=MemoryType.PROCEDURE),
     )
     other_namespace = f"context-other-{uuid4()}"
     other_session, other_capsule, other_memory = _seed_sources(
@@ -305,10 +305,11 @@ def _memory(
     status: MemoryStatus = MemoryStatus.CONFIRMED,
     expires_at: datetime | None = None,
     repo_id: str = "repo-1",
+    memory_type: MemoryType = MemoryType.PROJECT_RULE,
 ) -> GovernedMemoryEntry:
     record = MemoryRecord(
         memory_id=MemoryId(UUID(int=revision + 100)),
-        memory_type=MemoryType.PROJECT_RULE,
+        memory_type=memory_type,
         text=f"Memory {revision}",
         confidence=1.0,
         status=status,
