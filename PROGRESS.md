@@ -320,14 +320,16 @@
   authority and preserves ADR-012's opaque external namespace. `AGENT-DEF-CON-01`
   is now Done: its frozen provider-neutral Definition/Version/Release models,
   deterministic digest/reference validation and Registry Port are merged, with
-  `355/355` focused Core tests and changed static checks passing. The next Ready
-  task is the cloud-neutral `AGENT-AUTH-SNAPSHOT-01`; local SQLite Registry work is
-  intentionally deferred on this cloud microservice mainline, while storage,
-  API and runtime wiring remain locked. `AGENT-AUTH-SNAPSHOT-01` is now the
-  active cloud-neutral follow-up and owns only the schema, resolver Port, durable
-  pre-Attempt event and narrowly injected Worker seam. Its implementation and
-  recoverable latest-snapshot revalidation are complete in the isolated worktree;
-  review/merge evidence is pending. The implementation order is
+  `355/355` focused Core tests and changed static checks passing. The follow-up
+  `AGENT-AUTH-SNAPSHOT-01` is now Done on
+  `zebra-cloud-trench@50ad8d1c`: it owns only the schema, resolver Port, durable
+  pre-Attempt event and narrowly injected Worker seam, with recoverable
+  latest-snapshot revalidation. Focused authority `6/6`, Core `355/355` and
+  Worker `93 passed, 13 skipped` are green; the full suite's single failure is
+  the two inherited file-size violations outside this task. No successor task is
+  activated; local SQLite Registry work is intentionally deferred on this cloud
+  microservice mainline, while storage, API and runtime wiring remain locked.
+  The implementation order is
   `CON -> AUTH`, then `{DRAFT,AUTH} -> BIND -> MEM -> TRUST -> EVAL -> PUB`;
   PostgreSQL Registry remains a separately gated adapter.
 - Web Intelligence planning: `WEB-INT-PLAN-01` is a documentation-only review

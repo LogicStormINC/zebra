@@ -15,6 +15,14 @@
   211 skipped, 1 failed` only because of the two pre-existing file-size violations
   outside this task.
 
+## 2026-08-03 - AGENT-AUTH-SNAPSHOT-01 formal closeout
+
+- Merged commit `50ad8d1c` into `zebra-cloud-trench`; the root user's dirty
+  `AGENTS.md` remained unchanged and was not staged.
+- Closed the task as `Done`. Runtime, Worker composition, Provider HTTP, Desktop,
+  SQLite, PostgreSQL Registry, Redis and Mem0 consumer remain locked; no Compose,
+  migration or storage adapter was introduced.
+
 ## 2026-08-03 - CLOUD-CONTEXT-PG-01 formal closeout
 
 - The host rerun of

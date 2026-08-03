@@ -1659,10 +1659,10 @@
    inject it before `HARNESS_ATTEMPT_STARTED` when a resolver is explicitly wired;
    add recoverable latest-snapshot revalidation and preserve legacy local callers
    until cloud composition supplies the resolver.
-4. `in_progress` - Focused Core/Worker contract matrices, static and regression
+4. `completed` - Focused Core/Worker contract matrices, static and regression
    checks are green except for two inherited repository file-size violations;
-   prepare Review and merge closeout with the external-verifier fail-closed
-   boundary.
+   commit `50ad8d1c` is merged to `zebra-cloud-trench` and the external-verifier
+   fail-closed boundary is recorded.
 
 ## ARCH-RUNTIME-V2-PLAN-01 - Runtime V2 Proposal Current-State Alignment
 

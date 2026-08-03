@@ -4,9 +4,9 @@
 > Status, owner, branch, and evidence must be maintained by humans.
 > Current execution range: local Beta and single-host production foundations are
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
-> `AGENT-DEF-ADR-01` and `AGENT-DEF-CON-01` are accepted and closed. The next
-> cloud-neutral contract is `AGENT-AUTH-SNAPSHOT-01`; local SQLite Registry work
-> remains deferred on the cloud microservice mainline. ACP and optional code
+> `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
+> accepted and closed. No successor is activated on the cloud microservice
+> mainline; local SQLite Registry work remains deferred. ACP and optional code
 > intelligence remain locked.
 
 ## Global Rules
@@ -97,9 +97,9 @@
 - `AGENT-DEF-ADR-01` is `Done`; its accepted ADR-016 is merged into the cloud
   mainline and has unlocked the Core contract and its authority-snapshot successor.
 - `AGENT-DEF-CON-01` is `Done`: its provider-neutral Core Definition/Version/Release
-  models and Registry Port are merged into the cloud mainline. The active follow-up
-  is the cloud-neutral Attempt authority snapshot contract; local SQLite Registry,
-  PostgreSQL adapters and runtime wiring remain deferred or locked.
+  models and Registry Port are merged into the cloud mainline. The follow-up
+  `AGENT-AUTH-SNAPSHOT-01` is also `Done`; no successor is activated, and local
+  SQLite Registry, PostgreSQL adapters and runtime wiring remain deferred or locked.
 - Cloud aggregate and Artifact task state is maintained in the cloud board below;
   `CLOUD-SCOPE-CON-01` is `Done`, and the explicitly activated
   `CLOUD-SESSION-HISTORY-PG-01` is now `Done` after its host PostgreSQL
@@ -18312,7 +18312,7 @@ without adding release mutation, a marketplace or business user/tenant model.
 
 ### AGENT-AUTH-SNAPSHOT-01 - Durable Attempt Authority Snapshot Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Branch: `codex/agent-authority-snapshot-01`
 - Worktree: `../zebra-agent-agent-authority-snapshot-01`
@@ -18355,6 +18355,25 @@ or effect scope hash is an external authority snapshot.
 - map every Attempt creation/resume/retry caller and narrow Owned paths before claim
 - split external OIDC/business-authority adapter work if it cannot fit this contract
   slice without broad API/config ownership
+
+#### Validation And Handoff
+
+- Commit `50ad8d1c` adds the immutable authority/grant/limits models, resolver Port,
+  schema-validated resolved/revalidated events, recoverable latest-snapshot replay
+  and explicit Worker seam. External verification remains fail-closed unless a
+  resolver is explicitly composed.
+- Focused authority tests pass `6/6`; Core passes `355/355`; Worker passes
+  `93 passed, 13 skipped`; changed Ruff/format, excluded-baseline Mypy (`501`
+  source files), `uv lock --check`, Eval `10/10` and diff checks pass.
+- The full suite is `2031 passed, 211 skipped, 1 failed` only on the two inherited
+  repository file-size violations outside this task. No database, migration,
+  Registry adapter, Runtime composition, Provider HTTP, Desktop, Redis or Mem0
+  consumer was added.
+
+#### Closeout
+
+- Merged into `zebra-cloud-trench`; Runtime, Worker composition, Provider HTTP,
+  Desktop, SQLite, PostgreSQL Registry, Redis and Mem0 consumer remain locked.
 
 ### AGENT-DEF-BIND-01 - Immutable Task Definition Binding
 
