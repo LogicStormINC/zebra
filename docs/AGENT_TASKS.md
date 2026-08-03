@@ -2566,6 +2566,9 @@ external membership.
 - [ ] Host verification must run
   `tests/compose/session_history/run-postgres-tests.sh` and return the named
   `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS` marker before closeout.
+- The first host attempt reached PostgreSQL but stopped in the test fixture
+  because `TOOL_EXECUTION_COMPLETED` lacked required payload fields; the fixture
+  is corrected in the Review follow-up and requires a clean rerun.
 
 #### Review Boundary
 

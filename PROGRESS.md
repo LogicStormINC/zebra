@@ -127,9 +127,11 @@
   `Review`. It adds only a namespace-scoped PostgreSQL read adapter, JSONB row
   decoding, parity/isolation tests and an isolated Compose runner. Local focused
   validation is `13 passed, 3 skipped`, changed static checks and Eval `10/10`
-  pass; host Compose execution remains the sole closeout gate. Provider
-  Continuation, complete Store composition, Runtime selection and external Host
-  verification remain out of scope.
+  pass. The first host run reached PostgreSQL but exposed an incomplete test
+  Event payload before adapter assertions; the fixture is corrected and host
+  Compose remains the sole closeout gate. Provider Continuation, complete Store
+  composition, Runtime selection and external Host verification remain out of
+  scope.
 - Completed and formally closed Workspace adapter task: `CLOUD-AGG-WORKSPACE-PG-01`
   adds the additive
   PostgreSQL v4 projection schema and an injected Worker transaction that validates

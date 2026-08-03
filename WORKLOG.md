@@ -1,5 +1,16 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-SESSION-HISTORY-PG-01 host failure triage
+
+- The first host Compose run reached PostgreSQL and executed the focused suite,
+  but failed before the adapter assertions because the test fixture created a
+  `TOOL_EXECUTION_COMPLETED` Event with an incomplete payload.
+- Corrected only the owned test fixture to satisfy the existing event contract
+  (`attempt_number`, `tool_name`, `status`, `output`, `metadata`). The adapter,
+  migrations and runtime composition are unchanged.
+- Local focused validation remains `13 passed, 3 skipped`; host Compose must be
+  rerun before the card can leave `Review`.
+
 ## 2026-08-03 - CLOUD-SESSION-HISTORY-PG-01 implementation handoff
 
 - Added the namespace-scoped PostgreSQL Session History adapter, JSONB row

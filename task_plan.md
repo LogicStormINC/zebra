@@ -630,8 +630,10 @@
   Ruff/format/strict Mypy, shell syntax, diff and Eval `10/10` pass.
 - The only remaining acceptance gate is host execution of
   `tests/compose/session_history/run-postgres-tests.sh` with the
-  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS` marker. The sandbox cannot
-  access the host Docker socket, so no PostgreSQL service was started here.
+  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS` marker. The first host run
+  reached PostgreSQL but failed in the test fixture because its tool Event
+  payload omitted required contract fields; the fixture is corrected. The
+  sandbox cannot access the host Docker socket, so no rerun was started here.
 - No `ControlPlaneStores`, API/Worker composition, Runtime/Desktop path,
   PostgreSQL migration, Redis/Mem0 integration or Provider Continuation work was
   changed. Keep the card in `Review` until the host result is returned.

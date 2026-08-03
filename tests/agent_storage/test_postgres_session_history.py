@@ -49,7 +49,13 @@ def test_postgres_history_matches_read_search_and_browse_contract(
             sequence=4,
             event_type=EventType.TOOL_EXECUTION_COMPLETED,
             actor=EventActor.TOOL,
-            payload={"output": "SECRET-CONTROL-NEEDLE"},
+            payload={
+                "attempt_number": 1,
+                "tool_name": "secret_tool",
+                "status": "succeeded",
+                "output": "SECRET-CONTROL-NEEDLE",
+                "metadata": {},
+            },
             created_at=_at(2),
         )
     )

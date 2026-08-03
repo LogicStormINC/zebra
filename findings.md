@@ -686,6 +686,10 @@
 - Local focused validation passes `13 passed, 3 skipped`; changed Ruff/format,
   strict Mypy for the new adapter/row modules, shell syntax, diff and Eval `10/10`
   pass. The three PostgreSQL tests are skipped without a DSN.
+- The first host Compose run failed in the test fixture before adapter assertions:
+  `TOOL_EXECUTION_COMPLETED` was missing required contract fields. The fixture
+  now supplies the existing valid payload shape; no production or adapter code
+  changed. A clean host rerun is still required.
 - The card remains in `Review` until the host runs
   `tests/compose/session_history/run-postgres-tests.sh` and returns
   `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS`. No ControlPlaneStores,
