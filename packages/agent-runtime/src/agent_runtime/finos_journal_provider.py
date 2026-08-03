@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_tools import ToolContract, ToolRegistry
+from agent_tools.contracts import READ_ONLY_EFFECT_TAG
 
 MAX_RESPONSE_BYTES = 524_288
 FINOS_JOURNAL_V1_CONTRACT = "finos.journals.v1"
@@ -324,7 +325,12 @@ class FinosJournalProvider:
             FINOS_JOURNAL_V3_CONTRACT: FINOS_V3_TOOL_SPECS,
         }[self.contract_version]
         for spec in specs:
-            registry.register(spec.contract, self._handler(spec), tags=spec.tags)
+            tags = (
+                (*spec.tags, READ_ONLY_EFFECT_TAG)
+                if spec.side_effect == "read_only"
+                else spec.tags
+            )
+            registry.register(spec.contract, self._handler(spec), tags=tags)
 
     def _handler(self, spec: _FinosTool) -> Callable[[ToolCall], ToolResult]:
         def handler(call: ToolCall) -> ToolResult:

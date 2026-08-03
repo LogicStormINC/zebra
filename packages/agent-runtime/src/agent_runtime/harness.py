@@ -57,6 +57,7 @@ from agent_tools import (
     WorkspaceSearchTool,
     resolve_agent_definition_context,
 )
+from agent_tools.contracts import READ_ONLY_EFFECT_TAG
 from agent_tools.errors import ToolRegistryError
 from agent_tools.skills_catalog import LocalSkillCatalog, ScopedSkillRoot, SkillEnablementState
 
@@ -334,6 +335,7 @@ class LocalToolGateway(ToolGatewayPort):
             research = ResearchSubagentTool(self._subagents, workspace_root)
             registry.register(research.contract, research.handle)
         self._validator_tools = registry.names_with_tag("validator")
+        self._read_only_tools = registry.names_with_tag(READ_ONLY_EFFECT_TAG)
         self._model_tools = registry.model_tools() + self._mcp_catalog.model_tools
         self._parallel_safe_tools = registry.parallel_safe_names()
         self._parallel_batch_limits = (
@@ -416,6 +418,10 @@ class LocalToolGateway(ToolGatewayPort):
     @property
     def validator_tools(self) -> frozenset[str]:
         return self._validator_tools
+
+    @property
+    def read_only_tools(self) -> frozenset[str]:
+        return self._read_only_tools
 
     @property
     def parallel_batch_limits(self) -> dict[str, int]:

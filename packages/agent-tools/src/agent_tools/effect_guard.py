@@ -31,6 +31,7 @@ class ToolGatewayLike(Protocol):
     effective_mcp_tools: tuple[ModelToolDefinition, ...]
     effective_skill_components: tuple[str, ...]
     parallel_safe_tools: frozenset[str]
+    read_only_tools: frozenset[str]
     validator_tools: frozenset[str]
     parallel_batch_limits: dict[str, int]
 
@@ -108,6 +109,7 @@ class EffectGuardedToolGateway:
     def execute(self, tool_call: ToolCall) -> ToolResult:
         if (
             tool_call.name in READ_ONLY_TOOLS
+            or tool_call.name in self._gateway.read_only_tools
             or tool_call.name in self._gateway.validator_tools
         ):
             return self._gateway.execute(tool_call)

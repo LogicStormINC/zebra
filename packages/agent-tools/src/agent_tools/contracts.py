@@ -5,6 +5,10 @@ from agent_core.domain.tools import ToolCall, ToolResult
 
 ToolHandler = Callable[[ToolCall], ToolResult]
 
+# Effect contract: tools registered with this tag are classified as read-only
+# before execution and bypass the effect ledger in the guarded gateway.
+READ_ONLY_EFFECT_TAG = "effect:read_only"
+
 
 @dataclass(frozen=True)
 class ToolContract:
