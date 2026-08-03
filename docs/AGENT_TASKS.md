@@ -15901,3 +15901,77 @@ resolved capabilities into the existing OpenAI-compatible gateway.
   routing, capability discovery, model-family inference, automatic fallback,
   database/UI changes, FinOS business behavior, MiniMax MCP changes, or
   upstream merge
+
+### EFF-READONLY-01 - Declared Read-Only Tools Bypass Effect Ledger Before Reserve
+
+- Status: `Review`
+- Owner: `vinson1101` (human design owner)
+- Suggested role: `RUNTIME / EFFECT GUARD`
+- Repository: `vinson1101/zebra`
+- Branch: `codex/effect-readonly-quiescence`
+- Base: `c823948`
+- Implementation commits: `89a6407` (red tests), `26cd939` (runtime fix)
+- Owned paths:
+  - `packages/agent-tools/src/agent_tools/contracts.py`
+  - `packages/agent-tools/src/agent_tools/effect_guard.py`
+  - `packages/agent-runtime/src/agent_runtime/harness.py`
+  - `packages/agent-runtime/src/agent_runtime/finos_journal_provider.py`
+  - `tests/agent_tools/test_effect_guard.py`
+  - `tests/agent_runtime/test_finos_business_provider.py`
+  - `tests/api/test_effect_readonly_followup.py`
+  - `docs/AGENT_TASKS.md` (this card)
+
+#### Goal
+
+Make declared read-only tool classification visible before the effect ledger
+reserve: `FinosJournalProvider` maps `side_effect == "read_only"` to a generic
+`effect:read_only` tag at registration; `LocalToolGateway` projects
+`read_only_tools` from the registry; `EffectGuardedToolGateway` unions built-in,
+declared, and validator read-only sets. A failed declared read-only call must
+not create a ledger row, so terminal follow-ups stay 201 instead of being
+blocked by `handoff_source_not_quiescent` forever.
+
+#### Late Registration
+
+> Late registration: implementation began before the task card was recorded.
+> This entry documents the exception transparently and does not claim
+> pre-coding registration.
+
+#### Acceptance
+
+- [x] Red tests land first: dynamic declared read-only failure bypasses the
+  ledger and executes again; real FinOS provider wiring test proves the
+  classification reaches `LocalToolGateway.read_only_tools`.
+- [x] Unclassified effectful failure stays `uncertain` and rejects replay;
+  terminal follow-up controls: read-only failure -> 201 child, true uncertain
+  -> 409 with no child, multi-segment follow-ups all 201.
+- [x] No handoff validator, quiescence, ledger schema, HTTP status, Task state,
+  or `failed_no_effect` producer changes.
+- [x] Focused suite: 26 passed. Full suite at candidate HEAD: 2019 passed,
+  9 skipped, 10 failed, all 10 identical at base `c823948` (zero new failures).
+- [x] Changed files pass Ruff; Mypy shows only pre-existing errors; eval release
+  gate 10/10; `git diff --check` clean.
+
+#### Known Debt
+
+- `packages/agent-runtime/src/agent_runtime/harness.py` grew 550 -> 556 lines
+  against the 500-line source limit. The violation pre-exists; this branch adds
+  6 lines only. A separate split task is required and is not fixed here.
+- The API 201/409 and multi-segment tests are contract controls; the full
+  dynamic classification chain is proven red at guard and adapter wiring level.
+  End-to-end proof requires a staging real-403 flow.
+
+#### Deployment Status
+
+- `IMPLEMENTATION_COMPLETE_LOCAL`
+- `FORK_PUSH_READY`
+- `STAGING_NOT_ACCEPTED`
+- `NOT_MERGE_READY`
+
+Merge into `codex/finos-runtime-alignment` only after: fork diff review passes;
+staging real 403 creates no ledger row; two consecutive terminal follow-ups
+return 201; a true uncertain control still returns 409; the audited legacy row
+is converged to `failed_no_effect` (never deleted or set to `succeeded`) and the
+original Task returns 201; the full suite at the candidate HEAD shows zero new
+failures; Ruff, Mypy, release gate, `git diff --check`, and the file-size
+violation set show no new regression.
