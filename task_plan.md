@@ -1664,6 +1664,10 @@
    commit `50ad8d1c` is merged to `zebra-cloud-trench` and the external-verifier
    fail-closed boundary is recorded.
 
+Current gate: no successor task is active. Maintainer activation is required
+before any new implementation; no code, Compose, migration or test slice is
+authorized while the registered successor cards remain `Locked`.
+
 ## ARCH-RUNTIME-V2-PLAN-01 - Runtime V2 Proposal Current-State Alignment
 
 1. `completed` - Compare every proposal lane with current docs, code and task evidence.

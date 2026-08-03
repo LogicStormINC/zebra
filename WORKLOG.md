@@ -1,5 +1,16 @@
 # Progress Log
 
+## 2026-08-03 - cloud mainline activation gate
+
+- Sidebar ChatGPT review found no legal `Ready` or `In Progress` successor after
+  `AGENT-AUTH-SNAPSHOT-01` closeout.
+- Updated the task registry, progress log and implementation plan to remove the
+  stale “only AUTH may be active” wording and record the maintainer activation
+  gate.
+- No production code, Compose, migration or new tests changed; Runtime, Worker
+  composition, Provider HTTP, Desktop, SQLite, PostgreSQL Registry, Redis and
+  Mem0 consumer work remain locked.
+
 ## 2026-08-03 - AGENT-AUTH-SNAPSHOT-01 implementation
 
 - Continued the registered cloud-neutral authority task after the sidebar

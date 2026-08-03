@@ -18121,11 +18121,13 @@ turning it into executable architecture before the focused ADR is approved.
 Direction source: `docs/Zebra Agent Runtime Upgrade Proposal v2.0.md`.
 Decision source: `docs/ADR-016_Agent_Definition控制面与版本发布边界.md`.
 
-Execution rule: only `AGENT-AUTH-SNAPSHOT-01` may be active. Local SQLite Registry
-work is intentionally deferred on the cloud microservice mainline; every other
-later task remains `Locked` until its dependencies are merged to `main`, and a
-locked card's paths must be rechecked and narrowed against ADR-016 before it is
-claimed.
+Execution rule: `AGENT-AUTH-SNAPSHOT-01` is `Done`; no implementation task is
+currently active. A maintainer must explicitly activate a registered `Locked`
+card by updating its status, owner, branch and worktree before coding. Local
+SQLite Registry work is intentionally deferred on the cloud microservice
+mainline; every other later task remains `Locked` until explicit activation and
+dependency review, and a locked card's paths must be rechecked and narrowed
+against ADR-016 before it is claimed.
 
 ### AGENT-DEF-ADR-01 - Definition Authority And Snapshot ADR
 

@@ -326,9 +326,11 @@
   pre-Attempt event and narrowly injected Worker seam, with recoverable
   latest-snapshot revalidation. Focused authority `6/6`, Core `355/355` and
   Worker `93 passed, 13 skipped` are green; the full suite's single failure is
-  the two inherited file-size violations outside this task. No successor task is
-  activated; local SQLite Registry work is intentionally deferred on this cloud
-  microservice mainline, while storage, API and runtime wiring remain locked.
+  the two inherited file-size violations outside this task. No implementation
+  task is currently active; the cloud mainline is waiting for maintainer
+  activation of a registered successor. Local SQLite Registry work is
+  intentionally deferred on this cloud microservice mainline, while storage,
+  API and runtime wiring remain locked.
   The implementation order is
   `CON -> AUTH`, then `{DRAFT,AUTH} -> BIND -> MEM -> TRUST -> EVAL -> PUB`;
   PostgreSQL Registry remains a separately gated adapter.
