@@ -4,7 +4,8 @@
 > Status, owner, branch, and evidence must be maintained by humans.
 > Current execution range: local Beta and single-host production foundations are
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
-> ACP and optional code intelligence remain locked.
+> `AGENT-DEF-ADR-01` is accepted and closed; `AGENT-DEF-CON-01` is the current
+> Core contract task. ACP and optional code intelligence remain locked.
 
 ## Global Rules
 
@@ -91,6 +92,11 @@
 - `QA-148-MDL-01` is `Done` via PR `#156`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
+- `AGENT-DEF-ADR-01` is `Done`; its accepted ADR-016 is merged into the cloud
+  mainline and unlocks only the Core contract task below.
+- `AGENT-DEF-CON-01` is the current `Ready` task for the provider-neutral Core
+  Definition/Version/Release models and Registry Port. No storage or runtime
+  implementation is activated by this card.
 - Cloud aggregate and Artifact task state is maintained in the cloud board below;
   `CLOUD-SCOPE-CON-01` is `Done`, and the explicitly activated
   `CLOUD-SESSION-HISTORY-PG-01` is now `Done` after its host PostgreSQL
@@ -18112,13 +18118,13 @@ turning it into executable architecture before the focused ADR is approved.
 Direction source: `docs/Zebra Agent Runtime Upgrade Proposal v2.0.md`.
 Decision source: `docs/ADR-016_Agent_Definition控制面与版本发布边界.md`.
 
-Execution rule: only `AGENT-DEF-ADR-01` may be active. Every later task remains
+Execution rule: only `AGENT-DEF-CON-01` may be active. Every later task remains
 `Locked` until its dependencies are merged to `main`; a locked card's paths must
 be rechecked and narrowed against ADR-016 before it is claimed.
 
 ### AGENT-DEF-ADR-01 - Definition Authority And Snapshot ADR
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Branch: `codex/agent-def-adr-01`
 - Worktree: `../zebra-agent-agent-def-adr-01`
@@ -18167,15 +18173,25 @@ Task/Attempt snapshot split before implementation begins.
 - relative document targets exist, `git diff --check` passes and Eval passes 10/10
 - full repository checks retain the exact parent-branch baseline: 13 Ruff findings,
   4 mypy findings and two file-size violations; none is in this task's modified files
-- no implementation task is activated; after merge, only `AGENT-DEF-CON-01` may move
-  from `Locked` to `Ready`
+- the ADR is merged into `zebra-cloud-trench`; only `AGENT-DEF-CON-01` is
+  unlocked and no storage, API, runtime or publication task is activated
+
+#### Closeout
+
+- Accepted the ADR-016 decision and its dependency DAG on the current cloud
+  mainline. The architecture keeps Registry metadata, Event execution facts and
+  external Attempt authority as separate authorities.
+- The review evidence and documentation gates are complete; the two inherited
+  file-size violations remain outside this task. `AGENT-DEF-CON-01` is the only
+  follow-up permitted to move forward.
 
 ### AGENT-DEF-CON-01 - Core Definition And Registry Contracts
 
-- Status: `Locked`
-- Owner: `Unassigned`
-- Suggested branch: `codex/agent-def-con-01`
-- Depends on: `AGENT-DEF-ADR-01` merged to `main`
+- Status: `Ready`
+- Owner: `Codex`
+- Branch: `codex/agent-def-con-01`
+- Worktree: `../zebra-agent-agent-def-con-01`
+- Depends on: merged `AGENT-DEF-ADR-01`
 - Owned paths: `packages/agent-core/src/agent_core/domain/agent_definitions.py`,
   `packages/agent-core/src/agent_core/domain/identifiers.py`,
   `packages/agent-core/src/agent_core/domain/__init__.py`,

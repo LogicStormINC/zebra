@@ -314,14 +314,14 @@
   extraction. All four microservice repair cards are locally integrated after the
   provider, SCM, cancellation, Core file-size, backend and Eval gates pass. Desktop
   is explicitly outside the new Zebra microservice mainline.
-- Agent Definition architecture task in Review: `AGENT-DEF-ADR-01` records accepted
-  Definition control-plane decisions and updates the final architecture. It
-  separates Task-level Definition configuration from Attempt-level execution
+- Agent Definition architecture task `AGENT-DEF-ADR-01` is Done: ADR-016 records
+  accepted Definition control-plane decisions and updates the final architecture.
+  It separates Task-level Definition configuration from Attempt-level execution
   authority and preserves ADR-012's opaque external namespace. Code audit also
   confirmed that external Attempt authority snapshots and immutable Skill content
-  snapshots are not yet implemented; dedicated locked tasks now own those gaps.
-  This integration records the decision only; implementation remains governed by
-  the registered dependency DAG and explicit task activation.
+  snapshots are not yet implemented; dedicated follow-up tasks own those gaps.
+  `AGENT-DEF-CON-01` is the only Ready follow-up and owns the provider-neutral
+  Core Definition/Version/Release contract; storage and runtime remain locked.
   The implementation order is `CON -> STO -> {PG,DRAFT}`, `CON -> AUTH`, then
   `{DRAFT,AUTH} -> BIND -> MEM -> TRUST -> EVAL -> PUB`.
 - Web Intelligence planning: `WEB-INT-PLAN-01` is a documentation-only review

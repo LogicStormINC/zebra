@@ -1612,10 +1612,11 @@
 
 ### Decisions
 
-- The proposal direction and ADR-016 are locally accepted, but remain non-executable
-  until `AGENT-DEF-ADR-01` is merged.
-- `AGENT-DEF-ADR-01` is the only active task; all Python/SQL/API/runtime work is
-  `Locked`.
+- The proposal direction and ADR-016 are accepted and merged into the cloud
+  mainline; they remain architecture-only and do not select an implementation
+  backend.
+- `AGENT-DEF-CON-01` is the only Ready follow-up; all SQLite/PostgreSQL/API/
+  runtime and publication work remains `Locked`.
 - Task identity and Definition configuration remain stable across Segments, while
   external execution authority is revalidated for every Attempt.
 - Zebra stores only opaque `(authority_issuer, namespace_id)` isolation keys and
