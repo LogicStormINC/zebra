@@ -94,8 +94,9 @@
 - Cloud aggregate and Artifact task state is maintained in the cloud board below;
   `CLOUD-SCOPE-CON-01` is `Done`, and the explicitly activated
   `CLOUD-SESSION-HISTORY-PG-01` is now `Done` after its host PostgreSQL
-  evidence passed. Provider Continuation and all other successor adapters
-  remain `Locked`.
+  evidence passed. `CLOUD-CONTEXT-CON-01` is now the next `Ready` contract
+  slice; its PostgreSQL successor, Provider Continuation and all other
+  successor adapters remain `Locked`.
 
 ## Context Continuity And Governed Memory Board
 
@@ -2591,6 +2592,51 @@ external membership.
 - No migration, write aggregate, Lease fence, Store selector, Runtime, Worker,
   Provider HTTP, Desktop, Redis or Mem0 composition changed. The next adapter
   still requires an explicit activation.
+
+### CLOUD-CONTEXT-CON-01 - Context Materialization Boundary Contract
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Depends on: `CLOUD-SCOPE-CON-01`, `CLOUD-SESSION-HISTORY-PG-01`,
+  `CLOUD-MEMORY-CON-01`, `CLOUD-MEMORY-PG-01`, `CLOUD-AGG-CTX-PG-01` and
+  `CLOUD-AGG-CTX-ADMIN-PG-01`
+- Branch: `TBD after claim`
+- Owned paths: `docs/ADR-020_Context_Materialization_Boundary.md`,
+  `packages/agent-core/src/agent_core/domain/context_materialization.py` (new),
+  `packages/agent-core/src/agent_core/ports/context_materialization.py` (new),
+  their Core exports, `tests/agent_core/test_context_materialization.py` (new),
+  and this task's governance records
+- Goal: freeze the provider-neutral read boundary that assembles current
+  Session History, the active Context Capsule and confirmed governed Memory into
+  an ephemeral Context input generation.
+- Acceptance: the request carries trusted opaque namespace scope, Session CAS
+  revision, active-capsule expectation and explicit Memory visibility query;
+  results carry source generations and only confirmed, unexpired, scope-checked
+  Memory entries; rebuild is a deterministic reread; stale expectations,
+  deny-all scope, duplicate Memory revisions and invalid limits fail closed.
+- Explicit non-goals: no PostgreSQL adapter or migration, no Event/Session/
+  Context/Memory write, no `ControlPlaneStores` selector, no Worker/API/runtime
+  wiring, no Desktop, SQLite, Redis or Mem0 path.
+
+### CLOUD-CONTEXT-PG-01 - PostgreSQL Context Materialization Read Composition
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Depends on: `CLOUD-CONTEXT-CON-01`, `CLOUD-SESSION-HISTORY-PG-01`,
+  `CLOUD-MEMORY-PG-01`, `CLOUD-AGG-CTX-PG-01` and
+  `CLOUD-AGG-CTX-ADMIN-PG-01`
+- Owned paths: PostgreSQL Context materialization read composition under
+  `packages/agent-storage`, focused PostgreSQL/Compose tests and runner, and
+  the task's governance records
+- Goal: implement one namespace-scoped, read-only PostgreSQL composition for
+  the Context Materialization Port without creating a second Context or Memory
+  authority.
+- Acceptance: one consistent read generation combines Session History, active
+  Capsule and governed Memory; session/capsule/memory revisions are checked
+  before return; rebuild and expiry are read-only; cross-namespace and
+  cross-visibility reads fail closed; host PostgreSQL matrix passes.
+- Non-goals: no runtime selection, Worker startup, provider HTTP,
+  `ControlPlaneStores`, application Compose, Desktop, SQLite, Redis or Mem0.
 
 ### CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
 

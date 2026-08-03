@@ -646,6 +646,34 @@
   select PostgreSQL in `ControlPlaneStores` or unlock Runtime, Worker, Provider
   HTTP, Desktop, Redis, Mem0 or any other successor adapter.
 
+## CLOUD-CONTEXT-CON-01 - Context Materialization Boundary Contract
+
+1. `pending` - Trace the existing Session History, Context lifecycle and
+   governed Memory read contracts and freeze their non-overlapping assembly
+   boundary.
+2. `pending` - Add Core request/result types and a read-only Port carrying
+   namespace scope, Session revision, active Capsule expectation and Memory
+   visibility query.
+3. `pending` - Prove stale expectations, deny-all scope, invalid limits,
+   duplicate revisions, expired/candidate Memory and deterministic generation
+   rules with focused Core tests.
+4. `pending` - Write ADR-020, update governance records and close the contract
+   slice without adding a PostgreSQL adapter or runtime composition.
+
+### Decisions
+
+- Session History answers what happened; the Context Capsule answers the
+  resumable state; governed PostgreSQL Memory answers which confirmed facts may
+  be recalled. None of these sources is replaced by the materialized envelope.
+- The materialized generation is ephemeral and rebuildable. Its identity is
+  derived from the current Session revision, active Capsule identity and
+  revisioned Memory entries; it is not a new database authority.
+- Opaque deployment namespace scope and business Memory visibility are separate
+  inputs. Core validates their shape but never derives a business Tenant or
+  maps an external namespace to storage.
+- PostgreSQL read composition is a locked successor. Runtime, Worker, API,
+  Desktop, SQLite, Redis and Mem0 remain outside this contract.
+
 ## CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 
 1. `completed` - Trace every authoritative Worker-owned aggregate from Port to

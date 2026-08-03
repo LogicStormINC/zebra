@@ -130,6 +130,12 @@
   `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS`, changed static checks and
   Eval `10/10` pass. Provider Continuation, complete Store composition, Runtime
   selection and external Host verification remain out of scope.
+- `CLOUD-CONTEXT-CON-01` is the next `Ready` contract slice. It will freeze the
+  read-only boundary between Session History, the active Context Capsule and
+  confirmed governed Memory before any PostgreSQL materialization adapter is
+  activated. `CLOUD-CONTEXT-PG-01` is registered but remains `Locked`; no
+  runtime, Worker, API, Desktop, SQLite, Redis or Mem0 path is unlocked by this
+  planning step.
 - Completed and formally closed Workspace adapter task: `CLOUD-AGG-WORKSPACE-PG-01`
   adds the additive
   PostgreSQL v4 projection schema and an injected Worker transaction that validates
