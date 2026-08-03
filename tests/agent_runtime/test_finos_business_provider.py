@@ -6,10 +6,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from agent_core.domain.identifiers import new_tool_call_id
+from agent_core.domain.identifiers import new_session_id, new_tool_call_id
 from agent_core.domain.tools import ToolCall, ToolCallStatus
 from agent_runtime import FinosJournalProvider, LocalToolGateway
 from agent_runtime.finos_journal_provider import MAX_RESPONSE_BYTES, UrllibFinosTransport
+from agent_storage import SQLiteEffectLedger
+from agent_tools import EffectGuardedToolGateway
 
 
 class RecordingTransport:
@@ -431,6 +433,36 @@ def test_urllib_business_provider_transport_does_not_follow_redirects(
 
     assert len(handlers) == 1
     assert handlers[0].redirect_request(None, None, 302, "redirect", {}, "https://other") is None
+
+
+def test_read_only_finos_tool_failure_bypasses_effect_ledger(tmp_path: Path) -> None:
+    provider = FinosJournalProvider(
+        base_url="https://finos.internal",
+        task_id="11111111-1111-4111-8111-111111111111",
+        grant="opaque-task-grant",
+        contract_version="finos.journals.v2",
+        transport=FailingTransport(),
+    )
+    gateway = LocalToolGateway(tmp_path, finos_journal_provider=provider)
+
+    assert "finos.notes.list" in gateway.read_only_tools
+    assert "finos.journals.list" in gateway.read_only_tools
+    assert "finos.account_changes.propose" not in gateway.read_only_tools
+
+    root_session_id = new_session_id()
+    guarded = EffectGuardedToolGateway(
+        gateway,
+        ledger=SQLiteEffectLedger(tmp_path / "ledger.db"),
+        root_session_id=root_session_id,
+        authority_scope="workspace-write",
+    )
+
+    result = guarded.execute(_call("finos.notes.list", {"tag": "rebalance", "limit": 20}))
+
+    assert result.status is ToolCallStatus.FAILED
+    ledger = SQLiteEffectLedger(tmp_path / "ledger.db")
+    assert ledger.has_uncertain(root_session_id) is False
+    assert ledger.terminal_keys(root_session_id) == frozenset()
 
 
 def _call(name: str, arguments: dict[str, object]) -> ToolCall:
