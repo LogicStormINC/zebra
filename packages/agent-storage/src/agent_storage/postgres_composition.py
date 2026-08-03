@@ -6,6 +6,8 @@ from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.ports import (
     ArtifactPayloadObjectReadPort,
     CloudControlPlane,
+    ModelCallStorePort,
+    ToolRunStorePort,
 )
 
 from agent_storage.artifact_payload_reads import CloudArtifactPayloadReader
@@ -29,11 +31,31 @@ from agent_storage.postgres import (
     PostgresSessionHistory,
     PostgresWorkspaceProjectionStore,
 )
+from agent_storage.postgres_model_tool_compat import (
+    PostgresModelCallProjectionAdapter,
+    PostgresToolRunProjectionAdapter,
+)
 
 
 @dataclass(frozen=True, slots=True)
 class PostgresControlPlaneStores(CloudControlPlane):
-    """Concrete cloud composition; the local ``ControlPlaneStores`` is untouched."""
+    """Concrete cloud composition; the local ``ControlPlaneStores`` is untouched.
+
+    ``model_calls`` and ``tool_runs`` are compatibility views only. Their source
+    remains the single Event-derived ``model_tool_projections`` adapter.
+    """
+
+    @property
+    def model_calls(self) -> ModelCallStorePort:
+        return PostgresModelCallProjectionAdapter(self.model_tool_projections)
+
+    @property
+    def tool_runs(self) -> ToolRunStorePort:
+        return PostgresToolRunProjectionAdapter(self.model_tool_projections)
+
+    @property
+    def legacy_artifact_control_enabled(self) -> bool:
+        return False
 
 
 def postgres_control_plane_stores(

@@ -25,6 +25,12 @@
   remains implementation-`Blocked` pending a separately authorized slice. Local
   SQLite remains the default and cloud must fail closed rather than fall back to
   SQLite.
+- `CLOUD-API-WORKER-PG-01` completed its authorized implementation slice and is
+  now in `Review` (`In Progress -> Review`). Focused API/HTTP/Worker and real
+  PostgreSQL Compose evidence is green. It owns only shared profile selection,
+  PostgreSQL stores injection and the model/tool projection compatibility seam;
+  it does not activate application Compose, Redis live, `CLOUD-LIVE-01`, or any
+  aggregate gate.
 - Context fencing conformance child `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` is
   now `Done` on its governance worktree. Its Store-level semantic gap was closed
   by `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`, which is also `Done` after sidebar

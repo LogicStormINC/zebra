@@ -8,7 +8,7 @@ from typing import Any
 
 from agent_integrations import GitHubPullRequestTransport
 from agent_security import CredentialBroker
-from agent_storage import ControlPlaneStores
+from agent_storage import CloudCompositionSettings, ControlPlaneStores
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
@@ -29,6 +29,7 @@ def create_http_app(
     *,
     settings: ZebraAgentSettings | None = None,
     stores: ControlPlaneStores | None = None,
+    cloud_composition: CloudCompositionSettings | None = None,
     administrative_context_namespace: str | None = None,
     context_administrative_namespace: str | None = None,
     credential_broker: CredentialBroker | None = None,
@@ -41,6 +42,7 @@ def create_http_app(
         active_database_path,
         settings=active_settings,
         stores=stores,
+        cloud_composition=cloud_composition,
         administrative_context_namespace=administrative_context_namespace,
         context_administrative_namespace=context_administrative_namespace,
         credential_broker=credential_broker,

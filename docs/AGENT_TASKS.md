@@ -1488,6 +1488,65 @@ slice, and any future live runtime dependency must be registered before activati
 It must not be used as an implicit authorization to change API/Worker startup or
 to unlock any aggregate fencing gate.
 
+### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `CORE / APP / STORAGE`
+- Depends on: `CLOUD-CONTROL-PLANE-PG-01` and
+  `CLOUD-PROFILE-COMPOSITION-CON-01` (`Done`); does not depend on
+  `CLOUD-LIVE-01` or application Compose
+- Branch: `codex/cloud-api-worker-pg-01`
+- Worktree: `../.codex/worktrees/zebra-cloud-api-worker-pg-01`
+- Owned paths: `apps/api/src/zebra_agent_api/{app,http,storage_composition}.py`,
+  `apps/worker/src/zebra_agent_worker/{loop,main}.py`,
+  `packages/agent-storage/src/agent_storage/{__init__,runtime_composition,postgres_composition,postgres_model_tool_compat}.py`,
+  focused files under `tests/` for API/Worker storage composition,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`
+
+#### Goal
+
+Make the explicit `cloud` profile compose one PostgreSQL-backed store bundle for
+both API and Worker, while preserving local SQLite as the default profile. Cloud
+configuration errors must fail before startup; no path may silently construct a
+SQLite store in the cloud profile.
+
+#### Acceptance
+
+- unset profile and `ZEBRA_PROFILE=local` preserve the existing SQLite composition
+- `ZEBRA_PROFILE=cloud` builds `PostgresControlPlaneStores` from one shared builder
+  and never calls `sqlite_control_plane_stores`
+- missing DSN, namespace, signing key, object-store or scope configuration fails
+  closed without partial stores
+- Worker cloud composition injects the existing PostgreSQL workspace transaction
+  and namespace fence without changing execution semantics
+- `model_calls` and `tool_runs` are read/index compatibility facades over the
+  existing PostgreSQL `model_tool_projections`; no second authority tables exist
+- focused local, cloud-selection, missing-config, compatibility and API/Worker
+  injection tests pass; no migration, Compose, Redis live or production claim is added
+
+#### Activation decision
+
+- Sidebar ChatGPT returned `IMPLEMENTATION-ACTIVATE-OK` for
+  `Planning -> In Progress` with `implementation_authorized: true`.
+- Sidebar ChatGPT returned `CLOSEOUT-OK` for `In Progress -> Review` after the
+  focused and PostgreSQL-backed evidence below. This is a review handoff only;
+  implementation and successor activation remain unauthorized.
+- `CLOUD-AGG-FENCE-01` remains `Locked` and `CLOUD-COMPOSE-APP-01` remains
+  `Blocked`; this slice cannot activate either gate or any successor.
+
+#### Validation evidence
+
+- `uv run pytest -q tests/test_cloud_api_worker_profile_composition.py` -> 5 passed.
+- API app -> 21 passed; HTTP session creation -> 7 passed; Worker projection ->
+  5 passed; cloud artifact configuration -> 3 passed; combined regression -> 41
+  passed.
+- `tests/compose/control_plane/run-postgres-tests.sh` -> 11 passed and
+  `ZEBRA_CONTROL_PLANE_POSTGRES_TEST_RESULT=PASS`; Compose resources were removed
+  by the runner cleanup trap.
+- Ruff passed for all changed files; storage/Worker mypy passed; API mypy retains
+  the pre-existing `agent_security` export and `import-untyped` baseline.
+
 #### Goal
 
 Build one Zebra image and run migration, API and Worker as distinct commands over

@@ -4,14 +4,16 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import cast
 
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_storage import (
+    CloudCompositionSettings,
     ControlPlaneStores,
     LeaseConflictError,
-    sqlite_control_plane_stores,
+    compose_control_plane_stores,
 )
 from zebra_agent_config import ZebraAgentSettings
 
@@ -149,13 +151,27 @@ def build_worker_loop_service(
     settings: ZebraAgentSettings,
     sleep: Callable[[float], None] = time.sleep,
     stores: ControlPlaneStores | None = None,
+    cloud_composition: CloudCompositionSettings | None = None,
     effect_dispatch: EffectDispatchPort | None = None,
     worker_projection_transaction: WorkerProjectionTransactionPort | None = None,
     deployment_namespace: str | None = None,
     cloud_provider_continuation_factory: Callable[[SessionId], CloudProviderContinuationCoordinator]
     | None = None,
 ) -> WorkerLoopService:
-    active_stores = stores or sqlite_control_plane_stores(database_path)
+    active_stores = stores or compose_control_plane_stores(
+        profile=settings.profile,
+        database_path=(settings.database_url if settings.profile == "cloud" else database_path),
+        cloud=cloud_composition,
+    )
+    active_transaction = worker_projection_transaction
+    active_namespace = deployment_namespace
+    if settings.profile == "cloud":
+        active_transaction = active_transaction or cast(
+            WorkerProjectionTransactionPort, active_stores.workspaces
+        )
+        active_namespace = active_namespace or getattr(active_stores, "deployment_namespace", None)
+        if not isinstance(active_namespace, str) or not active_namespace.strip():
+            raise ValueError("cloud profile composition must expose deployment_namespace")
     claim_service = SessionClaimService(
         active_stores.leases,
         SessionRecoveryService(
@@ -171,8 +187,8 @@ def build_worker_loop_service(
         settings=settings,
         stores=active_stores,
         effect_dispatch=effect_dispatch,
-        worker_projection_transaction=worker_projection_transaction,
-        deployment_namespace=deployment_namespace,
+        worker_projection_transaction=active_transaction,
+        deployment_namespace=active_namespace,
         cloud_provider_continuation_factory=cloud_provider_continuation_factory,
     )
     return WorkerLoopService(

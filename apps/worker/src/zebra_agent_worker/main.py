@@ -63,7 +63,10 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--database",
         default=None,
-        help="SQLite database path. Defaults to settings database_url.",
+        help=(
+            "Local SQLite database path. Cloud profile ignores this path and "
+            "uses ZEBRA_DATABASE_URL. Defaults to settings database_url."
+        ),
     )
     parser.add_argument(
         "--worker-id",

@@ -1,5 +1,32 @@
 # Task Plan
 
+## CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition (Review)
+
+1. `completed` - Confirm the accepted cloud/local profile contract and isolate the
+   implementation from application Compose, Redis live and other runtime gates.
+2. `completed` - Add one shared PostgreSQL/local composition builder, wire API and
+   Worker startup to it, and expose model/tool projection compatibility facades.
+3. `completed` - Add focused local/cloud selection, fail-closed and injection tests.
+4. `completed` - Run static, focused and PostgreSQL-backed validation, update
+   evidence, request sidebar closeout and keep `CLOUD-COMPOSE-APP-01` blocked.
+
+### Review handoff
+
+- Sidebar ChatGPT returned `CLOSEOUT-OK` for `In Progress -> Review`.
+- Implementation authorization is closed; no successor activation or aggregate
+  gate unlock is authorized. An independent review is still required before
+  marking this task `Done`.
+
+### Boundary
+
+- Owned implementation paths are the API/Worker composition roots, the storage
+  runtime composition and model/tool compatibility adapter, focused tests, and
+  governance records listed in `CLOUD-API-WORKER-PG-01`.
+- No migration/DDL, application Compose, Redis live fan-out, Provider HTTP, Runtime
+  execution semantics, Mem0, Trench or production rollout is authorized.
+- Cloud configuration failure is fail-closed; local SQLite behavior remains the
+  default and is not dual-written.
+
 ## CLOUD-PROFILE-COMPOSITION-CON-01 - Explicit Cloud/Local Profile Composition Contract (Done)
 
 1. `completed` - Trace the API and Worker composition roots and confirm that both

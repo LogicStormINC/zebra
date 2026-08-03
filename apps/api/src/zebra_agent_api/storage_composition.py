@@ -2,19 +2,28 @@ from pathlib import Path
 
 from agent_storage import (
     ControlPlaneStores,
-    sqlite_control_plane_stores,
+    compose_control_plane_stores,
 )
+from zebra_agent_config import ZebraAgentSettings
 
 
 class ControlPlaneStorageMixin:
     """Lazily expose one control-plane store bundle to API mixins."""
 
     database_path: Path
+    settings: ZebraAgentSettings
     _stores: ControlPlaneStores | None
 
     @property
     def stores(self) -> ControlPlaneStores:
-        stores = self._stores or sqlite_control_plane_stores(self.database_path)
+        stores = self._stores or compose_control_plane_stores(
+            profile=self.settings.profile,
+            database_path=(
+                self.settings.database_url
+                if self.settings.profile == "cloud"
+                else self.database_path
+            ),
+        )
         object.__setattr__(self, "_stores", stores)
         return stores
 

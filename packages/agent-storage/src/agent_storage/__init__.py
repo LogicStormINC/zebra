@@ -121,8 +121,17 @@ from agent_storage.postgres_composition import (
     PostgresControlPlaneStores,
     postgres_control_plane_stores,
 )
+from agent_storage.postgres_model_tool_compat import (
+    PostgresModelCallProjectionAdapter,
+    PostgresToolRunProjectionAdapter,
+)
 from agent_storage.projections import SQLiteProjectionStore
 from agent_storage.provider_continuations import SQLiteProviderContinuationStore
+from agent_storage.runtime_composition import (
+    CloudCompositionSettings,
+    cloud_composition_from_environment,
+    compose_control_plane_stores,
+)
 from agent_storage.session_attachments import (
     load_attachment_contexts,
     store_initial_text_attachments,
@@ -146,6 +155,8 @@ __all__ = [
     "S3ArtifactObjectStore",
     "ControlPlaneStores",
     "PostgresControlPlaneStores",
+    "PostgresModelCallProjectionAdapter",
+    "PostgresToolRunProjectionAdapter",
     "EffectLedgerStatus",
     "EffectReplayRejectedError",
     "EffectReservation",
@@ -224,6 +235,9 @@ __all__ = [
     "compose_session_artifacts",
     "sqlite_control_plane_stores",
     "postgres_control_plane_stores",
+    "CloudCompositionSettings",
+    "cloud_composition_from_environment",
+    "compose_control_plane_stores",
     "apply_postgres_migrations",
     "attach_segment_in_transaction",
     "bootstrap_control_plane_epoch",
