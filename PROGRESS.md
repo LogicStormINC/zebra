@@ -116,6 +116,12 @@
   SQL, Runtime selection, Provider HTTP, Desktop, Redis or Mem0 behavior. Its
   successors are the still-locked Provider Continuation and Session History
   adapters.
+- `CLOUD-SCOPE-CON-01` is now in `Review`: `OpaqueAuthorityScope` is immutable,
+  rejects malformed or over-broad allow-lists, preserves the full-scope versus
+  deny-all distinction, and leaves external-to-deployment namespace mapping to
+  trusted composition. Focused Core `9/9`, full Core `347/347`, relevant
+  regressions `32/32` and Eval `10/10` pass; only the two inherited file-size
+  violations keep `make check` red.
 - Completed and formally closed Workspace adapter task: `CLOUD-AGG-WORKSPACE-PG-01`
   adds the additive
   PostgreSQL v4 projection schema and an injected Worker transaction that validates

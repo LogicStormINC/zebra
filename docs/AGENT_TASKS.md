@@ -92,9 +92,9 @@
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
 - Cloud aggregate and Artifact task state is maintained in the cloud board below;
-  `CLOUD-SCOPE-CON-01` is the sole newly `Ready` scope-boundary card. All other
-  successors remain `Locked` until this contract is reviewed and the maintainer
-  explicitly activates one path-bounded adapter.
+  `CLOUD-SCOPE-CON-01` is now the sole scope-boundary card in `Review`. All
+  successor adapters remain `Locked` until this contract is accepted and the
+  maintainer explicitly activates one path-bounded adapter.
 
 ## Context Continuity And Governed Memory Board
 
@@ -2209,7 +2209,7 @@ cloud mainline and is not built or changed by these cards.
 
 ### CLOUD-SCOPE-CON-01 - Opaque Authority Namespace Read Scope Contract
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `CORE / API / STORAGE / SECURITY`
 - Depends on: accepted `ADR-012`, `CLOUD-AGG-FENCE-CON-01` and the existing
@@ -2230,13 +2230,27 @@ external membership.
 
 #### Acceptance
 
-- [ ] Core exposes an immutable scope value with canonical identity and an
+- [x] Core exposes an immutable scope value with canonical identity and an
   explicit allow-list/deny-all distinction.
-- [ ] Blank, untrimmed, duplicate, invalid and over-limit values fail closed.
-- [ ] The contract states that external-to-deployment namespace mapping is
+- [x] Blank, untrimmed, duplicate, invalid and over-limit values fail closed.
+- [x] The contract states that external-to-deployment namespace mapping is
   trusted composition responsibility and is never guessed from a DSN.
-- [ ] Focused Core tests and release Eval pass; no SQL, migration, Runtime,
+- [x] Focused Core tests and release Eval pass; no SQL, migration, Runtime,
   Provider HTTP, Desktop, Redis or Mem0 behavior changes.
+
+#### Validation And Handoff
+
+- `tests/agent_core/test_cloud_scope.py` passes `9/9`; the complete Core suite
+  passes `347/347`; the Session History/aggregate scope regression set passes
+  `32/32`.
+- Changed-path Ruff, format, strict Mypy and `git diff --check` pass; release
+  Eval passes `10/10`.
+- `make check` retains the exact two inherited file-size violations in the
+  untouched Desktop stylesheet (`561/500`) and governed-memory PostgreSQL test
+  (`765/700`).
+- No PostgreSQL migration, adapter, Runtime selector, Host verifier, Desktop,
+  Redis or Mem0 behavior changed. The two successor adapter cards remain
+  `Locked` pending explicit activation.
 
 #### Explicit Non-Goals
 

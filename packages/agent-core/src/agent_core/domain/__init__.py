@@ -66,6 +66,7 @@ from agent_core.domain.cloud_artifact_requests import (
     ArtifactReserveRequest,
     canonical_artifact_reserve_hash,
 )
+from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.delivery_audit import DeliveryAuditRecord
 from agent_core.domain.effect_dispatch import (
     EffectClaim,
@@ -186,6 +187,7 @@ __all__ = [
     "ArtifactReserveRequest",
     "canonical_artifact_reserve_hash",
     "ArtifactRef",
+    "OpaqueAuthorityScope",
     "AgentTask",
     "AttachmentContextInput",
     "DeliveryAuditRecord",

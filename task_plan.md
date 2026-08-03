@@ -565,11 +565,11 @@
 1. `completed` - Freeze the accepted `(authority_issuer, namespace_id)` identity
    and bounded `allowed_session_ids` semantics without introducing a Zebra
    Tenant/User/Organization domain.
-2. `in_progress` - Implement one immutable Core scope value object and focused
+2. `completed` - Implement one immutable Core scope value object and focused
    normalization/deny-all tests.
-3. `pending` - Record that external-to-deployment namespace mapping belongs to
+3. `completed` - Record that external-to-deployment namespace mapping belongs to
    trusted composition; never infer it from a DSN or database row.
-4. `pending` - Run Core quality gates and move only this card to Review; do not
+4. `completed` - Run Core quality gates and move only this card to Review; do not
    activate either PostgreSQL adapter successor automatically.
 
 ### Decisions
@@ -581,6 +581,18 @@
 - This is a Core contract/documentation slice. Provider Continuation,
   PostgreSQL Session History, Host Grant verification and backend selection stay
   in their own cards.
+
+### Closeout
+
+- `OpaqueAuthorityScope` is immutable and rejects untrimmed identity values,
+  malformed/duplicate/over-limit session IDs and unknown business fields. It
+  distinguishes trusted full namespace (`None`) from explicit deny-all (`()`).
+- Focused Core `9/9`, complete Core `347/347`, relevant regression `32/32`,
+  Ruff/format/Mypy/diff and Eval `10/10` pass. `make check` remains blocked only
+  by the two recorded inherited size violations.
+- The card does not unlock an adapter automatically. `CLOUD-PROVIDER-CONT-PG-01`
+  and `CLOUD-SESSION-HISTORY-PG-01` remain `Locked` until the maintainer
+  explicitly activates one of them.
 
 ## CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 

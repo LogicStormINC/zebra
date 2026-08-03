@@ -10,6 +10,18 @@
   scope. The next adapter activation remains a maintainer decision after this
   Core contract is reviewed.
 
+## 2026-08-03 - CLOUD-SCOPE-CON-01 implementation and review handoff
+
+- Added `OpaqueAuthorityScope` in `agent-core` with immutable opaque identity,
+  canonical UUID allow-list, explicit full-scope/deny-all semantics and fail-
+  closed validation for business fields and over-limit input.
+- Validation: focused Core `9/9`, complete Core `347/347`, relevant scope/history
+  regressions `32/32`, Ruff/format/strict Mypy/diff and Eval `10/10` pass.
+  `make check` reproduces only the inherited Desktop stylesheet and governed
+  PostgreSQL test size violations.
+- Moved `CLOUD-SCOPE-CON-01` to `Review`; Provider Continuation and Session
+  History adapter cards remain Locked and no backend/runtime selection changed.
+
 ## 2026-07-30 CLOUD-MEMORY-PG-01 implementation and review
 
 - added PostgreSQL v10 governed Memory authority, revision CAS, Worker/Admin aggregate

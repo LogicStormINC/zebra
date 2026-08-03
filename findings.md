@@ -662,6 +662,10 @@
   unscoped database queries.
 - This card is intentionally Core/documentation-only. Provider Continuation and
   PostgreSQL Session History remain separate locked implementation gates.
+- Implementation evidence: `OpaqueAuthorityScope` is frozen/extra-forbid,
+  canonicalizes UUIDs through the existing history bound, and exposes explicit
+  full-scope/deny-all predicates. Core `347/347` and focused `9/9` pass; no
+  storage or runtime path consumes it yet.
 
 ## CLOUD-AGG-WORKSPACE-PG-01 - 2026-07-29
 
