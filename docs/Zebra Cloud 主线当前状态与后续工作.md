@@ -2,7 +2,7 @@
 
 > 快照日期：2026-08-03
 > 分支：`zebra-cloud-trench`
-> HEAD：`7c99cb56`
+> 规划基线：`03efa4f5`
 
 ## 结论
 
@@ -68,6 +68,12 @@ API/Worker 微服务组合。当前状态是“云端事实存储和聚合能力
 当前 API/Worker 仍会回退到 `sqlite_control_plane_stores(database_path)`。因此
 PostgreSQL Adapter 已存在，不代表云端运行时已经选用 PostgreSQL。
 
+当前唯一活动的云端主线任务是 docs-only
+`CLOUD-PROVIDER-CONT-PG-PLAN-01`。其详细方案见
+[`Cloud Provider Continuation PostgreSQL Plan`](./architecture/cloud-provider-continuation-pg-plan.md)。
+该卡只冻结外部 authority、内部 namespace、现有 Lease fence、Event 原子绑定、
+生命周期与 management sweep，不授权生产代码或 migration。
+
 仍锁定的关键任务：
 
 1. `CLOUD-PROVIDER-CONT-PG-01`：Provider continuation 的 namespace/fence 适配器。
@@ -76,8 +82,8 @@ PostgreSQL Adapter 已存在，不代表云端运行时已经选用 PostgreSQL�
 3. `CLOUD-DELIVERY-TXN-PG-01`：Delivery Audit/Idempotency 命令事务。
 4. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁。
 
-这些卡均保持 `Locked`，不能在没有 maintainer 激活、Owner、Branch、Worktree 和
-Owned paths 复核的情况下直接编码。
+这些实现卡均保持 `Locked`，不能在没有规划卡关闭、maintainer 激活、Owner、
+Branch、Worktree 和 Owned paths 复核的情况下直接编码。
 
 ### Docker 应用层与在线事件
 
@@ -150,17 +156,20 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 
 以下顺序沿用现有任务注册表，不代表自动激活：
 
-1. 维护者确认 Provider Continuation 的 namespace 边界并激活对应卡。
-2. 完成完整 PostgreSQL `ControlPlaneStores` 组合和 SQLite/Cloud 双 profile 选择。
-3. 完成 Delivery transaction 和所有 aggregate fencing 证据。
-4. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
-5. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
-6. 再激活 Host/AG-UI/Trench read-only vertical slice。
-7. 之后才进入 Frontend、Analysis、Writeback 和 GA。
+1. 关闭 `CLOUD-PROVIDER-CONT-PG-PLAN-01`，冻结 authority identity、
+   `WorkerMutationAuthority`、PostgreSQL 事务和生命周期合同。
+2. 由维护者单独激活并完成 `CLOUD-PROVIDER-CONT-PG-01`。
+3. 完成完整 PostgreSQL `ControlPlaneStores` 组合和 SQLite/Cloud 双 profile 选择。
+4. 完成 Delivery transaction 和所有 aggregate fencing 证据。
+5. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
+6. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
+7. 再激活 Host/AG-UI/Trench read-only vertical slice。
+8. 之后才进入 Frontend、Analysis、Writeback 和 GA。
 
 ## 当前治理门
 
-当前没有活动实现任务。维护者必须先在 `docs/AGENT_TASKS.md` 中明确激活一张已注册
-任务卡，再允许创建对应 Branch/Worktree 和生产代码变更。SQLite Registry、Runtime
-backend selection、Provider HTTP、Desktop、Redis live、Mem0 consumer 和应用 Compose
-均不得通过临时修改 `Locked` 状态绕过依赖。
+当前没有活动实现任务，只有一张明确注册的 docs-only `Planning` 卡。规划评审关闭后，
+维护者仍须在 `docs/AGENT_TASKS.md` 中单独激活 Provider Continuation 实现卡，才允许
+创建实现 Branch/Worktree 和生产代码变更。SQLite Registry、Runtime backend
+selection、Provider HTTP、Desktop、Redis live、Mem0 consumer 和应用 Compose 均不得
+通过临时修改 `Locked` 状态绕过依赖。

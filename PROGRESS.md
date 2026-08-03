@@ -11,6 +11,11 @@
   PostgreSQL adapters and isolated Compose evidence are substantially complete, but
   API/Worker PostgreSQL composition, application Compose, Redis live fan-out and the
   CopilotKit/Trench production slice remain gated.
+- Active docs-only planning task: `CLOUD-PROVIDER-CONT-PG-PLAN-01` freezes the
+  Provider Continuation external authority, internal deployment namespace,
+  existing `WorkerMutationAuthority`, same-transaction Event binding,
+  TTL/SHA/soft-delete and management sweep contract. Its PostgreSQL implementation
+  successor remains `Locked`; no migration, Runtime or application code is active.
 - Review task: `CTX-MEM-01` is in PR `#198` and closes the valid parts of GitHub issue `#197` with
   an exact three-user-turn tail, complete tool groups, one strict retry from
   original history, recoverable context suspension, evidence-gated memory

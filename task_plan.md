@@ -1,5 +1,39 @@
 # Task Plan
 
+## CLOUD-PROVIDER-CONT-PG-PLAN-01 - Provider Continuation PostgreSQL Authority Plan
+
+1. `completed` - Audit the status snapshot, registered dependency chain, current
+   Provider Continuation Port/SQLite adapter and every Worker persistence/recovery
+   caller.
+2. `completed` - Use the sidebar ChatGPT architecture review to choose the
+   docs-only planning gate and freeze authority identity, physical namespace,
+   existing Lease-fence reuse, transaction and lifecycle rules.
+3. `completed` - Write the focused plan and register its owner, branch, worktree,
+   owned paths, implementation unlock gate, acceptance matrix and explicit non-goals.
+4. `completed` - Validate documentation links, terminology, file limits and diff;
+   prepare the planning card for review without unlocking implementation.
+
+### Decisions
+
+- Keep `CLOUD-PROVIDER-CONT-PG-01` `Locked`; planning is a separate docs-only card.
+- External permission identity is `(authority_issuer, namespace_id)`, while trusted
+  composition maps it to the internal `deployment_namespace`. PostgreSQL uses
+  `(deployment_namespace, continuation_id)` as the physical resource key and
+  persists the external identity to fail closed on mapping drift.
+- Reuse complete `WorkerMutationAuthority` and `LeaseFence`; do not create a
+  continuation-specific fencing token.
+- Continuation bytes/metadata and the canonical selection Event commit in one
+  PostgreSQL transaction with idempotent lost-response recovery.
+- Preserve bounded TTL, SHA verification and soft-delete compatibility; replace
+  global sweep with audited, authority-and-namespace-scoped management operations.
+
+### Non-Goals
+
+- No application/package production code, migration or schema change.
+- No Runtime/backend selection, API/Worker composition or Provider HTTP.
+- No Desktop, SQLite behavior, Redis, Mem0, Docker application or deployment work.
+- No broader Control Plane, Delivery transaction or Trench/CopilotKit planning.
+
 ## CLOUD-MEMORY-PG-01 - PostgreSQL Governed Memory Authority
 
 1. `completed` - Re-audit v1-v9 migrations and aggregate transaction patterns,

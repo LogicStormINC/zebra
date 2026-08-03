@@ -1,5 +1,26 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-PLAN-01 planning
+
+- The maintainer requested the next plan under the current Zebra Cloud status
+  snapshot. The sidebar ChatGPT architecture review selected a separate docs-only
+  planning card instead of activating the locked PostgreSQL implementation or
+  broadening into Control Plane composition.
+- Registered owner `lukeding (Cloud Architecture Maintainer)`, branch
+  `docs/cloud-provider-cont-pg-plan`, isolated worktree and documentation-only
+  owned paths.
+- Wrote the Provider Continuation authority plan. A follow-up sidebar review
+  removed the proposed duplicate continuation fence in favor of the existing
+  `WorkerMutationAuthority/LeaseFence`, and separated external opaque authority
+  identity from the internal PostgreSQL deployment namespace.
+- `CLOUD-PROVIDER-CONT-PG-01` remains `Locked`. No production code, migration,
+  Runtime, Provider HTTP, Desktop, SQLite, Redis, Mem0, Docker application or
+  deployment behavior changed.
+- The focused plan is `290` lines. Link/terminology checks and
+  `git diff --check` pass; after the fresh worktree ran `make sync`, release Eval
+  passes `10/10`. The card remains `Planning` for maintainer review and does not
+  activate its implementation successor.
+
 ## 2026-08-03 - cloud mainline activation gate
 
 - Sidebar ChatGPT review found no legal `Ready` or `In Progress` successor after

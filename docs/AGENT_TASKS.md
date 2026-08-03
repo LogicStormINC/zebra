@@ -5,8 +5,9 @@
 > Current execution range: local Beta and single-host production foundations are
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
 > `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
-> accepted and closed. No successor is activated on the cloud microservice
-> mainline; local SQLite Registry work remains deferred. ACP and optional code
+> accepted and closed. `CLOUD-PROVIDER-CONT-PG-PLAN-01` is the sole active
+> docs-only cloud-mainline planning card; no implementation successor is
+> activated. Local SQLite Registry work remains deferred. ACP and optional code
 > intelligence remain locked.
 
 ## Global Rules
@@ -19,9 +20,18 @@
 
 ## Status Legend
 
-`Locked` / `Ready` / `In Progress` / `Review` / `Blocked` / `Done`
+`Locked` / `Planning` / `Ready` / `In Progress` / `Review` / `Blocked` / `Done`
+
+`Planning` is reserved for an explicitly owned docs-only architecture gate. It
+does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
+
+- `CLOUD-PROVIDER-CONT-PG-PLAN-01` is `Planning` on
+  `docs/cloud-provider-cont-pg-plan`. It freezes Provider Continuation external
+  authority, internal namespace, existing Lease fence, atomic Event binding,
+  lifecycle and scoped management rules. `CLOUD-PROVIDER-CONT-PG-01` remains
+  `Locked`; no production code or migration is authorized.
 
 - `EMB-PLAN-01` is `Done` on `zebra-cloud-trench`; it consolidates the Zebra
   Embedded target architecture and registers the dependency-ordered
@@ -2285,17 +2295,57 @@ external membership.
 - Tenant/User/Organization models
 - runtime backend selection or application Compose wiring
 
+### CLOUD-PROVIDER-CONT-PG-PLAN-01 - Provider Continuation PostgreSQL Authority Plan
+
+- Status: `Planning`
+- Type: Architecture / Governance / Docs-only
+- Owner: `lukeding (Cloud Architecture Maintainer)`
+- Branch: `docs/cloud-provider-cont-pg-plan`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-provider-cont-pg-plan/zebra-agent`
+- Depends on: completed `CLOUD-AGG-FENCE-CON-01`, completed
+  `CLOUD-SCOPE-CON-01`, accepted ADR-012 external authority boundary and the
+  maintainer's explicit request to plan the next cloud-mainline step
+- Owned paths: `docs/architecture/cloud-provider-continuation-pg-plan.md`,
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`, `task_plan.md`, and `WORKLOG.md`
+- Goal: freeze the authority identity, physical namespace key, existing Lease
+  fence reuse, same-transaction Event binding, TTL/SHA/soft-delete lifecycle and
+  management-scoped sweep required before PostgreSQL implementation.
+
+#### Acceptance
+
+- [x] External `(authority_issuer, namespace_id)` identity and trusted mapping
+  to internal `deployment_namespace` are unambiguous and introduce no Tenant model.
+- [x] Provider Continuation reuses complete `WorkerMutationAuthority` and does
+  not introduce a second continuation-specific fence.
+- [x] The physical key, idempotency, lock order, Event-reference integrity,
+  TTL/SHA/soft-delete and management-sweep rules are frozen.
+- [x] The implementation unlock gate, owned-path handoff, real PostgreSQL test
+  matrix and migration-ownership check are explicit.
+- [x] Docs links, terminology, line limits and `git diff --check` pass; no
+  production code, migration, Runtime, Provider HTTP, Desktop, SQLite, Redis,
+  Mem0, Docker application or deployment behavior changes.
+
+#### Closeout Rule
+
+- Review may move this card to `Done` and then permit the maintainer to activate
+  `CLOUD-PROVIDER-CONT-PG-01` separately. It must not set the implementation card
+  to `Ready` or reserve a migration by itself.
+
 ### CLOUD-PROVIDER-CONT-PG-01 - Fenced Provider Continuation Payload
 
 - Status: `Locked`
 - Owner: `UNASSIGNED`
-- Depends on: `CLOUD-AGG-FENCE-CON-01`, completed `CLOUD-SCOPE-CON-01` and an
-  approved tenant/namespace boundary
+- Depends on: completed `CLOUD-PROVIDER-CONT-PG-PLAN-01`,
+  `CLOUD-AGG-FENCE-CON-01`, completed `CLOUD-SCOPE-CON-01` and an approved
+  authority/namespace boundary
 - Owned paths: Provider continuation Port/domain if required, focused PostgreSQL
   adapter and migration, Worker continuation wiring and real PostgreSQL tests
-- Goal: make opaque continuation payload shared, tenant-scoped and fence-validated.
-- Acceptance: stale authority and cross-tenant access fail, TTL/SHA/delete semantics
-  match SQLite, Event references remain resolvable and sweep is management-scoped.
+- Goal: make opaque continuation payload shared, authority-scoped and validated
+  by the existing Worker Lease fence without creating a Zebra Tenant model.
+- Acceptance: stale authority and cross-namespace access fail, TTL/SHA/delete
+  semantics match SQLite, Event references are committed atomically and remain
+  resolvable, and sweep is explicitly management-scoped.
 
 ### CLOUD-ART-PAYLOAD-PG-01 - Shared Artifact Payload Authority
 
