@@ -560,6 +560,28 @@
 - This card defines authority input only. PostgreSQL transactions, migrations,
   composition and runtime backend selection stay in their implementation cards.
 
+## CLOUD-SCOPE-CON-01 - Opaque Authority Namespace Read Scope Contract
+
+1. `pending` - Freeze the accepted `(authority_issuer, namespace_id)` identity
+   and bounded `allowed_session_ids` semantics without introducing a Zebra
+   Tenant/User/Organization domain.
+2. `pending` - Implement one immutable Core scope value object and focused
+   normalization/deny-all tests.
+3. `pending` - Record that external-to-deployment namespace mapping belongs to
+   trusted composition; never infer it from a DSN or database row.
+4. `pending` - Run Core quality gates and move only this card to Review; do not
+   activate either PostgreSQL adapter successor automatically.
+
+### Decisions
+
+- `None` allow-list means full namespace authority only after trusted
+  composition; an empty tuple is an explicit deny-all scope.
+- Session IDs are canonical UUID strings and are bounded at the existing
+  `MAX_HISTORY_SCOPE_SESSIONS` limit of 20.
+- This is a Core contract/documentation slice. Provider Continuation,
+  PostgreSQL Session History, Host Grant verification and backend selection stay
+  in their own cards.
+
 ## CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
 
 1. `completed` - Trace every authoritative Worker-owned aggregate from Port to

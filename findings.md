@@ -647,6 +647,22 @@
   safety. The proven Effect pattern remains the target: a coarse-grained Adapter
   validates authority and performs all writes on one connection transaction.
 
+## CLOUD-SCOPE-CON-01 - 2026-08-03
+
+- `ADR-012` already accepts `(authority_issuer, namespace_id)` as the opaque
+  durable isolation key and explicitly forbids a Zebra Tenant domain. The
+  missing implementation boundary is the typed read scope, not a new identity
+  system.
+- The existing `SessionHistoryPort.scoped(allowed_session_ids)` and
+  `MAX_HISTORY_SCOPE_SESSIONS=20` provide the compatible allow-list vocabulary.
+  The new contract preserves `None` as trusted full-scope and an empty tuple as
+  explicit deny-all; it rejects duplicates and malformed UUIDs before storage.
+- External authority-to-`deployment_namespace` mapping stays in trusted
+  composition. No adapter may derive a namespace from DSN, credentials, or
+  unscoped database queries.
+- This card is intentionally Core/documentation-only. Provider Continuation and
+  PostgreSQL Session History remain separate locked implementation gates.
+
 ## CLOUD-AGG-WORKSPACE-PG-01 - 2026-07-29
 
 - Workspace remains an Event-derived read model. Fenced Worker commits therefore

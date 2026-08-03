@@ -1,5 +1,15 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-SCOPE-CON-01 task registration
+
+- Registered the sole current cloud `Ready` card after the previous audit found
+  no legal implementation slice. The card freezes the accepted opaque
+  `(authority_issuer, namespace_id)` boundary and bounded session allow-list.
+- Kept external membership, Tenant/User/Organization modeling, namespace
+  mapping, PostgreSQL adapters, Runtime selection and Mem0 delivery out of
+  scope. The next adapter activation remains a maintainer decision after this
+  Core contract is reviewed.
+
 ## 2026-07-30 CLOUD-MEMORY-PG-01 implementation and review
 
 - added PostgreSQL v10 governed Memory authority, revision CAS, Worker/Admin aggregate

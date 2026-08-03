@@ -92,8 +92,9 @@
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
 - Cloud aggregate and Artifact task state is maintained in the cloud board below;
-  no successor card is `Ready` until explicitly activated after its dependencies
-  are integrated.
+  `CLOUD-SCOPE-CON-01` is the sole newly `Ready` scope-boundary card. All other
+  successors remain `Locked` until this contract is reviewed and the maintainer
+  explicitly activates one path-bounded adapter.
 
 ## Context Continuity And Governed Memory Board
 
@@ -2206,11 +2207,50 @@ cloud mainline and is not built or changed by these cards.
   Provider HTTP or the application Compose profile; Context remains a separate
   Review card.
 
+### CLOUD-SCOPE-CON-01 - Opaque Authority Namespace Read Scope Contract
+
+- Status: `Ready`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE / API / STORAGE / SECURITY`
+- Depends on: accepted `ADR-012`, `CLOUD-AGG-FENCE-CON-01` and the existing
+  `SessionHistoryPort` allow-list boundary
+- Branch: `codex/cloud-scope-con-01`
+- Owned paths: `docs/CLOUD_Opaque_Authority_Scope_合同_v1.0.md`,
+  `packages/agent-core/src/agent_core/domain/cloud_scope.py` (new),
+  `packages/agent-core/src/agent_core/domain/__init__.py`,
+  `tests/agent_core/test_cloud_scope.py` (new), and this task's governance
+  records
+
+#### Goal
+
+Freeze the opaque `(authority_issuer, namespace_id)` identity and bounded
+`allowed_session_ids` read scope that PostgreSQL Provider Continuation and
+Session History adapters must consume. Do not create a Zebra Tenant or resolve
+external membership.
+
+#### Acceptance
+
+- [ ] Core exposes an immutable scope value with canonical identity and an
+  explicit allow-list/deny-all distinction.
+- [ ] Blank, untrimmed, duplicate, invalid and over-limit values fail closed.
+- [ ] The contract states that external-to-deployment namespace mapping is
+  trusted composition responsibility and is never guessed from a DSN.
+- [ ] Focused Core tests and release Eval pass; no SQL, migration, Runtime,
+  Provider HTTP, Desktop, Redis or Mem0 behavior changes.
+
+#### Explicit Non-Goals
+
+- PostgreSQL Provider Continuation or Session History adapters
+- HostSessionGrant verification or external business membership
+- Tenant/User/Organization models
+- runtime backend selection or application Compose wiring
+
 ### CLOUD-PROVIDER-CONT-PG-01 - Fenced Provider Continuation Payload
 
 - Status: `Locked`
 - Owner: `UNASSIGNED`
-- Depends on: `CLOUD-AGG-FENCE-CON-01` and an approved tenant/namespace boundary
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, completed `CLOUD-SCOPE-CON-01` and an
+  approved tenant/namespace boundary
 - Owned paths: Provider continuation Port/domain if required, focused PostgreSQL
   adapter and migration, Worker continuation wiring and real PostgreSQL tests
 - Goal: make opaque continuation payload shared, tenant-scoped and fence-validated.
@@ -2469,7 +2509,8 @@ cloud mainline and is not built or changed by these cards.
 
 - Status: `Locked`
 - Owner: `UNASSIGNED`
-- Depends on: PostgreSQL Event/Session Projection and approved tenant/session scope
+- Depends on: PostgreSQL Event/Session Projection, completed
+  `CLOUD-SCOPE-CON-01` and approved tenant/session scope
 - Owned paths: PostgreSQL Session History adapter, read composition and parity tests
 - Goal: provide namespace-scoped consistent history reads without adding a write aggregate.
 - Acceptance: SQLite/PG behavior, pagination, safety filters, stable ordering and

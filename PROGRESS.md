@@ -109,6 +109,13 @@
   focused `19/19`, Core `270/270`, Ruff, strict Mypy and Eval `10/10` gates pass;
   it does not implement PostgreSQL, change Store selection or touch Desktop. Its
   local acceptance unlocks only `CLOUD-AGG-WORKSPACE-PG-01`.
+- Added the sole current cloud `Ready` card, `CLOUD-SCOPE-CON-01`, to freeze the
+  external opaque `(authority_issuer, namespace_id)` plus bounded
+  `allowed_session_ids` read scope. The contract deliberately maps to the
+  injected deployment namespace in trusted composition and adds no Tenant model,
+  SQL, Runtime selection, Provider HTTP, Desktop, Redis or Mem0 behavior. Its
+  successors are the still-locked Provider Continuation and Session History
+  adapters.
 - Completed and formally closed Workspace adapter task: `CLOUD-AGG-WORKSPACE-PG-01`
   adds the additive
   PostgreSQL v4 projection schema and an injected Worker transaction that validates
