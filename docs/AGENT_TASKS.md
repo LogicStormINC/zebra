@@ -1642,9 +1642,11 @@ fact source; Redis remains optional live state and is not selected by startup.
   `5 passed`; lockfile, Ruff, Mypy, shell syntax and diff checks pass; the
   mirror-base three-container smoke is `PASS` and reports UID `65532`.
 - Direct build/smoke of the pinned Docker Hub Python digest remains an external
-  evidence gap because its layers remain at `0B` during download. No source pin
-  replacement, production rollout, Redis live routing, Runtime selector or
-  aggregate-gate unlock is authorized until that evidence is available.
+  evidence gap. The reproducible runner stops at Dockerfile line 4 with
+  `short read: expected 5691 bytes but got 0: unexpected EOF`; its PostgreSQL,
+  MinIO and network cleanup completes. No source pin replacement, production
+  rollout, Redis live routing, Runtime selector or aggregate-gate unlock is
+  authorized until that evidence is available.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 

@@ -39,8 +39,10 @@
 - Implementation commits are complete on `codex/cloud-compose-app-01`; the
   worktree is clean.
 - The pinned Docker Hub base remains the only external evidence gap. It is not
-  replaced by the temporary mirror, and no runtime or aggregate gate is
-  unlocked by this handoff.
+  replaced by the temporary mirror; the direct runner currently fails at the
+  pinned `FROM` with a Docker Hub `unexpected EOF`, after which dependency
+  resources are cleaned. No runtime or aggregate gate is unlocked by this
+  handoff.
 
 ## CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter (Done)
 
