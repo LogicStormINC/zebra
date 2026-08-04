@@ -148,12 +148,6 @@ class SingleAttemptOrchestrator:
                 },
             )
         )
-        metadata: dict[str, object] = {
-            "plan_summary": planner_result.summary,
-            "plan_metadata": planner_result.metadata,
-        }
-        if completion.output_contract is not None:
-            metadata["output_contract"] = dict(completion.output_contract)
         return self._tool_loop.advance(
             context,
             messages=messages,
@@ -162,7 +156,10 @@ class SingleAttemptOrchestrator:
             model_calls_used=1 + completion.call_metadata.response_repair_count,
             tool_calls_executed=0,
             fingerprints=set(),
-            metadata=metadata,
+            metadata={
+                "plan_summary": planner_result.summary,
+                "plan_metadata": planner_result.metadata,
+            },
         )
 
     def continue_approved_tool_call(

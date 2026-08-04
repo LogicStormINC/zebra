@@ -1,7 +1,9 @@
 from collections.abc import Callable, Mapping
+from dataclasses import replace
 
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.events import EventType
 from agent_core.domain.tools import ToolCall
 from agent_core.harness import context_recovery
 from agent_core.harness.attempt_result import (
@@ -195,6 +197,10 @@ class SequentialToolLoop:
                 },
         )
         if not completion.tool_calls:
+            contract = _final_output_contract(emitted_events, completion)
+            _bind_final_output_contract(emitted_events, contract)
+            if contract is not None:
+                metadata = {**metadata, "output_contract": contract}
             return complete_without_tools(
                 context,
                 messages=messages,
@@ -314,11 +320,6 @@ class SequentialToolLoop:
             ),
         )
         model_calls_used += 1 + completion.call_metadata.response_repair_count
-        if completion.output_contract is not None:
-            metadata = {
-                **metadata,
-                "output_contract": dict(completion.output_contract),
-            }
         compaction_count = metadata.get("conversation_compaction_count")
         provisional_final = should_use_provisional_final(
             context,
@@ -459,6 +460,10 @@ class SequentialToolLoop:
                 response_stage="final",
             )
         )
+        contract = _final_output_contract(emitted_events, completion)
+        _bind_final_output_contract(emitted_events, contract)
+        if contract is not None:
+            metadata = {**metadata, "output_contract": contract}
         if (
             completion.tool_calls
             or _is_raw_dsml_tool_request(completion.assistant_message.content)
@@ -504,6 +509,58 @@ def _executed_action_fingerprints(messages: list[SessionMessage]) -> set[str]:
         for call in message.tool_calls
         if (call.provider_call_id or str(call.tool_call_id)) in completed_ids
     }
+
+
+def _final_output_contract(
+    emitted_events: list[HarnessEventDraft],
+    completion: ModelCompletion,
+) -> dict[str, object] | None:
+    """The output_contract strictly bound to the FINAL answer.
+
+    The last explicit emission from a tool result
+    (``artifact.output_contract.emit``) in the terminal attempt wins;
+    otherwise the final completion's own gateway channel applies. Contracts
+    from earlier tool-loop rounds never leak into the final metadata because
+    only the terminal sites bind and non-final events never carry one.
+    """
+    emitted: dict[str, object] | None = None
+    for event in emitted_events:
+        if event.event_type is not EventType.TOOL_EXECUTION_COMPLETED:
+            continue
+        metadata = event.payload.get("metadata")
+        candidate = (
+            metadata.get("output_contract")
+            if isinstance(metadata, Mapping)
+            else None
+        )
+        if isinstance(candidate, Mapping):
+            emitted = dict(candidate)
+    if emitted is not None:
+        return emitted
+    if completion.output_contract is not None:
+        return dict(completion.output_contract)
+    return None
+
+
+def _bind_final_output_contract(
+    emitted_events: list[HarnessEventDraft],
+    contract: dict[str, object] | None,
+) -> None:
+    """Attach the contract to the final MODEL_RESPONSE_RECEIVED event only."""
+    if contract is None:
+        return
+    for index in range(len(emitted_events) - 1, -1, -1):
+        event = emitted_events[index]
+        if event.event_type is EventType.MODEL_RESPONSE_RECEIVED:
+            emitted_events[index] = replace(
+                event,
+                payload={
+                    **event.payload,
+                    "output_contract": dict(contract),
+                },
+            )
+            break
+
 
 def _is_raw_dsml_tool_request(content: str) -> bool:
     marker = "<｜｜DSML｜｜tool_calls>"

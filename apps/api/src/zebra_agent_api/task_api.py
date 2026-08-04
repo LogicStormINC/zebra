@@ -95,12 +95,20 @@ class TaskReadApi:
             ).read_events(parsed, -1)
         ]
         output_contract = None
-        for event in reversed(events):
-            if event.event_type is EventType.MODEL_RESPONSE_RECEIVED:
-                candidate = event.payload.get("output_contract")
-                if isinstance(candidate, Mapping):
-                    output_contract = dict(candidate)
-                break
+        if task.status.value == "completed":
+            # The artifact output contract is strictly bound to the final
+            # message: only the terminal completed Task's final-stage
+            # MODEL_RESPONSE_RECEIVED event may carry it. Intermediate
+            # tool-loop rounds never leak a contract into the projection.
+            for event in reversed(events):
+                if (
+                    event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+                    and event.payload.get("response_stage") == "final"
+                ):
+                    candidate = event.payload.get("output_contract")
+                    if isinstance(candidate, Mapping):
+                        output_contract = dict(candidate)
+                    break
         if output_contract is not None:
             body["artifact_output_contract"] = output_contract
         attachments = [

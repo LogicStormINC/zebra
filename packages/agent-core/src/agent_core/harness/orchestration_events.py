@@ -50,7 +50,7 @@ def model_response_event(
     }
     if completion.call_metadata.model_call_id is not None:
         payload["model_call_id"] = completion.call_metadata.model_call_id
-    if completion.output_contract is not None:
+    if completion.output_contract is not None and response_stage == "final":
         payload["output_contract"] = dict(completion.output_contract)
     if completion.call_metadata.estimated_input_tokens is not None:
         estimated = completion.call_metadata.estimated_input_tokens

@@ -128,24 +128,24 @@ class ModelResponseReceivedPayload(BaseModel):
             raise ValueError(
                 "output_contract.contract_version must be a non-blank string"
             )
-        if payload is not None and not isinstance(payload, dict):
+        if not isinstance(payload, dict):
             raise ValueError(
-                "output_contract.structured_payload must be an object"
+                "output_contract.structured_payload is required and must be an object"
             )
-        if digest is not None and (
-            not isinstance(digest, str)
-            or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
+        if not isinstance(digest, str) or not re.fullmatch(
+            r"sha256:[0-9a-f]{64}", digest
         ):
             raise ValueError(
-                "output_contract.payload_digest must be sha256:<64 hex>"
+                "output_contract.payload_digest is required and must be sha256:<64 hex>"
             )
-        if refs is not None and (
+        if (
             not isinstance(refs, list)
+            or not refs
             or not all(
                 isinstance(item, str) and item.strip() for item in refs
             )
         ):
             raise ValueError(
-                "output_contract.source_refs must be a text array"
+                "output_contract.source_refs is required and must be a non-empty text array"
             )
         return value

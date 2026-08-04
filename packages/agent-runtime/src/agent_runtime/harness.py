@@ -63,6 +63,9 @@ from agent_tools.skills_catalog import LocalSkillCatalog, ScopedSkillRoot, Skill
 
 from agent_runtime.adapters.local import LocalRuntime
 from agent_runtime.finos_journal_provider import FinosJournalProvider
+from agent_runtime.artifact_output_contract import (
+    ArtifactOutputContractEmitTool,
+)
 from agent_runtime.mcp_protocol import McpAnyServerSpec
 from agent_runtime.mcp_routing import build_mcp_transport
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
@@ -297,6 +300,12 @@ class LocalToolGateway(ToolGatewayPort):
         )
         if finos_journal_provider is not None:
             finos_journal_provider.register(registry)
+        output_contract_tool = ArtifactOutputContractEmitTool()
+        registry.register(
+            output_contract_tool.contract,
+            output_contract_tool.handle,
+            tags=("artifact_metadata",),
+        )
         self._skill_component_names: tuple[str, ...] = ()
         if skill_roots:
             catalog = LocalSkillCatalog(skill_roots, skills_state=skills_state)
