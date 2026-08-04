@@ -20,7 +20,7 @@ set +e
   cd "$ROOT_DIR"
   ZEBRA_LIVE_REDIS_URL="redis://127.0.0.1:${PORT}/0" \
     uv run --package agent-integrations --with pytest pytest -q \
-      tests/compose/live_fanout/test_redis_live_fanout.py
+      tests/compose/live_fanout/test_redis_live_fanout_compose.py
 )
 status=$?
 set -e
