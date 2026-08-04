@@ -2,13 +2,14 @@
 
 > 快照日期：2026-08-03
 > 分支：`zebra-cloud-trench`
-> 规划基线：`765ede43`
+> 当前基线：`635b6960`
 
 ## 结论
 
-Zebra Cloud 已完成大部分 PostgreSQL 云端底层适配器，但尚未完成可部署的
-API/Worker 微服务组合。当前状态是“云端事实存储和聚合能力基本齐备，主容器
-组装、运行时切换和 Trench 业务接入尚未完成”。
+Zebra Cloud 已完成 PostgreSQL 云端事实存储、API/Worker 存储组合和主要聚合能力，
+但尚未完成可部署的应用 Compose、在线事件 fan-out 和 Trench 业务接入。当前状态是
+“API/Worker 已能按显式 cloud profile 选择 PostgreSQL，主容器组装、运行时业务选择
+和 Trench 接入尚未完成”。
 
 任务注册表是当前状态的权威来源；本文件是面向项目协作的汇总，不替代
 [`docs/AGENT_TASKS.md`](./AGENT_TASKS.md) 中的任务卡、Owner、Branch 和依赖。
@@ -42,7 +43,7 @@ API/Worker 微服务组合。当前状态是“云端事实存储和聚合能力
 - `CLOUD-DELIVERY-TXN-PG-01` 已 fast-forward 合并到当前云端主线
   `9ec52b16`，并由侧边栏批准关闭为 `Done`。v15 Delivery transaction store
   将 receipt、audit 和 `COMMITTED` 状态放在同一 PostgreSQL transaction；API/
-  Worker wiring、Runtime selector 和外部动作仍未接线。
+  应用 Compose、Runtime selector 和外部动作仍未接线。
 
 ### Memory
 
@@ -71,18 +72,22 @@ API/Worker 微服务组合。当前状态是“云端事实存储和聚合能力
 
 ### PostgreSQL 运行时组合
 
-当前 API/Worker 仍会回退到 `sqlite_control_plane_stores(database_path)`。因此
-PostgreSQL Adapter 已存在，不代表云端运行时已经选用 PostgreSQL。
+`CLOUD-API-WORKER-PG-01` 已完成并以 `d9fd0419` fast-forward 合并到
+`zebra-cloud-trench`（治理收口提交为 `635b6960`）。API 和 Worker 使用同一个
+profile composer：只有显式 `ZEBRA_PROFILE=cloud` 才选择
+`PostgresControlPlaneStores`；缺少 DSN、namespace、签名密钥、authority scope 或
+S3 object reader 配置时启动 fail closed；local、unset 和 test profile 继续使用
+SQLite。Worker 同时注入 PostgreSQL workspace transaction 和 deployment namespace
+fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 的
+兼容 facade，不产生第二事实源。
 
-本次复核确认该问题是真实缺口，但侧边栏返回 `ACTIVATE-BLOCKED`：在 API/Worker
-接线前必须先完成治理型 `CLOUD-PROFILE-COMPOSITION-CON-01`，冻结
-`ZEBRA_PROFILE=cloud` 的显式选择、local SQLite 默认、缺失配置时的 fail-closed
-规则，以及 `model_calls`/`tool_runs` 到 PostgreSQL `model_tool_projections` 的
-兼容接缝。该 contract 已由侧边栏接受并关闭为 `Done`；`CLOUD-LIVE-01` 已从
-contract 依赖中移除，因为本卡不涉及 live runtime。现有
+该任务的 focused API/HTTP/Worker 回归为 `41 passed`，control-plane PostgreSQL
+17.5 Compose runner 为 `11 passed`，结果标记为
+`ZEBRA_CONTROL_PLANE_POSTGRES_TEST_RESULT=PASS` 且资源已清理。此项只完成存储组合，
+不等于应用 Compose、Runtime 业务选择或在线事件路由已完成；现有
 `CLOUD-COMPOSE-APP-01` 仍为实现 `Blocked`，不能被隐式激活。
 
-最近完成的云端主线任务是
+此前完成的云端主线任务是
 `CLOUD-DELIVERY-TXN-PG-01`。其实施边界见
 [`Cloud Delivery Transaction PostgreSQL Plan`](./architecture/cloud-delivery-txn-pg-plan.md)。
 `CLOUD-PROVIDER-CONT-PG-PLAN-01` 和实现卡均已由侧边栏接受并关闭为
@@ -97,30 +102,34 @@ contract 依赖中移除，因为本卡不涉及 live runtime。现有
    cloud-only `CloudControlPlane`、`PostgresControlPlaneStores` 存储组合、迁移和
    聚焦验证；现有本地 `ControlPlaneStores` 不变，API/Worker 接线与 Runtime 选择
    仍是后续门禁。
-3. `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01`：Context lifecycle 的治理/审计型
+3. `CLOUD-API-WORKER-PG-01`：已由侧边栏批准实施、独立 Review 并以 `d9fd0419`
+   fast-forward 合并为 `Done`；完成 API/Worker 的 cloud PostgreSQL profile
+   组合、fail-closed 配置和 model/tool compatibility facade，不包含应用 Compose
+   或 Runtime 业务切换。
+4. `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01`：Context lifecycle 的治理/审计型
    fencing conformance card，已由侧边栏批准关闭为 `Done`。
-4. `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`：修复行政 Context activation 的
+5. `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`：修复行政 Context activation 的
    Event type 与 capsule binding Store-level 缺口，已由侧边栏批准关闭为
    `Done`；Store guard、三类零写入回归和真实 PostgreSQL `18/18` 矩阵均已
    完成。
-5. `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01`：当前唯一进行中的治理型
+6. `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01`：当前唯一进行中的治理型
    子任务，审计 Handoff/dispatch 的 WorkerMutationAuthority、LeaseFence、
    身份绑定、零写入、并发、重放、命名空间隔离和事务发布边界。该卡当前为
    `Review`，审计结果为 `BLOCK-GAP`；实现代码、测试、迁移、Compose 和运行时
    选择均不在授权范围内。
 
-6. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
+7. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
    在所有子聚合 conformance card 完成前继续保持 `Locked`。
 
-当前 `CLOUD-CONTROL-PLANE-PG-01` 与 `CLOUD-DELIVERY-TXN-PG-01` 均为 `Done`；
+当前 `CLOUD-CONTROL-PLANE-PG-01`、`CLOUD-API-WORKER-PG-01` 与
+`CLOUD-DELIVERY-TXN-PG-01` 均为 `Done`；
 Context conformance 审计及其 semantic successor 均为 `Done`，
 `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 已进入 `Review`，审计结果为
 `BLOCK-GAP`；父 fencing gate 仍为 `Locked`，因为其他 aggregate fencing cards
-尚未闭合。Handoff/dispatch 实现 successor 仍为 `Locked`，不能顺带激活
-API/Worker、Runtime selector 或应用 Compose。API/Worker 运行时切换还受
-`CLOUD-PROFILE-COMPOSITION-CON-01` 已完成，但 `CLOUD-COMPOSE-APP-01` 当前仍为
-实现 `Blocked`，等待单独授权的 API/Worker composition slice；本次 contract
-关闭不改变任何 runtime gate。
+尚未闭合。Handoff/dispatch 实现 successor 仍为 `Locked`，不能顺带激活 Runtime selector
+或应用 Compose。API/Worker 存储组合已由 `CLOUD-API-WORKER-PG-01` 完成；应用
+`CLOUD-COMPOSE-APP-01` 当前仍为实现 `Blocked`，等待应用 Compose、Runtime 业务
+selector 和在线事件路由的单独授权；本次组合任务关闭不改变任何 runtime gate。
 
 ### Docker 应用层与在线事件
 
@@ -204,8 +213,9 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 3. [x] 完成并关闭 `CLOUD-PROFILE-COMPOSITION-CON-01`，冻结 explicit
    cloud/local profile、fail-closed 和 model/tool compatibility seam；不授权
    API/Worker 实现或 runtime activation。
-4. 完成 cloud-only `CloudControlPlane` / `PostgresControlPlaneStores` 存储组合；
-   再由独立 API/Worker 任务实现 SQLite/Cloud profile 选择。
+4. [x] 完成 cloud-only `CloudControlPlane` / `PostgresControlPlaneStores` 存储组合，
+   并由独立 `CLOUD-API-WORKER-PG-01` 任务实现 SQLite/Cloud profile 选择；实现提交
+   为 `d9fd0419`，治理收口为 `635b6960`。
 5. 完成 `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` 审计，并由
    `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` 修复已确认的 Store 语义缺口；两张卡
    均已由侧边栏 closeout 为 `Done`。
