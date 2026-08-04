@@ -78,6 +78,12 @@
   resources; existing payload-aware Effect transitions bind Worker authority
   and atomically coordinate Event, Artifact and outbox state. No adapter or
   migration changed; the parent gate remains `Locked`.
+- `CLOUD-AGG-FENCE-DELIVERY-01` is `Done` as Delivery boundary evidence.
+  Delivery is intentionally an API command claim/receipt lane, not a Worker
+  Lease aggregate; its corrected PostgreSQL 17.5 runner passes `12/12` with
+  `ZEBRA_DELIVERY_TRANSACTION_POSTGRES_TEST_RESULT=PASS` and cleans all
+  resources. No adapter or runtime wiring changed; the parent gate remains
+  `Locked`.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core

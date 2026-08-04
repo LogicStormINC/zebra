@@ -145,7 +145,10 @@ fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 
 13. `CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01`：已完成 Effect-to-Artifact
    conformance evidence。payload-aware schedule/terminal 已绑定 Worker authority
    并原子协调 Event、Artifact 与 outbox；专用 PostgreSQL 17.5 runner 通过 `7/7`。
-14. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
+14. `CLOUD-AGG-FENCE-DELIVERY-01`：已完成 Delivery command boundary
+   conformance。Delivery 使用 command claim/receipt token，而非 Worker Lease；
+   修正后的 PostgreSQL 17.5 runner 通过 `12/12`，不改变 adapter 或 runtime。
+15. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
    在所有子聚合 conformance card 完成前继续保持 `Locked`。
 
 当前 `CLOUD-CONTROL-PLANE-PG-01`、`CLOUD-API-WORKER-PG-01` 与
@@ -163,7 +166,8 @@ Context conformance 审计及其 semantic successor 均为 `Done`，
  PostgreSQL 写入校验；`CLOUD-AGG-FENCE-PROVIDER-01` 也已完成，补齐了
  Provider Continuation soft-delete 的同事务 stream CAS；`CLOUD-AGG-FENCE-ARTIFACT-01`
  已完成证据补齐，不改变 v9 adapter；`CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01` 已完成
- 事务证据补齐，不改变已实现事务；API/Worker 存储组合已由
+ 事务证据补齐，不改变已实现事务；`CLOUD-AGG-FENCE-DELIVERY-01` 已完成
+ command boundary 证据，不改变 command transaction；API/Worker 存储组合已由
 `CLOUD-API-WORKER-PG-01` 完成；应用
 `CLOUD-COMPOSE-APP-01` 当前仍为实现 `Blocked`，等待应用 Compose、Runtime 业务
 selector 和在线事件路由的单独授权；本次组合任务关闭不改变任何 runtime gate。

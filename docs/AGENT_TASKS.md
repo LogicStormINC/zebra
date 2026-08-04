@@ -6,8 +6,8 @@
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
 > `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
 > accepted and closed. The active cloud-mainline slice just closed
-> `CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01` is the active Effect-to-Artifact fencing
-> conformance slice after `CLOUD-AGG-FENCE-ARTIFACT-01` closed; the
+> `CLOUD-AGG-FENCE-DELIVERY-01` is the active Delivery transaction boundary
+> conformance slice after `CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01` closed; the
 > Handoff authority, dispatch and Workspace/Task successors are also `Done`,
 > while the aggregate parent remains locked.
 > Local SQLite Registry work remains deferred. ACP and optional code intelligence
@@ -3357,6 +3357,45 @@ external membership.
   object provider, SQLite behavior, Runtime/API/Worker profile selection,
   application Compose, Redis, Mem0, Provider HTTP, Delivery changes or
   parent-gate unlock.
+
+### CLOUD-AGG-FENCE-DELIVERY-01 - Delivery Transaction Boundary Conformance Evidence
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: `CLOUD-DELIVERY-TXN-PG-01` `Done`,
+  `CLOUD-AGG-FENCE-CON-01` `Done`, and merged
+  `CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01` evidence.
+- Branch: `codex/cloud-agg-fence-delivery-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-delivery-01/zebra-agent`
+- Base: `zebra-cloud-trench@29d8fd1b`
+- Activation: the maintainer requested continuation after Effect/Artifact
+  conformance closeout. This is the only active successor; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Owned paths: `tests/compose/delivery_transaction/`,
+  `docs/CLOUD-AGG-FENCE-DELIVERY-01.md`, and the governance records listed in
+  this registry, `PROGRESS.md`, `task_plan.md` and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`. Delivery Core/PostgreSQL
+  implementation and focused tests are read-only audit targets.
+- Goal: prove the API command delivery transaction's namespace, idempotency,
+  claim-token, receipt/audit atomicity and crash/replay semantics, while making
+  its runner reproducible in a clean workspace environment.
+- Acceptance: the runner installs `agent-storage` for psycopg collection,
+  emits a PASS sentinel and cleans resources; the audit explicitly records that
+  Delivery uses command claim/receipt authority, not Worker Lease fencing, and
+  therefore does not unlock the Worker aggregate parent.
+- Evidence: the corrected `tests/compose/delivery_transaction/run-postgres-tests.sh`
+  installs the `agent-storage` workspace package, runs PostgreSQL
+  `17.5-alpine3.21`, passes `12/12` with
+  `ZEBRA_DELIVERY_TRANSACTION_POSTGRES_TEST_RESULT=PASS`, and removes its
+  container, volume and network. The matrix covers concurrent one-owner claim,
+  hash conflict, claim-token fencing, receipt/audit atomic rollback, replay and
+  UNKNOWN/FAILED non-replay.
+- Closeout: shell syntax, Compose config and `git diff --check` pass. No
+  Delivery adapter, migration or runtime wiring changed. This card is `Done`;
+  the parent `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Explicit non-goals: no Delivery adapter redesign, API/Worker wiring, external
+  action execution, migration/DDL, SQLite behavior, Runtime/profile selection,
+  application Compose, Redis, Mem0, Provider HTTP or parent-gate unlock.
 
 ### CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01 - Workspace / Task Mutation Fencing Conformance Audit
 

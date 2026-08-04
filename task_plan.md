@@ -404,6 +404,56 @@
 - This card is evidence-only and `Done`; no adapter, migration, object provider,
   SQLite or runtime selection changed. The parent gate remains `Locked`.
 
+## CLOUD-AGG-FENCE-DELIVERY-01 - Delivery Transaction Boundary Conformance Evidence (Done)
+
+1. `completed` - Register the path-bounded Delivery evidence successor on
+   `codex/cloud-agg-fence-delivery-01` from `zebra-cloud-trench@29d8fd1b`;
+   preserve the dirty root `AGENTS.md` and keep the aggregate parent locked.
+2. `completed` - Audit Delivery claim, state transition, receipt/audit commit
+   and replay paths; record that this API command lane is intentionally distinct
+   from Worker Lease fencing.
+3. `completed` - Fix the existing PostgreSQL runner to install the
+   `agent-storage` workspace package so psycopg collection is reproducible;
+   preserve the existing Compose service and test scope.
+4. `completed` - Record exact counts, PASS sentinel, cleanup and static/script
+   evidence; close the card without unlocking `CLOUD-AGG-FENCE-01`.
+
+### Boundary
+
+- Writable paths are limited to `tests/compose/delivery_transaction/`, this
+  audit document and the governance records listed in the task registry.
+- Delivery Core contracts, PostgreSQL adapter/migration and focused tests are
+  read-only audit targets. No API/Worker wiring, external action execution,
+  migration redesign, SQLite, Runtime, application Compose, Redis, Mem0,
+  Provider HTTP or parent-gate change is included.
+
+### Current finding
+
+- Delivery identity is `(deployment_namespace, action, idempotency_key)` and its
+  `claim_token` fences receipt/audit commit. The transaction does not consume a
+  Worker LeaseFence by design; external effects remain outside this storage
+  transaction and UNKNOWN/FAILED states do not auto-replay.
+
+### Review boundary
+
+- This evidence card closes the Delivery command boundary only. The parent
+  `CLOUD-AGG-FENCE-01` remains `Locked` and no runtime or application Compose
+  selection is implied.
+
+### Evidence and closeout
+
+- The audit confirms Delivery uses `(deployment_namespace, action,
+  idempotency_key)` plus `claim_token` as command authority. Receipt, audit and
+  terminal transaction state commit atomically; UNKNOWN/FAILED states do not
+  auto-replay. No Worker LeaseFence is synthesized.
+- The corrected runner installs the `agent-storage` package, uses PostgreSQL
+  `17.5-alpine3.21`, passes `12/12` with
+  `ZEBRA_DELIVERY_TRANSACTION_POSTGRES_TEST_RESULT=PASS`, and removes its
+  container, volume and network. Shell syntax, Compose config and
+  `git diff --check` pass.
+- This card is evidence-only and `Done`; no adapter, migration, API/Worker
+  wiring or external action changed. The parent gate remains `Locked`.
+
 ## CLOUD-AGG-FENCE-TASK-01 - Fenced PostgreSQL Task Rollover Authority (Done)
 
 1. `completed` - Activate the bounded successor from the Workspace/Task audit on
