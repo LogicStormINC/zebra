@@ -211,7 +211,16 @@ def test_http_app_executes_session_resume(tmp_path: Path, monkeypatch) -> None:
     )
 
     assert response.status_code == 200
-    assert response.json() == {
+    body = response.json()
+    assert body["final_message"] == {
+        "message_id": body["final_message"]["message_id"],
+        "cursor": body["final_message"]["cursor"],
+    }
+    assert {
+        key: value
+        for key, value in body.items()
+        if key != "final_message"
+    } == {
         "session_id": session_id,
         "executed": True,
         "worker_id": "api-worker",
@@ -223,9 +232,11 @@ def test_http_app_executes_session_resume(tmp_path: Path, monkeypatch) -> None:
                 "attempt_number": 1,
                 "assistant_message": "HTTP resume complete.",
                 "tools": [],
-            }
-        ],
-    }
+                }
+            ],
+        }
+    assert body["final_message"]["cursor"] == 5
+    assert body["final_message"]["message_id"].startswith("final:")
 
 
 def test_http_app_suspends_and_then_resumes_session(tmp_path: Path, monkeypatch) -> None:

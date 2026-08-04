@@ -223,11 +223,27 @@ def test_session_resume_execute_contract_matrix_not_resumable_matches_across_api
 
 
 def _normalize_api_resume(payload: dict[str, object]) -> dict[str, object]:
-    return payload
+    return _normalize_final_message(payload)
 
 
 def _normalize_cli_resume(payload: dict[str, object]) -> dict[str, object]:
-    return {key: value for key, value in payload.items() if key != "database"}
+    normalized = {
+        key: value for key, value in payload.items() if key != "database"
+    }
+    return _normalize_final_message(normalized)
+
+
+def _normalize_final_message(payload: dict[str, object]) -> dict[str, object]:
+    # Each surface seeds its own database, so event-level message ids differ by
+    # construction; the contract parity is the identity *shape* (cursor of the
+    # latest completed final), which both surfaces must agree on.
+    final_message = payload.get("final_message")
+    if isinstance(final_message, dict):
+        return {
+            **payload,
+            "final_message": {"cursor": final_message.get("cursor")},
+        }
+    return payload
 
 
 def _fake_resume_gateway(settings: ZebraAgentSettings):

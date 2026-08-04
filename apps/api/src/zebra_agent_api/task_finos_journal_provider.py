@@ -24,10 +24,15 @@ FINOS_JOURNAL_TOOLS = (
 )
 FINOS_JOURNAL_TOOLS_BY_CONTRACT = {
     FINOS_JOURNAL_V1_CONTRACT: FINOS_JOURNAL_TOOLS,
-    FINOS_JOURNAL_V2_CONTRACT: (*FINOS_JOURNAL_TOOLS, "finos.account_changes.propose"),
+    FINOS_JOURNAL_V2_CONTRACT: (
+        *FINOS_JOURNAL_TOOLS,
+        "finos.account_changes.propose",
+        "finos.journals.save",
+    ),
     FINOS_JOURNAL_V3_CONTRACT: (
         *FINOS_JOURNAL_TOOLS,
         "finos.account_changes.propose",
+        "finos.journals.save",
         "finos.trade_log_quality.validate",
     ),
 }

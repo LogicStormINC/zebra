@@ -16,6 +16,7 @@ from zebra_agent_api.approval_context import serialize_approval_context
 from zebra_agent_api.clarification_context import serialize_clarification_context
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_payloads import parse_resume_session_payload
+from zebra_agent_api.task_final_identity import final_message_identity
 from zebra_agent_api.task_plan import serialize_task_plan
 from zebra_agent_config import ZebraAgentSettings
 from zebra_agent_worker import (
@@ -156,6 +157,7 @@ def _resume_result(
                 "reason": str(error),
             },
         )
+    final_message = final_message_identity(database_path, namespace.session_id)
     return CliCommandResult(
         command="resume",
         payload={
@@ -167,5 +169,10 @@ def _resume_result(
             "current_sequence": result.session.current_sequence,
             "assistant_message": result.attempt_result.metadata.get("assistant_message"),
             "trace": serialize_trace_events(result.events),
+            **(
+                {"final_message": final_message}
+                if final_message is not None
+                else {}
+            ),
         },
     )

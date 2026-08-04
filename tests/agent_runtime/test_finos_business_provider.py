@@ -158,7 +158,7 @@ def test_fixed_business_catalog_hides_authority_and_uses_fixed_paths_and_schemas
     assert grant not in str(rejected)
 
 
-def test_v2_business_catalog_adds_only_typed_account_change_proposal(
+def test_v2_business_catalog_adds_typed_proposal_and_journal_save_tools(
     tmp_path: Path,
 ) -> None:
     transport = RecordingTransport()
@@ -187,6 +187,7 @@ def test_v2_business_catalog_adds_only_typed_account_change_proposal(
         "finos.notes.get",
         "finos.securities.resolve",
         proposal_name,
+        "finos.journals.save",
     }
     assert definitions[proposal_name]["required"] == [
         "accounts",
@@ -218,6 +219,63 @@ def test_v2_business_catalog_adds_only_typed_account_change_proposal(
     )
     assert payload == {
         "schema_version": "finos.account_changes.propose.request.v1",
+        **arguments,
+    }
+
+
+def test_v2_journals_save_tool_posts_typed_command_to_the_shared_handler(
+    tmp_path: Path,
+) -> None:
+    transport = RecordingTransport()
+    task_id = "11111111-1111-4111-8111-111111111111"
+    provider = FinosJournalProvider(
+        base_url="https://finos.internal",
+        task_id=task_id,
+        grant="opaque-task-grant",
+        contract_version="finos.journals.v2",
+        transport=transport,
+    )
+    gateway = LocalToolGateway(tmp_path, finos_journal_provider=provider)
+    definition = next(
+        item.parameters
+        for item in gateway.model_tools
+        if item.name == "finos.journals.save"
+    )
+
+    assert definition["required"] == [
+        "message_id",
+        "source_artifact_id",
+        "business_date",
+        "idempotency_key",
+    ]
+    assert set(definition["properties"]) == {
+        "message_id",
+        "source_artifact_id",
+        "business_date",
+        "idempotency_key",
+    }
+
+    arguments = {
+        "message_id": "final:event-1",
+        "source_artifact_id": "artifact-1",
+        "business_date": "2026-08-03",
+        "idempotency_key": "zebra-save-round-1",
+    }
+    result = gateway.execute(_call("finos.journals.save", arguments))
+    url, headers, payload, _ = transport.calls[-1]
+
+    assert result.status is ToolCallStatus.EXECUTED
+    assert result.metadata == {
+        "schema_version": "finos.journals.save.v1",
+        "side_effect": "journal_save",
+    }
+    assert url == (
+        "https://finos.internal/internal/agent-provider/v1/tasks/"
+        f"{task_id}/journals:save"
+    )
+    assert headers["Authorization"] == "Bearer opaque-task-grant"
+    assert payload == {
+        "schema_version": "finos.journals.save.request.v1",
         **arguments,
     }
 

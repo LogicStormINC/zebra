@@ -4,7 +4,7 @@ from pathlib import Path
 from uuid import UUID
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
-from agent_core.application.session_projection import rebuild_session
+from agent_core.application.session_projection import apply_event, rebuild_session
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
@@ -38,6 +38,140 @@ def test_task_create_list_and_control_route_to_active_segment(tmp_path: Path) ->
     assert cancelled.body["session_id"] == task_id
     assert cancelled.body["status"] == "cancelled"
     assert read.body["status"] == "cancelled"
+
+
+def test_task_read_exposes_stable_final_message_identity(tmp_path: Path) -> None:
+    database = tmp_path / "tasks.sqlite"
+    task_id = str(
+        _seed_completed(database, tmp_path, assistant_message="First round final")
+    )
+    adapter = RouteAdapter(create_app(database))
+
+    read = adapter.handle(RouteRequest("GET", f"/tasks/{task_id}"))
+    conversation = adapter.handle(
+        RouteRequest("GET", f"/tasks/{task_id}/conversation")
+    )
+    final_items = [
+        item
+        for item in conversation.body["items"]
+        if item["role"] == "final_response" and item["state"] == "completed"
+    ]
+
+    assert read.status_code == 200
+    assert final_items
+    assert read.body["final_message"] == {
+        "message_id": final_items[-1]["item_id"],
+        "cursor": final_items[-1]["cursor"],
+    }
+
+
+def test_final_message_identity_uses_the_latest_completed_final(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "tasks.sqlite"
+    adapter = RouteAdapter(create_app(database))
+    created = adapter.handle(
+        RouteRequest(
+            "POST",
+            "/tasks",
+            body={
+                "title": "Two public turns",
+                "prompt": "PRIVATE initial prompt",
+                "public_content": "first user",
+                "workspace": str(tmp_path),
+            },
+        )
+    )
+    task_id = str(created.body["task_id"])
+    root_id = SessionId(UUID(task_id))
+    root = SQLiteProjectionStore(database).get_session(root_id)
+    assert root is not None
+    event_store = SQLiteEventStore(database)
+    root_events = (
+        SessionEvent.create(
+            session_id=root_id,
+            sequence=root.current_sequence + 1,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={"attempt_number": 1},
+            created_at=NOW,
+        ),
+        SessionEvent.create(
+            session_id=root_id,
+            sequence=root.current_sequence + 2,
+            event_type=EventType.MODEL_RESPONSE_RECEIVED,
+            actor=EventActor.HARNESS,
+            payload={"assistant_message": "first final", "tool_call_count": 0},
+            created_at=NOW,
+        ),
+        SessionEvent.create(
+            session_id=root_id,
+            sequence=root.current_sequence + 3,
+            event_type=EventType.SESSION_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={"summary": "done"},
+            created_at=NOW,
+        ),
+    )
+    for event in root_events:
+        event_store.append(event)
+    for event in root_events:
+        root = apply_event(root, event)
+    SQLiteProjectionStore(database).save_session(root)
+
+    appended = adapter.handle(
+        RouteRequest(
+            "POST",
+            f"/tasks/{task_id}/messages",
+            body={
+                "content": "PRIVATE follow-up harness input",
+                "public_content": "follow-up user",
+            },
+        )
+    )
+    segments = adapter.handle(
+        RouteRequest("GET", f"/internal/tasks/{task_id}/segments")
+    )
+    child_id = SessionId(UUID(segments.body["segments"][-1]["session_id"]))
+    child = SQLiteProjectionStore(database).get_session(child_id)
+    assert child is not None
+    event_store.append(
+        SessionEvent.create(
+            session_id=child_id,
+            sequence=child.current_sequence + 1,
+            event_type=EventType.MODEL_RESPONSE_RECEIVED,
+            actor=EventActor.HARNESS,
+            payload={"assistant_message": "follow-up final", "tool_call_count": 0},
+            created_at=NOW,
+        )
+    )
+    event_store.append(
+        SessionEvent.create(
+            session_id=child_id,
+            sequence=child.current_sequence + 2,
+            event_type=EventType.SESSION_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={"summary": "done"},
+            created_at=NOW,
+        )
+    )
+
+    read = adapter.handle(RouteRequest("GET", f"/tasks/{task_id}"))
+    conversation = adapter.handle(
+        RouteRequest("GET", f"/tasks/{task_id}/conversation")
+    )
+    final_items = [
+        item
+        for item in conversation.body["items"]
+        if item["role"] == "final_response" and item["state"] == "completed"
+    ]
+
+    assert appended.status_code == 201
+    assert len(final_items) == 2
+    assert read.body["final_message"] == {
+        "message_id": final_items[-1]["item_id"],
+        "cursor": final_items[-1]["cursor"],
+    }
 
 
 def test_task_routes_keep_one_identity_across_automatic_follow_up_rollover(

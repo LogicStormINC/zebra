@@ -22,7 +22,7 @@ FINOS_TOOLS = [
     "finos.notes.get",
     "finos.securities.resolve",
 ]
-FINOS_V2_TOOLS = [*FINOS_TOOLS, "finos.account_changes.propose"]
+FINOS_V2_TOOLS = [*FINOS_TOOLS, "finos.account_changes.propose", "finos.journals.save"]
 FINOS_V3_TOOLS = [*FINOS_V2_TOOLS, "finos.trade_log_quality.validate"]
 
 

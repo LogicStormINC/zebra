@@ -79,6 +79,7 @@ from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
 from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
 from zebra_agent_api.session_prompt_inputs import resolve_mcp_prompt_attachment
+from zebra_agent_api.task_final_identity import final_message_identity
 from zebra_agent_api.skills_admin import (
     ApiSkillsAdminMixin,
     runtime_skills_state,
@@ -241,6 +242,7 @@ class ZebraAgentApi(
                 status="model_gateway_unavailable",
                 reason=str(error),
             )
+        final_message = final_message_identity(self.database_path, session_id)
         return ApiResponse(
             status_code=200,
             body={
@@ -251,6 +253,11 @@ class ZebraAgentApi(
                 "current_sequence": result.session.current_sequence,
                 "assistant_message": result.attempt_result.metadata.get("assistant_message"),
                 "trace": serialize_trace_events(result.events),
+                **(
+                    {"final_message": final_message}
+                    if final_message is not None
+                    else {}
+                ),
             },
         )
     def cancel_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
@@ -545,6 +552,9 @@ class ZebraAgentApi(
                         staged_payload_ids,
                     )
             raise
+        final_message = final_message_identity(
+            self.database_path, str(session.session_id)
+        )
         return ApiResponse(
             status_code=201,
             body={
@@ -556,6 +566,7 @@ class ZebraAgentApi(
                 "model": model_entry.id,
                 "status": session.status.value,
                 "assistant_message": result.attempt_result.metadata.get("assistant_message"),
+                **({"final_message": final_message} if final_message is not None else {}),
                 "stop_reason": result.run_result.stop_reason.value,
                 "attempts_used": result.run_result.attempts_used,
                 "policy_profile": str(parsed["policy_profile"]),

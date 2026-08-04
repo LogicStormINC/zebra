@@ -28,6 +28,7 @@ from agent_storage import (
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_handoff import SessionHandoffApi
+from zebra_agent_api.task_final_identity import final_message_identity
 from zebra_agent_api.session_summary import serialize_session_summary
 
 DEFAULT_TASK_LIMIT = 50
@@ -84,6 +85,9 @@ class TaskReadApi:
             current_sequence=task.current_sequence,
             status=task.status.value,
         )
+        final_message = final_message_identity(self.database_path, task_id)
+        if final_message is not None:
+            body["final_message"] = final_message
         events = [
             item.event for item in SQLiteAgentTaskStore(self.database_path).read_events(parsed, -1)
         ]

@@ -231,6 +231,21 @@ ACCOUNT_CHANGES_PROPOSE_CONTRACT = ToolContract(
         "missing_evidence": {"type": "array", "items": {"type": "string"}},
     },
 )
+JOURNALS_SAVE_CONTRACT = ToolContract(
+    name="finos.journals.save",
+    description=(
+        "Save one completed final message of this authorized FinOS Task as a "
+        "daily journal. The message must already be immutable in FinOS."
+    ),
+    capability_version="finos.journals.save.v1",
+    required_arguments=("message_id", "source_artifact_id", "business_date", "idempotency_key"),
+    argument_properties={
+        "message_id": {"type": "string", "minLength": 1, "maxLength": 512},
+        "source_artifact_id": {"type": "string", "minLength": 1, "maxLength": 256},
+        "business_date": {"type": "string", "format": "date"},
+        "idempotency_key": {"type": "string", "minLength": 1, "maxLength": 256},
+    },
+)
 TRADE_LOG_QUALITY_VALIDATE_CONTRACT = ToolContract(
     name="finos.trade_log_quality.validate",
     description=(
@@ -258,6 +273,11 @@ FINOS_V2_TOOL_SPECS = (
         ACCOUNT_CHANGES_PROPOSE_CONTRACT,
         "account-changes:propose",
         side_effect="proposal",
+    ),
+    _FinosTool(
+        JOURNALS_SAVE_CONTRACT,
+        "journals:save",
+        side_effect="journal_save",
     ),
 )
 FINOS_V3_TOOL_SPECS = (
