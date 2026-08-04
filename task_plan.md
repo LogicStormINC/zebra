@@ -6,9 +6,9 @@
    dedicated branch/worktree and explicit owned paths.
 2. `completed` - Add one lockfile-based non-root multi-target image and an
    application-only Compose overlay for migration, API and Worker.
-3. `in_progress` - Add isolated dependency fixtures and a host Docker smoke runner
+3. `completed` - Add isolated dependency fixtures and a host Docker smoke runner
    covering migration ordering, API health, Worker startup and cleanup.
-4. `pending` - Record validation and closeout without selecting Redis live
+4. `in_progress` - Record validation and closeout without selecting Redis live
    routing or unlocking aggregate/runtime gates.
 
 ### Boundary
@@ -17,15 +17,21 @@
   joins its external `zebra-dependencies` network and does not redeclare services.
 - The explicit `cloud` profile is used for API/Worker. PostgreSQL and MinIO are
   required; SQLite, Mem0 and Redis live routing are not fallback authorities.
-- No API/Worker source changes, runtime selector changes, migration DDL changes,
-  aggregate gate unlock or production deployment is included.
+- No API/Worker composition-source changes, runtime selector changes, migration
+  DDL changes, aggregate gate unlock or production deployment is included. The
+  API package's `uvicorn` runtime dependency is explicitly declared so the
+  lockfile-based `--no-dev` image can start.
 
 ### Current evidence
 
 - Isolated PostgreSQL/MinIO dependencies are healthy and cleaned after each run.
 - Host-side cloud composition passes API health, exposes
   `PostgresControlPlaneStores`, and completes one idle Worker PostgreSQL cycle.
-- Container smoke remains pending on the Docker Hub Python base layer download.
+- The first container attempt found the production image lacked `uvicorn`; the
+  API runtime dependency was added and `uv.lock` regenerated.
+- A temporary mirror-base override passed the full three-container smoke,
+  including migration ordering, API health, PostgreSQL store assertion and
+  Worker health. The committed Docker Hub base still needs a direct build.
 
 ## CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter (Done)
 

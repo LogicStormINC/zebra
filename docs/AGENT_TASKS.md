@@ -1574,8 +1574,9 @@ projection to callers that currently use `model_calls` and `tool_runs`.
 - Worktree: `/Users/lukeding/.codex/worktrees/cloud-compose-app-01/zebra-agent`
 - Owned paths: `docker/compose.application.yml`, `docker/Dockerfile`,
   `docker/.dockerignore`, `docker/.env.application.example`, `docker/migrate.py`,
-  `docker/README.md`, `tests/compose/application/`, `docs/AGENT_TASKS.md`,
-  `PROGRESS.md`, `task_plan.md`, and
+  `docker/README.md`, `apps/api/pyproject.toml`, `uv.lock`,
+  `tests/compose/application/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`,
+  `task_plan.md`, and
   `docs/Zebra Cloud 主线当前状态与后续工作.md`
 
 #### Activation decision
@@ -1616,9 +1617,16 @@ fact source; Redis remains optional live state and is not selected by startup.
 - The migration wrapper passes Ruff/Mypy and applies all `15` known migrations
   against isolated PostgreSQL `17.5-alpine3.21`; resources are cleaned up.
 - The isolated dependency fixture reaches healthy PostgreSQL and MinIO and
-  cleans its network. The image build/smoke runner remains pending while the
-  Docker Hub Python base layer is being pulled; no application container has
-  been claimed healthy from that incomplete build.
+  cleans its network. The first container attempt exposed that `uvicorn` was
+  only a root dev dependency under the production `--no-dev` sync; the API
+  runtime dependency is now declared in `apps/api/pyproject.toml` and locked
+  in `uv.lock`.
+- A complete three-container smoke passed with the same committed Dockerfile
+  and a temporary mirror-only Python base override: migration completed, API
+  and Worker became healthy, `/health` passed, and the API exposed
+  `PostgresControlPlaneStores`. The pinned Docker Hub base in the committed
+  Dockerfile still needs a direct build/smoke run; the mirror is evidence of
+  application behavior, not a replacement for that source pin.
 - The same cloud environment was exercised from the synchronized host
   workspace: API `/health` passed, `create_app` exposed
   `PostgresControlPlaneStores`, and Worker completed one idle PostgreSQL cycle;

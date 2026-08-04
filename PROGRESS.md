@@ -58,9 +58,12 @@
   `codex/cloud-compose-app-01`. It owns only the non-root multi-target Zebra
   image, the application-only migration/API/Worker Compose overlay and isolated
   smoke evidence; host-side cloud composition already proves API health,
-  `PostgresControlPlaneStores` and one Worker PostgreSQL cycle, while the image
-  smoke remains pending on the Docker Hub Python base layer. The base dependency
-  Compose remains a separate lifecycle.
+  `PostgresControlPlaneStores` and one Worker PostgreSQL cycle. The production
+  `--no-dev` image now declares `uvicorn` as an API runtime dependency, and the
+  complete three-container smoke passes with a temporary mirror-only Python
+  base override; a direct build with the committed Docker Hub base remains the
+  final container evidence. The base dependency Compose remains a separate
+  lifecycle.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.
   Its direct Task authority gap is implemented by `CLOUD-AGG-FENCE-TASK-01` at
