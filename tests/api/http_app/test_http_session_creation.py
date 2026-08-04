@@ -216,10 +216,11 @@ def test_http_app_executes_session_resume(tmp_path: Path, monkeypatch) -> None:
         "message_id": body["final_message"]["message_id"],
         "cursor": body["final_message"]["cursor"],
     }
+    assert body["artifact_output_contract"] is None
     assert {
         key: value
         for key, value in body.items()
-        if key != "final_message"
+        if key not in {"final_message", "artifact_output_contract"}
     } == {
         "session_id": session_id,
         "executed": True,

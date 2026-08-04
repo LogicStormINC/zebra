@@ -174,6 +174,75 @@ def test_final_message_identity_uses_the_latest_completed_final(
     }
 
 
+def test_task_read_returns_artifact_output_contract_of_latest_final(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "tasks.sqlite"
+    adapter = RouteAdapter(create_app(database))
+    created = adapter.handle(
+        RouteRequest(
+            "POST",
+            "/tasks",
+            body={
+                "title": "Typed output",
+                "prompt": "PRIVATE prompt",
+                "workspace": str(tmp_path),
+            },
+        )
+    )
+    task_id = str(created.body["task_id"])
+    root_id = SessionId(UUID(task_id))
+    root = SQLiteProjectionStore(database).get_session(root_id)
+    assert root is not None
+    event_store = SQLiteEventStore(database)
+    events = (
+        SessionEvent.create(
+            session_id=root_id,
+            sequence=root.current_sequence + 1,
+            event_type=EventType.MODEL_RESPONSE_RECEIVED,
+            actor=EventActor.HARNESS,
+            payload={
+                "assistant_message": "typed final",
+                "tool_call_count": 0,
+                "output_contract": {
+                    "contract_id": "finos.daily-trading-journal",
+                    "contract_version": "1",
+                    "structured_payload": {"business_date": "2026-08-04"},
+                    "payload_digest": "sha256:" + "c" * 64,
+                    "source_refs": ["broker:a"],
+                },
+            },
+            created_at=NOW,
+        ),
+        SessionEvent.create(
+            session_id=root_id,
+            sequence=root.current_sequence + 2,
+            event_type=EventType.SESSION_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={"summary": "done"},
+            created_at=NOW,
+        ),
+    )
+    for event in events:
+        event_store.append(event)
+
+    read = adapter.handle(RouteRequest("GET", f"/tasks/{task_id}"))
+    assert read.status_code == 200
+    assert read.body["artifact_output_contract"]["contract_id"] == (
+        "finos.daily-trading-journal"
+    )
+    assert read.body["artifact_output_contract"]["source_refs"] == ["broker:a"]
+
+
+def test_task_read_omits_output_contract_when_absent(tmp_path: Path) -> None:
+    database = tmp_path / "tasks.sqlite"
+    task_id = str(_seed_completed(database, tmp_path, assistant_message="plain"))
+    adapter = RouteAdapter(create_app(database))
+    read = adapter.handle(RouteRequest("GET", f"/tasks/{task_id}"))
+    assert read.status_code == 200
+    assert "artifact_output_contract" not in read.body
+
+
 def test_task_routes_keep_one_identity_across_automatic_follow_up_rollover(
     tmp_path: Path,
 ) -> None:

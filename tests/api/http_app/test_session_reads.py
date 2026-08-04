@@ -29,6 +29,7 @@ def test_http_app_serves_health(tmp_path: Path) -> None:
             "task_image_attachments": True,
             "native_image_understanding": False,
             "final_message_identity": True,
+            "artifact_output_contract": True,
         },
     }
 

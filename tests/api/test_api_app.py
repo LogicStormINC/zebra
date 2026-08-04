@@ -38,6 +38,7 @@ def test_api_health_returns_service_status(tmp_path: Path) -> None:
             "task_image_attachments": True,
             "native_image_understanding": False,
             "final_message_identity": True,
+            "artifact_output_contract": True,
         },
     }
 
