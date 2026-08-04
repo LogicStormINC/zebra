@@ -84,6 +84,12 @@
   `ZEBRA_DELIVERY_TRANSACTION_POSTGRES_TEST_RESULT=PASS` and cleans all
   resources. No adapter or runtime wiring changed; the parent gate remains
   `Locked`.
+- `CLOUD-AGG-FENCE-REVIEW-01` is `Done` with result `PASS`. All registered
+  path-bounded aggregate evidence is green: Context `18/18`, Handoff
+  auth/dispatch `15/15` and `14/14`, Workspace/Task `36/36`, Model/Tool `8/8`,
+  Provider `4/4`, Artifact `13/13`, Effect/Artifact `7/7` and Delivery `12/12`.
+  The parent `CLOUD-AGG-FENCE-01` moved `Locked -> Review`; this does not
+  authorize runtime or application Compose activation.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core

@@ -6,10 +6,11 @@
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
 > `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
 > accepted and closed. The active cloud-mainline slice just closed
-> `CLOUD-AGG-FENCE-DELIVERY-01` is the active Delivery transaction boundary
-> conformance slice after `CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01` closed; the
-> Handoff authority, dispatch and Workspace/Task successors are also `Done`,
-> while the aggregate parent remains locked.
+> `CLOUD-AGG-FENCE-REVIEW-01` is the active aggregate fencing gate review after
+> all path-bounded conformance evidence closed; the
+> Handoff authority, dispatch, Workspace/Task and the remaining aggregate
+> evidence successors are `Done`; the aggregate parent is now in `Review` and
+> runtime activation remains gated.
 > Local SQLite Registry work remains deferred. ACP and optional code intelligence
 > remain locked.
 
@@ -3397,6 +3398,42 @@ external membership.
   action execution, migration/DDL, SQLite behavior, Runtime/profile selection,
   application Compose, Redis, Mem0, Provider HTTP or parent-gate unlock.
 
+### CLOUD-AGG-FENCE-REVIEW-01 - Aggregate Fencing Gate Evidence Review
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: all path-bounded aggregate conformance cards marked `Done`,
+  including Context, Handoff/Dispatch, Workspace/Task, Model/Tool, Provider,
+  Artifact, Effect/Artifact and Delivery boundary evidence.
+- Branch: `codex/cloud-agg-fence-review-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-review-01/zebra-agent`
+- Base: `zebra-cloud-trench@7a13f7a3`
+- Activation: the maintainer requested continuation after the Delivery
+  conformance closeout. This governance-only review is the only active slice;
+  no Runtime/API/Worker profile or application Compose activation is implied.
+- Owned paths: `docs/CLOUD-AGG-FENCE-REVIEW-01.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md` and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`. All production adapters,
+  migrations, tests and runners are read-only evidence.
+- Goal: reconcile every aggregate fencing matrix, migration/composition
+  boundary and non-Worker Delivery distinction, then move the parent
+  `CLOUD-AGG-FENCE-01` to `Review` only if its evidence is complete. Review does
+  not authorize runtime selection or production cutover.
+- Acceptance: the review records exact runner counts and PASS sentinels,
+  confirms zero-write/stale-fence/rollback coverage and names any remaining
+  gates. Parent status must remain `Locked` if any evidence or ownership is
+  incomplete; no implementation paths may be changed by this card.
+- Explicit non-goals: no production code, migration/DDL, SQLite, Runtime,
+  API/Worker wiring, Redis, Mem0, Provider HTTP, application Compose or
+  production rollout.
+- Evidence: the review records Context `18/18`, Handoff auth/dispatch `15/15`
+  and `14/14`, Workspace/Task `36/36`, Model/Tool `8/8`, Provider `4/4`,
+  Artifact `13/13`, Effect/Artifact `7/7` and Delivery `12/12`; all PASS
+  sentinels and cleanup results are present. Delivery is explicitly a command
+  lane, not Worker Lease fencing.
+- Closeout: review result `PASS`; parent `CLOUD-AGG-FENCE-01` moved
+  `Locked -> Review`. No implementation or runtime activation is authorized.
+
 ### CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01 - Workspace / Task Mutation Fencing Conformance Audit
 
 - Status: `Done`
@@ -3526,22 +3563,27 @@ external membership.
 
 ### CLOUD-AGG-FENCE-01 - Full Worker Aggregate Fencing Gate
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `Review`
+- Owner: `codex`
 - Depends on: PostgreSQL Adapters for every authoritative Worker-owned aggregate,
   merged `CLOUD-LEASE-01`, and approved `CLOUD-AGG-FENCE-PLAN-01` inventory
-- Branch: `TBD after prerequisite inventory`
-- Owned paths: none while Locked; this gate must be split into path-bounded
-  aggregate conformance cards before any implementation starts
+- Branch: `codex/cloud-agg-fence-review-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-review-01/zebra-agent`
+- Owned paths: no production paths are authorized by this Review state; the
+  evidence and governance paths are owned by `CLOUD-AGG-FENCE-REVIEW-01`.
 - Goal: require ContextLifecycle, Handoff/dispatch, Workspace/Task, Model/Tool run,
   provider continuation/history, Artifact and delivery-audit transactions to
   validate the current Lease fence in their own PostgreSQL transaction.
 - Acceptance: stale epoch/token/owner tests pass per aggregate on real PostgreSQL;
   only then may the project claim complete multi-Worker safety.
-- Current child gate: `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` is the first
-  governance-only conformance card and is now `Done`; its semantic successor
-  closed the Store-level Event semantic gap. Other aggregate cards still keep
-  this parent gate `Locked`.
+- Current child gates: Context, Handoff/Dispatch, Workspace/Task, Model/Tool,
+  Provider, Artifact, Effect/Artifact and Delivery boundary evidence are all
+  `Done` with recorded real PostgreSQL PASS matrices. Delivery is an API
+  command lane and is not counted as Worker Lease fencing.
+- Review result: `PASS` for `Locked -> Review`. The evidence is sufficient for
+  maintainer review, but implementation authorization, Runtime/API/Worker
+  profile selection, application Compose, Redis live fan-out and production
+  rollout remain `false`/out of scope.
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.

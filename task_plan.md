@@ -454,6 +454,50 @@
 - This card is evidence-only and `Done`; no adapter, migration, API/Worker
   wiring or external action changed. The parent gate remains `Locked`.
 
+## CLOUD-AGG-FENCE-REVIEW-01 - Aggregate Fencing Gate Evidence Review (Done)
+
+1. `completed` - Register the governance-only parent review on
+   `codex/cloud-agg-fence-review-01` from `zebra-cloud-trench@7a13f7a3`;
+   preserve the dirty root `AGENTS.md` and keep runtime activation out of scope.
+2. `completed` - Reconcile every path-bounded aggregate matrix, PASS
+   sentinel, cleanup result, migration boundary and Delivery non-Worker
+   distinction into one evidence table.
+3. `completed` - Decide whether the evidence supports moving
+   `CLOUD-AGG-FENCE-01` from `Locked` to `Review`; keep implementation and
+   successor activation unauthorized.
+4. `completed` - Record remaining Runtime/API/Worker, Redis, recovery, Provider
+   HTTP and Trench gates in the cloud status documents.
+
+### Boundary
+
+- Writable paths are limited to `docs/CLOUD-AGG-FENCE-REVIEW-01.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md` and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`.
+- All adapters, migrations, tests and Compose runners are read-only evidence;
+  no production or runtime path can be changed by this review.
+
+### Review boundary
+
+- A `Review` parent state means evidence is ready for maintainer approval; it
+  does not claim production multi-Worker readiness or select PostgreSQL at
+  runtime. The parent may remain `Locked` if any matrix or ownership boundary
+  is incomplete.
+
+### Evidence and closeout
+
+- All registered aggregate matrices are green: Context `18/18`, Handoff
+  reserve/abort `15/15`, dispatch `14/14`, Workspace/Task `36/36`, Model/Tool
+  `8/8`, Provider `4/4`, Artifact `13/13`, Effect/Artifact `7/7` and Delivery
+  command boundary `12/12`; read-only Session History and Context Materialization
+  evidence is also recorded. Runners use pinned PostgreSQL and deterministic
+  cleanup.
+- Cross-cutting review confirms namespace, LeaseFence, stream/projection CAS,
+  idempotent replay and rollback coverage. Delivery is explicitly command
+  claim/receipt authority and not a Worker Lease aggregate.
+- Review result: `PASS`, parent `CLOUD-AGG-FENCE-01` moved `Locked -> Review`.
+  No implementation authorization, successor activation, Runtime/API/Worker
+  profile selection, application Compose, Redis or production rollout is implied.
+
 ## CLOUD-AGG-FENCE-TASK-01 - Fenced PostgreSQL Task Rollover Authority (Done)
 
 1. `completed` - Activate the bounded successor from the Workspace/Task audit on

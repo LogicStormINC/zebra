@@ -148,8 +148,10 @@ fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 
 14. `CLOUD-AGG-FENCE-DELIVERY-01`：已完成 Delivery command boundary
    conformance。Delivery 使用 command claim/receipt token，而非 Worker Lease；
    修正后的 PostgreSQL 17.5 runner 通过 `12/12`，不改变 adapter 或 runtime。
-15. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
-   在所有子聚合 conformance card 完成前继续保持 `Locked`。
+15. `CLOUD-AGG-FENCE-REVIEW-01`：已完成总门禁证据复核，结果 `PASS`；已汇总所有
+   path-bounded aggregate PASS 与清理证据。
+16. `CLOUD-AGG-FENCE-01`：已从 `Locked` 转为 `Review`，仅表示证据待维护者批准；
+   不授权 runtime/application Compose、successor 或生产切换。
 
 当前 `CLOUD-CONTROL-PLANE-PG-01`、`CLOUD-API-WORKER-PG-01` 与
 `CLOUD-DELIVERY-TXN-PG-01` 均为 `Done`；
@@ -284,12 +286,15 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 12. [x] 实施并关闭 `CLOUD-AGG-FENCE-MODEL-TOOL-01`；专用 PostgreSQL 17.5
    runner 通过 `8/8`，现有 Control Plane runner 通过 `11/11`，补齐
    expected stream revision、stream drift、rollback 和 zero-write 证据。
-13. 继续完成 Artifact、Effect/Artifact linkage、Delivery 等剩余 aggregate
-   fencing conformance，再评估 `CLOUD-AGG-FENCE-01`，父门继续 `Locked`。
-14. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
-15. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
-16. 再激活 Host/AG-UI/Trench read-only vertical slice。
-17. 之后才进入 Frontend、Analysis、Writeback 和 GA。
+13. [x] 完成 Artifact、Effect/Artifact linkage、Delivery 等剩余 aggregate
+   fencing conformance；Artifact `13/13`、Effect `7/7`、Delivery `12/12`，
+   所有 runner 均完成清理。
+14. [x] 完成 `CLOUD-AGG-FENCE-REVIEW-01`；汇总全部矩阵为 `PASS`，
+   `CLOUD-AGG-FENCE-01` 从 `Locked` 转为 `Review`，不授权实现或 runtime。
+15. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
+16. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
+17. 再激活 Host/AG-UI/Trench read-only vertical slice。
+18. 之后才进入 Frontend、Analysis、Writeback 和 GA。
 
 ## 当前治理门
 
@@ -297,7 +302,8 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 closeout：Owner、Branch、Worktree、Owned paths 和 v13/v15 迁移所有权均已登记。
 当前 `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` 与
 `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` 均已完成；
-`CLOUD-AGG-FENCE-01` 仍保持 Locked。
+`CLOUD-AGG-FENCE-01` 的 path-bounded evidence 已全部闭合，当前可进入 `Review`；
+在维护者批准前不授权实现、successor 或 runtime/application Compose 激活。
 `CLOUD-CONTROL-PLANE-PG-01` 已在所有 aggregate PostgreSQL adapter/read-composition
 依赖闭合后由侧边栏批准激活，并在实现、Compose 验证和 closeout 后登记为 `Done`；
 其 v14 shared records 与 cloud-only composition 已交付。其余
