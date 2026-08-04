@@ -126,7 +126,12 @@ fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 
    `6c1ceffa`，治理收口为 `48bb942a`，仅覆盖 dispatch claim/ACK 的 operation、
    revision、LeaseFence、claim-token、replay/race/namespace/rollback/zero-write
    语义，不重做 reserve/abort。
-9. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
+9. `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01`：当前为 `Review`，审计结果为
+   `BLOCK-GAP`；Workspace Worker commit 与 Handoff-composed rollover 已有局部
+   fencing 证据，但 direct Task mutation 未绑定 `WorkerMutationAuthority`，且当前
+   checkout 缺少可重放的 Workspace/Task PostgreSQL runner。后续 successor 保持
+   `Locked`。
+10. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
    在所有子聚合 conformance card 完成前继续保持 `Locked`。
 
 当前 `CLOUD-CONTROL-PLANE-PG-01`、`CLOUD-API-WORKER-PG-01` 与
@@ -136,7 +141,7 @@ Context conformance 审计及其 semantic successor 均为 `Done`，
 `BLOCK-GAP`；`CLOUD-AGG-FENCE-HANDOFF-AUTH-01` 已完成授权实现并由独立 sidebar
 以 `CLOSEOUT-OK` 关闭为 `Done`。父 fencing gate 仍为 `Locked`，因为其他 aggregate
  fencing cards 尚未闭合；`CLOUD-AGG-FENCE-DISPATCH-01` 已完成并关闭为 `Done`，
-但不能顺带激活
+`CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` 进入 `Review` 且为 `BLOCK-GAP`，不能顺带激活
 Runtime selector 或应用 Compose。API/Worker 存储组合已由
 `CLOUD-API-WORKER-PG-01` 完成；应用
 `CLOUD-COMPOSE-APP-01` 当前仍为实现 `Blocked`，等待应用 Compose、Runtime 业务
@@ -243,12 +248,14 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
    与 token，补齐 replay、race、namespace、rollback 和 zero-write 回归；专用
    PostgreSQL 17.5 runner 已 `14/14` 通过并完成清理，实现提交为 `6c1ceffa`，
    治理收口为 `48bb942a`，已快进合并并完成本地 closeout；父门继续 `Locked`。
-9. 完成其余 aggregate fencing conformance 与真实 PostgreSQL 证据，再评估
+9. [review] 完成 `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` 审计；结果为
+   `BLOCK-GAP`，direct Task authority 与可重放 PostgreSQL runner 仍需独立 successor。
+10. 完成其余 aggregate fencing conformance 与真实 PostgreSQL 证据，再评估
    `CLOUD-AGG-FENCE-01` 激活。
-10. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
-11. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
-12. 再激活 Host/AG-UI/Trench read-only vertical slice。
-13. 之后才进入 Frontend、Analysis、Writeback 和 GA。
+11. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
+12. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
+13. 再激活 Host/AG-UI/Trench read-only vertical slice。
+14. 之后才进入 Frontend、Analysis、Writeback 和 GA。
 
 ## 当前治理门
 

@@ -205,6 +205,41 @@
 - No parent-gate unlock, API/Worker profile activation or successor activation is
   implied.
 
+## CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01 - Workspace / Task Mutation Fencing Conformance Audit (Review)
+
+1. `completed` - Claim the path-bounded governance audit on
+   `codex/cloud-agg-fence-workspace-task-con-01` at `zebra-cloud-trench@29a79bf7`;
+   keep the root `AGENTS.md` change untouched and all implementation paths read-only.
+2. `completed` - Trace Workspace Worker commit, Event/Session/Workspace projection
+   writes, Task rebuild/rollover, and Handoff-composed Task mutation through their
+   actual PostgreSQL transactions and Core Ports.
+3. `completed` - Record the WT-01..WT-12 matrix for authority identity, LeaseFence,
+   namespace, expected revision, concurrency, replay, rollback and zero-write scope.
+4. `completed` - Compare the recorded historical Workspace `80/80` and Task `32/32`
+   host results with the current checkout; mark missing repository-owned runners as a
+   `BLOCK-GAP` rather than treating temporary scripts as reproducible evidence.
+5. `completed` - Register the direct Task authority and Workspace/Task evidence
+   successors as `Locked`; do not activate them or unlock `CLOUD-AGG-FENCE-01`.
+
+### Boundary
+
+- Owned paths are only the audit card and governance records listed in the task
+  registry. Workspace/Task adapters, Core Ports, tests, migrations and runners are
+  read-only audit targets.
+- The parent `CLOUD-AGG-FENCE-01` remains `Locked`; no Runtime/API/Worker profile,
+  application Compose, Redis, Mem0, Provider HTTP, CopilotKit/Trench or SQLite
+  change is authorized.
+
+### Audit decision
+
+- `BLOCK-GAP`: Workspace Worker commit and Handoff-composed rollover carry local
+  transaction evidence, but direct Task rollover has no explicit Worker authority
+  parameter/current LeaseFence validation, and the current checkout has no
+  reproducible Workspace/Task PostgreSQL runner.
+- Successors `CLOUD-AGG-FENCE-TASK-01` and
+  `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` remain `Locked` pending separate
+  activation and implementation review.
+
 ## CLOUD-AGG-FENCE-CTX-SEMANTIC-01 - Administrative Context Event Semantics (Done)
 
 1. `completed` - Activate the bounded successor on

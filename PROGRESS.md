@@ -38,24 +38,19 @@
   `CLOSEOUT-OK`, three zero-write regressions and a real PostgreSQL `18/18`
   focused matrix. The parent `CLOUD-AGG-FENCE-01` remains `Locked` because other
   aggregate fencing cards are still pending.
+- `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` remains in `Review` with audit result
+  `BLOCK-GAP`; its reserve/abort successor is `Done`, and the dispatch successor
+  `CLOUD-AGG-FENCE-DISPATCH-01` is now fast-forward merged and closed as `Done`.
+  Its mainline PostgreSQL runner passes `14/14` with
+  `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`.
 - The current cloud governance slice is
-  `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01`, now in `Review` on its isolated
-  worktree at base `765ede43`. Sidebar ChatGPT returned `CLOSEOUT-OK` for
-  `Planning -> Review` with audit result `BLOCK-GAP`. Its reserve/abort gap is
-  now implemented by the separately activated successor
-  `CLOUD-AGG-FENCE-HANDOFF-AUTH-01`, which is in `Review` on
-  `codex/cloud-agg-fence-handoff-auth-01` at commit `6a04f1cd`; independent
-  sidebar closeout returned `CLOSEOUT-OK` and moved it to `Done`. The dispatch
-  revision/replay/race/namespace gap remains locked. The successor's real
-  PostgreSQL runner passes `15/15`; the parent `CLOUD-AGG-FENCE-01` remains
-  `Locked` and `implementation_authorized` remains false. After the required
-  fast-forward integration, sidebar ChatGPT approved only
-  `CLOUD-AGG-FENCE-DISPATCH-01` as `Review` from base `4a10883a`; its
-  dispatch-only claim/ACK implementation is committed as `6c1ceffa`, fast-forward
-  merged with governance closeout `48bb942a`, and locally closed as `Done`, with
-  no Runtime or application Compose activation. The mainline runner passes
-  `14/14` with `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`; the parent
-  aggregate gate remains `Locked`.
+  `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01`, in `Review` on its isolated worktree
+  at base `29a79bf7`, with audit result `BLOCK-GAP`. Workspace Worker commits and
+  Handoff-composed rollover are locally fenced, but direct Task mutation does not
+  accept `WorkerMutationAuthority`, and the current checkout lacks reproducible
+  Workspace/Task PostgreSQL runners. Follow-up cards remain `Locked`; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked` and no Runtime or application Compose
+  activation is implied.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core

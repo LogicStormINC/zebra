@@ -3189,6 +3189,37 @@ external membership.
   Mem0, Provider HTTP, CopilotKit/Trench, production rollout or parent-gate
   unlock.
 
+### CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01 - Workspace / Task Mutation Fencing Conformance Audit
+
+- Status: `Review`
+- Owner: `governance/planning`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01`,
+  `CLOUD-AGG-TASK-PG-01` and the accepted Handoff aggregate transaction.
+- Branch: `codex/cloud-agg-fence-workspace-task-con-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-workspace-task-con-01/zebra-agent`
+- Base: `zebra-cloud-trench@29a79bf7`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`,
+  `docs/Zebra Cloud 主线当前状态与后续工作.md` and
+  `docs/CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01.md` only.
+- Read-only audit targets: Workspace projection/Session/Event PostgreSQL adapters,
+  Task/Segment index transactions, Handoff commit composition, their Core Ports,
+  focused tests and recorded PostgreSQL evidence. No production code, migration,
+  test or Compose runner is writable in this card.
+- Goal: prove namespace, WorkerMutationAuthority/LeaseFence, expected revision,
+  Task identity, transaction atomicity, stale rejection and zero-write behavior for
+  Workspace and Task paths, while separating Event-derived replay/management writes.
+- Audit result: `BLOCK-GAP`. Workspace Worker commit and Handoff-composed rollover
+  are locally fenced; `AgentTaskPort.attach_segment` and the PostgreSQL facade do not
+  express Worker authority or directly validate the current LeaseFence, and the
+  current checkout has no reproducible Workspace/Task PostgreSQL runner. Historical
+  host results (`80/80` Workspace and `32/32` Task) remain recorded evidence but are
+  not re-runnable from this checkout.
+- Required follow-ups (both `Locked`): `CLOUD-AGG-FENCE-TASK-01` for the direct Task
+  mutation authority boundary, and `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` for
+  repository-owned PostgreSQL 17.5 runners. Neither successor unlocks the parent gate.
+- Explicit non-goals: no API/Worker selector, Runtime, application Compose, Redis,
+  Mem0, Provider HTTP, CopilotKit/Trench, SQLite feature work or parent-gate unlock.
+
 ### CLOUD-CONTROL-PLANE-PG-01 - Complete PostgreSQL Store Composition
 
 - Status: `Done`
