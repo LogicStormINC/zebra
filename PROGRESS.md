@@ -57,7 +57,10 @@
 - `CLOUD-COMPOSE-APP-01` is now the active implementation slice on
   `codex/cloud-compose-app-01`. It owns only the non-root multi-target Zebra
   image, the application-only migration/API/Worker Compose overlay and isolated
-  smoke evidence; the base dependency Compose remains a separate lifecycle.
+  smoke evidence; host-side cloud composition already proves API health,
+  `PostgresControlPlaneStores` and one Worker PostgreSQL cycle, while the image
+  smoke remains pending on the Docker Hub Python base layer. The base dependency
+  Compose remains a separate lifecycle.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.
   Its direct Task authority gap is implemented by `CLOUD-AGG-FENCE-TASK-01` at

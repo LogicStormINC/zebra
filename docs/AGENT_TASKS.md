@@ -1619,6 +1619,10 @@ fact source; Redis remains optional live state and is not selected by startup.
   cleans its network. The image build/smoke runner remains pending while the
   Docker Hub Python base layer is being pulled; no application container has
   been claimed healthy from that incomplete build.
+- The same cloud environment was exercised from the synchronized host
+  workspace: API `/health` passed, `create_app` exposed
+  `PostgresControlPlaneStores`, and Worker completed one idle PostgreSQL cycle;
+  the fixture resources were removed afterward.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 

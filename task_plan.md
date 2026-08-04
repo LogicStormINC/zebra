@@ -20,6 +20,13 @@
 - No API/Worker source changes, runtime selector changes, migration DDL changes,
   aggregate gate unlock or production deployment is included.
 
+### Current evidence
+
+- Isolated PostgreSQL/MinIO dependencies are healthy and cleaned after each run.
+- Host-side cloud composition passes API health, exposes
+  `PostgresControlPlaneStores`, and completes one idle Worker PostgreSQL cycle.
+- Container smoke remains pending on the Docker Hub Python base layer download.
+
 ## CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter (Done)
 
 1. `completed` - Register the independent live-state card with explicit owned
