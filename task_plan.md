@@ -1,5 +1,25 @@
 # Task Plan
 
+## CLOUD-COMPOSE-APP-01 - Zebra Application Container Overlay (In Progress)
+
+1. `completed` - Claim the dependency-cleared application Compose card with a
+   dedicated branch/worktree and explicit owned paths.
+2. `completed` - Add one lockfile-based non-root multi-target image and an
+   application-only Compose overlay for migration, API and Worker.
+3. `in_progress` - Add isolated dependency fixtures and a host Docker smoke runner
+   covering migration ordering, API health, Worker startup and cleanup.
+4. `pending` - Record validation and closeout without selecting Redis live
+   routing or unlocking aggregate/runtime gates.
+
+### Boundary
+
+- The dependency stack remains owned by `CLOUD-COMPOSE-INFRA-01`; this overlay
+  joins its external `zebra-dependencies` network and does not redeclare services.
+- The explicit `cloud` profile is used for API/Worker. PostgreSQL and MinIO are
+  required; SQLite, Mem0 and Redis live routing are not fallback authorities.
+- No API/Worker source changes, runtime selector changes, migration DDL changes,
+  aggregate gate unlock or production deployment is included.
+
 ## CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter (Done)
 
 1. `completed` - Register the independent live-state card with explicit owned
@@ -19,7 +39,7 @@
 - The branch was fast-forward merged into `zebra-cloud-trench` at `cfbebcf7`
   after the implementation review.
 - The adapter remains unselected by API/Worker startup; application Compose is
-  still a separate blocked card.
+  now tracked by the separately activated `CLOUD-COMPOSE-APP-01` card.
 
 ### Boundary
 

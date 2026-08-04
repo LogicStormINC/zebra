@@ -176,9 +176,11 @@ selector 和在线事件路由的单独授权；本次组合任务关闭不改�
 
 ### Docker 应用层与在线事件
 
-- `docker/compose.application.yml` 目前不存在；其登记卡
-  `CLOUD-COMPOSE-APP-01` 当前为 `Blocked`，不能作为 API/Worker 接线授权。
-- Zebra migration、API、Worker 三类主容器尚未建立。
+- `CLOUD-COMPOSE-APP-01` 已在依赖闭合后进入 `In Progress`，当前只建立
+  独立的 migration/API/Worker 主容器和 application-only Compose overlay；
+  不改造基础依赖容器生命周期。
+- Zebra migration、API、Worker 三类主容器正在本卡建立，尚未形成宿主 smoke
+  证据。
 - Redis 依赖容器之外已完成 `CLOUD-LIVE-01` 的 replay-plus-tail
   Port/Redis Streams Adapter；本地 `24/24`、integrations `127 passed, 3 skipped`
   和 pinned `redis:8.2.1-alpine` 宿主 Compose runner `1/1` 均通过，结果标记为
@@ -299,10 +301,12 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 14. [x] 完成 `CLOUD-AGG-FENCE-REVIEW-01`；汇总全部矩阵为 `PASS`，
    `CLOUD-AGG-FENCE-01` 从 `Locked` 转为 `Review`，不授权实现或 runtime。
 15. [x] 完成 `CLOUD-LIVE-01` 的 Redis live fan-out Port、Adapter 和隔离
-   Compose 证据并合并到主线；应用 Compose 仍需另一张独立授权卡。
-16. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
-17. 再激活 Host/AG-UI/Trench read-only vertical slice。
-18. 之后才进入 Frontend、Analysis、Writeback 和 GA。
+   Compose 证据并合并到主线。
+16. [进行中] 完成 `CLOUD-COMPOSE-APP-01` 的独立 migration/API/Worker
+   Compose overlay 和宿主 smoke 证据；不接入 Redis live routing。
+17. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
+18. 再激活 Host/AG-UI/Trench read-only vertical slice。
+19. 之后才进入 Frontend、Analysis、Writeback 和 GA。
 
 ## 当前治理门
 

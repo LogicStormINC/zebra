@@ -63,6 +63,10 @@ does not authorize production code, migrations or activation of its successor.
   provider-neutral live-event fan-out Port, the Redis Streams adapter and an
   isolated Redis evidence runner. It does not select a Runtime, wire API/Worker
   startup, create application Compose or make Redis authoritative.
+- `CLOUD-COMPOSE-APP-01` is `In Progress` on `codex/cloud-compose-app-01`; it
+  owns the separate Zebra migration/API/Worker image and application Compose
+  overlay. The base PostgreSQL/Redis/MinIO dependency stack remains an external
+  lifecycle, and this card does not activate Redis live routing or aggregate gates.
 - `MEM-MEM0-SPIKE-01` is `Done` on `codex/mem0-contract-spike-01`. The pinned
   OSS REST/Compose contract is recorded and its deterministic provider evidence
   is accepted; real-provider compatibility remains a separate credential gate.
@@ -1560,23 +1564,61 @@ projection to callers that currently use `model_calls` and `tool_runs`.
 
 ### CLOUD-COMPOSE-APP-01 - Zebra Application Container Overlay
 
-- Status: `Blocked`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `Codex`
 - Suggested role: `SRE / APP / CORE`
 - Depends on: merged `CLOUD-COMPOSE-INFRA-01`, `CLOUD-PG-01`,
   `CLOUD-LEASE-01`, `CLOUD-ART-01`, `CLOUD-PROFILE-COMPOSITION-CON-01` and
   `CLOUD-LIVE-01` (currently `Done`)
-- Branch: `TBD`
-- Candidate owned paths: `docker/compose.application.yml`, one multi-target Zebra
-  Dockerfile, container smoke tests, required config composition and governance records
+- Branch: `codex/cloud-compose-app-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-compose-app-01/zebra-agent`
+- Owned paths: `docker/compose.application.yml`, `docker/Dockerfile`,
+  `docker/.dockerignore`, `docker/.env.application.example`, `docker/migrate.py`,
+  `docker/README.md`, `tests/compose/application/`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`, `task_plan.md`, and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`
 
-#### Block reason
+#### Activation decision
 
-The profile contract and live fan-out dependency are now `Done`. This card is
-still implementation-blocked because the application overlay needs its own
-separately authorized implementation slice. It must not be used as an implicit
-authorization to change API/Worker startup or to unlock any aggregate fencing
-gate.
+The profile contract and live fan-out dependency are `Done`. The maintainer's
+explicit continuation activated this separately owned application slice on
+2026-08-04. It does not unlock `CLOUD-AGG-FENCE-01` or select Redis live routing.
+
+#### Goal
+
+Build one non-root Zebra image with distinct migration, API and Worker targets,
+then run those targets through an application-only Compose overlay that joins
+the already-running `zebra-dependencies` network. PostgreSQL remains the cloud
+fact source; Redis remains optional live state and is not selected by startup.
+
+#### Acceptance
+
+- `docker/Dockerfile` uses the repository lockfile, installs all workspace
+  runtime packages once, and exposes separate `migrate`, `api` and `worker`
+  targets under a non-root runtime user.
+- `docker/compose.application.yml` defines only `zebra-migrate`, `zebra-api`
+  and `zebra-worker`; PostgreSQL, Redis, MinIO and Mem0 are not redeclared and
+  the dependency network is external by name.
+- Migration runs before API/Worker, retries only transient PostgreSQL readiness,
+  and fails on migration checksum or configuration errors.
+- API and Worker receive the complete explicit cloud profile bundle and cannot
+  fall back to SQLite; API health and Worker process smoke checks are covered by
+  an isolated Compose runner with deterministic cleanup.
+- The overlay does not wire `RedisLiveEventFanout` into API/Worker, does not
+  add a runtime selector, and does not unlock aggregate fencing or production
+  rollout.
+
+#### Initial validation
+
+- Application Compose renders with exactly the three main services, forces
+  `ZEBRA_PROFILE=cloud`, and declares the dependency network external; missing
+  cloud variables fail during Compose interpolation.
+- The migration wrapper passes Ruff/Mypy and applies all `15` known migrations
+  against isolated PostgreSQL `17.5-alpine3.21`; resources are cleaned up.
+- The isolated dependency fixture reaches healthy PostgreSQL and MinIO and
+  cleans its network. The image build/smoke runner remains pending while the
+  Docker Hub Python base layer is being pulled; no application container has
+  been claimed healthy from that incomplete build.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 

@@ -1,16 +1,18 @@
 # Zebra Docker Compose
 
-`docker/` separates three lifecycles. Only the first two exist today.
+`docker/` separates three lifecycles. The application overlay now exists as a
+separate main-container lifecycle; it never owns the dependency containers.
 
 | Layer | File | Status |
 |---|---|---|
 | Database/object dependencies | `compose.dependencies.yml` | Implemented by `CLOUD-COMPOSE-INFRA-01` |
 | Optional Mem0 auxiliary service | `compose.mem0.yml` | Boot-smoke only; no Zebra adapter yet |
-| Zebra API/Worker/migrations | `compose.application.yml` | Intentionally absent; locked as `CLOUD-COMPOSE-APP-01` |
+| Zebra API/Worker/migrations | `compose.application.yml` | `CLOUD-COMPOSE-APP-01`; joins the external dependency network |
 
-The application overlay stays absent until the PostgreSQL, object-storage and
-live-Redis adapters exist. Starting API/Worker containers now would still use
-SQLite and would misrepresent the cloud dependency stack as authoritative.
+The application overlay requires the PostgreSQL, object-storage and live-state
+contracts already recorded by the cloud mainline. It uses the explicit cloud
+profile and fails closed on missing configuration; Redis is not yet selected by
+API/Worker startup.
 
 ## Service and authority boundaries
 
@@ -49,6 +51,43 @@ network so a future application project can join without owning their lifecycle.
 `minio-init` also enables bucket versioning. Artifact deletion is bound to the exact
 opaque object version returned by the S3-compatible provider; ETag is never treated
 as Zebra's SHA-256 authority.
+
+## Start the application containers
+
+The application overlay is intentionally a separate Compose project. Start the
+base dependency stack first, then copy the application example and align its
+PostgreSQL and MinIO credentials with `docker/.env`:
+
+```bash
+cp docker/.env.application.example docker/.env.application
+docker compose \
+  --env-file docker/.env.application \
+  -f docker/compose.application.yml \
+  config --quiet
+docker compose \
+  --env-file docker/.env.application \
+  -f docker/compose.application.yml \
+  up -d --build --wait zebra-migrate zebra-api zebra-worker
+curl --fail http://127.0.0.1:18080/health
+```
+
+`zebra-migrate` is the one-shot migration container; API and Worker start only
+after it exits successfully. The overlay joins the external
+`zebra-dependencies` network and does not create PostgreSQL, Redis, MinIO or
+Mem0 containers. Stop only the application project with:
+
+```bash
+docker compose \
+  --env-file docker/.env.application \
+  -f docker/compose.application.yml \
+  down --remove-orphans
+```
+
+The dependency stack and its volumes remain intact.
+
+The application image uses the explicit `cloud` profile and requires the full
+PostgreSQL, namespace, signing-key and S3 configuration. Redis live fan-out is
+not selected by API/Worker startup in this slice.
 
 ## Start the optional Mem0 boot smoke
 

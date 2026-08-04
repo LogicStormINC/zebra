@@ -1,0 +1,94 @@
+name: zebra-application
+
+x-zebra-cloud-environment: &zebra-cloud-environment
+  ZEBRA_PROFILE: cloud
+  ZEBRA_DATABASE_URL: ${ZEBRA_DATABASE_URL:?set ZEBRA_DATABASE_URL}
+  ZEBRA_DEPLOYMENT_NAMESPACE: ${ZEBRA_DEPLOYMENT_NAMESPACE:?set ZEBRA_DEPLOYMENT_NAMESPACE}
+  ZEBRA_AUTHORITY_ISSUER: ${ZEBRA_AUTHORITY_ISSUER:?set ZEBRA_AUTHORITY_ISSUER}
+  ZEBRA_HISTORY_SCOPE_NAMESPACE: ${ZEBRA_HISTORY_SCOPE_NAMESPACE:?set ZEBRA_HISTORY_SCOPE_NAMESPACE}
+  ZEBRA_CONTINUATION_SCOPE_NAMESPACE: ${ZEBRA_CONTINUATION_SCOPE_NAMESPACE:?set ZEBRA_CONTINUATION_SCOPE_NAMESPACE}
+  ZEBRA_MEMORY_CURSOR_SIGNING_KEY: ${ZEBRA_MEMORY_CURSOR_SIGNING_KEY:?set ZEBRA_MEMORY_CURSOR_SIGNING_KEY}
+  ZEBRA_S3_ENDPOINT: ${ZEBRA_S3_ENDPOINT:?set ZEBRA_S3_ENDPOINT}
+  ZEBRA_S3_BUCKET: ${ZEBRA_S3_BUCKET:?set ZEBRA_S3_BUCKET}
+  ZEBRA_S3_ACCESS_KEY: ${ZEBRA_S3_ACCESS_KEY:?set ZEBRA_S3_ACCESS_KEY}
+  ZEBRA_S3_SECRET_KEY: ${ZEBRA_S3_SECRET_KEY:?set ZEBRA_S3_SECRET_KEY}
+  ZEBRA_S3_REGION: ${ZEBRA_S3_REGION:-us-east-1}
+  ZEBRA_S3_KEY_PREFIX: ${ZEBRA_S3_KEY_PREFIX:-zebra/artifacts/v1}
+  ZEBRA_API_AUTH_TOKEN: ${ZEBRA_API_AUTH_TOKEN:-}
+
+services:
+  zebra-migrate:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: migrate
+    environment: *zebra-cloud-environment
+    restart: "no"
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    networks: [dependencies]
+
+  zebra-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: api
+    environment: *zebra-cloud-environment
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    depends_on:
+      zebra-migrate:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${ZEBRA_API_PORT:-18080}:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+    networks: [dependencies]
+
+  zebra-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: worker
+    environment:
+      <<: *zebra-cloud-environment
+      ZEBRA_WORKER_ID: ${ZEBRA_WORKER_ID:-zebra-cloud-worker}
+    restart: unless-stopped
+    command:
+      - --worker-id
+      - ${ZEBRA_WORKER_ID:-zebra-cloud-worker}
+      - --idle-sleep-seconds
+      - "${ZEBRA_WORKER_IDLE_SLEEP_SECONDS:-1.0}"
+    init: true
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    depends_on:
+      zebra-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD-SHELL, kill -0 1]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks: [dependencies]
+
+networks:
+  dependencies:
+    name: ${ZEBRA_APPLICATION_NETWORK:-zebra-dependencies}
+    external: true
