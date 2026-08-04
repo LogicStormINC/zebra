@@ -8,9 +8,10 @@
 - Snapshot date: `2026-08-04`
 - Cloud mainline status is recorded in
   [Zebra Cloud 主线当前状态与后续工作](./docs/Zebra%20Cloud%20主线当前状态与后续工作.md):
-  PostgreSQL adapters and isolated Compose evidence are substantially complete, but
-  API/Worker PostgreSQL composition, application Compose, Redis live fan-out and the
-  CopilotKit/Trench production slice remain gated. `CLOUD-CONTROL-PLANE-PG-01`
+  PostgreSQL adapters, API/Worker PostgreSQL composition, application Compose and
+  isolated Redis live fan-out evidence are substantially complete, but migration/
+  backup/recovery/rollback, multi-Worker drills and the CopilotKit/Trench production
+  slice remain gated. `CLOUD-CONTROL-PLANE-PG-01`
   implementation and focused validation are complete on the isolated branch;
   sidebar closeout is approved and the task is recorded as `Done`; its API/Worker
   mapping remains a later gate. `CLOUD-DELIVERY-TXN-PG-01` is also merged to the
@@ -21,10 +22,9 @@
   while the explicit profile contract and dependency registry are incomplete.
   The follow-up contract review returned `CONTRACT-ACCEPTED` and closed
   `CLOUD-PROFILE-COMPOSITION-CON-01` as `Done`; its `CLOUD-LIVE-01` dependency was
-  removed because the contract has no live-runtime scope. `CLOUD-COMPOSE-APP-01`
-  remains implementation-`Blocked` pending a separately authorized slice. Local
-  SQLite remains the default and cloud must fail closed rather than fall back to
-  SQLite.
+  removed because the contract has no live-runtime scope. `CLOUD-API-WORKER-PG-01`
+  and `CLOUD-COMPOSE-APP-01` are now `Done` on the cloud mainline. Local SQLite
+  remains the default and cloud must fail closed rather than fall back to SQLite.
 - `CLOUD-API-WORKER-PG-01` completed its authorized implementation slice and is
   now `Done` after independent Review and fast-forward merge of `d9fd0419` into
   `zebra-cloud-trench`. Focused API/HTTP/Worker and real PostgreSQL Compose
@@ -36,7 +36,7 @@
   now `Done` on its governance worktree. Its Store-level semantic gap was closed
   by `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`, which is also `Done` after sidebar
   `CLOSEOUT-OK`, three zero-write regressions and a real PostgreSQL `18/18`
-  focused matrix. The parent `CLOUD-AGG-FENCE-01` remains `Locked`; the
+  focused matrix. The parent `CLOUD-AGG-FENCE-01` remains in `Review`; the
   Model/Tool revision successor is now closed as `Done`.
 - `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` is now `Done` with audit result
   `PASS`; its reserve/abort successor is `Done`, and the dispatch successor
@@ -73,39 +73,39 @@
   Handoff/dispatch regression passes `24/24`. The repository-owned
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` runner is also `Done` at
   `49a8c026`, passing `36/36` on PostgreSQL `17.5-alpine3.21` with deterministic
-  cleanup. The parent `CLOUD-AGG-FENCE-01` remains `Locked` and no Runtime or
+  cleanup. The parent `CLOUD-AGG-FENCE-01` remains in `Review` and no Runtime or
   application Compose activation is implied.
 - `CLOUD-AGG-FENCE-MODEL-TOOL-01` is `Done` at implementation commit
   `31347989`. The PostgreSQL adapter now binds a Worker Model/Tool projection
   Event to `expected_stream_revision` and the current stream; its dedicated
   runner passes `8/8` with `ZEBRA_MODEL_TOOL_POSTGRES_TEST_RESULT=PASS`, while
   the existing Control Plane runner passes `11/11`. Both runners clean their
-  resources. The parent gate remains `Locked` and no runtime activation is
+  resources. The parent gate remains in `Review` and no runtime activation is
   implied.
 - `CLOUD-AGG-FENCE-PROVIDER-01` is `Done` at implementation commit
   `816a1ae0`. `delete_for_worker` now binds the current LeaseFence and
   `expected_stream_revision` to the locked Session stream before soft-delete;
   its reproducible PostgreSQL 17.5 runner passes `4/4` with
   `ZEBRA_PROVIDER_CONTINUATION_POSTGRES_TEST_RESULT=PASS` and cleans all
-  resources. The parent `CLOUD-AGG-FENCE-01` remains `Locked`.
+  resources. The parent `CLOUD-AGG-FENCE-01` remains in `Review`.
 - `CLOUD-AGG-FENCE-ARTIFACT-01` is `Done` as an evidence-only conformance
   slice. The repository-owned PostgreSQL 17.5 runner passes `13/13` with
   `ZEBRA_ARTIFACT_PAYLOAD_POSTGRES_TEST_RESULT=PASS` and cleans all resources;
   the existing v9 transitions already use the shared namespace, LeaseFence,
   stream CAS and lifecycle revision guards. No adapter or migration changed;
-  the parent gate remains `Locked`.
+  the parent gate remains in `Review`.
 - `CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01` is `Done` as an evidence-only
   conformance slice. Its repository-owned PostgreSQL 17.5 runner passes `7/7`
   with `ZEBRA_EFFECT_PAYLOAD_POSTGRES_TEST_RESULT=PASS` and cleans all
   resources; existing payload-aware Effect transitions bind Worker authority
   and atomically coordinate Event, Artifact and outbox state. No adapter or
-  migration changed; the parent gate remains `Locked`.
+  migration changed; the parent gate remains in `Review`.
 - `CLOUD-AGG-FENCE-DELIVERY-01` is `Done` as Delivery boundary evidence.
   Delivery is intentionally an API command claim/receipt lane, not a Worker
   Lease aggregate; its corrected PostgreSQL 17.5 runner passes `12/12` with
   `ZEBRA_DELIVERY_TRANSACTION_POSTGRES_TEST_RESULT=PASS` and cleans all
-  resources. No adapter or runtime wiring changed; the parent gate remains
-  `Locked`.
+  resources. No adapter or runtime wiring changed; the parent gate remains in
+  `Review`.
 - `CLOUD-AGG-FENCE-REVIEW-01` is `Done` with result `PASS`. All registered
   path-bounded aggregate evidence is green: Context `18/18`, Handoff
   auth/dispatch `15/15` and `14/14`, Workspace/Task `36/36`, Model/Tool `8/8`,

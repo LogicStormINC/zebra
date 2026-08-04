@@ -2,14 +2,14 @@
 
 > 快照日期：2026-08-04
 > 分支：`zebra-cloud-trench`
-> 当前基线：`a2faf0b4`
+> 当前基线：`62e2de59`
 
 ## 结论
 
-Zebra Cloud 已完成 PostgreSQL 云端事实存储、API/Worker 存储组合和主要聚合能力，
-但尚未完成可部署的应用 Compose、在线事件 fan-out 和 Trench 业务接入。当前状态是
-“API/Worker 已能按显式 cloud profile 选择 PostgreSQL，主容器组装、运行时业务选择
-和 Trench 接入尚未完成”。
+Zebra Cloud 已完成 PostgreSQL 云端事实存储、API/Worker 存储组合、应用 Compose
+和主要聚合能力；迁移/备份/恢复/回滚、多 Worker 故障演练以及 Trench 业务接入仍未
+完成。当前状态是“API/Worker 和主容器组装已能按显式 cloud profile 使用 PostgreSQL，
+Runtime 业务选择、恢复门禁和 Trench 接入尚未完成”。
 
 任务注册表是当前状态的权威来源；本文件是面向项目协作的汇总，不替代
 [`docs/AGENT_TASKS.md`](./AGENT_TASKS.md) 中的任务卡、Owner、Branch 和依赖。
@@ -84,8 +84,8 @@ fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 
 该任务的 focused API/HTTP/Worker 回归为 `41 passed`，control-plane PostgreSQL
 17.5 Compose runner 为 `11 passed`，结果标记为
 `ZEBRA_CONTROL_PLANE_POSTGRES_TEST_RESULT=PASS` 且资源已清理。此项只完成存储组合，
-不等于应用 Compose、Runtime 业务选择或在线事件路由已完成；现有
-`CLOUD-COMPOSE-APP-01` 仍为实现 `Blocked`，不能被隐式激活。
+不等于 Runtime 业务选择或在线事件路由已完成；`CLOUD-COMPOSE-APP-01` 已由独立
+镜像/Compose smoke 证据关闭为 `Done`，不因该任务隐式激活 Runtime 或 Redis 路由。
 
 此前完成的云端主线任务是
 `CLOUD-DELIVERY-TXN-PG-01`。其实施边界见
@@ -307,9 +307,11 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
    `CLOUD-AGG-FENCE-01` 从 `Locked` 转为 `Review`，不授权实现或 runtime。
 15. [x] 完成 `CLOUD-LIVE-01` 的 Redis live fan-out Port、Adapter 和隔离
    Compose 证据并合并到主线。
-16. [进行中] 完成 `CLOUD-COMPOSE-APP-01` 的独立 migration/API/Worker
-   Compose overlay 和宿主 smoke 证据；不接入 Redis live routing。
-17. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
+16. [x] 完成 `CLOUD-COMPOSE-APP-01` 的独立 migration/API/Worker Compose overlay
+   和宿主 smoke 证据；默认 mirror runner 返回
+   `ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`，不接入 Redis live routing。
+17. 完成 `CLOUD-REC-01` 迁移、备份、恢复、回滚和多 Worker E2E 门禁；该门禁
+   仍需 aggregate parent Review 收口后单独登记/激活。
 18. 再激活 Host/AG-UI/Trench read-only vertical slice。
 19. 之后才进入 Frontend、Analysis、Writeback 和 GA。
 
@@ -319,10 +321,11 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 closeout：Owner、Branch、Worktree、Owned paths 和 v13/v15 迁移所有权均已登记。
 当前 `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` 与
 `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` 均已完成；
-`CLOUD-AGG-FENCE-01` 的 path-bounded evidence 已全部闭合，当前可进入 `Review`；
-在维护者批准前不授权实现、successor 或 runtime/application Compose 激活。
+`CLOUD-AGG-FENCE-01` 的 path-bounded evidence 已全部闭合，当前处于 `Review`；
+在维护者批准前不授权其 successor 或 Runtime 选择。`CLOUD-COMPOSE-APP-01` 已
+完成并关闭为 `Done`，但该任务不改变 aggregate parent 或 Runtime 门禁。
 `CLOUD-CONTROL-PLANE-PG-01` 已在所有 aggregate PostgreSQL adapter/read-composition
 依赖闭合后由侧边栏批准激活，并在实现、Compose 验证和 closeout 后登记为 `Done`；
 其 v14 shared records 与 cloud-only composition 已交付。其余
-SQLite Registry、Runtime backend selection、Provider HTTP、Desktop、Redis live、
-Mem0 consumer 和应用 Compose 仍保持隔离。
+SQLite Registry、Runtime backend selection、Provider HTTP、Desktop、Mem0 consumer
+以及迁移/恢复演练仍保持隔离；Redis live adapter 已完成但未接入 API/Worker 启动。
