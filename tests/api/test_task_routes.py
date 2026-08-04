@@ -204,6 +204,7 @@ def test_task_read_returns_artifact_output_contract_of_latest_final(
             payload={
                 "assistant_message": "typed final",
                 "tool_call_count": 0,
+                "response_stage": "final",
                 "output_contract": {
                     "contract_id": "finos.daily-trading-journal",
                     "contract_version": "1",
@@ -225,6 +226,11 @@ def test_task_read_returns_artifact_output_contract_of_latest_final(
     )
     for event in events:
         event_store.append(event)
+    from agent_core.domain.sessions import SessionStatus
+
+    SQLiteProjectionStore(database).save_session(
+        root.model_copy(update={"status": SessionStatus.COMPLETED})
+    )
 
     read = adapter.handle(RouteRequest("GET", f"/tasks/{task_id}"))
     assert read.status_code == 200
