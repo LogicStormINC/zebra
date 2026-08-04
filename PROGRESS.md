@@ -48,7 +48,11 @@
   sidebar closeout returned `CLOSEOUT-OK` and moved it to `Done`. The dispatch
   revision/replay/race/namespace gap remains locked. The successor's real
   PostgreSQL runner passes `15/15`; the parent `CLOUD-AGG-FENCE-01` remains
-  `Locked` and `implementation_authorized` remains false.
+  `Locked` and `implementation_authorized` remains false. After the required
+  fast-forward integration, sidebar ChatGPT approved only
+  `CLOUD-AGG-FENCE-DISPATCH-01` as `In Progress` from base `4a10883a`; its
+  dispatch-only claim/ACK implementation and PostgreSQL evidence are now the
+  active work, with no Runtime or application Compose activation.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core

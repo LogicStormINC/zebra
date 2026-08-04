@@ -6,8 +6,9 @@
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
 > `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
 > accepted and closed. The active cloud-mainline slice is the governance-only
-> `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` audit; its implementation
-> predecessors are closed as `Done`, while the aggregate parent remains locked.
+> `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` audit; its Handoff authority
+> predecessor is closed as `Done`, its dispatch successor is now `In Progress`,
+> while the aggregate parent remains locked.
 > Local SQLite Registry work remains deferred. ACP and optional code intelligence
 > remain locked.
 
@@ -123,8 +124,8 @@ does not authorize production code, migrations or activation of its successor.
   audit of Handoff and dispatch mutation authority. Sidebar ChatGPT returned
   `CLOSEOUT-OK` for `Planning -> Review` with audit result `BLOCK-GAP`; production
   code, tests, migrations, Compose and runtime selection remain forbidden. The
-  parent `CLOUD-AGG-FENCE-01` remains `Locked`, and its two scoped successors
-  remain unactivated until their own authority/evidence gates are approved.
+  parent `CLOUD-AGG-FENCE-01` remains `Locked`; AUTH-01 is `Done` and the
+  separately approved DISPATCH-01 successor is now `In Progress`.
 
 ## Context Continuity And Governed Memory Board
 
@@ -3092,9 +3093,9 @@ external membership.
   namespace evidence and reproducible PostgreSQL runner are recorded in the
   audit document.
 - Required follow-up cards: the minimal Handoff reserve/abort authority card is
-  now separately activated and is recorded below as `Review`; the dispatch
-  stream/pointer/replay fencing card remains `Locked` and unactivated. Neither
-  card unlocks the parent gate or selects a runtime profile.
+  `Done`; the dispatch stream/pointer/replay fencing card is separately
+  activated below as `In Progress`. Neither card unlocks the parent gate or
+  selects a runtime profile.
 - Explicit non-goals: no changes to `packages/agent-core/`,
   `packages/agent-context/`, `packages/agent-storage/`, `apps/worker/`,
   `apps/api/`, `tests/`, `evals/`, migrations, Compose runners, Runtime,
@@ -3150,17 +3151,24 @@ external membership.
 
 ### CLOUD-AGG-FENCE-DISPATCH-01 - Dispatch Stream Pointer And Replay Fencing
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `codex`
 - Depends on: `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` `Review` closeout,
-  `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-HANDOFF-PG-01` and a new sidebar
-  activation decision. This card is registered only; it is not activated.
-- Branch: `TBD after explicit activation`
-- Worktree: `TBD after explicit activation`
-- Owned paths after activation: the Core Handoff dispatch Port/receipt seam;
-  PostgreSQL dispatch claim/ACK adapter and only the required schema-compatible
-  support; focused dispatch PostgreSQL tests and its dedicated Compose runner;
-  governance records. Handoff reservation authority remains owned by
+  `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-HANDOFF-PG-01`, accepted `Done`
+  `CLOUD-AGG-FENCE-HANDOFF-AUTH-01`, and a new sidebar activation decision.
+- Branch: `codex/cloud-agg-fence-dispatch-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-dispatch-01/zebra-agent`
+- Base: `zebra-cloud-trench@4a10883a`
+- Activation: sidebar ChatGPT returned `IMPLEMENTATION-ACTIVATE-OK` and
+  approved `Locked -> In Progress`; only this successor is active. The parent
+  gate remains `Locked`.
+- Owned paths after activation: `packages/agent-core/src/agent_core/handoff/`
+  dispatch files and the minimum Handoff types needed for operation/revision/
+  token contracts; `packages/agent-storage/src/agent_storage/postgres/`
+  dispatch files and only the existing claim/ACK adapter seam; focused dispatch
+  tests under `packages/agent-storage/tests/` and `tests/`; the dedicated
+  `tests/compose/session_handoff_dispatch/` runner; and governance records.
+  Handoff reservation authority remains owned by
   `CLOUD-AGG-FENCE-HANDOFF-AUTH-01`.
 - Goal: bind claim and ACK to Handoff operation identity, expected stream and
   active-pointer revision, full LeaseFence and claim token, with replay-safe and
@@ -3168,9 +3176,10 @@ external membership.
 - Acceptance: two-worker race has one winner; stale fence/token/expiry/stream/
   pointer and cross-namespace attempts write zero rows; authorized replay returns
   an equivalent result; PostgreSQL evidence includes exact commands and counts.
-- Explicit non-goals: no reserve/abort authority redesign, Runtime/API/Worker
-  profile selection, SQLite, Redis, Mem0, Provider HTTP, CopilotKit/Trench or
-  parent-gate unlock.
+- Explicit non-goals: no reserve/abort authority redesign, migration/DDL,
+  Runtime/API/Worker profile selection, application Compose, SQLite, Redis,
+  Mem0, Provider HTTP, CopilotKit/Trench, production rollout or parent-gate
+  unlock.
 
 ### CLOUD-CONTROL-PLANE-PG-01 - Complete PostgreSQL Store Composition
 

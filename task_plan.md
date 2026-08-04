@@ -149,6 +149,36 @@
   `implementation_authorized: false`. No parent-gate or runtime authorization is
   implied.
 
+## CLOUD-AGG-FENCE-DISPATCH-01 - Dispatch Stream Pointer And Replay Fencing (In Progress)
+
+1. `completed` - Integrate AUTH-01 into `zebra-cloud-trench` with a fast-forward
+   merge, preserve the root `AGENTS.md`, and verify the merged focused regression.
+2. `completed` - Obtain the post-merge sidebar activation decision. It returned
+   `IMPLEMENTATION-ACTIVATE-OK` for only this card with base `4a10883a`; keep
+   `CLOUD-AGG-FENCE-01` locked and do not activate another successor.
+3. `in_progress` - Trace the existing dispatch claim/ACK Port, PostgreSQL adapter,
+   pointer and audit transaction seams; record the smallest owned implementation
+   paths before changing code.
+4. `pending` - Bind claim and ACK to operation, stream/pointer revisions,
+   WorkerMutationAuthority, LeaseFence and claim token with fail-closed zero-write
+   behavior.
+5. `pending` - Add replay, race, namespace and rollback regressions plus the
+   dedicated PostgreSQL Compose runner and explicit PASS marker.
+6. `pending` - Run AUTH regressions and all changed-path static/Compose checks,
+   update evidence, request independent implementation Review and do not unlock
+   the parent gate.
+
+### Boundary
+
+- Owned paths are limited to the existing Core Handoff dispatch seam, the existing
+  PostgreSQL dispatch claim/ACK seam, focused dispatch tests, the dedicated runner,
+  this card and governance records.
+- No reserve/abort redesign, migration/DDL, API/Worker profile selection, Runtime,
+  application Compose, SQLite, Redis, Mem0, Provider HTTP, CopilotKit/Trench or
+  production rollout is authorized.
+- The parent `CLOUD-AGG-FENCE-01` remains `Locked`; this card does not close the
+  audit card automatically and still needs independent Review and closeout.
+
 ## CLOUD-AGG-FENCE-CTX-SEMANTIC-01 - Administrative Context Event Semantics (Done)
 
 1. `completed` - Activate the bounded successor on
