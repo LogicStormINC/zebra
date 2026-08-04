@@ -4,6 +4,7 @@ from typing import Protocol
 from agent_core.domain.agent_tasks import AgentTask, ExecutionSegment, RolloverReason
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
+from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,3 +37,17 @@ class AgentTaskPort(Protocol):
     ) -> AgentTask: ...
 
     def read_events(self, task_id: TaskId, after_sequence: int) -> tuple[TaskEvent, ...]: ...
+
+
+class FencedAgentTaskStorePort(AgentTaskPort, Protocol):
+    """Cloud Task extension for Worker-owned Segment rollover."""
+
+    def attach_segment_for_worker(
+        self,
+        task_id: TaskId,
+        segment_id: SessionId,
+        *,
+        predecessor_id: SessionId,
+        reason: RolloverReason,
+        authority: WorkerMutationAuthority,
+    ) -> AgentTask: ...

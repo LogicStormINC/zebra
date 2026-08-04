@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -14,14 +14,18 @@ from agent_core.application.session_projection import rebuild_session
 from agent_core.domain.agent_tasks import RolloverReason
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
+from agent_core.domain.leases import LeaseLostError
 from agent_core.domain.tool_profiles import ToolProfile
+from agent_core.ports import WorkerMutationAuthority
 from agent_storage import (
     PostgresAgentTaskConflictError,
     PostgresAgentTaskStore,
     PostgresEventStore,
+    PostgresLeaseStore,
     PostgresProjectionStore,
     apply_postgres_migrations,
     attach_segment_in_transaction,
+    bootstrap_control_plane_epoch,
 )
 
 
@@ -37,6 +41,7 @@ def postgres_dsn() -> str:
 @pytest.fixture
 def task_namespace(postgres_dsn: str) -> Generator[str]:
     namespace = f"task-{uuid4()}"
+    bootstrap_control_plane_epoch(postgres_dsn, deployment_namespace=namespace)
     yield namespace
     _delete_namespace(postgres_dsn, namespace)
 
@@ -62,6 +67,28 @@ def test_reads_do_not_implicitly_build_task_index(
             "SELECT count(*) FROM agent_tasks WHERE deployment_namespace = %s",
             (task_namespace,),
         ).fetchone() == (0,)
+
+
+def test_direct_postgres_rollover_requires_worker_authority(
+    postgres_dsn: str,
+    task_namespace: str,
+    tmp_path: Path,
+) -> None:
+    root = _seed_session(postgres_dsn, task_namespace, tmp_path / "root", "Root")
+    child = _seed_session(postgres_dsn, task_namespace, tmp_path / "child", "Child")
+    store = _store(postgres_dsn, task_namespace)
+    task = store.ensure_for_session(root)
+
+    with pytest.raises(PostgresAgentTaskConflictError, match="WorkerMutationAuthority"):
+        store.attach_segment(
+            task.task_id,
+            child,
+            predecessor_id=root,
+            reason=RolloverReason.RECOVERY,
+        )
+
+    assert store.active_segment(task.task_id) == root
+    assert [item.session_id for item in store.segments(task.task_id)] == [root]
 
 
 def test_explicit_rebuild_is_idempotent_and_task_event_order_is_unique(
@@ -110,14 +137,16 @@ def test_concurrent_rollover_has_one_winner_and_indexes_child_events(
         _seed_session(postgres_dsn, task_namespace, tmp_path / "b", "B"),
     )
     task = _store(postgres_dsn, task_namespace).ensure_for_session(root)
+    authority = _worker_authority(postgres_dsn, task_namespace, root)
 
     def rollover(child: SessionId) -> object:
         try:
-            return _store(postgres_dsn, task_namespace).attach_segment(
+            return _store(postgres_dsn, task_namespace).attach_segment_for_worker(
                 task.task_id,
                 child,
                 predecessor_id=root,
                 reason=RolloverReason.TERMINAL_FOLLOW_UP,
+                authority=authority,
             )
         except PostgresAgentTaskConflictError as exc:
             return exc
@@ -148,11 +177,12 @@ def test_rebuild_removes_noncanonical_rollover_and_reindexes_from_zero(
     )
     store = _store(postgres_dsn, task_namespace)
     task = store.ensure_for_session(root)
-    store.attach_segment(
+    store.attach_segment_for_worker(
         task.task_id,
         stale,
         predecessor_id=root,
         reason=RolloverReason.AGENT_HINT,
+        authority=_worker_authority(postgres_dsn, task_namespace, root),
     )
     _append_handoff_events(postgres_dsn, task_namespace, root=root, child=canonical)
 
@@ -243,16 +273,18 @@ def test_rebuild_and_rollover_share_one_task_transaction_lock(
     child = _seed_session(postgres_dsn, task_namespace, tmp_path / "child", "Child")
     store = _store(postgres_dsn, task_namespace)
     task = store.ensure_for_session(root)
+    authority = _worker_authority(postgres_dsn, task_namespace, root)
 
     def rebuild() -> object:
         return _store(postgres_dsn, task_namespace).ensure_for_session(root)
 
     def rollover() -> object:
-        return _store(postgres_dsn, task_namespace).attach_segment(
+        return _store(postgres_dsn, task_namespace).attach_segment_for_worker(
             task.task_id,
             child,
             predecessor_id=root,
             reason=RolloverReason.RECOVERY,
+            authority=authority,
         )
 
     with ThreadPoolExecutor(max_workers=2) as executor:
@@ -264,6 +296,49 @@ def test_rebuild_and_rollover_share_one_task_transaction_lock(
     assert store.active_segment(task.task_id) == segments[-1].session_id
     events = store.read_events(task.task_id, -1)
     assert [item.task_sequence for item in events] == list(range(len(events)))
+
+
+@pytest.mark.parametrize("invalid", ["fence", "namespace", "session", "stream"])
+def test_worker_rollover_rejects_invalid_authority_without_writes(
+    postgres_dsn: str,
+    task_namespace: str,
+    tmp_path: Path,
+    invalid: str,
+) -> None:
+    root = _seed_session(postgres_dsn, task_namespace, tmp_path / "root", "Root")
+    child = _seed_session(postgres_dsn, task_namespace, tmp_path / "child", "Child")
+    store = _store(postgres_dsn, task_namespace)
+    task = store.ensure_for_session(root)
+    authority = _worker_authority(postgres_dsn, task_namespace, root)
+    if invalid == "fence":
+        authority = authority.model_copy(
+            update={
+                "lease_fence": authority.lease_fence.model_copy(
+                    update={"fencing_token": authority.lease_fence.fencing_token + 1}
+                )
+            }
+        )
+    elif invalid == "namespace":
+        authority = authority.model_copy(update={"deployment_namespace": "other-namespace"})
+    elif invalid == "session":
+        authority = authority.model_copy(update={"session_id": child})
+    else:
+        authority = authority.model_copy(
+            update={"expected_stream_revision": authority.expected_stream_revision + 1}
+        )
+
+    expected_error = LeaseLostError if invalid != "stream" else PostgresAgentTaskConflictError
+    with pytest.raises(expected_error):
+        store.attach_segment_for_worker(
+            task.task_id,
+            child,
+            predecessor_id=root,
+            reason=RolloverReason.RECOVERY,
+            authority=authority,
+        )
+
+    assert store.active_segment(task.task_id) == root
+    assert [item.session_id for item in store.segments(task.task_id)] == [root]
 
 
 def test_connection_scoped_rollover_rolls_back_with_caller_transaction(
@@ -355,6 +430,36 @@ def _store(dsn: str, namespace: str) -> PostgresAgentTaskStore:
     return PostgresAgentTaskStore(dsn, deployment_namespace=namespace)
 
 
+def _worker_authority(
+    dsn: str,
+    namespace: str,
+    session_id: SessionId,
+) -> WorkerMutationAuthority:
+    lease = PostgresLeaseStore(
+        dsn,
+        deployment_namespace=namespace,
+    ).acquire(
+        session_id,
+        owner_instance_id=f"task-test-{uuid4()}",
+        ttl=timedelta(minutes=5),
+    )
+    with psycopg.connect(dsn) as connection:
+        stream = connection.execute(
+            """
+            SELECT current_version FROM session_streams
+            WHERE deployment_namespace = %s AND session_id = %s
+            """,
+            (namespace, session_id),
+        ).fetchone()
+    assert stream is not None
+    return WorkerMutationAuthority(
+        deployment_namespace=namespace,
+        session_id=session_id,
+        lease_fence=lease.fence,
+        expected_stream_revision=stream[0],
+    )
+
+
 def _append_handoff_events(
     dsn: str,
     namespace: str,
@@ -420,6 +525,7 @@ def _append_handoff_events(
 def _delete_namespace(dsn: str, namespace: str) -> None:
     with psycopg.connect(dsn) as connection:
         for table in (
+            "worker_leases",
             "task_event_index",
             "execution_segments",
             "agent_tasks",

@@ -8,10 +8,13 @@ from agent_core.domain.agent_tasks import (
     RolloverReason,
 )
 from agent_core.domain.identifiers import SessionId, TaskId
+from agent_core.domain.leases import LeaseLostError
 from agent_core.domain.sessions import SessionStatus
+from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 from psycopg import errors
 from psycopg.rows import dict_row
 
+from agent_storage.postgres.leases import assert_current_lease_fence
 from agent_storage.postgres.task_lineage import (
     PostgresAgentTaskConflictError,
     derive_lineage,
@@ -137,6 +140,60 @@ def attach_segment_in_transaction(
         with connection.cursor(row_factory=dict_row) as cursor:
             cursor.execute("SELECT 1")
             with connection.transaction():
+                _attach_segment(
+                    cursor,
+                    deployment_namespace,
+                    task_id=task_id,
+                    segment_id=segment_id,
+                    predecessor_id=predecessor_id,
+                    reason=reason,
+                )
+    except errors.UniqueViolation as exc:
+        raise PostgresAgentTaskConflictError("rollover conflicts with Task lineage") from exc
+
+
+def attach_segment_for_worker_in_transaction(
+    connection: Any,
+    deployment_namespace: str,
+    *,
+    task_id: TaskId,
+    segment_id: SessionId,
+    predecessor_id: SessionId,
+    reason: RolloverReason,
+    authority: WorkerMutationAuthority,
+) -> None:
+    """Attach a Segment only after the source Worker fence is valid."""
+    try:
+        with connection.cursor(row_factory=dict_row) as cursor:
+            cursor.execute("SELECT 1")
+            with connection.transaction():
+                if authority.deployment_namespace != deployment_namespace:
+                    raise LeaseLostError(
+                        "Task mutation authority belongs to another namespace"
+                    )
+                if authority.session_id != predecessor_id:
+                    raise LeaseLostError("Task mutation authority belongs to another Session")
+                assert_current_lease_fence(
+                    cursor,
+                    deployment_namespace,
+                    predecessor_id,
+                    authority.lease_fence,
+                )
+                stream = cursor.execute(
+                    """
+                    SELECT current_version FROM session_streams
+                    WHERE deployment_namespace = %s AND session_id = %s
+                    FOR SHARE
+                    """,
+                    (deployment_namespace, predecessor_id),
+                ).fetchone()
+                if (
+                    stream is None
+                    or stream["current_version"] != authority.expected_stream_revision
+                ):
+                    raise PostgresAgentTaskConflictError(
+                        "Task mutation authority does not match the current source stream"
+                    )
                 _attach_segment(
                     cursor,
                     deployment_namespace,

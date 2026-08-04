@@ -19,7 +19,7 @@ from agent_core.ports.agent_memory_gateway import (
     MemoryGatewayStatus,
 )
 from agent_core.ports.agent_registry import AgentRegistryPort
-from agent_core.ports.agent_tasks import AgentTaskPort, TaskEvent
+from agent_core.ports.agent_tasks import AgentTaskPort, FencedAgentTaskStorePort, TaskEvent
 from agent_core.ports.aggregate_mutation import (
     AdministrativeMutationCAS,
     WorkerMutationAuthority,
@@ -152,6 +152,7 @@ __all__ = [
     "ArtifactPayloadReadUnavailableError",
     "ArtifactObjectStorePort",
     "AgentTaskPort",
+    "FencedAgentTaskStorePort",
     "ArtifactStorePort",
     "ClockPort",
     "CloudArtifactPayloadStorePort",

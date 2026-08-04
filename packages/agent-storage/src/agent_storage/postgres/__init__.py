@@ -1,8 +1,10 @@
 """PostgreSQL adapters used by the explicit cloud control-plane composition."""
 
 from agent_storage.postgres.agent_tasks import (
+    FencedAgentTaskStorePort,
     PostgresAgentTaskConflictError,
     PostgresAgentTaskStore,
+    attach_segment_for_worker_in_transaction,
     attach_segment_in_transaction,
     rebuild_task_in_transaction,
 )
@@ -77,6 +79,7 @@ from agent_storage.postgres.workspaces import (
 )
 
 __all__ = [
+    "FencedAgentTaskStorePort",
     "PostgresAgentTaskConflictError",
     "PostgresAgentTaskStore",
     "PostgresCloudArtifactPayloadStore",
@@ -126,6 +129,7 @@ __all__ = [
     "PostgresProviderContinuationStore",
     "apply_postgres_migrations",
     "attach_segment_in_transaction",
+    "attach_segment_for_worker_in_transaction",
     "bootstrap_control_plane_epoch",
     "read_control_plane_epoch",
     "rebuild_task_in_transaction",

@@ -63,6 +63,7 @@ from agent_storage.memory_lookup import (
 )
 from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.postgres import (
+    FencedAgentTaskStorePort,
     GovernedMemoryImportError,
     GovernedMemoryImportQuarantine,
     GovernedMemoryImportReport,
@@ -110,6 +111,7 @@ from agent_storage.postgres import (
     PostgresWorkspaceProjectionConflictError,
     PostgresWorkspaceProjectionStore,
     apply_postgres_migrations,
+    attach_segment_for_worker_in_transaction,
     attach_segment_in_transaction,
     bootstrap_control_plane_epoch,
     import_sqlite_governed_memories,
@@ -184,6 +186,7 @@ __all__ = [
     "payload_for_artifact_uri",
     "PostgresAgentTaskConflictError",
     "PostgresAgentTaskStore",
+    "FencedAgentTaskStorePort",
     "PostgresCloudArtifactPayloadStore",
     "PostgresEventStore",
     "PostgresHandoffDispatchStore",
@@ -240,6 +243,7 @@ __all__ = [
     "compose_control_plane_stores",
     "apply_postgres_migrations",
     "attach_segment_in_transaction",
+    "attach_segment_for_worker_in_transaction",
     "bootstrap_control_plane_epoch",
     "read_control_plane_epoch",
     "rotate_control_plane_epoch",

@@ -3,11 +3,13 @@
 from agent_core.domain.agent_tasks import AgentTask, ExecutionSegment, RolloverReason
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId, TaskId
-from agent_core.ports.agent_tasks import AgentTaskPort, TaskEvent
+from agent_core.ports.agent_tasks import FencedAgentTaskStorePort, TaskEvent
+from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.task_index_transactions import (
     _require_task,
+    attach_segment_for_worker_in_transaction,
     attach_segment_in_transaction,
     get_task_in_transaction,
     rebuild_task_in_transaction,
@@ -21,7 +23,7 @@ from agent_storage.postgres.task_lineage import (
 )
 
 
-class PostgresAgentTaskStore(AgentTaskPort):
+class PostgresAgentTaskStore(FencedAgentTaskStorePort):
     """Explicitly rebuilt Task index whose read methods never write."""
 
     def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
@@ -136,14 +138,28 @@ class PostgresAgentTaskStore(AgentTaskPort):
         predecessor_id: SessionId,
         reason: RolloverReason,
     ) -> AgentTask:
+        raise PostgresAgentTaskConflictError(
+            "direct PostgreSQL Task rollover requires WorkerMutationAuthority"
+        )
+
+    def attach_segment_for_worker(
+        self,
+        task_id: TaskId,
+        segment_id: SessionId,
+        *,
+        predecessor_id: SessionId,
+        reason: RolloverReason,
+        authority: WorkerMutationAuthority,
+    ) -> AgentTask:
         with self._database.connect() as connection:
-            attach_segment_in_transaction(
+            attach_segment_for_worker_in_transaction(
                 connection,
                 self._database.deployment_namespace,
                 task_id=task_id,
                 segment_id=segment_id,
                 predecessor_id=predecessor_id,
                 reason=reason,
+                authority=authority,
             )
             return _require_task(connection, self._database.deployment_namespace, task_id)
 
@@ -169,8 +185,10 @@ class PostgresAgentTaskStore(AgentTaskPort):
         return tuple(task_event_from_row(task_id, row) for row in rows)
 
 __all__ = [
+    "FencedAgentTaskStorePort",
     "PostgresAgentTaskConflictError",
     "PostgresAgentTaskStore",
     "attach_segment_in_transaction",
+    "attach_segment_for_worker_in_transaction",
     "rebuild_task_in_transaction",
 ]
