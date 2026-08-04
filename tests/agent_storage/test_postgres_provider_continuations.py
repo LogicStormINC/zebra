@@ -176,6 +176,7 @@ def test_stale_fence_and_projection_conflict_leave_no_dangling_continuation(
 def test_scope_isolation_ttl_sha_and_worker_soft_delete(
     postgres_dsn: str,
     provider_namespace: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     seeded = _seed_session(postgres_dsn, provider_namespace)
     reference = _reference("ref-lifecycle")
@@ -190,7 +191,7 @@ def test_scope_isolation_ttl_sha_and_worker_soft_delete(
     )
     store = _store(postgres_dsn, provider_namespace)
     authority = _authority(provider_namespace, seeded.lease, seeded.session.current_sequence)
-    store.commit_worker_selection(
+    committed = store.commit_worker_selection(
         scope=seeded.scope,
         authority=authority,
         continuation_id="continuation-lifecycle",
@@ -258,10 +259,77 @@ def test_scope_isolation_ttl_sha_and_worker_soft_delete(
             idempotency_key="delete-denied",
         )
 
+    with pytest.raises(PostgresProviderContinuationConflictError, match="stream revision"):
+        store.delete_for_worker(
+            "continuation-lifecycle",
+            scope=seeded.scope,
+            authority=authority,
+            idempotency_key="delete-stale-revision",
+        )
+    with psycopg.connect(postgres_dsn) as connection:
+        row = connection.execute(
+            """
+            SELECT lifecycle_revision, deleted_at
+            FROM provider_continuation_artifacts
+            WHERE deployment_namespace = %s AND continuation_id = %s
+            """,
+            (provider_namespace, "continuation-lifecycle"),
+        ).fetchone()
+    assert row == (0, None)
+
+    with psycopg.connect(postgres_dsn) as connection:
+        connection.execute(
+            """
+            INSERT INTO provider_continuation_mutations (
+                deployment_namespace, continuation_id, operation_kind,
+                idempotency_key, request_hash, resulting_revision
+            ) VALUES (%s, %s, 'delete', %s, %s, 0)
+            """,
+            (
+                provider_namespace,
+                "continuation-lifecycle",
+                "delete-rollback",
+                "0" * 64,
+            ),
+        )
+    monkeypatch.setattr(
+        "agent_storage.postgres.provider_continuations.find_mutation",
+        lambda *_args: None,
+    )
+    with pytest.raises(psycopg.errors.UniqueViolation):
+        store.delete_for_worker(
+            "continuation-lifecycle",
+            scope=seeded.scope,
+            authority=_authority(
+                provider_namespace,
+                seeded.lease,
+                committed.event.sequence,
+            ),
+            idempotency_key="delete-rollback",
+            deleted_at=_at(4),
+        )
+    monkeypatch.undo()
+    with psycopg.connect(postgres_dsn) as connection:
+        row = connection.execute(
+            """
+            SELECT lifecycle_revision, deleted_at
+            FROM provider_continuation_artifacts
+            WHERE deployment_namespace = %s AND continuation_id = %s
+            """,
+            (provider_namespace, "continuation-lifecycle"),
+        ).fetchone()
+    assert row == (0, None)
+
+    delete_authority = _authority(
+        provider_namespace,
+        seeded.lease,
+        committed.event.sequence,
+    )
+
     deleted = store.delete_for_worker(
         "continuation-lifecycle",
         scope=seeded.scope,
-        authority=authority,
+        authority=delete_authority,
         idempotency_key="delete-lifecycle",
         deleted_at=_at(4),
     )
@@ -270,7 +338,7 @@ def test_scope_isolation_ttl_sha_and_worker_soft_delete(
     replayed = store.delete_for_worker(
         "continuation-lifecycle",
         scope=seeded.scope,
-        authority=authority,
+        authority=delete_authority,
         idempotency_key="delete-lifecycle",
         deleted_at=_at(5),
     )

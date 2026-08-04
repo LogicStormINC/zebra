@@ -296,6 +296,13 @@ class PostgresProviderContinuationStore(CloudProviderContinuationStorePort):
                 authority.session_id,
                 authority.lease_fence,
             )
+            lock_expected_stream(
+                connection,
+                self._database.deployment_namespace,
+                authority.session_id,
+                authority.expected_stream_revision,
+                PostgresProviderContinuationConflictError,
+            )
             row = connection.execute(
                 """
                 SELECT * FROM provider_continuation_artifacts
@@ -382,9 +389,7 @@ class PostgresProviderContinuationStore(CloudProviderContinuationStorePort):
         if not 1 <= limit <= 1000:
             raise ValueError("continuation sweep limit must be between 1 and 1000")
         effective_as_of = (as_of or datetime.now(UTC)).astimezone(UTC)
-        request_digest = sweep_hash(
-            scope, operation_id, operator_id, reason, limit, as_of
-        )
+        request_digest = sweep_hash(scope, operation_id, operator_id, reason, limit, as_of)
         namespace = self._database.deployment_namespace
         with self._database.connect() as connection:
             assert_management_boundary(

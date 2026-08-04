@@ -19,7 +19,8 @@ set +e
 (
   cd "$ROOT_DIR"
   ZEBRA_TEST_POSTGRES_DSN="postgresql://zebra:zebra-test-password@127.0.0.1:${PORT}/zebra" \
-    uv run pytest -q tests/agent_storage/test_postgres_provider_continuations.py
+    uv run --package agent-storage --with pytest pytest -q \
+      tests/agent_storage/test_postgres_provider_continuations.py
 )
 status=$?
 set -e
