@@ -180,7 +180,7 @@ selector 和在线事件路由的单独授权；本次组合任务关闭不改�
   `CLOUD-COMPOSE-APP-01` 当前为 `Blocked`，不能作为 API/Worker 接线授权。
 - Zebra migration、API、Worker 三类主容器尚未建立。
 - Redis 依赖容器之外已完成 `CLOUD-LIVE-01` 的 replay-plus-tail
-  Port/Redis Streams Adapter；本地 `19/19`、integrations `123 passed, 3 skipped`
+  Port/Redis Streams Adapter；本地 `24/24`、integrations `127 passed, 3 skipped`
   和 pinned `redis:8.2.1-alpine` 宿主 Compose runner `1/1` 均通过，结果标记为
   `ZEBRA_LIVE_FANOUT_REDIS_TEST_RESULT=PASS`。Adapter 仍未接入 API/Worker，
   Redis 仍不是事实源。

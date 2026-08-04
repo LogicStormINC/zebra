@@ -47,7 +47,8 @@
 - `CLOUD-LIVE-01` is in `Review` after completing the separately owned Redis
   live event fan-out slice. It remains limited to a provider-neutral Port, a
   bounded Redis Streams adapter and isolated evidence; the local Core/adapter
-  matrix is `19/19`, the full integrations package is `123 passed, 3 skipped`,
+  matrix is `24/24` (including the non-blocking read and namespace validation
+  regressions), the full integrations package is `127 passed, 3 skipped`,
   and the pinned `redis:8.2.1-alpine` host runner passes `1/1` with
   `ZEBRA_LIVE_FANOUT_REDIS_TEST_RESULT=PASS`. The detailed matrix is recorded
   in `docs/CLOUD-LIVE-01.md`. It does not authorize API/Worker startup wiring,

@@ -31,7 +31,9 @@ class LiveEventCursor:
         if len(self.value) > _MAX_CURSOR_LENGTH:
             raise ValueError("live event cursor exceeds 128 characters")
         if self.stream_ref is not None and (
-            not self.stream_ref or self.stream_ref != self.stream_ref.strip()
+            not isinstance(self.stream_ref, str)
+            or not self.stream_ref
+            or self.stream_ref != self.stream_ref.strip()
         ):
             raise ValueError("live event cursor stream_ref must be non-blank and trimmed")
 

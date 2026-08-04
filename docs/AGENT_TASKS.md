@@ -689,8 +689,8 @@ the caller can rebuild from PostgreSQL.
 
 #### Validation evidence (2026-08-04)
 
-- Core and Redis adapter regressions pass `19/19`; the full
-  `tests/agent_integrations` package passes `123 passed, 3 skipped`.
+- Core and Redis adapter regressions pass `24/24`; the full
+  `tests/agent_integrations` package passes `127 passed, 3 skipped`.
 - Changed-path Ruff, strict Mypy for the new Port/adapter, `uv lock --check`,
   Compose config, shell syntax and `git diff --check` pass. The package metadata
   now declares the existing `agent-security -> agent-tools` import chain and the

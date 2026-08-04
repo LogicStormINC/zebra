@@ -20,6 +20,7 @@ class _FakeRedis:
         self._next_id = 0
         self.fail_reads = False
         self.last_approximate: bool | None = None
+        self.last_block: int | None = None
 
     def xadd(
         self,
@@ -50,7 +51,7 @@ class _FakeRedis:
         count: int | None = None,
         block: int | None = None,
     ) -> Sequence[tuple[str, Sequence[tuple[str, Mapping[str, str]]]]]:
-        del block
+        self.last_block = block
         if self.fail_reads:
             raise ConnectionError("redis unavailable")
         name, cursor = next(iter(streams.items()))
@@ -81,7 +82,7 @@ def _adapter(*, max_stream_length: int = 100) -> tuple[RedisLiveEventFanout, _Fa
 
 
 def test_replay_barrier_then_tail_returns_only_new_canonical_events() -> None:
-    adapter, _ = _adapter()
+    adapter, client = _adapter()
     session_id = SessionId(uuid4())
     barrier = adapter.capture_barrier(deployment_namespace="deployment-a", session_id=session_id)
 
@@ -97,6 +98,30 @@ def test_replay_barrier_then_tail_returns_only_new_canonical_events() -> None:
     assert [event.event.sequence for event in events.events] == [2]
     assert events.events[0].deployment_namespace == "deployment-a"
     assert events.next_cursor.value == "2-0"
+    assert client.last_block is None
+
+
+@pytest.mark.parametrize("namespace", ["", " deployment-a", "deployment-a "])
+def test_capture_barrier_rejects_invalid_namespace(namespace: str) -> None:
+    adapter, _ = _adapter()
+
+    with pytest.raises(ValueError, match="deployment_namespace"):
+        adapter.capture_barrier(deployment_namespace=namespace, session_id=SessionId(uuid4()))
+
+
+def test_positive_block_timeout_is_forwarded_to_redis() -> None:
+    adapter, client = _adapter()
+    session_id = SessionId(uuid4())
+
+    adapter.read_after(
+        deployment_namespace="deployment-a",
+        session_id=session_id,
+        barrier=LiveEventCursor("0-0"),
+        durable_sequence=-1,
+        block_ms=25,
+    )
+
+    assert client.last_block == 25
 
 
 def test_namespace_isolation_and_duplicate_filtering() -> None:

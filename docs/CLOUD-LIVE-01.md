@@ -36,11 +36,11 @@ Event exists; it only supplies a transient tail.
 
 | ID | Contract | Evidence | Result |
 |---|---|---|---|
-| LV-01 | Core envelope/cursor/batch are immutable and Redis-free | `tests/agent_core/test_live_event_fanout.py` | `19 passed` |
+| LV-01 | Core envelope/cursor/batch are immutable and Redis-free | `tests/agent_core/test_live_event_fanout.py` | `11 passed` |
 | LV-02 | Namespace/session isolation and barrier binding | `tests/agent_integrations/test_redis_live_fanout.py` | `PASS` |
 | LV-03 | Durable duplicate filtering still advances cursor | focused regression for `LiveEventBatch.next_cursor` | `PASS` |
 | LV-04 | Exact bounded XADD and strict schema/metadata validation | fake-client regression matrix | `PASS` |
-| LV-05 | Package import and dependency graph are reproducible | `tests/agent_integrations` | `123 passed, 3 skipped` |
+| LV-05 | Package import and dependency graph are reproducible | `tests/agent_integrations` | `127 passed, 3 skipped` |
 | LV-06 | Real Redis `8.2.1-alpine` publish/barrier/tail behavior | `tests/compose/live_fanout/run-redis-tests.sh` | `1 passed; PASS` |
 
 ## Host validation
@@ -59,7 +59,7 @@ container and network. This closes the implementation/evidence slice and hands
 the card to `Review`; it does not authorize API/Worker runtime selection.
 
 The repository-wide `uv run pytest -q` run collected successfully and reported
-`2062 passed, 247 skipped`; two unrelated baseline failures remain in the MCP
+`2067 passed, 247 skipped`; two unrelated baseline failures remain in the MCP
 prompt atomicity test and the repository file-size gate.
 
 ## Explicit non-goals

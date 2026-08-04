@@ -45,3 +45,8 @@ def test_live_event_cursor_can_bind_an_opaque_stream_reference() -> None:
     cursor = LiveEventCursor("0-1", stream_ref="provider-stream-a")
 
     assert cursor.stream_ref == "provider-stream-a"
+
+
+def test_live_event_cursor_rejects_non_text_stream_reference() -> None:
+    with pytest.raises(ValueError, match="stream_ref"):
+        LiveEventCursor("0-1", stream_ref=123)  # type: ignore[arg-type]

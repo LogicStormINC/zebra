@@ -147,7 +147,7 @@ class RedisLiveEventFanout:
         response = self._client.xread(
             {key: self._redis_cursor(barrier.value).value},
             count=count,
-            block=block_ms,
+            block=block_ms or None,
         )
         entries: list[LiveEventEnvelope] = []
         seen_event_ids: set[str] = set()
@@ -215,6 +215,7 @@ class RedisLiveEventFanout:
         )
 
     def _stream_key(self, namespace: str, session_id: SessionId | UUID) -> str:
+        namespace = self._namespace(namespace)
         encoded_namespace = namespace.encode("utf-8").hex()
         return f"{self._key_prefix}:{encoded_namespace}:{self._session_id(session_id)}"
 
