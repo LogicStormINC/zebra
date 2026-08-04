@@ -566,3 +566,71 @@ def test_emit_wins_over_later_forged_tool_metadata() -> None:
         if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
     ]
     assert model_events[-1].payload["output_contract"] == legal
+
+
+def test_emit_contract_reaches_persisted_final_event_through_the_sink() -> None:
+    """The event sink persists drafts at append time, so the final event must
+    already carry the emit-tool contract when it is appended - an in-buffer
+    replace afterwards would never reach the store (real worker path)."""
+    envelope = {
+        "contract_id": "finos.sink-contract",
+        "contract_version": "1",
+        "structured_payload": {"business_date": "2026-08-04"},
+        "payload_digest": "sha256:" + "3" * 64,
+        "source_refs": ["broker:sink"],
+    }
+    emit_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name=ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME,
+        arguments={"output_contract": envelope},
+        created_at=NOW,
+    )
+    emit_definition = ModelToolDefinition(
+        name=ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME,
+        description="Declare generic artifact output metadata.",
+        parameters={
+            "type": "object",
+            "properties": {"output_contract": {"type": "object"}},
+            "required": ["output_contract"],
+        },
+    )
+    captured: list[object] = []
+
+    def sink(draft: object) -> None:
+        captured.append(draft)
+
+    gateway = ScriptedModelGateway(
+        (
+            ScriptedModelResponse(_completion("emit", tool_call=emit_call)),
+            ScriptedModelResponse(_completion("final answer")),
+            ScriptedModelResponse(_completion("final answer")),
+        )
+    )
+    loop = HarnessLoop()
+    result = loop.run(
+        HarnessTask(
+            title="sink contract",
+            user_input="emit the typed contract",
+            workspace_root=None,
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            _AllowAllPolicy(),
+            _EmitToolGateway(envelope),
+            model_step=HarnessModelStep(
+                available_tools=(emit_definition,)
+            ),
+            synthesize_tool_results=True,
+            event_sink=sink,
+        ).run,
+        created_at=NOW,
+    )
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    final_sinked = [
+        event
+        for event in captured
+        if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+    ]
+    assert final_sinked, "event sink must receive model response drafts"
+    assert final_sinked[-1].payload["response_stage"] == "final"
+    assert final_sinked[-1].payload["output_contract"] == envelope

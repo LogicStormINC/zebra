@@ -333,13 +333,23 @@ class SequentialToolLoop:
             compaction_happened=compaction is not None and compaction.compacted,
             compaction_count=compaction_count,
         )
+        response_stage = (
+            "tool_loop" if completion.tool_calls or provisional_final else "final"
+        )
+        # The event sink persists each draft at append time, so the final
+        # event must already carry the emit-tool contract BEFORE it is
+        # appended; a later in-buffer replace would never reach the store.
+        contract = (
+            _final_output_contract(emitted_events, completion)
+            if response_stage == "final"
+            else None
+        )
         emitted_events.append(
             model_response_event(
                 completion,
                 attempt_number=context.attempt.number,
-                response_stage=(
-                    "tool_loop" if completion.tool_calls or provisional_final else "final"
-                ),
+                response_stage=response_stage,
+                output_contract=contract,
             )
         )
         if provisional_final:
@@ -456,14 +466,16 @@ class SequentialToolLoop:
             response_repair_limit=allowed_response_repairs(model_limit, model_calls_used),
         )
         model_calls_used += 1 + completion.call_metadata.response_repair_count
+        contract = _final_output_contract(emitted_events, completion)
+        # Same sink constraint as above: inject the contract before append.
         emitted_events.append(
             model_response_event(
                 completion,
                 attempt_number=context.attempt.number,
                 response_stage="final",
+                output_contract=contract,
             )
         )
-        contract = _final_output_contract(emitted_events, completion)
         _bind_final_output_contract(emitted_events, contract)
         if contract is not None:
             metadata = {**metadata, "output_contract": contract}
