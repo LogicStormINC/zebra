@@ -3,7 +3,7 @@
 ## 状态
 
 - 任务：Workspace / Task Mutation Fencing Conformance Audit
-- 状态：`Review`
+- 状态：`Done`
 - Owner：`governance/planning`
 - 分支：`codex/cloud-agg-fence-workspace-task-con-01`
 - Worktree：`/Users/lukeding/.codex/worktrees/cloud-agg-fence-workspace-task-con-01/zebra-agent`
@@ -12,7 +12,7 @@
 - 后续实现：`CLOUD-AGG-FENCE-TASK-01` 已在
   `codex/cloud-agg-fence-task-01` 完成并进入 `Done`
 - 后续证据：`CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` 已激活并进入
-  `In Progress`
+  `Done`
 - 前置：`CLOUD-AGG-FENCE-CON-01`、`CLOUD-AGG-WORKSPACE-PG-01`、
   `CLOUD-AGG-TASK-PG-01` 均为 `Done`
 
@@ -48,14 +48,14 @@ migration、Compose runner、API、Worker、Runtime 或本地 SQLite；只登记
 | WT-09 | Task rollover concurrency/CAS | PASS（局部） | `_attach_segment` 使用 advisory lock、Task row `FOR UPDATE` 和 active-segment CAS；既有 Task 矩阵覆盖并发一胜者、唯一 task sequence、rollback。 |
 | WT-10 | Handoff 组合 Workspace/Task transaction | PASS（组合路径） | `session_handoff_transactions.py:77-142` 锁 Lease/stream/workspace/Task lineage 并校验 reservation facts；`:145-169` 在同一事务写 parent/child projection 与 attach。 |
 | WT-11 | Direct Task mutation authority | PASS（successor） | `FencedAgentTaskStorePort.attach_segment_for_worker` 与 PostgreSQL transaction helper 现已要求 `WorkerMutationAuthority`，校验 namespace、source Session、当前完整 LeaseFence 和 stream revision；legacy direct `attach_segment` fail closed。实现提交 `6a31929a`。 |
-| WT-12 | Reproducible PostgreSQL evidence | **BLOCK-GAP** | 当前仓库没有 Workspace/Task 专用 `tests/compose/` runner；任务卡记载的历史 `80/80` 与 `32/32` 来自宿主临时脚本，不能作为当前 checkout 可重放证据。 |
+| WT-12 | Reproducible PostgreSQL evidence | PASS（successor） | `tests/compose/workspace_task/run-postgres-tests.sh` 在提交 `49a8c026` 的 PostgreSQL `17.5-alpine3.21` Compose service 上运行 Workspace、Task 和 migration focused matrix，`36 passed`，输出 `ZEBRA_WORKSPACE_TASK_POSTGRES_TEST_RESULT=PASS`，并清理 container、volume、network。 |
 
 ## 审计结论
 
-结论仍为 `BLOCK-GAP`，任务保持 `Review`。Task direct mutation 的 authority 缺口
-已由 `CLOUD-AGG-FENCE-TASK-01` 的实现提交 `6a31929a` 修复，并以真实 PostgreSQL
-focused 回归验证；但 Workspace/Task PostgreSQL 证据仍缺少当前仓库内可重放的
-runner。缺口不是应用 Compose、Runtime selector 或 SQLite fallback 的授权理由。
+结论为 `PASS`，任务由 `Review` 收口为 `Done`。Task direct mutation 的 authority
+缺口已由 `CLOUD-AGG-FENCE-TASK-01` 的实现提交 `6a31929a` 修复，并以真实
+PostgreSQL focused 回归验证；Workspace/Task 证据 successor 已在当前 checkout
+提供可重放 runner。该结论不授权应用 Compose、Runtime selector 或 SQLite fallback。
 
 ## 必须单独登记的后续卡
 
@@ -64,9 +64,10 @@ runner。缺口不是应用 Compose、Runtime selector 或 SQLite fallback 的�
    CAS 和 zero-write 回归；保持已有 Handoff helper 的 Owned path 不被重做。该卡
    已通过本地 `REVIEW-OK`，实现提交为 `6a31929a`；Task `23/23` 与
    Handoff/dispatch `24/24` PostgreSQL 回归均通过。
-2. `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01`（`In Progress`）：恢复仓库内可重放的
+2. `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01`（`Done`）：恢复仓库内可重放的
    PostgreSQL `17.5-alpine3.21` Workspace/Task focused runner，记录精确命令、计数、
-   sentinel 和清理结果；不新增 migration，不把历史临时脚本当作当前证据。
+   sentinel 和清理结果；实现提交 `49a8c026`，runner `36 passed` 并完成清理；不新增
+   migration，不把历史临时脚本当作当前证据。
 
-在上述 successor 完成并经过独立复核前，不得解锁 `CLOUD-AGG-FENCE-01`，不得将
+上述 successor 已完成并经过本地复核；`CLOUD-AGG-FENCE-01` 仍保持 `Locked`，不得将
 Task direct mutation 接入运行态，也不得激活应用 Compose 或 Runtime selector。

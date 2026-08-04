@@ -237,9 +237,9 @@
 - Implementation commit: `6a31929a feat(cloud): fence postgres task rollover`.
 - Evidence: Task `23/23` and Handoff/dispatch `24/24` on PostgreSQL 17.5 via the
   existing control-plane Compose service; local `REVIEW-OK` is recorded. The
-  dedicated Workspace/Task runner remains the next locked evidence card.
+  dedicated Workspace/Task runner is closed at `49a8c026` with `36/36`.
 
-## CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01 - Reproducible Workspace/Task PostgreSQL Evidence (In Progress)
+## CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01 - Reproducible Workspace/Task PostgreSQL Evidence (Done)
 
 1. `completed` - Activate the path-bounded evidence successor from the Workspace/
    Task audit after `CLOUD-AGG-FENCE-TASK-01` reached `Done`; keep the parent gate
@@ -247,7 +247,7 @@
 2. `completed` - Add a pinned PostgreSQL `17.5-alpine3.21` Compose service and a
    repository-owned runner with config validation, health wait, exact focused test
    targets, pass/fail sentinel and `down --volumes --remove-orphans` cleanup.
-3. `in_progress` - Run the Workspace, Task and migration matrices on the host,
+3. `completed` - Run the Workspace, Task and migration matrices on the host,
    record counts, PostgreSQL version, tested SHA and cleanup evidence, then perform
    local Review and update the audit handoff.
 
@@ -260,9 +260,11 @@
 ### Current handoff
 
 - The runner is present at `tests/compose/workspace_task/run-postgres-tests.sh`.
-- Host PostgreSQL evidence and local closeout remain pending.
+- At tested SHA `49a8c026`, PostgreSQL `17.5-alpine3.21` produced `36 passed in
+  8.55s`, emitted `ZEBRA_WORKSPACE_TASK_POSTGRES_TEST_RESULT=PASS`, and cleaned the
+  container, volume and network; local `REVIEW-OK` is recorded.
 
-## CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01 - Workspace / Task Mutation Fencing Conformance Audit (Review)
+## CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01 - Workspace / Task Mutation Fencing Conformance Audit (Done)
 
 1. `completed` - Claim the path-bounded governance audit on
    `codex/cloud-agg-fence-workspace-task-con-01` at `zebra-cloud-trench@29a79bf7`;
@@ -273,11 +275,10 @@
 3. `completed` - Record the WT-01..WT-12 matrix for authority identity, LeaseFence,
    namespace, expected revision, concurrency, replay, rollback and zero-write scope.
 4. `completed` - Compare the recorded historical Workspace `80/80` and Task `32/32`
-   host results with the current checkout; mark missing repository-owned runners as a
-   `BLOCK-GAP` rather than treating temporary scripts as reproducible evidence.
-5. `completed` - Register the direct Task authority and Workspace/Task evidence
-   successors as separate cards; do not activate them or unlock
-   `CLOUD-AGG-FENCE-01`.
+   host results with the current checkout, then replace the evidence gap with the
+   repository-owned runner and record its `36/36` result.
+5. `completed` - Register and complete the direct Task authority and Workspace/Task
+   evidence successors as separate cards; do not unlock `CLOUD-AGG-FENCE-01`.
 
 ### Boundary
 
@@ -290,13 +291,11 @@
 
 ### Audit decision
 
-- `BLOCK-GAP`: Workspace Worker commit and Handoff-composed rollover carry local
-  transaction evidence, and direct Task rollover now has explicit Worker authority
-  and current LeaseFence validation. The current checkout still has no reproducible
-  Workspace/Task PostgreSQL runner.
-- `CLOUD-AGG-FENCE-TASK-01` is `Done` after its scoped implementation review;
-  `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` is `In Progress` on its isolated
-  runner branch pending host evidence and implementation review.
+- `PASS`: Workspace Worker commit, Handoff-composed rollover and direct Task
+  authority now have local transaction evidence; the repository-owned runner at
+  `49a8c026` passes `36/36` on PostgreSQL `17.5-alpine3.21` with deterministic
+  cleanup. `CLOUD-AGG-FENCE-TASK-01` and
+  `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` are both `Done`.
 
 ## CLOUD-AGG-FENCE-CTX-SEMANTIC-01 - Administrative Context Event Semantics (Done)
 

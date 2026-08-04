@@ -43,15 +43,14 @@
   `CLOUD-AGG-FENCE-DISPATCH-01` is now fast-forward merged and closed as `Done`.
   Its mainline PostgreSQL runner passes `14/14` with
   `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`.
-- The current cloud governance slice is
-  `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01`, in `Review` on its isolated worktree
-  at base `29a79bf7`, with audit result `BLOCK-GAP`. Its direct Task authority gap
-  is now implemented by `CLOUD-AGG-FENCE-TASK-01` on
-  `codex/cloud-agg-fence-task-01` at `6a31929a`; the focused Task PostgreSQL
-  regression passes `23/23` and Handoff/dispatch regression passes `24/24`.
-  The Task successor is locally reviewed and `Done`; the repository-owned
-  Workspace/Task runner is now the active `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01`
-  successor. The parent `CLOUD-AGG-FENCE-01` remains `Locked` and no Runtime or
+- The current cloud governance slice
+  `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.
+  Its direct Task authority gap is implemented by `CLOUD-AGG-FENCE-TASK-01` at
+  `6a31929a`; the focused Task PostgreSQL regression passes `23/23` and
+  Handoff/dispatch regression passes `24/24`. The repository-owned
+  `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` runner is also `Done` at
+  `49a8c026`, passing `36/36` on PostgreSQL `17.5-alpine3.21` with deterministic
+  cleanup. The parent `CLOUD-AGG-FENCE-01` remains `Locked` and no Runtime or
   application Compose activation is implied.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated

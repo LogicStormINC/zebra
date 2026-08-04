@@ -3191,7 +3191,7 @@ external membership.
 
 ### CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01 - Workspace / Task Mutation Fencing Conformance Audit
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `governance/planning`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01`,
   `CLOUD-AGG-TASK-PG-01` and the accepted Handoff aggregate transaction.
@@ -3208,15 +3208,13 @@ external membership.
 - Goal: prove namespace, WorkerMutationAuthority/LeaseFence, expected revision,
   Task identity, transaction atomicity, stale rejection and zero-write behavior for
   Workspace and Task paths, while separating Event-derived replay/management writes.
-- Audit result: `BLOCK-GAP`. Workspace Worker commit and Handoff-composed rollover
-  are locally fenced, and the direct Task authority gap is now implemented by
-  `CLOUD-AGG-FENCE-TASK-01` at `6a31929a`; the current checkout still has no
-  reproducible Workspace/Task PostgreSQL runner. Historical host results (`80/80`
-  Workspace and `32/32` Task) remain recorded evidence but are not re-runnable from
-  this checkout.
-- Required follow-ups: `CLOUD-AGG-FENCE-TASK-01` is `Done`; the separate
-  `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` is now `In Progress` for the
-  repository-owned PostgreSQL 17.5 runner. Neither successor unlocks the parent gate.
+- Audit result: `PASS`. Workspace Worker commit and Handoff-composed rollover are
+  locally fenced, the direct Task authority gap is implemented by
+  `CLOUD-AGG-FENCE-TASK-01` at `6a31929a`, and the repository-owned runner at
+  `49a8c026` passes `36/36` on PostgreSQL `17.5-alpine3.21` with cleanup.
+- Follow-ups: `CLOUD-AGG-FENCE-TASK-01` and
+  `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` are `Done`; neither successor
+  unlocks the parent gate.
 - Explicit non-goals: no API/Worker selector, Runtime, application Compose, Redis,
   Mem0, Provider HTTP, CopilotKit/Trench, SQLite feature work or parent-gate unlock.
 
@@ -3247,16 +3245,16 @@ external membership.
   regression matrix passes `24/24`; changed Ruff, strict Mypy over the three changed
   source modules, `uv lock --check`, compilation and `git diff --check` pass. The
   tests use an existing PostgreSQL 17.5 Compose service ad hoc; the repository-owned
-  Workspace/Task runner is a separate locked successor.
+  Workspace/Task evidence runner is closed separately at `49a8c026` with `36/36`.
 - Review state: local `REVIEW-OK` completed the scoped implementation review and
   moved this card to `Done`. No Runtime/API/Worker selector, application Compose,
   Redis, Mem0, SQLite feature work or parent-gate unlock is implied.
 
 ### CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01 - Reproducible Workspace/Task PostgreSQL Evidence
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `codex`
-- Depends on: `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` `Review` with `BLOCK-GAP`,
+- Depends on: `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` `Done` with `PASS`,
   `CLOUD-AGG-FENCE-TASK-01` `Done`, `CLOUD-AGG-WORKSPACE-PG-01`,
   `CLOUD-AGG-TASK-PG-01` and `CLOUD-AGG-FENCE-CON-01`.
 - Branch: `codex/cloud-agg-fence-workspace-task-evidence-01`
@@ -3274,8 +3272,13 @@ external membership.
   `ZEBRA_WORKSPACE_TASK_POSTGRES_TEST_RESULT=PASS` only on success, and removes
   its container, volume and network on exit. No migration, Runtime/API/Worker
   selector, application Compose or parent-gate change is allowed.
-- Current evidence: implementation is in progress; the runner and Compose files
-  are present but the host PostgreSQL run and closeout have not yet been recorded.
+- Evidence: from the repository root, `tests/compose/workspace_task/run-postgres-tests.sh`
+  at `49a8c026` started PostgreSQL `17.5-alpine3.21`, ran the three focused files,
+  passed `36/36`, emitted `ZEBRA_WORKSPACE_TASK_POSTGRES_TEST_RESULT=PASS`, and
+  removed its container, volume and network. Local `REVIEW-OK` closed the card as
+  `Done`. The runner sets `PYTHONPATH` only for the existing `agent-context` source
+  package required by the Worker test import; no production dependency or runtime
+  composition changed.
 
 ### CLOUD-CONTROL-PLANE-PG-01 - Complete PostgreSQL Store Composition
 
