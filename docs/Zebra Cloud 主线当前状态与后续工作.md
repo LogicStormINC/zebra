@@ -118,13 +118,14 @@ fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 
    namespace 缺口由已获批准的 `CLOUD-AGG-FENCE-DISPATCH-01` 实现卡处理。
 7. `CLOUD-AGG-FENCE-HANDOFF-AUTH-01`：已由侧边栏批准激活，在
    `codex/cloud-agg-fence-handoff-auth-01` 完成 reserve/abort authority
-   Store seam、零写入回归和真实 PostgreSQL runner；当前为 `Review`，实现提交
-   `6a04f1cd`，并已由独立 sidebar closeout 以 `CLOSEOUT-OK` 关闭为 `Done`。
+   Store seam、零写入回归和真实 PostgreSQL runner；当前为 `Done`，实现提交
+   `6a04f1cd`，并已由独立 sidebar closeout 以 `CLOSEOUT-OK` 关闭。
 
 8. `CLOUD-AGG-FENCE-DISPATCH-01`：AUTH-01 合并后由侧边栏批准以
-   `zebra-cloud-trench@4a10883a` 激活，当前 `Review`；实现提交为 `6c1ceffa`，
-   仅覆盖 dispatch claim/ACK 的 operation、revision、LeaseFence、claim-token、
-   replay/race/namespace/rollback/zero-write 语义，不重做 reserve/abort。
+   `zebra-cloud-trench@4a10883a` 激活，现已完成并关闭为 `Done`；实现提交为
+   `6c1ceffa`，治理收口为 `48bb942a`，仅覆盖 dispatch claim/ACK 的 operation、
+   revision、LeaseFence、claim-token、replay/race/namespace/rollback/zero-write
+   语义，不重做 reserve/abort。
 9. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
    在所有子聚合 conformance card 完成前继续保持 `Locked`。
 
@@ -134,8 +135,8 @@ Context conformance 审计及其 semantic successor 均为 `Done`，
 `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 已进入 `Review`，审计结果为
 `BLOCK-GAP`；`CLOUD-AGG-FENCE-HANDOFF-AUTH-01` 已完成授权实现并由独立 sidebar
 以 `CLOSEOUT-OK` 关闭为 `Done`。父 fencing gate 仍为 `Locked`，因为其他 aggregate
- fencing cards 尚未闭合；`CLOUD-AGG-FENCE-DISPATCH-01` 已获独立激活并处于
-`Review`，不能顺带激活
+ fencing cards 尚未闭合；`CLOUD-AGG-FENCE-DISPATCH-01` 已完成并关闭为 `Done`，
+但不能顺带激活
 Runtime selector 或应用 Compose。API/Worker 存储组合已由
 `CLOUD-API-WORKER-PG-01` 完成；应用
 `CLOUD-COMPOSE-APP-01` 当前仍为实现 `Blocked`，等待应用 Compose、Runtime 业务
@@ -236,13 +237,12 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
    dispatch revision/replay/race/namespace zero-write 及可复现 PostgreSQL
    runner 仍是后续门禁，不自动激活实现。
 7. [x] 完成 `CLOUD-AGG-FENCE-HANDOFF-AUTH-01` 的独立 sidebar closeout；结果为
-   `CLOSEOUT-OK`、`Review -> Done`，父门继续 `Locked`；DISPATCH-01 另行等待
-   合并后激活决策。
-8. [review] 已实施已激活的 `CLOUD-AGG-FENCE-DISPATCH-01`：claim/ACK
+   `CLOSEOUT-OK`、`Review -> Done`，父门继续 `Locked`。
+8. [x] 已实施已激活的 `CLOUD-AGG-FENCE-DISPATCH-01`：claim/ACK
    已绑定 operation、stream/pointer revision、WorkerMutationAuthority、LeaseFence
    与 token，补齐 replay、race、namespace、rollback 和 zero-write 回归；专用
    PostgreSQL 17.5 runner 已 `14/14` 通过并完成清理，实现提交为 `6c1ceffa`，
-   本地独立复核通过；仍需主线合并与父门 closeout，完成前父门继续 `Locked`。
+   治理收口为 `48bb942a`，已快进合并并完成本地 closeout；父门继续 `Locked`。
 9. 完成其余 aggregate fencing conformance 与真实 PostgreSQL 证据，再评估
    `CLOUD-AGG-FENCE-01` 激活。
 10. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。

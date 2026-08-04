@@ -132,8 +132,7 @@
 - No migration/DDL, dispatch claim/ACK redesign, API/Worker selector, Runtime,
   SQLite feature work, Redis/Mem0, Provider HTTP, CopilotKit/Trench,
   application Compose or production rollout is included.
-- The parent `CLOUD-AGG-FENCE-01` and `CLOUD-AGG-FENCE-DISPATCH-01` remain
-  `Locked`.
+- The parent `CLOUD-AGG-FENCE-01` remains `Locked`.
 
 ### Evidence
 
@@ -149,7 +148,7 @@
   `implementation_authorized: false`. No parent-gate or runtime authorization is
   implied.
 
-## CLOUD-AGG-FENCE-DISPATCH-01 - Dispatch Stream Pointer And Replay Fencing (Review)
+## CLOUD-AGG-FENCE-DISPATCH-01 - Dispatch Stream Pointer And Replay Fencing (Done)
 
 1. `completed` - Integrate AUTH-01 into `zebra-cloud-trench` with a fast-forward
    merge, preserve the root `AGENTS.md`, and verify the merged focused regression.
@@ -176,8 +175,8 @@
 - No reserve/abort redesign, migration/DDL, API/Worker profile selection, Runtime,
   application Compose, SQLite, Redis, Mem0, Provider HTTP, CopilotKit/Trench or
   production rollout is authorized.
-- The parent `CLOUD-AGG-FENCE-01` remains `Locked`; this card does not close the
-  audit card automatically and still needs formal closeout after mainline merge.
+- The parent `CLOUD-AGG-FENCE-01` remains `Locked`; this card does not unlock the
+  aggregate gate or authorize Runtime/API/Worker profile activation.
 
 ### Implementation evidence (current worktree)
 
@@ -193,16 +192,18 @@
   `postgres:17.5-alpine3.21` image and `uv run --package agent-storage --with pytest`
   so `psycopg[binary]` is collected from the workspace package. The runner passed
   `14/14` (`ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`) and removed its
-  container, volume and network. Local scoped Review is `REVIEW-OK`; formal
-  closeout remains pending after mainline merge; the parent gate is still
-  `Locked`.
+  container, volume and network. Local scoped Review is `REVIEW-OK`; the merged
+  mainline rerun is `14/14` with the same PASS marker, and closeout is `CLOSEOUT-OK`.
+  The parent gate is still `Locked`.
 
 ### Review handoff
 
 - Local implementation review: `REVIEW-OK` for the scoped dispatch slice.
 - Commit: `6c1ceffa feat(cloud): fence postgres handoff dispatch`.
-- No mainline merge, parent-gate unlock, API/Worker profile activation or
-  successor activation is implied.
+- Governance closeout: `48bb942a docs(cloud): move dispatch fencing to review`,
+  fast-forward merged to `zebra-cloud-trench`; post-merge runner remains `14/14`.
+- No parent-gate unlock, API/Worker profile activation or successor activation is
+  implied.
 
 ## CLOUD-AGG-FENCE-CTX-SEMANTIC-01 - Administrative Context Event Semantics (Done)
 

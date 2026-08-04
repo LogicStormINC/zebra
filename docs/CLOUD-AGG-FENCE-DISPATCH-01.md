@@ -3,7 +3,7 @@
 ## 状态
 
 - 任务：Dispatch Stream Pointer And Replay Fencing
-- 状态：`Review`
+- 状态：`Done`
 - Owner：`codex`
 - 分支：`codex/cloud-agg-fence-dispatch-01`
 - Worktree：`/Users/lukeding/.codex/worktrees/cloud-agg-fence-dispatch-01/zebra-agent`
@@ -61,5 +61,6 @@ API/Worker 启动选择、Runtime、Redis、Mem0、SQLite、Provider HTTP、Copi
   一个 `acked` 终态，不产生重复写入。
 - 专用 Compose runner 已通过 `14/14`，输出
   `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`，并清理容器、volume 与
-  network。实现提交为 `6c1ceffa`；本地独立复核通过，任务进入 `Review`，
-  父门继续 `Locked`，不自动合并主线。
+  network。实现提交为 `6c1ceffa`，治理收口提交为 `48bb942a`，已快进合并到
+  `zebra-cloud-trench`；本地独立复核与合并后回归均通过，任务关闭为 `Done`。
+  父门继续 `Locked`。

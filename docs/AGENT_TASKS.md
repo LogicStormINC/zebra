@@ -3144,14 +3144,14 @@ external membership.
   changed Ruff and strict Mypy pass, and no migration changed.
 - Closeout: independent sidebar ChatGPT returned `CLOSEOUT-OK` for
   `Review -> Done` with `implementation_authorized: false`. The parent
-  `CLOUD-AGG-FENCE-01` and `CLOUD-AGG-FENCE-DISPATCH-01` remain `Locked`.
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
 - Explicit non-goals: no dispatch Port redesign, Runtime/API/Worker profile
   selection, SQLite, Redis, Mem0, Provider HTTP, CopilotKit/Trench or parent-gate
   unlock.
 
 ### CLOUD-AGG-FENCE-DISPATCH-01 - Dispatch Stream Pointer And Replay Fencing
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `codex`
 - Depends on: `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` `Review` closeout,
   `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-HANDOFF-PG-01`, accepted `Done`
@@ -3181,8 +3181,9 @@ external membership.
   WorkerMutationAuthority without migration/DDL or SQLite changes. The dedicated
   PostgreSQL 17.5 runner passes `14/14` with explicit
   `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`; local scoped Review is
-  `REVIEW-OK`. Formal closeout remains pending after mainline merge. Implementation
-  commit: `6c1ceffa`; mainline merge remains a separate maintainer action.
+  `REVIEW-OK` and post-merge closeout is `CLOSEOUT-OK`. Implementation commit:
+  `6c1ceffa`; governance closeout `48bb942a` was fast-forward merged to
+  `zebra-cloud-trench`. The parent gate remains `Locked`.
 - Explicit non-goals: no reserve/abort authority redesign, migration/DDL,
   Runtime/API/Worker profile selection, application Compose, SQLite, Redis,
   Mem0, Provider HTTP, CopilotKit/Trench, production rollout or parent-gate

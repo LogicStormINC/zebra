@@ -51,10 +51,11 @@
   `Locked` and `implementation_authorized` remains false. After the required
   fast-forward integration, sidebar ChatGPT approved only
   `CLOUD-AGG-FENCE-DISPATCH-01` as `Review` from base `4a10883a`; its
-  dispatch-only claim/ACK implementation is committed as `6c1ceffa` and locally
-  reviewed, with no Runtime or application Compose activation. The isolated
-  runner passes `14/14` with `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`;
-  mainline merge and parent closeout remain pending.
+  dispatch-only claim/ACK implementation is committed as `6c1ceffa`, fast-forward
+  merged with governance closeout `48bb942a`, and locally closed as `Done`, with
+  no Runtime or application Compose activation. The mainline runner passes
+  `14/14` with `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`; the parent
+  aggregate gate remains `Locked`.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core
