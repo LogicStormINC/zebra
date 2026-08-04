@@ -1,3 +1,4 @@
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -180,10 +181,64 @@ class ModelCompletion:
     assistant_message: SessionMessage
     tool_calls: tuple[ToolCall, ...] = field(default_factory=tuple)
     call_metadata: ModelCallMetadata = field(default_factory=ModelCallMetadata)
+    output_contract: dict[str, object] | None = None
 
     def __post_init__(self) -> None:
         if self.assistant_message.role is not MessageRole.ASSISTANT:
             raise ValueError("model completion assistant_message must use assistant role")
+        if self.output_contract is not None:
+            object.__setattr__(
+                self,
+                "output_contract",
+                normalize_output_contract(self.output_contract),
+            )
+
+
+def normalize_output_contract(envelope: object) -> dict[str, object]:
+    """Producer-neutral generic envelope validation (basic types only).
+
+    Zebra never interprets a specific contract: it only checks that an
+    explicit ``output_contract`` has a well-typed generic envelope
+    (contract_id / contract_version / structured_payload / payload_digest /
+    source_refs). Business schema, digest correctness against the payload and
+    contract registration are validated by FinOS, never here.
+    """
+    if not isinstance(envelope, Mapping):
+        raise ValueError("output_contract must be an object")
+    contract_id = envelope.get("contract_id")
+    contract_version = envelope.get("contract_version")
+    payload = envelope.get("structured_payload")
+    digest = envelope.get("payload_digest")
+    refs = envelope.get("source_refs")
+    if not isinstance(contract_id, str) or not contract_id.strip():
+        raise ValueError(
+            "output_contract.contract_id must be a non-blank string"
+        )
+    if not isinstance(contract_version, str) or not contract_version.strip():
+        raise ValueError(
+            "output_contract.contract_version must be a non-blank string"
+        )
+    if payload is not None and not isinstance(payload, Mapping):
+        raise ValueError(
+            "output_contract.structured_payload must be an object"
+        )
+    if digest is not None and (
+        not isinstance(digest, str)
+        or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
+    ):
+        raise ValueError(
+            "output_contract.payload_digest must be sha256:<64 hex>"
+        )
+    if refs is not None and (
+        not isinstance(refs, list)
+        or not all(
+            isinstance(item, str) and item.strip() for item in refs
+        )
+    ):
+        raise ValueError(
+            "output_contract.source_refs must be a text array"
+        )
+    return dict(envelope)
 
 
 @dataclass(frozen=True)

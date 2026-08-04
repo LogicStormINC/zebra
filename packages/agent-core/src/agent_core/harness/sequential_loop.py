@@ -314,6 +314,11 @@ class SequentialToolLoop:
             ),
         )
         model_calls_used += 1 + completion.call_metadata.response_repair_count
+        if completion.output_contract is not None:
+            metadata = {
+                **metadata,
+                "output_contract": dict(completion.output_contract),
+            }
         compaction_count = metadata.get("conversation_compaction_count")
         provisional_final = should_use_provisional_final(
             context,

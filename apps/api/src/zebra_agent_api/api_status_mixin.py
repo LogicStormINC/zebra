@@ -38,6 +38,7 @@ class ApiStatusMixin:
                     "task_image_attachments": True,
                     "native_image_understanding": native_image_understanding,
                     "final_message_identity": True,
+                    "artifact_output_contract": True,
                 },
             },
         )

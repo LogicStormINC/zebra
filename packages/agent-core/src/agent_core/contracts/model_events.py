@@ -1,3 +1,5 @@
+import re
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -102,3 +104,48 @@ class ModelResponseReceivedPayload(BaseModel):
     normalized_error: str | None = None
     cache_hit: bool | None = None
     cost_usd: float | None = Field(default=None, ge=0)
+    output_contract: dict[str, object] | None = None
+
+    @field_validator("output_contract")
+    @classmethod
+    def ensure_output_contract_generic_envelope(
+        cls, value: dict[str, object] | None
+    ) -> dict[str, object] | None:
+        if value is None:
+            return None
+        if not isinstance(value, dict):
+            raise ValueError("output_contract must be an object")
+        contract_id = value.get("contract_id")
+        contract_version = value.get("contract_version")
+        payload = value.get("structured_payload")
+        digest = value.get("payload_digest")
+        refs = value.get("source_refs")
+        if not isinstance(contract_id, str) or not contract_id.strip():
+            raise ValueError(
+                "output_contract.contract_id must be a non-blank string"
+            )
+        if not isinstance(contract_version, str) or not contract_version.strip():
+            raise ValueError(
+                "output_contract.contract_version must be a non-blank string"
+            )
+        if payload is not None and not isinstance(payload, dict):
+            raise ValueError(
+                "output_contract.structured_payload must be an object"
+            )
+        if digest is not None and (
+            not isinstance(digest, str)
+            or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
+        ):
+            raise ValueError(
+                "output_contract.payload_digest must be sha256:<64 hex>"
+            )
+        if refs is not None and (
+            not isinstance(refs, list)
+            or not all(
+                isinstance(item, str) and item.strip() for item in refs
+            )
+        ):
+            raise ValueError(
+                "output_contract.source_refs must be a text array"
+            )
+        return value

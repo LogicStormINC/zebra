@@ -89,8 +89,20 @@ class TaskReadApi:
         if final_message is not None:
             body["final_message"] = final_message
         events = [
-            item.event for item in SQLiteAgentTaskStore(self.database_path).read_events(parsed, -1)
+            item.event
+            for item in SQLiteAgentTaskStore(
+                self.database_path
+            ).read_events(parsed, -1)
         ]
+        output_contract = None
+        for event in reversed(events):
+            if event.event_type is EventType.MODEL_RESPONSE_RECEIVED:
+                candidate = event.payload.get("output_contract")
+                if isinstance(candidate, Mapping):
+                    output_contract = dict(candidate)
+                break
+        if output_contract is not None:
+            body["artifact_output_contract"] = output_contract
         attachments = [
             ref.to_mapping() for event in events for ref in attachment_refs_from_event(event)
         ]

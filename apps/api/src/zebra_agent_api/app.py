@@ -253,6 +253,9 @@ class ZebraAgentApi(
                 "current_sequence": result.session.current_sequence,
                 "assistant_message": result.attempt_result.metadata.get("assistant_message"),
                 "trace": serialize_trace_events(result.events),
+                "artifact_output_contract": result.attempt_result.metadata.get(
+                    "output_contract"
+                ),
                 **(
                     {"final_message": final_message}
                     if final_message is not None
@@ -566,6 +569,9 @@ class ZebraAgentApi(
                 "model": model_entry.id,
                 "status": session.status.value,
                 "assistant_message": result.attempt_result.metadata.get("assistant_message"),
+                "artifact_output_contract": result.attempt_result.metadata.get(
+                    "output_contract"
+                ),
                 **({"final_message": final_message} if final_message is not None else {}),
                 "stop_reason": result.run_result.stop_reason.value,
                 "attempts_used": result.run_result.attempts_used,

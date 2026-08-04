@@ -169,6 +169,9 @@ def _resume_result(
             "current_sequence": result.session.current_sequence,
             "assistant_message": result.attempt_result.metadata.get("assistant_message"),
             "trace": serialize_trace_events(result.events),
+            "artifact_output_contract": result.attempt_result.metadata.get(
+                "output_contract"
+            ),
             **(
                 {"final_message": final_message}
                 if final_message is not None
