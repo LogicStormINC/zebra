@@ -6,9 +6,9 @@
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
 > `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
 > accepted and closed. The active cloud-mainline slice is the governance-only
-> `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` audit; its Handoff authority
-> predecessor is closed as `Done`, its dispatch successor is now `In Progress`,
-> while the aggregate parent remains locked.
+> `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` audit is now `Done` with `PASS`; its
+> Handoff authority and dispatch successors are closed as `Done`, while the
+> aggregate parent remains locked.
 > Local SQLite Registry work remains deferred. ACP and optional code intelligence
 > remain locked.
 
@@ -119,13 +119,13 @@ does not authorize production code, migrations or activation of its successor.
   evidence passed. `CLOUD-CONTEXT-CON-01` is now `Done` on its claimed branch;
   its PostgreSQL successor, Provider Continuation and all other successor
   adapters remain `Locked`.
-- `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` is `Review` on the isolated
+- `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` is `Done` on the isolated
   `codex/cloud-agg-fence-handoff-dispatch-con-01` worktree. It is a governance-only
   audit of Handoff and dispatch mutation authority. Sidebar ChatGPT returned
-  `CLOSEOUT-OK` for `Planning -> Review` with audit result `BLOCK-GAP`; production
-  code, tests, migrations, Compose and runtime selection remain forbidden. The
-  parent `CLOUD-AGG-FENCE-01` remains `Locked`; AUTH-01 is `Done` and the
-  separately approved DISPATCH-01 successor is now `In Progress`.
+  `CLOSEOUT-OK` for the initial `Planning -> Review` with audit result `BLOCK-GAP`;
+  AUTH-01, DISPATCH-01 and their PostgreSQL runners subsequently closed the gaps.
+  Local closeout records `PASS`; production runtime selection remains forbidden and
+  the parent `CLOUD-AGG-FENCE-01` remains `Locked`.
 
 ## Context Continuity And Governed Memory Board
 
@@ -3058,7 +3058,7 @@ external membership.
 
 ### CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01 - Handoff And Dispatch Mutation Authority Conformance Audit
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `governance/planning`
 - Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-HANDOFF-PG-01`,
   `CLOUD-AGG-HANDOFF-CON-01`, `CLOUD-LEASE-PG-01`, and the accepted Context
@@ -3087,35 +3087,32 @@ external membership.
   for separate sidebar closeout; a `BLOCK-GAP` may remain in `Review` for that
   closeout but cannot move to `Done`, with only the explicitly scoped,
   separately locked successors recorded below.
-- Audit result: `BLOCK-GAP`. Sidebar ChatGPT returned `CLOSEOUT-OK` and approved
-  `Planning -> Review`, while keeping implementation and successor activation
-  unauthorized. The missing authority/CAS, dispatch revision/replay/race/
-  namespace evidence and reproducible PostgreSQL runner are recorded in the
-  audit document.
-- Required follow-up cards: the minimal Handoff reserve/abort authority card is
-  `Done`; the dispatch stream/pointer/replay fencing card is separately
-  activated below as `In Progress`. Neither card unlocks the parent gate or
-  selects a runtime profile.
+- Audit result: `PASS`. The initial sidebar ChatGPT review returned `CLOSEOUT-OK`
+  for `Planning -> Review` with `BLOCK-GAP`; AUTH-01, DISPATCH-01 and their
+  PostgreSQL runners subsequently closed the recorded gaps. Neither successor
+  unlocks the parent gate or selects a runtime profile.
+- Required follow-up cards: `CLOUD-AGG-FENCE-HANDOFF-AUTH-01` and
+  `CLOUD-AGG-FENCE-DISPATCH-01` are both `Done`; the parent gate remains `Locked`.
 - Explicit non-goals: no changes to `packages/agent-core/`,
   `packages/agent-context/`, `packages/agent-storage/`, `apps/worker/`,
   `apps/api/`, `tests/`, `evals/`, migrations, Compose runners, Runtime,
   Provider HTTP, SQLite, Redis, Mem0, CopilotKit/Trench, application Docker or
   the dirty root `AGENTS.md`.
-- Validation boundary: use only existing focused PostgreSQL Compose runners,
-  unchanged; record PostgreSQL `17.5-alpine3.21`, tested SHA `765ede43`, exact
-  commands, per-case sentinels/counts, cleanup and `git diff --check`. No API or
-  Worker process is started by this governance card.
+- Validation boundary: the successor runners record PostgreSQL
+  `17.5-alpine3.21`, exact commands, sentinels/counts, cleanup and
+  `git diff --check`; no API or Worker process is started by this governance card.
 
 ### CLOUD-AGG-FENCE-HANDOFF-AUTH-01 - Handoff Reserve And Abort Authority
 
 - Status: `Done`
 - Owner: `codex`
-- Depends on: `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` `Review` closeout,
+- Depends on: `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` `Done` closeout,
   `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-HANDOFF-PG-01` and a new sidebar
   activation decision. Sidebar returned `IMPLEMENTATION-ACTIVATE-OK` and
   authorized `Locked -> In Progress` on the isolated branch below. Independent
   sidebar implementation Review returned `CLOSEOUT-OK` and approved
-  `Review -> Done`; the parent gate and dispatch successor remain locked.
+  `Review -> Done`; the parent gate remains locked. The dispatch successor was
+  locked at this closeout and is now separately `Done`.
 - Branch: `codex/cloud-agg-fence-handoff-auth-01`
 - Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-handoff-auth-01/zebra-agent`
 - Base: `zebra-cloud-trench@a765e068`
@@ -3153,7 +3150,7 @@ external membership.
 
 - Status: `Done`
 - Owner: `codex`
-- Depends on: `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` `Review` closeout,
+- Depends on: `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` `Done` closeout,
   `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-HANDOFF-PG-01`, accepted `Done`
   `CLOUD-AGG-FENCE-HANDOFF-AUTH-01`, and a new sidebar activation decision.
 - Branch: `codex/cloud-agg-fence-dispatch-01`

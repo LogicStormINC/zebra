@@ -60,7 +60,7 @@
   unlocked. `CLOUD-COMPOSE-APP-01` remains implementation-blocked until a
   separately authorized profile-composition successor is activated.
 
-## CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01 - Handoff And Dispatch Mutation Authority Conformance Audit (Review)
+## CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01 - Handoff And Dispatch Mutation Authority Conformance Audit (Done)
 
 1. `completed` - Claim the governance-only audit on
    `codex/cloud-agg-fence-handoff-dispatch-con-01` at
@@ -72,13 +72,13 @@
 3. `completed` - Populate the HD-01..HD-12 matrix with authority identity,
    aggregate binding, stale rejection, pointer/revision fencing, zero-write,
    concurrency, replay, namespace and transaction-boundary evidence.
-4. `completed` - Run only existing focused PostgreSQL Compose runners, unchanged,
-   where they cover the matrix; record PostgreSQL version, exact command,
-   sentinel, row counts, cleanup and tested SHA. Missing real evidence is a
-   `BLOCK-GAP`, not an implementation invitation.
-5. `completed` - Validate the governance diff and request sidebar review. Sidebar
-   ChatGPT returned `CLOSEOUT-OK` for `Planning -> Review` with audit result
-   `BLOCK-GAP`; `CLOUD-AGG-FENCE-01` remains `Locked`.
+4. `completed` - Run the successor PostgreSQL Compose runners; record PostgreSQL
+   version, exact commands, sentinels, counts, cleanup and tested SHA. The AUTH
+   matrix passes `15/15` and the DISPATCH matrix passes `14/14`.
+5. `completed` - Validate the governance diff and record the initial sidebar
+   `CLOSEOUT-OK` for `Planning -> Review` with audit result `BLOCK-GAP`.
+6. `completed` - Reconcile both successor closeouts and locally move this audit to
+   `Done` with `PASS`; keep `CLOUD-AGG-FENCE-01` `Locked`.
 
 ### Boundary
 
@@ -91,14 +91,9 @@
 
 ### Review decision
 
-- `CLOSEOUT-OK`: the planning audit is complete and moves to `Review`.
-- `BLOCK-GAP`: reserve/abort authority, dispatch stream/pointer/replay/race/
-  namespace zero-write evidence and a reproducible PostgreSQL runner remain
-  follow-up gates.
-- The reserve/abort successor is now separately activated under
-  `CLOUD-AGG-FENCE-HANDOFF-AUTH-01` and remains in `Review`; the dispatch
-  successor is still `Locked` and unactivated. The parent aggregate fencing
-  gate stays `Locked`.
+- `PASS`: reserve/abort authority, dispatch stream/pointer/replay/race/namespace
+  zero-write evidence and reproducible PostgreSQL runners are all closed by the
+  separately owned successors. The parent aggregate fencing gate stays `Locked`.
 
 ## CLOUD-AGG-FENCE-HANDOFF-AUTH-01 - Handoff Reserve And Abort Authority (Done)
 
@@ -122,7 +117,8 @@
    as `6a04f1cd`.
 7. `completed` - Request independent sidebar review of the implementation
    evidence. It returned `CLOSEOUT-OK` for `Review -> Done`; keep
-   `CLOUD-AGG-FENCE-01` and the dispatch successor locked.
+   `CLOUD-AGG-FENCE-01` locked; the dispatch successor was locked at that point and
+   was later completed by `CLOUD-AGG-FENCE-DISPATCH-01`.
 
 ### Boundary
 

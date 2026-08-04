@@ -38,10 +38,11 @@
   `CLOSEOUT-OK`, three zero-write regressions and a real PostgreSQL `18/18`
   focused matrix. The parent `CLOUD-AGG-FENCE-01` remains `Locked` because other
   aggregate fencing cards are still pending.
-- `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` remains in `Review` with audit result
-  `BLOCK-GAP`; its reserve/abort successor is `Done`, and the dispatch successor
-  `CLOUD-AGG-FENCE-DISPATCH-01` is now fast-forward merged and closed as `Done`.
-  Its mainline PostgreSQL runner passes `14/14` with
+- `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` is now `Done` with audit result
+  `PASS`; its reserve/abort successor is `Done`, and the dispatch successor
+  `CLOUD-AGG-FENCE-DISPATCH-01` is fast-forward merged and closed as `Done`.
+  The mainline PostgreSQL runners pass `15/15` and `14/14` with
+  `ZEBRA_HANDOFF_AUTH_POSTGRES_TEST_RESULT=PASS` and
   `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.

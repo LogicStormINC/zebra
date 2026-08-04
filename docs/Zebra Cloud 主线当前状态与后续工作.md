@@ -113,9 +113,9 @@ fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 
    `Done`；Store guard、三类零写入回归和真实 PostgreSQL `18/18` 矩阵均已
    完成。
 6. `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01`：Handoff/dispatch 的治理型
-   conformance 审计，当前为 `Review`，审计结果为 `BLOCK-GAP`。其 reserve/abort
-   authority 缺口已由独立 successor 处理；dispatch revision/replay/race/
-   namespace 缺口由已获批准的 `CLOUD-AGG-FENCE-DISPATCH-01` 实现卡处理。
+   conformance 审计已完成并为 `Done`，审计结果为 `PASS`。reserve/abort authority
+   与 dispatch revision/replay/race/namespace 缺口均由独立 successor 处理，两个
+   PostgreSQL runner 分别通过 `15/15` 与 `14/14`。
 7. `CLOUD-AGG-FENCE-HANDOFF-AUTH-01`：已由侧边栏批准激活，在
    `codex/cloud-agg-fence-handoff-auth-01` 完成 reserve/abort authority
    Store seam、零写入回归和真实 PostgreSQL runner；当前为 `Done`，实现提交
@@ -137,8 +137,8 @@ fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 
 当前 `CLOUD-CONTROL-PLANE-PG-01`、`CLOUD-API-WORKER-PG-01` 与
 `CLOUD-DELIVERY-TXN-PG-01` 均为 `Done`；
 Context conformance 审计及其 semantic successor 均为 `Done`，
-`CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 已进入 `Review`，审计结果为
-`BLOCK-GAP`；`CLOUD-AGG-FENCE-HANDOFF-AUTH-01` 已完成授权实现并由独立 sidebar
+`CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 已完成并为 `Done`，审计结果为
+`PASS`；`CLOUD-AGG-FENCE-HANDOFF-AUTH-01` 已完成授权实现并由独立 sidebar
 以 `CLOSEOUT-OK` 关闭为 `Done`。父 fencing gate 仍为 `Locked`，因为其他 aggregate
  fencing cards 尚未闭合；`CLOUD-AGG-FENCE-DISPATCH-01` 已完成并关闭为 `Done`，
 `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` 已完成并为 `Done`，其
@@ -239,10 +239,9 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 5. 完成 `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` 审计，并由
    `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` 修复已确认的 Store 语义缺口；两张卡
    均已由侧边栏 closeout 为 `Done`。
-6. [review] 完成 `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 治理审计；sidebar
-   已批准 `Planning -> Review`，但结果为 `BLOCK-GAP`。reserve/abort authority、
-   dispatch revision/replay/race/namespace zero-write 及可复现 PostgreSQL
-   runner 仍是后续门禁，不自动激活实现。
+6. [x] 完成 `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 治理审计；初始 sidebar
+   closeout 为 `BLOCK-GAP`，后续 AUTH-01、DISPATCH-01 及两个 PostgreSQL runner
+   已闭合缺口，本地收口结果为 `PASS`，父门继续 `Locked`。
 7. [x] 完成 `CLOUD-AGG-FENCE-HANDOFF-AUTH-01` 的独立 sidebar closeout；结果为
    `CLOSEOUT-OK`、`Review -> Done`，父门继续 `Locked`。
 8. [x] 已实施已激活的 `CLOUD-AGG-FENCE-DISPATCH-01`：claim/ACK

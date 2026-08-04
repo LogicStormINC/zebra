@@ -10,7 +10,7 @@
 - 基线：`zebra-cloud-trench@a765e068`
 - 实现提交：`6a04f1cd03aea96d9d04ba702832d1fffb1292e1`
 - 父门：`CLOUD-AGG-FENCE-01` 仍为 `Locked`
-- dispatch successor：`CLOUD-AGG-FENCE-DISPATCH-01` 仍为 `Locked`
+- dispatch successor：在本卡 closeout 时为 `Locked`，后续已完成为 `Done`
 
 sidebar ChatGPT 先返回 `IMPLEMENTATION-ACTIVATE-OK`，批准本卡从 `Locked` 进入
 `In Progress`，并限制在本文件、任务注册表声明的 Core/PostgreSQL Handoff seam、
@@ -78,7 +78,8 @@ abort-vs-commit race、结果物化失败事务回滚和 aggregate row-count 约
 
 - 本卡没有修改 migration/DDL、dispatch claim/ACK、API/Worker 启动选择、Runtime、
   Redis、Mem0、Provider HTTP、CopilotKit/Trench、Desktop 或应用 Compose。
-- `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 的审计结果仍为 `BLOCK-GAP`；本卡只关闭
-  reserve/abort 缺口，不改变 dispatch successor 的 `Locked` 状态。
+- 本卡 closeout 时 `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 仍为 `BLOCK-GAP`；
+  本卡只关闭 reserve/abort 缺口。后续 DISPATCH-01 及 conformance closeout 已将
+  dispatch successor 完成为 `Done`。
 - 独立 sidebar closeout 已通过，本卡标记为 `Done`；这不解锁
   `CLOUD-AGG-FENCE-01`，不激活 dispatch successor，也不授权运行态接线。
