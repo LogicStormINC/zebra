@@ -72,6 +72,12 @@
   the existing v9 transitions already use the shared namespace, LeaseFence,
   stream CAS and lifecycle revision guards. No adapter or migration changed;
   the parent gate remains `Locked`.
+- `CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01` is `Done` as an evidence-only
+  conformance slice. Its repository-owned PostgreSQL 17.5 runner passes `7/7`
+  with `ZEBRA_EFFECT_PAYLOAD_POSTGRES_TEST_RESULT=PASS` and cleans all
+  resources; existing payload-aware Effect transitions bind Worker authority
+  and atomically coordinate Event, Artifact and outbox state. No adapter or
+  migration changed; the parent gate remains `Locked`.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core

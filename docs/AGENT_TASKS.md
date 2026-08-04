@@ -6,8 +6,8 @@
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
 > `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
 > accepted and closed. The active cloud-mainline slice just closed
-> `CLOUD-AGG-FENCE-ARTIFACT-01` is the active Artifact lifecycle fencing
-> conformance slice after `CLOUD-AGG-FENCE-PROVIDER-01` closed; the
+> `CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01` is the active Effect-to-Artifact fencing
+> conformance slice after `CLOUD-AGG-FENCE-ARTIFACT-01` closed; the
 > Handoff authority, dispatch and Workspace/Task successors are also `Done`,
 > while the aggregate parent remains locked.
 > Local SQLite Registry work remains deferred. ACP and optional code intelligence
@@ -3316,6 +3316,47 @@ external membership.
 - Explicit non-goals: no Artifact adapter redesign, migration/DDL, object-store
   provider change, SQLite behavior, Runtime/API/Worker profile selection,
   application Compose, Redis, Mem0, Delivery changes or parent-gate unlock.
+
+### CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01 - Effect-to-Artifact Transaction Conformance Evidence
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: `CLOUD-EFFECT-PAYLOAD-ATOMIC-01` `Done`,
+  `CLOUD-ART-PAYLOAD-PG-01` `Done`, `CLOUD-AGG-FENCE-CON-01` `Done`, and merged
+  `CLOUD-AGG-FENCE-ARTIFACT-01` evidence.
+- Branch: `codex/cloud-agg-fence-effect-payload-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-effect-payload-01/zebra-agent`
+- Base: `zebra-cloud-trench@d44965c9`
+- Activation: the maintainer requested continuation after Artifact conformance
+  closeout. This is the only active successor; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Owned paths: `tests/compose/effect_payload/`,
+  `docs/CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01.md`, and the governance records listed
+  in this registry, `PROGRESS.md`, `task_plan.md` and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`. Existing Effect/Artifact
+  adapter, Core contracts and focused tests are read-only audit targets.
+- Goal: provide reproducible PostgreSQL evidence that payload-aware Effect
+  schedule and terminal transitions bind Worker authority and atomically commit
+  Event, Artifact lifecycle and outbox state, while unknown outcomes remain
+  recoverable and do not replay external effects.
+- Acceptance: the runner collects the focused matrix with `psycopg` available,
+  emits a PASS sentinel and cleans resources; the audit covers stale fence,
+  takeover, atomic finalize, terminal success/uncertain, replay, conflicting
+  identity, rollback and staged recovery.
+- Evidence: `tests/compose/effect_payload/run-postgres-tests.sh` uses
+  `postgres:17.5-alpine3.21`, installs the `agent-storage` package for
+  reproducible psycopg collection, passes `7/7` with
+  `ZEBRA_EFFECT_PAYLOAD_POSTGRES_TEST_RESULT=PASS`, and removes its container,
+  volume and network. The focused matrix covers stale fence before any state,
+  atomic intent/Event/Artifact/outbox commit, lost-response replay, conflicting
+  identity, terminal success/uncertain transitions and takeover reconciliation.
+- Closeout: shell syntax, Compose config and `git diff --check` pass. No
+  adapter, migration or local behavior changed. This card is `Done`; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Explicit non-goals: no Effect/Artifact adapter redesign, migration/DDL,
+  object provider, SQLite behavior, Runtime/API/Worker profile selection,
+  application Compose, Redis, Mem0, Provider HTTP, Delivery changes or
+  parent-gate unlock.
 
 ### CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01 - Workspace / Task Mutation Fencing Conformance Audit
 
