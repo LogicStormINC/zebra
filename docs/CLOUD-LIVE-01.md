@@ -1,6 +1,6 @@
 # CLOUD-LIVE-01 Redis Live Event Fan-out
 
-Status: `In Progress`
+Status: `Review`
 
 Branch: `codex/cloud-live-01`
 
@@ -41,7 +41,7 @@ Event exists; it only supplies a transient tail.
 | LV-03 | Durable duplicate filtering still advances cursor | focused regression for `LiveEventBatch.next_cursor` | `PASS` |
 | LV-04 | Exact bounded XADD and strict schema/metadata validation | fake-client regression matrix | `PASS` |
 | LV-05 | Package import and dependency graph are reproducible | `tests/agent_integrations` | `123 passed, 3 skipped` |
-| LV-06 | Real Redis `8.2.1-alpine` publish/barrier/tail behavior | `tests/compose/live_fanout/run-redis-tests.sh` | `PENDING HOST EVIDENCE` |
+| LV-06 | Real Redis `8.2.1-alpine` publish/barrier/tail behavior | `tests/compose/live_fanout/run-redis-tests.sh` | `1 passed; PASS` |
 
 ## Host validation
 
@@ -52,11 +52,15 @@ cd /Users/lukeding/.codex/worktrees/cloud-live-01/zebra-agent
 tests/compose/live_fanout/run-redis-tests.sh
 ```
 
-The runner renders its Compose file, starts a dedicated Redis service on
-`127.0.0.1:16381` by default, emits
-`ZEBRA_LIVE_FANOUT_REDIS_TEST_RESULT=PASS` on success, and removes its network,
-container and volumes in the exit trap. A PASS must be returned before this
-card moves to `Review` or is merged to `zebra-cloud-trench`.
+The runner rendered its Compose file, started a dedicated Redis service on
+`127.0.0.1:16381`, and emitted
+`ZEBRA_LIVE_FANOUT_REDIS_TEST_RESULT=PASS`; its exit trap removed the Redis
+container and network. This closes the implementation/evidence slice and hands
+the card to `Review`; it does not authorize API/Worker runtime selection.
+
+The repository-wide `uv run pytest -q` run collected successfully and reported
+`2062 passed, 247 skipped`; two unrelated baseline failures remain in the MCP
+prompt atomicity test and the repository file-size gate.
 
 ## Explicit non-goals
 

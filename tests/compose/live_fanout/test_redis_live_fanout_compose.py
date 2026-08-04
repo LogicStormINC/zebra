@@ -6,7 +6,7 @@ from uuid import uuid4
 import pytest
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
-from agent_integrations.redis_live_fanout import RedisLiveEventFanout
+from agent_integrations.redis_live_fanout import RedisLiveEventError, RedisLiveEventFanout
 from redis import Redis
 
 _REDIS_URL = os.environ.get("ZEBRA_LIVE_REDIS_URL")
@@ -49,12 +49,13 @@ def test_redis_stream_barrier_tail_and_namespace_isolation() -> None:
         )
         assert [item.event.sequence for item in events.events] == [2, 3]
         assert events.next_cursor.value
-        assert adapter.read_after(
-            deployment_namespace="compose-b",
-            session_id=session_id,
-            barrier=barrier,
-            durable_sequence=-1,
-        ).events == ()
+        with pytest.raises(RedisLiveEventError, match="barrier"):
+            adapter.read_after(
+                deployment_namespace="compose-b",
+                session_id=session_id,
+                barrier=barrier,
+                durable_sequence=-1,
+            )
     finally:
         client.flushdb()
         client.close()

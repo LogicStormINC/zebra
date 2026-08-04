@@ -1,6 +1,6 @@
 # Task Plan
 
-## CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter (In Progress)
+## CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter (Review)
 
 1. `completed` - Register the independent live-state card with explicit owned
    paths and keep application Compose/API/Worker wiring out of scope.
@@ -8,8 +8,16 @@
    batch, then implement the namespace-scoped bounded Redis Streams adapter.
 3. `completed` - Add deterministic unit/integration coverage and hand the
    isolated Redis Compose runner to the host for real-service evidence.
-4. `pending` - Record the host result and hand the card to Review without
+4. `completed` - Record the host result and hand the card to Review without
    selecting the adapter at runtime.
+
+### Review handoff
+
+- The Redis Compose runner passed against `redis:8.2.1-alpine` with
+  `ZEBRA_LIVE_FANOUT_REDIS_TEST_RESULT=PASS`; its container and network were
+  removed by the runner cleanup trap.
+- The adapter remains unselected by API/Worker startup; application Compose is
+  still a separate blocked card.
 
 ### Boundary
 
