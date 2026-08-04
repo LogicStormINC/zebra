@@ -6,8 +6,8 @@
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
 > `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
 > accepted and closed. The active cloud-mainline slice just closed
-> `CLOUD-AGG-FENCE-PROVIDER-01` is the active Provider Continuation fencing
-> conformance slice after `CLOUD-AGG-FENCE-MODEL-TOOL-01` closed; the
+> `CLOUD-AGG-FENCE-ARTIFACT-01` is the active Artifact lifecycle fencing
+> conformance slice after `CLOUD-AGG-FENCE-PROVIDER-01` closed; the
 > Handoff authority, dispatch and Workspace/Task successors are also `Done`,
 > while the aggregate parent remains locked.
 > Local SQLite Registry work remains deferred. ACP and optional code intelligence
@@ -3275,6 +3275,47 @@ external membership.
 - Explicit non-goals: no migration/DDL, Provider HTTP, SQLite behavior,
   Runtime/API/Worker profile selection, application Compose, Redis, Mem0,
   Artifact or Delivery changes, and no parent-gate unlock.
+
+### CLOUD-AGG-FENCE-ARTIFACT-01 - Artifact Lifecycle Fencing Conformance Evidence
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: `CLOUD-ART-PAYLOAD-PG-01` `Done`,
+  `CLOUD-EFFECT-PAYLOAD-ATOMIC-01` `Done`, `CLOUD-AGG-FENCE-CON-01` `Done`,
+  and merged `CLOUD-AGG-FENCE-PROVIDER-01` evidence.
+- Branch: `codex/cloud-agg-fence-artifact-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-artifact-01/zebra-agent`
+- Base: `zebra-cloud-trench@da21d324`
+- Activation: the maintainer requested continuation after Provider fencing
+  closeout. This is the only active successor; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Owned paths: `tests/compose/artifact_payload/`,
+  `docs/CLOUD-AGG-FENCE-ARTIFACT-01.md`, and the governance records listed in
+  this registry, `PROGRESS.md`, `task_plan.md` and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`. Existing Artifact Core,
+  PostgreSQL adapter and focused tests are read-only audit targets.
+- Goal: provide reproducible PostgreSQL 17.5 evidence for every Worker Artifact
+  lifecycle transition's namespace, LeaseFence, expected stream revision,
+  lifecycle CAS, idempotency and rollback boundary without changing v9 schema
+  or adapter behavior.
+- Acceptance: the runner collects the existing focused Artifact matrix with
+  `psycopg` available, emits a PASS sentinel and removes all resources; the
+  audit matrix covers reserve, object receipt, finalize/Event binding,
+  compensation, prune, stale authority, replay and management separation.
+- Evidence: `tests/compose/artifact_payload/run-postgres-tests.sh` uses
+  `postgres:17.5-alpine3.21`, installs the `agent-storage` package for
+  reproducible psycopg collection, passes `13/13` with
+  `ZEBRA_ARTIFACT_PAYLOAD_POSTGRES_TEST_RESULT=PASS`, and removes its
+  container, volume and network. The focused matrix covers stale LeaseFence and
+  stream authority, namespace/session isolation, concurrent reserve, lifecycle
+  revision CAS, canonical Event binding, compensation, exact-version prune,
+  idempotent replay, rollback and management CAS/audit separation.
+- Closeout: shell syntax, Compose config and `git diff --check` pass. No
+  adapter, migration or local behavior changed. This card is `Done`; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Explicit non-goals: no Artifact adapter redesign, migration/DDL, object-store
+  provider change, SQLite behavior, Runtime/API/Worker profile selection,
+  application Compose, Redis, Mem0, Delivery changes or parent-gate unlock.
 
 ### CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01 - Workspace / Task Mutation Fencing Conformance Audit
 

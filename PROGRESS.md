@@ -66,6 +66,12 @@
   its reproducible PostgreSQL 17.5 runner passes `4/4` with
   `ZEBRA_PROVIDER_CONTINUATION_POSTGRES_TEST_RESULT=PASS` and cleans all
   resources. The parent `CLOUD-AGG-FENCE-01` remains `Locked`.
+- `CLOUD-AGG-FENCE-ARTIFACT-01` is `Done` as an evidence-only conformance
+  slice. The repository-owned PostgreSQL 17.5 runner passes `13/13` with
+  `ZEBRA_ARTIFACT_PAYLOAD_POSTGRES_TEST_RESULT=PASS` and cleans all resources;
+  the existing v9 transitions already use the shared namespace, LeaseFence,
+  stream CAS and lifecycle revision guards. No adapter or migration changed;
+  the parent gate remains `Locked`.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core

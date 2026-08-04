@@ -301,6 +301,57 @@
   Implementation commit: `816a1ae0`. This card is `Done`; the parent gate
   remains `Locked`.
 
+## CLOUD-AGG-FENCE-ARTIFACT-01 - Artifact Lifecycle Fencing Conformance Evidence (Done)
+
+1. `completed` - Register the path-bounded Artifact evidence successor on
+   `codex/cloud-agg-fence-artifact-01` from `zebra-cloud-trench@da21d324`;
+   preserve the dirty root `AGENTS.md` and keep the aggregate parent locked.
+2. `completed` - Audit reserve, record-object, finalize, compensate and
+   prune transitions against the shared Worker boundary and management CAS;
+   keep existing implementation and tests read-only.
+3. `completed` - Add a pinned PostgreSQL 17.5 Compose runner that installs the
+   `agent-storage` workspace package, runs the focused Artifact matrix and
+   removes its container, volume and network deterministically.
+4. `completed` - Record the conformance matrix, exact PASS count and static/script
+   evidence; close the card without unlocking `CLOUD-AGG-FENCE-01`.
+
+### Boundary
+
+- Writable paths are limited to `tests/compose/artifact_payload/`, this audit
+  document and the governance records listed in the task registry.
+- Artifact Core contracts, v9 PostgreSQL adapter/migration and focused tests are
+  read-only audit targets. No adapter redesign, migration, object provider,
+  SQLite, Runtime, API/Worker profile, application Compose, Redis, Mem0,
+  Delivery or parent-gate change is included.
+
+### Current finding
+
+- `PostgresCloudArtifactPayloadStore` routes all Worker transitions through
+  `assert_worker_boundary`, which checks namespace, Session, current LeaseFence
+  and the locked Session stream revision. Lifecycle revision CAS and mutation
+  replay are checked after the payload row lock; management recovery uses a
+  separate administrative CAS and audit ledger.
+
+### Review boundary
+
+- This is an evidence-only conformance slice. The parent
+  `CLOUD-AGG-FENCE-01` remains `Locked` and no runtime or application Compose
+  selection is implied.
+
+### Evidence and closeout
+
+- The audit confirms every Worker Artifact transition routes through
+  `assert_worker_boundary` for namespace, Session, current LeaseFence and
+  locked stream revision, then locks lifecycle metadata and applies a revision
+  CAS plus idempotency mutation. Management recovery remains an explicit
+  administrative CAS/audit path.
+- The repository-owned runner uses PostgreSQL `17.5-alpine3.21`, passes `13/13`
+  with `ZEBRA_ARTIFACT_PAYLOAD_POSTGRES_TEST_RESULT=PASS`, and removes its
+  container, volume and network. Shell syntax, Compose config and
+  `git diff --check` pass.
+- This card is evidence-only and `Done`; no adapter, migration, object provider,
+  SQLite or runtime selection changed. The parent gate remains `Locked`.
+
 ## CLOUD-AGG-FENCE-TASK-01 - Fenced PostgreSQL Task Rollover Authority (Done)
 
 1. `completed` - Activate the bounded successor from the Workspace/Task audit on
