@@ -182,8 +182,8 @@ selector 和在线事件路由的单独授权；本次组合任务关闭不改�
 - 首次容器验证发现生产镜像以 `--no-dev` 同步时缺少 `uvicorn`；现已将其声明为
   API 运行时依赖并更新锁文件。使用仅替换 Python 基础镜像来源的临时 override，
   migration、API、Worker 三容器完整 smoke 已通过，API `/health` 与
-  `PostgresControlPlaneStores` 断言均通过；提交的 Docker Hub 基础镜像仍待直接
-  build/smoke，临时镜像不替代提交 pin。
+  `PostgresControlPlaneStores` 断言均通过，镜像运行用户为 UID `65532`；提交的
+  Docker Hub 基础镜像仍待直接 build/smoke，临时镜像不替代提交 pin。
 - Redis 依赖容器之外已完成 `CLOUD-LIVE-01` 的 replay-plus-tail
   Port/Redis Streams Adapter；本地 `24/24`、integrations `127 passed, 3 skipped`
   和 pinned `redis:8.2.1-alpine` 宿主 Compose runner `1/1` 均通过，结果标记为

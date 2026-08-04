@@ -1624,9 +1624,10 @@ fact source; Redis remains optional live state and is not selected by startup.
 - A complete three-container smoke passed with the same committed Dockerfile
   and a temporary mirror-only Python base override: migration completed, API
   and Worker became healthy, `/health` passed, and the API exposed
-  `PostgresControlPlaneStores`. The pinned Docker Hub base in the committed
-  Dockerfile still needs a direct build/smoke run; the mirror is evidence of
-  application behavior, not a replacement for that source pin.
+  `PostgresControlPlaneStores`; the image reports runtime UID `65532`. The
+  pinned Docker Hub base in the committed Dockerfile still needs a direct
+  build/smoke run; the mirror is evidence of application behavior, not a
+  replacement for that source pin.
 - The same cloud environment was exercised from the synchronized host
   workspace: API `/health` passed, `create_app` exposed
   `PostgresControlPlaneStores`, and Worker completed one idle PostgreSQL cycle;

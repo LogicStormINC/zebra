@@ -31,7 +31,8 @@
   API runtime dependency was added and `uv.lock` regenerated.
 - A temporary mirror-base override passed the full three-container smoke,
   including migration ordering, API health, PostgreSQL store assertion and
-  Worker health. The committed Docker Hub base still needs a direct build.
+  Worker health; the image runs as UID `65532`. The committed Docker Hub base
+  still needs a direct build.
 
 ## CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter (Done)
 
