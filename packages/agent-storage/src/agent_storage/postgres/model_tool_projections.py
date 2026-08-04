@@ -36,6 +36,12 @@ class PostgresModelToolProjectionStore(ModelToolProjectionPort):
                 event.session_id,
                 authority.lease_fence,
             )
+            _assert_worker_stream_revision(
+                connection,
+                self._database.deployment_namespace,
+                event,
+                authority,
+            )
             return index_event_in_transaction(
                 connection, self._database.deployment_namespace, event
             )
@@ -96,6 +102,31 @@ class PostgresModelToolProjectionStore(ModelToolProjectionPort):
             raise LeaseLostError("model/tool mutation authority belongs to another namespace")
         if authority.session_id != event.session_id:
             raise LeaseLostError("model/tool mutation authority belongs to another session")
+
+
+def _assert_worker_stream_revision(
+    connection: Any,
+    deployment_namespace: str,
+    event: SessionEvent,
+    authority: WorkerMutationAuthority,
+) -> None:
+    """Bind a projection write to the stream revision preceding its Event."""
+    if event.sequence != authority.expected_stream_revision + 1:
+        raise PostgresModelToolProjectionConflictError(
+            "projection Event does not follow the expected stream revision"
+        )
+    row = connection.execute(
+        """
+        SELECT current_version FROM session_streams
+        WHERE deployment_namespace = %s AND session_id = %s
+        FOR SHARE
+        """,
+        (deployment_namespace, event.session_id),
+    ).fetchone()
+    if row is None or row["current_version"] < event.sequence:
+        raise PostgresModelToolProjectionConflictError(
+            "projection Event stream revision drifted before indexing"
+        )
 
 
 def index_event_in_transaction(

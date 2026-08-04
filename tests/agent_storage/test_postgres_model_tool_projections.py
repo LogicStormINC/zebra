@@ -19,8 +19,10 @@ from agent_storage import (
     apply_postgres_migrations,
     bootstrap_control_plane_epoch,
 )
+from agent_storage.postgres.model_tool_projections import index_event_in_transaction
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
+from psycopg.rows import dict_row
 
 
 @pytest.fixture(scope="session")
@@ -81,13 +83,53 @@ def test_worker_index_is_fenced_idempotent_and_replayable(dsn: str) -> None:
         deployment_namespace=namespace,
         session_id=session_id,
         lease_fence=lease.fence,
-        expected_stream_revision=tool.sequence,
+        expected_stream_revision=0,
     )
     store = PostgresModelToolProjectionStore(dsn, deployment_namespace=namespace)
 
+    with pytest.raises(PostgresModelToolProjectionConflictError):
+        store.index_worker_event(
+            model,
+            authority=authority.model_copy(update={"expected_stream_revision": 1}),
+        )
+    with pytest.raises(LeaseLostError):
+        store.index_worker_event(
+            model,
+            authority=authority.model_copy(update={"deployment_namespace": "other"}),
+        )
     assert store.index_worker_event(model, authority=authority) is not None
-    assert store.index_worker_event(tool, authority=authority) is not None
+
+    tool_authority = authority.model_copy(update={"expected_stream_revision": 1})
+    with psycopg.connect(dsn) as connection:
+        connection.execute(
+            """UPDATE session_streams SET current_version = %s
+               WHERE deployment_namespace = %s AND session_id = %s""",
+            (model.sequence, namespace, session_id),
+        )
+    with pytest.raises(PostgresModelToolProjectionConflictError):
+        store.index_worker_event(tool, authority=tool_authority)
+    with psycopg.connect(dsn) as connection:
+        assert connection.execute("SELECT count(*) FROM tool_run_projections").fetchone() == (0,)
+        connection.execute(
+            """UPDATE session_streams SET current_version = %s
+               WHERE deployment_namespace = %s AND session_id = %s""",
+            (tool.sequence, namespace, session_id),
+        )
+
+    assert store.index_worker_event(tool, authority=tool_authority) is not None
     assert store.index_worker_event(model, authority=authority) is not None
+    with psycopg.connect(dsn) as connection:
+        connection.execute(
+            "UPDATE model_call_projections SET assistant_message = 'before-rollback'"
+        )
+    with pytest.raises(RuntimeError, match="inject rollback"):
+        with psycopg.connect(dsn, row_factory=dict_row) as connection:
+            index_event_in_transaction(connection, namespace, model)
+            raise RuntimeError("inject rollback")
+    with psycopg.connect(dsn) as connection:
+        assert connection.execute(
+            "SELECT assistant_message FROM model_call_projections"
+        ).fetchone() == ("before-rollback",)
     with psycopg.connect(dsn) as connection:
         connection.execute(
             "UPDATE model_call_projections SET assistant_message = 'corrupt', cache_hit = false"
@@ -100,7 +142,7 @@ def test_worker_index_is_fenced_idempotent_and_replayable(dsn: str) -> None:
     conflicting = model.model_copy(update={"event_id": uuid4()})
     with pytest.raises(PostgresModelToolProjectionConflictError):
         store.index_worker_event(conflicting, authority=authority)
-    stale = authority.model_copy(
+    stale = tool_authority.model_copy(
         update={"lease_fence": lease.fence.model_copy(update={"fencing_token": 99})}
     )
     with pytest.raises(LeaseLostError):
