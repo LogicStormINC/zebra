@@ -44,6 +44,13 @@
   The mainline PostgreSQL runners pass `15/15` and `14/14` with
   `ZEBRA_HANDOFF_AUTH_POSTGRES_TEST_RESULT=PASS` and
   `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`.
+- `CLOUD-LIVE-01` is now the active, separately owned next slice for Redis live
+  event fan-out. It is limited to a provider-neutral Port, a bounded Redis
+  Streams adapter and isolated evidence; the local Core/adapter matrix is
+  `19/19`, the full integrations package is `123 passed, 3 skipped`, and the
+  host runner is pending. The detailed matrix is recorded in
+  `docs/CLOUD-LIVE-01.md`. It does not authorize API/Worker startup wiring,
+  application Compose, Runtime selection or any Redis authority.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.
   Its direct Task authority gap is implemented by `CLOUD-AGG-FENCE-TASK-01` at

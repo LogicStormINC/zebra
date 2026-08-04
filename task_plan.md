@@ -1,5 +1,23 @@
 # Task Plan
 
+## CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter (In Progress)
+
+1. `completed` - Register the independent live-state card with explicit owned
+   paths and keep application Compose/API/Worker wiring out of scope.
+2. `completed` - Add the Core replay-plus-tail Port and immutable envelope/
+   batch, then implement the namespace-scoped bounded Redis Streams adapter.
+3. `completed` - Add deterministic unit/integration coverage and hand the
+   isolated Redis Compose runner to the host for real-service evidence.
+4. `pending` - Record the host result and hand the card to Review without
+   selecting the adapter at runtime.
+
+### Boundary
+
+- Redis is ephemeral live state only. PostgreSQL Event replay remains the
+  durable authority and the recovery path when Redis is unavailable or truncated.
+- No application Compose overlay, API/Worker startup change, Runtime selection,
+  migration, SQLite behavior, Mem0 consumer or Trench integration is authorized.
+
 ## CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition (Done)
 
 1. `completed` - Confirm the accepted cloud/local profile contract and isolate the

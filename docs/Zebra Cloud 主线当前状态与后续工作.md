@@ -2,7 +2,7 @@
 
 > 快照日期：2026-08-04
 > 分支：`zebra-cloud-trench`
-> 当前基线：`31347989`
+> 当前基线：`a2faf0b4`
 
 ## 结论
 
@@ -179,7 +179,13 @@ selector 和在线事件路由的单独授权；本次组合任务关闭不改�
 - `docker/compose.application.yml` 目前不存在；其登记卡
   `CLOUD-COMPOSE-APP-01` 当前为 `Blocked`，不能作为 API/Worker 接线授权。
 - Zebra migration、API、Worker 三类主容器尚未建立。
-- Redis 目前只有依赖容器，没有 replay-plus-tail 的 live fan-out Adapter。
+- Redis 依赖容器之外已登记并实现 `CLOUD-LIVE-01` 的 replay-plus-tail
+  Port/Redis Streams Adapter；本地 `19/19` 和 integrations `123 passed, 3 skipped`
+  已通过，但宿主 Redis Compose 证据尚未回收。Adapter 仍未接入 API/Worker，
+  Redis 仍不是事实源。
+- `CLOUD-LIVE-01` 已登记并进入 `In Progress`，当前只实施可复用的
+  replay-plus-tail Port/Redis Streams Adapter 与隔离 Redis 证据；API/Worker
+  运行态接线和应用 Compose 仍不在本卡授权内。
 - PostgreSQL/MinIO/Redis 的备份、PITR、恢复、回滚、RPO/RTO 和多 Worker 故障演练
   尚未形成完整 GA 证据。
 
@@ -291,7 +297,8 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
    所有 runner 均完成清理。
 14. [x] 完成 `CLOUD-AGG-FENCE-REVIEW-01`；汇总全部矩阵为 `PASS`，
    `CLOUD-AGG-FENCE-01` 从 `Locked` 转为 `Review`，不授权实现或 runtime。
-15. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
+15. [进行中] 完成 `CLOUD-LIVE-01` 的 Redis live fan-out Port、Adapter 和隔离
+   Compose 证据；应用 Compose 仍需另一张独立授权卡。
 16. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
 17. 再激活 Host/AG-UI/Trench read-only vertical slice。
 18. 之后才进入 Frontend、Analysis、Writeback 和 GA。

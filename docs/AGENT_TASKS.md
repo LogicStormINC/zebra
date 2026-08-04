@@ -59,6 +59,10 @@ does not authorize production code, migrations or activation of its successor.
 - `CLOUD-COMPOSE-INFRA-01` is `Done` on `codex/cloud-compose-infra-01`; it
   defines only the dependency Compose stack. Zebra application containers remain
   a separate locked task.
+- `CLOUD-LIVE-01` is `In Progress` on `codex/cloud-live-01`; it owns only the
+  provider-neutral live-event fan-out Port, the Redis Streams adapter and an
+  isolated Redis evidence runner. It does not select a Runtime, wire API/Worker
+  startup, create application Compose or make Redis authoritative.
 - `MEM-MEM0-SPIKE-01` is `Done` on `codex/mem0-contract-spike-01`. The pinned
   OSS REST/Compose contract is recorded and its deterministic provider evidence
   is accepted; real-provider compatibility remains a separate credential gate.
@@ -629,6 +633,75 @@ service and from future Zebra API/Worker application containers.
 - Closing this card records the dependency-container baseline only. Mem0 contract
   and adapter cards, PostgreSQL adapters, Zebra application images and Runtime
   selection retain separate gates.
+
+### CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `INTEGRATIONS / API / STORAGE`
+- Depends on: merged `CLOUD-COMPOSE-INFRA-01` and the durable PostgreSQL Event
+  contract; this card does not require unlocking `CLOUD-AGG-FENCE-01`.
+- Branch: `codex/cloud-live-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-live-01/zebra-agent`
+- Owned paths: `packages/agent-core/src/agent_core/ports/live_event_fanout.py`,
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `packages/agent-integrations/src/agent_integrations/redis_live_fanout.py`,
+  `packages/agent-integrations/src/agent_integrations/__init__.py`, the
+  `agent-integrations` and `agent-security` dependency metadata plus lockfile, focused Core and
+  integration tests, `tests/compose/live_fanout/`, this task card, `task_plan.md`,
+  `PROGRESS.md`, `docs/CLOUD-LIVE-01.md` and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`.
+
+#### Goal
+
+Provide the first cloud live-state seam without making Redis a fact source:
+durable PostgreSQL replay establishes the client cursor, a Redis Stream barrier
+is captured before replay, and the adapter then returns only post-barrier events
+whose canonical sequence is newer than the durable cursor. Redis keys and payloads
+must remain namespace-scoped and bounded; loss or corruption is fail-closed and
+the caller can rebuild from PostgreSQL.
+
+#### Acceptance
+
+- Core exposes no Redis types and defines an immutable event envelope, opaque
+  stream cursor/batch and `LiveEventFanoutPort` for barrier capture, publish and
+  post-barrier reads.
+- The Redis adapter uses a versioned, encoded namespace/session stream key,
+  bounded `XADD`, explicit schema fields and strict event deserialization; a
+  cross-namespace or malformed entry is rejected rather than returned.
+- The replay-plus-tail contract is deterministic: events already covered by the
+  durable sequence are filtered, events appended after the captured barrier are
+  observable, and `next_cursor` advances past every inspected entry, including
+  filtered replay duplicates.
+- Unit tests cover namespace isolation, barrier ordering, duplicate filtering,
+  malformed payloads, bounded configuration and Redis failure propagation; an
+  isolated Redis Compose runner covers publish/barrier/tail behavior against the
+  pinned dependency image and cleans its resources.
+- No API/Worker startup wiring, Runtime selector, application Compose overlay,
+  PostgreSQL migration, SQLite change, Mem0 consumer, Redis lease/fencing or
+  production rollout is included.
+
+#### Implementation handoff
+
+- This card is the separately authorized live fan-out implementation slice. The
+  adapter is reusable but remains unselected by API/Worker composition until a
+  later runtime-routing card explicitly owns that wiring.
+
+#### Validation evidence (2026-08-04)
+
+- Core and Redis adapter regressions pass `19/19`; the full
+  `tests/agent_integrations` package passes `123 passed, 3 skipped`.
+- Changed-path Ruff, strict Mypy for the new Port/adapter, `uv lock --check`,
+  Compose config, shell syntax and `git diff --check` pass. The package metadata
+  now declares the existing `agent-security -> agent-tools` import chain and the
+  new `redis` client explicitly, so an isolated package install is reproducible.
+- `make check` remains blocked only by five pre-existing file-size violations
+  outside this card (`UI/desktop/...styles.ts`, API `app.py`, two PostgreSQL
+  adapters and the governed-memory test); no new violation is introduced.
+- The host-side Redis runner is registered at
+  `tests/compose/live_fanout/run-redis-tests.sh` and has not been executed in
+  the sandbox because Docker socket access is unavailable. The card stays
+  `In Progress` until the pinned Redis `8.2.1-alpine` evidence is returned.
 
 ### MEM-MEM0-SPIKE-01 - Mem0 OSS Contract And Operations Probe
 
@@ -1483,7 +1556,7 @@ projection to callers that currently use `model_calls` and `tool_runs`.
 - Suggested role: `SRE / APP / CORE`
 - Depends on: merged `CLOUD-COMPOSE-INFRA-01`, `CLOUD-PG-01`,
   `CLOUD-LEASE-01`, `CLOUD-ART-01`, `CLOUD-PROFILE-COMPOSITION-CON-01` and
-  `CLOUD-LIVE-01` (currently not registered)
+  `CLOUD-LIVE-01` (currently `In Progress`)
 - Branch: `TBD`
 - Candidate owned paths: `docker/compose.application.yml`, one multi-target Zebra
   Dockerfile, container smoke tests, required config composition and governance records
@@ -1491,10 +1564,10 @@ projection to callers that currently use `model_calls` and `tool_runs`.
 #### Block reason
 
 The profile contract is now `Done`, so that prerequisite is cleared. The card is
-still implementation-blocked: it needs a separately authorized implementation
-slice, and any future live runtime dependency must be registered before activation.
-It must not be used as an implicit authorization to change API/Worker startup or
-to unlock any aggregate fencing gate.
+still implementation-blocked: its live dependency is registered but not yet
+closed, and the application overlay still needs a separately authorized
+implementation slice. It must not be used as an implicit authorization to
+change API/Worker startup or to unlock any aggregate fencing gate.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 

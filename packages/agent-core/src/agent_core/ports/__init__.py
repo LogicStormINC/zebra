@@ -79,6 +79,12 @@ from agent_core.ports.handoff_dispatch_store import (
 )
 from agent_core.ports.idempotency_store import IdempotencyRecord, IdempotencyStorePort
 from agent_core.ports.lease_store import LeaseStorePort
+from agent_core.ports.live_event_fanout import (
+    LiveEventBatch,
+    LiveEventCursor,
+    LiveEventEnvelope,
+    LiveEventFanoutPort,
+)
 from agent_core.ports.memory_delivery import MemoryDeliveryLedgerPort
 from agent_core.ports.memory_store import MemoryStorePort
 from agent_core.ports.model_call_store import ModelCallStorePort
@@ -194,6 +200,10 @@ __all__ = [
     "LeaseConflictError",
     "LeaseFence",
     "LeaseLostError",
+    "LiveEventBatch",
+    "LiveEventCursor",
+    "LiveEventEnvelope",
+    "LiveEventFanoutPort",
     "MemoryStorePort",
     "MemoryDeliveryLedgerPort",
     "ConfirmedMemoryPublication",
