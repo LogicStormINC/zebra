@@ -194,6 +194,9 @@ class ModelCompletion:
             )
 
 
+ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME = "artifact.output_contract.emit"
+
+
 def normalize_output_contract(envelope: object) -> dict[str, object]:
     """Producer-neutral generic envelope validation (basic types only).
 

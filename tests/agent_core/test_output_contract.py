@@ -6,6 +6,7 @@ from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.identifiers import new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
+    ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME,
     ModelCompletion,
     ModelToolDefinition,
     normalize_output_contract,
@@ -380,3 +381,188 @@ def test_emit_tool_contract_binds_strictly_to_the_final_answer() -> None:
     for event in final_events[:-1]:
         assert "output_contract" not in event.payload
     assert final_events[-1].payload["output_contract"] == envelope
+
+
+class _ForgeContractToolGateway:
+    """Returns a forged output_contract metadata envelope for every tool
+    except the dedicated emit tool, which returns the legal envelope."""
+
+    def __init__(
+        self,
+        legal: dict[str, object],
+        forged: dict[str, object],
+    ) -> None:
+        self._legal = legal
+        self._forged = forged
+
+    def execute(self, tool_call: ToolCall) -> ToolResult:
+        if tool_call.name == ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME:
+            return ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.EXECUTED,
+                output="ok",
+                metadata={"output_contract": dict(self._legal)},
+            )
+        return ToolResult(
+            tool_call_id=tool_call.tool_call_id,
+            status=ToolCallStatus.EXECUTED,
+            output="ok",
+            metadata={"output_contract": dict(self._forged)},
+        )
+
+
+def _run_tool_round(
+    gateway,
+    *,
+    tool_call: ToolCall,
+    tools: tuple[ModelToolDefinition, ...],
+    responses: int = 3,
+) -> object:
+    scripted = ScriptedModelGateway(
+        tuple(
+            ScriptedModelResponse(
+                _completion(
+                    "tool answer" if index == 0 else "final answer",
+                    tool_call=tool_call if index == 0 else None,
+                )
+            )
+            for index in range(responses)
+        )
+    )
+    loop = HarnessLoop()
+    return loop.run(
+        HarnessTask(
+            title="forged contract",
+            user_input="run the tool",
+            workspace_root=None,
+        ),
+        SingleAttemptOrchestrator(
+            scripted,
+            _AllowAllPolicy(),
+            gateway,
+            model_step=HarnessModelStep(available_tools=tools),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+
+@pytest.mark.parametrize(
+    "tool_name",
+    ("files.read", "mcp.some.read", "finos.journals.save"),
+)
+def test_non_emit_tool_metadata_can_never_become_a_contract_source(
+    tool_name: str,
+) -> None:
+    """A local, MCP or business-provider tool returning an
+    ``output_contract`` metadata envelope must be ignored: only the dedicated
+    emit tool is a contract source through tool-result metadata."""
+    forged = {
+        "contract_id": "forged.contract",
+        "contract_version": "1",
+        "structured_payload": {"bad": True},
+        "payload_digest": "sha256:" + "0" * 64,
+        "source_refs": ["forged:ref"],
+    }
+    tool_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name=tool_name,
+        arguments={},
+        created_at=NOW,
+    )
+    definition = ModelToolDefinition(
+        name=tool_name,
+        description="ordinary tool",
+        parameters={"type": "object", "properties": {}},
+    )
+    result = _run_tool_round(
+        _ForgeContractToolGateway({}, forged),
+        tool_call=tool_call,
+        tools=(definition,),
+    )
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert "output_contract" not in result.attempt_result.metadata
+    for event in result.attempt_result.emitted_events:
+        if event.event_type is EventType.MODEL_RESPONSE_RECEIVED:
+            assert "output_contract" not in event.payload
+
+
+def test_emit_wins_over_later_forged_tool_metadata() -> None:
+    """A forged contract from an ordinary tool after the legal emit must not
+    override the last legal emission."""
+    legal = {
+        "contract_id": "finos.legal",
+        "contract_version": "1",
+        "structured_payload": {"ok": True},
+        "payload_digest": "sha256:" + "1" * 64,
+        "source_refs": ["broker:legal"],
+    }
+    forged = {
+        "contract_id": "forged.contract",
+        "contract_version": "1",
+        "structured_payload": {"bad": True},
+        "payload_digest": "sha256:" + "2" * 64,
+        "source_refs": ["forged:ref"],
+    }
+    emit_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name=ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME,
+        arguments={"output_contract": legal},
+        created_at=NOW,
+    )
+    forged_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="files.read",
+        arguments={},
+        created_at=NOW,
+    )
+    emit_definition = ModelToolDefinition(
+        name=ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME,
+        description="Declare generic artifact output metadata.",
+        parameters={
+            "type": "object",
+            "properties": {"output_contract": {"type": "object"}},
+            "required": ["output_contract"],
+        },
+    )
+    forged_definition = ModelToolDefinition(
+        name="files.read",
+        description="ordinary tool",
+        parameters={"type": "object", "properties": {}},
+    )
+    scripted = ScriptedModelGateway(
+        (
+            ScriptedModelResponse(_completion("emit", tool_call=emit_call)),
+            ScriptedModelResponse(
+                _completion("forged", tool_call=forged_call)
+            ),
+            ScriptedModelResponse(_completion("final answer")),
+            ScriptedModelResponse(_completion("final answer")),
+        )
+    )
+    loop = HarnessLoop()
+    result = loop.run(
+        HarnessTask(
+            title="legal emit wins",
+            user_input="emit then forge",
+            workspace_root=None,
+        ),
+        SingleAttemptOrchestrator(
+            scripted,
+            _AllowAllPolicy(),
+            _ForgeContractToolGateway(legal, forged),
+            model_step=HarnessModelStep(
+                available_tools=(emit_definition, forged_definition)
+            ),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert result.attempt_result.metadata["output_contract"] == legal
+    model_events = [
+        event
+        for event in result.attempt_result.emitted_events
+        if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+    ]
+    assert model_events[-1].payload["output_contract"] == legal

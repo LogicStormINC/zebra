@@ -11,12 +11,15 @@ from __future__ import annotations
 
 import json
 
-from agent_core.domain.modeling import normalize_output_contract
+from agent_core.domain.modeling import (
+    ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME,
+    normalize_output_contract,
+)
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_tools import ToolContract
 
 
-ARTIFACT_OUTPUT_CONTRACT_EMIT_NAME = "artifact.output_contract.emit"
+ARTIFACT_OUTPUT_CONTRACT_EMIT_NAME = ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME
 
 ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL = ToolContract(
     name=ARTIFACT_OUTPUT_CONTRACT_EMIT_NAME,

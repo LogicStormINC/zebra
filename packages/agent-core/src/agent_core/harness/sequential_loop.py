@@ -2,7 +2,10 @@ from collections.abc import Callable, Mapping
 from dataclasses import replace
 
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.modeling import (
+    ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME,
+    ModelCompletion,
+)
 from agent_core.domain.events import EventType
 from agent_core.domain.tools import ToolCall
 from agent_core.harness import context_recovery
@@ -517,15 +520,21 @@ def _final_output_contract(
 ) -> dict[str, object] | None:
     """The output_contract strictly bound to the FINAL answer.
 
-    The last explicit emission from a tool result
-    (``artifact.output_contract.emit``) in the terminal attempt wins;
-    otherwise the final completion's own gateway channel applies. Contracts
-    from earlier tool-loop rounds never leak into the final metadata because
-    only the terminal sites bind and non-final events never carry one.
+    Only the dedicated producer tool (``artifact.output_contract.emit``) may
+    contribute a contract through tool-result metadata; ANY other tool's
+    ``output_contract`` metadata is ignored, so a forged envelope from a
+    local, MCP or business-provider tool can never become the Artifact
+    contract source. The last legal emission in the terminal attempt wins;
+    otherwise the final completion's own gateway channel
+    (``ModelCompletion.output_contract``) applies. Contracts from earlier
+    tool-loop rounds never leak into the final metadata because only the
+    terminal sites bind and non-final events never carry one.
     """
     emitted: dict[str, object] | None = None
     for event in emitted_events:
         if event.event_type is not EventType.TOOL_EXECUTION_COMPLETED:
+            continue
+        if event.payload.get("tool_name") != ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME:
             continue
         metadata = event.payload.get("metadata")
         candidate = (
