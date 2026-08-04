@@ -3186,6 +3186,37 @@ external membership.
   Mem0, Provider HTTP, CopilotKit/Trench, production rollout or parent-gate
   unlock.
 
+### CLOUD-AGG-FENCE-MODEL-TOOL-01 - Model/Tool Projection Revision Fencing
+
+- Status: `In Progress`
+- Owner: `codex`
+- Depends on: `CLOUD-MODEL-TOOL-PG-01` `Done`, `CLOUD-AGG-FENCE-CON-01`
+  `Done`, and the maintainer's request to continue the cloud mainline.
+- Branch: `codex/cloud-agg-fence-model-tool-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-model-tool-01/zebra-agent`
+- Base: `zebra-cloud-trench@d622c720`
+- Activation: the maintainer explicitly requested continuation after
+  `CLOUD-AGG-FENCE-DISPATCH-01`; this is the only active successor. The parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/model_tool_projections.py`,
+  `tests/agent_storage/test_postgres_model_tool_projections.py`,
+  `tests/compose/model_tool/`, `docs/CLOUD-AGG-FENCE-MODEL-TOOL-01.md`, and
+  the governance records listed in this registry, `PROGRESS.md`, `task_plan.md`
+  and `docs/Zebra Cloud 主线当前状态与后续工作.md`.
+- Goal: make every Worker Model/Tool projection mutation bind the canonical
+  Event sequence to `WorkerMutationAuthority.expected_stream_revision` inside
+  its PostgreSQL transaction, while keeping replay management-only and
+  Event-derived.
+- Acceptance: stale or mismatched expected stream revision, namespace, session
+  or LeaseFence rejects before projection writes; valid same-Event replay stays
+  idempotent; a conflicting Event identity remains fail-closed; stream drift,
+  rollback and cross-namespace cases have zero-write evidence on PostgreSQL
+  17.5; a repository-owned runner emits a PASS sentinel and cleans resources.
+- Explicit non-goals: no migration/DDL, Event authority redesign, SQLite
+  behavior, API/Worker profile selection, Runtime, application Compose, Redis,
+  Mem0, Provider HTTP, CopilotKit/Trench, Artifact changes or parent-gate
+  unlock.
+
 ### CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01 - Workspace / Task Mutation Fencing Conformance Audit
 
 - Status: `Done`

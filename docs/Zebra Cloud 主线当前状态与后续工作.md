@@ -2,7 +2,7 @@
 
 > 快照日期：2026-08-04
 > 分支：`zebra-cloud-trench`
-> 当前基线：`635b6960`
+> 当前基线：`d622c720`
 
 ## 结论
 
@@ -143,8 +143,10 @@ Context conformance 审计及其 semantic successor 均为 `Done`，
  fencing cards 尚未闭合；`CLOUD-AGG-FENCE-DISPATCH-01` 已完成并关闭为 `Done`，
 `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` 已完成并为 `Done`，其
 `CLOUD-AGG-FENCE-TASK-01` 与 `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01`
-均已完成，不能顺带激活
-Runtime selector 或应用 Compose。API/Worker 存储组合已由
+ 均已完成，不能顺带激活
+ Runtime selector 或应用 Compose。当前唯一激活的后续卡是
+ `CLOUD-AGG-FENCE-MODEL-TOOL-01`，用于补齐 Model/Tool projection 的
+ `expected_stream_revision` PostgreSQL 写入校验；API/Worker 存储组合已由
 `CLOUD-API-WORKER-PG-01` 完成；应用
 `CLOUD-COMPOSE-APP-01` 当前仍为实现 `Blocked`，等待应用 Compose、Runtime 业务
 selector 和在线事件路由的单独授权；本次组合任务关闭不改变任何 runtime gate。
@@ -258,10 +260,13 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
    `49a8c026` 的 PostgreSQL `17.5-alpine3.21` runner 通过 `36/36` 并完成清理，
    本地 `REVIEW-OK` 已记录；再完成其余 aggregate fencing conformance，评估
    `CLOUD-AGG-FENCE-01` 激活。
-12. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
-13. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
-14. 再激活 Host/AG-UI/Trench read-only vertical slice。
-15. 之后才进入 Frontend、Analysis、Writeback 和 GA。
+12. [ ] 实施并关闭当前激活的 `CLOUD-AGG-FENCE-MODEL-TOOL-01`，补齐
+   Model/Tool projection 的 expected stream revision、stream drift 和 zero-write
+   PostgreSQL 证据；完成后再评估下一个剩余 aggregate conformance。
+13. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
+14. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
+15. 再激活 Host/AG-UI/Trench read-only vertical slice。
+16. 之后才进入 Frontend、Analysis、Writeback 和 GA。
 
 ## 当前治理门
 

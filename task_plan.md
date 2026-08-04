@@ -201,6 +201,33 @@
 - No parent-gate unlock, API/Worker profile activation or successor activation is
   implied.
 
+## CLOUD-AGG-FENCE-MODEL-TOOL-01 - Model/Tool Projection Revision Fencing (In Progress)
+
+1. `in_progress` - Register the path-bounded successor on
+   `codex/cloud-agg-fence-model-tool-01` from `zebra-cloud-trench@d622c720`;
+   preserve the dirty root `AGENTS.md` and keep the aggregate parent gate locked.
+2. `pending` - Add the smallest PostgreSQL transaction-local guard that binds a
+   Worker projection Event to `expected_stream_revision` and the current stream,
+   without changing the Event-derived replay path or SQLite adapter.
+3. `pending` - Add zero-write regressions for wrong revision, namespace/session,
+   stale fence, stream drift, conflicting Event identity and rollback; keep valid
+   same-Event replay idempotent.
+4. `pending` - Add and run a pinned PostgreSQL 17.5 Compose runner with exact
+   counts, PASS sentinel and deterministic cleanup; run changed-path static and
+   focused Worker/Storage regressions.
+5. `pending` - Record the audit matrix and local Review handoff; do not unlock
+   `CLOUD-AGG-FENCE-01` or activate Runtime/API/Worker/application Compose.
+
+### Boundary
+
+- Writable implementation paths are limited to the PostgreSQL Model/Tool
+  projection adapter, its focused PostgreSQL test, the dedicated runner/Compose
+  directory and this card's governance records.
+- `replay_session()` remains management-only and may not consume Worker authority
+  or write Artifact payloads. No migration, SQLite, Runtime, API/Worker selector,
+  Redis, Mem0, Provider HTTP, Artifact, CopilotKit/Trench or parent-gate change is
+  included.
+
 ## CLOUD-AGG-FENCE-TASK-01 - Fenced PostgreSQL Task Rollover Authority (Done)
 
 1. `completed` - Activate the bounded successor from the Workspace/Task audit on
