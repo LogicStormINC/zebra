@@ -4,6 +4,7 @@ from ipaddress import ip_address
 from urllib.parse import urlsplit
 
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
+from agent_core.domain.modeling import ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME
 from agent_core.domain.tools import ToolCall
 from agent_core.domain.web import WebTargetError, parse_web_target
 from agent_core.domain.web_search import (
@@ -106,7 +107,6 @@ SHELL_INJECTION_MARKERS = ("&&", "||", "$(", "`", ";", "|", ">", "<")
 SENSITIVE_PATH_MARKERS = (".env", "credential", "id_rsa", "private_key", "secret", "token")
 EXFILTRATION_COMMANDS = frozenset({"curl", "nc", "netcat", "scp", "wget"})
 FINOS_ACCOUNT_CHANGES_PROPOSE_TOOL = "finos.account_changes.propose"
-ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL = "artifact.output_contract.emit"
 PATH_ARGUMENTS_BY_TOOL = {
     "command.run": ("cwd",),
     "files.list": ("path",),
@@ -187,7 +187,7 @@ class LocalPolicyEngine:
                 self.profile,
                 "finos.account_changes.propose requires the v2 Task provider",
             )
-        if tool_name == ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL:
+        if tool_name == ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME:
             # Producer-neutral typed artifact metadata declaration: no network
             # egress, no workspace write and no business side effect, so it is
             # allowed under every local policy profile. The tool still only
