@@ -2,7 +2,7 @@
 
 ## Model/Tool Projection Revision Fencing
 
-- Status: `In Progress`
+- Status: `Done` / audit result `PASS`
 - Date: `2026-08-04`
 - Base: `zebra-cloud-trench@d622c720`
 - Branch: `codex/cloud-agg-fence-model-tool-01`
@@ -60,3 +60,25 @@ The card may move to `Done` only after the focused tests and repository-owned
 PostgreSQL runner pass from the merged cloud mainline, with deterministic
 cleanup and no change to `CLOUD-AGG-FENCE-01`, Runtime selection or application
 Compose.
+
+## Evidence and closeout
+
+- `PostgresModelToolProjectionStore.index_worker_event()` now checks the
+  canonical Event sequence against `expected_stream_revision + 1` and locks the
+  namespace-scoped stream row before indexing. A stream behind the Event,
+  wrong revision, wrong namespace/session or stale LeaseFence fails before an
+  index write; forward stream progress remains compatible with idempotent
+  Event-derived replay.
+- Focused PostgreSQL evidence from
+  `tests/compose/model_tool/run-postgres-tests.sh` uses
+  `postgres:17.5-alpine3.21`, passes `8/8`, emits
+  `ZEBRA_MODEL_TOOL_POSTGRES_TEST_RESULT=PASS`, and removes the container,
+  volume and network. The existing Control Plane runner also passes `11/11`
+  with `ZEBRA_CONTROL_PLANE_POSTGRES_TEST_RESULT=PASS`.
+- The focused matrix covers wrong revision, namespace, stream drift, stale
+  fence, conflicting Event identity, same-Event replay and an injected
+  transaction rollback with unchanged projection rows. Ruff, format, strict
+  Mypy, shell syntax, Compose config and `git diff --check` pass.
+- Implementation commit: `31347989`. The parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`; no Runtime/API/Worker selection,
+  application Compose, SQLite, Redis, Mem0 or production rollout is implied.

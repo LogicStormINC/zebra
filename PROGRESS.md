@@ -36,8 +36,8 @@
   now `Done` on its governance worktree. Its Store-level semantic gap was closed
   by `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`, which is also `Done` after sidebar
   `CLOSEOUT-OK`, three zero-write regressions and a real PostgreSQL `18/18`
-  focused matrix. The parent `CLOUD-AGG-FENCE-01` remains `Locked`; the next
-  path-bounded successor is `CLOUD-AGG-FENCE-MODEL-TOOL-01`.
+  focused matrix. The parent `CLOUD-AGG-FENCE-01` remains `Locked`; the
+  Model/Tool revision successor is now closed as `Done`.
 - `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` is now `Done` with audit result
   `PASS`; its reserve/abort successor is `Done`, and the dispatch successor
   `CLOUD-AGG-FENCE-DISPATCH-01` is fast-forward merged and closed as `Done`.
@@ -53,11 +53,13 @@
   `49a8c026`, passing `36/36` on PostgreSQL `17.5-alpine3.21` with deterministic
   cleanup. The parent `CLOUD-AGG-FENCE-01` remains `Locked` and no Runtime or
   application Compose activation is implied.
-- `CLOUD-AGG-FENCE-MODEL-TOOL-01` is the only active successor after the
-  dispatch closeout. It closes the missing PostgreSQL check that binds a Worker
-  Model/Tool projection Event to `expected_stream_revision`; its branch and
-  owned paths are recorded in `docs/AGENT_TASKS.md`. No parent-gate or runtime
-  activation is implied.
+- `CLOUD-AGG-FENCE-MODEL-TOOL-01` is `Done` at implementation commit
+  `31347989`. The PostgreSQL adapter now binds a Worker Model/Tool projection
+  Event to `expected_stream_revision` and the current stream; its dedicated
+  runner passes `8/8` with `ZEBRA_MODEL_TOOL_POSTGRES_TEST_RESULT=PASS`, while
+  the existing Control Plane runner passes `11/11`. Both runners clean their
+  resources. The parent gate remains `Locked` and no runtime activation is
+  implied.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core

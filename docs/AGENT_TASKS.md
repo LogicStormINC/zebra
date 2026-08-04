@@ -5,10 +5,10 @@
 > Current execution range: local Beta and single-host production foundations are
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
 > `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
-> accepted and closed. The active cloud-mainline slice is the governance-only
-> `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` audit is now `Done` with `PASS`; its
-> Handoff authority and dispatch successors are closed as `Done`, while the
-> aggregate parent remains locked.
+> accepted and closed. The active cloud-mainline slice just closed
+> `CLOUD-AGG-FENCE-MODEL-TOOL-01` with its PostgreSQL revision evidence; the
+> Handoff authority, dispatch and Workspace/Task successors are also `Done`,
+> while the aggregate parent remains locked.
 > Local SQLite Registry work remains deferred. ACP and optional code intelligence
 > remain locked.
 
@@ -126,6 +126,11 @@ does not authorize production code, migrations or activation of its successor.
   AUTH-01, DISPATCH-01 and their PostgreSQL runners subsequently closed the gaps.
   Local closeout records `PASS`; production runtime selection remains forbidden and
   the parent `CLOUD-AGG-FENCE-01` remains `Locked`.
+- `CLOUD-AGG-FENCE-MODEL-TOOL-01` is `Done` on
+  `codex/cloud-agg-fence-model-tool-01` at implementation commit `31347989`.
+  Its PostgreSQL runner passes `8/8` and the existing Control Plane runner passes
+  `11/11`; the parent aggregate gate and all runtime/application Compose choices
+  remain locked.
 
 ## Context Continuity And Governed Memory Board
 
@@ -3188,7 +3193,7 @@ external membership.
 
 ### CLOUD-AGG-FENCE-MODEL-TOOL-01 - Model/Tool Projection Revision Fencing
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `codex`
 - Depends on: `CLOUD-MODEL-TOOL-PG-01` `Done`, `CLOUD-AGG-FENCE-CON-01`
   `Done`, and the maintainer's request to continue the cloud mainline.
@@ -3212,6 +3217,16 @@ external membership.
   idempotent; a conflicting Event identity remains fail-closed; stream drift,
   rollback and cross-namespace cases have zero-write evidence on PostgreSQL
   17.5; a repository-owned runner emits a PASS sentinel and cleans resources.
+- Evidence: implementation commit `31347989` binds Event sequence to
+  `expected_stream_revision + 1` and the locked current stream inside the
+  PostgreSQL transaction. The dedicated runner passes `8/8` with
+  `ZEBRA_MODEL_TOOL_POSTGRES_TEST_RESULT=PASS`; the existing Control Plane
+  runner passes `11/11` with `ZEBRA_CONTROL_PLANE_POSTGRES_TEST_RESULT=PASS`.
+  Focused tests cover wrong revision, namespace/session, stale fence, stream
+  drift, conflicting Event identity, idempotent replay and rollback; resources
+  are cleaned by both runners. Local static checks pass.
+- Closeout: local Review is `REVIEW-OK`; this card is `Done` and the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
 - Explicit non-goals: no migration/DDL, Event authority redesign, SQLite
   behavior, API/Worker profile selection, Runtime, application Compose, Redis,
   Mem0, Provider HTTP, CopilotKit/Trench, Artifact changes or parent-gate

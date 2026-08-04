@@ -201,21 +201,21 @@
 - No parent-gate unlock, API/Worker profile activation or successor activation is
   implied.
 
-## CLOUD-AGG-FENCE-MODEL-TOOL-01 - Model/Tool Projection Revision Fencing (In Progress)
+## CLOUD-AGG-FENCE-MODEL-TOOL-01 - Model/Tool Projection Revision Fencing (Done)
 
-1. `in_progress` - Register the path-bounded successor on
+1. `completed` - Register the path-bounded successor on
    `codex/cloud-agg-fence-model-tool-01` from `zebra-cloud-trench@d622c720`;
    preserve the dirty root `AGENTS.md` and keep the aggregate parent gate locked.
-2. `pending` - Add the smallest PostgreSQL transaction-local guard that binds a
+2. `completed` - Add the smallest PostgreSQL transaction-local guard that binds a
    Worker projection Event to `expected_stream_revision` and the current stream,
    without changing the Event-derived replay path or SQLite adapter.
-3. `pending` - Add zero-write regressions for wrong revision, namespace/session,
+3. `completed` - Add zero-write regressions for wrong revision, namespace/session,
    stale fence, stream drift, conflicting Event identity and rollback; keep valid
    same-Event replay idempotent.
-4. `pending` - Add and run a pinned PostgreSQL 17.5 Compose runner with exact
+4. `completed` - Add and run a pinned PostgreSQL 17.5 Compose runner with exact
    counts, PASS sentinel and deterministic cleanup; run changed-path static and
    focused Worker/Storage regressions.
-5. `pending` - Record the audit matrix and local Review handoff; do not unlock
+5. `completed` - Record the audit matrix and local Review handoff; do not unlock
    `CLOUD-AGG-FENCE-01` or activate Runtime/API/Worker/application Compose.
 
 ### Boundary
@@ -227,6 +227,23 @@
   or write Artifact payloads. No migration, SQLite, Runtime, API/Worker selector,
   Redis, Mem0, Provider HTTP, Artifact, CopilotKit/Trench or parent-gate change is
   included.
+
+### Evidence and handoff
+
+- `PostgresModelToolProjectionStore.index_worker_event()` now validates
+  `event.sequence == authority.expected_stream_revision + 1` and locks the
+  namespace-scoped stream row before projection upsert. Forward stream progress
+  remains compatible with same-Event replay; a stream behind the Event fails
+  closed before any projection write.
+- `tests/compose/model_tool/run-postgres-tests.sh` uses
+  `postgres:17.5-alpine3.21`, passes `8/8`, emits
+  `ZEBRA_MODEL_TOOL_POSTGRES_TEST_RESULT=PASS`, and cleans its resources. The
+  existing Control Plane runner passes `11/11` with
+  `ZEBRA_CONTROL_PLANE_POSTGRES_TEST_RESULT=PASS`.
+- Ruff, format, strict Mypy, shell syntax, Compose config and `git diff --check`
+  pass. Implementation commit: `31347989`; local Review is `REVIEW-OK`.
+- The parent `CLOUD-AGG-FENCE-01` remains `Locked`; no runtime or application
+  Compose selection is implied.
 
 ## CLOUD-AGG-FENCE-TASK-01 - Fenced PostgreSQL Task Rollover Authority (Done)
 
