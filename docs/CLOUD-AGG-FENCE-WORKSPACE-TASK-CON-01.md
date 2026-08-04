@@ -11,6 +11,8 @@
 - 父门：`CLOUD-AGG-FENCE-01` 继续 `Locked`
 - 后续实现：`CLOUD-AGG-FENCE-TASK-01` 已在
   `codex/cloud-agg-fence-task-01` 完成并进入 `Done`
+- 后续证据：`CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` 已激活并进入
+  `In Progress`
 - 前置：`CLOUD-AGG-FENCE-CON-01`、`CLOUD-AGG-WORKSPACE-PG-01`、
   `CLOUD-AGG-TASK-PG-01` 均为 `Done`
 
@@ -62,7 +64,7 @@ runner。缺口不是应用 Compose、Runtime selector 或 SQLite fallback 的�
    CAS 和 zero-write 回归；保持已有 Handoff helper 的 Owned path 不被重做。该卡
    已通过本地 `REVIEW-OK`，实现提交为 `6a31929a`；Task `23/23` 与
    Handoff/dispatch `24/24` PostgreSQL 回归均通过。
-2. `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01`（`Locked`）：恢复仓库内可重放的
+2. `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01`（`In Progress`）：恢复仓库内可重放的
    PostgreSQL `17.5-alpine3.21` Workspace/Task focused runner，记录精确命令、计数、
    sentinel 和清理结果；不新增 migration，不把历史临时脚本当作当前证据。
 

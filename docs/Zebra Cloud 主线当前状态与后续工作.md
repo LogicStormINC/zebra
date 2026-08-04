@@ -129,8 +129,8 @@ fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 
 9. `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01`：当前为 `Review`，审计结果为
    `BLOCK-GAP`；其 direct Task authority 缺口已由
    `CLOUD-AGG-FENCE-TASK-01` 在 `6a31929a` 实现，Task focused PostgreSQL 回归为
-   `23/23`，但当前 checkout 仍缺少可重放的 Workspace/Task PostgreSQL runner。
-   独立 evidence successor 保持 `Locked`。
+   `23/23`，但当前 checkout 的 Workspace/Task PostgreSQL runner 正由独立
+   evidence successor 补齐。
 10. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
    在所有子聚合 conformance card 完成前继续保持 `Locked`。
 
@@ -254,8 +254,10 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 10. [x] 完成 `CLOUD-AGG-FENCE-TASK-01` direct rollover authority；实现提交
    `6a31929a` 已通过 Task `23/23`、Handoff/dispatch `24/24` 和本地
    `REVIEW-OK`，当前为 `Done`。
-11. 完成 `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01`，再完成其余 aggregate
-   fencing conformance 与真实 PostgreSQL 证据，评估 `CLOUD-AGG-FENCE-01` 激活。
+11. [in progress] 完成 `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01`；runner 已在
+   `codex/cloud-agg-fence-workspace-task-evidence-01` 创建，待宿主 PostgreSQL
+   证据与本地 Review；再完成其余 aggregate fencing conformance，评估
+   `CLOUD-AGG-FENCE-01` 激活。
 12. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
 13. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
 14. 再激活 Host/AG-UI/Trench read-only vertical slice。

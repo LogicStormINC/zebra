@@ -50,9 +50,9 @@
   `codex/cloud-agg-fence-task-01` at `6a31929a`; the focused Task PostgreSQL
   regression passes `23/23` and Handoff/dispatch regression passes `24/24`.
   The Task successor is locally reviewed and `Done`; the repository-owned
-  Workspace/Task runner remains the separate locked evidence successor. The parent
-  `CLOUD-AGG-FENCE-01` remains `Locked` and no Runtime or application Compose
-  activation is implied.
+  Workspace/Task runner is now the active `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01`
+  successor. The parent `CLOUD-AGG-FENCE-01` remains `Locked` and no Runtime or
+  application Compose activation is implied.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core

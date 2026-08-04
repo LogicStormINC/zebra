@@ -239,6 +239,29 @@
   existing control-plane Compose service; local `REVIEW-OK` is recorded. The
   dedicated Workspace/Task runner remains the next locked evidence card.
 
+## CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01 - Reproducible Workspace/Task PostgreSQL Evidence (In Progress)
+
+1. `completed` - Activate the path-bounded evidence successor from the Workspace/
+   Task audit after `CLOUD-AGG-FENCE-TASK-01` reached `Done`; keep the parent gate
+   and all Runtime/API/Worker selectors locked.
+2. `completed` - Add a pinned PostgreSQL `17.5-alpine3.21` Compose service and a
+   repository-owned runner with config validation, health wait, exact focused test
+   targets, pass/fail sentinel and `down --volumes --remove-orphans` cleanup.
+3. `in_progress` - Run the Workspace, Task and migration matrices on the host,
+   record counts, PostgreSQL version, tested SHA and cleanup evidence, then perform
+   local Review and update the audit handoff.
+
+### Boundary
+
+- Owned paths are limited to `tests/compose/workspace_task/` and governance records.
+- Do not change migrations, adapters, Core Ports, application Compose, Runtime/API/
+  Worker selectors, Redis, Mem0, SQLite or the parent `CLOUD-AGG-FENCE-01` gate.
+
+### Current handoff
+
+- The runner is present at `tests/compose/workspace_task/run-postgres-tests.sh`.
+- Host PostgreSQL evidence and local closeout remain pending.
+
 ## CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01 - Workspace / Task Mutation Fencing Conformance Audit (Review)
 
 1. `completed` - Claim the path-bounded governance audit on
@@ -272,8 +295,8 @@
   and current LeaseFence validation. The current checkout still has no reproducible
   Workspace/Task PostgreSQL runner.
 - `CLOUD-AGG-FENCE-TASK-01` is `Done` after its scoped implementation review;
-  `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` remains `Locked` pending a separate
-  activation and implementation review.
+  `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` is `In Progress` on its isolated
+  runner branch pending host evidence and implementation review.
 
 ## CLOUD-AGG-FENCE-CTX-SEMANTIC-01 - Administrative Context Event Semantics (Done)
 

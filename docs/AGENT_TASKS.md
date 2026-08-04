@@ -3215,8 +3215,8 @@ external membership.
   Workspace and `32/32` Task) remain recorded evidence but are not re-runnable from
   this checkout.
 - Required follow-ups: `CLOUD-AGG-FENCE-TASK-01` is `Done`; the separate
-  `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` remains `Locked` for repository-owned
-  PostgreSQL 17.5 runners. Neither successor unlocks the parent gate.
+  `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` is now `In Progress` for the
+  repository-owned PostgreSQL 17.5 runner. Neither successor unlocks the parent gate.
 - Explicit non-goals: no API/Worker selector, Runtime, application Compose, Redis,
   Mem0, Provider HTTP, CopilotKit/Trench, SQLite feature work or parent-gate unlock.
 
@@ -3251,6 +3251,31 @@ external membership.
 - Review state: local `REVIEW-OK` completed the scoped implementation review and
   moved this card to `Done`. No Runtime/API/Worker selector, application Compose,
   Redis, Mem0, SQLite feature work or parent-gate unlock is implied.
+
+### CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01 - Reproducible Workspace/Task PostgreSQL Evidence
+
+- Status: `In Progress`
+- Owner: `codex`
+- Depends on: `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` `Review` with `BLOCK-GAP`,
+  `CLOUD-AGG-FENCE-TASK-01` `Done`, `CLOUD-AGG-WORKSPACE-PG-01`,
+  `CLOUD-AGG-TASK-PG-01` and `CLOUD-AGG-FENCE-CON-01`.
+- Branch: `codex/cloud-agg-fence-workspace-task-evidence-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-workspace-task-evidence-01/zebra-agent`
+- Base: `zebra-cloud-trench@026995cf`
+- Owned paths: `tests/compose/workspace_task/compose.yml`,
+  `tests/compose/workspace_task/run-postgres-tests.sh`, and this card's governance
+  records. Existing migrations, adapters and application Compose are read-only.
+- Goal: make the Workspace/Task PostgreSQL 17.5 focused evidence reproducible from
+  the current checkout, with an explicit Compose lifecycle, exact test targets,
+  pass/fail sentinel and deterministic resource cleanup.
+- Acceptance: the runner validates Compose config, starts a pinned PostgreSQL
+  `17.5-alpine3.21` service, runs the Workspace, Task and migration matrices with
+  the repository's `uv` environment, emits
+  `ZEBRA_WORKSPACE_TASK_POSTGRES_TEST_RESULT=PASS` only on success, and removes
+  its container, volume and network on exit. No migration, Runtime/API/Worker
+  selector, application Compose or parent-gate change is allowed.
+- Current evidence: implementation is in progress; the runner and Compose files
+  are present but the host PostgreSQL run and closeout have not yet been recorded.
 
 ### CLOUD-CONTROL-PLANE-PG-01 - Complete PostgreSQL Store Composition
 
