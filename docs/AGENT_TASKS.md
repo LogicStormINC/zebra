@@ -3209,16 +3209,48 @@ external membership.
   Task identity, transaction atomicity, stale rejection and zero-write behavior for
   Workspace and Task paths, while separating Event-derived replay/management writes.
 - Audit result: `BLOCK-GAP`. Workspace Worker commit and Handoff-composed rollover
-  are locally fenced; `AgentTaskPort.attach_segment` and the PostgreSQL facade do not
-  express Worker authority or directly validate the current LeaseFence, and the
-  current checkout has no reproducible Workspace/Task PostgreSQL runner. Historical
-  host results (`80/80` Workspace and `32/32` Task) remain recorded evidence but are
-  not re-runnable from this checkout.
-- Required follow-ups (both `Locked`): `CLOUD-AGG-FENCE-TASK-01` for the direct Task
-  mutation authority boundary, and `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` for
-  repository-owned PostgreSQL 17.5 runners. Neither successor unlocks the parent gate.
+  are locally fenced, and the direct Task authority gap is now implemented by
+  `CLOUD-AGG-FENCE-TASK-01` at `6a31929a`; the current checkout still has no
+  reproducible Workspace/Task PostgreSQL runner. Historical host results (`80/80`
+  Workspace and `32/32` Task) remain recorded evidence but are not re-runnable from
+  this checkout.
+- Required follow-ups: `CLOUD-AGG-FENCE-TASK-01` is `Done`; the separate
+  `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` remains `Locked` for repository-owned
+  PostgreSQL 17.5 runners. Neither successor unlocks the parent gate.
 - Explicit non-goals: no API/Worker selector, Runtime, application Compose, Redis,
   Mem0, Provider HTTP, CopilotKit/Trench, SQLite feature work or parent-gate unlock.
+
+### CLOUD-AGG-FENCE-TASK-01 - Fenced PostgreSQL Task Rollover Authority
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` `Review` with `BLOCK-GAP`,
+  `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-TASK-PG-01`, `CLOUD-AGG-WORKSPACE-PG-01`
+  and the accepted Handoff aggregate transaction.
+- Branch: `codex/cloud-agg-fence-task-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-task-01/zebra-agent`
+- Base: `zebra-cloud-trench@5969533d`
+- Implementation commit: `6a31929a`
+- Owned paths: the Core `FencedAgentTaskStorePort`, PostgreSQL Task facade and
+  transaction helper, focused `tests/agent_storage/test_postgres_agent_tasks.py`,
+  exports and this task's governance records. No migration or Compose runner is
+  owned by this card.
+- Goal: make Worker-owned direct Task rollover require the canonical
+  `WorkerMutationAuthority`, current source LeaseFence, namespace, source Session
+  and expected stream revision, while preserving SQLite and the existing Handoff
+  transaction helper.
+- Acceptance: legacy cloud direct rollover fails closed without authority; valid
+  Worker rollover commits one Segment under the current fence; stale fence,
+  namespace, Session and stream revision attempts produce zero writes; concurrent
+  rollover still has one winner; Handoff/dispatch regressions remain green.
+- Current evidence: Task/PostgreSQL focused matrix passes `23/23`; Handoff/dispatch
+  regression matrix passes `24/24`; changed Ruff, strict Mypy over the three changed
+  source modules, `uv lock --check`, compilation and `git diff --check` pass. The
+  tests use an existing PostgreSQL 17.5 Compose service ad hoc; the repository-owned
+  Workspace/Task runner is a separate locked successor.
+- Review state: local `REVIEW-OK` completed the scoped implementation review and
+  moved this card to `Done`. No Runtime/API/Worker selector, application Compose,
+  Redis, Mem0, SQLite feature work or parent-gate unlock is implied.
 
 ### CLOUD-CONTROL-PLANE-PG-01 - Complete PostgreSQL Store Composition
 

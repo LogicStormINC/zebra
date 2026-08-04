@@ -205,6 +205,40 @@
 - No parent-gate unlock, API/Worker profile activation or successor activation is
   implied.
 
+## CLOUD-AGG-FENCE-TASK-01 - Fenced PostgreSQL Task Rollover Authority (Done)
+
+1. `completed` - Activate the bounded successor from the Workspace/Task audit on
+   `codex/cloud-agg-fence-task-01`, preserve the root `AGENTS.md`, and keep the
+   Workspace/Task evidence runner outside this card.
+2. `completed` - Add the cloud-only `FencedAgentTaskStorePort` and a Worker rollover
+   entry point requiring `WorkerMutationAuthority`; keep the legacy Core Port and
+   SQLite adapter unchanged.
+3. `completed` - Validate namespace, source Session, current LeaseFence and expected
+   source stream revision before Task/Segment writes; fail closed for legacy direct
+   PostgreSQL rollover without authority.
+4. `completed` - Add stale fence/namespace/Session/stream zero-write cases, valid
+   Worker rollover and concurrent one-winner coverage; preserve Handoff helper usage.
+5. `completed` - Run the focused PostgreSQL Task matrix (`23/23`), Handoff/dispatch
+   regressions (`24/24`), changed Ruff, strict Mypy, compilation, lock and diff checks;
+   commit implementation as `6a31929a`.
+6. `completed` - Complete local implementation Review and update the audit/task
+   handoff; do not unlock `CLOUD-AGG-FENCE-01` or activate the separate evidence card.
+
+### Boundary
+
+- Owned paths are limited to the Core cloud Task Port extension, PostgreSQL Task
+  facade/transaction helper, focused Task tests, exports and governance records.
+- No migration, repository-owned Compose runner, Handoff redesign, Runtime/API/
+  Worker selector, application Compose, Redis, Mem0, Provider HTTP, CopilotKit/
+  Trench, SQLite feature work or parent-gate unlock is authorized.
+
+### Current handoff
+
+- Implementation commit: `6a31929a feat(cloud): fence postgres task rollover`.
+- Evidence: Task `23/23` and Handoff/dispatch `24/24` on PostgreSQL 17.5 via the
+  existing control-plane Compose service; local `REVIEW-OK` is recorded. The
+  dedicated Workspace/Task runner remains the next locked evidence card.
+
 ## CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01 - Workspace / Task Mutation Fencing Conformance Audit (Review)
 
 1. `completed` - Claim the path-bounded governance audit on
@@ -219,7 +253,8 @@
    host results with the current checkout; mark missing repository-owned runners as a
    `BLOCK-GAP` rather than treating temporary scripts as reproducible evidence.
 5. `completed` - Register the direct Task authority and Workspace/Task evidence
-   successors as `Locked`; do not activate them or unlock `CLOUD-AGG-FENCE-01`.
+   successors as separate cards; do not activate them or unlock
+   `CLOUD-AGG-FENCE-01`.
 
 ### Boundary
 
@@ -233,11 +268,11 @@
 ### Audit decision
 
 - `BLOCK-GAP`: Workspace Worker commit and Handoff-composed rollover carry local
-  transaction evidence, but direct Task rollover has no explicit Worker authority
-  parameter/current LeaseFence validation, and the current checkout has no
-  reproducible Workspace/Task PostgreSQL runner.
-- Successors `CLOUD-AGG-FENCE-TASK-01` and
-  `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` remain `Locked` pending separate
+  transaction evidence, and direct Task rollover now has explicit Worker authority
+  and current LeaseFence validation. The current checkout still has no reproducible
+  Workspace/Task PostgreSQL runner.
+- `CLOUD-AGG-FENCE-TASK-01` is `Done` after its scoped implementation review;
+  `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` remains `Locked` pending a separate
   activation and implementation review.
 
 ## CLOUD-AGG-FENCE-CTX-SEMANTIC-01 - Administrative Context Event Semantics (Done)

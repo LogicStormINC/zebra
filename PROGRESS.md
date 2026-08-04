@@ -45,10 +45,12 @@
   `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`.
 - The current cloud governance slice is
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01`, in `Review` on its isolated worktree
-  at base `29a79bf7`, with audit result `BLOCK-GAP`. Workspace Worker commits and
-  Handoff-composed rollover are locally fenced, but direct Task mutation does not
-  accept `WorkerMutationAuthority`, and the current checkout lacks reproducible
-  Workspace/Task PostgreSQL runners. Follow-up cards remain `Locked`; the parent
+  at base `29a79bf7`, with audit result `BLOCK-GAP`. Its direct Task authority gap
+  is now implemented by `CLOUD-AGG-FENCE-TASK-01` on
+  `codex/cloud-agg-fence-task-01` at `6a31929a`; the focused Task PostgreSQL
+  regression passes `23/23` and Handoff/dispatch regression passes `24/24`.
+  The Task successor is locally reviewed and `Done`; the repository-owned
+  Workspace/Task runner remains the separate locked evidence successor. The parent
   `CLOUD-AGG-FENCE-01` remains `Locked` and no Runtime or application Compose
   activation is implied.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
