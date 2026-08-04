@@ -67,6 +67,10 @@ does not authorize production code, migrations or activation of its successor.
   owns the separate Zebra migration/API/Worker image and application Compose
   overlay. The base PostgreSQL/Redis/MinIO dependency stack remains an external
   lifecycle, and this card does not activate Redis live routing or aggregate gates.
+- `CLOUD-REC-01` is registered as `Locked`; it is the next recovery evidence
+  gate after the aggregate parent review. It must remain split into migration,
+  backup/PITR, object restore, fencing/outbox reconciliation and multi-Worker
+  drill evidence; no production RPO/RTO or failover claim is implied.
 - `MEM-MEM0-SPIKE-01` is `Done` on `codex/mem0-contract-spike-01`. The pinned
   OSS REST/Compose contract is recorded and its deterministic provider evidence
   is accepted; real-provider compatibility remains a separate credential gate.
@@ -1659,6 +1663,48 @@ fact source; Redis remains optional live state and is not selected by startup.
   recorded external pull gap, not a source-pin change.
 - This closeout does not select Redis live routing, change Runtime backend
   selection, unlock aggregate fencing or claim a production rollout.
+
+### CLOUD-REC-01 - Migration, Backup, Restore And Recovery Gate
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `SRE / STORAGE / QA`
+- Depends on: `CLOUD-PG-PLAN-01`, `CLOUD-PG-01`, `CLOUD-LEASE-01`, completed
+  Artifact/PostgreSQL composition, `CLOUD-COMPOSE-APP-01` (`Done`) and
+  `CLOUD-AGG-FENCE-01` (`Review`, maintainer closeout required)
+- Branch: `TBD`
+- Owned paths: none while `Locked`; implementation must be split into
+  path-bounded child cards before activation
+
+#### Goal
+
+Produce repeatable, evidence-backed migration, backup, restore, rollback and
+multi-Worker recovery gates for the cloud profile without making Mem0 or Redis
+an authority and without claiming production readiness from local Compose alone.
+
+#### Planned child boundaries
+
+1. `CLOUD-PG-MIG-01`: canonical SQLite snapshot/export/import policy, cutover
+   manifest, unique `ACTIVE` record and fail-closed runtime write checks.
+2. `CLOUD-REC-BACKUP-01`: PostgreSQL logical/physical backup and PITR evidence;
+   platform-specific credentials and retention remain external to Zebra.
+3. `CLOUD-REC-RESTORE-01`: fresh-instance restore, S3-compatible Artifact
+   manifest/checksum validation, Redis rebuild and Lease epoch/fencing reset.
+4. `CLOUD-REC-DRILL-01`: rollback-versus-restore runbook, outbox reconciliation,
+   multi-Worker crash/race drill and measured RPO/RTO record.
+
+#### Lock reason and acceptance
+
+- The aggregate parent is still in `Review`; no child implementation or
+  successor activation is authorized until that gate is explicitly closed.
+- Every child must use isolated PostgreSQL/MinIO evidence with deterministic
+  cleanup, preserve the single PostgreSQL fact source, and fail closed on
+  namespace, epoch, checksum, object or cutover inconsistencies.
+- Mem0 remains a confirmed-memory derived index that can be rebuilt; Redis is
+  ephemeral live state rebuilt from PostgreSQL Event replay. Neither enters the
+  migration authority set.
+- Production RPO/RTO, PITR, failover or DR readiness stays `TBD` until a real
+  environment measures and approves it; local evidence alone cannot close GA.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 

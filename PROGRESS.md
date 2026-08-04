@@ -66,6 +66,11 @@
   Dockerfile keeps the official Docker Hub digest as its standalone default;
   that direct build remains an external review gap. The base dependency Compose
   remains a separate lifecycle.
+- `CLOUD-REC-01` is now registered as the next `Locked` recovery gate. Its
+  migration/export, backup/PITR, object restore, fencing/outbox reconciliation
+  and multi-Worker drill children remain inactive until the aggregate parent
+  `CLOUD-AGG-FENCE-01` receives maintainer closeout; no production RPO/RTO or DR
+  claim is made from local Compose evidence.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.
   Its direct Task authority gap is implemented by `CLOUD-AGG-FENCE-TASK-01` at

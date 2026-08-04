@@ -51,6 +51,20 @@
 - The official Docker Hub digest pull remains an external evidence gap; the
   committed Dockerfile default and source pin are unchanged.
 
+## CLOUD-REC-01 - Migration, Backup, Restore And Recovery Gate (Locked)
+
+- Next gate after `CLOUD-COMPOSE-APP-01`: migration/cutover policy, PostgreSQL
+  backup/PITR, object restore, fencing/outbox reconciliation and multi-Worker
+  failure drills.
+- Current blocker: `CLOUD-AGG-FENCE-01` is in `Review`; no recovery child is
+  activated until its maintainer closeout is recorded.
+- Planned child cards are `CLOUD-PG-MIG-01`, `CLOUD-REC-BACKUP-01`,
+  `CLOUD-REC-RESTORE-01` and `CLOUD-REC-DRILL-01`. Each must have its own
+  branch, owner, evidence runner and exact owned paths.
+- Boundary: PostgreSQL remains the only lifecycle/operation fact source; Redis
+  is replayable live state; Mem0 is a rebuildable confirmed-memory index. No
+  production RPO/RTO, PITR or DR claim is made from local Compose evidence.
+
 ## CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter (Done)
 
 1. `completed` - Register the independent live-state card with explicit owned
