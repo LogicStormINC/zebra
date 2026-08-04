@@ -245,6 +245,46 @@
 - The parent `CLOUD-AGG-FENCE-01` remains `Locked`; no runtime or application
   Compose selection is implied.
 
+## CLOUD-AGG-FENCE-PROVIDER-01 - Provider Continuation Lifecycle Fencing Conformance (In Progress)
+
+1. `completed` - Register the path-bounded Provider Continuation conformance
+   successor on `codex/cloud-agg-fence-provider-01` from
+   `zebra-cloud-trench@5694032c`; preserve the dirty root `AGENTS.md` and keep
+   the aggregate parent gate locked.
+2. `in_progress` - Trace every PostgreSQL Provider Continuation Worker mutation
+   and identify whether namespace, Session, LeaseFence and expected stream
+   revision are checked inside one transaction.
+3. `pending` - Bind `delete_for_worker` to the locked Session stream using the
+   existing `WorkerMutationAuthority.expected_stream_revision` helper without
+   changing the v13 schema or local SQLite Port.
+4. `pending` - Add stale-revision, namespace/session, stale-fence, idempotent
+   replay and rollback zero-write regressions; retain valid deletion behavior.
+5. `pending` - Run the pinned PostgreSQL 17.5 Provider Continuation runner,
+   changed-path static checks and `git diff --check`; record exact counts,
+   cleanup and closeout evidence.
+
+### Boundary
+
+- Writable implementation paths are limited to the Provider Continuation
+  PostgreSQL adapter, its focused PostgreSQL tests, the existing dedicated
+  runner/Compose directory and this card's governance records.
+- No migration, Provider HTTP, SQLite, Runtime, API/Worker profile selection,
+  application Compose, Redis, Mem0, Artifact, Delivery or parent-gate change
+  is included.
+
+### Current finding
+
+- `commit_worker_selection` already locks and checks the expected stream before
+  inserting the payload/Event aggregate. `delete_for_worker` checks the active
+  LeaseFence but currently does not bind `authority.expected_stream_revision`
+  to the Session stream, so a stale stream authority can mutate a live row.
+
+### Review boundary
+
+- The parent `CLOUD-AGG-FENCE-01` remains `Locked`; completing this card does
+  not authorize Runtime/API/Worker selection, application Compose or cloud
+  production rollout.
+
 ## CLOUD-AGG-FENCE-TASK-01 - Fenced PostgreSQL Task Rollover Authority (Done)
 
 1. `completed` - Activate the bounded successor from the Workspace/Task audit on

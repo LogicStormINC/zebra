@@ -6,7 +6,8 @@
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
 > `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
 > accepted and closed. The active cloud-mainline slice just closed
-> `CLOUD-AGG-FENCE-MODEL-TOOL-01` with its PostgreSQL revision evidence; the
+> `CLOUD-AGG-FENCE-PROVIDER-01` is the active Provider Continuation fencing
+> conformance slice after `CLOUD-AGG-FENCE-MODEL-TOOL-01` closed; the
 > Handoff authority, dispatch and Workspace/Task successors are also `Done`,
 > while the aggregate parent remains locked.
 > Local SQLite Registry work remains deferred. ACP and optional code intelligence
@@ -3231,6 +3232,37 @@ external membership.
   behavior, API/Worker profile selection, Runtime, application Compose, Redis,
   Mem0, Provider HTTP, CopilotKit/Trench, Artifact changes or parent-gate
   unlock.
+
+### CLOUD-AGG-FENCE-PROVIDER-01 - Provider Continuation Lifecycle Fencing Conformance
+
+- Status: `In Progress`
+- Owner: `codex`
+- Depends on: `CLOUD-PROVIDER-CONT-PG-01` `Done`,
+  `CLOUD-AGG-FENCE-CON-01` `Done`, and merged
+  `CLOUD-AGG-FENCE-MODEL-TOOL-01` evidence.
+- Branch: `codex/cloud-agg-fence-provider-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-provider-01/zebra-agent`
+- Base: `zebra-cloud-trench@5694032c`
+- Activation: the maintainer requested continuation after the Model/Tool
+  conformance closeout. This is the only active successor; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/provider_continuations.py`,
+  `tests/agent_storage/test_postgres_provider_continuations.py`,
+  `tests/compose/provider_continuation/`,
+  `docs/CLOUD-AGG-FENCE-PROVIDER-01.md`, and the governance records listed in
+  this registry, `PROGRESS.md`, `task_plan.md` and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`.
+- Goal: make every Worker Provider Continuation mutation, including soft
+  delete, bind the canonical `WorkerMutationAuthority.expected_stream_revision`
+  to the locked Session stream in the same PostgreSQL transaction while
+  preserving the existing v13 payload/Event contract.
+- Acceptance: stale or mismatched stream revision, namespace/session or
+  LeaseFence rejects before payload mutation; valid deletion remains
+  idempotent; rollback and zero-write evidence run against PostgreSQL 17.5;
+  the repository-owned runner emits a PASS sentinel and cleans all resources.
+- Explicit non-goals: no migration/DDL, Provider HTTP, SQLite behavior,
+  Runtime/API/Worker profile selection, application Compose, Redis, Mem0,
+  Artifact or Delivery changes, and no parent-gate unlock.
 
 ### CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01 - Workspace / Task Mutation Fencing Conformance Audit
 

@@ -135,7 +135,11 @@ fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 
    `expected_stream_revision`、stream drift、rollback 和 zero-write 校验；专用
    PostgreSQL 17.5 runner 通过 `8/8`，现有 Control Plane runner 通过 `11/11`，
    实现提交为 `31347989`。
-11. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
+11. `CLOUD-AGG-FENCE-PROVIDER-01`：当前激活的 Provider Continuation conformance
+   successor。`commit_worker_selection` 已绑定 expected stream revision；当前
+   补齐 `delete_for_worker` 的同事务 stream CAS、stale-revision 与 zero-write
+   证据，不改 v13 schema 或本地 SQLite。
+12. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
    在所有子聚合 conformance card 完成前继续保持 `Locked`。
 
 当前 `CLOUD-CONTROL-PLANE-PG-01`、`CLOUD-API-WORKER-PG-01` 与
