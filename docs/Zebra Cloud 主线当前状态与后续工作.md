@@ -171,12 +171,12 @@ Context conformance 审计及其 semantic successor 均为 `Done`，
  事务证据补齐，不改变已实现事务；`CLOUD-AGG-FENCE-DELIVERY-01` 已完成
  command boundary 证据，不改变 command transaction；API/Worker 存储组合已由
 `CLOUD-API-WORKER-PG-01` 完成；应用
-`CLOUD-COMPOSE-APP-01` 当前仍为实现 `Blocked`，等待应用 Compose、Runtime 业务
-selector 和在线事件路由的单独授权；本次组合任务关闭不改变任何 runtime gate。
+`CLOUD-COMPOSE-APP-01` 已完成应用 Compose 实现并关闭为 `Done`；Runtime 业务
+selector、在线事件路由和 aggregate gate 仍保持独立门禁，不因本次组合任务解锁。
 
 ### Docker 应用层与在线事件
 
-- `CLOUD-COMPOSE-APP-01` 已在依赖闭合后进入 `Review`，当前只建立
+- `CLOUD-COMPOSE-APP-01` 已在依赖闭合后完成并关闭为 `Done`，当前只建立
   独立的 migration/API/Worker 主容器和 application-only Compose overlay；
   不改造基础依赖容器生命周期。
 - 首次容器验证发现生产镜像以 `--no-dev` 同步时缺少 `uvicorn`；现已将其声明为

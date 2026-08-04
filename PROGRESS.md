@@ -54,7 +54,7 @@
   `ZEBRA_LIVE_FANOUT_REDIS_TEST_RESULT=PASS`. The detailed matrix is recorded
   in `docs/CLOUD-LIVE-01.md`. It does not authorize API/Worker startup wiring,
   application Compose, Runtime selection or any Redis authority.
-- `CLOUD-COMPOSE-APP-01` is now in `Review` on
+- `CLOUD-COMPOSE-APP-01` is now `Done` on
   `codex/cloud-compose-app-01`. It owns only the non-root multi-target Zebra
   image, the application-only migration/API/Worker Compose overlay and isolated
   smoke evidence; host-side cloud composition already proves API health,

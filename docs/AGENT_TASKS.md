@@ -63,7 +63,7 @@ does not authorize production code, migrations or activation of its successor.
   provider-neutral live-event fan-out Port, the Redis Streams adapter and an
   isolated Redis evidence runner. It does not select a Runtime, wire API/Worker
   startup, create application Compose or make Redis authoritative.
-- `CLOUD-COMPOSE-APP-01` is `In Progress` on `codex/cloud-compose-app-01`; it
+- `CLOUD-COMPOSE-APP-01` is `Done` on `codex/cloud-compose-app-01`; it
   owns the separate Zebra migration/API/Worker image and application Compose
   overlay. The base PostgreSQL/Redis/MinIO dependency stack remains an external
   lifecycle, and this card does not activate Redis live routing or aggregate gates.
@@ -1564,7 +1564,7 @@ projection to callers that currently use `model_calls` and `tool_runs`.
 
 ### CLOUD-COMPOSE-APP-01 - Zebra Application Container Overlay
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `SRE / APP / CORE`
 - Depends on: merged `CLOUD-COMPOSE-INFRA-01`, `CLOUD-PG-01`,
@@ -1650,6 +1650,15 @@ fact source; Redis remains optional live state and is not selected by startup.
   available for upstream builds; no source pin replacement, production rollout,
   Redis live routing, Runtime selector or aggregate-gate unlock is authorized
   by this mirror-only validation.
+
+#### Closeout
+
+- Independent review accepted the implementation as `PASS` and closed the card
+  as `Done`. The mirror-backed runner is the reproducible local evidence for
+  this environment; the official Docker Hub digest remains an explicitly
+  recorded external pull gap, not a source-pin change.
+- This closeout does not select Redis live routing, change Runtime backend
+  selection, unlock aggregate fencing or claim a production rollout.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 

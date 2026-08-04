@@ -1,6 +1,6 @@
 # Task Plan
 
-## CLOUD-COMPOSE-APP-01 - Zebra Application Container Overlay (Review)
+## CLOUD-COMPOSE-APP-01 - Zebra Application Container Overlay (Done)
 
 1. `completed` - Claim the dependency-cleared application Compose card with a
    dedicated branch/worktree and explicit owned paths.
@@ -43,6 +43,13 @@
   is not replaced in the Dockerfile; Application Compose selects the
   helper-confirmed mirror through an explicit build arg, and its runner passes.
   No runtime or aggregate gate is unlocked by this handoff.
+
+### Closeout
+
+- Independent review accepted the mirror-backed implementation as `PASS` and
+  closed `CLOUD-COMPOSE-APP-01` as `Done`.
+- The official Docker Hub digest pull remains an external evidence gap; the
+  committed Dockerfile default and source pin are unchanged.
 
 ## CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter (Done)
 
