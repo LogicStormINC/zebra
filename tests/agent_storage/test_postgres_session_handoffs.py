@@ -26,9 +26,11 @@ from agent_core.domain.session_handoff import (
     HandoffReason,
     SessionHandoffEnvelope,
 )
+from agent_core.ports.aggregate_mutation import AdministrativeMutationCAS
 from agent_core.ports.session_handoff import (
     HandoffOperation,
     HandoffSourceFacts,
+    SessionHandoffAbortRequest,
     SessionHandoffCommitRequest,
     SessionHandoffCreateRequest,
     canonical_handoff_request_hash,
@@ -156,6 +158,123 @@ def test_reserve_is_idempotent_and_rejects_a_different_request(
     assert second == first
     with pytest.raises(HandoffIdempotencyConflictError):
         _reserve(store, create_request, facts=facts, request_hash="2" * 64)
+
+
+def test_reserve_rejects_stale_authority_before_operation_write(
+    postgres_dsn: str,
+    handoff_namespace: str,
+    tmp_path: Path,
+) -> None:
+    source_id = _seed_completed_source(postgres_dsn, handoff_namespace, tmp_path)
+    store = _store(postgres_dsn, handoff_namespace)
+    create_request = _create_request(source_id, idempotency_key="stale-authority")
+    facts = store.inspect_source_facts(source_id, at=NOW)
+    stale = replace(facts, authority_revision="f" * 64)
+
+    with pytest.raises(HandoffStorageConflictError, match="authority facts"):
+        _reserve(store, create_request, facts=stale, request_hash=_request_hash(create_request))
+
+    with psycopg.connect(postgres_dsn) as connection:
+        row = connection.execute(
+            """
+            SELECT count(*) FROM handoff_operations
+            WHERE deployment_namespace = %s
+            """,
+            (handoff_namespace,),
+        ).fetchone()
+        assert row is not None and row[0] == 0
+
+
+def test_reserve_rejects_an_active_source_lease_before_operation_write(
+    postgres_dsn: str,
+    handoff_namespace: str,
+    tmp_path: Path,
+) -> None:
+    source_id = _seed_completed_source(postgres_dsn, handoff_namespace, tmp_path)
+    leases = PostgresLeaseStore(postgres_dsn, deployment_namespace=handoff_namespace)
+    leases.acquire(source_id, owner_instance_id="handoff-worker", ttl=timedelta(minutes=1))
+    store = _store(postgres_dsn, handoff_namespace)
+    create_request = _create_request(source_id, idempotency_key="active-lease")
+    facts = store.inspect_source_facts(source_id, at=NOW)
+
+    with pytest.raises(HandoffStorageConflictError, match="active lease"):
+        _reserve(store, create_request, facts=facts, request_hash=_request_hash(create_request))
+
+    with psycopg.connect(postgres_dsn) as connection:
+        row = connection.execute(
+            """
+            SELECT count(*) FROM handoff_operations
+            WHERE deployment_namespace = %s
+            """,
+            (handoff_namespace,),
+        ).fetchone()
+        assert row is not None and row[0] == 0
+
+
+def test_abort_requires_reservation_identity_and_administrative_cas(
+    postgres_dsn: str,
+    handoff_namespace: str,
+    tmp_path: Path,
+) -> None:
+    source_id = _seed_completed_source(postgres_dsn, handoff_namespace, tmp_path)
+    store = _store(postgres_dsn, handoff_namespace)
+    operation, _ = _prepared_commit(store, source_id)
+    authority = AdministrativeMutationCAS(
+        deployment_namespace=handoff_namespace,
+        session_id=source_id,
+        expected_stream_revision=operation.expected_source_stream_version,
+    )
+    invalid = SessionHandoffAbortRequest(
+        operation=replace(operation, request_hash="f" * 64),
+        authority=authority,
+        code="invalid_request_identity",
+    )
+
+    with pytest.raises(HandoffStorageConflictError, match="reservation facts"):
+        store.abort_authorized(invalid)
+    assert _operation_status(postgres_dsn, handoff_namespace, operation.operation_id) == (
+        "preparing",
+        None,
+    )
+
+    stale_authority = authority.model_copy(
+        update={"expected_stream_revision": authority.expected_stream_revision + 1}
+    )
+    with pytest.raises(HandoffStorageConflictError, match="authority"):
+        store.abort_authorized(
+            SessionHandoffAbortRequest(
+                operation=operation,
+                authority=stale_authority,
+                code="stale_cas",
+            )
+        )
+    assert _operation_status(postgres_dsn, handoff_namespace, operation.operation_id) == (
+        "preparing",
+        None,
+    )
+
+    request = SessionHandoffAbortRequest(
+        operation=operation,
+        authority=authority,
+        code="validation_rejected",
+    )
+    aborted = store.abort_authorized(request)
+    assert aborted.status.value == "aborted"
+    assert aborted.abort_code == request.code
+    assert store.abort_authorized(request) == aborted
+
+
+def _operation_status(dsn: str, namespace: str, operation_id: str) -> tuple[str, str | None]:
+    with psycopg.connect(dsn) as connection:
+        row = connection.execute(
+            """
+            SELECT status, abort_code FROM handoff_operations
+            WHERE deployment_namespace = %s AND operation_id = %s
+            """,
+            (namespace, operation_id),
+        ).fetchone()
+    assert row is not None
+    return str(row[0]), row[1]
 
 
 def test_stale_workspace_facts_leave_no_partial_handoff_rows(

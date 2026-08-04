@@ -15,6 +15,7 @@ from agent_core.domain.session_handoff import (
     SessionLineage,
     WorkspaceBindingRevision,
 )
+from agent_core.ports.aggregate_mutation import AdministrativeMutationCAS
 from agent_core.ports.handoff_dispatch_store import HandoffDispatch
 
 
@@ -93,6 +94,15 @@ class HandoffOperation:
 
 
 @dataclass(frozen=True, slots=True)
+class SessionHandoffAbortRequest:
+    """Administrative CAS evidence for aborting one reserved Handoff."""
+
+    operation: HandoffOperation
+    authority: AdministrativeMutationCAS
+    code: str
+
+
+@dataclass(frozen=True, slots=True)
 class SessionHandoffCommitRequest:
     operation: HandoffOperation
     create_request: SessionHandoffCreateRequest
@@ -161,3 +171,9 @@ class SessionHandoffPort(Protocol):
     ) -> HandoffDispatch | None: ...
 
     def acknowledge_dispatch(self, delivery_id: str, *, worker_id: str) -> None: ...
+
+
+class SessionHandoffAbortPort(Protocol):
+    """Stronger cloud-only abort seam; local SQLite keeps its legacy Port."""
+
+    def abort_authorized(self, request: SessionHandoffAbortRequest) -> HandoffOperation: ...

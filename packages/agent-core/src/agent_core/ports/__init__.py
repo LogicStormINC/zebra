@@ -120,6 +120,8 @@ from agent_core.ports.session_artifact_read import (
 from agent_core.ports.session_handoff import (
     HandoffOperation,
     HandoffSourceFacts,
+    SessionHandoffAbortPort,
+    SessionHandoffAbortRequest,
     SessionHandoffCommitRequest,
     SessionHandoffCreateRequest,
     SessionHandoffPort,
@@ -176,6 +178,8 @@ __all__ = [
     "HandoffDispatch",
     "HandoffDispatchStorePort",
     "HandoffSourceFacts",
+    "SessionHandoffAbortPort",
+    "SessionHandoffAbortRequest",
     "GovernedMemoryStorePort",
     "GovernedMemoryScanCursor",
     "GovernedMemoryScanPage",

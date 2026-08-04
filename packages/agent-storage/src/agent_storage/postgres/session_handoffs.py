@@ -13,10 +13,13 @@ from agent_core.domain.session_handoff import (
     SessionLineage,
     WorkspaceBindingRevision,
 )
+from agent_core.ports.aggregate_mutation import AdministrativeMutationCAS
 from agent_core.ports.handoff_dispatch_store import HandoffDispatch
 from agent_core.ports.session_handoff import (
     HandoffOperation,
     HandoffSourceFacts,
+    SessionHandoffAbortPort,
+    SessionHandoffAbortRequest,
     SessionHandoffCommitRequest,
     SessionHandoffCreateRequest,
     SessionHandoffPort,
@@ -26,6 +29,12 @@ from psycopg import errors
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.leases import lock_session_lease_boundary
+from agent_storage.postgres.session_handoff_authority import (
+    abort_authorized_in_transaction,
+    find_reservation,
+    require_reservation_facts,
+)
 from agent_storage.postgres.session_handoff_facts import (
     operation_from_row,
     read_source_facts_in_transaction,
@@ -47,7 +56,7 @@ from agent_storage.session_handoff_rows import (
 )
 
 
-class PostgresSessionHandoffStore(SessionHandoffPort):
+class PostgresSessionHandoffStore(SessionHandoffPort, SessionHandoffAbortPort):
     def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
         self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
 
@@ -88,6 +97,56 @@ class PostgresSessionHandoffStore(SessionHandoffPort):
             ).fetchone()
             assert now_row is not None
             now = now_row["now"]
+            existing = find_reservation(
+                connection,
+                namespace,
+                request.source_session_id,
+                idempotency_hash,
+            )
+            if existing is not None:
+                if existing["request_hash"] != request_hash:
+                    raise HandoffIdempotencyConflictError(
+                        "handoff idempotency key reused with different request"
+                    )
+                return operation_from_row(existing)
+            lock_session_lease_boundary(
+                connection,
+                namespace,
+                request.source_session_id,
+            )
+            existing = find_reservation(
+                connection,
+                namespace,
+                request.source_session_id,
+                idempotency_hash,
+            )
+            if existing is not None:
+                if existing["request_hash"] != request_hash:
+                    raise HandoffIdempotencyConflictError(
+                        "handoff idempotency key reused with different request"
+                    )
+                return operation_from_row(existing)
+            try:
+                facts = read_source_facts_in_transaction(
+                    connection,
+                    namespace,
+                    request.source_session_id,
+                    at=now,
+                    lock_workspace=True,
+                    lock_stream=True,
+                )
+            except ValueError as error:
+                raise HandoffStorageConflictError(
+                    "handoff source authority facts are unavailable"
+                ) from error
+            require_reservation_facts(
+                facts,
+                expected_source_stream_version=expected_source_stream_version,
+                source_lease_fence=source_lease_fence,
+                authority_revision=authority_revision,
+                workspace_revision=workspace_revision,
+                task_profile_revision=task_profile_revision,
+            )
             fence = source_lease_fence
             row = connection.execute(
                 """
@@ -128,14 +187,12 @@ class PostgresSessionHandoffStore(SessionHandoffPort):
                 ),
             ).fetchone()
             if row is None:
-                row = connection.execute(
-                    """
-                    SELECT * FROM handoff_operations
-                    WHERE deployment_namespace = %s AND source_session_id = %s
-                      AND idempotency_key_hash = %s
-                    """,
-                    (namespace, request.source_session_id, idempotency_hash),
-                ).fetchone()
+                row = find_reservation(
+                    connection,
+                    namespace,
+                    request.source_session_id,
+                    idempotency_hash,
+                )
                 assert row is not None
                 if row["request_hash"] != request_hash:
                     raise HandoffIdempotencyConflictError(
@@ -168,20 +225,29 @@ class PostgresSessionHandoffStore(SessionHandoffPort):
                 namespace,
                 operation_id,
             )
-            if current.status is HandoffOperationStatus.COMMITTED:
-                raise HandoffStorageConflictError("committed handoff cannot be aborted")
-            row = connection.execute(
-                """
-                UPDATE handoff_operations
-                SET status = 'aborted', abort_code = %s,
-                    updated_at = transaction_timestamp()
-                WHERE deployment_namespace = %s AND operation_id = %s
-                RETURNING *
-                """,
-                (code, namespace, UUID(operation_id)),
-            ).fetchone()
-            assert row is not None
-            return operation_from_row(row)
+            if current.status is HandoffOperationStatus.ABORTED:
+                return current
+            authority = AdministrativeMutationCAS(
+                deployment_namespace=namespace,
+                session_id=current.source_session_id,
+                expected_stream_revision=current.expected_source_stream_version,
+            )
+            return abort_authorized_in_transaction(
+                connection,
+                namespace,
+                SessionHandoffAbortRequest(
+                    operation=current,
+                    authority=authority,
+                    code=code,
+                ),
+            )
+
+    def abort_authorized(self, request: SessionHandoffAbortRequest) -> HandoffOperation:
+        if not request.code.strip():
+            raise ValueError("handoff abort code must not be blank")
+        namespace = self._database.deployment_namespace
+        with self._database.connect() as connection:
+            return abort_authorized_in_transaction(connection, namespace, request)
 
     def get_handoff(self, handoff_id: HandoffId) -> SessionHandoffResult | None:
         with self._database.connect() as connection:
@@ -284,18 +350,39 @@ class PostgresSessionHandoffStore(SessionHandoffPort):
     def abort_stale_preparing(self, *, before: datetime) -> int:
         if before.tzinfo is None:
             raise ValueError("stale handoff cutoff must be timezone-aware")
+        namespace = self._database.deployment_namespace
         with self._database.connect() as connection:
-            result = connection.execute(
+            rows = connection.execute(
                 """
-                UPDATE handoff_operations
-                SET status = 'aborted', abort_code = 'handoff_operation_stale',
-                    updated_at = transaction_timestamp()
+                SELECT * FROM handoff_operations
                 WHERE deployment_namespace = %s AND status = 'preparing'
                   AND updated_at < %s
+                FOR UPDATE SKIP LOCKED
                 """,
-                (self._database.deployment_namespace, before),
-            )
-            return int(result.rowcount)
+                (namespace, before),
+            ).fetchall()
+            aborted = 0
+            for row in rows:
+                operation = operation_from_row(row)
+                authority = AdministrativeMutationCAS(
+                    deployment_namespace=namespace,
+                    session_id=operation.source_session_id,
+                    expected_stream_revision=operation.expected_source_stream_version,
+                )
+                try:
+                    abort_authorized_in_transaction(
+                        connection,
+                        namespace,
+                        SessionHandoffAbortRequest(
+                            operation=operation,
+                            authority=authority,
+                            code="handoff_operation_stale",
+                        ),
+                    )
+                except HandoffStorageConflictError:
+                    continue
+                aborted += 1
+            return aborted
 
     def claim_dispatch(
         self,

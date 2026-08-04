@@ -22,6 +22,7 @@ def read_source_facts_in_transaction(
     *,
     at: datetime,
     lock_workspace: bool = False,
+    lock_stream: bool = False,
 ) -> HandoffSourceFacts:
     if at.tzinfo is None:
         raise ValueError("handoff source-fact timestamp must be timezone-aware")
@@ -29,21 +30,35 @@ def read_source_facts_in_transaction(
         SELECT * FROM workspace_projections
         WHERE deployment_namespace = %s AND session_id = %s
     """
-    if lock_workspace:
-        workspace_query += " FOR SHARE"
-    workspace = connection.execute(
-        workspace_query,
-        (deployment_namespace, session_id),
-    ).fetchone()
-    if workspace is None:
-        raise ValueError("handoff source workspace is missing")
-    stream = connection.execute(
-        """
+    stream_query = """
         SELECT current_version FROM session_streams
         WHERE deployment_namespace = %s AND session_id = %s
-        """,
-        (deployment_namespace, session_id),
-    ).fetchone()
+    """
+    if lock_workspace and lock_stream:
+        # Keep the stream lock before the workspace lock, matching Worker commits.
+        stream = connection.execute(
+            stream_query + " FOR UPDATE",
+            (deployment_namespace, session_id),
+        ).fetchone()
+        workspace = connection.execute(
+            workspace_query + " FOR SHARE",
+            (deployment_namespace, session_id),
+        ).fetchone()
+    else:
+        if lock_workspace:
+            workspace_query += " FOR SHARE"
+        workspace = connection.execute(
+            workspace_query,
+            (deployment_namespace, session_id),
+        ).fetchone()
+        if lock_stream:
+            stream_query += " FOR UPDATE"
+        stream = connection.execute(
+            stream_query,
+            (deployment_namespace, session_id),
+        ).fetchone()
+    if workspace is None:
+        raise ValueError("handoff source workspace is missing")
     if stream is None:
         raise ValueError("handoff source stream is missing")
     lease = connection.execute(
