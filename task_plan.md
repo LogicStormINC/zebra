@@ -100,7 +100,7 @@
   successor is still `Locked` and unactivated. The parent aggregate fencing
   gate stays `Locked`.
 
-## CLOUD-AGG-FENCE-HANDOFF-AUTH-01 - Handoff Reserve And Abort Authority (Review)
+## CLOUD-AGG-FENCE-HANDOFF-AUTH-01 - Handoff Reserve And Abort Authority (Done)
 
 1. `completed` - Obtain the explicit sidebar activation decision and create the
    isolated `codex/cloud-agg-fence-handoff-auth-01` worktree, preserving the
@@ -120,9 +120,9 @@
 6. `completed` - Run changed Ruff, strict Mypy, focused Core/SQLite regressions,
    `uv lock --check`, Compose/script/diff checks, and commit the implementation
    as `6a04f1cd`.
-7. `in_progress` - Request independent sidebar review of the implementation
-   evidence; do not close the card, unlock `CLOUD-AGG-FENCE-01`, or activate the
-   dispatch successor until that review completes.
+7. `completed` - Request independent sidebar review of the implementation
+   evidence. It returned `CLOSEOUT-OK` for `Review -> Done`; keep
+   `CLOUD-AGG-FENCE-01` and the dispatch successor locked.
 
 ### Boundary
 
@@ -145,8 +145,9 @@
   skips; SQLite/Core and neighboring dispatch/Lease regressions pass `29` with
   `23` skips. Changed Ruff, strict Mypy, `uv lock --check`, `bash -n`, Compose
   config and `git diff --check` pass.
-- This card is `Review`, not `Done`, until the independent sidebar closeout
-  accepts the evidence. No parent-gate or runtime authorization is implied.
+- Independent sidebar closeout returned `CLOSEOUT-OK` for `Review -> Done` with
+  `implementation_authorized: false`. No parent-gate or runtime authorization is
+  implied.
 
 ## CLOUD-AGG-FENCE-CTX-SEMANTIC-01 - Administrative Context Event Semantics (Done)
 

@@ -119,7 +119,7 @@ fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 
 7. `CLOUD-AGG-FENCE-HANDOFF-AUTH-01`：已由侧边栏批准激活，在
    `codex/cloud-agg-fence-handoff-auth-01` 完成 reserve/abort authority
    Store seam、零写入回归和真实 PostgreSQL runner；当前为 `Review`，实现提交
-   `6a04f1cd`，独立 closeout 尚未完成。
+   `6a04f1cd`，并已由独立 sidebar closeout 以 `CLOSEOUT-OK` 关闭为 `Done`。
 
 8. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
    在所有子聚合 conformance card 完成前继续保持 `Locked`。
@@ -128,8 +128,8 @@ fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 
 `CLOUD-DELIVERY-TXN-PG-01` 均为 `Done`；
 Context conformance 审计及其 semantic successor 均为 `Done`，
 `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 已进入 `Review`，审计结果为
-`BLOCK-GAP`；`CLOUD-AGG-FENCE-HANDOFF-AUTH-01` 已完成授权实现并进入 `Review`，
-但尚未由侧边栏 closeout。父 fencing gate 仍为 `Locked`，因为其他 aggregate
+`BLOCK-GAP`；`CLOUD-AGG-FENCE-HANDOFF-AUTH-01` 已完成授权实现并由独立 sidebar
+以 `CLOSEOUT-OK` 关闭为 `Done`。父 fencing gate 仍为 `Locked`，因为其他 aggregate
 fencing cards 尚未闭合；`CLOUD-AGG-FENCE-DISPATCH-01` 仍为 `Locked`，不能顺带激活
 Runtime selector 或应用 Compose。API/Worker 存储组合已由
 `CLOUD-API-WORKER-PG-01` 完成；应用
@@ -230,8 +230,8 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
    已批准 `Planning -> Review`，但结果为 `BLOCK-GAP`。reserve/abort authority、
    dispatch revision/replay/race/namespace zero-write 及可复现 PostgreSQL
    runner 仍是后续门禁，不自动激活实现。
-7. [review] 完成 `CLOUD-AGG-FENCE-HANDOFF-AUTH-01` 的独立 sidebar closeout；
-   在 closeout 前不解锁父门或激活 dispatch successor。
+7. [x] 完成 `CLOUD-AGG-FENCE-HANDOFF-AUTH-01` 的独立 sidebar closeout；结果为
+   `CLOSEOUT-OK`、`Review -> Done`，父门继续 `Locked`，dispatch successor 不激活。
 8. 完成其余 aggregate fencing conformance 与真实 PostgreSQL 证据，再评估
    `CLOUD-AGG-FENCE-01` 激活。
 9. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。

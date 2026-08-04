@@ -3,7 +3,7 @@
 ## 状态
 
 - 任务：Handoff Reserve And Abort Authority
-- 状态：`Review`
+- 状态：`Done`
 - Owner：`codex`
 - 分支：`codex/cloud-agg-fence-handoff-auth-01`
 - Worktree：`/Users/lukeding/.codex/worktrees/cloud-agg-fence-handoff-auth-01/zebra-agent`
@@ -12,10 +12,16 @@
 - 父门：`CLOUD-AGG-FENCE-01` 仍为 `Locked`
 - dispatch successor：`CLOUD-AGG-FENCE-DISPATCH-01` 仍为 `Locked`
 
-sidebar ChatGPT 已返回 `IMPLEMENTATION-ACTIVATE-OK`，批准本卡从 `Locked` 进入
-`In Progress`，并限制在本文件、任务注册表声明的 Core/ PostgreSQL Handoff seam、
-focused tests 和专用 runner。实现与证据已完成，等待独立 sidebar closeout；本记录
-不授权 parent gate、dispatch、Runtime、API/Worker selector 或应用 Compose。
+sidebar ChatGPT 先返回 `IMPLEMENTATION-ACTIVATE-OK`，批准本卡从 `Locked` 进入
+`In Progress`，并限制在本文件、任务注册表声明的 Core/PostgreSQL Handoff seam、
+focused tests 和专用 runner。随后独立实现 Review 返回以下 closeout 结论：
+
+```json
+{"verdict":"CLOSEOUT-OK","task_id":"CLOUD-AGG-FENCE-HANDOFF-AUTH-01","status_transition":"Review->Done","parent_gate":"Locked","dispatch_successor":"Locked","implementation_authorized":false}
+```
+
+因此本卡已关闭为 `Done`。该结论不授权 parent gate、dispatch、Runtime、API/Worker
+selector 或应用 Compose。
 
 ## 交付内容
 
@@ -74,5 +80,5 @@ abort-vs-commit race、结果物化失败事务回滚和 aggregate row-count 约
   Redis、Mem0、Provider HTTP、CopilotKit/Trench、Desktop 或应用 Compose。
 - `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 的审计结果仍为 `BLOCK-GAP`；本卡只关闭
   reserve/abort 缺口，不改变 dispatch successor 的 `Locked` 状态。
-- 在独立 sidebar closeout 通过前，本卡不能标记 `Done`，不能解锁
-  `CLOUD-AGG-FENCE-01`，也不能授权 successor 或运行态接线。
+- 独立 sidebar closeout 已通过，本卡标记为 `Done`；这不解锁
+  `CLOUD-AGG-FENCE-01`，不激活 dispatch successor，也不授权运行态接线。

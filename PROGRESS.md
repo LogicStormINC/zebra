@@ -44,10 +44,11 @@
   `Planning -> Review` with audit result `BLOCK-GAP`. Its reserve/abort gap is
   now implemented by the separately activated successor
   `CLOUD-AGG-FENCE-HANDOFF-AUTH-01`, which is in `Review` on
-  `codex/cloud-agg-fence-handoff-auth-01` at commit `6a04f1cd`; the dispatch
+  `codex/cloud-agg-fence-handoff-auth-01` at commit `6a04f1cd`; independent
+  sidebar closeout returned `CLOSEOUT-OK` and moved it to `Done`. The dispatch
   revision/replay/race/namespace gap remains locked. The successor's real
   PostgreSQL runner passes `15/15`; the parent `CLOUD-AGG-FENCE-01` remains
-  `Locked`.
+  `Locked` and `implementation_authorized` remains false.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core
