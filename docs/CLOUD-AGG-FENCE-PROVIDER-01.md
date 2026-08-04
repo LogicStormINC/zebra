@@ -2,7 +2,7 @@
 
 ## Provider Continuation Lifecycle Fencing Conformance
 
-- Status: `In Progress`
+- Status: `Done` / audit result `PASS`
 - Date: `2026-08-04`
 - Base: `zebra-cloud-trench@5694032c`
 - Branch: `codex/cloud-agg-fence-provider-01`
@@ -50,6 +50,24 @@ change is included.
 older stream revision could therefore delete a continuation after newer Session
 facts were committed. The fix must reuse the existing helper and leave v13
 schema and local SQLite compatibility untouched.
+
+## Evidence and closeout
+
+- `delete_for_worker` now calls `lock_expected_stream` after the current
+  LeaseFence check and before the continuation row is locked or changed. The
+  v13 schema, cloud Port and local SQLite behavior remain unchanged.
+- The dedicated PostgreSQL `17.5-alpine3.21` runner initially exposed a
+  collection failure because it used the repository root environment without
+  `psycopg`; it now installs the `agent-storage` workspace package explicitly.
+  The corrected runner passes `4/4`, emits
+  `ZEBRA_PROVIDER_CONTINUATION_POSTGRES_TEST_RESULT=PASS`, and removes its
+  container, volume and network.
+- The focused matrix covers stale stream zero-write, namespace scope, TTL/SHA,
+  soft-delete, idempotent replay and an injected mutation-insert failure that
+  proves transaction rollback. Changed Ruff, strict Mypy, format, shell syntax,
+  Compose config, local provider regressions and `git diff --check` pass.
+- Implementation commit: `816a1ae0`. This card is closed as `Done`; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
 
 ## Closeout rule
 

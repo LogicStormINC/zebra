@@ -135,10 +135,10 @@ fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 
    `expected_stream_revision`、stream drift、rollback 和 zero-write 校验；专用
    PostgreSQL 17.5 runner 通过 `8/8`，现有 Control Plane runner 通过 `11/11`，
    实现提交为 `31347989`。
-11. `CLOUD-AGG-FENCE-PROVIDER-01`：当前激活的 Provider Continuation conformance
-   successor。`commit_worker_selection` 已绑定 expected stream revision；当前
-   补齐 `delete_for_worker` 的同事务 stream CAS、stale-revision 与 zero-write
-   证据，不改 v13 schema 或本地 SQLite。
+11. `CLOUD-AGG-FENCE-PROVIDER-01`：已完成 Provider Continuation lifecycle
+   conformance。`delete_for_worker` 现已绑定 expected stream revision 与锁定的
+   Session stream；专用 PostgreSQL 17.5 runner 通过 `4/4`，提交为 `816a1ae0`，
+   不改 v13 schema 或本地 SQLite。
 12. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
    在所有子聚合 conformance card 完成前继续保持 `Locked`。
 
@@ -154,7 +154,8 @@ Context conformance 审计及其 semantic successor 均为 `Done`，
  均已完成，不能顺带激活
  Runtime selector 或应用 Compose。`CLOUD-AGG-FENCE-MODEL-TOOL-01` 已完成并
  关闭为 `Done`，补齐了 Model/Tool projection 的 `expected_stream_revision`
- PostgreSQL 写入校验；API/Worker 存储组合已由
+ PostgreSQL 写入校验；`CLOUD-AGG-FENCE-PROVIDER-01` 也已完成，补齐了
+ Provider Continuation soft-delete 的同事务 stream CAS；API/Worker 存储组合已由
 `CLOUD-API-WORKER-PG-01` 完成；应用
 `CLOUD-COMPOSE-APP-01` 当前仍为实现 `Blocked`，等待应用 Compose、Runtime 业务
 selector 和在线事件路由的单独授权；本次组合任务关闭不改变任何 runtime gate。
@@ -271,7 +272,7 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 12. [x] 实施并关闭 `CLOUD-AGG-FENCE-MODEL-TOOL-01`；专用 PostgreSQL 17.5
    runner 通过 `8/8`，现有 Control Plane runner 通过 `11/11`，补齐
    expected stream revision、stream drift、rollback 和 zero-write 证据。
-13. 继续完成 Provider continuation、Artifact、Delivery 等剩余 aggregate
+13. 继续完成 Artifact、Effect/Artifact linkage、Delivery 等剩余 aggregate
    fencing conformance，再评估 `CLOUD-AGG-FENCE-01`，父门继续 `Locked`。
 14. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
 15. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。

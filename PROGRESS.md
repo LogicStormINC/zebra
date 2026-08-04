@@ -60,12 +60,12 @@
   the existing Control Plane runner passes `11/11`. Both runners clean their
   resources. The parent gate remains `Locked` and no runtime activation is
   implied.
-- `CLOUD-AGG-FENCE-PROVIDER-01` is the active next conformance slice. The
-  Provider Continuation commit path already binds its Event aggregate to the
-  expected stream revision, but `delete_for_worker` still needs the same
-  transaction-local stream CAS before soft-delete. This card is limited to
-  that zero-write fencing gap; the parent `CLOUD-AGG-FENCE-01` remains
-  `Locked`.
+- `CLOUD-AGG-FENCE-PROVIDER-01` is `Done` at implementation commit
+  `816a1ae0`. `delete_for_worker` now binds the current LeaseFence and
+  `expected_stream_revision` to the locked Session stream before soft-delete;
+  its reproducible PostgreSQL 17.5 runner passes `4/4` with
+  `ZEBRA_PROVIDER_CONTINUATION_POSTGRES_TEST_RESULT=PASS` and cleans all
+  resources. The parent `CLOUD-AGG-FENCE-01` remains `Locked`.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core

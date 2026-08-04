@@ -245,21 +245,21 @@
 - The parent `CLOUD-AGG-FENCE-01` remains `Locked`; no runtime or application
   Compose selection is implied.
 
-## CLOUD-AGG-FENCE-PROVIDER-01 - Provider Continuation Lifecycle Fencing Conformance (In Progress)
+## CLOUD-AGG-FENCE-PROVIDER-01 - Provider Continuation Lifecycle Fencing Conformance (Done)
 
 1. `completed` - Register the path-bounded Provider Continuation conformance
    successor on `codex/cloud-agg-fence-provider-01` from
    `zebra-cloud-trench@5694032c`; preserve the dirty root `AGENTS.md` and keep
    the aggregate parent gate locked.
-2. `in_progress` - Trace every PostgreSQL Provider Continuation Worker mutation
+2. `completed` - Trace every PostgreSQL Provider Continuation Worker mutation
    and identify whether namespace, Session, LeaseFence and expected stream
    revision are checked inside one transaction.
-3. `pending` - Bind `delete_for_worker` to the locked Session stream using the
+3. `completed` - Bind `delete_for_worker` to the locked Session stream using the
    existing `WorkerMutationAuthority.expected_stream_revision` helper without
    changing the v13 schema or local SQLite Port.
-4. `pending` - Add stale-revision, namespace/session, stale-fence, idempotent
+4. `completed` - Add stale-revision, namespace/session, stale-fence, idempotent
    replay and rollback zero-write regressions; retain valid deletion behavior.
-5. `pending` - Run the pinned PostgreSQL 17.5 Provider Continuation runner,
+5. `completed` - Run the pinned PostgreSQL 17.5 Provider Continuation runner,
    changed-path static checks and `git diff --check`; record exact counts,
    cleanup and closeout evidence.
 
@@ -284,6 +284,22 @@
 - The parent `CLOUD-AGG-FENCE-01` remains `Locked`; completing this card does
   not authorize Runtime/API/Worker selection, application Compose or cloud
   production rollout.
+
+### Evidence and closeout
+
+- `delete_for_worker` now calls the existing `lock_expected_stream` helper after
+  the current LeaseFence check and before locking or updating the continuation
+  row. The v13 schema, cloud Port and local SQLite adapter are unchanged.
+- The Provider Continuation PostgreSQL runner uses the `agent-storage` package
+  dependency so `psycopg` is collected reproducibly. PostgreSQL 17.5 evidence
+  passes `4/4` and emits `ZEBRA_PROVIDER_CONTINUATION_POSTGRES_TEST_RESULT=PASS`;
+  the runner removes its container, volume and network. The focused matrix
+  includes stale revision zero-write, injected mutation-insert rollback,
+  namespace scope, TTL/SHA, soft-delete and idempotent replay.
+- Changed Ruff, format, strict Mypy, shell syntax, Compose config, local
+  provider regressions (`3 passed, 4 skipped`) and `git diff --check` pass.
+  Implementation commit: `816a1ae0`. This card is `Done`; the parent gate
+  remains `Locked`.
 
 ## CLOUD-AGG-FENCE-TASK-01 - Fenced PostgreSQL Task Rollover Authority (Done)
 

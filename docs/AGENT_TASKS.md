@@ -3235,7 +3235,7 @@ external membership.
 
 ### CLOUD-AGG-FENCE-PROVIDER-01 - Provider Continuation Lifecycle Fencing Conformance
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `codex`
 - Depends on: `CLOUD-PROVIDER-CONT-PG-01` `Done`,
   `CLOUD-AGG-FENCE-CON-01` `Done`, and merged
@@ -3260,6 +3260,18 @@ external membership.
   LeaseFence rejects before payload mutation; valid deletion remains
   idempotent; rollback and zero-write evidence run against PostgreSQL 17.5;
   the repository-owned runner emits a PASS sentinel and cleans all resources.
+- Evidence: `delete_for_worker` now reuses `lock_expected_stream` after the
+  current LeaseFence check, so stale stream authorities fail before the
+  continuation row is changed. Focused PostgreSQL evidence passes `4/4` with
+  `ZEBRA_PROVIDER_CONTINUATION_POSTGRES_TEST_RESULT=PASS`; the matrix covers
+  stale stream zero-write, transaction rollback, namespace scope, TTL/SHA,
+  soft-delete and idempotent replay. The runner now installs the
+  `agent-storage` package explicitly, fixing its prior psycopg collection gap,
+  and removes its container, volume and network.
+- Closeout: implementation commit `816a1ae0`; changed Ruff, strict Mypy,
+  format, shell syntax, Compose config, local provider regressions and
+  `git diff --check` pass. This card is `Done`; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
 - Explicit non-goals: no migration/DDL, Provider HTTP, SQLite behavior,
   Runtime/API/Worker profile selection, application Compose, Redis, Mem0,
   Artifact or Delivery changes, and no parent-gate unlock.
