@@ -3151,7 +3151,7 @@ external membership.
 
 ### CLOUD-AGG-FENCE-DISPATCH-01 - Dispatch Stream Pointer And Replay Fencing
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `codex`
 - Depends on: `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` `Review` closeout,
   `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-HANDOFF-PG-01`, accepted `Done`
@@ -3180,8 +3180,9 @@ external membership.
   now bind operation identity, child stream/pointer revisions and the canonical
   WorkerMutationAuthority without migration/DDL or SQLite changes. The dedicated
   PostgreSQL 17.5 runner passes `14/14` with explicit
-  `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`; independent Review and
-  closeout are still pending.
+  `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`; local scoped Review is
+  `REVIEW-OK`. Formal closeout remains pending after mainline merge. Implementation
+  commit: `6c1ceffa`; mainline merge remains a separate maintainer action.
 - Explicit non-goals: no reserve/abort authority redesign, migration/DDL,
   Runtime/API/Worker profile selection, application Compose, SQLite, Redis,
   Mem0, Provider HTTP, CopilotKit/Trench, production rollout or parent-gate

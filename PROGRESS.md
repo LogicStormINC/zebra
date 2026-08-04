@@ -50,11 +50,11 @@
   PostgreSQL runner passes `15/15`; the parent `CLOUD-AGG-FENCE-01` remains
   `Locked` and `implementation_authorized` remains false. After the required
   fast-forward integration, sidebar ChatGPT approved only
-  `CLOUD-AGG-FENCE-DISPATCH-01` as `In Progress` from base `4a10883a`; its
-  dispatch-only claim/ACK implementation and PostgreSQL evidence are now the
-  active work, with no Runtime or application Compose activation. The isolated
+  `CLOUD-AGG-FENCE-DISPATCH-01` as `Review` from base `4a10883a`; its
+  dispatch-only claim/ACK implementation is committed as `6c1ceffa` and locally
+  reviewed, with no Runtime or application Compose activation. The isolated
   runner passes `14/14` with `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`;
-  independent Review and closeout remain pending.
+  mainline merge and parent closeout remain pending.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core
