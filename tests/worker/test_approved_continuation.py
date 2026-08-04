@@ -141,7 +141,7 @@ def test_granted_tool_call_resumes_exactly_once_without_reproposal(
         event.payload["response_stage"]
         for event in events
         if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
-    ] == [None, "tool_loop", "final"]
+    ] == ["tool_loop", "tool_loop", "final"]
     assert sum(event.event_type is EventType.TOOL_EXECUTION_STARTED for event in events) == 1
     with pytest.raises(SessionResumeError, match="terminal session"):
         service.execute_session(session_id, worker_id="worker-a", executed_at=created_at)

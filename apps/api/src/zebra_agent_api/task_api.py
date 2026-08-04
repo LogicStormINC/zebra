@@ -88,23 +88,43 @@ class TaskReadApi:
         final_message = final_message_identity(self.database_path, task_id)
         if final_message is not None:
             body["final_message"] = final_message
-        events = [
+        task_events = SQLiteAgentTaskStore(self.database_path).read_events(
+            parsed, -1
+        )
+        # Contract projection is scoped to the ACTIVE execution segment: a
+        # stable Task keeps earlier rounds in older segments, and their
+        # final-stage events must never bind a contract to the latest final.
+        active_events = [
             item.event
-            for item in SQLiteAgentTaskStore(
-                self.database_path
-            ).read_events(parsed, -1)
+            for item in task_events
+            if item.segment_id == task.active_segment_id
         ]
         output_contract = None
         if task.status.value == "completed":
+            final_event_id = None
+            if isinstance(final_message, Mapping):
+                message_id = final_message.get("message_id")
+                if isinstance(message_id, str) and message_id.startswith(
+                    "final:"
+                ):
+                    final_event_id = message_id[len("final:") :]
             # The artifact output contract is strictly bound to the final
             # message: only the terminal completed Task's final-stage
             # MODEL_RESPONSE_RECEIVED event may carry it. Intermediate
-            # tool-loop rounds never leak a contract into the projection.
-            for event in reversed(events):
+            # tool-loop rounds never leak a contract into the projection,
+            # and an earlier round's final-stage event can never bind to the
+            # current final identity (active segment only, and when the final
+            # identity is known the contract event must be that exact event).
+            for event in reversed(active_events):
                 if (
                     event.event_type is EventType.MODEL_RESPONSE_RECEIVED
                     and event.payload.get("response_stage") == "final"
                 ):
+                    if (
+                        final_event_id is not None
+                        and str(event.event_id) != final_event_id
+                    ):
+                        break
                     candidate = event.payload.get("output_contract")
                     if isinstance(candidate, Mapping):
                         output_contract = dict(candidate)
@@ -112,7 +132,9 @@ class TaskReadApi:
         if output_contract is not None:
             body["artifact_output_contract"] = output_contract
         attachments = [
-            ref.to_mapping() for event in events for ref in attachment_refs_from_event(event)
+            ref.to_mapping()
+            for event in (item.event for item in task_events)
+            for ref in attachment_refs_from_event(event)
         ]
         if attachments:
             body["attachments"] = attachments

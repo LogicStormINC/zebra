@@ -134,7 +134,13 @@ class SingleAttemptOrchestrator:
             response_repair_limit=allowed_response_repairs(task.max_model_calls, 0),
         )
         emitted_events.append(
-            model_response_event(completion, attempt_number=context.attempt.number)
+            model_response_event(
+                completion,
+                attempt_number=context.attempt.number,
+                response_stage=(
+                    "tool_loop" if completion.tool_calls else "final"
+                ),
+            )
         )
         planner_result = self._planner.plan(context)
         emitted_events.append(

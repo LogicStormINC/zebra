@@ -106,6 +106,7 @@ SHELL_INJECTION_MARKERS = ("&&", "||", "$(", "`", ";", "|", ">", "<")
 SENSITIVE_PATH_MARKERS = (".env", "credential", "id_rsa", "private_key", "secret", "token")
 EXFILTRATION_COMMANDS = frozenset({"curl", "nc", "netcat", "scp", "wget"})
 FINOS_ACCOUNT_CHANGES_PROPOSE_TOOL = "finos.account_changes.propose"
+ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL = "artifact.output_contract.emit"
 PATH_ARGUMENTS_BY_TOOL = {
     "command.run": ("cwd",),
     "files.list": ("path",),
@@ -185,6 +186,15 @@ class LocalPolicyEngine:
             return _deny(
                 self.profile,
                 "finos.account_changes.propose requires the v2 Task provider",
+            )
+        if tool_name == ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL:
+            # Producer-neutral typed artifact metadata declaration: no network
+            # egress, no workspace write and no business side effect, so it is
+            # allowed under every local policy profile. The tool still only
+            # declares the envelope; it never saves anything.
+            return _allow(
+                self.profile,
+                "artifact output metadata declaration is allowed",
             )
         if self.profile is PolicyProfile.READ_ONLY:
             decision = _decision_for_read_only(tool_name, self.profile)

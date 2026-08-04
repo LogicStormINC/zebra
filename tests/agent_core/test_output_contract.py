@@ -7,6 +7,7 @@ from agent_core.domain.identifiers import new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
     ModelCompletion,
+    ModelToolDefinition,
     normalize_output_contract,
 )
 from agent_core.harness import (
@@ -194,6 +195,111 @@ def test_model_response_event_never_embeds_contract_on_tool_loop_stage() -> None
         response_stage="tool_loop",
     )
     assert "output_contract" not in draft.payload
+
+
+def test_initial_plain_completion_is_written_as_final_stage() -> None:
+    """The orchestrator's initial completion without tool calls is a final:
+    the emitted MODEL_RESPONSE_RECEIVED event must be marked final so the
+    Task projection binds its contract to the final message."""
+    envelope = {
+        "contract_id": "finos.daily-trading-journal",
+        "contract_version": "1",
+        "structured_payload": {"business_date": "2026-08-04"},
+        "payload_digest": "sha256:" + "c" * 64,
+        "source_refs": ["broker:emit"],
+    }
+    gateway = ScriptedModelGateway(
+        (ScriptedModelResponse(_completion("final answer", envelope)),)
+    )
+    loop = HarnessLoop()
+    result = loop.run(
+        HarnessTask(
+            title="plain final contract",
+            user_input="produce the typed contract",
+            workspace_root=None,
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            _AllowAllPolicy(),
+            _NoopToolGateway(),
+            model_step=HarnessModelStep(available_tools=()),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    model_events = [
+        event
+        for event in result.attempt_result.emitted_events
+        if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+    ]
+    assert len(model_events) == 1
+    assert model_events[0].payload["response_stage"] == "final"
+    assert model_events[0].payload["output_contract"] == envelope
+
+
+def test_initial_tool_completion_is_written_as_tool_loop_stage() -> None:
+    """The orchestrator's initial completion with tool calls is a tool-loop
+    round: its event must be marked tool_loop and never carry a contract."""
+    envelope = {
+        "contract_id": "finos.daily-trading-journal",
+        "contract_version": "1",
+        "structured_payload": {"business_date": "2026-08-04"},
+        "payload_digest": "sha256:" + "d" * 64,
+        "source_refs": ["broker:emit"],
+    }
+    tool_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="artifact.output_contract.emit",
+        arguments={"output_contract": envelope},
+        created_at=NOW,
+    )
+    gateway = ScriptedModelGateway(
+        (
+            ScriptedModelResponse(_completion("tool answer", tool_call=tool_call)),
+            ScriptedModelResponse(_completion("final answer")),
+            ScriptedModelResponse(_completion("final answer")),
+        )
+    )
+    loop = HarnessLoop()
+    result = loop.run(
+        HarnessTask(
+            title="tool loop contract",
+            user_input="emit the typed contract",
+            workspace_root=None,
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            _AllowAllPolicy(),
+            _EmitToolGateway(envelope),
+            model_step=HarnessModelStep(
+                available_tools=(
+                    ModelToolDefinition(
+                        name="artifact.output_contract.emit",
+                        description="Declare generic artifact output metadata.",
+                        parameters={
+                            "type": "object",
+                            "properties": {
+                                "output_contract": {"type": "object"}
+                            },
+                            "required": ["output_contract"],
+                        },
+                    ),
+                )
+            ),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    model_events = [
+        event
+        for event in result.attempt_result.emitted_events
+        if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+    ]
+    assert model_events[0].payload["response_stage"] == "tool_loop"
+    assert "output_contract" not in model_events[0].payload
+    assert model_events[-1].payload["response_stage"] == "final"
 
 
 class _EmitToolGateway:

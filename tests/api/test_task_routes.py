@@ -249,6 +249,242 @@ def test_task_read_omits_output_contract_when_absent(tmp_path: Path) -> None:
     assert "artifact_output_contract" not in read.body
 
 
+def _seed_follow_up_final(
+    database: Path,
+    adapter,
+    task_id: str,
+    *,
+    payload: dict[str, object],
+    assistant_message: str = "follow-up final",
+) -> SessionId:
+    """Roll the Task over to a terminal follow-up segment and seed its final."""
+    appended = adapter.handle(
+        RouteRequest(
+            "POST",
+            f"/tasks/{task_id}/messages",
+            body={
+                "content": "PRIVATE follow-up harness input",
+                "public_content": "follow-up user",
+            },
+        )
+    )
+    assert appended.status_code == 201
+    segments = adapter.handle(
+        RouteRequest("GET", f"/internal/tasks/{task_id}/segments")
+    )
+    child_id = SessionId(UUID(segments.body["segments"][-1]["session_id"]))
+    child = SQLiteProjectionStore(database).get_session(child_id)
+    assert child is not None
+    event_store = SQLiteEventStore(database)
+    child_events = (
+        SessionEvent.create(
+            session_id=child_id,
+            sequence=child.current_sequence + 1,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={"attempt_number": 1},
+            created_at=NOW,
+        ),
+        SessionEvent.create(
+            session_id=child_id,
+            sequence=child.current_sequence + 2,
+            event_type=EventType.MODEL_RESPONSE_RECEIVED,
+            actor=EventActor.HARNESS,
+            payload={
+                "assistant_message": assistant_message,
+                "tool_call_count": 0,
+                **payload,
+            },
+            created_at=NOW,
+        ),
+        SessionEvent.create(
+            session_id=child_id,
+            sequence=child.current_sequence + 3,
+            event_type=EventType.SESSION_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={"summary": "done"},
+            created_at=NOW,
+        ),
+    )
+    for event in child_events:
+        event_store.append(event)
+    for event in child_events:
+        child = apply_event(child, event)
+    SQLiteProjectionStore(database).save_session(
+        child.model_copy(update={"status": SessionStatus.COMPLETED})
+    )
+    return child_id
+
+
+def test_task_read_never_binds_previous_round_contract_to_latest_final(
+    tmp_path: Path,
+) -> None:
+    """Round 1 emits contract A; Round 2 is a plain final without a contract.
+    The Task projection must not leak Round 1's contract onto Round 2."""
+    database = tmp_path / "tasks.sqlite"
+    adapter = RouteAdapter(create_app(database))
+    created = adapter.handle(
+        RouteRequest(
+            "POST",
+            "/tasks",
+            body={
+                "title": "Stable rounds",
+                "prompt": "PRIVATE prompt",
+                "workspace": str(tmp_path),
+            },
+        )
+    )
+    task_id = str(created.body["task_id"])
+    root_id = SessionId(UUID(task_id))
+    root = SQLiteProjectionStore(database).get_session(root_id)
+    assert root is not None
+    event_store = SQLiteEventStore(database)
+    contract_a = {
+        "contract_id": "finos.round-one",
+        "contract_version": "1",
+        "structured_payload": {"round": 1},
+        "payload_digest": "sha256:" + "a" * 64,
+        "source_refs": ["broker:a"],
+    }
+    root_events = (
+        SessionEvent.create(
+            session_id=root_id,
+            sequence=root.current_sequence + 1,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={"attempt_number": 1},
+            created_at=NOW,
+        ),
+        SessionEvent.create(
+            session_id=root_id,
+            sequence=root.current_sequence + 2,
+            event_type=EventType.MODEL_RESPONSE_RECEIVED,
+            actor=EventActor.HARNESS,
+            payload={
+                "assistant_message": "round one final",
+                "tool_call_count": 0,
+                "response_stage": "final",
+                "output_contract": contract_a,
+            },
+            created_at=NOW,
+        ),
+        SessionEvent.create(
+            session_id=root_id,
+            sequence=root.current_sequence + 3,
+            event_type=EventType.SESSION_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={"summary": "done"},
+            created_at=NOW,
+        ),
+    )
+    for event in root_events:
+        event_store.append(event)
+    for event in root_events:
+        root = apply_event(root, event)
+    SQLiteProjectionStore(database).save_session(
+        root.model_copy(update={"status": SessionStatus.COMPLETED})
+    )
+
+    _seed_follow_up_final(
+        database,
+        adapter,
+        task_id,
+        payload={"response_stage": "final"},
+    )
+    read = adapter.handle(RouteRequest("GET", f"/tasks/{task_id}"))
+    assert read.status_code == 200
+    assert read.body["final_message"]["message_id"].startswith("final:")
+    assert "artifact_output_contract" not in read.body
+
+
+def test_task_read_binds_only_the_active_round_contract(tmp_path: Path) -> None:
+    """Round 1 emits contract A; Round 2 emits contract B. The Task read must
+    return B only, never A."""
+    database = tmp_path / "tasks.sqlite"
+    adapter = RouteAdapter(create_app(database))
+    created = adapter.handle(
+        RouteRequest(
+            "POST",
+            "/tasks",
+            body={
+                "title": "Stable rounds",
+                "prompt": "PRIVATE prompt",
+                "workspace": str(tmp_path),
+            },
+        )
+    )
+    task_id = str(created.body["task_id"])
+    root_id = SessionId(UUID(task_id))
+    root = SQLiteProjectionStore(database).get_session(root_id)
+    assert root is not None
+    event_store = SQLiteEventStore(database)
+    contract_a = {
+        "contract_id": "finos.round-one",
+        "contract_version": "1",
+        "structured_payload": {"round": 1},
+        "payload_digest": "sha256:" + "a" * 64,
+        "source_refs": ["broker:a"],
+    }
+    contract_b = {
+        "contract_id": "finos.round-two",
+        "contract_version": "1",
+        "structured_payload": {"round": 2},
+        "payload_digest": "sha256:" + "b" * 64,
+        "source_refs": ["broker:b"],
+    }
+    root_events = (
+        SessionEvent.create(
+            session_id=root_id,
+            sequence=root.current_sequence + 1,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={"attempt_number": 1},
+            created_at=NOW,
+        ),
+        SessionEvent.create(
+            session_id=root_id,
+            sequence=root.current_sequence + 2,
+            event_type=EventType.MODEL_RESPONSE_RECEIVED,
+            actor=EventActor.HARNESS,
+            payload={
+                "assistant_message": "round one final",
+                "tool_call_count": 0,
+                "response_stage": "final",
+                "output_contract": contract_a,
+            },
+            created_at=NOW,
+        ),
+        SessionEvent.create(
+            session_id=root_id,
+            sequence=root.current_sequence + 3,
+            event_type=EventType.SESSION_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={"summary": "done"},
+            created_at=NOW,
+        ),
+    )
+    for event in root_events:
+        event_store.append(event)
+    for event in root_events:
+        root = apply_event(root, event)
+    SQLiteProjectionStore(database).save_session(
+        root.model_copy(update={"status": SessionStatus.COMPLETED})
+    )
+
+    _seed_follow_up_final(
+        database,
+        adapter,
+        task_id,
+        payload={"response_stage": "final", "output_contract": contract_b},
+    )
+    read = adapter.handle(RouteRequest("GET", f"/tasks/{task_id}"))
+    assert read.status_code == 200
+    assert read.body["artifact_output_contract"]["contract_id"] == (
+        "finos.round-two"
+    )
+    assert read.body["artifact_output_contract"]["source_refs"] == ["broker:b"]
+
+
 def test_task_routes_keep_one_identity_across_automatic_follow_up_rollover(
     tmp_path: Path,
 ) -> None:
