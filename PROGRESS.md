@@ -61,11 +61,11 @@
   `PostgresControlPlaneStores` and one Worker PostgreSQL cycle. The production
   `--no-dev` image now declares `uvicorn` as an API runtime dependency, and the
   complete three-container smoke passes with a temporary mirror-only Python
-  base override (runtime UID `65532`); a direct build with the committed Docker
-  Hub base remains the final container evidence and is recorded as an external
-  review gap. The direct runner currently ends at the pinned `FROM` with a
-  Docker Hub `unexpected EOF`; dependency cleanup still completes. The base
-  dependency Compose remains a separate lifecycle.
+  base override (runtime UID `65532`) and now through the Application Compose
+  default mirror with `ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`. The
+  Dockerfile keeps the official Docker Hub digest as its standalone default;
+  that direct build remains an external review gap. The base dependency Compose
+  remains a separate lifecycle.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.
   Its direct Task authority gap is implemented by `CLOUD-AGG-FENCE-TASK-01` at

@@ -87,7 +87,12 @@ The dependency stack and its volumes remain intact.
 
 The application image uses the explicit `cloud` profile and requires the full
 PostgreSQL, namespace, signing-key and S3 configuration. Redis live fan-out is
-not selected by API/Worker startup in this slice.
+not selected by API/Worker startup in this slice. Application Compose defaults
+the Python runtime base to the API-confirmed `linux/amd64` mirror
+`swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/python:3.12-slim-bookworm`
+for local/CI pulls; set `ZEBRA_APPLICATION_PYTHON_BASE_IMAGE` to the pinned
+Docker Hub digest when the upstream registry is reachable. The Dockerfile keeps
+that official digest as its standalone-build default.
 
 ## Start the optional Mem0 boot smoke
 

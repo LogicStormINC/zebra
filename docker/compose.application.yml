@@ -16,11 +16,16 @@ x-zebra-cloud-environment: &zebra-cloud-environment
   ZEBRA_S3_KEY_PREFIX: ${ZEBRA_S3_KEY_PREFIX:-zebra/artifacts/v1}
   ZEBRA_API_AUTH_TOKEN: ${ZEBRA_API_AUTH_TOKEN:-}
 
+x-zebra-application-build: &zebra-application-build
+  context: ..
+  dockerfile: docker/Dockerfile
+  args:
+    ZEBRA_PYTHON_BASE_IMAGE: ${ZEBRA_APPLICATION_PYTHON_BASE_IMAGE:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/python:3.12-slim-bookworm}
+
 services:
   zebra-migrate:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      <<: *zebra-application-build
       target: migrate
     environment: *zebra-cloud-environment
     restart: "no"
@@ -30,8 +35,7 @@ services:
 
   zebra-api:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      <<: *zebra-application-build
       target: api
     environment: *zebra-cloud-environment
     restart: unless-stopped
@@ -61,8 +65,7 @@ services:
 
   zebra-worker:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      <<: *zebra-application-build
       target: worker
     environment:
       <<: *zebra-cloud-environment

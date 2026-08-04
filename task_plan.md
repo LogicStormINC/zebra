@@ -32,17 +32,17 @@
 - A temporary mirror-base override passed the full three-container smoke,
   including migration ordering, API health, PostgreSQL store assertion and
   Worker health; the image runs as UID `65532`. The committed Docker Hub base
-  still needs a direct build.
+  still needs a direct standalone build, while the Application Compose default
+  mirror runner now passes with `ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`.
 
 ### Review handoff
 
 - Implementation commits are complete on `codex/cloud-compose-app-01`; the
   worktree is clean.
-- The pinned Docker Hub base remains the only external evidence gap. It is not
-  replaced by the temporary mirror; the direct runner currently fails at the
-  pinned `FROM` with a Docker Hub `unexpected EOF`, after which dependency
-  resources are cleaned. No runtime or aggregate gate is unlocked by this
-  handoff.
+- The pinned Docker Hub base remains the only standalone-build evidence gap. It
+  is not replaced in the Dockerfile; Application Compose selects the
+  helper-confirmed mirror through an explicit build arg, and its runner passes.
+  No runtime or aggregate gate is unlocked by this handoff.
 
 ## CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter (Done)
 

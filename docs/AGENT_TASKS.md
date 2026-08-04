@@ -1642,11 +1642,14 @@ fact source; Redis remains optional live state and is not selected by startup.
   `5 passed`; lockfile, Ruff, Mypy, shell syntax and diff checks pass; the
   mirror-base three-container smoke is `PASS` and reports UID `65532`.
 - Direct build/smoke of the pinned Docker Hub Python digest remains an external
-  evidence gap. The reproducible runner stops at Dockerfile line 4 with
-  `short read: expected 5691 bytes but got 0: unexpected EOF`; its PostgreSQL,
-  MinIO and network cleanup completes. No source pin replacement, production
-  rollout, Redis live routing, Runtime selector or aggregate-gate unlock is
-  authorized until that evidence is available.
+  evidence gap when the standalone Dockerfile default is used. The Application
+  Compose overlay now passes the helper-confirmed `linux/amd64` mirror through
+  `ZEBRA_APPLICATION_PYTHON_BASE_IMAGE`; its complete runner passes with
+  `ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`, and PostgreSQL, MinIO and
+  network cleanup completes. The Dockerfile's official digest default remains
+  available for upstream builds; no source pin replacement, production rollout,
+  Redis live routing, Runtime selector or aggregate-gate unlock is authorized
+  by this mirror-only validation.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 
