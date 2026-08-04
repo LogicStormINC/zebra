@@ -59,7 +59,7 @@ does not authorize production code, migrations or activation of its successor.
 - `CLOUD-COMPOSE-INFRA-01` is `Done` on `codex/cloud-compose-infra-01`; it
   defines only the dependency Compose stack. Zebra application containers remain
   a separate locked task.
-- `CLOUD-LIVE-01` is `Review` on `codex/cloud-live-01`; it owns only the
+- `CLOUD-LIVE-01` is `Done` on `codex/cloud-live-01`; it owns only the
   provider-neutral live-event fan-out Port, the Redis Streams adapter and an
   isolated Redis evidence runner. It does not select a Runtime, wire API/Worker
   startup, create application Compose or make Redis authoritative.
@@ -636,7 +636,7 @@ service and from future Zebra API/Worker application containers.
 
 ### CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `INTEGRATIONS / API / STORAGE`
 - Depends on: merged `CLOUD-COMPOSE-INFRA-01` and the durable PostgreSQL Event
@@ -687,6 +687,14 @@ the caller can rebuild from PostgreSQL.
   adapter is reusable but remains unselected by API/Worker composition until a
   later runtime-routing card explicitly owns that wiring.
 
+#### Closeout
+
+- Independent local review passed after the focused, full-repository and real
+  Redis Compose checks; the branch was fast-forward merged into
+  `zebra-cloud-trench` at `cfbebcf7`.
+- This closeout does not authorize API/Worker startup wiring, Runtime selection,
+  application Compose, Redis authority or any aggregate gate unlock.
+
 #### Validation evidence (2026-08-04)
 
 - Core and Redis adapter regressions pass `24/24`; the full
@@ -701,7 +709,7 @@ the caller can rebuild from PostgreSQL.
 - The host-side Redis runner passed against the pinned `redis:8.2.1-alpine`
   service: `1 passed` and
   `ZEBRA_LIVE_FANOUT_REDIS_TEST_RESULT=PASS`. The runner removed its container
-  and network; the card is handed to `Review` without authorizing API/Worker
+  and network; the card is closed as `Done` without authorizing API/Worker
   runtime selection.
 
 ### MEM-MEM0-SPIKE-01 - Mem0 OSS Contract And Operations Probe
@@ -1557,18 +1565,18 @@ projection to callers that currently use `model_calls` and `tool_runs`.
 - Suggested role: `SRE / APP / CORE`
 - Depends on: merged `CLOUD-COMPOSE-INFRA-01`, `CLOUD-PG-01`,
   `CLOUD-LEASE-01`, `CLOUD-ART-01`, `CLOUD-PROFILE-COMPOSITION-CON-01` and
-  `CLOUD-LIVE-01` (currently `Review`)
+  `CLOUD-LIVE-01` (currently `Done`)
 - Branch: `TBD`
 - Candidate owned paths: `docker/compose.application.yml`, one multi-target Zebra
   Dockerfile, container smoke tests, required config composition and governance records
 
 #### Block reason
 
-The profile contract is now `Done`, so that prerequisite is cleared. The card is
-still implementation-blocked: its live dependency is registered but not yet
-closed, and the application overlay still needs a separately authorized
-implementation slice. It must not be used as an implicit authorization to
-change API/Worker startup or to unlock any aggregate fencing gate.
+The profile contract and live fan-out dependency are now `Done`. This card is
+still implementation-blocked because the application overlay needs its own
+separately authorized implementation slice. It must not be used as an implicit
+authorization to change API/Worker startup or to unlock any aggregate fencing
+gate.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 

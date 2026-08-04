@@ -184,9 +184,9 @@ selector 和在线事件路由的单独授权；本次组合任务关闭不改�
   和 pinned `redis:8.2.1-alpine` 宿主 Compose runner `1/1` 均通过，结果标记为
   `ZEBRA_LIVE_FANOUT_REDIS_TEST_RESULT=PASS`。Adapter 仍未接入 API/Worker，
   Redis 仍不是事实源。
-- `CLOUD-LIVE-01` 已进入 `Review`，当前只交付可复用的 replay-plus-tail
-  Port/Redis Streams Adapter 与隔离 Redis 证据；API/Worker 运行态接线和应用
-  Compose 仍不在本卡授权内。
+- `CLOUD-LIVE-01` 已完成并合并到 `zebra-cloud-trench`（`cfbebcf7`），当前只
+  交付可复用的 replay-plus-tail Port/Redis Streams Adapter 与隔离 Redis 证据；
+  API/Worker 运行态接线和应用 Compose 仍不在本卡授权内。
 - PostgreSQL/MinIO/Redis 的备份、PITR、恢复、回滚、RPO/RTO 和多 Worker 故障演练
   尚未形成完整 GA 证据。
 
@@ -298,8 +298,8 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
    所有 runner 均完成清理。
 14. [x] 完成 `CLOUD-AGG-FENCE-REVIEW-01`；汇总全部矩阵为 `PASS`，
    `CLOUD-AGG-FENCE-01` 从 `Locked` 转为 `Review`，不授权实现或 runtime。
-15. [复核中] 完成 `CLOUD-LIVE-01` 的 Redis live fan-out Port、Adapter 和隔离
-   Compose 证据；宿主 runner 已通过，应用 Compose 仍需另一张独立授权卡。
+15. [x] 完成 `CLOUD-LIVE-01` 的 Redis live fan-out Port、Adapter 和隔离
+   Compose 证据并合并到主线；应用 Compose 仍需另一张独立授权卡。
 16. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
 17. 再激活 Host/AG-UI/Trench read-only vertical slice。
 18. 之后才进入 Frontend、Analysis、Writeback 和 GA。

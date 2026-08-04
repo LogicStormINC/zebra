@@ -44,8 +44,9 @@
   The mainline PostgreSQL runners pass `15/15` and `14/14` with
   `ZEBRA_HANDOFF_AUTH_POSTGRES_TEST_RESULT=PASS` and
   `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`.
-- `CLOUD-LIVE-01` is in `Review` after completing the separately owned Redis
-  live event fan-out slice. It remains limited to a provider-neutral Port, a
+- `CLOUD-LIVE-01` is `Done` after completing and fast-forward merging the
+  separately owned Redis live event fan-out slice at `cfbebcf7`. It remains
+  limited to a provider-neutral Port, a
   bounded Redis Streams adapter and isolated evidence; the local Core/adapter
   matrix is `24/24` (including the non-blocking read and namespace validation
   regressions), the full integrations package is `127 passed, 3 skipped`,

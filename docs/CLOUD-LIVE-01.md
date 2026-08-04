@@ -1,6 +1,6 @@
 # CLOUD-LIVE-01 Redis Live Event Fan-out
 
-Status: `Review`
+Status: `Done`
 
 Branch: `codex/cloud-live-01`
 
@@ -56,7 +56,8 @@ The runner rendered its Compose file, started a dedicated Redis service on
 `127.0.0.1:16381`, and emitted
 `ZEBRA_LIVE_FANOUT_REDIS_TEST_RESULT=PASS`; its exit trap removed the Redis
 container and network. This closes the implementation/evidence slice and hands
-the card to `Review`; it does not authorize API/Worker runtime selection.
+the card to `Done` after fast-forward merge; it does not authorize API/Worker
+runtime selection.
 
 The repository-wide `uv run pytest -q` run collected successfully and reported
 `2067 passed, 247 skipped`; two unrelated baseline failures remain in the MCP
