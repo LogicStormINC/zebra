@@ -54,7 +54,7 @@
   `ZEBRA_LIVE_FANOUT_REDIS_TEST_RESULT=PASS`. The detailed matrix is recorded
   in `docs/CLOUD-LIVE-01.md`. It does not authorize API/Worker startup wiring,
   application Compose, Runtime selection or any Redis authority.
-- `CLOUD-COMPOSE-APP-01` is now the active implementation slice on
+- `CLOUD-COMPOSE-APP-01` is now in `Review` on
   `codex/cloud-compose-app-01`. It owns only the non-root multi-target Zebra
   image, the application-only migration/API/Worker Compose overlay and isolated
   smoke evidence; host-side cloud composition already proves API health,
@@ -62,8 +62,8 @@
   `--no-dev` image now declares `uvicorn` as an API runtime dependency, and the
   complete three-container smoke passes with a temporary mirror-only Python
   base override (runtime UID `65532`); a direct build with the committed Docker
-  Hub base remains the final container evidence. The base dependency Compose
-  remains a separate lifecycle.
+  Hub base remains the final container evidence and is recorded as an external
+  review gap. The base dependency Compose remains a separate lifecycle.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.
   Its direct Task authority gap is implemented by `CLOUD-AGG-FENCE-TASK-01` at

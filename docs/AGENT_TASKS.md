@@ -1564,7 +1564,7 @@ projection to callers that currently use `model_calls` and `tool_runs`.
 
 ### CLOUD-COMPOSE-APP-01 - Zebra Application Container Overlay
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `SRE / APP / CORE`
 - Depends on: merged `CLOUD-COMPOSE-INFRA-01`, `CLOUD-PG-01`,
@@ -1632,6 +1632,19 @@ fact source; Redis remains optional live state and is not selected by startup.
   workspace: API `/health` passed, `create_app` exposed
   `PostgresControlPlaneStores`, and Worker completed one idle PostgreSQL cycle;
   the fixture resources were removed afterward.
+
+#### Review handoff
+
+- The implementation is committed on `codex/cloud-compose-app-01` and the
+  worktree is clean. The application-only overlay, lockfile-based non-root
+  image, migration ordering and deterministic cleanup are ready for review.
+- Focused validation is green: the cloud API/Worker composition regression is
+  `5 passed`; lockfile, Ruff, Mypy, shell syntax and diff checks pass; the
+  mirror-base three-container smoke is `PASS` and reports UID `65532`.
+- Direct build/smoke of the pinned Docker Hub Python digest remains an external
+  evidence gap because its layers remain at `0B` during download. No source pin
+  replacement, production rollout, Redis live routing, Runtime selector or
+  aggregate-gate unlock is authorized until that evidence is available.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 

@@ -176,7 +176,7 @@ selector 和在线事件路由的单独授权；本次组合任务关闭不改�
 
 ### Docker 应用层与在线事件
 
-- `CLOUD-COMPOSE-APP-01` 已在依赖闭合后进入 `In Progress`，当前只建立
+- `CLOUD-COMPOSE-APP-01` 已在依赖闭合后进入 `Review`，当前只建立
   独立的 migration/API/Worker 主容器和 application-only Compose overlay；
   不改造基础依赖容器生命周期。
 - 首次容器验证发现生产镜像以 `--no-dev` 同步时缺少 `uvicorn`；现已将其声明为

@@ -1,6 +1,6 @@
 # Task Plan
 
-## CLOUD-COMPOSE-APP-01 - Zebra Application Container Overlay (In Progress)
+## CLOUD-COMPOSE-APP-01 - Zebra Application Container Overlay (Review)
 
 1. `completed` - Claim the dependency-cleared application Compose card with a
    dedicated branch/worktree and explicit owned paths.
@@ -8,7 +8,7 @@
    application-only Compose overlay for migration, API and Worker.
 3. `completed` - Add isolated dependency fixtures and a host Docker smoke runner
    covering migration ordering, API health, Worker startup and cleanup.
-4. `in_progress` - Record validation and closeout without selecting Redis live
+4. `completed` - Record validation and closeout without selecting Redis live
    routing or unlocking aggregate/runtime gates.
 
 ### Boundary
@@ -33,6 +33,14 @@
   including migration ordering, API health, PostgreSQL store assertion and
   Worker health; the image runs as UID `65532`. The committed Docker Hub base
   still needs a direct build.
+
+### Review handoff
+
+- Implementation commits are complete on `codex/cloud-compose-app-01`; the
+  worktree is clean.
+- The pinned Docker Hub base remains the only external evidence gap. It is not
+  replaced by the temporary mirror, and no runtime or aggregate gate is
+  unlocked by this handoff.
 
 ## CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter (Done)
 
