@@ -37,6 +37,7 @@ def test_api_health_returns_service_status(tmp_path: Path) -> None:
             "build_commit": "unknown",
             "task_image_attachments": True,
             "native_image_understanding": False,
+            "final_message_identity": True,
         },
     }
 
@@ -63,6 +64,7 @@ def test_api_health_reports_native_image_capability_from_explicit_profile(
     assert runtime["fallback_allowed"] is False
     assert runtime["build_commit"] == "unknown"
     assert runtime["task_image_attachments"] is True
+    assert runtime["final_message_identity"] is True
 
 
 def test_api_health_does_not_infer_native_image_capability_without_valid_profile(

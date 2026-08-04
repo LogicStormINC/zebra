@@ -27,6 +27,8 @@ def test_http_app_serves_health(tmp_path: Path) -> None:
             "fallback_allowed": False,
             "build_commit": "unknown",
             "task_image_attachments": True,
+            "native_image_understanding": False,
+            "final_message_identity": True,
         },
     }
 

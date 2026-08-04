@@ -37,6 +37,7 @@ class ApiStatusMixin:
                     "build_commit": self.settings.build_commit,
                     "task_image_attachments": True,
                     "native_image_understanding": native_image_understanding,
+                    "final_message_identity": True,
                 },
             },
         )
