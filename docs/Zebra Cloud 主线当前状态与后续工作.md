@@ -238,9 +238,11 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 7. [x] 完成 `CLOUD-AGG-FENCE-HANDOFF-AUTH-01` 的独立 sidebar closeout；结果为
    `CLOSEOUT-OK`、`Review -> Done`，父门继续 `Locked`；DISPATCH-01 另行等待
    合并后激活决策。
-8. [ ] 实施并关闭已激活的 `CLOUD-AGG-FENCE-DISPATCH-01`，补齐 claim/ACK
-   revision、replay、race、namespace、rollback 和 zero-write 的真实 PostgreSQL
-   证据；完成后仍需独立 Review 和 closeout。
+8. [in progress] 已实施已激活的 `CLOUD-AGG-FENCE-DISPATCH-01`：claim/ACK
+   已绑定 operation、stream/pointer revision、WorkerMutationAuthority、LeaseFence
+   与 token，补齐 replay、race、namespace、rollback 和 zero-write 回归；专用
+   PostgreSQL 17.5 runner 已 `14/14` 通过并完成清理。仍需独立 Review 和
+   closeout，完成前父门继续 `Locked`。
 9. 完成其余 aggregate fencing conformance 与真实 PostgreSQL 证据，再评估
    `CLOUD-AGG-FENCE-01` 激活。
 10. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。

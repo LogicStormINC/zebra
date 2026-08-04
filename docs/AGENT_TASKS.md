@@ -3176,6 +3176,12 @@ external membership.
 - Acceptance: two-worker race has one winner; stale fence/token/expiry/stream/
   pointer and cross-namespace attempts write zero rows; authorized replay returns
   an equivalent result; PostgreSQL evidence includes exact commands and counts.
+- Current implementation evidence: the cloud receipt/Port and PostgreSQL adapter
+  now bind operation identity, child stream/pointer revisions and the canonical
+  WorkerMutationAuthority without migration/DDL or SQLite changes. The dedicated
+  PostgreSQL 17.5 runner passes `14/14` with explicit
+  `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`; independent Review and
+  closeout are still pending.
 - Explicit non-goals: no reserve/abort authority redesign, migration/DDL,
   Runtime/API/Worker profile selection, application Compose, SQLite, Redis,
   Mem0, Provider HTTP, CopilotKit/Trench, production rollout or parent-gate

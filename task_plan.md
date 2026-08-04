@@ -156,15 +156,15 @@
 2. `completed` - Obtain the post-merge sidebar activation decision. It returned
    `IMPLEMENTATION-ACTIVATE-OK` for only this card with base `4a10883a`; keep
    `CLOUD-AGG-FENCE-01` locked and do not activate another successor.
-3. `in_progress` - Trace the existing dispatch claim/ACK Port, PostgreSQL adapter,
-   pointer and audit transaction seams; record the smallest owned implementation
-   paths before changing code.
-4. `pending` - Bind claim and ACK to operation, stream/pointer revisions,
+3. `completed` - Trace the existing dispatch claim/ACK Port, PostgreSQL adapter,
+   pointer and audit transaction seams; keep the implementation inside the
+   activated dispatch paths and preserve the SQLite Port boundary.
+4. `completed` - Bind claim and ACK to operation, stream/pointer revisions,
    WorkerMutationAuthority, LeaseFence and claim token with fail-closed zero-write
-   behavior.
-5. `pending` - Add replay, race, namespace and rollback regressions plus the
+   behavior, without migration/DDL.
+5. `completed` - Add replay, race, namespace and rollback regressions plus the
    dedicated PostgreSQL Compose runner and explicit PASS marker.
-6. `pending` - Run AUTH regressions and all changed-path static/Compose checks,
+6. `in_progress` - Run AUTH regressions and all changed-path static/Compose checks,
    update evidence, request independent implementation Review and do not unlock
    the parent gate.
 
@@ -178,6 +178,23 @@
   production rollout is authorized.
 - The parent `CLOUD-AGG-FENCE-01` remains `Locked`; this card does not close the
   audit card automatically and still needs independent Review and closeout.
+
+### Implementation evidence (current worktree)
+
+- `HandoffDispatch` now carries `operation_id`, expected child stream revision,
+  active pointer revision and the canonical `WorkerMutationAuthority`. The cloud
+  `FencedHandoffDispatchStorePort` extends the legacy Port without changing the
+  SQLite adapter signature.
+- PostgreSQL claim/ACK joins the committed operation, child `session_streams` and
+  `session_projections` in the same transaction. Stale operation, stream, pointer,
+  LeaseFence, owner, token, expiry and namespace facts reject before a dispatch
+  update; no migration/DDL was added.
+- `tests/compose/session_handoff_dispatch/run-postgres-tests.sh` uses the locked
+  `postgres:17.5-alpine3.21` image and `uv run --package agent-storage --with pytest`
+  so `psycopg[binary]` is collected from the workspace package. The runner passed
+  `14/14` (`ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`) and removed its
+  container, volume and network. Independent Review and sidebar closeout remain
+  pending; the parent gate is still `Locked`.
 
 ## CLOUD-AGG-FENCE-CTX-SEMANTIC-01 - Administrative Context Event Semantics (Done)
 

@@ -73,6 +73,7 @@ from agent_core.ports.governed_memory_store import (
     GovernedMemoryStorePort,
 )
 from agent_core.ports.handoff_dispatch_store import (
+    FencedHandoffDispatchStorePort,
     HandoffDispatch,
     HandoffDispatchStorePort,
 )
@@ -177,6 +178,7 @@ __all__ = [
     "EffectiveRuntimeAuthority",
     "HandoffDispatch",
     "HandoffDispatchStorePort",
+    "FencedHandoffDispatchStorePort",
     "HandoffSourceFacts",
     "SessionHandoffAbortPort",
     "SessionHandoffAbortRequest",

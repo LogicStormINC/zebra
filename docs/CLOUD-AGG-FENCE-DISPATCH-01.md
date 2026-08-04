@@ -50,3 +50,15 @@ API/Worker 启动选择、Runtime、Redis、Mem0、SQLite、Provider HTTP、Copi
   stale stream/pointer、跨 namespace、ACK replay、rollback 和 rollback 后 retry。
 - changed-path Ruff、strict Mypy、`uv lock --check`、`bash -n`、Compose config、
   `git diff --check`，并保留根 `AGENTS.md` 的用户未提交状态。
+
+## 当前实现证据
+
+- `HandoffDispatch` 携带 operation、child stream、active pointer 和
+  `WorkerMutationAuthority`；云端使用 `FencedHandoffDispatchStorePort`，本地
+  SQLite 仍保留旧 Port 签名与行为。
+- canonical claim retry（带 authority 或 revision）返回仍有效的原 token；
+  legacy fence-only retry 继续返回 `None`。并发 ACK 在 dispatch 行锁上收敛为
+  一个 `acked` 终态，不产生重复写入。
+- 专用 Compose runner 已通过 `14/14`，输出
+  `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`，并清理容器、volume 与
+  network；独立 Review/closeout 仍待完成，父门继续 `Locked`。

@@ -4,7 +4,7 @@ import os
 from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from threading import Event
 from typing import Any
@@ -15,6 +15,7 @@ import pytest
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseFence, LeaseLostError
 from agent_core.domain.session_handoff import WorkspaceBindingRevision
+from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 from agent_core.ports.handoff_dispatch_store import HandoffDispatch
 from agent_storage import (
     PostgresHandoffDispatchStore,
@@ -323,6 +324,204 @@ def test_envelope_artifact_is_bound_to_committed_operation(
                 """,
                 (seed.namespace, seed.child_id),
             )
+
+
+def test_claim_carries_operation_revisions_and_authorized_ack_replay(
+    postgres_dsn: str,
+    seed: _Seed,
+) -> None:
+    store = _store(postgres_dsn, seed.namespace)
+    authority = WorkerMutationAuthority(
+        deployment_namespace=seed.namespace,
+        session_id=seed.child_id,
+        expected_stream_revision=0,
+        lease_fence=seed.fence,
+    )
+    claim = store.claim_for_child(
+        seed.child_id,
+        authority=authority,
+        expected_pointer_revision=0,
+        claimed_at=datetime.now(UTC),
+    )
+
+    assert claim is not None
+    assert claim.operation_id is not None
+    assert claim.expected_stream_revision == 0
+    assert claim.expected_pointer_revision == 0
+    assert claim.authority == authority
+    retry = store.claim_for_child(
+        seed.child_id,
+        authority=authority,
+        expected_pointer_revision=0,
+        claimed_at=datetime.now(UTC),
+    )
+    assert retry is not None
+    assert retry.claim_token == claim.claim_token
+    store.acknowledge(claim, checked_at=datetime.now(UTC))
+    store.acknowledge(claim, checked_at=datetime.now(UTC))
+
+
+def test_stale_pointer_ack_is_zero_write(postgres_dsn: str, seed: _Seed) -> None:
+    store = _store(postgres_dsn, seed.namespace)
+    claim = store.claim_for_child(
+        seed.child_id,
+        fence=seed.fence,
+        claimed_at=datetime.now(UTC),
+    )
+    assert claim is not None
+    with psycopg.connect(postgres_dsn) as connection:
+        connection.execute(
+            """
+            UPDATE session_projections SET current_sequence = 1
+            WHERE deployment_namespace = %s AND session_id = %s
+            """,
+            (seed.namespace, seed.child_id),
+        )
+
+    with pytest.raises(HandoffStorageConflictError):
+        store.acknowledge(claim, checked_at=datetime.now(UTC))
+    assert _dispatch_status(postgres_dsn, seed) == ("claimed", None)
+
+
+def test_stale_stream_claim_is_zero_write(postgres_dsn: str, seed: _Seed) -> None:
+    store = _store(postgres_dsn, seed.namespace)
+    with psycopg.connect(postgres_dsn) as connection:
+        connection.execute(
+            """
+            UPDATE session_streams SET current_version = 1
+            WHERE deployment_namespace = %s AND session_id = %s
+            """,
+            (seed.namespace, seed.child_id),
+        )
+
+    with pytest.raises(HandoffStorageConflictError):
+        store.claim_for_child(
+            seed.child_id,
+            fence=seed.fence,
+            expected_stream_revision=0,
+            claimed_at=datetime.now(UTC),
+        )
+    assert _dispatch_status(postgres_dsn, seed) == ("pending", None)
+
+
+def test_wrong_operation_and_namespace_receipts_are_zero_write(
+    postgres_dsn: str,
+    seed: _Seed,
+) -> None:
+    store = _store(postgres_dsn, seed.namespace)
+    claim = store.claim_for_child(
+        seed.child_id,
+        fence=seed.fence,
+        claimed_at=datetime.now(UTC),
+    )
+    assert claim is not None
+    with pytest.raises(HandoffStorageConflictError):
+        store.acknowledge(
+            replace(claim, claim_token="wrong-token"),
+            checked_at=datetime.now(UTC),
+        )
+    assert _dispatch_status(postgres_dsn, seed) == ("claimed", None)
+    wrong_operation = replace(claim, operation_id=str(uuid4()))
+    with pytest.raises(HandoffStorageConflictError):
+        store.acknowledge(wrong_operation, checked_at=datetime.now(UTC))
+    assert _dispatch_status(postgres_dsn, seed) == ("claimed", None)
+
+    other_store = _store(postgres_dsn, f"other-{uuid4()}")
+    with pytest.raises(HandoffStorageConflictError):
+        other_store.acknowledge(claim, checked_at=datetime.now(UTC))
+    assert _dispatch_status(postgres_dsn, seed) == ("claimed", None)
+
+
+def test_two_workers_have_one_claim_winner(postgres_dsn: str, seed: _Seed) -> None:
+    stores = [_store(postgres_dsn, seed.namespace) for _ in range(2)]
+    claimed_at = datetime.now(UTC)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(
+            executor.map(
+                lambda store: store.claim_for_child(
+                    seed.child_id,
+                    fence=seed.fence,
+                    claimed_at=claimed_at,
+                ),
+                stores,
+            )
+        )
+
+    winners = [result for result in results if result is not None]
+    assert len(winners) == 1
+    stores[0].acknowledge(winners[0], checked_at=datetime.now(UTC))
+
+
+def test_concurrent_ack_replays_without_duplicate_transition(
+    postgres_dsn: str,
+    seed: _Seed,
+) -> None:
+    store = _store(postgres_dsn, seed.namespace)
+    claim = store.claim_for_child(
+        seed.child_id,
+        fence=seed.fence,
+        claimed_at=datetime.now(UTC),
+    )
+    assert claim is not None
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(
+            executor.map(
+                lambda _: store.acknowledge(claim, checked_at=datetime.now(UTC)),
+                range(2),
+            )
+        )
+
+    assert results == [None, None]
+    assert _dispatch_status(postgres_dsn, seed)[0] == "acked"
+
+
+def test_failed_ack_rolls_back_and_valid_retry_converges(
+    postgres_dsn: str,
+    seed: _Seed,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = _store(postgres_dsn, seed.namespace)
+    claim = store.claim_for_child(
+        seed.child_id,
+        fence=seed.fence,
+        claimed_at=datetime.now(UTC),
+    )
+    assert claim is not None
+    original_ack = store._acknowledge
+
+    def fail_after_write(connection: Any, receipt: HandoffDispatch) -> int:
+        connection.execute(
+            """
+            UPDATE handoff_dispatch_outbox
+            SET claim_owner_instance_id = 'transient-owner'
+            WHERE deployment_namespace = %s AND delivery_id = %s
+            """,
+            (seed.namespace, receipt.delivery_id),
+        )
+        raise RuntimeError("injected dispatch failure")
+
+    monkeypatch.setattr(store, "_acknowledge", fail_after_write)
+    with pytest.raises(RuntimeError, match="injected dispatch failure"):
+        store.acknowledge(claim, checked_at=datetime.now(UTC))
+    assert _dispatch_status(postgres_dsn, seed) == ("claimed", None)
+    monkeypatch.setattr(store, "_acknowledge", original_ack)
+    store.acknowledge(claim, checked_at=datetime.now(UTC))
+
+
+def _dispatch_status(
+    dsn: str,
+    seed: _Seed,
+) -> tuple[str, datetime | None]:
+    with psycopg.connect(dsn) as connection:
+        row = connection.execute(
+            """
+            SELECT status, acked_at FROM handoff_dispatch_outbox
+            WHERE deployment_namespace = %s AND child_session_id = %s
+            """,
+            (seed.namespace, seed.child_id),
+        ).fetchone()
+    assert row is not None
+    return row
 
 
 def _store(dsn: str, namespace: str) -> PostgresHandoffDispatchStore:
