@@ -41,6 +41,6 @@ trap cleanup EXIT
 
 curl --fail --silent --show-error "http://127.0.0.1:${API_PORT}/health" >/dev/null
 "${APP_COMPOSE[@]}" exec -T zebra-api python -c \
-  'from zebra_agent_config import load_settings; s = load_settings(); assert s.profile == "cloud"; assert s.database_url.startswith("postgresql://")'
+  'from zebra_agent_api import create_app; from zebra_agent_config import load_settings; s = load_settings(); api = create_app(settings=s); assert s.profile == "cloud"; assert s.database_url.startswith("postgresql://"); assert type(api.stores).__name__ == "PostgresControlPlaneStores"'
 "${APP_COMPOSE[@]}" ps --status running zebra-api zebra-worker
 echo "ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS"
