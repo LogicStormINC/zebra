@@ -1573,7 +1573,7 @@ projection to callers that currently use `model_calls` and `tool_runs`.
 - Branch: `codex/cloud-compose-app-01`
 - Worktree: `/Users/lukeding/.codex/worktrees/cloud-compose-app-01/zebra-agent`
 - Owned paths: `docker/compose.application.yml`, `docker/Dockerfile`,
-  `docker/.dockerignore`, `docker/.env.application.example`, `docker/migrate.py`,
+  `.dockerignore`, `docker/.env.application.example`, `docker/migrate.py`,
   `docker/README.md`, `apps/api/pyproject.toml`, `uv.lock`,
   `tests/compose/application/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`,
   `task_plan.md`, and
