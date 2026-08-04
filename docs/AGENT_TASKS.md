@@ -3091,10 +3091,10 @@ external membership.
   unauthorized. The missing authority/CAS, dispatch revision/replay/race/
   namespace evidence and reproducible PostgreSQL runner are recorded in the
   audit document.
-- Required follow-up cards, both `Locked` and not activated: a minimal
-  Handoff reserve/abort authority card and a separate dispatch stream/pointer/
-  replay fencing card. Neither may unlock the parent gate or select a runtime
-  profile without a new sidebar activation decision.
+- Required follow-up cards: the minimal Handoff reserve/abort authority card is
+  now separately activated and is recorded below as `Review`; the dispatch
+  stream/pointer/replay fencing card remains `Locked` and unactivated. Neither
+  card unlocks the parent gate or selects a runtime profile.
 - Explicit non-goals: no changes to `packages/agent-core/`,
   `packages/agent-context/`, `packages/agent-storage/`, `apps/worker/`,
   `apps/api/`, `tests/`, `evals/`, migrations, Compose runners, Runtime,
@@ -3107,17 +3107,24 @@ external membership.
 
 ### CLOUD-AGG-FENCE-HANDOFF-AUTH-01 - Handoff Reserve And Abort Authority
 
-- Status: `Locked`
-- Owner: `UNASSIGNED`
+- Status: `Review`
+- Owner: `codex`
 - Depends on: `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` `Review` closeout,
   `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-HANDOFF-PG-01` and a new sidebar
-  activation decision. This card is registered only; it is not activated.
-- Branch: `TBD after explicit activation`
-- Worktree: `TBD after explicit activation`
-- Owned paths after activation: the Core Session Handoff authority/Port seam;
-  PostgreSQL Handoff reservation, commit precondition and abort adapter seams;
-  focused Handoff PostgreSQL tests and its dedicated Compose runner; governance
-  records. Existing local SQLite behavior and unrelated aggregate adapters are
+  activation decision. Sidebar returned `IMPLEMENTATION-ACTIVATE-OK` and
+  authorized `Locked -> In Progress` on the isolated branch below. The
+  implementation is now ready for independent `Review`; the parent gate and
+  dispatch successor remain locked.
+- Branch: `codex/cloud-agg-fence-handoff-auth-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-handoff-auth-01/zebra-agent`
+- Base: `zebra-cloud-trench@a765e068`
+- Implementation commit: `6a04f1cd03aea96d9d04ba702832d1fffb1292e1`
+- Owned paths after activation: `packages/agent-core/src/agent_core/ports/`
+  Handoff authority seam; `packages/agent-storage/src/agent_storage/postgres/`
+  Handoff reservation, commit precondition and abort seams; focused Handoff
+  PostgreSQL tests; `tests/compose/session_handoff_authority/`;
+  `docs/CLOUD-AGG-FENCE-HANDOFF-AUTH-01.md`; and governance records. Existing
+  local SQLite behavior, dispatch semantics and unrelated aggregate adapters are
   out of scope.
 - Goal: bind reserve and abort to the canonical WorkerMutationAuthority or an
   explicitly approved AdministrativeMutationCAS, current source LeaseFence,
@@ -3125,6 +3132,15 @@ external membership.
 - Acceptance: wrong namespace, owner, epoch, token, expiry, stream, workspace,
   request identity and stale CAS all fail before writes; authorized retry is
   idempotent; real PostgreSQL evidence records row counts and cleanup.
+- Evidence: the cloud-only `SessionHandoffAbortPort` carries
+  `AdministrativeMutationCAS`; PostgreSQL reserve rechecks and locks Lease,
+  stream and Workspace facts before insert; abort locks the operation and the
+  same source facts before a status CAS. The dedicated PostgreSQL `17.5`
+  runner passes `15/15` with marker
+  `ZEBRA_HANDOFF_AUTH_POSTGRES_TEST_RESULT=PASS`; containers, volume and network
+  are removed by the runner. Focused deterministic tests pass `14` with `15`
+  PostgreSQL-gated skips, SQLite/Core regressions pass `29` with `23` skips,
+  changed Ruff and strict Mypy pass, and no migration changed.
 - Explicit non-goals: no dispatch Port redesign, Runtime/API/Worker profile
   selection, SQLite, Redis, Mem0, Provider HTTP, CopilotKit/Trench or parent-gate
   unlock.

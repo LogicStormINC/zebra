@@ -95,8 +95,58 @@
 - `BLOCK-GAP`: reserve/abort authority, dispatch stream/pointer/replay/race/
   namespace zero-write evidence and a reproducible PostgreSQL runner remain
   follow-up gates.
-- Two scoped successors are recorded as `Locked` only; neither is activated,
-  and the parent aggregate fencing gate stays `Locked`.
+- The reserve/abort successor is now separately activated under
+  `CLOUD-AGG-FENCE-HANDOFF-AUTH-01` and remains in `Review`; the dispatch
+  successor is still `Locked` and unactivated. The parent aggregate fencing
+  gate stays `Locked`.
+
+## CLOUD-AGG-FENCE-HANDOFF-AUTH-01 - Handoff Reserve And Abort Authority (Review)
+
+1. `completed` - Obtain the explicit sidebar activation decision and create the
+   isolated `codex/cloud-agg-fence-handoff-auth-01` worktree, preserving the
+   audit card's read-only boundary and the dirty root `AGENTS.md`.
+2. `completed` - Add the cloud-only abort authority Port carrying
+   `AdministrativeMutationCAS`; keep the existing SQLite-compatible
+   `SessionHandoffPort` unchanged.
+3. `completed` - Recheck reserve idempotency and bind the PostgreSQL insert to
+   the current Lease boundary, source stream, Workspace, LeaseFence and
+   authority/task revisions before any operation row is written.
+4. `completed` - Bind authorized abort to operation/request identity, namespace,
+   source session and stream CAS; serialize it with commit and verify stale,
+   workspace-drift, namespace and active-lease paths are zero-write.
+5. `completed` - Add concurrent reserve/abort-versus-commit/replay/rollback
+   regressions and a dedicated PostgreSQL 17.5 Compose runner with deterministic
+   cleanup and a PASS sentinel.
+6. `completed` - Run changed Ruff, strict Mypy, focused Core/SQLite regressions,
+   `uv lock --check`, Compose/script/diff checks, and commit the implementation
+   as `6a04f1cd`.
+7. `in_progress` - Request independent sidebar review of the implementation
+   evidence; do not close the card, unlock `CLOUD-AGG-FENCE-01`, or activate the
+   dispatch successor until that review completes.
+
+### Boundary
+
+- The implementation is limited to the Core Handoff authority seam, the
+  PostgreSQL Handoff reservation/abort helpers, focused tests, the dedicated
+  runner and governance records in the activated card.
+- No migration/DDL, dispatch claim/ACK redesign, API/Worker selector, Runtime,
+  SQLite feature work, Redis/Mem0, Provider HTTP, CopilotKit/Trench,
+  application Compose or production rollout is included.
+- The parent `CLOUD-AGG-FENCE-01` and `CLOUD-AGG-FENCE-DISPATCH-01` remain
+  `Locked`.
+
+### Evidence
+
+- `tests/compose/session_handoff_authority/run-postgres-tests.sh` uses
+  `postgres:17.5-alpine3.21` and passes `15/15`, emitting
+  `ZEBRA_HANDOFF_AUTH_POSTGRES_TEST_RESULT=PASS`; the container, volume and
+  network are removed by the trap.
+- Focused deterministic validation passes `14` with `15` PostgreSQL-gated
+  skips; SQLite/Core and neighboring dispatch/Lease regressions pass `29` with
+  `23` skips. Changed Ruff, strict Mypy, `uv lock --check`, `bash -n`, Compose
+  config and `git diff --check` pass.
+- This card is `Review`, not `Done`, until the independent sidebar closeout
+  accepts the evidence. No parent-gate or runtime authorization is implied.
 
 ## CLOUD-AGG-FENCE-CTX-SEMANTIC-01 - Administrative Context Event Semantics (Done)
 

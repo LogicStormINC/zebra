@@ -5,7 +5,7 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-08-03`
+- Snapshot date: `2026-08-04`
 - Cloud mainline status is recorded in
   [Zebra Cloud 主线当前状态与后续工作](./docs/Zebra%20Cloud%20主线当前状态与后续工作.md):
   PostgreSQL adapters and isolated Compose evidence are substantially complete, but
@@ -41,11 +41,13 @@
 - The current cloud governance slice is
   `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01`, now in `Review` on its isolated
   worktree at base `765ede43`. Sidebar ChatGPT returned `CLOSEOUT-OK` for
-  `Planning -> Review` with audit result `BLOCK-GAP`: reserve/abort authority,
-  dispatch revision/replay/race/namespace evidence and a reproducible Handoff
-  PostgreSQL runner remain missing. No production code, tests, migrations,
-  Compose runner or runtime selection is authorized; the parent
-  `CLOUD-AGG-FENCE-01` remains `Locked`.
+  `Planning -> Review` with audit result `BLOCK-GAP`. Its reserve/abort gap is
+  now implemented by the separately activated successor
+  `CLOUD-AGG-FENCE-HANDOFF-AUTH-01`, which is in `Review` on
+  `codex/cloud-agg-fence-handoff-auth-01` at commit `6a04f1cd`; the dispatch
+  revision/replay/race/namespace gap remains locked. The successor's real
+  PostgreSQL runner passes `15/15`; the parent `CLOUD-AGG-FENCE-01` remains
+  `Locked`.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is formally `Done` after sidebar
   architecture review. `CLOUD-PROVIDER-CONT-PG-01` is now `Done` on the isolated
   `codex/cloud-provider-cont-pg-01` worktree, based on `f6c8a926`, with its Core
@@ -62,8 +64,8 @@
   promotion, and repo-scoped SQLite FTS recall under a token budget. Local
   validation: `63` focused tests, changed-file Ruff, Mypy over `158` source
   files, and release eval `10/10` pass. Full suite: `1747 passed, 8 skipped`;
-  the same nine failures reproduce on untouched `main`. `make check` is blocked
-  only by two inherited file-size violations outside this task. PR CI run
+  the same nine failures reproduce on untouched `main`. The current file-size
+  gate is blocked by four inherited violations outside this task. PR CI run
   `30332213200` did not execute any step because GitHub reported an account
   payment/spending-limit gate.
 - Verified implementation baseline: `f1e4965` (PR `#174`)

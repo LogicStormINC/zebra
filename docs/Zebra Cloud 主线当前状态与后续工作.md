@@ -1,6 +1,6 @@
 # Zebra Cloud 主线当前状态与后续工作
 
-> 快照日期：2026-08-03
+> 快照日期：2026-08-04
 > 分支：`zebra-cloud-trench`
 > 当前基线：`635b6960`
 
@@ -112,22 +112,27 @@ fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 
    Event type 与 capsule binding Store-level 缺口，已由侧边栏批准关闭为
    `Done`；Store guard、三类零写入回归和真实 PostgreSQL `18/18` 矩阵均已
    完成。
-6. `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01`：当前唯一进行中的治理型
-   子任务，审计 Handoff/dispatch 的 WorkerMutationAuthority、LeaseFence、
-   身份绑定、零写入、并发、重放、命名空间隔离和事务发布边界。该卡当前为
-   `Review`，审计结果为 `BLOCK-GAP`；实现代码、测试、迁移、Compose 和运行时
-   选择均不在授权范围内。
+6. `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01`：Handoff/dispatch 的治理型
+   conformance 审计，当前为 `Review`，审计结果为 `BLOCK-GAP`。其 reserve/abort
+   authority 缺口已由独立 successor 处理；dispatch revision/replay/race/
+   namespace 缺口仍未授权实现。
+7. `CLOUD-AGG-FENCE-HANDOFF-AUTH-01`：已由侧边栏批准激活，在
+   `codex/cloud-agg-fence-handoff-auth-01` 完成 reserve/abort authority
+   Store seam、零写入回归和真实 PostgreSQL runner；当前为 `Review`，实现提交
+   `6a04f1cd`，独立 closeout 尚未完成。
 
-7. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
+8. `CLOUD-AGG-FENCE-01`：所有 Worker 权威聚合的真实 PostgreSQL fencing 总门禁，
    在所有子聚合 conformance card 完成前继续保持 `Locked`。
 
 当前 `CLOUD-CONTROL-PLANE-PG-01`、`CLOUD-API-WORKER-PG-01` 与
 `CLOUD-DELIVERY-TXN-PG-01` 均为 `Done`；
 Context conformance 审计及其 semantic successor 均为 `Done`，
 `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 已进入 `Review`，审计结果为
-`BLOCK-GAP`；父 fencing gate 仍为 `Locked`，因为其他 aggregate fencing cards
-尚未闭合。Handoff/dispatch 实现 successor 仍为 `Locked`，不能顺带激活 Runtime selector
-或应用 Compose。API/Worker 存储组合已由 `CLOUD-API-WORKER-PG-01` 完成；应用
+`BLOCK-GAP`；`CLOUD-AGG-FENCE-HANDOFF-AUTH-01` 已完成授权实现并进入 `Review`，
+但尚未由侧边栏 closeout。父 fencing gate 仍为 `Locked`，因为其他 aggregate
+fencing cards 尚未闭合；`CLOUD-AGG-FENCE-DISPATCH-01` 仍为 `Locked`，不能顺带激活
+Runtime selector 或应用 Compose。API/Worker 存储组合已由
+`CLOUD-API-WORKER-PG-01` 完成；应用
 `CLOUD-COMPOSE-APP-01` 当前仍为实现 `Blocked`，等待应用 Compose、Runtime 业务
 selector 和在线事件路由的单独授权；本次组合任务关闭不改变任何 runtime gate。
 
@@ -190,9 +195,11 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 1 failed
 ```
 
-唯一失败是仓库文件大小门禁，包含两个已知超限文件：
+当前失败是仓库文件大小门禁，包含四个已知超限文件：
 
 - `UI/desktop/src/components/CodexConversationPane.styles.ts`：561/500
+- `apps/api/src/zebra_agent_api/app.py`：513/500
+- `packages/agent-storage/src/agent_storage/postgres/context_lifecycle.py`：502/500
 - `tests/agent_storage/test_postgres_governed_memories.py`：765/700
 
 这不是当前 Cloud Adapter 的功能失败，但会使全仓库质量门保持红色。Desktop 文件
@@ -223,12 +230,14 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
    已批准 `Planning -> Review`，但结果为 `BLOCK-GAP`。reserve/abort authority、
    dispatch revision/replay/race/namespace zero-write 及可复现 PostgreSQL
    runner 仍是后续门禁，不自动激活实现。
-7. 完成其余 aggregate fencing conformance 与真实 PostgreSQL 证据，再评估
+7. [review] 完成 `CLOUD-AGG-FENCE-HANDOFF-AUTH-01` 的独立 sidebar closeout；
+   在 closeout 前不解锁父门或激活 dispatch successor。
+8. 完成其余 aggregate fencing conformance 与真实 PostgreSQL 证据，再评估
    `CLOUD-AGG-FENCE-01` 激活。
-8. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
-9. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
-10. 再激活 Host/AG-UI/Trench read-only vertical slice。
-11. 之后才进入 Frontend、Analysis、Writeback 和 GA。
+9. 接入 Redis live fan-out，创建独立的 Zebra application Compose overlay。
+10. 完成迁移、备份、恢复、回滚和多 Worker E2E 门禁。
+11. 再激活 Host/AG-UI/Trench read-only vertical slice。
+12. 之后才进入 Frontend、Analysis、Writeback 和 GA。
 
 ## 当前治理门
 
