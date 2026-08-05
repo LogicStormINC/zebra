@@ -234,6 +234,7 @@ def test_event_import_rejects_legacy_authority_tables_before_writes(
         export_sqlite_snapshot(source, table_names=("session_events", legacy_authority_table)),
         snapshot_dir,
     )
+    source_snapshot = load_sqlite_snapshot(snapshot_dir)
 
     with pytest.raises(MigrationImportError, match=legacy_authority_table):
         import_sqlite_event_snapshot(
@@ -242,6 +243,7 @@ def test_event_import_rejects_legacy_authority_tables_before_writes(
             deployment_namespace="tenant-a",
             importer_identity="zebra-postgres-migration-v1",
         )
+    assert load_sqlite_snapshot(snapshot_dir) == source_snapshot
     with psycopg.connect(isolated_dsn) as connection:
         assert connection.execute("SELECT count(*) FROM session_events").fetchone() == (0,)
 

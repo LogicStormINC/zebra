@@ -53,7 +53,8 @@ Redis 或 Mem0 变成云端事实源。
   避免继续堆叠在单一文件中。
 - 新增三项 legacy authority 零写入回归：快照包含 `artifact_payloads`、
   `effect_ledger` 或 `provider_continuation_artifacts` 时，在 Event 写入前拒绝，
-  PostgreSQL 目标保持为空。
+  PostgreSQL 目标保持为空；回归同时重新加载被拒绝的快照，确认记录和
+  manifest 未改变，保留它作为 quarantine/rebuild 输入。
 
 ## 尚未完成
 
