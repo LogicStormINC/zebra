@@ -7933,3 +7933,16 @@ actual byte access.
 - The matrix explicitly rejects promoting `tenant_id` to namespace, status names
   to lifecycle authority, or Event payloads to historical lease/request evidence.
   No implementation or successor activation changed.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-ARTIFACT-01 activation
+
+- The maintainer explicitly activated the first path-bounded legacy child under
+  `CLOUD-PG-MIG-LEGACY-CON-01`: `CLOUD-PG-MIG-LEGACY-ARTIFACT-01`.
+- The child runs on `codex/cloud-pg-mig-legacy-artifact-01` in
+  `/Users/lukeding/Desktop/playground/2026/product/zebra-agent-cloud-pg-mig-legacy-artifact-01`.
+  Its Owned paths are limited to the Artifact quarantine module, focused test,
+  isolated runner and evidence document; parent governance records remain on the
+  migration branch.
+- The selected disposition is manifest-backed quarantine/rebuild. Effect/Delivery
+  and Provider continuation remain unregistered and inactive, and no PostgreSQL
+  Artifact authority write or runtime wiring is authorized.

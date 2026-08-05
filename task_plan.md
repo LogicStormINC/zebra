@@ -121,17 +121,37 @@
    a mapping or close the pending projection slice. The same document now
    records the field-level direct-versus-unavailable matrix for each source.
 
-### CLOUD-PG-MIG-LEGACY-CON-01 - Locked successor registration
+### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy successor governance (In Progress)
 
-- `Locked` parent card for the three remaining legacy authority mappings.
-- Before activation, split independent Artifact, Effect/Delivery and Provider
-  children with exact Owned paths and a source-to-target field matrix.
+- The maintainer explicitly activated the first child,
+  `CLOUD-PG-MIG-LEGACY-ARTIFACT-01`, on 2026-08-05.
+- Effect/Delivery and Provider continuation remain unregistered and inactive;
+  each must receive its own source contract, branch and Owned paths before any
+  implementation.
 - A child may choose only a versioned export with complete authority evidence or
   an explicit manifest-backed quarantine/rebuild flow; synthesized leases,
   Event identities, request hashes, object versions and namespace bindings are
   prohibited.
-- The current migration card's `29/29` zero-write evidence is the admission
-  baseline, not implementation authorization for any successor.
+- The current migration card's `29/29` zero-write evidence remains the admission
+  baseline; no child may infer cloud authority from status-name similarity.
+
+### CLOUD-PG-MIG-LEGACY-ARTIFACT-01 - Artifact Legacy Export And Quarantine (In Progress)
+
+1. `in_progress` - Freeze the direct/derivable/unavailable Artifact field matrix
+   against the v9 PostgreSQL authority and register the quarantine disposition.
+2. `pending` - Implement deterministic, manifest-bound quarantine export and
+   tamper verification without writing PostgreSQL Artifact authority.
+3. `pending` - Add the isolated PostgreSQL 17.5 zero-write runner and record
+   `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS` with deterministic cleanup.
+
+### Boundary
+
+- Owned implementation paths are limited to the Artifact quarantine module,
+  focused test, isolated runner and its evidence document. Parent governance
+  records stay on the migration governance branch.
+- The child must preserve the original SQLite snapshot as the source of truth;
+  it cannot transfer payload bytes or invent Lease, Event/object version,
+  request/idempotency or lifecycle transition facts.
 
 ### Boundary
 

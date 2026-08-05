@@ -1769,14 +1769,14 @@ fail-closed writes when the namespace or active cutover is not valid.
 
 ### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy Authority Export And Quarantine Contract
 
-- Status: `Locked`
-- Owner: `TBD`
+- Status: `In Progress`
+- Owner: `Codex`
 - Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
 - Depends on: `CLOUD-PG-MIG-01` mapping audit and the completed Artifact,
   Effect/Delivery and Provider authority contracts
-- Branch: `TBD`
-- Owned paths: none on the parent; split one path-bounded child per legacy
-  source before activation
+- Branch: parent governance on `codex/cloud-pg-mig-01`
+- Owned paths: governance records only; each legacy source is implemented by an
+  independent child card below
 
 #### Goal
 
@@ -1796,9 +1796,64 @@ object version, dispatch evidence or namespace authority from unrelated rows.
 - Unsupported or incomplete legacy rows remain outside cloud authority and are
   retained in the manifest-backed source snapshot or an explicitly governed
   quarantine/rebuild artifact.
-- The parent and all children remain `Locked` until a maintainer activates them;
-  no API/Worker wiring, runtime cutover, Redis/Mem0 behavior or production
+- Unactivated children remain `Locked` until a maintainer activates them; no
+  API/Worker wiring, runtime cutover, Redis/Mem0 behavior or production
   migration is implied by this registration.
+
+#### Activation decision
+
+- The maintainer explicitly activated the first path-bounded child on
+  2026-08-05: `CLOUD-PG-MIG-LEGACY-ARTIFACT-01`.
+- Effect/Delivery and Provider continuation children remain unregistered and
+  inactive until their own source contracts are selected.
+- The Artifact child chooses the manifest-backed quarantine/rebuild path because
+  the legacy row cannot prove reservation Lease, Event/object version,
+  idempotency/request hash or cloud lifecycle evidence. No PostgreSQL Artifact
+  authority write is authorized by this activation.
+
+### CLOUD-PG-MIG-LEGACY-ARTIFACT-01 - Artifact Legacy Export And Quarantine
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
+- Depends on: `CLOUD-PG-MIG-01` (`In Progress`),
+  `CLOUD-PG-MIG-LEGACY-CON-01` (`In Progress`), `CLOUD-ART-PAYLOAD-PG-01`
+  (`Done`) and `CLOUD-AGG-FENCE-ARTIFACT-01` (`Done`)
+- Branch: `codex/cloud-pg-mig-legacy-artifact-01`
+- Worktree: `../zebra-agent-cloud-pg-mig-legacy-artifact-01`
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres/migration_legacy_artifact.py`,
+  `tests/agent_storage/test_postgres_migration_legacy_artifact.py`,
+  `tests/compose/migration_legacy_artifact/`, and
+  `docs/CLOUD-PG-MIG-LEGACY-ARTIFACT-01.md`. Parent governance records remain
+  owned by `CLOUD-PG-MIG-LEGACY-CON-01`.
+
+#### Goal
+
+Preserve legacy `artifact_payloads` rows as a deterministic, manifest-bound
+quarantine/rebuild input without promoting incomplete metadata into the fenced
+PostgreSQL `artifact_payload_metadata` authority.
+
+#### Acceptance
+
+- The source-to-target matrix names every directly reusable, provably derivable
+  and unavailable authority field; unavailable fields are never synthesized.
+- A versioned quarantine artifact retains the canonical source snapshot digest,
+  source table, canonical row content/digests, unavailable-field reason and
+  disposition, with deterministic serialization and tamper detection.
+- The PostgreSQL preflight rejects the legacy source before Event writes and
+  proves zero rows in `artifact_payload_metadata`; the quarantine artifact can
+  still be loaded and verified afterward.
+- The isolated PostgreSQL 17.5 runner emits
+  `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS` only after all checks pass and
+  removes its container, volume and network.
+
+#### Explicit non-goals
+
+- No write to `artifact_payload_metadata`, no object-byte transfer, no inferred
+  reservation Lease, Event identity, request hash, object version or lifecycle
+  transition; no API/Worker wiring, Runtime selector, SQLite fallback removal,
+  Effect/Delivery or Provider continuation behavior.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 
