@@ -1743,16 +1743,17 @@ fail-closed writes when the namespace or active cutover is not valid.
 #### Current slice evidence
 
 - SQLite canonical snapshot/export and manifest tamper detection are implemented;
-  the local matrix is `2 passed, 12 skipped` without PostgreSQL.
+  the local matrix is `2 passed, 14 skipped` without PostgreSQL.
 - Migration v16 adds the unique ACTIVE cutover guard; the PostgreSQL 17.5
-  runner passes `20/20` with deterministic cleanup and the registered PASS
+  runner passes `22/22` with deterministic cleanup and the registered PASS
   sentinel. Event-first import, Session/Workspace/Task rebuild, Model/Tool
   projection replay, Context capsule/pointer verification and fenced Handoff
   operation/envelope/dispatch replay are covered. SQLite lineage is checked
   against rebuilt PostgreSQL Task segments; `acked` dispatch is rejected because
-  its source lacks an authoritative ACK timestamp. Artifact, Effect/Delivery,
-  Idempotency/Audit, Provider continuation, Memory and runtime write wiring keep
-  this card in progress.
+  its source lacks an authoritative ACK timestamp. Idempotency receipts are
+  replayed into the namespace-scoped control-plane table; Artifact, Effect/Delivery,
+  Delivery Audit, Provider continuation, Memory and runtime write wiring keep this
+  card in progress.
 
 #### Explicit non-goals
 

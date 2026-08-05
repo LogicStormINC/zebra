@@ -49,6 +49,10 @@ from agent_storage.postgres.migration_handoff import (
     HandoffMigrationError,
     HandoffReplayReport,
 )
+from agent_storage.postgres.migration_idempotency import (
+    IdempotencyMigrationError,
+    IdempotencyReplayReport,
+)
 from agent_storage.postgres.migration_recovery import (
     MigrationImportError,
     MigrationImportReport,
@@ -152,6 +156,8 @@ __all__ = [
     "MigrationImportReport",
     "HandoffMigrationError",
     "HandoffReplayReport",
+    "IdempotencyMigrationError",
+    "IdempotencyReplayReport",
     "SQLiteSnapshot",
     "SnapshotIntegrityError",
     "SnapshotManifest",

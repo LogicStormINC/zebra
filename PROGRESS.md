@@ -79,10 +79,10 @@
   fencing, restricted Event-first import, Session/Workspace/Task rebuild,
   Event-derived Model/Tool projection replay, Context capsule/pointer
   verification, and fenced Handoff operation/envelope/dispatch replay with
-  rebuilt-lineage checks. The PostgreSQL 17.5 runner passes `20/20` with
-  `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and deterministic cleanup; Artifact,
-  Effect/Delivery, Idempotency/Audit, Provider continuation, Memory and runtime
-  ACTIVE write wiring remain gated.
+  rebuilt-lineage checks, plus namespace-scoped idempotency receipt replay. The
+  PostgreSQL 17.5 runner passes `22/22` with `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`
+  and deterministic cleanup; Artifact, Effect/Delivery, Delivery Audit,
+  Provider continuation, Memory and runtime ACTIVE write wiring remain gated.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.
   Its direct Task authority gap is implemented by `CLOUD-AGG-FENCE-TASK-01` at

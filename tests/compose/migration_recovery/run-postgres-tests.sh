@@ -22,6 +22,7 @@ set +e
     uv run --package agent-storage --with pytest pytest -q \
       tests/agent_storage/test_postgres_migration_recovery.py \
       tests/agent_storage/test_postgres_migration_handoff.py \
+      tests/agent_storage/test_postgres_migration_idempotency.py \
       tests/agent_storage/test_postgres_migrations.py
 )
 status=$?

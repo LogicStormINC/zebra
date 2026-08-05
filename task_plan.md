@@ -101,7 +101,10 @@
    `acked` dispatch rows because the source lacks an authoritative ACK timestamp,
    and verify the rebuilt Task/Segment lineage instead of copying the SQLite
    lineage read model.
-12. `pending` - Register and implement the next explicitly owned authority
+12. `completed` - Replay SQLite idempotency receipts into the namespace-scoped
+   PostgreSQL control-plane table after Event import, preserving the response
+   object and timestamp contract and rejecting malformed receipts before writes.
+13. `pending` - Register and implement the next explicitly owned authority
    projection slice after confirming its PostgreSQL mapping, preserving
    Event-first ordering and fail-closed behavior before handing the parent card
    to Review.

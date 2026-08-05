@@ -7854,3 +7854,15 @@ actual byte access.
   runner passes `20/20` and emits `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`, with
   deterministic container, volume and network cleanup. Changed-path Ruff and
   strict Mypy pass.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Idempotency replay slice
+
+- Added `migration_idempotency.py` and extended the restricted snapshot importer
+  for namespace-scoped SQLite idempotency receipts. Action/key/request identity,
+  HTTP status range, JSON-object response and timezone-aware timestamp are
+  validated before any PostgreSQL insert; malformed receipts roll back with zero
+  writes.
+- The focused local matrix is `2 passed, 14 skipped`; the PostgreSQL 17.5
+  migration runner passes `22/22` with `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and
+  deterministic cleanup. Delivery Audit remains deferred because its legacy
+  SQLite table has no stable row identity for preserving append order.
