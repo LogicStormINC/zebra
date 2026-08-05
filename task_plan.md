@@ -118,7 +118,8 @@
    mapping audit and permitted follow-up paths are recorded in
    `docs/CLOUD-PG-MIG-01.md`. Focused PostgreSQL regressions now prove these
    three legacy tables fail before Event writes; this evidence does not activate
-   a mapping or close the pending projection slice.
+   a mapping or close the pending projection slice. The same document now
+   records the field-level direct-versus-unavailable matrix for each source.
 
 ### CLOUD-PG-MIG-LEGACY-CON-01 - Locked successor registration
 

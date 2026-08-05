@@ -7925,3 +7925,11 @@ actual byte access.
   versioned export or an explicit manifest-backed quarantine/rebuild flow. It
   remains `Locked`; no implementation, runtime wiring or authority activation
   was performed.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 field-level legacy mapping matrix
+
+- Expanded `docs/CLOUD-PG-MIG-01.md` with direct-versus-unavailable fields for
+  Artifact payload, Effect/Delivery and Provider continuation legacy rows.
+- The matrix explicitly rejects promoting `tenant_id` to namespace, status names
+  to lifecycle authority, or Event payloads to historical lease/request evidence.
+  No implementation or successor activation changed.

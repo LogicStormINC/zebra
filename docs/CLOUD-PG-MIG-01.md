@@ -79,6 +79,15 @@ Redis 或 Mem0 变成云端事实源。
 | `effect_ledger` | `effect_outbox` | 缺少 execution/dispatch identity、request hash、payload Artifact、intent/terminal Event 和 claim/evidence；状态值相似不等于事实绑定。 |
 | `provider_continuation_artifacts` | `provider_continuation_artifacts` | 缺少 deployment/authority scope、selection Event、幂等/request hash 和 accepted LeaseFence；事件 payload 不能补出历史租约。 |
 
+字段级结论如下；“可由 Session/Event 推导”只有在 legacy export 同时提供明确
+绑定且能通过 CAS 校验时才可接受，当前快照没有该证据：
+
+| Source | 直接存在且可复用 | 不可从旧行证明的 target authority |
+| --- | --- | --- |
+| `artifact_payloads` | artifact/session identity、kind/mime、sha256、size、retention/prune 时间 | `intended_event_sequence`、`expected_stream_revision`、idempotency/request hash、reservation Lease、Event/object version、云 lifecycle transition evidence |
+| `effect_ledger` | root session、ledger key、attempt、legacy status/result、timestamps | execution/dispatch identity、request hash、payload Artifact、intent/terminal Event、claim Lease/evidence、retry identity |
+| `provider_continuation_artifacts` | session/reference/provider/model/capability、payload/source digest、expiry/delete 时间 | trusted deployment/authority scope、continuation selection Event、idempotency/request hash、accepted LeaseFence；`tenant_id` 不能直接提升为 namespace authority |
+
 Delivery Audit 是本卡中已解决的例外：snapshot v2 显式导出
 `__zebra_source_rowid`，按源顺序插入并验证 PostgreSQL `audit_id`；rowid 仅作
 迁移顺序证据，不作业务身份。
