@@ -1949,7 +1949,7 @@ PostgreSQL `effect_outbox` authority.
 
 ### CLOUD-PG-MIG-LEGACY-PROVIDER-01 - Provider Continuation Legacy Export And Quarantine
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
 - Depends on: `CLOUD-PG-MIG-01` (`In Progress`),
@@ -1991,6 +1991,22 @@ opaque payload bytes into fenced PostgreSQL Provider Continuation authority.
   inferred deployment namespace, authority issuer, namespace id, selection Event,
   idempotency/request hash or accepted LeaseFence, and no API/Worker/runtime
   wiring. This child does not modify the completed Provider authority card.
+
+#### Review handoff
+
+- Child implementation commit `b74f1c27` is complete across all Owned paths;
+  the child worktree is clean.
+- Local focused validation: `4 passed, 1 skipped`; changed-path Ruff, strict
+  Mypy, Bash/Compose config and `git diff --check` pass.
+- PostgreSQL `17.5-alpine3.21` runner: `5 passed`, emits
+  `ZEBRA_PG_MIG_LEGACY_PROVIDER_TEST_RESULT=PASS`, and removes its container,
+  volume and network. The preflight rejects `provider_continuation_artifacts`
+  before Event writes; `session_events` and the target Provider authority remain
+  empty, and the quarantine reloads successfully afterward.
+- Independent review found no blocking issues. The child was merged into
+  `codex/cloud-pg-mig-01` at `ce8880c0` and is now `Done`; this closes only the
+  path-bounded Provider Continuation quarantine slice. The parent migration
+  remains `In Progress`.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 

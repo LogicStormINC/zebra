@@ -8030,3 +8030,17 @@ actual byte access.
   legacy row cannot prove deployment/scope authority, continuation selection
   Event, idempotency/request hash or accepted LeaseFence. No PostgreSQL Provider
   authority write or runtime wiring is authorized.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-PROVIDER-01 merged and closed
+
+- With explicit maintainer authorization, merged child commit `b74f1c27` into
+  parent `codex/cloud-pg-mig-01` as `ce8880c0`; no conflicts occurred and the
+  parent worktree's unrelated `.zebra-agent/sessions.sqlite` change was
+  preserved.
+- Post-merge validation remained green: local focused matrix `4 passed, 1
+  skipped`; PostgreSQL `17.5-alpine3.21` runner `5 passed` with
+  `ZEBRA_PG_MIG_LEGACY_PROVIDER_TEST_RESULT=PASS`, deterministic cleanup,
+  changed-path static checks and `git diff --check`.
+- Closed `CLOUD-PG-MIG-LEGACY-PROVIDER-01` as `Done`. The parent migration stays
+  `In Progress`; the three legacy successor quarantine slices are now complete,
+  while no cloud authority write or runtime cutover is implied.

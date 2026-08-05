@@ -99,10 +99,12 @@
   pass the local focused matrix (`4 passed, 1 skipped`) and PostgreSQL 17.5
   runner (`5 passed`,
   `ZEBRA_PG_MIG_LEGACY_EFFECT_DELIVERY_TEST_RESULT=PASS`) with cleanup.
-  `CLOUD-PG-MIG-LEGACY-PROVIDER-01` is now `In Progress` on
-  `codex/cloud-pg-mig-legacy-provider-01` with its own quarantine contract and
-  Owned paths. No cloud Artifact/Effect/Provider authority write or runtime
-  wiring is implied.
+  `CLOUD-PG-MIG-LEGACY-PROVIDER-01` is now `Done` after merge commit
+  `ce8880c0` from `codex/cloud-pg-mig-legacy-provider-01`. Its deterministic
+  Provider Continuation quarantine/export contract and evidence runner pass the
+  local focused matrix (`4 passed, 1 skipped`) and PostgreSQL 17.5 runner
+  (`5 passed`, `ZEBRA_PG_MIG_LEGACY_PROVIDER_TEST_RESULT=PASS`) with cleanup.
+  No cloud Artifact/Effect/Provider authority write or runtime wiring is implied.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.
   Its direct Task authority gap is implemented by `CLOUD-AGG-FENCE-TASK-01` at
