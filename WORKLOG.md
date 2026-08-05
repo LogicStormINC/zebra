@@ -8115,3 +8115,13 @@ actual byte access.
   `codex/cloud-pg-mig-01` at `bd0291c4`. `CLOUD-REC-RESTORE-01` is now `Done`;
   rollback/outbox reconciliation, multi-Worker drills, physical PITR, RPO/RTO
   and DR readiness remain outside this child.
+
+## 2026-08-05 - CLOUD-REC-DRILL-01 activation
+
+- Activated `CLOUD-REC-DRILL-01` as the final recovery child on
+  `codex/cloud-rec-drill-01`, after migration, logical backup and fresh-instance
+  restore evidence closed. Its local-only scope is rollback-versus-restore
+  decision evidence, fenced Effect outbox reconciliation, a same-dispatch
+  multi-worker claim race and observed recovery timing/zero-loss counts.
+- No provider calls, runtime Worker wiring, automatic replay of uncertain
+  external effects, production failover, RPO/RTO or DR claim is authorized.

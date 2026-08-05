@@ -177,7 +177,8 @@ selector、在线事件路由和生产切换仍保持独立门禁。`CLOUD-REC-0
 `In Progress`，`CLOUD-PG-MIG-01` 已完成 `29/29` 迁移证据，
 `CLOUD-REC-BACKUP-01` 已完成开发环境逻辑备份/恢复证据；Artifact、Effect/Delivery
 和 Provider continuation 旧表仍以已收口的 fail-closed quarantine 边界保留，
-`CLOUD-REC-RESTORE-01` 也已完成开发环境新实例恢复/重建证据，其余恢复子任务保持未激活。
+`CLOUD-REC-RESTORE-01` 也已完成开发环境新实例恢复/重建证据，
+`CLOUD-REC-DRILL-01` 已作为最后一个恢复子任务激活。
 
 ### Docker 应用层与在线事件
 
@@ -336,5 +337,6 @@ closeout：Owner、Branch、Worktree、Owned paths 和 v13/v15 迁移所有权�
 其 v14 shared records 与 cloud-only composition 已交付。其余
 SQLite Registry、Runtime backend selection、Provider HTTP、Desktop、Mem0 consumer
 以及迁移/恢复演练仍保持隔离；`CLOUD-REC-01` 已 `In Progress`，
-`CLOUD-REC-BACKUP-01` 与 `CLOUD-REC-RESTORE-01` 已 `Done`，其逻辑备份/恢复证据不构成生产 PITR/RPO/RTO 声明；
+`CLOUD-REC-BACKUP-01` 与 `CLOUD-REC-RESTORE-01` 已 `Done`，
+`CLOUD-REC-DRILL-01` 正在推进；本地证据不构成生产 PITR/RPO/RTO 声明；
 Redis live adapter 已完成但未接入 API/Worker 启动。

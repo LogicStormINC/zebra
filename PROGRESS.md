@@ -73,9 +73,9 @@
 - `CLOUD-REC-01` remains `In Progress`. `CLOUD-PG-MIG-01` and its first recovery
   child `CLOUD-REC-BACKUP-01` are `Done`, with the latter proving only
   development-only logical backup portability. `CLOUD-REC-RESTORE-01` is also
-  `Done` for development-only fresh-instance rebuild evidence; fencing/outbox
-  reconciliation and multi-Worker drill children remain split and inactive. No
-  production RPO/RTO or DR claim is made from local Compose evidence.
+  `Done` for development-only fresh-instance rebuild evidence;
+  `CLOUD-REC-DRILL-01` is now the explicitly activated final recovery child.
+  No production RPO/RTO or DR claim is made from local Compose evidence.
 - `CLOUD-PG-MIG-01` is now `Done` on `codex/cloud-pg-mig-01`. The completed
   slice provides canonical read-only SQLite snapshots, migration v16 cutover
   fencing, restricted Event-first import, Session/Workspace/Task rebuild,

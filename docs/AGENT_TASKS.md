@@ -68,8 +68,9 @@ does not authorize production code, migrations or activation of its successor.
 - `CLOUD-REC-01` is `In Progress` after aggregate fencing closeout. Its
   migration and logical-backup children are `Done`; object restore,
   `CLOUD-REC-RESTORE-01` is now `Done` for development-only rebuild evidence,
-  and fencing/outbox reconciliation plus multi-Worker drill evidence remain
-  separate inactive gates. No production RPO/RTO or failover claim is implied.
+  and `CLOUD-REC-DRILL-01` is the final active recovery child for local
+  rollback/reconcile/race evidence. No production RPO/RTO or failover claim is
+  implied.
 - `MEM-MEM0-SPIKE-01` is `Done` on `codex/mem0-contract-spike-01`. The pinned
   OSS REST/Compose contract is recorded and its deterministic provider evidence
   is accepted; real-provider compatibility remains a separate credential gate.
@@ -1697,7 +1698,8 @@ an authority and without claiming production readiness from local Compose alone.
 
 - The aggregate parent is closed, so children may be claimed independently;
   `CLOUD-PG-MIG-01`, `CLOUD-REC-BACKUP-01` and `CLOUD-REC-RESTORE-01` are
-  `Done`; the drill remains inactive until its own card is Ready.
+  `Done`; `CLOUD-REC-DRILL-01` is explicitly activated as the only remaining
+  recovery child.
 - Every child must use isolated PostgreSQL/MinIO evidence with deterministic
   cleanup, preserve the single PostgreSQL fact source, and fail closed on
   namespace, epoch, checksum, object or cutover inconsistencies.
@@ -1888,6 +1890,50 @@ multi-Worker evidence contract is registered and activated.
 - Child commits `10ccc458` and `bd0291c4` were fast-forward merged into
   `codex/cloud-pg-mig-01` at `bd0291c4`; this child does not activate runtime
   cloud writes, physical PITR, RPO/RTO, DR or the rollback/drill card.
+
+### CLOUD-REC-DRILL-01 - Rollback, Outbox Reconcile And Worker Race Evidence
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `SRE / STORAGE / QA`
+- Depends on: `CLOUD-PG-MIG-01` (`Done`), `CLOUD-REC-BACKUP-01` (`Done`),
+  `CLOUD-REC-RESTORE-01` (`Done`), `CLOUD-REC-01` (`In Progress`) and
+  `CLOUD-AGG-FENCE-01` (`Done`)
+- Branch: `codex/cloud-rec-drill-01`
+- Worktree: `../zebra-agent-cloud-rec-drill-01`
+- Owned paths:
+  `tests/compose/recovery_drill/` and
+  `docs/CLOUD-REC-DRILL-01.md`. Parent recovery governance records remain
+  owned by `CLOUD-REC-01` on `codex/cloud-pg-mig-01`.
+
+#### Goal
+
+Prove a local-only rollback/recovery decision boundary for the PostgreSQL
+Effect outbox: a fenced worker crash becomes an evidence-bearing uncertain
+state, a replacement worker reconciles it exactly once, concurrent workers
+cannot claim or reconcile the same dispatch twice, and durable Event counts
+show no loss. Record observed local timing as a drill measurement only.
+
+#### Acceptance
+
+- PostgreSQL 17.5 applies the v1-v16 catalog; an invalid Event-version schedule
+  rolls back without an outbox write.
+- Two consumers race on one pending dispatch and exactly one claim wins; the
+  first worker is fenced out after epoch replacement, and the replacement
+  worker finds/reconciles the stale claim exactly once with evidence.
+- An uncertain dispatch is resolved only through the explicit no-effect outcome;
+  it never silently returns to pending or auto-replays an external effect.
+- The runner emits `ZEBRA_PG_RECOVERY_DRILL_TEST_RESULT=PASS` with a JSON report
+  containing local recovery milliseconds and zero-loss Event counts, then cleans
+  its PostgreSQL resources.
+- Provider calls, runtime Worker wiring, production failover, physical PITR,
+  measured production RPO/RTO and DR readiness remain non-goals.
+
+#### Lock reason
+
+This is the final local recovery child after migration, logical backup and fresh
+restore closeout. Its timing report is evidence for code-path behavior only; it
+does not close the recovery parent or authorize a production release.
 
 ### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy Authority Export And Quarantine Contract
 

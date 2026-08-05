@@ -59,7 +59,7 @@
 - `CLOUD-AGG-FENCE-01` is closed as `Done`; the recovery parent remains active
   for independent child claims. Migration and the first logical-backup child are
   closed; `CLOUD-REC-RESTORE-01` is now also closed for development-only
-  evidence and the drill remains inactive.
+  evidence; `CLOUD-REC-DRILL-01` is the final active recovery child.
 - Planned child cards are `CLOUD-PG-MIG-01`, `CLOUD-REC-BACKUP-01`,
   `CLOUD-REC-RESTORE-01` and `CLOUD-REC-DRILL-01`. Each must have its own
   branch, owner, evidence runner and exact owned paths.
@@ -175,6 +175,24 @@ PITR/WAL, production credentials, RPO/RTO and DR readiness remain non-goals.
 - The child proves development-only restore/rebuild composition. It does not
   enable runtime cloud writes, invent Artifact authority, or claim physical PITR,
   production credentials, RPO/RTO or DR readiness.
+
+### CLOUD-REC-DRILL-01 - Rollback, Outbox Reconcile And Worker Race Evidence (In Progress)
+
+1. `in_progress` - Freeze the local-only rollback-versus-restore and outbox
+   reconciliation decision boundary.
+2. `pending` - Exercise a crashed/expired fenced claim, concurrent reconciliation
+   and a same-dispatch multi-worker claim race against PostgreSQL.
+3. `pending` - Record observed local recovery timings and zero-loss Event counts
+   without presenting them as production RPO/RTO or DR readiness.
+
+### Boundary
+
+- Owned implementation paths are limited to the isolated drill Compose runner,
+  supporting verification script and `docs/CLOUD-REC-DRILL-01.md`; parent recovery
+  governance records remain on `codex/cloud-pg-mig-01`.
+- The child uses existing PostgreSQL Effect/Lease contracts and does not add
+  provider calls, runtime worker wiring, production failover or automatic replay
+  of uncertain external effects.
 
 ### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy successor governance (Done)
 

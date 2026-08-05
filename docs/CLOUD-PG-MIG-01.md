@@ -63,7 +63,7 @@ Redis 或 Mem0 变成云端事实源。
 - PostgreSQL logical backup/restore、physical PITR、Artifact 对象恢复、Redis/Mem0
   rebuild、Outbox reconcile、multi-Worker drill 和生产 RPO/RTO 属于
   `CLOUD-REC-*` 子卡；`CLOUD-REC-BACKUP-01` 与 `CLOUD-REC-RESTORE-01` 已完成
-  开发环境备份/恢复证据，其余恢复子卡仍未激活。
+  开发环境备份/恢复证据，`CLOUD-REC-DRILL-01` 正在推进。
 
 ### 剩余映射审计
 
