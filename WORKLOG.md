@@ -7964,3 +7964,15 @@ actual byte access.
 - Moved the child to `Review`; independent review is still required before
   `Done`. Effect/Delivery and Provider continuation remain unregistered and
   inactive.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-ARTIFACT-01 independent review
+
+- Reviewed the manifest-bound quarantine at the child Owned paths. No blocking
+  SQL, deserialization, authority-boundary or cleanup issue was found. Tightened
+  the JSON trust boundary so `NaN`/`Infinity` cannot enter snapshot
+  canonicalization, with a focused regression in child commit `f0d56a62`.
+- Revalidated the child through `fefa3261`: local focused matrix `4 passed,
+  1 skipped`; PostgreSQL `17.5-alpine3.21` runner `5 passed`, emits
+  `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS`, and removes container,
+  volume and network. The child remains `Review` pending merge; no runtime or
+  Artifact authority activation is implied.

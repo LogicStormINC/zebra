@@ -144,10 +144,12 @@
 3. `completed` - Add the isolated PostgreSQL 17.5 zero-write runner and record
    `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS` with deterministic cleanup.
 
-Review handoff: child commit `fe585c49`; local focused matrix `3 passed, 1
-skipped`; PostgreSQL 17.5 runner `4 passed` with the required PASS sentinel and
-container/volume/network cleanup. Independent review is still required before
-`Done`; Effect/Delivery and Provider continuation remain inactive.
+Review handoff: child commits through `fefa3261` (including the strict
+non-finite JSON rejection in `f0d56a62`); local focused matrix `4 passed, 1
+skipped`; PostgreSQL 17.5 runner `5 passed` with the required PASS sentinel and
+container/volume/network cleanup. Independent review found no blocking issues;
+merge is still required before `Done`; Effect/Delivery and Provider
+continuation remain inactive.
 
 ### Boundary
 

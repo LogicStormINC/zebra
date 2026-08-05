@@ -1857,19 +1857,21 @@ PostgreSQL `artifact_payload_metadata` authority.
 
 #### Review handoff
 
-- Child implementation commit: `fe585c49` on
-  `codex/cloud-pg-mig-legacy-artifact-01`; all child Owned paths are committed
-  and the worktree is clean.
-- Local focused validation: `3 passed, 1 skipped`; changed-path Ruff, strict
+- Child implementation commits through `fefa3261` on
+  `codex/cloud-pg-mig-legacy-artifact-01` (including strict rejection of
+  non-finite JSON in `f0d56a62`); all child Owned paths are committed and the
+  worktree is clean.
+- Local focused validation: `4 passed, 1 skipped`; changed-path Ruff, strict
   Mypy, Shell/Compose config and `git diff --check` pass.
-- PostgreSQL `17.5-alpine3.21` runner: `4 passed`, emits
+- PostgreSQL `17.5-alpine3.21` runner: `5 passed`, emits
   `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS`, and removes its container,
   volume and network. The preflight rejects `artifact_payloads` before Event
   writes; `session_events` and `artifact_payload_metadata` remain empty, and
   the quarantine reloads successfully afterward.
-- This is a `Review` handoff, not a `Done` or runtime activation. The parent
-  migration remains `In Progress`; Effect/Delivery and Provider continuation
-  successors remain unregistered and inactive.
+- Independent review found no blocking issues. This is still a `Review` handoff,
+  not a `Done` or runtime activation: the parent migration remains `In Progress`
+  and merge is pending. Effect/Delivery and Provider continuation successors
+  remain unregistered and inactive.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 
