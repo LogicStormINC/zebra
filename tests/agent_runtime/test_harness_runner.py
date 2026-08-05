@@ -22,7 +22,13 @@ from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_runtime import LocalToolGateway, run_local_harness
 from agent_runtime.web_gateway import LocalWebGatewayTransport
 from agent_runtime.web_search import LocalWebSearchTransport
-from agent_security import LocalPolicyEngine, PolicyProfile, parse_network_profile
+from agent_security import (
+    LocalPolicyEngine,
+    NetworkProfile,
+    NetworkProfileName,
+    PolicyProfile,
+    parse_network_profile,
+)
 from agent_storage import SQLiteArtifactPayloadStore
 from zebra_agent_config import McpServerSettings
 
@@ -423,6 +429,7 @@ def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
         title="Runtime tool discovery test",
         workspace_root=tmp_path.resolve(),
         model_gateway=gateway,
+        network_profile=NetworkProfile(name=NetworkProfileName.FULL_TRUSTED_LOCAL),
     )
 
     tools = gateway.tool_requests[0]
@@ -687,7 +694,11 @@ def test_local_tool_gateway_registers_session_history_only_with_port(
 
 
 def test_local_tool_gateway_exposes_coding_profile_tools(tmp_path) -> None:
-    gateway = LocalToolGateway(tmp_path.resolve(), tool_profile=ToolProfile.CODING)
+    gateway = LocalToolGateway(
+        tmp_path.resolve(),
+        tool_profile=ToolProfile.CODING,
+        network_profile=NetworkProfile(name=NetworkProfileName.FULL_TRUSTED_LOCAL),
+    )
 
     assert tuple(tool.name for tool in gateway.model_tools) == (
         "agent.clarify",
@@ -715,12 +726,34 @@ def test_local_tool_gateway_registers_native_web_tools_when_v2_enabled(tmp_path)
 
 
 def test_local_tool_gateway_keeps_legacy_web_when_v2_disabled(tmp_path) -> None:
-    gateway = LocalToolGateway(tmp_path.resolve())
+    gateway = LocalToolGateway(
+        tmp_path.resolve(),
+        network_profile=NetworkProfile(name=NetworkProfileName.FULL_TRUSTED_LOCAL),
+    )
 
     names = {tool.name for tool in gateway.model_tools}
     assert "web.fetch" in names
     assert "web.crawl" not in names
     assert "web.read" not in names
+
+
+def test_web_fetch_hidden_when_network_profile_forbids_direct_egress(
+    tmp_path,
+) -> None:
+    """mcp-proxy-only routes all web egress through the MCP proxy: web.fetch
+    is always DENY with no recovery, so the model must not even see the tool.
+    Profiles that can authorize direct fetch keep it visible."""
+    proxy_only = LocalToolGateway(
+        tmp_path.resolve(),
+        network_profile=NetworkProfile(name=NetworkProfileName.MCP_PROXY_ONLY),
+    )
+    assert "web.fetch" not in {tool.name for tool in proxy_only.model_tools}
+
+    trusted = LocalToolGateway(
+        tmp_path.resolve(),
+        network_profile=NetworkProfile(name=NetworkProfileName.FULL_TRUSTED_LOCAL),
+    )
+    assert "web.fetch" in {tool.name for tool in trusted.model_tools}
 
 
 def test_local_tool_gateway_rejects_unknown_tool_profile(tmp_path) -> None:

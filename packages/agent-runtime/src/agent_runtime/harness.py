@@ -30,7 +30,13 @@ from agent_core.ports.model_gateway import (
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
 from agent_core.ports.session_history import SessionHistoryPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
-from agent_security import DEFAULT_NETWORK_PROFILE, LocalPolicyEngine, NetworkProfile, PolicyProfile
+from agent_security import (
+    DEFAULT_NETWORK_PROFILE,
+    LocalPolicyEngine,
+    NetworkProfile,
+    NetworkProfileName,
+    PolicyProfile,
+)
 from agent_tools import (
     AuthorizedMcpToolCatalog,
     ClarifyTool,
@@ -135,6 +141,7 @@ def run_local_harness(
         workspace_root,
         model_gateway=model_gateway,
         tool_profile=tool_profile,
+        network_profile=network_profile,
         web_search_endpoint=web_search_endpoint,
         skill_roots=skill_roots,
         skills_state=skills_state,
@@ -221,6 +228,7 @@ class LocalToolGateway(ToolGatewayPort):
         model_gateway: ModelGatewayPort | None = None,
         research_child_limit: int = DEFAULT_RESEARCH_CHILD_LIMIT,
         tool_profile: ToolProfile = ToolProfile.GENERAL,
+        network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
         web_gateway_transport: WebGatewayTransport | None = None,
         web_search_endpoint: str | None = None,
         web_search_transport: WebSearchTransport | None = None,
@@ -249,6 +257,7 @@ class LocalToolGateway(ToolGatewayPort):
         self._disabled_mcp_tools = frozenset(name.strip() for name in disabled_mcp_tools)
         if any(not name for name in self._disabled_mcp_tools):
             raise ValueError("disabled MCP tool names must not be blank")
+        self._network_profile = network_profile
         self._workspace = LocalWorkspace(workspace_root)
         self._workspace.ensure()
         self._runtime = runtime or LocalRuntime()
@@ -399,7 +408,24 @@ class LocalToolGateway(ToolGatewayPort):
             max_output_bytes=262_144 if output_projector is not None else 65_536,
         )
         if "web.fetch" in enabled_names:
-            registry.register(legacy_fetch.contract, legacy_fetch.handle)
+            # Tool visibility must match network authority: under
+            # mcp-proxy-only (or any profile without direct web egress) a
+            # web.fetch call is always DENY with no recovery, so exposing the
+            # tool only invites a guaranteed session failure. Only profiles
+            # that can actually allow direct fetch see the tool.
+            # Tool visibility must match network authority: profiles without
+            # direct web egress (mcp-proxy-only, git-proxy-only, setup-only)
+            # always DENY web.fetch with no recovery, so exposing the tool
+            # only invites a guaranteed session failure. Only profiles that
+            # can actually allow fetch (full-trusted-local,
+            # domain-allowlist) plus the legacy NONE durable-authority path
+            # see the tool.
+            if self._network_profile.name in {
+                NetworkProfileName.NONE,
+                NetworkProfileName.DOMAIN_ALLOWLIST,
+                NetworkProfileName.FULL_TRUSTED_LOCAL,
+            }:
+                registry.register(legacy_fetch.contract, legacy_fetch.handle)
         if search_endpoint is not None and "web.search" in enabled_names:
             legacy_search = WebSearchTool(
                 endpoint=search_endpoint,

@@ -312,6 +312,7 @@ class SessionExecutionService:
                 task.workspace_root,
                 model_gateway=model_gateway,
                 tool_profile=task.tool_profile,
+                network_profile=effective_network_profile,
                 web_search_endpoint=self._settings.web_search_endpoint,
                 skill_roots=skill_roots,
                 skills_state=skills_state,
