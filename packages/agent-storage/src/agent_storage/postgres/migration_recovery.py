@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, TypeVar
-from uuid import UUID, uuid4
+from typing import Any
+from uuid import UUID
 
-import psycopg
 from agent_core.application.session_projection import rebuild_session
 from agent_core.application.workspace_projection import WorkspaceProjectionError, rebuild_workspace
 from agent_core.domain.events import EventType, SessionEvent
@@ -18,6 +17,10 @@ from psycopg import sql
 
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.events import append_event_in_transaction
+from agent_storage.postgres.migration_context import (
+    ContextMigrationError,
+    replay_context_snapshot,
+)
 from agent_storage.postgres.migration_snapshot import (
     SnapshotRecord,
     load_sqlite_snapshot,
@@ -29,12 +32,6 @@ from agent_storage.postgres.task_lineage import root_for_session
 from agent_storage.postgres.workspaces import save_workspace_in_transaction
 
 _IMPORT_IDENTITY = "zebra-postgres-migration-v1"
-_T = TypeVar("_T")
-
-
-class CutoverConflictError(RuntimeError):
-    """Raised when a cutover transition would violate the active fence."""
-
 
 class MigrationImportError(RuntimeError):
     """Raised when a snapshot cannot be imported without losing authority."""
@@ -48,6 +45,8 @@ class MigrationImportReport:
     workspace_count: int
     model_tool_projection_count: int
     task_count: int
+    context_capsule_count: int
+    active_context_count: int
     manifest_sha256: str
 
 
@@ -65,7 +64,12 @@ def import_sqlite_event_snapshot(
     records_by_table: dict[str, list[SnapshotRecord]] = {}
     for record in snapshot.records:
         records_by_table.setdefault(record.table, []).append(record)
-    unsupported = set(records_by_table) - {"session_events", "session_projections"}
+    unsupported = set(records_by_table) - {
+        "session_events",
+        "session_projections",
+        "context_capsule_artifacts",
+        "active_context_projections",
+    }
     if unsupported:
         names = ", ".join(sorted(unsupported))
         raise MigrationImportError(f"snapshot contains unsupported authoritative tables: {names}")
@@ -89,6 +93,15 @@ def import_sqlite_event_snapshot(
                 raise MigrationImportError(
                     "Event cannot rebuild model/tool projection"
                 ) from error
+        try:
+            context_report = replay_context_snapshot(
+                connection,
+                deployment_namespace,
+                records_by_table,
+                {event.event_id: event for event in events},
+            )
+        except ContextMigrationError as error:
+            raise MigrationImportError(str(error)) from error
         workspace_count = 0
         for session_events in grouped.values():
             save_session_in_transaction(
@@ -132,86 +145,10 @@ def import_sqlite_event_snapshot(
         workspace_count=workspace_count,
         model_tool_projection_count=model_tool_projection_count,
         task_count=len(task_roots),
+        context_capsule_count=context_report.capsule_count,
+        active_context_count=context_report.active_count,
         manifest_sha256=snapshot.manifest.digest,
     )
-
-
-class PostgresCutoverStore:
-    """Namespace-scoped cutover state; runtime writes must use ``run_guarded``."""
-
-    def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
-        self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
-
-    def prepare(self, *, manifest_sha256: str, cutover_id: UUID | None = None) -> UUID:
-        identifier = cutover_id or uuid4()
-        _require_digest(manifest_sha256)
-        with self._database.connect() as connection:
-            connection.execute(
-                """INSERT INTO control_plane_cutovers
-                (deployment_namespace, cutover_id, state, manifest_sha256)
-                VALUES (%s, %s, 'prepared', %s)""",
-                (self._database.deployment_namespace, identifier, manifest_sha256),
-            )
-        return identifier
-
-    def verify(self, cutover_id: UUID, *, manifest_sha256: str) -> None:
-        self._transition(cutover_id, "prepared", "verified", manifest_sha256)
-
-    def activate(self, cutover_id: UUID, *, manifest_sha256: str) -> None:
-        self._transition(cutover_id, "verified", "active", manifest_sha256)
-
-    def _transition(
-        self, cutover_id: UUID, expected: str, target: str, manifest_sha256: str
-    ) -> None:
-        _require_digest(manifest_sha256)
-        try:
-            with self._database.connect() as connection:
-                cursor = connection.execute(
-                    """UPDATE control_plane_cutovers
-                    SET state = %s, verified_at = CASE WHEN %s = 'verified'
-                        THEN transaction_timestamp() ELSE verified_at END,
-                        activated_at = CASE WHEN %s = 'active'
-                        THEN transaction_timestamp() ELSE activated_at END
-                    WHERE deployment_namespace = %s AND cutover_id = %s
-                      AND state = %s AND manifest_sha256 = %s""",
-                    (
-                        target,
-                        target,
-                        target,
-                        self._database.deployment_namespace,
-                        cutover_id,
-                        expected,
-                        manifest_sha256,
-                    ),
-                )
-                if cursor.rowcount != 1:
-                    raise CutoverConflictError(f"invalid cutover transition to {target}")
-        except psycopg.errors.UniqueViolation as error:
-            raise CutoverConflictError("another active cutover already exists") from error
-
-    def run_guarded(
-        self, cutover_id: UUID, manifest_sha256: str, action: Callable[[Any], _T]
-    ) -> _T:
-        _require_digest(manifest_sha256)
-        with self._database.connect() as connection:
-            _assert_active(
-                connection,
-                self._database.deployment_namespace,
-                cutover_id,
-                manifest_sha256,
-            )
-            return action(connection)
-
-
-def _assert_active(connection: Any, namespace: str, cutover_id: UUID, digest: str) -> None:
-    row = connection.execute(
-        """SELECT state FROM control_plane_cutovers
-        WHERE deployment_namespace = %s AND cutover_id = %s
-          AND manifest_sha256 = %s""",
-        (namespace, cutover_id, digest),
-    ).fetchone()
-    if row is None or row["state"] != "active":
-        raise CutoverConflictError("runtime write requires an active matching cutover")
 
 
 def _events_from_records(records: Sequence[SnapshotRecord]) -> tuple[SessionEvent, ...]:
@@ -275,8 +212,3 @@ def _require_empty_import_target(connection: Any) -> None:
         ).fetchone()
         if row is None or row["count"] != 0:
             raise MigrationImportError("PostgreSQL import target must be empty")
-
-
-def _require_digest(value: str) -> None:
-    if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
-        raise ValueError("manifest checksum must be a lowercase SHA-256 digest")

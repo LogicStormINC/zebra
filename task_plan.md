@@ -93,7 +93,10 @@
 9. `completed` - Rebuild Event-derived Task/Segment indexes from the existing
    PostgreSQL lineage reducer and include their tables in the empty-target
    guard.
-10. `pending` - Extend the restricted importer for the next explicitly owned
+10. `completed` - Replay SQLite Context capsule artifacts and active pointers
+    only after verifying payload checksum, capsule Event, preceding compaction
+    Event, namespace bindings and pointer Event sequence.
+11. `pending` - Extend the restricted importer for the next explicitly owned
    authority projection slice, preserving Event-first ordering and fail-closed
    behavior before handing the parent card to Review.
 

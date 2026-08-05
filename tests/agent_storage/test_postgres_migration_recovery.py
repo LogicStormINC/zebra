@@ -5,14 +5,17 @@ import os
 import sqlite3
 from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID, uuid4
 
 import psycopg
 import pytest
+from agent_core.contracts.events import ContextCapsuleCreatedPayload
+from agent_core.domain.context_capsule import ContextCapsule, ContextSourceEventRange
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_session_id
-from agent_storage import SQLiteEventStore
+from agent_storage import SQLiteContextLifecycleStore, SQLiteEventStore
 from agent_storage.postgres import (
     CutoverConflictError,
     MigrationImportError,
@@ -211,6 +214,145 @@ def test_event_import_requires_restricted_identity(isolated_dsn: str, tmp_path: 
             deployment_namespace="tenant-a",
             importer_identity="runtime",
         )
+
+
+def test_event_import_rebuilds_context_capsule_and_active_pointer(
+    isolated_dsn: str, tmp_path: Path
+) -> None:
+    source = tmp_path / "source.sqlite"
+    event_store = SQLiteEventStore(source)
+    SQLiteContextLifecycleStore(source)
+    session_id = new_session_id()
+    created_at = datetime(2026, 8, 5, tzinfo=UTC)
+    event_store.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=0,
+            event_type=EventType.SESSION_CREATED,
+            actor=EventActor.SYSTEM,
+            payload={"title": "Context import"},
+            created_at=created_at,
+        )
+    )
+    event_store.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=1,
+            event_type=EventType.TASK_PREPARED,
+            actor=EventActor.USER,
+            payload={
+                "title": "Context import",
+                "user_input": "restore context",
+                "workspace_root": "/workspaces/context-import",
+            },
+            created_at=created_at,
+        )
+    )
+    capsule = ContextCapsule(
+        capsule_id="capsule-import",
+        objective="Resume context import",
+        immediate_next="continue",
+        source_event_range=ContextSourceEventRange(start_sequence=0, end_sequence=1),
+        source_hash="a" * 64,
+        confidence=1.0,
+        created_at=created_at,
+    )
+    compaction = SessionEvent.create(
+        session_id=session_id,
+        sequence=2,
+        event_type=EventType.CONTEXT_COMPACTED,
+        actor=EventActor.SYSTEM,
+        payload={
+            "attempt_number": 1,
+            "before_tokens": 10,
+            "after_tokens": 5,
+            "removed_message_count": 1,
+            "retained_message_count": 1,
+            "within_budget": True,
+            "provenance": "migration-test",
+            "capsule": capsule.model_dump(mode="json"),
+        },
+        created_at=created_at,
+    )
+    artifact_id = uuid4()
+    assert capsule.source_event_range is not None
+    capsule_event = SessionEvent.create(
+        session_id=session_id,
+        sequence=3,
+        event_type=EventType.CONTEXT_CAPSULE_CREATED,
+        actor=EventActor.SYSTEM,
+        payload=ContextCapsuleCreatedPayload(
+            capsule_id=capsule.capsule_id,
+            artifact_id=str(artifact_id),
+            schema_version=capsule.version,
+            source_hash=capsule.source_hash,
+            source_event_range=capsule.source_event_range,
+        ).model_dump(mode="json"),
+        created_at=created_at,
+    )
+    for event in (compaction, capsule_event):
+        event_store.append(event)
+    payload = capsule.model_dump_json().encode("utf-8")
+    with sqlite3.connect(source) as connection:
+        connection.execute(
+            """INSERT INTO context_capsule_artifacts (
+                capsule_id, artifact_id, session_id, payload, payload_sha256,
+                source_hash, created_at, event_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                capsule.capsule_id,
+                str(artifact_id),
+                str(session_id),
+                payload,
+                hashlib.sha256(payload).hexdigest(),
+                capsule.source_hash,
+                created_at.isoformat(),
+                str(capsule_event.event_id),
+            ),
+        )
+        connection.execute(
+            """INSERT INTO active_context_projections (
+                session_id, capsule_id, artifact_id, source_hash, event_sequence, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?)""",
+            (
+                str(session_id),
+                capsule.capsule_id,
+                str(artifact_id),
+                capsule.source_hash,
+                capsule_event.sequence,
+                created_at.isoformat(),
+            ),
+        )
+    snapshot_dir = tmp_path / "snapshot"
+    write_sqlite_snapshot(
+        export_sqlite_snapshot(
+            source,
+            table_names=(
+                "session_events",
+                "context_capsule_artifacts",
+                "active_context_projections",
+            ),
+        ),
+        snapshot_dir,
+    )
+
+    report = import_sqlite_event_snapshot(
+        snapshot_dir,
+        isolated_dsn,
+        deployment_namespace="tenant-a",
+        importer_identity="zebra-postgres-migration-v1",
+    )
+
+    assert report.context_capsule_count == 1
+    assert report.active_context_count == 1
+    with psycopg.connect(isolated_dsn) as connection:
+        row = connection.execute(
+            "SELECT capsule_id, artifact_id, event_sequence FROM active_context_projections"
+        ).fetchone()
+        assert row is not None
+        assert row[0] == capsule.capsule_id
+        assert str(row[1]) == str(artifact_id)
+        assert row[2] == capsule_event.sequence
 
 
 def test_event_import_rejects_any_nonempty_target(

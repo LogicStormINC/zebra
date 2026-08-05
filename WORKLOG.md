@@ -7828,3 +7828,13 @@ actual byte access.
   transaction, with task lineage conflicts failing closed.
 - The focused replay regression verifies the root Task/active Segment binding;
   the PostgreSQL 17.5 runner remains green at `17/17` with deterministic cleanup.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Context capsule replay slice
+
+- Added a dedicated Context replay module. SQLite capsule payload bytes are
+  checksum-verified, validated against the capsule-created Event and its
+  preceding compaction Event, then inserted with the active pointer only when
+  all namespace/session/artifact bindings and pointer Event sequence agree.
+- Split Cutover fencing into `migration_cutover.py` so every migration source
+  file remains below the 300-line target. The PostgreSQL 17.5 runner passes
+  `18/18` with deterministic cleanup and `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`.
