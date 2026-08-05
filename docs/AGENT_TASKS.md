@@ -44,7 +44,7 @@ does not authorize production code, migrations or activation of its successor.
   official Python protocol compatibility matrix is integrated. Trench
   `TRN-CPK-SPIKE-01` is also merged to Trench `main` at `5c59b22` with its
   focused and full checks green. `EMB-HOST-CON-01` is `Done` on
-  `codex/emb-host-con-01`; `EMB-AGUI-CON-01` is now `In Progress` on
+  `codex/emb-host-con-01`; `EMB-AGUI-CON-01` is `Done` on
   `codex/emb-agui-con-01`. Production API/Worker routing, CopilotKit/Trench
   integration and React SDK work remain separately gated.
 - `CTX-MEM-01` is `Review` in PR `#198` on
@@ -394,7 +394,7 @@ technical limits and typed fail-closed errors.
 
 ### EMB-AGUI-CON-01 - Durable AG-UI Projection Contract
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / INTEGRATIONS / QA`
 - Depends on: completed `EMB-HOST-CON-01`, `EMB-AGUI-SPIKE-01` and Trench
@@ -424,6 +424,19 @@ adding an API route, Worker behavior or Trench dependency.
   resume identity is deterministic and does not mutate durable state.
 - The projection is pure and provider-neutral: no Event Store writes, API/
   Worker/Trench imports, CopilotKit runtime or Host transport.
+
+#### Closeout
+
+- Implementation commit: `5485fc2e`.
+- `tests/agent_integrations` passes `132 passed, 3 skipped`; the focused
+  projection matrix passes `5/5` and validates every output through the pinned
+  official AG-UI event union.
+- Changed-path Ruff, format, strict Mypy, `uv lock --check`, diff checks and
+  release Eval `10/10` pass. The full suite records `2102 passed, 271 skipped,
+  2 failed`; the two failures are the pre-existing MCP prompt atomicity and
+  repository file-size-gate defects.
+- No API/Worker route, SSE transport, Redis fan-out, Host transport,
+  JWT/JWKS, Trench or CopilotKit runtime wiring was added.
 
 #### Explicit non-goals
 

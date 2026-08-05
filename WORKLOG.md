@@ -8175,3 +8175,17 @@ actual byte access.
   cursors, interrupt snapshots and reconnect tails.
 - No API/Worker route, SSE transport, Redis live fan-out, Trench/CopilotKit
   runtime, Host transport or JWT/JWKS adapter is activated.
+
+## 2026-08-05 - EMB-AGUI-CON-01 closeout
+
+- Added the pure `agent-integrations` projection contract: stable Task/thread
+  and Segment/run identity, bounded opaque cursors, text/tool/state/error
+  mapping, interrupt snapshots and deterministic resume identity. The reviewed
+  `ag-ui-protocol==0.1.19` is now an explicit package dependency with lock entry.
+- Commit `5485fc2e` passes `5/5` focused projection tests and the package suite
+  `132 passed, 3 skipped`; changed-path Ruff, format, strict Mypy, lock, diff
+  checks and Eval `10/10` pass.
+- Full suite evidence is `2102 passed, 271 skipped, 2 failed`; failures remain
+  the pre-existing MCP prompt atomicity and repository file-size-gate defects.
+  The task is `Done`; API/Worker/SSE, Redis, Host transport and Trench runtime
+  successors remain separately locked.

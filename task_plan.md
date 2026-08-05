@@ -2665,15 +2665,15 @@ the parent migration is `Done`.
 - The next successors remain independently gated: Host verifier/registry,
   AG-UI projection, Surface and Host tool contracts.
 
-## EMB-AGUI-CON-01 - Durable AG-UI Projection Contract (In Progress)
+## EMB-AGUI-CON-01 - Durable AG-UI Projection Contract (Done)
 
 1. `completed` - Confirm Host authority and both protocol spikes are merged;
    create the isolated branch/worktree and register owned paths.
-2. `in_progress` - Implement the pure durable Session Event to AG-UI event,
+2. `completed` - Implement the pure durable Session Event to AG-UI event,
    identity and cursor projection in `agent-integrations`.
-3. `pending` - Add golden text/tool/state/error/interrupt/reconnect fixtures and
+3. `completed` - Add golden text/tool/state/error/interrupt/reconnect fixtures and
    changed-path static validation against `ag-ui-protocol==0.1.19`.
-4. `pending` - Close the contract without HTTP/SSE, API/Worker, Redis, Trench,
+4. `completed` - Close the contract without HTTP/SSE, API/Worker, Redis, Trench,
    CopilotKit or Host transport wiring.
 
 ### Boundary
@@ -2683,6 +2683,17 @@ the parent migration is `Done`.
 - Reconnect is a deterministic tail projection bound to the same Task/thread,
   Segment run and exact durable event cursor. Transport signing and endpoint
   policy belong to later P3 tasks.
+
+### Closeout
+
+- Commit `5485fc2e` adds immutable identity/cursor/resume contracts and a pure
+  Session Event projector. `tests/agent_integrations` passes `132 passed, 3
+  skipped`; the focused contract matrix is `5/5`.
+- Changed-path Ruff, format, strict Mypy, lock, diff checks and Eval `10/10`
+  pass. Full suite evidence is `2102 passed, 271 skipped, 2 failed`; both are
+  pre-existing baseline defects.
+- P3 production AG-UI endpoint, Host verifier, Redis live tail and Trench
+  runtime remain independently locked.
 
 ## EMB-PLAN-01 - Zebra Embedded Architecture Consolidation
 
