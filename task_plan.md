@@ -2637,6 +2637,24 @@ the parent migration is `Done`.
 - Closed `EMB-AGUI-SPIKE-01` from `Review` to `Done`; the next
   `EMB-AGUI-CON-01` contract and Trench CopilotKit integration remain gated.
 
+## EMB-HOST-CON-01 - Generic Host Authority Contracts (In Progress)
+
+1. `completed` - Confirm both P0 protocol spikes are merged and record the
+   isolated branch/worktree and owned paths before implementation.
+2. `in_progress` - Implement immutable HostSessionGrant claims, resource refs,
+   technical limits and a validated HostContextEnvelope in `agent-core`.
+3. `pending` - Add fail-closed issuer/audience/origin/host/expiry/scope/resource
+   contract tests and changed-path static validation.
+4. `pending` - Close the contract without adding JWT/JWKS, API, AG-UI, Trench
+   or runtime wiring.
+
+### Boundary
+
+- The contract is provider-neutral Core domain code. Cryptographic JWT/JWKS
+  verification and token persistence belong to a later adapter task.
+- The context envelope contains only validated opaque authority data; it never
+  becomes Event Store or CopilotKit state.
+
 ## EMB-PLAN-01 - Zebra Embedded Architecture Consolidation
 
 1. `completed` - Audit the draft Embedded architecture, repository source-of-truth

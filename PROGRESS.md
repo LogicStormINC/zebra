@@ -197,6 +197,10 @@
   closeout branch. It pins `ag-ui-protocol==0.1.19`, validates the canonical SSE,
   interrupt/resume and forward-compatibility boundaries with `11/11` focused
   tests, and adds no production API/Worker, CopilotKit, React SDK or UI wiring.
+- Trench `TRN-CPK-SPIKE-01` is merged to Trench `main` at `5c59b22`; its
+  focused/full checks, frontend builds, Alembic checks and `git diff --check`
+  pass. `EMB-HOST-CON-01` is now active on `codex/emb-host-con-01` for the
+  provider-neutral Core Host authority contract only.
 - Completed storage composition task: `CLOUD-STO-SEAM-01` on `codex/cloud-sto-seam-01` is the
   first Zebra-foundation task after the maintainer reprioritized durable storage
   and memory ahead of further Trench work. It injects existing control-plane Store

@@ -69,11 +69,11 @@ read-only。
 
 ### TRN-CPK-SPIKE-01 — Trench CopilotKit v2 runtime spike
 
-- Status: `Locked`；Trench repo only。
+- Status: `Done`；Trench repo only；merged to Trench `main` at `5c59b22`。
 - Depends on: `EMB-PLAN-01` merged。
 - Candidate paths: Trench isolated spike route/page/test fixture；精确路径由 Trench 注册。
 - Deliverable: `<CopilotKit>` → Runtime v2 handler → `HttpAgent` → fake Zebra AG-UI。
-- Acceptance: text、tool、interrupt、resume、reload、Header policy 全通过；记录版本和许可证边界。
+- Acceptance: text、tool、interrupt、resume、reload、Header policy 全通过；记录版本和许可证边界。Trench `make check` 通过。
 
 ### P0 gate
 
@@ -85,8 +85,9 @@ read-only。
 
 ### EMB-HOST-CON-01 — Generic Host authority contracts
 
-- Status: `Locked`；Zebra repo；depends on both P0 Spikes。
-- Candidate paths: `packages/agent-core/src/agent_core/domain/host_authority.py`, contract tests。
+- Status: `In Progress`；Zebra repo；depends on completed `EMB-AGUI-SPIKE-01` and `TRN-CPK-SPIKE-01`。
+- Branch/worktree: `codex/emb-host-con-01` / `../zebra-agent-emb-host-con-01`。
+- Candidate paths: `packages/agent-core/src/agent_core/domain/host_authority.py`, `tests/agent_core/test_host_authority.py` and registered governance records。
 - Deliverable: HostSessionGrant claims、HostContextEnvelope、ResourceRef、namespace、scope、limits、errors。
 - Acceptance: no Trench imports；invalid issuer/origin/expiry/scope/resource fixtures fail closed。
 

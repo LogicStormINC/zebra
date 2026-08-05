@@ -8139,3 +8139,14 @@ actual byte access.
   `codex/cloud-pg-mig-01` at `08a7f3e6`. `CLOUD-REC-DRILL-01` and the local
   `CLOUD-REC-01` evidence gate are now `Done`; production PITR, RPO/RTO,
   failover and DR readiness remain external gates.
+
+## 2026-08-05 - TRN-CPK-SPIKE-01 merge and EMB-HOST-CON-01 activation
+
+- Trench `codex/trn-cpk-spike-01` was merged into Trench `main` at `5c59b22`.
+  After refreshing the worktree lockfile dependencies, `make check` passed
+  Python `65 + 49`, frontend `17`, both frontend builds, lint, Alembic heads/
+  offline upgrade and `git diff --check`; the CopilotKit channel-manager warning
+  remains non-blocking.
+- Activated `EMB-HOST-CON-01` on `codex/emb-host-con-01` with Core-only owned
+  paths. JWT/JWKS adapters, API/AG-UI routing, Trench imports and production
+  wiring remain outside this contract slice.

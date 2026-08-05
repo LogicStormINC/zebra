@@ -41,8 +41,11 @@ does not authorize production code, migrations or activation of its successor.
   Embedded target architecture and registers the dependency-ordered
   CopilotKit/AG-UI, cloud, Trench, analysis, writeback, memory, and GA roadmap.
 - `EMB-AGUI-SPIKE-01` is `Done` on `codex/emb-agui-spike-01`; its development-only
-  official Python protocol compatibility matrix is integrated. Production AG-UI,
-  CopilotKit/Trench and React SDK work remain separately gated.
+  official Python protocol compatibility matrix is integrated. Trench
+  `TRN-CPK-SPIKE-01` is also merged to Trench `main` at `5c59b22` with its
+  focused and full checks green. `EMB-HOST-CON-01` is now `In Progress` on
+  `codex/emb-host-con-01`; production AG-UI, CopilotKit/Trench routing and React
+  SDK work remain separately gated.
 - `CTX-MEM-01` is `Review` in PR `#198` on
   `codex/issue-197-context-memory-continuity`. It closes GitHub issue `#197`
   without depending on the stacked semantic-memory gateway: same-Task recovery
@@ -336,6 +339,45 @@ that the later `EMB-AGUI-CON-01` contract may safely adopt.
 - Closed `EMB-AGUI-SPIKE-01` from `Review` to `Done`. No API/Worker route,
   Event Store mapping, CopilotKit/Trench code, React SDK or UI behavior was added;
   `EMB-AGUI-CON-01` remains a separate future contract gate.
+
+### EMB-HOST-CON-01 - Generic Host Authority Contracts
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `CORE / SECURITY / INTEGRATIONS`
+- Depends on: completed `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, and Trench
+  `TRN-CPK-SPIKE-01` merged at `5c59b22`.
+- Branch: `codex/emb-host-con-01`
+- Worktree: `../zebra-agent-emb-host-con-01`
+- Owned paths: `packages/agent-core/src/agent_core/domain/host_authority.py`,
+  `packages/agent-core/src/agent_core/domain/__init__.py`,
+  `tests/agent_core/test_host_authority.py`, and this card's governance records
+  in `docs/AGENT_TASKS.md`, `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`,
+  `PROGRESS.md`, `task_plan.md`, and `WORKLOG.md`.
+
+#### Goal
+
+Freeze the provider-neutral Host authority boundary before any AG-UI adapter or
+Host Gateway exists: immutable HostSessionGrant claims, a validated context
+envelope, opaque resource references, exact origin/issuer/audience checks,
+technical limits and typed fail-closed errors.
+
+#### Acceptance
+
+- Grant claims reject blank/duplicate scopes and resources, malformed origins,
+  extra fields, invalid timestamp ordering, expired/not-yet-valid grants and
+  issuer/audience/Host-app/origin mismatches.
+- Context derivation carries only validated namespace, workspace, resources,
+  scopes, limits and policy metadata; no raw JWT or Trench import enters Core.
+- Scope and resource checks are deterministic and fail closed; limits are
+  bounded positive integers with explicit upper ceilings.
+- Focused contract tests cover valid derivation and every rejection family;
+  changed-path Ruff, strict Mypy and `git diff --check` pass.
+
+#### Explicit non-goals
+
+- no JWT signature/JWKS adapter, token persistence, API route, AG-UI projection,
+  Trench dependency, Host registry, runtime selection or production secret.
 
 ### CLOUD-STO-SEAM-01 - Control-Plane Storage Composition Seam
 
