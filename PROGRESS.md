@@ -100,7 +100,7 @@
   runner (`5 passed`,
   `ZEBRA_PG_MIG_LEGACY_EFFECT_DELIVERY_TEST_RESULT=PASS`) with cleanup.
   `CLOUD-PG-MIG-LEGACY-PROVIDER-01` is now `Done` after merge commit
-  `ce8880c0` from `codex/cloud-pg-mig-legacy-provider-01`. Its deterministic
+  `5f275d4b` from `codex/cloud-pg-mig-legacy-provider-01`. Its deterministic
   Provider Continuation quarantine/export contract and evidence runner pass the
   local focused matrix (`4 passed, 1 skipped`) and PostgreSQL 17.5 runner
   (`5 passed`, `ZEBRA_PG_MIG_LEGACY_PROVIDER_TEST_RESULT=PASS`) with cleanup.

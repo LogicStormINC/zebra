@@ -8034,7 +8034,7 @@ actual byte access.
 ## 2026-08-05 - CLOUD-PG-MIG-LEGACY-PROVIDER-01 merged and closed
 
 - With explicit maintainer authorization, merged child commit `b74f1c27` into
-  parent `codex/cloud-pg-mig-01` as `ce8880c0`; no conflicts occurred and the
+  parent `codex/cloud-pg-mig-01` as `5f275d4b`; no conflicts occurred and the
   parent worktree's unrelated `.zebra-agent/sessions.sqlite` change was
   preserved.
 - Post-merge validation remained green: local focused matrix `4 passed, 1

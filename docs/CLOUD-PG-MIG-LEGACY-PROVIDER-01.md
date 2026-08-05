@@ -8,7 +8,7 @@
 - Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent-cloud-pg-mig-legacy-provider-01`
 - Parent: `CLOUD-PG-MIG-LEGACY-CON-01` remains `In Progress`
 - Provider authority predecessor: `CLOUD-PROVIDER-CONT-PG-01` is `Done`
-- Parent merge: `ce8880c0` on `codex/cloud-pg-mig-01`
+- Parent merge: `5f275d4b` on `codex/cloud-pg-mig-01`
 
 ## Boundary
 
@@ -68,7 +68,7 @@ table.
 
 Independent review found no blocking SQL, deserialization, authority-boundary
 or cleanup issue. The child was merged into `codex/cloud-pg-mig-01` at
-`ce8880c0` after the post-merge focused matrix, strict static checks, runner
+`5f275d4b` after the post-merge focused matrix, strict static checks, runner
 cleanup and `git diff --check` passed. This closes the child as `Done`; it does
 not close the parent migration or modify the completed Provider authority
 implementation.

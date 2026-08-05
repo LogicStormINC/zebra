@@ -185,7 +185,8 @@ path-bounded successor below.
   transfer opaque payload bytes, invent deployment/scope identity, selection
   Events, idempotency/request hashes or accepted LeaseFence authority.
 
-Closeout: child commit `b74f1c27` was merged into the parent by `ce8880c0`.
+Closeout: child commit `b74f1c27` plus its evidence closeout were merged into
+the parent by `5f275d4b`.
 Post-merge local focused matrix is `4 passed, 1 skipped`; PostgreSQL 17.5 runner
 is `5 passed` with the required PASS sentinel and container/volume/network
 cleanup. This closes the path-bounded Provider Continuation quarantine slice;

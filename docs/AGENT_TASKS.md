@@ -2004,7 +2004,7 @@ opaque payload bytes into fenced PostgreSQL Provider Continuation authority.
   before Event writes; `session_events` and the target Provider authority remain
   empty, and the quarantine reloads successfully afterward.
 - Independent review found no blocking issues. The child was merged into
-  `codex/cloud-pg-mig-01` at `ce8880c0` and is now `Done`; this closes only the
+  `codex/cloud-pg-mig-01` at `5f275d4b` and is now `Done`; this closes only the
   path-bounded Provider Continuation quarantine slice. The parent migration
   remains `In Progress`.
 
