@@ -8,6 +8,7 @@ from agent_storage.postgres.delivery_transaction_migration import (
 from agent_storage.postgres.governed_memory_migration import GOVERNED_MEMORY_MIGRATION
 from agent_storage.postgres.handoff_migration import HANDOFF_MIGRATION
 from agent_storage.postgres.memory_delivery_migration import MEMORY_DELIVERY_MIGRATION
+from agent_storage.postgres.migration_recovery_migration import MIGRATION_RECOVERY_MIGRATION
 from agent_storage.postgres.migration_types import Migration
 from agent_storage.postgres.native_memory_migration import NATIVE_MEMORY_MIGRATION
 from agent_storage.postgres.provider_continuation_migration import (
@@ -458,4 +459,5 @@ MIGRATIONS = (
     PROVIDER_CONTINUATION_MIGRATION,
     CONTROL_PLANE_MIGRATION,
     DELIVERY_TRANSACTION_MIGRATION,
+    MIGRATION_RECOVERY_MIGRATION,
 )

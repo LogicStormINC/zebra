@@ -7770,3 +7770,13 @@ actual byte access.
   parent audit `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` `BLOCK-GAP` as `Done`.
   `CLOUD-AGG-FENCE-01` remains `Locked`; no API/Worker/runtime or provider scope
   was unlocked.
+## 2026-08-05 - CLOUD-PG-MIG-01 claim
+
+- Claimed `CLOUD-PG-MIG-01` on `codex/cloud-pg-mig-01` in the isolated
+  worktree `/Users/lukeding/Desktop/playground/2026/product/zebra-agent-cloud-pg-mig-01`.
+- Root `AGENTS.md` has an unrelated uncommitted user edit and is preserved;
+  it is not in this task's staged paths.
+- The first implementation slice is limited to deterministic SQLite snapshot
+  export, PostgreSQL cutover guard and focused PostgreSQL evidence. Backup/PITR,
+  object restore, Redis/Mem0 rebuild, multi-Worker drills and production
+  runtime selection remain separate gates.

@@ -1707,7 +1707,7 @@ an authority and without claiming production readiness from local Compose alone.
 
 ### CLOUD-PG-MIG-01 - Canonical SQLite Snapshot And PostgreSQL Cutover Evidence
 
-- Status: `Ready`
+- Status: `In Progress`
 - Owner: `Codex`
 - Suggested role: `STORAGE / SRE / QA`
 - Depends on: `CLOUD-REC-01` (`Ready`), `CLOUD-PG-PLAN-01` (`Done`),
@@ -1739,6 +1739,15 @@ fail-closed writes when the namespace or active cutover is not valid.
 - The focused PostgreSQL 17.5 Compose runner proves replay, namespace
   isolation, rollback/transaction failure and deterministic resource cleanup;
   it emits `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` only after all checks pass.
+
+#### Current slice evidence
+
+- SQLite canonical snapshot/export and manifest tamper detection are implemented;
+  the local matrix is `2 passed, 5 skipped` without PostgreSQL.
+- Migration v16 adds the unique ACTIVE cutover guard; the PostgreSQL 17.5
+  runner passes `13/13` with deterministic cleanup and the registered PASS
+  sentinel. Full Event/Projection import and rebuild remain in progress, so
+  this card is not yet ready for Review.
 
 #### Explicit non-goals
 

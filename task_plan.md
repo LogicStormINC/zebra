@@ -65,18 +65,20 @@
   is replayable live state; Mem0 is a rebuildable confirmed-memory index. No
   production RPO/RTO, PITR or DR claim is made from local Compose evidence.
 
-## CLOUD-PG-MIG-01 - Canonical SQLite Snapshot And PostgreSQL Cutover (Ready)
+## CLOUD-PG-MIG-01 - Canonical SQLite Snapshot And PostgreSQL Cutover (In Progress)
 
-1. `pending` - Claim the path-bounded migration child in an isolated worktree;
+1. `completed` - Claim the path-bounded migration child in an isolated worktree;
    preserve the root `AGENTS.md` and keep all recovery siblings inactive.
-2. `pending` - Implement deterministic SQLite snapshot/export and manifest
-   checksums without mutating the source database.
-3. `pending` - Add restricted PostgreSQL import/rebuild and a unique,
+2. `completed` - Implement deterministic SQLite snapshot/export and manifest
+   checksums without mutating the source database; the local matrix passes
+   `2 passed` with the PostgreSQL cases skipped when no DSN is set.
+3. `in_progress` - Add restricted PostgreSQL import/rebuild and a unique,
    namespace-scoped `PREPARED -> VERIFIED -> ACTIVE` cutover guard with
-   fail-closed zero-write behavior.
-4. `pending` - Add the pinned PostgreSQL 17.5 Compose runner, replay,
-   namespace, rollback and transaction-failure evidence, then record exact
-   cleanup and PASS sentinel results.
+   fail-closed zero-write behavior. The cutover schema/guard is complete;
+   Event/Projection import and rebuild remain.
+4. `completed` - Add the pinned PostgreSQL 17.5 Compose runner, replay,
+   namespace, rollback and transaction-failure evidence; it passes `13/13`,
+   emits `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and cleans all resources.
 5. `pending` - Run changed-path static checks, update the migration evidence
    document and hand the card to Review without activating API/Worker runtime,
    Redis, Mem0 or production cutover.

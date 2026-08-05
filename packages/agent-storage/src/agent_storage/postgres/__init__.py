@@ -44,6 +44,17 @@ from agent_storage.postgres.memory_delivery import (
     PostgresMemoryDeliveryLedger,
     PostgresMemoryDeliveryStore,
 )
+from agent_storage.postgres.migration_recovery import (
+    CutoverConflictError,
+    PostgresCutoverStore,
+    SnapshotIntegrityError,
+    SnapshotManifest,
+    SnapshotRecord,
+    SQLiteSnapshot,
+    export_sqlite_snapshot,
+    load_sqlite_snapshot,
+    write_sqlite_snapshot,
+)
 from agent_storage.postgres.migration_runner import apply_postgres_migrations
 from agent_storage.postgres.migration_types import PostgresMigrationError
 from agent_storage.postgres.model_tool_projections import (
@@ -128,6 +139,15 @@ __all__ = [
     "PostgresProviderContinuationConflictError",
     "PostgresProviderContinuationStore",
     "apply_postgres_migrations",
+    "CutoverConflictError",
+    "SQLiteSnapshot",
+    "SnapshotIntegrityError",
+    "SnapshotManifest",
+    "SnapshotRecord",
+    "PostgresCutoverStore",
+    "export_sqlite_snapshot",
+    "load_sqlite_snapshot",
+    "write_sqlite_snapshot",
     "attach_segment_in_transaction",
     "attach_segment_for_worker_in_transaction",
     "bootstrap_control_plane_epoch",
