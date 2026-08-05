@@ -1812,6 +1812,14 @@ object version, dispatch evidence or namespace authority from unrelated rows.
   the legacy row cannot prove reservation Lease, Event/object version,
   idempotency/request hash or cloud lifecycle evidence. No PostgreSQL Artifact
   authority write is authorized by this activation.
+- The Effect/Delivery child chooses the manifest-backed quarantine/rebuild path
+  because the legacy row cannot prove dispatch/claim identity, request hash,
+  payload Artifact, intent/terminal Event or delivery evidence. No PostgreSQL
+  Effect/Delivery authority write is authorized by that activation.
+- The maintainer explicitly activated the next path-bounded child on 2026-08-05:
+  `CLOUD-PG-MIG-LEGACY-PROVIDER-01`. It depends on the completed
+  `CLOUD-PROVIDER-CONT-PG-01` authority contract; no Provider continuation
+  authority write is authorized by this activation.
 
 ### CLOUD-PG-MIG-LEGACY-ARTIFACT-01 - Artifact Legacy Export And Quarantine
 
@@ -1936,7 +1944,53 @@ PostgreSQL `effect_outbox` authority.
 - Independent review found no blocking issues. The child was merged into
   `codex/cloud-pg-mig-01` at `62d2e601` and is now `Done`; this closes only the
   path-bounded Effect/Delivery quarantine slice. The parent migration remains
-  `In Progress`, and Provider continuation remains unregistered and inactive.
+  `In Progress`, and Provider continuation is now activated in its own child
+  card below.
+
+### CLOUD-PG-MIG-LEGACY-PROVIDER-01 - Provider Continuation Legacy Export And Quarantine
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
+- Depends on: `CLOUD-PG-MIG-01` (`In Progress`),
+  `CLOUD-PG-MIG-LEGACY-CON-01` (`In Progress`) and
+  `CLOUD-PROVIDER-CONT-PG-01` (`Done`)
+- Branch: `codex/cloud-pg-mig-legacy-provider-01`
+- Worktree: `../zebra-agent-cloud-pg-mig-legacy-provider-01`
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres/migration_legacy_provider.py`,
+  `tests/agent_storage/test_postgres_migration_legacy_provider.py`,
+  `tests/compose/migration_legacy_provider/`, and
+  `docs/CLOUD-PG-MIG-LEGACY-PROVIDER-01.md`. Parent governance records remain
+  owned by `CLOUD-PG-MIG-LEGACY-CON-01`.
+
+#### Goal
+
+Preserve legacy `provider_continuation_artifacts` rows as a deterministic,
+manifest-bound quarantine/rebuild input without promoting incomplete metadata or
+opaque payload bytes into fenced PostgreSQL Provider Continuation authority.
+
+#### Acceptance
+
+- The source-to-target matrix names every directly reusable, structurally
+  comparable and unavailable authority field; unavailable fields are never
+  synthesized.
+- A versioned quarantine artifact retains the canonical source snapshot digest,
+  source table, canonical row content/digests, unavailable-field reason and
+  disposition, with deterministic serialization and tamper detection.
+- PostgreSQL preflight rejects a legacy `provider_continuation_artifacts` source
+  before Event writes and proves zero rows in the target Provider authority; the
+  quarantine remains loadable and verified afterward.
+- The isolated PostgreSQL 17.5 runner emits
+  `ZEBRA_PG_MIG_LEGACY_PROVIDER_TEST_RESULT=PASS` only after all checks pass and
+  removes its container, volume and network.
+
+#### Explicit non-goals
+
+- No write to `provider_continuation_artifacts`, no opaque payload transfer, no
+  inferred deployment namespace, authority issuer, namespace id, selection Event,
+  idempotency/request hash or accepted LeaseFence, and no API/Worker/runtime
+  wiring. This child does not modify the completed Provider authority card.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 

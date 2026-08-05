@@ -8017,3 +8017,16 @@ actual byte access.
 - Closed `CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01` as `Done`. The parent
   migration stays `In Progress`; Provider continuation remains unregistered
   and inactive.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-PROVIDER-01 activation
+
+- After Effect/Delivery was merged and closed, explicitly activated the next
+  path-bounded legacy child: `CLOUD-PG-MIG-LEGACY-PROVIDER-01`.
+- The child owns only the `provider_continuation_artifacts` quarantine module,
+  focused test, PostgreSQL 17.5 runner and evidence document on
+  `codex/cloud-pg-mig-legacy-provider-01`; parent governance records remain on
+  `codex/cloud-pg-mig-01`.
+- The selected disposition is manifest-backed quarantine/rebuild because the
+  legacy row cannot prove deployment/scope authority, continuation selection
+  Event, idempotency/request hash or accepted LeaseFence. No PostgreSQL Provider
+  authority write or runtime wiring is authorized.

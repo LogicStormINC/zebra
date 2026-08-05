@@ -163,7 +163,27 @@ Effect/Delivery and Provider continuation remain inactive.
 Closeout: child commit `84087e08` was merged into the parent by `62d2e601`.
 Post-merge local focused matrix is `4 passed, 1 skipped`; PostgreSQL 17.5 runner
 is `5 passed` with the required PASS sentinel and container/volume/network
-cleanup. Provider continuation remains inactive.
+cleanup. Provider continuation is now explicitly activated as the next
+path-bounded successor below.
+
+### CLOUD-PG-MIG-LEGACY-PROVIDER-01 - Provider Continuation Legacy Export And Quarantine (In Progress)
+
+1. `in_progress` - Freeze the direct/structurally-comparable/unavailable
+   `provider_continuation_artifacts` to cloud authority field matrix and register
+   the quarantine disposition.
+2. `pending` - Implement deterministic, manifest-bound quarantine export and
+   tamper verification without writing PostgreSQL Provider authority.
+3. `pending` - Add the isolated PostgreSQL 17.5 zero-write runner and record
+   `ZEBRA_PG_MIG_LEGACY_PROVIDER_TEST_RESULT=PASS` with deterministic cleanup.
+
+### Boundary
+
+- Owned implementation paths are limited to the Provider quarantine module,
+  focused test, isolated runner and evidence document. Parent governance
+  records stay on the migration governance branch.
+- The child preserves the original SQLite snapshot as source of truth; it cannot
+  transfer opaque payload bytes, invent deployment/scope identity, selection
+  Events, idempotency/request hashes or accepted LeaseFence authority.
 
 ### Boundary
 
