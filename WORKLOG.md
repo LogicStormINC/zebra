@@ -7866,3 +7866,16 @@ actual byte access.
   migration runner passes `22/22` with `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and
   deterministic cleanup. Delivery Audit remains deferred because its legacy
   SQLite table has no stable row identity for preserving append order.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Governed Memory replay slice
+
+- Added `migration_memory.py` and replayed the canonical `memory_records` table
+  after Event import. The slice validates Memory model fields, content and
+  provenance digests, namespace scope/singleton and supersession relations, and
+  source session/Event ranges before inserting the namespace-scoped PostgreSQL
+  authority row; malformed input rolls back with zero writes.
+- The focused local matrix is `2 passed, 16 skipped`; the PostgreSQL 17.5
+  migration runner passes `24/24` with `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and
+  deterministic cleanup. Artifact, Effect/Delivery, Delivery Audit and Provider
+  continuation remain deferred where the legacy schema cannot prove cloud
+  authority fields or stable append order.

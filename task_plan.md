@@ -104,10 +104,14 @@
 12. `completed` - Replay SQLite idempotency receipts into the namespace-scoped
    PostgreSQL control-plane table after Event import, preserving the response
    object and timestamp contract and rejecting malformed receipts before writes.
-13. `pending` - Register and implement the next explicitly owned authority
+13. `completed` - Replay governed SQLite Memory authority after Event import,
+   validating content/provenance digests, scope/singleton/supersession rules and
+   source Event ranges before the namespace-scoped PostgreSQL insert.
+14. `pending` - Register and implement the next explicitly owned authority
    projection slice after confirming its PostgreSQL mapping, preserving
    Event-first ordering and fail-closed behavior before handing the parent card
-   to Review.
+   to Review. Artifact, Effect/Delivery, Delivery Audit and Provider continuation
+   remain blocked until their legacy-to-cloud authority fields are provable.
 
 ### Boundary
 

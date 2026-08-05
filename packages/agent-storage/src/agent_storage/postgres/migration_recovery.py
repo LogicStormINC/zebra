@@ -30,6 +30,10 @@ from agent_storage.postgres.migration_idempotency import (
     IdempotencyMigrationError,
     replay_idempotency_snapshot,
 )
+from agent_storage.postgres.migration_memory import (
+    MemoryMigrationError,
+    replay_memory_snapshot,
+)
 from agent_storage.postgres.migration_snapshot import (
     SnapshotRecord,
     load_sqlite_snapshot,
@@ -61,6 +65,7 @@ class MigrationImportReport:
     handoff_dispatch_count: int
     handoff_lineage_count: int
     idempotency_count: int
+    memory_count: int
     manifest_sha256: str
 
 
@@ -88,6 +93,7 @@ def import_sqlite_event_snapshot(
         "session_lineage",
         "handoff_dispatch_outbox",
         "idempotency_records",
+        "memory_records",
     }
     if unsupported:
         names = ", ".join(sorted(unsupported))
@@ -137,6 +143,14 @@ def import_sqlite_event_snapshot(
                 records_by_table,
             )
         except IdempotencyMigrationError as error:
+            raise MigrationImportError(str(error)) from error
+        try:
+            memory_report = replay_memory_snapshot(
+                connection,
+                deployment_namespace,
+                records_by_table,
+            )
+        except MemoryMigrationError as error:
             raise MigrationImportError(str(error)) from error
         workspace_count = 0
         for session_events in grouped.values():
@@ -193,6 +207,7 @@ def import_sqlite_event_snapshot(
         handoff_dispatch_count=handoff_report.dispatch_count,
         handoff_lineage_count=handoff_lineage_count,
         idempotency_count=idempotency_report.record_count,
+        memory_count=memory_report.record_count,
         manifest_sha256=snapshot.manifest.digest,
     )
 

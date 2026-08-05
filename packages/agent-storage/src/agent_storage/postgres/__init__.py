@@ -53,6 +53,7 @@ from agent_storage.postgres.migration_idempotency import (
     IdempotencyMigrationError,
     IdempotencyReplayReport,
 )
+from agent_storage.postgres.migration_memory import MemoryMigrationError, MemoryReplayReport
 from agent_storage.postgres.migration_recovery import (
     MigrationImportError,
     MigrationImportReport,
@@ -158,6 +159,8 @@ __all__ = [
     "HandoffReplayReport",
     "IdempotencyMigrationError",
     "IdempotencyReplayReport",
+    "MemoryMigrationError",
+    "MemoryReplayReport",
     "SQLiteSnapshot",
     "SnapshotIntegrityError",
     "SnapshotManifest",

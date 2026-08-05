@@ -11,6 +11,7 @@
 （Context capsule/pointer 回放）、`migration_handoff_rows.py` 与
 `migration_handoff.py`（Handoff authority/lineage 回放）、
 `migration_idempotency.py`（control-plane receipt 回放）、
+`migration_memory.py`（governed Memory authority 回放）、
 `migration_cutover.py`（Cutover 门禁）和 `migration_recovery.py`（导入编排），
 各源文件均保持在 300 行目标以内：
 
@@ -30,7 +31,9 @@
    immutable envelope 和 pending/完整 claimed dispatch 在 Event 之后回放；
    `session_lineage` 不直接写入 PostgreSQL，而是在 Task/Segment 重建后逐行校验。
    SQLite idempotency receipt 经过 action/key/request/status/JSON object/timestamp
-   校验后写入 namespace-scoped control-plane 表。
+   校验后写入 namespace-scoped control-plane 表。Governed Memory 经过内容、
+   creation/provenance digest、scope、supersession 和 source Event range 校验后
+   写入 PostgreSQL authority 表。
    SQLite 中没有权威 ACK 时间的 `acked` dispatch、非受支持的权威表、非空目标、
    错误 identity 和不连续 sequence 都 fail closed。
 
@@ -39,8 +42,8 @@ Redis 或 Mem0 变成云端事实源。
 
 ## 已验证
 
-- 本地快照/完整性单测：`2 passed, 14 skipped`（无外部 PostgreSQL 时 PG 用例跳过）。
-- PostgreSQL 17.5 Compose runner：`22 passed`，输出
+- 本地快照/完整性单测：`2 passed, 16 skipped`（无外部 PostgreSQL 时 PG 用例跳过）。
+- PostgreSQL 17.5 Compose runner：`24 passed`，输出
   `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`。
 - runner 清理了容器、volume 和 network；迁移目录 v1-v16 的 checksum 与并发
   migration runner 一并复核。
@@ -52,8 +55,9 @@ Redis 或 Mem0 变成云端事实源。
 - 将 canonical snapshot 中其余权威 Store 数据导入 PostgreSQL，并为每个
   adapter 保持 restricted identity、empty-schema、checksum、ordering 和 rebuild
   校验；当前 importer 对未支持表会 fail closed，不会静默丢数据。Handoff 已覆盖；
-  Artifact payload、Effect/Delivery Outbox、Delivery Audit、Provider continuation
-  和 governed Memory 仍需各自确认其 PostgreSQL 权威映射。
+  Artifact payload、Effect/Delivery Outbox、Delivery Audit 和 Provider continuation
+  仍需各自确认其 PostgreSQL 权威映射；旧表缺少新 authority 所需的租约、Event
+  绑定或稳定顺序键时必须保持 fail closed。
 - 接入真实 cloud runtime 的 ACTIVE 写门禁、SQLite fallback removal、完整
   migration replay 证据；这些完成前不能关闭本卡。
 - PostgreSQL backup/PITR、Artifact 对象恢复、Redis/Mem0 rebuild、Outbox
