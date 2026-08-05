@@ -62,6 +62,7 @@ name = "agent-integrations"
 version = "0.1.0"
 source = { editable = "packages/agent-integrations" }
 dependencies = [
+    { name = "ag-ui-protocol" },
     { name = "agent-core" },
     { name = "agent-security" },
     { name = "httpx" },
@@ -71,6 +72,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "ag-ui-protocol", specifier = "==0.1.19" },
     { name = "agent-core", editable = "packages/agent-core" },
     { name = "agent-security", editable = "packages/agent-security" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
