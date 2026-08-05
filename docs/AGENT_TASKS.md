@@ -1838,7 +1838,7 @@ object version, dispatch evidence or namespace authority from unrelated rows.
 - Owner: `Codex`
 - Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
 - Depends on: `CLOUD-PG-MIG-01` (`In Progress`),
-  `CLOUD-PG-MIG-LEGACY-CON-01` (`In Progress`), `CLOUD-ART-PAYLOAD-PG-01`
+  `CLOUD-PG-MIG-LEGACY-CON-01` (`Done`), `CLOUD-ART-PAYLOAD-PG-01`
   (`Done`) and `CLOUD-AGG-FENCE-ARTIFACT-01` (`Done`)
 - Branch: `codex/cloud-pg-mig-legacy-artifact-01`
 - Worktree: `../zebra-agent-cloud-pg-mig-legacy-artifact-01`
@@ -1901,7 +1901,7 @@ PostgreSQL `artifact_payload_metadata` authority.
 - Owner: `Codex`
 - Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
 - Depends on: `CLOUD-PG-MIG-01` (`In Progress`),
-  `CLOUD-PG-MIG-LEGACY-CON-01` (`In Progress`),
+  `CLOUD-PG-MIG-LEGACY-CON-01` (`Done`),
   `CLOUD-DELIVERY-TXN-PG-01` (`Done`) and
   `CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01` (`Done`)
 - Branch: `codex/cloud-pg-mig-legacy-effect-delivery-01`
@@ -1964,7 +1964,7 @@ PostgreSQL `effect_outbox` authority.
 - Owner: `Codex`
 - Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
 - Depends on: `CLOUD-PG-MIG-01` (`In Progress`),
-  `CLOUD-PG-MIG-LEGACY-CON-01` (`In Progress`) and
+  `CLOUD-PG-MIG-LEGACY-CON-01` (`Done`) and
   `CLOUD-PROVIDER-CONT-PG-01` (`Done`)
 - Branch: `codex/cloud-pg-mig-legacy-provider-01`
 - Worktree: `../zebra-agent-cloud-pg-mig-legacy-provider-01`
