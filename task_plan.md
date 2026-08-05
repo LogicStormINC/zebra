@@ -58,7 +58,8 @@
   failure drills.
 - `CLOUD-AGG-FENCE-01` is closed as `Done`; the recovery parent remains active
   for independent child claims. Migration and the first logical-backup child are
-  closed; restore and drill children remain inactive.
+  closed; `CLOUD-REC-RESTORE-01` is the next active child and the drill remains
+  inactive.
 - Planned child cards are `CLOUD-PG-MIG-01`, `CLOUD-REC-BACKUP-01`,
   `CLOUD-REC-RESTORE-01` and `CLOUD-REC-DRILL-01`. Each must have its own
   branch, owner, evidence runner and exact owned paths.
@@ -148,6 +149,24 @@ readiness remain explicit non-goals.
 - The child proves logical portability only; it does not configure production
   credentials, physical base backups, WAL archiving, object restore, RPO/RTO or
   DR readiness.
+
+### CLOUD-REC-RESTORE-01 - Fresh Instance Restore And Rebuild Evidence (In Progress)
+
+1. `in_progress` - Freeze the fresh-instance restore boundary across PostgreSQL,
+   S3-compatible Artifact objects, Redis live state and Lease epoch authority.
+2. `pending` - Restore a fully migrated PostgreSQL dump into a fresh database,
+   validate the Artifact manifest/checksum and rebuild Redis from durable Events.
+3. `pending` - Rotate the restored namespace's control-plane epoch and record
+   deterministic cleanup without claiming production DR, RPO or RTO.
+
+### Boundary
+
+- Owned implementation paths are limited to the isolated restore Compose runner,
+  supporting verification script and `docs/CLOUD-REC-RESTORE-01.md`; parent
+  recovery governance records remain on `codex/cloud-pg-mig-01`.
+- The child proves development-only restore/rebuild composition. It does not
+  enable runtime cloud writes, invent Artifact authority, or claim physical PITR,
+  production credentials, RPO/RTO or DR readiness.
 
 ### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy successor governance (Done)
 

@@ -8088,3 +8088,13 @@ actual byte access.
   parent migration branch at `b8a82f21`. `CLOUD-REC-BACKUP-01` is now `Done`;
   physical PITR/WAL, object restore, RPO/RTO, DR and the remaining recovery
   children stay out of scope.
+
+## 2026-08-05 - CLOUD-REC-RESTORE-01 activation
+
+- Activated `CLOUD-REC-RESTORE-01` as the next path-bounded recovery child on
+  `codex/cloud-rec-restore-01`, after `CLOUD-PG-MIG-01` and
+  `CLOUD-REC-BACKUP-01` closed. Its scope is a development-only fresh-instance
+  PostgreSQL restore, S3-compatible Artifact manifest/checksum validation,
+  Redis Event replay rebuild and control-plane epoch rotation.
+- Fencing/outbox reconciliation, multi-Worker drills, physical PITR, production
+  credentials and RPO/RTO/DR claims remain inactive or explicitly out of scope.

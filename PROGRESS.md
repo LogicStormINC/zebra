@@ -73,6 +73,7 @@
 - `CLOUD-REC-01` remains `In Progress`. `CLOUD-PG-MIG-01` and its first recovery
   child `CLOUD-REC-BACKUP-01` are `Done`, with the latter proving only
   development-only logical backup portability. Object restore,
+  `CLOUD-REC-RESTORE-01` is now the explicitly activated next child;
   fencing/outbox reconciliation and multi-Worker drill children remain split and
   inactive. No production RPO/RTO or DR claim is made from local Compose
   evidence.

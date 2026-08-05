@@ -67,8 +67,9 @@ does not authorize production code, migrations or activation of its successor.
   lifecycle, and this card does not activate Redis live routing or aggregate gates.
 - `CLOUD-REC-01` is `In Progress` after aggregate fencing closeout. Its
   migration and logical-backup children are `Done`; object restore,
-  fencing/outbox reconciliation and multi-Worker drill evidence remain separate
-  inactive gates. No production RPO/RTO or failover claim is implied.
+  `CLOUD-REC-RESTORE-01` is the active next child, and fencing/outbox
+  reconciliation plus multi-Worker drill evidence remain separate inactive
+  gates. No production RPO/RTO or failover claim is implied.
 - `MEM-MEM0-SPIKE-01` is `Done` on `codex/mem0-contract-spike-01`. The pinned
   OSS REST/Compose contract is recorded and its deterministic provider evidence
   is accepted; real-provider compatibility remains a separate credential gate.
@@ -1695,8 +1696,9 @@ an authority and without claiming production readiness from local Compose alone.
 #### Lock reason and acceptance
 
 - The aggregate parent is closed, so children may be claimed independently;
-  `CLOUD-PG-MIG-01` and `CLOUD-REC-BACKUP-01` are now `Done`; the remaining
-  recovery children stay inactive until their own cards are Ready.
+  `CLOUD-PG-MIG-01` and `CLOUD-REC-BACKUP-01` are `Done`; the explicitly
+  activated `CLOUD-REC-RESTORE-01` is the only active recovery child, and the
+  drill remains inactive until its own card is Ready.
 - Every child must use isolated PostgreSQL/MinIO evidence with deterministic
   cleanup, preserve the single PostgreSQL fact source, and fail closed on
   namespace, epoch, checksum, object or cutover inconsistencies.
@@ -1827,6 +1829,50 @@ physical PITR or production recovery readiness.
   PITR, production credentials, RPO/RTO or DR claim.
 - Backup/PITR, object restore, fencing/outbox reconciliation and multi-Worker
   drills remain the separate `CLOUD-REC-*` children.
+
+### CLOUD-REC-RESTORE-01 - Fresh Instance Restore And Rebuild Evidence
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `SRE / STORAGE / QA`
+- Depends on: `CLOUD-PG-MIG-01` (`Done`), `CLOUD-REC-BACKUP-01` (`Done`),
+  `CLOUD-REC-01` (`In Progress`), `CLOUD-COMPOSE-APP-01` (`Done`),
+  `CLOUD-LIVE-01` (`Done`) and `CLOUD-AGG-FENCE-01` (`Done`)
+- Branch: `codex/cloud-rec-restore-01`
+- Worktree: `../zebra-agent-cloud-rec-restore-01`
+- Owned paths:
+  `tests/compose/recovery_restore/` and
+  `docs/CLOUD-REC-RESTORE-01.md`. Parent recovery governance records remain
+  owned by `CLOUD-REC-01` on `codex/cloud-pg-mig-01`.
+
+#### Goal
+
+Prove a development-only fresh-instance recovery composition: restore the
+fully migrated PostgreSQL source into a new database, verify an S3-compatible
+Artifact object from its manifest/checksum contract, rebuild Redis live state
+from durable Events, and rotate the restored namespace's control-plane epoch
+before any runtime writer is enabled.
+
+#### Acceptance
+
+- PostgreSQL 17.5 source/restore databases run the v1-v16 catalog; a fresh
+  `template0` database is restored from a non-empty custom logical archive.
+- The Artifact object is versioned, verified by SHA-256/size metadata and
+  readable after an explicit object-loss/rebuild step; the manifest never
+  invents PostgreSQL lifecycle authority.
+- Redis is flushed and rebuilt by replaying the restored namespace's Event
+  through the existing live fan-out contract; the rebuilt stream is checked for
+  namespace/session/sequence identity and remains non-authoritative.
+- The restored control-plane epoch is rotated to a new value and the runner
+  emits `ZEBRA_PG_RECOVERY_RESTORE_TEST_RESULT=PASS` only after all checks pass.
+- Physical PITR/WAL, production credentials, object retention, runtime cloud
+  writes, measured RPO/RTO, failover and DR readiness remain non-goals.
+
+#### Lock reason
+
+This child is explicitly activated after the migration and logical-backup gates
+closed. `CLOUD-REC-DRILL-01` remains inactive until its own rollback/outbox and
+multi-Worker evidence contract is registered and activated.
 
 ### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy Authority Export And Quarantine Contract
 
