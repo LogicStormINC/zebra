@@ -90,7 +90,10 @@
    empty-target guard.
 8. `completed` - Make the empty-target guard schema-wide (excluding only the
    migration ledger) and add a regression for unrelated occupied state.
-9. `pending` - Extend the restricted importer for the next explicitly owned
+9. `completed` - Rebuild Event-derived Task/Segment indexes from the existing
+   PostgreSQL lineage reducer and include their tables in the empty-target
+   guard.
+10. `pending` - Extend the restricted importer for the next explicitly owned
    authority projection slice, preserving Event-first ordering and fail-closed
    behavior before handing the parent card to Review.
 

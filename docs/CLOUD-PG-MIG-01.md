@@ -20,9 +20,9 @@
    状态，再调用写操作；检查失败或操作抛错时写入为零。
 
 3. 受限 importer 只接受已校验的 Event/Projection snapshot：先按连续 sequence
-   导入 Event，再用 Event 重建 Session、存在 `task_prepared` 事实的 Workspace，
-   以及 Model/Tool projections；非受支持的权威表、非空目标、错误 identity 和
-   不连续 sequence 都 fail closed。
+   导入 Event，再用 Event 重建 Session、存在 `task_prepared` 事实的 Workspace、
+   Task index 以及 Model/Tool projections；非受支持的权威表、非空目标、错误
+   identity 和不连续 sequence 都 fail closed。
 
 这些模块只建立迁移证据边界，不改变 API/Worker profile 选择，也不把 SQLite、
 Redis 或 Mem0 变成云端事实源。

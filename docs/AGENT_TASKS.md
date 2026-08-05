@@ -1746,7 +1746,7 @@ fail-closed writes when the namespace or active cutover is not valid.
   the local matrix is `2 passed, 9 skipped` without PostgreSQL.
 - Migration v16 adds the unique ACTIVE cutover guard; the PostgreSQL 17.5
   runner passes `17/17` with deterministic cleanup and the registered PASS
-  sentinel. Event-first import, Session/Workspace rebuild and Model/Tool
+  sentinel. Event-first import, Session/Workspace/Task rebuild and Model/Tool
   projection replay are covered; remaining authority tables and runtime write
   wiring keep this card in progress.
 

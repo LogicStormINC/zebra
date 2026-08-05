@@ -13,6 +13,7 @@ import psycopg
 from agent_core.application.session_projection import rebuild_session
 from agent_core.application.workspace_projection import WorkspaceProjectionError, rebuild_workspace
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.identifiers import SessionId
 from psycopg import sql
 
 from agent_storage.postgres.database import PostgresDatabase
@@ -23,6 +24,8 @@ from agent_storage.postgres.migration_snapshot import (
 )
 from agent_storage.postgres.model_tool_projections import index_event_in_transaction
 from agent_storage.postgres.projections import save_session_in_transaction
+from agent_storage.postgres.task_index_transactions import rebuild_task_in_transaction
+from agent_storage.postgres.task_lineage import root_for_session
 from agent_storage.postgres.workspaces import save_workspace_in_transaction
 
 _IMPORT_IDENTITY = "zebra-postgres-migration-v1"
@@ -44,6 +47,7 @@ class MigrationImportReport:
     projection_count: int
     workspace_count: int
     model_tool_projection_count: int
+    task_count: int
     manifest_sha256: str
 
 
@@ -104,12 +108,30 @@ def import_sqlite_event_snapshot(
                         "task_prepared Event cannot rebuild workspace projection"
                     ) from error
                 workspace_count += 1
+        try:
+            task_roots = {
+                root_for_session(
+                    connection,
+                    deployment_namespace,
+                    SessionId(UUID(session_id)),
+                )
+                for session_id in grouped
+            }
+            for root_session_id in task_roots:
+                rebuild_task_in_transaction(
+                    connection,
+                    deployment_namespace,
+                    root_session_id,
+                )
+        except (KeyError, TypeError, ValueError) as error:
+            raise MigrationImportError("Event cannot rebuild task projection") from error
     return MigrationImportReport(
         deployment_namespace=deployment_namespace,
         event_count=len(events),
         projection_count=len(grouped),
         workspace_count=workspace_count,
         model_tool_projection_count=model_tool_projection_count,
+        task_count=len(task_roots),
         manifest_sha256=snapshot.manifest.digest,
     )
 

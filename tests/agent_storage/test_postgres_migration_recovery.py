@@ -176,6 +176,7 @@ def test_event_import_rebuilds_workspace_projection(isolated_dsn: str, tmp_path:
 
     assert report.workspace_count == 1
     assert report.model_tool_projection_count == 1
+    assert report.task_count == 1
     with psycopg.connect(isolated_dsn) as connection:
         row = connection.execute(
             "SELECT workspace_root, current_sequence, status FROM workspace_projections"
@@ -189,6 +190,11 @@ def test_event_import_rebuilds_workspace_projection(isolated_dsn: str, tmp_path:
         ).fetchone()
         assert tool is not None
         assert tuple(tool) == ("shell", "succeeded", "ok")
+        task = connection.execute(
+            "SELECT task_id, active_segment_id FROM agent_tasks"
+        ).fetchone()
+        assert task is not None
+        assert task[0] == task[1]
 
 
 def test_event_import_requires_restricted_identity(isolated_dsn: str, tmp_path: Path) -> None:

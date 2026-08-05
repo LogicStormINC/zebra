@@ -7820,3 +7820,11 @@ actual byte access.
   occupied unrelated table now fails closed before Event writes.
 - Added the occupied-target regression. The PostgreSQL 17.5 runner passes
   `17/17` with deterministic cleanup and `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Task index replay slice
+
+- The importer now rebuilds Event-derived `agent_tasks`, `execution_segments`
+  and `task_event_index` through the existing lineage reducer in the same
+  transaction, with task lineage conflicts failing closed.
+- The focused replay regression verifies the root Task/active Segment binding;
+  the PostgreSQL 17.5 runner remains green at `17/17` with deterministic cleanup.
