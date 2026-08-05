@@ -7946,3 +7946,21 @@ actual byte access.
 - The selected disposition is manifest-backed quarantine/rebuild. Effect/Delivery
   and Provider continuation remain unregistered and inactive, and no PostgreSQL
   Artifact authority write or runtime wiring is authorized.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-ARTIFACT-01 Review handoff
+
+- Implemented the path-bounded quarantine module, focused test, PostgreSQL 17.5
+  runner and evidence document in child commit `fe585c49` on
+  `codex/cloud-pg-mig-legacy-artifact-01`. The manifest binds the source
+  snapshot digest, canonical Artifact rows, unavailable authority fields and
+  quarantine disposition; no payload bytes or PostgreSQL Artifact authority are
+  written.
+- Validation: local focused matrix `3 passed, 1 skipped`; changed-path Ruff,
+  strict Mypy, Bash/Compose config and `git diff --check` pass; isolated
+  PostgreSQL 17.5 matrix `4 passed` with
+  `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS` and deterministic cleanup.
+  Unsupported legacy input is rejected before Event writes and both
+  `session_events` and `artifact_payload_metadata` remain at zero rows.
+- Moved the child to `Review`; independent review is still required before
+  `Done`. Effect/Delivery and Provider continuation remain unregistered and
+  inactive.

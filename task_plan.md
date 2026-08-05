@@ -135,14 +135,19 @@
 - The current migration card's `29/29` zero-write evidence remains the admission
   baseline; no child may infer cloud authority from status-name similarity.
 
-### CLOUD-PG-MIG-LEGACY-ARTIFACT-01 - Artifact Legacy Export And Quarantine (In Progress)
+### CLOUD-PG-MIG-LEGACY-ARTIFACT-01 - Artifact Legacy Export And Quarantine (Review)
 
-1. `in_progress` - Freeze the direct/derivable/unavailable Artifact field matrix
+1. `completed` - Freeze the direct/derivable/unavailable Artifact field matrix
    against the v9 PostgreSQL authority and register the quarantine disposition.
-2. `pending` - Implement deterministic, manifest-bound quarantine export and
+2. `completed` - Implement deterministic, manifest-bound quarantine export and
    tamper verification without writing PostgreSQL Artifact authority.
-3. `pending` - Add the isolated PostgreSQL 17.5 zero-write runner and record
+3. `completed` - Add the isolated PostgreSQL 17.5 zero-write runner and record
    `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS` with deterministic cleanup.
+
+Review handoff: child commit `fe585c49`; local focused matrix `3 passed, 1
+skipped`; PostgreSQL 17.5 runner `4 passed` with the required PASS sentinel and
+container/volume/network cleanup. Independent review is still required before
+`Done`; Effect/Delivery and Provider continuation remain inactive.
 
 ### Boundary
 

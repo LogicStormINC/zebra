@@ -1813,7 +1813,7 @@ object version, dispatch evidence or namespace authority from unrelated rows.
 
 ### CLOUD-PG-MIG-LEGACY-ARTIFACT-01 - Artifact Legacy Export And Quarantine
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
 - Depends on: `CLOUD-PG-MIG-01` (`In Progress`),
@@ -1854,6 +1854,22 @@ PostgreSQL `artifact_payload_metadata` authority.
   reservation Lease, Event identity, request hash, object version or lifecycle
   transition; no API/Worker wiring, Runtime selector, SQLite fallback removal,
   Effect/Delivery or Provider continuation behavior.
+
+#### Review handoff
+
+- Child implementation commit: `fe585c49` on
+  `codex/cloud-pg-mig-legacy-artifact-01`; all child Owned paths are committed
+  and the worktree is clean.
+- Local focused validation: `3 passed, 1 skipped`; changed-path Ruff, strict
+  Mypy, Shell/Compose config and `git diff --check` pass.
+- PostgreSQL `17.5-alpine3.21` runner: `4 passed`, emits
+  `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS`, and removes its container,
+  volume and network. The preflight rejects `artifact_payloads` before Event
+  writes; `session_events` and `artifact_payload_metadata` remain empty, and
+  the quarantine reloads successfully afterward.
+- This is a `Review` handoff, not a `Done` or runtime activation. The parent
+  migration remains `In Progress`; Effect/Delivery and Provider continuation
+  successors remain unregistered and inactive.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 
