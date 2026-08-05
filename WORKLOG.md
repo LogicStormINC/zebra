@@ -8150,3 +8150,16 @@ actual byte access.
 - Activated `EMB-HOST-CON-01` on `codex/emb-host-con-01` with Core-only owned
   paths. JWT/JWKS adapters, API/AG-UI routing, Trench imports and production
   wiring remain outside this contract slice.
+
+## 2026-08-05 - EMB-HOST-CON-01 closeout
+
+- Added the provider-neutral `HostSessionGrant`, `HostContextEnvelope`, opaque
+  `HostResourceRef`, bounded `HostTechnicalLimits` and typed fail-closed errors
+  in `agent-core`; no raw JWT, Trench import or runtime wiring is present.
+- Commit `ca59753b` is validated by `16/16` focused tests and `386/386`
+  `tests/agent_core` tests. Changed-path Ruff, format, Mypy and `git diff
+  --check` pass; Eval is `10/10`.
+- Full suite evidence is `2097 passed, 271 skipped, 2 failed`; failures are the
+  pre-existing MCP prompt atomicity and file-size-gate baseline defects. The
+  task is `Done`; Host verifier, AG-UI projection and Trench production slices
+  remain separately locked.

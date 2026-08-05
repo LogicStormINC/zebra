@@ -2637,15 +2637,15 @@ the parent migration is `Done`.
 - Closed `EMB-AGUI-SPIKE-01` from `Review` to `Done`; the next
   `EMB-AGUI-CON-01` contract and Trench CopilotKit integration remain gated.
 
-## EMB-HOST-CON-01 - Generic Host Authority Contracts (In Progress)
+## EMB-HOST-CON-01 - Generic Host Authority Contracts (Done)
 
 1. `completed` - Confirm both P0 protocol spikes are merged and record the
    isolated branch/worktree and owned paths before implementation.
-2. `in_progress` - Implement immutable HostSessionGrant claims, resource refs,
+2. `completed` - Implement immutable HostSessionGrant claims, resource refs,
    technical limits and a validated HostContextEnvelope in `agent-core`.
-3. `pending` - Add fail-closed issuer/audience/origin/host/expiry/scope/resource
+3. `completed` - Add fail-closed issuer/audience/origin/host/expiry/scope/resource
    contract tests and changed-path static validation.
-4. `pending` - Close the contract without adding JWT/JWKS, API, AG-UI, Trench
+4. `completed` - Close the contract without adding JWT/JWKS, API, AG-UI, Trench
    or runtime wiring.
 
 ### Boundary
@@ -2654,6 +2654,16 @@ the parent migration is `Done`.
   verification and token persistence belong to a later adapter task.
 - The context envelope contains only validated opaque authority data; it never
   becomes Event Store or CopilotKit state.
+
+### Closeout
+
+- Commit `ca59753b` adds the Core models, typed fail-closed errors and 16
+  contract tests. `tests/agent_core` passes `386/386`.
+- Changed-path Ruff, format, Mypy, diff checks and Eval `10/10` pass. The full
+  repository run is `2097 passed, 271 skipped, 2 failed`; both failures are
+  pre-existing baseline defects, including the repository file-size gate.
+- The next successors remain independently gated: Host verifier/registry,
+  AG-UI projection, Surface and Host tool contracts.
 
 ## EMB-PLAN-01 - Zebra Embedded Architecture Consolidation
 

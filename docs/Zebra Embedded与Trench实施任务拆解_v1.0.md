@@ -85,11 +85,11 @@ read-only。
 
 ### EMB-HOST-CON-01 — Generic Host authority contracts
 
-- Status: `In Progress`；Zebra repo；depends on completed `EMB-AGUI-SPIKE-01` and `TRN-CPK-SPIKE-01`。
+- Status: `Done`；Zebra repo；implementation commit `ca59753b`；depends on completed `EMB-AGUI-SPIKE-01` and `TRN-CPK-SPIKE-01`。
 - Branch/worktree: `codex/emb-host-con-01` / `../zebra-agent-emb-host-con-01`。
 - Candidate paths: `packages/agent-core/src/agent_core/domain/host_authority.py`, `tests/agent_core/test_host_authority.py` and registered governance records。
 - Deliverable: HostSessionGrant claims、HostContextEnvelope、ResourceRef、namespace、scope、limits、errors。
-- Acceptance: no Trench imports；invalid issuer/origin/expiry/scope/resource fixtures fail closed。
+- Acceptance: no Trench imports；invalid issuer/origin/expiry/scope/resource fixtures fail closed；16/16 focused tests and 386/386 `agent_core` tests pass。
 
 ### EMB-AGUI-CON-01 — Durable AG-UI projection contract
 

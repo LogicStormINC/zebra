@@ -43,7 +43,7 @@ does not authorize production code, migrations or activation of its successor.
 - `EMB-AGUI-SPIKE-01` is `Done` on `codex/emb-agui-spike-01`; its development-only
   official Python protocol compatibility matrix is integrated. Trench
   `TRN-CPK-SPIKE-01` is also merged to Trench `main` at `5c59b22` with its
-  focused and full checks green. `EMB-HOST-CON-01` is now `In Progress` on
+  focused and full checks green. `EMB-HOST-CON-01` is `Done` on
   `codex/emb-host-con-01`; production AG-UI, CopilotKit/Trench routing and React
   SDK work remain separately gated.
 - `CTX-MEM-01` is `Review` in PR `#198` on
@@ -342,7 +342,7 @@ that the later `EMB-AGUI-CON-01` contract may safely adopt.
 
 ### EMB-HOST-CON-01 - Generic Host Authority Contracts
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / SECURITY / INTEGRATIONS`
 - Depends on: completed `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, and Trench
@@ -373,6 +373,18 @@ technical limits and typed fail-closed errors.
   bounded positive integers with explicit upper ceilings.
 - Focused contract tests cover valid derivation and every rejection family;
   changed-path Ruff, strict Mypy and `git diff --check` pass.
+
+#### Closeout
+
+- Implementation commit: `ca59753b`.
+- `tests/agent_core/test_host_authority.py` passes `16/16`; the full
+  `tests/agent_core` suite passes `386/386`.
+- Changed-path Ruff, format, Mypy and diff checks pass; release Eval passes
+  `10/10`.
+- Full repository validation records `2097 passed, 271 skipped, 2 failed`.
+  The two failures are pre-existing MCP prompt atomicity and file-size-gate
+  baseline defects; the size gate also reports five untouched over-limit files.
+- No JWT/JWKS, API, AG-UI, Trench or runtime wiring was added.
 
 #### Explicit non-goals
 
