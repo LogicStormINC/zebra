@@ -51,19 +51,46 @@
 - The official Docker Hub digest pull remains an external evidence gap; the
   committed Dockerfile default and source pin are unchanged.
 
-## CLOUD-REC-01 - Migration, Backup, Restore And Recovery Gate (Locked)
+## CLOUD-REC-01 - Migration, Backup, Restore And Recovery Gate (Ready)
 
 - Next gate after `CLOUD-COMPOSE-APP-01`: migration/cutover policy, PostgreSQL
   backup/PITR, object restore, fencing/outbox reconciliation and multi-Worker
   failure drills.
-- Current blocker: `CLOUD-AGG-FENCE-01` is in `Review`; no recovery child is
-  activated until its maintainer closeout is recorded.
+- `CLOUD-AGG-FENCE-01` is closed as `Done`; the recovery parent is now ready
+  for independent child claims. Only the first migration child is active next.
 - Planned child cards are `CLOUD-PG-MIG-01`, `CLOUD-REC-BACKUP-01`,
   `CLOUD-REC-RESTORE-01` and `CLOUD-REC-DRILL-01`. Each must have its own
   branch, owner, evidence runner and exact owned paths.
 - Boundary: PostgreSQL remains the only lifecycle/operation fact source; Redis
   is replayable live state; Mem0 is a rebuildable confirmed-memory index. No
   production RPO/RTO, PITR or DR claim is made from local Compose evidence.
+
+## CLOUD-PG-MIG-01 - Canonical SQLite Snapshot And PostgreSQL Cutover (Ready)
+
+1. `pending` - Claim the path-bounded migration child in an isolated worktree;
+   preserve the root `AGENTS.md` and keep all recovery siblings inactive.
+2. `pending` - Implement deterministic SQLite snapshot/export and manifest
+   checksums without mutating the source database.
+3. `pending` - Add restricted PostgreSQL import/rebuild and a unique,
+   namespace-scoped `PREPARED -> VERIFIED -> ACTIVE` cutover guard with
+   fail-closed zero-write behavior.
+4. `pending` - Add the pinned PostgreSQL 17.5 Compose runner, replay,
+   namespace, rollback and transaction-failure evidence, then record exact
+   cleanup and PASS sentinel results.
+5. `pending` - Run changed-path static checks, update the migration evidence
+   document and hand the card to Review without activating API/Worker runtime,
+   Redis, Mem0 or production cutover.
+
+### Boundary
+
+- Owned paths are limited to the PostgreSQL migration-recovery module(s),
+  focused migration tests, `tests/compose/migration_recovery/`,
+  `docs/CLOUD-PG-MIG-01.md` and the registered governance records.
+- SQLite remains the local profile's existing store during this slice; the
+  implementation must not add dual-write, implicit backend selection or a
+  fallback from cloud PostgreSQL to SQLite.
+- Backup/PITR, object restore, fencing/outbox reconciliation and multi-Worker
+  drills remain separate `CLOUD-REC-*` child cards.
 
 ## CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter (Done)
 

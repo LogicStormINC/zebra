@@ -5,12 +5,10 @@
 > Current execution range: local Beta and single-host production foundations are
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
 > `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
-> accepted and closed. The active cloud-mainline slice just closed
-> `CLOUD-AGG-FENCE-REVIEW-01` is the active aggregate fencing gate review after
-> all path-bounded conformance evidence closed; the
-> Handoff authority, dispatch, Workspace/Task and the remaining aggregate
-> evidence successors are `Done`; the aggregate parent is now in `Review` and
-> runtime activation remains gated.
+> accepted and closed. The cloud-mainline aggregate evidence review is closed
+> with `PASS`; `CLOUD-AGG-FENCE-01` is now `Done` as a governance gate. The
+> recovery gate is unlocked for its first path-bounded migration child, while
+> runtime, application wiring and production rollout remain separately gated.
 > Local SQLite Registry work remains deferred. ACP and optional code intelligence
 > remain locked.
 
@@ -67,10 +65,11 @@ does not authorize production code, migrations or activation of its successor.
   owns the separate Zebra migration/API/Worker image and application Compose
   overlay. The base PostgreSQL/Redis/MinIO dependency stack remains an external
   lifecycle, and this card does not activate Redis live routing or aggregate gates.
-- `CLOUD-REC-01` is registered as `Locked`; it is the next recovery evidence
-  gate after the aggregate parent review. It must remain split into migration,
-  backup/PITR, object restore, fencing/outbox reconciliation and multi-Worker
-  drill evidence; no production RPO/RTO or failover claim is implied.
+- `CLOUD-REC-01` is `Ready` after aggregate fencing closeout. It is the next
+  recovery evidence gate and remains split into migration, backup/PITR, object
+  restore, fencing/outbox reconciliation and multi-Worker drill evidence; only
+  `CLOUD-PG-MIG-01` is being claimed for the first implementation slice, and
+  no production RPO/RTO or failover claim is implied.
 - `MEM-MEM0-SPIKE-01` is `Done` on `codex/mem0-contract-spike-01`. The pinned
   OSS REST/Compose contract is recorded and its deterministic provider evidence
   is accepted; real-provider compatibility remains a separate credential gate.
@@ -139,12 +138,12 @@ does not authorize production code, migrations or activation of its successor.
   `CLOSEOUT-OK` for the initial `Planning -> Review` with audit result `BLOCK-GAP`;
   AUTH-01, DISPATCH-01 and their PostgreSQL runners subsequently closed the gaps.
   Local closeout records `PASS`; production runtime selection remains forbidden and
-  the parent `CLOUD-AGG-FENCE-01` remains `Locked`.
+  the parent `CLOUD-AGG-FENCE-01` is now `Done` as a governance gate.
 - `CLOUD-AGG-FENCE-MODEL-TOOL-01` is `Done` on
   `codex/cloud-agg-fence-model-tool-01` at implementation commit `31347989`.
   Its PostgreSQL runner passes `8/8` and the existing Control Plane runner passes
-  `11/11`; the parent aggregate gate and all runtime/application Compose choices
-  remain locked.
+  `11/11`; the parent aggregate gate is closed, while all runtime/application
+  Compose choices remain locked.
 
 ## Context Continuity And Governed Memory Board
 
@@ -1666,14 +1665,14 @@ fact source; Redis remains optional live state and is not selected by startup.
 
 ### CLOUD-REC-01 - Migration, Backup, Restore And Recovery Gate
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: `UNASSIGNED`
 - Suggested role: `SRE / STORAGE / QA`
 - Depends on: `CLOUD-PG-PLAN-01`, `CLOUD-PG-01`, `CLOUD-LEASE-01`, completed
   Artifact/PostgreSQL composition, `CLOUD-COMPOSE-APP-01` (`Done`) and
-  `CLOUD-AGG-FENCE-01` (`Review`, maintainer closeout required)
+  `CLOUD-AGG-FENCE-01` (`Done`)
 - Branch: `TBD`
-- Owned paths: none while `Locked`; implementation must be split into
+- Owned paths: none on the parent; implementation must be split into
   path-bounded child cards before activation
 
 #### Goal
@@ -1695,8 +1694,8 @@ an authority and without claiming production readiness from local Compose alone.
 
 #### Lock reason and acceptance
 
-- The aggregate parent is still in `Review`; no child implementation or
-  successor activation is authorized until that gate is explicitly closed.
+- The aggregate parent is closed, so the first child may be claimed independently;
+  the remaining recovery children stay inactive until their own cards are Ready.
 - Every child must use isolated PostgreSQL/MinIO evidence with deterministic
   cleanup, preserve the single PostgreSQL fact source, and fail closed on
   namespace, epoch, checksum, object or cutover inconsistencies.
@@ -1705,6 +1704,49 @@ an authority and without claiming production readiness from local Compose alone.
   migration authority set.
 - Production RPO/RTO, PITR, failover or DR readiness stays `TBD` until a real
   environment measures and approves it; local evidence alone cannot close GA.
+
+### CLOUD-PG-MIG-01 - Canonical SQLite Snapshot And PostgreSQL Cutover Evidence
+
+- Status: `Ready`
+- Owner: `Codex`
+- Suggested role: `STORAGE / SRE / QA`
+- Depends on: `CLOUD-REC-01` (`Ready`), `CLOUD-PG-PLAN-01` (`Done`),
+  `CLOUD-PG-01` (`Done`) and the existing PostgreSQL migration catalog
+- Branch: `codex/cloud-pg-mig-01`
+- Worktree: `../zebra-agent-cloud-pg-mig-01`
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/` migration
+  recovery module(s) only; `tests/agent_storage/` focused migration/recovery
+  tests; `tests/compose/migration_recovery/` runner and Compose fixture;
+  `docs/CLOUD-PG-MIG-01.md`; and this card's governance records in
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`, `WORKLOG.md`
+
+#### Goal
+
+Provide the smallest reproducible migration evidence slice: a canonical,
+checksummed SQLite snapshot/export contract, restricted PostgreSQL import and
+rebuild checks, a unique `PREPARED -> VERIFIED -> ACTIVE` cutover record, and
+fail-closed writes when the namespace or active cutover is not valid.
+
+#### Acceptance
+
+- SQLite is read-only during export; canonical JSONL ordering, normalization,
+  counts and manifest hashes are deterministic and replayable.
+- Import runs only against an empty PostgreSQL schema with a restricted
+  migration identity, verifies the manifest before writes, and preserves Event
+  ordering before projections/rebuildable indexes.
+- Exactly one active cutover exists per deployment namespace; non-`ACTIVE`,
+  mismatched or duplicate activation attempts perform zero runtime writes.
+- The focused PostgreSQL 17.5 Compose runner proves replay, namespace
+  isolation, rollback/transaction failure and deterministic resource cleanup;
+  it emits `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` only after all checks pass.
+
+#### Explicit non-goals
+
+- No API/Worker runtime selector or SQLite fallback removal beyond the tested
+  cutover guard; no Redis live routing, Mem0 writes, object payload transfer,
+  PITR, production credentials, RPO/RTO or DR claim.
+- Backup/PITR, object restore, fencing/outbox reconciliation and multi-Worker
+  drills remain the separate `CLOUD-REC-*` children.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 
@@ -3773,13 +3815,13 @@ external membership.
 
 ### CLOUD-AGG-FENCE-01 - Full Worker Aggregate Fencing Gate
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `codex`
 - Depends on: PostgreSQL Adapters for every authoritative Worker-owned aggregate,
   merged `CLOUD-LEASE-01`, and approved `CLOUD-AGG-FENCE-PLAN-01` inventory
 - Branch: `codex/cloud-agg-fence-review-01`
 - Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-review-01/zebra-agent`
-- Owned paths: no production paths are authorized by this Review state; the
+- Owned paths: no production paths were authorized by this governance card; the
   evidence and governance paths are owned by `CLOUD-AGG-FENCE-REVIEW-01`.
 - Goal: require ContextLifecycle, Handoff/dispatch, Workspace/Task, Model/Tool run,
   provider continuation/history, Artifact and delivery-audit transactions to
@@ -3790,10 +3832,11 @@ external membership.
   Provider, Artifact, Effect/Artifact and Delivery boundary evidence are all
   `Done` with recorded real PostgreSQL PASS matrices. Delivery is an API
   command lane and is not counted as Worker Lease fencing.
-- Review result: `PASS` for `Locked -> Review`. The evidence is sufficient for
-  maintainer review, but implementation authorization, Runtime/API/Worker
-  profile selection, application Compose, Redis live fan-out and production
-  rollout remain `false`/out of scope.
+- Review result: `PASS`; the maintainer continuation instruction closed the
+  governance gate as `Done`. This closeout authorizes only the separately
+  registered recovery evidence sequence; Runtime/API/Worker profile selection,
+  application Compose, Redis live fan-out and production rollout remain
+  independently gated and out of scope.
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.

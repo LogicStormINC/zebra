@@ -1,15 +1,16 @@
 # Zebra Cloud 主线当前状态与后续工作
 
-> 快照日期：2026-08-04
+> 快照日期：2026-08-05
 > 分支：`zebra-cloud-trench`
-> 当前基线：`62e2de59`
+> 当前基线：`391b754c`
 
 ## 结论
 
 Zebra Cloud 已完成 PostgreSQL 云端事实存储、API/Worker 存储组合、应用 Compose
 和主要聚合能力；迁移/备份/恢复/回滚、多 Worker 故障演练以及 Trench 业务接入仍未
 完成。当前状态是“API/Worker 和主容器组装已能按显式 cloud profile 使用 PostgreSQL，
-Runtime 业务选择、恢复门禁和 Trench 接入尚未完成”。
+aggregate fencing 治理门已关闭，恢复链的首个迁移子任务已 Ready；Runtime 业务选择、
+恢复证据和 Trench 接入尚未完成”。
 
 任务注册表是当前状态的权威来源；本文件是面向项目协作的汇总，不替代
 [`docs/AGENT_TASKS.md`](./AGENT_TASKS.md) 中的任务卡、Owner、Branch 和依赖。
@@ -150,16 +151,16 @@ fence，`model_calls`/`tool_runs` 只是 Event-derived `model_tool_projections` 
    修正后的 PostgreSQL 17.5 runner 通过 `12/12`，不改变 adapter 或 runtime。
 15. `CLOUD-AGG-FENCE-REVIEW-01`：已完成总门禁证据复核，结果 `PASS`；已汇总所有
    path-bounded aggregate PASS 与清理证据。
-16. `CLOUD-AGG-FENCE-01`：已从 `Locked` 转为 `Review`，仅表示证据待维护者批准；
-   不授权 runtime/application Compose、successor 或生产切换。
+16. `CLOUD-AGG-FENCE-01`：总门禁证据已由维护者继续指令收口为 `Done`；该治理
+   closeout 只解锁恢复证据序列，不授权 Runtime/API/Worker 选择或生产切换。
 
 当前 `CLOUD-CONTROL-PLANE-PG-01`、`CLOUD-API-WORKER-PG-01` 与
 `CLOUD-DELIVERY-TXN-PG-01` 均为 `Done`；
 Context conformance 审计及其 semantic successor 均为 `Done`，
 `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` 已完成并为 `Done`，审计结果为
 `PASS`；`CLOUD-AGG-FENCE-HANDOFF-AUTH-01` 已完成授权实现并由独立 sidebar
-以 `CLOSEOUT-OK` 关闭为 `Done`。父 fencing gate 仍为 `Locked`，因为其他 aggregate
- fencing cards 尚未闭合；`CLOUD-AGG-FENCE-DISPATCH-01` 已完成并关闭为 `Done`，
+以 `CLOSEOUT-OK` 关闭为 `Done`。父 fencing gate 已收口为 `Done`；
+`CLOUD-AGG-FENCE-DISPATCH-01` 已完成并关闭为 `Done`，
 `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` 已完成并为 `Done`，其
 `CLOUD-AGG-FENCE-TASK-01` 与 `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01`
  均已完成，不能顺带激活
@@ -171,8 +172,9 @@ Context conformance 审计及其 semantic successor 均为 `Done`，
  事务证据补齐，不改变已实现事务；`CLOUD-AGG-FENCE-DELIVERY-01` 已完成
  command boundary 证据，不改变 command transaction；API/Worker 存储组合已由
 `CLOUD-API-WORKER-PG-01` 完成；应用
-`CLOUD-COMPOSE-APP-01` 已完成应用 Compose 实现并关闭为 `Done`；Runtime 业务
-selector、在线事件路由和 aggregate gate 仍保持独立门禁，不因本次组合任务解锁。
+ `CLOUD-COMPOSE-APP-01` 已完成应用 Compose 实现并关闭为 `Done`；Runtime 业务
+selector、在线事件路由和生产切换仍保持独立门禁。`CLOUD-REC-01` 已由 `Locked`
+转为 `Ready`，当前只领取 `CLOUD-PG-MIG-01`，其余恢复子任务保持未激活。
 
 ### Docker 应用层与在线事件
 
@@ -304,16 +306,18 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
    fencing conformance；Artifact `13/13`、Effect `7/7`、Delivery `12/12`，
    所有 runner 均完成清理。
 14. [x] 完成 `CLOUD-AGG-FENCE-REVIEW-01`；汇总全部矩阵为 `PASS`，
-   `CLOUD-AGG-FENCE-01` 从 `Locked` 转为 `Review`，不授权实现或 runtime。
+   `CLOUD-AGG-FENCE-01` 已由维护者继续指令收口为 `Done`，仅解锁恢复证据。
 15. [x] 完成 `CLOUD-LIVE-01` 的 Redis live fan-out Port、Adapter 和隔离
    Compose 证据并合并到主线。
 16. [x] 完成 `CLOUD-COMPOSE-APP-01` 的独立 migration/API/Worker Compose overlay
    和宿主 smoke 证据；默认 mirror runner 返回
    `ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`，不接入 Redis live routing。
-17. 完成 `CLOUD-REC-01` 迁移、备份、恢复、回滚和多 Worker E2E 门禁；该门禁
-   仍需 aggregate parent Review 收口后单独登记/激活。
-18. 再激活 Host/AG-UI/Trench read-only vertical slice。
-19. 之后才进入 Frontend、Analysis、Writeback 和 GA。
+17. [ ] 完成 `CLOUD-PG-MIG-01` 的 SQLite 快照、PostgreSQL 导入和 cutover
+   证据；先保持 `CLOUD-REC-01` 其余备份/恢复/演练子任务未激活。
+18. [ ] 完成 `CLOUD-REC-01` 的备份、恢复、回滚和多 Worker E2E 门禁；该门禁
+   不能以本地 Compose 证据宣称生产 RPO/RTO 或 DR 就绪。
+19. 再激活 Host/AG-UI/Trench read-only vertical slice。
+20. 之后才进入 Frontend、Analysis、Writeback 和 GA。
 
 ## 当前治理门
 
@@ -321,11 +325,12 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 closeout：Owner、Branch、Worktree、Owned paths 和 v13/v15 迁移所有权均已登记。
 当前 `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` 与
 `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` 均已完成；
-`CLOUD-AGG-FENCE-01` 的 path-bounded evidence 已全部闭合，当前处于 `Review`；
-在维护者批准前不授权其 successor 或 Runtime 选择。`CLOUD-COMPOSE-APP-01` 已
+`CLOUD-AGG-FENCE-01` 的 path-bounded evidence 已全部闭合，当前为 `Done`；
+该 closeout 只授权恢复证据 successor，不授权 Runtime 选择。`CLOUD-COMPOSE-APP-01` 已
 完成并关闭为 `Done`，但该任务不改变 aggregate parent 或 Runtime 门禁。
 `CLOUD-CONTROL-PLANE-PG-01` 已在所有 aggregate PostgreSQL adapter/read-composition
 依赖闭合后由侧边栏批准激活，并在实现、Compose 验证和 closeout 后登记为 `Done`；
 其 v14 shared records 与 cloud-only composition 已交付。其余
 SQLite Registry、Runtime backend selection、Provider HTTP、Desktop、Mem0 consumer
-以及迁移/恢复演练仍保持隔离；Redis live adapter 已完成但未接入 API/Worker 启动。
+以及迁移/恢复演练仍保持隔离；`CLOUD-REC-01` 已 `Ready`，当前仅领取
+`CLOUD-PG-MIG-01`；Redis live adapter 已完成但未接入 API/Worker 启动。
