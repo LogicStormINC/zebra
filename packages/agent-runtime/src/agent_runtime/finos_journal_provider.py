@@ -338,13 +338,27 @@ class FinosJournalProvider:
         object.__setattr__(self, "grant", self.grant.strip())
         object.__setattr__(self, "contract_version", contract_version)
 
-    def register(self, registry: ToolRegistry) -> None:
+    def register(
+        self,
+        registry: ToolRegistry,
+        *,
+        allow_journal_save: bool = True,
+    ) -> None:
         specs = {
             FINOS_JOURNAL_V1_CONTRACT: FINOS_TOOL_SPECS,
             FINOS_JOURNAL_V2_CONTRACT: FINOS_V2_TOOL_SPECS,
             FINOS_JOURNAL_V3_CONTRACT: FINOS_V3_TOOL_SPECS,
         }[self.contract_version]
         for spec in specs:
+            if (
+                not allow_journal_save
+                and spec.side_effect == "journal_save"
+            ):
+                # Read-only policy always DENYs finos.journals.save with no
+                # recovery; exposing it only invites a guaranteed session
+                # failure. Saving stays a user-initiated action (the browser
+                # message action), never a model tool call.
+                continue
             tags = (
                 (*spec.tags, READ_ONLY_EFFECT_TAG)
                 if spec.side_effect == "read_only"

@@ -142,6 +142,7 @@ def run_local_harness(
         model_gateway=model_gateway,
         tool_profile=tool_profile,
         network_profile=network_profile,
+        policy_profile=policy_profile,
         web_search_endpoint=web_search_endpoint,
         skill_roots=skill_roots,
         skills_state=skills_state,
@@ -229,6 +230,7 @@ class LocalToolGateway(ToolGatewayPort):
         research_child_limit: int = DEFAULT_RESEARCH_CHILD_LIMIT,
         tool_profile: ToolProfile = ToolProfile.GENERAL,
         network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
+        policy_profile: PolicyProfile = PolicyProfile.READ_ONLY,
         web_gateway_transport: WebGatewayTransport | None = None,
         web_search_endpoint: str | None = None,
         web_search_transport: WebSearchTransport | None = None,
@@ -258,6 +260,7 @@ class LocalToolGateway(ToolGatewayPort):
         if any(not name for name in self._disabled_mcp_tools):
             raise ValueError("disabled MCP tool names must not be blank")
         self._network_profile = network_profile
+        self._policy_profile = policy_profile
         self._workspace = LocalWorkspace(workspace_root)
         self._workspace.ensure()
         self._runtime = runtime or LocalRuntime()
@@ -308,7 +311,12 @@ class LocalToolGateway(ToolGatewayPort):
             web_pipeline_v2=web_pipeline_v2,
         )
         if finos_journal_provider is not None:
-            finos_journal_provider.register(registry)
+            finos_journal_provider.register(
+                registry,
+                allow_journal_save=(
+                    self._policy_profile is not PolicyProfile.READ_ONLY
+                ),
+            )
         output_contract_tool = ArtifactOutputContractEmitTool()
         registry.register(
             output_contract_tool.contract,

@@ -10,6 +10,7 @@ from agent_core.domain.identifiers import new_session_id, new_tool_call_id
 from agent_core.domain.tools import ToolCall, ToolCallStatus
 from agent_runtime import FinosJournalProvider, LocalToolGateway
 from agent_runtime.finos_journal_provider import MAX_RESPONSE_BYTES, UrllibFinosTransport
+from agent_security import PolicyProfile
 from agent_storage import SQLiteEffectLedger
 from agent_tools import EffectGuardedToolGateway
 
@@ -84,7 +85,11 @@ def test_fixed_business_catalog_hides_authority_and_uses_fixed_paths_and_schemas
         grant=grant,
         transport=transport,
     )
-    gateway = LocalToolGateway(tmp_path, finos_journal_provider=provider)
+    gateway = LocalToolGateway(
+        tmp_path,
+        finos_journal_provider=provider,
+        policy_profile=PolicyProfile.WORKSPACE_WRITE,
+    )
     expected = (
         (
             "finos.journals.list",
@@ -170,7 +175,11 @@ def test_v2_business_catalog_adds_typed_proposal_and_journal_save_tools(
         contract_version="finos.journals.v2",
         transport=transport,
     )
-    gateway = LocalToolGateway(tmp_path, finos_journal_provider=provider)
+    gateway = LocalToolGateway(
+        tmp_path,
+        finos_journal_provider=provider,
+        policy_profile=PolicyProfile.WORKSPACE_WRITE,
+    )
     proposal_name = "finos.account_changes.propose"
     definitions = {
         item.name: item.parameters for item in gateway.model_tools if item.name.startswith("finos.")
@@ -223,6 +232,32 @@ def test_v2_business_catalog_adds_typed_proposal_and_journal_save_tools(
     }
 
 
+def test_read_only_task_never_sees_journal_save_tool(tmp_path: Path) -> None:
+    """FinOS tasks run under read-only policy, which always DENYs
+    finos.journals.save with no recovery: exposing it would invite a
+    guaranteed session failure. Saving stays a user-initiated message action;
+    the model must not see the save tool, while account-changes propose (the
+    v2 typed capability) stays visible."""
+    transport = RecordingTransport()
+    provider = FinosJournalProvider(
+        base_url="https://finos.internal",
+        task_id="11111111-1111-4111-8111-111111111111",
+        grant="opaque-task-grant",
+        contract_version="finos.journals.v2",
+        transport=transport,
+    )
+    gateway = LocalToolGateway(
+        tmp_path,
+        finos_journal_provider=provider,
+        policy_profile=PolicyProfile.READ_ONLY,
+    )
+    names = {item.name for item in gateway.model_tools}
+    assert "finos.journals.save" not in names
+    assert "finos.account_changes.propose" in names
+    assert "finos.journals.list" in names
+
+
+
 def test_v2_journals_save_tool_posts_typed_command_to_the_shared_handler(
     tmp_path: Path,
 ) -> None:
@@ -235,7 +270,11 @@ def test_v2_journals_save_tool_posts_typed_command_to_the_shared_handler(
         contract_version="finos.journals.v2",
         transport=transport,
     )
-    gateway = LocalToolGateway(tmp_path, finos_journal_provider=provider)
+    gateway = LocalToolGateway(
+        tmp_path,
+        finos_journal_provider=provider,
+        policy_profile=PolicyProfile.WORKSPACE_WRITE,
+    )
     definition = next(
         item.parameters
         for item in gateway.model_tools
