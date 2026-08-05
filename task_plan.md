@@ -116,7 +116,9 @@
    to Review. Artifact, Effect/Delivery and Provider continuation
    remain blocked until their legacy-to-cloud authority fields are provable; the
    mapping audit and permitted follow-up paths are recorded in
-   `docs/CLOUD-PG-MIG-01.md`.
+   `docs/CLOUD-PG-MIG-01.md`. Focused PostgreSQL regressions now prove these
+   three legacy tables fail before Event writes; this evidence does not activate
+   a mapping or close the pending projection slice.
 
 ### Boundary
 

@@ -44,13 +44,16 @@ Redis 或 Mem0 变成云端事实源。
 
 ## 已验证
 
-- 本地快照/完整性单测：`2 passed, 18 skipped`（无外部 PostgreSQL 时 PG 用例跳过）。
-- PostgreSQL 17.5 Compose runner：`26 passed`，输出
+- 本地快照/完整性单测：`2 passed, 21 skipped`（无外部 PostgreSQL 时 PG 用例跳过）。
+- PostgreSQL 17.5 Compose runner：`29 passed`，输出
   `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`。
 - runner 清理了容器、volume 和 network；迁移目录 v1-v16 的 checksum 与并发
   migration runner 一并复核。
 - changed-path Ruff、strict Mypy、`git diff --check` 通过；迁移模块已按职责拆分，
   避免继续堆叠在单一文件中。
+- 新增三项 legacy authority 零写入回归：快照包含 `artifact_payloads`、
+  `effect_ledger` 或 `provider_continuation_artifacts` 时，在 Event 写入前拒绝，
+  PostgreSQL 目标保持为空。
 
 ## 尚未完成
 
@@ -79,6 +82,11 @@ Redis 或 Mem0 变成云端事实源。
 Delivery Audit 是本卡中已解决的例外：snapshot v2 显式导出
 `__zebra_source_rowid`，按源顺序插入并验证 PostgreSQL `audit_id`；rowid 仅作
 迁移顺序证据，不作业务身份。
+
+三类阻塞表现在由 focused PostgreSQL 回归锁定为同一 fail-closed 边界：它们不是
+“先导入再补字段”的暂存 authority，任何一类出现都会阻止整个快照导入，并在
+Event 写入前保持目标零写入。原始记录仍保留在带 manifest 的 SQLite snapshot 中，
+可供后续版本化 export 或人工 quarantine/rebuild 使用。
 
 允许的后续路径是先扩展版本化 snapshot/export 合同并生成可审计的历史证据，
 或建立明确的 legacy quarantine/rebuild 流程；在此之前 importer 对这些表继续

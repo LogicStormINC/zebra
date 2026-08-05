@@ -1743,9 +1743,9 @@ fail-closed writes when the namespace or active cutover is not valid.
 #### Current slice evidence
 
 - SQLite canonical snapshot/export and manifest tamper detection are implemented;
-  the local matrix is `2 passed, 18 skipped` without PostgreSQL.
+  the local matrix is `2 passed, 21 skipped` without PostgreSQL.
 - Migration v16 adds the unique ACTIVE cutover guard; the PostgreSQL 17.5
-  runner passes `26/26` with deterministic cleanup and the registered PASS
+  runner passes `29/29` with deterministic cleanup and the registered PASS
   sentinel. Event-first import, Session/Workspace/Task rebuild, Model/Tool
   projection replay, Context capsule/pointer verification and fenced Handoff
   operation/envelope/dispatch replay are covered. SQLite lineage is checked
@@ -1755,8 +1755,9 @@ fail-closed writes when the namespace or active cutover is not valid.
   rows are imported only after source scope/Event and content/provenance checks.
   Snapshot v2 carries an explicit SQLite source rowid for Delivery Audit; rows
   are inserted in that order so PostgreSQL `audit_id` preserves the local read
-  contract. Artifact, Effect/Delivery, Provider continuation and runtime write
-  wiring keep this card in progress.
+  contract. Focused zero-write regressions reject legacy Artifact, Effect and
+  Provider continuation tables before any Event write; their authority mapping
+  and runtime write wiring keep this card in progress.
 
 #### Explicit non-goals
 

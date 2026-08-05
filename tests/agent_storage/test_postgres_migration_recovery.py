@@ -200,6 +200,52 @@ def test_event_import_rebuilds_workspace_projection(isolated_dsn: str, tmp_path:
         assert task[0] == task[1]
 
 
+@pytest.mark.parametrize(
+    "legacy_authority_table",
+    ("artifact_payloads", "effect_ledger", "provider_continuation_artifacts"),
+)
+def test_event_import_rejects_legacy_authority_tables_before_writes(
+    isolated_dsn: str,
+    tmp_path: Path,
+    legacy_authority_table: str,
+) -> None:
+    """Legacy rows cannot be promoted without their cloud authority bindings."""
+    source = tmp_path / f"{legacy_authority_table}.sqlite"
+    event_store = SQLiteEventStore(source)
+    event_store.append(
+        SessionEvent.create(
+            session_id=new_session_id(),
+            sequence=0,
+            event_type=EventType.SESSION_CREATED,
+            actor=EventActor.SYSTEM,
+            payload={"title": "blocked legacy authority"},
+        )
+    )
+    with sqlite3.connect(source) as connection:
+        connection.execute(
+            f'CREATE TABLE "{legacy_authority_table}" (marker TEXT NOT NULL)'
+        )
+        connection.execute(
+            f'INSERT INTO "{legacy_authority_table}" VALUES (?)',
+            ("legacy-row",),
+        )
+    snapshot_dir = tmp_path / "snapshot"
+    write_sqlite_snapshot(
+        export_sqlite_snapshot(source, table_names=("session_events", legacy_authority_table)),
+        snapshot_dir,
+    )
+
+    with pytest.raises(MigrationImportError, match=legacy_authority_table):
+        import_sqlite_event_snapshot(
+            snapshot_dir,
+            isolated_dsn,
+            deployment_namespace="tenant-a",
+            importer_identity="zebra-postgres-migration-v1",
+        )
+    with psycopg.connect(isolated_dsn) as connection:
+        assert connection.execute("SELECT count(*) FROM session_events").fetchone() == (0,)
+
+
 def test_event_import_requires_restricted_identity(isolated_dsn: str, tmp_path: Path) -> None:
     source = tmp_path / "source.sqlite"
     with sqlite3.connect(source) as connection:

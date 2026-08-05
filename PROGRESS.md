@@ -81,10 +81,11 @@
   verification, and fenced Handoff operation/envelope/dispatch replay with
   rebuilt-lineage checks, plus namespace-scoped idempotency and governed Memory
   replay, and rowid-evidenced Delivery Audit replay through snapshot v2. The
-  PostgreSQL 17.5 runner passes `26/26` with
-  `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and deterministic cleanup; Artifact,
-  Effect/Delivery, Provider continuation and runtime ACTIVE
-  write wiring remain gated.
+  PostgreSQL 17.5 runner passes `29/29` with
+  `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and deterministic cleanup. New
+  zero-write regressions reject legacy Artifact, Effect and Provider
+  continuation tables before Event writes; their cloud authority mappings and
+  runtime ACTIVE write wiring remain gated.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.
   Its direct Task authority gap is implemented by `CLOUD-AGG-FENCE-TASK-01` at

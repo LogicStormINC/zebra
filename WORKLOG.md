@@ -7904,3 +7904,15 @@ actual byte access.
 - Recorded the permitted next paths: versioned snapshot/export evidence or an
   explicit legacy quarantine/rebuild flow. Until then the importer remains
   unsupported-table fail-closed and the migration target remains zero-write.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 legacy authority zero-write regression
+
+- Added a parameterized PostgreSQL regression for the three remaining legacy
+  authority tables: `artifact_payloads`, `effect_ledger` and
+  `provider_continuation_artifacts`.
+- Each table is paired with a valid Session Event in the snapshot; the importer
+  rejects the snapshot before Event append and the target remains empty. This
+  confirms that status-name similarity cannot create a partial cloud authority.
+- Local focused matrix: `2 passed, 21 skipped`; PostgreSQL 17.5 Compose runner:
+  `29 passed`, `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`, with container, volume and
+  network cleanup. No authority mapping was activated.
