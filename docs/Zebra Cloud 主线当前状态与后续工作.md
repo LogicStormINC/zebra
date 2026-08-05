@@ -7,10 +7,10 @@
 ## 结论
 
 Zebra Cloud 已完成 PostgreSQL 云端事实存储、API/Worker 存储组合、应用 Compose
-和主要聚合能力；迁移/备份/恢复/回滚、多 Worker 故障演练以及 Trench 业务接入仍未
-完成。当前状态是“API/Worker 和主容器组装已能按显式 cloud profile 使用 PostgreSQL，
-aggregate fencing 治理门已关闭，恢复链的首个迁移子任务正在实施；Runtime 业务选择、
-恢复证据和 Trench 接入尚未完成”。
+和主要聚合能力；恢复/回滚、多 Worker 故障演练以及 Trench 业务接入仍未完成。
+迁移与开发环境逻辑备份子任务已经完成，当前状态是“API/Worker 和主容器组装已能按
+显式 cloud profile 使用 PostgreSQL，aggregate fencing 治理门已关闭，恢复父门仍在
+推进；Runtime 业务选择、生产恢复证据和 Trench 接入尚未完成”。
 
 任务注册表是当前状态的权威来源；本文件是面向项目协作的汇总，不替代
 [`docs/AGENT_TASKS.md`](./AGENT_TASKS.md) 中的任务卡、Owner、Branch 和依赖。
@@ -174,9 +174,10 @@ Context conformance 审计及其 semantic successor 均为 `Done`，
 `CLOUD-API-WORKER-PG-01` 完成；应用
  `CLOUD-COMPOSE-APP-01` 已完成应用 Compose 实现并关闭为 `Done`；Runtime 业务
 selector、在线事件路由和生产切换仍保持独立门禁。`CLOUD-REC-01` 已进入
-`In Progress`，`CLOUD-PG-MIG-01` 已完成 `29/29` 迁移证据，当前激活
-`CLOUD-REC-BACKUP-01`；Artifact、Effect/Delivery 和 Provider continuation
-旧表仍以已收口的 fail-closed quarantine 边界保留，其余恢复子任务保持未激活。
+`In Progress`，`CLOUD-PG-MIG-01` 已完成 `29/29` 迁移证据，
+`CLOUD-REC-BACKUP-01` 已完成开发环境逻辑备份/恢复证据；Artifact、Effect/Delivery
+和 Provider continuation 旧表仍以已收口的 fail-closed quarantine 边界保留，其余
+恢复子任务保持未激活。
 
 ### Docker 应用层与在线事件
 
@@ -265,7 +266,7 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 ## 后续实施顺序
 
 以下顺序沿用现有任务注册表；Delivery、Context conformance、Handoff/dispatch
-和 aggregate fencing 均已完成，当前推进 `CLOUD-PG-MIG-01` 迁移证据，父门禁
+和 aggregate fencing 均已完成，迁移与开发环境逻辑备份证据已完成，恢复父门禁
 仍受依赖约束：
 
 1. [x] 关闭 `CLOUD-PROVIDER-CONT-PG-PLAN-01`，冻结 authority identity、
@@ -334,6 +335,6 @@ closeout：Owner、Branch、Worktree、Owned paths 和 v13/v15 迁移所有权�
 依赖闭合后由侧边栏批准激活，并在实现、Compose 验证和 closeout 后登记为 `Done`；
 其 v14 shared records 与 cloud-only composition 已交付。其余
 SQLite Registry、Runtime backend selection、Provider HTTP、Desktop、Mem0 consumer
-以及迁移/恢复演练仍保持隔离；`CLOUD-REC-01` 已 `In Progress`，当前激活
-`CLOUD-REC-BACKUP-01`，其逻辑备份/恢复证据不构成生产 PITR/RPO/RTO 声明；
+以及迁移/恢复演练仍保持隔离；`CLOUD-REC-01` 已 `In Progress`，
+`CLOUD-REC-BACKUP-01` 已 `Done`，其逻辑备份/恢复证据不构成生产 PITR/RPO/RTO 声明；
 Redis live adapter 已完成但未接入 API/Worker 启动。

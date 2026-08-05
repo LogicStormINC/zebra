@@ -65,11 +65,10 @@ does not authorize production code, migrations or activation of its successor.
   owns the separate Zebra migration/API/Worker image and application Compose
   overlay. The base PostgreSQL/Redis/MinIO dependency stack remains an external
   lifecycle, and this card does not activate Redis live routing or aggregate gates.
-- `CLOUD-REC-01` is `Ready` after aggregate fencing closeout. It is the next
-  recovery evidence gate and remains split into migration, backup/PITR, object
-  restore, fencing/outbox reconciliation and multi-Worker drill evidence; only
-  `CLOUD-PG-MIG-01` is being claimed for the first implementation slice, and
-  no production RPO/RTO or failover claim is implied.
+- `CLOUD-REC-01` is `In Progress` after aggregate fencing closeout. Its
+  migration and logical-backup children are `Done`; object restore,
+  fencing/outbox reconciliation and multi-Worker drill evidence remain separate
+  inactive gates. No production RPO/RTO or failover claim is implied.
 - `MEM-MEM0-SPIKE-01` is `Done` on `codex/mem0-contract-spike-01`. The pinned
   OSS REST/Compose contract is recorded and its deterministic provider evidence
   is accepted; real-provider compatibility remains a separate credential gate.
@@ -1685,8 +1684,9 @@ an authority and without claiming production readiness from local Compose alone.
 
 1. `CLOUD-PG-MIG-01`: canonical SQLite snapshot/export/import policy, cutover
    manifest, unique `ACTIVE` record and fail-closed runtime write checks.
-2. `CLOUD-REC-BACKUP-01`: PostgreSQL logical/physical backup and PITR evidence;
-   platform-specific credentials and retention remain external to Zebra.
+2. `CLOUD-REC-BACKUP-01`: development-only PostgreSQL logical backup
+   portability; physical backup/PITR, credentials and retention remain external
+   to this child.
 3. `CLOUD-REC-RESTORE-01`: fresh-instance restore, S3-compatible Artifact
    manifest/checksum validation, Redis rebuild and Lease epoch/fencing reset.
 4. `CLOUD-REC-DRILL-01`: rollback-versus-restore runbook, outbox reconciliation,
@@ -1694,10 +1694,9 @@ an authority and without claiming production readiness from local Compose alone.
 
 #### Lock reason and acceptance
 
-- The aggregate parent is closed, so the first child may be claimed independently;
-  `CLOUD-PG-MIG-01` is now `Done` and `CLOUD-REC-BACKUP-01` is the only active
-  recovery child; the remaining recovery children stay inactive until their own
-  cards are Ready.
+- The aggregate parent is closed, so children may be claimed independently;
+  `CLOUD-PG-MIG-01` and `CLOUD-REC-BACKUP-01` are now `Done`; the remaining
+  recovery children stay inactive until their own cards are Ready.
 - Every child must use isolated PostgreSQL/MinIO evidence with deterministic
   cleanup, preserve the single PostgreSQL fact source, and fail closed on
   namespace, epoch, checksum, object or cutover inconsistencies.
@@ -1778,7 +1777,7 @@ fail-closed writes when the namespace or active cutover is not valid.
 
 ### CLOUD-REC-BACKUP-01 - PostgreSQL Logical Backup And Restore Evidence
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `SRE / STORAGE / QA`
 - Depends on: `CLOUD-PG-MIG-01` (`Done`), `CLOUD-REC-01` (`In Progress`),
@@ -1809,6 +1808,17 @@ physical PITR or production recovery readiness.
   checks pass and removes the container, volume, network and temporary archive.
 - Physical base backup, WAL archive, PITR, credentials, object restore, RPO/RTO
   and DR readiness remain explicit non-goals.
+
+#### Closeout
+
+- The isolated PostgreSQL 17.5 runner passed `RECOVERY_BACKUP_SEED=PASS
+  migrations=16 events=1` and `RECOVERY_BACKUP_VERIFY=PASS migrations=16
+  events=1` after restoring a non-empty custom archive.
+- The SHA-256 manifest check passed and the runner emitted
+  `ZEBRA_PG_RECOVERY_BACKUP_TEST_RESULT=PASS`; the container, volume, network
+  and temporary archive were cleaned up.
+- `CLOUD-REC-BACKUP-01` is complete; this child does not activate runtime cloud
+  writes, physical PITR, object restore, RPO/RTO or DR readiness.
 
 #### Explicit non-goals
 
@@ -1888,7 +1898,7 @@ object version, dispatch evidence or namespace authority from unrelated rows.
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
-- Depends on: `CLOUD-PG-MIG-01` (`In Progress`),
+- Depends on: `CLOUD-PG-MIG-01` (`Done`),
   `CLOUD-PG-MIG-LEGACY-CON-01` (`Done`), `CLOUD-ART-PAYLOAD-PG-01`
   (`Done`) and `CLOUD-AGG-FENCE-ARTIFACT-01` (`Done`)
 - Branch: `codex/cloud-pg-mig-legacy-artifact-01`
@@ -1942,16 +1952,15 @@ PostgreSQL `artifact_payload_metadata` authority.
   the quarantine reloads successfully afterward.
 - Independent review found no blocking issues. The child was merged into
   `codex/cloud-pg-mig-01` at `bed02e4a` and is now `Done`; this closes only the
-  path-bounded Artifact quarantine slice. The parent migration remains
-  `In Progress`, and Effect/Delivery and Provider continuation successors remain
-  unregistered and inactive.
+  path-bounded Artifact quarantine slice. The parent migration is now `Done`,
+  and the other legacy successors are independently closed below.
 
 ### CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01 - Effect/Delivery Legacy Export And Quarantine
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
-- Depends on: `CLOUD-PG-MIG-01` (`In Progress`),
+- Depends on: `CLOUD-PG-MIG-01` (`Done`),
   `CLOUD-PG-MIG-LEGACY-CON-01` (`Done`),
   `CLOUD-DELIVERY-TXN-PG-01` (`Done`) and
   `CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01` (`Done`)
@@ -2005,16 +2014,15 @@ PostgreSQL `effect_outbox` authority.
   quarantine reloads successfully afterward.
 - Independent review found no blocking issues. The child was merged into
   `codex/cloud-pg-mig-01` at `62d2e601` and is now `Done`; this closes only the
-  path-bounded Effect/Delivery quarantine slice. The parent migration remains
-  `In Progress`, and Provider continuation is now activated in its own child
-  card below.
+  path-bounded Effect/Delivery quarantine slice. Provider continuation was
+  activated and is independently closed in its own child card below.
 
 ### CLOUD-PG-MIG-LEGACY-PROVIDER-01 - Provider Continuation Legacy Export And Quarantine
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
-- Depends on: `CLOUD-PG-MIG-01` (`In Progress`),
+- Depends on: `CLOUD-PG-MIG-01` (`Done`),
   `CLOUD-PG-MIG-LEGACY-CON-01` (`Done`) and
   `CLOUD-PROVIDER-CONT-PG-01` (`Done`)
 - Branch: `codex/cloud-pg-mig-legacy-provider-01`
@@ -2067,8 +2075,8 @@ opaque payload bytes into fenced PostgreSQL Provider Continuation authority.
   empty, and the quarantine reloads successfully afterward.
 - Independent review found no blocking issues. The child was merged into
   `codex/cloud-pg-mig-01` at `5f275d4b` and is now `Done`; this closes only the
-  path-bounded Provider Continuation quarantine slice. The parent migration
-  remains `In Progress`.
+  path-bounded Provider Continuation quarantine slice. The parent migration is
+  `Done`.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 

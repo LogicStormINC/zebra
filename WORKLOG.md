@@ -8069,3 +8069,22 @@ actual byte access.
   `codex/cloud-rec-backup-01`, limited to logical `pg_dump`/`pg_restore`,
   checksum manifest and fresh-database verification. Physical PITR/WAL,
   production credentials, RPO/RTO and DR claims remain out of scope.
+
+## 2026-08-05 - CLOUD-REC-BACKUP-01 logical portability closeout
+
+- Added the path-bounded PostgreSQL 17.5 recovery-backup Compose runner and
+  verifier on `codex/cloud-rec-backup-01`. It seeds one deterministic
+  namespace-scoped Event, dumps a non-empty custom archive with
+  `--no-owner --no-privileges`, records and verifies a SHA-256 manifest, and
+  restores into a fresh `template0` database.
+- The runner passed `RECOVERY_BACKUP_SEED=PASS migrations=16 events=1`,
+  `RECOVERY_BACKUP_VERIFY=PASS migrations=16 events=1`,
+  `RECOVERY_BACKUP_MANIFEST=PASS` for a non-empty archive (159,803 bytes in the
+  final merged-branch rerun), and
+  `ZEBRA_PG_RECOVERY_BACKUP_TEST_RESULT=PASS`; all Compose and temporary
+  resources were cleaned up. Ruff, strict Mypy, Bash syntax and diff checks
+  passed.
+- Child commits `3b62e593` and `b8a82f21` were fast-forward merged into the
+  parent migration branch at `b8a82f21`. `CLOUD-REC-BACKUP-01` is now `Done`;
+  physical PITR/WAL, object restore, RPO/RTO, DR and the remaining recovery
+  children stay out of scope.

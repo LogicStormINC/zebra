@@ -56,9 +56,9 @@
 - Next gate after `CLOUD-COMPOSE-APP-01`: migration/cutover policy, PostgreSQL
   backup/PITR, object restore, fencing/outbox reconciliation and multi-Worker
   failure drills.
-- `CLOUD-AGG-FENCE-01` is closed as `Done`; the recovery parent is now active
-  for independent child claims. Migration is closed and the first backup child
-  is active next.
+- `CLOUD-AGG-FENCE-01` is closed as `Done`; the recovery parent remains active
+  for independent child claims. Migration and the first logical-backup child are
+  closed; restore and drill children remain inactive.
 - Planned child cards are `CLOUD-PG-MIG-01`, `CLOUD-REC-BACKUP-01`,
   `CLOUD-REC-RESTORE-01` and `CLOUD-REC-DRILL-01`. Each must have its own
   branch, owner, evidence runner and exact owned paths.
@@ -122,16 +122,23 @@ Closeout: the focused local migration matrix is `2 passed, 21 skipped` without
 PostgreSQL; the PostgreSQL 17.5 runner passes `29/29`, emits
 `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`, and cleans its container, volume and
 network. Changed-path Ruff/Mypy and diff checks pass. `CLOUD-PG-MIG-01` is
-closed; runtime cutover and backup/recovery gates remain separate.
+closed; runtime cutover and the remaining recovery gates remain separate.
 
-### CLOUD-REC-BACKUP-01 - PostgreSQL Logical Backup And Restore Evidence (In Progress)
+### CLOUD-REC-BACKUP-01 - PostgreSQL Logical Backup And Restore Evidence (Done)
 
-1. `in_progress` - Freeze the development backup/restore evidence contract and
+1. `completed` - Freeze the development backup/restore evidence contract and
    exact source/restore identity boundary.
-2. `pending` - Add a deterministic PostgreSQL 17.5 logical dump, checksum
+2. `completed` - Add a deterministic PostgreSQL 17.5 logical dump, checksum
    manifest and fresh-database restore verification without claiming PITR.
-3. `pending` - Record cleanup, sentinel output and the external physical
+3. `completed` - Record cleanup, sentinel output and the external physical
    backup/WAL/PITR boundary for the recovery parent.
+
+Closeout: the isolated PostgreSQL 17.5 runner seeds one namespace-scoped Event,
+creates a non-empty custom archive, validates its SHA-256 manifest, restores to
+a fresh database, and passes migration/schema/count/namespace-read checks.
+It emits `ZEBRA_PG_RECOVERY_BACKUP_TEST_RESULT=PASS` and cleans its volume,
+network and temporary files. Physical PITR/WAL, object restore, RPO/RTO and DR
+readiness remain explicit non-goals.
 
 ### Boundary
 
@@ -162,8 +169,8 @@ closed; runtime cutover and backup/recovery gates remain separate.
 Closeout: all three legacy successor children are `Done` with independent
 field matrices, manifest-bound quarantine artifacts, zero-write PostgreSQL
 preflights, and cleaned PostgreSQL 17.5 runners. The governance parent is
-closed; `CLOUD-PG-MIG-01` remains `In Progress` for its separate migration and
-runtime gates.
+closed; `CLOUD-PG-MIG-01` is also `Done`, while runtime and recovery gates remain
+separate.
 
 ### CLOUD-PG-MIG-LEGACY-ARTIFACT-01 - Artifact Legacy Export And Quarantine (Done)
 
@@ -219,7 +226,7 @@ the parent by `5f275d4b`.
 Post-merge local focused matrix is `4 passed, 1 skipped`; PostgreSQL 17.5 runner
 is `5 passed` with the required PASS sentinel and container/volume/network
 cleanup. This closes the path-bounded Provider Continuation quarantine slice;
-the parent migration remains `In Progress`.
+the parent migration is `Done`.
 
 ### Boundary
 
