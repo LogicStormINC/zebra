@@ -147,6 +147,25 @@ def test_artifact_quarantine_tampering_fails_closed(tmp_path: Path) -> None:
         load_artifact_quarantine(output)
 
 
+def test_artifact_quarantine_rejects_nonfinite_json(tmp_path: Path) -> None:
+    source = tmp_path / "source.sqlite"
+    _legacy_source(source)
+    output = tmp_path / "quarantine"
+    write_artifact_quarantine(
+        build_artifact_quarantine(
+            export_sqlite_snapshot(source, table_names=("artifact_payloads",))
+        ),
+        output,
+    )
+    records = (output / "records.jsonl").read_text(encoding="utf-8")
+    (output / "records.jsonl").write_text(
+        records.replace(',12,"active"', ',NaN,"active"', 1), encoding="utf-8"
+    )
+
+    with pytest.raises(ArtifactQuarantineError, match="malformed"):
+        load_artifact_quarantine(output)
+
+
 def test_artifact_quarantine_requires_source_table(tmp_path: Path) -> None:
     source = tmp_path / "source.sqlite"
     with sqlite3.connect(source) as connection:

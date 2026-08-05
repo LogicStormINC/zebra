@@ -122,7 +122,10 @@ def load_artifact_quarantine(directory: str | Path) -> ArtifactQuarantine:
     """Load and verify a quarantine artifact before any rebuild decision."""
     root = Path(directory)
     try:
-        manifest_data = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+        manifest_data = json.loads(
+            (root / "manifest.json").read_text(encoding="utf-8"),
+            parse_constant=_reject_json_constant,
+        )
         lines = (root / "records.jsonl").read_text(encoding="utf-8").splitlines()
     except (OSError, json.JSONDecodeError) as error:
         raise ArtifactQuarantineError("Artifact quarantine files are unreadable") from error
@@ -174,7 +177,7 @@ def _manifest_from_json(value: object) -> ArtifactQuarantineManifest:
 
 def _record_from_json(line: str) -> SnapshotRecord:
     try:
-        value = json.loads(line)
+        value = json.loads(line, parse_constant=_reject_json_constant)
         record = SnapshotRecord(
             table=str(value["table"]),
             columns=tuple(str(item) for item in value["columns"]),
@@ -205,6 +208,10 @@ def _canonical_json(value: object) -> str:
         separators=(",", ":"),
         allow_nan=False,
     )
+
+
+def _reject_json_constant(value: str) -> object:
+    raise ArtifactQuarantineError(f"non-finite JSON value is not allowed: {value}")
 
 
 def _require_digest(value: str, label: str) -> None:
