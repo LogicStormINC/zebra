@@ -401,7 +401,8 @@ technical limits and typed fail-closed errors.
   `TRN-CPK-SPIKE-01` merged at `5c59b22`.
 - Branch: `codex/emb-agui-con-01`
 - Worktree: `../zebra-agent-emb-agui-con-01`
-- Owned paths: `packages/agent-integrations/src/agent_integrations/ag_ui/`,
+- Owned paths: `packages/agent-integrations/pyproject.toml`, `uv.lock`,
+  `packages/agent-integrations/src/agent_integrations/ag_ui/`,
   `tests/agent_integrations/test_ag_ui_projection.py`, and this card's
   governance records in `docs/AGENT_TASKS.md`, `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`,
   `PROGRESS.md`, `task_plan.md` and `WORKLOG.md`.

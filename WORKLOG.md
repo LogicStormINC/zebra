@@ -8168,8 +8168,8 @@ actual byte access.
 
 - Activated the next dependency-ordered successor on
   `codex/emb-agui-con-01` after Host authority closeout. Owned paths are only
-  the `agent-integrations` AG-UI projection package, its contract tests and
-  governance records.
+  the `agent-integrations` AG-UI projection package, its explicit protocol
+  dependency/lock entries, contract tests and governance records.
 - The slice will map immutable Session Events to the reviewed AG-UI 0.1.19
   event model, deterministic Task/thread and Segment/run identities, bounded
   cursors, interrupt snapshots and reconnect tails.
