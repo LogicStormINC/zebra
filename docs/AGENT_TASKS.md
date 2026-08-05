@@ -1878,7 +1878,7 @@ PostgreSQL `artifact_payload_metadata` authority.
 
 ### CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01 - Effect/Delivery Legacy Export And Quarantine
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
 - Depends on: `CLOUD-PG-MIG-01` (`In Progress`),
@@ -1921,6 +1921,22 @@ PostgreSQL `effect_outbox` authority.
   dispatch/claim identity, request hash, payload Artifact reference, intent or
   terminal Event, LeaseFence, namespace or API/Worker/runtime wiring. Provider
   continuation remains out of scope.
+
+#### Review handoff
+
+- Child implementation commit `84087e08` is complete across all Owned paths;
+  the child worktree is clean.
+- Local focused validation: `4 passed, 1 skipped`; changed-path Ruff, strict
+  Mypy, Bash/Compose config and `git diff --check` pass.
+- PostgreSQL `17.5-alpine3.21` runner: `5 passed`, emits
+  `ZEBRA_PG_MIG_LEGACY_EFFECT_DELIVERY_TEST_RESULT=PASS`, and removes its
+  container, volume and network. The preflight rejects `effect_ledger` before
+  Event writes; `session_events` and `effect_outbox` remain empty, and the
+  quarantine reloads successfully afterward.
+- Independent review found no blocking issues. The child was merged into
+  `codex/cloud-pg-mig-01` at `62d2e601` and is now `Done`; this closes only the
+  path-bounded Effect/Delivery quarantine slice. The parent migration remains
+  `In Progress`, and Provider continuation remains unregistered and inactive.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 

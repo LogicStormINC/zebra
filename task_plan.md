@@ -151,14 +151,19 @@ local focused matrix is `4 passed, 1 skipped`; PostgreSQL 17.5 runner is `5
 passed` with the required PASS sentinel and container/volume/network cleanup.
 Effect/Delivery and Provider continuation remain inactive.
 
-### CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01 - Effect/Delivery Legacy Export And Quarantine (In Progress)
+### CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01 - Effect/Delivery Legacy Export And Quarantine (Done)
 
-1. `in_progress` - Freeze the direct/derivable/unavailable `effect_ledger` to
+1. `completed` - Freeze the direct/derivable/unavailable `effect_ledger` to
    `effect_outbox` field matrix and register the quarantine disposition.
-2. `pending` - Implement deterministic, manifest-bound quarantine export and
+2. `completed` - Implement deterministic, manifest-bound quarantine export and
    tamper verification without writing PostgreSQL Effect/Delivery authority.
-3. `pending` - Add the isolated PostgreSQL 17.5 zero-write runner and record
+3. `completed` - Add the isolated PostgreSQL 17.5 zero-write runner and record
    `ZEBRA_PG_MIG_LEGACY_EFFECT_DELIVERY_TEST_RESULT=PASS` with deterministic cleanup.
+
+Closeout: child commit `84087e08` was merged into the parent by `62d2e601`.
+Post-merge local focused matrix is `4 passed, 1 skipped`; PostgreSQL 17.5 runner
+is `5 passed` with the required PASS sentinel and container/volume/network
+cleanup. Provider continuation remains inactive.
 
 ### Boundary
 

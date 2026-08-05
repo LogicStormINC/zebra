@@ -92,11 +92,15 @@
   from `codex/cloud-pg-mig-legacy-artifact-01`. Its deterministic
   Artifact legacy quarantine/export contract and evidence runner pass the local
   focused matrix (`4 passed, 1 skipped`) and PostgreSQL 17.5 runner (`5 passed`,
-  `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS`) with cleanup. Effect/Delivery
-  is now `In Progress` on `codex/cloud-pg-mig-legacy-effect-delivery-01` with
-  its own quarantine contract and Owned paths; Provider continuation remains
-  unregistered and inactive. No cloud Artifact/Effect authority write or runtime
-  wiring is implied.
+  `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS`) with cleanup.
+  `CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01` is now `Done` after merge commit
+  `62d2e601` from `codex/cloud-pg-mig-legacy-effect-delivery-01`. Its
+  deterministic Effect/Delivery quarantine/export contract and evidence runner
+  pass the local focused matrix (`4 passed, 1 skipped`) and PostgreSQL 17.5
+  runner (`5 passed`,
+  `ZEBRA_PG_MIG_LEGACY_EFFECT_DELIVERY_TEST_RESULT=PASS`) with cleanup.
+  Provider continuation remains unregistered and inactive. No cloud
+  Artifact/Effect authority write or runtime wiring is implied.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.
   Its direct Task authority gap is implemented by `CLOUD-AGG-FENCE-TASK-01` at

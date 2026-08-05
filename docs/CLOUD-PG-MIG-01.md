@@ -103,7 +103,7 @@ Event 写入前保持目标零写入。原始记录仍保留在带 manifest 的 
 返回 unsupported-authority error 并保持目标事务零写入。
 
 后续治理父卡 `CLOUD-PG-MIG-LEGACY-CON-01` 已进入 `In Progress`：Artifact
-子卡已完成并合并，Effect/Delivery 子卡已按独立 Owned paths 激活；Provider
+和 Effect/Delivery 子卡均已按独立 Owned paths 完成并合并；Provider
 continuation 仍未注册/激活。当前卡不授权运行态切换或把任一 quarantine 直接写入
 cloud authority。
 

@@ -2,12 +2,13 @@
 
 ## Effect/Delivery legacy export and quarantine evidence
 
-- Status: `In Progress`
+- Status: `Done` / independently reviewed and merged into the parent migration
 - Date: `2026-08-05`
 - Branch: `codex/cloud-pg-mig-legacy-effect-delivery-01`
 - Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent-cloud-pg-mig-legacy-effect-delivery-01`
 - Parent: `CLOUD-PG-MIG-LEGACY-CON-01` remains `In Progress`
 - Artifact predecessor: `Done` and merged into `codex/cloud-pg-mig-01`
+- Parent merge: `62d2e601` on `codex/cloud-pg-mig-01`
 - Provider continuation remains unregistered and inactive.
 
 ## Boundary
@@ -64,5 +65,8 @@ authority table.
 
 ## Closeout
 
-Pending independent review, PostgreSQL runner evidence and parent merge. This
-child does not close the parent migration or activate Provider continuation.
+Independent review found no blocking SQL, deserialization, authority-boundary
+or cleanup issue. The child was merged into `codex/cloud-pg-mig-01` at
+`62d2e601` after the post-merge focused matrix, strict static checks, runner
+cleanup and `git diff --check` passed. This closes the child as `Done`; it does
+not close the parent migration or activate Provider continuation.
