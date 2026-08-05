@@ -131,6 +131,17 @@ from agent_core.domain.governed_memory_receipts import (
     GovernedMemoryRevision,
     canonical_governed_memory_result_hash,
 )
+from agent_core.domain.host_authority import (
+    HostAuthorityError,
+    HostContextEnvelope,
+    HostGrantExpiredError,
+    HostGrantMismatchError,
+    HostGrantNotYetValidError,
+    HostGrantScopeError,
+    HostResourceRef,
+    HostSessionGrant,
+    HostTechnicalLimits,
+)
 from agent_core.domain.leases import (
     DEFAULT_MAX_LEASE_TTL,
     LeaseCheckpointRegressionError,
@@ -215,6 +226,15 @@ __all__ = [
     "canonical_artifact_reserve_hash",
     "ArtifactRef",
     "OpaqueAuthorityScope",
+    "HostAuthorityError",
+    "HostContextEnvelope",
+    "HostGrantExpiredError",
+    "HostGrantMismatchError",
+    "HostGrantNotYetValidError",
+    "HostGrantScopeError",
+    "HostResourceRef",
+    "HostSessionGrant",
+    "HostTechnicalLimits",
     "ContextMaterialization",
     "ContextMaterializationGeneration",
     "ContextMaterializationMode",
