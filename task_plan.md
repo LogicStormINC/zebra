@@ -111,7 +111,9 @@
    projection slice after confirming its PostgreSQL mapping, preserving
    Event-first ordering and fail-closed behavior before handing the parent card
    to Review. Artifact, Effect/Delivery, Delivery Audit and Provider continuation
-   remain blocked until their legacy-to-cloud authority fields are provable.
+   remain blocked until their legacy-to-cloud authority fields are provable; the
+   mapping audit and permitted follow-up paths are recorded in
+   `docs/CLOUD-PG-MIG-01.md`.
 
 ### Boundary
 

@@ -63,6 +63,22 @@ Redis 或 Mem0 变成云端事实源。
 - PostgreSQL backup/PITR、Artifact 对象恢复、Redis/Mem0 rebuild、Outbox
   reconcile、multi-Worker drill 和生产 RPO/RTO 属于其他 `CLOUD-REC-*` 卡。
 
+### 剩余映射审计
+
+以下旧表不会被合成字段后写入云端 authority；每一项都需要独立的导出合同
+或历史事实补齐后才能激活下一子任务：
+
+| SQLite source | PostgreSQL target | 当前阻塞证据 |
+| --- | --- | --- |
+| `artifact_payloads` | `artifact_payload_metadata` | 缺少 expected stream revision、Worker lease、幂等/request hash、Event/object version；本地 `active` 也不能无损映射到云端 lifecycle。 |
+| `effect_ledger` | `effect_outbox` | 缺少 execution/dispatch identity、request hash、payload Artifact、intent/terminal Event 和 claim/evidence；状态值相似不等于事实绑定。 |
+| `delivery_audit_records` | `control_plane_delivery_audit_records` | SQLite 读契约按 `rowid` 排序，但 canonical snapshot v1 不导出 rowid；PostgreSQL 自增 `audit_id` 无法恢复原 append 顺序。 |
+| `provider_continuation_artifacts` | `provider_continuation_artifacts` | 缺少 deployment/authority scope、selection Event、幂等/request hash 和 accepted LeaseFence；事件 payload 不能补出历史租约。 |
+
+允许的后续路径是先扩展版本化 snapshot/export 合同并生成可审计的历史证据，
+或建立明确的 legacy quarantine/rebuild 流程；在此之前 importer 对这些表继续
+返回 unsupported-authority error 并保持目标事务零写入。
+
 ## 设计边界
 
 - PostgreSQL Event/Projection 与 fenced aggregate 仍是 Zebra 的事实源。

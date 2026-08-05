@@ -7879,3 +7879,14 @@ actual byte access.
   deterministic cleanup. Artifact, Effect/Delivery, Delivery Audit and Provider
   continuation remain deferred where the legacy schema cannot prove cloud
   authority fields or stable append order.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 remaining authority mapping audit
+
+- Audited the remaining SQLite `artifact_payloads`, `effect_ledger`,
+  `delivery_audit_records` and `provider_continuation_artifacts` contracts against
+  their PostgreSQL authority tables. Each lacks at least one non-derivable lease,
+  Event, request/idempotency, object or stable-order binding; status-name
+  similarity is not treated as migration evidence.
+- Recorded the permitted next paths: versioned snapshot/export evidence or an
+  explicit legacy quarantine/rebuild flow. Until then the importer remains
+  unsupported-table fail-closed and the migration target remains zero-write.
