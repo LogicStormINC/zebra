@@ -7838,3 +7838,19 @@ actual byte access.
 - Split Cutover fencing into `migration_cutover.py` so every migration source
   file remains below the 300-line target. The PostgreSQL 17.5 runner passes
   `18/18` with deterministic cleanup and `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Handoff replay slice
+
+- Added `migration_handoff_rows.py` and `migration_handoff.py` to decode and
+  replay SQLite Handoff operations, immutable envelopes and pending or fully
+  fenced claimed dispatch rows after Event import. Envelope checksums, operation
+  timestamps/depth, source/target Event bindings, dispatch ownership and
+  namespace-scoped relations fail closed before PostgreSQL commit.
+- `session_lineage` remains a rebuild assertion: the importer compares every
+  source row with rebuilt `execution_segments` instead of copying a second
+  lineage authority. SQLite `acked` dispatch is rejected because the legacy row
+  has no authoritative ACK timestamp; no status is guessed.
+- Focused local tests pass `2 passed, 12 skipped`; the PostgreSQL 17.5 Compose
+  runner passes `20/20` and emits `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`, with
+  deterministic container, volume and network cleanup. Changed-path Ruff and
+  strict Mypy pass.

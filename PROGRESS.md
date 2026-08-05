@@ -77,10 +77,12 @@
 - `CLOUD-PG-MIG-01` is `In Progress` on `codex/cloud-pg-mig-01`. The current
   slice provides canonical read-only SQLite snapshots, migration v16 cutover
   fencing, restricted Event-first import, Session/Workspace/Task rebuild,
-  Event-derived Model/Tool projection replay and Context capsule/pointer
-  verification. The PostgreSQL 17.5 runner passes `18/18` with
-  `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and deterministic cleanup;
-  unsupported authority tables and runtime ACTIVE write wiring remain gated.
+  Event-derived Model/Tool projection replay, Context capsule/pointer
+  verification, and fenced Handoff operation/envelope/dispatch replay with
+  rebuilt-lineage checks. The PostgreSQL 17.5 runner passes `20/20` with
+  `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and deterministic cleanup; Artifact,
+  Effect/Delivery, Idempotency/Audit, Provider continuation, Memory and runtime
+  ACTIVE write wiring remain gated.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.
   Its direct Task authority gap is implemented by `CLOUD-AGG-FENCE-TASK-01` at

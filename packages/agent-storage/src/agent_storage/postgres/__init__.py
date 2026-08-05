@@ -45,6 +45,10 @@ from agent_storage.postgres.memory_delivery import (
     PostgresMemoryDeliveryStore,
 )
 from agent_storage.postgres.migration_cutover import CutoverConflictError, PostgresCutoverStore
+from agent_storage.postgres.migration_handoff import (
+    HandoffMigrationError,
+    HandoffReplayReport,
+)
 from agent_storage.postgres.migration_recovery import (
     MigrationImportError,
     MigrationImportReport,
@@ -146,6 +150,8 @@ __all__ = [
     "CutoverConflictError",
     "MigrationImportError",
     "MigrationImportReport",
+    "HandoffMigrationError",
+    "HandoffReplayReport",
     "SQLiteSnapshot",
     "SnapshotIntegrityError",
     "SnapshotManifest",

@@ -96,9 +96,15 @@
 10. `completed` - Replay SQLite Context capsule artifacts and active pointers
     only after verifying payload checksum, capsule Event, preceding compaction
     Event, namespace bindings and pointer Event sequence.
-11. `pending` - Extend the restricted importer for the next explicitly owned
-   authority projection slice, preserving Event-first ordering and fail-closed
-   behavior before handing the parent card to Review.
+11. `completed` - Replay the fenced Handoff operation, immutable envelope and
+   pending/complete claimed dispatch rows after Event import; reject SQLite
+   `acked` dispatch rows because the source lacks an authoritative ACK timestamp,
+   and verify the rebuilt Task/Segment lineage instead of copying the SQLite
+   lineage read model.
+12. `pending` - Register and implement the next explicitly owned authority
+   projection slice after confirming its PostgreSQL mapping, preserving
+   Event-first ordering and fail-closed behavior before handing the parent card
+   to Review.
 
 ### Boundary
 
@@ -108,6 +114,10 @@
 - SQLite remains the local profile's existing store during this slice; the
   implementation must not add dual-write, implicit backend selection or a
   fallback from cloud PostgreSQL to SQLite.
+- Handoff migration accepts only committed aggregates with a checksum-verified
+  envelope and pending or fully fenced claimed dispatch. `session_lineage` is a
+  rebuild assertion; it is not a PostgreSQL authority table. Artifact payload
+  bytes and ACK completion timestamps are not inferred from these rows.
 - Backup/PITR, object restore, fencing/outbox reconciliation and multi-Worker
   drills remain separate `CLOUD-REC-*` child cards.
 

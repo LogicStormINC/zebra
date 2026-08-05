@@ -21,6 +21,11 @@ from agent_storage.postgres.migration_context import (
     ContextMigrationError,
     replay_context_snapshot,
 )
+from agent_storage.postgres.migration_handoff import (
+    HandoffMigrationError,
+    replay_handoff_snapshot,
+    validate_rebuilt_handoff_lineage,
+)
 from agent_storage.postgres.migration_snapshot import (
     SnapshotRecord,
     load_sqlite_snapshot,
@@ -47,6 +52,10 @@ class MigrationImportReport:
     task_count: int
     context_capsule_count: int
     active_context_count: int
+    handoff_operation_count: int
+    handoff_envelope_count: int
+    handoff_dispatch_count: int
+    handoff_lineage_count: int
     manifest_sha256: str
 
 
@@ -69,6 +78,10 @@ def import_sqlite_event_snapshot(
         "session_projections",
         "context_capsule_artifacts",
         "active_context_projections",
+        "handoff_operations",
+        "session_handoff_envelopes",
+        "session_lineage",
+        "handoff_dispatch_outbox",
     }
     if unsupported:
         names = ", ".join(sorted(unsupported))
@@ -101,6 +114,15 @@ def import_sqlite_event_snapshot(
                 {event.event_id: event for event in events},
             )
         except ContextMigrationError as error:
+            raise MigrationImportError(str(error)) from error
+        try:
+            handoff_report = replay_handoff_snapshot(
+                connection,
+                deployment_namespace,
+                records_by_table,
+                {event.event_id: event for event in events},
+            )
+        except HandoffMigrationError as error:
             raise MigrationImportError(str(error)) from error
         workspace_count = 0
         for session_events in grouped.values():
@@ -136,7 +158,12 @@ def import_sqlite_event_snapshot(
                     deployment_namespace,
                     root_session_id,
                 )
-        except (KeyError, TypeError, ValueError) as error:
+            handoff_lineage_count = validate_rebuilt_handoff_lineage(
+                connection,
+                deployment_namespace,
+                records_by_table,
+            )
+        except (HandoffMigrationError, KeyError, TypeError, ValueError) as error:
             raise MigrationImportError("Event cannot rebuild task projection") from error
     return MigrationImportReport(
         deployment_namespace=deployment_namespace,
@@ -147,6 +174,10 @@ def import_sqlite_event_snapshot(
         task_count=len(task_roots),
         context_capsule_count=context_report.capsule_count,
         active_context_count=context_report.active_count,
+        handoff_operation_count=handoff_report.operation_count,
+        handoff_envelope_count=handoff_report.envelope_count,
+        handoff_dispatch_count=handoff_report.dispatch_count,
+        handoff_lineage_count=handoff_lineage_count,
         manifest_sha256=snapshot.manifest.digest,
     )
 
