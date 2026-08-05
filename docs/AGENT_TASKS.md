@@ -44,8 +44,9 @@ does not authorize production code, migrations or activation of its successor.
   official Python protocol compatibility matrix is integrated. Trench
   `TRN-CPK-SPIKE-01` is also merged to Trench `main` at `5c59b22` with its
   focused and full checks green. `EMB-HOST-CON-01` is `Done` on
-  `codex/emb-host-con-01`; production AG-UI, CopilotKit/Trench routing and React
-  SDK work remain separately gated.
+  `codex/emb-host-con-01`; `EMB-AGUI-CON-01` is now `In Progress` on
+  `codex/emb-agui-con-01`. Production API/Worker routing, CopilotKit/Trench
+  integration and React SDK work remain separately gated.
 - `CTX-MEM-01` is `Review` in PR `#198` on
   `codex/issue-197-context-memory-continuity`. It closes GitHub issue `#197`
   without depending on the stacked semantic-memory gateway: same-Task recovery
@@ -390,6 +391,43 @@ technical limits and typed fail-closed errors.
 
 - no JWT signature/JWKS adapter, token persistence, API route, AG-UI projection,
   Trench dependency, Host registry, runtime selection or production secret.
+
+### EMB-AGUI-CON-01 - Durable AG-UI Projection Contract
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `CORE / INTEGRATIONS / QA`
+- Depends on: completed `EMB-HOST-CON-01`, `EMB-AGUI-SPIKE-01` and Trench
+  `TRN-CPK-SPIKE-01` merged at `5c59b22`.
+- Branch: `codex/emb-agui-con-01`
+- Worktree: `../zebra-agent-emb-agui-con-01`
+- Owned paths: `packages/agent-integrations/src/agent_integrations/ag_ui/`,
+  `tests/agent_integrations/test_ag_ui_projection.py`, and this card's
+  governance records in `docs/AGENT_TASKS.md`, `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`,
+  `PROGRESS.md`, `task_plan.md` and `WORKLOG.md`.
+
+#### Goal
+
+Freeze one pure, replayable mapping from durable Zebra Session Events to the
+reviewed AG-UI event model: stable Task/thread and Segment run identity, text
+and tool events, state/error snapshots, cursors and reconnect tails, without
+adding an API route, Worker behavior or Trench dependency.
+
+#### Acceptance
+
+- Golden fixtures cover text, tool, state, error, terminal success and
+  reconnect-tail projections using the pinned `ag-ui-protocol==0.1.19` model.
+- The mapper rejects mixed sessions, non-monotonic/duplicate sequences and
+  invalid cursors; the cursor binds task, run and the exact durable event.
+- Interrupt projection emits state/messages before a `RUN_FINISHED` interrupt;
+  resume identity is deterministic and does not mutate durable state.
+- The projection is pure and provider-neutral: no Event Store writes, API/
+  Worker/Trench imports, CopilotKit runtime or Host transport.
+
+#### Explicit non-goals
+
+- no HTTP/SSE endpoint, Redis live fan-out, API/Worker wiring, JWT/JWKS or
+  Trench/CopilotKit runtime integration.
 
 ### CLOUD-STO-SEAM-01 - Control-Plane Storage Composition Seam
 

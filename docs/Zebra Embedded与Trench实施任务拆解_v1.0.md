@@ -93,10 +93,10 @@ read-only。
 
 ### EMB-AGUI-CON-01 — Durable AG-UI projection contract
 
-- Status: `Locked`；Zebra repo；depends on `EMB-HOST-CON-01`。
-- Candidate paths: `packages/agent-integrations/src/agent_integrations/ag_ui/`, contract tests。
+- Status: `In Progress`；Zebra repo；branch `codex/emb-agui-con-01`；depends on completed `EMB-HOST-CON-01`。
+- Candidate paths: `packages/agent-integrations/src/agent_integrations/ag_ui/`, `tests/agent_integrations/test_ag_ui_projection.py` and registered governance records。
 - Deliverable: Task/thread、Segment attempt/run、event、cursor、interrupt/resume mapping。
-- Acceptance: golden fixtures cover text/tool/state/error/reconnect；mapping is a pure projection。
+- Acceptance: golden fixtures cover text/tool/state/error/reconnect；mapping is a pure projection；no API/Worker/Trench runtime wiring。
 
 ### EMB-SURFACE-CON-01 — Frontend surface and shared-state contracts
 

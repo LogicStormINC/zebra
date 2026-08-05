@@ -204,6 +204,10 @@
   bounded limits and fail-closed validation pass `16/16` focused and `386/386`
   `agent_core` tests. JWT/JWKS, API/AG-UI, Trench and runtime wiring remain
   separately gated.
+- `EMB-AGUI-CON-01` is now active on `codex/emb-agui-con-01` after Host
+  authority closeout. It is limited to a pure, replayable AG-UI projection
+  contract; API/Worker routes, Redis live fan-out, Trench/CopilotKit runtime
+  and Host transport remain separately gated.
 - Completed storage composition task: `CLOUD-STO-SEAM-01` on `codex/cloud-sto-seam-01` is the
   first Zebra-foundation task after the maintainer reprioritized durable storage
   and memory ahead of further Trench work. It injects existing control-plane Store

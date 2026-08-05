@@ -2665,6 +2665,25 @@ the parent migration is `Done`.
 - The next successors remain independently gated: Host verifier/registry,
   AG-UI projection, Surface and Host tool contracts.
 
+## EMB-AGUI-CON-01 - Durable AG-UI Projection Contract (In Progress)
+
+1. `completed` - Confirm Host authority and both protocol spikes are merged;
+   create the isolated branch/worktree and register owned paths.
+2. `in_progress` - Implement the pure durable Session Event to AG-UI event,
+   identity and cursor projection in `agent-integrations`.
+3. `pending` - Add golden text/tool/state/error/interrupt/reconnect fixtures and
+   changed-path static validation against `ag-ui-protocol==0.1.19`.
+4. `pending` - Close the contract without HTTP/SSE, API/Worker, Redis, Trench,
+   CopilotKit or Host transport wiring.
+
+### Boundary
+
+- The projection may read immutable `SessionEvent` values and return official
+  AG-UI models plus an opaque cursor; it never writes durable state.
+- Reconnect is a deterministic tail projection bound to the same Task/thread,
+  Segment run and exact durable event cursor. Transport signing and endpoint
+  policy belong to later P3 tasks.
+
 ## EMB-PLAN-01 - Zebra Embedded Architecture Consolidation
 
 1. `completed` - Audit the draft Embedded architecture, repository source-of-truth

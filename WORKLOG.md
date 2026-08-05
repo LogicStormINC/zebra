@@ -8163,3 +8163,15 @@ actual byte access.
   pre-existing MCP prompt atomicity and file-size-gate baseline defects. The
   task is `Done`; Host verifier, AG-UI projection and Trench production slices
   remain separately locked.
+
+## 2026-08-05 - EMB-AGUI-CON-01 activation
+
+- Activated the next dependency-ordered successor on
+  `codex/emb-agui-con-01` after Host authority closeout. Owned paths are only
+  the `agent-integrations` AG-UI projection package, its contract tests and
+  governance records.
+- The slice will map immutable Session Events to the reviewed AG-UI 0.1.19
+  event model, deterministic Task/thread and Segment/run identities, bounded
+  cursors, interrupt snapshots and reconnect tails.
+- No API/Worker route, SSE transport, Redis live fan-out, Trench/CopilotKit
+  runtime, Host transport or JWT/JWKS adapter is activated.
