@@ -7976,3 +7976,17 @@ actual byte access.
   `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS`, and removes container,
   volume and network. The child remains `Review` pending merge; no runtime or
   Artifact authority activation is implied.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-ARTIFACT-01 merged and closed
+
+- With explicit maintainer authorization, merged child commits through
+  `fefa3261` into parent `codex/cloud-pg-mig-01` as `bed02e4a`; no conflicts
+  occurred and the parent worktree's unrelated `.zebra-agent/sessions.sqlite`
+  change was preserved.
+- Post-merge validation remained green: local focused matrix `4 passed, 1
+  skipped`; PostgreSQL `17.5-alpine3.21` runner `5 passed` with
+  `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS`, deterministic cleanup,
+  changed-path static checks and `git diff --check`.
+- Closed `CLOUD-PG-MIG-LEGACY-ARTIFACT-01` as `Done`. The parent migration stays
+  `In Progress`; Effect/Delivery and Provider continuation remain unregistered
+  and inactive.

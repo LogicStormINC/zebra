@@ -88,8 +88,8 @@
   runtime ACTIVE write wiring remain gated.
 - `CLOUD-PG-MIG-LEGACY-CON-01` is now `In Progress` as the governance parent
   after the maintainer explicitly activated its first path-bounded child.
-  `CLOUD-PG-MIG-LEGACY-ARTIFACT-01` is now `Review` on
-  `codex/cloud-pg-mig-legacy-artifact-01` through `fefa3261`. Its deterministic
+  `CLOUD-PG-MIG-LEGACY-ARTIFACT-01` is now `Done` after merge commit `bed02e4a`
+  from `codex/cloud-pg-mig-legacy-artifact-01`. Its deterministic
   Artifact legacy quarantine/export contract and evidence runner pass the local
   focused matrix (`4 passed, 1 skipped`) and PostgreSQL 17.5 runner (`5 passed`,
   `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS`) with cleanup. Effect/Delivery

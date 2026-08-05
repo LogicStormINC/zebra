@@ -2,11 +2,12 @@
 
 ## Artifact legacy export and quarantine evidence
 
-- Status: `Review` / independent review passed, merge still pending
+- Status: `Done` / independently reviewed and merged into the parent migration
 - Date: `2026-08-05`
 - Branch: `codex/cloud-pg-mig-legacy-artifact-01`
 - Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent-cloud-pg-mig-legacy-artifact-01`
 - Parent: `CLOUD-PG-MIG-LEGACY-CON-01` remains `In Progress`
+- Parent merge: `bed02e4a` on `codex/cloud-pg-mig-01`
 - Effect/Delivery and Provider continuation successors remain unregistered and inactive.
 
 ## Boundary
@@ -62,9 +63,11 @@ additional review/rebuild input, not a temporary PostgreSQL authority table.
   before Event writes and asserts zero rows in both `session_events` and
   `artifact_payload_metadata`; the quarantine remains loadable afterward.
 
-## Closeout rule
+## Closeout
 
-Move this child to `Review` only after the focused tests, strict static checks,
-runner cleanup and `git diff --check` pass on this branch. `Done` requires
-independent review and does not unlock the parent migration or activate the
-Effect/Delivery or Provider successors.
+Independent review found no blocking SQL, deserialization, authority-boundary
+or cleanup issue. The child was merged into `codex/cloud-pg-mig-01` at
+`bed02e4a` after the post-merge focused matrix, strict static checks, runner
+cleanup and `git diff --check` passed. This closes the child as `Done`; it does
+not close the parent migration or activate the Effect/Delivery or Provider
+successors.

@@ -1813,7 +1813,7 @@ object version, dispatch evidence or namespace authority from unrelated rows.
 
 ### CLOUD-PG-MIG-LEGACY-ARTIFACT-01 - Artifact Legacy Export And Quarantine
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
 - Depends on: `CLOUD-PG-MIG-01` (`In Progress`),
@@ -1868,10 +1868,11 @@ PostgreSQL `artifact_payload_metadata` authority.
   volume and network. The preflight rejects `artifact_payloads` before Event
   writes; `session_events` and `artifact_payload_metadata` remain empty, and
   the quarantine reloads successfully afterward.
-- Independent review found no blocking issues. This is still a `Review` handoff,
-  not a `Done` or runtime activation: the parent migration remains `In Progress`
-  and merge is pending. Effect/Delivery and Provider continuation successors
-  remain unregistered and inactive.
+- Independent review found no blocking issues. The child was merged into
+  `codex/cloud-pg-mig-01` at `bed02e4a` and is now `Done`; this closes only the
+  path-bounded Artifact quarantine slice. The parent migration remains
+  `In Progress`, and Effect/Delivery and Provider continuation successors remain
+  unregistered and inactive.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 
