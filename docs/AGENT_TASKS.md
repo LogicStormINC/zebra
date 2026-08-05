@@ -67,9 +67,9 @@ does not authorize production code, migrations or activation of its successor.
   lifecycle, and this card does not activate Redis live routing or aggregate gates.
 - `CLOUD-REC-01` is `In Progress` after aggregate fencing closeout. Its
   migration and logical-backup children are `Done`; object restore,
-  `CLOUD-REC-RESTORE-01` is the active next child, and fencing/outbox
-  reconciliation plus multi-Worker drill evidence remain separate inactive
-  gates. No production RPO/RTO or failover claim is implied.
+  `CLOUD-REC-RESTORE-01` is now `Done` for development-only rebuild evidence,
+  and fencing/outbox reconciliation plus multi-Worker drill evidence remain
+  separate inactive gates. No production RPO/RTO or failover claim is implied.
 - `MEM-MEM0-SPIKE-01` is `Done` on `codex/mem0-contract-spike-01`. The pinned
   OSS REST/Compose contract is recorded and its deterministic provider evidence
   is accepted; real-provider compatibility remains a separate credential gate.
@@ -1696,9 +1696,8 @@ an authority and without claiming production readiness from local Compose alone.
 #### Lock reason and acceptance
 
 - The aggregate parent is closed, so children may be claimed independently;
-  `CLOUD-PG-MIG-01` and `CLOUD-REC-BACKUP-01` are `Done`; the explicitly
-  activated `CLOUD-REC-RESTORE-01` is the only active recovery child, and the
-  drill remains inactive until its own card is Ready.
+  `CLOUD-PG-MIG-01`, `CLOUD-REC-BACKUP-01` and `CLOUD-REC-RESTORE-01` are
+  `Done`; the drill remains inactive until its own card is Ready.
 - Every child must use isolated PostgreSQL/MinIO evidence with deterministic
   cleanup, preserve the single PostgreSQL fact source, and fail closed on
   namespace, epoch, checksum, object or cutover inconsistencies.
@@ -1832,7 +1831,7 @@ physical PITR or production recovery readiness.
 
 ### CLOUD-REC-RESTORE-01 - Fresh Instance Restore And Rebuild Evidence
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `SRE / STORAGE / QA`
 - Depends on: `CLOUD-PG-MIG-01` (`Done`), `CLOUD-REC-BACKUP-01` (`Done`),
@@ -1873,6 +1872,22 @@ before any runtime writer is enabled.
 This child is explicitly activated after the migration and logical-backup gates
 closed. `CLOUD-REC-DRILL-01` remains inactive until its own rollback/outbox and
 multi-Worker evidence contract is registered and activated.
+
+#### Closeout
+
+- The isolated PostgreSQL/Redis/MinIO runner passed
+  `RECOVERY_RESTORE_SEED=PASS migrations=16 events=1 lease_token=1`,
+  `RECOVERY_RESTORE_ARCHIVE=PASS` for a non-empty 159,998-byte archive,
+  `RECOVERY_RESTORE_CLEAR=PASS artifact=absent redis=flushed`,
+  `RECOVERY_RESTORE_VERIFY=PASS migrations=16 events=1`, and
+  `ZEBRA_PG_RECOVERY_RESTORE_TEST_RESULT=PASS`.
+- It restored a fresh `template0` database, rebuilt a deleted versioned Artifact
+  from its manifest/checksum, replayed the restored Event into flushed Redis,
+  rotated the control-plane epoch, rejected the stale source lease and acquired
+  a new fencing token. All resources were cleaned up.
+- Child commits `10ccc458` and `bd0291c4` were fast-forward merged into
+  `codex/cloud-pg-mig-01` at `bd0291c4`; this child does not activate runtime
+  cloud writes, physical PITR, RPO/RTO, DR or the rollback/drill card.
 
 ### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy Authority Export And Quarantine Contract
 

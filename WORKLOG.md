@@ -8098,3 +8098,20 @@ actual byte access.
   Redis Event replay rebuild and control-plane epoch rotation.
 - Fencing/outbox reconciliation, multi-Worker drills, physical PITR, production
   credentials and RPO/RTO/DR claims remain inactive or explicitly out of scope.
+
+## 2026-08-05 - CLOUD-REC-RESTORE-01 closeout
+
+- The isolated PostgreSQL/Redis/MinIO runner passed
+  `RECOVERY_RESTORE_SEED=PASS migrations=16 events=1 lease_token=1`,
+  `RECOVERY_RESTORE_ARCHIVE=PASS` for a 159,998-byte archive,
+  `RECOVERY_RESTORE_CLEAR=PASS artifact=absent redis=flushed`,
+  `RECOVERY_RESTORE_VERIFY=PASS migrations=16 events=1`, and
+  `ZEBRA_PG_RECOVERY_RESTORE_TEST_RESULT=PASS`.
+- Verification restored into `template0`, rebuilt a deleted versioned Artifact
+  by its manifest/checksum, replayed the restored Event into flushed Redis, and
+  rotated the control-plane epoch. The stale source lease was rejected and a
+  fresh fencing token was acquired/released; all resources were cleaned up.
+- Child commits `10ccc458` and `bd0291c4` were fast-forward merged into
+  `codex/cloud-pg-mig-01` at `bd0291c4`. `CLOUD-REC-RESTORE-01` is now `Done`;
+  rollback/outbox reconciliation, multi-Worker drills, physical PITR, RPO/RTO
+  and DR readiness remain outside this child.

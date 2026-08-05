@@ -62,8 +62,8 @@ Redis 或 Mem0 变成云端事实源。
   独立运行态门禁；本卡不授权这些动作。
 - PostgreSQL logical backup/restore、physical PITR、Artifact 对象恢复、Redis/Mem0
   rebuild、Outbox reconcile、multi-Worker drill 和生产 RPO/RTO 属于
-  `CLOUD-REC-*` 子卡；`CLOUD-REC-BACKUP-01` 已完成开发环境逻辑备份/恢复证据，
-  其余恢复子卡仍未激活。
+  `CLOUD-REC-*` 子卡；`CLOUD-REC-BACKUP-01` 与 `CLOUD-REC-RESTORE-01` 已完成
+  开发环境备份/恢复证据，其余恢复子卡仍未激活。
 
 ### 剩余映射审计
 

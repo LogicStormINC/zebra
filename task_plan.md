@@ -58,8 +58,8 @@
   failure drills.
 - `CLOUD-AGG-FENCE-01` is closed as `Done`; the recovery parent remains active
   for independent child claims. Migration and the first logical-backup child are
-  closed; `CLOUD-REC-RESTORE-01` is the next active child and the drill remains
-  inactive.
+  closed; `CLOUD-REC-RESTORE-01` is now also closed for development-only
+  evidence and the drill remains inactive.
 - Planned child cards are `CLOUD-PG-MIG-01`, `CLOUD-REC-BACKUP-01`,
   `CLOUD-REC-RESTORE-01` and `CLOUD-REC-DRILL-01`. Each must have its own
   branch, owner, evidence runner and exact owned paths.
@@ -150,14 +150,22 @@ readiness remain explicit non-goals.
   credentials, physical base backups, WAL archiving, object restore, RPO/RTO or
   DR readiness.
 
-### CLOUD-REC-RESTORE-01 - Fresh Instance Restore And Rebuild Evidence (In Progress)
+### CLOUD-REC-RESTORE-01 - Fresh Instance Restore And Rebuild Evidence (Done)
 
-1. `in_progress` - Freeze the fresh-instance restore boundary across PostgreSQL,
+1. `completed` - Freeze the fresh-instance restore boundary across PostgreSQL,
    S3-compatible Artifact objects, Redis live state and Lease epoch authority.
-2. `pending` - Restore a fully migrated PostgreSQL dump into a fresh database,
+2. `completed` - Restore a fully migrated PostgreSQL dump into a fresh database,
    validate the Artifact manifest/checksum and rebuild Redis from durable Events.
-3. `pending` - Rotate the restored namespace's control-plane epoch and record
+3. `completed` - Rotate the restored namespace's control-plane epoch and record
    deterministic cleanup without claiming production DR, RPO or RTO.
+
+Closeout: the isolated PostgreSQL/Redis/MinIO runner restores a non-empty
+PostgreSQL 17.5 custom archive into `template0`, deletes and rebuilds one
+versioned Artifact by its SHA-256/size manifest, flushes and replays Redis from
+the restored Event, and rotates the control-plane epoch so the stale lease is
+rejected and a new fencing token is acquired. It emits
+`ZEBRA_PG_RECOVERY_RESTORE_TEST_RESULT=PASS` and cleans all resources. Physical
+PITR/WAL, production credentials, RPO/RTO and DR readiness remain non-goals.
 
 ### Boundary
 
