@@ -10,12 +10,17 @@ from uuid import UUID, uuid4
 
 import psycopg
 import pytest
+from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import new_session_id
+from agent_storage import SQLiteEventStore
 from agent_storage.postgres import (
     CutoverConflictError,
+    MigrationImportError,
     PostgresCutoverStore,
     SnapshotIntegrityError,
     apply_postgres_migrations,
     export_sqlite_snapshot,
+    import_sqlite_event_snapshot,
     load_sqlite_snapshot,
     write_sqlite_snapshot,
 )
@@ -57,6 +62,77 @@ def test_snapshot_tampering_fails_before_import(tmp_path: Path) -> None:
 
     with pytest.raises(SnapshotIntegrityError, match="checksum"):
         load_sqlite_snapshot(output)
+
+
+def test_event_import_rebuilds_projection_after_events(isolated_dsn: str, tmp_path: Path) -> None:
+    source = tmp_path / "source.sqlite"
+    event_store = SQLiteEventStore(source)
+    session_id = new_session_id()
+    created = SessionEvent.create(
+        session_id=session_id,
+        sequence=0,
+        event_type=EventType.SESSION_CREATED,
+        actor=EventActor.SYSTEM,
+        payload={"title": "Imported session"},
+    )
+    message = SessionEvent.create(
+        session_id=session_id,
+        sequence=1,
+        event_type=EventType.USER_MESSAGE_RECEIVED,
+        actor=EventActor.USER,
+        payload={"content": "replay me"},
+    )
+    event_store.append(created)
+    event_store.append(message)
+    snapshot_dir = tmp_path / "snapshot"
+    write_sqlite_snapshot(
+        export_sqlite_snapshot(source, table_names=("session_events",)),
+        snapshot_dir,
+    )
+
+    report = import_sqlite_event_snapshot(
+        snapshot_dir,
+        isolated_dsn,
+        deployment_namespace="tenant-a",
+        importer_identity="zebra-postgres-migration-v1",
+    )
+
+    assert report.event_count == 2
+    assert report.projection_count == 1
+    with psycopg.connect(isolated_dsn) as connection:
+        event_count = connection.execute("SELECT count(*) FROM session_events").fetchone()
+        assert event_count is not None
+        assert event_count[0] == 2
+        row = connection.execute(
+            "SELECT title, current_sequence FROM session_projections"
+        ).fetchone()
+        assert row is not None
+        assert row[0] == "Imported session"
+        assert row[1] == 1
+
+    with pytest.raises(MigrationImportError, match="empty"):
+        import_sqlite_event_snapshot(
+            snapshot_dir,
+            isolated_dsn,
+            deployment_namespace="tenant-a",
+            importer_identity="zebra-postgres-migration-v1",
+        )
+
+
+def test_event_import_requires_restricted_identity(isolated_dsn: str, tmp_path: Path) -> None:
+    source = tmp_path / "source.sqlite"
+    with sqlite3.connect(source) as connection:
+        connection.execute("CREATE TABLE session_events (event_id TEXT)")
+    snapshot_dir = tmp_path / "snapshot"
+    write_sqlite_snapshot(export_sqlite_snapshot(source), snapshot_dir)
+
+    with pytest.raises(MigrationImportError, match="identity"):
+        import_sqlite_event_snapshot(
+            snapshot_dir,
+            isolated_dsn,
+            deployment_namespace="tenant-a",
+            importer_identity="runtime",
+        )
 
 
 @pytest.fixture(scope="session")

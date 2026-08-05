@@ -7780,3 +7780,15 @@ actual byte access.
   export, PostgreSQL cutover guard and focused PostgreSQL evidence. Backup/PITR,
   object restore, Redis/Mem0 rebuild, multi-Worker drills and production
   runtime selection remain separate gates.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Event-first import slice
+
+- Added migration v16 `control_plane_cutovers` with one namespace-scoped ACTIVE
+  record and a transaction-scoped guarded write helper.
+- Added restricted Event-first snapshot import: it verifies the manifest and
+  importer identity, requires an empty target, appends contiguous Event streams,
+  then rebuilds Session projections from Event history. Unsupported authority
+  tables fail closed instead of being silently dropped.
+- The PostgreSQL 17.5 runner now passes `15/15` with deterministic cleanup;
+  the remaining work is full authority-table import coverage and runtime ACTIVE
+  write wiring.

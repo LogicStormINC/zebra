@@ -6,7 +6,7 @@
 
 ## 当前切片
 
-本卡先交付迁移链的两个可复用基础合同：
+本卡先交付迁移链的三个可复用基础合同：
 
 1. 对 SQLite 文件执行只读一致性快照，按表名、列定义和规范化 JSONL
    记录排序，生成行数、表计数和 SHA-256 manifest。UTF-8 文本按 NFC
@@ -17,13 +17,17 @@
    transaction 中先检查 namespace、cutover id、manifest digest 和 ACTIVE
    状态，再调用写操作；检查失败或操作抛错时写入为零。
 
+3. 受限 importer 只接受已校验的 Event/Projection snapshot：先按连续 sequence
+   导入 Event，再用 Event 重建 Session projection；非受支持的权威表、非空目标、
+   错误 identity 和不连续 sequence 都 fail closed。
+
 这些模块只建立迁移证据边界，不改变 API/Worker profile 选择，也不把 SQLite、
 Redis 或 Mem0 变成云端事实源。
 
 ## 已验证
 
-- 本地快照/完整性单测：`2 passed, 5 skipped`（无外部 PostgreSQL 时 PG 用例跳过）。
-- PostgreSQL 17.5 Compose runner：`13 passed`，输出
+- 本地快照/完整性单测：`2 passed, 7 skipped`（无外部 PostgreSQL 时 PG 用例跳过）。
+- PostgreSQL 17.5 Compose runner：`15 passed`，输出
   `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`。
 - runner 清理了容器、volume 和 network；迁移目录 v1-v16 的 checksum 与并发
   migration runner 一并复核。
@@ -31,9 +35,9 @@ Redis 或 Mem0 变成云端事实源。
 
 ## 尚未完成
 
-- 将 canonical snapshot 中的 Event/Projection 及其他权威 Store 数据导入
-  PostgreSQL，并在导入前执行 restricted identity、empty-schema、checksum、
-  Event ordering 和 projection rebuild 校验。
+- 将 canonical snapshot 中其余权威 Store 数据导入 PostgreSQL，并为每个
+  adapter 保持 restricted identity、empty-schema、checksum、ordering 和 rebuild
+  校验；当前 importer 对未支持表会 fail closed，不会静默丢数据。
 - 接入真实 cloud runtime 的 ACTIVE 写门禁、SQLite fallback removal、完整
   migration replay 证据；这些完成前不能关闭本卡。
 - PostgreSQL backup/PITR、Artifact 对象恢复、Redis/Mem0 rebuild、Outbox

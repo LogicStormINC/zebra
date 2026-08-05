@@ -16,10 +16,15 @@ from urllib.parse import quote
 from uuid import UUID, uuid4
 
 import psycopg
+from agent_core.application.session_projection import rebuild_session
+from agent_core.domain.events import SessionEvent
 
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.events import append_event_in_transaction
+from agent_storage.postgres.projections import save_session_in_transaction
 
 _SNAPSHOT_SCHEMA = "zebra.sqlite.snapshot.v1"
+_IMPORT_IDENTITY = "zebra-postgres-migration-v1"
 _T = TypeVar("_T")
 
 
@@ -29,6 +34,10 @@ class SnapshotIntegrityError(ValueError):
 
 class CutoverConflictError(RuntimeError):
     """Raised when a cutover transition would violate the active fence."""
+
+
+class MigrationImportError(RuntimeError):
+    """Raised when a snapshot cannot be imported without losing authority."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,7 +88,19 @@ class SQLiteSnapshot:
     manifest: SnapshotManifest
 
 
-def export_sqlite_snapshot(database_path: str | Path) -> SQLiteSnapshot:
+@dataclass(frozen=True, slots=True)
+class MigrationImportReport:
+    deployment_namespace: str
+    event_count: int
+    projection_count: int
+    manifest_sha256: str
+
+
+def export_sqlite_snapshot(
+    database_path: str | Path,
+    *,
+    table_names: Sequence[str] | None = None,
+) -> SQLiteSnapshot:
     """Read every user table from a consistent, read-only SQLite transaction."""
     path = Path(database_path)
     uri = f"file:{quote(str(path), safe='/')}?mode=ro"
@@ -93,13 +114,19 @@ def export_sqlite_snapshot(database_path: str | Path) -> SQLiteSnapshot:
         connection.execute("BEGIN")
         records: list[SnapshotRecord] = []
         table_counts: list[tuple[str, int]] = []
-        tables = connection.execute(
+        available_tables = connection.execute(
             """SELECT name FROM sqlite_master
             WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
             ORDER BY name"""
         ).fetchall()
-        for row in tables:
-            table = str(row[0])
+        available = tuple(str(row[0]) for row in available_tables)
+        selected = available if table_names is None else tuple(sorted(set(table_names)))
+        missing = set(selected) - set(available)
+        if missing:
+            raise SnapshotIntegrityError(
+                f"requested SQLite snapshot tables do not exist: {', '.join(sorted(missing))}"
+            )
+        for table in selected:
             columns = tuple(
                 str(column[1])
                 for column in connection.execute(
@@ -176,9 +203,6 @@ def load_sqlite_snapshot(directory: str | Path) -> SQLiteSnapshot:
         records.append(record)
     records.sort(key=lambda item: (item.table, item.as_json()))
     record_bytes = "\n".join(record.as_json() for record in records).encode("utf-8")
-    counts: dict[str, int] = {}
-    for record in records:
-        counts[record.table] = counts.get(record.table, 0) + 1
     try:
         manifest = SnapshotManifest(
             schema=str(manifest_data["schema"]),
@@ -192,6 +216,9 @@ def load_sqlite_snapshot(directory: str | Path) -> SQLiteSnapshot:
         raise SnapshotIntegrityError("snapshot manifest is malformed") from error
     if manifest.schema != _SNAPSHOT_SCHEMA or manifest.record_count != len(records):
         raise SnapshotIntegrityError("snapshot manifest count or schema mismatch")
+    counts = {table: 0 for table, _ in manifest.table_counts}
+    for record in records:
+        counts[record.table] = counts.get(record.table, 0) + 1
     if manifest.records_sha256 != hashlib.sha256(record_bytes).hexdigest():
         raise SnapshotIntegrityError("snapshot records checksum mismatch")
     if tuple(sorted(counts.items())) != tuple(sorted(manifest.table_counts)):
@@ -199,6 +226,50 @@ def load_sqlite_snapshot(directory: str | Path) -> SQLiteSnapshot:
     if manifest_data.get("manifest_sha256") != manifest.digest:
         raise SnapshotIntegrityError("snapshot manifest checksum mismatch")
     return SQLiteSnapshot(tuple(records), manifest)
+
+
+def import_sqlite_event_snapshot(
+    directory: str | Path,
+    postgres_dsn: str,
+    *,
+    deployment_namespace: str,
+    importer_identity: str,
+) -> MigrationImportReport:
+    """Import Events first, then rebuild Sessions from the imported Event stream."""
+    snapshot = load_sqlite_snapshot(directory)
+    if importer_identity != _IMPORT_IDENTITY:
+        raise MigrationImportError("restricted migration importer identity required")
+    records_by_table: dict[str, list[SnapshotRecord]] = {}
+    for record in snapshot.records:
+        records_by_table.setdefault(record.table, []).append(record)
+    unsupported = set(records_by_table) - {"session_events", "session_projections"}
+    if unsupported:
+        names = ", ".join(sorted(unsupported))
+        raise MigrationImportError(f"snapshot contains unsupported authoritative tables: {names}")
+    events = _events_from_records(records_by_table.get("session_events", []))
+    database = PostgresDatabase(postgres_dsn, deployment_namespace=deployment_namespace)
+    with database.connect() as connection:
+        connection.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+            (f"migration-import:{deployment_namespace}",),
+        )
+        _require_empty_import_target(connection)
+        grouped: dict[str, list[SessionEvent]] = {}
+        for event in events:
+            append_event_in_transaction(connection, deployment_namespace, event)
+            grouped.setdefault(str(event.session_id), []).append(event)
+        for session_events in grouped.values():
+            save_session_in_transaction(
+                connection,
+                deployment_namespace,
+                rebuild_session(session_events),
+            )
+    return MigrationImportReport(
+        deployment_namespace=deployment_namespace,
+        event_count=len(events),
+        projection_count=len(grouped),
+        manifest_sha256=snapshot.manifest.digest,
+    )
 
 
 class PostgresCutoverStore:
@@ -277,6 +348,66 @@ def _assert_active(connection: Any, namespace: str, cutover_id: UUID, digest: st
     ).fetchone()
     if row is None or row["state"] != "active":
         raise CutoverConflictError("runtime write requires an active matching cutover")
+
+
+def _events_from_records(records: Sequence[SnapshotRecord]) -> tuple[SessionEvent, ...]:
+    events: list[SessionEvent] = []
+    for record in records:
+        values = _record_values(
+            record,
+            {
+                "event_id",
+                "session_id",
+                "sequence",
+                "event_type",
+                "payload",
+                "actor",
+                "created_at",
+                "causation_id",
+                "correlation_id",
+                "idempotency_key",
+                "policy_version",
+                "model_profile",
+            },
+        )
+        payload = values["payload"]
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except json.JSONDecodeError as error:
+                raise MigrationImportError("session Event payload is not JSON") from error
+        if not isinstance(payload, dict):
+            raise MigrationImportError("session Event payload must be an object")
+        try:
+            events.append(SessionEvent.model_validate({**values, "payload": payload}))
+        except ValueError as error:
+            raise MigrationImportError("session Event record failed validation") from error
+    events.sort(key=lambda event: (str(event.session_id), event.sequence))
+    expected: dict[str, int] = {}
+    for event in events:
+        sequence = expected.get(str(event.session_id), 0)
+        if event.sequence != sequence:
+            raise MigrationImportError("session Event sequence is not contiguous")
+        expected[str(event.session_id)] = sequence + 1
+    return tuple(events)
+
+
+def _record_values(record: SnapshotRecord, expected: set[str]) -> dict[str, object]:
+    if set(record.columns) != expected or len(record.columns) != len(record.values):
+        raise MigrationImportError(f"unexpected {record.table} column contract")
+    return dict(zip(record.columns, record.values, strict=True))
+
+
+def _require_empty_import_target(connection: Any) -> None:
+    for table in (
+        "session_events",
+        "session_streams",
+        "session_projections",
+        "control_plane_cutovers",
+    ):
+        row = connection.execute(f"SELECT count(*) AS count FROM {table}").fetchone()
+        if row is None or row["count"] != 0:
+            raise MigrationImportError("PostgreSQL import target must be empty")
 
 
 def _require_digest(value: str) -> None:
