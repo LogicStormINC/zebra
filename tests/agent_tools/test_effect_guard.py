@@ -134,3 +134,27 @@ def test_unclassified_failure_marks_uncertain_and_rejects_replay(tmp_path) -> No
     with pytest.raises(EffectReplayRejectedError, match="uncertain"):
         guarded.execute(_call("command.run"))
     assert gateway.calls == 1
+
+
+def test_emit_declaration_failure_never_marks_uncertain(tmp_path) -> None:
+    """artifact.output_contract.emit is a declarative metadata tool with no
+    external side effect: even a validation failure (e.g. a malformed
+    payload_digest) must not poison the effect ledger, or a later round of a
+    stable Task would be blocked by handoff_source_not_quiescent."""
+    gateway = _Gateway(fail_names=frozenset({"artifact.output_contract.emit"}))
+    ledger = SQLiteEffectLedger(tmp_path / "ledger.db")
+    root_session_id = new_session_id()
+    guarded = EffectGuardedToolGateway(
+        gateway,
+        ledger=ledger,
+        root_session_id=root_session_id,
+        authority_scope="workspace-write",
+    )
+
+    first = guarded.execute(_call("artifact.output_contract.emit"))
+
+    assert first.status is ToolCallStatus.FAILED
+    assert ledger.has_uncertain(root_session_id) is False
+    # A second attempt executes again instead of replaying/blocking.
+    guarded.execute(_call("artifact.output_contract.emit"))
+    assert gateway.calls == 2

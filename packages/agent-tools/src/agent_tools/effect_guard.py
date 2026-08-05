@@ -58,6 +58,10 @@ READ_ONLY_TOOLS = frozenset(
         "agent.research",
         "agent.plan",
         "agent.clarify",
+        # Declarative metadata emission: it performs no external side effect
+        # (validation failure is a pure local reject), so it must never be
+        # recorded as an uncertain effect that would block later task rounds.
+        "artifact.output_contract.emit",
     }
 )
 
