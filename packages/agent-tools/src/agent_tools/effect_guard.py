@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping
 from typing import Any, Protocol, cast
 
 from agent_core.domain.identifiers import SessionId
@@ -62,6 +63,17 @@ READ_ONLY_TOOLS = frozenset(
         # (validation failure is a pure local reject), so it must never be
         # recorded as an uncertain effect that would block later task rounds.
         "artifact.output_contract.emit",
+    }
+)
+
+# Failures that are provably local with no external side effect (argument
+# validation, registry rejection, declarative metadata validation). These
+# settle as failed_no_effect so later rounds of the same stable Task are not
+# blocked; only failures that could have had an external effect stay uncertain.
+DETERMINISTIC_FAILURE_REASONS = frozenset(
+    {
+        "tool_validation_error",
+        "invalid_output_contract",
     }
 )
 
@@ -133,8 +145,18 @@ class EffectGuardedToolGateway:
         if result.status is ToolCallStatus.EXECUTED:
             self._ledger.mark_succeeded(reservation, result)
         else:
-            # A generic tool failure cannot prove that no external effect occurred.
-            self._ledger.mark_uncertain(reservation)
+            metadata = (
+                result.metadata if isinstance(result.metadata, Mapping) else {}
+            )
+            if metadata.get("reason") in DETERMINISTIC_FAILURE_REASONS:
+                # Provably local failure: no external effect could have
+                # occurred, so the effect settles cleanly and later rounds of
+                # the same stable Task are not blocked.
+                self._ledger.mark_failed_no_effect(reservation)
+            else:
+                # A generic tool failure cannot prove that no external effect
+                # occurred; keep it uncertain to protect later rounds.
+                self._ledger.mark_uncertain(reservation)
         return result
 
 

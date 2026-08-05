@@ -20,11 +20,13 @@ class _Gateway:
         validator_tools: frozenset[str] = frozenset(),
         read_only_tools: frozenset[str] = frozenset(),
         fail_names: frozenset[str] = frozenset(),
+        validation_fail_names: frozenset[str] = frozenset(),
     ) -> None:
         self.calls = 0
         self.validator_tools = validator_tools
         self.read_only_tools = read_only_tools
         self.fail_names = fail_names
+        self.validation_fail_names = validation_fail_names
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
         self.calls += 1
@@ -33,6 +35,12 @@ class _Gateway:
                 tool_call_id=tool_call.tool_call_id,
                 status=ToolCallStatus.FAILED,
                 metadata={"reason": "provider_rejected"},
+            )
+        if tool_call.name in self.validation_fail_names:
+            return ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.FAILED,
+                metadata={"reason": "tool_validation_error"},
             )
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
@@ -157,4 +165,28 @@ def test_emit_declaration_failure_never_marks_uncertain(tmp_path) -> None:
     assert ledger.has_uncertain(root_session_id) is False
     # A second attempt executes again instead of replaying/blocking.
     guarded.execute(_call("artifact.output_contract.emit"))
+    assert gateway.calls == 2
+
+
+def test_provably_local_failure_marks_failed_no_effect_and_allows_retry(
+    tmp_path,
+) -> None:
+    """A deterministic local failure (validation error) must not poison the
+    ledger: the effect settles as failed_no_effect, a later round of the same
+    stable Task is not blocked, and the call can be retried."""
+    gateway = _Gateway(validation_fail_names=frozenset({"files.read"}))
+    ledger = SQLiteEffectLedger(tmp_path / "ledger.db")
+    root_session_id = new_session_id()
+    guarded = EffectGuardedToolGateway(
+        gateway,
+        ledger=ledger,
+        root_session_id=root_session_id,
+        authority_scope="workspace-write",
+    )
+
+    first = guarded.execute(_call("files.read"))
+
+    assert first.status is ToolCallStatus.FAILED
+    assert ledger.has_uncertain(root_session_id) is False
+    guarded.execute(_call("files.read"))
     assert gateway.calls == 2
