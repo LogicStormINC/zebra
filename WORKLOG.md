@@ -7990,3 +7990,16 @@ actual byte access.
 - Closed `CLOUD-PG-MIG-LEGACY-ARTIFACT-01` as `Done`. The parent migration stays
   `In Progress`; Effect/Delivery and Provider continuation remain unregistered
   and inactive.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01 activation
+
+- After Artifact was merged and closed, explicitly activated the next
+  path-bounded legacy child: `CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01`.
+- The child owns only the `effect_ledger` quarantine module, focused test,
+  PostgreSQL 17.5 runner and evidence document on
+  `codex/cloud-pg-mig-legacy-effect-delivery-01`; parent governance records
+  remain on `codex/cloud-pg-mig-01`.
+- The selected disposition is manifest-backed quarantine/rebuild because the
+  legacy row cannot prove execution/dispatch identity, request hash, payload
+  Artifact, intent/terminal Event, claim evidence or namespace authority. No
+  PostgreSQL Effect/Delivery authority write or runtime wiring is authorized.

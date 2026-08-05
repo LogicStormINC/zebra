@@ -1803,9 +1803,11 @@ object version, dispatch evidence or namespace authority from unrelated rows.
 #### Activation decision
 
 - The maintainer explicitly activated the first path-bounded child on
-  2026-08-05: `CLOUD-PG-MIG-LEGACY-ARTIFACT-01`.
-- Effect/Delivery and Provider continuation children remain unregistered and
-  inactive until their own source contracts are selected.
+  2026-08-05: `CLOUD-PG-MIG-LEGACY-ARTIFACT-01`; it is now `Done` after parent
+  merge `bed02e4a`.
+- The maintainer explicitly activated the next path-bounded child on 2026-08-05:
+  `CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01`. Provider continuation remains
+  unregistered and inactive until its own source contract is selected.
 - The Artifact child chooses the manifest-backed quarantine/rebuild path because
   the legacy row cannot prove reservation Lease, Event/object version,
   idempotency/request hash or cloud lifecycle evidence. No PostgreSQL Artifact
@@ -1873,6 +1875,52 @@ PostgreSQL `artifact_payload_metadata` authority.
   path-bounded Artifact quarantine slice. The parent migration remains
   `In Progress`, and Effect/Delivery and Provider continuation successors remain
   unregistered and inactive.
+
+### CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01 - Effect/Delivery Legacy Export And Quarantine
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
+- Depends on: `CLOUD-PG-MIG-01` (`In Progress`),
+  `CLOUD-PG-MIG-LEGACY-CON-01` (`In Progress`),
+  `CLOUD-DELIVERY-TXN-PG-01` (`Done`) and
+  `CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01` (`Done`)
+- Branch: `codex/cloud-pg-mig-legacy-effect-delivery-01`
+- Worktree: `../zebra-agent-cloud-pg-mig-legacy-effect-delivery-01`
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres/migration_legacy_effect.py`,
+  `tests/agent_storage/test_postgres_migration_legacy_effect.py`,
+  `tests/compose/migration_legacy_effect/`, and
+  `docs/CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01.md`. Parent governance records
+  remain owned by `CLOUD-PG-MIG-LEGACY-CON-01`.
+
+#### Goal
+
+Preserve legacy `effect_ledger` rows as a deterministic, manifest-bound
+quarantine/rebuild input without promoting incomplete metadata into the fenced
+PostgreSQL `effect_outbox` authority.
+
+#### Acceptance
+
+- The source-to-target matrix names every directly reusable, structurally
+  comparable and unavailable authority field; unavailable fields are never
+  synthesized.
+- A versioned quarantine artifact retains the canonical source snapshot digest,
+  source table, canonical row content/digests, unavailable-field reason and
+  disposition, with deterministic serialization and tamper detection.
+- PostgreSQL preflight rejects a legacy `effect_ledger` source before Event
+  writes and proves zero rows in `effect_outbox`; the quarantine remains
+  loadable and verified afterward.
+- The isolated PostgreSQL 17.5 runner emits
+  `ZEBRA_PG_MIG_LEGACY_EFFECT_DELIVERY_TEST_RESULT=PASS` only after all checks
+  pass and removes its container, volume and network.
+
+#### Explicit non-goals
+
+- No write to `effect_outbox`, no external-effect result transfer, no inferred
+  dispatch/claim identity, request hash, payload Artifact reference, intent or
+  terminal Event, LeaseFence, namespace or API/Worker/runtime wiring. Provider
+  continuation remains out of scope.
 
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 

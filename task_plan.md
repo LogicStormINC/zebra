@@ -123,11 +123,12 @@
 
 ### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy successor governance (In Progress)
 
-- The maintainer explicitly activated the first child,
-  `CLOUD-PG-MIG-LEGACY-ARTIFACT-01`, on 2026-08-05.
-- Effect/Delivery and Provider continuation remain unregistered and inactive;
-  each must receive its own source contract, branch and Owned paths before any
-  implementation.
+- The maintainer explicitly activated `CLOUD-PG-MIG-LEGACY-ARTIFACT-01` on
+  2026-08-05; it is now `Done` after parent merge `bed02e4a`.
+- The maintainer explicitly activated the next child,
+  `CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01`, on 2026-08-05. Provider
+  continuation remains unregistered and inactive and still requires its own
+  source contract, branch and Owned paths before implementation.
 - A child may choose only a versioned export with complete authority evidence or
   an explicit manifest-backed quarantine/rebuild flow; synthesized leases,
   Event identities, request hashes, object versions and namespace bindings are
@@ -149,6 +150,25 @@ rejection in `f0d56a62`) were merged into the parent by `bed02e4a`. Post-merge
 local focused matrix is `4 passed, 1 skipped`; PostgreSQL 17.5 runner is `5
 passed` with the required PASS sentinel and container/volume/network cleanup.
 Effect/Delivery and Provider continuation remain inactive.
+
+### CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01 - Effect/Delivery Legacy Export And Quarantine (In Progress)
+
+1. `in_progress` - Freeze the direct/derivable/unavailable `effect_ledger` to
+   `effect_outbox` field matrix and register the quarantine disposition.
+2. `pending` - Implement deterministic, manifest-bound quarantine export and
+   tamper verification without writing PostgreSQL Effect/Delivery authority.
+3. `pending` - Add the isolated PostgreSQL 17.5 zero-write runner and record
+   `ZEBRA_PG_MIG_LEGACY_EFFECT_DELIVERY_TEST_RESULT=PASS` with deterministic cleanup.
+
+### Boundary
+
+- Owned implementation paths are limited to the Effect/Delivery quarantine
+  module, focused test, isolated runner and evidence document. Parent governance
+  records stay on the migration governance branch.
+- The child preserves the original SQLite snapshot as source of truth; it cannot
+  transfer external-effect results, invent dispatch/claim identity, request
+  hashes, payload Artifact references, Event bindings, LeaseFence or namespace
+  authority.
 
 ### Boundary
 
