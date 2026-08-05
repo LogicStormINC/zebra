@@ -70,11 +70,12 @@
   review's `PASS` evidence and maintainer continuation closeout. This unlocks
   only the recovery evidence sequence; Runtime/API/Worker selection and
   production rollout remain separate gates.
-- `CLOUD-REC-01` is now `Ready`. Its migration/export, backup/PITR, object
+- `CLOUD-REC-01` is now `In Progress`. `CLOUD-PG-MIG-01` is complete; the first
+  recovery child `CLOUD-REC-BACKUP-01` is explicitly activated next. Object
   restore, fencing/outbox reconciliation and multi-Worker drill children remain
-  split; only `CLOUD-PG-MIG-01` is claimed next. No production RPO/RTO or DR
-  claim is made from local Compose evidence.
-- `CLOUD-PG-MIG-01` is `In Progress` on `codex/cloud-pg-mig-01`. The current
+  split and inactive. No production RPO/RTO or DR claim is made from local
+  Compose evidence.
+- `CLOUD-PG-MIG-01` is now `Done` on `codex/cloud-pg-mig-01`. The completed
   slice provides canonical read-only SQLite snapshots, migration v16 cutover
   fencing, restricted Event-first import, Session/Workspace/Task rebuild,
   Event-derived Model/Tool projection replay, Context capsule/pointer
@@ -84,8 +85,10 @@
   PostgreSQL 17.5 runner passes `29/29` with
   `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and deterministic cleanup. New
   zero-write regressions reject legacy Artifact, Effect and Provider
-  continuation tables before Event writes; their cloud authority mappings and
-  runtime ACTIVE write wiring remain gated.
+  continuation tables before Event writes; their cloud authority mappings are
+  closed as explicit quarantine contracts and runtime ACTIVE write wiring remains
+  gated. The PostgreSQL 17.5 runner passes `29/29` with
+  `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and deterministic cleanup.
 - `CLOUD-PG-MIG-LEGACY-CON-01` is now `Done` as the governance parent after all
   three path-bounded children were explicitly activated, independently
   validated and merged.

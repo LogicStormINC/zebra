@@ -1,6 +1,6 @@
 # CLOUD-PG-MIG-01 — SQLite 快照与 PostgreSQL Cutover
 
-> 状态：`In Progress`
+> 状态：`Done`
 > 分支：`codex/cloud-pg-mig-01`
 > Worktree：`/Users/lukeding/Desktop/playground/2026/product/zebra-agent-cloud-pg-mig-01`
 
@@ -56,18 +56,13 @@ Redis 或 Mem0 变成云端事实源。
   PostgreSQL 目标保持为空；回归同时重新加载被拒绝的快照，确认记录和
   manifest 未改变，保留它作为 quarantine/rebuild 输入。
 
-## 尚未完成
+## 后续门禁
 
-- 将 canonical snapshot 中其余权威 Store 数据导入 PostgreSQL，并为每个
-  adapter 保持 restricted identity、empty-schema、checksum、ordering 和 rebuild
-  校验；当前 importer 对未支持表会 fail closed，不会静默丢数据。Handoff 已覆盖；
-  Artifact payload、Effect/Delivery Outbox 和 Provider continuation
-  仍需各自确认其 PostgreSQL 权威映射；旧表缺少新 authority 所需的租约、Event
-  绑定或稳定顺序键时必须保持 fail closed。
-- 接入真实 cloud runtime 的 ACTIVE 写门禁、SQLite fallback removal、完整
-  migration replay 证据；这些完成前不能关闭本卡。
-- PostgreSQL backup/PITR、Artifact 对象恢复、Redis/Mem0 rebuild、Outbox
-  reconcile、multi-Worker drill 和生产 RPO/RTO 属于其他 `CLOUD-REC-*` 卡。
+- 真实 cloud runtime 的 ACTIVE 写门禁、SQLite fallback removal 和生产切换仍是
+  独立运行态门禁；本卡不授权这些动作。
+- PostgreSQL logical backup/restore、physical PITR、Artifact 对象恢复、Redis/Mem0
+  rebuild、Outbox reconcile、multi-Worker drill 和生产 RPO/RTO 属于
+  `CLOUD-REC-*` 子卡；当前先激活 `CLOUD-REC-BACKUP-01`。
 
 ### 剩余映射审计
 

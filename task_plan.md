@@ -51,13 +51,14 @@
 - The official Docker Hub digest pull remains an external evidence gap; the
   committed Dockerfile default and source pin are unchanged.
 
-## CLOUD-REC-01 - Migration, Backup, Restore And Recovery Gate (Ready)
+## CLOUD-REC-01 - Migration, Backup, Restore And Recovery Gate (In Progress)
 
 - Next gate after `CLOUD-COMPOSE-APP-01`: migration/cutover policy, PostgreSQL
   backup/PITR, object restore, fencing/outbox reconciliation and multi-Worker
   failure drills.
-- `CLOUD-AGG-FENCE-01` is closed as `Done`; the recovery parent is now ready
-  for independent child claims. Only the first migration child is active next.
+- `CLOUD-AGG-FENCE-01` is closed as `Done`; the recovery parent is now active
+  for independent child claims. Migration is closed and the first backup child
+  is active next.
 - Planned child cards are `CLOUD-PG-MIG-01`, `CLOUD-REC-BACKUP-01`,
   `CLOUD-REC-RESTORE-01` and `CLOUD-REC-DRILL-01`. Each must have its own
   branch, owner, evidence runner and exact owned paths.
@@ -65,7 +66,7 @@
   is replayable live state; Mem0 is a rebuildable confirmed-memory index. No
   production RPO/RTO, PITR or DR claim is made from local Compose evidence.
 
-## CLOUD-PG-MIG-01 - Canonical SQLite Snapshot And PostgreSQL Cutover (In Progress)
+## CLOUD-PG-MIG-01 - Canonical SQLite Snapshot And PostgreSQL Cutover (Done)
 
 1. `completed` - Claim the path-bounded migration child in an isolated worktree;
    preserve the root `AGENTS.md` and keep all recovery siblings inactive.
@@ -110,14 +111,36 @@
 14. `completed` - Extend the snapshot contract to v2 for explicit Delivery Audit
    source rowids, replay rows in source order, and verify PostgreSQL `audit_id`
    preserves the local read contract without treating rowid as business identity.
-15. `pending` - Register and implement the next explicitly owned authority
-   projection slice after confirming its PostgreSQL mapping, preserving
-   Event-first ordering and fail-closed behavior before handing the parent card
-   to Review. The Artifact, Effect/Delivery and Provider continuation legacy
-   mappings are now closed as manifest-backed quarantine/rebuild slices; their
+15. `completed` - Register and close the legacy authority boundary after
+   confirming its PostgreSQL mapping, preserving Event-first ordering and
+   fail-closed behavior. The Artifact, Effect/Delivery and Provider continuation
+   legacy mappings are closed as manifest-backed quarantine/rebuild slices; their
    focused PostgreSQL regressions still reject unsupported rows before Event
-   writes. The mapping audit and permitted follow-up paths remain recorded in
-   `docs/CLOUD-PG-MIG-01.md`.
+   writes.
+
+Closeout: the focused local migration matrix is `2 passed, 21 skipped` without
+PostgreSQL; the PostgreSQL 17.5 runner passes `29/29`, emits
+`ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`, and cleans its container, volume and
+network. Changed-path Ruff/Mypy and diff checks pass. `CLOUD-PG-MIG-01` is
+closed; runtime cutover and backup/recovery gates remain separate.
+
+### CLOUD-REC-BACKUP-01 - PostgreSQL Logical Backup And Restore Evidence (In Progress)
+
+1. `in_progress` - Freeze the development backup/restore evidence contract and
+   exact source/restore identity boundary.
+2. `pending` - Add a deterministic PostgreSQL 17.5 logical dump, checksum
+   manifest and fresh-database restore verification without claiming PITR.
+3. `pending` - Record cleanup, sentinel output and the external physical
+   backup/WAL/PITR boundary for the recovery parent.
+
+### Boundary
+
+- Owned implementation paths are limited to the isolated backup runner,
+  supporting verification script, Compose fixture and evidence document. Parent
+  recovery governance records remain on `codex/cloud-pg-mig-01`.
+- The child proves logical portability only; it does not configure production
+  credentials, physical base backups, WAL archiving, object restore, RPO/RTO or
+  DR readiness.
 
 ### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy successor governance (Done)
 

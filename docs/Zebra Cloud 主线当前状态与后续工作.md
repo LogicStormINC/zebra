@@ -173,11 +173,10 @@ Context conformance 审计及其 semantic successor 均为 `Done`，
  command boundary 证据，不改变 command transaction；API/Worker 存储组合已由
 `CLOUD-API-WORKER-PG-01` 完成；应用
  `CLOUD-COMPOSE-APP-01` 已完成应用 Compose 实现并关闭为 `Done`；Runtime 业务
-selector、在线事件路由和生产切换仍保持独立门禁。`CLOUD-REC-01` 已由 `Locked`
-转为 `Ready`，当前只领取 `CLOUD-PG-MIG-01`。该卡的 PostgreSQL 17.5 迁移
-runner 已通过 `29/29`；Artifact、Effect/Delivery 和 Provider continuation 的
-旧表 authority 映射仍 fail closed，`CLOUD-PG-MIG-LEGACY-CON-01` 已登记为
-`Locked` successor，其余恢复子任务保持未激活。
+selector、在线事件路由和生产切换仍保持独立门禁。`CLOUD-REC-01` 已进入
+`In Progress`，`CLOUD-PG-MIG-01` 已完成 `29/29` 迁移证据，当前激活
+`CLOUD-REC-BACKUP-01`；Artifact、Effect/Delivery 和 Provider continuation
+旧表仍以已收口的 fail-closed quarantine 边界保留，其余恢复子任务保持未激活。
 
 ### Docker 应用层与在线事件
 
@@ -315,8 +314,8 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 16. [x] 完成 `CLOUD-COMPOSE-APP-01` 的独立 migration/API/Worker Compose overlay
    和宿主 smoke 证据；默认 mirror runner 返回
    `ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`，不接入 Redis live routing。
-17. [ ] 完成 `CLOUD-PG-MIG-01` 的 SQLite 快照、PostgreSQL 导入和 cutover
-   证据；先保持 `CLOUD-REC-01` 其余备份/恢复/演练子任务未激活。
+17. [x] 完成 `CLOUD-PG-MIG-01` 的 SQLite 快照、PostgreSQL 导入和 cutover
+   证据；其 `29/29` PostgreSQL runner、legacy fail-closed 边界和治理收口已记录。
 18. [ ] 完成 `CLOUD-REC-01` 的备份、恢复、回滚和多 Worker E2E 门禁；该门禁
    不能以本地 Compose 证据宣称生产 RPO/RTO 或 DR 就绪。
 19. 再激活 Host/AG-UI/Trench read-only vertical slice。
@@ -335,6 +334,6 @@ closeout：Owner、Branch、Worktree、Owned paths 和 v13/v15 迁移所有权�
 依赖闭合后由侧边栏批准激活，并在实现、Compose 验证和 closeout 后登记为 `Done`；
 其 v14 shared records 与 cloud-only composition 已交付。其余
 SQLite Registry、Runtime backend selection、Provider HTTP、Desktop、Mem0 consumer
-以及迁移/恢复演练仍保持隔离；`CLOUD-REC-01` 已 `Ready`，当前仅领取
-`CLOUD-PG-MIG-01`，其 `29/29` 证据和 legacy successor 边界见任务注册表；
+以及迁移/恢复演练仍保持隔离；`CLOUD-REC-01` 已 `In Progress`，当前激活
+`CLOUD-REC-BACKUP-01`，其逻辑备份/恢复证据不构成生产 PITR/RPO/RTO 声明；
 Redis live adapter 已完成但未接入 API/Worker 启动。

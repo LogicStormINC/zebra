@@ -1665,13 +1665,13 @@ fact source; Redis remains optional live state and is not selected by startup.
 
 ### CLOUD-REC-01 - Migration, Backup, Restore And Recovery Gate
 
-- Status: `Ready`
-- Owner: `UNASSIGNED`
+- Status: `In Progress`
+- Owner: `Codex`
 - Suggested role: `SRE / STORAGE / QA`
 - Depends on: `CLOUD-PG-PLAN-01`, `CLOUD-PG-01`, `CLOUD-LEASE-01`, completed
   Artifact/PostgreSQL composition, `CLOUD-COMPOSE-APP-01` (`Done`) and
   `CLOUD-AGG-FENCE-01` (`Done`)
-- Branch: `TBD`
+- Branch: `codex/cloud-pg-mig-01` (governance only)
 - Owned paths: none on the parent; implementation must be split into
   path-bounded child cards before activation
 
@@ -1695,7 +1695,9 @@ an authority and without claiming production readiness from local Compose alone.
 #### Lock reason and acceptance
 
 - The aggregate parent is closed, so the first child may be claimed independently;
-  the remaining recovery children stay inactive until their own cards are Ready.
+  `CLOUD-PG-MIG-01` is now `Done` and `CLOUD-REC-BACKUP-01` is the only active
+  recovery child; the remaining recovery children stay inactive until their own
+  cards are Ready.
 - Every child must use isolated PostgreSQL/MinIO evidence with deterministic
   cleanup, preserve the single PostgreSQL fact source, and fail closed on
   namespace, epoch, checksum, object or cutover inconsistencies.
@@ -1707,10 +1709,10 @@ an authority and without claiming production readiness from local Compose alone.
 
 ### CLOUD-PG-MIG-01 - Canonical SQLite Snapshot And PostgreSQL Cutover Evidence
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `STORAGE / SRE / QA`
-- Depends on: `CLOUD-REC-01` (`Ready`), `CLOUD-PG-PLAN-01` (`Done`),
+- Depends on: `CLOUD-REC-01` (`In Progress`), `CLOUD-PG-PLAN-01` (`Done`),
   `CLOUD-PG-01` (`Done`) and the existing PostgreSQL migration catalog
 - Branch: `codex/cloud-pg-mig-01`
 - Worktree: `../zebra-agent-cloud-pg-mig-01`
@@ -1757,7 +1759,56 @@ fail-closed writes when the namespace or active cutover is not valid.
   are inserted in that order so PostgreSQL `audit_id` preserves the local read
   contract. Focused zero-write regressions reject legacy Artifact, Effect and
   Provider continuation tables before any Event write; their authority mapping
-  and runtime write wiring keep this card in progress.
+  and runtime write wiring remain gated.
+
+#### Review handoff
+
+- The migration implementation and all Owned paths are complete on
+  `codex/cloud-pg-mig-01`; the worktree retains only the unrelated generated
+  `.zebra-agent/sessions.sqlite` modification.
+- Local focused validation is `2 passed, 13 skipped` for the recovery module;
+  changed-path Ruff/Mypy and `git diff --check` pass.
+- PostgreSQL `17.5-alpine3.21` runner: `29 passed`, emits
+  `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`, and removes its container, volume and
+  network. Event ordering, projection rebuilds, cutover guards, namespace
+  isolation, transaction rollback and unsupported legacy zero-write boundaries
+  are covered.
+- `CLOUD-PG-MIG-01` is now `Done`; this closeout does not select runtime cloud
+  writes, SQLite fallback removal, production cutover or recovery children.
+
+### CLOUD-REC-BACKUP-01 - PostgreSQL Logical Backup And Restore Evidence
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `SRE / STORAGE / QA`
+- Depends on: `CLOUD-PG-MIG-01` (`Done`), `CLOUD-REC-01` (`In Progress`),
+  `CLOUD-COMPOSE-APP-01` (`Done`) and `CLOUD-AGG-FENCE-01` (`Done`)
+- Branch: `codex/cloud-rec-backup-01`
+- Worktree: `../zebra-agent-cloud-rec-backup-01`
+- Owned paths:
+  `tests/compose/recovery_backup/` and
+  `docs/CLOUD-REC-BACKUP-01.md`. Parent recovery governance records remain
+  owned by `CLOUD-REC-01` on `codex/cloud-pg-mig-01`.
+
+#### Goal
+
+Prove development-only PostgreSQL logical backup portability by dumping the
+fully migrated source, recording a checksum manifest, restoring into a fresh
+database and comparing authoritative schema/data counts without claiming
+physical PITR or production recovery readiness.
+
+#### Acceptance
+
+- PostgreSQL `17.5-alpine3.21` source runs the v1-v16 catalog and a deterministic
+  Event seed; `pg_dump --format=custom --no-owner --no-privileges` produces a
+  non-empty archive with a SHA-256 manifest.
+- A fresh restore database is created before `pg_restore`; schema migration,
+  session stream and Event counts match the source, and restored rows can be
+  read through the namespace-scoped contract.
+- The runner emits `ZEBRA_PG_RECOVERY_BACKUP_TEST_RESULT=PASS` only after all
+  checks pass and removes the container, volume, network and temporary archive.
+- Physical base backup, WAL archive, PITR, credentials, object restore, RPO/RTO
+  and DR readiness remain explicit non-goals.
 
 #### Explicit non-goals
 

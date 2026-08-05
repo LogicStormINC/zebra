@@ -8054,3 +8054,18 @@ actual byte access.
   verification, local strict static checks, and cleaned PostgreSQL 17.5 runners
   for all three source tables. The main `CLOUD-PG-MIG-01` migration remains
   `In Progress`; no cloud authority or runtime cutover is implied.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 mainline closeout and CLOUD-REC-BACKUP-01 activation
+
+- Re-ran the main PostgreSQL 17.5 migration runner after all legacy successor
+  boundaries closed: `29 passed`,
+  `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`, with container, volume and network
+  cleanup. Local recovery-focused checks and changed-path static checks remain
+  green.
+- Closed `CLOUD-PG-MIG-01` as `Done`. Its Event-first import, projection and
+  cutover evidence is complete; unsupported legacy authority tables remain
+  fail-closed quarantine inputs and no runtime cutover is implied.
+- Activated the next mainline recovery child `CLOUD-REC-BACKUP-01` on
+  `codex/cloud-rec-backup-01`, limited to logical `pg_dump`/`pg_restore`,
+  checksum manifest and fresh-database verification. Physical PITR/WAL,
+  production credentials, RPO/RTO and DR claims remain out of scope.
