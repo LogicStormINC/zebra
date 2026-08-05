@@ -7,8 +7,9 @@
 > `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
 > accepted and closed. The cloud-mainline aggregate evidence review is closed
 > with `PASS`; `CLOUD-AGG-FENCE-01` is now `Done` as a governance gate. The
-> recovery gate is unlocked for its first path-bounded migration child, while
-> runtime, application wiring and production rollout remain separately gated.
+> local recovery evidence gate is closed after its path-bounded migration,
+> backup, restore and drill children; runtime, application wiring and production
+> rollout remain separately gated.
 > Local SQLite Registry work remains deferred. ACP and optional code intelligence
 > remain locked.
 
@@ -65,12 +66,10 @@ does not authorize production code, migrations or activation of its successor.
   owns the separate Zebra migration/API/Worker image and application Compose
   overlay. The base PostgreSQL/Redis/MinIO dependency stack remains an external
   lifecycle, and this card does not activate Redis live routing or aggregate gates.
-- `CLOUD-REC-01` is `In Progress` after aggregate fencing closeout. Its
-  migration and logical-backup children are `Done`; object restore,
-  `CLOUD-REC-RESTORE-01` is now `Done` for development-only rebuild evidence,
-  and `CLOUD-REC-DRILL-01` is the final active recovery child for local
-  rollback/reconcile/race evidence. No production RPO/RTO or failover claim is
-  implied.
+- `CLOUD-REC-01` is `Done` as the local recovery evidence gate after all four
+  children were independently validated and merged. The migration, logical
+  backup, fresh restore and rollback/reconcile/race evidence is local-only; no
+  production RPO/RTO, PITR, DR or failover claim is implied.
 - `MEM-MEM0-SPIKE-01` is `Done` on `codex/mem0-contract-spike-01`. The pinned
   OSS REST/Compose contract is recorded and its deterministic provider evidence
   is accepted; real-provider compatibility remains a separate credential gate.
@@ -1666,7 +1665,7 @@ fact source; Redis remains optional live state and is not selected by startup.
 
 ### CLOUD-REC-01 - Migration, Backup, Restore And Recovery Gate
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `SRE / STORAGE / QA`
 - Depends on: `CLOUD-PG-PLAN-01`, `CLOUD-PG-01`, `CLOUD-LEASE-01`, completed
@@ -1696,10 +1695,8 @@ an authority and without claiming production readiness from local Compose alone.
 
 #### Lock reason and acceptance
 
-- The aggregate parent is closed, so children may be claimed independently;
-  `CLOUD-PG-MIG-01`, `CLOUD-REC-BACKUP-01` and `CLOUD-REC-RESTORE-01` are
-  `Done`; `CLOUD-REC-DRILL-01` is explicitly activated as the only remaining
-  recovery child.
+- All four children are `Done` with isolated evidence runners and deterministic
+  cleanup; this parent closes the local recovery evidence gate.
 - Every child must use isolated PostgreSQL/MinIO evidence with deterministic
   cleanup, preserve the single PostgreSQL fact source, and fail closed on
   namespace, epoch, checksum, object or cutover inconsistencies.
@@ -1709,12 +1706,21 @@ an authority and without claiming production readiness from local Compose alone.
 - Production RPO/RTO, PITR, failover or DR readiness stays `TBD` until a real
   environment measures and approves it; local evidence alone cannot close GA.
 
+#### Closeout
+
+- `CLOUD-PG-MIG-01`, `CLOUD-REC-BACKUP-01`, `CLOUD-REC-RESTORE-01` and
+  `CLOUD-REC-DRILL-01` are all merged into `codex/cloud-pg-mig-01` and their
+  registered PASS sentinels were re-run successfully.
+- This parent is `Done` for local migration/recovery evidence only. Runtime
+  selection, physical PITR, production failover, RPO/RTO and DR approval remain
+  external mainline gates.
+
 ### CLOUD-PG-MIG-01 - Canonical SQLite Snapshot And PostgreSQL Cutover Evidence
 
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `STORAGE / SRE / QA`
-- Depends on: `CLOUD-REC-01` (`In Progress`), `CLOUD-PG-PLAN-01` (`Done`),
+- Depends on: `CLOUD-REC-01` (`Done`), `CLOUD-PG-PLAN-01` (`Done`),
   `CLOUD-PG-01` (`Done`) and the existing PostgreSQL migration catalog
 - Branch: `codex/cloud-pg-mig-01`
 - Worktree: `../zebra-agent-cloud-pg-mig-01`
@@ -1783,7 +1789,7 @@ fail-closed writes when the namespace or active cutover is not valid.
 - Status: `Done`
 - Owner: `Codex`
 - Suggested role: `SRE / STORAGE / QA`
-- Depends on: `CLOUD-PG-MIG-01` (`Done`), `CLOUD-REC-01` (`In Progress`),
+- Depends on: `CLOUD-PG-MIG-01` (`Done`), `CLOUD-REC-01` (`Done`),
   `CLOUD-COMPOSE-APP-01` (`Done`) and `CLOUD-AGG-FENCE-01` (`Done`)
 - Branch: `codex/cloud-rec-backup-01`
 - Worktree: `../zebra-agent-cloud-rec-backup-01`
@@ -1837,7 +1843,7 @@ physical PITR or production recovery readiness.
 - Owner: `Codex`
 - Suggested role: `SRE / STORAGE / QA`
 - Depends on: `CLOUD-PG-MIG-01` (`Done`), `CLOUD-REC-BACKUP-01` (`Done`),
-  `CLOUD-REC-01` (`In Progress`), `CLOUD-COMPOSE-APP-01` (`Done`),
+  `CLOUD-REC-01` (`Done`), `CLOUD-COMPOSE-APP-01` (`Done`),
   `CLOUD-LIVE-01` (`Done`) and `CLOUD-AGG-FENCE-01` (`Done`)
 - Branch: `codex/cloud-rec-restore-01`
 - Worktree: `../zebra-agent-cloud-rec-restore-01`
@@ -1871,9 +1877,9 @@ before any runtime writer is enabled.
 
 #### Lock reason
 
-This child is explicitly activated after the migration and logical-backup gates
-closed. `CLOUD-REC-DRILL-01` remains inactive until its own rollback/outbox and
-multi-Worker evidence contract is registered and activated.
+This child was explicitly activated after the migration and logical-backup gates
+closed; its evidence is now closed. `CLOUD-REC-DRILL-01` was activated and
+completed independently.
 
 #### Closeout
 
@@ -1893,11 +1899,11 @@ multi-Worker evidence contract is registered and activated.
 
 ### CLOUD-REC-DRILL-01 - Rollback, Outbox Reconcile And Worker Race Evidence
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `SRE / STORAGE / QA`
 - Depends on: `CLOUD-PG-MIG-01` (`Done`), `CLOUD-REC-BACKUP-01` (`Done`),
-  `CLOUD-REC-RESTORE-01` (`Done`), `CLOUD-REC-01` (`In Progress`) and
+  `CLOUD-REC-RESTORE-01` (`Done`), `CLOUD-REC-01` (`Done`) and
   `CLOUD-AGG-FENCE-01` (`Done`)
 - Branch: `codex/cloud-rec-drill-01`
 - Worktree: `../zebra-agent-cloud-rec-drill-01`
@@ -1931,9 +1937,19 @@ show no loss. Record observed local timing as a drill measurement only.
 
 #### Lock reason
 
-This is the final local recovery child after migration, logical backup and fresh
-restore closeout. Its timing report is evidence for code-path behavior only; it
-does not close the recovery parent or authorize a production release.
+This was the final local recovery child after migration, logical backup and
+fresh restore closeout. Its timing report is evidence for code-path behavior
+only; it does not authorize a production release.
+
+#### Closeout
+
+- Child commits `214eadb2` and `08a7f3e6` were fast-forward merged into
+  `codex/cloud-pg-mig-01` at `08a7f3e6`.
+- The runner emitted `RECOVERY_DRILL_VERIFY=PASS events=2 recovery_ms=86.47`
+  and `ZEBRA_PG_RECOVERY_DRILL_TEST_RESULT=PASS`; the report recorded one claim
+  winner, one reconciliation winner, zero rollback writes and zero lost Events.
+- This closes the child and the local recovery parent only; production PITR,
+  RPO/RTO, failover and DR readiness remain external gates.
 
 ### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy Authority Export And Quarantine Contract
 

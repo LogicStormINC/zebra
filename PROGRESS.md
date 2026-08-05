@@ -8,10 +8,10 @@
 - Snapshot date: `2026-08-05`
 - Cloud mainline status is recorded in
   [Zebra Cloud 主线当前状态与后续工作](./docs/Zebra%20Cloud%20主线当前状态与后续工作.md):
-  PostgreSQL adapters, API/Worker PostgreSQL composition, application Compose and
-  isolated Redis live fan-out evidence are substantially complete, but migration/
-  backup/recovery/rollback, multi-Worker drills and the CopilotKit/Trench production
-  slice remain gated. `CLOUD-CONTROL-PLANE-PG-01`
+  PostgreSQL adapters, API/Worker PostgreSQL composition, application Compose,
+  isolated Redis live fan-out and local migration/recovery evidence are complete;
+  production recovery and the CopilotKit/Trench production slice remain gated.
+  `CLOUD-CONTROL-PLANE-PG-01`
   implementation and focused validation are complete on the isolated branch;
   sidebar closeout is approved and the task is recorded as `Done`; its API/Worker
   mapping remains a later gate. `CLOUD-DELIVERY-TXN-PG-01` is also merged to the
@@ -70,12 +70,11 @@
   review's `PASS` evidence and maintainer continuation closeout. This unlocks
   only the recovery evidence sequence; Runtime/API/Worker selection and
   production rollout remain separate gates.
-- `CLOUD-REC-01` remains `In Progress`. `CLOUD-PG-MIG-01` and its first recovery
-  child `CLOUD-REC-BACKUP-01` are `Done`, with the latter proving only
-  development-only logical backup portability. `CLOUD-REC-RESTORE-01` is also
-  `Done` for development-only fresh-instance rebuild evidence;
-  `CLOUD-REC-DRILL-01` is now the explicitly activated final recovery child.
-  No production RPO/RTO or DR claim is made from local Compose evidence.
+- `CLOUD-REC-01` is now `Done` as the local recovery evidence gate:
+  `CLOUD-PG-MIG-01`, `CLOUD-REC-BACKUP-01`, `CLOUD-REC-RESTORE-01` and
+  `CLOUD-REC-DRILL-01` are all independently validated and merged. The local
+  drill proves rollback, fenced claim/reconcile races and zero-loss Event
+  counts; no production RPO/RTO, PITR or DR claim is made from Compose.
 - `CLOUD-PG-MIG-01` is now `Done` on `codex/cloud-pg-mig-01`. The completed
   slice provides canonical read-only SQLite snapshots, migration v16 cutover
   fencing, restricted Event-first import, Session/Workspace/Task rebuild,

@@ -62,8 +62,8 @@ Redis 或 Mem0 变成云端事实源。
   独立运行态门禁；本卡不授权这些动作。
 - PostgreSQL logical backup/restore、physical PITR、Artifact 对象恢复、Redis/Mem0
   rebuild、Outbox reconcile、multi-Worker drill 和生产 RPO/RTO 属于
-  `CLOUD-REC-*` 子卡；`CLOUD-REC-BACKUP-01` 与 `CLOUD-REC-RESTORE-01` 已完成
-  开发环境备份/恢复证据，`CLOUD-REC-DRILL-01` 正在推进。
+  `CLOUD-REC-*` 子卡；四个恢复子卡已完成开发环境证据，生产 PITR/RPO/RTO
+  与 DR readiness 仍是外部门禁。
 
 ### 剩余映射审计
 
@@ -107,5 +107,5 @@ Event 写入前保持目标零写入。原始记录仍保留在带 manifest 的 
 - PostgreSQL Event/Projection 与 fenced aggregate 仍是 Zebra 的事实源。
 - Mem0 只能从 confirmed governed Memory 重建；Redis 只能从 Event replay
   重建，二者不参与 cutover authority。
-- `ACTIVE` 不是生产准入。生产切换仍需 `CLOUD-REC-01` 的 backup/restore/drill
-  证据及独立审批。
+- `ACTIVE` 不是生产准入。生产切换仍需 `CLOUD-REC-01` 的本地 backup/restore/drill
+  证据之外的真实环境验证及独立审批。

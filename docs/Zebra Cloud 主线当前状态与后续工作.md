@@ -6,11 +6,11 @@
 
 ## 结论
 
-Zebra Cloud 已完成 PostgreSQL 云端事实存储、API/Worker 存储组合、应用 Compose
-和主要聚合能力；恢复/回滚、多 Worker 故障演练以及 Trench 业务接入仍未完成。
-迁移与开发环境逻辑备份子任务已经完成，当前状态是“API/Worker 和主容器组装已能按
-显式 cloud profile 使用 PostgreSQL，aggregate fencing 治理门已关闭，恢复父门仍在
-推进；Runtime 业务选择、生产恢复证据和 Trench 接入尚未完成”。
+Zebra Cloud 已完成 PostgreSQL 云端事实存储、API/Worker 存储组合、应用 Compose、
+主要聚合能力以及本地迁移/恢复证据；生产恢复与 Trench 业务接入仍未完成。当前状态
+是“API/Worker 和主容器组装已能按显式 cloud profile 使用 PostgreSQL，aggregate
+fencing 治理门与本地 recovery evidence gate 已关闭；Runtime 业务选择、生产
+PITR/RPO/RTO/DR 和 Trench 接入尚未完成”。
 
 任务注册表是当前状态的权威来源；本文件是面向项目协作的汇总，不替代
 [`docs/AGENT_TASKS.md`](./AGENT_TASKS.md) 中的任务卡、Owner、Branch 和依赖。
@@ -173,12 +173,13 @@ Context conformance 审计及其 semantic successor 均为 `Done`，
  command boundary 证据，不改变 command transaction；API/Worker 存储组合已由
 `CLOUD-API-WORKER-PG-01` 完成；应用
  `CLOUD-COMPOSE-APP-01` 已完成应用 Compose 实现并关闭为 `Done`；Runtime 业务
-selector、在线事件路由和生产切换仍保持独立门禁。`CLOUD-REC-01` 已进入
-`In Progress`，`CLOUD-PG-MIG-01` 已完成 `29/29` 迁移证据，
+selector、在线事件路由和生产切换仍保持独立门禁。`CLOUD-REC-01` 已完成本地
+恢复证据门禁，`CLOUD-PG-MIG-01` 已完成 `29/29` 迁移证据，
 `CLOUD-REC-BACKUP-01` 已完成开发环境逻辑备份/恢复证据；Artifact、Effect/Delivery
 和 Provider continuation 旧表仍以已收口的 fail-closed quarantine 边界保留，
 `CLOUD-REC-RESTORE-01` 也已完成开发环境新实例恢复/重建证据，
-`CLOUD-REC-DRILL-01` 已作为最后一个恢复子任务激活。
+`CLOUD-REC-DRILL-01` 已完成回滚/回收/竞态演练；本地结果不构成生产
+PITR/RPO/RTO 或 DR 声明。
 
 ### Docker 应用层与在线事件
 
@@ -266,9 +267,9 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 
 ## 后续实施顺序
 
-以下顺序沿用现有任务注册表；Delivery、Context conformance、Handoff/dispatch
-和 aggregate fencing 均已完成，迁移与开发环境逻辑备份证据已完成，恢复父门禁
-仍受依赖约束：
+以下顺序沿用现有任务注册表；Delivery、Context conformance、Handoff/dispatch、
+aggregate fencing 和本地 migration/recovery evidence 均已完成，生产恢复与
+Embedded/Trench 仍受独立依赖约束：
 
 1. [x] 关闭 `CLOUD-PROVIDER-CONT-PG-PLAN-01`，冻结 authority identity、
    `WorkerMutationAuthority`、PostgreSQL 事务和生命周期合同。
@@ -318,8 +319,8 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
    `ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`，不接入 Redis live routing。
 17. [x] 完成 `CLOUD-PG-MIG-01` 的 SQLite 快照、PostgreSQL 导入和 cutover
    证据；其 `29/29` PostgreSQL runner、legacy fail-closed 边界和治理收口已记录。
-18. [ ] 完成 `CLOUD-REC-01` 的备份、恢复、回滚和多 Worker E2E 门禁；该门禁
-   不能以本地 Compose 证据宣称生产 RPO/RTO 或 DR 就绪。
+18. [x] 完成 `CLOUD-REC-01` 的备份、恢复、回滚和多 Worker 本地 E2E 门禁；
+   本地 Compose 证据不宣称生产 RPO/RTO、PITR 或 DR 就绪。
 19. 再激活 Host/AG-UI/Trench read-only vertical slice。
 20. 之后才进入 Frontend、Analysis、Writeback 和 GA。
 
@@ -336,7 +337,6 @@ closeout：Owner、Branch、Worktree、Owned paths 和 v13/v15 迁移所有权�
 依赖闭合后由侧边栏批准激活，并在实现、Compose 验证和 closeout 后登记为 `Done`；
 其 v14 shared records 与 cloud-only composition 已交付。其余
 SQLite Registry、Runtime backend selection、Provider HTTP、Desktop、Mem0 consumer
-以及迁移/恢复演练仍保持隔离；`CLOUD-REC-01` 已 `In Progress`，
-`CLOUD-REC-BACKUP-01` 与 `CLOUD-REC-RESTORE-01` 已 `Done`，
-`CLOUD-REC-DRILL-01` 正在推进；本地证据不构成生产 PITR/RPO/RTO 声明；
+以及迁移/恢复演练仍保持隔离；`CLOUD-REC-01` 已 `Done`，四个恢复子任务
+均已完成本地证据；本地证据不构成生产 PITR/RPO/RTO 声明；
 Redis live adapter 已完成但未接入 API/Worker 启动。

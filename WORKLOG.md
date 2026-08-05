@@ -8125,3 +8125,17 @@ actual byte access.
   multi-worker claim race and observed recovery timing/zero-loss counts.
 - No provider calls, runtime Worker wiring, automatic replay of uncertain
   external effects, production failover, RPO/RTO or DR claim is authorized.
+
+## 2026-08-05 - CLOUD-REC-DRILL-01 closeout
+
+- The isolated PostgreSQL 17.5 drill passed
+  `RECOVERY_DRILL_VERIFY=PASS events=2 recovery_ms=86.47` and emitted
+  `ZEBRA_PG_RECOVERY_DRILL_TEST_RESULT=PASS` after deterministic cleanup.
+- The report recorded one same-dispatch claim winner, one reconciliation winner,
+  two durable Events, one outbox row, zero rollback Events/outbox rows, zero
+  lost Events and explicit stale-terminal rejection; an uncertain dispatch was
+  resolved only as `failed_no_effect`.
+- Child commits `214eadb2` and `08a7f3e6` were fast-forward merged into
+  `codex/cloud-pg-mig-01` at `08a7f3e6`. `CLOUD-REC-DRILL-01` and the local
+  `CLOUD-REC-01` evidence gate are now `Done`; production PITR, RPO/RTO,
+  failover and DR readiness remain external gates.

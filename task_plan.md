@@ -51,21 +51,24 @@
 - The official Docker Hub digest pull remains an external evidence gap; the
   committed Dockerfile default and source pin are unchanged.
 
-## CLOUD-REC-01 - Migration, Backup, Restore And Recovery Gate (In Progress)
+## CLOUD-REC-01 - Migration, Backup, Restore And Recovery Gate (Done)
 
-- Next gate after `CLOUD-COMPOSE-APP-01`: migration/cutover policy, PostgreSQL
-  backup/PITR, object restore, fencing/outbox reconciliation and multi-Worker
-  failure drills.
-- `CLOUD-AGG-FENCE-01` is closed as `Done`; the recovery parent remains active
-  for independent child claims. Migration and the first logical-backup child are
-  closed; `CLOUD-REC-RESTORE-01` is now also closed for development-only
-  evidence; `CLOUD-REC-DRILL-01` is the final active recovery child.
+- Completed gate after `CLOUD-COMPOSE-APP-01`: migration/cutover policy,
+  PostgreSQL logical backup, fresh object/Redis restore, fencing/outbox
+  reconciliation and the local multi-Worker failure drill.
+- `CLOUD-AGG-FENCE-01` is closed as `Done`; all four recovery children are
+  independently validated and merged with local evidence.
 - Planned child cards are `CLOUD-PG-MIG-01`, `CLOUD-REC-BACKUP-01`,
   `CLOUD-REC-RESTORE-01` and `CLOUD-REC-DRILL-01`. Each must have its own
   branch, owner, evidence runner and exact owned paths.
 - Boundary: PostgreSQL remains the only lifecycle/operation fact source; Redis
   is replayable live state; Mem0 is a rebuildable confirmed-memory index. No
-  production RPO/RTO, PITR or DR claim is made from local Compose evidence.
+  production RPO/RTO, PITR or DR claim is made from local Compose evidence;
+  those remain external approval gates.
+
+Closeout: the local migration, backup, fresh restore and rollback/outbox/
+multi-Worker recovery evidence sequence is complete. Runtime selection,
+production failover, physical PITR and DR readiness remain separate gates.
 
 ## CLOUD-PG-MIG-01 - Canonical SQLite Snapshot And PostgreSQL Cutover (Done)
 
@@ -176,13 +179,13 @@ PITR/WAL, production credentials, RPO/RTO and DR readiness remain non-goals.
   enable runtime cloud writes, invent Artifact authority, or claim physical PITR,
   production credentials, RPO/RTO or DR readiness.
 
-### CLOUD-REC-DRILL-01 - Rollback, Outbox Reconcile And Worker Race Evidence (In Progress)
+### CLOUD-REC-DRILL-01 - Rollback, Outbox Reconcile And Worker Race Evidence (Done)
 
-1. `in_progress` - Freeze the local-only rollback-versus-restore and outbox
+1. `completed` - Freeze the local-only rollback-versus-restore and outbox
    reconciliation decision boundary.
-2. `pending` - Exercise a crashed/expired fenced claim, concurrent reconciliation
+2. `completed` - Exercise a crashed/expired fenced claim, concurrent reconciliation
    and a same-dispatch multi-worker claim race against PostgreSQL.
-3. `pending` - Record observed local recovery timings and zero-loss Event counts
+3. `completed` - Record observed local recovery timings and zero-loss Event counts
    without presenting them as production RPO/RTO or DR readiness.
 
 ### Boundary
@@ -193,6 +196,12 @@ PITR/WAL, production credentials, RPO/RTO and DR readiness remain non-goals.
 - The child uses existing PostgreSQL Effect/Lease contracts and does not add
   provider calls, runtime worker wiring, production failover or automatic replay
   of uncertain external effects.
+
+Closeout: the PostgreSQL 17.5 drill emitted
+`RECOVERY_DRILL_VERIFY=PASS events=2 recovery_ms=86.47` and
+`ZEBRA_PG_RECOVERY_DRILL_TEST_RESULT=PASS`; the report records one claim winner,
+one reconciliation winner, zero rollback writes, zero lost Events and explicit
+stale-terminal rejection. The result is local code-path evidence only.
 
 ### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy successor governance (Done)
 
