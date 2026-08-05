@@ -1,6 +1,6 @@
 # CLOUD-REC-RESTORE-01 — fresh-instance restore and rebuild
 
-Status: In Progress  
+Status: Done  
 Owner: Codex  
 Branch: `codex/cloud-rec-restore-01`  
 Owned paths: `tests/compose/recovery_restore/`, `docs/CLOUD-REC-RESTORE-01.md`
@@ -29,3 +29,12 @@ tests/compose/recovery_restore/run-recovery-tests.sh
 Acceptance evidence is the sequence of `RECOVERY_RESTORE_*` `PASS` lines and
 the final sentinel `ZEBRA_PG_RECOVERY_RESTORE_TEST_RESULT=PASS`. The runner
 removes its PostgreSQL/Redis/MinIO volumes, network and temporary files on exit.
+
+Validation completed on 2026-08-05:
+
+- `RECOVERY_RESTORE_SEED=PASS migrations=16 events=1 lease_token=1`;
+- `RECOVERY_RESTORE_ARCHIVE=PASS` for a non-empty 159,998-byte logical archive;
+- `RECOVERY_RESTORE_CLEAR=PASS artifact=absent redis=flushed`;
+- `RECOVERY_RESTORE_VERIFY=PASS migrations=16 events=1` with a fresh Artifact
+  version and a new control-plane epoch/fence;
+- `ZEBRA_PG_RECOVERY_RESTORE_TEST_RESULT=PASS` with deterministic cleanup.
