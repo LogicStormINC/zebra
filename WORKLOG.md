@@ -8044,3 +8044,13 @@ actual byte access.
 - Closed `CLOUD-PG-MIG-LEGACY-PROVIDER-01` as `Done`. The parent migration stays
   `In Progress`; the three legacy successor quarantine slices are now complete,
   while no cloud authority write or runtime cutover is implied.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-CON-01 governance closeout
+
+- Closed the governance parent after Artifact, Effect/Delivery and Provider
+  Continuation children completed their independent quarantine contracts and
+  were merged into `codex/cloud-pg-mig-01`.
+- Final evidence includes zero-write PostgreSQL preflights, manifest/tamper
+  verification, local strict static checks, and cleaned PostgreSQL 17.5 runners
+  for all three source tables. The main `CLOUD-PG-MIG-01` migration remains
+  `In Progress`; no cloud authority or runtime cutover is implied.

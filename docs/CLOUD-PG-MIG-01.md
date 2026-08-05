@@ -102,10 +102,9 @@ Event 写入前保持目标零写入。原始记录仍保留在带 manifest 的 
 或建立明确的 legacy quarantine/rebuild 流程；在此之前 importer 对这些表继续
 返回 unsupported-authority error 并保持目标事务零写入。
 
-后续治理父卡 `CLOUD-PG-MIG-LEGACY-CON-01` 已进入 `In Progress`：Artifact
-和 Effect/Delivery 子卡均已按独立 Owned paths 完成并合并；Provider
-continuation legacy 子卡已按独立 Owned paths 完成并合并。当前卡不授权运行态切换或把
-任一 quarantine 直接写入 cloud authority。
+后续治理父卡 `CLOUD-PG-MIG-LEGACY-CON-01` 已 `Done`：Artifact、Effect/Delivery
+和 Provider continuation 子卡均已按独立 Owned paths 完成并合并。当前卡不授权运行态
+切换或把任一 quarantine 直接写入 cloud authority。
 
 ## 设计边界
 

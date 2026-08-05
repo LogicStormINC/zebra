@@ -86,8 +86,9 @@
   zero-write regressions reject legacy Artifact, Effect and Provider
   continuation tables before Event writes; their cloud authority mappings and
   runtime ACTIVE write wiring remain gated.
-- `CLOUD-PG-MIG-LEGACY-CON-01` is now `In Progress` as the governance parent
-  after the maintainer explicitly activated its path-bounded children.
+- `CLOUD-PG-MIG-LEGACY-CON-01` is now `Done` as the governance parent after all
+  three path-bounded children were explicitly activated, independently
+  validated and merged.
   `CLOUD-PG-MIG-LEGACY-ARTIFACT-01` is now `Done` after merge commit `bed02e4a`
   from `codex/cloud-pg-mig-legacy-artifact-01`. Its deterministic
   Artifact legacy quarantine/export contract and evidence runner pass the local

@@ -1769,7 +1769,7 @@ fail-closed writes when the namespace or active cutover is not valid.
 
 ### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy Authority Export And Quarantine Contract
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
 - Depends on: `CLOUD-PG-MIG-01` mapping audit and the completed Artifact,
@@ -1820,6 +1820,17 @@ object version, dispatch evidence or namespace authority from unrelated rows.
   `CLOUD-PG-MIG-LEGACY-PROVIDER-01`. It depends on the completed
   `CLOUD-PROVIDER-CONT-PG-01` authority contract; no Provider continuation
   authority write is authorized by this activation.
+
+#### Closeout
+
+- `CLOUD-PG-MIG-LEGACY-ARTIFACT-01`,
+  `CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01` and
+  `CLOUD-PG-MIG-LEGACY-PROVIDER-01` are all `Done` after their independent
+  field matrices, manifest-bound quarantine artifacts, zero-write PostgreSQL
+  preflights, static checks and cleanup evidence.
+- The Provider evidence closeout is merged into `codex/cloud-pg-mig-01` at
+  `5f275d4b`; the governance parent is now closed. No legacy quarantine was
+  promoted into cloud authority and no Runtime/API/Worker cutover is implied.
 
 ### CLOUD-PG-MIG-LEGACY-ARTIFACT-01 - Artifact Legacy Export And Quarantine
 

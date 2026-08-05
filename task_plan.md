@@ -113,28 +113,34 @@
 15. `pending` - Register and implement the next explicitly owned authority
    projection slice after confirming its PostgreSQL mapping, preserving
    Event-first ordering and fail-closed behavior before handing the parent card
-   to Review. Artifact, Effect/Delivery and Provider continuation
-   remain blocked until their legacy-to-cloud authority fields are provable; the
-   mapping audit and permitted follow-up paths are recorded in
-   `docs/CLOUD-PG-MIG-01.md`. Focused PostgreSQL regressions now prove these
-   three legacy tables fail before Event writes; this evidence does not activate
-   a mapping or close the pending projection slice. The same document now
-   records the field-level direct-versus-unavailable matrix for each source.
+   to Review. The Artifact, Effect/Delivery and Provider continuation legacy
+   mappings are now closed as manifest-backed quarantine/rebuild slices; their
+   focused PostgreSQL regressions still reject unsupported rows before Event
+   writes. The mapping audit and permitted follow-up paths remain recorded in
+   `docs/CLOUD-PG-MIG-01.md`.
 
-### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy successor governance (In Progress)
+### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy successor governance (Done)
 
 - The maintainer explicitly activated `CLOUD-PG-MIG-LEGACY-ARTIFACT-01` on
   2026-08-05; it is now `Done` after parent merge `bed02e4a`.
 - The maintainer explicitly activated the next child,
   `CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01`, on 2026-08-05. Provider
-  continuation remains unregistered and inactive and still requires its own
-  source contract, branch and Owned paths before implementation.
+  continuation was then activated and completed in its own source-bounded child.
+- The maintainer explicitly activated
+  `CLOUD-PG-MIG-LEGACY-PROVIDER-01`; it is now `Done` after parent evidence
+  merge `5f275d4b`.
 - A child may choose only a versioned export with complete authority evidence or
   an explicit manifest-backed quarantine/rebuild flow; synthesized leases,
   Event identities, request hashes, object versions and namespace bindings are
   prohibited.
 - The current migration card's `29/29` zero-write evidence remains the admission
   baseline; no child may infer cloud authority from status-name similarity.
+
+Closeout: all three legacy successor children are `Done` with independent
+field matrices, manifest-bound quarantine artifacts, zero-write PostgreSQL
+preflights, and cleaned PostgreSQL 17.5 runners. The governance parent is
+closed; `CLOUD-PG-MIG-01` remains `In Progress` for its separate migration and
+runtime gates.
 
 ### CLOUD-PG-MIG-LEGACY-ARTIFACT-01 - Artifact Legacy Export And Quarantine (Done)
 
