@@ -1,6 +1,6 @@
 # CLOUD-REC-DRILL-01 — rollback, outbox reconciliation and worker race
 
-Status: In Progress  
+Status: Done  
 Owner: Codex  
 Branch: `codex/cloud-rec-drill-01`  
 Owned paths: `tests/compose/recovery_drill/`, `docs/CLOUD-REC-DRILL-01.md`
@@ -29,3 +29,11 @@ tests/compose/recovery_drill/run-recovery-drill.sh
 Acceptance evidence is the JSON report, `RECOVERY_DRILL_VERIFY=PASS`, and the
 final sentinel `ZEBRA_PG_RECOVERY_DRILL_TEST_RESULT=PASS`. The runner removes
 its PostgreSQL volume, network and temporary report on exit.
+
+Validation completed on 2026-08-05:
+
+- `RECOVERY_DRILL_VERIFY=PASS events=2 recovery_ms=86.47`;
+- report: claim winner `1`, reconciliation winner `1`, stale terminal rejected,
+  final dispatch `failed_no_effect`, `rpo_events_lost=0`, and outbox count `1`;
+- observed same-dispatch claim race: `17.618ms` (local measurement only);
+- `ZEBRA_PG_RECOVERY_DRILL_TEST_RESULT=PASS` with deterministic cleanup.
