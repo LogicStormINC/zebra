@@ -7792,3 +7792,31 @@ actual byte access.
 - The PostgreSQL 17.5 runner now passes `15/15` with deterministic cleanup;
   the remaining work is full authority-table import coverage and runtime ACTIVE
   write wiring.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 migration module split
+
+- Split canonical SQLite snapshot export/manifest verification into
+  `migration_snapshot.py`; cutover fencing and Event-first import remain in
+  `migration_recovery.py`. Both source files are below the repository's 300-line
+  target and the package re-export surface is unchanged.
+- Changed-path Ruff, strict Mypy, local migration tests (`2 passed, 7 skipped`)
+  and the PostgreSQL 17.5 runner (`15 passed`, PASS sentinel) remain green.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Workspace replay slice
+
+- The restricted importer now rebuilds `workspace_projections` from imported
+  `task_prepared` Event streams using the existing Core projection reducer and
+  PostgreSQL transaction adapter. Targets containing Workspace rows fail closed.
+- Event-derived `model_call_projections` and `tool_run_projections` are now
+  rebuilt through the existing indexer in the same import transaction; their
+  target rows are also covered by the empty-schema guard.
+- Added the focused Workspace replay regression; the PostgreSQL 17.5 runner
+  passes `16/16` with deterministic cleanup and the same PASS sentinel.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 schema-wide empty-target guard
+
+- Replaced the table allowlist in the importer preflight with a schema-wide
+  PostgreSQL base-table scan, excluding only `zebra_schema_migrations`; any
+  occupied unrelated table now fails closed before Event writes.
+- Added the occupied-target regression. The PostgreSQL 17.5 runner passes
+  `17/17` with deterministic cleanup and `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`.

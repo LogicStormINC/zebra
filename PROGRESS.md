@@ -74,6 +74,12 @@
   restore, fencing/outbox reconciliation and multi-Worker drill children remain
   split; only `CLOUD-PG-MIG-01` is claimed next. No production RPO/RTO or DR
   claim is made from local Compose evidence.
+- `CLOUD-PG-MIG-01` is `In Progress` on `codex/cloud-pg-mig-01`. The current
+  slice provides canonical read-only SQLite snapshots, migration v16 cutover
+  fencing, restricted Event-first import, Session/Workspace rebuild and
+  Event-derived Model/Tool projection replay. The PostgreSQL 17.5 runner passes
+  `17/17` with `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and deterministic cleanup;
+  unsupported authority tables and runtime ACTIVE write wiring remain gated.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.
   Its direct Task authority gap is implemented by `CLOUD-AGG-FENCE-TASK-01` at

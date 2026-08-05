@@ -79,9 +79,20 @@
 4. `completed` - Add the pinned PostgreSQL 17.5 Compose runner, replay,
    namespace, rollback and transaction-failure evidence; it passes `15/15`,
    emits `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and cleans all resources.
-5. `pending` - Run changed-path static checks, update the migration evidence
-   document and hand the card to Review without activating API/Worker runtime,
-   Redis, Mem0 or production cutover.
+5. `completed` - Run changed-path static checks and split the migration module
+   by responsibility; the evidence document records the boundary without
+   activating API/Worker runtime, Redis, Mem0 or production cutover.
+6. `completed` - Extend the restricted importer to rebuild Event-derived
+   Workspace projections when `task_prepared` facts are present, and include
+   the Workspace table in empty-target checks.
+7. `completed` - Replay Event-derived Model/Tool projections through the
+   existing PostgreSQL indexer and include both projection tables in the
+   empty-target guard.
+8. `completed` - Make the empty-target guard schema-wide (excluding only the
+   migration ledger) and add a regression for unrelated occupied state.
+9. `pending` - Extend the restricted importer for the next explicitly owned
+   authority projection slice, preserving Event-first ordering and fail-closed
+   behavior before handing the parent card to Review.
 
 ### Boundary
 

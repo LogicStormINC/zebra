@@ -6,7 +6,9 @@
 
 ## 当前切片
 
-本卡先交付迁移链的三个可复用基础合同：
+本卡先交付迁移链的三个可复用基础合同。实现按职责拆为
+`migration_snapshot.py`（快照格式/校验）和 `migration_recovery.py`
+（导入/Cutover），两个源文件均保持在 300 行目标以内：
 
 1. 对 SQLite 文件执行只读一致性快照，按表名、列定义和规范化 JSONL
    记录排序，生成行数、表计数和 SHA-256 manifest。UTF-8 文本按 NFC
@@ -18,20 +20,22 @@
    状态，再调用写操作；检查失败或操作抛错时写入为零。
 
 3. 受限 importer 只接受已校验的 Event/Projection snapshot：先按连续 sequence
-   导入 Event，再用 Event 重建 Session projection；非受支持的权威表、非空目标、
-   错误 identity 和不连续 sequence 都 fail closed。
+   导入 Event，再用 Event 重建 Session、存在 `task_prepared` 事实的 Workspace，
+   以及 Model/Tool projections；非受支持的权威表、非空目标、错误 identity 和
+   不连续 sequence 都 fail closed。
 
 这些模块只建立迁移证据边界，不改变 API/Worker profile 选择，也不把 SQLite、
 Redis 或 Mem0 变成云端事实源。
 
 ## 已验证
 
-- 本地快照/完整性单测：`2 passed, 7 skipped`（无外部 PostgreSQL 时 PG 用例跳过）。
-- PostgreSQL 17.5 Compose runner：`15 passed`，输出
+- 本地快照/完整性单测：`2 passed, 9 skipped`（无外部 PostgreSQL 时 PG 用例跳过）。
+- PostgreSQL 17.5 Compose runner：`17 passed`，输出
   `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`。
 - runner 清理了容器、volume 和 network；迁移目录 v1-v16 的 checksum 与并发
   migration runner 一并复核。
-- changed-path Ruff、strict Mypy、`git diff --check` 通过。
+- changed-path Ruff、strict Mypy、`git diff --check` 通过；迁移模块已按职责拆分，
+  避免继续堆叠在单一文件中。
 
 ## 尚未完成
 

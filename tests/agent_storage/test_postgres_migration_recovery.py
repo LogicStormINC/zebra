@@ -119,6 +119,78 @@ def test_event_import_rebuilds_projection_after_events(isolated_dsn: str, tmp_pa
         )
 
 
+def test_event_import_rebuilds_workspace_projection(isolated_dsn: str, tmp_path: Path) -> None:
+    source = tmp_path / "source.sqlite"
+    event_store = SQLiteEventStore(source)
+    session_id = new_session_id()
+    event_store.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=0,
+            event_type=EventType.SESSION_CREATED,
+            actor=EventActor.SYSTEM,
+            payload={"title": "Workspace import"},
+        )
+    )
+    event_store.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=1,
+            event_type=EventType.TASK_PREPARED,
+            actor=EventActor.USER,
+            payload={
+                "title": "Workspace import",
+                "user_input": "restore workspace",
+                "workspace_root": "/workspaces/imported",
+            },
+        )
+    )
+    event_store.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=2,
+            event_type=EventType.TOOL_EXECUTION_COMPLETED,
+            actor=EventActor.TOOL,
+            idempotency_key="tool-import-1",
+            payload={
+                "attempt_number": 1,
+                "tool_name": "shell",
+                "status": "succeeded",
+                "output": "ok",
+                "metadata": {},
+            },
+        )
+    )
+    snapshot_dir = tmp_path / "snapshot"
+    write_sqlite_snapshot(
+        export_sqlite_snapshot(source, table_names=("session_events",)),
+        snapshot_dir,
+    )
+
+    report = import_sqlite_event_snapshot(
+        snapshot_dir,
+        isolated_dsn,
+        deployment_namespace="tenant-a",
+        importer_identity="zebra-postgres-migration-v1",
+    )
+
+    assert report.workspace_count == 1
+    assert report.model_tool_projection_count == 1
+    with psycopg.connect(isolated_dsn) as connection:
+        row = connection.execute(
+            "SELECT workspace_root, current_sequence, status FROM workspace_projections"
+        ).fetchone()
+        assert row is not None
+        assert row[0] == "/workspaces/imported"
+        assert row[1] == 2
+        assert row[2] == "prepared"
+        tool = connection.execute(
+            "SELECT tool_name, status, output FROM tool_run_projections"
+        ).fetchone()
+        assert tool is not None
+        assert tuple(tool) == ("shell", "succeeded", "ok")
+
+
 def test_event_import_requires_restricted_identity(isolated_dsn: str, tmp_path: Path) -> None:
     source = tmp_path / "source.sqlite"
     with sqlite3.connect(source) as connection:
@@ -132,6 +204,34 @@ def test_event_import_requires_restricted_identity(isolated_dsn: str, tmp_path: 
             isolated_dsn,
             deployment_namespace="tenant-a",
             importer_identity="runtime",
+        )
+
+
+def test_event_import_rejects_any_nonempty_target(
+    isolated_dsn: str, tmp_path: Path
+) -> None:
+    source = tmp_path / "source.sqlite"
+    SQLiteEventStore(source).append(
+        SessionEvent.create(
+            session_id=new_session_id(),
+            sequence=0,
+            event_type=EventType.SESSION_CREATED,
+            actor=EventActor.SYSTEM,
+            payload={"title": "Occupied target"},
+        )
+    )
+    snapshot_dir = tmp_path / "snapshot"
+    write_sqlite_snapshot(export_sqlite_snapshot(source), snapshot_dir)
+    with psycopg.connect(isolated_dsn) as connection:
+        connection.execute("CREATE TABLE unrelated_state (value TEXT NOT NULL)")
+        connection.execute("INSERT INTO unrelated_state VALUES ('occupied')")
+
+    with pytest.raises(MigrationImportError, match="empty"):
+        import_sqlite_event_snapshot(
+            snapshot_dir,
+            isolated_dsn,
+            deployment_namespace="tenant-a",
+            importer_identity="zebra-postgres-migration-v1",
         )
 
 
