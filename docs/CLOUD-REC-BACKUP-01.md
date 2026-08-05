@@ -1,6 +1,6 @@
 # CLOUD-REC-BACKUP-01 — PostgreSQL logical backup portability
 
-Status: In Progress  
+Status: Done  
 Owner: Codex  
 Branch: `codex/cloud-rec-backup-01`  
 Owned paths: `tests/compose/recovery_backup/`, `docs/CLOUD-REC-BACKUP-01.md`
@@ -28,6 +28,15 @@ tests/compose/recovery_backup/run-postgres-tests.sh
 Acceptance evidence is the sentinel
 `ZEBRA_PG_RECOVERY_BACKUP_TEST_RESULT=PASS`, together with the seed and restore
 verification lines emitted by the runner.
+
+Validation completed on 2026-08-05:
+
+- `RECOVERY_BACKUP_SEED=PASS migrations=16 events=1`;
+- `RECOVERY_BACKUP_VERIFY=PASS migrations=16 events=1`;
+- `RECOVERY_BACKUP_MANIFEST=PASS` with a non-empty 159,808-byte archive;
+- `ZEBRA_PG_RECOVERY_BACKUP_TEST_RESULT=PASS`;
+- Compose volume, network, restore database, and temporary files were cleaned
+  up by the runner trap.
 
 ## Explicit non-goals
 
