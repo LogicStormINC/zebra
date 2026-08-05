@@ -12,6 +12,7 @@
 `migration_handoff.py`（Handoff authority/lineage 回放）、
 `migration_idempotency.py`（control-plane receipt 回放）、
 `migration_memory.py`（governed Memory authority 回放）、
+`migration_delivery_audit.py`（Delivery Audit 顺序回放）、
 `migration_cutover.py`（Cutover 门禁）和 `migration_recovery.py`（导入编排），
 各源文件均保持在 300 行目标以内：
 
@@ -33,7 +34,8 @@
    SQLite idempotency receipt 经过 action/key/request/status/JSON object/timestamp
    校验后写入 namespace-scoped control-plane 表。Governed Memory 经过内容、
    creation/provenance digest、scope、supersession 和 source Event range 校验后
-   写入 PostgreSQL authority 表。
+   写入 PostgreSQL authority 表。Delivery Audit 只接受 snapshot v2 的显式
+   source rowid，按源读取顺序写入 PostgreSQL 自增 `audit_id`。
    SQLite 中没有权威 ACK 时间的 `acked` dispatch、非受支持的权威表、非空目标、
    错误 identity 和不连续 sequence 都 fail closed。
 
@@ -42,8 +44,8 @@ Redis 或 Mem0 变成云端事实源。
 
 ## 已验证
 
-- 本地快照/完整性单测：`2 passed, 16 skipped`（无外部 PostgreSQL 时 PG 用例跳过）。
-- PostgreSQL 17.5 Compose runner：`24 passed`，输出
+- 本地快照/完整性单测：`2 passed, 18 skipped`（无外部 PostgreSQL 时 PG 用例跳过）。
+- PostgreSQL 17.5 Compose runner：`26 passed`，输出
   `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`。
 - runner 清理了容器、volume 和 network；迁移目录 v1-v16 的 checksum 与并发
   migration runner 一并复核。
@@ -55,7 +57,7 @@ Redis 或 Mem0 变成云端事实源。
 - 将 canonical snapshot 中其余权威 Store 数据导入 PostgreSQL，并为每个
   adapter 保持 restricted identity、empty-schema、checksum、ordering 和 rebuild
   校验；当前 importer 对未支持表会 fail closed，不会静默丢数据。Handoff 已覆盖；
-  Artifact payload、Effect/Delivery Outbox、Delivery Audit 和 Provider continuation
+  Artifact payload、Effect/Delivery Outbox 和 Provider continuation
   仍需各自确认其 PostgreSQL 权威映射；旧表缺少新 authority 所需的租约、Event
   绑定或稳定顺序键时必须保持 fail closed。
 - 接入真实 cloud runtime 的 ACTIVE 写门禁、SQLite fallback removal、完整
@@ -65,15 +67,18 @@ Redis 或 Mem0 变成云端事实源。
 
 ### 剩余映射审计
 
-以下旧表不会被合成字段后写入云端 authority；每一项都需要独立的导出合同
+以下三类旧表不会被合成字段后写入云端 authority；每一项都需要独立的导出合同
 或历史事实补齐后才能激活下一子任务：
 
 | SQLite source | PostgreSQL target | 当前阻塞证据 |
 | --- | --- | --- |
 | `artifact_payloads` | `artifact_payload_metadata` | 缺少 expected stream revision、Worker lease、幂等/request hash、Event/object version；本地 `active` 也不能无损映射到云端 lifecycle。 |
 | `effect_ledger` | `effect_outbox` | 缺少 execution/dispatch identity、request hash、payload Artifact、intent/terminal Event 和 claim/evidence；状态值相似不等于事实绑定。 |
-| `delivery_audit_records` | `control_plane_delivery_audit_records` | SQLite 读契约按 `rowid` 排序，但 canonical snapshot v1 不导出 rowid；PostgreSQL 自增 `audit_id` 无法恢复原 append 顺序。 |
 | `provider_continuation_artifacts` | `provider_continuation_artifacts` | 缺少 deployment/authority scope、selection Event、幂等/request hash 和 accepted LeaseFence；事件 payload 不能补出历史租约。 |
+
+Delivery Audit 是本卡中已解决的例外：snapshot v2 显式导出
+`__zebra_source_rowid`，按源顺序插入并验证 PostgreSQL `audit_id`；rowid 仅作
+迁移顺序证据，不作业务身份。
 
 允许的后续路径是先扩展版本化 snapshot/export 合同并生成可审计的历史证据，
 或建立明确的 legacy quarantine/rebuild 流程；在此之前 importer 对这些表继续

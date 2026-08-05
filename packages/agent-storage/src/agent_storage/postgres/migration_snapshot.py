@@ -14,6 +14,8 @@ from pathlib import Path
 from urllib.parse import quote
 
 _SNAPSHOT_SCHEMA = "zebra.sqlite.snapshot.v1"
+_SNAPSHOT_SCHEMA_WITH_ROWIDS = "zebra.sqlite.snapshot.v2"
+_ROWID_COLUMN = "__zebra_source_rowid"
 
 
 class SnapshotIntegrityError(ValueError):
@@ -72,6 +74,7 @@ def export_sqlite_snapshot(
     database_path: str | Path,
     *,
     table_names: Sequence[str] | None = None,
+    include_rowids: Sequence[str] = (),
 ) -> SQLiteSnapshot:
     """Read every user table from a consistent, read-only SQLite transaction."""
     path = Path(database_path)
@@ -98,6 +101,9 @@ def export_sqlite_snapshot(
             raise SnapshotIntegrityError(
                 f"requested SQLite snapshot tables do not exist: {', '.join(sorted(missing))}"
             )
+        rowid_tables = set(include_rowids)
+        if rowid_tables - set(selected):
+            raise SnapshotIntegrityError("rowid capture requires the table to be selected")
         for table in selected:
             columns = tuple(
                 str(column[1])
@@ -107,11 +113,24 @@ def export_sqlite_snapshot(
             )
             if not columns:
                 raise SnapshotIntegrityError(f"table has no columns: {table}")
-            rows = connection.execute(
-                f"SELECT {_select_columns(columns)} FROM {_quote_identifier(table)}"
-            ).fetchall()
+            if table in rowid_tables:
+                if _ROWID_COLUMN in columns:
+                    raise SnapshotIntegrityError(f"reserved rowid column is present: {table}")
+                snapshot_columns = (*columns, _ROWID_COLUMN)
+                rows = connection.execute(
+                    f"SELECT {_select_columns(columns)}, "
+                    f"rowid AS {_quote_identifier(_ROWID_COLUMN)} "
+                    f"FROM {_quote_identifier(table)}"
+                ).fetchall()
+            else:
+                snapshot_columns = columns
+                rows = connection.execute(
+                    f"SELECT {_select_columns(columns)} FROM {_quote_identifier(table)}"
+                ).fetchall()
             table_records = [
-                SnapshotRecord(table, columns, tuple(_snapshot_value(value) for value in item))
+                SnapshotRecord(
+                    table, snapshot_columns, tuple(_snapshot_value(value) for value in item)
+                )
                 for item in rows
             ]
             table_records.sort(key=lambda item: item.as_json())
@@ -120,7 +139,7 @@ def export_sqlite_snapshot(
         records.sort(key=lambda item: (item.table, item.as_json()))
         record_bytes = "\n".join(record.as_json() for record in records).encode("utf-8")
         manifest = SnapshotManifest(
-            schema=_SNAPSHOT_SCHEMA,
+            schema=_SNAPSHOT_SCHEMA_WITH_ROWIDS if rowid_tables else _SNAPSHOT_SCHEMA,
             record_count=len(records),
             records_sha256=hashlib.sha256(record_bytes).hexdigest(),
             table_counts=tuple(table_counts),
@@ -185,7 +204,9 @@ def load_sqlite_snapshot(directory: str | Path) -> SQLiteSnapshot:
         )
     except (KeyError, TypeError, ValueError) as error:
         raise SnapshotIntegrityError("snapshot manifest is malformed") from error
-    if manifest.schema != _SNAPSHOT_SCHEMA or manifest.record_count != len(records):
+    if manifest.schema not in {_SNAPSHOT_SCHEMA, _SNAPSHOT_SCHEMA_WITH_ROWIDS}:
+        raise SnapshotIntegrityError("snapshot manifest schema is unsupported")
+    if manifest.record_count != len(records):
         raise SnapshotIntegrityError("snapshot manifest count or schema mismatch")
     counts = {table: 0 for table, _ in manifest.table_counts}
     for record in records:

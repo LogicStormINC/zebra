@@ -7880,6 +7880,20 @@ actual byte access.
   continuation remain deferred where the legacy schema cannot prove cloud
   authority fields or stable append order.
 
+## 2026-08-05 - CLOUD-PG-MIG-01 Delivery Audit replay slice
+
+- Extended the canonical snapshot contract to v2 with opt-in
+  `__zebra_source_rowid` capture. Delivery Audit replay requires this explicit
+  ordering evidence, validates session/status/metadata/timestamp contracts, and
+  inserts rows in source order so PostgreSQL's generated `audit_id` preserves
+  the local `ORDER BY rowid` read behavior. The source rowid is not treated as
+  a business identity.
+- The focused local matrix is `2 passed, 18 skipped`; the PostgreSQL 17.5
+  migration runner passes `26/26` with `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and
+  deterministic cleanup. Artifact, Effect/Delivery and Provider continuation
+  remain deferred because their legacy schemas still lack non-derivable cloud
+  authority fields.
+
 ## 2026-08-05 - CLOUD-PG-MIG-01 remaining authority mapping audit
 
 - Audited the remaining SQLite `artifact_payloads`, `effect_ledger`,

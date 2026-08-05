@@ -107,10 +107,13 @@
 13. `completed` - Replay governed SQLite Memory authority after Event import,
    validating content/provenance digests, scope/singleton/supersession rules and
    source Event ranges before the namespace-scoped PostgreSQL insert.
-14. `pending` - Register and implement the next explicitly owned authority
+14. `completed` - Extend the snapshot contract to v2 for explicit Delivery Audit
+   source rowids, replay rows in source order, and verify PostgreSQL `audit_id`
+   preserves the local read contract without treating rowid as business identity.
+15. `pending` - Register and implement the next explicitly owned authority
    projection slice after confirming its PostgreSQL mapping, preserving
    Event-first ordering and fail-closed behavior before handing the parent card
-   to Review. Artifact, Effect/Delivery, Delivery Audit and Provider continuation
+   to Review. Artifact, Effect/Delivery and Provider continuation
    remain blocked until their legacy-to-cloud authority fields are provable; the
    mapping audit and permitted follow-up paths are recorded in
    `docs/CLOUD-PG-MIG-01.md`.

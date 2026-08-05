@@ -80,9 +80,10 @@
   Event-derived Model/Tool projection replay, Context capsule/pointer
   verification, and fenced Handoff operation/envelope/dispatch replay with
   rebuilt-lineage checks, plus namespace-scoped idempotency and governed Memory
-  replay. The PostgreSQL 17.5 runner passes `24/24` with
+  replay, and rowid-evidenced Delivery Audit replay through snapshot v2. The
+  PostgreSQL 17.5 runner passes `26/26` with
   `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and deterministic cleanup; Artifact,
-  Effect/Delivery, Delivery Audit, Provider continuation and runtime ACTIVE
+  Effect/Delivery, Provider continuation and runtime ACTIVE
   write wiring remain gated.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.

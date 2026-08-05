@@ -24,6 +24,7 @@ set +e
       tests/agent_storage/test_postgres_migration_handoff.py \
       tests/agent_storage/test_postgres_migration_idempotency.py \
       tests/agent_storage/test_postgres_migration_memory.py \
+      tests/agent_storage/test_postgres_migration_delivery_audit.py \
       tests/agent_storage/test_postgres_migrations.py
 )
 status=$?

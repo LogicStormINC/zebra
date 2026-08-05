@@ -21,6 +21,10 @@ from agent_storage.postgres.migration_context import (
     ContextMigrationError,
     replay_context_snapshot,
 )
+from agent_storage.postgres.migration_delivery_audit import (
+    DeliveryAuditMigrationError,
+    replay_delivery_audit_snapshot,
+)
 from agent_storage.postgres.migration_handoff import (
     HandoffMigrationError,
     replay_handoff_snapshot,
@@ -66,6 +70,7 @@ class MigrationImportReport:
     handoff_lineage_count: int
     idempotency_count: int
     memory_count: int
+    delivery_audit_count: int
     manifest_sha256: str
 
 
@@ -94,6 +99,7 @@ def import_sqlite_event_snapshot(
         "handoff_dispatch_outbox",
         "idempotency_records",
         "memory_records",
+        "delivery_audit_records",
     }
     if unsupported:
         names = ", ".join(sorted(unsupported))
@@ -152,6 +158,14 @@ def import_sqlite_event_snapshot(
             )
         except MemoryMigrationError as error:
             raise MigrationImportError(str(error)) from error
+        try:
+            delivery_audit_report = replay_delivery_audit_snapshot(
+                connection,
+                deployment_namespace,
+                records_by_table,
+            )
+        except DeliveryAuditMigrationError as error:
+            raise MigrationImportError(str(error)) from error
         workspace_count = 0
         for session_events in grouped.values():
             save_session_in_transaction(
@@ -208,6 +222,7 @@ def import_sqlite_event_snapshot(
         handoff_lineage_count=handoff_lineage_count,
         idempotency_count=idempotency_report.record_count,
         memory_count=memory_report.record_count,
+        delivery_audit_count=delivery_audit_report.record_count,
         manifest_sha256=snapshot.manifest.digest,
     )
 

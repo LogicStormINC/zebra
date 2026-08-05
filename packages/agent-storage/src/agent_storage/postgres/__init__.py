@@ -45,6 +45,10 @@ from agent_storage.postgres.memory_delivery import (
     PostgresMemoryDeliveryStore,
 )
 from agent_storage.postgres.migration_cutover import CutoverConflictError, PostgresCutoverStore
+from agent_storage.postgres.migration_delivery_audit import (
+    DeliveryAuditMigrationError,
+    DeliveryAuditReplayReport,
+)
 from agent_storage.postgres.migration_handoff import (
     HandoffMigrationError,
     HandoffReplayReport,
@@ -153,6 +157,8 @@ __all__ = [
     "PostgresProviderContinuationStore",
     "apply_postgres_migrations",
     "CutoverConflictError",
+    "DeliveryAuditMigrationError",
+    "DeliveryAuditReplayReport",
     "MigrationImportError",
     "MigrationImportReport",
     "HandoffMigrationError",
