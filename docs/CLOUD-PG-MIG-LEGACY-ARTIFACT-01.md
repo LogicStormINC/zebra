@@ -2,7 +2,7 @@
 
 ## Artifact legacy export and quarantine evidence
 
-- Status: `In Progress` / implementation slice ready for review
+- Status: `Review` / independent review passed, merge still pending
 - Date: `2026-08-05`
 - Branch: `codex/cloud-pg-mig-legacy-artifact-01`
 - Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent-cloud-pg-mig-legacy-artifact-01`
