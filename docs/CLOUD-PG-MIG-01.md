@@ -92,6 +92,9 @@ Event 写入前保持目标零写入。原始记录仍保留在带 manifest 的 
 或建立明确的 legacy quarantine/rebuild 流程；在此之前 importer 对这些表继续
 返回 unsupported-authority error 并保持目标事务零写入。
 
+后续治理父卡 `CLOUD-PG-MIG-LEGACY-CON-01` 已登记为 `Locked`。它必须先按三类
+source 拆分独立子卡和 Owned paths，再允许任何一类进入实现；当前卡不授权其激活。
+
 ## 设计边界
 
 - PostgreSQL Event/Projection 与 fenced aggregate 仍是 Zebra 的事实源。

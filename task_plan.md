@@ -120,6 +120,18 @@
    three legacy tables fail before Event writes; this evidence does not activate
    a mapping or close the pending projection slice.
 
+### CLOUD-PG-MIG-LEGACY-CON-01 - Locked successor registration
+
+- `Locked` parent card for the three remaining legacy authority mappings.
+- Before activation, split independent Artifact, Effect/Delivery and Provider
+  children with exact Owned paths and a source-to-target field matrix.
+- A child may choose only a versioned export with complete authority evidence or
+  an explicit manifest-backed quarantine/rebuild flow; synthesized leases,
+  Event identities, request hashes, object versions and namespace bindings are
+  prohibited.
+- The current migration card's `29/29` zero-write evidence is the admission
+  baseline, not implementation authorization for any successor.
+
 ### Boundary
 
 - Owned paths are limited to the PostgreSQL migration-recovery module(s),

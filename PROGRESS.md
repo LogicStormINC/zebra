@@ -86,6 +86,9 @@
   zero-write regressions reject legacy Artifact, Effect and Provider
   continuation tables before Event writes; their cloud authority mappings and
   runtime ACTIVE write wiring remain gated.
+- `CLOUD-PG-MIG-LEGACY-CON-01` is registered `Locked` as the governance-only
+  successor for those three mappings. It must split independent export or
+  quarantine/rebuild children before any authority write is activated.
 - The current cloud governance slice
   `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` is now `Done` with audit result `PASS`.
   Its direct Task authority gap is implemented by `CLOUD-AGG-FENCE-TASK-01` at

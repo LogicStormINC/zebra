@@ -7916,3 +7916,12 @@ actual byte access.
 - Local focused matrix: `2 passed, 21 skipped`; PostgreSQL 17.5 Compose runner:
   `29 passed`, `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`, with container, volume and
   network cleanup. No authority mapping was activated.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-CON-01 registered Locked
+
+- Registered a governance-only successor for the remaining Artifact,
+  Effect/Delivery and Provider legacy mappings.
+- The successor must split one child per source and choose either a complete
+  versioned export or an explicit manifest-backed quarantine/rebuild flow. It
+  remains `Locked`; no implementation, runtime wiring or authority activation
+  was performed.

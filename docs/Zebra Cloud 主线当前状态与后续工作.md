@@ -9,7 +9,7 @@
 Zebra Cloud 已完成 PostgreSQL 云端事实存储、API/Worker 存储组合、应用 Compose
 和主要聚合能力；迁移/备份/恢复/回滚、多 Worker 故障演练以及 Trench 业务接入仍未
 完成。当前状态是“API/Worker 和主容器组装已能按显式 cloud profile 使用 PostgreSQL，
-aggregate fencing 治理门已关闭，恢复链的首个迁移子任务已 Ready；Runtime 业务选择、
+aggregate fencing 治理门已关闭，恢复链的首个迁移子任务正在实施；Runtime 业务选择、
 恢复证据和 Trench 接入尚未完成”。
 
 任务注册表是当前状态的权威来源；本文件是面向项目协作的汇总，不替代
@@ -28,7 +28,7 @@ aggregate fencing 治理门已关闭，恢复链的首个迁移子任务已 Read
 
 ### PostgreSQL 云端基础
 
-- PostgreSQL 迁移目录已覆盖 v1-v15：Event/Projection、Epoch/Lease、Effect
+- PostgreSQL 迁移目录已覆盖 v1-v16：Event/Projection、Epoch/Lease、Effect
   Outbox、Workspace、Task/Segment、Model/Tool、Context、Handoff、Artifact、
   Governed Memory、Memory Delivery、Native Memory Gateway、Provider Continuation、
   cloud control-plane shared records 和 Delivery Transaction。
@@ -174,7 +174,10 @@ Context conformance 审计及其 semantic successor 均为 `Done`，
 `CLOUD-API-WORKER-PG-01` 完成；应用
  `CLOUD-COMPOSE-APP-01` 已完成应用 Compose 实现并关闭为 `Done`；Runtime 业务
 selector、在线事件路由和生产切换仍保持独立门禁。`CLOUD-REC-01` 已由 `Locked`
-转为 `Ready`，当前只领取 `CLOUD-PG-MIG-01`，其余恢复子任务保持未激活。
+转为 `Ready`，当前只领取 `CLOUD-PG-MIG-01`。该卡的 PostgreSQL 17.5 迁移
+runner 已通过 `29/29`；Artifact、Effect/Delivery 和 Provider continuation 的
+旧表 authority 映射仍 fail closed，`CLOUD-PG-MIG-LEGACY-CON-01` 已登记为
+`Locked` successor，其余恢复子任务保持未激活。
 
 ### Docker 应用层与在线事件
 
@@ -262,8 +265,8 @@ Thread、Redis live state 和前端 state 不能成为持久事实源。
 
 ## 后续实施顺序
 
-以下顺序沿用现有任务注册表；Delivery 已完成，Context conformance 审计与
-语义缺口修复均已完成，当前先进行 Handoff/dispatch conformance 审计，父门禁
+以下顺序沿用现有任务注册表；Delivery、Context conformance、Handoff/dispatch
+和 aggregate fencing 均已完成，当前推进 `CLOUD-PG-MIG-01` 迁移证据，父门禁
 仍受依赖约束：
 
 1. [x] 关闭 `CLOUD-PROVIDER-CONT-PG-PLAN-01`，冻结 authority identity、
@@ -333,4 +336,5 @@ closeout：Owner、Branch、Worktree、Owned paths 和 v13/v15 迁移所有权�
 其 v14 shared records 与 cloud-only composition 已交付。其余
 SQLite Registry、Runtime backend selection、Provider HTTP、Desktop、Mem0 consumer
 以及迁移/恢复演练仍保持隔离；`CLOUD-REC-01` 已 `Ready`，当前仅领取
-`CLOUD-PG-MIG-01`；Redis live adapter 已完成但未接入 API/Worker 启动。
+`CLOUD-PG-MIG-01`，其 `29/29` 证据和 legacy successor 边界见任务注册表；
+Redis live adapter 已完成但未接入 API/Worker 启动。

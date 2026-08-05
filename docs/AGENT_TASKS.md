@@ -1767,6 +1767,39 @@ fail-closed writes when the namespace or active cutover is not valid.
 - Backup/PITR, object restore, fencing/outbox reconciliation and multi-Worker
   drills remain the separate `CLOUD-REC-*` children.
 
+### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy Authority Export And Quarantine Contract
+
+- Status: `Locked`
+- Owner: `TBD`
+- Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
+- Depends on: `CLOUD-PG-MIG-01` mapping audit and the completed Artifact,
+  Effect/Delivery and Provider authority contracts
+- Branch: `TBD`
+- Owned paths: none on the parent; split one path-bounded child per legacy
+  source before activation
+
+#### Goal
+
+Freeze the only safe choices for legacy `artifact_payloads`, `effect_ledger` and
+`provider_continuation_artifacts`: prove a versioned export that contains every
+cloud authority field, or preserve the source as an explicit quarantine/rebuild
+input. The contract must not synthesize a lease, Event identity, request hash,
+object version, dispatch evidence or namespace authority from unrelated rows.
+
+#### Acceptance
+
+- The source-to-target field matrix names every required field and marks each
+  value as directly present, provably derived, or unavailable.
+- Each source gets an independent child card and evidence runner; a child may
+  write PostgreSQL authority only after its preflight, ordering, checksum,
+  namespace and zero-write failure matrix is accepted.
+- Unsupported or incomplete legacy rows remain outside cloud authority and are
+  retained in the manifest-backed source snapshot or an explicitly governed
+  quarantine/rebuild artifact.
+- The parent and all children remain `Locked` until a maintainer activates them;
+  no API/Worker wiring, runtime cutover, Redis/Mem0 behavior or production
+  migration is implied by this registration.
+
 ### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
 
 - Status: `Done`
