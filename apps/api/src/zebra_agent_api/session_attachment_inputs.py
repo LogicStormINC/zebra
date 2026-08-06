@@ -12,7 +12,7 @@ from zebra_agent_api.session_document_inputs import extract_docx_text, extract_p
 from zebra_agent_api.session_presentation_inputs import extract_pptx_text
 from zebra_agent_api.session_spreadsheet_inputs import extract_xlsx_text
 
-MAX_ATTACHMENT_COUNT = 4
+MAX_ATTACHMENT_COUNT = 6
 MAX_ATTACHMENT_BYTES = 65_536
 MAX_ATTACHMENT_TOTAL_BYTES = 131_072
 MAX_PDF_BYTES = 4_194_304

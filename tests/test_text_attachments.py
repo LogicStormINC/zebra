@@ -69,8 +69,8 @@ def test_attachment_parser_rejects_unsafe_inputs(
 
 def test_attachment_parser_enforces_shape_count_and_byte_budgets() -> None:
     valid = _attachment("brief.txt", "material")
-    with pytest.raises(ValueError, match="at most 4"):
-        parse_attachment_inputs([valid] * 5)
+    with pytest.raises(ValueError, match="at most 6"):
+        parse_attachment_inputs([valid] * 7)
     with pytest.raises(ValueError, match="fields must be"):
         parse_attachment_inputs([{**valid, "unexpected": "field"}])
     with pytest.raises(ValueError, match="65536-byte limit"):
