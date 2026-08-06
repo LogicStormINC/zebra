@@ -23,6 +23,22 @@ def test_ensure_column_is_idempotent(tmp_path: Path) -> None:
     assert {"a", "b"} <= columns
 
 
+def test_database_connections_use_wal_and_long_busy_timeout(
+    tmp_path: Path,
+) -> None:
+    """Long tasks write heavily from concurrent threads; connections must run
+    in WAL mode with a generous busy timeout instead of the default 5s
+    rollback-journal lock window."""
+    database = SQLiteDatabase(tmp_path / "wal.sqlite")
+    with database.connect() as connection:
+        mode = connection.execute("PRAGMA journal_mode").fetchone()[0]
+        busy_timeout = connection.execute("PRAGMA busy_timeout").fetchone()[0]
+        synchronous = connection.execute("PRAGMA synchronous").fetchone()[0]
+    assert str(mode).lower() == "wal"
+    assert int(busy_timeout) >= 30000
+    assert int(synchronous) == 1
+
+
 def test_concurrent_ensure_column_does_not_raise(tmp_path: Path) -> None:
     database = SQLiteDatabase(tmp_path / "race.sqlite")
     with database.connect() as connection:

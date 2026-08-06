@@ -12,8 +12,15 @@ class SQLiteDatabase:
         return self._database_path
 
     def connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self._database_path)
+        # Long tasks write heavily (events, effect ledger, projections) from
+        # concurrent threads; the default rollback journal plus the 5s busy
+        # timeout surfaced as "database is locked" mid-run. WAL lets readers
+        # proceed during writes and a 30s busy timeout absorbs writer bursts.
+        connection = sqlite3.connect(self._database_path, timeout=30)
         connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA journal_mode=WAL")
+        connection.execute("PRAGMA busy_timeout=30000")
+        connection.execute("PRAGMA synchronous=NORMAL")
         return connection
 
 
@@ -43,4 +50,3 @@ def ensure_column(
     except sqlite3.OperationalError as exc:
         if "duplicate column name" not in str(exc):
             raise
-
