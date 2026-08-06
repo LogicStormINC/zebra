@@ -74,6 +74,9 @@ DETERMINISTIC_FAILURE_REASONS = frozenset(
     {
         "tool_validation_error",
         "invalid_output_contract",
+        # Local loop-guard / read-dedup rejections: the call was NOT executed
+        # (executed=false), so no external effect could have occurred.
+        "repeated_tool_call",
     }
 )
 

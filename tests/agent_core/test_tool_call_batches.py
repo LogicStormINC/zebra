@@ -159,6 +159,92 @@ def test_provider_batch_repeated_member_becomes_observation_and_tail_still_runs(
     assert isinstance(counts, dict) and len(counts) == 1
 
 
+def test_repeated_read_dedup_is_scoped_to_the_current_attempt() -> None:
+    """Cross-round reads are legitimate (a correction round re-queries the
+    same history) and must not be rejected by the session-level read dedup;
+    only repeats WITHIN the current attempt are recovered."""
+    from agent_core.harness.sequential_loop import _executed_action_fingerprints
+    from agent_core.harness.tool_batch import _can_recover_repeated_reads
+
+    attempt_start = datetime(2026, 7, 14, 9, 5, tzinfo=UTC)
+    older = datetime(2026, 7, 14, 9, 0, tzinfo=UTC)
+    old_call = _call("sessions.search", {"query": "history"}, "call-old")
+    done_call = _call("files.read", {"path": "a.txt"}, "call-done")
+    pending = _call("sessions.search", {"query": "history"}, "call-pending")
+    old_assistant = SessionMessage(
+        message_id=new_message_id(),
+        role=MessageRole.ASSISTANT,
+        content="old round",
+        created_at=older,
+        tool_calls=(old_call,),
+    )
+    old_result = SessionMessage(
+        message_id=new_message_id(),
+        role=MessageRole.TOOL,
+        content="done",
+        created_at=older,
+        tool_call_id="call-old",
+    )
+    done_assistant = SessionMessage(
+        message_id=new_message_id(),
+        role=MessageRole.ASSISTANT,
+        content="fresh round",
+        created_at=attempt_start,
+        tool_calls=(done_call,),
+    )
+    done_result = SessionMessage(
+        message_id=new_message_id(),
+        role=MessageRole.TOOL,
+        content="done",
+        created_at=attempt_start,
+        tool_call_id="call-done",
+    )
+
+    attempt_fingerprints = _executed_action_fingerprints(
+        [old_assistant, old_result, done_assistant, done_result],
+        since=attempt_start,
+    )
+    # The earlier round's identical call is NOT in the current-attempt set.
+    assert _can_recover_repeated_reads(
+        (pending,),
+        fingerprints=attempt_fingerprints,
+        metadata={},
+    ) is False
+
+    # A duplicate within the same attempt is still recovered.
+    pending_done_assistant = SessionMessage(
+        message_id=new_message_id(),
+        role=MessageRole.ASSISTANT,
+        content="pending round",
+        created_at=attempt_start,
+        tool_calls=(pending,),
+    )
+    pending_done_result = SessionMessage(
+        message_id=new_message_id(),
+        role=MessageRole.TOOL,
+        content="done",
+        created_at=attempt_start,
+        tool_call_id="call-pending",
+    )
+    with_pending = _executed_action_fingerprints(
+        [
+            old_assistant,
+            old_result,
+            done_assistant,
+            done_result,
+            pending_done_assistant,
+            pending_done_result,
+        ],
+        since=attempt_start,
+    )
+    duplicate = _call("sessions.search", {"query": "history"}, "call-dup")
+    assert _can_recover_repeated_reads(
+        (duplicate,),
+        fingerprints=with_pending,
+        metadata={},
+    ) is True
+
+
 def test_provider_batch_suspends_before_over_budget_batch_starts() -> None:
     calls = (
         _call("files.read", {"path": "a.txt"}, "call_a"),

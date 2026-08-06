@@ -1,5 +1,6 @@
 from collections.abc import Callable, Mapping
 from dataclasses import replace
+from datetime import datetime
 
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
@@ -102,7 +103,9 @@ class SequentialToolLoop:
                 completion=completion,
                 tool_calls=calls,
             )
-        fingerprints = _executed_action_fingerprints(messages)
+        fingerprints = _executed_action_fingerprints(
+            messages, since=context.attempt.started_at
+        )
         emitted_events: list[HarnessEventDraft] = HarnessEventBuffer(self._event_sink)
         batch = self._batch_executor.execute(
             context,
@@ -160,7 +163,9 @@ class SequentialToolLoop:
             emitted_events=HarnessEventBuffer(self._event_sink),
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
-            fingerprints=_executed_action_fingerprints(messages),
+            fingerprints=_executed_action_fingerprints(
+                messages, since=context.attempt.started_at
+            ),
             metadata={
                 "clarification_continuation": True,
                 "clarification_id": clarification_id,
@@ -420,7 +425,9 @@ class SequentialToolLoop:
             tool_calls_executed=tool_calls_executed,
             metadata=metadata,
             fallback_message=fallback_message,
-            fingerprints=_executed_action_fingerprints(messages),
+            fingerprints=_executed_action_fingerprints(
+                messages, since=context.attempt.started_at
+            ),
             request_next_completion=self._request_next_completion,
         )
         if evidence_result is not None:
@@ -514,13 +521,18 @@ class SequentialToolLoop:
         )
 
 
-def _executed_action_fingerprints(messages: list[SessionMessage]) -> set[str]:
+def _executed_action_fingerprints(
+    messages: list[SessionMessage],
+    *,
+    since: datetime | None = None,
+) -> set[str]:
     completed_ids = {
         message.tool_call_id for message in messages if message.role is MessageRole.TOOL
     }
     return {
         action_fingerprint(call)
         for message in messages
+        if since is None or message.created_at >= since
         for call in message.tool_calls
         if (call.provider_call_id or str(call.tool_call_id)) in completed_ids
     }
