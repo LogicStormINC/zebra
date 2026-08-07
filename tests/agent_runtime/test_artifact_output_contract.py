@@ -53,6 +53,28 @@ def test_emit_tool_executes_and_carries_the_envelope_in_metadata(
     assert json.loads(result.output) == envelope
 
 
+def test_emit_tool_executes_envelope_without_digest(tmp_path: Path) -> None:
+    """The model may omit payload_digest entirely (FinOS computes it at save
+    time); the tool must accept the four-field envelope."""
+    gateway = LocalToolGateway(tmp_path)
+    envelope = {
+        "contract_id": "finos.daily-trading-journal",
+        "contract_version": "1",
+        "structured_payload": {"business_date": "2026-08-04"},
+        "source_refs": ["broker:emit"],
+    }
+    result = gateway.execute(
+        ToolCall(
+            tool_call_id=new_tool_call_id(),
+            name=ARTIFACT_OUTPUT_CONTRACT_EMIT_NAME,
+            arguments={"output_contract": envelope},
+            created_at=NOW,
+        )
+    )
+    assert result.status is ToolCallStatus.EXECUTED
+    assert result.metadata["output_contract"] == envelope
+
+
 def test_emit_tool_rejects_incomplete_envelope(tmp_path: Path) -> None:
     gateway = LocalToolGateway(tmp_path)
     result = gateway.execute(

@@ -25,9 +25,11 @@ ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL = ToolContract(
     name=ARTIFACT_OUTPUT_CONTRACT_EMIT_NAME,
     description=(
         "Declare generic typed artifact output metadata for the final answer. "
-        "Pass the complete envelope: contract_id, contract_version, "
-        "structured_payload, payload_digest (sha256 of the payload) and "
-        "source_refs. This only declares metadata; it never saves anything."
+        "Pass contract_id, contract_version, structured_payload and "
+        "source_refs. payload_digest is optional: FinOS derives the sha256 "
+        "fingerprint when the journal is saved, so do NOT try to compute it "
+        "and never run commands for it. This only declares metadata; it "
+        "never saves anything."
     ),
     capability_version="artifact.output_contract.emit.v1",
     required_arguments=("output_contract",),
@@ -49,7 +51,6 @@ ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL = ToolContract(
                 "contract_id",
                 "contract_version",
                 "structured_payload",
-                "payload_digest",
                 "source_refs",
             ],
             "additionalProperties": False,

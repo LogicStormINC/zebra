@@ -202,9 +202,12 @@ def normalize_output_contract(envelope: object) -> dict[str, object]:
 
     Zebra never interprets a specific contract: it only checks that an
     explicit ``output_contract`` has a well-typed generic envelope
-    (contract_id / contract_version / structured_payload / payload_digest /
-    source_refs). Business schema, digest correctness against the payload and
-    contract registration are validated by FinOS, never here.
+    (contract_id / contract_version / structured_payload / source_refs).
+    payload_digest is OPTIONAL: it is a derived fingerprint that FinOS
+    computes at registration, and a model cannot compute sha256 by hand.
+    If supplied it must still be well-formed. Business schema, digest
+    correctness against the payload and contract registration are validated
+    by FinOS, never here.
     """
     if not isinstance(envelope, Mapping):
         raise ValueError("output_contract must be an object")
@@ -225,11 +228,12 @@ def normalize_output_contract(envelope: object) -> dict[str, object]:
         raise ValueError(
             "output_contract.structured_payload is required and must be an object"
         )
-    if not isinstance(digest, str) or not re.fullmatch(
-        r"sha256:[0-9a-f]{64}", digest
+    if digest is not None and (
+        not isinstance(digest, str)
+        or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
     ):
         raise ValueError(
-            "output_contract.payload_digest is required and must be sha256:<64 hex>"
+            "output_contract.payload_digest, when provided, must be sha256:<64 hex>"
         )
     if (
         not isinstance(refs, list)

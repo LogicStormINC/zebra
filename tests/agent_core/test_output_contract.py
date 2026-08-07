@@ -54,6 +54,18 @@ def test_normalize_output_contract_accepts_generic_envelope() -> None:
     assert normalize_output_contract(envelope) == envelope
 
 
+def test_normalize_output_contract_accepts_envelope_without_digest() -> None:
+    """payload_digest is a derived fingerprint FinOS computes at save time;
+    a model cannot compute sha256 by hand, so omitting it must be valid."""
+    envelope = {
+        "contract_id": "finos.daily-trading-journal",
+        "contract_version": "1",
+        "structured_payload": {"business_date": "2026-08-04"},
+        "source_refs": ["broker:a"],
+    }
+    assert normalize_output_contract(envelope) == envelope
+
+
 def _complete_envelope(**overrides):
     envelope = {
         "contract_id": "finos.daily-trading-journal",
