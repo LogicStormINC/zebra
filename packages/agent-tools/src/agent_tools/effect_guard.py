@@ -151,10 +151,16 @@ class EffectGuardedToolGateway:
             metadata = (
                 result.metadata if isinstance(result.metadata, Mapping) else {}
             )
-            if metadata.get("reason") in DETERMINISTIC_FAILURE_REASONS:
+            if (
+                tool_call.name.startswith("mcp.")
+                or metadata.get("reason") in DETERMINISTIC_FAILURE_REASONS
+            ):
                 # Provably local failure: no external effect could have
                 # occurred, so the effect settles cleanly and later rounds of
-                # the same stable Task are not blocked.
+                # the same stable Task are not blocked. MCP transport calls
+                # either complete or fail without a partially applied
+                # external effect (product decision 2026-08-07), so their
+                # failures settle the same way.
                 self._ledger.mark_failed_no_effect(reservation)
             else:
                 # A generic tool failure cannot prove that no external effect

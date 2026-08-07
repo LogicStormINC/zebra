@@ -62,6 +62,30 @@ def test_terminal_follow_up_rejects_uncertain_effect_without_child(tmp_path: Pat
     assert len(segments) == 1
 
 
+def test_terminal_follow_up_after_failed_no_effect_ledger_creates_child(
+    tmp_path: Path,
+) -> None:
+    """A failure settled as failed_no_effect (MCP transport failures per the
+    2026-08-07 product decision) must not block a later round of the same
+    stable Task: the follow-up message is accepted and a child segment is
+    created, unlike the uncertain settlement."""
+    database = tmp_path / "follow-up-mcp.sqlite"
+    task_id = _seed_completed_task_with_failed_read_only_tool(database, tmp_path)
+    _seed_failed_no_effect_ledger(database, SessionId(UUID(task_id)))
+    client = _client(database)
+
+    response = client.post(
+        f"/tasks/{task_id}/messages",
+        json={"content": "Continue after the MCP failure."},
+        headers={"Idempotency-Key": "follow-up-mcp"},
+    )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["rolled_over"] is True
+    segments = client.get(f"/internal/tasks/{task_id}/segments").json()["segments"]
+    assert len(segments) == 2
+
+
 def test_terminal_follow_up_across_segments_after_read_only_failure(
     tmp_path: Path,
 ) -> None:
@@ -214,6 +238,13 @@ def _poison_ledger_with_uncertain(database: Path, root_session_id: SessionId) ->
     reservation = ledger.reserve(root_session_id, _effect_identity())
     ledger.mark_executing(reservation)
     ledger.mark_uncertain(reservation)
+
+
+def _seed_failed_no_effect_ledger(database: Path, root_session_id: SessionId) -> None:
+    ledger = SQLiteEffectLedger(database)
+    reservation = ledger.reserve(root_session_id, _effect_identity())
+    ledger.mark_executing(reservation)
+    ledger.mark_failed_no_effect(reservation)
 
 
 def _effect_identity() -> EffectIdentity:

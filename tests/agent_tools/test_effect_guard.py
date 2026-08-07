@@ -144,6 +144,35 @@ def test_unclassified_failure_marks_uncertain_and_rejects_replay(tmp_path) -> No
     assert gateway.calls == 1
 
 
+def test_mcp_failure_marks_failed_no_effect_and_allows_retry(tmp_path) -> None:
+    """An MCP tool failure settles as failed_no_effect (product decision
+    2026-08-07): an MCP call either completes or fails without a partially
+    applied external effect, so a later round of the same stable Task must
+    not be blocked by handoff_source_not_quiescent. Local tools keep the
+    conservative uncertain settlement."""
+    gateway = _Gateway(fail_names=frozenset({"mcp.minimax.understand_image"}))
+    ledger = SQLiteEffectLedger(tmp_path / "ledger.db")
+    root_session_id = new_session_id()
+    guarded = EffectGuardedToolGateway(
+        gateway,
+        ledger=ledger,
+        root_session_id=root_session_id,
+        authority_scope="workspace-write",
+    )
+
+    first = guarded.execute(_call("mcp.minimax.understand_image"))
+
+    assert first.status is ToolCallStatus.FAILED
+    # Settled as no-effect: later rounds of the same stable Task are not
+    # blocked by handoff_source_not_quiescent.
+    assert ledger.has_uncertain(root_session_id) is False
+    # An identical un-retried call is rejected as no-effect (not replayed),
+    # never as the blocking uncertain status.
+    with pytest.raises(EffectReplayRejectedError, match="failed_no_effect"):
+        guarded.execute(_call("mcp.minimax.understand_image"))
+    assert gateway.calls == 1
+
+
 def test_emit_declaration_failure_never_marks_uncertain(tmp_path) -> None:
     """artifact.output_contract.emit is a declarative metadata tool with no
     external side effect: even a validation failure (e.g. a malformed
