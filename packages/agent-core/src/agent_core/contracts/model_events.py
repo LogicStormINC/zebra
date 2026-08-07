@@ -132,11 +132,13 @@ class ModelResponseReceivedPayload(BaseModel):
             raise ValueError(
                 "output_contract.structured_payload is required and must be an object"
             )
-        if not isinstance(digest, str) or not re.fullmatch(
-            r"sha256:[0-9a-f]{64}", digest
+        if digest is not None and (
+            not isinstance(digest, str)
+            or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
         ):
             raise ValueError(
-                "output_contract.payload_digest is required and must be sha256:<64 hex>"
+                "output_contract.payload_digest, when provided, "
+                "must be sha256:<64 hex>"
             )
         if (
             not isinstance(refs, list)

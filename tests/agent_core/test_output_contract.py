@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 import pytest
+from pydantic import ValidationError
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.identifiers import new_tool_call_id
@@ -11,6 +12,7 @@ from agent_core.domain.modeling import (
     ModelToolDefinition,
     normalize_output_contract,
 )
+from agent_core.contracts.model_events import ModelResponseReceivedPayload
 from agent_core.harness import (
     HarnessAttemptOutcome,
     HarnessLoop,
@@ -64,6 +66,35 @@ def test_normalize_output_contract_accepts_envelope_without_digest() -> None:
         "source_refs": ["broker:a"],
     }
     assert normalize_output_contract(envelope) == envelope
+
+
+def test_model_response_event_accepts_envelope_without_digest() -> None:
+    """The durable model_response_received event contract must accept an
+    output_contract without payload_digest (FinOS derives it at save time);
+    a stale requirement here rejected the final event and failed the session."""
+    payload = ModelResponseReceivedPayload(
+        assistant_message="final",
+        output_contract={
+            "contract_id": "finos.daily-trading-journal",
+            "contract_version": "1",
+            "structured_payload": {"business_date": "2026-08-04"},
+            "source_refs": ["broker:a"],
+        },
+    )
+    assert payload.output_contract["structured_payload"] == {
+        "business_date": "2026-08-04"
+    }
+    with pytest.raises(ValidationError):
+        ModelResponseReceivedPayload(
+            assistant_message="final",
+            output_contract={
+                "contract_id": "finos.daily-trading-journal",
+                "contract_version": "1",
+                "structured_payload": {"business_date": "2026-08-04"},
+                "payload_digest": "md5:abc",
+                "source_refs": ["broker:a"],
+            },
+        )
 
 
 def _complete_envelope(**overrides):
