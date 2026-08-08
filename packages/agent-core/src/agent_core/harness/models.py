@@ -12,7 +12,11 @@ from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.model_media import ModelMediaInput, ordered_media_inputs
 from agent_core.domain.plans import SessionPlan
 from agent_core.domain.sessions import Session
-from agent_core.domain.skills import normalize_skill_components
+from agent_core.domain.skills import (
+    SkillComponentIdentity,
+    normalize_skill_component_identities,
+    normalize_skill_components,
+)
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 
@@ -52,6 +56,7 @@ class HarnessTask:
     mcp_allowlist: tuple[str, ...] = ()
     preapproved_readonly_tools: tuple[str, ...] = ()
     skill_components: tuple[str, ...] = ()
+    skill_component_identities: tuple[SkillComponentIdentity, ...] | None = None
     agent_definition: AgentDefinition | None = None
     agent_context: AgentDefinitionContext | None = None
     model_capabilities: tuple[str, ...] = ()
@@ -104,6 +109,16 @@ class HarnessTask:
         object.__setattr__(
             self, "skill_components", normalize_skill_components(self.skill_components)
         )
+        skill_component_identities = (
+            None
+            if self.skill_component_identities is None
+            else normalize_skill_component_identities(self.skill_component_identities)
+        )
+        if skill_component_identities is not None and self.skill_components != tuple(
+            identity.name for identity in skill_component_identities
+        ):
+            raise ValueError("skill component identities must match skill_components")
+        object.__setattr__(self, "skill_component_identities", skill_component_identities)
         model_capabilities: list[str] = []
         for capability in self.model_capabilities:
             if not isinstance(capability, str) or not capability.strip():

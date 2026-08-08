@@ -59,6 +59,15 @@ def read_source_facts(
             if workspace["skill_components"] is None
             else json.loads(workspace["skill_components"])
         ),
+        **(
+            {
+                "skill_component_identities": json.loads(
+                    workspace["skill_component_identities"]
+                )
+            }
+            if workspace["skill_component_identities"] is not None
+            else {}
+        ),
     }
     workspace_payload = {
         "workspace_root": workspace["workspace_root"],

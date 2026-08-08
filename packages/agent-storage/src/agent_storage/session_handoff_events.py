@@ -85,6 +85,11 @@ def build_handoff_events(
                     if workspace["skill_components"] is None
                     else json.loads(workspace["skill_components"])
                 ),
+                "skill_component_identities": (
+                    None
+                    if workspace["skill_component_identities"] is None
+                    else json.loads(workspace["skill_component_identities"])
+                ),
                 "agent_definition": (
                     None
                     if workspace["agent_definition"] is None

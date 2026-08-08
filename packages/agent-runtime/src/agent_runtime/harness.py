@@ -13,6 +13,7 @@ from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.identifiers import EventId, SessionId
 from agent_core.domain.model_media import ModelInputModality, ModelMediaInput
 from agent_core.domain.modeling import ModelToolDefinition
+from agent_core.domain.skills import SkillComponentIdentity
 from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.domain.web import WebTarget, WebTargetError, parse_web_target
@@ -68,10 +69,10 @@ from agent_tools.errors import ToolRegistryError
 from agent_tools.skills_catalog import LocalSkillCatalog, ScopedSkillRoot, SkillEnablementState
 
 from agent_runtime.adapters.local import LocalRuntime
-from agent_runtime.finos_journal_provider import FinosJournalProvider
 from agent_runtime.artifact_output_contract import (
     ArtifactOutputContractEmitTool,
 )
+from agent_runtime.finos_journal_provider import FinosJournalProvider
 from agent_runtime.mcp_protocol import McpAnyServerSpec
 from agent_runtime.mcp_routing import build_mcp_transport
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
@@ -120,6 +121,7 @@ def run_local_harness(
     web_search_endpoint: str | None = None,
     skill_roots: tuple[str | Path | ScopedSkillRoot, ...] = (),
     skills_state: SkillEnablementState | None = None,
+    granted_skill_component_identities: tuple[SkillComponentIdentity, ...] | None = None,
     session_history: SessionHistoryPort | None = None,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
     attachments: tuple[AttachmentContextInput, ...] = (),
@@ -146,6 +148,7 @@ def run_local_harness(
         web_search_endpoint=web_search_endpoint,
         skill_roots=skill_roots,
         skills_state=skills_state,
+        granted_skill_component_identities=granted_skill_component_identities,
         session_history=session_history,
         mcp_servers=mcp_servers,
         mcp_allowlist=mcp_allowlist,
@@ -180,6 +183,7 @@ def run_local_harness(
                 mcp_allowlist=effective_mcp_allowlist,
                 preapproved_readonly_tools=effective_preapproved_readonly_tools,
                 skill_components=tool_gateway.effective_skill_components,
+                skill_component_identities=tool_gateway.effective_skill_component_identities,
                 agent_definition=agent_definition,
                 model_id=model_id,
                 agent_context=agent_context,
@@ -236,6 +240,7 @@ class LocalToolGateway(ToolGatewayPort):
         web_search_transport: WebSearchTransport | None = None,
         skill_roots: tuple[str | Path | ScopedSkillRoot, ...] = (),
         skills_state: SkillEnablementState | None = None,
+        granted_skill_component_identities: tuple[SkillComponentIdentity, ...] | None = None,
         session_history: SessionHistoryPort | None = None,
         current_session_id: str | None = None,
         mcp_servers: Sequence[McpAnyServerSpec] = (),
@@ -324,9 +329,20 @@ class LocalToolGateway(ToolGatewayPort):
             tags=("artifact_metadata",),
         )
         self._skill_component_names: tuple[str, ...] = ()
+        self._skill_component_identities: tuple[SkillComponentIdentity, ...] = ()
+        if granted_skill_component_identities and not skill_roots:
+            raise ValueError("granted skill component identities require configured skill roots")
         if skill_roots:
-            catalog = LocalSkillCatalog(skill_roots, skills_state=skills_state)
-            self._skill_component_names = tuple(metadata.name for metadata in catalog.list()[0])
+            catalog = LocalSkillCatalog(
+                skill_roots,
+                skills_state=skills_state,
+                granted_component_identities=granted_skill_component_identities,
+            )
+            skill_metadata = catalog.list()[0]
+            self._skill_component_names = tuple(metadata.name for metadata in skill_metadata)
+            self._skill_component_identities = tuple(
+                metadata.component_identity() for metadata in skill_metadata
+            )
             for skill_tool in (SkillsListTool(catalog), SkillsReadTool(catalog)):
                 if skill_tool.contract.name in enabled_names:
                     registry.register(skill_tool.contract, skill_tool.handle)
@@ -453,6 +469,10 @@ class LocalToolGateway(ToolGatewayPort):
     @property
     def effective_skill_components(self) -> tuple[str, ...]:
         return self._skill_component_names
+
+    @property
+    def effective_skill_component_identities(self) -> tuple[SkillComponentIdentity, ...]:
+        return self._skill_component_identities
 
     @property
     def parallel_safe_tools(self) -> frozenset[str]:

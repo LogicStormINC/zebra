@@ -82,6 +82,16 @@ class HarnessLoop:
                 "preapproved_readonly_tools": list(task.preapproved_readonly_tools),
                 "skill_components": list(task.skill_components),
                 **(
+                    {
+                        "skill_component_identities": [
+                            identity.model_dump(mode="json")
+                            for identity in task.skill_component_identities
+                        ]
+                    }
+                    if task.skill_component_identities is not None
+                    else {}
+                ),
+                **(
                     {"agent_definition": task.agent_definition.model_dump(mode="json")}
                     if task.agent_definition is not None
                     else {}

@@ -317,6 +317,7 @@ class SessionExecutionService:
                 web_search_endpoint=self._settings.web_search_endpoint,
                 skill_roots=skill_roots,
                 skills_state=skills_state,
+                granted_skill_component_identities=task.skill_component_identities,
                 mcp_servers=with_task_workspace_root(self._settings.mcp_servers, task_workspace),
                 mcp_allowlist=task.mcp_allowlist,
                 disabled_mcp_tools=(
@@ -368,6 +369,7 @@ class SessionExecutionService:
                 network_allowlist=effective_network_profile.domain_allowlist,
                 **auth.harness_authority(task, tool_gateway.effective_mcp_tools),
                 skill_components=tool_gateway.effective_skill_components,
+                skill_component_identities=tool_gateway.effective_skill_component_identities,
                 agent_definition=task.agent_definition,
                 agent_context=agent_context,
                 model_id=task.model_id,

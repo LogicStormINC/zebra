@@ -7,6 +7,8 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from types import MappingProxyType
 from typing import Protocol
 
+from agent_core.domain.skills import SkillComponentIdentity, normalize_skill_component_identities
+
 from agent_tools.skills_scope import (
     MAX_COMPATIBILITY_ENTRIES as MAX_COMPATIBILITY_ENTRIES,
 )
@@ -94,6 +96,18 @@ class SkillMetadata:
     scope: SkillScope = SkillScope.USER
     namespace: str | None = None
 
+    def component_identity(self) -> SkillComponentIdentity:
+        if self.digest is None or self.namespace is None:
+            raise ValueError("skill metadata is missing an immutable component identity")
+        return SkillComponentIdentity(
+            name=self.name,
+            version=self.version,
+            digest=self.digest,
+            scope=self.scope.value,
+            namespace=self.namespace,
+            source=self.source,
+        )
+
 
 @dataclass(frozen=True)
 class SkillReadResult:
@@ -119,9 +133,15 @@ class LocalSkillCatalog:
         roots: tuple[str | Path | ScopedSkillRoot, ...],
         *,
         skills_state: SkillEnablementState | None = None,
+        granted_component_identities: tuple[SkillComponentIdentity, ...] | None = None,
     ) -> None:
         self._roots = normalize_scoped_roots(roots)
         self._skills_state = skills_state
+        self._granted_component_identities = (
+            None
+            if granted_component_identities is None
+            else normalize_skill_component_identities(granted_component_identities)
+        )
 
     def list(self, *, limit: int = 100) -> tuple[tuple[SkillMetadata, ...], int, bool]:
         if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= MAX_SKILLS:
@@ -129,16 +149,7 @@ class LocalSkillCatalog:
                 SkillCatalogReason.INVALID_LIMIT, f"limit must be from 1 to {MAX_SKILLS}"
             )
         entries, ambiguous, truncated = self._discover()
-        disabled = (
-            self._skills_state.disabled_components()
-            if self._skills_state is not None
-            else frozenset[tuple[str, str]]()
-        )
-        available = tuple(
-            entry.metadata
-            for entry in entries.values()
-            if (entry.metadata.name, entry.metadata.scope.value) not in disabled
-        )
+        available = tuple(entry.metadata for entry in self._available_entries(entries).values())
         return available[:limit], len(ambiguous), truncated or len(available) > limit
 
     def read(self, name: str, *, file_path: str = "SKILL.md") -> SkillReadResult:
@@ -148,20 +159,13 @@ class LocalSkillCatalog:
             raise SkillCatalogError(
                 SkillCatalogReason.AMBIGUOUS_SKILL, "skill name is ambiguous across roots"
             )
+        entries = self._available_entries(entries)
         try:
             entry = entries[normalized_name]
         except KeyError as exc:
             raise SkillCatalogError(
                 SkillCatalogReason.SKILL_NOT_FOUND, "skill is not available"
             ) from exc
-        if self._skills_state is not None and (
-            entry.metadata.name,
-            entry.metadata.scope.value,
-        ) in self._skills_state.disabled_components():
-            raise SkillCatalogError(
-                SkillCatalogReason.SKILL_NOT_FOUND,
-                "skill is disabled",
-            )
         relative = _validated_support_path(file_path)
         candidate = entry.root / relative
         try:
@@ -179,7 +183,42 @@ class LocalSkillCatalog:
                 SkillCatalogReason.PATH_OUTSIDE_SKILL, "skill file escapes its package"
             )
         content, byte_count = _read_utf8(resolved)
+        component_content = (
+            content
+            if relative.as_posix() == "SKILL.md"
+            else _read_utf8(entry.root / "SKILL.md")[0]
+        )
+        _ensure_component_digest(entry.metadata, component_content)
         return SkillReadResult(entry.metadata, relative.as_posix(), content, byte_count)
+
+    def _available_entries(self, entries: dict[str, _SkillEntry]) -> dict[str, _SkillEntry]:
+        disabled = (
+            self._skills_state.disabled_components()
+            if self._skills_state is not None
+            else frozenset[tuple[str, str]]()
+        )
+        enabled = {
+            name: entry
+            for name, entry in entries.items()
+            if (entry.metadata.name, entry.metadata.scope.value) not in disabled
+        }
+        if self._granted_component_identities is None:
+            return enabled
+        expected = set(self._granted_component_identities)
+        available = {
+            entry.metadata.component_identity()
+            for entry in enabled.values()
+        }
+        if not expected <= available:
+            raise SkillCatalogError(
+                SkillCatalogReason.SKILL_NOT_FOUND,
+                "granted skill component identity is unavailable",
+            )
+        return {
+            name: entry
+            for name, entry in enabled.items()
+            if entry.metadata.component_identity() in expected
+        }
 
     def _discover(self) -> tuple[dict[str, _SkillEntry], frozenset[str], bool]:
         entries: dict[str, _SkillEntry] = {}
@@ -263,6 +302,21 @@ def _load_entry(skill_root: Path, scoped: ScopedSkillRoot) -> _SkillEntry | None
         scoped.scope,
         namespace,
     )
+
+
+def _ensure_component_digest(metadata: SkillMetadata, content: str) -> None:
+    try:
+        frontmatter_text, body_bytes = split_frontmatter(content.encode("utf-8"))
+    except SkillCatalogError as exc:
+        raise SkillCatalogError(
+            SkillCatalogReason.DIGEST_MISMATCH,
+            "skill component digest drifted before read",
+        ) from exc
+    if metadata.digest != compute_skill_digest(frontmatter_text.encode("utf-8"), body_bytes):
+        raise SkillCatalogError(
+            SkillCatalogReason.DIGEST_MISMATCH,
+            "skill component digest drifted before read",
+        )
 
 
 def _validated_support_path(value: str) -> Path:

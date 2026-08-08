@@ -11,6 +11,11 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.sessions import Session
+from agent_core.domain.skills import (
+    SkillComponentIdentity,
+    normalize_skill_component_identities,
+    normalize_skill_components,
+)
 from agent_core.domain.tool_profiles import ToolProfile
 
 
@@ -27,6 +32,7 @@ class SessionBootstrapCommand:
     mcp_allowlist: tuple[str, ...] = ()
     preapproved_readonly_tools: tuple[str, ...] = ()
     skill_components: tuple[str, ...] = ()
+    skill_component_identities: tuple[SkillComponentIdentity, ...] | None = None
     agent_definition: AgentDefinition | None = None
     history_session_ids: tuple[str, ...] | None = None
     max_attempts: int = 1
@@ -60,6 +66,16 @@ class SessionBootstrapService:
             if command.history_session_ids is None
             else normalize_history_session_ids(command.history_session_ids)
         )
+        skill_components = normalize_skill_components(command.skill_components)
+        skill_component_identities = (
+            None
+            if command.skill_component_identities is None
+            else normalize_skill_component_identities(command.skill_component_identities)
+        )
+        if skill_component_identities is not None and skill_components != tuple(
+            identity.name for identity in skill_component_identities
+        ):
+            raise ValueError("skill component identities must match skill_components")
         session = Session.create(
             title=command.title,
             created_at=command.created_at,
@@ -104,7 +120,17 @@ class SessionBootstrapService:
                     "network_allowlist": list(command.network_allowlist),
                     "mcp_allowlist": list(mcp_allowlist),
                     "preapproved_readonly_tools": list(preapproved_readonly_tools),
-                    "skill_components": list(command.skill_components),
+                    "skill_components": list(skill_components),
+                    **(
+                        {
+                            "skill_component_identities": [
+                                identity.model_dump(mode="json")
+                                for identity in skill_component_identities
+                            ]
+                        }
+                        if skill_component_identities is not None
+                        else {}
+                    ),
                     **(
                         {"agent_definition": command.agent_definition.model_dump(mode="json")}
                         if command.agent_definition is not None

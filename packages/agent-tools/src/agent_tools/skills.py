@@ -114,6 +114,9 @@ class SkillsReadTool:
                 "skill_scope": result.metadata.scope.value,
                 "skill_version": result.metadata.version,
                 "provenance_source": result.metadata.source,
+                "skill_component_identity": result.metadata.component_identity().model_dump(
+                    mode="json"
+                ),
             },
         )
 

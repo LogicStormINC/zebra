@@ -42,6 +42,7 @@ class SkillCatalogReason(StrEnum):
     SENSITIVE_FILE = "sensitive_file"
     UNSUPPORTED_FILE = "unsupported_file"
     FILE_READ_FAILED = "file_read_failed"
+    DIGEST_MISMATCH = "digest_mismatch"
     INVALID_ARGUMENTS = "invalid_arguments"
 
 

@@ -15,6 +15,7 @@ from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import ArtifactId, SessionId, new_event_id
 from agent_core.domain.model_media import ModelMediaInput
+from agent_core.domain.skills import SkillComponentIdentity
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_integrations import GitHubPullRequestTransport, build_model_gateway
 from agent_runtime import (
@@ -40,6 +41,7 @@ from agent_storage import (
     list_confirmed_repo_memories,
 )
 from agent_storage.session_attachments import RegisteredTaskMedia, TaskAttachmentMediaResolver
+from agent_tools.skills_catalog import LocalSkillCatalog
 from zebra_agent_config import (
     ModelCatalogEntry,
     ZebraAgentSettings,
@@ -79,12 +81,12 @@ from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
 from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
 from zebra_agent_api.session_prompt_inputs import resolve_mcp_prompt_attachment
-from zebra_agent_api.task_final_identity import final_message_identity
 from zebra_agent_api.skills_admin import (
     ApiSkillsAdminMixin,
     runtime_skills_state,
     scoped_skill_roots,
 )
+from zebra_agent_api.task_final_identity import final_message_identity
 from zebra_agent_api.task_image_attachments import (
     StagedTaskImages,
     cleanup_staged_task_images,
@@ -308,6 +310,7 @@ class ZebraAgentApi(
             return bad_request(str(error))
         images_durable = False
         try:
+            skill_components, skill_component_identities = _skill_grant_snapshot(self.settings)
             bootstrap = SessionBootstrapService().build(
                 SessionBootstrapCommand(
                     title=str(parsed["title"]),
@@ -321,6 +324,8 @@ class ZebraAgentApi(
                     tool_profile=ToolProfile(str(parsed["tool_profile"])),
                     network_profile=str(parsed["network_profile"]),
                     network_allowlist=tuple(parsed["network_allowlist"]),
+                    skill_components=skill_components,
+                    skill_component_identities=skill_component_identities,
                     **auth.command_fields(parsed),
                     history_session_ids=parsed["history_session_ids"],
                     max_model_calls=parsed["max_model_calls"],
@@ -610,6 +615,20 @@ def _agent_definition_response(
 ) -> dict[str, object]:
     definition = parsed["agent_definition"]
     return {} if definition is None else {"agent_definition": definition.model_dump(mode="json")}
+
+
+def _skill_grant_snapshot(
+    settings: ZebraAgentSettings,
+) -> tuple[tuple[str, ...], tuple[SkillComponentIdentity, ...]]:
+    roots = scoped_skill_roots(settings)
+    if not roots:
+        return (), ()
+    metadata = LocalSkillCatalog(
+        roots,
+        skills_state=runtime_skills_state(settings),
+    ).list()[0]
+    identities = tuple(item.component_identity() for item in metadata)
+    return tuple(identity.name for identity in identities), identities
 
 
 def create_app(

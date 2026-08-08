@@ -12,6 +12,7 @@ from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.attachments import TextAttachmentInput
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
+from agent_core.domain.skills import SkillComponentIdentity
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_runtime import (
     normalize_mcp_resource_ids,
@@ -24,9 +25,12 @@ from agent_storage import (
     SQLiteArtifactPayloadStore,
     SQLiteEventStore,
     SQLiteProjectionStore,
+    SQLiteSkillsStateStore,
     SQLiteWorkspaceProjectionStore,
     store_initial_text_attachments,
 )
+from agent_tools.skills_catalog import LocalSkillCatalog
+from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_cli.cli_database import (
@@ -97,6 +101,7 @@ def _run_result(
         session = execution_result.harness_result.session
         payload = serialize_run_execution(execution_result)
     else:
+        skill_components, skill_component_identities = _skill_grant_snapshot(settings)
         bootstrap = SessionBootstrapService().build(
             SessionBootstrapCommand(
                 title=namespace.title,
@@ -107,6 +112,8 @@ def _run_result(
                 network_profile=network_profile.name.value,
                 network_allowlist=network_profile.domain_allowlist,
                 mcp_allowlist=mcp_allowlist,
+                skill_components=skill_components,
+                skill_component_identities=skill_component_identities,
             )
         )
         session = bootstrap.session
@@ -144,3 +151,22 @@ def _run_result(
             **payload,
         },
     )
+
+
+def _skill_grant_snapshot(
+    settings: ZebraAgentSettings,
+) -> tuple[tuple[str, ...], tuple[SkillComponentIdentity, ...]]:
+    roots = build_scoped_skill_roots(
+        system=settings.skill_roots_system,
+        admin=settings.skill_roots_admin,
+        user=settings.skill_roots,
+        repo=settings.skill_roots_repo,
+    )
+    if not roots:
+        return (), ()
+    metadata = LocalSkillCatalog(
+        roots,
+        skills_state=SQLiteSkillsStateStore(settings.skills_state_path),
+    ).list()[0]
+    identities = tuple(item.component_identity() for item in metadata)
+    return tuple(identity.name for identity in identities), identities

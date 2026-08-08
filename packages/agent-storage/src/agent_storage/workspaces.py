@@ -33,6 +33,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     mcp_allowlist,
                     preapproved_readonly_tools,
                     skill_components,
+                    skill_component_identities,
                     agent_definition,
                     last_attempt_number,
                     runtime_name,
@@ -43,7 +44,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     runtime_workspace_writable,
                     snapshot_id,
                     snapshot_path
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_id) DO UPDATE SET
                     workspace_root = excluded.workspace_root,
                     prepared_at = excluded.prepared_at,
@@ -57,6 +58,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     mcp_allowlist = excluded.mcp_allowlist,
                     preapproved_readonly_tools = excluded.preapproved_readonly_tools,
                     skill_components = excluded.skill_components,
+                    skill_component_identities = excluded.skill_component_identities,
                     agent_definition = excluded.agent_definition,
                     last_attempt_number = excluded.last_attempt_number,
                     runtime_name = excluded.runtime_name,
@@ -96,6 +98,16 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     ),
                     (
                         None
+                        if workspace.skill_component_identities is None
+                        else json.dumps(
+                            [
+                                identity.model_dump(mode="json")
+                                for identity in workspace.skill_component_identities
+                            ]
+                        )
+                    ),
+                    (
+                        None
                         if workspace.agent_definition is None
                         else json.dumps(workspace.agent_definition.model_dump(mode="json"))
                     ),
@@ -130,6 +142,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     mcp_allowlist,
                     preapproved_readonly_tools,
                     skill_components,
+                    skill_component_identities,
                     agent_definition,
                     last_attempt_number,
                     runtime_name,
@@ -174,6 +187,11 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     if row["skill_components"] is None
                     else tuple(json.loads(row["skill_components"]))
                 ),
+                "skill_component_identities": (
+                    None
+                    if row["skill_component_identities"] is None
+                    else tuple(json.loads(row["skill_component_identities"]))
+                ),
                 "agent_definition": (
                     None
                     if row["agent_definition"] is None
@@ -213,6 +231,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     mcp_allowlist TEXT,
                     preapproved_readonly_tools TEXT,
                     skill_components TEXT,
+                    skill_component_identities TEXT,
                     agent_definition TEXT,
                     last_attempt_number INTEGER,
                     runtime_name TEXT,
@@ -261,6 +280,12 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                 "TEXT",
             )
             ensure_column(connection, "workspace_projections", "skill_components", "TEXT")
+            ensure_column(
+                connection,
+                "workspace_projections",
+                "skill_component_identities",
+                "TEXT",
+            )
             ensure_column(connection, "workspace_projections", "agent_definition", "TEXT")
             ensure_column(connection, "workspace_projections", "snapshot_id", "TEXT")
             ensure_column(connection, "workspace_projections", "snapshot_path", "TEXT")
