@@ -58,6 +58,10 @@ class RedisCommittedEventPublisher(CommittedEventPublisherPort):
             event=event,
         )
 
+    @property
+    def fanout(self) -> RedisLiveEventFanout:
+        return self._fanout
+
 
 class RedisStreamClient(Protocol):
     def xadd(

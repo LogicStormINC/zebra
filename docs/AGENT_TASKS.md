@@ -944,6 +944,56 @@ must degrade to replay and never roll back the append.
   transaction calls that bypass `EventStorePort.append` remain a named follow-up
   risk for the outbox/commit hook; this card does not claim those paths are live.
 
+### CLOUD-LIVE-SSE-01 - Durable Replay And Redis Live Tail
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `API / INTEGRATIONS / QA`
+- Depends on: `CLOUD-LIVE-PUBLISH-01` review commit `1aa0a703`
+- Branch: `codex/cloud-live-sse-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-live-sse-01/zebra-agent`
+- Owned paths: `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/factory.py`,
+  `apps/api/src/zebra_agent_api/http.py`,
+  `apps/api/src/zebra_agent_api/session_streaming.py`,
+  `packages/agent-integrations/src/agent_integrations/redis_live_fanout.py`,
+  `tests/api/test_session_streaming.py`, `tests/api/http_app/`,
+  `tests/api/test_live_session_streaming.py`, this task card, and the focused
+  status in `PROGRESS.md`
+
+#### Goal
+
+Serve session SSE by replaying durable Events first, then tailing Redis after a
+captured barrier. Redis is an ephemeral accelerator: trim, disconnect, malformed
+entries or API restart fall back to durable polling without claiming loss.
+
+#### Acceptance
+
+- The stream captures a namespace/session barrier before durable replay and
+  emits each Event at most once per cursor; durable sequence and live cursor are
+  monotonic across reconnects.
+- Redis live failures, trim gaps and duplicate entries do not lose durable
+  Events; the stream continues with durable polling and closes on terminal state.
+- API composition exposes the same optional fanout used by the publisher; local
+  SQLite SSE behavior and auth/cursor validation remain compatible. Focused
+  streaming tests, full suite, Ruff, Mypy and file-size gates pass.
+
+#### Review Evidence
+
+- Commit: pending on `codex/cloud-live-sse-01`
+- Focused streaming/auth tests: `27 passed`
+- Full suite: `2147 passed, 271 skipped`
+- `make check`: file-size `1228` files, Ruff clean, Mypy `605` files, eval `10/10`
+- The live tail is intentionally optional; Redis errors clear the live cursor
+  and preserve durable polling as the lossless recovery path.
+
+#### Explicit Non-Goals
+
+- no new AG-UI protocol projection or auth middleware
+- no PostgreSQL transaction outbox, production recovery, Helm/gVisor deployment
+  or Trench work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`

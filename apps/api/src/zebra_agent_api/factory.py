@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
+from agent_core.ports import LiveEventFanoutPort
 from agent_integrations import GitHubPullRequestTransport, RedisCommittedEventPublisher
 from agent_security import CredentialBroker
 from agent_storage import (
@@ -38,6 +39,7 @@ def create_app(
     active_settings = settings or load_settings()
     active_database_path = Path(database_path or active_settings.database_url)
     active_stores = stores
+    live_event_fanout: LiveEventFanoutPort | None = None
     if active_stores is None and active_settings.storage_authority == "postgresql":
         active_stores = compose_control_plane_stores(
             profile=active_settings.profile,
@@ -51,14 +53,18 @@ def create_app(
             namespace = "local"
         if not isinstance(namespace, str) or not namespace.strip():
             raise ValueError("live Redis publishing requires deployment_namespace")
+        publisher = RedisCommittedEventPublisher.from_url(
+            active_settings.live_events.redis_url,
+            deployment_namespace=namespace,
+            max_stream_length=active_settings.live_events.stream_max_length,
+            key_prefix=active_settings.live_events.key_prefix,
+        )
+        publisher_fanout = getattr(publisher, "fanout", None)
+        if publisher_fanout is not None:
+            live_event_fanout = cast(LiveEventFanoutPort, publisher_fanout)
         active_stores = with_committed_event_publisher(
             active_stores,
-            RedisCommittedEventPublisher.from_url(
-                active_settings.live_events.redis_url,
-                deployment_namespace=namespace,
-                max_stream_length=active_settings.live_events.stream_max_length,
-                key_prefix=active_settings.live_events.key_prefix,
-            ),
+            publisher,
         )
     active_broker = credential_broker
     if active_broker is None:
@@ -67,6 +73,7 @@ def create_app(
         database_path=active_database_path,
         settings=active_settings,
         _stores=active_stores,
+        live_event_fanout=live_event_fanout,
         administrative_context_namespace=resolve_context_namespace(
             administrative_context_namespace, context_administrative_namespace
         ),

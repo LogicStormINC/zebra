@@ -121,6 +121,8 @@ def create_http_app(
                 stream = tail_session_events(
                     database_path=active_database_path,
                     stores=api.stores,
+                    live_event_fanout=api.live_event_fanout,
+                    deployment_namespace=_deployment_namespace(api),
                     session_id=session_key,
                     request=request,
                     after_sequence=after_sequence,
@@ -174,6 +176,15 @@ async def _read_request_body(request: Request) -> tuple[dict[str, Any] | None, J
 def _stream_resource_id(path: str) -> str:
     parts = [part for part in path.split("/") if part]
     return parts[-2] if len(parts) >= 2 else ""
+
+
+def _deployment_namespace(api: object) -> str | None:
+    stores = getattr(api, "stores", None)
+    namespace = getattr(stores, "deployment_namespace", None)
+    if isinstance(namespace, str) and namespace.strip():
+        return namespace
+    settings = getattr(api, "settings", None)
+    return "local" if getattr(settings, "deployment", None) == "local" else None
 
 
 def _after_sequence(request: Request) -> tuple[int, JSONResponse | None]:

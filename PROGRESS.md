@@ -82,6 +82,10 @@
   API/Worker now compose one namespace-bound Redis publisher around direct Event
   appends; SSE consumption remains next. Full validation is green:
   `2145 passed, 271 skipped`; `make check` and the real Redis runner pass.
+- `CLOUD-LIVE-SSE-01` is in `Review` on `codex/cloud-live-sse-01`. HTTP SSE now
+  captures a Redis replay barrier, drains durable Events, then tails Redis with
+  duplicate filtering and durable polling fallback. Full validation is green:
+  `2147 passed, 271 skipped`; `make check` is green.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed
