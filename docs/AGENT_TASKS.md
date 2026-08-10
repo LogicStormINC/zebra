@@ -1170,6 +1170,59 @@ Artifact metadata/ref, checksum, size and namespace remain consistent.
 - Evidence is MinIO/local-only; no production object retention, replication,
   RPO/RTO or DR readiness is claimed.
 
+### CLOUD-DEPLOY-HELM-01 - Kubernetes/Helm Application Deployment
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `SRE / PLATFORM / SECURITY`
+- Depends on: `CLOUD-DEPLOY-PROFILE-01` review evidence, recovery contract
+  review and the existing non-root application image/Compose overlay
+- Branch: `codex/cloud-deploy-helm-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-deploy-helm-01/zebra-agent`
+- Owned paths: `deploy/helm/zebra-agent/` (new),
+  `tests/deploy/test_helm_chart.py` (new), `docs/CLOUD-DEPLOY-HELM-01.md`
+  (new), this task card, and the focused status in `PROGRESS.md`
+
+#### Goal
+
+Provide a fail-closed Helm chart for the cloud/production profile: migration
+Job, API, Worker, Service, probes, resources, PDBs, non-root/read-only pods,
+gVisor RuntimeClass and secret references without embedding database credentials.
+
+#### Acceptance
+
+- Chart values schema requires a digest-pinned image, PostgreSQL DSN Secret,
+  gVisor RuntimeClass, workspace quota and the explicit deployment namespace;
+  invalid local/trusted-local or missing secret references fail closed.
+- Rendered resources include one migration Job, API/Worker Deployments, Service,
+  health probes, bounded resources, PDBs and least-privilege pod/container
+  security contexts; API/Worker do not run database migrations implicitly.
+- Database/S3/Redis/auth material arrives only through Secret refs; chart
+  templates contain no password literals or generated Secret data.
+- Static render tests pass and any available `helm lint/template` evidence is
+  recorded; no Kubernetes cluster, gVisor E2E or production rollout is claimed.
+
+#### Explicit Non-Goals
+
+- no Helm release, cluster credentials, managed database or production deploy
+- no gVisor runtime implementation or cluster-level NetworkPolicy/E2E
+- no changes to Docker image, API/Worker code or original dirty worktree edits
+
+#### Review Evidence
+
+- Static chart tests: `4 passed`; the values schema rejects missing digest,
+  namespace, runtime image and required Secret names.
+- `helm lint` with a digest-pinned image and explicit cloud values: `1 chart(s)
+  linted, 0 chart(s) failed`; the only message is Helm's optional icon notice.
+- `helm template` renders `7` resources: migration Job, API/Worker Deployments,
+  API Service, two PDBs and ServiceAccount. Default values fail closed with
+  schema errors.
+- `kubectl apply --dry-run=client` cannot reach the configured local cluster;
+  `--validate=false` still cannot recognize resources without an API server.
+  No server-side or gVisor cluster claim is made.
+- `make check`: file-size `1231` files, Ruff clean, Mypy `605` files, eval
+  `10/10`; full suite `2151 passed, 271 skipped`.
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`

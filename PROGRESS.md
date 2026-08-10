@@ -102,6 +102,12 @@
   Artifact ref, checksum, metadata, namespace and cleanup without reading a
   Worker-local payload. Real runner and full validation are green:
   `2147 passed, 271 skipped`; `make check` is green. Evidence remains local-only.
+- `CLOUD-DEPLOY-HELM-01` is in `Review` on
+  `codex/cloud-deploy-helm-01`. Its fail-closed chart renders migration/API/
+  Worker, Service, Secret refs, non-root/read-only pods, resources, PDBs and
+  gVisor RuntimeClass. `helm lint/template` and static tests pass; no cluster
+  server or gVisor E2E is available. Full validation is green:
+  `2151 passed, 271 skipped`; `make check` is green.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

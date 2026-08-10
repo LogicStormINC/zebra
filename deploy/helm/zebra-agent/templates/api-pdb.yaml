@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "zebra-agent.fullname" . }}-api
+  labels:
+    {{- include "zebra-agent.labels" . | nindent 4 }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "zebra-agent.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
