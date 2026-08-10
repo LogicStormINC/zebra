@@ -18,6 +18,7 @@ from agent_storage import (
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.claims import SessionClaimService
+from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.execution import SessionExecutionService
 from zebra_agent_worker.provider_continuation_commit import (
     CloudProviderContinuationCoordinator,
@@ -57,10 +58,12 @@ class WorkerLoopService:
         execution_service: SessionExecutionService,
         *,
         sleep: Callable[[float], None] = time.sleep,
+        command_consumer: SessionCommandConsumer | None = None,
     ) -> None:
         self._projection_store = projection_store
         self._execution_service = execution_service
         self._sleep = sleep
+        self._command_consumer = command_consumer
 
     def poll_once(
         self,
@@ -69,12 +72,28 @@ class WorkerLoopService:
         batch_size: int = 1,
         lease_ttl_seconds: int = 30,
     ) -> WorkerLoopCycleResult:
-        ready_sessions = self._projection_store.list_ready_sessions(limit=batch_size)
-        ready_ids = tuple(str(session.session_id) for session in ready_sessions)
+        command_result = (
+            self._command_consumer.consume_once(
+                worker_id=worker_id,
+                lease_ttl_seconds=lease_ttl_seconds,
+                batch_size=batch_size,
+            )
+            if self._command_consumer is not None
+            else None
+        )
         executed_ids: list[str] = []
         skipped_ids: list[str] = []
+        if command_result is not None and command_result.session_id is not None:
+            if command_result.status == "executed":
+                executed_ids.append(command_result.session_id)
+            elif command_result.status == "skipped":
+                skipped_ids.append(command_result.session_id)
+        ready_sessions = self._projection_store.list_ready_sessions(limit=batch_size)
+        ready_ids = tuple(str(session.session_id) for session in ready_sessions)
         for session in ready_sessions:
             session_id = str(session.session_id)
+            if session_id in executed_ids:
+                continue
             try:
                 self._execution_service.execute_session(
                     session.session_id,
@@ -198,10 +217,12 @@ def build_worker_loop_service(
         deployment_namespace=active_namespace,
         cloud_provider_continuation_factory=cloud_provider_continuation_factory,
     )
+    command_consumer = SessionCommandConsumer(active_stores, execution_service)
     return WorkerLoopService(
         projection_store=active_stores.sessions,
         execution_service=execution_service,
         sleep=sleep,
+        command_consumer=command_consumer,
     )
 
 

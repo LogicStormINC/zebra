@@ -93,8 +93,8 @@ class SessionCommand(BaseModel):
 
     def event_payload(self) -> dict[str, object]:
         return SessionCommandAcceptedPayload(
-            command_id=self.command_id,
-            session_id=self.session_id,
+            command_id=str(self.command_id),
+            session_id=str(self.session_id),
             kind=self.kind,
             expected_revision=self.expected_revision,
             idempotency_key=self.idempotency_key,
@@ -106,13 +106,21 @@ class SessionCommand(BaseModel):
 class SessionCommandAcceptedPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    command_id: UUID
-    session_id: UUID
+    command_id: str
+    session_id: str
     kind: SessionCommandKind
     expected_revision: int = Field(ge=0)
     idempotency_key: str = Field(min_length=1, max_length=MAX_IDEMPOTENCY_KEY_LENGTH)
     payload: dict[str, object]
     fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @field_validator("command_id", "session_id")
+    @classmethod
+    def validate_uuid_text(cls, value: str) -> str:
+        try:
+            return str(UUID(value))
+        except ValueError as exc:
+            raise ValueError("command identity must be a UUID") from exc
 
 
 class SessionCommandDecision(BaseModel):

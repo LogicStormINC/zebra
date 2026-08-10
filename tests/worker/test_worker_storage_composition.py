@@ -89,7 +89,7 @@ def test_worker_uses_supplied_stores_for_all_control_plane_services(tmp_path: Pa
     assert result.skipped_session_ids == (str(session_id),)
     projection_store.list_ready_sessions.assert_called_once_with(limit=1)
     projection_store.get_session.assert_not_called()
-    event_store.read_since.assert_not_called()
+    assert event_store.read_since.call_args.args[0] == session_id
     workspace_store.get_workspace.assert_not_called()
     lease_store.acquire.assert_called_once()
     assert service._projection_store is stores.sessions

@@ -66,6 +66,10 @@
   `codex/cloud-command-api-con-01`. ADR-023 and the core contract freeze the
   durable command envelope, stable idempotency/revision admission and accepted
   Event payload; route/Worker execution remains reserved for its successors.
+- `CLOUD-COMMAND-RUN-01` is `Review` on `codex/cloud-command-run-01`. Its owned
+  slice adds the stateless API command submission seam and Worker
+  run/resume/message wake-up without Runtime side effects in API. Full Python
+  validation is green: `2128 passed, 271 skipped`; `make check` is green.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

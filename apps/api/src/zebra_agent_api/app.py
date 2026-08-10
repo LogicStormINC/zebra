@@ -54,6 +54,7 @@ from zebra_agent_worker import (
 
 from zebra_agent_api.api_approval_control_mixin import ApiApprovalControlMixin
 from zebra_agent_api.api_artifact_read_mixin import ApiArtifactReadMixin
+from zebra_agent_api.api_command_mixin import ApiCommandMixin
 from zebra_agent_api.api_memory_control_mixin import ApiMemoryControlMixin
 from zebra_agent_api.api_memory_read_mixin import ApiMemoryReadMixin
 from zebra_agent_api.api_scm_mixin import ApiScmMixin
@@ -85,6 +86,7 @@ from zebra_agent_api.storage_composition import ControlPlaneStorageMixin
 class ZebraAgentApi(
     ControlPlaneStorageMixin,
     ApiStatusMixin,
+    ApiCommandMixin,
     ApiSessionReadMixin,
     ApiSessionHandoffMixin,
     ApiMemoryReadMixin,
@@ -150,7 +152,11 @@ class ZebraAgentApi(
         parsed["attachments"] = (*parsed["attachments"], *resource_attachments, *prompt_attachments)
 
         response = (
-            self._create_and_execute_session(parsed)
+            self.queue_cloud_run(
+                self._create_queued_session(parsed), idempotency_key=idempotency_key
+            )
+            if parsed["execute"] and self.settings.deployment == "cloud"
+            else self._create_and_execute_session(parsed)
             if parsed["execute"]
             else self._create_queued_session(parsed)
         )

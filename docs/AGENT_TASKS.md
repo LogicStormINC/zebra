@@ -747,6 +747,50 @@ explicitly outside this contract.
 - No API route, Worker wake-up, Runtime side effect or production deployment is
   claimed; those remain the explicitly dependent command-run/control cards.
 
+### CLOUD-COMMAND-RUN-01 - Run/Resume Command And Worker Wake-up
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `API / WORKER / STORAGE`
+- Depends on: `CLOUD-COMMAND-API-CON-01` review commit `af8ec37b`
+- Branch: `codex/cloud-command-run-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-command-run-01/zebra-agent`
+- Owned paths: `apps/api/src/zebra_agent_api/command_submission.py`,
+  `apps/api/src/zebra_agent_api/api_command_mixin.py`,
+  `apps/api/src/zebra_agent_api/app.py`, `apps/api/src/zebra_agent_api/routes.py`,
+  `apps/worker/src/zebra_agent_worker/command_consumer.py`,
+  `apps/worker/src/zebra_agent_worker/loop.py`,
+  `tests/api/test_session_command_routes.py`,
+  `tests/worker/test_command_consumer.py`,
+  `tests/worker/test_worker_storage_composition.py`, this task card, and the focused
+  status in `PROGRESS.md`
+
+#### Goal
+
+Submit run/resume/message intent as durable `SessionCommand` Events and let a
+stateless Worker claim the command stream after restart. API command handling
+must not construct a Harness or Runtime; existing local execute compatibility
+remains explicitly isolated.
+
+#### Acceptance
+
+- The command route requires an idempotency key and expected revision, appends
+  one accepted intent, returns duplicate/revision-conflict deterministically,
+  and never invokes Runtime/Harness in the API process.
+- Worker command consumption is restart-safe, claims only accepted command
+  Events, and routes run/resume/message to the existing execution services.
+- Focused API/Worker tests cover duplicate commands, concurrent revision
+  conflict, worker restart/replay and local compatibility; full validation is
+  green: `2128 passed, 271 skipped`, Ruff, Mypy (603 files), file-size gate
+  (1219 files), and eval release gate (10/10).
+
+#### Explicit Non-Goals
+
+- no stop/cancel/suspend control consumer (owned by `CLOUD-COMMAND-CTRL-01`)
+- no Redis/live publish, production recovery, Helm/gVisor deployment or Trench
+  work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`

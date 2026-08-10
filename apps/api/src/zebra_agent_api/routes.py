@@ -9,7 +9,7 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.domain.session_handoff import HandoffActorKind
 
 from zebra_agent_api.app import ZebraAgentApi
-from zebra_agent_api.responses import ApiResponse
+from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.task_routes import handle_task_route
 
 
@@ -123,12 +123,32 @@ class RouteAdapter:
             if len(parts) == 3 and parts[1:] == ("context", "recover"):
                 return self.app.recover_session_context(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "messages":
+                if self.app.settings.deployment == "cloud":
+                    command = _cloud_command_payload("message", request.body or {})
+                    if isinstance(command, ApiResponse):
+                        return command
+                    return self.app.submit_command(
+                        parts[0], command, idempotency_key=_idempotency_key(request)
+                    )
                 return self.app.append_session_message(parts[0], request.body or {})
+            if len(parts) == 2 and parts[1] == "commands":
+                return self.app.submit_command(
+                    parts[0],
+                    request.body or {},
+                    idempotency_key=_idempotency_key(request),
+                )
             if len(parts) == 2 and parts[1] == "cancel":
                 return self.app.cancel_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "suspend":
                 return self.app.suspend_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "resume":
+                if self.app.settings.deployment == "cloud":
+                    command = _cloud_command_payload("resume", request.body or {})
+                    if isinstance(command, ApiResponse):
+                        return command
+                    return self.app.submit_command(
+                        parts[0], command, idempotency_key=_idempotency_key(request)
+                    )
                 return self.app.resume_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overview":
                 return self.app.get_memory_operations_overview(parts[0], request.body or {})
@@ -377,6 +397,20 @@ def _idempotency_key(request: RouteRequest) -> str | None:
         if name.lower() == "idempotency-key" and value.strip():
             return value.strip()
     return None
+
+
+def _cloud_command_payload(kind: str, payload: dict[str, Any]) -> dict[str, object] | ApiResponse:
+    expected_revision = payload.get("expected_revision")
+    if not isinstance(expected_revision, int) or isinstance(expected_revision, bool):
+        return bad_request("expected_revision is required for cloud commands")
+    command_payload = {key: value for key, value in payload.items() if key != "expected_revision"}
+    if kind == "message" and command_payload.get("attachments"):
+        return bad_request("cloud message commands require durable attachment references")
+    return {
+        "kind": kind,
+        "expected_revision": expected_revision,
+        "payload": command_payload,
+    }
 
 
 def _principal_identity_hash(request: RouteRequest) -> str:
