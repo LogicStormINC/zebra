@@ -60,6 +60,9 @@ does not authorize production code, migrations or activation of its successor.
 - `ARCH-CONFIG-SECURITY-01` is in `Review` on
   `codex/arch-config-security-01`. It removes the remaining aggregate config
   import from Security credentials and preserves secret/redaction contracts.
+- `CLOUD-DEPLOY-PROFILE-CON-01` is in `Review` on
+  `codex/cloud-deploy-profile-con-01`. It freezes the deployment/storage/runtime
+  matrix and rejection contract before API/Worker composition changes.
 - `CLOUD-INTEGRATION-REG-01` is `Review` on
   `codex/cloud-integration-regressions-01`. It repairs the branch-specific
   recovered-Lease heartbeat checkpoint regression and restores lazy local API
@@ -592,6 +595,49 @@ needs. It must not read environment/config aggregates or import `apps/config`.
 - Boundary inventory is now empty. Focused Security/boundary validation passes
   `6 tests`; Ruff, file-size gate (`1215` files), and Mypy (`598` source files)
   pass.
+
+### CLOUD-DEPLOY-PROFILE-CON-01 - Deployment Profile Matrix Contract
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `ARCH / DEPLOY`
+- Depends on: `ARCH-CONFIG-INTEGRATIONS-01` and `ARCH-CONFIG-SECURITY-01` review
+  commits `fe200bb6` and `f1d27669`
+- Branch: `codex/cloud-deploy-profile-con-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-deploy-profile-con-01/zebra-agent`
+- Owned paths: `docs/ADR-022_Deployment_Profile矩阵与权威轴合同.md`,
+  `tests/config/test_profile_contract.py`,
+  `tests/test_cloud_api_worker_profile_composition.py`,
+  `apps/config/src/zebra_agent_config/settings.py`, this task card, and the
+  focused status in `PROGRESS.md`
+
+#### Goal
+
+Freeze one unambiguous matrix for deployment, storage authority and runtime
+isolation. Local remains lazy SQLite/trusted-local; cloud and production use
+PostgreSQL plus gVisor and fail closed. `cloud + trusted-local` and
+`production + SQLite` are invalid combinations.
+
+#### Acceptance
+
+- ADR-022 states the axes, valid combinations, rejected combinations and
+  composition ownership without creating a second Settings aggregate.
+- Focused contract tests cover local compatibility and the rejection/production
+  cases; implementation may be completed by the dependent Profile task.
+
+#### Explicit Non-Goals
+
+- no API/Worker/Compose composition implementation in this contract card
+- no command API, recovery, Helm/gVisor or Trench work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- ADR-022 records the only valid local/ci/test and cloud/production matrix,
+  explicit deployment/storage/runtime axes, and fail-closed rules.
+- `ZebraAgentSettings` exposes read-only axis views and validates PostgreSQL +
+  gVisor + quota for cloud/production. Focused config/cloud matrix validation
+  passes `30 tests`; Ruff and Mypy (`598` source files) pass.
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 

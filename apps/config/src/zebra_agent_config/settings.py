@@ -135,6 +135,18 @@ class ZebraAgentSettings:
     mcp_servers: tuple[McpServerSettings | McpHttpServerSettings, ...] = ()
     mcp_elicitation_enabled: bool = True
 
+    @property
+    def deployment(self) -> str:
+        return "cloud" if self.profile in {"cloud", "production"} else "local"
+
+    @property
+    def storage_authority(self) -> str:
+        return "postgresql" if self.deployment == "cloud" else "sqlite"
+
+    @property
+    def runtime_isolation(self) -> str:
+        return self.runtime.runtime_class
+
 
 def trusted_local_mode_enabled(settings: ZebraAgentSettings) -> bool:
     return settings.profile == "local" and settings.runtime.runtime_class == "trusted-local"
@@ -158,13 +170,20 @@ def load_settings(
         if deepseek_model:
             values["ZEBRA_MODEL_NAME"] = deepseek_model
     profile = _read(values, "ZEBRA_PROFILE", default="local")
+    database_url = _read(
+        values,
+        "ZEBRA_DATABASE_URL",
+        default=".zebra-agent/sessions.sqlite",
+    )
+    runtime = _load_runtime_settings(values, profile=profile)
+    _validate_profile_contract(
+        profile=profile,
+        database_url=database_url,
+        runtime=runtime,
+    )
     return ZebraAgentSettings(
         profile=profile,
-        database_url=_read(
-            values,
-            "ZEBRA_DATABASE_URL",
-            default=".zebra-agent/sessions.sqlite",
-        ),
+        database_url=database_url,
         api=ApiSettings(
             auth_token=_read_optional(values, "ZEBRA_API_AUTH_TOKEN"),
         ),
@@ -198,7 +217,7 @@ def load_settings(
         session_handoff=SessionHandoffSettings(
             enabled=_read_bool(values, "ZEBRA_SESSION_HANDOFF_ENABLED", default=False),
         ),
-        runtime=_load_runtime_settings(values, profile=profile),
+        runtime=runtime,
         setup=load_setup_settings(values),
         scm=_load_scm_settings(values),
         web_search_endpoint=_read_optional(values, "ZEBRA_WEB_SEARCH_ENDPOINT"),
@@ -227,12 +246,10 @@ def _load_runtime_settings(
     runtime_class = _read(
         values,
         "ZEBRA_RUNTIME_CLASS",
-        default="gvisor" if profile == "production" else "trusted-local",
+        default="trusted-local",
     )
     if runtime_class not in {"trusted-local", "os-sandbox", "oci-rootless", "gvisor"}:
         raise ValueError("ZEBRA_RUNTIME_CLASS is unsupported")
-    if profile == "production" and runtime_class != "gvisor":
-        raise ValueError("ZEBRA_PROFILE=production requires ZEBRA_RUNTIME_CLASS=gvisor")
     engine = _read(values, "ZEBRA_RUNTIME_ENGINE", default="docker")
     if engine not in {"docker", "podman"}:
         raise ValueError("ZEBRA_RUNTIME_ENGINE must be docker or podman")
@@ -247,10 +264,16 @@ def _load_runtime_settings(
     require_workspace_quota = _read_bool(
         values,
         "ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA",
-        default=profile == "production",
+        default=profile in {"cloud", "production"},
     )
-    if profile == "production" and not require_workspace_quota:
-        raise ValueError("ZEBRA_PROFILE=production requires a storage-enforced workspace quota")
+    if (
+        profile in {"cloud", "production"}
+        and runtime_class == "gvisor"
+        and not require_workspace_quota
+    ):
+        raise ValueError(
+            f"ZEBRA_PROFILE={profile} requires a storage-enforced workspace quota"
+        )
     return RuntimeSettings(
         runtime_class=runtime_class,
         engine=engine,
@@ -279,6 +302,20 @@ def _load_runtime_settings(
             default=10_240,
         ),
     )
+
+
+def _validate_profile_contract(
+    *,
+    profile: str,
+    database_url: str,
+    runtime: RuntimeSettings,
+) -> None:
+    if profile not in {"cloud", "production"}:
+        return
+    if runtime.runtime_class != "gvisor":
+        raise ValueError(f"ZEBRA_PROFILE={profile} requires ZEBRA_RUNTIME_CLASS=gvisor")
+    if not database_url.startswith(("postgresql://", "postgres://")):
+        raise ValueError(f"ZEBRA_PROFILE={profile} requires a PostgreSQL DSN")
 
 
 def _read_mcp_servers(

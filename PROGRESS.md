@@ -52,6 +52,11 @@
   the minimal provider/token reference and has no `zebra_agent_config` import;
   redaction and provider validation remain unchanged. The package dependency
   inventory is now empty.
+- `CLOUD-DEPLOY-PROFILE-CON-01` is in `Review` on
+  `codex/cloud-deploy-profile-con-01`. ADR-022 and executable settings
+  validation freeze the deployment/storage/runtime axes: local is lazy SQLite,
+  cloud/production require PostgreSQL + gVisor + quota, and invalid mixes fail
+  closed.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

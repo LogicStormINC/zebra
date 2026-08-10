@@ -162,6 +162,9 @@ def test_api_cloud_profile_uses_shared_composition(
         env={
             "ZEBRA_PROFILE": "cloud",
             "ZEBRA_DATABASE_URL": "postgresql://zebra:test@localhost/zebra",
+            "ZEBRA_RUNTIME_CLASS": "gvisor",
+            "ZEBRA_RUNTIME_IMAGE": "zebra/runtime@sha256:" + "a" * 64,
+            "ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA": "true",
         }
     )
     local = sqlite_control_plane_stores(tmp_path / "api.sqlite")
@@ -184,6 +187,9 @@ def test_worker_cloud_profile_uses_shared_composition_without_sqlite_fallback(
         env={
             "ZEBRA_PROFILE": "cloud",
             "ZEBRA_DATABASE_URL": "postgresql://zebra:test@localhost/zebra",
+            "ZEBRA_RUNTIME_CLASS": "gvisor",
+            "ZEBRA_RUNTIME_IMAGE": "zebra/runtime@sha256:" + "a" * 64,
+            "ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA": "true",
         }
     )
     local = sqlite_control_plane_stores(tmp_path / "worker.sqlite")
