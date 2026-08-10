@@ -148,6 +148,10 @@
   next slice is the AG-UI SSE replay/live-tail composition: exact durable
   cursor validation, official event encoding and interrupt/error/terminal
   projection, with durable polling as the lossless fallback.
+- `EMB-HOST-GW-01` is `In Progress` on `codex/cloud-real-svc-ci-01`. The
+  gateway slice is limited to typed Host manifest/invoke transport, workload
+  identity, Grant/manifest scope intersection, SSRF validation and bounded
+  receipts; Trench business Tools remain Gate 4 work.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

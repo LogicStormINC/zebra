@@ -75,6 +75,10 @@ does not authorize production code, migrations or activation of its successor.
   The activated slice owns the AG-UI replay/live-tail composition and focused
   SSE tests; durable Event Store replay remains authoritative and no command or
   Worker execution is added here.
+- `EMB-HOST-GW-01` is `In Progress` on `codex/cloud-real-svc-ci-01`. The
+  activated slice owns only the typed Host Tool manifest/invoke adapter,
+  workload identity and scope/SSRF/receipt boundaries; it does not add a
+  Trench endpoint or business-domain write path.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is `Done` on
   `docs/cloud-provider-cont-pg-plan`. It freezes Provider Continuation external
   authority, internal namespace, existing Lease fence, atomic Event binding,
@@ -1634,6 +1638,44 @@ it.
 
 - no new Event Store, Redis schema, command behavior, JWT/JWKS or Trench code
 - no API-side Worker execution or Copilot Runtime
+
+### EMB-HOST-GW-01 - Typed Host Tool Gateway
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Suggested role: `INTEGRATIONS / SECURITY / QA`
+- Depends on: `EMB-TOOL-CON-01` and `EMB-AUTH-01`
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `packages/agent-integrations/src/agent_integrations/host_tools/`
+  (new), focused `tests/agent_integrations/test_host_tools.py`, this task card
+  and focused `PROGRESS.md`
+
+#### Goal
+
+Provide one typed, provider-neutral Host Tool Gateway that discovers the Host
+manifest, invokes a declared tool with workload identity and the intersection
+of Grant/manifest scopes, and returns bounded `ToolResult`/`ToolReceipt`
+metadata.
+
+#### Acceptance
+
+- Manifest entries reuse `ToolContract`; malformed, duplicate or unbounded
+  entries fail closed and cannot create a parallel Tool model.
+- Endpoint parsing and DNS resolution reject non-HTTPS, credentials, private,
+  loopback, metadata and rebinding targets before transport execution.
+- Timeout, 4xx/5xx, invalid body and output-limit failures become structured
+  recoverable `ToolResult` values; transport credentials never enter output,
+  metadata or receipts.
+- Workload identity, required scope intersection, resource binding and required
+  idempotency are validated before invoke; focused integration/security tests
+  and changed-path quality checks pass.
+
+#### Explicit Non-Goals
+
+- no Trench read Tool implementation or business schema knowledge
+- no API route, Worker Harness, JWT decoder, replay store or Redis dependency
+- no destructive/write Host Tool admission beyond the declared contract
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 

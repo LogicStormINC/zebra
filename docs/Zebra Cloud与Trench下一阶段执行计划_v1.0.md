@@ -353,7 +353,7 @@ flowchart TD
 
 #### EMB-HOST-GW-01 — Typed Host Tool Gateway
 
-- 状态：`Locked`；预计：8-12h；依赖：Tool contract 与 Auth HTTP。
+- 状态：`In Progress`；预计：8-12h；依赖：Tool contract 与 Auth HTTP。
 - Reserved paths：新 `agent-integrations/.../host_tools/`、Security transport seam、tests。
 - 交付：manifest discovery/invoke、workload identity、scope intersection、SSRF、receipt。
 - 验收：timeout/4xx/5xx/invalid body 为结构化 recoverable result；secret 不进 model/Sandbox。

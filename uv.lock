@@ -65,6 +65,7 @@ dependencies = [
     { name = "ag-ui-protocol" },
     { name = "agent-core" },
     { name = "agent-security" },
+    { name = "agent-tools" },
     { name = "httpx" },
     { name = "redis" },
 ]
@@ -74,6 +75,7 @@ requires-dist = [
     { name = "ag-ui-protocol", specifier = "==0.1.19" },
     { name = "agent-core", editable = "packages/agent-core" },
     { name = "agent-security", editable = "packages/agent-security" },
+    { name = "agent-tools", editable = "packages/agent-tools" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
     { name = "redis", specifier = ">=6.4.0,<7.0.0" },
 ]
