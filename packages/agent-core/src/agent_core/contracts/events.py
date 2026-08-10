@@ -32,6 +32,7 @@ from agent_core.contracts.model_events import (
     ModelResponseReceivedPayload,
 )
 from agent_core.contracts.runtime_events import RuntimeProvisionedPayload
+from agent_core.contracts.session_commands import SessionCommandAcceptedPayload
 from agent_core.contracts.session_control_events import (
     SessionResumedPayload,
     SessionSuspendedPayload,
@@ -421,6 +422,7 @@ class ClarificationRespondedPayload(BaseModel):
 _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SESSION_CREATED: SessionCreatedPayload,
     EventType.SESSION_TITLE_UPDATED: SessionTitleUpdatedPayload,
+    EventType.SESSION_COMMAND_ACCEPTED: SessionCommandAcceptedPayload,
     EventType.USER_MESSAGE_RECEIVED: UserMessageReceivedPayload,
     EventType.TASK_PREPARED: TaskPreparedPayload,
     EventType.RUNTIME_PROVISIONED: RuntimeProvisionedPayload,

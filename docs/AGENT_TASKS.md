@@ -696,6 +696,57 @@ CI and test keep lazy SQLite compatibility.
   Compose execution was attempted but Docker Hub BuildKit authorization timed
   out before a service image could build; dependency containers were cleaned up.
 
+### CLOUD-COMMAND-API-CON-01 - Stateless API Command Contract
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `CORE / API / STORAGE`
+- Depends on: `CLOUD-DEPLOY-PROFILE-01` review commit `99b73707`
+- Branch: `codex/cloud-command-api-con-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-command-api-con-01/zebra-agent`
+- Owned paths: `packages/agent-core/src/agent_core/contracts/session_commands.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/contracts/__init__.py`,
+  `packages/agent-core/src/agent_core/domain/events.py`,
+  `tests/agent_core/test_session_command_contract.py`,
+  `docs/ADR-023_Stateless_Command与Revision合同.md`, this task card, and the
+  focused status in `PROGRESS.md`
+
+#### Goal
+
+Define one provider-neutral durable command envelope for run, resume, message,
+stop, cancel and suspend. Commands carry an idempotency key and expected
+revision; API/cloud callers submit intent while local execute compatibility is
+explicitly outside this contract.
+
+#### Acceptance
+
+- Command kinds, target identity, expected revision, idempotency key and
+  payload validation are typed, bounded and provider-neutral.
+- The contract maps command kinds to durable event intent and status outcomes
+  without constructing a Runtime or Harness.
+- Duplicate/revision-conflict semantics are deterministic and covered by
+  focused tests; core package boundaries and file-size/Ruff/Mypy gates pass.
+
+#### Explicit Non-Goals
+
+- no API route, Worker consumer, Runtime side effect, Redis/live wiring,
+  recovery, deployment or Trench work
+- no second configuration aggregate and no change to the original dirty
+  `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- ADR-023 and `SessionCommand` freeze the provider-neutral command envelope,
+  bounded JSON payload, command-specific validation, stable fingerprint and
+  `session_command_accepted` event payload.
+- Deterministic admission checks idempotency replay/conflict before optimistic
+  revision conflict, so retries remain safe after the stream advances. Focused
+  core/event validation passes `18 tests`; Ruff, Mypy (`600` files) and the file
+  size gate (`1217` files) pass.
+- No API route, Worker wake-up, Runtime side effect or production deployment is
+  claimed; those remain the explicitly dependent command-run/control cards.
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`

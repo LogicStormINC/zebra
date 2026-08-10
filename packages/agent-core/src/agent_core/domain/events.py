@@ -15,6 +15,7 @@ from agent_core.domain.identifiers import (
 class EventType(StrEnum):
     SESSION_CREATED = "session_created"
     SESSION_TITLE_UPDATED = "session_title_updated"
+    SESSION_COMMAND_ACCEPTED = "session_command_accepted"
     USER_MESSAGE_RECEIVED = "user_message_received"
     TASK_PREPARED = "task_prepared"
     RUNTIME_PROVISIONED = "runtime_provisioned"

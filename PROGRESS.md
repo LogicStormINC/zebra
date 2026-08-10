@@ -62,6 +62,10 @@
   application Compose now consume the validated storage/runtime axes; full
   Python validation is green, Compose config passes, and the actual image build
   is currently blocked by a Docker Hub authorization timeout.
+- `CLOUD-COMMAND-API-CON-01` is in `Review` on
+  `codex/cloud-command-api-con-01`. ADR-023 and the core contract freeze the
+  durable command envelope, stable idempotency/revision admission and accepted
+  Event payload; route/Worker execution remains reserved for its successors.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed
