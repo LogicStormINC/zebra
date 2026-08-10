@@ -296,6 +296,8 @@ class LocalToolGateway(ToolGatewayPort):
             CommandRunTool(self._runtime, self._workspace),
         )
         enabled_names = tool_names_for_profile(tool_profile)
+        if tool_profile is ToolProfile.GENERAL and policy_profile is PolicyProfile.READ_ONLY:
+            enabled_names -= {"command.run", "patch.apply"}
         for tool in tools:
             if tool.contract.name in enabled_names:
                 registry.register(tool.contract, tool.handle)
