@@ -130,6 +130,11 @@
   secret-free Grant audit and atomic PostgreSQL `jti` replay now pass the real
   Compose runner (`4 passed`) and the existing control-plane migration runner
   (`11 passed`); HTTP/JWT and Trench remain out of scope.
+- `EMB-AUTH-HTTP-01` is in `Review` on
+  `codex/cloud-real-svc-ci-01`. Cloud/production HTTP now requires an injected
+  Host Grant authorizer before route dispatch, and CORS uses normalized exact
+  HTTPS origins without reflection; focused auth/HTTP (`5 passed`) and existing
+  HTTP/command/live/stream (`52 passed`) matrices are green.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

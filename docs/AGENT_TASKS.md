@@ -1314,7 +1314,7 @@ machine-readable evidence.
 
 ### EMB-TOOL-CON-01 - Host Tool Contract Extension
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Suggested role: `CORE / TOOLS / SECURITY`
 - Depends on: completed `EMB-HOST-CON-01`, `EMB-AGUI-CON-01` and Gate 0 quality
@@ -1458,6 +1458,54 @@ remain provider-neutral and must not import API, JWT or Trench code.
   covered, and a second deployment namespace cannot read the first audit.
 - `make check` passes: file-size `1241` files, Ruff, Mypy `608` files and eval
   `10/10`.
+
+### EMB-AUTH-HTTP-01 - API Auth Middleware And Exact CORS
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `API / SECURITY`
+- Depends on: `EMB-AUTH-PG-01` and the command/profile baseline
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `apps/api/src/zebra_agent_api/http.py`, focused API auth/config
+  tests under `tests/api/`, this task card and focused `PROGRESS.md`
+
+#### Goal
+
+Make HTTP composition enforce Host Grant authorization before route/business
+dispatch for non-local profiles and derive CORS from an injected registry-backed
+exact-origin policy. Preserve local bearer-token compatibility without making it
+an Embedded/cloud fallback.
+
+#### Acceptance
+
+- Local profile behavior remains compatible, including public health and the
+  existing optional local bearer token.
+- Cloud/production requests without a Grant, with a disallowed origin or with
+  an authorizer-rejected scope stop before `RouteAdapter.handle`; missing
+  authorizer configuration fails closed.
+- CORS never reflects an arbitrary Origin for non-local profiles; allowed
+  preflight and normal responses carry only the exact registry-backed origin.
+- Focused HTTP/config tests, API tests, Ruff/Mypy and `make check` pass.
+
+#### Explicit Non-Goals
+
+- no JWT parsing/JWKS network client or new signing dependency
+- no PostgreSQL schema/adapter changes, AG-UI route implementation or Trench code
+
+#### Review Evidence
+
+- `create_http_app` now keeps local optional bearer auth and public health
+  behavior, while cloud/production routes require an injected Host Grant
+  authorizer before body parsing or `RouteAdapter.handle` dispatch. Missing
+  authorizer, missing Grant, disallowed origin and authorizer scope rejection
+  all fail closed with secret-free responses.
+- Wildcard/reflected CORS was removed from the non-local path. Exact HTTPS
+  origins are normalized from the injected registry-backed adapter policy;
+  Starlette preflight and normal responses never echo an untrusted Origin.
+- Focused HTTP/auth matrix: `5 passed`; existing HTTP/command/live/stream
+  matrix: `52 passed`; `make check` passes with file-size `1244` files, Ruff,
+  Mypy `608` files and eval `10/10`.
 
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions

@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Mapping
+from dataclasses import dataclass
 from json import JSONDecodeError
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
+from urllib.parse import urlsplit
 
 from agent_integrations import GitHubPullRequestTransport
-from agent_security import CredentialBroker
+from agent_security import CredentialBroker, HostGrantSecurityError
 from agent_storage import CloudCompositionSettings, ControlPlaneStores
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +24,26 @@ from zebra_agent_api.session_streaming import tail_session_events, tail_task_eve
 from zebra_agent_api.task_api import parse_task_id
 
 HTTP_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
+HTTP_ALLOWED_HEADERS = ["Accept", "Authorization", "Content-Type", "Last-Event-ID"]
+
+
+@dataclass(frozen=True)
+class HostGrantHttpRequest:
+    """Transient request data passed to the injected Host Grant adapter."""
+
+    method: str
+    path: str
+    origin: str | None
+    authorization: str
+
+
+class HostGrantRequestAuthorizer(Protocol):
+    """JWT/registry/replay adapter owned by the production composition root."""
+
+    allowed_origins: tuple[str, ...]
+
+    def authorize(self, request: HostGrantHttpRequest) -> object | None:
+        """Verify the bearer Grant, bindings, scope and replay state."""
 
 
 def create_http_app(
@@ -35,6 +57,8 @@ def create_http_app(
     credential_broker: CredentialBroker | None = None,
     credential_env: Mapping[str, str] | None = None,
     github_transport: GitHubPullRequestTransport | None = None,
+    host_grant_authorizer: HostGrantRequestAuthorizer | None = None,
+    host_grant_origins: tuple[str, ...] | None = None,
 ) -> FastAPI:
     active_settings = settings or load_settings()
     active_database_path = Path(database_path or active_settings.database_url)
@@ -50,35 +74,29 @@ def create_http_app(
         github_transport=github_transport,
     )
     adapter = RouteAdapter(api)
+    exact_host_origins = _resolve_host_origins(
+        host_grant_authorizer,
+        host_grant_origins,
+    )
     app = FastAPI(title="Zebra Agent API")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_origins=["*"] if active_settings.deployment == "local" else exact_host_origins,
+        allow_methods=HTTP_METHODS,
+        allow_headers=HTTP_ALLOWED_HEADERS,
         allow_credentials=False,
     )
-
-    @app.middleware("http")
-    async def _preflight_middleware(
-        request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
-        if request.method.upper() == "OPTIONS":
-            origin = request.headers.get("origin", "*")
-            requested_headers = request.headers.get("access-control-request-headers", "*")
-            response = Response(status_code=204)
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Methods"] = ", ".join(HTTP_METHODS)
-            response.headers["Access-Control-Allow-Headers"] = requested_headers
-            response.headers["Access-Control-Max-Age"] = "600"
-            return response
-        return await call_next(request)
 
     async def handle(request: Request, full_path: str = "") -> Response:
         del full_path
         if request.method.upper() == "OPTIONS":
             return Response(status_code=200)
-        auth_error = _authorize_request(request, active_settings)
+        auth_error = _authorize_request(
+            request,
+            active_settings,
+            host_grant_authorizer=host_grant_authorizer,
+            host_grant_origins=exact_host_origins,
+        )
         if auth_error is not None:
             return auth_error
         body, body_error = await _read_request_body(request)
@@ -206,11 +224,23 @@ def _after_sequence(request: Request) -> tuple[int, JSONResponse | None]:
     return value, None
 
 
-def _authorize_request(request: Request, settings: ZebraAgentSettings) -> JSONResponse | None:
+def _authorize_request(
+    request: Request,
+    settings: ZebraAgentSettings,
+    *,
+    host_grant_authorizer: HostGrantRequestAuthorizer | None,
+    host_grant_origins: tuple[str, ...],
+) -> JSONResponse | None:
     if request.method.upper() == "OPTIONS":
         return None
     if request.url.path == "/health":
         return None
+    if settings.deployment != "local":
+        return _authorize_host_request(
+            request,
+            host_grant_authorizer=host_grant_authorizer,
+            host_grant_origins=host_grant_origins,
+        )
     expected_token = settings.api.auth_token
     if expected_token is None:
         return None
@@ -224,11 +254,98 @@ def _authorize_request(request: Request, settings: ZebraAgentSettings) -> JSONRe
     return None
 
 
-def _unauthorized() -> JSONResponse:
+def _authorize_host_request(
+    request: Request,
+    *,
+    host_grant_authorizer: HostGrantRequestAuthorizer | None,
+    host_grant_origins: tuple[str, ...],
+) -> JSONResponse | None:
+    origin = request.headers.get("origin")
+    if origin is not None:
+        try:
+            normalized_origin = _normalize_exact_origin(origin)
+        except ValueError:
+            return _forbidden("host_origin_not_allowed")
+        if normalized_origin not in host_grant_origins:
+            return _forbidden("host_origin_not_allowed")
+    authorization = request.headers.get("authorization", "")
+    if not authorization.startswith("Bearer ") or not authorization.removeprefix("Bearer ").strip():
+        return _unauthorized(reason="missing_or_invalid_host_grant")
+    if host_grant_authorizer is None:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unavailable",
+                "reason": "host_grant_authorizer_unconfigured",
+            },
+        )
+    try:
+        host_grant_authorizer.authorize(
+            HostGrantHttpRequest(
+                method=request.method.upper(),
+                path=request.url.path,
+                origin=origin,
+                authorization=authorization,
+            )
+        )
+    except (HostGrantSecurityError, ValueError):
+        return _forbidden("host_grant_rejected")
+    return None
+
+
+def _resolve_host_origins(
+    authorizer: HostGrantRequestAuthorizer | None,
+    configured_origins: tuple[str, ...] | None,
+) -> tuple[str, ...]:
+    values = configured_origins
+    if values is None and authorizer is not None:
+        values = authorizer.allowed_origins
+    if values is None:
+        return ()
+    normalized = tuple(_normalize_exact_origin(origin) for origin in values)
+    if not normalized or len(set(normalized)) != len(normalized):
+        raise ValueError("Host Grant origins must contain unique exact HTTPS origins")
+    return normalized
+
+
+def _normalize_exact_origin(value: str) -> str:
+    normalized = value.strip()
+    parsed = urlsplit(normalized)
+    if (
+        parsed.scheme != "https"
+        or not parsed.netloc
+        or parsed.path not in {"", "/"}
+        or parsed.query
+        or parsed.fragment
+        or parsed.username is not None
+        or parsed.password is not None
+    ):
+        raise ValueError("Host Grant origins must be exact HTTPS origins")
+    host = parsed.hostname
+    if host is None:
+        raise ValueError("Host Grant origin must contain a host")
+    try:
+        port = parsed.port
+    except ValueError as exc:
+        raise ValueError("Host Grant origin has an invalid port") from exc
+    return f"https://{host.lower()}{f':{port}' if port is not None else ''}"
+
+
+def _unauthorized(*, reason: str = "missing_or_invalid_bearer_token") -> JSONResponse:
     return JSONResponse(
         status_code=401,
         content={
             "status": "unauthorized",
-            "reason": "missing_or_invalid_bearer_token",
+            "reason": reason,
+        },
+    )
+
+
+def _forbidden(reason: str) -> JSONResponse:
+    return JSONResponse(
+        status_code=403,
+        content={
+            "status": "forbidden",
+            "reason": reason,
         },
     )
