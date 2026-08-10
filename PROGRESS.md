@@ -86,6 +86,11 @@
   captures a Redis replay barrier, drains durable Events, then tails Redis with
   duplicate filtering and durable polling fallback. Full validation is green:
   `2147 passed, 271 skipped`; `make check` is green.
+- `CLOUD-REC-PROD-CON-01` is in `Review` on
+  `codex/cloud-rec-prod-con-01`. Its recovery contract freezes PG physical/WAL,
+  immutable object copies, restore epoch and identity rotation, machine-readable
+  drill evidence, and the read-only → single Worker → ingress sequence. Full
+  validation is green: `2147 passed, 271 skipped`; `make check` is green.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

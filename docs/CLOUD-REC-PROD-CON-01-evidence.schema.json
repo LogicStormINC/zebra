@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zebra-agent.invalid/schemas/recovery-evidence-v1.json",
+  "title": "Zebra production recovery drill evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "drill_id",
+    "environment",
+    "provider",
+    "deployment_namespace",
+    "target_recovery_point",
+    "backup",
+    "invariants",
+    "measurements",
+    "identity_rotation",
+    "cleanup",
+    "approvals"
+  ],
+  "properties": {
+    "schema_version": {"const": "zebra.recovery.evidence.v1"},
+    "drill_id": {"type": "string", "minLength": 1},
+    "environment": {
+      "type": "string",
+      "enum": ["production-like", "production"]
+    },
+    "provider": {"type": "string", "minLength": 1},
+    "deployment_namespace": {"type": "string", "minLength": 1},
+    "source_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["captured_at", "database_identity", "manifest_sha256"],
+      "properties": {
+        "captured_at": {"type": "string", "format": "date-time"},
+        "database_identity": {"type": "string", "minLength": 1},
+        "manifest_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "target_recovery_point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested_at", "restored_at", "timeline_id"],
+      "properties": {
+        "requested_at": {"type": "string", "format": "date-time"},
+        "restored_at": {"type": "string", "format": "date-time"},
+        "timeline_id": {"type": "string", "minLength": 1}
+      }
+    },
+    "backup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["postgres", "objects"],
+      "properties": {
+        "postgres": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "base_backup_id",
+            "wal_archive_until",
+            "encrypted",
+            "immutable_retention_until"
+          ],
+          "properties": {
+            "base_backup_id": {"type": "string", "minLength": 1},
+            "wal_archive_until": {"type": "string", "format": "date-time"},
+            "encrypted": {"type": "boolean", "const": true},
+            "immutable_retention_until": {"type": "string", "format": "date-time"}
+          }
+        },
+        "objects": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["backup_copy_id", "versioning", "manifest_sha256"],
+          "properties": {
+            "backup_copy_id": {"type": "string", "minLength": 1},
+            "versioning": {"type": "boolean", "const": true},
+            "manifest_sha256": {"$ref": "#/$defs/sha256"}
+          }
+        }
+      }
+    },
+    "invariants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_count",
+        "event_sequences_contiguous",
+        "max_event_sequence",
+        "projection_rebuilt",
+        "projection_revisions_match",
+        "namespace_isolated",
+        "artifact_references_verified",
+        "lease_epoch_rotated",
+        "old_epoch_writes_rejected",
+        "redis_rebuilt",
+        "uncertain_effects_reconciled"
+      ],
+      "properties": {
+        "event_count": {"type": "integer", "minimum": 0},
+        "event_sequences_contiguous": {"type": "boolean", "const": true},
+        "max_event_sequence": {"type": "integer", "minimum": -1},
+        "projection_rebuilt": {"type": "boolean", "const": true},
+        "projection_revisions_match": {"type": "boolean", "const": true},
+        "namespace_isolated": {"type": "boolean", "const": true},
+        "artifact_references_verified": {"type": "boolean", "const": true},
+        "lease_epoch_rotated": {"type": "boolean", "const": true},
+        "old_epoch_writes_rejected": {"type": "boolean", "const": true},
+        "redis_rebuilt": {"type": "boolean", "const": true},
+        "uncertain_effects_reconciled": {"type": "boolean", "const": true}
+      }
+    },
+    "measurements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rpo_seconds", "rto_seconds", "observed_at"],
+      "properties": {
+        "rpo_seconds": {"type": "number", "minimum": 0},
+        "rto_seconds": {"type": "number", "minimum": 0},
+        "observed_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "identity_rotation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "old_epoch",
+        "new_epoch",
+        "old_runtime_identity_revoked",
+        "restore_identity_revoked",
+        "new_runtime_identity_issued"
+      ],
+      "properties": {
+        "old_epoch": {"type": "string", "minLength": 1},
+        "new_epoch": {"type": "string", "minLength": 1},
+        "old_runtime_identity_revoked": {"type": "boolean", "const": true},
+        "restore_identity_revoked": {"type": "boolean", "const": true},
+        "new_runtime_identity_issued": {"type": "boolean", "const": true}
+      }
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "old_instance_isolated",
+        "temporary_credentials_revoked",
+        "orphan_objects_handled",
+        "temporary_resources_deleted"
+      ],
+      "properties": {
+        "old_instance_isolated": {"type": "boolean", "const": true},
+        "temporary_credentials_revoked": {"type": "boolean", "const": true},
+        "orphan_objects_handled": {"type": "boolean", "const": true},
+        "temporary_resources_deleted": {"type": "boolean", "const": true}
+      }
+    },
+    "approvals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recovery_operator", "service_owner", "recorded_at"],
+      "properties": {
+        "recovery_operator": {"type": "string", "minLength": 1},
+        "service_owner": {"type": "string", "minLength": 1},
+        "recorded_at": {"type": "string", "format": "date-time"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

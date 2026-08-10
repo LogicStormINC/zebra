@@ -994,6 +994,60 @@ entries or API restart fall back to durable polling without claiming loss.
   or Trench work
 - no change to the original dirty `zebra-cloud-trench` worktree
 
+### CLOUD-REC-PROD-CON-01 - Production Recovery Contract
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `SRE / STORAGE / SECURITY`
+- Depends on: Gate 0 canonical quality baseline and the local recovery evidence
+  gate; implementation is documentation/evidence-only and may run alongside
+  the live stream task.
+- Branch: `codex/cloud-rec-prod-con-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-rec-prod-con-01/zebra-agent`
+- Owned paths: `docs/CLOUD-REC-PROD-CON-01.md` (new),
+  `docs/CLOUD-REC-PROD-CON-01-evidence.schema.json` (new), this task card, and
+  the focused status in `PROGRESS.md`
+
+#### Goal
+
+Freeze the production recovery contract before any PITR or object-backup
+implementation: PostgreSQL physical backup/WAL, S3-compatible Artifact backup,
+RPO/RTO measurement, credential and restore-epoch rotation, and accountable
+drill evidence.
+
+#### Acceptance
+
+- The contract distinguishes pre-cutover abort, post-`ACTIVE` application
+  rollback, database restore and site failover; no path returns to stale SQLite.
+- A machine-readable evidence schema and operator checklist bind the target
+  recovery point, Event/Projection/Artifact/Lease invariants, restore epoch,
+  namespace, credential rotation, RPO/RTO measurements and cleanup proof.
+- Production RPO/RTO, retention, PITR and failover remain `TBD` until a real
+  provider/isolated restore drill supplies measured evidence; local logical dump
+  or re-uploading a Worker-local payload cannot satisfy the contract.
+- The document names backup/restore identities, least privilege, immutable
+  retention, object checksum/version checks, Redis rebuild and uncertain Effect
+  reconciliation without adding runtime code, credentials or provider wiring.
+
+#### Review Evidence
+
+- This card is documentation-only; no production service or migration is
+  changed. Existing local backup/restore/drill records are explicitly labeled
+  as non-production evidence.
+- `docs/CLOUD-REC-PROD-CON-01-evidence.schema.json` parses with the standard
+  JSON parser; the contract document is 137 lines and the schema is 174 lines.
+- `make sync && make check`: file-size `1229` files, Ruff clean, Mypy `605`
+  files, eval `10/10`; full suite `2147 passed, 271 skipped`.
+- The production values remain `TBD`; no RPO/RTO, PITR, failover or provider
+  readiness is claimed from local Compose evidence.
+
+#### Explicit Non-Goals
+
+- no PITR provider, WAL job, S3/MinIO runner or Kubernetes deployment
+- no RPO/RTO number, production credential or failover claim without measured
+  evidence
+- no changes to the original dirty `zebra-cloud-trench` worktree
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`
