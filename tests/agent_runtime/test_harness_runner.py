@@ -449,6 +449,24 @@ def test_run_local_harness_advertises_its_executable_tools(tmp_path) -> None:
     assert file_read.parameters["required"] == ["path"]
 
 
+def test_read_only_harness_does_not_advertise_write_or_command_tools(tmp_path) -> None:
+    gateway = ScriptedModelGateway(
+        responses=(ScriptedModelResponse(completion=_completion("No tool needed.")),)
+    )
+
+    run_local_harness(
+        prompt="Check the arithmetic.",
+        title="Read-only tool discovery test",
+        workspace_root=tmp_path.resolve(),
+        model_gateway=gateway,
+        policy_profile=PolicyProfile.READ_ONLY,
+    )
+
+    names = {tool.name for tool in gateway.tool_requests[0]}
+    assert "command.run" not in names
+    assert "patch.apply" not in names
+
+
 def test_local_tool_gateway_rejects_legacy_transports_when_v2_enabled(tmp_path) -> None:
     with pytest.raises(
         ValueError, match="legacy web transports are not supported when web_pipeline_v2 is enabled"
