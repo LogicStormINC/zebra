@@ -67,6 +67,10 @@ does not authorize production code, migrations or activation of its successor.
   `codex/cloud-integration-regressions-01`. It repairs the branch-specific
   recovered-Lease heartbeat checkpoint regression and restores lazy local API
   Store composition without weakening explicit cloud fail-closed startup.
+- `EMB-AGUI-CMD-01` is `In Progress` on `codex/cloud-real-svc-ci-01`. The
+  activated slice owns only the API AG-UI command route/composition and focused
+  tests; it submits run/resume/stop intents to the existing durable command
+  service and does not construct Worker execution in the route.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is `Done` on
   `docs/cloud-provider-cont-pg-plan`. It freezes Provider Continuation external
   authority, internal namespace, existing Lease fence, atomic Event binding,
@@ -1554,6 +1558,41 @@ JWT/JWKS transport bounded and injectable; never persist or log raw bearer data.
   replay, wrong scope/origin, audit and digest-only persistence. Decoder unit
   tests pass `3`, the combined HTTP/auth matrix passes `45`, and `make check`
   passes with file-size `1245` files, Ruff, Mypy `610` files and eval `10/10`.
+
+### EMB-AGUI-CMD-01 - AG-UI Command Endpoint
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Suggested role: `API / INTEGRATIONS / QA`
+- Depends on: command control, `EMB-AUTH-HTTP-01`, and `EMB-AGUI-CON-01`
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `apps/api/src/zebra_agent_api/ag_ui_command.py` (new),
+  `apps/api/src/zebra_agent_api/routes.py`,
+  `tests/api/test_agui_command_routes.py` (new), this task card and focused
+  `PROGRESS.md`
+
+#### Goal
+
+Expose one bounded AG-UI command envelope for `run`, `resume`, and `stop`.
+Resolve the stable `threadId` to the active durable Segment, validate the
+official `RunAgentInput` where applicable, and append only a command intent.
+
+#### Acceptance
+
+- Valid run/resume/stop requests append exactly one durable command event and
+  return the command service's accepted/duplicate/conflict outcome.
+- Invalid IDs, payloads, stale revisions, and unknown actions map to bounded
+  RFC 9457-style problem bodies without calling business execution.
+- The API route does not construct or import Worker Harness execution services;
+  a focused source/test guard proves command-only composition.
+- Local and cloud HTTP auth behavior remains owned by existing middleware; this
+  slice adds no auth bypass, CORS policy, storage migration, or Trench code.
+
+#### Explicit Non-Goals
+
+- no AG-UI SSE/replay route (owned by `EMB-AGUI-STREAM-01`)
+- no Worker execution, Redis fan-out, JWT/JWKS, Host Tool Gateway or Trench code
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 

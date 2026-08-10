@@ -331,9 +331,10 @@ flowchart TD
 
 #### EMB-AGUI-CMD-01 — AG-UI command endpoint
 
-- 状态：`Locked`；预计：6-10h；依赖：command control、Auth HTTP、AG-UI contract。
+- 状态：`In Progress`；预计：6-10h；依赖：command control、Auth HTTP、AG-UI contract。
 - Reserved paths：AG-UI API command route/composition、tests。
-- 交付：run/resume/stop 与 RFC 9457 mapping；只调用 durable command service。
+- 交付：`POST /agui/commands`（及其 thread/run 资源别名）承载
+  `run`/`resume`/`stop` 与 RFC 9457 mapping；只调用 durable command service。
 - 验收：API 进程中不导入或构造 Worker Harness execution service。
 
 #### EMB-AGUI-STREAM-01 — AG-UI replay/stream endpoint

@@ -8,6 +8,7 @@ from uuid import UUID
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.session_handoff import HandoffActorKind
 
+from zebra_agent_api.ag_ui_command import handle_agui_command
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.task_routes import handle_task_route
@@ -34,6 +35,9 @@ class RouteAdapter:
             return self.app.get_mcp_capabilities()
         if method == "GET" and request.path == "/capabilities/mcp/prompts":
             return self.app.get_mcp_prompts()
+        agui_response = handle_agui_command(self.app, request)
+        if agui_response is not None:
+            return agui_response
         if method == "GET" and request.path == "/sessions":
             return self.app.list_sessions(request.query or {})
         if method == "POST" and request.path == "/sessions":

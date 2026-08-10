@@ -139,6 +139,11 @@
   PyJWT decoder with bounded injectable JWKS resolution now composes with the
   PostgreSQL registry/replay authorizer; the real Host PostgreSQL/API matrix is
   `5 passed`, with no raw token in HTTP/audit evidence.
+- `EMB-AGUI-CMD-01` is `In Progress` on `codex/cloud-real-svc-ci-01`. The
+  activated API slice is limited to a bounded `run`/`resume`/`stop` command
+  envelope that resolves `threadId` to the active durable Segment and calls
+  only the existing command service; the AG-UI stream and Trench slices remain
+  separate gates.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed
