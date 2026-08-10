@@ -91,6 +91,9 @@ Then make the smallest production changes required by those tests.
 - FinOS read-only compatibility smoke: `23 passed`, covering Stable Task
   follow-up, clarification, retry/resume, WAITING_INPUT reconciliation, public
   conversation, and model selection; no compatibility regression was found.
+- Real dual-repository Gate 2 E2E: `1 passed`, covering Review v4 main/reference,
+  typed reads, executed Skill provenance, candidate/save/history, and same
+  Stable Task correction.
 - No FinOS source, stable integration branch, GUI, provider, or deployment state changed.
 
 ### Hard non-goals

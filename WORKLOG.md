@@ -17,6 +17,8 @@
   and diff-check pass, and full static/file-size findings are inherited
 - FinOS compatibility smoke is `23 passed` across Stable Task follow-up,
   clarification, retry/resume, WAITING_INPUT, public conversation, and model selection
+- real dual-repository Gate 2 E2E is `1 passed` across Review v4 main/reference,
+  typed reads, executed Skill provenance, candidate/save/history, and same-Task correction
 - no Planner Agent, sub-agent, scheduler, finance/Review workflow, GUI, FinOS
   source, stable branch, provider, or deployment change was added
 

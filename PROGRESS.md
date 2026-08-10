@@ -17,6 +17,7 @@
   eval is `10/10`; changed-path Ruff/compileall/diff-check pass. Full Ruff is
   11 inherited findings versus 13 at exact base, while Mypy and file-size retain
   the same 13 inherited findings. FinOS compatibility smoke is `23 passed`; no
+  regression appeared in the real dual-repository Gate 2 E2E (`1 passed`). No
   FinOS source, stable branch, GUI, provider, or deployment change was made.
 - AOR-DEF-01 follow-up review closes durable continuation evidence,
   shared capability preflight, and trusted skill scope/state/content-digest
