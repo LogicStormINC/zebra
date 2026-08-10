@@ -107,7 +107,11 @@ def _cloud_settings() -> CloudCompositionSettings:
 def test_local_profile_keeps_sqlite_and_cloud_selection_never_falls_back(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    local = compose_control_plane_stores(profile="local", database_path=tmp_path / "local.sqlite")
+    local = compose_control_plane_stores(
+        profile="local",
+        storage_authority="sqlite",
+        database_path=tmp_path / "local.sqlite",
+    )
     assert isinstance(local, ControlPlaneStores)
 
     calls: list[dict[str, object]] = []
@@ -121,6 +125,7 @@ def test_local_profile_keeps_sqlite_and_cloud_selection_never_falls_back(
     )
     cloud = compose_control_plane_stores(
         profile="cloud",
+        storage_authority="postgresql",
         database_path=tmp_path / "ignored.sqlite",
         cloud=_cloud_settings(),
     )
@@ -155,12 +160,13 @@ def test_projection_compatibility_facades_use_one_event_derived_source() -> None
         tool.upsert(projection.tool)
 
 
-def test_api_cloud_profile_uses_shared_composition(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+@pytest.mark.parametrize("profile", ["cloud", "production"])
+def test_cloud_and_production_api_profiles_use_shared_composition(
+    profile: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     settings = load_settings(
         env={
-            "ZEBRA_PROFILE": "cloud",
+            "ZEBRA_PROFILE": profile,
             "ZEBRA_DATABASE_URL": "postgresql://zebra:test@localhost/zebra",
             "ZEBRA_RUNTIME_CLASS": "gvisor",
             "ZEBRA_RUNTIME_IMAGE": "zebra/runtime@sha256:" + "a" * 64,
@@ -176,16 +182,18 @@ def test_api_cloud_profile_uses_shared_composition(
 
     monkeypatch.setattr("zebra_agent_api.factory.compose_control_plane_stores", fake_compose)
     api = create_app(settings=settings, cloud_composition=_cloud_settings())
-    assert captured["profile"] == "cloud"
+    assert captured["profile"] == profile
+    assert captured["storage_authority"] == "postgresql"
     assert api.stores is local
 
 
-def test_worker_cloud_profile_uses_shared_composition_without_sqlite_fallback(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+@pytest.mark.parametrize("profile", ["cloud", "production"])
+def test_cloud_and_production_worker_profiles_use_shared_composition_without_sqlite_fallback(
+    profile: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     settings = load_settings(
         env={
-            "ZEBRA_PROFILE": "cloud",
+            "ZEBRA_PROFILE": profile,
             "ZEBRA_DATABASE_URL": "postgresql://zebra:test@localhost/zebra",
             "ZEBRA_RUNTIME_CLASS": "gvisor",
             "ZEBRA_RUNTIME_IMAGE": "zebra/runtime@sha256:" + "a" * 64,
@@ -207,4 +215,5 @@ def test_worker_cloud_profile_uses_shared_composition_without_sqlite_fallback(
         cloud_composition=_cloud_settings(),
         sleep=lambda _: None,
     )
-    assert captured["profile"] == "cloud"
+    assert captured["profile"] == profile
+    assert captured["storage_authority"] == "postgresql"

@@ -160,18 +160,25 @@ def build_worker_loop_service(
 ) -> WorkerLoopService:
     active_stores = stores or compose_control_plane_stores(
         profile=settings.profile,
-        database_path=(settings.database_url if settings.profile == "cloud" else database_path),
+        storage_authority=settings.storage_authority,
+        database_path=(
+            settings.database_url
+            if settings.storage_authority == "postgresql"
+            else database_path
+        ),
         cloud=cloud_composition,
     )
     active_transaction = worker_projection_transaction
     active_namespace = deployment_namespace
-    if settings.profile == "cloud":
+    if settings.storage_authority == "postgresql":
         active_transaction = active_transaction or cast(
             WorkerProjectionTransactionPort, active_stores.workspaces
         )
         active_namespace = active_namespace or getattr(active_stores, "deployment_namespace", None)
         if not isinstance(active_namespace, str) or not active_namespace.strip():
-            raise ValueError("cloud profile composition must expose deployment_namespace")
+            raise ValueError(
+                f"{settings.profile} profile composition must expose deployment_namespace"
+            )
     claim_service = SessionClaimService(
         active_stores.leases,
         SessionRecoveryService(

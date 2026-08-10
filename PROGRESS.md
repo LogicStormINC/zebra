@@ -57,6 +57,11 @@
   validation freeze the deployment/storage/runtime axes: local is lazy SQLite,
   cloud/production require PostgreSQL + gVisor + quota, and invalid mixes fail
   closed.
+- `CLOUD-DEPLOY-PROFILE-01` is in `Review` on
+  `codex/cloud-deploy-profile-01`. API, Worker, Storage, migration and
+  application Compose now consume the validated storage/runtime axes; full
+  Python validation is green, Compose config passes, and the actual image build
+  is currently blocked by a Docker Hub authorization timeout.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

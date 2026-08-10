@@ -33,17 +33,18 @@ class CloudCompositionSettings:
 def compose_control_plane_stores(
     *,
     profile: str,
+    storage_authority: str,
     database_path: str | Path,
     cloud: CloudCompositionSettings | None = None,
 ) -> ControlPlaneStores:
-    """Select exactly one storage profile; cloud never falls back to SQLite."""
-    if profile != "cloud":
-        # ponytail: test profiles intentionally exercise the local composition;
-        # only the explicit cloud profile may select PostgreSQL.
+    """Select exactly one storage authority; cloud never falls back to SQLite."""
+    if storage_authority == "sqlite":
         return sqlite_control_plane_stores(database_path)
+    if storage_authority != "postgresql":
+        raise ValueError(f"unsupported storage authority: {storage_authority}")
     resolved = cloud or cloud_composition_from_environment()
     if not resolved.dsn.strip():
-        raise ValueError("cloud profile requires ZEBRA_DATABASE_URL")
+        raise ValueError(f"{profile} profile requires ZEBRA_DATABASE_URL")
     stores = postgres_control_plane_stores(
         resolved.dsn,
         deployment_namespace=resolved.deployment_namespace,

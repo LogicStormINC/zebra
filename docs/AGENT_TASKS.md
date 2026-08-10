@@ -639,6 +639,63 @@ PostgreSQL plus gVisor and fail closed. `cloud + trusted-local` and
   gVisor + quota for cloud/production. Focused config/cloud matrix validation
   passes `30 tests`; Ruff and Mypy (`598` source files) pass.
 
+### CLOUD-DEPLOY-PROFILE-01 - Profile Implementation And Application Composition
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `ARCH / DEPLOY / API / WORKER`
+- Depends on: `CLOUD-DEPLOY-PROFILE-CON-01` review commit `322a0233`
+- Branch: `codex/cloud-deploy-profile-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-deploy-profile-01/zebra-agent`
+- Owned paths: `apps/config/src/zebra_agent_config/settings.py`,
+  `packages/agent-storage/src/agent_storage/runtime_composition.py`,
+  `apps/api/src/zebra_agent_api/factory.py`,
+  `apps/api/src/zebra_agent_api/storage_composition.py`,
+  `apps/api/src/zebra_agent_api/api_scm_mixin.py`,
+  `apps/worker/src/zebra_agent_worker/loop.py`,
+  `apps/worker/src/zebra_agent_worker/provider_configuration.py`,
+  `docker/migrate.py`, `docker/compose.application.yml`,
+  `tests/compose/application/run-smoke.sh`,
+  `tests/test_cloud_api_worker_profile_composition.py`, this task card, and
+  the focused status in `PROGRESS.md`
+
+#### Goal
+
+Make API, Worker, storage composition and the application Compose smoke path
+consume the same validated deployment/storage/runtime profile. Production must
+select PostgreSQL authority and the isolated runtime just like cloud; local,
+CI and test keep lazy SQLite compatibility.
+
+#### Acceptance
+
+- local/cloud/production composition tests prove one profile selection reaches
+  API, Worker and storage without string-specific authority forks.
+- cloud/production startup uses PostgreSQL stores and fails closed on invalid
+  runtime or DSN; local/test startup remains lazy and SQLite-compatible.
+- application Compose smoke uses the same profile contract and validates the
+  production axes; focused Ruff, Mypy, file-size and matrix tests pass.
+
+#### Explicit Non-Goals
+
+- no command API, live Redis, recovery, Helm/gVisor deployment or Trench work
+- no second settings aggregate and no change to the original dirty
+  `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- API, Worker, Storage composition and the migration entrypoint now consume the
+  explicit `storage_authority` axis. Both `cloud` and `production` select
+  PostgreSQL and deployment namespace wiring; local/CI/test remain SQLite.
+- Application Compose and its smoke script pass the gVisor digest/quota inputs,
+  while invalid profile/runtime/DSN combinations continue to fail during config
+  load. MCP config parsing was split into `mcp_settings.py` to keep the source
+  file-size gate below 500 lines without changing its public exports.
+- Focused profile/composition validation passes `11 tests`; full backend passes
+  `2113 passed, 271 skipped`; `make check` passes (`1216` files, Ruff, Mypy
+  `599`, eval `10/10`). Compose `config --quiet` passes. Full application
+  Compose execution was attempted but Docker Hub BuildKit authorization timed
+  out before a service image could build; dependency containers were cleaned up.
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`

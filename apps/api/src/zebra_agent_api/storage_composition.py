@@ -18,9 +18,10 @@ class ControlPlaneStorageMixin:
     def stores(self) -> ControlPlaneStores:
         stores = self._stores or compose_control_plane_stores(
             profile=self.settings.profile,
+            storage_authority=self.settings.storage_authority,
             database_path=(
                 self.settings.database_url
-                if self.settings.profile == "cloud"
+                if self.settings.storage_authority == "postgresql"
                 else self.database_path
             ),
         )

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import time
 
 _MAX_ATTEMPTS = 30
@@ -10,9 +9,14 @@ _RETRY_DELAY_SECONDS = 2
 
 
 def main() -> None:
-    dsn = os.environ.get("ZEBRA_DATABASE_URL", "").strip()
-    if not dsn:
-        raise SystemExit("ZEBRA_DATABASE_URL must be set for the migration container")
+    from zebra_agent_config import load_settings
+
+    settings = load_settings()
+    if settings.storage_authority != "postgresql":
+        raise SystemExit(
+            f"{settings.profile} profile cannot run PostgreSQL migrations"
+        )
+    dsn = settings.database_url
     import psycopg
     from agent_storage.postgres.migration_runner import apply_postgres_migrations
 

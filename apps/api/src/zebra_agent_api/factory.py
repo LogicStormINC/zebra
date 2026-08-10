@@ -37,9 +37,10 @@ def create_app(
     active_settings = settings or load_settings()
     active_database_path = Path(database_path or active_settings.database_url)
     active_stores = stores
-    if active_stores is None and active_settings.profile == "cloud":
+    if active_stores is None and active_settings.storage_authority == "postgresql":
         active_stores = compose_control_plane_stores(
-            profile="cloud",
+            profile=active_settings.profile,
+            storage_authority=active_settings.storage_authority,
             database_path=active_settings.database_url,
             cloud=cloud_composition,
         )
