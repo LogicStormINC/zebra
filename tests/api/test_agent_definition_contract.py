@@ -10,7 +10,7 @@ from agent_tools.agent_definitions import resolve_agent_definition_context
 from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_api.app import create_app
 from zebra_agent_api.session_payloads import parse_create_session_payload
-from zebra_agent_api.task_api import TaskReadApi, create_task
+from zebra_agent_api.task_api import TaskReadApi, append_task_message, create_task
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
 
@@ -160,3 +160,66 @@ def test_task_create_and_read_retain_definition_version_and_contract(tmp_path) -
     read = TaskReadApi(app.database_path).get(task_id)
     assert read.status_code == 200
     assert read.body["workspace"]["agent_definition"] == definition.model_dump(mode="json")
+
+
+def test_task_create_selects_and_pins_server_resolved_skill_components(
+    tmp_path: Path,
+) -> None:
+    skills = tmp_path / "system-skills"
+    for name, version in (("selected-skill", "4.0.0"), ("other-skill", "1.0.0")):
+        skill = skills / name
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text(
+            f"---\nname: {name}\nversion: {version}\ndescription: {name}\n---\n\n{name}\n",
+            encoding="utf-8",
+        )
+    database = tmp_path / "tasks.sqlite"
+    settings = ZebraAgentSettings(
+        profile="test",
+        database_url=str(database),
+        api=ApiSettings(auth_token=None),
+        model=ModelSettings(
+            provider="test",
+            api_key_env="TEST_API_KEY",
+            base_url="https://example.test",
+            model="test-model",
+        ),
+        skill_roots_system=(str(skills),),
+        skills_state_path=str(tmp_path / "skills-state.sqlite"),
+    )
+    app = create_app(database, settings=settings)
+
+    created = create_task(
+        app,
+        {
+            "prompt": "Use the selected Skill.",
+            "workspace": str(tmp_path),
+            "skill_components": ["selected-skill"],
+        },
+        idempotency_key=None,
+    )
+
+    assert created.status_code == 201
+    task_id = str(created.body["task_id"])
+    before = TaskReadApi(database).get(task_id).body["workspace"]
+    assert before["skill_components"] == ["selected-skill"]
+    assert before["skill_component_identities"] == [
+        {
+            "name": "selected-skill",
+            "version": "4.0.0",
+            "digest": before["skill_component_identities"][0]["digest"],
+            "scope": "system",
+            "namespace": "system",
+            "source": "selected-skill",
+        }
+    ]
+
+    appended = append_task_message(
+        app,
+        task_id,
+        {"content": "Continue with the same grant."},
+        idempotency_key="continue-1",
+    )
+    after = TaskReadApi(database).get(task_id).body["workspace"]
+    assert appended.status_code == 201
+    assert after["skill_component_identities"] == before["skill_component_identities"]
