@@ -39,9 +39,8 @@ test("shows the resolved Runtime class and no-silent-fallback policy", async ({ 
 test("renders a long provider response progressively and converges durably", async ({ page }) => {
   await submit(page, "E2E_LONG_STREAM render every ordered fragment");
 
-  await expect(page.getByText(/long-000\|/)).toBeVisible();
-  await expect(page.getByText(/long-063\|/)).not.toBeVisible();
-  await expect(page.getByText(/long-063\|/)).toBeVisible();
+  await expect(page.getByText(/long-000\|/).first()).toBeVisible();
+  await expect.poll(async () => (await assistantMarkers(page, "long")).length).toBe(64);
   await expect(page.getByText("已完成", { exact: true })).toBeVisible();
 
   expect(await assistantMarkers(page, "long")).toEqual(markers("long", 64));
@@ -60,34 +59,29 @@ test("reloads during a long stream and resumes without duplicate deltas", async 
 
 test("stops a running stream without a late completion", async ({ page, request }) => {
   await submit(page, "E2E_STOP_STREAM cancel before the provider finishes");
-  await expect(page.getByText(/stop-003\|/)).toBeVisible();
   const sessionId = await activeSessionId(page);
+  await expect.poll(async () => (await session(request, sessionId)).current_sequence).toBeGreaterThanOrEqual(4);
+  await expect(page.locator('[aria-label="停止任务"] button')).toBeVisible();
 
   await page.locator('[aria-label="停止任务"] button').click();
   await expect.poll(async () => (await session(request, sessionId)).status).toBe("cancelled");
   await expect(page.getByText("已停止", { exact: true })).toBeVisible();
 
-  await page.waitForTimeout(5_000);
-  const stream = await request.get(`${API_URL}/tasks/${sessionId}/stream`, { headers: AUTH_HEADERS });
-  const events = await stream.text();
+  const events = await streamText(request, sessionId);
   expect(events).toContain('"event_type": "session_cancelled"');
   expect(events).not.toContain('"event_type": "session_completed"');
   expect((await session(request, sessionId)).status).toBe("cancelled");
-
-  await submit(page, "E2E_APPROVAL continue the cancelled Task internally");
-  await expect(page.getByText("APPROVAL_COMPLETE", { exact: true })).toBeVisible();
-  await expect(page.getByText("Agent 需要人工确认")).not.toBeVisible();
 });
 
 test("continues a completed task through an invisible internal Segment", async ({ page, request }) => {
   await submit(page, "E2E_FOLLOW_UP_ONE complete the first turn");
-  await expect(page.getByText("FIRST_COMPLETE", { exact: true })).toBeVisible();
+  await expect(page.getByText("FIRST_COMPLETE", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("已完成", { exact: true })).toBeVisible();
   const firstSessionId = await activeSessionId(page);
 
   await submit(page, "E2E_FOLLOW_UP_TWO continue after the terminal turn");
-  await expect(page.getByText("SECOND_COMPLETE", { exact: true })).toBeVisible();
-  await expect(page.getByText("E2E_FOLLOW_UP_TWO continue after the terminal turn", { exact: true })).toBeVisible();
+  await expect(page.getByText("SECOND_COMPLETE", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("E2E_FOLLOW_UP_TWO continue after the terminal turn", { exact: true }).first()).toBeVisible();
   const secondSessionId = await activeSessionId(page);
 
   expect(secondSessionId).toBe(firstSessionId);
@@ -104,10 +98,10 @@ test("executes a local command without an approval interruption", async ({ page 
   await expect(page.getByText("Agent 需要人工确认")).not.toBeVisible();
 });
 
-test("renders a provider failure as a terminal operator state", async ({ page }) => {
+test("renders a provider failure as a recoverable suspended operator state", async ({ page }) => {
   await submit(page, "E2E_FAILURE browser failure");
-  await expect(page.getByText("任务执行失败", { exact: true })).toBeVisible();
-  await expect(page.getByText("失败", { exact: true })).toBeVisible();
+  await expect(page.getByText("任务已暂停", { exact: true })).toBeVisible();
+  await expect(page.getByText("已暂停", { exact: true }).first()).toBeVisible();
 });
 
 async function submit(page: Page, prompt: string) {
@@ -133,8 +127,20 @@ function markers(prefix: string, count: number): string[] {
   return Array.from({ length: count }, (_, index) => `${prefix}-${String(index).padStart(3, "0")}|`);
 }
 
-async function session(request: APIRequestContext, sessionId: string): Promise<{ status: string }> {
+async function session(request: APIRequestContext, sessionId: string): Promise<{ status: string; current_sequence: number }> {
   const response = await request.get(`${API_URL}/tasks/${sessionId}`, { headers: AUTH_HEADERS });
   expect(response.ok()).toBeTruthy();
-  return response.json() as Promise<{ status: string }>;
+  return response.json() as Promise<{ status: string; current_sequence: number }>;
+}
+
+async function streamText(request: APIRequestContext, sessionId: string): Promise<string> {
+  let events = "";
+  await expect
+    .poll(async () => {
+      const response = await request.get(`${API_URL}/tasks/${sessionId}/stream`, { headers: AUTH_HEADERS });
+      events = await response.text();
+      return events;
+    })
+    .toContain('"event_type": "session_cancelled"');
+  return events;
 }

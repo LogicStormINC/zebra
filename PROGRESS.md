@@ -24,6 +24,13 @@
   violation remaining. The existing concurrent PostgreSQL/Memory size and
   export fixes were validated as an isolated handoff snapshot; the dirty
   `zebra-cloud-trench` worktree is preserved unchanged.
+- `QA-CLOUDLINE-DESKTOP-01` is in `Review` on
+  `codex/qa-cloudline-desktop-01`. It split the remaining Desktop stylesheet
+  size violation without changing the composer CSS contract and made the
+  long-stream/stop assertions event-driven. Node 22 build, all Desktop static
+  checks, file-size validation, and the eight Playwright tests pass. The default
+  Tauri check remains environment-blocked by the global USTC Cargo mirror;
+  direct rsproxy Cargo validation passed with `--locked`.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

@@ -40,6 +40,11 @@ does not authorize production code, migrations or activation of its successor.
   after the regression fix. A validated snapshot of the concurrent PostgreSQL /
   Memory size fixes is being re-homed into this isolated branch; the original
   dirty worktree remains untouched.
+- `QA-CLOUDLINE-DESKTOP-01` is in `Review` on
+  `codex/qa-cloudline-desktop-01`. It split the remaining Desktop stylesheet
+  size violation and made long-stream/stop Playwright regressions deterministic
+  after the Python baseline. Its visual contract stays unchanged; Node 22 build,
+  static checks, file-size validation, and all eight E2E tests pass.
 - `CLOUD-INTEGRATION-REG-01` is `Review` on
   `codex/cloud-integration-regressions-01`. It repairs the branch-specific
   recovered-Lease heartbeat checkpoint regression and restores lazy local API
@@ -355,6 +360,43 @@ errors exposed after the complete workspace dependency sync.
 - no API/Worker runtime, Profile, migration, Desktop or Trench feature work
 - no broad Mypy configuration relaxation or dependency addition
 - no destructive cleanup of the original worktree
+
+### QA-CLOUDLINE-DESKTOP-01 - Desktop Quality And Streaming Regressions
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `QA / DESKTOP`
+- Depends on: `QA-CLOUDLINE-PY-01` review commit `908f1989ca32`
+- Branch: `codex/qa-cloudline-desktop-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/qa-cloudline-desktop-01/zebra-agent`
+- Owned paths:
+  `UI/desktop/src/components/CodexConversationPane.styles.ts`,
+  `UI/desktop/src/components/CodexConversationPane.content.styles.ts`,
+  `UI/desktop/e2e/desktop-streaming.spec.ts`, this task card, and the focused
+  status in `PROGRESS.md`
+
+#### Goal
+
+Remove the last repository file-size violation without changing the composer
+visual contract, and make long-stream and stop assertions event-driven rather
+than timing- or multi-match-dependent.
+
+#### Acceptance
+
+- Both style modules remain below the repository source-file limit and the
+  composer layout check still finds the existing CSS contract.
+- Node 22 Desktop build and every `checks/*.check.ts` script pass.
+- The eight Desktop streaming Playwright tests pass under the supported Node
+  runtime, or an environment-only blocker is recorded with command evidence.
+- `pnpm tauri:check` is blocked only by the machine's global USTC Cargo mirror
+  returning 404; `cargo --config /tmp/zebra-cargo-direct-config.toml check
+  --locked` passes against rsproxy without a source change.
+- No broad timeout increase, visual redesign, or unrelated UI cleanup.
+
+#### Explicit Non-Goals
+
+- no API/Worker, Python, migration, Profile or Trench implementation work
+- no change to the original dirty `zebra-cloud-trench` worktree
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
