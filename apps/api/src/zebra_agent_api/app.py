@@ -142,6 +142,12 @@ class ZebraAgentApi(
             )
         except ValueError as error:
             return bad_request(str(error))
+        try:
+            skill_grant = _skill_grant_snapshot(
+                self.settings, parsed["skill_components"]
+            )
+        except ValueError as error:
+            return bad_request(str(error))
         if trusted_local_mode_enabled(self.settings) and not auth.is_scoped(parsed):
             parsed["network_profile"] = "full-trusted-local"
             parsed["network_allowlist"] = []
@@ -174,12 +180,14 @@ class ZebraAgentApi(
                 parsed,
                 model_entry=model_entry,
                 session_id=session_id,
+                skill_grant=skill_grant,
             )
             if parsed["execute"]
             else self._create_queued_session(
                 parsed,
                 model_entry=model_entry,
                 session_id=session_id,
+                skill_grant=skill_grant,
             )
         )
         if idempotency_key is None or response.status_code != 201:
@@ -295,6 +303,9 @@ class ZebraAgentApi(
         *,
         model_entry: ModelCatalogEntry,
         session_id: SessionId | None,
+        skill_grant: tuple[
+            tuple[str, ...], tuple[SkillComponentIdentity, ...]
+        ],
     ) -> ApiResponse:
         try:
             staged_images = (
@@ -310,7 +321,7 @@ class ZebraAgentApi(
             return bad_request(str(error))
         images_durable = False
         try:
-            skill_components, skill_component_identities = _skill_grant_snapshot(self.settings)
+            skill_components, skill_component_identities = skill_grant
             bootstrap = SessionBootstrapService().build(
                 SessionBootstrapCommand(
                     title=str(parsed["title"]),
@@ -391,6 +402,9 @@ class ZebraAgentApi(
         *,
         model_entry: ModelCatalogEntry,
         session_id: SessionId | None,
+        skill_grant: tuple[
+            tuple[str, ...], tuple[SkillComponentIdentity, ...]
+        ],
     ) -> ApiResponse:
         try:
             model_gateway = build_model_gateway(
@@ -491,6 +505,7 @@ class ZebraAgentApi(
                 web_search_endpoint=self.settings.web_search_endpoint,
                 skill_roots=scoped_skill_roots(self.settings),
                 skills_state=runtime_skills_state(self.settings),
+                granted_skill_component_identities=skill_grant[1],
                 mcp_servers=(
                     with_task_workspace_root(
                         self.settings.mcp_servers, staged_images.workspace_root
@@ -619,15 +634,22 @@ def _agent_definition_response(
 
 def _skill_grant_snapshot(
     settings: ZebraAgentSettings,
+    requested: tuple[str, ...] | None = None,
 ) -> tuple[tuple[str, ...], tuple[SkillComponentIdentity, ...]]:
     roots = scoped_skill_roots(settings)
     if not roots:
+        if requested:
+            raise ValueError("requested Skill component is unavailable")
         return (), ()
     metadata = LocalSkillCatalog(
         roots,
         skills_state=runtime_skills_state(settings),
     ).list()[0]
-    identities = tuple(item.component_identity() for item in metadata)
+    available = {item.name: item.component_identity() for item in metadata}
+    selected = tuple(available) if requested is None else requested
+    if any(name not in available for name in selected):
+        raise ValueError("requested Skill component is unavailable")
+    identities = tuple(available[name] for name in selected)
     return tuple(identity.name for identity in identities), identities
 
 
