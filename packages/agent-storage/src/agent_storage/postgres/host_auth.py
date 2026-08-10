@@ -179,6 +179,21 @@ class PostgresHostAuthorityStore:
             ).fetchone()
         return None if row is None else _registry_from_row(row)
 
+    def list_registries(self, *, active_only: bool = True) -> tuple[HostRegistryRecord, ...]:
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT host_app_id, namespace_id, issuer, audience, jwks_uri,
+                    allowed_origins, algorithms, policy_version, active
+                FROM host_authority_registries
+                WHERE deployment_namespace = %s
+                  AND (%s = FALSE OR active = TRUE)
+                ORDER BY host_app_id, namespace_id
+                """,
+                (self.deployment_namespace, active_only),
+            ).fetchall()
+        return tuple(_registry_from_row(row) for row in rows)
+
     def consume_grant(self, attempt: HostGrantAttempt) -> HostGrantReplayDecision:
         """Atomically consume a jti and append accepted/replay/rejected audit."""
         with self._database.connect() as connection:
@@ -234,6 +249,11 @@ class PostgresHostAuthorityStore:
             reason = "jti accepted" if inserted is not None else "jti replay rejected"
             audit = self._insert_audit(connection, attempt, outcome, reason)
             return HostGrantReplayDecision(inserted is not None, outcome, audit)
+
+    def record_rejection(self, attempt: HostGrantAttempt, reason: str) -> HostGrantAuditRecord:
+        """Record a validated-but-denied attempt without consuming its jti."""
+        with self._database.connect() as connection:
+            return self._insert_audit(connection, attempt, "rejected", reason)
 
     def list_audit(self, *, issuer: str, jti: str) -> tuple[HostGrantAuditRecord, ...]:
         issuer = _https_origin(issuer, "issuer")

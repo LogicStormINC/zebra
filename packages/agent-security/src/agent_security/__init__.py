@@ -161,6 +161,13 @@ from agent_security.host_grant import (
     JwtAlgorithm,
     VerifiedHostGrant,
 )
+from agent_security.jwt_adapter import (
+    CachingJwksKeyResolver,
+    DecodedJwtGrant,
+    HostGrantDecodeError,
+    JwksKeyResolver,
+    PyJwtHostGrantDecoder,
+)
 
 __all__ = [
     "DecodedHostGrant",
@@ -171,4 +178,9 @@ __all__ = [
     "HostGrantVerifier",
     "JwtAlgorithm",
     "VerifiedHostGrant",
+    "CachingJwksKeyResolver",
+    "DecodedJwtGrant",
+    "HostGrantDecodeError",
+    "JwksKeyResolver",
+    "PyJwtHostGrantDecoder",
 ]

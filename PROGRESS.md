@@ -135,6 +135,10 @@
   Host Grant authorizer before route dispatch, and CORS uses normalized exact
   HTTPS origins without reflection; focused auth/HTTP (`5 passed`) and existing
   HTTP/command/live/stream (`52 passed`) matrices are green.
+- `EMB-AUTH-01` is in `Review` on `codex/cloud-real-svc-ci-01`. A signed RS256
+  PyJWT decoder with bounded injectable JWKS resolution now composes with the
+  PostgreSQL registry/replay authorizer; the real Host PostgreSQL/API matrix is
+  `5 passed`, with no raw token in HTTP/audit evidence.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

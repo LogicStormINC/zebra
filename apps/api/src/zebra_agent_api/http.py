@@ -40,7 +40,10 @@ class HostGrantHttpRequest:
 class HostGrantRequestAuthorizer(Protocol):
     """JWT/registry/replay adapter owned by the production composition root."""
 
-    allowed_origins: tuple[str, ...]
+    @property
+    def allowed_origins(self) -> tuple[str, ...]:
+        """Exact registry-backed origins used by the CORS composition."""
+        ...
 
     def authorize(self, request: HostGrantHttpRequest) -> object | None:
         """Verify the bearer Grant, bindings, scope and replay state."""

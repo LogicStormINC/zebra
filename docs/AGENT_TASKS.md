@@ -1508,6 +1508,53 @@ an Embedded/cloud fallback.
   Mypy `608` files and eval `10/10`.
 
 
+### EMB-AUTH-01 - Production Host Auth Gate
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `SECURITY / API / STORAGE`
+- Depends on: `EMB-AUTH-CON-01`, `EMB-AUTH-PG-01` and `EMB-AUTH-HTTP-01`
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: focused production Host Grant decoder/authorizer composition,
+  integration evidence tests/docs, this task card and focused `PROGRESS.md`
+
+#### Goal
+
+Close the existing P3 Host-auth parent gate by composing signed Grant
+verification, registry lookup, PostgreSQL replay/audit and the HTTP seam. Keep
+JWT/JWKS transport bounded and injectable; never persist or log raw bearer data.
+
+#### Acceptance
+
+- A real signed RS256 Grant is accepted only for its registered issuer,
+  audience, exact origin, namespace and required scope; forged, expired,
+  wrong-scope and replayed Grants fail before business dispatch.
+- PostgreSQL audit records accepted, replay and rejected outcomes and the
+  local profile remains compatible; no secret enters responses or durable rows.
+- The JWT library decision, key-resolution timeout/cache seam and failure
+  mapping are documented by focused tests; no Trench imports are introduced.
+
+#### Explicit Non-Goals
+
+- no Trench Tool implementation, AG-UI endpoint or Host Gateway
+- no browser service credentials, wildcard CORS or unbounded JWKS fetch
+
+#### Review Evidence
+
+- The production composition now exposes a PostgreSQL-backed
+  `PostgresHostGrantRequestAuthorizer`: it loads active registry rows, verifies
+  a signed RS256 Grant, checks issuer/audience/host/namespace/origin/scope,
+  consumes `jti` atomically and maps replay to a secret-free HTTP rejection.
+- JWT decision is `PyJWT[crypto]` with an injectable key resolver. The bundled
+  resolver pins registry HTTPS JWKS URIs, uses a bounded 5-second timeout and
+  300-second cache, and decoder failures do not expose token or key details.
+- Real PostgreSQL/API matrix passes `5 passed` through
+  `tests/compose/host_auth_pg/run-postgres-tests.sh`; it covers signed accept,
+  replay, wrong scope/origin, audit and digest-only persistence. Decoder unit
+  tests pass `3`, the combined HTTP/auth matrix passes `45`, and `make check`
+  passes with file-size `1245` files, Ruff, Mypy `610` files and eval `10/10`.
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`
