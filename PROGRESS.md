@@ -108,6 +108,11 @@
   gVisor RuntimeClass. `helm lint/template` and static tests pass; no cluster
   server or gVisor E2E is available. Full validation is green:
   `2151 passed, 271 skipped`; `make check` is green.
+- `CLOUD-REAL-SVC-CI-01` is in `Review` on
+  `codex/cloud-real-svc-ci-01`. Its canonical workflow now runs separate
+  application, Redis live, PITR, S3 and fresh-restore matrix runners with
+  bounded timeouts and always-retained evidence. The local Docker matrix is
+  green; no remote Actions or Kubernetes rollout is claimed.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

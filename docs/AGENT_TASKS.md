@@ -1223,6 +1223,56 @@ gVisor RuntimeClass and secret references without embedding database credentials
 - `make check`: file-size `1231` files, Ruff clean, Mypy `605` files, eval
   `10/10`; full suite `2151 passed, 271 skipped`.
 
+### CLOUD-REAL-SVC-CI-01 - Canonical Real-Service CI
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `QA / SRE / PLATFORM`
+- Depends on: live Redis publisher/SSE and PostgreSQL/S3 recovery runners already
+  present in this integration worktree
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `.github/workflows/quality.yml`,
+  `tests/compose/cloudline/` (new), `docs/CLOUD-REAL-SVC-CI-01.md` (new),
+  this task card, and focused `PROGRESS.md`
+
+#### Goal
+
+Bring the canonical PostgreSQL, Redis, application, PITR and S3 recovery
+evidence into controlled CI jobs with fixed timeouts, machine-readable logs and
+always-cleanup semantics. A failed runner must identify its contract boundary.
+
+#### Acceptance
+
+- CI invokes the real-service runners with pinned toolchain/runtime inputs,
+  bounded job timeouts and retained evidence artifacts.
+- Every runner has deterministic Compose project names and cleanup on success,
+  failure and cancellation; credentials remain test-only and are not persisted.
+- The aggregation surface reports each contract runner separately and fails the
+  job when any runner fails; no skipped/optional runner is counted as coverage.
+- Static workflow/runner tests pass and the local runner matrix is executable
+  when Docker is available. CI wiring does not claim a Kubernetes cluster.
+
+#### Explicit Non-Goals
+
+- no production credentials, deployment, managed service or Kubernetes rollout
+- no weakening of existing backend/Desktop/gVisor/quota quality gates
+- no changes to domain adapters beyond runner compatibility fixes
+
+#### Review Evidence
+
+- Manifest/static workflow tests: `2 passed`; Ruff and Mypy are clean for the
+  runner wrapper/tests; Ruby YAML parser accepts `.github/workflows/quality.yml`.
+- Local Docker matrix completed with independent project cleanup: application
+  Compose `PASS`, Redis live fan-out `1 passed`, PostgreSQL PITR `PASS`, S3
+  recovery `PASS`, and PostgreSQL/Redis/MinIO fresh restore `PASS`.
+- PITR evidence recorded `events=4`, `revision=3`, old epoch rejection and
+  `RPO=0.121072s`, `RTO=6.691080s`; S3 evidence recorded checksum and guarded
+  PostgreSQL ref repair; every runner reported cleanup or its own `EXIT` trap.
+- The first application attempt hit a transient Docker Hub BuildKit OAuth EOF;
+  after the pinned `docker/dockerfile:1.7` image was available, the same runner
+  passed. No remote GitHub Actions run or Kubernetes claim is made here.
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`

@@ -35,6 +35,41 @@ jobs:
       - name: Run static and release gates
         run: make check
 
+  real-services:
+    name: Real service contract (${{ matrix.runner }})
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: ["application", "live-fanout", "recovery-pitr", "recovery-s3", "recovery-restore"]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          cache-dependency-glob: uv.lock
+          enable-cache: true
+          python-version: "3.12"
+          version: "0.11.12"
+      - name: Install locked workspace
+        run: uv sync --frozen --all-packages --group dev
+      - name: Run real-service contract runner
+        run: |
+          mkdir -p "cloudline-evidence/${{ matrix.runner }}"
+          uv run python tests/compose/cloudline/run_real_service.py \
+            --runner "${{ matrix.runner }}" \
+            --evidence-dir "cloudline-evidence/${{ matrix.runner }}"
+      - name: Retain real-service evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cloudline-${{ matrix.runner }}-evidence
+          path: cloudline-evidence/${{ matrix.runner }}
+          if-no-files-found: error
+          retention-days: 14
+
   desktop:
     name: Desktop quality
     runs-on: ubuntu-latest
