@@ -80,8 +80,10 @@ def should_check_plan_activation(
 ) -> bool:
     calls = completion.tool_calls
     if (
-        not calls
+        len(calls) < 2
         or metadata.get("plan_activation_check_attempted") is True
+        or metadata.get("clarification_continuation") is True
+        or tool_calls_executed != 0
         or calls[0].name in {"agent.clarify", "agent.plan"}
         or current_task_plan(context, emitted_events).steps
         or not any(

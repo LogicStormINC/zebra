@@ -59,7 +59,7 @@ class FakeGateway:
                     created_at=_created_at(),
                 )
             )
-        assert len(messages) in {1, 2}
+        assert len(messages) in {1, 2, 3}
         assert messages[-1].role is MessageRole.USER
         return self._completion
 

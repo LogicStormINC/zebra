@@ -456,6 +456,7 @@ def test_simple_one_shot_task_still_completes_without_a_plan() -> None:
 
 def test_plan_activation_check_precedes_the_first_substantive_tool() -> None:
     first_read = _tool_call("files.read", {"path": "evidence.txt"})
+    first_check = _tool_call("files.read", {"path": "context.txt"})
     planned_read = _tool_call("files.read", {"path": "evidence.txt"})
     open_plan = _tool_call(
         "agent.plan",
@@ -483,7 +484,7 @@ def test_plan_activation_check_precedes_the_first_substantive_tool() -> None:
     )
     gateway = ScriptedModelGateway(
         responses=(
-            _response("Read first.", first_read),
+            _response("Read both sources.", first_read, first_check),
             _response("Plan first.", open_plan),
             _response("Read now.", planned_read),
             _response("Close the Plan.", close_plan),
@@ -526,11 +527,9 @@ def test_plan_activation_check_precedes_the_first_substantive_tool() -> None:
 
 def test_plan_activation_check_allows_a_simple_tool_without_a_plan() -> None:
     first_read = _tool_call("files.read", {"path": "one.txt"})
-    confirmed_read = _tool_call("files.read", {"path": "one.txt"})
     gateway = ScriptedModelGateway(
         responses=(
             _response("Read it.", first_read),
-            _response("This is one step; read it.", confirmed_read),
             _response("Final answer."),
             _response("Final answer."),
         )
@@ -542,27 +541,27 @@ def test_plan_activation_check_allows_a_simple_tool_without_a_plan() -> None:
     assert EventType.PLAN_UPDATED not in {
         event.event_type for event in result.emitted_events
     }
-    assert tools.calls == [confirmed_read]
-    assert len({
-        message.message_id
+    assert tools.calls == [first_read]
+    assert all(
+        message.metadata.get("plan_activation_check") is not True
         for request in gateway.requests
         for message in request
-        if message.metadata.get("plan_activation_check") is True
-    }) == 1
+    )
 
 
 @pytest.mark.parametrize(
     ("max_model_calls", "max_tool_calls"),
-    ((2, None), (None, 1)),
+    ((2, None), (None, 2)),
 )
-def test_plan_activation_check_preserves_explicit_single_tool_budgets(
+def test_plan_activation_check_preserves_explicit_batch_budgets(
     max_model_calls: int | None,
     max_tool_calls: int | None,
 ) -> None:
-    read_call = _tool_call("files.read", {"path": "one.txt"})
+    first_read = _tool_call("files.read", {"path": "one.txt"})
+    second_read = _tool_call("files.read", {"path": "two.txt"})
     gateway = ScriptedModelGateway(
         responses=(
-            _response("Read it.", read_call),
+            _response("Read both.", first_read, second_read),
             _response("Final answer."),
         )
     )
@@ -575,7 +574,7 @@ def test_plan_activation_check_preserves_explicit_single_tool_budgets(
     )
 
     assert result.outcome is HarnessAttemptOutcome.COMPLETED
-    assert tools.calls == [read_call]
+    assert tools.calls == [first_read, second_read]
     assert all(
         message.metadata.get("plan_activation_check") is not True
         for request in gateway.requests
@@ -635,7 +634,7 @@ def _tool_call(name: str, arguments: dict[str, object]) -> ToolCall:
     )
 
 
-def _response(content: str, tool_call: ToolCall | None = None) -> ScriptedModelResponse:
+def _response(content: str, *tool_calls: ToolCall) -> ScriptedModelResponse:
     return ScriptedModelResponse(
         completion=ModelCompletion(
             assistant_message=SessionMessage(
@@ -644,7 +643,7 @@ def _response(content: str, tool_call: ToolCall | None = None) -> ScriptedModelR
                 content=content,
                 created_at=NOW,
             ),
-            tool_calls=(tool_call,) if tool_call is not None else (),
+            tool_calls=tool_calls,
         )
     )
 
