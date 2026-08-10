@@ -18,16 +18,16 @@ MODEL_NATIVE_DELEGATION_GUIDANCE = (
 
 PLAN_ACTIVATION_GUIDANCE = (
     "Plan and evidence activation:\n"
-    "- If a goal clearly requires coordinated multiple steps, multiple evidence "
-    "sources, or multiple tool actions, you must first call agent.plan to establish "
+    "- If a goal clearly requires durable coordination across dependent steps, "
+    "evidence sources, or tool actions, you must first call agent.plan to establish "
     "a concise durable Plan before substantive work.\n"
     "- Keep the Plan concise and update its statuses as work progresses.\n"
     "- When conclusions depend on user-scoped or mutable facts and applicable "
     "authorized typed read tools are advertised, verify them with at least one "
     "relevant authoritative typed read before finalizing; do not rely on general "
     "knowledge or prompt summaries alone.\n"
-    "- Simple one-step tasks may proceed without a Plan; do not create one merely "
-    "because several independent reads are available."
+    "- Simple one-step tasks may proceed without a Plan. Short linear sequences and "
+    "multiple independent reads or checks do not require a Plan by themselves."
 )
 
 
@@ -47,11 +47,6 @@ def append_capability_guidance(
         if name in names
     )
     if not guidance:
-        return
-    if messages:
-        messages[-1] = messages[-1].model_copy(
-            update={"content": f"{messages[-1].content}\n\n{guidance}"}
-        )
         return
     messages.append(
         SessionMessage(

@@ -75,11 +75,20 @@ def test_delegation_guidance_follows_effective_tool_manifest() -> None:
     assert [message.role for message in direct_messages] == [MessageRole.USER]
 
 
-def test_plan_activation_guidance_follows_effective_tool_manifest() -> None:
+def test_plan_activation_guidance_follows_effective_tool_manifest(
+    tmp_path: Path,
+) -> None:
     created_at = datetime(2026, 8, 10, 20, 0, tzinfo=UTC)
-    task = HarnessTask(title="Investigate", user_input="Investigate a complex issue.")
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    task = HarnessTask(
+        title="Investigate",
+        user_input="Investigate a complex issue.",
+        workspace_root=workspace,
+    )
 
     planned_messages = HarnessModelStep(
+        context_compiler=StaticContextCompiler(),
         available_tools=(PLAN_TOOL,)
     ).build_initial_messages(task, created_at=created_at)
     combined_messages = HarnessModelStep(
@@ -89,11 +98,16 @@ def test_plan_activation_guidance_follows_effective_tool_manifest() -> None:
         task, created_at=created_at
     )
 
-    assert planned_messages[0].role is MessageRole.SYSTEM
-    assert "must first call agent.plan" in planned_messages[0].content
-    assert "Simple one-step tasks may proceed without a Plan" in planned_messages[0].content
+    assert [message.role for message in planned_messages] == [
+        MessageRole.SYSTEM,
+        MessageRole.SYSTEM,
+        MessageRole.USER,
+    ]
+    assert "must first call agent.plan" in planned_messages[-2].content
+    assert "requires durable coordination" in planned_messages[-2].content
+    assert "Short linear sequences" in planned_messages[-2].content
     assert "verify them with at least one relevant authoritative typed read" in (
-        planned_messages[0].content
+        planned_messages[-2].content
     )
     assert planned_messages[-1].role is MessageRole.USER
     assert "delegation_reason" in combined_messages[0].content
