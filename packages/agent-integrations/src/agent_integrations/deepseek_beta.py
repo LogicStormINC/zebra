@@ -15,7 +15,6 @@ from agent_core.domain.modeling import (
     ModelThinkingMode,
     ModelToolDefinition,
 )
-from zebra_agent_config import ZebraAgentSettings
 
 from agent_integrations.deepseek_beta_results import (
     DeepSeekBetaTextResult,
@@ -30,6 +29,7 @@ from agent_integrations.model_errors import (
 )
 from agent_integrations.openai_compatible import OpenAICompatibleModelGateway
 from agent_integrations.openai_payloads import serialize_message
+from agent_integrations.provider_settings import ModelProviderSettings
 
 
 @dataclass(frozen=True)
@@ -249,34 +249,34 @@ class DeepSeekBetaGateway:
 
 
 def build_deepseek_beta_gateway(
-    settings: ZebraAgentSettings,
+    settings: ModelProviderSettings,
     *,
     env: Mapping[str, str] | None = None,
     client: httpx.Client | None = None,
 ) -> DeepSeekBetaGateway:
-    if settings.model.provider.lower() != "deepseek":
+    if settings.provider.lower() != "deepseek":
         raise ValueError("DeepSeek beta gateway requires the DeepSeek provider")
-    if not settings.model.deepseek_beta_enabled:
+    if not settings.deepseek_beta_enabled:
         raise ValueError("DeepSeek beta capabilities are disabled by configuration")
     values = dict(env or {})
     if env is None:
         values.update(_read_defaults(Path(".env")))
         values.update(_read_defaults(Path(".env.local")))
-    api_key = values.get(settings.model.api_key_env)
+    api_key = values.get(settings.api_key_env)
     if api_key is None:
         import os
 
-        api_key = os.environ.get(settings.model.api_key_env)
+        api_key = os.environ.get(settings.api_key_env)
     if not (api_key or "").strip():
-        raise ValueError(f"missing API key in environment variable {settings.model.api_key_env}")
-    beta_base_url = settings.model.deepseek_beta_base_url or (
-        f"{settings.model.base_url.rstrip('/')}/beta"
+        raise ValueError(f"missing API key in environment variable {settings.api_key_env}")
+    beta_base_url = settings.deepseek_beta_base_url or (
+        f"{settings.base_url.rstrip('/')}/beta"
     )
     return DeepSeekBetaGateway(
-        stable_base_url=settings.model.base_url,
+        stable_base_url=settings.base_url,
         beta_base_url=beta_base_url,
         api_key=api_key or "",
-        model_name=settings.model.model,
+        model_name=settings.model,
         client=client,
     )
 

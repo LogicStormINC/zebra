@@ -5,6 +5,7 @@ from agent_integrations import (
     GitHubPullRequestGateway,
     LocalOnlyPullRequestGateway,
     PullRequestRequest,
+    ScmProviderSettings,
     ScmUnavailableError,
     build_pull_request_gateway,
 )
@@ -23,12 +24,11 @@ from scm_support import (
     _network_env,
     _now,
 )
-from zebra_agent_config import ScmSettings
 
 
 def test_build_pull_request_gateway_defaults_to_local_only() -> None:
     gateway = build_pull_request_gateway(
-        ScmSettings(
+        ScmProviderSettings(
             provider="local-only",
             github_owner=None,
             github_repo=None,
@@ -42,7 +42,7 @@ def test_build_pull_request_gateway_defaults_to_local_only() -> None:
 
 def test_build_pull_request_gateway_selects_github() -> None:
     gateway = build_pull_request_gateway(
-        ScmSettings(
+        ScmProviderSettings(
             provider="github",
             github_owner="octo-org",
             github_repo="zebra-agent",
@@ -58,7 +58,7 @@ def test_build_pull_request_gateway_does_not_use_env_token_fallback_by_default(
     tmp_path: Path,
 ) -> None:
     gateway = build_pull_request_gateway(
-        ScmSettings(
+        ScmProviderSettings(
             provider="github",
             github_owner="octo-org",
             github_repo="zebra-agent",

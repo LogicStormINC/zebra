@@ -14,11 +14,11 @@ from agent_security import (
     CredentialBroker,
     NetworkProfile,
     NetworkProfileName,
-    ScmCredentialBoundary,
+    ScmCredentialCapability,
     parse_network_profile,
 )
-from zebra_agent_config import ScmSettings
 
+from agent_integrations.provider_settings import ScmProviderSettings
 from agent_integrations.scm_credentials import CredentialLookupResult, github_token_from_broker
 from agent_integrations.scm_errors import ScmIntegrationError, ScmUnavailableError
 from agent_integrations.scm_proxy import (
@@ -310,7 +310,7 @@ class GitHubPullRequestGateway:
 
 
 def build_pull_request_gateway(
-    settings: ScmSettings,
+    settings: ScmProviderSettings,
     *,
     env: Mapping[str, str] | None = None,
     credential_broker: CredentialBroker | None = None,
@@ -332,8 +332,9 @@ def build_pull_request_gateway(
         if not settings.pull_request_dry_run:
             if credential_broker is None:
                 if allow_env_token_fallback:
-                    capability = ScmCredentialBoundary().capability_from_settings(
-                        settings,
+                    capability = ScmCredentialCapability(
+                        provider=settings.provider,
+                        token_env=settings.github_token_env,
                         token_value=active_env.get(settings.github_token_env or ""),
                     )
                     token_value = capability.token_value

@@ -42,6 +42,11 @@
   configuration boundary and the dependency contract passes: reusable packages
   cannot import `apps/*` composition roots, and the five current config imports
   are tracked as exact successor inventory for Integrations/Security.
+- `ARCH-CONFIG-INTEGRATIONS-01` is in `Review` on
+  `codex/arch-config-integrations-01`. Model, DeepSeek beta, SCM and credential
+  builders now accept typed provider settings; `agent-integrations` no longer
+  imports or depends on `zebra_agent_config`. App roots perform the mapping and
+  preserve environment, retry, credential and network behavior.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

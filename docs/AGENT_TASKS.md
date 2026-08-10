@@ -53,6 +53,10 @@ does not authorize production code, migrations or activation of its successor.
   `codex/arch-config-boundary-01`. It freezes the provider-neutral configuration
   boundary and adds a dependency contract before Integrations and Security
   configuration decoupling.
+- `ARCH-CONFIG-INTEGRATIONS-01` is in `Review` on
+  `codex/arch-config-integrations-01`. It removes aggregate Settings inputs from
+  Model and SCM adapters through typed provider settings while preserving app
+  environment compatibility.
 - `CLOUD-INTEGRATION-REG-01` is `Review` on
   `codex/cloud-integration-regressions-01`. It repairs the branch-specific
   recovered-Lease heartbeat checkpoint regression and restores lazy local API
@@ -500,6 +504,52 @@ provider-specific adapters.
   roots, and the five existing `zebra_agent_config` imports are an exact,
   finite successor inventory. Focused contract validation passes `2 tests`,
   Ruff and Mypy.
+
+### ARCH-CONFIG-INTEGRATIONS-01 - Typed Integration Provider Settings
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `INTEGRATIONS / CONFIG`
+- Depends on: `ARCH-CONFIG-BOUNDARY-01` review commit `7e5c5360`
+- Branch: `codex/arch-config-integrations-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/arch-config-integrations-01/zebra-agent`
+- Owned paths: `packages/agent-integrations/`, its focused tests/pyproject,
+  `tests/config/test_package_dependency_boundaries.py`, API/Worker/CLI
+  composition mapping required to call the typed builders, this task card, and
+  the focused status in `PROGRESS.md`
+
+#### Goal
+
+Make Model, DeepSeek beta, SCM and credential integration builders accept only
+their minimum typed provider settings. Preserve environment variable names,
+credential redaction, retry and network policy behavior at app composition.
+
+#### Acceptance
+
+- `agent-integrations` has no `zebra_agent_config` import or dependency.
+- Model and SCM provider settings are immutable and contain no database,
+  runtime, session or aggregate Settings fields.
+- Package tests, boundary inventory, Mypy and affected API/Worker/CLI tests pass.
+
+#### Explicit Non-Goals
+
+- no Security credential implementation rewrite beyond the SCM input type
+- no Profile, command API, recovery, deployment, Helm/gVisor or Trench work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- Added immutable `ModelProviderSettings` and `ScmProviderSettings`; Model,
+  DeepSeek beta, SCM and credential builders no longer accept the aggregate
+  `ZebraAgentSettings` or import `zebra_agent_config`. The package dependency
+  and lockfile entries were removed.
+- API, Worker and CLI composition roots map only the required fields; model
+  environment lookup and SCM credential/network/redaction behavior remain in
+  their existing seams. The boundary inventory is reduced to the one Security
+  credential import owned by `ARCH-CONFIG-SECURITY-01`.
+- Focused Integrations/API/CLI/boundary validation passes `158 passed, 3
+  skipped`; Ruff, file-size gate (`1213` files), and Mypy (`598` source files)
+  pass.
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 

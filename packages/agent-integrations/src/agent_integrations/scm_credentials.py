@@ -11,8 +11,8 @@ from agent_security import (
     CredentialTransportError,
     CredentialUnavailableError,
 )
-from zebra_agent_config import ScmSettings
 
+from agent_integrations.provider_settings import ScmProviderSettings
 from agent_integrations.scm_errors import ScmUnavailableError
 
 
@@ -24,7 +24,7 @@ class CredentialLookupResult:
 
 
 def token_from_broker(
-    settings: ScmSettings,
+    settings: ScmProviderSettings,
     *,
     credential_broker: CredentialBroker,
     now: datetime,

@@ -10,14 +10,23 @@ from agent_core.domain.modeling import (
     ModelToolChoice,
     ModelToolDefinition,
 )
-from agent_integrations import build_model_gateway
+from agent_integrations import ModelProviderSettings, build_model_gateway
 from zebra_agent_config import load_settings
 
 
 def test_real_deepseek_non_thinking_tool_round_trip() -> None:
     settings = load_settings()
+    model = settings.model
     try:
-        gateway = build_model_gateway(settings)
+        gateway = build_model_gateway(
+            ModelProviderSettings(
+                provider=model.provider,
+                api_key_env=model.api_key_env,
+                base_url=model.base_url,
+                model=model.model,
+                max_retries=model.max_retries,
+            )
+        )
     except ValueError as exc:
         if "missing API key" not in str(exc):
             raise
@@ -68,8 +77,17 @@ def test_real_deepseek_non_thinking_tool_round_trip() -> None:
 
 def test_real_deepseek_thinking_tool_round_trip() -> None:
     settings = load_settings()
+    model = settings.model
     try:
-        gateway = build_model_gateway(settings)
+        gateway = build_model_gateway(
+            ModelProviderSettings(
+                provider=model.provider,
+                api_key_env=model.api_key_env,
+                base_url=model.base_url,
+                model=model.model,
+                max_retries=model.max_retries,
+            )
+        )
     except ValueError as exc:
         if "missing API key" not in str(exc):
             raise

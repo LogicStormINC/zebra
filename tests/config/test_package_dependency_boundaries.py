@@ -10,10 +10,6 @@ PACKAGES = ROOT / "packages"
 # means a new package-level configuration dependency fails this contract before
 # ARCH-CONFIG-INTEGRATIONS-01 and ARCH-CONFIG-SECURITY-01 remove the entries.
 KNOWN_CONFIG_IMPORTS = {
-    "packages/agent-integrations/src/agent_integrations/deepseek_beta.py",
-    "packages/agent-integrations/src/agent_integrations/openai_compatible.py",
-    "packages/agent-integrations/src/agent_integrations/scm.py",
-    "packages/agent-integrations/src/agent_integrations/scm_credentials.py",
     "packages/agent-security/src/agent_security/credentials.py",
 }
 

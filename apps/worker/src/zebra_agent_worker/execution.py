@@ -66,6 +66,7 @@ from zebra_agent_worker.execution_finalization import (
 )
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
 from zebra_agent_worker.model_call_index import ModelCallIndexer
+from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_execution import CloudProviderContinuationFactory
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
@@ -249,7 +250,7 @@ class SessionExecutionService:
             trusted_local=trusted_local,
         )
         try:
-            model_gateway = build_model_gateway(self._settings)
+            model_gateway = build_model_gateway(model_provider_settings(self._settings))
         except ValueError:
             raise
         runtime_handle = None

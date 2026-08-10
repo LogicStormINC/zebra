@@ -9,6 +9,7 @@ from agent_integrations import (
     GitHubAppInstallationToken,
     GitHubAppTokenTransport,
     GitHubPullRequestPayload,
+    ScmProviderSettings,
     ScmProxyRequest,
     ScmProxyResponse,
     ScmUnavailableError,
@@ -17,7 +18,6 @@ from agent_security import (
     CredentialCapability,
     LocalSecretStore,
 )
-from zebra_agent_config import ScmSettings
 
 
 def _git_workspace(path: Path) -> Path:
@@ -33,8 +33,8 @@ def _git_workspace(path: Path) -> Path:
 def _git(path: Path, command: tuple[str, ...]) -> str:
     return run(command, cwd=path, check=True, capture_output=True, text=True).stdout
 
-def _github_scm(*, pull_request_dry_run: bool) -> ScmSettings:
-    return ScmSettings(
+def _github_scm(*, pull_request_dry_run: bool) -> ScmProviderSettings:
+    return ScmProviderSettings(
         provider="github",
         github_owner="octo-org",
         github_repo="zebra-agent",

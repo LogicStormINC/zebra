@@ -10,6 +10,7 @@ from agent_core.domain.modeling import (
     ModelUsage,
 )
 from agent_core.domain.tools import ToolCall
+from agent_integrations import ModelProviderSettings
 from cli_run_support import (
     FakeGateway,
     _created_at,
@@ -20,8 +21,8 @@ from zebra_agent_config import ZebraAgentSettings
 
 
 def test_cli_model_command_uses_configured_gateway(monkeypatch: pytest.MonkeyPatch) -> None:
-    def fake_build_model_gateway(settings: ZebraAgentSettings) -> FakeGateway:
-        assert settings.model.provider == "test"
+    def fake_build_model_gateway(settings: ModelProviderSettings) -> FakeGateway:
+        assert settings.provider == "test"
         return FakeGateway(
             completion=ModelCompletion(
                 assistant_message=SessionMessage(

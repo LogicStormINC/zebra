@@ -9,13 +9,11 @@ dependencies = [
     "agent-security",
     "httpx>=0.28.1,<0.29.0",
     "redis>=6.4.0,<7.0.0",
-    "zebra-agent-config",
 ]
 
 [tool.uv.sources]
 agent-core = { workspace = true }
 agent-security = { workspace = true }
-zebra-agent-config = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

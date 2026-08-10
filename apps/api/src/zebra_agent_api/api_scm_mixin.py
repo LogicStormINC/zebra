@@ -4,7 +4,11 @@ from collections.abc import Callable
 from pathlib import Path
 
 from agent_core.domain.identifiers import SessionId
-from agent_integrations import GitHubPullRequestTransport, build_pull_request_gateway
+from agent_integrations import (
+    GitHubPullRequestTransport,
+    ScmProviderSettings,
+    build_pull_request_gateway,
+)
 from agent_security import CredentialBroker
 from agent_storage import ControlPlaneStores
 from zebra_agent_config import ZebraAgentSettings
@@ -50,7 +54,7 @@ class ApiScmMixin:
             return session_key
         try:
             gateway = build_pull_request_gateway(
-                self.settings.scm,
+                _scm_provider_settings(self.settings),
                 credential_broker=self.credential_broker,
                 github_transport=self.github_transport,
             )
@@ -69,3 +73,15 @@ class ApiScmMixin:
             payload,
             idempotency_key=idempotency_key,
         )
+
+
+def _scm_provider_settings(settings: ZebraAgentSettings) -> ScmProviderSettings:
+    scm = settings.scm
+    return ScmProviderSettings(
+        provider=scm.provider,
+        github_owner=scm.github_owner,
+        github_repo=scm.github_repo,
+        github_token_env=scm.github_token_env,
+        github_api_base_url=scm.github_api_base_url,
+        pull_request_dry_run=scm.pull_request_dry_run,
+    )

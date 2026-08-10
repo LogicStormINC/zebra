@@ -16,7 +16,11 @@ from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.tool_profiles import ToolProfile
-from agent_integrations import GitHubPullRequestTransport, build_model_gateway
+from agent_integrations import (
+    GitHubPullRequestTransport,
+    ModelProviderSettings,
+    build_model_gateway,
+)
 from agent_runtime import (
     read_mcp_resource_attachments,
     run_local_harness,
@@ -376,7 +380,6 @@ class ZebraAgentApi(
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
-
     def _create_and_execute_session(self, parsed: CreateSessionPayload) -> ApiResponse:
         workspace_root = Path(str(parsed["workspace"])).expanduser().resolve()
         confirmed_memories = list_confirmed_repo_memories(
@@ -384,7 +387,7 @@ class ZebraAgentApi(
             repo_id=str(workspace_root),
         )
         try:
-            model_gateway = build_model_gateway(self.settings)
+            model_gateway = build_model_gateway(_model_provider_settings(self.settings))
         except ValueError as error:
             return service_unavailable(
                 status="model_gateway_unavailable",
@@ -468,3 +471,22 @@ class ZebraAgentApi(
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
+
+
+def _model_provider_settings(settings: ZebraAgentSettings) -> ModelProviderSettings:
+    model = settings.model
+    return ModelProviderSettings(
+        provider=model.provider,
+        api_key_env=model.api_key_env,
+        base_url=model.base_url,
+        model=model.model,
+        executor_profile=model.executor_profile,
+        planner_profile=model.planner_profile,
+        reviewer_profile=model.reviewer_profile,
+        summarizer_profile=model.summarizer_profile,
+        analyst_profile=model.analyst_profile,
+        classifier_profile=model.classifier_profile,
+        max_retries=model.max_retries,
+        deepseek_beta_enabled=model.deepseek_beta_enabled,
+        deepseek_beta_base_url=model.deepseek_beta_base_url,
+    )

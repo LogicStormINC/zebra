@@ -35,6 +35,7 @@ from agent_integrations.openai_compatible import (
     OpenAICompatibleModelGateway,
     build_model_gateway,
 )
+from agent_integrations.provider_settings import ModelProviderSettings, ScmProviderSettings
 from agent_integrations.redis_live_fanout import (
     RedisLiveEventError,
     RedisLiveEventFanout,
@@ -82,6 +83,8 @@ __all__ = [
     "GitHubProxyPullRequestTransport",
     "GitHubPullRequestTransport",
     "OpenAICompatibleModelGateway",
+    "ModelProviderSettings",
+    "ScmProviderSettings",
     "RedisLiveEventError",
     "RedisLiveEventFanout",
     "ModelProviderError",

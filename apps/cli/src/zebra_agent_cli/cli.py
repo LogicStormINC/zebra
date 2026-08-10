@@ -9,6 +9,7 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_integrations import build_model_gateway
 from zebra_agent_api.session_context_control import SessionContextControlApi
 from zebra_agent_config import ZebraAgentSettings, load_settings
+from zebra_agent_worker.provider_configuration import model_provider_settings
 
 from zebra_agent_cli.cli_database import (
     _database_path,
@@ -364,7 +365,7 @@ def _model_result(
     namespace: argparse.Namespace,
     settings: ZebraAgentSettings,
 ) -> CliCommandResult:
-    completion = build_model_gateway(settings).complete(
+    completion = build_model_gateway(model_provider_settings(settings)).complete(
         [
             SessionMessage(
                 message_id=new_message_id(),
