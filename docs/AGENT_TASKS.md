@@ -1048,6 +1048,68 @@ drill evidence.
   evidence
 - no changes to the original dirty `zebra-cloud-trench` worktree
 
+### CLOUD-REC-PG-PITR-01 - PostgreSQL Physical PITR Drill
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `STORAGE / SRE`
+- Depends on: `CLOUD-REC-PROD-CON-01` review commit `c75b31d4` and an
+  available Docker PostgreSQL runner
+- Branch: `codex/cloud-rec-pg-pitr-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-rec-pg-pitr-01/zebra-agent`
+- Owned paths: `tests/compose/recovery_pitr/compose.yml`,
+  `tests/compose/recovery_pitr/run-pitr.sh`,
+  `tests/compose/recovery_pitr/verify_pitr.py`,
+  `docs/CLOUD-REC-PG-PITR-01.md` (new), this task card, and the focused status
+  in `PROGRESS.md`
+
+#### Goal
+
+Prove a production-like PostgreSQL physical base backup plus archived-WAL
+restore to a named recovery point, then rebuild the Session Projection and
+rotate the control-plane epoch before a replacement Lease owner can write.
+
+#### Acceptance
+
+- The runner uses physical `pg_basebackup` and WAL archive/recovery, restores a
+  fresh data volume to an explicit named recovery point, and excludes a
+  post-target Event.
+- Evidence checks Event count/max revision, contiguous Session sequence,
+  namespace-negative reads, Projection replay equality, old epoch write
+  rejection, replacement Lease epoch and measured drill RPO/RTO.
+- Compose cleanup is deterministic and the report labels the result
+  `production-like`/`local-only`; no production RPO/RTO, failover or provider
+  readiness claim is inferred.
+- The real runner emits a machine-readable PostgreSQL-scoped report with the
+  production recovery contract's recovery-point, invariant, measurement and
+  cleanup fields; it does not masquerade as the full contract before S3
+  evidence lands, and leaves no containers, volumes or temporary credentials
+  behind.
+
+#### Review Evidence
+
+- `bash tests/compose/recovery_pitr/run-pitr.sh` passed with
+  `ZEBRA_PG_RECOVERY_PITR_TEST_RESULT=PASS` and
+  `PITR_CLEANUP=PASS`; the runner removed its project containers and volumes.
+- Physical base backup digest:
+  `48cf4ad242410ecb40322840ed3cf19d91dfe4bf5c52063d25190c7688873710`;
+  archived WAL count `7`; named restore point `zebra_pitr_target_v1` at
+  `0/60011F0`.
+- Recovered Event evidence: `4` Events, max revision `3`, contiguous sequence,
+  post-target Event excluded, Projection rebuilt at revision `3`, namespace
+  negative read empty, old epoch write rejected, replacement Lease epoch
+  acquired and released.
+- Measured local drill values: RPO `0.077309s`, RTO `6.462744s`. These are
+  production-like Docker measurements only, not approved production SLOs.
+- `make check`: file-size `1229` files, Ruff clean, Mypy `605` files, eval
+  `10/10`; full suite `2147 passed, 271 skipped`.
+
+#### Explicit Non-Goals
+
+- no managed-cloud backup credentials, failover topology or production cutover
+- no S3 object restore (owned by `CLOUD-REC-S3-01`)
+- no application deployment, API/Worker wiring or original dirty worktree edits
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`

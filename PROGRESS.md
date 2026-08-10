@@ -91,6 +91,12 @@
   immutable object copies, restore epoch and identity rotation, machine-readable
   drill evidence, and the read-only → single Worker → ingress sequence. Full
   validation is green: `2147 passed, 271 skipped`; `make check` is green.
+- `CLOUD-REC-PG-PITR-01` is in `Review` on
+  `codex/cloud-rec-pg-pitr-01`. Its isolated physical base-backup/WAL runner
+  restores to a named point, excludes a post-target Event, rebuilds Projection,
+  rotates Lease epoch and records cleanup. Real runner and full validation are
+  green: `2147 passed, 271 skipped`; `make check` is green. Measurements remain
+  local-only (`RPO 0.077309s`, `RTO 6.462744s`).
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

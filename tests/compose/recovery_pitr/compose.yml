@@ -1,0 +1,115 @@
+name: zebra-pg-recovery-pitr-test
+
+services:
+  archive-init:
+    image: postgres:17.5-alpine3.21
+    user: "0"
+    entrypoint: [/bin/sh, -ec]
+    command:
+      - chown -R postgres:postgres /wal_archive
+    volumes:
+      - wal-archive:/wal_archive
+
+  backup-init:
+    image: postgres:17.5-alpine3.21
+    user: "0"
+    entrypoint: [/bin/sh, -ec]
+    command:
+      - mkdir -p /backup/base && chown -R postgres:postgres /backup
+    volumes:
+      - base-backup:/backup
+
+  primary:
+    image: postgres:17.5-alpine3.21
+    depends_on:
+      archive-init:
+        condition: service_completed_successfully
+      backup-init:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_DB: zebra
+      POSTGRES_USER: zebra
+      POSTGRES_PASSWORD: zebra-test-password
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - max_wal_senders=3
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_timeout=1s
+      - -c
+      - archive_command=test ! -f /wal_archive/%f && cp %p /wal_archive/%f
+    ports:
+      - "127.0.0.1:${ZEBRA_PG_RECOVERY_PITR_PRIMARY_PORT:-25465}:5432"
+    volumes:
+      - primary-data:/var/lib/postgresql/data
+      - wal-archive:/wal_archive
+      - base-backup:/backup
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 4s
+    networks:
+      - dependencies
+
+  restore-init:
+    image: postgres:17.5-alpine3.21
+    user: "0"
+    environment:
+      PITR_TARGET_NAME: ${ZEBRA_PG_PITR_TARGET_NAME:-zebra_pitr_target_v1}
+    entrypoint: [/bin/sh, -ec]
+    command:
+      - |
+        find /var/lib/postgresql/data -mindepth 1 -delete
+        cp -a /backup/base/. /var/lib/postgresql/data/
+        printf "restore_command = 'cp /wal_archive/%%f %%p'\nrecovery_target_name = '%s'\nrecovery_target_action = 'promote'\n" "$${PITR_TARGET_NAME}" >> /var/lib/postgresql/data/postgresql.auto.conf
+        touch /var/lib/postgresql/data/recovery.signal
+        chown -R postgres:postgres /var/lib/postgresql/data
+    volumes:
+      - base-backup:/backup:ro
+      - restore-data:/var/lib/postgresql/data
+      - wal-archive:/wal_archive:ro
+    networks:
+      - dependencies
+
+  restore:
+    image: postgres:17.5-alpine3.21
+    environment:
+      POSTGRES_DB: zebra
+      POSTGRES_USER: zebra
+      POSTGRES_PASSWORD: zebra-test-password
+    command: [postgres]
+    ports:
+      - "127.0.0.1:${ZEBRA_PG_RECOVERY_PITR_RESTORE_PORT:-25466}:5432"
+    volumes:
+      - restore-data:/var/lib/postgresql/data
+      - wal-archive:/wal_archive:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 2s
+      timeout: 3s
+      retries: 45
+      start_period: 4s
+    networks:
+      - dependencies
+
+volumes:
+  primary-data:
+  base-backup:
+  restore-data:
+  wal-archive:
+
+networks:
+  dependencies:
+    name: zebra-pg-recovery-pitr-test-dependencies
