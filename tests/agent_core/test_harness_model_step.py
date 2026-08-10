@@ -87,8 +87,11 @@ def test_plan_activation_guidance_follows_effective_tool_manifest() -> None:
     )
 
     assert planned_messages[0].role is MessageRole.SYSTEM
-    assert "call agent.plan before substantive execution" in planned_messages[0].content
+    assert "must first call agent.plan" in planned_messages[0].content
     assert "Simple one-step tasks may proceed without a Plan" in planned_messages[0].content
+    assert "verify them with at least one relevant authoritative typed read" in (
+        planned_messages[0].content
+    )
     assert "delegation_reason" in planned_messages[0].content
     assert planned_messages[-1].role is MessageRole.USER
     assert [message.role for message in direct_messages] == [MessageRole.USER]
