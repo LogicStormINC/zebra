@@ -49,6 +49,10 @@ does not authorize production code, migrations or activation of its successor.
   `codex/qa-cloudline-ci-01`. It owns the canonical Quality workflow and the
   packaged Desktop driver helper needed to revalidate the full Gate 0 matrix
   after the Lease, atomicity, stylesheet, and event-driven assertion fixes.
+- `ARCH-CONFIG-BOUNDARY-01` is in `Review` on
+  `codex/arch-config-boundary-01`. It freezes the provider-neutral configuration
+  boundary and adds a dependency contract before Integrations and Security
+  configuration decoupling.
 - `CLOUD-INTEGRATION-REG-01` is `Review` on
   `codex/cloud-integration-regressions-01`. It repairs the branch-specific
   recovered-Lease heartbeat checkpoint regression and restores lazy local API
@@ -453,6 +457,49 @@ new commits.
 - no Profile, command API, recovery, Helm, gVisor implementation, Auth or Trench
   feature work
 - no change to the original dirty `zebra-cloud-trench` worktree
+
+### ARCH-CONFIG-BOUNDARY-01 - Packages/Apps Configuration Boundary Contract
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `ARCH / CONFIG`
+- Depends on: Gate 0 canonical quality review commit `109ec4e4`
+- Branch: `codex/arch-config-boundary-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/arch-config-boundary-01/zebra-agent`
+- Owned paths: `docs/ADR-021_配置边界与Provider-neutral输入合同.md`,
+  `tests/config/test_package_dependency_boundaries.py`, this task card, and
+  the focused status in `PROGRESS.md`
+
+#### Goal
+
+Freeze one provider-neutral settings input boundary and make package/app
+layering executable: reusable `packages/*` may not import `apps/*`, while app
+composition remains the only place that maps environment-backed settings into
+provider-specific adapters.
+
+#### Acceptance
+
+- The contract documents the allowed dependency direction and minimum mapping
+  fields for Integrations and Security.
+- A deterministic dependency test fails if any package source imports
+  `zebra_agent_config` or an `apps.*` module; current violations are recorded
+  as successor work rather than hidden.
+- No second aggregate settings object or runtime behavior is introduced.
+
+#### Explicit Non-Goals
+
+- no Integrations or Security import rewrite in this card
+- no Profile implementation, command API, recovery, deployment or Trench work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- Added ADR-021 with the single settings aggregate, provider-neutral adapter
+  inputs, dependency direction, and successor migration order.
+- Added two executable boundary tests: packages cannot import app/composition
+  roots, and the five existing `zebra_agent_config` imports are an exact,
+  finite successor inventory. Focused contract validation passes `2 tests`,
+  Ruff and Mypy.
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 

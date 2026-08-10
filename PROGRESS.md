@@ -37,6 +37,11 @@
   cancellation and suspended-state contracts. The local Gate 0 matrix is
   green; the previous PR #194 failures are confirmed stale and predate the
   Lease, atomicity, stylesheet, and event-driven assertion fixes.
+- `ARCH-CONFIG-BOUNDARY-01` is in `Review` on
+  `codex/arch-config-boundary-01`. ADR-021 freezes the provider-neutral
+  configuration boundary and the dependency contract passes: reusable packages
+  cannot import `apps/*` composition roots, and the five current config imports
+  are tracked as exact successor inventory for Integrations/Security.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed
