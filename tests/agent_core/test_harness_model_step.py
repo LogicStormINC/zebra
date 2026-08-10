@@ -50,6 +50,11 @@ RESEARCH_TOOL = ModelToolDefinition(
     description="Delegate bounded research.",
     parameters={"type": "object", "properties": {}},
 )
+PLAN_TOOL = ModelToolDefinition(
+    name="agent.plan",
+    description="Maintain the durable task plan.",
+    parameters={"type": "object", "properties": {}},
+)
 
 
 def test_delegation_guidance_follows_effective_tool_manifest() -> None:
@@ -66,6 +71,26 @@ def test_delegation_guidance_follows_effective_tool_manifest() -> None:
     assert parent_messages[0].role is MessageRole.SYSTEM
     assert "Answer directly" in parent_messages[0].content
     assert "delegation_reason" in parent_messages[0].content
+    assert "Plan activation" not in parent_messages[0].content
+    assert [message.role for message in direct_messages] == [MessageRole.USER]
+
+
+def test_plan_activation_guidance_follows_effective_tool_manifest() -> None:
+    created_at = datetime(2026, 8, 10, 20, 0, tzinfo=UTC)
+    task = HarnessTask(title="Investigate", user_input="Investigate a complex issue.")
+
+    planned_messages = HarnessModelStep(
+        available_tools=(PLAN_TOOL, RESEARCH_TOOL)
+    ).build_initial_messages(task, created_at=created_at)
+    direct_messages = HarnessModelStep().build_initial_messages(
+        task, created_at=created_at
+    )
+
+    assert planned_messages[0].role is MessageRole.SYSTEM
+    assert "call agent.plan before substantive execution" in planned_messages[0].content
+    assert "Simple one-step tasks may proceed without a Plan" in planned_messages[0].content
+    assert "delegation_reason" in planned_messages[0].content
+    assert planned_messages[-1].role is MessageRole.USER
     assert [message.role for message in direct_messages] == [MessageRole.USER]
 
 

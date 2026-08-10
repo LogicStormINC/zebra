@@ -15975,3 +15975,46 @@ is converged to `failed_no_effect` (never deleted or set to `succeeded`) and the
 original Task returns 201; the full suite at the candidate HEAD shows zero new
 failures; Ruff, Mypy, release gate, `git diff --check`, and the file-size
 violation set show no new regression.
+
+### ZNX-GOAL-PLAN-ACT-01 - Goal/Plan Activation Closure
+
+- Status: `In Progress`
+- Owner: `Vinson / Codex coordinated`
+- Branch: `codex/znx-goal-plan-act-01`
+- Exact base: `61552a4c86e40e324219be96c0cf7f58afb0fb75`
+- Owned paths: `packages/agent-core/src/agent_core/harness/`,
+  `tests/agent_core/`,
+  `docs/AGENT_TASKS.md`,
+  `docs/FINOS_NEXT_RUNTIME_TASK_BOARD_AMENDMENT_GOAL_PLAN_V1_2026-08-10.md`,
+  `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close the narrow product-activation gap after Goal/Plan v1 lifecycle acceptance:
+when a real model receives a clearly multi-step goal whose durable progress
+matters, it should use the existing `agent.plan` capability and authoritative
+typed reads before finalizing. Simple one-step tasks remain valid without a Plan.
+
+#### Required Diagnostic And Acceptance
+
+- [ ] Capture only advertised tool names and returned tool-call names from the
+  failed real-model request; never record credentials.
+- [ ] Prove whether `agent.plan` and host typed reads are advertised before
+  changing activation instructions or capability binding.
+- [ ] Add deterministic red tests before the minimum generic production change.
+- [ ] Real complex Goal emits at least one `PLAN_UPDATED` and one authoritative
+  typed read, then preserves the same Stable Task and stable Goal across a
+  follow-up while revising and closing the Plan before final completion.
+- [ ] Targeted, full, static, eval, and FinOS compatibility gates show no new
+  regression relative to the exact base.
+
+#### Explicit Non-Goals
+
+- planner Agent or planner model;
+- complexity classifier;
+- Goal Tree, Plan DAG, scheduler, recurring/background work, or unlimited
+  automatic continuation;
+- mandatory Plan for every Task;
+- FinOS/Review/finance-specific workflow or Goal/Plan types;
+- GUI/computer-use or FinOS source changes without a proven compatibility
+  regression.

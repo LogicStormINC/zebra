@@ -20,6 +20,7 @@ from agent_core.domain.modeling import (
     ModelToolDefinition,
 )
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.harness.capability_guidance import append_capability_guidance
 from agent_core.harness.context_recovery import (
     merge_recovery_messages,
     prepare_bounded_conversation,
@@ -49,18 +50,6 @@ from agent_core.ports.conversation_compactor import (
 )
 from agent_core.ports.model_gateway import ModelGatewayPort, ModelResponseRejectedError
 from agent_core.ports.provider_continuation import ProviderContinuationCompletionPort
-
-MODEL_NATIVE_DELEGATION_GUIDANCE = (
-    "Subagent delegation:\n"
-    "- Answer directly when context is sufficient or evidence collection is not needed.\n"
-    "- Use a normal parent tool for one direct operation or a short linear sequence.\n"
-    "- Call agent.research only for bounded, independent, multi-step evidence "
-    "collection whose separate context is materially useful.\n"
-    "- Words such as research, search, analysis, or comparison do not require "
-    "delegation by themselves.\n"
-    "- Every agent.research call must include objective and a concise "
-    "delegation_reason explaining why direct work is less suitable."
-)
 
 
 def _tool_result_content(tool_result: ToolResult) -> str:
@@ -491,22 +480,11 @@ class HarnessModelStep:
                     },
                 ),
             )
-        if any(tool.name == "agent.research" for tool in self._available_tools):
-            if messages:
-                messages[-1] = messages[-1].model_copy(
-                    update={
-                        "content": (f"{messages[-1].content}\n\n{MODEL_NATIVE_DELEGATION_GUIDANCE}")
-                    }
-                )
-            else:
-                messages.append(
-                    SessionMessage(
-                        message_id=new_message_id(),
-                        role=MessageRole.SYSTEM,
-                        content=MODEL_NATIVE_DELEGATION_GUIDANCE,
-                        created_at=created_at,
-                    )
-                )
+        append_capability_guidance(
+            messages,
+            self._available_tools,
+            created_at=created_at,
+        )
         append_task_state_context(messages, task, created_at=created_at)
         messages.append(
             SessionMessage(
