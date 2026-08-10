@@ -107,8 +107,10 @@ class SessionExecutionService:
             effect_dispatch,
         )
         provider_runtime.validate_factory(
-            cloud_provider_continuation_factory, worker_projection_transaction,
-            deployment_namespace, stores,
+            cloud_provider_continuation_factory,
+            worker_projection_transaction,
+            deployment_namespace,
+            stores,
         )
         self._database_path = database_path
         self._claim_service = claim_service
@@ -168,7 +170,7 @@ class SessionExecutionService:
         lease_ttl_seconds: int = 30,
     ) -> ExecutedSession:
         started_at = executed_at or datetime.now(UTC)
-        lease = self._claim_service.acquire_lease(
+        claimed = self._claim_service.claim_session(
             session_id,
             worker_id=worker_id,
             claimed_at=started_at,
@@ -176,13 +178,9 @@ class SessionExecutionService:
         )
         with LeaseHeartbeat(
             self._claim_service,
-            lease,
+            claimed.lease,
             lease_ttl_seconds=lease_ttl_seconds,
         ) as heartbeat:
-            claimed = self._claim_service.recover_lease(
-                lease,
-                lease_ttl_seconds=lease_ttl_seconds,
-            )
             resumed = self._resume_service.require_resumable(
                 claimed,
                 release_on_failure=False,

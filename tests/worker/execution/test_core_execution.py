@@ -3,6 +3,7 @@ from dataclasses import replace
 from pathlib import Path
 from threading import Event, Thread
 
+from agent_core.application.mock_model import ScriptedModelGateway
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
@@ -30,6 +31,7 @@ from worker_execution_support import (
     _seed_ready_session_with_input,
     _tool_gateway,
 )
+from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.control import SessionControlService
 
 
@@ -57,6 +59,48 @@ def test_worker_execution_service_completes_ready_session(
     model_calls = SQLiteModelCallStore(database_path).list_for_session(session_id)
     assert len(model_calls) == 1
     assert isinstance(model_calls[0], ModelCallRecord)
+
+
+def test_worker_execution_keeps_recovered_lease_during_long_model_call(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session(database_path, tmp_path)
+    complete = ScriptedModelGateway.complete
+    heartbeat_lease = SessionClaimService.heartbeat_lease
+    background_heartbeat = Event()
+
+    def slow_complete(self, messages, *, tools=()):
+        assert background_heartbeat.wait(timeout=2)
+        return complete(self, messages, tools=tools)
+
+    def observed_heartbeat(self, lease, *, lease_ttl_seconds, checkpoint=None):
+        if checkpoint is None:
+            background_heartbeat.set()
+        return heartbeat_lease(
+            self,
+            lease,
+            lease_ttl_seconds=lease_ttl_seconds,
+            checkpoint=checkpoint,
+        )
+
+    monkeypatch.setattr(ScriptedModelGateway, "complete", slow_complete)
+    monkeypatch.setattr(SessionClaimService, "heartbeat_lease", observed_heartbeat)
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _assistant_only_gateway(settings=settings),
+    )
+
+    result = _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-long-model",
+        executed_at=_created_at(),
+        lease_ttl_seconds=1,
+    )
+
+    assert result.session.status is SessionStatus.COMPLETED
+    assert SQLiteLeaseStore(database_path).get(session_id) is None
 
 
 def test_worker_persists_effective_runtime_authority_before_attempt(

@@ -142,7 +142,10 @@ def test_prompt_resolution_failure_is_atomic(
         lambda *_args: (_ for _ in ()).throw(ValueError("selected MCP prompt is unavailable")),
     )
 
-    response = create_app(database, settings=_settings()).create_session(
+    app = create_app(database, settings=_settings())
+    assert not database.exists()
+
+    response = app.create_session(
         {
             "prompt": "Do not persist",
             "network_profile": "mcp-proxy-only",

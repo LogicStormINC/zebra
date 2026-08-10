@@ -30,6 +30,10 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `CLOUD-INTEGRATION-REG-01` is `Review` on
+  `codex/cloud-integration-regressions-01`. It repairs the branch-specific
+  recovered-Lease heartbeat checkpoint regression and restores lazy local API
+  Store composition without weakening explicit cloud fail-closed startup.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is `Done` on
   `docs/cloud-provider-cont-pg-plan`. It freezes Provider Continuation external
   authority, internal namespace, existing Lease fence, atomic Event binding,
@@ -220,6 +224,72 @@ confirmed repo memory by current-task relevance within a token budget.
   model-inferred memories
 - no semantic provider or Mem0 integration; `MEM-GW-CON-01` owns that contract
 - no automatic child Session or Subagent creation to escape a context limit
+
+## Cloud Integration Stabilization Board
+
+### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `WORKER / API / QA`
+- Depends on: `zebra-cloud-trench@978e02de`
+- Branch: `codex/cloud-integration-regressions-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-integration-regressions-01/zebra-agent`
+- Owned paths:
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/factory.py`,
+  `tests/worker/execution/test_core_execution.py`,
+  `tests/api/test_mcp_prompt_api.py`, this card in `docs/AGENT_TASKS.md`, and the
+  cloud composition regression in `tests/test_cloud_api_worker_profile_composition.py`,
+  plus the focused closeout record in `PROGRESS.md`.
+
+#### Goal
+
+Repair two integration regressions at their shared lifecycle boundaries: start
+background Lease maintenance from the recovery-renewed checkpoint, and preserve
+lazy SQLite composition until a validated local request needs authoritative
+storage. Explicit cloud composition remains fail closed at application startup.
+
+#### Acceptance
+
+- A Worker execution that lasts beyond one heartbeat interval retains ownership
+  after recovery advanced the Lease checkpoint and releases the Lease on exit.
+- Invalid MCP prompt resolution returns `400` without creating the configured
+  local SQLite database; constructing the local API alone also performs no write.
+- Explicit cloud startup and caller-injected `ControlPlaneStores` behavior remain
+  covered by the existing composition matrix.
+- Focused regressions, the complete backend suite, changed-path Ruff/Mypy, file
+  size and diff checks are run; unrelated inherited blockers are separated from
+  task-owned failures.
+
+#### Explicit Non-Goals
+
+- no Lease Store contract or fencing semantics change
+- no PostgreSQL migration or cloud authority change
+- no API route, MCP protocol, Desktop or Trench feature work
+
+#### Closeout
+
+- Worker execution now reuses `SessionClaimService.claim_session`, so the
+  background heartbeat starts from the recovery-renewed Lease checkpoint and
+  the existing cleanup path handles recovery failure.
+- Local/test API construction again leaves `_stores` lazy. Explicit cloud
+  startup still composes its complete Store bundle immediately and fails closed;
+  the stable `zebra_agent_api.app.create_app` import remains available through a
+  focused 58-line factory module.
+- Both regressions failed before the fix and pass afterward. The focused API,
+  cloud composition, claim, heartbeat and execution matrix is `33 passed, 1
+  skipped`; the deterministic long-call test waits for a real background
+  heartbeat rather than relying on a fixed sleep.
+- Full backend validation is `2104 passed, 271 skipped, 1 failed`. The sole
+  failure is the repository size gate's four out-of-scope files; this task
+  removes `app.py` from that list and keeps `execution.py` below the hard limit.
+- Changed-path Ruff, format and `git diff --check` pass; release Eval is `10/10`.
+  Full Ruff's 10 findings and Mypy's 13 findings are unchanged, out-of-scope
+  baseline defects. A local Desktop streaming attempt reached the API but the
+  Playwright-managed provider uniformly failed as `transport_error`; it did not
+  reproduce `LeaseCheckpointRegressionError` and is not counted as passing E2E.
 
 ## Zebra Embedded And Trench Architecture Board
 

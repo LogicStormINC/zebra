@@ -171,7 +171,7 @@ def test_api_cloud_profile_uses_shared_composition(
         captured.update(kwargs)
         return local
 
-    monkeypatch.setattr("zebra_agent_api.app.compose_control_plane_stores", fake_compose)
+    monkeypatch.setattr("zebra_agent_api.factory.compose_control_plane_stores", fake_compose)
     api = create_app(settings=settings, cloud_composition=_cloud_settings())
     assert captured["profile"] == "cloud"
     assert api.stores is local

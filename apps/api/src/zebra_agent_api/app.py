@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
@@ -30,16 +29,13 @@ from agent_security import (
     resolve_effective_network_profile,
 )
 from agent_storage import (
-    CloudCompositionSettings,
     ControlPlaneStores,
     LeaseConflictError,
-    compose_control_plane_stores,
     list_confirmed_repo_memories,
     store_text_attachments,
 )
 from zebra_agent_config import (
     ZebraAgentSettings,
-    load_settings,
     trusted_local_mode_enabled,
 )
 from zebra_agent_worker import (
@@ -60,12 +56,11 @@ from zebra_agent_api.api_scm_mixin import ApiScmMixin
 from zebra_agent_api.api_session_handoff_mixin import ApiSessionHandoffMixin
 from zebra_agent_api.api_session_read_mixin import ApiSessionReadMixin
 from zebra_agent_api.api_status_mixin import ApiStatusMixin
-from zebra_agent_api.credential_broker import build_default_credential_broker
+from zebra_agent_api.factory import create_app as create_app
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
-from zebra_agent_api.session_context_namespace import resolve_context_namespace
 from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
@@ -473,41 +468,3 @@ class ZebraAgentApi(
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
-
-
-def create_app(
-    database_path: str | Path | None = None,
-    *,
-    settings: ZebraAgentSettings | None = None,
-    stores: ControlPlaneStores | None = None,
-    cloud_composition: CloudCompositionSettings | None = None,
-    administrative_context_namespace: str | None = None,
-    context_administrative_namespace: str | None = None,
-    credential_broker: CredentialBroker | None = None,
-    credential_env: Mapping[str, str] | None = None,
-    github_transport: GitHubPullRequestTransport | None = None,
-) -> ZebraAgentApi:
-    active_settings = settings or load_settings()
-    active_database_path = Path(database_path or active_settings.database_url)
-    active_stores = stores or compose_control_plane_stores(
-        profile=active_settings.profile,
-        database_path=(
-            active_settings.database_url
-            if active_settings.profile == "cloud"
-            else active_database_path
-        ),
-        cloud=cloud_composition,
-    )
-    active_broker = credential_broker
-    if active_broker is None:
-        active_broker = build_default_credential_broker(active_settings.scm, env=credential_env)
-    return ZebraAgentApi(
-        database_path=active_database_path,
-        settings=active_settings,
-        _stores=active_stores,
-        administrative_context_namespace=resolve_context_namespace(
-            administrative_context_namespace, context_administrative_namespace
-        ),
-        credential_broker=active_broker,
-        github_transport=github_transport,
-    )

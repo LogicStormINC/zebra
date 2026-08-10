@@ -6,6 +6,13 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-08-05`
+- `CLOUD-INTEGRATION-REG-01` is in `Review` on
+  `codex/cloud-integration-regressions-01`. It fixes two regressions found on
+  `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed
+  Lease checkpoint, and local/test API Store composition is lazy again while
+  explicit cloud startup remains fail closed. The focused matrix passes `33
+  passed, 1 skipped`; the full backend suite is `2104 passed, 271 skipped, 1
+  failed`, with only four out-of-scope repository size violations remaining.
 - Cloud mainline status is recorded in
   [Zebra Cloud 主线当前状态与后续工作](./docs/Zebra%20Cloud%20主线当前状态与后续工作.md):
   PostgreSQL adapters, API/Worker PostgreSQL composition, application Compose,
