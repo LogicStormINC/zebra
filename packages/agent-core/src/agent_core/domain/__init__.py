@@ -188,7 +188,15 @@ from agent_core.domain.session_handoff import (
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.tool_runs import ToolRunRecord
-from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.domain.tools import (
+    ToolCall,
+    ToolCallStatus,
+    ToolExecutionLocation,
+    ToolIdempotency,
+    ToolReceipt,
+    ToolResult,
+    ToolRisk,
+)
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 
 __all__ = [
@@ -344,9 +352,13 @@ __all__ = [
     "TextAttachmentInput",
     "ToolCall",
     "ToolCallStatus",
+    "ToolExecutionLocation",
+    "ToolIdempotency",
+    "ToolReceipt",
     "ToolProfile",
     "ToolRunRecord",
     "ToolResult",
+    "ToolRisk",
     "WorkerLease",
     "WorkspaceProjection",
     "WorkspaceBindingRevision",

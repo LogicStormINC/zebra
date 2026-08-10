@@ -1275,7 +1275,7 @@ always-cleanup semantics. A failed runner must identify its contract boundary.
 
 ### CLOUD-K8S-GVISOR-E2E-01 - Kubernetes gVisor End-to-End Evidence
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Suggested role: `SRE / PLATFORM / SECURITY`
 - Depends on: `CLOUD-DEPLOY-HELM-01`, `CLOUD-REAL-SVC-CI-01` and a real Linux
@@ -1311,6 +1311,53 @@ machine-readable evidence.
 - no production cluster credentials, managed cluster or rollout
 - no fallback to runc/crun when gVisor is unavailable
 - no claim of completion until a real Linux gVisor-enabled cluster passes
+
+### EMB-TOOL-CON-01 - Host Tool Contract Extension
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Suggested role: `CORE / TOOLS / SECURITY`
+- Depends on: completed `EMB-HOST-CON-01`, `EMB-AGUI-CON-01` and Gate 0 quality
+  baseline
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `packages/agent-core/src/agent_core/domain/tools.py`,
+  `packages/agent-core/src/agent_core/domain/__init__.py`,
+  `packages/agent-tools/src/agent_tools/contracts.py`,
+  `packages/agent-tools/src/agent_tools/__init__.py`,
+  `tests/agent_tools/test_host_tool_contract.py` (new), this task card and
+  focused `PROGRESS.md`
+
+#### Goal
+
+Extend the existing `ToolContract`/`ToolResult` seam with execution location,
+scope, risk, timeout, output size, idempotency and a versioned receipt schema.
+Do not create a parallel Host Tool model.
+
+#### Acceptance
+
+- Existing tools retain compatible defaults and model-tool projection behavior.
+- Host tools require explicit non-empty scopes, bounded timeout/output limits and
+  an execution location/risk/idempotency declaration.
+- Receipt metadata has a stable version and carries no secret or raw credential;
+  duplicate scopes and invalid bounds fail closed.
+- Focused contract tests, package tests, Ruff/Mypy and full quality gates pass.
+
+#### Explicit Non-Goals
+
+- no JWT verification, PostgreSQL replay ledger, HTTP route or Trench code
+- no changes to existing builtin behavior beyond contract defaults
+
+#### Review Evidence
+
+- Core `ToolResult` now carries an optional typed `ToolReceipt`; the existing
+  `ToolContract` adds execution location, scopes, risk, timeout, output bound,
+  idempotency and receipt schema version without a parallel Host Tool model.
+- Focused contract/compatibility tests: `20 passed`; broader domain/tool checks:
+  `30 passed`; Ruff and Mypy are clean for the changed modules.
+- Host contracts reject missing/duplicate scopes, unbounded metadata and missing
+  required idempotency keys; receipt serialization contains only bounded,
+  non-secret metadata. Existing local tools retain their defaults.
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 

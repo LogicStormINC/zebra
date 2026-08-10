@@ -13,7 +13,14 @@ if TYPE_CHECKING:
     from agent_tools.builtin.plan import PlanTool, plan_contract
     from agent_tools.builtin.search import WorkspaceSearchTool, files_search_contract
     from agent_tools.builtin.tests import TestsRunTool, tests_run_contract
-    from agent_tools.contracts import RegisteredTool, ToolContract
+    from agent_tools.contracts import (
+        RegisteredTool,
+        ToolContract,
+        ToolExecutionLocation,
+        ToolIdempotency,
+        ToolReceipt,
+        ToolRisk,
+    )
     from agent_tools.effect_guard import (
         EffectGuardedToolGateway,
         FencedEffectToolGateway,
@@ -88,6 +95,10 @@ __all__ = [
     "SkillsReadTool",
     "TestsRunTool",
     "ToolContract",
+    "ToolExecutionLocation",
+    "ToolIdempotency",
+    "ToolReceipt",
+    "ToolRisk",
     "ToolExecutor",
     "ToolOutputProjector",
     "ToolOutputEnvelope",
@@ -155,6 +166,10 @@ _EXPORTS = {
     "SkillsListTool": ("agent_tools.skills", "SkillsListTool"),
     "SkillsReadTool": ("agent_tools.skills", "SkillsReadTool"),
     "RegisteredTool": ("agent_tools.contracts", "RegisteredTool"),
+    "ToolExecutionLocation": ("agent_tools.contracts", "ToolExecutionLocation"),
+    "ToolIdempotency": ("agent_tools.contracts", "ToolIdempotency"),
+    "ToolReceipt": ("agent_tools.contracts", "ToolReceipt"),
+    "ToolRisk": ("agent_tools.contracts", "ToolRisk"),
     "SessionSearchTool": ("agent_tools.session_history", "SessionSearchTool"),
     "TestsRunTool": ("agent_tools.builtin.tests", "TestsRunTool"),
     "ToolContract": ("agent_tools.contracts", "ToolContract"),
