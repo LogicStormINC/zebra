@@ -1110,6 +1110,66 @@ rotate the control-plane epoch before a replacement Lease owner can write.
 - no S3 object restore (owned by `CLOUD-REC-S3-01`)
 - no application deployment, API/Worker wiring or original dirty worktree edits
 
+### CLOUD-REC-S3-01 - Artifact Object Backup And Restore Drill
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `STORAGE / SRE`
+- Depends on: `CLOUD-REC-PROD-CON-01` review commit `c75b31d4`, the existing
+  S3/MinIO Artifact adapter and an available Docker MinIO runner
+- Branch: `codex/cloud-rec-s3-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-rec-s3-01/zebra-agent`
+- Owned paths: `tests/compose/recovery_s3/compose.yml`,
+  `tests/compose/recovery_s3/run-s3-recovery.sh`,
+  `tests/compose/recovery_s3/verify_s3_recovery.py`,
+  `docs/CLOUD-REC-S3-01.md` (new), this task card, and the focused status in
+  `PROGRESS.md`
+
+#### Goal
+
+Prove that an Artifact payload can be restored from an independent versioned
+object backup after the source object version is deleted, while PostgreSQL
+Artifact metadata/ref, checksum, size and namespace remain consistent.
+
+#### Acceptance
+
+- The runner creates a versioned backup copy through the object provider, deletes
+  the source object version, and restores from the backup copy; it never reads a
+  Worker-local payload as the backup source.
+- Source/backup object metadata and bytes match the immutable expectation;
+  PostgreSQL `artifact_payload_metadata` ref is checked and updated only by an
+  explicit, guarded recovery-repair step in the evidence runner.
+- Namespace-negative metadata/object reads fail closed; backup version, restored
+  version, checksum, size, repair guard and cleanup are recorded in a
+  machine-readable report.
+- The real MinIO runner passes with deterministic cleanup and labels itself
+  `production-like`/`local-only`; no production object retention or DR claim is
+  inferred.
+
+#### Explicit Non-Goals
+
+- no cloud credentials, cross-region replication or production retention policy
+- no new runtime Artifact repair API; the runner's guarded SQL is evidence-only
+- no PostgreSQL PITR, Kubernetes deployment or original dirty worktree edits
+
+#### Review Evidence
+
+- `bash tests/compose/recovery_s3/run-s3-recovery.sh` passed with
+  `ZEBRA_S3_RECOVERY_TEST_RESULT=PASS` and
+  `S3_RECOVERY_CLEANUP=PASS`; the runner removed its project containers and
+  volumes.
+- Source object version `077ce385-9ed0-4c52-ba83-581f51b0fc7b` was deleted;
+  independent backup version `425c0b48-d3cc-487a-80fe-ccdaf95acc46` restored
+  source version `9a393bce-70c5-4839-af5d-4a28e17664c9`.
+- SHA-256 `be181d4f360260be24d015b15e375cb4de473b8928d145b94c4974115de12022`,
+  size `35`, provider metadata, namespace-negative reads and PostgreSQL ref
+  consistency all pass; guarded repair affected exactly one row at lifecycle
+  revision `3`.
+- `make check`: file-size `1230` files, Ruff clean, Mypy `605` files, eval
+  `10/10`; full suite `2147 passed, 271 skipped`.
+- Evidence is MinIO/local-only; no production object retention, replication,
+  RPO/RTO or DR readiness is claimed.
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`

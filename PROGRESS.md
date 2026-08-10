@@ -97,6 +97,11 @@
   rotates Lease epoch and records cleanup. Real runner and full validation are
   green: `2147 passed, 271 skipped`; `make check` is green. Measurements remain
   local-only (`RPO 0.077309s`, `RTO 6.462744s`).
+- `CLOUD-REC-S3-01` is in `Review` on `codex/cloud-rec-s3-01`. Its independent
+  versioned MinIO backup-copy/delete/restore runner verifies the PostgreSQL
+  Artifact ref, checksum, metadata, namespace and cleanup without reading a
+  Worker-local payload. Real runner and full validation are green:
+  `2147 passed, 271 skipped`; `make check` is green. Evidence remains local-only.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed
