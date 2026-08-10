@@ -15847,7 +15847,7 @@ typed-tool Policy, Approval, or Audit.
 ### MDL-PROFILE-02 - Explicit Verified Model Profiles
 
 - Status: `Review`
-- Owner: `Vinson / Codex coordinated`
+- Owner: `Vinson`
 - Suggested role: `CTX / INTEGRATIONS / QA`
 - Depends on: `MM-NATIVE-QWEN-PHASE1@4533cf4`
 - Branch: `codex/generic-model-profile-v2`

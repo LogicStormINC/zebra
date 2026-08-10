@@ -80,6 +80,9 @@ def test_plan_activation_guidance_follows_effective_tool_manifest() -> None:
     task = HarnessTask(title="Investigate", user_input="Investigate a complex issue.")
 
     planned_messages = HarnessModelStep(
+        available_tools=(PLAN_TOOL,)
+    ).build_initial_messages(task, created_at=created_at)
+    combined_messages = HarnessModelStep(
         available_tools=(PLAN_TOOL, RESEARCH_TOOL)
     ).build_initial_messages(task, created_at=created_at)
     direct_messages = HarnessModelStep().build_initial_messages(
@@ -92,8 +95,9 @@ def test_plan_activation_guidance_follows_effective_tool_manifest() -> None:
     assert "verify them with at least one relevant authoritative typed read" in (
         planned_messages[0].content
     )
-    assert "delegation_reason" in planned_messages[0].content
     assert planned_messages[-1].role is MessageRole.USER
+    assert "delegation_reason" in combined_messages[0].content
+    assert combined_messages[-1].role is MessageRole.USER
     assert [message.role for message in direct_messages] == [MessageRole.USER]
 
 
