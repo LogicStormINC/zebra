@@ -34,6 +34,15 @@ from agent_storage.postgres.governed_memory_import import (
     GovernedMemoryImportReport,
     import_sqlite_governed_memories,
 )
+from agent_storage.postgres.host_auth import (
+    HostAuthorityStorageError,
+    HostGrantAttempt,
+    HostGrantAuditRecord,
+    HostGrantReplayDecision,
+    HostRegistryBindingError,
+    HostRegistryRecord,
+    PostgresHostAuthorityStore,
+)
 from agent_storage.postgres.idempotency import PostgresIdempotencyStore
 from agent_storage.postgres.leases import PostgresLeaseStore
 from agent_storage.postgres.memory_delivery import (
@@ -127,6 +136,13 @@ __all__ = [
     "PostgresLeaseStore",
     "PostgresGovernedMemoryStore",
     "PostgresIdempotencyStore",
+    "HostAuthorityStorageError",
+    "HostGrantAuditRecord",
+    "HostGrantAttempt",
+    "HostGrantReplayDecision",
+    "HostRegistryBindingError",
+    "HostRegistryRecord",
+    "PostgresHostAuthorityStore",
     "PostgresMemoryDeliveryLedger",
     "PostgresMemoryDeliveryStore",
     "NativeMemoryConflictError",

@@ -125,6 +125,11 @@
   `codex/cloud-real-svc-ci-01`. The provider-neutral Host Grant/JWT contract
   pins algorithms, issuer/JWKS, exact origins, clock skew and bindings; JWT
   decoding, HTTP and PostgreSQL replay remain separate adapters.
+- `EMB-AUTH-PG-01` is in `Review` on
+  `codex/cloud-real-svc-ci-01`. Migration v17, namespace-bound Host registry,
+  secret-free Grant audit and atomic PostgreSQL `jti` replay now pass the real
+  Compose runner (`4 passed`) and the existing control-plane migration runner
+  (`11 passed`); HTTP/JWT and Trench remain out of scope.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

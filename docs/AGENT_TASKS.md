@@ -1407,6 +1407,59 @@ key retrieval remain an adapter concern.
   Mypy are clean for the changed security modules. JWT decoding/JWKS and replay
   remain explicitly separate adapters.
 
+### EMB-AUTH-PG-01 - Host Registry And Replay Ledger
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `STORAGE / SECURITY / QA`
+- Depends on: `EMB-AUTH-CON-01`, production Profile and `CLOUD-REAL-SVC-CI-01`
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: next available PostgreSQL migration (`v17`), focused Host
+  registry/grant audit adapter and tests under `packages/agent-storage/` and
+  `tests/agent_storage/`, `tests/compose/host_auth_pg/` (new), this task card
+  and focused `PROGRESS.md`
+
+#### Goal
+
+Persist the namespace-bound Host issuer/tenant registry, secret-free Grant
+audit evidence and an atomic PostgreSQL `jti` replay ledger. The adapter must
+remain provider-neutral and must not import API, JWT or Trench code.
+
+#### Acceptance
+
+- Registry rows are keyed by deployment namespace, Host application and opaque
+  tenant namespace; inactive or unknown bindings fail closed.
+- A concurrent replay race accepts exactly one attempt and records both the
+  accepted and replay audit outcomes in the same transaction boundary.
+- Audit and replay rows contain only bounded identifiers/digests, never bearer
+  tokens or signing material; reads and writes cannot cross deployment
+  namespaces.
+- Migration checksum/concurrency tests, focused adapter tests and a real
+  PostgreSQL Compose runner pass; no constructor performs implicit DDL.
+
+#### Explicit Non-Goals
+
+- no JWT decoding, JWKS retrieval, HTTP middleware, CORS or Trench imports
+- no Redis replay cache or production migration activation outside `v17`
+
+#### Review Evidence
+
+- PostgreSQL migration `v17` adds the deployment-scoped Host registry, replay
+  ledger and append-only audit tables with bounded fields and digest-only
+  checks; migration catalog/checksum/concurrency tests pass.
+- The adapter performs registry binding, active/algorithm/expiry checks and
+  replay insertion plus accepted/replay/rejected audit in one transaction.
+  Two concurrent real PostgreSQL consumers produce exactly one accepted and
+  one replay outcome; the replay ledger contains one row.
+- Real Compose runner `tests/compose/host_auth_pg/run-postgres-tests.sh` passes
+  `4 passed` and reports `ZEBRA_HOST_AUTH_POSTGRES_TEST_RESULT=PASS`; the
+  existing control-plane runner passes `11 passed`. No constructor DDL is
+  covered, and a second deployment namespace cannot read the first audit.
+- `make check` passes: file-size `1241` files, Ruff, Mypy `608` files and eval
+  `10/10`.
+
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`
