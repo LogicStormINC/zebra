@@ -151,3 +151,24 @@ __all__ = [
     "resolve_artifact_retention_policy",
     "serialize_artifact_access_projection",
 ]
+from agent_security.host_grant import (
+    DecodedHostGrant,
+    HostGrantAlgorithmError,
+    HostGrantBindingError,
+    HostGrantSecurityError,
+    HostGrantVerificationConfig,
+    HostGrantVerifier,
+    JwtAlgorithm,
+    VerifiedHostGrant,
+)
+
+__all__ = [
+    "DecodedHostGrant",
+    "HostGrantAlgorithmError",
+    "HostGrantBindingError",
+    "HostGrantSecurityError",
+    "HostGrantVerificationConfig",
+    "HostGrantVerifier",
+    "JwtAlgorithm",
+    "VerifiedHostGrant",
+]

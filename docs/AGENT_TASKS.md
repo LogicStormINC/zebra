@@ -1359,6 +1359,54 @@ Do not create a parallel Host Tool model.
   required idempotency keys; receipt serialization contains only bounded,
   non-secret metadata. Existing local tools retain their defaults.
 
+### EMB-AUTH-CON-01 - Host Grant/JWT Security Contract
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `SECURITY / CORE`
+- Depends on: completed `EMB-HOST-CON-01`, `EMB-TOOL-CON-01` and Gate 0 quality
+  baseline
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `packages/agent-security/src/agent_security/host_grant.py` (new),
+  `packages/agent-security/src/agent_security/__init__.py`,
+  `tests/agent_security/test_host_grant_contract.py` (new), this task card and
+  focused `PROGRESS.md`
+
+#### Goal
+
+Freeze provider-neutral Host Grant verification inputs: algorithm pinning,
+issuer/JWKS, audience/subject/jti, clock skew, exact origin allowlist,
+namespace/resource/scope binding and typed fail-closed errors. JWT decoding and
+key retrieval remain an adapter concern.
+
+#### Acceptance
+
+- HS algorithms, wildcard origins, non-HTTPS JWKS and malformed issuer/audience
+  fail closed; allowed algorithms are explicit and immutable.
+- Verification accepts only a structurally validated `HostSessionGrant`, checks
+  time/jti/origin/scope/resource bindings and returns secret-free context.
+- Raw bearer tokens and signing material never appear in the contract result,
+  receipt or error representation; replay ledger is a later PostgreSQL task.
+- Focused security tests, package tests, Ruff/Mypy and full quality gates pass.
+
+#### Explicit Non-Goals
+
+- no JWT dependency/key fetch, HTTP middleware, CORS wiring or replay storage
+- no production issuer/JWKS credentials or Trench imports
+
+#### Review Evidence
+
+- `HostGrantVerificationConfig` pins asymmetric algorithms (`RS256`/`ES256`),
+  HTTPS issuer/JWKS, exact origins and bounded clock skew; wildcard origins,
+  HS algorithms and malformed URLs fail closed.
+- `HostGrantVerifier` accepts only decoded `HostSessionGrant` claims, checks
+  algorithm, issuer/audience/host binding, time, jti, required scopes/resources
+  and returns only `HostContextEnvelope`; raw bearer tokens are not represented.
+- Focused security plus existing Host authority tests: `24 passed`; Ruff and
+  Mypy are clean for the changed security modules. JWT decoding/JWKS and replay
+  remain explicitly separate adapters.
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`

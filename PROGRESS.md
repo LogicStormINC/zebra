@@ -121,6 +121,10 @@
   `codex/cloud-real-svc-ci-01`. `ToolContract`/`ToolResult` now carry Host
   execution location, scopes, risk, bounds, idempotency and typed receipt
   metadata; transport, JWT and Trench implementation remain separate tasks.
+- `EMB-AUTH-CON-01` is in `Review` on
+  `codex/cloud-real-svc-ci-01`. The provider-neutral Host Grant/JWT contract
+  pins algorithms, issuer/JWKS, exact origins, clock skew and bindings; JWT
+  decoding, HTTP and PostgreSQL replay remain separate adapters.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed
