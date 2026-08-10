@@ -45,7 +45,7 @@ does not authorize production code, migrations or activation of its successor.
   size violation and made long-stream/stop Playwright regressions deterministic
   after the Python baseline. Its visual contract stays unchanged; Node 22 build,
   static checks, file-size validation, and all eight E2E tests pass.
-- `QA-CLOUDLINE-CI-01` is `In Progress` on
+- `QA-CLOUDLINE-CI-01` is in `Review` on
   `codex/qa-cloudline-ci-01`. It owns the canonical Quality workflow and the
   packaged Desktop driver helper needed to revalidate the full Gate 0 matrix
   after the Lease, atomicity, stylesheet, and event-driven assertion fixes.
@@ -404,7 +404,7 @@ than timing- or multi-match-dependent.
 
 ### QA-CLOUDLINE-CI-01 - Canonical Gate 0 Quality Baseline
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Suggested role: `QA / CI`
 - Depends on: `QA-CLOUDLINE-PY-01` review commit `908f1989ca32` and
@@ -432,6 +432,21 @@ new commits.
   packaged helper static validation; remote job evidence is reported separately
   when the branch is not pushed.
 - No CI job is removed, made advisory, or hidden behind a broad retry.
+
+#### Closeout
+
+- `make sync` completed; `make test` passed `2105 passed, 271 skipped`, and
+  `make check` passed the file-size gate (`1212` files), Ruff, Mypy (`596`
+  source files), and the ten-case release eval.
+- Node 22 / pnpm 10.28.2 Desktop checks and build pass; the eight Playwright
+  streaming tests pass with `NO_PROXY=127.0.0.1,localhost`.
+- Tauri `cargo check --locked` passes with the direct rsproxy config. The
+  repository's default `pnpm tauri:check` remains machine-blocked by the
+  global USTC mirror returning 404; no source or lockfile change was made.
+- The old PR #194 run `30992835876` is useful only as pre-fix evidence: its
+  Backend, Desktop and packaged failures correspond to the now-closed size,
+  Lease checkpoint, atomicity and stale packaged-state assertions. No remote
+  rerun is claimed from this unpushed branch.
 
 #### Explicit Non-Goals
 

@@ -31,11 +31,12 @@
   checks, file-size validation, and the eight Playwright tests pass. The default
   Tauri check remains environment-blocked by the global USTC Cargo mirror;
   direct rsproxy Cargo validation passed with `--locked`.
-- `QA-CLOUDLINE-CI-01` is `In Progress` on `codex/qa-cloudline-ci-01`. It owns
-  the canonical Quality workflow and packaged Desktop driver helper while
-  revalidating the Gate 0 jobs against the regression and QA commits. The
-  previous PR #194 failures are confirmed stale: they predate the Lease,
-  atomicity, stylesheet, and event-driven assertion fixes.
+- `QA-CLOUDLINE-CI-01` is in `Review` on `codex/qa-cloudline-ci-01`. It keeps
+  the canonical Quality jobs intact, adds loopback proxy bypass to Desktop and
+  packaged jobs, and updates the packaged driver helper to the durable
+  cancellation and suspended-state contracts. The local Gate 0 matrix is
+  green; the previous PR #194 failures are confirmed stale and predate the
+  Lease, atomicity, stylesheet, and event-driven assertion fixes.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed
