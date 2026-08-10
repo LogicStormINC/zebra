@@ -1,5 +1,25 @@
 # Progress Log
 
+## 2026-08-10 ZNX-GOALPLAN-01 Goal/Plan v1 lifecycle
+
+- started red-first from exact Zebra base `0a81c6d` on
+  `codex/znx-goal-plan-v1`, then combined cleanly with Gate 2 `aa8c4d5`
+- reused the existing Stable Task, `SessionPlan`, `agent.plan`, `PLAN_UPDATED`,
+  and `Session.task_plan` paths; root Goal remains stable while the latest Plan
+  persists across continuation, retry, suspend/resume, reconstruction, and rollover
+- normal completion now receives one bounded Plan-closing opportunity and then
+  suspends with `task_plan_incomplete` if pending/in-progress work remains;
+  cancelled/closed Plans permit but never fabricate Goal completion
+- deterministic WAITING_INPUT and real workspace snapshot/resume E2E paths pass;
+  Goal/Plan plus Gate 2 targeted validation is `136 passed`
+- full pytest is `2085 passed, 9 failed, 9 skipped`, matching the untouched
+  exact-base failure set; release eval is `10/10`, changed-path Ruff/compileall
+  and diff-check pass, and full static/file-size findings are inherited
+- FinOS compatibility smoke is `23 passed` across Stable Task follow-up,
+  clarification, retry/resume, WAITING_INPUT, public conversation, and model selection
+- no Planner Agent, sub-agent, scheduler, finance/Review workflow, GUI, FinOS
+  source, stable branch, provider, or deployment change was added
+
 ## 2026-08-02 AOR-DEF-01 governance P1 scope and size correction
 
 - task-card `Owned paths` now explicitly names

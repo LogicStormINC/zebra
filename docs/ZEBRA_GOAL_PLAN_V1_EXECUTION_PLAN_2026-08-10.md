@@ -223,7 +223,7 @@ Do not persist or expose hidden reasoning traces as Plan content.
 
 ## 5. Implementation card — ZNX-GOALPLAN-01
 
-- Status: **Ready now**
+- Status: **Done**
 - Branch: `codex/znx-goal-plan-v1`
 - Type: Zebra-only generic runtime
 - Depends on: current `codex/finos-runtime-next`

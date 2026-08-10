@@ -81,6 +81,12 @@ adaptive execution boundary is specified in
 - correlated model, tool, approval, clarification, artifact, memory, and trace evidence
 - backend-internal handoff safety contracts with authority narrowing and side-effect replay guards
 - stable Task projection, cross-Segment event cursor, and active-Segment command routing
+- stable Task Goal derived from the root request, so ordinary follow-ups refine
+  the same work without replacing its objective
+- one Agent-owned durable Plan restored across continuation, retry, suspension,
+  worker reconstruction, and internal Segment rollover
+- completion coherence that keeps pending or in-progress Plan work out of the
+  normal completed state without treating Plan closure as proof of Goal success
 - bounded prior user/Assistant checkpoints for context-correct terminal follow-ups
 
 ### Runtime, policy, and tools

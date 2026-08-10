@@ -34,7 +34,7 @@ This is a product/runtime priority change, not a hard technical dependency on Ga
 
 ## 2. New card — ZNX-GOALPLAN-01
 
-- Status: **Ready now**
+- Status: **Done**
 - Suggested branch: `codex/znx-goal-plan-v1`
 - Suggested role: `CORE / RUNTIME / STORAGE / EVAL / QA`
 - Depends on: current Zebra next runtime substrate
@@ -73,6 +73,25 @@ Start with red tests for:
 - no-Plan one-shot compatibility.
 
 Then make the smallest production changes required by those tests.
+
+### Completion evidence
+
+- Exact implementation base: `0a81c6dd02d65e28f0075cc3f70d5471df20c9b9`.
+- Branch: `codex/znx-goal-plan-v1`; implementation commit: `b2b7f65`.
+- Reused `SessionPlan`, `agent.plan`, `PLAN_UPDATED`, `Session.task_plan`, and
+  the Stable Task/Segment spine; no Planner service or second task engine was added.
+- Goal/Plan plus Gate 2 compatibility set: `136 passed`, with the one
+  exact-base cancellation-streaming failure intentionally deselected.
+- Full suite after combining with Gate 2: `2085 passed, 9 failed, 9 skipped`;
+  the same nine failures reproduce on the untouched exact base.
+- Release eval: `10/10` passed. Changed-path Ruff, compileall, and diff-check pass.
+- Full Ruff improves from 13 exact-base findings to 11; full Mypy retains the
+  same 13 exact-base findings; file-size retains the same 13 exact-base paths.
+  Touched oversized composition files shrink from `552 -> 536` and `538 -> 522` lines.
+- FinOS read-only compatibility smoke: `23 passed`, covering Stable Task
+  follow-up, clarification, retry/resume, WAITING_INPUT reconciliation, public
+  conversation, and model selection; no compatibility regression was found.
+- No FinOS source, stable integration branch, GUI, provider, or deployment state changed.
 
 ### Hard non-goals
 

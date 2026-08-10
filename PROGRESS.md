@@ -5,7 +5,19 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-07-29`
+- Snapshot date: `2026-08-10`
+- `ZNX-GOALPLAN-01` closes the existing Plan lifecycle on
+  `codex/znx-goal-plan-v1` from exact base `0a81c6d`, then combines cleanly with
+  Gate 2 at `aa8c4d5`. Stable Task now projects its root Goal and latest mutable
+  durable Plan, reconstructs both for continuation/retry/resume/worker paths,
+  and rejects normal completion while Plan steps remain open. Closed Plans do
+  not fabricate Goal success, and no-Plan one-shot tasks remain compatible.
+  Goal/Plan plus Gate 2 targeted validation is `136 passed`; full pytest is
+  `2085 passed, 9 failed, 9 skipped` with the exact-base failure set. Release
+  eval is `10/10`; changed-path Ruff/compileall/diff-check pass. Full Ruff is
+  11 inherited findings versus 13 at exact base, while Mypy and file-size retain
+  the same 13 inherited findings. FinOS compatibility smoke is `23 passed`; no
+  FinOS source, stable branch, GUI, provider, or deployment change was made.
 - AOR-DEF-01 follow-up review closes durable continuation evidence,
   shared capability preflight, and trusted skill scope/state/content-digest
   checks; focused follow-up tests are 70 passed and no deployment occurred.
