@@ -11,6 +11,7 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -55,6 +56,41 @@ def wait_for_api() -> dict[str, Any]:
         except (OSError, urllib.error.URLError):
             time.sleep(0.25)
     raise AssertionError("API did not become ready")
+
+
+def wait_for_session(
+    session_id: str,
+    predicate: Callable[[dict[str, Any]], bool],
+    *,
+    timeout: float = 40,
+) -> dict[str, Any]:
+    deadline = time.monotonic() + timeout
+    session: dict[str, Any] = {}
+    while time.monotonic() < deadline:
+        session = request_json("GET", f"{API_URL}/tasks/{session_id}", headers=AUTH_HEADERS)
+        if predicate(session):
+            return session
+        time.sleep(0.25)
+    raise AssertionError(f"session {session_id} did not reach the expected state: {session!r}")
+
+
+def wait_for_stream_event(session_id: str, event_type: str, *, timeout: float = 40) -> str:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        request = urllib.request.Request(
+            f"{API_URL}/tasks/{session_id}/stream",
+            headers=AUTH_HEADERS,
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=10) as response:
+                text = str(response.read().decode())
+        except (OSError, urllib.error.URLError):
+            time.sleep(0.25)
+            continue
+        if f'"event_type": "{event_type}"' in text:
+            return text
+        time.sleep(0.25)
+    raise AssertionError(f"session stream did not contain {event_type!r}")
 
 
 class PackagedApp:
@@ -233,6 +269,15 @@ class PackagedApp:
             )
         )
 
+    def wait_active_session_id(self, *, timeout: float = 30) -> str:
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            session_id = self.active_session_id()
+            if session_id:
+                return session_id
+            time.sleep(0.25)
+        raise AssertionError("packaged UI did not persist the active session id")
+
     def screenshot(self, path: Path) -> None:
         response = request_json(
             "GET", f"{DRIVER_URL}/session/{self.session_id}/screenshot"
@@ -254,6 +299,8 @@ class PackagedApp:
 def start_api(repository: Path, database: Path) -> subprocess.Popen[bytes]:
     environment = {
         **os.environ,
+        "NO_PROXY": "127.0.0.1,localhost",
+        "no_proxy": "127.0.0.1,localhost",
         "ZEBRA_API_AUTH_TOKEN": "e2e-token",
         "ZEBRA_DATABASE_URL": str(database),
         "ZEBRA_E2E_API_KEY": "e2e-secret",
@@ -296,6 +343,8 @@ def stop_process(process: subprocess.Popen[Any]) -> None:
 
 
 def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
+    os.environ["NO_PROXY"] = "127.0.0.1,localhost"
+    os.environ["no_proxy"] = "127.0.0.1,localhost"
     repository = Path(__file__).resolve().parents[1]
     desktop = repository / "UI" / "desktop"
     temporary = Path(tempfile.mkdtemp(prefix="zebra-packaged-e2e-"))
@@ -323,9 +372,16 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         steps.append("runtime-profile-no-fallback")
 
         app.submit("E2E_STOP_STREAM packaged cancellation")
-        app.wait_body("stop-003|", timeout=40)
+        stop_session_id = app.wait_active_session_id()
+        wait_for_session(
+            stop_session_id,
+            lambda session: int(session.get("current_sequence", 0)) >= 4,
+        )
         app.click_aria("停止任务")
+        wait_for_session(stop_session_id, lambda session: session.get("status") == "cancelled")
         app.wait_body("已停止")
+        stop_events = wait_for_stream_event(stop_session_id, "session_cancelled")
+        assert '"event_type": "session_completed"' not in stop_events
         steps.append("cancellation")
 
         app.submit("E2E_APPROVAL packaged approval")
@@ -333,7 +389,7 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         app.wait_body("command.run")
         app.click_text("批准")
         app.wait_body("APPROVAL_COMPLETE", timeout=40)
-        session_id = app.active_session_id()
+        session_id = app.wait_active_session_id()
         session = request_json(
             "GET", f"{API_URL}/tasks/{session_id}", headers=AUTH_HEADERS
         )
@@ -347,12 +403,13 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         steps.append("approval-real-runtime")
 
         app.submit("E2E_FAILURE packaged failure")
-        app.wait_body("失败 ·", timeout=40)
-        failure_session_id = app.active_session_id()
+        app.wait_body("任务已暂停", timeout=40)
+        app.wait_body("已暂停")
+        failure_session_id = app.wait_active_session_id()
         failure_session = request_json(
             "GET", f"{API_URL}/tasks/{failure_session_id}", headers=AUTH_HEADERS
         )
-        assert failure_session["status"] == "failed"
+        assert failure_session["status"] == "suspended"
         steps.append("failure-visible")
 
         stop_process(api)
@@ -362,11 +419,11 @@ def run(application: Path, evidence_path: Path, screenshot_path: Path) -> None:
         app.refresh()
         app.wait_body("本地运行时已连接", timeout=20)
         app.wait_body("E2E_FAILURE packaged failure", timeout=20)
-        app.wait_body("失败 ·")
+        app.wait_body("任务已暂停")
         recovered_session = request_json(
             "GET", f"{API_URL}/tasks/{failure_session_id}", headers=AUTH_HEADERS
         )
-        assert recovered_session["status"] == "failed"
+        assert recovered_session["status"] == "suspended"
         steps.append("restart-durable-recovery")
 
         app.screenshot(screenshot_path)

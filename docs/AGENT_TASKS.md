@@ -45,6 +45,10 @@ does not authorize production code, migrations or activation of its successor.
   size violation and made long-stream/stop Playwright regressions deterministic
   after the Python baseline. Its visual contract stays unchanged; Node 22 build,
   static checks, file-size validation, and all eight E2E tests pass.
+- `QA-CLOUDLINE-CI-01` is `In Progress` on
+  `codex/qa-cloudline-ci-01`. It owns the canonical Quality workflow and the
+  packaged Desktop driver helper needed to revalidate the full Gate 0 matrix
+  after the Lease, atomicity, stylesheet, and event-driven assertion fixes.
 - `CLOUD-INTEGRATION-REG-01` is `Review` on
   `codex/cloud-integration-regressions-01`. It repairs the branch-specific
   recovered-Lease heartbeat checkpoint regression and restores lazy local API
@@ -396,6 +400,43 @@ than timing- or multi-match-dependent.
 #### Explicit Non-Goals
 
 - no API/Worker, Python, migration, Profile or Trench implementation work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+### QA-CLOUDLINE-CI-01 - Canonical Gate 0 Quality Baseline
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Suggested role: `QA / CI`
+- Depends on: `QA-CLOUDLINE-PY-01` review commit `908f1989ca32` and
+  `QA-CLOUDLINE-DESKTOP-01` review commit `debdaa16`
+- Branch: `codex/qa-cloudline-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/qa-cloudline-ci-01/zebra-agent`
+- Owned paths: `.github/workflows/quality.yml`,
+  `scripts/packaged_desktop_e2e.py`, this task card, and the focused status in
+  `PROGRESS.md`
+
+#### Goal
+
+Close the Gate 0 canonical quality baseline after the two QA branches. Keep
+the workflow's existing Backend, Desktop, packaged Tauri, gVisor, quota and OS
+sandbox jobs; repair only verified environment or contract drift exposed by the
+new commits.
+
+#### Acceptance
+
+- The canonical workflow is syntactically valid and explicitly bypasses proxy
+  routing for loopback API/provider traffic.
+- Packaged Tauri E2E follows the durable suspended-state and event-driven
+  streaming contracts rather than stale terminal/fixed-fragment assertions.
+- Local reproductions pass for Backend quality, Desktop checks/build/E2E, and
+  packaged helper static validation; remote job evidence is reported separately
+  when the branch is not pushed.
+- No CI job is removed, made advisory, or hidden behind a broad retry.
+
+#### Explicit Non-Goals
+
+- no Profile, command API, recovery, Helm, gVisor implementation, Auth or Trench
+  feature work
 - no change to the original dirty `zebra-cloud-trench` worktree
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
