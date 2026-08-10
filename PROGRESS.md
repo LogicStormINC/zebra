@@ -74,6 +74,10 @@
   stop/cancel/suspend/resume now use the durable command seam and Worker-side
   control service; local operator behavior remains compatible. Full validation
   is green: `2134 passed, 271 skipped`; `make check` passes.
+- `CLOUD-LIVE-WIRE-CON-01` is `Review` on `codex/cloud-live-wire-con-01`. ADR-024
+  and the shared post-commit publisher seam freeze durable-first ordering,
+  duplicate tolerance and replay-barrier degradation before Redis composition.
+  Full validation is green: `2138 passed, 271 skipped`; `make check` passes.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

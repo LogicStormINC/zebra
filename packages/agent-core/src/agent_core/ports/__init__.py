@@ -38,6 +38,7 @@ from agent_core.ports.artifact_store import ArtifactStorePort
 from agent_core.ports.clock import ClockPort
 from agent_core.ports.cloud_artifact_payload_store import CloudArtifactPayloadStorePort
 from agent_core.ports.cloud_control_plane import CloudControlPlane
+from agent_core.ports.committed_event_publisher import CommittedEventPublisherPort
 from agent_core.ports.context_compiler import ContextCompilerPort, RuntimeEvidenceInput
 from agent_core.ports.context_lifecycle_store import (
     ContextLifecycleCommitResult,
@@ -165,6 +166,7 @@ __all__ = [
     "ContextCompilerPort",
     "ContextMaterializationPort",
     "CloudControlPlane",
+    "CommittedEventPublisherPort",
     "ContextLifecycleCommitResult",
     "ContextLifecycleStorePort",
     "ConversationCompactionResult",

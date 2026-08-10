@@ -839,6 +839,56 @@ Route cloud stop/cancel/suspend/resume controls through the durable command
 - Worker control claims invoke `SessionControlService` only after command
   acceptance; API composition does not build Runtime/Harness for these routes.
 
+### CLOUD-LIVE-WIRE-CON-01 - Event Commit/Live Publish Contract
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `CORE / STORAGE / INTEGRATIONS`
+- Depends on: `CLOUD-COMMAND-CTRL-01` review commit `74d830eb`
+- Branch: `codex/cloud-live-wire-con-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-live-wire-con-01/zebra-agent`
+- Owned paths: `packages/agent-core/src/agent_core/ports/committed_event_publisher.py`,
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `packages/agent-storage/src/agent_storage/live_event_store.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `tests/agent_storage/test_live_event_publication_contract.py`,
+  `docs/ADR-024_Event提交后实时发布合同.md`, this task card, and the focused
+  status in `PROGRESS.md`
+
+#### Goal
+
+Freeze one shared post-commit publication seam for canonical Session Events.
+Durable append success is authoritative; live publish is duplicate-tolerant and
+degrades without rolling back or hiding the committed Event. Replay captures a
+live barrier before durable replay and filters by durable sequence.
+
+#### Acceptance
+
+- A store decorator publishes only the Event returned by a successful durable
+  append; append failures never invoke the publisher.
+- Publisher exceptions do not turn a committed Event into an API/Worker failure;
+  duplicate retries may publish again and remain safe for the live consumer.
+- The contract documents SQLite direct append and PostgreSQL transaction seams;
+  transaction-boundary wiring remains the explicit successor task. Focused
+  contract tests (`28` including live fanout) and the full suite (`2138 passed,
+  271 skipped`) are green; Ruff, Mypy (605 files), file-size gate (1224 files),
+  and eval release gate (10/10) pass.
+
+#### Explicit Non-Goals
+
+- no Redis composition, HTTP/SSE live tail, production recovery or deployment
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- ADR-024 freezes the commit/publish ordering and replay barrier. The new
+  `CommittedEventPublisherPort` plus `PostCommitPublishingEventStore` provide a
+  shared direct-append seam without adding Redis to Core or making live delivery
+  authoritative.
+- PostgreSQL aggregate transactions that call `append_event_in_transaction`
+  remain explicitly unwired until `CLOUD-LIVE-PUBLISH-01` supplies a commit-safe
+  composition/outbox hook.
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`
