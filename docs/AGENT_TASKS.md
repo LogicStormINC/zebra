@@ -30,6 +30,11 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `CLOUD-TRN-NEXT-PLAN-01` is `Review` on
+  `codex/cloud-trench-next-plan-01`. It records the evidence-backed path from
+  cloud-mainline stabilization to the first production Trench read-only slice.
+  All newly reserved successor IDs remain `Locked`; the only immediate closeout
+  remains `CLOUD-INTEGRATION-REG-01`.
 - `CLOUD-INTEGRATION-REG-01` is `Review` on
   `codex/cloud-integration-regressions-01`. It repairs the branch-specific
   recovered-Lease heartbeat checkpoint regression and restores lazy local API
@@ -226,6 +231,60 @@ confirmed repo memory by current-task relevance within a token budget.
 - no automatic child Session or Subagent creation to escape a context limit
 
 ## Cloud Integration Stabilization Board
+
+### CLOUD-TRN-NEXT-PLAN-01 - Cloud And Trench Next Execution Plan
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `ARCH / PM / QA`
+- Depends on: `CLOUD-INTEGRATION-REG-01` review evidence; this docs branch is
+  intentionally stacked on its implementation commit and must merge after it
+- Branch: `codex/cloud-trench-next-plan-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-trench-next-plan-01/zebra-agent`
+- Owned paths:
+  `docs/Zebra Cloud与Trench下一阶段执行计划_v1.0.md` (new), this card and
+  successor reservation table in `docs/AGENT_TASKS.md`, and the focused current
+  snapshot in `PROGRESS.md`
+
+#### Goal
+
+Replace an ambiguous “continue cloud/Trench” direction with one evidence-backed,
+dependency-ordered execution plan that first restores a green cloud baseline,
+then closes production composition/live/recovery gates, and finally delivers a
+read-only Trench vertical slice.
+
+#### Acceptance
+
+- [x] Code, package dependencies, composition roots, CI, current task state and
+  authoritative architecture/phase/Embedded documents are inspected.
+- [x] Verified blockers are separated from already completed contracts/adapters.
+- [x] Successor tasks have stable IDs, dependency order, reserved path boundaries,
+  acceptance, non-goals and planning estimates.
+- [x] No successor is activated and no production code, migration or Trench file
+  changes as part of this planning card.
+- [x] The plan preserves `CLOUD-INTEGRATION-REG-01` as the first merge and keeps
+  the concurrent original-worktree changes outside this branch.
+
+#### Locked Successor Reservations
+
+The full scope and acceptance for each reservation are authoritative in
+`docs/Zebra Cloud与Trench下一阶段执行计划_v1.0.md`. Before implementation,
+exactly one eligible row must be expanded into a claimed card with a human owner,
+branch, worktree and frozen Owned paths.
+
+| Gate | Locked task IDs | Unlock condition |
+| --- | --- | --- |
+| 0 | `QA-CLOUDLINE-PY-01`, `QA-CLOUDLINE-DESKTOP-01`, `QA-CLOUDLINE-CI-01` | regression fix merged and concurrent changes handed off |
+| 1 | `ARCH-CONFIG-BOUNDARY-01`, `ARCH-CONFIG-INTEGRATIONS-01`, `ARCH-CONFIG-SECURITY-01`, `CLOUD-DEPLOY-PROFILE-CON-01`, `CLOUD-DEPLOY-PROFILE-01`, `CLOUD-COMMAND-API-CON-01`, `CLOUD-COMMAND-RUN-01`, `CLOUD-COMMAND-CTRL-01` | Gate 0 canonical CI green, then each listed dependency |
+| 2 | `CLOUD-LIVE-WIRE-CON-01`, `CLOUD-LIVE-PUBLISH-01`, `CLOUD-LIVE-SSE-01`, `CLOUD-REC-PROD-CON-01`, `CLOUD-REC-PG-PITR-01`, `CLOUD-REC-S3-01`, `CLOUD-DEPLOY-HELM-01`, `CLOUD-K8S-GVISOR-E2E-01`, `CLOUD-REAL-SVC-CI-01` | command/profile baseline plus task-specific infrastructure |
+| 3 | `EMB-TOOL-CON-01`, `EMB-AUTH-CON-01`, `EMB-AUTH-PG-01`, `EMB-AUTH-HTTP-01`, `EMB-AUTH-01`, `EMB-AGUI-CMD-01`, `EMB-AGUI-STREAM-01`, `EMB-AGUI-API-01`, `EMB-HOST-GW-01` | Gate 0 for contract cards; real-service cloud baseline for adapters/endpoints |
+| 4 | `TRN-READ-PLAN-01`, `TRN-READ-01`, `TRN-CPK-BFF-01`, `TRN-PANEL-01`, `EMB-TRN-READ-E2E-01` | Gate 0 plus stable Zebra contracts unlock Trench planning; implementations keep their listed dependencies |
+
+#### Explicit Non-Goals
+
+- no implementation activation, code cleanup, migration allocation or CI edit
+- no P4 shared-state, P5 analysis, P6 writeback, Mem0 runtime or Agent Definition runtime
+- no claim that Compose evidence equals Kubernetes production readiness
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 

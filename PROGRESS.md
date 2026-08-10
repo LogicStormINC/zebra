@@ -5,7 +5,17 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-08-05`
+- Snapshot date: `2026-08-10`
+- `CLOUD-TRN-NEXT-PLAN-01` is in `Review` on
+  `codex/cloud-trench-next-plan-01`, intentionally stacked after the regression
+  fix. The inspected next-step plan is recorded in
+  [Zebra Cloud 与 Trench 下一阶段执行计划 v1.0](./docs/Zebra%20Cloud与Trench下一阶段执行计划_v1.0.md).
+  It makes the first product milestone the production Trench read-only vertical
+  slice, but first gates it on a green cloud mainline, coherent PostgreSQL +
+  gVisor production composition, stateless command-only API, durable replay plus
+  Redis live tail, real-service CI, production recovery and deployment evidence.
+  All new successor IDs remain `Locked`; no P4+, Memory runtime or Agent
+  Definition runtime work is activated.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed
