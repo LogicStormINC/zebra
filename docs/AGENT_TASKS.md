@@ -67,15 +67,15 @@ does not authorize production code, migrations or activation of its successor.
   `codex/cloud-integration-regressions-01`. It repairs the branch-specific
   recovered-Lease heartbeat checkpoint regression and restores lazy local API
   Store composition without weakening explicit cloud fail-closed startup.
-- `EMB-AGUI-CMD-01` is `In Progress` on `codex/cloud-real-svc-ci-01`. The
+- `EMB-AGUI-CMD-01` is `Review` on `codex/cloud-real-svc-ci-01`. The
   activated slice owns only the API AG-UI command route/composition and focused
   tests; it submits run/resume/stop intents to the existing durable command
   service and does not construct Worker execution in the route.
-- `EMB-AGUI-STREAM-01` is `In Progress` on `codex/cloud-real-svc-ci-01`.
+- `EMB-AGUI-STREAM-01` is `Review` on `codex/cloud-real-svc-ci-01`.
   The activated slice owns the AG-UI replay/live-tail composition and focused
   SSE tests; durable Event Store replay remains authoritative and no command or
   Worker execution is added here.
-- `EMB-HOST-GW-01` is `In Progress` on `codex/cloud-real-svc-ci-01`. The
+- `EMB-HOST-GW-01` is `Review` on `codex/cloud-real-svc-ci-01`. The
   activated slice owns only the typed Host Tool manifest/invoke adapter,
   workload identity and scope/SSRF/receipt boundaries; it does not add a
   Trench endpoint or business-domain write path.
@@ -1569,7 +1569,7 @@ JWT/JWKS transport bounded and injectable; never persist or log raw bearer data.
 
 ### EMB-AGUI-CMD-01 - AG-UI Command Endpoint
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Suggested role: `API / INTEGRATIONS / QA`
 - Depends on: command control, `EMB-AUTH-HTTP-01`, and `EMB-AGUI-CON-01`
@@ -1602,9 +1602,18 @@ official `RunAgentInput` where applicable, and append only a command intent.
 - no AG-UI SSE/replay route (owned by `EMB-AGUI-STREAM-01`)
 - no Worker execution, Redis fan-out, JWT/JWKS, Host Tool Gateway or Trench code
 
+#### Review Evidence
+
+- `POST /agui/commands` and the thread/run aliases validate the bounded
+  `run`/`resume`/`stop` envelope, resolve the active durable Segment and call
+  only `app.submit_command`.
+- Focused command tests: `5 passed`; the combined command, auth and stream
+  matrix is `204 passed, 3 skipped`. A source guard proves the route does not
+  import or construct Worker execution services.
+
 ### EMB-AGUI-STREAM-01 - AG-UI Replay And Stream Endpoint
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Suggested role: `API / INTEGRATIONS / QA`
 - Depends on: `EMB-AGUI-CMD-01`, live SSE, `EMB-AUTH-HTTP-01`, and
@@ -1639,9 +1648,18 @@ it.
 - no new Event Store, Redis schema, command behavior, JWT/JWKS or Trench code
 - no API-side Worker execution or Copilot Runtime
 
+#### Review Evidence
+
+- `GET /agui/threads/{threadId}/runs/{runId}/stream` replays from an exact
+  durable cursor, polls the Event Store as the lossless fallback, and emits
+  one opaque cursor per projected SSE event. Unknown durable events advance the
+  cursor without inventing business output.
+- Golden replay/reconnect/live-tail and malformed-cursor tests pass; the AG-UI
+  stream slice is included in the `204 passed, 3 skipped` integration matrix.
+
 ### EMB-HOST-GW-01 - Typed Host Tool Gateway
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Suggested role: `INTEGRATIONS / SECURITY / QA`
 - Depends on: `EMB-TOOL-CON-01` and `EMB-AUTH-01`
@@ -1676,6 +1694,34 @@ metadata.
 - no Trench read Tool implementation or business schema knowledge
 - no API route, Worker Harness, JWT decoder, replay store or Redis dependency
 - no destructive/write Host Tool admission beyond the declared contract
+
+#### Review Evidence
+
+- The typed gateway reuses `ToolContract`, verifies manifest digest and Host
+  workload identity, intersects Grant/manifest scopes, validates resource and
+  idempotency bindings, and returns bounded recoverable `ToolResult`/receipt
+  metadata for timeout, transport, HTTP and output-limit failures.
+- HTTPS/SSRF, secret-redaction and failure mapping tests pass: `7 passed`; the
+  Integrations package suite is `143 passed, 3 skipped`, with changed-path
+  Ruff/Mypy and `uv lock --check` green.
+
+### EMB-AGUI-API-01 - Production AG-UI Gate
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `API / INTEGRATIONS / QA`
+- Depends on: `EMB-AGUI-CMD-01` and `EMB-AGUI-STREAM-01`
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: integration evidence, this task card and focused `PROGRESS.md`
+
+#### Review Evidence
+
+- Command-only API composition, durable AG-UI replay/live tail, and existing
+  Host Grant HTTP gating are integrated without API-side Worker execution.
+- The combined API/Integrations matrix passes `204 passed, 3 skipped`; this
+  parent remains `Review` until the branch is merged and the release gates are
+  repeated on the resulting mainline.
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 

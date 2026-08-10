@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from urllib.parse import urlsplit
 
 import httpx
-from agent_security.ssrf import (  # type: ignore[import-untyped]
+from agent_security.ssrf import (
     HostNameResolver,
     SsrfError,
     resolve_and_validate,

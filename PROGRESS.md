@@ -139,19 +139,25 @@
   PyJWT decoder with bounded injectable JWKS resolution now composes with the
   PostgreSQL registry/replay authorizer; the real Host PostgreSQL/API matrix is
   `5 passed`, with no raw token in HTTP/audit evidence.
-- `EMB-AGUI-CMD-01` is `In Progress` on `codex/cloud-real-svc-ci-01`. The
-  activated API slice is limited to a bounded `run`/`resume`/`stop` command
-  envelope that resolves `threadId` to the active durable Segment and calls
-  only the existing command service; the AG-UI stream and Trench slices remain
-  separate gates.
-- `EMB-AGUI-STREAM-01` is `In Progress` on `codex/cloud-real-svc-ci-01`. The
-  next slice is the AG-UI SSE replay/live-tail composition: exact durable
-  cursor validation, official event encoding and interrupt/error/terminal
-  projection, with durable polling as the lossless fallback.
-- `EMB-HOST-GW-01` is `In Progress` on `codex/cloud-real-svc-ci-01`. The
-  gateway slice is limited to typed Host manifest/invoke transport, workload
-  identity, Grant/manifest scope intersection, SSRF validation and bounded
-  receipts; Trench business Tools remain Gate 4 work.
+- `EMB-AGUI-CMD-01` is `Review` on `codex/cloud-real-svc-ci-01`. The bounded
+  `run`/`resume`/`stop` envelope resolves `threadId` to the active durable
+  Segment and calls only the existing command service; focused command tests
+  pass (`5`), with no Worker execution import or construction.
+- `EMB-AGUI-STREAM-01` is `Review` on `codex/cloud-real-svc-ci-01`. The AG-UI
+  SSE route validates exact durable cursors, replays and live-tails the Event
+  Store, and emits official projected events with a lossless polling fallback.
+  Replay/reconnect/live-tail tests pass in the combined matrix.
+- `EMB-AGUI-API-01` is `Review` on `codex/cloud-real-svc-ci-01`. Command-only
+  API composition, durable AG-UI replay/live tail and existing Host Grant HTTP
+  gating pass together; it remains a parent review gate until this branch is
+  merged and mainline gates are repeated.
+- `EMB-HOST-GW-01` is `Review` on `codex/cloud-real-svc-ci-01`. The typed Host
+  gateway verifies manifest digest and workload identity, intersects scopes,
+  validates resource/idempotency/SSRF boundaries and returns bounded receipts;
+  focused tests pass (`7`) and the Integrations package is `143 passed,
+  3 skipped`.
+- Gate 3 combined API/Integrations matrix is `204 passed, 3 skipped`; no Trench
+  business Tool or Kubernetes gVisor E2E completion is claimed.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

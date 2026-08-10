@@ -295,14 +295,14 @@ flowchart TD
 
 #### EMB-TOOL-CON-01 — Host Tool contract extension
 
-- 状态：`Locked`；预计：6-10h；依赖：`EMB-HOST-CON-01`。
+- 状态：`Review`；分支：`codex/cloud-real-svc-ci-01`；预计：6-10h。
 - Reserved paths：focused `agent-tools` contracts/tests。
 - 交付：在现有 ToolDefinition/ToolResult 上增加 execution location、scope、risk、timeout、
   size、idempotency 和 receipt；不建立平行 Tool 模型。
 
 #### EMB-AUTH-CON-01 — Host Grant/JWT 安全合同
 
-- 状态：`Locked`；预计：6-10h；依赖：`EMB-HOST-CON-01` 和 Gate 0。
+- 状态：`Review`；分支：`codex/cloud-real-svc-ci-01`；预计：6-10h。
 - Reserved paths：focused Security contract/ADR/tests。
 - 交付：alg pin、issuer/JWKS、aud/jti、clock skew、origin、namespace/resource/scope、
   RFC 9457 错误和 JWT library 决策。
@@ -310,28 +310,28 @@ flowchart TD
 
 #### EMB-AUTH-PG-01 — Host registry 与 replay ledger
 
-- 状态：`Locked`；预计：8-12h；依赖：Auth 合同、生产 Profile 和 real-service baseline。
+- 状态：`Review`；分支：`codex/cloud-real-svc-ci-01`；预计：8-12h。
 - Reserved paths：下一可用 migration、focused PostgreSQL registry/grant audit adapter/tests。
 - 交付：Host issuer/tenant registry、grant audit、jti replay ledger；激活时再分配迁移号。
 - 验收：真实 PG 下原子 replay reject、审计完整、namespace 隔离。
 
 #### EMB-AUTH-HTTP-01 — API auth middleware 与 exact CORS
 
-- 状态：`Locked`；预计：6-10h；依赖：Auth PG。
+- 状态：`Review`；分支：`codex/cloud-real-svc-ci-01`；预计：6-10h。
 - Reserved paths：API auth middleware/http composition、config mapping、tests。
 - 交付：非本地路由强制 Grant，CORS 使用 registry exact origin，不反射任意 origin。
 - 验收：本地兼容；云端无 grant、错误 scope/origin 均在业务处理前拒绝。
 
 #### EMB-AUTH-01 — Production Host auth gate
 
-- 状态：`Locked`；预计：2-4h；依赖：Auth contract、PG 和 HTTP 三个子任务。
+- 状态：`Review`；分支：`codex/cloud-real-svc-ci-01`；预计：2-4h。
 - Reserved paths：integration evidence doc、registry/progress closeout。
 - 交付：关闭既有 P3 auth parent gate，不再混合合同、migration 和 middleware 代码。
 - 验收：真实服务上的签名、重放、scope、origin、审计和本地兼容矩阵全部通过。
 
 #### EMB-AGUI-CMD-01 — AG-UI command endpoint
 
-- 状态：`In Progress`；预计：6-10h；依赖：command control、Auth HTTP、AG-UI contract。
+- 状态：`Review`；分支：`codex/cloud-real-svc-ci-01`；预计：6-10h。
 - Reserved paths：AG-UI API command route/composition、tests。
 - 交付：`POST /agui/commands`（及其 thread/run 资源别名）承载
   `run`/`resume`/`stop` 与 RFC 9457 mapping；只调用 durable command service。
@@ -339,21 +339,21 @@ flowchart TD
 
 #### EMB-AGUI-STREAM-01 — AG-UI replay/stream endpoint
 
-- 状态：`In Progress`；预计：6-10h；依赖：live SSE、Auth HTTP、AG-UI contract。
+- 状态：`Review`；分支：`codex/cloud-real-svc-ci-01`；预计：6-10h。
 - Reserved paths：AG-UI streaming route/projection composition、golden fixtures/tests。
 - 交付：durable replay、live tail、cursor、interrupt/resume/error 投影。
 - 验收：断线重连无消息丢失或重复业务动作，未知事件向前兼容。
 
 #### EMB-AGUI-API-01 — Production AG-UI gate
 
-- 状态：`Locked`；预计：2-4h；依赖：AG-UI command 与 stream 子任务。
+- 状态：`Review`；分支：`codex/cloud-real-svc-ci-01`；预计：2-4h。
 - Reserved paths：integration evidence doc、registry/progress closeout。
 - 交付：关闭既有 P3 parent gate，不再混合实现代码。
 - 验收：command-only API、durable replay、auth、real-service evidence 全部通过。
 
 #### EMB-HOST-GW-01 — Typed Host Tool Gateway
 
-- 状态：`In Progress`；预计：8-12h；依赖：Tool contract 与 Auth HTTP。
+- 状态：`Review`；分支：`codex/cloud-real-svc-ci-01`；预计：8-12h。
 - Reserved paths：新 `agent-integrations/.../host_tools/`、Security transport seam、tests。
 - 交付：manifest discovery/invoke、workload identity、scope intersection、SSRF、receipt。
 - 验收：timeout/4xx/5xx/invalid body 为结构化 recoverable result；secret 不进 model/Sandbox。
