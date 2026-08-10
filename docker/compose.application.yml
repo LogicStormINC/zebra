@@ -18,6 +18,9 @@ x-zebra-cloud-environment: &zebra-cloud-environment
   ZEBRA_S3_REGION: ${ZEBRA_S3_REGION:-us-east-1}
   ZEBRA_S3_KEY_PREFIX: ${ZEBRA_S3_KEY_PREFIX:-zebra/artifacts/v1}
   ZEBRA_API_AUTH_TOKEN: ${ZEBRA_API_AUTH_TOKEN:-}
+  ZEBRA_LIVE_REDIS_URL: ${ZEBRA_LIVE_REDIS_URL:-redis://redis-live:6379/0}
+  ZEBRA_LIVE_STREAM_MAX_LENGTH: ${ZEBRA_LIVE_STREAM_MAX_LENGTH:-1000}
+  ZEBRA_LIVE_STREAM_KEY_PREFIX: ${ZEBRA_LIVE_STREAM_KEY_PREFIX:-zebra:live:v1}
 
 x-zebra-application-build: &zebra-application-build
   context: ..

@@ -11,8 +11,8 @@ separate main-container lifecycle; it never owns the dependency containers.
 
 The application overlay requires the PostgreSQL, object-storage and live-state
 contracts already recorded by the cloud mainline. It uses the explicit cloud
-profile and fails closed on missing configuration; Redis is not yet selected by
-API/Worker startup.
+profile and fails closed on missing configuration; API and Worker use the
+explicit `ZEBRA_LIVE_REDIS_URL` to publish committed Events after durable append.
 
 ## Service and authority boundaries
 
@@ -86,8 +86,7 @@ docker compose \
 The dependency stack and its volumes remain intact.
 
 The application image uses the explicit `cloud` profile and requires the full
-PostgreSQL, namespace, signing-key and S3 configuration. Redis live fan-out is
-not selected by API/Worker startup in this slice. Application Compose defaults
+PostgreSQL, namespace, signing-key, S3 and live Redis configuration. Application Compose defaults
 the Python runtime base to the API-confirmed `linux/amd64` mirror
 `swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/python:3.12-slim-bookworm`
 for local/CI pulls; set `ZEBRA_APPLICATION_PYTHON_BASE_IMAGE` to the pinned

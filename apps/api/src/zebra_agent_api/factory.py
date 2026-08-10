@@ -4,12 +4,13 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from agent_integrations import GitHubPullRequestTransport
+from agent_integrations import GitHubPullRequestTransport, RedisCommittedEventPublisher
 from agent_security import CredentialBroker
 from agent_storage import (
     CloudCompositionSettings,
     ControlPlaneStores,
     compose_control_plane_stores,
+    with_committed_event_publisher,
 )
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
@@ -43,6 +44,21 @@ def create_app(
             storage_authority=active_settings.storage_authority,
             database_path=active_settings.database_url,
             cloud=cloud_composition,
+        )
+    if active_stores is not None and active_settings.live_events.redis_url is not None:
+        namespace = getattr(active_stores, "deployment_namespace", None)
+        if namespace is None and active_settings.deployment == "local":
+            namespace = "local"
+        if not isinstance(namespace, str) or not namespace.strip():
+            raise ValueError("live Redis publishing requires deployment_namespace")
+        active_stores = with_committed_event_publisher(
+            active_stores,
+            RedisCommittedEventPublisher.from_url(
+                active_settings.live_events.redis_url,
+                deployment_namespace=namespace,
+                max_stream_length=active_settings.live_events.stream_max_length,
+                key_prefix=active_settings.live_events.key_prefix,
+            ),
         )
     active_broker = credential_broker
     if active_broker is None:

@@ -9,11 +9,13 @@ from typing import cast
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_core.ports.projection_store import ProjectionStorePort
+from agent_integrations import RedisCommittedEventPublisher
 from agent_storage import (
     CloudCompositionSettings,
     ControlPlaneStores,
     LeaseConflictError,
     compose_control_plane_stores,
+    with_committed_event_publisher,
 )
 from zebra_agent_config import ZebraAgentSettings
 
@@ -188,6 +190,21 @@ def build_worker_loop_service(
         ),
         cloud=cloud_composition,
     )
+    if settings.live_events.redis_url is not None:
+        namespace = getattr(active_stores, "deployment_namespace", None)
+        if namespace is None and settings.deployment == "local":
+            namespace = "local"
+        if not isinstance(namespace, str) or not namespace.strip():
+            raise ValueError("live Redis publishing requires deployment_namespace")
+        active_stores = with_committed_event_publisher(
+            active_stores,
+            RedisCommittedEventPublisher.from_url(
+                settings.live_events.redis_url,
+                deployment_namespace=namespace,
+                max_stream_length=settings.live_events.stream_max_length,
+                key_prefix=settings.live_events.key_prefix,
+            ),
+        )
     active_transaction = worker_projection_transaction
     active_namespace = deployment_namespace
     if settings.storage_authority == "postgresql":

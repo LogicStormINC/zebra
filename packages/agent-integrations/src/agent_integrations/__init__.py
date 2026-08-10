@@ -37,6 +37,7 @@ from agent_integrations.openai_compatible import (
 )
 from agent_integrations.provider_settings import ModelProviderSettings, ScmProviderSettings
 from agent_integrations.redis_live_fanout import (
+    RedisCommittedEventPublisher,
     RedisLiveEventError,
     RedisLiveEventFanout,
 )
@@ -86,6 +87,7 @@ __all__ = [
     "ModelProviderSettings",
     "ScmProviderSettings",
     "RedisLiveEventError",
+    "RedisCommittedEventPublisher",
     "RedisLiveEventFanout",
     "ModelProviderError",
     "Mem0AgentMemoryGateway",

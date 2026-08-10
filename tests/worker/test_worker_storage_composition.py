@@ -11,8 +11,13 @@ from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId, new_session_id, new_tool_call_id
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness.models import HarnessEventDraft
-from agent_storage import ControlPlaneStores, sqlite_control_plane_stores
-from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
+from agent_integrations import RedisCommittedEventPublisher
+from agent_storage import (
+    ControlPlaneStores,
+    PostCommitPublishingEventStore,
+    sqlite_control_plane_stores,
+)
+from zebra_agent_config import ApiSettings, LiveEventSettings, ModelSettings, ZebraAgentSettings
 from zebra_agent_worker import build_worker_loop_service
 from zebra_agent_worker.context_lifecycle import persist_context_compaction
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
@@ -123,6 +128,32 @@ def test_worker_uses_supplied_stores_for_all_control_plane_services(tmp_path: Pa
     legacy = sqlite_control_plane_stores(legacy_database)
     assert legacy.events.list_for_session(session_id) == []
     assert legacy.sessions.get_session(session_id) is None
+
+
+def test_worker_composition_wraps_event_store_when_live_publisher_is_enabled(
+    tmp_path: Path, monkeypatch
+) -> None:
+    publisher = object()
+    monkeypatch.setattr(
+        RedisCommittedEventPublisher,
+        "from_url",
+        classmethod(lambda cls, *args, **kwargs: publisher),
+    )
+    database_path = tmp_path / "live-worker.sqlite"
+    settings = replace(
+        _settings(database_path),
+        live_events=LiveEventSettings(redis_url="redis://redis-live:6379/0"),
+    )
+    stores = sqlite_control_plane_stores(database_path)
+
+    service = build_worker_loop_service(
+        database_path=database_path,
+        settings=settings,
+        stores=stores,
+        sleep=lambda _: None,
+    )
+
+    assert isinstance(service._execution_service._event_store, PostCommitPublishingEventStore)
 
 
 def test_compaction_and_recovery_stay_on_authoritative_backend(tmp_path: Path) -> None:

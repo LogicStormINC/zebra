@@ -5,6 +5,7 @@ from uuid import uuid4
 import pytest
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
+from agent_storage import sqlite_control_plane_stores, with_committed_event_publisher
 from agent_storage.live_event_store import PostCommitPublishingEventStore
 
 
@@ -92,3 +93,14 @@ def test_duplicate_retry_is_safe_to_publish_again() -> None:
     decorated.append(event)
 
     assert publisher.events == [event, event]
+
+
+def test_composition_wraps_event_store_once(tmp_path) -> None:
+    stores = sqlite_control_plane_stores(tmp_path / "sessions.sqlite")
+    publisher = _Publisher()
+
+    wired = with_committed_event_publisher(stores, publisher)
+    rewired = with_committed_event_publisher(wired, publisher)
+
+    assert isinstance(wired.events, PostCommitPublishingEventStore)
+    assert rewired.events is wired.events

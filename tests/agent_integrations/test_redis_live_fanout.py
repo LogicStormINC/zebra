@@ -8,6 +8,7 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports.live_event_fanout import LiveEventCursor
 from agent_integrations.redis_live_fanout import (
+    RedisCommittedEventPublisher,
     RedisLiveEventError,
     RedisLiveEventFanout,
 )
@@ -99,6 +100,26 @@ def test_replay_barrier_then_tail_returns_only_new_canonical_events() -> None:
     assert events.events[0].deployment_namespace == "deployment-a"
     assert events.next_cursor.value == "2-0"
     assert client.last_block is None
+
+
+def test_committed_publisher_binds_one_namespace() -> None:
+    fanout, client = _adapter()
+    publisher = RedisCommittedEventPublisher(fanout, deployment_namespace="deployment-a")
+    session_id = SessionId(uuid4())
+    event = _event(session_id, 1)
+
+    publisher.publish_committed(event)
+
+    assert len(client.streams) == 1
+    assert b"deployment-a".hex() in next(iter(client.streams))
+
+
+@pytest.mark.parametrize("namespace", ["", " deployment-a", "deployment-a "])
+def test_committed_publisher_rejects_invalid_namespace(namespace: str) -> None:
+    fanout, _ = _adapter()
+
+    with pytest.raises(ValueError, match="deployment_namespace"):
+        RedisCommittedEventPublisher(fanout, deployment_namespace=namespace)
 
 
 @pytest.mark.parametrize("namespace", ["", " deployment-a", "deployment-a "])

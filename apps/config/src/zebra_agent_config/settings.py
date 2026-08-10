@@ -43,6 +43,13 @@ class SessionHandoffSettings:
 
 
 @dataclass(frozen=True)
+class LiveEventSettings:
+    redis_url: str | None = None
+    stream_max_length: int = 1_000
+    key_prefix: str = "zebra:live:v1"
+
+
+@dataclass(frozen=True)
 class ScmSettings:
     provider: str
     github_owner: str | None
@@ -77,6 +84,7 @@ class ZebraAgentSettings:
     api: ApiSettings
     model: ModelSettings
     session_handoff: SessionHandoffSettings = field(default_factory=SessionHandoffSettings)
+    live_events: LiveEventSettings = field(default_factory=LiveEventSettings)
     runtime: RuntimeSettings = field(default_factory=RuntimeSettings)
     setup: SetupSettings = field(default_factory=SetupSettings)
     scm: ScmSettings = field(
@@ -181,6 +189,7 @@ def load_settings(
         session_handoff=SessionHandoffSettings(
             enabled=_read_bool(values, "ZEBRA_SESSION_HANDOFF_ENABLED", default=False),
         ),
+        live_events=_load_live_event_settings(values),
         runtime=runtime,
         setup=load_setup_settings(values),
         scm=_load_scm_settings(values),
@@ -265,6 +274,18 @@ def _load_runtime_settings(
             "ZEBRA_RUNTIME_WORKSPACE_QUOTA_MB",
             default=10_240,
         ),
+    )
+
+
+def _load_live_event_settings(values: Mapping[str, str]) -> LiveEventSettings:
+    return LiveEventSettings(
+        redis_url=_read_optional(values, "ZEBRA_LIVE_REDIS_URL"),
+        stream_max_length=_read_int(
+            values,
+            "ZEBRA_LIVE_STREAM_MAX_LENGTH",
+            default=1_000,
+        ),
+        key_prefix=_read(values, "ZEBRA_LIVE_STREAM_KEY_PREFIX", default="zebra:live:v1"),
     )
 
 

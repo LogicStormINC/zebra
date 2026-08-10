@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports.committed_event_publisher import CommittedEventPublisherPort
 from agent_core.ports.event_store import EventStorePort
+
+from agent_storage.composition import ControlPlaneStores
 
 
 class PostCommitPublishingEventStore(EventStorePort):
@@ -31,3 +35,15 @@ class PostCommitPublishingEventStore(EventStorePort):
 
     def read_since(self, session_id: SessionId, sequence: int) -> list[SessionEvent]:
         return self._event_store.read_since(session_id, sequence)
+
+
+def with_committed_event_publisher(
+    stores: ControlPlaneStores,
+    publisher: CommittedEventPublisherPort,
+) -> ControlPlaneStores:
+    if isinstance(stores.events, PostCommitPublishingEventStore):
+        return stores
+    return replace(
+        stores,
+        events=PostCommitPublishingEventStore(stores.events, publisher),
+    )

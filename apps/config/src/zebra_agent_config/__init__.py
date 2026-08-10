@@ -1,5 +1,6 @@
 from zebra_agent_config.settings import (
     ApiSettings,
+    LiveEventSettings,
     McpHttpServerSettings,
     McpServerSettings,
     ModelSettings,
@@ -17,6 +18,7 @@ __all__ = [
     "McpHttpServerSettings",
     "McpServerSettings",
     "ModelSettings",
+    "LiveEventSettings",
     "RuntimeSettings",
     "ScmSettings",
     "SessionHandoffSettings",

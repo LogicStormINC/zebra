@@ -889,6 +889,61 @@ live barrier before durable replay and filters by durable sequence.
   remain explicitly unwired until `CLOUD-LIVE-PUBLISH-01` supplies a commit-safe
   composition/outbox hook.
 
+### CLOUD-LIVE-PUBLISH-01 - Redis Live Publisher Composition
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `INTEGRATIONS / API / WORKER / STORAGE`
+- Depends on: `CLOUD-LIVE-WIRE-CON-01` review commit `62b1b328`
+- Branch: `codex/cloud-live-publish-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-live-publish-01/zebra-agent`
+- Owned paths: `apps/config/src/zebra_agent_config/settings.py`,
+  `apps/api/src/zebra_agent_api/factory.py`,
+  `apps/worker/src/zebra_agent_worker/loop.py`,
+  `packages/agent-integrations/src/agent_integrations/redis_live_fanout.py`,
+  `packages/agent-storage/src/agent_storage/live_event_store.py`,
+  `docker/compose.application.yml`, `docker/.env.application.example`,
+  `docker/README.md`, `.env.example`, `tests/config/`,
+  `tests/agent_integrations/`, `tests/agent_storage/`,
+  `tests/api/test_live_publish_composition.py`,
+  `tests/worker/test_worker_storage_composition.py`,
+  this task card, and the focused status in `PROGRESS.md`
+
+#### Goal
+
+Compose one namespace-bound Redis committed-event publisher in cloud API and
+Worker processes. Durable Event append remains authoritative; publisher outage
+must degrade to replay and never roll back the append.
+
+#### Acceptance
+
+- Cloud settings parse an explicit live Redis URL and bounded stream options;
+  local settings remain live-disabled by default.
+- API and Worker composition wrap the shared Event store once with the
+  post-commit publisher, using the same deployment namespace and Redis stream
+  envelope; injected local stores remain compatible.
+- Publisher adapter tests cover namespace binding, duplicate-safe envelopes and
+  Redis failure degradation; Compose config carries the dependency URL. Focused
+  validation passes (`46` tests), full suite passes (`2145 passed, 271 skipped`),
+  and the real Redis runner emits `ZEBRA_LIVE_FANOUT_REDIS_TEST_RESULT=PASS`.
+
+#### Explicit Non-Goals
+
+- no SSE consumer/replay endpoint (owned by `CLOUD-LIVE-SSE-01`)
+- no PostgreSQL aggregate-transaction outbox migration; direct EventStore append
+  wiring is explicit, while transaction seams remain a follow-up risk
+- no production recovery, Helm/gVisor deployment or Trench work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- `RedisCommittedEventPublisher` binds the shared post-commit contract to one
+  namespace; API and Worker use `with_committed_event_publisher` exactly once.
+  Cloud Compose supplies `redis://redis-live:6379/0`; local remains opt-in.
+- Direct EventStore append publication is verified. PostgreSQL aggregate
+  transaction calls that bypass `EventStorePort.append` remain a named follow-up
+  risk for the outbox/commit hook; this card does not claim those paths are live.
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`

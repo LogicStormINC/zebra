@@ -7,6 +7,7 @@ from uuid import UUID
 
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId
+from agent_core.ports.committed_event_publisher import CommittedEventPublisherPort
 from agent_core.ports.live_event_fanout import (
     LiveEventBatch,
     LiveEventCursor,
@@ -22,6 +23,40 @@ _MAX_READ_COUNT = 1_000
 
 class RedisLiveEventError(RuntimeError):
     """Raised when a Redis live-event entry violates the canonical envelope."""
+
+
+class RedisCommittedEventPublisher(CommittedEventPublisherPort):
+    """Bind the generic post-commit publisher contract to one namespace."""
+
+    def __init__(self, fanout: RedisLiveEventFanout, *, deployment_namespace: str) -> None:
+        if not deployment_namespace or deployment_namespace != deployment_namespace.strip():
+            raise ValueError("deployment_namespace must be non-blank and trimmed")
+        self._fanout = fanout
+        self._deployment_namespace = deployment_namespace
+
+    @classmethod
+    def from_url(
+        cls,
+        url: str,
+        *,
+        deployment_namespace: str,
+        max_stream_length: int = 1_000,
+        key_prefix: str = "zebra:live:v1",
+    ) -> RedisCommittedEventPublisher:
+        return cls(
+            RedisLiveEventFanout.from_url(
+                url,
+                max_stream_length=max_stream_length,
+                key_prefix=key_prefix,
+            ),
+            deployment_namespace=deployment_namespace,
+        )
+
+    def publish_committed(self, event: SessionEvent) -> None:
+        self._fanout.publish(
+            deployment_namespace=self._deployment_namespace,
+            event=event,
+        )
 
 
 class RedisStreamClient(Protocol):

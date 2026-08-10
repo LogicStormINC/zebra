@@ -78,6 +78,10 @@
   and the shared post-commit publisher seam freeze durable-first ordering,
   duplicate tolerance and replay-barrier degradation before Redis composition.
   Full validation is green: `2138 passed, 271 skipped`; `make check` passes.
+- `CLOUD-LIVE-PUBLISH-01` is `Review` on `codex/cloud-live-publish-01`. Cloud
+  API/Worker now compose one namespace-bound Redis publisher around direct Event
+  appends; SSE consumption remains next. Full validation is green:
+  `2145 passed, 271 skipped`; `make check` and the real Redis runner pass.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed
