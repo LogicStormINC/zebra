@@ -163,7 +163,7 @@ def test_repeated_read_dedup_is_scoped_to_the_current_attempt() -> None:
     """Cross-round reads are legitimate (a correction round re-queries the
     same history) and must not be rejected by the session-level read dedup;
     only repeats WITHIN the current attempt are recovered."""
-    from agent_core.harness.sequential_loop import _executed_action_fingerprints
+    from agent_core.harness.attempt_result import executed_action_fingerprints
     from agent_core.harness.tool_batch import _can_recover_repeated_reads
 
     attempt_start = datetime(2026, 7, 14, 9, 5, tzinfo=UTC)
@@ -200,7 +200,7 @@ def test_repeated_read_dedup_is_scoped_to_the_current_attempt() -> None:
         tool_call_id="call-done",
     )
 
-    attempt_fingerprints = _executed_action_fingerprints(
+    attempt_fingerprints = executed_action_fingerprints(
         [old_assistant, old_result, done_assistant, done_result],
         since=attempt_start,
     )
@@ -226,7 +226,7 @@ def test_repeated_read_dedup_is_scoped_to_the_current_attempt() -> None:
         created_at=attempt_start,
         tool_call_id="call-pending",
     )
-    with_pending = _executed_action_fingerprints(
+    with_pending = executed_action_fingerprints(
         [
             old_assistant,
             old_result,

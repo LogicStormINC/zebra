@@ -139,33 +139,37 @@ def _final_response(content: str) -> ScriptedModelResponse:
         )
     )
 
+def _read_response(content: str) -> ScriptedModelResponse:
+    return ScriptedModelResponse(
+        completion=ModelCompletion(
+            assistant_message=SessionMessage(
+                message_id=new_message_id(),
+                role=MessageRole.ASSISTANT,
+                content=content,
+                created_at=_created_at(),
+            ),
+            tool_calls=(
+                ToolCall(
+                    tool_call_id=new_tool_call_id(),
+                    name="files.read",
+                    arguments={"path": "README.md"},
+                    created_at=_created_at(),
+                ),
+            ),
+            call_metadata=ModelCallMetadata(
+                provider="test",
+                model_name="test-model",
+                usage=ModelUsage(total_tokens=9),
+            ),
+        )
+    )
+
 def _tool_gateway(*, settings: ZebraAgentSettings) -> ScriptedModelGateway:
     del settings
     return ScriptedModelGateway(
         responses=(
-            ScriptedModelResponse(
-                completion=ModelCompletion(
-                    assistant_message=SessionMessage(
-                        message_id=new_message_id(),
-                        role=MessageRole.ASSISTANT,
-                        content="Reading README.",
-                        created_at=_created_at(),
-                    ),
-                    tool_calls=(
-                        ToolCall(
-                            tool_call_id=new_tool_call_id(),
-                            name="files.read",
-                            arguments={"path": "README.md"},
-                            created_at=_created_at(),
-                        ),
-                    ),
-                    call_metadata=ModelCallMetadata(
-                        provider="test",
-                        model_name="test-model",
-                        usage=ModelUsage(total_tokens=9),
-                    ),
-                )
-            ),
+            _read_response("Reading README."),
+            _read_response("The check confirms this is one direct read."),
             _final_response("README content returned."),
             _final_response("README content returned."),
         )

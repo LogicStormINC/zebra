@@ -6,10 +6,10 @@ from agent_core.application.session_projection import apply_event
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
 from agent_core.domain.plans import PlanStep, PlanStepStatus, SessionPlan
 from agent_core.domain.sessions import Session, SessionStatus
-from agent_core.domain.tools import ToolCall, ToolResult
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import (
     HarnessAttempt,
     HarnessAttemptOutcome,
@@ -454,6 +454,187 @@ def test_simple_one_shot_task_still_completes_without_a_plan() -> None:
     assert result.outcome is HarnessAttemptOutcome.COMPLETED
 
 
+def test_plan_activation_check_precedes_the_first_substantive_tool() -> None:
+    first_read = _tool_call("files.read", {"path": "evidence.txt"})
+    planned_read = _tool_call("files.read", {"path": "evidence.txt"})
+    open_plan = _tool_call(
+        "agent.plan",
+        {
+            "steps": [
+                {
+                    "step_id": "read",
+                    "content": "Read the evidence",
+                    "status": "in_progress",
+                }
+            ]
+        },
+    )
+    close_plan = _tool_call(
+        "agent.plan",
+        {
+            "steps": [
+                {
+                    "step_id": "read",
+                    "content": "Read the evidence",
+                    "status": "completed",
+                }
+            ]
+        },
+    )
+    gateway = ScriptedModelGateway(
+        responses=(
+            _response("Read first.", first_read),
+            _response("Plan first.", open_plan),
+            _response("Read now.", planned_read),
+            _response("Close the Plan.", close_plan),
+            _response("Final answer."),
+            _response("Final answer."),
+        )
+    )
+    tools = RecordingToolGateway()
+    result = _run_with_plan_tools(gateway, tools)
+
+    plan_index = next(
+        index
+        for index, event in enumerate(result.emitted_events)
+        if event.event_type is EventType.PLAN_UPDATED
+    )
+    read_index = next(
+        index
+        for index, event in enumerate(result.emitted_events)
+        if event.event_type is EventType.TOOL_EXECUTION_STARTED
+        and event.payload.get("tool_name") == "files.read"
+    )
+    assert result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert plan_index < read_index
+    assert tools.calls == [planned_read]
+    assert str(first_read.tool_call_id) not in {
+        str(event.payload.get("tool_call_id"))
+        for event in result.emitted_events
+        if event.event_type
+        in {
+            EventType.TOOL_CALL_PROPOSED,
+            EventType.POLICY_DECISION_MADE,
+            EventType.TOOL_EXECUTION_STARTED,
+            EventType.TOOL_EXECUTION_COMPLETED,
+            EventType.TOOL_EXECUTION_FAILED,
+        }
+    }
+    assert gateway.requests[1][-1].metadata["plan_activation_check"] is True
+    assert result.metadata["plan_activation_check_attempted"] is True
+
+
+def test_plan_activation_check_allows_a_simple_tool_without_a_plan() -> None:
+    first_read = _tool_call("files.read", {"path": "one.txt"})
+    confirmed_read = _tool_call("files.read", {"path": "one.txt"})
+    gateway = ScriptedModelGateway(
+        responses=(
+            _response("Read it.", first_read),
+            _response("This is one step; read it.", confirmed_read),
+            _response("Final answer."),
+            _response("Final answer."),
+        )
+    )
+    tools = RecordingToolGateway()
+    result = _run_with_plan_tools(gateway, tools)
+
+    assert result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert EventType.PLAN_UPDATED not in {
+        event.event_type for event in result.emitted_events
+    }
+    assert tools.calls == [confirmed_read]
+    assert len({
+        message.message_id
+        for request in gateway.requests
+        for message in request
+        if message.metadata.get("plan_activation_check") is True
+    }) == 1
+
+
+@pytest.mark.parametrize(
+    ("max_model_calls", "max_tool_calls"),
+    ((2, None), (None, 1)),
+)
+def test_plan_activation_check_preserves_explicit_single_tool_budgets(
+    max_model_calls: int | None,
+    max_tool_calls: int | None,
+) -> None:
+    read_call = _tool_call("files.read", {"path": "one.txt"})
+    gateway = ScriptedModelGateway(
+        responses=(
+            _response("Read it.", read_call),
+            _response("Final answer."),
+        )
+    )
+    tools = RecordingToolGateway()
+    result = _run_with_plan_tools(
+        gateway,
+        tools,
+        max_model_calls=max_model_calls,
+        max_tool_calls=max_tool_calls,
+    )
+
+    assert result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert tools.calls == [read_call]
+    assert all(
+        message.metadata.get("plan_activation_check") is not True
+        for request in gateway.requests
+        for message in request
+    )
+
+
+def _run_with_plan_tools(
+    gateway: ScriptedModelGateway,
+    tools: "RecordingToolGateway",
+    *,
+    max_model_calls: int | None = None,
+    max_tool_calls: int | None = None,
+) -> HarnessAttemptResult:
+    definitions = (
+        ModelToolDefinition(
+            name="agent.plan",
+            description="Maintain the durable Plan.",
+            parameters={"type": "object", "properties": {}},
+        ),
+        ModelToolDefinition(
+            name="files.read",
+            description="Read one file.",
+            parameters={"type": "object", "properties": {}},
+        ),
+    )
+    session = Session.create(title="Activation", created_at=NOW).model_copy(
+        update={"status": SessionStatus.RUNNING}
+    )
+    return SingleAttemptOrchestrator(
+        gateway,
+        LocalPolicyEngine(PolicyProfile.READ_ONLY),
+        tools,
+        model_step=HarnessModelStep(available_tools=definitions),
+        verifier=NoopVerifier(),
+        synthesize_tool_results=True,
+    ).run(
+        HarnessContext(
+            task=HarnessTask(
+                title="Activation",
+                user_input="Handle the evidence.",
+                max_model_calls=max_model_calls,
+                max_tool_calls=max_tool_calls,
+            ),
+            session=session,
+            attempt=HarnessAttempt(number=1, started_at=NOW),
+        )
+    )
+
+
+def _tool_call(name: str, arguments: dict[str, object]) -> ToolCall:
+    return ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name=name,
+        arguments=arguments,
+        created_at=NOW,
+    )
+
+
 def _response(content: str, tool_call: ToolCall | None = None) -> ScriptedModelResponse:
     return ScriptedModelResponse(
         completion=ModelCompletion(
@@ -471,3 +652,16 @@ def _response(content: str, tool_call: ToolCall | None = None) -> ScriptedModelR
 class NeverToolGateway(ToolGatewayPort):
     def execute(self, tool_call: ToolCall) -> ToolResult:
         raise AssertionError(f"unexpected gateway execution: {tool_call.name}")
+
+
+class RecordingToolGateway(ToolGatewayPort):
+    def __init__(self) -> None:
+        self.calls: list[ToolCall] = []
+
+    def execute(self, tool_call: ToolCall) -> ToolResult:
+        self.calls.append(tool_call)
+        return ToolResult(
+            tool_call_id=tool_call.tool_call_id,
+            status=ToolCallStatus.EXECUTED,
+            output="evidence",
+        )

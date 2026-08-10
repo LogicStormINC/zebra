@@ -1,9 +1,8 @@
 from collections.abc import Callable, Mapping
 from dataclasses import replace
-from datetime import datetime
 
 from agent_core.domain.events import EventType
-from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import (
     ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME,
     ModelCompletion,
@@ -11,9 +10,13 @@ from agent_core.domain.modeling import (
 from agent_core.domain.tools import ToolCall
 from agent_core.harness import context_recovery
 from agent_core.harness.attempt_result import (
-    action_fingerprint,
     append_no_progress_observation,
     build_attempt_result,
+    executed_action_fingerprints,
+)
+from agent_core.harness.capability_guidance import (
+    append_plan_activation_check,
+    should_check_plan_activation,
 )
 from agent_core.harness.clarification_step import clarification_tool_result
 from agent_core.harness.completion_evidence import (
@@ -34,6 +37,7 @@ from agent_core.harness.models import (
     HarnessEventDraft,
 )
 from agent_core.harness.orchestration_events import model_response_event
+from agent_core.harness.protocol_invariants import is_raw_dsml_tool_request
 from agent_core.harness.selection import ToolCallSelectionStrategy
 from agent_core.harness.tool_batch import ToolBatchExecutor
 from agent_core.harness.tool_resolution import (
@@ -103,7 +107,7 @@ class SequentialToolLoop:
                 completion=completion,
                 tool_calls=calls,
             )
-        fingerprints = _executed_action_fingerprints(
+        fingerprints = executed_action_fingerprints(
             messages, since=context.attempt.started_at
         )
         emitted_events: list[HarnessEventDraft] = HarnessEventBuffer(self._event_sink)
@@ -163,7 +167,7 @@ class SequentialToolLoop:
             emitted_events=HarnessEventBuffer(self._event_sink),
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
-            fingerprints=_executed_action_fingerprints(
+            fingerprints=executed_action_fingerprints(
                 messages, since=context.attempt.started_at
             ),
             metadata={
@@ -219,6 +223,28 @@ class SequentialToolLoop:
                 assistant_message=completion.assistant_message.content,
                 fingerprints=fingerprints,
                 request_next_completion=self._request_next_completion,
+            )
+        if should_check_plan_activation(
+            context,
+            messages,
+            completion,
+            emitted_events,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            metadata=metadata,
+        ):
+            append_plan_activation_check(
+                messages, completion, created_at=context.attempt.started_at
+            )
+            return self._request_next_completion(
+                context,
+                messages=messages,
+                emitted_events=emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                fingerprints=fingerprints,
+                metadata={**metadata, "plan_activation_check_attempted": True},
+                fallback_message=completion.assistant_message.content,
             )
         selection = self._tool_selector.select(completion.tool_calls)
         calls = completion.tool_calls if self._synthesize_tool_results else (selection.tool_call,)
@@ -425,7 +451,7 @@ class SequentialToolLoop:
             tool_calls_executed=tool_calls_executed,
             metadata=metadata,
             fallback_message=fallback_message,
-            fingerprints=_executed_action_fingerprints(
+            fingerprints=executed_action_fingerprints(
                 messages, since=context.attempt.started_at
             ),
             request_next_completion=self._request_next_completion,
@@ -488,7 +514,7 @@ class SequentialToolLoop:
             metadata = {**metadata, "output_contract": contract}
         if (
             completion.tool_calls
-            or _is_raw_dsml_tool_request(completion.assistant_message.content)
+            or is_raw_dsml_tool_request(completion.assistant_message.content)
             or not completion.assistant_message.content.strip()
         ):
             return build_attempt_result(
@@ -519,23 +545,6 @@ class SequentialToolLoop:
             emitted_events=emitted_events,
             metadata=metadata,
         )
-
-
-def _executed_action_fingerprints(
-    messages: list[SessionMessage],
-    *,
-    since: datetime | None = None,
-) -> set[str]:
-    completed_ids = {
-        message.tool_call_id for message in messages if message.role is MessageRole.TOOL
-    }
-    return {
-        action_fingerprint(call)
-        for message in messages
-        if since is None or message.created_at >= since
-        for call in message.tool_calls
-        if (call.provider_call_id or str(call.tool_call_id)) in completed_ids
-    }
 
 
 def _final_output_contract(
@@ -593,24 +602,3 @@ def _bind_final_output_contract(
                 },
             )
             break
-
-
-def _is_raw_dsml_tool_request(content: str) -> bool:
-    marker = "<｜｜DSML｜｜tool_calls>"
-    marker_index = 0
-    while True:
-        marker_index = content.find(marker, marker_index)
-        if marker_index < 0:
-            return False
-        invoke_index = content.find("invoke name=", marker_index + len(marker))
-        if (
-            not _is_inside_fenced_code_block(content, marker_index)
-            and invoke_index >= 0
-            and not _is_inside_fenced_code_block(content, invoke_index)
-        ):
-            return True
-        marker_index += len(marker)
-
-
-def _is_inside_fenced_code_block(content: str, position: int) -> bool:
-    return sum(line.lstrip().startswith("```") for line in content[:position].splitlines()) % 2 == 1

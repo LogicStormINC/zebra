@@ -15984,6 +15984,8 @@ violation set show no new regression.
 - Exact base: `61552a4c86e40e324219be96c0cf7f58afb0fb75`
 - Owned paths: `packages/agent-core/src/agent_core/harness/`,
   `tests/agent_core/`,
+  `tests/worker/execution/worker_execution_support.py`,
+  `tests/worker/execution/test_core_execution.py`,
   `docs/AGENT_TASKS.md`,
   `docs/FINOS_NEXT_RUNTIME_TASK_BOARD_AMENDMENT_GOAL_PLAN_V1_2026-08-10.md`,
   `PROGRESS.md`, `WORKLOG.md`
