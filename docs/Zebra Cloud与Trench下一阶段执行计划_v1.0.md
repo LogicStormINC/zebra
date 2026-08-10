@@ -339,7 +339,7 @@ flowchart TD
 
 #### EMB-AGUI-STREAM-01 — AG-UI replay/stream endpoint
 
-- 状态：`Locked`；预计：6-10h；依赖：live SSE、Auth HTTP、AG-UI contract。
+- 状态：`In Progress`；预计：6-10h；依赖：live SSE、Auth HTTP、AG-UI contract。
 - Reserved paths：AG-UI streaming route/projection composition、golden fixtures/tests。
 - 交付：durable replay、live tail、cursor、interrupt/resume/error 投影。
 - 验收：断线重连无消息丢失或重复业务动作，未知事件向前兼容。

@@ -71,6 +71,10 @@ does not authorize production code, migrations or activation of its successor.
   activated slice owns only the API AG-UI command route/composition and focused
   tests; it submits run/resume/stop intents to the existing durable command
   service and does not construct Worker execution in the route.
+- `EMB-AGUI-STREAM-01` is `In Progress` on `codex/cloud-real-svc-ci-01`.
+  The activated slice owns the AG-UI replay/live-tail composition and focused
+  SSE tests; durable Event Store replay remains authoritative and no command or
+  Worker execution is added here.
 - `CLOUD-PROVIDER-CONT-PG-PLAN-01` is `Done` on
   `docs/cloud-provider-cont-pg-plan`. It freezes Provider Continuation external
   authority, internal namespace, existing Lease fence, atomic Event binding,
@@ -1593,6 +1597,43 @@ official `RunAgentInput` where applicable, and append only a command intent.
 
 - no AG-UI SSE/replay route (owned by `EMB-AGUI-STREAM-01`)
 - no Worker execution, Redis fan-out, JWT/JWKS, Host Tool Gateway or Trench code
+
+### EMB-AGUI-STREAM-01 - AG-UI Replay And Stream Endpoint
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Suggested role: `API / INTEGRATIONS / QA`
+- Depends on: `EMB-AGUI-CMD-01`, live SSE, `EMB-AUTH-HTTP-01`, and
+  `EMB-AGUI-CON-01`
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `apps/api/src/zebra_agent_api/ag_ui_stream.py` (new),
+  `apps/api/src/zebra_agent_api/http.py`,
+  `tests/api/test_agui_stream_routes.py` (new), this task card and focused
+  `PROGRESS.md`
+
+#### Goal
+
+Expose `GET /agui/threads/{threadId}/runs/{runId}/stream` as a durable AG-UI
+projection. Replay starts from an exact opaque cursor, live tails new durable
+Events, and each emitted SSE record carries the cursor of the Event that caused
+it.
+
+#### Acceptance
+
+- Initial replay, reconnect, interrupt/resume, terminal error/success and
+  forward-compatible unknown Events are covered by golden SSE tests.
+- A reconnect cursor is validated against the requested Task/run and exact
+  durable Event; no business command is retried or created by streaming.
+- Durable polling is the lossless fallback when optional live fan-out is absent;
+  the route never makes Redis a second authority.
+- Invalid thread/run/cursor requests map to bounded problem details before the
+  streaming response starts.
+
+#### Explicit Non-Goals
+
+- no new Event Store, Redis schema, command behavior, JWT/JWKS or Trench code
+- no API-side Worker execution or Copilot Runtime
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 

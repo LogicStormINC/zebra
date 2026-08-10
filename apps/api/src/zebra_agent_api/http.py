@@ -16,6 +16,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
+from zebra_agent_api.ag_ui_stream import (
+    AgUiStreamContext,
+    prepare_agui_stream,
+    tail_agui_events,
+)
 from zebra_agent_api.app import create_app
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
@@ -105,6 +110,23 @@ def create_http_app(
         body, body_error = await _read_request_body(request)
         if body_error is not None:
             return body_error
+        if _is_agui_stream_request(request):
+            agui_stream = prepare_agui_stream(
+                api.stores,
+                request.url.path,
+                request.query_params,
+            )
+            if isinstance(agui_stream, ApiResponse):
+                return JSONResponse(status_code=agui_stream.status_code, content=agui_stream.body)
+            if isinstance(agui_stream, AgUiStreamContext):
+                return StreamingResponse(
+                    tail_agui_events(agui_stream, request),
+                    media_type="text/event-stream",
+                    headers={
+                        "Cache-Control": "no-cache",
+                        "X-Accel-Buffering": "no",
+                    },
+                )
         route_request = RouteRequest(
             method=request.method,
             path=request.url.path,
@@ -165,6 +187,17 @@ def create_http_app(
 
 def _is_stream_request(request: Request) -> bool:
     return request.method.upper() == "GET" and request.url.path.endswith("/stream")
+
+
+def _is_agui_stream_request(request: Request) -> bool:
+    parts = tuple(part for part in request.url.path.split("/") if part)
+    return (
+        request.method.upper() == "GET"
+        and len(parts) == 6
+        and parts[:2] == ("agui", "threads")
+        and parts[3] == "runs"
+        and parts[5] == "stream"
+    )
 
 
 async def _read_request_body(request: Request) -> tuple[dict[str, Any] | None, JSONResponse | None]:
