@@ -11,8 +11,8 @@ from agent_core.harness.hooks import (
     PlannerHook,
     VerifierHook,
 )
-from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.model_request import allowed_response_repairs
+from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import (
     HarnessAttemptResult,
     HarnessContext,

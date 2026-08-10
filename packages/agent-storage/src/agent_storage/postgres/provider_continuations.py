@@ -1,5 +1,3 @@
-"""Fenced PostgreSQL Provider Continuation aggregate and lifecycle reads."""
-
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -48,13 +46,10 @@ from agent_storage.postgres.provider_continuation_support import (
 )
 
 
-class PostgresProviderContinuationConflictError(ValueError):
-    """Raised when a continuation request conflicts with durable authority."""
+class PostgresProviderContinuationConflictError(ValueError): ...
 
 
 class PostgresProviderContinuationStore(CloudProviderContinuationStorePort):
-    """Persist provider bytes and their canonical selection Event atomically."""
-
     def __init__(
         self,
         dsn: str,

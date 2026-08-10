@@ -16,6 +16,14 @@
   Redis live tail, real-service CI, production recovery and deployment evidence.
   All new successor IDs remain `Locked`; no P4+, Memory runtime or Agent
   Definition runtime work is activated.
+- `QA-CLOUDLINE-PY-01` is `Review` on
+  `codex/qa-cloudline-py-01`. It owns the Python size/Ruff/Mypy gate after the
+  Lease/API regression fix. `make sync`, full Ruff, Mypy over 596 files and
+  focused tests (`34 passed, 10 skipped`) pass; the full backend is `2104
+  passed, 271 skipped, 1 failed`, with only the Desktop-owned stylesheet size
+  violation remaining. The existing concurrent PostgreSQL/Memory size and
+  export fixes were validated as an isolated handoff snapshot; the dirty
+  `zebra-cloud-trench` worktree is preserved unchanged.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

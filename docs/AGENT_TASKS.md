@@ -35,6 +35,11 @@ does not authorize production code, migrations or activation of its successor.
   cloud-mainline stabilization to the first production Trench read-only slice.
   All newly reserved successor IDs remain `Locked`; the only immediate closeout
   remains `CLOUD-INTEGRATION-REG-01`.
+- `QA-CLOUDLINE-PY-01` is `Review` on
+  `codex/qa-cloudline-py-01`. It owns the Python size, Ruff and Mypy baseline
+  after the regression fix. A validated snapshot of the concurrent PostgreSQL /
+  Memory size fixes is being re-homed into this isolated branch; the original
+  dirty worktree remains untouched.
 - `CLOUD-INTEGRATION-REG-01` is `Review` on
   `codex/cloud-integration-regressions-01`. It repairs the branch-specific
   recovered-Lease heartbeat checkpoint regression and restores lazy local API
@@ -285,6 +290,71 @@ branch, worktree and frozen Owned paths.
 - no implementation activation, code cleanup, migration allocation or CI edit
 - no P4 shared-state, P5 analysis, P6 writeback, Mem0 runtime or Agent Definition runtime
 - no claim that Compose evidence equals Kubernetes production readiness
+
+### QA-CLOUDLINE-PY-01 - Python Quality Baseline
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `QA / CORE / STORAGE`
+- Depends on: merged `CLOUD-INTEGRATION-REG-01`; this worktree is based on
+  `codex/cloud-trench-next-plan-01`
+- Branch: `codex/qa-cloudline-py-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/qa-cloudline-py-01/zebra-agent`
+- Owned paths:
+  `packages/agent-core/src/agent_core/harness/orchestrator.py`,
+  `packages/agent-core/src/agent_core/harness/sequential_loop.py`,
+  `packages/agent-security/src/agent_security/mcp_proxy_policy.py`,
+  `packages/agent-tools/src/agent_tools/search_pipeline.py`,
+  `packages/agent-tools/src/agent_tools/web_crawl.py`,
+  `packages/agent-tools/src/agent_tools/web_projection.py`,
+  `packages/agent-storage/src/agent_storage/s3_error_mapping.py`,
+  `packages/agent-storage/src/agent_storage/artifact_objects.py`,
+  `packages/agent-storage/src/agent_storage/runtime_composition.py`,
+  `packages/agent-storage/src/agent_storage/postgres/__init__.py`,
+  `packages/agent-storage/src/agent_storage/postgres/context_lifecycle.py`,
+  `packages/agent-storage/src/agent_storage/postgres/provider_continuations.py`,
+  `tests/agent_core/test_harness_model_step.py`,
+  `tests/agent_tools/test_search_pipeline.py`,
+  `tests/agent_tools/test_web_projection.py`,
+  `tests/integration/test_web_native_e2e.py`,
+  `tests/agent_storage/test_postgres_governed_memories.py`,
+  `tests/agent_storage/governed_memory_test_support.py` (new), this card in
+  `docs/AGENT_TASKS.md`, and the focused status in `PROGRESS.md`
+
+#### Goal
+
+Close the Python quality gate after `CLOUD-INTEGRATION-REG-01`, including the
+three source/test size violations, Ruff import/unused findings and the Mypy
+errors exposed after the complete workspace dependency sync.
+
+#### Acceptance
+
+- `make sync` completes before static checks.
+- `scripts/check_file_sizes.py`, full Ruff and full Mypy pass on this branch.
+- Focused tests for changed tool, storage and harness paths pass; no behavior
+  change is introduced by import organization or JSON metadata narrowing.
+- The concurrent PG/Memory handoff snapshot is validated in this branch and the
+  original dirty worktree is not modified.
+
+#### Closeout
+
+- `make sync` completed; full Ruff passes and Mypy passes for all `596` source
+  files.
+- The three Python/test size violations are below their limits. Focused tests
+  pass `34 passed, 10 skipped`; the full backend suite is `2104 passed, 271
+  skipped, 1 failed`.
+- The sole full-suite failure is the one Desktop-owned size violation in
+  `UI/desktop/src/components/CodexConversationPane.styles.ts` (`561/500`). It
+  is intentionally left for `QA-CLOUDLINE-DESKTOP-01` and is not a Python task
+  failure.
+- Original `zebra-cloud-trench` concurrent changes remain untouched; their
+  validated size/export snapshot is now reproducible on this branch.
+
+#### Explicit Non-Goals
+
+- no API/Worker runtime, Profile, migration, Desktop or Trench feature work
+- no broad Mypy configuration relaxation or dependency addition
+- no destructive cleanup of the original worktree
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 

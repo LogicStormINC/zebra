@@ -2,10 +2,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
+from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.events import EventType
 from agent_core.domain.modeling import (
     ModelCallMetadata,
     ModelCompletion,

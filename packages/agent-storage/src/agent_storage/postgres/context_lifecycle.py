@@ -1,5 +1,3 @@
-"""Fenced PostgreSQL Context Capsule aggregate."""
-
 from datetime import datetime
 from hashlib import sha256
 from typing import Any

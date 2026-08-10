@@ -12,14 +12,14 @@ double. See WEB-PIPE-CRAWL-01 / Pipeline V2 §7–17.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Protocol
 from datetime import UTC, datetime
+from typing import Protocol
 
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.domain.web import TruncationScope
-from agent_tools.web_envelope import WEB_ENVELOPE_CAPABILITY_VERSION, WebResultEnvelope
 
 from agent_tools.contracts import ToolContract
+from agent_tools.web_envelope import WEB_ENVELOPE_CAPABILITY_VERSION, WebResultEnvelope
 
 #: Cap on cleaned content kept for a single fetch (Pipeline V2 DEFAULT_MAX_CLEAN_CHARS).
 DEFAULT_MAX_CLEAN_CHARS = 2_000_000
@@ -245,9 +245,9 @@ def _outcome_result(
         resource_id=outcome.resource_id,
         extra={
             "next_cursor": outcome.next_cursor,
-            "content_sha256": outcome.metadata.get("content_sha256"),
-            "clean_chars": outcome.metadata.get("clean_chars"),
-            "fetch_mode": outcome.metadata.get("fetch_mode"),
+            "content_sha256": _metadata_text(outcome.metadata, "content_sha256"),
+            "clean_chars": _metadata_int(outcome.metadata, "clean_chars"),
+            "fetch_mode": _metadata_text(outcome.metadata, "fetch_mode"),
             "degraded": outcome.degraded,
         },
     )
@@ -313,3 +313,13 @@ def _failure(tool_call: ToolCall, *, reason: str, detail: str) -> ToolResult:
         status=ToolCallStatus.FAILED,
         metadata={"route": "crawl_gateway", "reason": reason, "detail": detail},
     )
+
+
+def _metadata_text(metadata: dict[str, object], key: str) -> str | None:
+    value = metadata.get(key)
+    return value if isinstance(value, str) else None
+
+
+def _metadata_int(metadata: dict[str, object], key: str) -> int | None:
+    value = metadata.get(key)
+    return value if isinstance(value, int) and not isinstance(value, bool) else None

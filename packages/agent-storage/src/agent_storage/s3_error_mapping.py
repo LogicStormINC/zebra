@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from typing import cast
 
 from agent_core.domain.artifact_objects import ArtifactObjectUnavailableError
-from botocore.exceptions import ClientError  # type: ignore[import-untyped]
+from botocore.exceptions import ClientError  # type: ignore
 
 
 def is_not_found(error: ClientError) -> bool:

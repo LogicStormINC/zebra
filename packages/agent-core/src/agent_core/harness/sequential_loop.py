@@ -6,8 +6,8 @@ from agent_core.domain.tools import ToolCall
 from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
 from agent_core.harness.clarification_step import clarification_tool_result
 from agent_core.harness.hooks import VerifierHook
-from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.model_request import allowed_response_repairs
+from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import (
     HarnessAttemptOutcome,
     HarnessAttemptResult,

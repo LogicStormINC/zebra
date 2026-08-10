@@ -7,7 +7,6 @@ import pytest
 from agent_core.domain.identifiers import new_tool_call_id
 from agent_core.domain.tools import ToolCall
 from agent_core.domain.web_resource import WebResourceId
-from agent_tools.web_envelope import WEB_ENVELOPE_CAPABILITY_VERSION
 from agent_storage.web_chunker import chunk_clean_text
 from agent_storage.web_resource import (
     ResourceStatus,
@@ -16,6 +15,7 @@ from agent_storage.web_resource import (
     WebResourceStoreAdapter,
     utc_now_iso,
 )
+from agent_tools.web_envelope import WEB_ENVELOPE_CAPABILITY_VERSION
 from agent_tools.web_projection import (
     CursorError,
     ReadCursor,

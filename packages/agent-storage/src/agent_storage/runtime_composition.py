@@ -10,8 +10,8 @@ from typing import Any, cast
 
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.ports import ArtifactPayloadObjectReadPort
-from botocore.config import Config  # type: ignore[import-untyped]
-from botocore.session import Session  # type: ignore[import-untyped]
+from botocore.config import Config  # type: ignore
+from botocore.session import Session  # type: ignore
 
 from agent_storage.artifact_objects import S3ArtifactObjectStore
 from agent_storage.composition import ControlPlaneStores, sqlite_control_plane_stores

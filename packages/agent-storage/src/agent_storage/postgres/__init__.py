@@ -10,8 +10,8 @@ from agent_storage.postgres.agent_tasks import (
 )
 from agent_storage.postgres.artifact_payloads import PostgresCloudArtifactPayloadStore
 from agent_storage.postgres.artifact_reads import PostgresSessionArtifactReadStore
+from agent_storage.postgres.context_authority import PostgresContextLifecycleConflictError
 from agent_storage.postgres.context_lifecycle import (
-    PostgresContextLifecycleConflictError,
     PostgresContextLifecycleStore,
 )
 from agent_storage.postgres.context_materialization import (
@@ -78,7 +78,8 @@ from agent_storage.postgres.model_tool_projections import (
     PostgresModelToolProjectionConflictError,
     PostgresModelToolProjectionStore,
 )
-from agent_storage.postgres.native_memory import (
+from agent_storage.postgres.native_memory import PostgresNativeMemoryGateway
+from agent_storage.postgres.native_memory_types import (
     NativeMemoryConflictError,
     NativeMemoryError,
     NativeMemoryMutation,
@@ -87,7 +88,6 @@ from agent_storage.postgres.native_memory import (
     NativeMemoryRecallHit,
     NativeMemoryReset,
     NativeMemoryStaleGenerationError,
-    PostgresNativeMemoryGateway,
 )
 from agent_storage.postgres.outbox import PostgresEffectDispatchStore
 from agent_storage.postgres.projections import (

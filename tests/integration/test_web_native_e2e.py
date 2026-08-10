@@ -29,6 +29,7 @@ from agent_tools.web_crawl import (
     web_extract_contract,
     web_fetch_v2_contract,
 )
+from agent_tools.web_envelope import WEB_ENVELOPE_CAPABILITY_VERSION
 from agent_tools.web_projection import (
     WebFindTool,
     WebProjector,
@@ -37,7 +38,6 @@ from agent_tools.web_projection import (
     web_read_contract,
 )
 from agent_tools.web_search import web_search_contract
-from agent_tools.web_envelope import WEB_ENVELOPE_CAPABILITY_VERSION
 
 # ---------------------------------------------------------------------------
 # Contract matrix

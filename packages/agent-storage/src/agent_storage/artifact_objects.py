@@ -19,7 +19,7 @@ from agent_core.domain.artifact_objects import (
     ArtifactObjectVerification,
     ArtifactObjectVerificationStatus,
 )
-from botocore.exceptions import BotoCoreError, ClientError  # type: ignore[import-untyped]
+from botocore.exceptions import BotoCoreError, ClientError  # type: ignore
 
 from agent_storage.s3_error_mapping import (
     is_not_found,

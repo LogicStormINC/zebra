@@ -14,13 +14,13 @@ from agent_tools.search_pipeline import (
     SearchProvider,
     SearchProviderRegistry,
     SearchQuery,
-    web_search_v2_contract,
     apply_filters,
     expand_query,
     keyword_coverage_score,
     parse_search_query,
     reciprocal_rank_fusion,
     rerank_hits,
+    web_search_v2_contract,
 )
 
 
