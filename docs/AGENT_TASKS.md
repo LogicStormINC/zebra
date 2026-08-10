@@ -1273,6 +1273,45 @@ always-cleanup semantics. A failed runner must identify its contract boundary.
   after the pinned `docker/dockerfile:1.7` image was available, the same runner
   passed. No remote GitHub Actions run or Kubernetes claim is made here.
 
+### CLOUD-K8S-GVISOR-E2E-01 - Kubernetes gVisor End-to-End Evidence
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Suggested role: `SRE / PLATFORM / SECURITY`
+- Depends on: `CLOUD-DEPLOY-HELM-01`, `CLOUD-REAL-SVC-CI-01` and a real Linux
+  Kubernetes cluster with a registered `gvisor` RuntimeClass
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `tests/k8s/gvisor/` (new),
+  `.github/workflows/k8s-gvisor-e2e.yml` (new),
+  `docs/CLOUD-K8S-GVISOR-E2E-01.md` (new), this task card, and focused
+  `PROGRESS.md`
+
+#### Goal
+
+Provide a fail-closed Kubernetes runner for real API/Worker-shaped Pods,
+gVisor runtime, workspace quota, NetworkPolicy and long-task checkpoint resume
+across Worker Pod deletion. The runner must clean its namespace and retain
+machine-readable evidence.
+
+#### Acceptance
+
+- Preflight rejects a cluster without a Ready node, `gvisor` RuntimeClass or
+  enforced NetworkPolicy instead of silently falling back to runc.
+- API and Worker Pods use digest-pinned images, gVisor, non-root/read-only
+  security context, explicit resources and a namespace ResourceQuota.
+- A long Worker task resumes from a PVC checkpoint after its Pod is deleted;
+  an oversized PVC is rejected by quota; the allowed API path succeeds while a
+  blocked path is denied.
+- Runner evidence records runtime handler, restart/resume, quota denial,
+  network policy and cleanup. No local non-gVisor cluster is counted as E2E.
+
+#### Explicit Non-Goals
+
+- no production cluster credentials, managed cluster or rollout
+- no fallback to runc/crun when gVisor is unavailable
+- no claim of completion until a real Linux gVisor-enabled cluster passes
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`

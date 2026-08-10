@@ -113,6 +113,10 @@
   application, Redis live, PITR, S3 and fresh-restore matrix runners with
   bounded timeouts and always-retained evidence. The local Docker matrix is
   green; no remote Actions or Kubernetes rollout is claimed.
+- `CLOUD-K8S-GVISOR-E2E-01` is `In Progress` on
+  `codex/cloud-real-svc-ci-01`. The fail-closed Kubernetes runner and dedicated
+  workflow are being added; the current OrbStack cluster has no `gvisor`
+  RuntimeClass, so no Kubernetes E2E pass is claimed yet.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed
