@@ -71,7 +71,7 @@ def test_delegation_guidance_follows_effective_tool_manifest() -> None:
     assert parent_messages[0].role is MessageRole.SYSTEM
     assert "Answer directly" in parent_messages[0].content
     assert "delegation_reason" in parent_messages[0].content
-    assert "Plan activation" not in parent_messages[0].content
+    assert "must first call agent.plan" not in parent_messages[0].content
     assert [message.role for message in direct_messages] == [MessageRole.USER]
 
 

@@ -15847,7 +15847,7 @@ typed-tool Policy, Approval, or Audit.
 ### MDL-PROFILE-02 - Explicit Verified Model Profiles
 
 - Status: `Review`
-- Owner: `Vinson`
+- Owner: `Vinson / Codex coordinated`
 - Suggested role: `CTX / INTEGRATIONS / QA`
 - Depends on: `MM-NATIVE-QWEN-PHASE1@4533cf4`
 - Branch: `codex/generic-model-profile-v2`
@@ -15979,7 +15979,7 @@ violation set show no new regression.
 ### ZNX-GOAL-PLAN-ACT-01 - Goal/Plan Activation Closure
 
 - Status: `In Progress`
-- Owner: `Vinson / Codex coordinated`
+- Owner: `Vinson`
 - Branch: `codex/znx-goal-plan-act-01`
 - Exact base: `61552a4c86e40e324219be96c0cf7f58afb0fb75`
 - Owned paths: `packages/agent-core/src/agent_core/harness/`,
