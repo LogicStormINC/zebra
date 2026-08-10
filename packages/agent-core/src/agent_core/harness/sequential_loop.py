@@ -15,10 +15,12 @@ from agent_core.harness.attempt_result import (
     executed_action_fingerprints,
 )
 from agent_core.harness.capability_guidance import (
-    append_plan_activation_check,
-    should_check_plan_activation,
+    append_required_plan_nudge,
+    required_plan_action,
+    required_plan_failure,
 )
 from agent_core.harness.clarification_step import clarification_tool_result
+from agent_core.harness.completion_blocking import current_task_plan
 from agent_core.harness.completion_evidence import (
     complete_without_tools,
     continue_after_tool_batch,
@@ -111,6 +113,14 @@ class SequentialToolLoop:
             messages, since=context.attempt.started_at
         )
         emitted_events: list[HarnessEventDraft] = HarnessEventBuffer(self._event_sink)
+        if context.task.plan_required and not current_task_plan(context, ()).steps:
+            return required_plan_failure(
+                completion,
+                emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                metadata={"approval_continuation": True},
+            )
         batch = self._batch_executor.execute(
             context,
             messages=messages,
@@ -208,6 +218,37 @@ class SequentialToolLoop:
                     "detail": str(exc),
                 },
         )
+        plan_action = required_plan_action(
+            context,
+            messages,
+            completion,
+            emitted_events,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            metadata=metadata,
+        )
+        if plan_action == "nudge":
+            append_required_plan_nudge(
+                messages, completion, created_at=context.attempt.started_at
+            )
+            return self._request_next_completion(
+                context,
+                messages=messages,
+                emitted_events=emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                fingerprints=fingerprints,
+                metadata={**metadata, "required_plan_nudge_attempted": True},
+                fallback_message=completion.assistant_message.content,
+            )
+        if plan_action == "fail":
+            return required_plan_failure(
+                completion,
+                emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                metadata=metadata,
+            )
         if not completion.tool_calls:
             contract = _final_output_contract(emitted_events, completion)
             _bind_final_output_contract(emitted_events, contract)
@@ -224,30 +265,22 @@ class SequentialToolLoop:
                 fingerprints=fingerprints,
                 request_next_completion=self._request_next_completion,
             )
-        if should_check_plan_activation(
-            context,
-            messages,
-            completion,
-            emitted_events,
-            model_calls_used=model_calls_used,
-            tool_calls_executed=tool_calls_executed,
-            metadata=metadata,
-        ):
-            append_plan_activation_check(
-                messages, completion, created_at=context.attempt.started_at
-            )
-            return self._request_next_completion(
-                context,
-                messages=messages,
-                emitted_events=emitted_events,
-                model_calls_used=model_calls_used,
-                tool_calls_executed=tool_calls_executed,
-                fingerprints=fingerprints,
-                metadata={**metadata, "plan_activation_check_attempted": True},
-                fallback_message=completion.assistant_message.content,
-            )
         selection = self._tool_selector.select(completion.tool_calls)
         calls = completion.tool_calls if self._synthesize_tool_results else (selection.tool_call,)
+        plan_missing = context.task.plan_required and not current_task_plan(
+            context, emitted_events
+        ).steps
+        first_call = completion.tool_calls[0]
+        batch_fits = (
+            context.task.max_tool_calls is None
+            or tool_calls_executed + len(completion.tool_calls)
+            <= context.task.max_tool_calls
+        )
+        if plan_missing and first_call.name in {"agent.clarify", "agent.plan"} and (
+            not self._synthesize_tool_results
+            or (first_call.name == "agent.plan" and not batch_fits)
+        ):
+            calls = (first_call,)
         self._model_step.append_tool_batch(
             messages,
             completion=completion,

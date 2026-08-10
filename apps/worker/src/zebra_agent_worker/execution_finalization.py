@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
@@ -26,6 +27,7 @@ def finalize_execution(
     event_store: SQLiteEventStore,
     started_at: datetime,
     suspension_snapshot: RuntimeSnapshot | None = None,
+    completion_sink: Callable[[SessionEvent], SessionEvent] | None = None,
 ) -> tuple[SessionEvent, ...]:
     if recorder.session.status in {
         SessionStatus.CANCELLED,
@@ -34,15 +36,61 @@ def finalize_execution(
         SessionStatus.FAILED,
     }:
         return recorder.events
-    if attempt_result.outcome not in {
+    if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
+        completed_session = recorder.session.model_copy(
+            update={"status": SessionStatus.COMPLETED}
+        )
+        extraction = memory_extraction_service.extract(
+            session=completed_session,
+            events=event_store.list_for_session(recorder.session.session_id),
+            next_sequence=recorder.next_sequence,
+            command=MemoryCandidateExtractionCommand(
+                repo_id=str(Path(recorder.workspace.workspace_root).expanduser().resolve()),
+                extracted_at=started_at,
+            ),
+        )
+        for event in extraction.events:
+            recorder.append_event(event)
+        completed_session = recorder.session.model_copy(
+            update={"status": SessionStatus.COMPLETED}
+        )
+        promotion = memory_promotion_service.promote(
+            session=completed_session,
+            source_events=event_store.list_for_session(recorder.session.session_id),
+            candidates=extraction.records,
+            promoted_at=started_at,
+        )
+        for event in promotion.events:
+            recorder.append_event(event)
+        title_event = title_service.generate(
+            session=recorder.session.model_copy(update={"status": SessionStatus.COMPLETED}),
+            events=event_store.list_for_session(recorder.session.session_id),
+            next_sequence=recorder.next_sequence,
+        )
+        if title_event is not None:
+            recorder.append_event(title_event)
+        completion_event = SessionEvent.create(
+            session_id=recorder.session.session_id,
+            sequence=recorder.next_sequence,
+            event_type=EventType.SESSION_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={
+                "attempt_number": 1,
+                "summary": attempt_result.summary,
+                "metadata": attempt_result.metadata,
+            },
+        )
+        if completion_sink is None:
+            recorder.append_event(completion_event)
+        else:
+            recorder.accept_persisted_event(completion_sink(completion_event))
+    elif attempt_result.outcome not in {
         HarnessAttemptOutcome.SUSPENDED,
         HarnessAttemptOutcome.WAITING_APPROVAL,
         HarnessAttemptOutcome.WAITING_INPUT,
     }:
         recorder.append(
-            EventType.SESSION_COMPLETED
-            if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
-            else EventType.SESSION_FAILED,
+            EventType.SESSION_FAILED,
             EventActor.HARNESS,
             {
                 "attempt_number": 1,
@@ -69,31 +117,4 @@ def finalize_execution(
                 **snapshot_payload,
             },
         )
-    if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
-        extraction = memory_extraction_service.extract(
-            session=recorder.session,
-            events=event_store.list_for_session(recorder.session.session_id),
-            next_sequence=recorder.next_sequence,
-            command=MemoryCandidateExtractionCommand(
-                repo_id=str(Path(recorder.workspace.workspace_root).expanduser().resolve()),
-                extracted_at=started_at,
-            ),
-        )
-        for event in extraction.events:
-            recorder.append_event(event)
-        promotion = memory_promotion_service.promote(
-            session=recorder.session,
-            source_events=event_store.list_for_session(recorder.session.session_id),
-            candidates=extraction.records,
-            promoted_at=started_at,
-        )
-        for event in promotion.events:
-            recorder.append_event(event)
-        title_event = title_service.generate(
-            session=recorder.session,
-            events=event_store.list_for_session(recorder.session.session_id),
-            next_sequence=recorder.next_sequence,
-        )
-        if title_event is not None:
-            recorder.append_event(title_event)
     return recorder.events

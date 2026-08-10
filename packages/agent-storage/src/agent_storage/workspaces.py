@@ -1,4 +1,5 @@
 import json
+import sqlite3
 from pathlib import Path
 
 from agent_core.domain.identifiers import SessionId
@@ -17,111 +18,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
 
     def save_workspace(self, workspace: WorkspaceProjection) -> WorkspaceProjection:
         with self._database.connect() as connection:
-            connection.execute(
-                """
-                INSERT INTO workspace_projections (
-                    session_id,
-                    workspace_root,
-                    prepared_at,
-                    updated_at,
-                    current_sequence,
-                    status,
-                    policy_profile,
-                    tool_profile,
-                    network_profile,
-                    network_allowlist,
-                    mcp_allowlist,
-                    preapproved_readonly_tools,
-                    skill_components,
-                    skill_component_identities,
-                    agent_definition,
-                    last_attempt_number,
-                    runtime_name,
-                    runtime_engine,
-                    runtime_image,
-                    runtime_spec_digest,
-                    runtime_network_enforcement,
-                    runtime_workspace_writable,
-                    snapshot_id,
-                    snapshot_path
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(session_id) DO UPDATE SET
-                    workspace_root = excluded.workspace_root,
-                    prepared_at = excluded.prepared_at,
-                    updated_at = excluded.updated_at,
-                    current_sequence = excluded.current_sequence,
-                    status = excluded.status,
-                    policy_profile = excluded.policy_profile,
-                    tool_profile = excluded.tool_profile,
-                    network_profile = excluded.network_profile,
-                    network_allowlist = excluded.network_allowlist,
-                    mcp_allowlist = excluded.mcp_allowlist,
-                    preapproved_readonly_tools = excluded.preapproved_readonly_tools,
-                    skill_components = excluded.skill_components,
-                    skill_component_identities = excluded.skill_component_identities,
-                    agent_definition = excluded.agent_definition,
-                    last_attempt_number = excluded.last_attempt_number,
-                    runtime_name = excluded.runtime_name,
-                    runtime_engine = excluded.runtime_engine,
-                    runtime_image = excluded.runtime_image,
-                    runtime_spec_digest = excluded.runtime_spec_digest,
-                    runtime_network_enforcement = excluded.runtime_network_enforcement,
-                    runtime_workspace_writable = excluded.runtime_workspace_writable,
-                    snapshot_id = excluded.snapshot_id,
-                    snapshot_path = excluded.snapshot_path
-                """,
-                (
-                    str(workspace.session_id),
-                    workspace.workspace_root,
-                    workspace.prepared_at.isoformat(),
-                    workspace.updated_at.isoformat(),
-                    workspace.current_sequence,
-                    workspace.status.value,
-                    workspace.policy_profile,
-                    workspace.tool_profile.value,
-                    workspace.network_profile.value,
-                    json.dumps(workspace.network_allowlist),
-                    (
-                        None
-                        if workspace.mcp_allowlist is None
-                        else json.dumps(workspace.mcp_allowlist)
-                    ),
-                    (
-                        None
-                        if workspace.preapproved_readonly_tools is None
-                        else json.dumps(workspace.preapproved_readonly_tools)
-                    ),
-                    (
-                        None
-                        if workspace.skill_components is None
-                        else json.dumps(workspace.skill_components)
-                    ),
-                    (
-                        None
-                        if workspace.skill_component_identities is None
-                        else json.dumps(
-                            [
-                                identity.model_dump(mode="json")
-                                for identity in workspace.skill_component_identities
-                            ]
-                        )
-                    ),
-                    (
-                        None
-                        if workspace.agent_definition is None
-                        else json.dumps(workspace.agent_definition.model_dump(mode="json"))
-                    ),
-                    workspace.last_attempt_number,
-                    workspace.runtime_name,
-                    workspace.runtime_engine,
-                    workspace.runtime_image,
-                    workspace.runtime_spec_digest,
-                    workspace.runtime_network_enforcement,
-                    workspace.runtime_workspace_writable,
-                    workspace.snapshot_id,
-                    workspace.snapshot_path,
-                ),
-            )
+            _save_workspace(connection, workspace)
         return workspace
 
     def get_workspace(self, session_id: SessionId) -> WorkspaceProjection | None:
@@ -289,3 +186,105 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
             ensure_column(connection, "workspace_projections", "agent_definition", "TEXT")
             ensure_column(connection, "workspace_projections", "snapshot_id", "TEXT")
             ensure_column(connection, "workspace_projections", "snapshot_path", "TEXT")
+
+
+def _save_workspace(
+    connection: sqlite3.Connection, workspace: WorkspaceProjection
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO workspace_projections (
+            session_id,
+            workspace_root,
+            prepared_at,
+            updated_at,
+            current_sequence,
+            status,
+            policy_profile,
+            tool_profile,
+            network_profile,
+            network_allowlist,
+            mcp_allowlist,
+            preapproved_readonly_tools,
+            skill_components,
+            skill_component_identities,
+            agent_definition,
+            last_attempt_number,
+            runtime_name,
+            runtime_engine,
+            runtime_image,
+            runtime_spec_digest,
+            runtime_network_enforcement,
+            runtime_workspace_writable,
+            snapshot_id,
+            snapshot_path
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(session_id) DO UPDATE SET
+            workspace_root = excluded.workspace_root,
+            prepared_at = excluded.prepared_at,
+            updated_at = excluded.updated_at,
+            current_sequence = excluded.current_sequence,
+            status = excluded.status,
+            policy_profile = excluded.policy_profile,
+            tool_profile = excluded.tool_profile,
+            network_profile = excluded.network_profile,
+            network_allowlist = excluded.network_allowlist,
+            mcp_allowlist = excluded.mcp_allowlist,
+            preapproved_readonly_tools = excluded.preapproved_readonly_tools,
+            skill_components = excluded.skill_components,
+            skill_component_identities = excluded.skill_component_identities,
+            agent_definition = excluded.agent_definition,
+            last_attempt_number = excluded.last_attempt_number,
+            runtime_name = excluded.runtime_name,
+            runtime_engine = excluded.runtime_engine,
+            runtime_image = excluded.runtime_image,
+            runtime_spec_digest = excluded.runtime_spec_digest,
+            runtime_network_enforcement = excluded.runtime_network_enforcement,
+            runtime_workspace_writable = excluded.runtime_workspace_writable,
+            snapshot_id = excluded.snapshot_id,
+            snapshot_path = excluded.snapshot_path
+        """,
+        (
+            str(workspace.session_id),
+            workspace.workspace_root,
+            workspace.prepared_at.isoformat(),
+            workspace.updated_at.isoformat(),
+            workspace.current_sequence,
+            workspace.status.value,
+            workspace.policy_profile,
+            workspace.tool_profile.value,
+            workspace.network_profile.value,
+            json.dumps(workspace.network_allowlist),
+            None if workspace.mcp_allowlist is None else json.dumps(workspace.mcp_allowlist),
+            (
+                None
+                if workspace.preapproved_readonly_tools is None
+                else json.dumps(workspace.preapproved_readonly_tools)
+            ),
+            None if workspace.skill_components is None else json.dumps(workspace.skill_components),
+            (
+                None
+                if workspace.skill_component_identities is None
+                else json.dumps(
+                    [
+                        identity.model_dump(mode="json")
+                        for identity in workspace.skill_component_identities
+                    ]
+                )
+            ),
+            (
+                None
+                if workspace.agent_definition is None
+                else json.dumps(workspace.agent_definition.model_dump(mode="json"))
+            ),
+            workspace.last_attempt_number,
+            workspace.runtime_name,
+            workspace.runtime_engine,
+            workspace.runtime_image,
+            workspace.runtime_spec_digest,
+            workspace.runtime_network_enforcement,
+            workspace.runtime_workspace_writable,
+            workspace.snapshot_id,
+            workspace.snapshot_path,
+        ),
+    )

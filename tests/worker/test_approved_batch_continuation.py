@@ -44,8 +44,7 @@ def test_approved_batch_continues_tail_without_replaying_completed_call(
     )
     tail = _call("files.read", {"path": "last.txt"}, "call_last", created_at)
     initial_gateway = _gateway(
-        _completion("Run the complete batch.", created_at, first, pending, tail),
-        _completion("This short batch needs no Plan.", created_at, first, pending, tail),
+        _completion("Run the complete batch.", created_at, first, pending, tail)
     )
     final_gateway = _gateway(
         _completion("FIRST|APPROVED|LAST", created_at),
@@ -90,7 +89,7 @@ def test_approved_batch_continues_tail_without_replaying_completed_call(
 
     assert completed.session.status is SessionStatus.COMPLETED
     assert completed.attempt_result.metadata["assistant_message"] == ("FIRST|APPROVED|LAST")
-    assert completed.attempt_result.metadata["model_calls_used"] == 4
+    assert completed.attempt_result.metadata["model_calls_used"] == 3
     assert completed.attempt_result.metadata["tool_calls_executed"] == 3
     assert [
         draft.payload.get("tool_name")

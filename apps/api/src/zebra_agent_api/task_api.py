@@ -88,6 +88,8 @@ class TaskReadApi:
             status=task.status.value,
             goal={"objective": task.goal},
         )
+        if task.plan_required:
+            body["plan_required"] = True
         final_message = final_message_identity(self.database_path, task_id)
         if final_message is not None:
             body["final_message"] = final_message
@@ -173,6 +175,8 @@ class TaskReadApi:
                 status=task.status.value,
                 goal={"objective": task.goal},
             )
+            if task.plan_required:
+                body["plan_required"] = True
             items.append(body)
         return ApiResponse(
             200,
@@ -266,7 +270,11 @@ def create_task(
     task = SQLiteAgentTaskStore(app.database_path).ensure_for_session(SessionId(UUID(session_id)))
     body = dict(response.body)
     body.pop("workspace", None)
-    body.update(task_id=str(task.task_id), session_id=str(task.task_id))
+    body.update(
+        task_id=str(task.task_id),
+        session_id=str(task.task_id),
+        plan_required=task.plan_required,
+    )
     return ApiResponse(response.status_code, body)
 
 

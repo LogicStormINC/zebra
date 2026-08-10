@@ -87,6 +87,7 @@ class ConcurrentToolBatchExecutor:
             and not first_execution_started
             and len(tool_calls) > 1
             and self._max_parallel_tool_calls > 1
+            and all(call.name != "agent.plan" for call in tool_calls)
             and all(call.name in self._parallel_safe_tools for call in tool_calls)
         )
 

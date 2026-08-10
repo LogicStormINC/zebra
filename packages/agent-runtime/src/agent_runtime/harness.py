@@ -72,7 +72,11 @@ from agent_runtime.adapters.local import LocalRuntime
 from agent_runtime.artifact_output_contract import (
     ArtifactOutputContractEmitTool,
 )
-from agent_runtime.finos_journal_provider import FinosJournalProvider
+from agent_runtime.finos_journal_provider import (
+    _FINOS_AUTHORITATIVE_TYPED_READ_TAG,
+    FinosJournalProvider,
+    trusted_authoritative_typed_read_result,
+)
 from agent_runtime.mcp_protocol import McpAnyServerSpec
 from agent_runtime.mcp_routing import build_mcp_transport
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
@@ -135,6 +139,7 @@ def run_local_harness(
     trusted_local: bool = False,
     max_model_calls: int | None = None,
     max_tool_calls: int | None = None,
+    plan_required: bool = False,
     web_pipeline_v2: bool = False,
     session_id: SessionId | None = None,
     initial_user_event_id: EventId | None = None,
@@ -175,6 +180,7 @@ def run_local_harness(
                 max_attempts=1,
                 max_model_calls=max_model_calls,
                 max_tool_calls=max_tool_calls,
+                plan_required=plan_required,
                 workspace_root=workspace_root,
                 policy_profile=policy_profile.value,
                 tool_profile=tool_profile,
@@ -380,6 +386,9 @@ class LocalToolGateway(ToolGatewayPort):
             registry.register(research.contract, research.handle)
         self._validator_tools = registry.names_with_tag("validator")
         self._read_only_tools = registry.names_with_tag(READ_ONLY_EFFECT_TAG)
+        self._authoritative_typed_read_tools = registry.names_with_tag(
+            _FINOS_AUTHORITATIVE_TYPED_READ_TAG
+        )
         self._model_tools = registry.model_tools() + self._mcp_catalog.model_tools
         self._parallel_safe_tools = registry.parallel_safe_names()
         self._parallel_batch_limits = (
@@ -502,7 +511,10 @@ class LocalToolGateway(ToolGatewayPort):
             )
         try:
             result = self._executor.execute(tool_call)
-            return self._project_tool_output(tool_call, result)
+            return trusted_authoritative_typed_read_result(
+                self._project_tool_output(tool_call, result),
+                trusted=tool_call.name in self._authoritative_typed_read_tools,
+            )
         except ToolRegistryError as exc:
             detail = str(exc)[:1000]
             return ToolResult(

@@ -54,6 +54,66 @@ def test_conflicting_validator_fields_fail_closed_on_recorded_success() -> None:
 
 
 @pytest.mark.parametrize(
+    ("event_type", "status", "metadata", "satisfied"),
+    (
+        (
+            EventType.TOOL_EXECUTION_COMPLETED,
+            ToolCallStatus.EXECUTED.value,
+            {"typed_evidence": ["authoritative_typed_read"]},
+            True,
+        ),
+        (
+            EventType.TOOL_EXECUTION_COMPLETED,
+            ToolCallStatus.EXECUTED.value,
+            {"tool_tags": ["effect:read_only"]},
+            False,
+        ),
+        (
+            EventType.TOOL_EXECUTION_FAILED,
+            ToolCallStatus.FAILED.value,
+            {"typed_evidence": ["authoritative_typed_read"]},
+            False,
+        ),
+    ),
+)
+def test_authoritative_typed_read_requires_successful_metadata_coverage(
+    event_type: EventType,
+    status: str,
+    metadata: dict[str, object],
+    satisfied: bool,
+) -> None:
+    definition = AgentDefinition(
+        agent_id="agent-neutral",
+        version="1.0.0",
+        completion_contract=CompletionEvidenceContract(
+            required_evidence=(
+                CompletionEvidenceRequirement(
+                    evidence_id="authoritative_financial_evidence",
+                    typed_evidence=("authoritative_typed_read",),
+                ),
+            )
+        ),
+    )
+    evidence = evaluate_completion_evidence(
+        definition,
+        (
+            HarnessEventDraft(
+                event_type=event_type,
+                actor=EventActor.TOOL,
+                payload={
+                    "tool_call_id": str(new_tool_call_id()),
+                    "status": status,
+                    "metadata": metadata,
+                },
+            ),
+        ),
+    )
+
+    assert evidence.satisfied is satisfied
+    assert evidence.missing == (() if satisfied else ("authoritative_financial_evidence",))
+
+
+@pytest.mark.parametrize(
     ("event_type", "actor", "status"),
     (
         (EventType.TOOL_EXECUTION_FAILED, EventActor.TOOL, ToolCallStatus.FAILED.value),

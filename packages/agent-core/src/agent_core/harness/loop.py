@@ -100,6 +100,7 @@ class HarnessLoop:
                 "max_attempts": task.max_attempts,
                 "max_model_calls": task.max_model_calls,
                 "max_tool_calls": task.max_tool_calls,
+                **({"plan_required": True} if task.plan_required else {}),
                 **({"model_id": task.model_id} if task.model_id is not None else {}),
             },
         )

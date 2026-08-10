@@ -94,6 +94,14 @@ def test_plan_activation_guidance_follows_effective_tool_manifest(
     combined_messages = HarnessModelStep(
         available_tools=(PLAN_TOOL, RESEARCH_TOOL)
     ).build_initial_messages(task, created_at=created_at)
+    required_messages = HarnessModelStep(available_tools=(PLAN_TOOL,)).build_initial_messages(
+        HarnessTask(
+            title="Required",
+            user_input="Complete the explicit Goal.",
+            plan_required=True,
+        ),
+        created_at=created_at,
+    )
     direct_messages = HarnessModelStep().build_initial_messages(
         task, created_at=created_at
     )
@@ -112,6 +120,8 @@ def test_plan_activation_guidance_follows_effective_tool_manifest(
     assert planned_messages[-1].role is MessageRole.USER
     assert "delegation_reason" in combined_messages[0].content
     assert combined_messages[-1].role is MessageRole.USER
+    assert "plan_required=true" in required_messages[0].content
+    assert "required_plan_not_created" in required_messages[0].content
     assert [message.role for message in direct_messages] == [MessageRole.USER]
 
 

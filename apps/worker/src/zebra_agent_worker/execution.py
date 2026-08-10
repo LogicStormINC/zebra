@@ -383,11 +383,14 @@ class SessionExecutionService:
                 media_inputs=native_media_inputs,
                 runtime_evidence=task.runtime_evidence,
                 goal=task_record.goal,
+                plan_required=task_record.plan_required,
                 task_plan=task_record.task_plan,
             ),
             session=claimed.recovery.session,
             attempt=HarnessAttempt(number=1, started_at=started_at),
-            completion_evidence_events=persisted_completion_evidence_events(session_events),
+            completion_evidence_events=persisted_completion_evidence_events(
+                item.event for item in task_events
+            ),
         )
         try:
             continuation = recover_approved_continuation(session_events)
@@ -515,6 +518,19 @@ class SessionExecutionService:
             cleanup_error = close_tool_gateway(tool_gateway)
         if cleanup_error is not None:
             attempt_result = runtime_cleanup_failure_result(cleanup_error, attempt_result)
+        completion_lease_released = False
+
+        def persist_completed(event: SessionEvent) -> SessionEvent:
+            nonlocal completion_lease_released
+            self._event_store.append_completed_and_release_lease(
+                event,
+                session=recorder.session,
+                workspace=recorder.workspace,
+                worker_id=claimed.lease.worker_id,
+            )
+            completion_lease_released = True
+            return event
+
         emitted_events = finalize_execution(
             recorder=recorder,
             attempt_result=attempt_result,
@@ -524,11 +540,13 @@ class SessionExecutionService:
             event_store=self._event_store,
             started_at=started_at,
             suspension_snapshot=suspension_snapshot,
+            completion_sink=persist_completed,
         )
         final_session = self._projection_store.get_session(session_id)
         if final_session is None:
             raise WorkerExecutionError("session projection missing after worker execution")
-        self._claim_service.release_claim(claimed)
+        if not completion_lease_released:
+            self._claim_service.release_claim(claimed)
         return ExecutedSession(
             session=final_session,
             events=emitted_events,

@@ -33,6 +33,11 @@ class TaskPreparedPayload(BaseModel):
     max_attempts: int | None = None
     max_model_calls: int | None = None
     max_tool_calls: int | None = None
+    plan_required: bool = Field(
+        default=False,
+        strict=True,
+        exclude_if=lambda value: not value,
+    )
     model_id: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @field_validator("title", "user_input")

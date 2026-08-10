@@ -38,6 +38,8 @@ class HarnessStopReason(StrEnum):
     TOOL_CALL_BUDGET_EXHAUSTED = "tool_call_budget_exhausted"
     TOOL_LOOP_NO_PROGRESS = "tool_loop_no_progress"
     TASK_PLAN_INCOMPLETE = "task_plan_incomplete"
+    REQUIRED_PLAN_NOT_CREATED = "required_plan_not_created"
+    COMPLETION_EVIDENCE_MISSING = "completion_evidence_missing"
     APPROVAL_REQUIRED = "approval_required"
     CLARIFICATION_REQUIRED = "clarification_required"
 
@@ -69,6 +71,7 @@ class HarnessTask:
     media_inputs: tuple[ModelMediaInput, ...] = ()
     public_content: str | None = None
     goal: str | None = None
+    plan_required: bool = False
     task_plan: SessionPlan = field(default_factory=SessionPlan)
 
     def __post_init__(self) -> None:
@@ -81,6 +84,8 @@ class HarnessTask:
             if not normalized_goal:
                 raise ValueError("harness task goal must not be blank when set")
             object.__setattr__(self, "goal", normalized_goal)
+        if not isinstance(self.plan_required, bool):
+            raise ValueError("harness task plan_required must be boolean")
         if self.public_content is not None:
             normalized_public_content = self.public_content.strip()
             if not normalized_public_content:

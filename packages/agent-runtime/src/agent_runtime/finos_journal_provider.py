@@ -13,6 +13,8 @@ from agent_tools import ToolContract, ToolRegistry
 from agent_tools.contracts import READ_ONLY_EFFECT_TAG
 
 MAX_RESPONSE_BYTES = 524_288
+AUTHORITATIVE_TYPED_READ = "authoritative_typed_read"
+_FINOS_AUTHORITATIVE_TYPED_READ_TAG = "internal:finos_authoritative_typed_read"
 FINOS_JOURNAL_V1_CONTRACT = "finos.journals.v1"
 FINOS_JOURNAL_V2_CONTRACT = "finos.journals.v2"
 FINOS_JOURNAL_V3_CONTRACT = "finos.journals.v3"
@@ -359,11 +361,11 @@ class FinosJournalProvider:
                 # failure. Saving stays a user-initiated action (the browser
                 # message action), never a model tool call.
                 continue
-            tags = (
-                (*spec.tags, READ_ONLY_EFFECT_TAG)
-                if spec.side_effect == "read_only"
-                else spec.tags
-            )
+            tags = spec.tags
+            if spec.side_effect == "read_only":
+                tags += (READ_ONLY_EFFECT_TAG,)
+                if "validator" not in spec.tags:
+                    tags += (_FINOS_AUTHORITATIVE_TYPED_READ_TAG,)
             registry.register(spec.contract, self._handler(spec), tags=tags)
 
     def _handler(self, spec: _FinosTool) -> Callable[[ToolCall], ToolResult]:
@@ -415,6 +417,24 @@ class FinosJournalProvider:
             output=output,
             metadata=metadata,
         )
+
+
+def trusted_authoritative_typed_read_result(result: ToolResult, *, trusted: bool) -> ToolResult:
+    metadata = dict(result.metadata)
+    raw = metadata.get("typed_evidence", ())
+    values = raw if isinstance(raw, list | tuple) else (raw,)
+    evidence = [
+        item.strip()
+        for item in values
+        if isinstance(item, str) and item.strip() != AUTHORITATIVE_TYPED_READ
+    ]
+    if trusted and result.status is ToolCallStatus.EXECUTED:
+        evidence.append(AUTHORITATIVE_TYPED_READ)
+    if evidence:
+        metadata["typed_evidence"] = list(dict.fromkeys(evidence))
+    else:
+        metadata.pop("typed_evidence", None)
+    return result.model_copy(update={"metadata": metadata})
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):

@@ -34,6 +34,7 @@ class AgentTask(BaseModel):
     task_id: TaskId
     title: str
     goal: str
+    plan_required: bool = Field(default=False, strict=True)
     task_plan: SessionPlan = Field(default_factory=SessionPlan)
     status: SessionStatus
     active_segment_id: SessionId

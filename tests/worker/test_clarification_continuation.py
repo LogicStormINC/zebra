@@ -5,6 +5,11 @@ from pathlib import Path
 import pytest
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
+from agent_core.domain.agent_definitions import (
+    AgentDefinition,
+    CompletionEvidenceContract,
+    CompletionEvidenceRequirement,
+)
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_message_id, new_session_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
@@ -164,6 +169,129 @@ def test_clarification_response_resumes_same_session_once(
         event.event_type is EventType.HARNESS_ATTEMPT_STARTED
         and event.payload.get("clarification_continuation") is True
         for event in events
+    ) == 1
+
+
+def test_required_plan_nudge_remains_bounded_across_clarification(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "required-plan-clarification.sqlite"
+    first_read = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="files.read",
+        arguments={"path": "first.txt"},
+        created_at=NOW,
+    )
+    clarify_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="agent.clarify",
+        arguments={"question": "Which account?"},
+        created_at=NOW,
+    )
+    second_read = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="files.read",
+        arguments={"path": "second.txt"},
+        created_at=NOW,
+    )
+    initial = ScriptedModelGateway(
+        responses=(
+            _response("Read before planning.", first_read),
+            _response("I need one answer.", clarify_call),
+        )
+    )
+    resumed = ScriptedModelGateway(
+        responses=(_response("Read before planning again.", second_read),)
+    )
+    gateways = iter((initial, resumed))
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: next(gateways),
+    )
+    session_id = _seed_session(
+        database_path,
+        tmp_path,
+        plan_required=True,
+    )
+    service = _execution_service(database_path)
+
+    waiting = service.execute_session(session_id, worker_id="worker-a", executed_at=NOW)
+    create_app(database_path).append_session_message(
+        str(session_id),
+        {
+            "content": "Main account",
+            "clarification_id": str(clarify_call.tool_call_id),
+        },
+    )
+    failed = service.execute_session(session_id, worker_id="worker-a", executed_at=NOW)
+
+    assert waiting.session.status is SessionStatus.WAITING_INPUT
+    assert failed.session.status is SessionStatus.FAILED
+    assert failed.attempt_result.metadata["stop_reason"] == "required_plan_not_created"
+    assert len(resumed.requests) == 1
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
+    assert not any(
+        event.event_type is EventType.TOOL_EXECUTION_STARTED
+        and event.payload.get("tool_name") == "files.read"
+        for event in events
+    )
+
+
+def test_completion_evidence_nudge_remains_bounded_across_clarification(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "completion-evidence-clarification.sqlite"
+    clarify_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="agent.clarify",
+        arguments={"question": "Which account?"},
+        created_at=NOW,
+    )
+    initial = ScriptedModelGateway(
+        responses=(
+            _response("The answer is ready."),
+            _response("I need one answer.", clarify_call),
+        )
+    )
+    resumed = ScriptedModelGateway(
+        responses=(
+            _response("Still no authoritative evidence."),
+            _response("Still no authoritative evidence."),
+        )
+    )
+    gateways = iter((initial, resumed))
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: next(gateways),
+    )
+    session_id = _seed_session(
+        database_path,
+        tmp_path,
+        agent_definition=_authoritative_evidence_definition(),
+    )
+    service = _execution_service(database_path)
+
+    waiting = service.execute_session(session_id, worker_id="worker-a", executed_at=NOW)
+    create_app(database_path).append_session_message(
+        str(session_id),
+        {"content": "Main account", "clarification_id": str(clarify_call.tool_call_id)},
+    )
+    failed = service.execute_session(session_id, worker_id="worker-a", executed_at=NOW)
+
+    assert waiting.session.status is SessionStatus.WAITING_INPUT
+    assert failed.session.status is SessionStatus.FAILED
+    assert failed.attempt_result.metadata["stop_reason"] == "completion_evidence_missing"
+    assert len(resumed.requests) == 1
+    clarification = next(
+        event
+        for event in SQLiteEventStore(database_path).list_for_session(session_id)
+        if event.event_type is EventType.CLARIFICATION_REQUESTED
+    )
+    assert sum(
+        message.get("metadata", {}).get("missing_completion_evidence") is not None
+        for message in clarification.payload["conversation"]
     ) == 1
 
 
@@ -334,13 +462,21 @@ def _response(content: str, tool_call: ToolCall | None = None) -> ScriptedModelR
     )
 
 
-def _seed_session(database_path: Path, workspace_root: Path):
+def _seed_session(
+    database_path: Path,
+    workspace_root: Path,
+    *,
+    plan_required: bool = False,
+    agent_definition: AgentDefinition | None = None,
+):
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title="Clarification continuation",
             user_input="Prepare an audience-specific summary.",
             workspace_root=workspace_root.resolve(),
             policy_profile="workspace_write",
+            plan_required=plan_required,
+            agent_definition=agent_definition,
         )
     )
     event_store = SQLiteEventStore(database_path)
@@ -353,6 +489,21 @@ def _seed_session(database_path: Path, workspace_root: Path):
         SQLiteWorkspaceProjectionStore(database_path),
     ).recover_session(bootstrap.session.session_id)
     return bootstrap.session.session_id
+
+
+def _authoritative_evidence_definition() -> AgentDefinition:
+    return AgentDefinition(
+        agent_id="finos",
+        version="1.0.0",
+        completion_contract=CompletionEvidenceContract(
+            required_evidence=(
+                CompletionEvidenceRequirement(
+                    evidence_id="authoritative_financial_evidence",
+                    typed_evidence=("authoritative_typed_read",),
+                ),
+            )
+        ),
+    )
 
 
 def _execution_service(database_path: Path) -> SessionExecutionService:

@@ -29,6 +29,7 @@ class CreateSessionPayload(TypedDict):
     tool_profile: str
     max_model_calls: int | None
     max_tool_calls: int | None
+    plan_required: bool
     network_profile: str
     network_allowlist: list[str]
     mcp_allowlist: list[str]
@@ -126,10 +127,10 @@ def parse_create_session_payload(payload: dict[str, object]) -> CreateSessionPay
     workspace = payload.get("workspace", ".")
     if not isinstance(workspace, str) or not workspace.strip():
         return bad_request("workspace must be a non-blank string when provided")
-    execute = payload.get("execute", False)
-    if not isinstance(execute, bool):
-        return bad_request("execute must be a boolean when provided")
-
+    execute, plan_required = payload.get("execute", False), payload.get("plan_required", False)
+    for field, value in (("execute", execute), ("plan_required", plan_required)):
+        if not isinstance(value, bool):
+            return bad_request(f"{field} must be a boolean when provided")
     policy_profile = payload.get("policy_profile", PolicyProfile.WORKSPACE_WRITE.value)
     if not isinstance(policy_profile, str):
         return bad_request("policy_profile must be a string when provided")
@@ -137,7 +138,6 @@ def parse_create_session_payload(payload: dict[str, object]) -> CreateSessionPay
         PolicyProfile(policy_profile)
     except ValueError:
         return bad_request("policy_profile is not supported")
-
     tool_profile = payload.get("tool_profile", ToolProfile.GENERAL.value)
     if not isinstance(tool_profile, str):
         return bad_request("tool_profile must be a string when provided")
@@ -234,11 +234,11 @@ def parse_create_session_payload(payload: dict[str, object]) -> CreateSessionPay
         ),
         "title": title.strip(),
         "workspace": workspace.strip(),
-        "execute": execute,
+        "execute": bool(execute),
         "policy_profile": policy_profile,
         "tool_profile": tool_profile,
         "max_model_calls": max_model_calls,
-        "max_tool_calls": max_tool_calls,
+        "max_tool_calls": max_tool_calls, "plan_required": bool(plan_required),
         "network_profile": network.name.value,
         "network_allowlist": list(network.domain_allowlist),
         "mcp_allowlist": list(normalized_mcp),

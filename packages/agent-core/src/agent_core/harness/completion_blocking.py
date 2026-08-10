@@ -37,6 +37,16 @@ def enforce_plan_completion_coherence(
     if result.outcome is not HarnessAttemptOutcome.COMPLETED:
         return result
     plan = current_task_plan(context, result.emitted_events)
+    if context.task.plan_required and not plan.steps:
+        return replace(
+            result,
+            outcome=HarnessAttemptOutcome.FAILED,
+            summary="required durable Plan was not created",
+            metadata={
+                **result.metadata,
+                "stop_reason": "required_plan_not_created",
+            },
+        )
     if not plan.open_step_ids:
         return result
     return replace(
@@ -87,6 +97,24 @@ def append_missing_evidence_observation(
             metadata={"missing_completion_evidence": list(missing)},
         )
     )
+
+
+def completion_evidence_observation_count(
+    messages: Iterable[SessionMessage],
+    metadata: dict[str, object],
+) -> int:
+    count = metadata.get("completion_evidence_observation_count")
+    recorded = count if isinstance(count, int) and not isinstance(count, bool) else 0
+    return max(
+        recorded,
+        sum("missing_completion_evidence" in message.metadata for message in messages),
+    )
+
+
+def completion_evidence_failure_outcome(
+    open_plan_steps: tuple[str, ...],
+) -> HarnessAttemptOutcome:
+    return HarnessAttemptOutcome.SUSPENDED if open_plan_steps else HarnessAttemptOutcome.FAILED
 
 
 def blocked_completion_reason(open_plan_steps: tuple[str, ...]) -> str:

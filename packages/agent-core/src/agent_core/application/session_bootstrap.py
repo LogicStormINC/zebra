@@ -38,6 +38,7 @@ class SessionBootstrapCommand:
     max_attempts: int = 1
     max_model_calls: int | None = None
     max_tool_calls: int | None = None
+    plan_required: bool = False
     created_at: datetime | None = None
     session_id: SessionId | None = None
     model_id: str | None = None
@@ -51,6 +52,8 @@ class BootstrappedSession:
 
 class SessionBootstrapService:
     def build(self, command: SessionBootstrapCommand) -> BootstrappedSession:
+        if not isinstance(command.plan_required, bool):
+            raise ValueError("plan_required must be boolean")
         mcp_allowlist = normalize_mcp_allowlist(command.mcp_allowlist)
         preapproved_readonly_tools = normalize_mcp_allowlist(
             command.preapproved_readonly_tools
@@ -144,6 +147,7 @@ class SessionBootstrapService:
                     "max_attempts": command.max_attempts,
                     "max_model_calls": command.max_model_calls,
                     "max_tool_calls": command.max_tool_calls,
+                    **({"plan_required": True} if command.plan_required else {}),
                     **(
                         {"model_id": command.model_id}
                         if command.model_id is not None

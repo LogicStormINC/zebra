@@ -484,6 +484,7 @@ class HarnessModelStep:
             messages,
             self._available_tools,
             created_at=created_at,
+            plan_required=task.plan_required,
         )
         append_task_state_context(messages, task, created_at=created_at)
         messages.append(

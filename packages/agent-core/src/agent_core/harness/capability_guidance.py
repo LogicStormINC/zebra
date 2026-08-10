@@ -1,11 +1,19 @@
 from collections.abc import Mapping, Sequence
 from datetime import datetime
+from typing import Literal
 
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion, ModelToolDefinition
+from agent_core.domain.plans import SessionPlan
+from agent_core.harness.attempt_result import build_attempt_result
 from agent_core.harness.completion_blocking import current_task_plan
-from agent_core.harness.models import HarnessContext, HarnessEventDraft
+from agent_core.harness.models import (
+    HarnessAttemptOutcome,
+    HarnessAttemptResult,
+    HarnessContext,
+    HarnessEventDraft,
+)
 
 _PLAN_ACTIVATION_POLICY = "plan-activation.v1"
 
@@ -35,21 +43,35 @@ PLAN_ACTIVATION_GUIDANCE = (
     "multiple independent reads or checks do not require a Plan by themselves."
 )
 
+REQUIRED_PLAN_GUIDANCE = (
+    "Required Plan contract:\n"
+    "- This Task has plan_required=true. Before finalizing or calling any "
+    "substantive tool, first call agent.plan with a non-empty durable Plan.\n"
+    "- agent.clarify may be called first only when user input is required.\n"
+    "- Finishing or proposing substantive work without a durable Plan causes "
+    "the Task to fail as required_plan_not_created."
+)
+
 
 def append_capability_guidance(
     messages: list[SessionMessage],
     tools: tuple[ModelToolDefinition, ...],
     *,
     created_at: datetime,
+    plan_required: bool = False,
 ) -> None:
     names = {tool.name for tool in tools}
     guidance = "\n\n".join(
         text
         for name, text in (
+            (
+                "agent.plan",
+                REQUIRED_PLAN_GUIDANCE if plan_required else "",
+            ),
             ("agent.plan", PLAN_ACTIVATION_GUIDANCE),
             ("agent.research", MODEL_NATIVE_DELEGATION_GUIDANCE),
         )
-        if name in names
+        if name in names and text
     )
     if not guidance:
         return
@@ -68,7 +90,7 @@ def append_capability_guidance(
     )
 
 
-def should_check_plan_activation(
+def required_plan_action(
     context: HarnessContext,
     messages: Sequence[SessionMessage],
     completion: ModelCompletion,
@@ -77,48 +99,79 @@ def should_check_plan_activation(
     model_calls_used: int,
     tool_calls_executed: int,
     metadata: Mapping[str, object],
-) -> bool:
+) -> Literal["continue", "nudge", "fail"]:
     calls = completion.tool_calls
     if (
-        len(calls) < 2
-        or metadata.get("plan_activation_check_attempted") is True
-        or metadata.get("clarification_continuation") is True
-        or tool_calls_executed != 0
-        or calls[0].name in {"agent.clarify", "agent.plan"}
+        not context.task.plan_required
         or current_task_plan(context, emitted_events).steps
-        or not any(
-            message.metadata.get("plan_activation_policy") == _PLAN_ACTIVATION_POLICY
-            for message in messages
-        )
     ):
-        return False
+        return "continue"
+    if calls and calls[0].name == "agent.clarify":
+        return "continue"
+    if calls and calls[0].name == "agent.plan" and _has_nonempty_plan(calls[0].arguments):
+        return "continue"
+    if metadata.get("required_plan_nudge_attempted") is True or any(
+        message.metadata.get("required_plan_nudge") is True for message in messages
+    ):
+        return "fail"
     model_limit = context.task.max_model_calls
     if model_limit is not None and model_calls_used + 1 >= model_limit:
-        return False
+        return "fail"
     tool_limit = context.task.max_tool_calls
-    return tool_limit is None or tool_calls_executed + len(calls) < tool_limit
+    if tool_limit is not None and tool_calls_executed >= tool_limit:
+        return "fail"
+    return "nudge"
 
 
-def append_plan_activation_check(
+def append_required_plan_nudge(
     messages: list[SessionMessage],
     completion: ModelCompletion,
     *,
     created_at: datetime,
 ) -> None:
-    names = ", ".join(call.name for call in completion.tool_calls)
+    names = [call.name for call in completion.tool_calls]
     messages.append(
         SessionMessage(
             message_id=new_message_id(),
             role=MessageRole.SYSTEM,
             content=(
-                "Runtime plan-activation check: the previous response proposed "
-                f"these tools before any durable Plan: {names}. Re-evaluate once. "
-                "If the goal requires durable coordination, call agent.plan first; "
-                "necessary substantive tools may follow it in the same response. "
-                "If this is only a simple one-step or short linear sequence, re-propose "
-                "the necessary tools without a Plan. This check will not repeat."
+                "Runtime contract observation: plan_required=true, but no non-empty "
+                "durable Plan exists. The prior response tried to finalize or proposed "
+                f"substantive tools before planning: {names}. Re-evaluate once and call "
+                "agent.plan first with non-empty steps. A valid Plan may be followed by "
+                "necessary tools in the same response. If user input is needed first, "
+                "call agent.clarify alone. Any other response fails the Task as "
+                "required_plan_not_created."
             ),
             created_at=created_at,
-            metadata={"plan_activation_check": True},
+            metadata={"required_plan_nudge": True},
         )
     )
+
+
+def required_plan_failure(
+    completion: ModelCompletion,
+    emitted_events: list[HarnessEventDraft],
+    *,
+    model_calls_used: int,
+    tool_calls_executed: int,
+    metadata: Mapping[str, object],
+) -> HarnessAttemptResult:
+    return build_attempt_result(
+        outcome=HarnessAttemptOutcome.FAILED,
+        summary="required durable Plan was not created",
+        assistant_message=completion.assistant_message.content,
+        model_calls_used=model_calls_used,
+        tool_calls_executed=tool_calls_executed,
+        emitted_events=emitted_events,
+        metadata={**metadata, "stop_reason": "required_plan_not_created"},
+    )
+
+
+def _has_nonempty_plan(arguments: Mapping[str, object]) -> bool:
+    if "steps" not in arguments:
+        return False
+    try:
+        return bool(SessionPlan.model_validate({"steps": arguments["steps"]}).steps)
+    except ValueError:
+        return False

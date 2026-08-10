@@ -18,6 +18,8 @@ from agent_core.harness.completion_blocking import (
     append_missing_evidence_observation,
     blocked_completion_reason,
     blocked_completion_summary,
+    completion_evidence_failure_outcome,
+    completion_evidence_observation_count,
     current_task_plan,
 )
 from agent_core.harness.models import (
@@ -277,9 +279,7 @@ def complete_without_tools(
     request_next_completion: Callable[..., HarnessAttemptResult],
 ) -> HarnessAttemptResult:
     status = evaluate_context_completion_evidence(context, emitted_events)
-    observation_count = _non_negative_int(
-        metadata.get("completion_evidence_observation_count")
-    )
+    observation_count = completion_evidence_observation_count(messages, metadata)
     metadata = _completion_status_metadata(status, metadata)
     if status.satisfied:
         return build_attempt_result(
@@ -297,7 +297,7 @@ def complete_without_tools(
         )
     if observation_count >= 1:
         return build_attempt_result(
-            outcome=HarnessAttemptOutcome.SUSPENDED,
+            outcome=completion_evidence_failure_outcome(status.open_plan_steps),
             summary=blocked_completion_summary(status.open_plan_steps),
             assistant_message=assistant_message,
             model_calls_used=model_calls_used,
@@ -345,12 +345,10 @@ def prepare_terminal_synthesis_evidence(
     status = evaluate_context_completion_evidence(context, emitted_events)
     if status.satisfied:
         return None
-    observation_count = _non_negative_int(
-        metadata.get("completion_evidence_observation_count")
-    )
+    observation_count = completion_evidence_observation_count(messages, metadata)
     if observation_count >= 1:
         return build_attempt_result(
-            outcome=HarnessAttemptOutcome.SUSPENDED,
+            outcome=completion_evidence_failure_outcome(status.open_plan_steps),
             summary=blocked_completion_summary(status.open_plan_steps),
             assistant_message=fallback_message,
             model_calls_used=model_calls_used,
@@ -398,7 +396,7 @@ def terminal_synthesis_completion_evidence(
     if status.satisfied:
         return None
     return build_attempt_result(
-        outcome=HarnessAttemptOutcome.SUSPENDED,
+        outcome=completion_evidence_failure_outcome(status.open_plan_steps),
         summary=blocked_completion_summary(status.open_plan_steps),
         assistant_message=assistant_message,
         model_calls_used=model_calls_used,

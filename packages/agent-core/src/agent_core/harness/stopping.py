@@ -69,6 +69,11 @@ class HarnessStoppingPolicy:
             return False
         if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
             return False
+        if attempt_result.metadata.get("stop_reason") in {
+            "completion_evidence_missing",
+            "required_plan_not_created",
+        }:
+            return False
         if max_model_calls is not None and model_calls_used >= max_model_calls:
             return False
         if max_tool_calls is not None and tool_calls_used >= max_tool_calls:
@@ -93,6 +98,10 @@ class HarnessStoppingPolicy:
             return HarnessStopReason.CLARIFICATION_REQUIRED
         if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
             return HarnessStopReason.COMPLETED
+        if attempt_result.metadata.get("stop_reason") == "required_plan_not_created":
+            return HarnessStopReason.REQUIRED_PLAN_NOT_CREATED
+        if attempt_result.metadata.get("stop_reason") == "completion_evidence_missing":
+            return HarnessStopReason.COMPLETION_EVIDENCE_MISSING
         if attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED:
             if attempt_result.metadata.get("stop_reason") == "task_plan_incomplete":
                 return HarnessStopReason.TASK_PLAN_INCOMPLETE

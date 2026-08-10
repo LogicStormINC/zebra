@@ -346,6 +346,7 @@ def _task_from_connection(connection: sqlite3.Connection, task_id: TaskId) -> Ag
         task_id=task_id,
         title=row["title"],
         goal=_task_goal(connection, row["root_session_id"]),
+        plan_required=_task_plan_required(connection, row["root_session_id"]),
         task_plan=_task_plan(connection, task_id),
         status=SessionStatus(row["status"]),
         active_segment_id=SessionId(UUID(row["active_segment_id"])),
@@ -371,10 +372,28 @@ def _task_goal(connection: sqlite3.Connection, root_session_id: str) -> str:
         if projection is None:
             raise ValueError("task goal projection is incomplete")
         return str(projection["title"]).strip()
-    goal = deserialize_event_row(row).payload.get("content")
+    payload = deserialize_event_row(row).payload
+    goal = payload.get("public_content", payload.get("content"))
     if not isinstance(goal, str) or not goal.strip():
         raise ValueError("task goal projection is invalid")
     return goal.strip()
+
+
+def _task_plan_required(connection: sqlite3.Connection, root_session_id: str) -> bool:
+    row = connection.execute(
+        """
+        SELECT * FROM session_events
+        WHERE session_id = ? AND event_type = ?
+        ORDER BY sequence LIMIT 1
+        """,
+        (root_session_id, EventType.TASK_PREPARED.value),
+    ).fetchone()
+    if row is None:
+        return False
+    value = deserialize_event_row(row).payload.get("plan_required", False)
+    if not isinstance(value, bool):
+        raise ValueError("task plan_required projection is invalid")
+    return value
 
 
 def _task_plan(connection: sqlite3.Connection, task_id: TaskId) -> SessionPlan:

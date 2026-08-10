@@ -15982,31 +15982,64 @@ violation set show no new regression.
 - Owner: `Vinson`
 - Branch: `codex/znx-goal-plan-act-01`
 - Exact base: `61552a4c86e40e324219be96c0cf7f58afb0fb75`
-- Owned paths: `packages/agent-core/src/agent_core/harness/`,
-  `tests/agent_core/`,
-  `tests/worker/execution/worker_execution_support.py`,
-  `tests/worker/execution/test_core_execution.py`,
+- Owned paths: `apps/api/src/zebra_agent_api/`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
+  `packages/agent-core/src/agent_core/application/session_bootstrap.py`,
+  `packages/agent-core/src/agent_core/contracts/task_prepared.py`,
+  `packages/agent-core/src/agent_core/domain/agent_tasks.py`,
+  `packages/agent-core/src/agent_core/harness/`,
+  `packages/agent-runtime/src/agent_runtime/finos_journal_provider.py`,
+  `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `packages/agent-storage/src/agent_storage/agent_tasks.py`,
+  `packages/agent-storage/src/agent_storage/projections.py`,
+  `packages/agent-storage/src/agent_storage/sqlite.py`,
+  `packages/agent-storage/src/agent_storage/workspaces.py`,
+  `tests/agent_core/`, `tests/agent_runtime/`, `tests/agent_storage/`,
+  `tests/api/`, `tests/worker/`,
   `docs/AGENT_TASKS.md`,
   `docs/FINOS_NEXT_RUNTIME_TASK_BOARD_AMENDMENT_GOAL_PLAN_V1_2026-08-10.md`,
   `PROGRESS.md`, `WORKLOG.md`
 
 #### Goal
 
-Close the narrow product-activation gap after Goal/Plan v1 lifecycle acceptance:
-when a real model receives a clearly multi-step goal whose durable progress
-matters, it should use the existing `agent.plan` capability and authoritative
-typed reads before finalizing. Simple one-step tasks remain valid without a Plan.
+Close the narrow product-activation gap after Goal/Plan v1 lifecycle acceptance
+with two independent generic Stable Task execution contracts:
+
+- `plan_required=true` requires an Agent-authored durable Plan before business
+  execution and before normal completion;
+- the existing `AgentDefinition.completion_contract.required_evidence` requires
+  declared authoritative evidence before normal completion.
+
+FinOS may select these contracts for an explicit Goal-oriented Task and may
+produce `authoritative_typed_read` only after an authorized, schema-valid,
+successful typed read. It does not author Plan steps, prescribe tool order, or
+gain new data authority. Simple Tasks remain valid without either contract.
 
 #### Required Diagnostic And Acceptance
 
-- [ ] Capture only advertised tool names and returned tool-call names from the
+- [x] Capture only advertised tool names and returned tool-call names from the
   failed real-model request; never record credentials.
-- [ ] Prove whether `agent.plan` and host typed reads are advertised before
+- [x] Prove whether `agent.plan` and host typed reads are advertised before
   changing activation instructions or capability binding.
-- [ ] Add deterministic red tests before the minimum generic production change.
-- [ ] Real complex Goal emits at least one `PLAN_UPDATED` and one authoritative
-  typed read, then preserves the same Stable Task and stable Goal across a
-  follow-up while revising and closing the Plan before final completion.
+- [x] Add deterministic red tests before the minimum generic production change.
+- [ ] Persist strict, default-false `plan_required` on the Stable Task; inherit it
+  across follow-up, retry, resume and reconstruction; block business tools and
+  normal completion before the first durable Plan, then fail explicitly after
+  one bounded unsuccessful correction.
+- [ ] Reuse the existing completion-evidence framework and accept
+  `authoritative_typed_read` only from trusted successful execution metadata;
+  failed, malformed, proposal, save, validator, or merely read-only-tagged calls
+  do not satisfy it.
+- [ ] Real complex Goal produces this order: first `PLAN_UPDATED`, first
+  authoritative typed read, continued Plan/tool work, closed Plan, satisfied
+  required evidence, then `COMPLETED`.
+- [ ] The real follow-up preserves Stable Task, stable Goal, latest Plan revision,
+  and accumulated required evidence; it neither resets nor re-declares the root
+  contracts.
+- [ ] Default no-Plan/no-evidence Tasks can still complete normally.
+- [ ] FinOS Gate 2 real dual-repository E2E remains green without a fixed Review
+  Plan or any widened capability grant.
 - [ ] Targeted, full, static, eval, and FinOS compatibility gates show no new
   regression relative to the exact base.
 
@@ -16017,6 +16050,8 @@ typed reads before finalizing. Simple one-step tasks remain valid without a Plan
 - Goal Tree, Plan DAG, scheduler, recurring/background work, or unlimited
   automatic continuation;
 - mandatory Plan for every Task;
-- FinOS/Review/finance-specific workflow or Goal/Plan types;
+- a new evidence framework, fixed tool-name requirement, or untrusted evidence;
+- FinOS/Review/finance-specific Plan, workflow, or Goal/Plan types;
+- new permissions or broader account/date/object/capability scope;
 - GUI/computer-use or FinOS source changes without a proven compatibility
   regression.

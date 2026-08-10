@@ -15,8 +15,10 @@ def test_stable_task_projects_root_goal_and_latest_plan(tmp_path: Path) -> None:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title="Stable goal",
-            user_input="Identify the causes of recent repeated losses.",
+            user_input="PRIVATE compiled context and instructions.",
+            public_content="Identify the causes of recent repeated losses.",
             workspace_root=tmp_path,
+            plan_required=True,
             created_at=NOW,
         )
     )
@@ -55,6 +57,7 @@ def test_stable_task_projects_root_goal_and_latest_plan(tmp_path: Path) -> None:
     task = SQLiteAgentTaskStore(database).ensure_for_session(bootstrap.session.session_id)
 
     assert task.goal == "Identify the causes of recent repeated losses."
+    assert task.plan_required is True
     assert task.task_plan.steps[0].step_id == "compare"
     assert task.task_plan.steps[0].status is PlanStepStatus.IN_PROGRESS
 
@@ -76,3 +79,4 @@ def test_stable_task_uses_title_for_legacy_projection_without_events(
     task = SQLiteAgentTaskStore(database).ensure_for_session(bootstrap.session.session_id)
 
     assert task.goal == "Legacy projected task"
+    assert task.plan_required is False
