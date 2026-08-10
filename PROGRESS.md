@@ -70,6 +70,10 @@
   slice adds the stateless API command submission seam and Worker
   run/resume/message wake-up without Runtime side effects in API. Full Python
   validation is green: `2128 passed, 271 skipped`; `make check` is green.
+- `CLOUD-COMMAND-CTRL-01` is `Review` on `codex/cloud-command-ctrl-01`. Cloud
+  stop/cancel/suspend/resume now use the durable command seam and Worker-side
+  control service; local operator behavior remains compatible. Full validation
+  is green: `2134 passed, 271 skipped`; `make check` passes.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

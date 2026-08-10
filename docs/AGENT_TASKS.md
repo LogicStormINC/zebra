@@ -791,6 +791,54 @@ remains explicitly isolated.
   work
 - no change to the original dirty `zebra-cloud-trench` worktree
 
+### CLOUD-COMMAND-CTRL-01 - Stop/Cancel/Suspend Control Commands
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `API / WORKER / STORAGE`
+- Depends on: `CLOUD-COMMAND-RUN-01` review commit `e049006b`
+- Branch: `codex/cloud-command-ctrl-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-command-ctrl-01/zebra-agent`
+- Owned paths: `apps/api/src/zebra_agent_api/routes.py`,
+  `apps/worker/src/zebra_agent_worker/command_consumer.py`,
+  `tests/api/test_session_command_routes.py`,
+  `tests/worker/test_command_consumer.py`, this task card, and the focused
+  status in `PROGRESS.md`
+
+#### Goal
+
+Route cloud stop/cancel/suspend/resume controls through the durable command
+  seam. The API appends intent only; a Worker applies the existing typed control
+  service after claiming the accepted command Event.
+
+#### Acceptance
+
+- Cloud control routes require idempotency key and expected revision and return
+  deterministic accepted/duplicate/revision-conflict responses without Runtime
+  or projection side effects in the API process.
+- Worker control consumption invokes the existing `SessionControlService` for
+  stop/cancel/suspend and keeps resume on the execution service; replay is
+  restart-safe and fenced by the durable command stream.
+- Focused API/Worker tests cover control routing, duplicate/competing commands,
+  Worker-side effects and local route compatibility; `13` focused tests and
+  the full suite (`2134 passed, 271 skipped`) are green. Ruff, Mypy (603 files),
+  file-size gate (1224 files), and eval release gate (10/10) pass.
+
+#### Explicit Non-Goals
+
+- no Redis/live publish, production recovery, Helm/gVisor deployment or Trench
+  work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- Cloud `stop` is intentionally mapped to the existing durable cancellation
+  transition because the domain has no separate `SESSION_STOPPED` state; local
+  `/stop` keeps the same compatibility mapping. Cloud cancel/suspend/resume and
+  the generic command route all append the same accepted command Event.
+- Worker control claims invoke `SessionControlService` only after command
+  acceptance; API composition does not build Runtime/Harness for these routes.
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`

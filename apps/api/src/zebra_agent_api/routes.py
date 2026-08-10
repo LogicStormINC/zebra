@@ -137,10 +137,17 @@ class RouteAdapter:
                     request.body or {},
                     idempotency_key=_idempotency_key(request),
                 )
-            if len(parts) == 2 and parts[1] == "cancel":
+            if len(parts) == 2 and parts[1] in {"stop", "cancel", "suspend"}:
+                if self.app.settings.deployment == "cloud":
+                    command = _cloud_command_payload(parts[1], request.body or {})
+                    if isinstance(command, ApiResponse):
+                        return command
+                    return self.app.submit_command(
+                        parts[0], command, idempotency_key=_idempotency_key(request)
+                    )
+                if parts[1] == "suspend":
+                    return self.app.suspend_session(parts[0], request.body or {})
                 return self.app.cancel_session(parts[0], request.body or {})
-            if len(parts) == 2 and parts[1] == "suspend":
-                return self.app.suspend_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "resume":
                 if self.app.settings.deployment == "cloud":
                     command = _cloud_command_payload("resume", request.body or {})

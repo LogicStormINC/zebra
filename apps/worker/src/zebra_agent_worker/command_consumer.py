@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
 from agent_core.application import SessionMessageAppendCommand, SessionMessageAppendService
@@ -12,11 +12,18 @@ from agent_core.ports.projection_store import ProjectionStorePort
 from agent_storage import ControlPlaneStores, LeaseConflictError
 from pydantic import ValidationError
 
+from zebra_agent_worker.control import SessionControlError
 from zebra_agent_worker.recovery import SessionRecoveryError, SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeError
 
 if TYPE_CHECKING:
     from zebra_agent_worker.execution import SessionExecutionService
+
+
+class _SessionControl(Protocol):
+    def cancel_session(self, session_id: SessionId) -> object: ...
+
+    def suspend_session(self, session_id: SessionId) -> object: ...
 
 
 @dataclass(frozen=True)
@@ -34,10 +41,13 @@ class SessionCommandConsumer:
         self,
         stores: ControlPlaneStores,
         execution_service: SessionExecutionService,
+        *,
+        control_service: _SessionControl | None = None,
     ) -> None:
         self._stores = stores
         self._projection_store: ProjectionStorePort = stores.sessions
         self._execution_service = execution_service
+        self._control_service = control_service
         self._recovery = SessionRecoveryService(
             stores.events,
             stores.sessions,
@@ -67,17 +77,27 @@ class SessionCommandConsumer:
                     idempotency_key=accepted.idempotency_key,
                     payload=accepted.payload,
                 )
-                if command.kind is SessionCommandKind.MESSAGE:
+                if command.kind in {SessionCommandKind.STOP, SessionCommandKind.CANCEL}:
+                    self._cancel(command)
+                elif command.kind is SessionCommandKind.SUSPEND:
+                    self._suspend(command)
+                elif command.kind is SessionCommandKind.MESSAGE:
                     self._append_message(command)
-                self._execution_service.execute_session(
-                    command.session_id,
-                    worker_id=worker_id,
-                    lease_ttl_seconds=lease_ttl_seconds,
-                )
+                if command.kind in {
+                    SessionCommandKind.RUN,
+                    SessionCommandKind.RESUME,
+                    SessionCommandKind.MESSAGE,
+                }:
+                    self._execution_service.execute_session(
+                        command.session_id,
+                        worker_id=_worker_id(command, worker_id),
+                        lease_ttl_seconds=_lease_ttl(command, lease_ttl_seconds),
+                    )
             except (
                 ValidationError,
                 ValueError,
                 LeaseConflictError,
+                SessionControlError,
                 SessionRecoveryError,
                 SessionResumeError,
             ) as exc:
@@ -118,8 +138,34 @@ class SessionCommandConsumer:
         ).model_copy(update={"idempotency_key": f"{command.idempotency_key}:message"})
         self._stores.events.append(event)
 
+    def _cancel(self, command: SessionCommand) -> None:
+        if self._control_service is None:
+            raise SessionControlError("control service is not configured")
+        self._control_service.cancel_session(command.session_id)
+
+    def _suspend(self, command: SessionCommand) -> None:
+        if self._control_service is None:
+            raise SessionControlError("control service is not configured")
+        self._control_service.suspend_session(command.session_id)
+
 
 def _command_kind(event: object) -> str | None:
     payload = getattr(event, "payload", None)
     kind = payload.get("kind") if isinstance(payload, dict) else None
     return kind if isinstance(kind, str) else None
+
+
+def _worker_id(command: SessionCommand, default: str) -> str:
+    if command.kind is SessionCommandKind.RESUME:
+        worker_id = command.payload.get("worker_id")
+        if isinstance(worker_id, str) and worker_id.strip():
+            return worker_id.strip()
+    return default
+
+
+def _lease_ttl(command: SessionCommand, default: int) -> int:
+    if command.kind is SessionCommandKind.RESUME:
+        lease_ttl = command.payload.get("lease_ttl_seconds")
+        if isinstance(lease_ttl, int) and not isinstance(lease_ttl, bool) and lease_ttl > 0:
+            return lease_ttl
+    return default

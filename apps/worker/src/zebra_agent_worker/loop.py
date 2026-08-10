@@ -19,6 +19,7 @@ from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.command_consumer import SessionCommandConsumer
+from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.execution import SessionExecutionService
 from zebra_agent_worker.provider_continuation_commit import (
     CloudProviderContinuationCoordinator,
@@ -217,7 +218,15 @@ def build_worker_loop_service(
         deployment_namespace=active_namespace,
         cloud_provider_continuation_factory=cloud_provider_continuation_factory,
     )
-    command_consumer = SessionCommandConsumer(active_stores, execution_service)
+    command_consumer = SessionCommandConsumer(
+        active_stores,
+        execution_service,
+        control_service=SessionControlService(
+            database_path,
+            settings=settings,
+            stores=active_stores,
+        ),
+    )
     return WorkerLoopService(
         projection_store=active_stores.sessions,
         execution_service=execution_service,

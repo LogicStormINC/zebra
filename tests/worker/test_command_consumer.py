@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.contracts import SessionCommand, SessionCommandKind
@@ -25,6 +26,18 @@ class _ExecutionSpy:
         self.stores.sessions.save_session(
             session.model_copy(update={"current_sequence": latest.sequence})
         )
+
+
+class _ControlSpy:
+    def __init__(self) -> None:
+        self.cancelled: list[SessionId] = []
+        self.suspended: list[SessionId] = []
+
+    def cancel_session(self, session_id: SessionId) -> None:
+        self.cancelled.append(session_id)
+
+    def suspend_session(self, session_id: SessionId) -> None:
+        self.suspended.append(session_id)
 
 
 def test_consumer_wakes_worker_and_does_not_replay_projected_command(tmp_path: Path) -> None:
@@ -73,6 +86,37 @@ def test_message_command_appends_user_event_before_waking_worker(tmp_path: Path)
         EventType.USER_MESSAGE_RECEIVED,
     ]
     assert events[-1].payload["content"] == "continue"
+
+
+@pytest.mark.parametrize(
+    ("kind", "control_attr"),
+    (
+        (SessionCommandKind.STOP, "cancelled"),
+        (SessionCommandKind.CANCEL, "cancelled"),
+        (SessionCommandKind.SUSPEND, "suspended"),
+    ),
+)
+def test_control_command_is_applied_by_worker_without_execution(
+    tmp_path: Path, kind: SessionCommandKind, control_attr: str
+) -> None:
+    stores, session_id, revision = _seed_session(tmp_path)
+    command = SessionCommand(
+        command_id=uuid4(),
+        session_id=session_id,
+        kind=kind,
+        expected_revision=revision,
+        idempotency_key=f"{kind.value}-worker-1",
+    )
+    stores.events.append(_command_event(command, revision + 1))
+    execution = _ExecutionSpy(stores)
+    control = _ControlSpy()
+    consumer = SessionCommandConsumer(stores, execution, control_service=control)  # type: ignore[arg-type]
+
+    result = consumer.consume_once(worker_id="worker-c", lease_ttl_seconds=30)
+
+    assert result.status == "executed"
+    assert execution.calls == []
+    assert getattr(control, control_attr) == [session_id]
 
 
 def _seed_session(tmp_path: Path):

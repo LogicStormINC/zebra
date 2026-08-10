@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.events import EventType
@@ -134,6 +135,42 @@ def test_cloud_message_route_submits_command_instead_of_executing_inline(tmp_pat
 
     assert response.status_code == 202
     assert response.body["kind"] == "message"
+    assert response.body["status"] == "accepted"
+
+
+@pytest.mark.parametrize("kind", ("stop", "cancel", "suspend"))
+def test_cloud_control_routes_submit_command_instead_of_executing_inline(
+    tmp_path: Path, kind: str
+) -> None:
+    database_path, session_id, expected_revision = _seed_ready_session(tmp_path)
+    settings = load_settings(
+        {
+            "ZEBRA_PROFILE": "cloud",
+            "ZEBRA_DATABASE_URL": "postgresql://zebra:test@db/zebra",
+            "ZEBRA_RUNTIME_CLASS": "gvisor",
+            "ZEBRA_RUNTIME_IMAGE": "zebra/runtime@sha256:" + "a" * 64,
+            "ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA": "true",
+        }
+    )
+    adapter = RouteAdapter(
+        create_app(
+            database_path,
+            settings=settings,
+            stores=sqlite_control_plane_stores(database_path),
+        )
+    )
+
+    response = adapter.handle(
+        RouteRequest(
+            method="POST",
+            path=f"/sessions/{session_id}/{kind}",
+            headers={"Idempotency-Key": f"cloud-{kind}-1"},
+            body={"expected_revision": expected_revision},
+        )
+    )
+
+    assert response.status_code == 202
+    assert response.body["kind"] == kind
     assert response.body["status"] == "accepted"
 
 
