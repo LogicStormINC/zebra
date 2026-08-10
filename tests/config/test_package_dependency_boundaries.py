@@ -9,9 +9,7 @@ PACKAGES = ROOT / "packages"
 # These are the two known successor-task seams. Keeping the inventory exact
 # means a new package-level configuration dependency fails this contract before
 # ARCH-CONFIG-INTEGRATIONS-01 and ARCH-CONFIG-SECURITY-01 remove the entries.
-KNOWN_CONFIG_IMPORTS = {
-    "packages/agent-security/src/agent_security/credentials.py",
-}
+KNOWN_CONFIG_IMPORTS: set[str] = set()
 
 
 def _imports(path: Path) -> set[str]:

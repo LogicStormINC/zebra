@@ -47,6 +47,11 @@
   builders now accept typed provider settings; `agent-integrations` no longer
   imports or depends on `zebra_agent_config`. App roots perform the mapping and
   preserve environment, retry, credential and network behavior.
+- `ARCH-CONFIG-SECURITY-01` is in `Review` on
+  `codex/arch-config-security-01`. Security credential policy now accepts only
+  the minimal provider/token reference and has no `zebra_agent_config` import;
+  redaction and provider validation remain unchanged. The package dependency
+  inventory is now empty.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
   `codex/cloud-integration-regressions-01`. It fixes two regressions found on
   `zebra-cloud-trench`: Worker heartbeat now starts from the recovery-renewed

@@ -33,6 +33,7 @@ from agent_security.credentials import (
     REDACTED_SECRET,
     ScmCredentialBoundary,
     ScmCredentialCapability,
+    ScmCredentialSettings,
 )
 from agent_security.delivery import (
     CommitPolicy,
@@ -114,6 +115,7 @@ __all__ = [
     "REDACTED_SECRET",
     "SUPPORTED_NETWORK_PROFILES",
     "ScmCredentialBoundary",
+    "ScmCredentialSettings",
     "ScmCredentialCapability",
     "SetupDownload",
     "SetupDownloadEvidence",

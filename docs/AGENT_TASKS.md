@@ -57,6 +57,9 @@ does not authorize production code, migrations or activation of its successor.
   `codex/arch-config-integrations-01`. It removes aggregate Settings inputs from
   Model and SCM adapters through typed provider settings while preserving app
   environment compatibility.
+- `ARCH-CONFIG-SECURITY-01` is in `Review` on
+  `codex/arch-config-security-01`. It removes the remaining aggregate config
+  import from Security credentials and preserves secret/redaction contracts.
 - `CLOUD-INTEGRATION-REG-01` is `Review` on
   `codex/cloud-integration-regressions-01`. It repairs the branch-specific
   recovered-Lease heartbeat checkpoint regression and restores lazy local API
@@ -549,6 +552,45 @@ credential redaction, retry and network policy behavior at app composition.
   credential import owned by `ARCH-CONFIG-SECURITY-01`.
 - Focused Integrations/API/CLI/boundary validation passes `158 passed, 3
   skipped`; Ruff, file-size gate (`1213` files), and Mypy (`598` source files)
+  pass.
+
+### ARCH-CONFIG-SECURITY-01 - Credential Boundary Configuration Decoupling
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `SECURITY / CONFIG`
+- Depends on: `ARCH-CONFIG-BOUNDARY-01` review commit `7e5c5360` and
+  `ARCH-CONFIG-INTEGRATIONS-01` review commit `fe200bb6`
+- Branch: `codex/arch-config-security-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/arch-config-security-01/zebra-agent`
+- Owned paths: `packages/agent-security/`, its focused tests/pyproject, the
+  boundary inventory in `tests/config/test_package_dependency_boundaries.py`,
+  this task card, and the focused status in `PROGRESS.md`
+
+#### Goal
+
+Make Security credential policy consume only provider/token references that it
+needs. It must not read environment/config aggregates or import `apps/config`.
+
+#### Acceptance
+
+- `agent-security` has no `zebra_agent_config` import or dependency.
+- Credential validation, token redaction and snapshot behavior remain explicit
+  and secret-safe.
+- Security tests, boundary inventory, Ruff and Mypy pass.
+
+#### Explicit Non-Goals
+
+- no Profile, command API, recovery, deployment, Integrations or Trench work
+- no plaintext secret persistence or change to the original dirty worktree
+
+#### Closeout
+
+- Added immutable `ScmCredentialSettings` containing only provider and token
+  environment reference. `agent-security` no longer imports or depends on
+  `zebra_agent_config`; its redacted capability and snapshot stay secret-safe.
+- Boundary inventory is now empty. Focused Security/boundary validation passes
+  `6 tests`; Ruff, file-size gate (`1215` files), and Mypy (`598` source files)
   pass.
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
